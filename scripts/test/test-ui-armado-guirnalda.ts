@@ -42,7 +42,9 @@ import {
   racimosEnOrden,
   resumenInsumosGuirnalda,
 } from "@/components/plan/guirnalda";
-import { conAnfitriona, conRelleno, MAXIMO_REMATES } from "@/components/plan/guirnalda/borrador-guirnalda";
+import { conAnfitriona, conDesnivel, conRelleno, MAXIMO_REMATES } from "@/components/plan/guirnalda/borrador-guirnalda";
+import { desnivelTexto, soporteConCaida } from "@/components/plan/guirnalda/leyenda-guirnalda";
+import { curvaGuirnalda } from "@/components/plan/patron/geometria-dibujo";
 import { peticionVistaGuirnalda } from "@/components/plan/guirnalda/usarVistaGuirnalda";
 import { alBorrador } from "@/components/plan/guirnalda/vista-guirnalda";
 import { celdasDeArmado, curvaDeArmado, patronSobreArmado } from "@/components/plan/guirnalda/geometria-guirnalda";
@@ -341,6 +343,91 @@ function planConArmado(resuelto: ArmadoGuirnaldaResuelto | null): PlanResuelto {
   assert.match(sinPatron, /Sueltos entre racimos: 1 ×/);
   assert.equal(resumenInsumosGuirnalda([], null), "");
   ok("hoja de armado: una sola, con insumos en metros, racimos en orden, leyenda, pasos y el patrón fundido");
+}
+
+// ---------------------------------------------------------------------------
+// 7b. Caída y desnivel de la foto (ADR-0032, decisión 26): la curva real, a escala, que cae.
+{
+  // Salidas reales de Python: la guirnalda de la foto del usuario (en pared, curva,
+  // alta a la izquierda y cae hacia la derecha) y un arco caído colgado con desnivel.
+  const DESNIVEL = vista("pared_curva_desnivel");
+  const COLGADA_DESNIVEL = vista("colgada_arco_caido_desnivel");
+  assert.equal(DESNIVEL.armado.armado.desnivel_m, -0.9);
+  assert.ok(DESNIVEL.armado.largo_cuerda_m > DESNIVEL.armado.largo_m, "la cuerda de Python, más larga que el largo");
+  for (const caso of [DESNIVEL, COLGADA_DESNIVEL]) {
+    const dibujo = dibujarGuirnalda(caso.armado);
+    assert.equal(dibujo.globos.length, caso.armado.globos_por_instancia, "cada globo de Python se dibuja una vez");
+    const numeros = [dibujo.caja.x, dibujo.caja.y, dibujo.caja.ancho, dibujo.caja.alto, ...dibujo.globos.flatMap((g) => [g.x, g.y, g.r]), ...dibujo.racimos.flatMap((r) => [r.centro.x, r.centro.y, r.etiqueta.x, r.etiqueta.y])];
+    assert.ok(numeros.every(Number.isFinite), "ningún NaN ni infinito en la geometría");
+    const svg = renderToStaticMarkup(React.createElement(GraficaGuirnalda, { resuelto: caso.armado, leyenda }));
+    assert.doesNotMatch(svg, /NaN|Infinity/, "SVG sin NaN");
+    const xs = dibujo.racimos.map((racimo) => racimo.centro.x);
+    assert.ok(xs.every((x, i) => i === 0 || x > xs[i - 1]!), "numerados de izquierda a derecha sobre la curva");
+    const [primero, ultimo] = [dibujo.racimos[0]!, dibujo.racimos.at(-1)!];
+    const escala = (ultimo.centro.x - primero.centro.x) / caso.armado.largo_m;
+    // La pantalla crece hacia abajo: el extremo derecho más bajo tiene la y mayor, a escala.
+    const bajada = (ultimo.centro.y - primero.centro.y) / escala;
+    assert.ok(Math.abs(bajada + (caso.armado.armado.desnivel_m ?? 0)) < 0.02, `el extremo derecho, ${bajada.toFixed(3)} m más abajo`);
+  }
+  // La curva sigue siendo una curva (se arquea sobre la recta entre los extremos), ya no una joroba simétrica.
+  const curva = dibujarGuirnalda(DESNIVEL.armado);
+  const medio = curva.racimos[Math.floor(curva.racimos.length / 2)]!;
+  const [izq, der] = [curva.racimos[0]!, curva.racimos.at(-1)!];
+  const recta = izq.centro.y + ((der.centro.y - izq.centro.y) * (medio.centro.x - izq.centro.x)) / (der.centro.x - izq.centro.x);
+  assert.ok(medio.centro.y < recta, "el centro de la curva, por encima de la recta que une los extremos");
+  assert.ok(medio.centro.y > izq.centro.y, "y más bajo que el extremo izquierdo: cae hacia la derecha");
+  // Arco caído colgado de dos anclajes a distinta altura: los anclajes sobre la recta inclinada y la caída bajo ella.
+  const caido = dibujarGuirnalda(COLGADA_DESNIVEL.armado);
+  assert.equal(caido.anclajes.length, 2);
+  const escalaCaido = (caido.anclajes[1]!.x - caido.anclajes[0]!.x) / 3.5;
+  assert.ok(Math.abs((caido.anclajes[1]!.y - caido.anclajes[0]!.y) / escalaCaido - 0.6) < 0.01, "el anclaje derecho 0,6 m más abajo");
+  const flecha = Math.max(...caido.racimos.map((racimo) => racimo.centro.y - (caido.anclajes[0]!.y + ((caido.anclajes[1]!.y - caido.anclajes[0]!.y) * (racimo.centro.x - caido.anclajes[0]!.x)) / (caido.anclajes[1]!.x - caido.anclajes[0]!.x))));
+  assert.ok(Math.abs(flecha / escalaCaido - 0.4) < 0.06, `la caída bajo la recta entre anclajes, a escala: ${(flecha / escalaCaido).toFixed(3)} m`);
+  assert.equal(caido.caidaDeMuestra, false);
+  // Sin desnivel, la curva es exactamente la de antes (la joroba suave de E6).
+  const antes = (t: number) => ({ x: t * 3.5, y: -0.12 * 3.5 * Math.sin(Math.PI * t) });
+  for (const t of [0, 0.25, 0.5, 0.9, 1]) assert.deepEqual(curvaGuirnalda({ forma: "curva", largo_m: 3.5 })(t), antes(t));
+  assert.deepEqual(curvaDeArmado(SOBRE_ARCO.armado), { forma: "curva", largo_m: 3.5 }, "sin desnivel no viaja el campo");
+
+  // El texto alternativo lo dice, y el bloque y la hoja también.
+  const alt = renderToStaticMarkup(React.createElement(GraficaGuirnalda, { resuelto: DESNIVEL.armado, leyenda, etiqueta: "Guirnalda de la foto" }));
+  assert.match(alt, /<figcaption class="sr-only"><p>En pared\. Curva, cae hacia la derecha \(el extremo derecho, 0,9 m más bajo\), 3,5 m de largo \(cuerda de 3,61 m\)\. 13 cuartetos de 12″, numerados de izquierda a derecha\.<\/p>/);
+  assert.equal(desnivelTexto({ desnivel_m: 0.25 }), "cae hacia la izquierda (el extremo izquierdo, 0,25 m más bajo)");
+  assert.equal(desnivelTexto({}), "");
+  const bloque = textoVisible(renderToStaticMarkup(React.createElement(BloqueGuirnalda, { resuelto: COLGADA_DESNIVEL.armado, leyenda, nombrePieza: "Guirnalda" })));
+  assert.match(bloque, /Forma: Arco caído con 0,4 m de caída, 2 anclajes, cae hacia la derecha \(el extremo derecho, 0,6 m más bajo\)/);
+  const hoja = textoVisible(renderToStaticMarkup(React.createElement(HojaArmadoGuirnalda, { resuelto: DESNIVEL.armado, leyenda, estructura, declarada })));
+  assert.match(hoja, /Fija la guirnalda a la pared de izquierda a derecha con ganchos o pegante, con el extremo derecho 0,9 m más bajo que el izquierdo\./, "el paso de Python");
+
+  // El editor: el control del desnivel solo donde un extremo puede ir más alto (pared o colgada).
+  const colores = leyendaPatron(declarada.materiales, estructura.lineas);
+  const controles = (borrador: ArmadoGuirnaldaV1) => renderToStaticMarkup(React.createElement(ControlesGuirnalda, {
+    borrador, opciones: DESNIVEL.opciones, colores, nombrePieza: (id: string) => id,
+    onCambiar: () => undefined, moviendo: null, onMover: () => undefined, onArrastrar: () => undefined,
+  }));
+  const conControl = controles(DESNIVEL.armado.armado);
+  assert.match(conControl, /role="switch" aria-checked="true"[^>]*>.*Un extremo más alto que el otro/);
+  assert.match(conControl, /aria-valuetext="La guirnalda cae hacia la derecha \(el extremo derecho, 0,9 m más bajo\)" data-testid="desnivel-guirnalda"/, "el deslizador se anuncia en palabras");
+  assert.match(conControl, /<span class="sr-only">Altura del extremo derecho respecto del izquierdo, en metros<\/span>/, "con su etiqueta");
+  assert.match(textoVisible(conControl), /−0,9 m/, "y su valor corto a la vista");
+  const nivelada = controles({ ...DESNIVEL.armado.armado, desnivel_m: undefined });
+  assert.match(nivelada, /role="switch" aria-checked="false"[^>]*>.*Un extremo más alto que el otro/);
+  assert.doesNotMatch(nivelada, /desnivel-guirnalda/, "apagado, sin deslizador");
+  assert.doesNotMatch(controles(RECETA.armado.armado), /Un extremo más alto/, "sobre la mesa no hay desnivel");
+  assert.deepEqual((["pared", "colgada", "piso", "mesa", "sobre_estructura"] as const).filter(soporteConCaida), ["pared", "colgada"], "la tabla del contrato");
+
+  // El borrador: solo la forma del contrato.
+  const base = DESNIVEL.armado.armado;
+  assert.equal(conDesnivel(base, -0.30000000000000004).desnivel_m, -0.3, "a dos decimales");
+  assert.equal(conDesnivel(base, -9).desnivel_m, -5, "dentro del contrato");
+  assert.equal("desnivel_m" in conDesnivel(base, 0), false, "nivelada: sin el campo");
+  assert.equal("desnivel_m" in conDesnivel(base, null), false);
+  assert.equal(conDesnivel(base, 0.4).origen, "decorador");
+  assert.equal("desnivel_m" in conSoporte(base, "mesa"), false, "sobre la mesa el desnivel se va");
+  assert.equal("desnivel_m" in conAnfitriona(base, "EST_02_ARCO"), false, "sobre otra pieza también");
+  assert.equal(conSoporte(base, "colgada").desnivel_m, -0.9, "colgada lo conserva");
+  assert.equal(conForma(base, "ondulada").desnivel_m, -0.9, "cualquier forma lo lleva");
+  ok("caída y desnivel de la foto: la curva cae hacia la derecha a escala, sin NaN, con texto alternativo, bloque, hoja y control del editor");
 }
 
 // ---------------------------------------------------------------------------

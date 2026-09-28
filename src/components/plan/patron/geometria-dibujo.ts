@@ -45,8 +45,10 @@ export type CurvaGuirnalda = {
   forma: FormaGuirnalda;
   /** Largo declarado de la pieza (m): el ancho del dibujo. */
   largo_m: number;
-  /** Cuánto baja el centro respecto de los extremos (m), en las formas que cuelgan. */
+  /** Cuánto baja el centro respecto de la recta entre los extremos (m), en las formas que cuelgan. */
   caida_m?: number;
+  /** Altura del extremo derecho menos la del izquierdo (m): negativo si cae hacia la derecha. */
+  desnivel_m?: number;
   puntos_de_anclaje?: number;
 };
 
@@ -185,15 +187,31 @@ const ALTURA_ONDA_M = 0.18;
  * La curva de una guirnalda con armado, en metros (y hacia abajo), del
  * extremo izquierdo (t = 0) al derecho (t = 1), con `x = t · largo`:
  * - recta: el largo en línea recta;
- * - curva: un arco suave hacia arriba;
+ * - curva: un arco suave hacia arriba (una curva que cae la lee Python como
+ *   arco caído, ADR-0032 decisión 26: esta es la que no cae);
  * - ondulada: sube y baja, una onda cada 1,2 m;
  * - u_invertida: una U invertida cuyos lados bajan `caida_m` (arco de
  *   parábola de ancho `largo`, el mismo con que Python mide la cuerda);
  * - arco_caido: un arco de parábola que baja `caida_m` entre cada par de
  *   anclajes (`puntos_de_anclaje − 1` tramos, como en Python).
+ * Con `desnivel_m` (decisión 26) la forma va sobre la recta que une los dos
+ * extremos a distinta altura, no sobre la horizontal: el extremo derecho
+ * queda `desnivel_m` más alto (más bajo si es negativo) y los anclajes
+ * sobre esa recta, como la cuerda que mide Python.
  * Solo geometría de pantalla: el largo de la cuerda y los globos los da Python.
  */
-export function curvaGuirnalda({ forma, largo_m, caida_m, puntos_de_anclaje }: CurvaGuirnalda): (t: number) => Punto {
+export function curvaGuirnalda(entrada: CurvaGuirnalda): (t: number) => Punto {
+  const forma = formaSobreLaHorizontal(entrada);
+  const desnivel = Number.isFinite(entrada.desnivel_m) ? entrada.desnivel_m ?? 0 : 0;
+  if (!desnivel) return forma;
+  // La pantalla crece hacia abajo: un extremo derecho más alto tiene la y menor.
+  return (t) => {
+    const punto = forma(t);
+    return { x: punto.x, y: punto.y - desnivel * t };
+  };
+}
+
+function formaSobreLaHorizontal({ forma, largo_m, caida_m, puntos_de_anclaje }: CurvaGuirnalda): (t: number) => Punto {
   const largo = largo_m > 0 ? largo_m : 1;
   switch (forma) {
     case "curva":

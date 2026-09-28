@@ -201,6 +201,30 @@ async function main(): Promise<void> {
   assert.equal(resugerirArmadoGuirnalda({ accion: "repartir", estructura_id: GUIRNALDA }, con, sin), true, "perdido por otra edición: se vuelve a sugerir");
   assert.equal(resugerirArmadoGuirnalda({ accion: "mezcla", estructura_id: GUIRNALDA }, con, con), false);
   console.log("[PASS] edición: la acción armado_guirnalda guarda el armado o lo quita, y lo quitado a propósito no se vuelve a sugerir");
+
+  // --- 8. Decision 26: the tilt travels as the contract says, and Python owns its rule.
+  const DESNIVEL = vistas.casos.colgada_arco_caido_desnivel!;
+  const CON_DESNIVEL = (DESNIVEL.armado as { armado: Json }).armado;
+  assert.equal(CON_DESNIVEL.desnivel_m, -0.6);
+  llamadas = instalarFetch((llamada) => resultado(llamada, DESNIVEL));
+  r = await pedir({ plan: PLAN, estructura_id: GUIRNALDA, armado_guirnalda: CON_DESNIVEL, lineas: LINEAS });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  assert.deepEqual(llamadas[0]!.body.armado_guirnalda, CON_DESNIVEL, "the tilt reaches Python as it was drafted");
+  assert.deepEqual((r.cuerpo.armado as Json).armado, CON_DESNIVEL, "and comes back echoed, with the cord Python measured");
+  assert.equal((r.cuerpo.armado as Json).largo_cuerda_m, 3.66);
+  llamadas = instalarFetch(() => { throw new Error("un desnivel fuera del contrato no debe llegar a Python"); });
+  r = await pedir({ plan: PLAN, estructura_id: GUIRNALDA, armado_guirnalda: { ...CON_DESNIVEL, desnivel_m: -5.5 }, lineas: LINEAS });
+  assert.equal(r.status, 400, "desnivel fuera del contrato");
+  assert.equal(llamadas.length, 0);
+  const sinSoporte = vistas.casos.mesa_con_desnivel as unknown as { error: string; detalles: Json };
+  assert.equal(sinSoporte.detalles.motivo, "desnivel_sin_soporte", "Python's own rule and sentence (real output)");
+  instalarFetch(() => rechazoPython("armado_invalido", 422, sinSoporte.detalles));
+  r = await pedir({ plan: PLAN, estructura_id: GUIRNALDA, armado_guirnalda: { ...CON_DESNIVEL, soporte: "mesa", forma: "recta", caida_m: undefined }, lineas: LINEAS });
+  assert.equal(r.status, 422);
+  assert.equal(r.cuerpo.motivo, "desnivel_sin_soporte");
+  assert.equal(r.cuerpo.mensaje, sinSoporte.detalles.mensaje);
+  EdicionArmadoGuirnaldaSchema.parse({ accion: "armado_guirnalda", estructura_id: GUIRNALDA, armado_guirnalda: CON_DESNIVEL });
+  console.log("[PASS] desnivel: viaja tal cual a Python y vuelve con su cuerda; fuera del contrato 400; desnivel_sin_soporte llega con la frase de Python; la edición lo guarda");
 }
 
 main().catch((error: unknown) => {

@@ -1,10 +1,11 @@
-import type {
-  ArmadoGuirnaldaResuelto,
-  FormaGuirnalda,
-  InsumoGuirnalda,
-  PosicionRemateGuirnalda,
-  SoporteGuirnalda,
-  UnidadRacimoGuirnalda,
+import {
+  SOPORTES_CON_CAIDA_GUIRNALDA,
+  type ArmadoGuirnaldaResuelto,
+  type FormaGuirnalda,
+  type InsumoGuirnalda,
+  type PosicionRemateGuirnalda,
+  type SoporteGuirnalda,
+  type UnidadRacimoGuirnalda,
 } from "@/lib/plan/armado-guirnalda";
 import { ESTRUCTURAS_OFICIALES } from "@/lib/plan/estructuras-oficiales";
 import type { LineaMaterial } from "@/lib/plan/resuelto";
@@ -96,6 +97,16 @@ export function formaConCaida(forma: FormaGuirnalda): boolean {
   return ESTRUCTURAS_OFICIALES.guirnalda.geometria?.formas?.[forma]?.conCaida === true;
 }
 
+/**
+ * Si el soporte deja colgar una forma y poner un extremo más alto que el otro
+ * (`desnivel_m`): la pared o colgada. Lo dice el contrato
+ * (`SOPORTES_CON_CAIDA_GUIRNALDA`, exportado como `x-reglas-guirnalda`), que
+ * Python lee como `SOPORTES_CON_CAIDA`.
+ */
+export function soporteConCaida(soporte: SoporteGuirnalda): boolean {
+  return (SOPORTES_CON_CAIDA_GUIRNALDA as readonly SoporteGuirnalda[]).includes(soporte);
+}
+
 const numero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
 
 /** "0,4 m". */
@@ -147,11 +158,24 @@ export function racimosTexto(armado: ArmadoGuirnalda, cantidad: number): string 
   return `${cantidad} ${cantidad === 1 ? nombre.singular : nombre.plural} de ${armado.racimo.tamano_pulg_base}″`;
 }
 
-/** "Ondulada", "Arco caído con 0,4 m de caída, 3 anclajes". */
+/**
+ * "cae hacia la derecha (el extremo derecho, 0,4 m más bajo)": hacia dónde cae
+ * una guirnalda con desnivel (ADR-0032, decisión 26); vacío si va nivelada.
+ */
+export function desnivelTexto(armado: Pick<ArmadoGuirnalda, "desnivel_m">): string {
+  const desnivel = armado.desnivel_m;
+  if (!desnivel) return "";
+  const lado = desnivel < 0 ? "derecha" : "izquierda";
+  const extremo = desnivel < 0 ? "derecho" : "izquierdo";
+  return `cae hacia la ${lado} (el extremo ${extremo}, ${metros(Math.abs(desnivel))} más bajo)`;
+}
+
+/** "Ondulada", "Arco caído con 0,4 m de caída, 3 anclajes", "Curva, cae hacia la derecha (el extremo derecho, 0,4 m más bajo)". */
 export function formaTexto(armado: ArmadoGuirnalda): string {
   const caida = armado.caida_m !== undefined && formaConCaida(armado.forma) ? ` con ${metros(armado.caida_m)} de caída` : "";
   const anclajes = armado.puntos_de_anclaje !== undefined ? `, ${armado.puntos_de_anclaje} anclajes` : "";
-  return `${NOMBRE_FORMA[armado.forma]}${caida}${anclajes}`;
+  const desnivel = desnivelTexto(armado);
+  return `${NOMBRE_FORMA[armado.forma]}${caida}${anclajes}${desnivel ? `, ${desnivel}` : ""}`;
 }
 
 /** "R-12 blanco fashion (3)": el nombre de un código para leer en voz alta o en la hoja. */

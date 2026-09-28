@@ -19,15 +19,17 @@ import {
   conAnclajes,
   conAnfitriona,
   conCaida,
+  conDesnivel,
   conForma,
   conRacimo,
   conRelleno,
   conRemate,
   conSoporte,
+  MAX_DESNIVEL_M,
   MAXIMO_REMATES,
   quitarRemate,
 } from "./borrador-guirnalda";
-import { formaConCaida, metros, NOMBRE_FORMA, NOMBRE_POSICION, NOMBRE_SOPORTE, NOMBRE_UNIDAD } from "./leyenda-guirnalda";
+import { desnivelTexto, formaConCaida, metros, NOMBRE_FORMA, NOMBRE_POSICION, NOMBRE_SOPORTE, NOMBRE_UNIDAD, soporteConCaida } from "./leyenda-guirnalda";
 
 type Props = {
   /** El armado a la vista (el del decorador o la receta de Python); `null` mientras no hay ninguno. */
@@ -57,6 +59,19 @@ const MAX_CAIDA_M = 5;
 const MAX_PROPORCION_RELLENO = 0.5;
 const ANCLAJES = { min: 2, max: 6 } as const;
 const PROPORCION_RELLENO_INICIAL = 0.2;
+/** Al encender el desnivel: el extremo derecho un poco más bajo, como cae una guirnalda en la pared. */
+const DESNIVEL_INICIAL_M = -0.2;
+
+/** "−0,4 m", "+0,25 m": el desnivel del extremo derecho, corto para la salida del deslizador. */
+function desnivelCorto(valor: number): string {
+  if (!valor) return "0 m";
+  return `${valor < 0 ? "−" : "+"}${metros(Math.abs(valor))}`;
+}
+
+/** Lo que lee un lector de pantalla del deslizador del desnivel. */
+function desnivelLeido(valor: number): string {
+  return valor ? `La guirnalda ${desnivelTexto({ desnivel_m: valor })}` : "Los dos extremos a la misma altura";
+}
 
 const porcentaje = new Intl.NumberFormat("es-CO", { style: "percent", maximumFractionDigits: 0 });
 
@@ -69,13 +84,15 @@ function mayuscula(texto: string): string {
  * arrastre es un solo borrador, una sola vista previa y una sola entrada de
  * "Deshacer". Mientras se mueve, solo cambia su número.
  */
-function Deslizador({ etiqueta, valor, min, max, paso, formato, onConfirmar, testid }: {
+function Deslizador({ etiqueta, valor, min, max, paso, formato, textoValor = formato, onConfirmar, testid }: {
   etiqueta: string;
   valor: number;
   min: number;
   max: number;
   paso: number;
   formato: (valor: number) => string;
+  /** Lo que anuncia el lector de pantalla (`aria-valuetext`); sin él, lo que se ve. */
+  textoValor?: (valor: number) => string;
   onConfirmar: (valor: number) => void;
   testid: string;
 }) {
@@ -94,7 +111,7 @@ function Deslizador({ etiqueta, valor, min, max, paso, formato, onConfirmar, tes
         max={max}
         step={paso}
         value={mostrado}
-        aria-valuetext={formato(mostrado)}
+        aria-valuetext={textoValor(mostrado)}
         data-testid={testid}
         onChange={(evento) => setLocal(Number(evento.currentTarget.value))}
         onPointerUp={confirmar}
@@ -109,8 +126,9 @@ function Deslizador({ etiqueta, valor, min, max, paso, formato, onConfirmar, tes
 
 /**
  * Ajustes del armado de una guirnalda (ADR-0032, E6): soporte (y la pieza
- * anfitriona), forma, caída y anclajes, unidad y tamaño del racimo, relleno y
- * remates. Ofrece lo que Python admite para la pieza (`opciones`); las formas
+ * anfitriona), forma, caída, desnivel entre los extremos (en pared o colgada,
+ * decisión 26) y anclajes, unidad y tamaño del racimo, relleno y remates.
+ * Ofrece lo que Python admite para la pieza (`opciones`); las formas
  * son las cinco del contrato y Python rechaza con su frase la que no quepa
  * con el soporte (el editor la deshace). Cada cambio es un borrador nuevo que
  * Python dibuja; aquí no se cuenta nada.
@@ -139,6 +157,7 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
   const coloresDe = (indices: readonly number[], actual?: number) => colores.filter((color) => indices.includes(color.indice) || color.indice === actual);
   const conCaidaForma = formaConCaida(borrador.forma);
   const conAnclajesVisibles = borrador.soporte === "colgada" || borrador.forma === "arco_caido";
+  const conDesnivelVisible = soporteConCaida(borrador.soporte);
   const nombreColor = (indice: number) => colores.find((color) => color.indice === indice)?.etiqueta ?? `Color ${indice + 1}`;
 
   return (
@@ -167,7 +186,7 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
         )}
       </Apartado>
 
-      <Apartado titulo="Forma" ayuda="Cómo corre de un extremo al otro. La U invertida y el arco caído cuelgan: en pared o colgada.">
+      <Apartado titulo="Forma" ayuda="Cómo corre de un extremo al otro. La U invertida y el arco caído cuelgan: en pared o colgada, donde un extremo también puede ir más alto que el otro.">
         <Segmentado<FormaGuirnalda>
           etiqueta="Forma de la guirnalda"
           opciones={FORMAS_GUIRNALDA.map((forma) => ({ valor: forma, etiqueta: NOMBRE_FORMA[forma] }))}
@@ -186,6 +205,19 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
             />
             {borrador.caida_m !== undefined && (
               <Deslizador etiqueta="Caída en metros" valor={borrador.caida_m} min={MIN_CAIDA_M} max={MAX_CAIDA_M} paso={0.05} formato={metros} onConfirmar={(caida) => onCambiar(conCaida(borrador, caida))} testid="caida-guirnalda" />
+            )}
+          </div>
+        )}
+        {conDesnivelVisible && (
+          <div className="space-y-1.5 pt-1">
+            <Interruptor
+              etiqueta="Un extremo más alto que el otro"
+              descripcion={borrador.desnivel_m !== undefined ? `La guirnalda ${desnivelTexto(borrador)}: la cuerda es más larga y cambia los globos.` : "Los dos extremos a la misma altura."}
+              activo={borrador.desnivel_m !== undefined}
+              onCambiar={(activo) => onCambiar(conDesnivel(borrador, activo ? borrador.desnivel_m ?? DESNIVEL_INICIAL_M : null))}
+            />
+            {borrador.desnivel_m !== undefined && (
+              <Deslizador etiqueta="Altura del extremo derecho respecto del izquierdo, en metros" valor={borrador.desnivel_m} min={-MAX_DESNIVEL_M} max={MAX_DESNIVEL_M} paso={0.05} formato={desnivelCorto} textoValor={desnivelLeido} onConfirmar={(desnivel) => onCambiar(conDesnivel(borrador, desnivel))} testid="desnivel-guirnalda" />
             )}
           </div>
         )}

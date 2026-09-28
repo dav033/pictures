@@ -6,7 +6,7 @@ import type {
   UnidadRacimoGuirnalda,
 } from "@/lib/plan/armado-guirnalda";
 import { jsonEstable } from "../bouquet/borrador-armado";
-import { formaConCaida } from "./leyenda-guirnalda";
+import { formaConCaida, soporteConCaida } from "./leyenda-guirnalda";
 
 /**
  * Ediciones del armado DECLARATIVO de una guirnalda que arma el editor
@@ -15,9 +15,10 @@ import { formaConCaida } from "./leyenda-guirnalda";
  * que aquí no hay ninguna regla de conteo: cada borrador va a la vista previa
  * y Python lo resuelve o lo rechaza con su frase. Solo se cuida la FORMA del
  * contrato (`armado-guirnalda.v1`) para que el borrador se pueda pedir: la
- * caída solo en las formas que la tabla de geometría marca `conCaida`, la
- * pieza anfitriona solo sobre otra pieza y los anclajes que el contrato exige
- * al colgar. Todo lo que el decorador toca lo firma él (`origen: "decorador"`).
+ * caída solo en las formas que la tabla de geometría marca `conCaida`, el
+ * desnivel solo en los soportes de `SOPORTES_CON_CAIDA_GUIRNALDA`, la pieza
+ * anfitriona solo sobre otra pieza y los anclajes que el contrato exige al
+ * colgar. Todo lo que el decorador toca lo firma él (`origen: "decorador"`).
  * Puro: sin React.
  */
 
@@ -25,6 +26,8 @@ import { formaConCaida } from "./leyenda-guirnalda";
 export const MAXIMO_REMATES = 6;
 /** Mínimo de anclajes de `armado-guirnalda.v1`: con él arranca una guirnalda que pasa a colgar. */
 const ANCLAJES_MINIMOS = 2;
+/** Tope de `desnivel_m` en `armado-guirnalda.v1`, en valor absoluto. */
+export const MAX_DESNIVEL_M = 5;
 
 export function claveArmadoGuirnalda(armado: ArmadoGuirnaldaV1): string {
   return jsonEstable(armado);
@@ -62,11 +65,13 @@ export function conSoporte(armado: ArmadoGuirnaldaV1, soporte: SoporteGuirnalda,
   if (soporte === "sobre_estructura" && anfitriona) siguiente = { ...siguiente, estructura_id: anfitriona };
   if (soporte === "colgada" && siguiente.puntos_de_anclaje === undefined) siguiente = { ...siguiente, puntos_de_anclaje: ANCLAJES_MINIMOS };
   if (usaAnclajes(armado) && !usaAnclajes(siguiente)) siguiente = sin(siguiente, "puntos_de_anclaje");
+  // En el piso, la mesa u otra pieza los extremos van a su altura: el desnivel se va con su control.
+  if (!soporteConCaida(soporte)) siguiente = sin(siguiente, "desnivel_m");
   return firmado(siguiente);
 }
 
 export function conAnfitriona(armado: ArmadoGuirnaldaV1, anfitriona: string): ArmadoGuirnaldaV1 {
-  return firmado({ ...armado, soporte: "sobre_estructura", estructura_id: anfitriona });
+  return firmado(sin({ ...armado, soporte: "sobre_estructura", estructura_id: anfitriona }, "desnivel_m"));
 }
 
 /** Otra forma; la caída se va si la nueva forma no cuelga, y los anclajes si ya no los usa (ver `conSoporte`). */
@@ -81,6 +86,16 @@ export function conForma(armado: ArmadoGuirnaldaV1, forma: FormaGuirnalda): Arma
 export function conCaida(armado: ArmadoGuirnaldaV1, caida: number | null): ArmadoGuirnaldaV1 {
   if (caida === null || !(caida > 0)) return firmado(sin(armado, "caida_m"));
   return firmado({ ...armado, caida_m: Math.round(caida * 100) / 100 });
+}
+
+/**
+ * El desnivel en metros (el extremo derecho menos el izquierdo), a dos
+ * decimales y dentro del contrato; `null` o 0 lo quitan (va nivelada).
+ */
+export function conDesnivel(armado: ArmadoGuirnaldaV1, desnivel: number | null): ArmadoGuirnaldaV1 {
+  if (desnivel === null || !Number.isFinite(desnivel)) return firmado(sin(armado, "desnivel_m"));
+  const metros = Math.round(Math.max(-MAX_DESNIVEL_M, Math.min(MAX_DESNIVEL_M, desnivel)) * 100) / 100;
+  return firmado(metros === 0 ? sin(armado, "desnivel_m") : { ...armado, desnivel_m: metros });
 }
 
 export function conAnclajes(armado: ArmadoGuirnaldaV1, puntos: number | null): ArmadoGuirnaldaV1 {
