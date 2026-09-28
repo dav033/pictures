@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from app.armado_bouquet import (
@@ -10,7 +12,9 @@ from app.armado_bouquet import (
     GloboCatalogo,
     armado_resuelto,
     clasificar,
+    compra_desde_lectura,
     sugerir_armado,
+    total_leido,
     validar,
 )
 
@@ -329,10 +333,9 @@ def test_las_frases_del_prompt_describen_el_armado_en_ingles() -> None:
     assert gemini.startswith("BOUQUET ASSEMBLY — a helium balloon bouquet")
     assert "stacked in layers" in gemini and "Topper: gold foil heart." in gemini
     assert 'white 12" latex balloons' in gemini and "level 1 (layer)" in gemini
-    assert lora == (
-        "a helium balloon bouquet stacked in level layers of white and pink balloons"
-        " topped by gold foil heart"
-    )
+    # Modificador del sustantivo que ya escribe el caption ("a balloon bouquet ..."),
+    # como la frase de un patrón: sin artículo ni otro "bouquet" (2026-09-25).
+    assert lora == "floating on helium ribbons in level stacked layers, topped by gold foil heart"
 
 
 def test_la_frase_lora_deletrea_los_numeros_y_es_ascii() -> None:
@@ -343,10 +346,66 @@ def test_la_frase_lora_deletrea_los_numeros_y_es_ascii() -> None:
     lora = str(resuelto["prompt_lora"])
     gemini = str(resuelto["prompt_gemini"])
     assert lora.isascii() and not any(c.isdigit() for c in lora)
-    assert "foil number two balloon" in lora and "foil number five balloon" in lora
-    assert lora.endswith("one on each side")
+    # Dos números del mismo tamaño y color comparten el prefijo: más corto para el LoRA.
+    assert "large gold foil numbers two and five" in lora
+    assert lora.endswith(", one number in each bouquet")
     assert 'foil number "2" balloon' in gemini and "Build two matching bouquets" in gemini
     assert "one on each side, each with its own bouquet" in gemini
+
+
+def test_numeros_distintos_se_nombran_cada_uno_en_la_frase_lora() -> None:
+    estructura = _estructura([_latex(12, "blanco"), _numero("1", 16), _numero("8")], [4, 1, 1])
+    armado = sugerir_armado(estructura, variante="base_aire")
+    assert armado is not None
+    lora = str(armado_resuelto(estructura, armado)["prompt_lora"])
+    assert "small gold foil number one balloon and large gold foil number eight balloon" in lora
+
+
+@pytest.mark.parametrize(
+    ("globos", "cantidades", "eleccion"),
+    [
+        ([_latex(12, "blanco"), _latex(12, "rosado"), _corazon_18()], [3, 3, 1], {}),
+        ([_latex(12, "blanco"), _latex(5, "rosado"), _corazon_18()], [8, 3, 1], {}),
+        ([_latex(12, "blanco"), _numero("2"), _numero("5")], [4, 1, 1], {"disposicion": "abajo"}),
+        (
+            [_latex(12, "blanco"), _latex(12, "rosado")],
+            [3, 2],
+            {"variante": "helio_escalonado"},
+        ),
+    ],
+)
+def test_la_frase_lora_es_un_modificador_del_bouquet(
+    globos: list[GloboCatalogo], cantidades: list[int], eleccion: dict[str, str]
+) -> None:
+    estructura = _estructura(globos, cantidades)
+    armado = sugerir_armado(estructura, **eleccion)  # type: ignore[arg-type]
+    assert armado is not None
+    lora = str(armado_resuelto(estructura, armado)["prompt_lora"])
+    # El compilador del caption ya dice "a balloon bouquet": la frase lo sigue.
+    assert not lora.startswith(("a ", "an ")) and "balloon bouquet" not in lora
+    assert lora.isascii() and not any(c.isdigit() for c in lora)
+
+
+def test_con_base_de_aire_la_frase_gemini_solo_nombra_lo_que_va_en_varilla() -> None:
+    sin_numeros = _estructura([_latex(12, "blanco"), _latex(5, "rosado"), _corazon_18()], [8, 3, 1])
+    armado = sugerir_armado(sin_numeros)
+    assert armado is not None and armado["variante"] == "base_aire"
+    gemini = str(armado_resuelto(sin_numeros, armado)["prompt_gemini"])
+    # Antes decía "the topper and the numbers stand on sticks" sin números en la compra.
+    assert "numbers" not in gemini and gemini.endswith("the topper stands on a stick above it.")
+    # Un cuarteto de un solo globo se nombra una vez, no cuatro veces seguidas.
+    assert 'level 1 (base): 2 four-balloon clusters of white 12" latex balloons;' in gemini
+    assert gemini.count('white 12" latex balloons') == 1
+
+    con_numeros = _estructura([_latex(12, "blanco"), _numero("1", 16), _numero("8", 16)], [4, 1, 1])
+    armado = sugerir_armado(con_numeros)
+    assert armado is not None and armado["variante"] == "base_aire"
+    gemini = str(armado_resuelto(con_numeros, armado)["prompt_gemini"])
+    assert gemini.endswith("the numbers stand on sticks above it.")
+    abajo = sugerir_armado(con_numeros, disposicion="abajo")
+    assert abajo is not None
+    gemini = str(armado_resuelto(con_numeros, abajo)["prompt_gemini"])
+    assert gemini.endswith("Keep every balloon touching its cluster.")
 
 
 # --- La foto manda sobre la compra (2026-09-25) ------------------------------------
@@ -447,3 +506,193 @@ def test_los_numeros_abajo_van_de_pie_y_no_flotan() -> None:
     assert "de pie en la base" in " ".join(resuelto["pasos"])  # type: ignore[arg-type]
     assert "standing at the base" in str(resuelto["prompt_gemini"])
     assert str(resuelto["prompt_lora"]).endswith("standing at the base")
+
+
+def test_escalonado_sin_remate_ni_numeros_no_nombra_una_pieza_central() -> None:
+    estructura = _estructura([_latex(9, "negro")], [10])
+    armado = sugerir_armado(estructura)
+    assert armado is not None and armado["variante"] == "helio_escalonado"
+    gemini = str(armado_resuelto(estructura, armado)["prompt_gemini"])
+    # Sin remate ni números no hay pieza central que rodear ni que suba más alto.
+    assert "central piece" not in gemini
+    assert "staggered at clearly different heights." in gemini
+    assert gemini.endswith("No two balloons at the same height.")
+    con_estrella = _estructura(
+        [_latex(12, "blanco"), _globo("B2b Globo Metalizado Estrella Dorado Mate — 36 IN")],
+        [4, 1],
+    )
+    armado = sugerir_armado(con_estrella, variante="helio_escalonado")
+    assert armado is not None
+    gemini = str(armado_resuelto(con_estrella, armado)["prompt_gemini"])
+    assert "around the central piece" in gemini and gemini.endswith("floats highest.")
+
+
+# --- Cantidad y tamaño por nivel (bouquet-referencia v2, 2026-09-28) -----------------
+#
+# El caso real (SEGUIMIENTO-bouquets.md §14): un bouquet con más de 30 látex,
+# los números 3 y 5 y una corona salía con 11 globos porque la lectura
+# describía UNA unidad por nivel. Los materiales son los del plan de ese caso.
+
+_CUARTETO_35 = ["dorado", "negro", "dorado", "negro"]
+
+
+def _bouquet_35() -> EstructuraBouquet:
+    globos = [
+        _latex(12, "dorado"),
+        _latex(12, "negro"),
+        _latex(18, "dorado"),
+        _latex(12, "blanco"),
+        _globo("B2b Globo Metalizado Numero 3 Plateado — 40 IN / PAQUETE X 1", color="plateado"),
+        _globo("B2b Globo Metalizado Numero 5 Plateado — 40 IN / PAQUETE X 1", color="plateado"),
+        _globo("B2b Globo Metalizado Corona Dorado — 32 IN / PAQUETE X 1", color="dorado"),
+    ]
+    # Lo que el modelo había declarado (30): la foto manda sobre esto.
+    return _estructura(globos, [8, 8, 6, 5, 1, 1, 1])
+
+
+def _base_35(**extra: object) -> list[dict[str, object]]:
+    """Los dos niveles de cuartetos de la base, con lo que lea la foto de cada uno."""
+    return [{"unidad": "cuarteto", "colores": _CUARTETO_35, **extra} for _ in range(2)]
+
+
+def _lectura_35(niveles: list[dict[str, object]]) -> dict[str, object]:
+    return {
+        "variante": "base_aire",
+        "niveles": niveles,
+        "remate": {"clase": "metalizado", "color": "dorado"},
+        "numeros": [
+            {"digito": "3", "clase_tamano": "grande"},
+            {"digito": "5", "clase_tamano": "grande"},
+        ],
+        "disposicion": "centro",
+        "confianza": 0.8,
+    }
+
+
+def test_una_lectura_sin_cantidad_sigue_contando_una_unidad_por_nivel() -> None:
+    # Comportamiento de siempre (lectura v1): 2 cuartetos + corona + 3 y 5 = 11.
+    lectura = _lectura_35(_base_35())
+    compra = compra_desde_lectura(_bouquet_35(), lectura)
+    assert compra is not None and compra.total == total_leido(lectura) == 11
+    con_uno = compra_desde_lectura(_bouquet_35(), _lectura_35(_base_35(cantidad=1)))
+    assert con_uno is not None
+    assert (con_uno.cantidades, con_uno.armado) == (compra.cantidades, compra.armado)
+
+
+def test_el_bouquet_grande_se_compra_por_niveles_con_la_cantidad_leida() -> None:
+    # Base de dos niveles de 4 cuartetos + corona + 3 y 5: 32 + 1 + 2.
+    lectura = _lectura_35(_base_35(cantidad=4))
+    compra = compra_desde_lectura(_bouquet_35(), lectura)
+    assert compra is not None and compra.total == total_leido(lectura) == 35
+    assert compra.cantidades == (16, 16, 0, 0, 1, 1, 1)
+    assert compra.armado["niveles"] == [
+        {"rol": "base", "unidad": "cuarteto", "cantidad": 8, "posiciones": [0, 1, 0, 1]}
+    ]
+    # Con cuerpo: dos niveles de base, uno de cuerpo y acentos grandes.
+    con_cuerpo = _lectura_35(
+        [
+            *_base_35(cantidad=4, clase_tamano="mediano"),
+            {
+                "unidad": "cuarteto",
+                "colores": ["negro", "dorado", "blanco", "dorado"],
+                "cantidad": 2,
+                "clase_tamano": "mediano",
+            },
+            {"unidad": "suelto", "colores": ["dorado"], "cantidad": 3, "clase_tamano": "grande"},
+        ]
+    )
+    compra = compra_desde_lectura(_bouquet_35(), con_cuerpo)
+    assert compra is not None and compra.total == total_leido(con_cuerpo) == 46
+    assert compra.cantidades == (20, 18, 3, 2, 1, 1, 1)
+    niveles = cast(list[dict[str, object]], compra.armado["niveles"])
+    assert [(n["rol"], n["cantidad"]) for n in niveles] == [
+        ("base", 8),
+        ("cuerpo", 2),
+        ("acento", 3),
+    ]
+    assert compra.quitados == ()
+
+
+def test_el_tamano_leido_conserva_el_dorado_de_18() -> None:
+    acento: dict[str, object] = {"unidad": "suelto", "colores": ["dorado"], "cantidad": 3}
+    grande = _lectura_35([*_base_35(cantidad=4), {**acento, "clase_tamano": "grande"}])
+    compra = compra_desde_lectura(_bouquet_35(), grande)
+    assert compra is not None and compra.cantidades[2] == 3, "el dorado de 18 no se quita"
+    # Sin la clase de tamaño, el primero de ese color (como siempre): el 18 queda
+    # en 0, pero no "porque la foto no lo lleva".
+    compra = compra_desde_lectura(_bouquet_35(), _lectura_35([*_base_35(cantidad=4), acento]))
+    assert compra is not None and compra.cantidades[:3] == (19, 16, 0)
+    assert dict(compra.quitados) == {2: "sin_tamano", 3: "sin_color"}
+    # Todo mediano: el 18 se quita porque la foto lleva el dorado en otro tamaño.
+    mediano = _lectura_35(
+        [*_base_35(cantidad=4, clase_tamano="mediano"), {**acento, "clase_tamano": "mediano"}]
+    )
+    compra = compra_desde_lectura(_bouquet_35(), mediano)
+    assert compra is not None and dict(compra.quitados) == {2: "otro_tamano", 3: "sin_color"}
+    # Un tamaño que el plan no tiene en ese color cae en el más cercano.
+    gigante = _lectura_35([{**acento, "colores": ["negro"], "clase_tamano": "gigante"}])
+    compra = compra_desde_lectura(_bouquet_35(), gigante)
+    assert compra is not None and compra.cantidades[1] == 3
+
+
+def test_la_compra_leida_suma_lo_mismo_que_publica_la_lectura() -> None:
+    estructura = _estructura(
+        [_latex(12, "blanco"), _latex(12, "rosado"), _numero("8"), _numero("0"), _corazon_18()],
+        [10, 10, 1, 1, 1],
+    )
+    trio = {"unidad": "trio", "colores": ["blanco", "rosado", "blanco"]}
+    lecturas: list[dict[str, object]] = [
+        {"variante": "helio_apilado", "niveles": [{**trio, "cantidad": 5}], "confianza": 0.9},
+        {
+            "variante": "helio_escalonado",
+            "niveles": [{"unidad": "suelto", "colores": ["blanco", "rosado"], "cantidad": 6}],
+            "remate": {"clase": "metalizado"},
+            "numeros": [
+                {"digito": "8", "clase_tamano": "grande"},
+                {"digito": "0", "clase_tamano": "grande"},
+            ],
+            "disposicion": "lados",
+            "confianza": 0.9,
+        },
+        {
+            "variante": "base_aire",
+            "niveles": [{"unidad": "suelto", "colores": ["blanco"] * 6, "cantidad": 24}],
+            "confianza": 0.9,
+        },
+    ]
+    for lectura in lecturas:
+        compra = compra_desde_lectura(estructura, lectura)
+        assert compra is not None and compra.total == total_leido(lectura)
+        # Los niveles que se juntan nunca pasan del tope de 24 unidades del contrato,
+        # y el armado leído valida contra lo que compra.
+        niveles = cast(list[dict[str, object]], compra.armado["niveles"])
+        assert all(cast(int, nivel["cantidad"]) <= 24 for nivel in niveles)
+        comprada = EstructuraBouquet(
+            estructura.estructura_id, True, 1, estructura.materiales, compra.cantidades
+        )
+        validar(comprada, compra.armado)
+    # Números a los lados: dos bouquets de 12 sueltos y su corazón, un dígito cada uno.
+    assert total_leido(lecturas[1]) == (12 + 1) * 2 + 2
+    # Más globos de los que un plan puede declarar (999): la foto no manda.
+    enorme = {
+        "variante": "base_aire",
+        "niveles": [{"unidad": "suelto", "colores": ["blanco"] * 6, "cantidad": 24}] * 8,
+        "confianza": 0.9,
+    }
+    assert total_leido(enorme) == 1152
+    assert compra_desde_lectura(estructura, enorme) is None
+
+
+def test_el_bouquet_chico_de_la_foto_sigue_saliendo_con_cinco() -> None:
+    globos = [_latex(12, "negro"), _latex(12, "dorado"), _numero("8"), _numero("0")]
+    lectura = {
+        "variante": "helio_escalonado",
+        "niveles": [{"unidad": "suelto", "colores": ["dorado", "dorado", "negro"], "cantidad": 1}],
+        "numeros": [
+            {"digito": "8", "clase_tamano": "grande"},
+            {"digito": "0", "clase_tamano": "grande"},
+        ],
+        "confianza": 0.85,
+    }
+    compra = compra_desde_lectura(_estructura(globos, [5, 5, 1, 1]), lectura)
+    assert compra is not None and compra.total == total_leido(lectura) == 5

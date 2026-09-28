@@ -42,7 +42,7 @@ from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from math import isfinite
-from typing import Literal, Protocol, cast
+from typing import Annotated, Literal, Protocol, cast
 from urllib.parse import urlparse
 
 from pydantic import ConfigDict, Field, ValidationError, field_validator, model_validator
@@ -57,6 +57,8 @@ from app.generated_models import (
 )
 from app.armado_bouquet import (
     CONFIANZA_MINIMA_LECTURA,
+    MAX_CANTIDAD_NIVEL,
+    MAX_TOTAL_LEIDO,
     ArmadoInvalido,
     CompraLeida,
     EstructuraBouquet,
@@ -274,6 +276,9 @@ class NivelLeido(ContractModel):
 
     unidad: Literal["suelto", "pareja", "trio", "cuarteto", "quinteto", "sexteto"]
     colores: list[str] = Field(min_length=1, max_length=6)
+    # Units of the level; absent in readings before bouquet-referencia v2 (worth 1).
+    cantidad: int | None = Field(default=None, ge=1, le=MAX_CANTIDAD_NIVEL)
+    clase_tamano: Literal["chico", "mediano", "grande", "gigante"] | None = None
 
 
 class RemateLeido(ContractModel):
@@ -302,6 +307,13 @@ class PistaArmado(ContractModel):
     numeros: list[NumeroLeido] | None = Field(default=None, max_length=3)
     disposicion: Literal["centro", "lados", "arriba", "abajo"] | None = None
     confianza: float = Field(ge=0, le=1)
+    # Published by the reading itself (``armado_bouquet.total_leido``). The
+    # resolution recounts the levels with that same function; it never trusts
+    # a number that travelled through Next.
+    total_globos: int | None = Field(default=None, ge=0, le=MAX_TOTAL_LEIDO)
+    avisos: list[Annotated[str, Field(min_length=1, max_length=200)]] | None = Field(
+        default=None, max_length=12
+    )
 
 
 class PlanResolutionRequest(OperationalRequest):
@@ -3258,13 +3270,25 @@ def _comprar_lo_leido(
             f"{name}: la foto muestra {total} globos por bouquet, así que la cantidad quedó en "
             f"{total * reps} (el plan decía {before})."
         )
-    dropped = [
-        _text(materials[index].get("color")) or "un material"
-        for index, units in enumerate(bought.cantidades)
-        if units == 0
-    ]
-    if dropped:
-        notices.append(f"{name}: se quitó {', '.join(dropped)} porque la foto no lo lleva.")
+    # A latex whose color stays in another size was not "missing from the photo".
+    reasons = dict(bought.quitados)
+    dropped: dict[str, list[str]] = {}
+    for index, units in enumerate(bought.cantidades):
+        if units:
+            continue
+        label = _text(materials[index].get("color")) or "un material"
+        reason = reasons.get(index, "sin_color")
+        classified = context.materiales[index]
+        if reason != "sin_color" and classified is not None and classified.tamano_pulg:
+            label = f"{label} de {classified.tamano_pulg:g} pulgadas"
+        dropped.setdefault(reason, []).append(label)
+    because = {
+        "sin_color": "porque la foto no lo lleva",
+        "otro_tamano": "porque la foto lleva ese color en otro tamaño",
+        "sin_tamano": "porque la lectura de la foto no dice el tamaño de ese color",
+    }
+    for reason, labels in dropped.items():
+        notices.append(f"{name}: se quitó {', '.join(labels)} {because[reason]}.")
     return (
         {
             **dict(structure),

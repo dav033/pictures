@@ -83,20 +83,45 @@ export function medidasCliente(tipo: string, medidas: { ancho_m?: number; alto_m
 
 const TIPOS_CON_GLOBOS = new Set(["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"]);
 
-/** Tipos que el backend mide en globos; el resto (telón, kit, accesorio) son piezas. */
+/** Tipos que el backend mide en globos por su geometría; el resto (telón, kit, accesorio) depende de lo que compra. */
 export function esEstructuraDeGlobos(tipo: string): boolean {
   return TIPOS_CON_GLOBOS.has(tipo);
 }
 
-/** "unos 120 globos", "2 iguales · unos 40 globos cada una". */
-export function cantidadCliente(total: number, repeticiones: number, tipo: string): string {
-  const [singular, plural] = esEstructuraDeGlobos(tipo) ? ["globo", "globos"] : ["pieza", "piezas"];
+type LineaParaContar = { titulo: string; forma: string | null };
+export type EstructuraParaContar = { tipo: string; lineas?: ReadonlyArray<LineaParaContar> };
+
+/** Un globo suelto del catálogo: látex con forma, o un producto que se llama globo (metalizado, número) y no es un kit empaquetado. */
+function esLineaDeGlobo(linea: LineaParaContar): boolean {
+  return linea.forma !== null || (/\bglobos?\b/i.test(linea.titulo) && !/\bkit\b/i.test(linea.titulo));
+}
+
+/**
+ * Si la pieza se cuenta en globos: las estructuras con geometría siempre; un
+ * bouquet, un kit o una figura cuando todo lo que compra son globos (su
+ * `total_unidades` es de globos). Un kit empaquetado, un telón o un accesorio
+ * son piezas. Solo presentación: el conteo es el de `PlanResuelto`.
+ */
+export function cuentaEnGlobos(estructura: EstructuraParaContar): boolean {
+  if (esEstructuraDeGlobos(estructura.tipo)) return true;
+  const lineas = estructura.lineas ?? [];
+  return lineas.length > 0 && lineas.every(esLineaDeGlobo);
+}
+
+/**
+ * "unos 120 globos", "unas 3 piezas", "2 iguales · unos 40 globos cada una".
+ * Con un tipo suelto decide la geometría; con la estructura resuelta, también lo
+ * que compra (un bouquet de globos dice globos, no piezas).
+ */
+export function cantidadCliente(total: number, repeticiones: number, estructura: string | EstructuraParaContar): string {
+  const deGlobos = typeof estructura === "string" ? esEstructuraDeGlobos(estructura) : cuentaEnGlobos(estructura);
+  const [singular, plural, aproximado] = deGlobos ? ["globo", "globos", "unos"] : ["pieza", "piezas", "unas"];
   const veces = Math.max(1, repeticiones);
-  if (veces === 1) return total === 1 ? contar(total, singular, plural) : `unos ${contar(total, singular, plural)}`;
+  if (veces === 1) return total === 1 ? contar(total, singular, plural) : `${aproximado} ${contar(total, singular, plural)}`;
   const base = Math.floor(total / veces);
   const resto = total % veces;
   const cada = resto === 0 ? contar(base, singular, plural) : `${NUMERO.format(base)} o ${contar(base + 1, singular, plural)}`;
-  return `${veces} iguales · unos ${cada} cada una`;
+  return `${veces} iguales · ${aproximado} ${cada} cada una`;
 }
 
 type Genero = "m" | "f";

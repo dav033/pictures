@@ -34,9 +34,38 @@ export const GEMINI_COMPOSITION_HARD_LOCK = "COMPOSITING HARD LOCK: use the venu
  */
 export const GEMINI_COMPOSITION_PATTERN_LOCK = "Keep each structure's color pattern exactly as in the LoRA image.";
 
-/** Hard lock de la etapa 2; sin patrón de color es la constante de siempre, byte a byte. */
-export function hardLockComposicionGemini(conPatronDeColor: boolean): string {
-  return conPatronDeColor ? `${GEMINI_COMPOSITION_HARD_LOCK} ${GEMINI_COMPOSITION_PATTERN_LOCK}` : GEMINI_COMPOSITION_HARD_LOCK;
+/**
+ * Lo que el hard lock añade cuando el caption de la etapa 1 llevó el armado de
+ * un bouquet (ADR-0030): al re-posar la decoración, Gemini no puede rehacer el
+ * bouquet ni mover sus números. Solo nombra lo que el armado fija; el armado
+ * mismo ya viaja en la línea de color del prompt de la etapa 2.
+ */
+export const GEMINI_COMPOSITION_ASSEMBLY_LOCK = "Keep each balloon bouquet exactly as assembled in the LoRA image: the same levels from bottom to top, the same topper, the number balloons in the same position and the same number of bouquets; never add, drop or regroup its balloons.";
+
+/**
+ * Hard lock de la etapa 2; sin patrón de color ni armado es la constante de
+ * siempre, byte a byte. `conArmadoBouquet` va aparte del patrón: un plan puede
+ * traer uno, el otro o los dos.
+ */
+export function hardLockComposicionGemini(conPatronDeColor: boolean, conArmadoBouquet = false): string {
+  return [
+    GEMINI_COMPOSITION_HARD_LOCK,
+    ...(conPatronDeColor ? [GEMINI_COMPOSITION_PATTERN_LOCK] : []),
+    ...(conArmadoBouquet ? [GEMINI_COMPOSITION_ASSEMBLY_LOCK] : []),
+  ].join(" ");
+}
+
+/**
+ * Qué candados pide el caption de la etapa 1, leído de sus cláusulas: una
+ * cláusula con `colorPattern` lleva un patrón de color, salvo que esa frase sea
+ * la de un armado de bouquet (`armadoBouquet`). Sin armados es la condición de
+ * siempre (`some(colorPattern)`).
+ */
+export function candadosDeComposicion(clauses: ReadonlyArray<{ colorPattern?: string; armadoBouquet?: unknown }>): [conPatronDeColor: boolean, conArmadoBouquet: boolean] {
+  return [
+    clauses.some((clause) => Boolean(clause.colorPattern) && !clause.armadoBouquet),
+    clauses.some((clause) => Boolean(clause.colorPattern) && Boolean(clause.armadoBouquet)),
+  ];
 }
 
 /**

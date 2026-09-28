@@ -1,0 +1,375 @@
+{
+  "_comentario": "Salidas de services/ai-api/app/armado_bouquet.py (armado_resuelto) fijadas a mano el 2026-09-25, como scripts/fixtures/patron-color-prompt/armados.json: entradas del prompt de imagen, no un oráculo de conteo ni de redacción. numeros-centro: el \"80\" de la foto (2 látex dorado reflex R-12, 1 negro R-12, números 8 y 0 dorado mate de 32\", helio escalonado, al centro). numeros-lados: 4 blancos R-12 y los números 1 y 5 plata de 32\" a cada lado (grupos 2). vector-15: la receta del bouquet del vector dorado 15 (10 negros R-9). Si Python cambia la redacción, se vuelve a fijar a mano y el commit dice por qué.",
+  "armados": {
+    "numeros-centro": {
+      "estructura_id": "EST_02_BOUQUET",
+      "armado": {
+        "version": "armado-bouquet.v1",
+        "origen": "referencia",
+        "variante": "helio_escalonado",
+        "niveles": [
+          {
+            "rol": "alrededor",
+            "unidad": "suelto",
+            "cantidad": 2,
+            "posiciones": [
+              0
+            ]
+          },
+          {
+            "rol": "alrededor",
+            "unidad": "suelto",
+            "cantidad": 1,
+            "posiciones": [
+              1
+            ]
+          }
+        ],
+        "numero": {
+          "digitos": [
+            2,
+            3
+          ],
+          "disposicion": "centro"
+        }
+      },
+      "grupos": 1,
+      "repeticiones": 1,
+      "leyenda": [
+        {
+          "codigo": 1,
+          "material": 0,
+          "product_id": "7109611258049",
+          "variant_id": "V-DORADO-R12",
+          "descripcion": "R-12 dorado reflex",
+          "tipo_globo": "latex",
+          "color": "dorado",
+          "acabado": "reflex",
+          "tamano_pulg": 12,
+          "digito": null,
+          "unidades_por_grupo": 2,
+          "unidades_total": 2
+        },
+        {
+          "codigo": 2,
+          "material": 1,
+          "product_id": "8634239516967",
+          "variant_id": "V-NEGRO-R12",
+          "descripcion": "R-12 negro fashion",
+          "tipo_globo": "latex",
+          "color": "negro",
+          "acabado": "fashion",
+          "tamano_pulg": 12,
+          "digito": null,
+          "unidades_por_grupo": 1,
+          "unidades_total": 1
+        },
+        {
+          "codigo": 3,
+          "material": 2,
+          "product_id": "30005493",
+          "variant_id": "V-NUMERO-8",
+          "descripcion": "Número \"8\" 32\" dorado mate",
+          "tipo_globo": "numero",
+          "color": "dorado",
+          "acabado": "mate",
+          "tamano_pulg": 32,
+          "digito": "8",
+          "unidades_por_grupo": 1,
+          "unidades_total": 1
+        },
+        {
+          "codigo": 4,
+          "material": 3,
+          "product_id": "30005473",
+          "variant_id": "V-NUMERO-0",
+          "descripcion": "Número \"0\" 32\" dorado mate",
+          "tipo_globo": "numero",
+          "color": "dorado",
+          "acabado": "mate",
+          "tamano_pulg": 32,
+          "digito": "0",
+          "unidades_por_grupo": 1,
+          "unidades_total": 1
+        }
+      ],
+      "niveles": [
+        {
+          "rol": "alrededor",
+          "unidad": "suelto",
+          "cantidad": 2,
+          "codigos": [
+            1
+          ]
+        },
+        {
+          "rol": "alrededor",
+          "unidad": "suelto",
+          "cantidad": 1,
+          "codigos": [
+            2
+          ]
+        }
+      ],
+      "remate": [],
+      "numero": {
+        "codigos": [
+          3,
+          4
+        ],
+        "disposicion": "centro"
+      },
+      "insumos": [
+        {
+          "insumo": "pesa",
+          "cantidad": 1,
+          "unidad": "pesas",
+          "detalle": "de 136 g o más cada una (suma del peso de cada globo)",
+          "estimado": false
+        },
+        {
+          "insumo": "cinta",
+          "cantidad": 5,
+          "unidad": "cintas",
+          "detalle": "una por globo, de largos distintos si el bouquet es escalonado",
+          "estimado": false
+        },
+        {
+          "insumo": "helio",
+          "cantidad": 0.13,
+          "unidad": "m³",
+          "detalle": "según la capacidad de gas de cada globo",
+          "estimado": true
+        }
+      ],
+      "duracion_estimada": {
+        "horas_min": 18,
+        "horas_max": 24
+      },
+      "nombre": "Bouquet de helio escalonado",
+      "descripcion": "Globos con helio a distintas alturas alrededor de la pieza central.",
+      "pasos": [
+        "Nivel 1 (alrededor): 2 globos sueltos de R-12 dorado reflex (1).",
+        "Nivel 2 (alrededor): 1 globo suelto de R-12 negro fashion (2).",
+        "Números: Número \"8\" 32\" dorado mate (3), Número \"0\" 32\" dorado mate (4), al centro del bouquet.",
+        "Ata cada globo a su cinta y todas las cintas a la pesa."
+      ],
+      "avisos": [],
+      "prompt_gemini": "BOUQUET ASSEMBLY — a helium balloon bouquet on ribbons of different lengths tied to one weight, the balloons staggered at clearly different heights around the central piece. From the bottom up: level 1 (around the center): 2 single balloons of high-shine chrome gold 12\" latex balloons; level 2 (around the center): 1 single balloon of matte black 12\" latex balloons. Number balloons: large matte gold foil number \"8\" balloon 32\" and large matte gold foil number \"0\" balloon 32\", at the center of the bouquet. No two balloons at the same height; the central piece floats highest.",
+      "prompt_lora": "floating on helium ribbons at staggered heights, with large gold foil numbers eight and zero at the center of the bouquet"
+    },
+    "numeros-lados": {
+      "estructura_id": "EST_02_BOUQUET",
+      "armado": {
+        "version": "armado-bouquet.v1",
+        "origen": "sugerido",
+        "variante": "helio_escalonado",
+        "niveles": [
+          {
+            "rol": "alrededor",
+            "unidad": "suelto",
+            "cantidad": 2,
+            "posiciones": [
+              0
+            ]
+          }
+        ],
+        "numero": {
+          "digitos": [
+            1,
+            2
+          ],
+          "disposicion": "lados"
+        }
+      },
+      "grupos": 2,
+      "repeticiones": 1,
+      "leyenda": [
+        {
+          "codigo": 1,
+          "material": 0,
+          "product_id": "20000435",
+          "variant_id": "V-BLANCO-R12",
+          "descripcion": "R-12 blanco fashion",
+          "tipo_globo": "latex",
+          "color": "blanco",
+          "acabado": "fashion",
+          "tamano_pulg": 12,
+          "digito": null,
+          "unidades_por_grupo": 2,
+          "unidades_total": 4
+        },
+        {
+          "codigo": 2,
+          "material": 1,
+          "product_id": "30005488",
+          "variant_id": "V-NUMERO-1",
+          "descripcion": "Número \"1\" 32\" plateado",
+          "tipo_globo": "numero",
+          "color": "plateado",
+          "acabado": null,
+          "tamano_pulg": 32,
+          "digito": "1",
+          "unidades_por_grupo": 1,
+          "unidades_total": 1
+        },
+        {
+          "codigo": 3,
+          "material": 2,
+          "product_id": "30005508",
+          "variant_id": "V-NUMERO-5",
+          "descripcion": "Número \"5\" 32\" plateado",
+          "tipo_globo": "numero",
+          "color": "plateado",
+          "acabado": null,
+          "tamano_pulg": 32,
+          "digito": "5",
+          "unidades_por_grupo": 1,
+          "unidades_total": 1
+        }
+      ],
+      "niveles": [
+        {
+          "rol": "alrededor",
+          "unidad": "suelto",
+          "cantidad": 2,
+          "codigos": [
+            1
+          ]
+        }
+      ],
+      "remate": [],
+      "numero": {
+        "codigos": [
+          2,
+          3
+        ],
+        "disposicion": "lados"
+      },
+      "insumos": [
+        {
+          "insumo": "pesa",
+          "cantidad": 2,
+          "unidad": "pesas",
+          "detalle": "de 74 g o más cada una (suma del peso de cada globo)",
+          "estimado": false
+        },
+        {
+          "insumo": "cinta",
+          "cantidad": 6,
+          "unidad": "cintas",
+          "detalle": "una por globo, de largos distintos si el bouquet es escalonado",
+          "estimado": false
+        },
+        {
+          "insumo": "helio",
+          "cantidad": 0.145,
+          "unidad": "m³",
+          "detalle": "según la capacidad de gas de cada globo",
+          "estimado": true
+        }
+      ],
+      "duracion_estimada": {
+        "horas_min": 18,
+        "horas_max": 24
+      },
+      "nombre": "Bouquet de helio escalonado",
+      "descripcion": "Globos con helio a distintas alturas alrededor de la pieza central.",
+      "pasos": [
+        "Nivel 1 (alrededor): 2 globos sueltos de R-12 blanco fashion (1).",
+        "Números: Número \"1\" 32\" plateado (2), Número \"5\" 32\" plateado (3), uno a cada lado, cada uno con su propio bouquet.",
+        "Ata cada globo a su cinta y todas las cintas a la pesa."
+      ],
+      "avisos": [],
+      "prompt_gemini": "BOUQUET ASSEMBLY — a helium balloon bouquet on ribbons of different lengths tied to one weight, the balloons staggered at clearly different heights around the central piece. Build two matching bouquets, one per number. From the bottom up: level 1 (around the center): 2 single balloons of matte white 12\" latex balloons. Number balloons: large silver foil number \"1\" balloon 32\" and large silver foil number \"5\" balloon 32\", one on each side, each with its own bouquet. No two balloons at the same height; the central piece floats highest.",
+      "prompt_lora": "floating on helium ribbons at staggered heights, with large silver foil numbers one and five, one number in each bouquet"
+    },
+    "vector-15": {
+      "estructura_id": "EST_03_BOUQUET",
+      "armado": {
+        "version": "armado-bouquet.v1",
+        "origen": "sugerido",
+        "variante": "helio_escalonado",
+        "niveles": [
+          {
+            "rol": "alrededor",
+            "unidad": "suelto",
+            "cantidad": 10,
+            "posiciones": [
+              0
+            ]
+          }
+        ]
+      },
+      "grupos": 1,
+      "repeticiones": 1,
+      "leyenda": [
+        {
+          "codigo": 1,
+          "material": 0,
+          "product_id": "P-F15-NEGRO",
+          "variant_id": "V-F15-NEGRO-9",
+          "descripcion": "R-9 negro",
+          "tipo_globo": "latex",
+          "color": "negro",
+          "acabado": null,
+          "tamano_pulg": 9,
+          "digito": null,
+          "unidades_por_grupo": 10,
+          "unidades_total": 10
+        }
+      ],
+      "niveles": [
+        {
+          "rol": "alrededor",
+          "unidad": "suelto",
+          "cantidad": 10,
+          "codigos": [
+            1
+          ]
+        }
+      ],
+      "remate": [],
+      "numero": null,
+      "insumos": [
+        {
+          "insumo": "pesa",
+          "cantidad": 1,
+          "unidad": "pesas",
+          "detalle": "de 60 g o más cada una (suma del peso de cada globo)",
+          "estimado": true
+        },
+        {
+          "insumo": "cinta",
+          "cantidad": 10,
+          "unidad": "cintas",
+          "detalle": "una por globo, de largos distintos si el bouquet es escalonado",
+          "estimado": false
+        },
+        {
+          "insumo": "helio",
+          "cantidad": 0.07,
+          "unidad": "m³",
+          "detalle": "según la capacidad de gas de cada globo",
+          "estimado": true
+        }
+      ],
+      "duracion_estimada": {
+        "horas_min": 10,
+        "horas_max": 14
+      },
+      "nombre": "Bouquet de helio escalonado",
+      "descripcion": "Globos con helio a distintas alturas alrededor de la pieza central.",
+      "pasos": [
+        "Nivel 1 (alrededor): 10 globos sueltos de R-9 negro (1).",
+        "Ata cada globo a su cinta y todas las cintas a la pesa."
+      ],
+      "avisos": [
+        "Cada bouquet lleva 10 globos: Anagram recomienda un número impar (5 o 7).",
+        "El peso de la pesa incluye valores estimados para algún tamaño sin fila en la tabla."
+      ],
+      "prompt_gemini": "BOUQUET ASSEMBLY — a helium balloon bouquet on ribbons of different lengths tied to one weight, the balloons staggered at clearly different heights. From the bottom up: level 1 (around the center): 10 single balloons of black 9\" latex balloons. No two balloons at the same height.",
+      "prompt_lora": "floating on helium ribbons at staggered heights"
+    }
+  }
+}

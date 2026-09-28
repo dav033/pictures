@@ -11,13 +11,12 @@ import type { EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import {
   acabadoCliente,
   cantidadCliente,
-  esEstructuraDeGlobos,
+  cuentaEnGlobos,
   medidasCliente,
   metrosCliente,
   muestraColor,
   productoCliente,
   productoConTamanoCliente,
-  pulgadasCliente,
   tonoCliente,
   ubicacionCliente,
 } from "@/lib/plan/presentacion-cliente";
@@ -135,6 +134,36 @@ function tamanoCorto(linea: LineaMaterial): string {
   return Number.isFinite(pulgadas) && pulgadas ? `${pulgadas}″` : linea.tamano_codigo ?? "";
 }
 
+/** The catalog size code the decorator orders by ("R-12"); the inches when the line has no code. */
+function codigoTamano(linea: LineaMaterial): string {
+  return linea.tamano_codigo?.trim() || tamanoCorto(linea);
+}
+
+/** The exact variant to order, set apart from the size so it reads as a code to copy. */
+function EtiquetaSku({ sku }: { sku: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-baseline gap-1 rounded-md bg-superficie-suave px-1.5 py-px ring-1 ring-borde-suave ring-inset">
+      <span className="text-[9px] font-semibold tracking-wider text-texto-suave uppercase">SKU</span>
+      <span className="font-mono text-[11px] tracking-tight text-texto select-all">{sku}</span>
+    </span>
+  );
+}
+
+/** "R-12" followed by its SKU tag: the size code plus the exact variant to order. */
+function tamanoConSku(linea: LineaMaterial, extra?: string | null): ReactNode {
+  const codigo = codigoTamano(linea);
+  return (
+    <span className="inline-flex max-w-full items-center gap-2">
+      <span className="truncate">
+        {codigo && <span className="font-semibold tabular-nums">{codigo}</span>}
+        {codigo && extra ? " · " : null}
+        {extra}
+      </span>
+      {linea.sku && <EtiquetaSku sku={linea.sku} />}
+    </span>
+  );
+}
+
 /**
  * Lines of the same catalog product in the same color are one family: the
  * sizes are variants of it. Grouped so a piece with five sizes of "Fashion
@@ -157,7 +186,7 @@ function familiasDeLineas(lineas: readonly LineaMaterial[]): Array<{ clave: stri
 type AccionesLinea = Pick<Props, "imagenDe" | "fotoAusente" | "editable" | "onEditar" | "onQuitar" | "puedeQuitar" | "onVerProducto" | "extraLinea">;
 
 /** One size of one product, with its photo, units and the edit/remove actions. */
-function FilaLinea({ linea, detalle, compacta = false, imagenDe, fotoAusente, editable, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea }: { linea: LineaMaterial; detalle: string; compacta?: boolean } & AccionesLinea) {
+function FilaLinea({ linea, detalle, compacta = false, imagenDe, fotoAusente, editable, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea }: { linea: LineaMaterial; detalle: ReactNode; compacta?: boolean } & AccionesLinea) {
   const imagen = imagenDe(linea);
   const nombreAccesible = productoConTamanoCliente(linea.titulo, linea.tamano_codigo);
   return (
@@ -233,13 +262,14 @@ export function DetalleEstructura({
   const acciones = { imagenDe, fotoAusente, editable, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea };
   const nombreVisible = oficial?.nombre ?? productoCliente(estructura.nombre);
   const medidasTexto = medidasCliente(estructura.tipo, declarada?.medidas);
-  const cantidad = cantidadCliente(estructura.total_unidades, estructura.repeticiones, estructura.tipo);
-  const deGlobos = esEstructuraDeGlobos(estructura.tipo);
+  const cantidad = cantidadCliente(estructura.total_unidades, estructura.repeticiones, estructura);
+  // A bouquet or a kit made of balloons counts balloons, not pieces.
+  const deGlobos = cuentaEnGlobos(estructura);
   const tramos = tramosPorTamano(estructura.mezcla_real.map((linea) => ({ pulgadas: linea.diam_pulg, unidades: linea.unidades })));
   const mosaicos = [
     ...mosaicosMedidas(estructura.tipo, declarada?.medidas),
     ...(estructura.repeticiones > 1 ? [{ etiqueta: "Piezas iguales", valor: String(estructura.repeticiones) }] : []),
-    { etiqueta: deGlobos ? "Globos" : "Piezas", valor: `unos ${Math.round(estructura.total_unidades)}` },
+    { etiqueta: deGlobos ? "Globos" : "Piezas", valor: `${deGlobos ? "unos" : "unas"} ${Math.round(estructura.total_unidades)}` },
   ];
   const pequenosRellenan = tramos.length >= 2 && tramos[0]!.unidades > tramos[tramos.length - 1]!.unidades;
   // With a pattern, the grid decides how much of each color goes in; only confetti still takes a color split.
@@ -375,7 +405,7 @@ export function DetalleEstructura({
                 if (familia.lineas.length === 1) {
                   return (
                     <li key={familia.clave}>
-                      <FilaLinea linea={primera} detalle={[primera.tamano_codigo ? pulgadasCliente(primera.tamano_codigo) : null, tono].filter(Boolean).join(" · ")} {...acciones} />
+                      <FilaLinea linea={primera} detalle={tamanoConSku(primera, tono)} {...acciones} />
                     </li>
                   );
                 }
@@ -400,10 +430,10 @@ export function DetalleEstructura({
                         <span className="block truncate text-sm font-medium text-texto">{productoCliente(primera.titulo)}</span>
                         {tono && <span className="mt-0.5 block truncate text-xs text-texto-suave">{tono}</span>}
                         {/* Every size of the family at a glance: the list used to repeat the product once per size. */}
-                        <span className="mt-1 flex flex-wrap gap-1" aria-label={`Tamaños: ${familia.lineas.map((linea) => `${tamanoCorto(linea)} ${linea.unidades}`).join(", ")}`}>
+                        <span className="mt-1 flex flex-wrap gap-1" aria-label={`Tamaños: ${familia.lineas.map((linea) => `${codigoTamano(linea)} ${linea.unidades}`).join(", ")}`}>
                           {familia.lineas.map((linea) => (
                             <span key={linea.variant_id} aria-hidden="true" className="rounded-full bg-superficie-suave px-1.5 py-px text-[11px] tabular-nums text-texto-suave ring-1 ring-borde-suave ring-inset">
-                              <span className="font-semibold text-texto">{tamanoCorto(linea)}</span> {linea.unidades}
+                              <span className="font-semibold text-texto">{codigoTamano(linea)}</span> {linea.unidades}
                             </span>
                           ))}
                         </span>
@@ -426,7 +456,7 @@ export function DetalleEstructura({
                     >
                       {familia.lineas.map((linea, posicion) => (
                         <li key={linea.variant_id} className={posicion === familia.lineas.length - 1 ? "pb-2" : undefined}>
-                          <FilaLinea linea={linea} detalle={linea.tamano_codigo ? pulgadasCliente(linea.tamano_codigo) : tamanoCorto(linea)} compacta {...acciones} />
+                          <FilaLinea linea={linea} detalle={tamanoConSku(linea)} compacta {...acciones} />
                         </li>
                       ))}
                     </motion.ul>
