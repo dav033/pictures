@@ -16,7 +16,8 @@
  * se niega sin ellos y con `CI=true`, mide el gasto real con el saldo de fal
  * antes y después de cada imagen y se detiene al alcanzar el tope). El repo no
  * declara un precio por imagen de fal: el tope es el único límite, y el gasto
- * que reporta es el medido, no una estimación. Las imágenes y el manifiesto van
+ * que reporta es el medido, no una estimación. Por eso falla cerrado: sin saldo
+ * legible no genera nada, y si el saldo deja de leerse a mitad, se detiene. Las imágenes y el manifiesto van
  * a `reports/lora-debug/` (ignorado por git); ninguna entra al repositorio.
  *
  *   NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/ops/generar-bouquet-armado.ts
