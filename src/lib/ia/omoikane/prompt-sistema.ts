@@ -238,7 +238,9 @@ function conteoLeido(conteo: ConteoDelElemento): string {
   const kit = cantidad === null
     ? ""
     : ` Si la pieza es un kit (bouquet, figura, racimo), declara unidades_declaradas ${cantidad} por pieza (sumando repeticiones): manda sobre el total de un armado leído.`;
-  return `; conteo leído en la foto: ${cuenta}${racimos}.${kit} Si es una estructura geométrica no calcules globos: al confirmar, Python ajusta densidad y medidas a esa cuenta`;
+  // Sin medidas del cliente, unas inventadas (0,5 m) centraban la ventana del
+  // eje lejos de la foto (ADR-0031, enmienda 2026-09-28): que las deje vacías.
+  return `; conteo leído en la foto: ${cuenta}${racimos}.${kit} Si es una estructura geométrica no calcules globos ni le pongas medidas que el cliente no dio (manda medidas vacío): al confirmar, Python ajusta densidad y medidas a esa cuenta`;
 }
 
 /**

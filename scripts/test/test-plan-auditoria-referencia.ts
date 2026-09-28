@@ -407,17 +407,19 @@ async function main(): Promise<void> {
   assert.equal(clienteDioMedidasEspacio("Quiero algo así para la primera comunión"), false);
   assert.equal(clienteDioMedidasEspacio("El salón mide 10 x 8"), true);
   assert.equal(clienteDioMedidasEspacio("Un techo de 5,5 metros de alto"), true);
-  assert.equal(clienteDioMedidasEspacio("Para 50 invitados", "salón de 12 m de largo"), true, "the brief counts");
-  assert.equal(clienteDioMedidasEspacio("Para 50 invitados", 12), false, "a non-text brief field is ignored");
+  assert.equal(clienteDioMedidasEspacio("Para 50 invitados"), false);
   assert.equal(aplicarFuenteMedidasEspacio(planEspacio, false).espacio.fuente, "supuesto");
   assert.equal(aplicarFuenteMedidasEspacio(planEspacio, true).espacio.fuente, "cliente", "measures the customer gave are the customer's");
   assert.equal(aplicarFuenteMedidasEspacio(PlanDecoracionSchema.parse({ ...planSoloFigura, espacio: { ...espacioFoto, fuente: "cliente" } }), false).espacio.fuente, "supuesto", "the model cannot claim the customer's numbers");
   const sinMedidas = PlanDecoracionSchema.parse({ ...planSoloFigura, espacio: { tipo: "salon_eventos", fuente: "foto" } });
   assert.equal(aplicarFuenteMedidasEspacio(sinMedidas, false), sinMedidas, "without numbers nothing changes");
   const { estado: estadoEspacio, confirmar: confirmarEspacio } = herramienta("Quiero un arco blanco para la primera comunión", [candidato("P-BLANCO", "globo_latex", "blanco", [{ variantId: "V-BLANCO-12", diamPulg: 12 }])], undefined, 2, [{ ...filasColumna[0]!, product_id: "P-BLANCO", variant_id: "V-BLANCO-12", colores_producto: ["blanco"], colores_variante: ["blanco"] }], { "P-BLANCO": "https://cdn.shopify.test/blanco-12.jpg" });
+  // The brief is written by the model (guardar_brief): a number there is not the
+  // customer's evidence (ADR-0031, amendment 2026-09-28).
+  estadoEspacio.brief.espacio = "salón de 3 m por 3 m";
   const espacioConfirmado = await confirmarEspacio({ ...argsArco, espacio: espacioFoto }, llamada) as Record<string, unknown>;
   assert.equal(espacioConfirmado.ok, true, JSON.stringify(espacioConfirmado).slice(0, 400));
-  assert.deepEqual(estadoEspacio.planResuelto?.plan.espacio, { ...espacioFoto, fuente: "supuesto" }, "the signed plan says estimated, never measured from the photo");
+  assert.deepEqual(estadoEspacio.planResuelto?.plan.espacio, { ...espacioFoto, fuente: "supuesto" }, "the signed plan says estimated, never measured from the photo nor taken from a brief the model wrote");
   assert.equal(estadoEspacio.cotizacion?.lineas[0]?.foto, "https://cdn.shopify.test/blanco-12.jpg", "D9a: the chat quote carries the catalog photo");
   assert.deepEqual((espacioConfirmado.cotizacion as { lineas: Array<{ foto?: string }> }).lineas.map((linea) => linea.foto), ["https://cdn.shopify.test/blanco-12.jpg"]);
   ok("medidas del espacio: foto solo vale para el tipo; sin dato del cliente son supuesto (y la cotización trae foto)");

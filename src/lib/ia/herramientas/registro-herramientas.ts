@@ -721,7 +721,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     estado.ajustesCobertura = cobertura.ajustes;
     let planCanonico = sanearMarcasPlan(sanearPorquesPlan(aplicarFuenteMedidasEspacio(
       aplicarColoresReferencia(cobertura.plan, estado.referenceBlueprint),
-      clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio),
+      clienteDioMedidasEspacio(estado.solicitudOriginal),
     )));
     const erroresDeIntencion = validarRestriccionesPlan(
       planCanonico,
@@ -1020,7 +1020,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // Sin conteos leídos no hay nada que ajustar y la petición es la de siempre.
     const completarConteos = featureEnabled("CONTEO_REFERENCIA_V1");
     // ADR-0031, revisión 33: las medidas que el cliente dio para una pieza no las mueve la foto.
-    const medidasDelCliente = completarConteos && clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio);
+    const medidasDelCliente = completarConteos && clienteDioMedidasEspacio(estado.solicitudOriginal);
     const resolverPlanDelTurno = (plan: PlanDecoracion) => {
       const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];

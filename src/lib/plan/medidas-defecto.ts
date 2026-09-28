@@ -9,10 +9,16 @@ function tieneMedidasEspacio(espacio: EspacioPlan): boolean {
 /** A length in meters or centimeters, or "3x4" / "3 por 4", in the customer's words. */
 const MEDIDA_EN_TEXTO = /\b\d+(?:[.,]\d+)?\s*(?:m|mts?|metros?|cm|cent[ií]metros?)\b|\b\d+(?:[.,]\d+)?\s*(?:x|×|por)\s*\d+(?:[.,]\d+)?\b/i;
 
-/** Whether the customer stated a physical size in the request or the brief. */
-export function clienteDioMedidasEspacio(solicitudOriginal: string, espacioBrief?: unknown): boolean {
-  // The brief is written by a tool call: its field is not guaranteed to be text.
-  return MEDIDA_EN_TEXTO.test(solicitudOriginal) || (typeof espacioBrief === "string" && MEDIDA_EN_TEXTO.test(espacioBrief));
+/**
+ * Whether the customer stated a physical size in their own messages
+ * (`solicitudOriginal` joins every customer message of the conversation).
+ * The brief is not evidence: `guardar_brief` is a model tool call, so a number
+ * in `brief.espacio` can be one the model invented, and it would make those
+ * measures the customer's and freeze them against the photo's count
+ * (ADR-0031, amendment 2026-09-28).
+ */
+export function clienteDioMedidasEspacio(solicitudOriginal: string): boolean {
+  return MEDIDA_EN_TEXTO.test(solicitudOriginal);
 }
 
 /**
