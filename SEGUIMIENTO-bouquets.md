@@ -321,3 +321,72 @@ Pruebas propias de la segunda entrega, sueltas:
 uv run --directory services/ai-api pytest -q tests/test_armado_bouquet.py tests/test_plan_armado.py tests/test_plan_armado_preview.py
 npm run -s plan:test-armado-ruta && npm run -s ia:test-patron-color-prompt && npm run -s ui:test-propuesta
 ```
+
+## 13. Armado y generación en fal.ai (2026-09-25, misma rama)
+
+Frente 3 de `SEGUIMIENTO-guirnaldas.md` §2.3: que el armado del bouquet llegue a la
+generación (Uzume/Gemini, Kagutsuchi/LoRA y la etapa híbrida). Cero llamadas pagas.
+
+Hallazgos:
+
+- **El armado nunca llegaba a Gemini.** `tieneContratoDeColor`
+  (`src/lib/ia/uzume/build-image-prompt.ts`) daba falso para un bouquet real: es
+  `kit`, el blueprint le pone categoría `other` y su nombre ("Bouquet de globos…")
+  no dice "balloon". La prueba existente no lo veía porque usaba un semiarco como
+  bouquet.
+- La frase LoRA del armado nombraba un segundo bouquet ("a balloon bouquet … a
+  helium balloon bouquet"); con `grupos: 2` chocaba con CARDINALITY/INSTANCE
+  ("exactly one"); el candado híbrido no mencionaba el armado; el bloque BALLOON
+  SIZE MIX llamaba "latex balloon" a números, metalizados y burbujas; el escalonado
+  sin remate ni números nombraba una pieza central.
+
+| Commit | Qué |
+|---|---|
+| `4dbc916` | La frase LoRA del armado es un modificador del bouquet (Python) |
+| `4143b31` | El escalonado sin remate ni números no nombra una pieza central (Python) |
+| `0f0196e` | El armado llega a Gemini, al caption LoRA y al híbrido; prueba `ia:test-armado-bouquet-prompt` con fixture real de Python |
+| `9955c9c` | `scripts/ops/generar-bouquet-armado.ts`: generación real con vista previa por defecto y tope `--max-usd` (no se corrió) |
+| `d17c462` | UI: "Globos que lleva" muestra el código de tamaño (R-12) y el SKU de cada variante |
+
+Verificación hecha por el agente: `tsc` y lint sin errores; pytest del armado (59) y
+14 scripts de prompts en verde; sin armado, 10 escenas capturadas salen byte a byte
+iguales. La corrida completa de `plan:test` y de pytest se cortó por una pausa; se
+repitió antes del push (ver el mensaje del commit de esta sección).
+
+Decisiones del usuario pendientes: el vocabulario LoRA no tiene burbuja ni corazón
+dorado mate; `STRUCTURE_DESCRIPTORS` llama "balloon decoration kit" al bouquet
+(cambiarlo altera los prompts sin armado); las referencias de `/edit` no llevan fotos
+de catálogo, por diseño.
+
+## 14. Abierto: un bouquet grande sale con 11 globos (diagnóstico, sin arreglar)
+
+Caso real (2026-09-25): bouquet con más de 30 látex, números 3 y 5 y corona; la
+tarjeta dice "unos 11 piezas". Reproducido sin proveedores con el código real: una
+lectura de 2 cuartetos + corona + 3 y 5 da 11, y `resolve_plan` también, aunque el
+modelo haya declarado 30.
+
+Causa: la lectura del armado describe **una unidad por nivel**.
+
+- El prompt pide "the color of each balloon of ONE unit"
+  (`amaterasu/estructuras/bouquet.py:58`); el esquema (l.86–95) y
+  `LecturaArmadoSchema` (`armado-bouquet.ts:118–136`) no tienen cuántas unidades
+  forman el nivel; `_lectura` recorta sin avisar (l.179–185).
+- `_niveles_leidos` pone `cantidad: 1` a cada nivel (`armado_bouquet.py:591–629`) y
+  `compra_desde_lectura` (l.632) lo vuelve compra; `_comprar_lo_leido`
+  (`plan.py:3259`) reemplaza `unidades_declaradas`, sin mínimo (ADR-0030, decisión 4
+  enmendada). Techo expresable: 8 sextetos = 51.
+- Desde `5560485`, `armadoLeido` (`src/lib/ia/omoikane/prompt-sistema.ts:162–180`,
+  regla l.118) recalcula el mismo total en TypeScript (segundo dueño de la cuenta,
+  contra `AGENTS.md`) y le ordena al chat declararlo y no superarlo: aunque Python
+  descarte la lectura, el chat ya declaró 11.
+- Secundario: la lectura no trae tamaño; `_material_del_color` asigna cada color al
+  primer látex de ese color, así que un dorado de 18" queda en 0 y se quita con el
+  aviso engañoso "la foto no lo lleva". La tarjeta dice "piezas" porque un kit no es
+  tipo de globos (`presentacion-cliente.ts:95`).
+
+Arreglo propuesto (no aplicado): la lectura del armado pide `cantidad` (1–24) y una
+clase de tamaño opcional por nivel (el contrato del armado ya admite `cantidad`);
+Python concilia con la lectura de conteo (`feat/conteo-referencia`): el conteo da la
+cantidad y el armado la distribución; `armadoLeido` deja de contar en TypeScript y
+el chat recibe el total que decidió Python. La regla de E2 "en kits la lectura del
+armado manda" queda descartada por este caso.
