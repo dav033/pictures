@@ -20,11 +20,13 @@ from typing import cast
 import pytest
 
 from app.armado_guirnalda import (
+    SOPORTES_CON_CAIDA,
     ArmadoInvalido,
     EstructuraGuirnalda,
     GloboGuirnalda,
     OtraEstructura,
     armado_resuelto,
+    geometria_de_lectura,
     opciones_admitidas,
     sugerir_armado,
     validar,
@@ -501,7 +503,7 @@ def _lectura(**extra: object) -> dict[str, object]:
     }
 
 
-def test_la_lectura_nunca_trae_caida_y_una_forma_que_cuelga_necesita_de_donde() -> None:
+def test_sin_caida_leida_no_hay_caida_y_una_forma_que_cuelga_necesita_de_donde() -> None:
     en_piso = sugerir_armado(_estructura(), _lectura(soporte="piso", forma="arco_caido"))
     assert en_piso is not None
     assert (en_piso["origen"], en_piso["soporte"], en_piso["forma"]) == (
@@ -511,7 +513,7 @@ def test_la_lectura_nunca_trae_caida_y_una_forma_que_cuelga_necesita_de_donde() 
     )
     colgada = sugerir_armado(_estructura(), _lectura(soporte="colgada", forma="u_invertida"))
     assert colgada is not None and colgada["puntos_de_anclaje"] == 2, "colgada cuelga de dos"
-    assert "caida_m" not in colgada, "la cantidad no es de la lectura"
+    assert "caida_m" not in colgada, "sin caida_relativa no se inventa una caída"
 
 
 def test_la_anfitriona_se_busca_por_el_elemento_de_la_foto() -> None:
@@ -562,3 +564,149 @@ def test_opciones_que_admite_la_pieza() -> None:
     sin_anfitriona = opciones_admitidas(_estructura(CLASICA, mezcla="clasica"))
     assert sin_anfitriona["soportes"] == ["pared", "colgada", "piso", "mesa"]
     assert sin_anfitriona["materiales_relleno"] == [] and sin_anfitriona["materiales_remate"] == []
+
+
+# --- Caída y desnivel de la foto (ADR-0032, decisión 26) -------------------------------------
+
+
+def test_los_soportes_con_caida_salen_de_la_tabla_del_contrato() -> None:
+    # Dueño: estructuras-oficiales.ts (soportesConCaida), exportado en x-geometria.
+    assert SOPORTES_CON_CAIDA == frozenset({"pared", "colgada"})
+
+
+@pytest.mark.parametrize(
+    ("lectura", "geometria"),
+    [
+        # La foto del usuario: en la pared, alta a la izquierda y cae hacia la derecha.
+        (
+            _lectura(forma="curva", caida_relativa=0.0, desnivel_relativo=-0.25),
+            {"forma": "curva", "desnivel_m": -0.63},
+        ),
+        # Una recta o una curva que cae cuelga en arco, con su caída en metros.
+        (
+            _lectura(forma="recta", caida_relativa=0.12, desnivel_relativo=None),
+            {"forma": "arco_caido", "caida_m": 0.3},
+        ),
+        (
+            _lectura(forma="curva", caida_relativa=0.1, desnivel_relativo=0.2),
+            {"forma": "arco_caido", "caida_m": 0.25, "desnivel_m": 0.5},
+        ),
+        # Una U invertida o un arco caído llevan la caída tal cual.
+        (
+            _lectura(soporte="colgada", forma="u_invertida", caida_relativa=0.4),
+            {"forma": "u_invertida", "caida_m": 1.0},
+        ),
+        # Una ondulada no cae (su onda no es una caída), pero sí puede ir desnivelada.
+        (_lectura(forma="ondulada", caida_relativa=0.3), {}),
+        (
+            _lectura(forma="ondulada", caida_relativa=0.3, desnivel_relativo=-0.1),
+            {"forma": "ondulada", "desnivel_m": -0.25},
+        ),
+        # Por debajo de 0,05 la guirnalda se lee recta y nivelada.
+        (_lectura(forma="curva", caida_relativa=0.04, desnivel_relativo=-0.049), {}),
+        # Sin medidas (null o ausentes), sin nada que medir.
+        (_lectura(caida_relativa=None, desnivel_relativo=None), {}),
+        (_lectura(), {}),
+        # En el piso, sobre la mesa o sobre otra pieza los extremos van a su altura.
+        (_lectura(soporte="piso", caida_relativa=0.2, desnivel_relativo=-0.3), {}),
+        (_lectura(soporte="mesa", desnivel_relativo=-0.3), {}),
+        (_lectura(soporte="sobre_estructura", desnivel_relativo=-0.3), {}),
+        # Una lectura dudosa no decide nada.
+        (_lectura(confianza=0.49, desnivel_relativo=-0.3), {}),
+    ],
+)
+def test_la_geometria_de_la_lectura_en_metros(
+    lectura: Mapping[str, object], geometria: Mapping[str, object]
+) -> None:
+    assert geometria_de_lectura(lectura, 2.5) == geometria
+
+
+def test_la_geometria_nunca_pasa_del_contrato() -> None:
+    larga = geometria_de_lectura(
+        _lectura(
+            soporte="colgada", forma="u_invertida", caida_relativa=0.6, desnivel_relativo=-0.6
+        ),
+        12.0,
+    )
+    assert larga == {"forma": "u_invertida", "caida_m": 5.0, "desnivel_m": -5.0}
+    assert geometria_de_lectura(_lectura(desnivel_relativo=-0.3), 0.0) == {}
+
+
+def test_la_lectura_con_caida_y_desnivel_llega_al_armado() -> None:
+    estructura = _estructura()
+    leida = sugerir_armado(estructura, _lectura(forma="curva", desnivel_relativo=-0.25))
+    assert leida is not None
+    assert (leida["origen"], leida["soporte"], leida["forma"], leida["desnivel_m"]) == (
+        "referencia",
+        "pared",
+        "curva",
+        -0.63,
+    )
+    assert "caida_m" not in leida
+    caida = sugerir_armado(
+        estructura,
+        _lectura(soporte="colgada", forma="recta", caida_relativa=0.16, desnivel_relativo=-0.2),
+    )
+    assert caida is not None
+    assert (caida["soporte"], caida["forma"], caida["caida_m"], caida["desnivel_m"]) == (
+        "colgada",
+        "arco_caido",
+        0.4,
+        -0.5,
+    )
+    assert caida["puntos_de_anclaje"] == 2, "colgada sin anclajes visibles cuelga de dos"
+    # Sin las medidas nuevas, byte a byte lo de antes.
+    assert sugerir_armado(estructura, _lectura(forma="curva")) == sugerir_armado(
+        estructura, _lectura(forma="curva", caida_relativa=None, desnivel_relativo=None)
+    )
+
+
+def test_el_desnivel_solo_en_pared_o_colgada() -> None:
+    estructura = _estructura(otras=(ARCO,))
+    validar(estructura, _armado(desnivel_m=-0.4))
+    validar(estructura, _armado(forma="ondulada", desnivel_m=0.3))
+    validar(
+        estructura,
+        _armado(
+            soporte="colgada",
+            forma="u_invertida",
+            caida_m=0.8,
+            desnivel_m=-0.2,
+            puntos_de_anclaje=2,
+        ),
+    )
+    for armado in (
+        _armado(soporte="piso", desnivel_m=-0.4),
+        _armado(soporte="mesa", desnivel_m=0.2),
+        _armado(soporte="sobre_estructura", estructura_id="EST_02_ARCO", desnivel_m=-0.3),
+    ):
+        assert _motivo(estructura, armado) == "desnivel_sin_soporte"
+    assert _motivo(estructura, _armado(desnivel_m=-5.5)) == "forma_invalida", "tope del contrato"
+
+
+def test_el_desnivel_en_la_hoja_y_en_la_frase_de_gemini() -> None:
+    estructura = _estructura()
+    nivelada = armado_resuelto(estructura, _armado())
+    cae = armado_resuelto(estructura, _armado(desnivel_m=-0.4))
+    pasos = cast(list[str], cae["pasos"])
+    assert pasos[-1] == (
+        "Fija la guirnalda a la pared de izquierda a derecha con ganchos o pegante,"
+        " con el extremo derecho 0,4 m más bajo que el izquierdo."
+    )
+    frase = "Its right end hangs about 0.4 m lower than its left end, so the garland slopes down toward the right."
+    assert str(cae["prompt_gemini"]) == f"{nivelada['prompt_gemini']} {frase}"
+    assert cae["prompt_lora"] == nivelada["prompt_lora"], "el LoRA no aprendió el desnivel"
+    sube = armado_resuelto(
+        estructura,
+        _armado(
+            soporte="colgada", forma="arco_caido", caida_m=0.3, desnivel_m=0.25, puntos_de_anclaje=2
+        ),
+    )
+    assert cast(list[str], sube["pasos"])[-1] == (
+        "Cuélgala de sus 2 puntos de anclaje con la cuerda, con una caída de 0,3 m"
+        " y el extremo derecho 0,25 m más alto que el izquierdo."
+    )
+    assert str(sube["prompt_gemini"]).endswith(
+        "Its left end hangs about 0.25 m lower than its right end, so the garland slopes down"
+        " toward the left."
+    )

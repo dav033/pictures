@@ -81,6 +81,7 @@ from app.armado_guirnalda import (
     OtraEstructura,
 )
 from app.armado_guirnalda import armado_resuelto as armado_guirnalda_resuelto
+from app.armado_guirnalda import geometria_de_lectura as geometria_de_lectura_guirnalda
 from app.armado_guirnalda import opciones_admitidas as opciones_armado_guirnalda
 from app.armado_guirnalda import racimo_y_forma as racimo_y_forma_de_armado
 from app.armado_guirnalda import sugerir_armado as sugerir_armado_guirnalda
@@ -1131,6 +1132,26 @@ def _product_variant_mismatches(
     return sorted(mismatches)
 
 
+def _parabola_arc(run: float, rise: float, sag: float) -> float:
+    """Length of the parabola from ``(0, 0)`` to ``(run, rise)`` that sags ``sag`` below its chord.
+
+    ``y = rise · x / run - 4 · sag · x · (run - x) / run²``: the sag is the
+    vertical gap to the straight line joining the ends, largest at mid-span.
+    Its slope runs linearly from ``(rise - 4·sag) / run`` to
+    ``(rise + 4·sag) / run`` with curvature ``8·sag / run²``, so the length is
+    the closed form of ``∫ sqrt(1 + s²) ds`` between those slopes over that
+    curvature. With ``rise = 0`` it is the level span of ``_garland_cord``.
+    """
+
+    def primitive(slope: float) -> float:
+        return (slope * math.sqrt(1 + slope * slope) + math.asinh(slope)) / 2
+
+    curvature = 8 * sag / (run * run)
+    start = (rise - 4 * sag) / run
+    end = (rise + 4 * sag) / run
+    return (primitive(end) - primitive(start)) / curvature
+
+
 def _garland_cord(length: float, armado: Mapping[str, object]) -> float:
     """Real length of a garland's cord with its assembly (ADR-0032).
 
@@ -1141,15 +1162,29 @@ def _garland_cord(length: float, armado: Mapping[str, object]) -> float:
     ``a`` half the span. For a small sag that is ``span + 8/3 · h² / span``;
     the closed form keeps a tall inverted U (1.5 m wide, 2.2 m drop) at 4.8 m
     where the series says 10.1 m. An ``arco_caido`` hung from ``n`` points
-    makes ``n - 1`` swags. Any other shape keeps the straight length.
+    makes ``n - 1`` swags.
+
+    A ``desnivel_m`` (decision 26, any shape) puts the right end that much
+    higher (or lower, when negative) than the left one: the anchors stand on
+    the sloped line between the ends, and each span is the parabola between
+    two ends at different heights with the same sag below its chord
+    (``_parabola_arc``); without a sag, the sloped straight line. Without a
+    ``desnivel_m`` the length is exactly the one of before (golden vectors),
+    and any other shape keeps the straight length.
     """
     shape = armado.get("forma")
     sag = _number(armado.get("caida_m")) or 0.0
+    rise = _number(armado.get("desnivel_m")) or 0.0
     geometry = _GARLAND_SHAPES.get(shape) if isinstance(shape, str) else None
-    if length <= 0 or sag <= 0 or geometry is None or geometry.get("conCaida") is not True:
+    hangs = sag > 0 and geometry is not None and geometry.get("conCaida") is True
+    if length <= 0 or not (hangs or rise):
         return length
+    if not hangs:
+        return math.hypot(length, rise)
     anchors = _integer(armado.get("puntos_de_anclaje")) or 2
     spans = max(1, anchors - 1) if shape == "arco_caido" else 1
+    if rise:
+        return spans * _parabola_arc(length / spans, rise / spans, sag)
     half = length / spans / 2
     arc = math.sqrt(half * half + 4 * sag * sag) + half * half / (2 * sag) * math.asinh(
         2 * sag / half
@@ -3857,9 +3892,14 @@ def _aplicar_conteos(
         if request.medidas_del_cliente
         else set()
     )
+    # A garland this confirmation assembles from its photo reading is counted
+    # with the drop and tilt that reading will give it (decision 26).
+    counted = _counted_with_read_geometry(request)
     port = conteo_foto.PuertoPlan(
-        contar=lambda structure: _structure_count(plan, structure)[1],
-        dentro_de_puerta=lambda structure, total: _within_physical_gate(plan, structure, total),
+        contar=lambda structure: _structure_count(plan, counted(structure))[1],
+        dentro_de_puerta=lambda structure, total: _within_physical_gate(
+            plan, counted(structure), total
+        ),
         mezcla_cubierta=lambda structure, mix: _mix_covered(
             structure, mix, candidates_by_product, allowlist
         ),
@@ -3883,6 +3923,51 @@ def _aplicar_conteos(
         adjusted = _garland_assemblies_after_count(adjusted, counts, request.pistas_guirnalda)
         _validate_plan(adjusted)
     return adjusted, hints, counts
+
+
+def _counted_with_read_geometry(
+    request: PlanResolutionRequest,
+) -> Callable[[Mapping[str, object]], Mapping[str, object]]:
+    """How the photo count sees a garland this confirmation assembles from its reading.
+
+    ADR-0032, decision 26. The assemblies are completed after the count, and
+    the reading's drop and tilt become the assembly's ``caida_m`` and
+    ``desnivel_m``, which lengthen the cord that is bought. So a garland
+    without an assembly that this resolution will assemble
+    (``completar_armados_guirnalda``, within ``completar_armados_de``) is
+    counted with the geometry its reading gives over the measures being tried
+    (``geometria_de_lectura``, the same function the assembly uses): the
+    count compares the photo with that cord, not with the straight length.
+    Only for counting; nothing of it is written into the plan. Without a
+    reading that brings a drop or a tilt, every structure counts as always.
+    """
+    if not request.completar_armados_guirnalda or not request.pistas_guirnalda:
+        return lambda structure: structure
+    only = None if request.completar_armados_de is None else set(request.completar_armados_de)
+    readings: dict[str, Mapping[str, object]] = {}
+    for hint in request.pistas_guirnalda:
+        # The first one of an element, as _completar_armados_guirnalda takes it.
+        readings.setdefault(_text(hint.get("referencia_element_id")) or "", hint)
+
+    def counted(structure: Mapping[str, object]) -> Mapping[str, object]:
+        if structure.get("armado_guirnalda") is not None or not _is_garland(structure):
+            return structure
+        if only is not None and _text(structure.get("estructura_id")) not in only:
+            return structure
+        reading = readings.get(_text(structure.get("referencia_element_id")) or "")
+        if reading is None:
+            return structure
+        measures = _mapping(structure.get("medidas"))
+        length = _number(measures.get("largo_m")) or _number(measures.get("ancho_m")) or 0.0
+        geometry = geometria_de_lectura_guirnalda(reading, length)
+        if not geometry:
+            return structure
+        anchors = reading.get("puntos_de_anclaje")
+        if isinstance(anchors, int) and not isinstance(anchors, bool):
+            geometry["puntos_de_anclaje"] = anchors
+        return {**structure, "armado_guirnalda": geometry}
+
+    return counted
 
 
 def _garland_assemblies_after_count(
@@ -3921,10 +4006,8 @@ def _garland_assemblies_after_count(
             ),
             None,
         )
-        again = sugerir_armado_guirnalda(
-            _garland_context(_with_structure(current, index, bare), bare), reading
-        )
-        structures[index] = bare if again is None else {**bare, "armado_guirnalda": again}
+        again = _with_garland_assembly(current, index, bare, reading)
+        structures[index] = bare if again is None else again
         agregar_supuesto(
             assumptions,
             supuesto(
@@ -4274,6 +4357,89 @@ def _without(structure: Mapping[str, object], key: str) -> dict[str, object]:
     return {name: value for name, value in structure.items() if name != key}
 
 
+def _without_read_geometry(reading: Mapping[str, object] | None) -> Mapping[str, object] | None:
+    """The reading without its drop and tilt: the assembly as before decision 26."""
+    if reading is None:
+        return None
+    return {
+        key: value
+        for key, value in reading.items()
+        if key not in ("caida_relativa", "desnivel_relativo")
+    }
+
+
+def _suggest_garland_assembly(
+    plan: Mapping[str, object],
+    index: int,
+    structure: Mapping[str, object],
+    reading: Mapping[str, object] | None,
+) -> dict[str, object] | None:
+    """``sugerir_armado`` over what the suggested assembly itself buys (decision 26).
+
+    ``structure`` carries no assembly. The photo's drop and tilt lengthen the
+    cord, and the cord decides the count: suggested over the straight
+    purchase, such an assembly would split balloons that are not bought. So
+    it is suggested again over the purchase of its own cord and kept when it
+    keeps that cord; otherwise the reading without its geometry decides, as
+    before. Without a drop or a tilt this is exactly ``sugerir_armado`` over
+    ``structure``.
+    """
+    context = _garland_context(_with_structure(plan, index, structure), structure)
+    first: dict[str, object] | None = sugerir_armado_guirnalda(context, reading)
+    if first is None or _garland_cord(context.largo_m, first) == context.largo_m:
+        return first
+    placed = {**structure, "armado_guirnalda": first}
+    again: dict[str, object] | None = sugerir_armado_guirnalda(
+        _garland_context(_with_structure(plan, index, placed), placed), reading
+    )
+    if again is not None and _garland_cord(context.largo_m, again) == _garland_cord(
+        context.largo_m, first
+    ):
+        return again
+    flat: dict[str, object] | None = sugerir_armado_guirnalda(
+        context, _without_read_geometry(reading)
+    )
+    return flat
+
+
+def _with_garland_assembly(
+    plan: Mapping[str, object],
+    index: int,
+    structure: Mapping[str, object],
+    reading: Mapping[str, object] | None,
+) -> dict[str, object] | None:
+    """``structure`` (without an assembly) with the one suggested for it, or ``None``.
+
+    Suggested over what it buys (``_suggest_garland_assembly``). When the
+    photo's drop or tilt changed the cord, the count changed with it: a color
+    pattern gets its shares synced to the new grid (the signed plan says what
+    is built and resolving it again is a fixed point), and if the pattern no
+    longer fits, the reading's geometry is left out (the count as before)
+    instead of failing.
+    """
+    assembly = _suggest_garland_assembly(plan, index, structure, reading)
+    if assembly is None:
+        return None
+    placed = {**structure, "armado_guirnalda": assembly}
+    measures = _mapping(structure.get("medidas"))
+    length = _number(measures.get("largo_m")) or _number(measures.get("ancho_m")) or 0.0
+    if structure.get("patron_color") is None or _garland_cord(length, assembly) == length:
+        return placed
+    candidate = _with_structure(plan, index, placed)
+    try:
+        return dict(
+            _mappings(_sync_participations(candidate, candidate, only=index).get("estructuras"))[
+                index
+            ]
+        )
+    except PlanResolutionError:
+        flat = sugerir_armado_guirnalda(
+            _garland_context(_with_structure(plan, index, structure), structure),
+            _without_read_geometry(reading),
+        )
+        return None if flat is None else {**structure, "armado_guirnalda": flat}
+
+
 def _assembly_with_pattern_by_cluster(
     plan: Mapping[str, object],
     index: int,
@@ -4296,9 +4462,7 @@ def _assembly_with_pattern_by_cluster(
     cluster over it.
     """
     bare = _without(_without(structure, "patron_color"), "armado_guirnalda")
-    first = sugerir_armado_guirnalda(
-        _garland_context(_with_structure(plan, index, bare), bare), reading
-    )
+    first = _suggest_garland_assembly(plan, index, bare, reading)
     if first is None:
         return None, False
     assembled = {**bare, "armado_guirnalda": first}
@@ -4313,9 +4477,7 @@ def _assembly_with_pattern_by_cluster(
     except PlanResolutionError:
         return None, True
     patterned = _without(synced, "armado_guirnalda")
-    second = sugerir_armado_guirnalda(
-        _garland_context(_with_structure(plan, index, patterned), patterned), reading
-    )
+    second = _suggest_garland_assembly(plan, index, patterned, reading)
     if second is None:
         return None, True
     final = {**patterned, "armado_guirnalda": second}
@@ -4340,9 +4502,13 @@ def _completar_armados_guirnalda(
 
     ``completar_armados_guirnalda`` (ADR-0032). The reading of the garland's
     reference element (``pistas_guirnalda``, E4, confidence at least 0.5)
-    decides its support, shape, unit, filler and toppers; it never declares a
-    drop and neither does the recipe, so the count and the total balloons stay
-    as they were. A garland neither can arrange keeps no assembly. With
+    decides its support, shape, unit, filler and toppers; the recipe never
+    declares a drop, so without a reading the count and the total balloons
+    stay as they were. Since decision 26 the reading may bring the drop and
+    the tilt of the photo: then the cord, and what is bought, follow them
+    (``_with_garland_assembly``), as the photo count already did
+    (``_counted_with_read_geometry``). A garland neither can arrange keeps no
+    assembly. With
     ``only``, the other structures are left as they are (the re-resolution
     after an edit). A plan without garlands comes back as it was.
 
@@ -4401,9 +4567,9 @@ def _completar_armados_guirnalda(
                     " sugerido y el armado de sus racimos.",
                 ),
             )
-        assembly = sugerir_armado_guirnalda(_garland_context(current, item), reading)
-        if assembly is not None:
-            structures[index] = {**item, "armado_guirnalda": assembly}
+        placed = _with_garland_assembly(current, index, item, reading)
+        if placed is not None:
+            structures[index] = placed
             changed = True
     if not changed and not notice:
         return dict(plan)

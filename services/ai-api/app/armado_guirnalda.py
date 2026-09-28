@@ -16,7 +16,9 @@ real de la cuerda) y llegan aquí por instancia, material × tamaño
 (``EstructuraGuirnalda.globos``). El armado solo los reparte: cada globo
 comprado queda en exactamente un racimo, en el relleno, en un remate o suelto,
 y ``validar`` lo comprueba. La receta nunca declara caída, así que completar
-un armado deja el total en COP igual.
+un armado deja el total en COP igual. La lectura de la foto sí puede traerla,
+con el desnivel entre los extremos (decisión 26): relativos al largo, y aquí
+se pasan a metros; entonces la cuerda es otra y ``plan.py`` cuenta sobre ella.
 
 Reglas y su fuente:
 
@@ -85,8 +87,13 @@ SOPORTE_POR_DEFECTO = "pared"
 MEZCLAS_ORGANICAS = frozenset({"organica_fina", "organica_gruesa"})
 #: La receta rellena con los globos de 5" (y menores) de la compra.
 TAMANO_RELLENO_RECETA_PULG = 5.0
-#: Soportes donde una forma que cuelga tiene de dónde colgar.
-SOPORTES_CON_CAIDA = frozenset({"pared", "colgada"})
+#: Desde esta caída o este desnivel (fracción del largo) la foto cuenta: por debajo la
+#: guirnalda se lee recta y nivelada, y su cuerda cambiaría menos del 1 % (decisión 26).
+MEDIDA_RELATIVA_MINIMA = 0.05
+#: Formas sin caída propia que, si la foto las ve caer, cuelgan en arco (decisión 26).
+FORMAS_QUE_CAEN = frozenset({"recta", "curva"})
+#: Tope de ``caida_m`` y de ``desnivel_m`` en ``armado-guirnalda.v1`` (en valor absoluto).
+MAX_METROS_GEOMETRIA = 5.0
 _MARGEN_TIRA = 1.1
 _SEPARACION_GANCHOS_M = 0.5
 _SEPARACION_PESAS_M = 1.5
@@ -110,14 +117,23 @@ _ESQUEMA_ARMADO: Mapping[str, object] = cast(
 _FORMA = Draft7Validator(_ESQUEMA_ARMADO)
 # Qué formas cuelgan (y cuentan la cuerda con su caída): dueño
 # estructuras-oficiales.ts, exportado en x-geometria-estructuras-oficiales.
+_GEOMETRIA_GUIRNALDA: Mapping[str, object] = cast(
+    Mapping[str, Mapping[str, object]], _PLAN_SCHEMA["x-geometria-estructuras-oficiales"]
+)["guirnalda"]
 _GEOMETRIA_FORMAS: Mapping[str, Mapping[str, object]] = cast(
-    Mapping[str, Mapping[str, object]],
-    cast(Mapping[str, Mapping[str, object]], _PLAN_SCHEMA["x-geometria-estructuras-oficiales"])[
-        "guirnalda"
-    ]["formas"],
+    Mapping[str, Mapping[str, object]], _GEOMETRIA_GUIRNALDA["formas"]
 )
 FORMAS_CON_CAIDA = frozenset(
     forma for forma, datos in _GEOMETRIA_FORMAS.items() if datos.get("conCaida") is True
+)
+#: Soportes donde una forma que cuelga tiene de dónde colgar y un extremo puede ir más
+#: alto que el otro (``desnivel_m``, decisión 26). Dueño: armado-guirnalda.ts
+#: (``SOPORTES_CON_CAIDA_GUIRNALDA``), exportado en ``x-reglas-guirnalda``.
+SOPORTES_CON_CAIDA = frozenset(
+    cast(
+        list[str],
+        cast(Mapping[str, object], _PLAN_SCHEMA["x-reglas-guirnalda"])["soportesConCaida"],
+    )
 )
 
 
@@ -352,6 +368,11 @@ def _validar_forma_y_soporte(estructura: EstructuraGuirnalda, armado: Mapping[st
         raise ArmadoInvalido(
             "forma_no_admitida",
             "Una guirnalda que cuelga necesita la pared o puntos de anclaje de donde colgar.",
+        )
+    if armado.get("desnivel_m") is not None and soporte not in SOPORTES_CON_CAIDA:
+        raise ArmadoInvalido(
+            "desnivel_sin_soporte",
+            "Solo una guirnalda en la pared o colgada tiene un extremo más alto que el otro.",
         )
     k = GLOBOS_POR_UNIDAD[str(cast(Mapping[str, object], armado["racimo"])["unidad"])]
     if estructura.k_patron is not None and k != estructura.k_patron:
@@ -639,6 +660,60 @@ def _receta(estructura: EstructuraGuirnalda) -> dict[str, object] | None:
     }
 
 
+def _metros_de(relativo: object, largo_m: float) -> float | None:
+    """Una medida relativa al largo en metros, a centímetros y dentro del contrato (±5 m).
+
+    ``None`` si no es un número, queda por debajo de ``MEDIDA_RELATIVA_MINIMA``
+    o se redondea a cero.
+    """
+    if isinstance(relativo, bool) or not isinstance(relativo, (int, float)):
+        return None
+    if not math.isfinite(relativo) or abs(relativo) < MEDIDA_RELATIVA_MINIMA or largo_m <= 0:
+        return None
+    metros = (Decimal(str(relativo)) * Decimal(str(largo_m))).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    return max(-MAX_METROS_GEOMETRIA, min(MAX_METROS_GEOMETRIA, float(metros))) if metros else None
+
+
+def geometria_de_lectura(lectura: Mapping[str, object], largo_m: float) -> dict[str, object]:
+    """La forma, la caída y el desnivel que la foto dice, en metros sobre ``largo_m``.
+
+    ADR-0032, decisión 26. La lectura (con confianza desde 0,5) trae medidas
+    relativas al largo horizontal, nunca metros: ``caida_relativa`` (cuánto
+    baja el centro bajo la recta que une los extremos) y ``desnivel_relativo``
+    (el extremo derecho menos el izquierdo). Cuentan solo en una guirnalda que
+    la foto ve en la pared o colgada (``SOPORTES_CON_CAIDA``) y desde
+    ``MEDIDA_RELATIVA_MINIMA``. Una recta o una curva que cae pasa a
+    ``arco_caido`` con su caída; una U invertida o un arco caído la llevan tal
+    cual; una ondulada no (su onda no es una caída). El desnivel va en
+    cualquier forma. ``largo_m`` es el tramo horizontal del plan, sea del
+    cliente o no: la caída nunca lo cambia, solo alarga la cuerda. ``{}`` si
+    no hay nada que medir. Puro: ``plan.py`` lo usa también para que el
+    conteo de la foto compare con la cuerda que se va a comprar.
+    """
+    confianza = lectura.get("confianza")
+    if (
+        isinstance(confianza, bool)
+        or not isinstance(confianza, (int, float))
+        or confianza < CONFIANZA_MINIMA_LECTURA
+        or lectura.get("soporte") not in SOPORTES_CON_CAIDA
+        or lectura.get("forma") not in FORMAS
+    ):
+        return {}
+    forma = str(lectura["forma"])
+    caida = _metros_de(lectura.get("caida_relativa"), largo_m)
+    desnivel = _metros_de(lectura.get("desnivel_relativo"), largo_m)
+    if caida is not None and caida > 0 and forma in FORMAS_QUE_CAEN:
+        forma = "arco_caido"
+    geometria: dict[str, object] = {}
+    if caida is not None and caida > 0 and forma in FORMAS_CON_CAIDA:
+        geometria["caida_m"] = caida
+    if desnivel is not None:
+        geometria["desnivel_m"] = desnivel
+    return {"forma": forma, **geometria} if geometria else {}
+
+
 def _forma_desde_lectura(
     estructura: EstructuraGuirnalda, lectura: Mapping[str, object], receta: Mapping[str, object]
 ) -> dict[str, object]:
@@ -647,9 +722,10 @@ def _forma_desde_lectura(
     ``sobre_estructura`` solo si la anfitriona que la foto nombra
     (``anfitriona_element_id``) la materializa otra pieza del plan. Una forma
     que cuelga sin un soporte de donde colgar se queda recta, y una guirnalda
-    colgada sin anclajes visibles cuelga de dos. Nunca lleva caída: los metros
-    no se leen en una foto y la caída cambiaría la cantidad, que no es de la
-    lectura (la cuenta la da el conteo, ADR-0031).
+    colgada sin anclajes visibles cuelga de dos. La caída y el desnivel que la
+    foto lee (relativos al largo) entran en metros con ``geometria_de_lectura``
+    (decisión 26): alargan la cuerda, y ``plan.py`` cuenta sobre ella y compara
+    el conteo de la foto (ADR-0031) con esa cuerda.
     """
     armado = dict(receta)
     armado["origen"] = "referencia"
@@ -685,6 +761,8 @@ def _forma_desde_lectura(
         estructura.k_patron is None or GLOBOS_POR_UNIDAD[str(unidad)] == estructura.k_patron
     ):
         armado["racimo"] = {**cast(Mapping[str, object], receta["racimo"]), "unidad": unidad}
+    # Solo en pared o colgada, que es entonces el soporte leído: la receta no lo cambia.
+    armado.update(geometria_de_lectura(lectura, estructura.largo_m))
     return armado
 
 
@@ -1168,6 +1246,40 @@ def _frase_lora(
     return _ascii_sin_cifras(lora)
 
 
+def _desnivel(armado: Mapping[str, object]) -> float | None:
+    desnivel = armado.get("desnivel_m")
+    if isinstance(desnivel, bool) or not isinstance(desnivel, (int, float)) or not desnivel:
+        return None
+    return float(desnivel)
+
+
+def _desnivel_es(armado: Mapping[str, object]) -> str:
+    """ "el extremo derecho 0,4 m más bajo que el izquierdo", o vacío sin desnivel."""
+    desnivel = _desnivel(armado)
+    if desnivel is None:
+        return ""
+    metros = f"{abs(desnivel):g}".replace(".", ",")
+    return (
+        f"el extremo derecho {metros} m más {'bajo' if desnivel < 0 else 'alto'} que el izquierdo"
+    )
+
+
+def _frase_desnivel(armado: Mapping[str, object]) -> str:
+    """La línea del desnivel para Uzume (decisión 26), aparte de ``_frases_prompt``; vacía sin él.
+
+    Va detrás de las frases del armado, tal cual. El fragmento LoRA no la
+    lleva: ni v007 ni v004 aprendieron el desnivel y no admite cifras.
+    """
+    desnivel = _desnivel(armado)
+    if desnivel is None:
+        return ""
+    bajo, alto = ("right", "left") if desnivel < 0 else ("left", "right")
+    return (
+        f"Its {bajo} end hangs about {abs(desnivel):g} m lower than its {alto} end,"
+        f" so the garland slopes down toward the {bajo}."
+    )
+
+
 def armado_resuelto(
     estructura: EstructuraGuirnalda, armado: Mapping[str, object]
 ) -> dict[str, object]:
@@ -1275,6 +1387,8 @@ def armado_resuelto(
     caida_es = (
         f", con una caída de {float(cast(float, caida)):g} m".replace(".", ",") if caida else ""
     )
+    if _desnivel_es(armado):
+        caida_es += (" y " if caida_es else ", con ") + _desnivel_es(armado)
     pasos.append(
         {
             "pared": "Fija la guirnalda a la pared de izquierda a derecha con ganchos o pegante"
@@ -1331,6 +1445,7 @@ def armado_resuelto(
         + "."
     )
     prompt_gemini, prompt_lora = _frases_prompt(estructura, armado, reparto)
+    prompt_gemini = " ".join(f for f in (prompt_gemini, _frase_desnivel(armado)) if f)
     return {
         "estructura_id": estructura.estructura_id,
         "armado": dict(armado),
@@ -1365,6 +1480,7 @@ __all__ = [
     "UNIDADES",
     "VERSION_ARMADO",
     "armado_resuelto",
+    "geometria_de_lectura",
     "opciones_admitidas",
     "racimo_y_forma",
     "sugerir_armado",
