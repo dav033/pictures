@@ -7,6 +7,8 @@ falla contra el código anterior al arreglo.
 from __future__ import annotations
 
 
+from typing import cast
+
 import pytest
 
 from tests.test_conteo_foto import (
@@ -131,3 +133,39 @@ def test_10_la_lectura_descarta_racimos_incoherentes_con_el_tope() -> None:
         None,
         None,
     )
+
+
+# --- 34: tras editar la mezcla no queda el supuesto viejo del conteo ---------------------
+
+
+@pytest.mark.anyio
+async def test_34_editar_la_mezcla_reemplaza_el_supuesto_del_conteo() -> None:
+    import copy
+
+    from app.plan_edicion import EdicionMezcla, editar_plan
+    from tests.guirnalda_datos import GUIRNALDA, estructura_del_plan, guirnalda, plan, resolver
+
+    base = plan(guirnalda(referencia_element_id="REF_01_E01", nombre="Guirnalda del fondo"))
+    base["espacio"] = {"tipo": "salon", "fuente": "supuesto"}
+    base["supuestos"] = ["un supuesto del modelo que no es del conteo"]
+    pistas = [_conteo(estimado_total=50, por_tamano=[{"clase": "mediano", "proporcion": 1.0}])]
+    primera = await resolver(base, completar_conteos=True, pistas_conteo=pistas)
+    assert estructura_del_plan(primera)["mezcla"] == "clasica"
+    editado = editar_plan(
+        cast(dict[str, object], primera["plan"]),
+        EdicionMezcla.model_validate(
+            {"accion": "mezcla", "estructura_id": GUIRNALDA, "mezcla": "organica_gruesa"}
+        ),
+    )
+    segunda = await resolver(
+        copy.deepcopy(editado.plan),
+        completar_conteos=True,
+        pistas_conteo=pistas,
+        completar_conteos_de=[GUIRNALDA],
+    )
+    assert estructura_del_plan(segunda)["mezcla"] == "organica_gruesa"
+    supuestos = cast(list[str], cast(dict[str, object], segunda["plan"])["supuestos"])
+    del_conteo = [s for s in supuestos if s.startswith("Guirnalda del fondo: la foto muestra")]
+    # Uno solo, el de la re-resolución: el de la confirmación nombraba la mezcla clásica.
+    assert len(del_conteo) == 1 and "clásica" not in del_conteo[0], supuestos
+    assert "un supuesto del modelo que no es del conteo" in supuestos

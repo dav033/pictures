@@ -33,6 +33,7 @@ una puerta y una mesa, y el umbral de "contradice claramente" de la mezcla.
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import cast
@@ -50,7 +51,7 @@ from app.armado_bouquet import (
 )
 from app.amaterasu.conteo_referencia import MAX_GLOBOS
 from app.generated_models import contract_schema
-from app.supuestos import agregar_supuesto
+from app.supuestos import agregar_supuesto, nombre_corto
 from app.supuestos import supuesto as acotar_supuesto
 
 #: La misma barra que las otras lecturas de la foto (patrón, armado).
@@ -489,6 +490,29 @@ def _nombre(estructura: Mapping[str, object], defecto: str) -> str:
     return nombre if isinstance(nombre, str) and nombre.strip() else defecto
 
 
+def _nombre_de_pieza(estructura: Mapping[str, object]) -> str:
+    """El nombre con que el conteo encabeza el supuesto de una pieza (``_kit``, ``_geometrica``)."""
+    tipo = str(estructura.get("tipo"))
+    return _nombre(estructura, "La pieza" if tipo == "kit" else tipo.capitalize())
+
+
+_MARCA_CONTEO = re.compile(
+    r": la foto muestra (?:unos )?\d+ globos(?: por pieza)?"
+    r"(?: y el plan tenía |; el armado leído tenía |, así que la cantidad quedó en )"
+)
+
+
+def _es_supuesto_de_conteo(texto: str, nombre: str) -> bool:
+    """Si ``texto`` es un supuesto que el conteo escribió para la pieza ``nombre``.
+
+    El del armado del bouquet (ADR-0030, "globos por bouquet") no lo es.
+    """
+    return any(
+        texto.startswith(cabeza) and _MARCA_CONTEO.match(texto, len(cabeza)) is not None
+        for cabeza in {nombre_corto(nombre), nombre}
+    )
+
+
 def _unos(cuenta: Cuenta) -> str:
     return f"{cuenta.globos}" if cuenta.exacto else f"unos {cuenta.globos}"
 
@@ -509,7 +533,7 @@ def _kit(
     reps = max(1, cast(int, estructura.get("repeticiones") or 1))
     antes_total = cast(int, estructura.get("unidades_declaradas") or 0)
     antes = round(antes_total / reps)
-    nombre = _nombre(estructura, "La pieza")
+    nombre = _nombre_de_pieza(estructura)
 
     def sin_cambio(decision: str, motivo: str, despues: int = antes) -> _Resultado:
         return _Resultado(estructura, decision, cuenta.globos, antes, despues, [], motivo)
@@ -742,7 +766,7 @@ def _geometrica(
         if isinstance(valor, (int, float))
     }
     antes = puerto.contar(estructura)
-    nombre = _nombre(estructura, tipo.capitalize())
+    nombre = _nombre_de_pieza(estructura)
 
     cambiar_mezcla = None
     if not mezcla_fija and not puerto.tamanos_obligatorios:
@@ -853,6 +877,17 @@ def aplicar(
     medidas_fijas = cast(Mapping[str, object], plan.get("espacio") or {}).get("fuente") == "cliente"
     estructuras: list[object] = []
     supuestos = [s for s in cast(list[object], plan.get("supuestos") or []) if isinstance(s, str)]
+    originales = list(supuestos)
+    if solo is not None:
+        # Tras una edición, el supuesto que el conteo escribió al confirmar esa
+        # pieza ya no describe el plan (revisión 34): se reemplaza, no se suma.
+        for cruda in cast(list[object], plan.get("estructuras") or []):
+            estructura = cast(Mapping[str, object], cruda)
+            if str(estructura.get("estructura_id")) in solo and (
+                str(estructura.get("referencia_element_id")) in por_elemento
+            ):
+                nombre = _nombre_de_pieza(estructura)
+                supuestos = [s for s in supuestos if not _es_supuesto_de_conteo(s, nombre)]
     conteos: list[dict[str, object]] = []
     for cruda in cast(list[object], plan.get("estructuras") or []):
         estructura = dict(cast(Mapping[str, object], cruda))
@@ -943,7 +978,7 @@ def aplicar(
             }
         )
     nuevo = {**dict(plan), "estructuras": estructuras}
-    if any(c["decision"] == "ajustado" for c in conteos):
+    if supuestos != originales or any(c["decision"] == "ajustado" for c in conteos):
         nuevo["supuestos"] = list(dict.fromkeys(supuestos))
     # Las lecturas del armado en el orden en que llegaron, con las reescaladas en su lugar.
     lecturas_armado = [
