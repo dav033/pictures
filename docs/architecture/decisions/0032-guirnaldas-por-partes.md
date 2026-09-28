@@ -287,12 +287,17 @@ Sigue la frontera de las anteriores: Amaterasu describe, Python arma.
     `src/lib/ia/referencia/reference-structure.ts`): con la lectura encendida,
     después de las lecturas, la ubicación de cada guirnalda se refina. Con
     soporte leído (confianza ≥ 0,5): `mesa` es `sobre_mesa_principal`; `piso`
-    es `recorrido_suelo` si la caja baja hasta el borde de la foto y es alta
-    (una corrida que se aleja hacia el fondo) y si no `piso_frontal`; `pared`
-    saca a la guirnalda del piso o de la mesa. Sin soporte, por geometría: su
+    es `piso_frontal`; `pared` saca a la guirnalda del piso o de la mesa, salvo
+    que otra pieza aprobada de su foto (o un backdrop) ya esté en `fondo_pared`,
+    porque el plan admite una sola. Sin soporte, por geometría: su
     borde de abajo sobre la mitad de arriba de una mesa detectada (un mueble
-    cuyo nombre dice table o mesa) que cubre a lo ancho es `sobre_mesa_principal`;
-    si su caja cubre un 30 % o más de un mueble, `alrededor_mobiliario`. Es un
+    cuyo nombre dice table o mesa) que cubre a lo ancho es `sobre_mesa_principal`.
+    *Enmienda (hallazgo 12 de la revisión):* la salida se queda en el
+    vocabulario de Plan 1.0, el único que admiten el plan del chat y
+    `plan-resolution.v1`, y el prompt del sistema manda copiar la ubicación tal
+    cual; `recorrido_suelo` (una corrida alta hacia el fondo) y
+    `alrededor_mobiliario` (caja sobre un mueble) se quitaron hasta que Plan
+    1.1 llegue a esos consumidores. Es un
     posproceso: el prompt v16 del reconocedor sigue byte a byte y
     `placementFor` no cambia, así que con la bandera apagada la ubicación es la
     de siempre. Los umbrales son supuestos sin calibrar.
