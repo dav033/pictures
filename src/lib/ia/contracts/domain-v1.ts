@@ -24,6 +24,7 @@ import {
 } from "@/lib/plan/tipos";
 import { ArmadoBouquetResueltoSchema, PistaArmadoSchema } from "@/lib/plan/armado-bouquet";
 import { ArmadoGuirnaldaResueltoSchema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
+import { ConteoAplicadoSchema, PistaConteoSchema } from "@/lib/plan/conteo-referencia";
 import { PatronColorResueltoSchema, PistaPatronSchema } from "@/lib/plan/patron-color";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
 import { LoraSelectionSchema } from "@/lib/lora/schema";
@@ -414,6 +415,11 @@ export const PlanResueltoV1Schema = z.object({
    * cuando no hay ninguno.
    */
   armados_guirnalda: z.array(ArmadoGuirnaldaResueltoSchema).optional(),
+  /**
+   * Qué hizo Python con el conteo de la foto de cada estructura y por qué
+   * (ADR-0031). Fuera del snapshot que firma `plan_hash`; se omite sin conteos.
+   */
+  conteos_referencia: z.array(ConteoAplicadoSchema).max(32).optional(),
 }).strict();
 
 const quoteLineSchema = z.object({
@@ -484,6 +490,14 @@ export const PlanResolutionRequestV1Schema = z.object({
   completar_armados_guirnalda: z.boolean().optional(),
   /** Con `completar_armados_guirnalda`: la lectura de cada guirnalda de la foto, por elemento (E4). */
   pistas_guirnalda: z.array(PistaGuirnaldaSchema).max(16).optional(),
+  /** Al confirmar un plan: Python ajusta cantidad, medidas, densidad o mezcla al conteo de la foto (ADR-0031). */
+  completar_conteos: z.boolean().optional(),
+  pistas_conteo: z.array(PistaConteoSchema).max(16).optional(),
+  /**
+   * Tras una edición: solo estas estructuras se ajustan (la de la mezcla
+   * editada, o ninguna); las demás con pista conservan su lectura sin cambios.
+   */
+  completar_conteos_de: z.array(idSchema).max(8).optional(),
 }).strict();
 
 export const PlanResolutionResultV1Schema = z.object({

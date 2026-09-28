@@ -552,6 +552,13 @@ no se probó contra Gemini.
 calibrar los umbrales de ubicación (mesa, muebles, recorrido de piso); E5 puede
 usar `colores_por_racimo` para el patrón por racimo.
 
+**Fusión de conteo E2 (2026-09-28, `0072d33`):** `_aplicar_conteos` corre antes de
+las completitudes de bouquets y guirnaldas y cuenta con `_structure_count`, así
+que una guirnalda colgada se compara por su cuerda parabólica; pruebas
+`test_el_conteo_se_compara_con_la_cuerda_que_se_compra` y
+`test_la_cantidad_sale_del_conteo_y_la_distribucion_de_la_lectura`
+(`tests/test_plan_guirnalda.py`).
+
 ### Estado de las ramas (2026-09-28, todas subidas a `origin`, sin PR abierto)
 
 | Rama | Contenido | Estado |

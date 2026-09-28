@@ -246,6 +246,76 @@ def test_una_pista_mal_formada_se_rechaza() -> None:
         request(plan(), pistas_guirnalda=[_pista(caida_m=0.5)])
 
 
+# --- Conteo de la foto (ADR-0031) y armado de la guirnalda ---------------------------------
+
+
+def _conteo(**cambios: object) -> dict[str, object]:
+    return {
+        "referencia_element_id": "REF_01_E01",
+        "globos_visibles": 40,
+        "exacto": False,
+        "estimado_total": None,
+        "racimos": None,
+        "globos_por_racimo": None,
+        "por_tamano": [],
+        "largo_relativo": None,
+        "alto_relativo": None,
+        "confianza": 0.8,
+        **cambios,
+    }
+
+
+@pytest.mark.anyio
+async def test_el_conteo_se_compara_con_la_cuerda_que_se_compra() -> None:
+    # Una U invertida con caída: el conteo busca densidad y largo con el mismo
+    # conteo que la resolución (la cuerda parabólica), no con el largo recto.
+    colgada = _armado(forma="u_invertida", caida_m=0.8)
+    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01", armado_guirnalda=colgada))
+    sin_conteo = await resolver(plan_)
+    ajustado = await resolver(
+        plan_, completar_conteos=True, pistas_conteo=[_conteo(estimado_total=72)]
+    )
+    [conteo] = cast(list[dict[str, object]], ajustado["conteos_referencia"])
+    assert conteo["globos_antes"] == _unidades(sin_conteo) > 48, (
+        "la cuenta de antes es la de la cuerda"
+    )
+    assert conteo["decision"] == "ajustado"
+    assert abs(_unidades(ajustado) - 72) <= max(2, 0.15 * 72), "dentro de la tolerancia del conteo"
+    assert conteo["globos_despues"] == _unidades(ajustado)
+    estructura = estructura_del_plan(ajustado)
+    assert estructura["armado_guirnalda"] == colgada, "el conteo no toca el armado"
+    medidas = cast(dict[str, float], estructura["medidas"])
+    eje = cast(list[dict[str, object]], ajustado["estructuras"])[0]["eje_m"]
+    assert eje == round(_garland_cord(medidas["largo_m"], colgada), 2)
+    assert not [
+        a for a in cast(list[str], ajustado["advertencias"]) if a.startswith("puerta_fisica:")
+    ]
+
+
+@pytest.mark.anyio
+async def test_la_cantidad_sale_del_conteo_y_la_distribucion_de_la_lectura() -> None:
+    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    conteo = {"completar_conteos": True, "pistas_conteo": [_conteo(estimado_total=60)]}
+    solo_conteo = await resolver(plan_, completar_armados_guirnalda=True, **conteo)
+    con_lectura = await resolver(
+        plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista()], **conteo
+    )
+    assert abs(_unidades(con_lectura) - 60) <= max(2, 0.15 * 60), "la cantidad es del conteo"
+    assert lineas(con_lectura) == lineas(solo_conteo)
+    assert _total(con_lectura) == _total(solo_conteo), "la lectura no cambia lo que se compra"
+    armado = cast(dict[str, object], estructura_del_plan(con_lectura)["armado_guirnalda"])
+    assert (armado["origen"], armado["soporte"], armado["forma"]) == (
+        "referencia",
+        "mesa",
+        "ondulada",
+    )
+    assert cast(dict[str, object], estructura_del_plan(solo_conteo)["armado_guirnalda"])[
+        "origen"
+    ] == ("sugerido")
+    resuelto = cast(list[dict[str, object]], con_lectura["armados_guirnalda"])[0]
+    assert resuelto["globos_por_instancia"] == _unidades(con_lectura)
+
+
 # --- Geometría: la cuerda y la puerta física -------------------------------------------------
 
 

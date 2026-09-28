@@ -22,7 +22,7 @@ import {
   type PistaArmado,
 } from "@/lib/plan/armado-bouquet";
 import { LecturaGuirnaldaSchema, type PistaGuirnalda } from "@/lib/plan/armado-guirnalda";
-import { LecturaConteoSchema } from "@/lib/plan/conteo-referencia";
+import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import {
   MODOS_PATRON_COLOR,
@@ -1255,6 +1255,10 @@ export interface PythonPlanResolutionInput {
   completarArmadosGuirnalda?: boolean;
   /** Absent unless the caller passes it (ADR-0032, E4): the garland readings of the photo. */
   pistasGuirnalda?: PistaGuirnalda[];
+  /** Absent unless the caller passes it (ADR-0031): same byte-identical rule. */
+  completarConteos?: boolean;
+  pistasConteo?: PistaConteo[];
+  completarConteosDe?: string[];
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -2422,6 +2426,9 @@ export async function llamarPythonPlanResolution(
     completarArmadosDe,
     completarArmadosGuirnalda,
     pistasGuirnalda,
+    completarConteos,
+    pistasConteo,
+    completarConteosDe,
     ...rest
   } = input;
   const operationBody = {
@@ -2437,6 +2444,9 @@ export async function llamarPythonPlanResolution(
     ...(completarArmadosDe === undefined ? {} : { completar_armados_de: completarArmadosDe }),
     ...(completarArmadosGuirnalda === undefined ? {} : { completar_armados_guirnalda: completarArmadosGuirnalda }),
     ...(pistasGuirnalda === undefined ? {} : { pistas_guirnalda: pistasGuirnalda }),
+    ...(completarConteos === undefined ? {} : { completar_conteos: completarConteos }),
+    ...(pistasConteo === undefined ? {} : { pistas_conteo: pistasConteo }),
+    ...(completarConteosDe === undefined ? {} : { completar_conteos_de: completarConteosDe }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_RESOLUTION_PATH, PYTHON_PLAN_RESOLUTION_SCOPE, {
     ...rest,

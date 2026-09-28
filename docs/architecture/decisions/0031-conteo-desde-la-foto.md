@@ -1,7 +1,7 @@
 # ADR-0031 — Conteo de globos desde la foto de referencia
 
 Date: 2026-09-25
-Status: accepted para E1 (lectura, contrato y blueprint, detrás de una bandera apagada); E2 pendiente
+Status: accepted. E1 (lectura, contrato y blueprint) y E2 (usar la lectura al confirmar), las dos detrás de banderas apagadas. Falta la evaluación pagada.
 Supersedes: nothing. Extiende ADR-0030 (decisión 4 enmendada, "la foto manda").
 
 ## Problema
@@ -103,24 +103,116 @@ El trabajo se parte en dos entregas reversibles por separado
     `plan-resolution.v1` y `plan-decoracion.v1`, que la rama de guirnaldas también
     cambia. Nada entra en `estructuras`/`compras` del snapshot: `plan_hash` no cambia.
 
-### E2 (pendiente): usar la lectura al confirmar
+### E2 (hecha): usar la lectura al confirmar
 
-- `pistas_conteo[]` y `completar_conteos` en `plan-resolution.v1`
-  (`PistaConteoSchema = LecturaConteoSchema + referencia_element_id`, como
-  `pistas_armado`), y `conteos_referencia[]` fuera del hash en `plan-resuelto.v1`
-  con lo que Python decidió y por qué.
-- `_aplicar_conteos` en `plan.py`, antes de `_build_resolved`, con el catálogo
-  leído, detrás de `CONTEO_REFERENCIA_V1` (default OFF): kits con `exacto` y
-  confianza ≥ 0,5 → `unidades_declaradas`; geométricas → la combinación de
-  densidad y eje (±35 %, o el largo relativo) cuyo `_total_globos` quede más cerca
-  del estimado, con tolerancia ±15 % y sin salir de la puerta física; la mezcla
-  solo si `por_tamano` la contradice claramente; un supuesto por cambio.
-- Texto para el modelo del chat en `serializeReferenceBlueprint` ("conteo leído en
-  la foto: unos N globos…"), como el armado leído del bouquet. Hoy el prompt del
-  chat es el mismo con y sin conteo (lo vigila `ia:test-conteo-referencia`).
-- Evaluación: 30 fotos con conteo humano (`sha256, globos, exacto`) fuera del
-  repo; error relativo mediano por familia; primero sin costo, después pagada con
-  tope declarado y telemetría apagada.
+11. **La regla de kits del plan original queda reemplazada.** En
+    `SEGUIMIENTO-guirnaldas.md` §2.1 la regla era "en kits manda la lectura del
+    armado si existe; si no, el conteo". Un caso real la descartó: un bouquet de
+    más de 30 globos salió con 11. La lectura del armado describe una unidad por
+    nivel (`SEGUIMIENTO-bouquets.md` §14; la rama `fix/bouquet-conteo-niveles` le
+    agrega `cantidad` por nivel). Ahora **el conteo da la cantidad y el armado la
+    distribución**.
+    - F = piezas fijas del armado leído (remate × grupos + dígitos).
+    - A = látex del armado.
+    - C = cuenta usable del conteo: con confianza de al menos 0,5, los globos
+      visibles si la cuenta es exacta; si no, el estimado; si no, racimos × globos
+      por racimo. C incluye metalizados y números, porque el prompt de E1 los
+      cuenta.
+
+    Reglas:
+    - Si |C − (A+F)| ≤ max(2; 15 % de C), se queda el armado.
+    - Si no, total = C cuando la cuenta es exacta, y max(A+F, C) cuando no lo es.
+      Un estimado puede subir la cifra, nunca bajarla, y un bouquet apilado casi
+      nunca es exacto.
+    - Los niveles leídos se reescalan a total − F por restos mayores; cada nivel
+      conserva su unidad y sus colores, y en un empate va primero la base. El
+      sobrante menor que una unidad va como sueltos de acento.
+    - Queda un solo supuesto: "la foto muestra unos N globos; el armado leído
+      tenía M: la cantidad quedó en T (el plan decía X)".
+
+    Si la lectura del armado no existe o no se puede reescalar, se descarta:
+    manda C si es exacta y max(declarado, C) si no, con la misma tolerancia. Un
+    kit que ya trae armado no se toca, y uno que no se compra por globos sueltos
+    tampoco.
+
+    **Codificación.** Una lectura reescalada repite n veces un nivel de n
+    unidades. `armado_bouquet._niveles_leidos` de hoy junta esas copias como n
+    unidades, y con `cantidad` por nivel (la otra rama) cada copia contará 1.
+    Por eso no hizo falta tocar `armado_bouquet.py`.
+12. **Geométricas, en este orden.**
+    1. La mezcla, solo si `por_tamano` la contradice claramente. Umbral: una
+       variación total de al menos 0,3 frente a la mezcla del plan, y otra mezcla
+       del contrato al menos 0,15 más cerca. Además, el catálogo del turno tiene
+       que cubrir cada tamaño para cada material y el cliente no puede haber
+       fijado tamaños.
+    2. La densidad (sencilla, media, lujosa) con las medidas fijas.
+    3. Solo si no alcanza, el eje (todas sus medidas por un mismo factor) dentro
+       de ±35 %. La ventana se centra en las medidas del plan o, si la foto trae
+       escala, en veces × la altura de la referencia: persona 1,7 m, puerta 2 m,
+       mesa 0,75 m.
+
+    Se elige la opción dentro de ±15 % que menos cambia el plan: medidas más
+    cercanas, luego la densidad más cercana, luego la cuenta más cercana. Nunca
+    fuera de la puerta física (`_physical_warnings`, sin tocarla). Las medidas
+    nuevas se dicen "equivalentes a la foto (no medidos)". Con
+    `espacio.fuente: cliente` las medidas no se tocan. Una pieza con patrón
+    re-sincroniza sus participaciones; si el patrón ya no cabe, no se ajusta. Sin
+    opción válida: `sin_ajuste_posible`, y el plan queda igual.
+13. **Dónde corre.** Las reglas están en `services/ai-api/app/conteo_foto.py`, que
+    no importa `plan.py`: lo que necesita le llega en `PuertoPlan` (contar, puerta
+    física, cobertura de mezcla, contexto del kit, re-sincronizar el patrón).
+    `plan._aplicar_conteos` corre al inicio de `_resolution_result`, con el
+    catálogo leído y **antes de toda completitud de armados**: los bouquets aquí
+    y, en `feat/guirnaldas`, `completar_armados_guirnalda`. El conteo decide
+    cuántos globos hay y los armados solo los acomodan. Al fusionar, esa línea
+    va primero.
+14. **Contrato** (`src/lib/plan/conteo-referencia.ts` → `domain-v1.ts` → export →
+    `generate_models.py`):
+    - en `plan-resolution.v1`: `completar_conteos`, `pistas_conteo[]`
+      (`PistaConteoSchema`, validada en Python contra el esquema exportado) y
+      `completar_conteos_de`;
+    - en `plan-resuelto.v1`, **fuera del hash**: `conteos_referencia[]` con la
+      lectura, la decisión (`ajustado`, `coincide`, `sin_ajuste_posible`,
+      `no_confiable`, `sin_aplicar`), los globos de la foto, antes y después, los
+      cambios y el motivo.
+
+    Lo que cambia del plan (unidades, densidad, mezcla, medidas, armado) sí entra
+    en `plan_hash`, solo al confirmar. Sin `completar_conteos`, la resolución es
+    byte a byte la de siempre (31 vectores dorados sin cambios), y el plan firmado
+    es punto fijo.
+15. **Next.**
+    - `CONTEO_REFERENCIA_V1` (default OFF): al confirmar,
+      `pistasConteoDelPlan` manda los conteos del blueprint (uno por elemento),
+      solo si hay alguno.
+    - Al editar (`aplicar-edicion.ts`, `conteosDeLaEdicion`), los conteos de
+      `base.conteos_referencia` vuelven a viajar para no perderse. Solo una
+      edición de mezcla pide ajustar la pieza editada (`completar_conteos_de`),
+      con la mezcla que eligió el decorador; las demás piezas quedan
+      `sin_aplicar`.
+    - El chat (`serializeReferenceBlueprint`) recibe "conteo leído en la foto:
+      unos N globos (aproximado; V visibles), R racimos de K" con la regla de
+      declarar la cantidad en kits y no calcular globos en geométricas. Solo con
+      la bandera y confianza de al menos 0,5; sin eso la línea es la de siempre.
+      No se toca `armadoLeido`: lo cambia la rama del bouquet, y mientras tanto
+      el texto dice que esta cuenta manda sobre el total de un armado leído.
+16. **Evaluación sin costo por defecto** (`src/lib/eval/estructuras/conteo.ts`,
+    `cli-conteo.ts`, `npm run eval:conteo`). Reutiliza la suite y el esqueleto
+    del runner de reconocimiento: vista previa por defecto, tope de gasto con
+    reserva de la cota, concurrencia, plazo, reanudación y telemetría durable
+    apagada. Los crudos, las imágenes y la verdad humana
+    (`sha256,globos,exacto[,familia]`) quedan fuera del repo.
+    - Métricas: error relativo mediano por familia y en piezas densas (meta
+      ≤ 25 %), y la parte a ±1 en fotos de hasta 15 globos contadas una a una.
+    - Los tokens de la lectura de conteo no están medidos
+      (`tokens-conteo-2026-09-28.json`, `medido: false`), y así se declara.
+    - Solo se probó en vista previa y con un analizador simulado.
+
+Supuestos a validar con el negocio:
+- la tolerancia de ±15 % (mínimo 2);
+- la ventana de ±35 %;
+- las alturas de referencia;
+- el umbral de contradicción de la mezcla;
+- que un estimado nunca baje la cantidad de un kit.
 
 ## Alternativas descartadas
 
@@ -138,6 +230,14 @@ El trabajo se parte en dos entregas reversibles por separado
 - **Recortar valores fuera de rango** (p. ej. `globos_por_racimo: 9 → 8`). Una
   cuenta recortada es una cuenta inventada: fuera de rango se descarta.
 - **Agregar `pistas_conteo` ya en E1.** Ver decisión 10.
+- **"En kits manda la lectura del armado"** (plan original). Subcuenta los
+  bouquets grandes (decisión 11).
+- **Cambiar el largo antes que la densidad.** Un largo "equivalente" es una
+  estimación, y la densidad no inventa medidas: el largo solo se mueve cuando la
+  densidad no alcanza.
+- **Tocar `armado_bouquet.py` para leer `cantidad`.** Es de la rama
+  `fix/bouquet-conteo-niveles`. La lectura reescalada se codifica repitiendo
+  niveles y funciona antes y después de esa rama.
 
 ## Consecuencias
 
@@ -153,11 +253,22 @@ El trabajo se parte en dos entregas reversibles por separado
   de la revisión anterior, `additionalProperties: false`).
 - Depende de que v16 reconozca bien las piezas: si llama arco a una guirnalda
   colgada, la cuenta cae en la regla del arco. Se mide en E7.
+- Con `CONTEO_REFERENCIA_V1`, los planes confirmados con conteos cambian su
+  `plan_hash`: llevan las unidades, la densidad, la mezcla o las medidas
+  ajustadas y su supuesto. Las re-resoluciones no, salvo la de una edición de
+  mezcla.
+- Pendiente de la fusión con `fix/bouquet-conteo-niveles`: donde un nivel leído
+  no traiga tamaño, repartir con `por_tamano` del conteo. Hoy
+  `_material_del_color` elige el primer látex del color, y el tamaño lo decide
+  esa rama.
 
 ## Rollback
 
-Apagar `CONTEO_REFERENCIA_PYTHON_ENABLED`. Para quitar el código: revertir los
-commits de E1 y desplegar app y `ai-api` juntos. No hay datos en el servidor que
+Apagar `CONTEO_REFERENCIA_V1` (los planes dejan de ajustarse) y
+`CONTEO_REFERENCIA_PYTHON_ENABLED` (no hay lectura). Para quitar el código:
+revertir los commits de E2 y E1, y desplegar app y `ai-api` juntos. Un plan ya
+confirmado con ajustes los conserva: son parte del plan firmado, como un patrón
+o un armado. No hay datos en el servidor que
 migrar (las lecturas viven en la caché del proceso, que el despliegue vacía); un
 blueprint con `appearance.conteo` que una sesión del navegador conserve
 (`sessionStorage`) lo rechazaría la revisión anterior, y se resuelve volviendo a

@@ -14,6 +14,7 @@ import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarB
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PistaArmado } from "@/lib/plan/armado-bouquet";
 import type { PistaGuirnalda } from "@/lib/plan/armado-guirnalda";
+import type { PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { PistaPatron } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
@@ -574,6 +575,24 @@ export function pistasGuirnaldaDelPlan(plan: Pick<PlanDecoracion, "estructuras">
   return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
 }
 
+/**
+ * Conteos de globos de la foto para las estructuras que materializan un
+ * elemento de la referencia (ADR-0031). Misma fuente y misma regla que
+ * `pistasArmadoDelPlan`: una lectura por elemento aprobado.
+ */
+export function pistasConteoDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): PistaConteo[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const pistas = new Map<string, PistaConteo>();
+  for (const estructura of plan.estructuras) {
+    const elementId = estructura.referencia_element_id;
+    const conteo = elementId ? elementos.get(elementId)?.appearance.conteo : undefined;
+    if (!elementId || !conteo || pistas.has(elementId)) continue;
+    pistas.set(elementId, { referencia_element_id: elementId, ...conteo });
+  }
+  return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
+}
+
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
  * de @sempertex/agente-core despacha — cada cuerpo es el mismo que tenía el
  * if-chain de ejecutar.ts antes de esta extracción, sin cambios de lógica. */
@@ -997,10 +1016,14 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const completarArmados = featureEnabled("BOUQUETS_ARMADO_V1");
     // ADR-0032: y el de las guirnaldas, detrás de GUIRNALDAS_ARMADO_V1 (solo receta hasta E4).
     const completarArmadosGuirnalda = featureEnabled("GUIRNALDAS_ARMADO_V1");
+    // ADR-0031: el conteo de globos de la foto, detrás de CONTEO_REFERENCIA_V1.
+    // Sin conteos leídos no hay nada que ajustar y la petición es la de siempre.
+    const completarConteos = featureEnabled("CONTEO_REFERENCIA_V1");
     const resolverPlanDelTurno = (plan: PlanDecoracion) => {
       const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasGuirnalda = completarArmadosGuirnalda ? pistasGuirnaldaDelPlan(plan, estado.referenceBlueprint) : [];
+      const pistasConteo = completarConteos ? pistasConteoDelPlan(plan, estado.referenceBlueprint) : [];
       // Diagnóstico (ids y conteos, nunca la foto): qué lecturas de la foto viajan con la confirmación.
       if (completarArmados) console.info("[plan] pistas de armado", JSON.stringify({ request_id: estado.ragRequestId, bouquets: plan.estructuras.filter((estructura) => estructura.estructura_oficial === "bouquet").map((estructura) => ({ id: estructura.estructura_id, referencia: estructura.referencia_element_id ?? null, unidades: estructura.unidades_declaradas ?? null })), pistas: pistasArmado.map((pista) => ({ referencia: pista.referencia_element_id, confianza: pista.confianza, numeros: pista.numeros?.map((numero) => numero.digito).join("") ?? null })) }));
       return resolverPlan({
@@ -1014,6 +1037,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         ...(pistasArmado.length > 0 ? { pistasArmado } : {}),
         ...(completarArmadosGuirnalda ? { completarArmadosGuirnalda } : {}),
         ...(pistasGuirnalda.length > 0 ? { pistasGuirnalda } : {}),
+        ...(pistasConteo.length > 0 ? { completarConteos: true, pistasConteo } : {}),
         requestId: estado.ragRequestId,
         correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
         ...(options.signal ? { signal: options.signal } : {}),

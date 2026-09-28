@@ -4,6 +4,7 @@ import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-ref
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { EJEMPLO_UNIDADES_DECLARADAS, GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/escena/creatividad";
+import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 
 /**
  * Compartido por producción y los arneses de evaluación para evitar que el
@@ -181,6 +182,24 @@ function armadoLeido(lectura: ReferenceBlueprintV2["elements"][number]["appearan
 }
 
 /**
+ * Lo que Amaterasu contó de una pieza de la foto (ADR-0031), dicho al modelo
+ * con los números tal como se leyeron: no se deriva ninguna cantidad aquí
+ * (Python decide la del plan al confirmar). Solo con `CONTEO_REFERENCIA_V1` y
+ * una lectura confiable (>= 0,5, la barra de Python); sin eso, nada, y la línea
+ * del elemento es la de siempre.
+ */
+function conteoLeido(conteo: ReferenceBlueprintV2["elements"][number]["appearance"]["conteo"]): string {
+  if (!conteo || conteo.confianza < 0.5 || !featureEnabled("CONTEO_REFERENCIA_V1")) return "";
+  const cuenta = conteo.exacto
+    ? `${conteo.globos_visibles} globos (cuenta exacta)`
+    : conteo.estimado_total !== null
+      ? `unos ${conteo.estimado_total} globos (aproximado; ${conteo.globos_visibles} visibles)`
+      : `${conteo.globos_visibles} globos visibles (aproximado, hay ocultos)`;
+  const racimos = conteo.racimos !== null && conteo.globos_por_racimo !== null ? `, ${conteo.racimos} racimos de ${conteo.globos_por_racimo}` : "";
+  return `; conteo leído en la foto: ${cuenta}${racimos}. Si la pieza es un kit (bouquet, figura, racimo), declara unidades_declaradas con esa cantidad por pieza (sumando repeticiones); esta cuenta manda sobre el total de un armado leído. Si es una estructura geométrica no calcules globos: al confirmar, Python ajusta densidad y medidas a esa cuenta`;
+}
+
+/**
  * Serializa el blueprint de referencia (analizado por
  * /api/references/analyze) a texto compacto para el turno de chat — plan de
  * integración de referencias visuales, R2. Solo geometría/composición
@@ -220,7 +239,7 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       const estructura = semantica
         ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados (chrome/metallic = reflex, pearl = satin; "clear" junto a un color, como "clear pink", es la línea Cristal de ese color —un acabado translúcido, no un globo transparente—, y "clear" solo sí es transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
         : "";
-      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}${armadoLeido(element.appearance.armado_bouquet)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
+      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}${armadoLeido(element.appearance.armado_bouquet)}${conteoLeido(element.appearance.conteo)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
     })
     .join("\n");
   return elementos || "- Ningún elemento relevante detectado.";

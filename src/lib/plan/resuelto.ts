@@ -2,6 +2,7 @@ import type { PlanDecoracion, PlanDecoracion1_1, PropCatalogo } from "./tipos";
 import type { TipoEstructura, Ubicacion } from "./composicion";
 import type { ArmadoBouquetResuelto } from "./armado-bouquet";
 import type { ArmadoGuirnaldaResuelto } from "./armado-guirnalda";
+import type { ConteoAplicado } from "./conteo-referencia";
 import type { PatronColorResuelto } from "./patron-color";
 
 export type EstadoComercialPlan = "VERIFICADO" | "APROBACION_REQUERIDA" | "PRESUPUESTO_EXCEDIDO";
@@ -184,5 +185,7 @@ export type PlanResuelto = {
   armados_bouquet?: ArmadoBouquetResuelto[];
   /** Armado de cada guirnalda (ADR-0032), escrito por Python; la UI solo lo dibuja. */
   armados_guirnalda?: ArmadoGuirnaldaResuelto[];
+  /** Qué hizo Python con el conteo de la foto de cada estructura y por qué (ADR-0031). */
+  conteos_referencia?: ConteoAplicado[];
   advertencias: string[];
 };

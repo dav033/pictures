@@ -7234,6 +7234,280 @@
         ],
         "additionalProperties": false
       }
+    },
+    "conteos_referencia": {
+      "maxItems": 32,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "referencia_element_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "ajustado",
+              "coincide",
+              "sin_ajuste_posible",
+              "no_confiable",
+              "sin_aplicar"
+            ]
+          },
+          "lectura": {
+            "type": "object",
+            "properties": {
+              "globos_visibles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              "exacto": {
+                "type": "boolean"
+              },
+              "estimado_total": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "racimos": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "globos_por_racimo": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "por_tamano": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "clase": {
+                      "type": "string",
+                      "enum": [
+                        "chico",
+                        "mediano",
+                        "grande",
+                        "gigante"
+                      ]
+                    },
+                    "proporcion": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "clase",
+                    "proporcion"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "largo_relativo": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "referencia": {
+                        "type": "string",
+                        "enum": [
+                          "persona",
+                          "puerta",
+                          "mesa"
+                        ]
+                      },
+                      "veces": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 50
+                      }
+                    },
+                    "required": [
+                      "referencia",
+                      "veces"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "alto_relativo": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "referencia": {
+                        "type": "string",
+                        "enum": [
+                          "persona",
+                          "puerta",
+                          "mesa"
+                        ]
+                      },
+                      "veces": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 50
+                      }
+                    },
+                    "required": [
+                      "referencia",
+                      "veces"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confianza": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "globos_visibles",
+              "exacto",
+              "estimado_total",
+              "racimos",
+              "globos_por_racimo",
+              "por_tamano",
+              "largo_relativo",
+              "alto_relativo",
+              "confianza"
+            ],
+            "additionalProperties": false
+          },
+          "globos_foto": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "globos_antes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "globos_despues": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "cambios": {
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "campo": {
+                  "type": "string",
+                  "enum": [
+                    "unidades_declaradas",
+                    "densidad",
+                    "mezcla",
+                    "ancho_m",
+                    "alto_m",
+                    "largo_m"
+                  ]
+                },
+                "antes": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  ]
+                },
+                "despues": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "campo",
+                "antes",
+                "despues"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "motivo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
+        "required": [
+          "estructura_id",
+          "referencia_element_id",
+          "decision",
+          "lectura",
+          "globos_foto",
+          "globos_antes",
+          "globos_despues",
+          "cambios",
+          "motivo"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
