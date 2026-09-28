@@ -61,6 +61,34 @@ _MODOS_POR_TIPO: dict[str, tuple[str, ...]] = {
 _TIPOS_ESPIRAL_SUGERIDA = frozenset({"columna", "arco", "semiarco", "guirnalda"})
 #: La forma del armado de guirnalda que se arma simétrica desde el centro (E5).
 FORMA_GUIRNALDA_ESPEJO = "u_invertida"
+AVISO_ESPEJO_GUIRNALDA = (
+    "El patrón de la guirnalda quedó sin espejo: solo una guirnalda en U invertida se arma"
+    " simétrica desde el centro."
+)
+
+
+def quitar_espejo_sin_u(estructura: dict[str, object], armado: object) -> list[str]:
+    """Quita el espejo del patrón de una guirnalda que ya no va en U invertida (E5).
+
+    El espejo de una guirnalda depende de su armado (``patron_color``): si el
+    armado se quita o cambia de forma, el patrón en espejo ya no vale y la
+    próxima resolución lo rechazaría. Se deja el mismo patrón sin espejo, con
+    aviso; quien llama resincroniza ``participacion``. Un solo dueño para la
+    edición (``plan_edicion``) y la vista previa del armado (``plan``, revisión 5).
+    """
+    patron = estructura.get("patron_color")
+    if (
+        estructura.get("tipo") != "guirnalda"
+        or not isinstance(patron, Mapping)
+        or patron.get("simetria") != "espejo"
+        or (isinstance(armado, Mapping) and armado.get("forma") == FORMA_GUIRNALDA_ESPEJO)
+    ):
+        return []
+    estructura["patron_color"] = {
+        clave: copy.deepcopy(valor) for clave, valor in patron.items() if clave != "simetria"
+    }
+    return [AVISO_ESPEJO_GUIRNALDA]
+
 
 # Tablas ES→EN de color y acabado (owners: taxonomy/v2.ts y
 # mezcla-color-escena.ts), exportadas en plan-decoracion.v1 para que los
@@ -1964,6 +1992,8 @@ def patron_resuelto(
 
 
 __all__ = [
+    "AVISO_ESPEJO_GUIRNALDA",
+    "quitar_espejo_sin_u",
     "Conteo",
     "DIRECCIONES",
     "EstructuraPatron",

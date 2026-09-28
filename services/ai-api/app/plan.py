@@ -107,7 +107,7 @@ from app.patron_color import (
     sugerir_patron_modo,
     validar_y_expandir,
 )
-from app.patron_color import filas_de_racimos
+from app.patron_color import filas_de_racimos, quitar_espejo_sin_u
 
 
 PLAN_RESOLUTION_SCOPE = "plan.resolve"
@@ -4429,6 +4429,9 @@ def _garland_context_with(
         structures[index].pop("armado_guirnalda", None)
     else:
         structures[index]["armado_guirnalda"] = json.loads(json.dumps(armado))
+    # As the edit does: a pattern mirrored for a U does not survive another
+    # shape or the recipe (review 5), or the preview would reject the draft.
+    quitar_espejo_sin_u(structures[index], armado)
     candidate = {**dict(plan), "estructuras": structures}
     _validate_plan(candidate)
     measured = _complete_measures(candidate)
