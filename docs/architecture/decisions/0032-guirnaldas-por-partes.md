@@ -1,7 +1,8 @@
 # ADR-0032 — Guirnaldas por partes
 
-Date: 2026-09-25
-Status: accepted (E3 y E4 sin UI, detrás de banderas apagadas)
+Date: 2026-09-25 (E4 y E5: 2026-09-28)
+Status: accepted (E3, E4 y E5 sin UI; E3 y E4 detrás de banderas apagadas,
+E5 sin bandera propia: sin armado todo es byte a byte lo de antes)
 Supersedes: nothing.
 
 ## Problema
@@ -82,8 +83,8 @@ la cuerda real es más larga y la puerta física no lo veía
    vista previa del patrón: `_runs_by_demand`), racimos, relleno, remates (con
    el racimo junto al que va cada globo), sueltos, largo declarado y de cuerda,
    insumos no cotizados, duración estimada (marcada estimada), pasos, avisos y
-   `prompt_gemini` / `prompt_lora` (inglés; LoRA en ASCII, sin cifras). Las
-   frases no se insertan todavía en Uzume ni Kagutsuchi (E5).
+   `prompt_gemini` / `prompt_lora` (inglés; LoRA en ASCII, sin cifras). Desde
+   E5 llegan a Uzume y a Kagutsuchi (decisiones 10 a 12).
 8. **Vista previa sin catálogo** (`POST /internal/v1/plan/armado-guirnalda`,
    scope `plan.armado_guirnalda`, contrato local `plan-armado-guirnalda.v1`):
    resuelve el armado del editor o, con `null`, la receta, con la misma función
@@ -96,6 +97,85 @@ la cuerda real es más larga y la puerta física no lo veía
    quepa** en los globos nuevos; si no, lo quita con aviso. Quitar un color lo
    quita siempre (los índices de `materiales` se corren). Con la bandera, Next
    re-resuelve con `completar_armados_de: [pieza]` y avisa si no volvió.
+
+### Entrega E5: prompts, patrón por racimo y espejo (2026-09-28)
+
+10. **Las frases del armado entran por la misma puerta que el patrón y el
+    bouquet** (`frasesDeEstructuras`, `src/lib/ia/uzume/mezcla-color-escena.ts`):
+    Uzume las pone en la línea de color y en el `color_pattern` de la
+    guirnalda, y Kagutsuchi detrás de sus materiales, tal cual. Una guirnalda
+    con armado y patrón da **una sola frase**: la del armado y detrás la del
+    patrón (espacio en Gemini, coma en el caption LoRA). TypeScript no redacta
+    ni cuenta nada del armado: solo lee lo que Python decidió (`soporte`,
+    `forma`, `puntos_de_anclaje`, la anfitriona) para elegir sus propias frases
+    fijas. Sin `armados_guirnalda` (o con la lista vacía) cada prompt es byte a
+    byte el de antes; lo fija una instantánea capturada con los constructores
+    anteriores a E5.
+11. **La frase LoRA del armado es un modificador de la guirnalda**, no otra
+    guirnalda: "mounted flat against the wall in clusters of four with small
+    pink filler balloons and large white accent balloons". Empezaba por
+    "organic balloon garland" y el caption nombraba dos guirnaldas seguidas,
+    el mismo fallo que tuvo el bouquet (ADR-0030). No repite los colores de
+    los racimos (la cláusula ya los nombra); sí los del relleno y los remates,
+    que dicen cuál es chico y cuál grande. El descriptor se especializa por
+    soporte justo detrás de los materiales: "mounted flat against the wall",
+    "draped between two anchor points" (o "across three anchor points"),
+    "resting on the floor along the front", "running along the table edge",
+    "wrapped around the balloon arch". ASCII, sin cifras, dentro de
+    `LORA_PROMPT_MAX_LENGTH` (también en el presupuesto del híbrido) y sin
+    fugas de español.
+12. **Gemini**: cada `soporte` y `forma` lleva su frase de soporte en el
+    INSTANCE CONTRACT (`fraseSoporteGuirnalda`); antes solo la pared tenía
+    una, y sin armado sigue siendo la única. Sin patrón, la línea de color
+    conserva el reparto orgánico y el armado va detrás (el armado dice cómo
+    se arma, no dónde va cada color); con patrón, la frase del patrón lo
+    reemplaza, como sin armado. Una guirnalda `sobre_estructura` abre una
+    excepción en el contrato de cardinalidad (las dos piezas se tocan) y una
+    `mesa` cuenta en la excepción de mesa aunque su ubicación no sea una mesa.
+    En el híbrido, `GEMINI_COMPOSITION_GARLAND_LOCK` se añade al hard lock solo
+    cuando el caption llevó un armado de guirnalda; un armado sin patrón no
+    pide el candado del patrón.
+13. **Patrón por racimo** (`patron_color.py`). `EstructuraPatron` trae del
+    armado sus globos por racimo y su forma (`racimo_y_forma`). Con armado,
+    `sugerir_patron` va por los racimos del armado: espiral si los colores
+    caben en un racimo, anillos (un color por racimo, por participación) si
+    no, confeti de esos racimos si ninguno se arma; siempre con
+    `globos_por_racimo` = la unidad del armado. Antes una mezcla de varios
+    tamaños caía siempre en confeti. La unidad del armado también manda sobre
+    la de la foto y sobre el punto de partida del editor. **Cómo convive el
+    relleno**: el patrón colorea los racimos; el relleno y los remates toman
+    el color de su material (`_tomar_relleno`, `_tomar_remates`) y no ocupan
+    posiciones del patrón. El racimo `i` toma la fila `i` del patrón
+    **expandido sobre los racimos que de verdad se arman**
+    (`filas_de_racimos`), no una fila de la rejilla tomada a lo largo: con
+    T/k filas y menos racimos, unos anillos de tres colores perdían uno y el
+    espejo se rompía. La compra no cambia: el conteo por color sigue saliendo
+    de la rejilla completa (T/k filas). Si lo comprado de un color no alcanza
+    para sus racimos, esas posiciones toman el color que más quede y se avisa
+    (`fuera_de_patron`, de E3). Un patrón con globos pintados a mano conserva
+    la correspondencia de E3. Sin armado, `sugerir_patron` da exactamente lo
+    de antes y los planes sin armado se resuelven byte a byte iguales.
+14. **Espejo en una guirnalda armada en `u_invertida`**, simétrica desde el
+    centro (`_admite_espejo`, `modos_admitidos`), con su redacción: "desde
+    cada extremo hasta el centro", "from both ends up to the center, mirrored
+    on each side". En cualquier otra forma, o sin armado, `simetria_no_permitida`
+    con su propio mensaje. El espejo vive en `patron_color.py` (Python), no en
+    el contrato: el Zod de `patron-color.v1` ya admitía `simetria: "espejo"`,
+    así que no hubo cambio de contrato. Una edición que saca la guirnalda de
+    la U (otro armado, quitarlo, o una edición que lo quita porque ya no cabe)
+    deja el patrón sin espejo, con aviso, en vez de dejar un plan que la
+    resolución rechazaría. `PROMPT_VERSION` del patrón de Amaterasu no cambia.
+15. **Al confirmar el orden no cambia**: el patrón se completa en
+    `_complete_plan`, antes que la receta del armado (`_resolution_result`),
+    así que una guirnalda nueva recibe el preset de siempre (confeti con
+    varios tamaños) y la receta toma la unidad de ese patrón (cuarteto). El
+    preset por racimo aplica cuando el armado ya existe: el del decorador,
+    una re-resolución que completa patrones, la sugerencia del editor y la
+    pista de la foto. Invertir el orden no es seguro sin más: sincronizar las
+    participaciones con el patrón nuevo puede dejar sin globo grande a un
+    remate de la receta (422 al confirmar). Queda pendiente (receta → patrón
+    → receta otra vez) para la fusión con E2 y E4, que también tocan
+    `_resolution_result`.
 
 ## Reglas y sus fuentes
 
@@ -136,16 +216,29 @@ Propuestos como en ADR-0030; ninguno tiene fuente escrita del oficio en el repo
   cuerda y 55 globos en vez de 48).
 - `armado_guirnalda.py` pasa de 400 líneas (1.250, como las 1.152 de
   `armado_bouquet.py`): es un solo conjunto de reglas con un dueño; si crece
-  con E5, la redacción de frases es lo primero que se separa.
+  con E5, la redacción de frases es lo primero que se separa. (E5 solo movió
+  la frase LoRA a `_frase_lora`: 1.327 líneas.)
+- E5: sin armado ningún prompt cambia (instantánea de 16 prompts) y ningún
+  plan sin armado cambia (los mismos cinco planes resueltos antes y después).
+  Con armado cambian los prompts de imagen, y con armado y sin patrón la
+  confirmación o el editor sugieren el patrón por racimo, que cambia
+  `participacion` y, con ella, el reparto por color de la compra (no el
+  total).
+- **No se sabe si los LoRA aprendieron guirnaldas por soporte.** Ni v007 ni
+  v004 se han medido con estas frases: se mide en E7, con pago y tope
+  (`scripts/ops/generar-guirnalda-armado.ts`, vista previa por defecto).
 
 ## Entregas
 
 - **E3 (esta, hecha):** contrato, `armado_guirnalda.py`, geometría, completar
   al confirmar, vista previa, edición, bandera y cableado en Next, pruebas.
 - **E4 (hecha, 2026-09-28):** lectura de la guirnalda en la foto y ubicación
-  refinada; decisiones 10 a 13.
-- **E5 (pendiente):** frases en Uzume/Kagutsuchi, patrón por racimo (preset
-  espiral/anillos con varios tamaños) y espejo en `u_invertida`.
+  refinada; decisiones 16 a 19.
+- **E5 (hecha, 2026-09-28, rama `feat/guirnaldas-e5`):** frases en
+  Uzume/Kagutsuchi y en el candado del híbrido, patrón por racimo (preset
+  espiral/anillos con la unidad del armado, `filas_de_racimos`) y espejo en
+  `u_invertida` (decisiones 10 a 15). Fusionada con E4 y E2 en
+  `feat/guirnaldas`, donde se cerró el orden al confirmar (decisión 20).
 - **E6 (pendiente):** UI (bloque, gráfica sobre la forma, editor, hoja) y la
   ruta de Next de la vista previa.
 
@@ -153,7 +246,7 @@ Propuestos como en ADR-0030; ninguno tiene fuente escrita del oficio en el repo
 
 Sigue la frontera de las anteriores: Amaterasu describe, Python arma.
 
-10. **Lectura `lectura-guirnalda`** (`POST /internal/v1/ia/guirnalda-referencia`,
+16. **Lectura `lectura-guirnalda`** (`POST /internal/v1/ia/guirnalda-referencia`,
     scope `ia.guirnalda_referencia`, bandera `GUIRNALDA_REFERENCIA_PYTHON_ENABLED`,
     default OFF): una llamada de visión por foto con guirnaldas, en paralelo
     con las lecturas del patrón, del bouquet y del conteo, con la misma
@@ -171,7 +264,7 @@ Sigue la frontera de las anteriores: Amaterasu describe, Python arma.
     colgada puede salir del reconocedor como arco, §5 del seguimiento): una
     pieza que no es guirnalda vuelve con confianza 0; una lectura de un
     elemento que el plan hace arco nunca se usa.
-11. **La lectura da la distribución, nunca la cantidad.** No trae caída (los
+17. **La lectura da la distribución, nunca la cantidad.** No trae caída (los
     metros no se leen en una foto y la caída cambiaría el conteo, que es de
     ADR-0031); `racimos_visibles` y `colores_por_racimo` solo informan (el color
     de cada racimo es del patrón, E5). Al confirmar, con `GUIRNALDAS_ARMADO_V1`,
@@ -185,10 +278,10 @@ Sigue la frontera de las anteriores: Amaterasu describe, Python arma.
     burbuja no se usa (la guirnalda solo compra látex). Si el relleno o los
     remates leídos no caben en lo que se compra, se conserva la forma leída con
     los de la receta; si ni eso, la receta. El total en COP no cambia.
-12. **`pistas_guirnalda` no tiene un segundo modelo en Python:** el campo de
+18. **`pistas_guirnalda` no tiene un segundo modelo en Python:** el campo de
     `plan-resolution.v1` se valida contra el contrato exportado (`PistaGuirnaldaSchema`),
     no contra un Pydantic escrito a mano.
-13. **Ubicación de las guirnaldas** (`refinarPlacementGuirnalda` y
+19. **Ubicación de las guirnaldas** (`refinarPlacementGuirnalda` y
     `reubicarGuirnaldas`, junto a `placementFor` en
     `src/lib/ia/referencia/reference-structure.ts`): con la lectura encendida,
     después de las lecturas, la ubicación de cada guirnalda se refina. Con
@@ -211,7 +304,14 @@ tope de gasto). `reference-blueprint.v2` gana un campo opcional y
 
 ## Rollback
 
-Apagar `GUIRNALDA_REFERENCIA_PYTHON_ENABLED` y `GUIRNALDAS_ARMADO_V1`. Para quitar el código: revertir los commits; los
+Apagar `GUIRNALDA_REFERENCIA_PYTHON_ENABLED` deja de leer las guirnaldas en la
+foto. E5 no tiene bandera propia: todo depende de que la guirnalda traiga armado.
+Apagar `GUIRNALDAS_ARMADO_V1` deja de completar armados al confirmar; un
+armado puesto a mano en el editor sigue llegando a los prompts. Revertir los
+commits de E5 la quita del todo (un patrón con espejo sobre una guirnalda en U
+lo rechazaría la revisión anterior: se despliegan juntos app y `ai-api`).
+
+Para quitar el código: revertir los commits; los
 planes que ya traen `armado_guirnalda` los rechazaría la revisión anterior
 (`additionalProperties: false`), como en ADR-0028 y ADR-0030: app y `ai-api`
 se despliegan juntos.

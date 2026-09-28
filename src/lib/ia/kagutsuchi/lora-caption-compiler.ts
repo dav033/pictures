@@ -4,7 +4,7 @@ import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
 import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { armadoDeElemento, frasePatronColor, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
+import { armadoDeElemento, armadoGuirnaldaDeElemento, frasePatronColor, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
 
@@ -139,6 +139,13 @@ export type LoraVisualClause = {
    * without an assembly keeps its clauses byte for byte.
    */
   armadoBouquet?: { grupos: number };
+  /**
+   * Present when `colorPattern` is (or starts with) the `prompt_lora` of a
+   * garland assembly (ADR-0032, E5): its support and shape, and whether the
+   * phrase also carries a color pattern. The route reads it to pick the hybrid
+   * stage-2 locks; the clause text is the phrase, verbatim. Absent otherwise.
+   */
+  armadoGuirnalda?: ArmadoGuirnaldaEnPrompt;
 };
 
 export type LoraCaptionCompilation = {
@@ -173,6 +180,8 @@ type SemanticElement = {
   colorPattern?: string;
   /** Set when that `prompt_lora` is a bouquet assembly (ADR-0030). */
   armadoBouquet?: { grupos: number };
+  /** Set when that `prompt_lora` is a garland assembly (ADR-0032). */
+  armadoGuirnalda?: ArmadoGuirnaldaEnPrompt;
 };
 
 const STRUCTURE_NOUNS: Record<CaptionStructureType, string> = {
@@ -640,6 +649,7 @@ function createClause(
     // Shared by every item: the pattern is part of the grouping key.
     ...(first.colorPattern ? { colorPattern: first.colorPattern } : {}),
     ...(first.colorPattern && first.armadoBouquet ? { armadoBouquet: first.armadoBouquet } : {}),
+    ...(first.colorPattern && first.armadoGuirnalda ? { armadoGuirnalda: first.armadoGuirnalda } : {}),
   };
 }
 
@@ -1155,6 +1165,7 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
     ...semanticFor(element, index, sceneSpec, officialStructures?.get(element.element_id) ?? officialStructures?.get(element.element_id.split("#")[0]!)),
     colorPattern: frasePatronColor(colorPatterns, element, "prompt_lora"),
     armadoBouquet: armadoDeElemento(colorPatterns, element),
+    armadoGuirnalda: armadoGuirnaldaDeElemento(colorPatterns, element),
   }));
   const used = new Set<string>();
   const clauses: LoraVisualClause[] = [];
@@ -1353,10 +1364,11 @@ export function compileLoraCaption(input: {
   /** Plain English styling cues of the creativity level (creatividad.ts); dropped first when compacting. */
   creativeCues?: readonly string[];
   /**
-   * `plan_resuelto.patrones_color` and `armados_bouquet` as Python wrote them
-   * (ADR-0028 §12, ADR-0030; `frasesDeEstructuras`). Only the `prompt_lora`
-   * of an applied phrase is inserted, verbatim; the compiler never words,
-   * expands or counts a pattern or an assembly. Absent: the legacy caption.
+   * `plan_resuelto.patrones_color`, `armados_bouquet` and `armados_guirnalda`
+   * as Python wrote them (ADR-0028 §12, ADR-0030, ADR-0032;
+   * `frasesDeEstructuras`). Only the `prompt_lora` of an applied phrase is
+   * inserted, verbatim; the compiler never words, expands or counts a pattern
+   * or an assembly. Absent: the legacy caption.
    */
   colorPatterns?: readonly FraseDeEstructura[];
 }): LoraCaptionCompilation {

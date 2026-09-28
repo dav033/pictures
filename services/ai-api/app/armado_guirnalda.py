@@ -38,8 +38,8 @@ from __future__ import annotations
 
 import math
 import unicodedata
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal
 from fractions import Fraction
 from typing import cast
@@ -181,6 +181,12 @@ class EstructuraGuirnalda:
     otras: tuple[OtraEstructura, ...] = ()
     #: Filas de la rejilla del patrón de color (material por posición), si tiene patrón.
     filas_patron: tuple[tuple[int, ...], ...] | None = None
+    #: El patrón expandido sobre ``n`` racimos seguidos (``patron_color.filas_de_racimos``,
+    #: E5): el racimo ``i`` toma la fila ``i``. ``None`` (o si devuelve ``None``): las
+    #: filas de ``filas_patron`` tomadas a lo largo.
+    filas_de_racimos: Callable[[int], tuple[tuple[int, ...], ...] | None] | None = field(
+        default=None, compare=False, repr=False
+    )
 
     @property
     def total(self) -> int:
@@ -460,10 +466,11 @@ def _racimos(
 
     Cada material lleva su propia fila de tamaños repartidos a lo largo. Sin
     patrón, los colores se reparten parejo por toda la guirnalda; con patrón,
-    el racimo ``i`` toma los colores de la fila de la rejilla que le
-    corresponde a lo largo (la fila ``i`` cuando hay tantos racimos como filas).
-    Si a un color ya no le quedan globos, la posición toma el color que más
-    tenga (y se cuenta en ``fuera_de_patron``).
+    el racimo ``i`` toma los colores de la fila ``i`` del patrón expandido
+    sobre los racimos que de verdad se arman (``filas_de_racimos``, E5), o, si
+    no se puede, de la fila de la rejilla que le corresponde a lo largo. Si a
+    un color ya no le quedan globos, la posición toma el color que más tenga
+    (y se cuenta en ``fuera_de_patron``).
     """
     globos = estructura.globos
     pool = sum(restantes)
@@ -475,7 +482,18 @@ def _racimos(
         ]
         por_material[material] = _esparcir([(i, c) for i, c in cuentas if c > 0])
     filas = estructura.filas_patron
-    if filas:
+    por_racimo = (
+        estructura.filas_de_racimos(cantidad)
+        if filas and estructura.filas_de_racimos is not None
+        else None
+    )
+    if (
+        por_racimo is not None
+        and len(por_racimo) == cantidad
+        and all(len(fila) == k for fila in por_racimo)
+    ):
+        deseados = [material for fila in por_racimo for material in fila]
+    elif filas:
         deseados = [
             material
             for i in range(cantidad)
@@ -549,6 +567,22 @@ def _repartir(estructura: EstructuraGuirnalda, armado: Mapping[str, object]) -> 
 def validar(estructura: EstructuraGuirnalda, armado: Mapping[str, object]) -> None:
     """Valida el armado contra la guirnalda y lo que compra. ``ArmadoInvalido`` si no."""
     _repartir(estructura, armado)
+
+
+def racimo_y_forma(armado: object) -> tuple[int | None, str | None]:
+    """Lo que el patrón de color lee de un armado (E5): globos por racimo y forma.
+
+    ``(None, None)`` sin armado. No valida: lo que no se reconoce es ``None``.
+    """
+    if not isinstance(armado, Mapping):
+        return None, None
+    racimo = armado.get("racimo")
+    unidad = racimo.get("unidad") if isinstance(racimo, Mapping) else None
+    forma = armado.get("forma")
+    return (
+        GLOBOS_POR_UNIDAD.get(unidad) if isinstance(unidad, str) else None,
+        forma if isinstance(forma, str) else None,
+    )
 
 
 # --- Sugerencia (receta o lectura de la foto) ----------------------------------------------
@@ -1067,36 +1101,71 @@ def _frases_prompt(
         " continuous organic piece with no gaps."
     )
 
-    soporte_lora = {
-        "pared": "mounted flat against the wall",
-        "colgada": "draped between anchor points",
-        "piso": "resting on the floor",
-        "mesa": "running along the table edge",
-        "sobre_estructura": f"wrapped around the {anfitriona_en}",
-    }[soporte]
-    forma_lora = {
-        "recta": "",
-        "curva": " in a gentle curve",
-        "ondulada": " in a soft wave",
-        "arco_caido": " dipping in swags",
-        "u_invertida": " shaped as an inverted U",
-    }[forma]
-    if soporte == "sobre_estructura":
-        forma_lora = ""
-    lora = (
-        f"organic balloon garland {soporte_lora}{forma_lora} built from clusters of"
-        f" {_UNIDAD_EN[unidad][2]} {_colores_lora([color(m, lora=True) for m in materiales])}"
-        " balloons"
-    )
+    extras_lora: list[str] = []
     if relleno_materiales:
-        lora += (
-            f" with small {_colores_lora([color(m, lora=True) for m in relleno_materiales])}"
+        extras_lora.append(
+            f"small {_colores_lora([color(m, lora=True) for m in relleno_materiales])}"
             " filler balloons"
         )
     if reparto.remates:
         grandes = list(dict.fromkeys(color(r.material, lora=True) for r in reparto.remates))
-        lora += f" and large {_colores_lora(grandes)} accent balloons"
-    return " ".join(frases), _ascii_sin_cifras(lora)
+        extras_lora.append(f"large {_colores_lora(grandes)} accent balloons")
+    anclajes = int(cast(int, puntos)) if puntos is not None else None
+    return " ".join(frases), _frase_lora(
+        soporte, forma, anclajes, anfitriona_en, unidad, extras_lora
+    )
+
+
+def _frase_lora(
+    soporte: str,
+    forma: str,
+    anclajes: int | None,
+    anfitriona_en: str,
+    unidad: str,
+    extras: Sequence[str],
+) -> str:
+    """Fragmento LoRA del armado: un modificador de la guirnalda, nunca otra guirnalda (E5).
+
+    El compilador del caption ya escribe "an organic balloon garland" con sus
+    materiales (y sus colores) y pone esta frase detrás, tal cual, como la del
+    patrón de color. Empezar por el sustantivo nombraba dos guirnaldas
+    seguidas, el mismo fallo que tuvo el bouquet. Lleva el soporte ("draped
+    between two anchor points", "resting on the floor along the front",
+    "running along the table edge", "wrapped around the balloon arch",
+    "mounted flat against the wall"), la forma, la unidad del racimo y, con sus
+    colores, el relleno y los remates. ASCII y sin cifras (ADR-0028 §8): el
+    número de anclajes va en palabras.
+    """
+    if soporte == "colgada":
+        puntos = anclajes if anclajes is not None else 2
+        soporte_lora = (
+            "draped between two anchor points"
+            if puntos == 2
+            else f"draped across {_DIGITOS_EN[puntos]} anchor points"
+        )
+    else:
+        soporte_lora = {
+            "pared": "mounted flat against the wall",
+            "piso": "resting on the floor along the front",
+            "mesa": "running along the table edge",
+            "sobre_estructura": f"wrapped around the {anfitriona_en}",
+        }[soporte]
+    # Sobre otra pieza la guirnalda sigue la forma de su anfitriona.
+    forma_lora = (
+        ""
+        if soporte == "sobre_estructura"
+        else {
+            "recta": "",
+            "curva": " in a gentle curve",
+            "ondulada": " in a soft wave",
+            "arco_caido": " dipping in swags",
+            "u_invertida": " shaped as an inverted U",
+        }[forma]
+    )
+    lora = f"{soporte_lora}{forma_lora} in clusters of {_UNIDAD_EN[unidad][2]}"
+    if extras:
+        lora += " with " + " and ".join(extras)
+    return _ascii_sin_cifras(lora)
 
 
 def armado_resuelto(
@@ -1297,6 +1366,7 @@ __all__ = [
     "VERSION_ARMADO",
     "armado_resuelto",
     "opciones_admitidas",
+    "racimo_y_forma",
     "sugerir_armado",
     "validar",
 ]

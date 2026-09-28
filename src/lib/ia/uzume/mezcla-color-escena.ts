@@ -1,6 +1,7 @@
 import { porcentajesMayorResto } from "../escena/tamano-fisico";
 import type { SceneSpec } from "../escena/scene-spec";
 import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
+import type { ArmadoGuirnaldaResuelto, FormaGuirnalda, SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 
 /**
@@ -82,9 +83,26 @@ export function frasePatronColor(
 }
 
 /**
+ * Lo que el prompt lee del armado de una guirnalda (ADR-0032), tal como lo
+ * decidió Python: sobre qué va, qué forma toma, de cuántos puntos cuelga y
+ * sobre qué pieza va abrazada. Solo elige frases fijas del prompt (soporte,
+ * forma, candados); nunca redacta ni cuenta el armado.
+ */
+export type ArmadoGuirnaldaEnPrompt = {
+  soporte: SoporteGuirnalda;
+  forma: FormaGuirnalda;
+  puntos_de_anclaje?: number;
+  /** Con `soporte: "sobre_estructura"`: la pieza del plan sobre la que va. */
+  anfitriona?: string;
+  /** La frase de la estructura lleva además su patrón de color (no confeti). */
+  conPatron: boolean;
+};
+
+/**
  * Lo que los constructores de prompts leen de un patrón de color o de un
- * armado de bouquet: a qué estructura pertenece, si está en el plan y las dos
- * frases que escribió Python. Un `PatronColorResuelto` lo cumple tal cual.
+ * armado de bouquet o de guirnalda: a qué estructura pertenece, si está en el
+ * plan y las dos frases que escribió Python. Un `PatronColorResuelto` lo cumple
+ * tal cual.
  */
 export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "aplicado" | "prompt_gemini" | "prompt_lora"> & {
   /**
@@ -94,19 +112,38 @@ export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "apl
    * para redactar el armado. Un patrón de color no lo lleva.
    */
   armado?: { grupos: number };
+  /** Solo en la frase de una guirnalda con armado (ADR-0032, E5). */
+  guirnalda?: ArmadoGuirnaldaEnPrompt;
 };
 
 /**
+ * Une la frase del armado de una guirnalda con la de su patrón, cuando lo
+ * tiene: el armado dice cómo se arma y el patrón de qué color va cada globo
+ * (los dos de Python, tal cual). Primero el armado, luego el patrón.
+ */
+function unirFrases(armado: string, patron: string | undefined, separador: string): string {
+  const conPatron = patron?.trim();
+  return conPatron ? `${armado.trim()}${separador}${conPatron}` : armado.trim();
+}
+
+/**
  * Las frases por estructura de un plan resuelto: sus patrones de color
- * (ADR-0028 §12) y sus armados de bouquet (ADR-0030), que siempre son del
- * plan (`aplicado: true`). `undefined` cuando el plan no trae ninguno de los
- * dos, para que la petición de siempre siga byte a byte igual.
+ * (ADR-0028 §12), sus armados de bouquet (ADR-0030) y sus armados de
+ * guirnalda (ADR-0032), que siempre son del plan (`aplicado: true`). Una
+ * guirnalda con armado y patrón da una sola frase: la del armado seguida de la
+ * del patrón (en Gemini con un espacio, en el caption LoRA con una coma), que
+ * reemplaza a la del patrón solo. `undefined` cuando el plan no trae ninguno,
+ * para que la petición de siempre siga byte a byte igual.
  */
 export function frasesDeEstructuras(
-  plan: { patrones_color?: readonly PatronColorResuelto[]; armados_bouquet?: readonly ArmadoBouquetResuelto[] } | null | undefined,
+  plan: {
+    patrones_color?: readonly PatronColorResuelto[];
+    armados_bouquet?: readonly ArmadoBouquetResuelto[];
+    armados_guirnalda?: readonly ArmadoGuirnaldaResuelto[];
+  } | null | undefined,
 ): FraseDeEstructura[] | undefined {
-  if (!plan || (plan.patrones_color === undefined && plan.armados_bouquet === undefined)) return undefined;
-  return [
+  if (!plan || (plan.patrones_color === undefined && plan.armados_bouquet === undefined && plan.armados_guirnalda === undefined)) return undefined;
+  const frases: FraseDeEstructura[] = [
     ...(plan.patrones_color ?? []),
     ...(plan.armados_bouquet ?? []).map((armado) => ({
       estructura_id: armado.estructura_id,
@@ -116,6 +153,40 @@ export function frasesDeEstructuras(
       armado: { grupos: armado.grupos },
     })),
   ];
+  for (const armado of plan.armados_guirnalda ?? []) {
+    const indice = frases.findIndex((frase) => frase.aplicado && frase.estructura_id === armado.estructura_id && !frase.armado);
+    const patron = indice >= 0 ? frases[indice] : undefined;
+    const entrada: FraseDeEstructura = {
+      estructura_id: armado.estructura_id,
+      aplicado: true,
+      prompt_gemini: unirFrases(armado.prompt_gemini, patron?.prompt_gemini, " "),
+      prompt_lora: unirFrases(armado.prompt_lora, patron?.prompt_lora, ", "),
+      guirnalda: {
+        soporte: armado.armado.soporte,
+        forma: armado.armado.forma,
+        ...(armado.armado.puntos_de_anclaje === undefined ? {} : { puntos_de_anclaje: armado.armado.puntos_de_anclaje }),
+        ...(armado.armado.estructura_id === undefined ? {} : { anfitriona: armado.armado.estructura_id }),
+        conPatron: Boolean(patron?.prompt_gemini.trim() || patron?.prompt_lora.trim()),
+      },
+    };
+    if (indice >= 0) frases[indice] = entrada;
+    else frases.push(entrada);
+  }
+  return frases;
+}
+
+/**
+ * El armado de guirnalda de la estructura del elemento (sus instancias
+ * repetidas incluidas), cuando su frase aplicada es la de un armado de
+ * guirnalda. `undefined` sin él: el prompt no cambia.
+ */
+export function armadoGuirnaldaDeElemento(
+  frases: readonly FraseDeEstructura[] | undefined,
+  element: SceneSpec["elements"][number],
+): ArmadoGuirnaldaEnPrompt | undefined {
+  if (!frases?.length) return undefined;
+  const estructura = idDeEstructura(element);
+  return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura && frase.guirnalda)?.guirnalda;
 }
 
 /**

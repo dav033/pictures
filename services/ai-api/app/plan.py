@@ -38,9 +38,10 @@ import math
 import os
 import re
 import unicodedata
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from functools import partial
 from math import isfinite
 from typing import Literal, Protocol, cast
 from urllib.parse import urlparse
@@ -79,6 +80,7 @@ from app.armado_guirnalda import (
 )
 from app.armado_guirnalda import armado_resuelto as armado_guirnalda_resuelto
 from app.armado_guirnalda import opciones_admitidas as opciones_armado_guirnalda
+from app.armado_guirnalda import racimo_y_forma as racimo_y_forma_de_armado
 from app.armado_guirnalda import sugerir_armado as sugerir_armado_guirnalda
 from app.catalog import purchase_color_for_unsold
 from app import conteo_foto
@@ -101,6 +103,7 @@ from app.patron_color import (
     sugerir_patron_modo,
     validar_y_expandir,
 )
+from app.patron_color import filas_de_racimos
 
 
 PLAN_RESOLUTION_SCOPE = "plan.resolve"
@@ -687,6 +690,11 @@ def _pattern_context(
         _axis, total, proportions, _unplaced = _structure_count(plan, structure)
         single_size = len(proportions) == 1
     measures = _mapping(structure.get("medidas"))
+    # A garland built by clusters (ADR-0032, E5): the pattern reads the unit and
+    # the shape of its assembly (preset by cluster, mirror in an inverted U).
+    cluster, shape = racimo_y_forma_de_armado(
+        structure.get("armado_guirnalda") if _is_garland(structure) else None
+    )
     return EstructuraPatron(
         estructura_id=_text(structure.get("estructura_id")) or "",
         tipo=tipo,
@@ -703,6 +711,8 @@ def _pattern_context(
             )
             for material in _mappings(structure.get("materiales"))
         ),
+        racimo_armado=cluster,
+        forma_armado=shape,
     )
 
 
@@ -3992,6 +4002,7 @@ def _garland_context(
     balloons: list[GloboGuirnalda] = []
     cord = length
     rows: tuple[tuple[int, ...], ...] | None = None
+    rows_by_cluster: Callable[[int], tuple[tuple[int, ...], ...] | None] | None = None
     if garland:
         armado = structure.get("armado_guirnalda")
         cord = _eje(
@@ -4020,9 +4031,13 @@ def _garland_context(
                 )
             )
         if structure.get("patron_color") is not None:
-            _context, expansion = _expand_pattern(plan, structure)
+            pattern_context, expansion = _expand_pattern(plan, structure)
             if expansion.geometria == "racimos":
                 rows = expansion.celdas
+                # E5: the pattern laid over the clusters actually built.
+                rows_by_cluster = partial(
+                    filas_de_racimos, pattern_context, _mapping(structure.get("patron_color"))
+                )
     return EstructuraGuirnalda(
         estructura_id=structure_id,
         nombre=_text(structure.get("nombre")) or structure_id,
@@ -4053,6 +4068,7 @@ def _garland_context(
             if _text(other.get("estructura_id")) != structure_id
         ),
         filas_patron=rows,
+        filas_de_racimos=rows_by_cluster,
     )
 
 
