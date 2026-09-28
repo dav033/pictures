@@ -19,6 +19,7 @@ from app.conteo_foto import (
     Cuenta,
     Opcion,
     clase_de_diametro,
+    clases_desde_por_tamano,
     cuenta_usable,
     elegir_opcion,
     medidas_desde_referencia,
@@ -27,8 +28,18 @@ from app.conteo_foto import (
     total_kit_con_armado,
     total_kit_sin_armado,
 )
+from app.armado_bouquet import total_leido
 from app.plan import _MIXES, resolve_plan
-from tests.test_plan_armado import _bouquet, _plan as _plan_bouquet, _resolve as _resolver_bouquet
+from tests.test_plan_armado import (
+    ROWS,
+    ROWS_CON_R18,
+    _bouquet,
+    _bouquet_dos_tamanos,
+    _pista_dos_tamanos,
+    _row,
+)
+from tests.test_plan_armado import _plan as _plan_bouquet
+from tests.test_plan_armado import _resolve as _resolver_bouquet
 from tests.test_plan_patron import (
     ESPIRAL,
     FakePlanStore as CatalogoGeometrico,
@@ -87,44 +98,39 @@ def test_kit_sin_armado() -> None:
 # --- Reescalar la lectura del armado ------------------------------------------------
 
 
-def _globos(lectura: Mapping[str, object]) -> int:
-    unidades = {"suelto": 1, "pareja": 2, "trio": 3, "cuarteto": 4, "quinteto": 5, "sexteto": 6}
-    total = 0
-    for nivel in cast(list[dict[str, object]], lectura["niveles"]):
-        colores = cast(list[str], nivel["colores"])
-        total += len(colores) if nivel["unidad"] == "suelto" else unidades[str(nivel["unidad"])]
-    return total
-
-
-def test_reescalar_conserva_unidades_y_colores_y_deja_el_sobrante_suelto() -> None:
+def test_reescalar_ajusta_la_cantidad_de_cada_nivel_y_deja_el_sobrante_suelto() -> None:
     lectura = {
         "referencia_element_id": "REF_01_E01",
         "variante": "base_aire",
         "niveles": [
             {"unidad": "cuarteto", "colores": ["blanco", "blanco", "rosado", "rosado"]},
-            {"unidad": "trio", "colores": ["rosado", "blanco", "rosado"]},
+            {"unidad": "trio", "colores": ["rosado", "blanco", "rosado"], "clase_tamano": "grande"},
         ],
         "remate": {"clase": "metalizado", "color": "dorado"},
         "confianza": 0.9,
     }
     nueva = reescalar_lectura_armado(lectura, 29)
-    assert nueva is not None and _globos(nueva) == 29
-    niveles = cast(list[dict[str, object]], nueva["niveles"])
-    cuartetos = [n for n in niveles if n["unidad"] == "cuarteto"]
-    trios = [n for n in niveles if n["unidad"] == "trio"]
-    sueltos = [n for n in niveles if n["unidad"] == "suelto"]
-    assert all(n["colores"] == ["blanco", "blanco", "rosado", "rosado"] for n in cuartetos)
-    assert all(n["colores"] == ["rosado", "blanco", "rosado"] for n in trios)
+    assert nueva is not None
+    # El dueño de la cuenta de la lectura dice 29 látex más el remate.
+    assert total_leido(nueva) == 30
     # 4:3 → 29 globos: 4 cuartetos (16) y 4 tríos (12); sobra 1, que va suelto.
-    assert (len(cuartetos), len(trios)) == (4, 4)
-    assert [n["colores"] for n in sueltos] == [["blanco"]]
+    assert nueva["niveles"] == [
+        {"unidad": "cuarteto", "colores": ["blanco", "blanco", "rosado", "rosado"], "cantidad": 4},
+        {
+            "unidad": "trio",
+            "colores": ["rosado", "blanco", "rosado"],
+            "clase_tamano": "grande",
+            "cantidad": 4,
+        },
+        {"unidad": "suelto", "colores": ["blanco"], "cantidad": 1},
+    ]
     # Remate, variante y confianza no cambian.
     assert {k: nueva[k] for k in ("remate", "variante", "confianza")} == {
         k: lectura[k] for k in ("remate", "variante", "confianza")
     }
 
 
-def test_reescalar_empata_a_favor_del_primer_nivel_y_entiende_cantidad() -> None:
+def test_reescalar_empata_a_favor_de_la_base_y_parte_en_tramos_el_tope() -> None:
     lectura = {
         "variante": "base_aire",
         "niveles": [
@@ -135,13 +141,44 @@ def test_reescalar_empata_a_favor_del_primer_nivel_y_entiende_cantidad() -> None
     }
     nueva = reescalar_lectura_armado(lectura, 20)
     assert nueva is not None
-    niveles = cast(list[dict[str, object]], nueva["niveles"])
-    # 16 → 20: 2,5 cuartetos cada uno; el cuarteto de sobra va a la base.
-    assert [n["colores"] for n in niveles].count(["a", "b", "a", "b"]) == 3
-    assert [n["colores"] for n in niveles].count(["c", "c", "c", "c"]) == 2
-    assert all("cantidad" not in n for n in niveles), "cada copia cuenta como una unidad"
+    # 16 → 20: 2,5 cuartetos cada uno; el cuarteto de sobra va a la base (el primero).
+    assert [n["cantidad"] for n in cast(list[dict[str, object]], nueva["niveles"])] == [3, 2]
+    grande = reescalar_lectura_armado(lectura, 200)
+    assert grande is not None
+    # 25 cuartetos por nivel: tramos de a lo sumo 24 unidades, que el armado junta hasta el tope.
+    assert [n["cantidad"] for n in cast(list[dict[str, object]], grande["niveles"])] == [
+        24,
+        1,
+        24,
+        1,
+    ]
+    assert total_leido(grande) == 200
     assert reescalar_lectura_armado({"niveles": []}, 10) is None
     assert reescalar_lectura_armado({"niveles": [{"unidad": "trio", "colores": []}]}, 10) is None
+
+
+def test_la_clase_de_tamano_sale_del_reparto_del_conteo_solo_donde_falta() -> None:
+    lectura = {
+        "niveles": [
+            {
+                "unidad": "cuarteto",
+                "colores": ["blanco", "rosado", "blanco", "rosado"],
+                "cantidad": 3,
+            },
+            {"unidad": "suelto", "colores": ["blanco"], "cantidad": 4},
+            {"unidad": "suelto", "colores": ["dorado"], "clase_tamano": "chico"},
+        ],
+    }
+    reparto = [{"clase": "mediano", "proporcion": 0.75}, {"clase": "grande", "proporcion": 0.25}]
+    con_clases = clases_desde_por_tamano(lectura, reparto)
+    assert [
+        n.get("clase_tamano") for n in cast(list[dict[str, object]], con_clases["niveles"])
+    ] == [
+        "mediano",
+        "grande",
+        "chico",
+    ]
+    assert clases_desde_por_tamano(lectura, []) == lectura
 
 
 # --- Geométricas: mezcla, escala, elección -------------------------------------------
@@ -375,6 +412,182 @@ def test_una_pista_fuera_de_contrato_se_rechaza() -> None:
             {"estructuras": [], "plan_version": "1.0"},
             pistas_conteo=[_conteo(por_tamano=[{"clase": "enorme", "proporcion": 1}])],
         )
+
+
+# --- El bouquet del 11 (SEGUIMIENTO-bouquets.md §14) con la lectura v2 ---------------
+
+ROWS_NUMEROS = [
+    *ROWS,
+    _row(
+        "num3-dorado",
+        "B2b Globo Metalizado Numero 3 Dorado",
+        "34 IN",
+        forma=None,
+        diam=None,
+        codigo="34 IN",
+    ),
+    _row(
+        "num5-dorado",
+        "B2b Globo Metalizado Numero 5 Dorado",
+        "34 IN",
+        forma=None,
+        diam=None,
+        codigo="34 IN",
+    ),
+]
+
+
+def _bouquet_con_numeros() -> dict[str, object]:
+    base = _bouquet(unidades_declaradas=11)
+    materiales = cast(list[dict[str, object]], base["materiales"])
+    numeros = [
+        {
+            "product_id": f"prod-num{digito}-dorado",
+            "variant_id": f"var-num{digito}-dorado",
+            "color": "dorado",
+            "participacion": 0.1,
+            "rol_material": "secundario",
+        }
+        for digito in (3, 5)
+    ]
+    partes = (0.35, 0.35, 0.1)
+    return {
+        **base,
+        "materiales": [
+            *({**m, "participacion": parte} for m, parte in zip(materiales, partes, strict=True)),
+            *numeros,
+        ],
+    }
+
+
+def _lectura_once(**nivel: object) -> dict[str, object]:
+    cuarteto = {"unidad": "cuarteto", "colores": ["blanco", "rosado", "blanco", "rosado"], **nivel}
+    return {
+        "referencia_element_id": "REF_01_E01",
+        "variante": "base_aire",
+        "niveles": [cuarteto, dict(cuarteto)],
+        "remate": {"clase": "metalizado", "color": "dorado"},
+        "numeros": [
+            {"digito": "3", "clase_tamano": "grande"},
+            {"digito": "5", "clase_tamano": "grande"},
+        ],
+        "disposicion": "centro",
+        "confianza": 0.85,
+    }
+
+
+@pytest.mark.anyio
+async def test_el_bouquet_del_11_con_conteo_sube_a_unos_35_por_cantidad() -> None:
+    # Lectura v1: dos cuartetos sin cantidad (8) + corona + 3 y 5 = 11. El conteo estima 35.
+    resolved = await _resolver_bouquet(
+        _plan_bouquet(_bouquet_con_numeros()),
+        ROWS_NUMEROS,
+        completar_armados=True,
+        pistas_armado=[_lectura_once()],
+        completar_conteos=True,
+        pistas_conteo=[_conteo(globos_visibles=26, estimado_total=35)],
+    )
+    estructura = _estructura(resolved)
+    assert estructura["unidades_declaradas"] == 35
+    armado = cast(dict[str, object], estructura["armado_bouquet"])
+    # 32 látex: los dos niveles leídos pasan de 1 a 4 cuartetos (posiciones intactas).
+    assert armado["niveles"] == [
+        {"rol": "base", "unidad": "cuarteto", "cantidad": 8, "posiciones": [0, 1, 0, 1]}
+    ]
+    assert cast(dict[str, object], armado["numero"])["digitos"] == [3, 4]
+    lineas = {
+        str(linea["variant_id"]): cast(int, linea["unidades"])
+        for linea in cast(
+            list[dict[str, object]],
+            cast(list[dict[str, object]], resolved["estructuras"])[0]["lineas"],
+        )
+    }
+    assert lineas == {
+        "var-r12-blanco": 16,
+        "var-r12-rosado": 16,
+        "var-foil-dorado": 1,
+        "var-num3-dorado": 1,
+        "var-num5-dorado": 1,
+    }
+    assert [s for s in _supuestos(resolved) if "Bouquet de globos" in s] == [
+        "Bouquet de globos: la foto muestra unos 35 globos; el armado leído tenía 11: la cantidad "
+        "quedó en 35 (el plan decía 11)."
+    ]
+
+
+@pytest.mark.anyio
+async def test_la_lectura_con_cantidad_coincide_con_el_conteo_y_se_queda_el_armado() -> None:
+    # Lectura v2: 4 cuartetos por nivel (32) + corona + 3 y 5 = 35; el conteo estima 36.
+    resolved = await _resolver_bouquet(
+        _plan_bouquet(_bouquet_con_numeros()),
+        ROWS_NUMEROS,
+        completar_armados=True,
+        pistas_armado=[_lectura_once(cantidad=4)],
+        completar_conteos=True,
+        pistas_conteo=[_conteo(globos_visibles=26, estimado_total=36)],
+    )
+    assert _estructura(resolved)["unidades_declaradas"] == 35
+    [conteo] = _conteos(resolved)
+    assert (conteo["decision"], conteo["globos_despues"], conteo["cambios"]) == ("coincide", 35, [])
+    # El único ajuste de cantidad es el del armado leído (ADR-0030), sin supuesto del conteo.
+    assert not any("el armado leído tenía" in s for s in _supuestos(resolved))
+
+
+@pytest.mark.anyio
+async def test_los_tamanos_salen_del_reparto_del_conteo_si_la_lectura_no_los_dice() -> None:
+    reparto = [{"clase": "mediano", "proporcion": 0.75}, {"clase": "grande", "proporcion": 0.25}]
+    resolved = await _resolver_bouquet(
+        _plan_bouquet(_bouquet_dos_tamanos()),
+        ROWS_CON_R18,
+        completar_armados=True,
+        pistas_armado=[_pista_dos_tamanos()],
+        completar_conteos=True,
+        pistas_conteo=[_conteo(globos_visibles=17, exacto=True, por_tamano=reparto)],
+    )
+    lineas = sorted(
+        (str(linea["variant_id"]), cast(int, linea["unidades"]))
+        for linea in cast(
+            list[dict[str, object]],
+            cast(list[dict[str, object]], resolved["estructuras"])[0]["lineas"],
+        )
+    )
+    # Sin el reparto (prueba de test_plan_armado) el blanco de 18" se quitaba: 10 blancos de 12".
+    assert lineas == [
+        ("var-foil-dorado", 1),
+        ("var-r12-blanco", 6),
+        ("var-r12-rosado", 6),
+        ("var-r18-blanco", 4),
+    ]
+    assert not any("se quitó" in s for s in _supuestos(resolved))
+
+
+@pytest.mark.anyio
+async def test_el_bouquet_de_5_sigue_dando_5() -> None:
+    pista = {
+        "referencia_element_id": "REF_01_E01",
+        "variante": "helio_escalonado",
+        "niveles": [
+            {"unidad": "suelto", "colores": ["blanco", "blanco"]},
+            {"unidad": "suelto", "colores": ["rosado", "rosado"]},
+        ],
+        "remate": {"clase": "metalizado", "color": "dorado"},
+        "confianza": 0.9,
+    }
+    sin_conteo = await _resolver_bouquet(
+        _plan_bouquet(_bouquet(unidades_declaradas=15)),
+        completar_armados=True,
+        pistas_armado=[pista],
+    )
+    con_conteo = await _resolver_bouquet(
+        _plan_bouquet(_bouquet(unidades_declaradas=15)),
+        completar_armados=True,
+        pistas_armado=[pista],
+        completar_conteos=True,
+        pistas_conteo=[_conteo(globos_visibles=5, exacto=True)],
+    )
+    assert _estructura(sin_conteo)["unidades_declaradas"] == 5
+    assert _estructura(con_conteo)["unidades_declaradas"] == 5
+    assert _conteos(con_conteo)[0]["decision"] == "coincide"
 
 
 # --- Resolución: piezas geométricas -----------------------------------------------------

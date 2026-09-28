@@ -320,8 +320,20 @@ async function main(): Promise<void> {
   assert.equal(serializeReferenceBlueprint(sinConteo), serializeReferenceBlueprint(conConteosDe(sinConteo, sinConteo)), "sin conteo, la línea de siempre");
   const pocaConfianza = conConteosDe(sinConteo, blueprintDe([elemento("REF_01_E02", { tipo: "columna", conteo: { ...conteo, confianza: 0.3 } })]));
   assert.doesNotMatch(serializeReferenceBlueprint(pocaConfianza), /conteo leído/, "una lectura poco confiable no se le cuenta al modelo");
+  // Un bouquet con armado leído (total que publicó Python) y conteo: manda el conteo;
+  // sin conteo que mande, el total de Python. Nunca una cuenta hecha aquí.
+  const armadoConTotal = { variante: "base_aire", niveles: [{ unidad: "cuarteto", colores: ["blanco", "rosado", "blanco", "rosado"] }], remate: { clase: "metalizado", color: "dorado" }, numeros: [{ digito: "3", clase_tamano: "grande" }, { digito: "5", clase_tamano: "grande" }], confianza: 0.85, total_globos: 11 };
+  const bouquetOnce = (extra: Json = {}) => blueprintDe([elemento("REF_01_E01", { tipo: "kit", forma: "medium dense bouquet", armado: armadoConTotal, ...extra })]);
+  const lineaConteo = serializeReferenceBlueprint(bouquetOnce({ conteo: { ...conteo, globos_visibles: 26, estimado_total: 35, racimos: null, globos_por_racimo: null } }));
+  assert.doesNotMatch(lineaConteo, /total 11 globos|unidades_declaradas 11/, lineaConteo);
+  assert.match(lineaConteo, /declara unidades_declaradas unos 35 por pieza/);
+  assert.match(lineaConteo, /Busca cada dígito como globo metalizado número/, "los números del armado siguen");
+  const soloRacimos = serializeReferenceBlueprint(bouquetOnce({ conteo: { ...conteo, estimado_total: null } }));
+  assert.match(soloRacimos, /total 11 globos\. Declara unidades_declaradas 11 por pieza/, "sin cifra leída el conteo no manda: el total de Python");
+  assert.doesNotMatch(soloRacimos, /declara unidades_declaradas unos/);
   delete process.env.CONTEO_REFERENCIA_V1;
-  ok("el prompt del chat cuenta el conteo leído solo con CONTEO_REFERENCIA_V1 y lectura confiable");
+  assert.match(serializeReferenceBlueprint(bouquetOnce({ conteo: { ...conteo, estimado_total: 35 } })), /total 11 globos/, "sin la bandera, el armado como siempre");
+  ok("el prompt del chat cuenta el conteo leído solo con CONTEO_REFERENCIA_V1 y lectura confiable, y ahí manda sobre el total del armado");
 
   // ---------------------------------------------------------------------------
   // E2: pistas al confirmar, transporte a Python, resultado y edición.

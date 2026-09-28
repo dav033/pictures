@@ -8,7 +8,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { motion, useReducedMotion } from "motion/react";
 import { Check, TriangleAlert, X } from "lucide-react";
 import type { CompraConsolidada, PlanResuelto } from "@/lib/plan/resuelto";
-import { acabadoCliente, agruparComprasCliente, esEstructuraDeGlobos, familiasEnOrden, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente, tonoCliente, type GrupoCompraCliente } from "@/lib/plan/presentacion-cliente";
+import { acabadoCliente, agruparComprasCliente, cuentaEnGlobos, familiasEnOrden, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente, tonoCliente, type GrupoCompraCliente } from "@/lib/plan/presentacion-cliente";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 import { BotonAprobar } from "@/components/propuesta/BotonAprobar";
 import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
@@ -277,7 +277,7 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
                 <div className="text-left sm:text-right">
                   <p className="text-[13px] text-texto-suave">{plan.totales.incluye_iva ? "Total con IVA" : "Total sin IVA"}</p>
                   <p className="text-3xl font-semibold tracking-tight text-texto tabular-nums sm:text-[34px]"><NumeroAnimado valor={total} formato="pesos" retraso={reducir ? 0 : 0.2} /></p>
-                  <p className="mt-0.5 text-[13px] text-texto-suave">COP · {numero.format(comprados)} {plan.estructuras.every((estructura) => esEstructuraDeGlobos(estructura.tipo)) ? "globos" : "unidades"} comprados, {numero.format(enDecoracion)} en la decoración</p>
+                  <p className="mt-0.5 text-[13px] text-texto-suave">COP · {numero.format(comprados)} {plan.estructuras.every(cuentaEnGlobos) ? "globos" : "unidades"} comprados, {numero.format(enDecoracion)} en la decoración</p>
                 </div>
               </div>
               <p className="mt-3 text-xs text-texto-tenue">Incluye una reserva del {plan.totales.merma_porcentaje}% por globos que se revientan al inflar o montar. No incluye montaje.</p>

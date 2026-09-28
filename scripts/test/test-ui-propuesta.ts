@@ -594,6 +594,10 @@ function planConBouquet(conArmado: boolean): PlanResuelto {
   assert.equal((html.match(/data-testid="crear-armado"/g) ?? []).length, 0, "con armado no se ofrece crearlo");
   assert.equal((html.match(/data-testid="bloque-patron"/g) ?? []).length, 3, "las piezas con patrón siguen con su bloque; el bouquet no lleva patrón");
   assert.doesNotMatch(html, /data-testid="editor-armado"|data-testid="dialogo-hoja-armado-bouquet"/, "editor y hoja cerrados no se montan");
+  // Un bouquet es un kit hecho de globos: cuenta globos, nunca "unos 7 piezas".
+  assert.match(texto, /Globos unos 7/, "el mosaico del bouquet cuenta globos");
+  assert.match(texto, /unos 7 globos/, "la pieza del bouquet dice globos");
+  assert.doesNotMatch(texto, /unos \d+ piezas/, "piezas va en femenino y un bouquet no son piezas");
   ok("tarjeta con bouquet: bloque del armado con nombre, insumos y accesos");
 
   const sinArmado = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planConBouquet(false), onPlanActualizado: () => undefined }));

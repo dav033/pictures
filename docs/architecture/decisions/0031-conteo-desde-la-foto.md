@@ -109,9 +109,11 @@ El trabajo se parte en dos entregas reversibles por separado
     `SEGUIMIENTO-guirnaldas.md` §2.1 la regla era "en kits manda la lectura del
     armado si existe; si no, el conteo". Un caso real la descartó: un bouquet de
     más de 30 globos salió con 11. La lectura del armado describe una unidad por
-    nivel (`SEGUIMIENTO-bouquets.md` §14; la rama `fix/bouquet-conteo-niveles` le
-    agrega `cantidad` por nivel). Ahora **el conteo da la cantidad y el armado la
-    distribución**.
+    nivel (`SEGUIMIENTO-bouquets.md` §14; `fix/bouquet-conteo-niveles`, ya fusionada,
+    le agrega `cantidad` y `clase_tamano` por nivel, y `total_globos`). Ahora **el
+    conteo da la cantidad y el armado la distribución**.
+    - A + F = total de la lectura del armado según `armado_bouquet.total_leido`,
+      el único dueño de esa cuenta (el que `compra_desde_lectura` compra).
     - F = piezas fijas del armado leído (remate × grupos + dígitos).
     - A = látex del armado.
     - C = cuenta usable del conteo: con confianza de al menos 0,5, los globos
@@ -124,9 +126,12 @@ El trabajo se parte en dos entregas reversibles por separado
     - Si no, total = C cuando la cuenta es exacta, y max(A+F, C) cuando no lo es.
       Un estimado puede subir la cifra, nunca bajarla, y un bouquet apilado casi
       nunca es exacto.
-    - Los niveles leídos se reescalan a total − F por restos mayores; cada nivel
-      conserva su unidad y sus colores, y en un empate va primero la base. El
-      sobrante menor que una unidad va como sueltos de acento.
+    - Se reescala la `cantidad` de cada nivel leído para llegar a total − F, por
+      restos mayores; en un empate va primero el nivel leído primero, que en una
+      base de aire es la base. Cada nivel conserva su unidad, sus posiciones de
+      color y su clase de tamaño. El sobrante menor que una unidad va como
+      sueltos de acento. Un nivel que pasa del tope de 24 unidades se parte en
+      tramos consecutivos, que `_niveles_leidos` junta hasta el tope.
     - Queda un solo supuesto: "la foto muestra unos N globos; el armado leído
       tenía M: la cantidad quedó en T (el plan decía X)".
 
@@ -135,10 +140,14 @@ El trabajo se parte en dos entregas reversibles por separado
     kit que ya trae armado no se toca, y uno que no se compra por globos sueltos
     tampoco.
 
-    **Codificación.** Una lectura reescalada repite n veces un nivel de n
-    unidades. `armado_bouquet._niveles_leidos` de hoy junta esas copias como n
-    unidades, y con `cantidad` por nivel (la otra rama) cada copia contará 1.
-    Por eso no hizo falta tocar `armado_bouquet.py`.
+    **Tamaños.** A un nivel leído sin `clase_tamano` se le asigna la clase
+    desde el `por_tamano` del conteo (`conteo_foto.clases_desde_por_tamano`).
+    Los niveles se recorren en el orden leído y cada uno toma la clase a la que
+    más globos le faltan para su parte del reparto. Esto se aplica también
+    cuando la cantidad del armado se queda. El látex de esa clase lo sigue
+    eligiendo `armado_bouquet._material_del_color`, que tiene un solo dueño: el
+    conteo solo le pasa la clase por la lectura. Una clase que la foto sí dio no
+    se cambia.
 12. **Geométricas, en este orden.**
     1. La mezcla, solo si `por_tamano` la contradice claramente. Umbral: una
        variación total de al menos 0,3 frente a la mezcla del plan, y otra mezcla
@@ -193,8 +202,11 @@ El trabajo se parte en dos entregas reversibles por separado
       unos N globos (aproximado; V visibles), R racimos de K" con la regla de
       declarar la cantidad en kits y no calcular globos en geométricas. Solo con
       la bandera y confianza de al menos 0,5; sin eso la línea es la de siempre.
-      No se toca `armadoLeido`: lo cambia la rama del bouquet, y mientras tanto
-      el texto dice que esta cuenta manda sobre el total de un armado leído.
+      Cuando el conteo trae una cifra leída (cuenta exacta o estimado), manda
+      esa cifra: `armadoLeido` deja de dar el `total_globos` de la lectura del
+      armado y solo describe colores, remate y números. Si el conteo no trae
+      cifra, o la bandera está apagada, manda el total que publicó Python.
+      Ninguna cuenta se hace en TypeScript.
 16. **Evaluación sin costo por defecto** (`src/lib/eval/estructuras/conteo.ts`,
     `cli-conteo.ts`, `npm run eval:conteo`). Reutiliza la suite y el esqueleto
     del runner de reconocimiento: vista previa por defecto, tope de gasto con
@@ -235,9 +247,11 @@ Supuestos a validar con el negocio:
 - **Cambiar el largo antes que la densidad.** Un largo "equivalente" es una
   estimación, y la densidad no inventa medidas: el largo solo se mueve cuando la
   densidad no alcanza.
-- **Tocar `armado_bouquet.py` para leer `cantidad`.** Es de la rama
-  `fix/bouquet-conteo-niveles`. La lectura reescalada se codifica repitiendo
-  niveles y funciona antes y después de esa rama.
+- **Repetir n veces un nivel en lugar de fijar su `cantidad`** (primera versión
+  de E2, antes de fusionar `fix/bouquet-conteo-niveles`). Con la lectura v2 la
+  cantidad se ajusta en el propio nivel.
+- **Elegir el tamaño en `conteo_foto.py`.** Sería un segundo dueño de
+  `_material_del_color`; el conteo solo pone la clase en el nivel.
 
 ## Consecuencias
 
@@ -257,10 +271,9 @@ Supuestos a validar con el negocio:
   `plan_hash`: llevan las unidades, la densidad, la mezcla o las medidas
   ajustadas y su supuesto. Las re-resoluciones no, salvo la de una edición de
   mezcla.
-- Pendiente de la fusión con `fix/bouquet-conteo-niveles`: donde un nivel leído
-  no traiga tamaño, repartir con `por_tamano` del conteo. Hoy
-  `_material_del_color` elige el primer látex del color, y el tamaño lo decide
-  esa rama.
+- Fusionada `fix/bouquet-conteo-niveles` (2026-09-28). Una lectura v2 con
+  `cantidad` suele coincidir con el conteo dentro de la tolerancia y el armado
+  se queda; el reescalado cubre las lecturas que aún subcuentan.
 
 ## Rollback
 

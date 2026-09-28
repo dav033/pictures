@@ -61,6 +61,29 @@ repartido entre prompts y módulos sin un lugar por tipo.
    comprar, o no es confiable, se aplica la regla de siempre: la compra del plan
    y la receta. Motivo: el modelo del chat elegía la cantidad sin ver el número
    de globos (15 para una foto de 5) y el armado solo podía acomodar ese error.
+   **Enmienda del 2026-09-28 (cantidad y tamaño por nivel):** la lectura
+   `bouquet-referencia.v1` describía una sola unidad por nivel, así que la foto
+   no podía mandar más de 51 globos y un bouquet de más de 30 salía con 11
+   (`SEGUIMIENTO-bouquets.md` §14). Desde `bouquet-referencia.v2` cada nivel leído
+   trae `cantidad` (1–24: cuántas unidades iguales lo forman alrededor de la
+   pieza, contando las ocultas por simetría) y, si se ve, `clase_tamano`
+   (`chico` 5"–9", `mediano` 11"–12", `grande` 16"–18", `gigante` 24"–36").
+   Python compra `cantidad` unidades por nivel y, con la clase, el látex de ese
+   color de tamaño más cercano (sin clase, el primero de ese color, como antes).
+   La cuenta de la lectura tiene un solo dueño, `armado_bouquet.total_leido`: la
+   lectura la publica como `total_globos`, el chat la recibe tal cual (TypeScript
+   ya no suma) y la compra al confirmar suma exactamente eso. Una lectura v1 sin
+   `cantidad` sigue siendo válida y vale una unidad por nivel; sin `total_globos`
+   el chat no recibe cifra. Una foto que pida más de lo que una estructura puede
+   declarar (999) no manda. Lo que la validación recorta queda en los `avisos` de
+   la lectura y lo que descarta entero, en el log con correlación; el aviso de un
+   material quitado distingue "la foto no lo lleva" de "lo lleva en otro tamaño" y
+   de "la lectura no dice su tamaño". Queda para la conciliación con la lectura de
+   conteo (su propia rama): el conteo da la cantidad y el armado la distribución.
+   Contrato y rollback: los campos son opcionales en `LecturaArmadoSchema` (y por
+   eso en `reference-blueprint.v2` y en `pistas_armado`); App y `ai-api` se
+   despliegan juntos. Tras un rollback, un blueprint con lecturas v2 guardado en
+   una conversación abierta no pasa el esquema estricto de la revisión anterior.
 5. **Completar al confirmar** (`completar_armados` + `pistas_armado` en
    `plan-resolution.v1`, bandera `BOUQUETS_ARMADO_V1`, default OFF): cada estructura
    con `estructura_oficial: "bouquet"` sin armado recibe el de la lectura de la foto

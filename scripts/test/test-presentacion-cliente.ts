@@ -12,6 +12,7 @@ import {
   ambientacionCliente,
   cantidadCliente,
   coloresCliente,
+  cuentaEnGlobos,
   coloresObservadosCliente,
   describirEstructuraCliente,
   medidasCliente,
@@ -53,6 +54,29 @@ assert.equal(medidasCliente("centro_mesa", { ancho_m: 0.4, alto_m: 0.5 }), "0,4 
 assert.equal(cantidadCliente(23, 1, "semiarco"), "unos 23 globos");
 assert.equal(cantidadCliente(71, 2, "columna"), "2 iguales · unos 35 o 36 globos cada una");
 assert.equal(cantidadCliente(1, 1, "backdrop"), "1 pieza");
+// Piezas en femenino: "unas 3 piezas", nunca "unos 3 piezas".
+assert.equal(cantidadCliente(3, 1, "backdrop"), "unas 3 piezas");
+assert.equal(cantidadCliente(6, 2, "accesorio"), "2 iguales · unas 3 piezas cada una");
+// Un bouquet o un kit hecho de globos cuenta globos (SEGUIMIENTO-bouquets.md §14:
+// la tarjeta decía "unos 11 piezas" para un bouquet de látex, números y corona).
+const bouquetDeGlobos = {
+  tipo: "kit",
+  lineas: [
+    { titulo: "Globo látex dorado", forma: "redondo" },
+    { titulo: "B2b Globo Metalizado Numero 3 Plateado — 40 IN / PAQUETE X 1", forma: null },
+    { titulo: "B2b Globo Metalizado Corona Dorado — 32 IN / PAQUETE X 1", forma: null },
+  ],
+};
+assert.equal(cuentaEnGlobos(bouquetDeGlobos), true);
+assert.equal(cantidadCliente(36, 1, bouquetDeGlobos), "unos 36 globos");
+// Piezas de verdad: un kit empaquetado, una figura sin globos, o una pieza sin líneas.
+const kitEmpaquetado = { tipo: "kit", lineas: [{ titulo: "Kit Globos Feliz Cumpleaños x 20", forma: null }] };
+const figuraSinGlobos = { tipo: "kit", lineas: [{ titulo: "Figura de icopor unicornio", forma: null }] };
+assert.equal(cantidadCliente(2, 1, kitEmpaquetado), "unas 2 piezas");
+assert.equal(cantidadCliente(2, 1, figuraSinGlobos), "unas 2 piezas");
+assert.equal(cuentaEnGlobos({ tipo: "kit", lineas: [...bouquetDeGlobos.lineas, ...figuraSinGlobos.lineas] }), false, "una figura sin globos dentro del kit lo vuelve piezas");
+assert.equal(cuentaEnGlobos({ tipo: "kit", lineas: [] }), false);
+assert.equal(cuentaEnGlobos({ tipo: "semiarco", lineas: [] }), true, "la geometría siempre cuenta globos");
 assert.equal(tamanosCliente([{ diam_pulg: 12 }, { diam_pulg: 5 }, { diam_pulg: 9 }, { diam_pulg: 12 }]), "globos de 5, 9 y 12 pulgadas");
 ok("medidas, cantidades y tamaños en palabras del cliente");
 

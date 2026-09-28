@@ -40,11 +40,13 @@ from typing import cast
 from jsonschema import Draft7Validator
 
 from app.armado_bouquet import (
+    CLASES_TAMANO_NIVEL,
     CONFIANZA_MINIMA_LECTURA,
-    GLOBOS_POR_UNIDAD,
+    MAX_CANTIDAD_NIVEL,
     CompraLeida,
     EstructuraBouquet,
     compra_desde_lectura,
+    total_leido,
 )
 from app.generated_models import contract_schema
 
@@ -173,24 +175,6 @@ def total_kit_con_armado(cuenta: Cuenta, leidos: int) -> int:
     return cuenta.globos if cuenta.exacto else max(leidos, cuenta.globos)
 
 
-def _unidades_de_nivel(nivel: Mapping[str, object]) -> tuple[int, int, list[str]] | None:
-    """(globos por unidad, unidades, colores) de un nivel leído; ``None`` si no se entiende.
-
-    Un nivel ``suelto`` son sus colores, un globo cada uno. Uno con unidad son
-    ``cantidad`` unidades (1 si la lectura no la trae) de esos colores.
-    """
-    unidad = nivel.get("unidad")
-    colores = [c for c in cast(list[object], nivel.get("colores") or []) if isinstance(c, str)]
-    if not isinstance(unidad, str) or unidad not in GLOBOS_POR_UNIDAD or not colores:
-        return None
-    if unidad == "suelto":
-        return 1, len(colores), colores
-    cantidad = nivel.get("cantidad", 1)
-    if not isinstance(cantidad, int) or cantidad < 1:
-        return None
-    return GLOBOS_POR_UNIDAD[unidad], cantidad, colores
-
-
 def _sueltos_por_color(colores: Sequence[str], cantidad: int) -> list[str]:
     """``cantidad`` globos sueltos repartidos por turnos entre ``colores``, agrupados por color.
 
@@ -203,62 +187,117 @@ def _sueltos_por_color(colores: Sequence[str], cantidad: int) -> list[str]:
     return [color for color in distintos for _ in range(cuentas[color])]
 
 
+def _globos_de(nivel: Mapping[str, object], cantidad: int | None = None) -> int:
+    """Globos de un nivel leído, contados por el dueño de esa cuenta (``total_leido``).
+
+    Con ``cantidad``, los de ese nivel con esa cantidad de unidades (1: una unidad).
+    """
+    unico = dict(nivel) if cantidad is None else {**dict(nivel), "cantidad": cantidad}
+    return int(total_leido({"niveles": [unico]}))
+
+
+def _en_tramos(nivel: Mapping[str, object], unidades: int) -> list[dict[str, object]]:
+    """El nivel con ``unidades`` unidades, en tramos consecutivos de a lo sumo el tope por nivel."""
+    tramos: list[dict[str, object]] = []
+    while unidades > 0:
+        tramo = min(unidades, MAX_CANTIDAD_NIVEL)
+        tramos.append({**dict(nivel), "cantidad": tramo})
+        unidades -= tramo
+    return tramos
+
+
 def reescalar_lectura_armado(
     lectura: Mapping[str, object], latex_por_grupo: int
 ) -> dict[str, object] | None:
     """La lectura del armado con sus niveles llevados a ``latex_por_grupo`` látex.
 
-    Cada nivel conserva su unidad y su secuencia de colores; las unidades se
-    reparten por restos mayores sobre la proporción leída (empate: el nivel
-    leído primero, así en una base de aire la base va primero). El sobrante que
-    no completa una unidad va como globos sueltos de acento con los colores
-    leídos. Remate, números y disposición no cambian.
-
-    Un nivel con ``n`` unidades se escribe ``n`` veces: es lo que el armado de
-    hoy lee como ``n`` unidades (``armado_bouquet._niveles_leidos`` junta las
-    consecutivas iguales), y también lo que leerá cuando la lectura traiga
-    ``cantidad`` por nivel (cada copia cuenta 1). ``None`` si no hay niveles o
-    no alcanza para nada.
+    Cada nivel conserva su unidad, sus posiciones de color y su clase de tamaño;
+    solo cambia su ``cantidad`` (1 en una lectura anterior a la cantidad). Las
+    unidades se reparten por restos mayores sobre la proporción leída; en un
+    empate va el nivel leído primero, así en una base de aire la base va
+    primero. El sobrante que no completa una unidad va como globos sueltos de
+    acento con los colores leídos. Un nivel que pasa del tope de unidades por
+    nivel se parte en tramos iguales consecutivos. Remate, números y
+    disposición no cambian. Las cuentas son las de ``armado_bouquet.total_leido``.
+    ``None`` si no hay niveles o no alcanza para nada.
     """
-    niveles_crudos = cast(list[object], lectura.get("niveles") or [])
-    niveles: list[tuple[str, int, int, list[str]]] = []
-    for crudo in niveles_crudos:
-        if not isinstance(crudo, Mapping):
-            return None
-        leido = _unidades_de_nivel(crudo)
-        if leido is None:
-            return None
-        niveles.append((str(crudo["unidad"]), *leido))
-    actual = sum(k * n for _unidad, k, n, _colores in niveles)
-    if actual <= 0 or latex_por_grupo <= 0:
+    niveles = [
+        n for n in cast(list[object], lectura.get("niveles") or []) if isinstance(n, Mapping)
+    ]
+    if not niveles or len(niveles) != len(cast(list[object], lectura.get("niveles") or [])):
         return None
-    cuotas = [n * latex_por_grupo / actual for _unidad, _k, n, _colores in niveles]
+    if any(not cast(list[object], nivel.get("colores") or []) for nivel in niveles):
+        return None
+    por_unidad = [_globos_de(nivel, 1) for nivel in niveles]
+    leidas = [
+        _globos_de(nivel) // k if k > 0 else 0 for nivel, k in zip(niveles, por_unidad, strict=True)
+    ]
+    actual = sum(k * n for k, n in zip(por_unidad, leidas, strict=True))
+    if actual <= 0 or latex_por_grupo <= 0 or 0 in por_unidad:
+        return None
+    cuotas = [n * latex_por_grupo / actual for n in leidas]
     unidades = [math.floor(cuota) for cuota in cuotas]
-    sobrante = latex_por_grupo - sum(k * u for (_unidad, k, _n, _c), u in zip(niveles, unidades))
+    sobrante = latex_por_grupo - sum(k * u for k, u in zip(por_unidad, unidades, strict=True))
     orden = sorted(range(len(niveles)), key=lambda i: (-(cuotas[i] - unidades[i]), i))
     agregado = True
     while agregado:
         agregado = False
         for i in orden:
-            k = niveles[i][1]
-            if k <= sobrante:
+            if por_unidad[i] <= sobrante:
                 unidades[i] += 1
-                sobrante -= k
+                sobrante -= por_unidad[i]
                 agregado = True
         orden = list(range(len(niveles)))
-    nuevos: list[dict[str, object]] = []
-    for (unidad, _k, _n, colores), n in zip(niveles, unidades):
-        if n <= 0:
-            continue
-        if unidad == "suelto":
-            nuevos.append({"unidad": "suelto", "colores": _sueltos_por_color(colores, n)})
-        else:
-            nuevos.extend({"unidad": unidad, "colores": list(colores)} for _ in range(n))
+    nuevos = [
+        tramo for nivel, n in zip(niveles, unidades, strict=True) for tramo in _en_tramos(nivel, n)
+    ]
     if sobrante > 0:
-        todos = [color for _u, _k, _n, colores in niveles for color in colores]
-        nuevos.append({"unidad": "suelto", "colores": _sueltos_por_color(todos, sobrante)})
+        todos = [
+            color
+            for nivel in niveles
+            for color in cast(list[object], nivel.get("colores") or [])
+            if isinstance(color, str)
+        ]
+        nuevos.append(
+            {"unidad": "suelto", "colores": _sueltos_por_color(todos, sobrante), "cantidad": 1}
+        )
     if not nuevos:
         return None
+    return {**dict(lectura), "niveles": nuevos}
+
+
+def clases_desde_por_tamano(
+    lectura: Mapping[str, object], por_tamano: Sequence[Mapping[str, object]]
+) -> dict[str, object]:
+    """La lectura con una clase de tamaño en cada nivel que no la trae, desde el
+    reparto por tamaño del conteo.
+
+    Los niveles sin clase se recorren en el orden leído y cada uno toma la clase
+    a la que más globos le faltan para su parte del reparto (empate: la de más
+    parte). Un nivel entero lleva una sola clase. Elegir el látex de esa clase
+    sigue siendo de ``armado_bouquet._material_del_color``: aquí solo se le pasa
+    la clase. Sin reparto, o si todos los niveles traen clase, la lectura tal cual.
+    """
+    partes = {
+        str(item["clase"]): float(cast(float, item["proporcion"]))
+        for item in por_tamano
+        if isinstance(item, Mapping) and item.get("clase") in CLASES_TAMANO_NIVEL
+    }
+    niveles = [
+        n for n in cast(list[object], lectura.get("niveles") or []) if isinstance(n, Mapping)
+    ]
+    sin_clase = [
+        i for i, n in enumerate(niveles) if n.get("clase_tamano") not in CLASES_TAMANO_NIVEL
+    ]
+    if not partes or not sin_clase:
+        return dict(lectura)
+    globos = sum(_globos_de(niveles[i]) for i in sin_clase)
+    asignados = {clase: 0.0 for clase in partes}
+    nuevos = [dict(n) for n in niveles]
+    for i in sin_clase:
+        clase = max(partes, key=lambda c: (partes[c] * globos - asignados[c], partes[c]))
+        nuevos[i]["clase_tamano"] = clase
+        asignados[clase] += _globos_de(niveles[i])
     return {**dict(lectura), "niveles": nuevos}
 
 
@@ -452,12 +491,14 @@ def _kit(
     estructura: dict[str, object],
     cuenta: Cuenta,
     armado_leido: Mapping[str, object] | None,
+    por_tamano: Sequence[Mapping[str, object]],
     puerto: PuertoPlan,
 ) -> tuple[_Resultado, Mapping[str, object] | None, bool]:
     """Un kit con la cuenta de la foto.
 
-    Devuelve el resultado, la lectura del armado que deben usar los armados (la
-    reescalada, o la de siempre) y si esa lectura se descarta.
+    Devuelve el resultado, la lectura del armado que deben usar los armados (con
+    la clase de tamaño del conteo en los niveles que no la traen y, si hace
+    falta, reescalada) y si esa lectura se descarta.
     """
     reps = max(1, cast(int, estructura.get("repeticiones") or 1))
     antes_total = cast(int, estructura.get("unidades_declaradas") or 0)
@@ -481,11 +522,16 @@ def _kit(
             False,
         )
 
-    compra = (
-        compra_desde_lectura(contexto, armado_leido)
-        if armado_leido is not None and contexto.es_bouquet
-        else None
-    )
+    compra = None
+    if armado_leido is not None and contexto.es_bouquet:
+        # Los niveles sin clase de tamaño la toman del reparto del conteo; el
+        # látex de esa clase lo sigue eligiendo armado_bouquet.
+        con_clases = clases_desde_por_tamano(armado_leido, por_tamano)
+        compra = compra_desde_lectura(contexto, con_clases)
+        if compra is not None:
+            armado_leido = con_clases
+        else:
+            compra = compra_desde_lectura(contexto, armado_leido)
     if compra is not None:
         partes = _partes(compra)
         total = total_kit_con_armado(cuenta, partes.total)
@@ -508,7 +554,12 @@ def _kit(
         latex = (total - partes.fijas) // partes.grupos
         reescalada = reescalar_lectura_armado(armado_leido or {}, latex)
         nueva = compra_desde_lectura(contexto, reescalada) if reescalada is not None else None
-        if nueva is not None and nueva.total * reps <= MAX_UNIDADES_DECLARADAS:
+        esperado = latex * partes.grupos + partes.fijas
+        if (
+            nueva is not None
+            and nueva.total == esperado
+            and nueva.total * reps <= MAX_UNIDADES_DECLARADAS
+        ):
             final = nueva.total
             item = {**estructura, "unidades_declaradas": final * reps}
             supuesto = (
@@ -826,7 +877,11 @@ def aplicar(
                 and float(cast(float, leida.get("confianza", 0))) >= CONFIANZA_MINIMA_LECTURA
             )
             resultado, lectura_armado, descartar = _kit(
-                estructura, cuenta, leida if confiable else None, puerto
+                estructura,
+                cuenta,
+                leida if confiable else None,
+                cast(Sequence[Mapping[str, object]], lectura.get("por_tamano") or []),
+                puerto,
             )
             if confiable and descartar:
                 armados.pop(str(elemento), None)

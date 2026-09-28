@@ -343,6 +343,20 @@
                             "minLength": 1,
                             "maxLength": 80
                           }
+                        },
+                        "cantidad": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 24
+                        },
+                        "clase_tamano": {
+                          "type": "string",
+                          "enum": [
+                            "chico",
+                            "mediano",
+                            "grande",
+                            "gigante"
+                          ]
                         }
                       },
                       "required": [
@@ -412,6 +426,20 @@
                     "type": "number",
                     "minimum": 0,
                     "maximum": 1
+                  },
+                  "total_globos": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2309
+                  },
+                  "avisos": {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
                   }
                 },
                 "required": [

@@ -109,7 +109,7 @@ export function TarjetaPiezaFoto({ pieza, retraso, controles, onAbrir }: PropsTa
             <span className="mt-px block truncate text-[13px] text-texto-suave">{pieza.subtitulo}</span>
           </span>
           <span className="flex items-baseline gap-1.5">
-            <span className="text-xs text-texto-suave">unos</span>
+            <span className="text-xs text-texto-suave">{pieza.unidad === "piezas" ? "unas" : "unos"}</span>
             <NumeroAnimado valor={pieza.globos} retraso={retraso + 0.3} className="text-xl leading-none font-semibold tracking-tight tabular-nums text-texto @xl:text-[28px]" />
             <span className="text-xs text-texto-suave">{pieza.unidad}</span>
           </span>

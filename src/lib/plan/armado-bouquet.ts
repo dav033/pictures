@@ -114,13 +114,33 @@ export const ArmadoBouquetResueltoSchema = z.object({
 
 export type ArmadoBouquetResuelto = z.infer<typeof ArmadoBouquetResueltoSchema>;
 
-/** Lectura del armado en la foto de referencia (Amaterasu, ADR-0030). */
+/** Clase de tamaño que la lectura da a un nivel: 5"–9", 11"–12", 16"–18" o 24"–36" (dueño de los rangos: `armado_bouquet.py`). */
+export const CLASES_TAMANO_NIVEL = ["chico", "mediano", "grande", "gigante"] as const;
+export type ClaseTamanoNivel = (typeof CLASES_TAMANO_NIVEL)[number];
+const MAX_NIVELES_LEIDOS = 8;
+const MAX_SUELTOS_LEIDOS = 6;
+const MAX_CANTIDAD_NIVEL = 24;
+/** Techo de `total_globos`: todos los niveles de sueltos al tope, remate y dos grupos (números a los lados), más tres dígitos. */
+const MAX_TOTAL_LEIDO = (MAX_NIVELES_LEIDOS * MAX_SUELTOS_LEIDOS * MAX_CANTIDAD_NIVEL + 1) * 2 + 3;
+
+/**
+ * Lectura del armado en la foto de referencia (Amaterasu, ADR-0030).
+ *
+ * Desde `bouquet-referencia.v2` (2026-09-28) cada nivel trae `cantidad`
+ * (cuántas unidades iguales lo forman alrededor de la pieza) y, si se ve,
+ * `clase_tamano`; la lectura publica `total_globos`, que cuenta Python
+ * (`armado_bouquet.total_leido`) y aquí solo se muestra, y `avisos` con lo que
+ * la validación recortó. Una lectura anterior no los trae y sigue siendo
+ * válida: cada nivel vale una unidad y no hay total que mostrar.
+ */
 export const LecturaArmadoSchema = z.object({
   variante: z.enum(VARIANTES_BOUQUET),
   niveles: z.array(z.object({
     unidad: z.enum(UNIDADES_BOUQUET),
-    colores: z.array(z.string().trim().min(1).max(80)).min(1).max(6),
-  }).strict()).max(8),
+    colores: z.array(z.string().trim().min(1).max(80)).min(1).max(MAX_SUELTOS_LEIDOS),
+    cantidad: z.number().int().min(1).max(MAX_CANTIDAD_NIVEL).optional(),
+    clase_tamano: z.enum(CLASES_TAMANO_NIVEL).optional(),
+  }).strict()).max(MAX_NIVELES_LEIDOS),
   remate: z.object({
     clase: z.enum(["metalizado", "burbuja", "latex"]),
     color: z.string().trim().min(1).max(80).optional(),
@@ -131,6 +151,10 @@ export const LecturaArmadoSchema = z.object({
   }).strict()).max(3).optional(),
   disposicion: z.enum(DISPOSICIONES_NUMERO).optional(),
   confianza: z.number().min(0).max(1),
+  /** Globos de UNA pieza según la lectura, contados por Python. Nunca se recalcula en TypeScript. */
+  total_globos: z.number().int().min(0).max(MAX_TOTAL_LEIDO).optional(),
+  /** Lo que la validación de Python recortó o quitó de la lectura (solo observabilidad). */
+  avisos: z.array(z.string().min(1).max(200)).max(12).optional(),
 }).strict();
 
 export type LecturaArmado = z.infer<typeof LecturaArmadoSchema>;
