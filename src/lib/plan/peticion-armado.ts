@@ -132,8 +132,12 @@ export function leerErrorArmado(datos: unknown, respaldo: string): ErrorArmadoLe
   };
 }
 
-/** POST JSON con los errores de este módulo; devuelve el cuerpo de una respuesta 2xx sin validar. */
-async function publicar(url: string, cuerpo: unknown, respaldo: string, opciones: { signal?: AbortSignal; fetcher?: typeof fetch }): Promise<unknown> {
+/**
+ * POST JSON con los errores de este módulo; devuelve el cuerpo de una
+ * respuesta 2xx sin validar. También lo usa la vista previa del armado de
+ * guirnaldas (`peticion-armado-guirnalda.ts`): sus errores tienen la misma forma.
+ */
+export async function publicar(url: string, cuerpo: unknown, respaldo: string, opciones: { signal?: AbortSignal; fetcher?: typeof fetch }): Promise<unknown> {
   const fetcher = opciones.fetcher ?? fetch;
   let respuesta: Response;
   try {

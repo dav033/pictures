@@ -107,7 +107,11 @@ async def leer_foto(
     try:
         raw = json.loads(str(text))
     except json.JSONDecodeError as causa:
-        raise error(f"{prefijo}_invalid_output", 502) from causa
+        # Un JSON cortado (MAX_TOKENS) dice por qué en el log de Next (revisión 8).
+        motivo = _finish_reason(response)
+        raise error(
+            f"{prefijo}_invalid_output", 502, f"finish_reason={motivo}" if motivo else None
+        ) from causa
     return raw, _usage_dict(getattr(response, "usage_metadata", None))
 
 

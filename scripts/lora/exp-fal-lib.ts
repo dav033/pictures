@@ -262,6 +262,9 @@ export function verificarIdentidadCoherente(defaults: Defaults): void {
  * - Nunca corre con `CI=true`: un runner de integración no debe poder gastar.
  * - Si el gasto acumulado alcanza `--max-usd`, se detiene antes de la
  *   siguiente celda en vez de seguir encadenando llamadas.
+ * - El tope se mide con el saldo de fal (el repo no tiene un precio por
+ *   imagen), así que falla cerrado: sin saldo legible al empezar no se genera
+ *   nada, y si deja de poder leerse a mitad (dos intentos) la tanda se detiene.
  */
 export async function correrExperimento(opciones: {
   nombre: string;
@@ -287,6 +290,8 @@ export async function correrExperimento(opciones: {
     saldo_despues: null as number | null,
     gasto_usd: null as number | null,
     detenido_por_limite: false,
+    /** El saldo dejó de poder leerse: sin él el tope no se puede aplicar. */
+    detenido_por_saldo_ilegible: false,
   };
 
   if (process.argv.includes("--dry-run")) {
@@ -311,7 +316,11 @@ export async function correrExperimento(opciones: {
   if (!key) throw new Error("Falta FAL_KEY en .env.local");
 
   fs.mkdirSync(outDir, { recursive: true });
-  manifiesto.saldo_antes = await saldo(key);
+  const saldoAntes = await saldo(key);
+  manifiesto.saldo_antes = saldoAntes;
+  if (saldoAntes === null) {
+    throw new Error("SALDO_ILEGIBLE: no se pudo leer el saldo de fal, así que --max-usd no se puede aplicar. No se generó nada.");
+  }
   console.log(`${nombre}: ${celdas.length} celdas · saldo antes US$${manifiesto.saldo_antes ?? "?"} · tope US$${maxUsd}`);
 
   for (const celda of celdas) {
@@ -332,14 +341,18 @@ export async function correrExperimento(opciones: {
       console.log(`FALLO: ${String(error).slice(0, 200)}`);
     }
 
-    const saldoActual = await saldo(key);
-    if (manifiesto.saldo_antes !== null && saldoActual !== null) {
-      const gastoHastaAhora = manifiesto.saldo_antes - saldoActual;
-      if (gastoHastaAhora >= maxUsd) {
-        manifiesto.detenido_por_limite = true;
-        console.log(`\n[LIMITE] gasto acumulado US$${gastoHastaAhora.toFixed(4)} alcanzó --max-usd ${maxUsd}. Deteniendo antes de la siguiente celda.`);
-        break;
-      }
+    // Un fallo suelto de la consulta se reintenta una vez; si sigue sin saldo, el tope no se puede aplicar.
+    const saldoActual = (await saldo(key)) ?? (await saldo(key));
+    if (saldoActual === null) {
+      manifiesto.detenido_por_saldo_ilegible = true;
+      console.log(`\n[LIMITE] no se pudo leer el saldo de fal tras ${celda.id}: sin él --max-usd no se puede aplicar. Deteniendo antes de la siguiente celda.`);
+      break;
+    }
+    const gastoHastaAhora = saldoAntes - saldoActual;
+    if (gastoHastaAhora >= maxUsd) {
+      manifiesto.detenido_por_limite = true;
+      console.log(`\n[LIMITE] gasto acumulado US$${gastoHastaAhora.toFixed(4)} alcanzó --max-usd ${maxUsd}. Deteniendo antes de la siguiente celda.`);
+      break;
     }
   }
 

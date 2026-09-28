@@ -90,6 +90,15 @@ async function run(): Promise<void> {
     assert.equal(sinDinero.omitidas_por_presupuesto, 5);
   });
 
+  await caso("presupuesto: un análisis más caro que su cota frena los siguientes (hallazgo #25)", async () => {
+    let llamadas = 0;
+    // 1 millón de tokens de entrada por análisis: 0,75 US$, veinte veces la cota.
+    const caro: Analizador = async () => { llamadas += 1; return { resultado: "ok", detecciones: [], pases: [{ capacidad: "analisis_referencia_inventario", intento: 1, ms: 1, uso: { entrada: 1_000_000, salida: 0 }, finishReason: "STOP", malformado: false }], rawOutputSha256: "c".repeat(64), msTotal: 1 }; };
+    const resultado = await ejecutarCorrida({ config: config({ maxUsd: 1, corridasPorImagen: 3, concurrencia: 1 }), items: [item(1)], analizar: caro, alEscribir: () => undefined });
+    assert.equal(llamadas, 2, "tras 0,75 US$ el segundo aún cabe; tras 1,50 US$ el tercero no");
+    assert.equal(resultado.omitidas_por_presupuesto, 1);
+  });
+
   await caso("concurrencia: ≤ límite entre imágenes y nunca la misma imagen en paralelo", async () => {
     let activas = 0;
     let maximo = 0;

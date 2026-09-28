@@ -21,6 +21,15 @@ import {
   type ArmadoBouquetV1,
   type PistaArmado,
 } from "@/lib/plan/armado-bouquet";
+import {
+  ArmadoGuirnaldaResueltoSchema,
+  LecturaGuirnaldaSchema,
+  type ArmadoGuirnaldaResuelto,
+  type ArmadoGuirnaldaV1,
+  type PistaGuirnalda,
+} from "@/lib/plan/armado-guirnalda";
+import { OpcionesArmadoGuirnaldaSchema, type OpcionesArmadoGuirnalda } from "@/lib/plan/opciones-armado-guirnalda";
+import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import {
   MODOS_PATRON_COLOR,
@@ -65,12 +74,18 @@ export const PYTHON_PATRON_REFERENCIA_PATH = "/internal/v1/ia/patron-referencia"
 export const PYTHON_PATRON_REFERENCIA_SCOPE = "ia.patron_referencia";
 export const PYTHON_BOUQUET_REFERENCIA_PATH = "/internal/v1/ia/bouquet-referencia";
 export const PYTHON_BOUQUET_REFERENCIA_SCOPE = "ia.bouquet_referencia";
+export const PYTHON_CONTEO_REFERENCIA_PATH = "/internal/v1/ia/conteo-referencia";
+export const PYTHON_CONTEO_REFERENCIA_SCOPE = "ia.conteo_referencia";
+export const PYTHON_GUIRNALDA_REFERENCIA_PATH = "/internal/v1/ia/guirnalda-referencia";
+export const PYTHON_GUIRNALDA_REFERENCIA_SCOPE = "ia.guirnalda_referencia";
 export const PYTHON_PLAN_EDIT_PATH = "/internal/v1/plan/edit";
 export const PYTHON_PLAN_EDIT_SCOPE = "plan.edit";
 export const PYTHON_PLAN_PATRON_PATH = "/internal/v1/plan/patron";
 export const PYTHON_PLAN_PATRON_SCOPE = "plan.patron";
 export const PYTHON_PLAN_ARMADO_PATH = "/internal/v1/plan/armado-bouquet";
 export const PYTHON_PLAN_ARMADO_SCOPE = "plan.armado_bouquet";
+export const PYTHON_PLAN_ARMADO_GUIRNALDA_PATH = "/internal/v1/plan/armado-guirnalda";
+export const PYTHON_PLAN_ARMADO_GUIRNALDA_SCOPE = "plan.armado_guirnalda";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
 export const PYTHON_EMBEDDING_DIMENSIONS = 768;
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
@@ -139,6 +154,14 @@ export const PYTHON_PLAN_ARMADO_DOMAIN_CODES = [
   "invalid_plan",
 ] as const;
 export type PythonPlanArmadoDomainCode = (typeof PYTHON_PLAN_ARMADO_DOMAIN_CODES)[number];
+
+/**
+ * Stable domain error codes reported by POST /internal/v1/plan/armado-guirnalda
+ * (ADR-0032). Its `armado_invalido` carries the structure, the stable
+ * `motivo` and Python's `mensaje` (`domainDetails`), never the options: the
+ * editor asks for them with `armado_guirnalda: null`.
+ */
+export const PYTHON_PLAN_ARMADO_GUIRNALDA_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
 
 /**
  * Stable domain error codes reported by POST /internal/v1/plan/patron (ADR-0028 §10).
@@ -929,6 +952,82 @@ export interface PythonBouquetReferenciaResult {
   replayed?: boolean;
 }
 
+/** A balloon structure the reference analysis found in one photo, to be counted (ADR-0031). */
+export interface PythonConteoReferenciaElemento {
+  elementId: string;
+  /** Plan structure type (`visual_semantics.structure_type`) or "desconocido". */
+  tipo: string;
+  /** The official structure the chat would give it (`identificarEstructuraOficial`), when there is one. */
+  estructuraOficial?: string;
+  bbox?: { x: number; y: number; width: number; height: number };
+  /** Identical pieces the element stands for ("2 columns"); Python counts one. Omitted when 1. */
+  piezas?: number;
+}
+
+export interface PythonConteoReferenciaInput {
+  imagen: { mimeType: "image/png" | "image/jpeg" | "image/webp"; dataBase64: string };
+  /** 1..12, unique ids, all from the same photo as `imagen`. */
+  elementos: PythonConteoReferenciaElemento[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+/** One reading as Python validated it: the balloon count of one piece. */
+export type PythonConteoReferenciaLectura = z.infer<typeof conteoReferenciaLecturaSchema>;
+
+/** A garland the reference analysis found in one photo (ADR-0032, E4). */
+export interface PythonGuirnaldaReferenciaElemento {
+  elementId: string;
+  bbox?: { x: number; y: number; width: number; height: number };
+  coloresObservados: string[];
+}
+
+/** Another balloon piece of the same photo: a garland may be wrapped around it. */
+export interface PythonGuirnaldaReferenciaOtra {
+  elementId: string;
+  tipo: string;
+  bbox?: { x: number; y: number; width: number; height: number };
+}
+
+export interface PythonGuirnaldaReferenciaInput {
+  imagen: { mimeType: "image/png" | "image/jpeg" | "image/webp"; dataBase64: string };
+  /** 1..12, unique ids, all from the same photo as `imagen`. */
+  elementos: PythonGuirnaldaReferenciaElemento[];
+  /** 0..12 other balloon pieces of the photo; ids distinct from `elementos`. */
+  otras: PythonGuirnaldaReferenciaOtra[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+/** One reading as Python validated it: how one garland is built. */
+export type PythonGuirnaldaReferenciaLectura = z.infer<typeof guirnaldaReferenciaLecturaSchema>;
+
+export interface PythonGuirnaldaReferenciaResult {
+  lecturas: PythonGuirnaldaReferenciaLectura[];
+  modelo: string;
+  promptVersion: string;
+  usage: z.infer<typeof guirnaldaReferenciaPayloadResultSchema>["usage"];
+  replayed?: boolean;
+}
+
+export interface PythonConteoReferenciaResult {
+  lecturas: PythonConteoReferenciaLectura[];
+  modelo: string;
+  promptVersion: string;
+  usage: z.infer<typeof conteoReferenciaPayloadResultSchema>["usage"];
+  replayed?: boolean;
+}
+
 /** One hint as Python validated it; "ninguno" carries no colors. */
 export type PythonPatronReferenciaPista = z.infer<typeof patronReferenciaPistaSchema>;
 
@@ -1169,6 +1268,16 @@ export interface PythonPlanResolutionInput {
   completarArmados?: boolean;
   pistasArmado?: PistaArmado[];
   completarArmadosDe?: string[];
+  /** Absent unless the caller passes it (ADR-0032): same byte-identical rule. */
+  completarArmadosGuirnalda?: boolean;
+  /** Absent unless the caller passes it (ADR-0032, E4): the garland readings of the photo. */
+  pistasGuirnalda?: PistaGuirnalda[];
+  /** Absent unless the caller passes it (ADR-0031): same byte-identical rule. */
+  completarConteos?: boolean;
+  pistasConteo?: PistaConteo[];
+  completarConteosDe?: string[];
+  /** With `completarConteos`: the customer gave measures, so the structures' declared measures stay (ADR-0031). */
+  medidasDelCliente?: boolean;
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1219,6 +1328,8 @@ export interface PythonPlanEditInput {
   completarPatrones: boolean;
   /** `BOUQUETS_ARMADO_V1`: the notice of a removed assembly says it is suggested again (ADR-0030). */
   completarArmados?: boolean;
+  /** `GUIRNALDAS_ARMADO_V1`: the same for a garland's assembly (ADR-0032). */
+  completarArmadosGuirnalda?: boolean;
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1346,6 +1457,42 @@ export interface PythonPlanArmadoResult {
   replayed?: boolean;
 }
 
+/**
+ * One resolved line of the previewed garland (`LineaGuirnalda` in
+ * services/ai-api/app/plan_edicion.py): the pattern preview's line plus the
+ * size code, with which Python names each code of the legend as at
+ * resolution. It only names; the counts are the plan's own.
+ */
+export const PythonPlanArmadoGuirnaldaLineaSchema = PythonPlanPatronLineaSchema.extend({
+  tamano_codigo: z.string().max(40).nullable().optional(),
+}).strict();
+export type PythonPlanArmadoGuirnaldaLinea = z.infer<typeof PythonPlanArmadoGuirnaldaLineaSchema>;
+export const PythonPlanArmadoGuirnaldaLineasSchema = z.array(PythonPlanArmadoGuirnaldaLineaSchema).max(PYTHON_PLAN_PATRON_MAX_LINEAS);
+
+export { OpcionesArmadoGuirnaldaSchema, type OpcionesArmadoGuirnalda };
+
+export interface PythonPlanArmadoGuirnaldaInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /** `null` asks for the recipe of the garland (ADR-0032). */
+  armadoGuirnalda: ArmadoGuirnaldaV1 | null;
+  /** The garland's resolved lines as the browser holds them; only the contract fields travel. */
+  lineas?: readonly PythonPlanArmadoGuirnaldaLinea[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanArmadoGuirnaldaResult {
+  armado: ArmadoGuirnaldaResuelto;
+  opciones: OpcionesArmadoGuirnalda;
+  replayed?: boolean;
+}
+
 const rerankPayloadResultSchema = z.object({
   order: z.array(z.string().min(1)),
   scores: z.record(z.string().min(1), z.number().finite()),
@@ -1442,18 +1589,60 @@ const bouquetReferenciaPayloadResultSchema = z.object({
   }).strict().nullable(),
 }).strict();
 
+// Local contract (ADR-0026 §3): the Pydantic side is
+// services/ai-api/app/amaterasu/conteo_referencia.py, which owns the prompt and
+// the validation; the reading's shape is `LecturaConteoSchema`
+// (src/lib/plan/conteo-referencia.ts), exported inside reference-blueprint.v2.
+const conteoReferenciaLecturaSchema = LecturaConteoSchema.extend({
+  element_id: z.string().min(1).max(80),
+}).strict();
+
+const conteoReferenciaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("conteo-referencia-result.v1"),
+  lecturas: z.array(conteoReferenciaLecturaSchema).max(12),
+  modelo: z.string().min(1),
+  prompt_version: z.string().min(1),
+  usage: intentParseUsageSchema.extend({
+    tool_use_prompt_token_count: z.number().int().nonnegative().optional(),
+  }).strict().nullable(),
+}).strict();
+
+// Local contract (ADR-0026 §3): the Pydantic side is
+// services/ai-api/app/amaterasu/guirnalda_referencia.py; the prompt and the
+// validation live in estructuras/guirnalda.py and the reading's shape is
+// `LecturaGuirnaldaSchema` (src/lib/plan/armado-guirnalda.ts), exported inside
+// reference-blueprint.v2.
+const guirnaldaReferenciaLecturaSchema = LecturaGuirnaldaSchema.extend({
+  element_id: z.string().min(1).max(80),
+}).strict();
+
+const guirnaldaReferenciaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("guirnalda-referencia-result.v1"),
+  lecturas: z.array(guirnaldaReferenciaLecturaSchema).max(12),
+  modelo: z.string().min(1),
+  prompt_version: z.string().min(1),
+  usage: intentParseUsageSchema.extend({
+    tool_use_prompt_token_count: z.number().int().nonnegative().optional(),
+  }).strict().nullable(),
+}).strict();
+
+/** Readings only for elements that were asked about, once each (bouquet, count and garland readings). */
+function lecturasPorElementoPedido(lecturas: readonly { element_id: string }[], elementIds: readonly string[]): boolean {
+  const pedidos = new Set(elementIds);
+  const vistos = new Set<string>();
+  for (const lectura of lecturas) {
+    if (!pedidos.has(lectura.element_id) || vistos.has(lectura.element_id)) return false;
+    vistos.add(lectura.element_id);
+  }
+  return true;
+}
+
 /** Readings only for elements that were asked about, once each. */
 function bouquetReferenciaPayloadIsConsistent(
   payload: z.infer<typeof bouquetReferenciaPayloadResultSchema>,
   elementIds: readonly string[],
 ): boolean {
-  const pedidos = new Set(elementIds);
-  const vistos = new Set<string>();
-  for (const lectura of payload.lecturas) {
-    if (!pedidos.has(lectura.element_id) || vistos.has(lectura.element_id)) return false;
-    vistos.add(lectura.element_id);
-  }
-  return true;
+  return lecturasPorElementoPedido(payload.lecturas, elementIds);
 }
 
 // Local contracts (ADR-0026 §3) of the plan editor, owned by the Pydantic
@@ -1484,6 +1673,12 @@ const planArmadoPayloadResultSchema = z.object({
   armado: ArmadoBouquetResueltoSchema,
   variantes_admitidas: variantesAdmitidasSchema,
   disposiciones_admitidas: disposicionesAdmitidasSchema,
+}).strict();
+
+const planArmadoGuirnaldaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-armado-guirnalda-result.v1"),
+  armado: ArmadoGuirnaldaResueltoSchema,
+  opciones: OpcionesArmadoGuirnaldaSchema,
 }).strict();
 
 const imageGenerateUsageSchema = z.object({
@@ -2001,6 +2196,99 @@ export async function llamarPythonBouquetReferencia(
 }
 
 /**
+ * Counts the balloons of each balloon structure in one reference photo
+ * (ADR-0031). Python owns the prompt, how each kind of piece is counted, the
+ * response schema and the validation; this only transports the photo and the
+ * structures the analysis found, and checks the answer is about them and fits
+ * the reading's contract. No idempotency key and no retry: the call has no side
+ * effect and the caller continues without readings on any failure.
+ */
+export async function llamarPythonConteoReferencia(
+  input: PythonConteoReferenciaInput,
+): Promise<PythonConteoReferenciaResult> {
+  const { imagen, elementos, ...rest } = input;
+  const operationPayload = {
+    schema_version: "conteo-referencia.v1" as const,
+    imagen: { mime_type: imagen.mimeType, data_base64: imagen.dataBase64 },
+    elementos: elementos.map((elemento) => ({
+      element_id: elemento.elementId,
+      tipo: elemento.tipo,
+      ...(elemento.estructuraOficial === undefined ? {} : { estructura_oficial: elemento.estructuraOficial }),
+      ...(elemento.bbox === undefined ? {} : { bbox: elemento.bbox }),
+      ...(elemento.piezas === undefined ? {} : { piezas: elemento.piezas }),
+    })),
+  };
+  const response = await llamarPythonOperacion(PYTHON_CONTEO_REFERENCIA_PATH, PYTHON_CONTEO_REFERENCIA_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+  });
+  const parsed = conteoReferenciaPayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success || !lecturasPorElementoPedido(parsed.data.lecturas, elementos.map((elemento) => elemento.elementId))) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonConteoReferenciaResult = {
+    lecturas: parsed.data.lecturas,
+    modelo: parsed.data.modelo,
+    promptVersion: parsed.data.prompt_version,
+    usage: parsed.data.usage,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
+ * Reads how each garland in one reference photo is built (ADR-0032, E4).
+ * Python owns the prompt, the palette, the response schema and the validation;
+ * this only transports the photo, the garlands the analysis found and the other
+ * balloon pieces a garland may be wrapped around, and checks the answer is
+ * about the garlands asked for. No idempotency key and no retry: the call has
+ * no side effect and the caller continues without readings on any failure.
+ */
+export async function llamarPythonGuirnaldaReferencia(
+  input: PythonGuirnaldaReferenciaInput,
+): Promise<PythonGuirnaldaReferenciaResult> {
+  const { imagen, elementos, otras, ...rest } = input;
+  const operationPayload = {
+    schema_version: "guirnalda-referencia.v1" as const,
+    imagen: { mime_type: imagen.mimeType, data_base64: imagen.dataBase64 },
+    elementos: elementos.map((elemento) => ({
+      element_id: elemento.elementId,
+      ...(elemento.bbox === undefined ? {} : { bbox: elemento.bbox }),
+      colores_observados: elemento.coloresObservados,
+    })),
+    otras: otras.map((otra) => ({
+      element_id: otra.elementId,
+      tipo: otra.tipo,
+      ...(otra.bbox === undefined ? {} : { bbox: otra.bbox }),
+    })),
+  };
+  const response = await llamarPythonOperacion(PYTHON_GUIRNALDA_REFERENCIA_PATH, PYTHON_GUIRNALDA_REFERENCIA_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+  });
+  const parsed = guirnaldaReferenciaPayloadResultSchema.safeParse(response.payload);
+  // A host may be another piece or an arch/half-arch that is itself read (review 6/13), never the garland itself.
+  const otrasIds = new Set([...otras.map((otra) => otra.elementId), ...elementos.map((elemento) => elemento.elementId)]);
+  if (
+    !parsed.success
+    || !lecturasPorElementoPedido(parsed.data.lecturas, elementos.map((elemento) => elemento.elementId))
+    || parsed.data.lecturas.some((lectura) => lectura.anfitriona_element_id !== undefined && (!otrasIds.has(lectura.anfitriona_element_id) || lectura.anfitriona_element_id === lectura.element_id))
+  ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonGuirnaldaReferenciaResult = {
+    lecturas: parsed.data.lecturas,
+    modelo: parsed.data.modelo,
+    promptVersion: parsed.data.prompt_version,
+    usage: parsed.data.usage,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
  * The one Gemini Interactions call `crearImagenGemini`'s `generar()` makes
  * (src/lib/ia/uzume/imagen.ts, via the ImagenPort
  * src/lib/ia/uzume/imagen-python.ts wraps around this). `input` travels
@@ -2198,6 +2486,12 @@ export async function llamarPythonPlanResolution(
     completarArmados,
     pistasArmado,
     completarArmadosDe,
+    completarArmadosGuirnalda,
+    pistasGuirnalda,
+    completarConteos,
+    pistasConteo,
+    completarConteosDe,
+    medidasDelCliente,
     ...rest
   } = input;
   const operationBody = {
@@ -2211,6 +2505,12 @@ export async function llamarPythonPlanResolution(
     ...(completarArmados === undefined ? {} : { completar_armados: completarArmados }),
     ...(pistasArmado === undefined ? {} : { pistas_armado: pistasArmado }),
     ...(completarArmadosDe === undefined ? {} : { completar_armados_de: completarArmadosDe }),
+    ...(completarArmadosGuirnalda === undefined ? {} : { completar_armados_guirnalda: completarArmadosGuirnalda }),
+    ...(pistasGuirnalda === undefined ? {} : { pistas_guirnalda: pistasGuirnalda }),
+    ...(completarConteos === undefined ? {} : { completar_conteos: completarConteos }),
+    ...(pistasConteo === undefined ? {} : { pistas_conteo: pistasConteo }),
+    ...(completarConteosDe === undefined ? {} : { completar_conteos_de: completarConteosDe }),
+    ...(medidasDelCliente === undefined ? {} : { medidas_del_cliente: medidasDelCliente }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_RESOLUTION_PATH, PYTHON_PLAN_RESOLUTION_SCOPE, {
     ...rest,
@@ -2292,7 +2592,7 @@ export async function llamarPythonCatalogRecommendations(
  * is pure and has no effect to deduplicate.
  */
 export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<PythonPlanEditResult> {
-  const { plan, lineasBase, edicion, coloresVariante, completarPatrones, completarArmados, ...rest } = input;
+  const { plan, lineasBase, edicion, coloresVariante, completarPatrones, completarArmados, completarArmadosGuirnalda, ...rest } = input;
   const operationBody = {
     schema_version: "plan-edit.v1" as const,
     plan,
@@ -2305,6 +2605,7 @@ export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<
     completar_patrones: completarPatrones,
     // Absent unless the caller passes it: every other request stays byte-identical.
     ...(completarArmados === undefined ? {} : { completar_armados: completarArmados }),
+    ...(completarArmadosGuirnalda === undefined ? {} : { completar_armados_guirnalda: completarArmadosGuirnalda }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_EDIT_PATH, PYTHON_PLAN_EDIT_SCOPE, {
     ...rest,
@@ -2418,6 +2719,58 @@ export async function llamarPythonPlanArmadoBouquet(input: PythonPlanArmadoInput
     variantes_admitidas: parsed.data.variantes_admitidas,
     disposiciones_admitidas: parsed.data.disposiciones_admitidas,
   };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/** Exactly the fields of `plan-armado-guirnalda.v1`'s line, whatever else the caller's object carries. */
+function lineaPlanArmadoGuirnalda(linea: PythonPlanArmadoGuirnaldaLinea): PythonPlanArmadoGuirnaldaLinea {
+  return {
+    ...lineaPlanPatron(linea),
+    ...(linea.tamano_codigo === undefined ? {} : { tamano_codigo: linea.tamano_codigo }),
+  };
+}
+
+/** Same JSON whatever the key order (Python may echo an object's keys in another order). */
+function jsonOrdenado(valor: unknown): string {
+  if (Array.isArray(valor)) return `[${valor.map(jsonOrdenado).join(",")}]`;
+  if (valor && typeof valor === "object") {
+    const entradas = Object.entries(valor as Record<string, unknown>).filter(([, campo]) => campo !== undefined).sort(([a], [b]) => a.localeCompare(b));
+    return `{${entradas.map(([clave, campo]) => `${JSON.stringify(clave)}:${jsonOrdenado(campo)}`).join(",")}}`;
+  }
+  return JSON.stringify(valor);
+}
+
+/**
+ * Resolves one garland's assembly, or suggests one with `null` (ADR-0032),
+ * for the garland editor. No catalog and no side effect: the plan counts the
+ * balloons and the resolved lines only name each code. Returns what the
+ * editor may offer for the piece (`opciones`), decided by Python.
+ */
+export async function llamarPythonPlanArmadoGuirnalda(input: PythonPlanArmadoGuirnaldaInput): Promise<PythonPlanArmadoGuirnaldaResult> {
+  const { plan, estructuraId, armadoGuirnalda, lineas, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-armado-guirnalda.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    armado_guirnalda: armadoGuirnalda,
+    ...(lineas === undefined ? {} : { lineas: lineas.map(lineaPlanArmadoGuirnalda) }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_ARMADO_GUIRNALDA_PATH, PYTHON_PLAN_ARMADO_GUIRNALDA_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_ARMADO_GUIRNALDA_SCOPE],
+  });
+  const parsed = planArmadoGuirnaldaPayloadResultSchema.safeParse(response.payload);
+  // The answer is about the structure asked for; a given assembly comes back as given.
+  if (
+    !parsed.success
+    || parsed.data.armado.estructura_id !== estructuraId
+    || (armadoGuirnalda !== null && jsonOrdenado(parsed.data.armado.armado) !== jsonOrdenado(armadoGuirnalda))
+  ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = { armado: parsed.data.armado, opciones: parsed.data.opciones };
   return response.replayed ? { ...resultado, replayed: true } : resultado;
 }
 

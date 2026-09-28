@@ -13,6 +13,8 @@ import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValid
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion, type HechosPeticionPlan } from "@/lib/rag/observability/log";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PistaArmado } from "@/lib/plan/armado-bouquet";
+import type { PistaGuirnalda } from "@/lib/plan/armado-guirnalda";
+import type { PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { PistaPatron } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
@@ -556,6 +558,41 @@ export function pistasArmadoDelPlan(plan: Pick<PlanDecoracion, "estructuras">, b
   return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
 }
 
+/**
+ * Lecturas de la foto para las guirnaldas que materializan un elemento de la
+ * referencia (ADR-0032, E4). Misma fuente y misma regla que `pistasArmadoDelPlan`.
+ */
+export function pistasGuirnaldaDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): PistaGuirnalda[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const pistas = new Map<string, PistaGuirnalda>();
+  for (const estructura of plan.estructuras) {
+    const elementId = estructura.referencia_element_id;
+    const lectura = elementId ? elementos.get(elementId)?.appearance.armado_guirnalda : undefined;
+    if (!elementId || !lectura || pistas.has(elementId)) continue;
+    pistas.set(elementId, { referencia_element_id: elementId, ...lectura });
+  }
+  return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
+}
+
+/**
+ * Conteos de globos de la foto para las estructuras que materializan un
+ * elemento de la referencia (ADR-0031). Misma fuente y misma regla que
+ * `pistasArmadoDelPlan`: una lectura por elemento aprobado.
+ */
+export function pistasConteoDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): PistaConteo[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const pistas = new Map<string, PistaConteo>();
+  for (const estructura of plan.estructuras) {
+    const elementId = estructura.referencia_element_id;
+    const conteo = elementId ? elementos.get(elementId)?.appearance.conteo : undefined;
+    if (!elementId || !conteo || pistas.has(elementId)) continue;
+    pistas.set(elementId, { referencia_element_id: elementId, ...conteo });
+  }
+  return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
+}
+
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
  * de @sempertex/agente-core despacha — cada cuerpo es el mismo que tenía el
  * if-chain de ejecutar.ts antes de esta extracción, sin cambios de lógica. */
@@ -977,9 +1014,18 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const completarPatrones = featureEnabled("PATRONES_COLOR_V1");
     // ADR-0030: lo mismo para el armado de los bouquets, detrás de BOUQUETS_ARMADO_V1.
     const completarArmados = featureEnabled("BOUQUETS_ARMADO_V1");
+    // ADR-0032: y el de las guirnaldas, detrás de GUIRNALDAS_ARMADO_V1 (solo receta hasta E4).
+    const completarArmadosGuirnalda = featureEnabled("GUIRNALDAS_ARMADO_V1");
+    // ADR-0031: el conteo de globos de la foto, detrás de CONTEO_REFERENCIA_V1.
+    // Sin conteos leídos no hay nada que ajustar y la petición es la de siempre.
+    const completarConteos = featureEnabled("CONTEO_REFERENCIA_V1");
+    // ADR-0031, revisión 33: las medidas que el cliente dio para una pieza no las mueve la foto.
+    const medidasDelCliente = completarConteos && clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio);
     const resolverPlanDelTurno = (plan: PlanDecoracion) => {
       const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];
+      const pistasGuirnalda = completarArmadosGuirnalda ? pistasGuirnaldaDelPlan(plan, estado.referenceBlueprint) : [];
+      const pistasConteo = completarConteos ? pistasConteoDelPlan(plan, estado.referenceBlueprint) : [];
       // Diagnóstico (ids y conteos, nunca la foto): qué lecturas de la foto viajan con la confirmación.
       if (completarArmados) console.info("[plan] pistas de armado", JSON.stringify({ request_id: estado.ragRequestId, bouquets: plan.estructuras.filter((estructura) => estructura.estructura_oficial === "bouquet").map((estructura) => ({ id: estructura.estructura_id, referencia: estructura.referencia_element_id ?? null, unidades: estructura.unidades_declaradas ?? null })), pistas: pistasArmado.map((pista) => ({ referencia: pista.referencia_element_id, confianza: pista.confianza, numeros: pista.numeros?.map((numero) => numero.digito).join("") ?? null })) }));
       return resolverPlan({
@@ -991,6 +1037,10 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         ...(pistasPatron.length > 0 ? { pistasPatron } : {}),
         ...(completarArmados ? { completarArmados } : {}),
         ...(pistasArmado.length > 0 ? { pistasArmado } : {}),
+        ...(completarArmadosGuirnalda ? { completarArmadosGuirnalda } : {}),
+        ...(pistasGuirnalda.length > 0 ? { pistasGuirnalda } : {}),
+        ...(pistasConteo.length > 0 ? { completarConteos: true, pistasConteo } : {}),
+        ...(pistasConteo.length > 0 && medidasDelCliente ? { medidasDelCliente: true } : {}),
         requestId: estado.ragRequestId,
         correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
         ...(options.signal ? { signal: options.signal } : {}),
@@ -1120,6 +1170,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       allowlist: allowlistTurno,
       // The image of this plan is generated with the level it was designed with.
       creatividad: perfilCreatividad(options.creatividad).nivel,
+      // An edit has no customer text: it reads this to keep those measures fixed (revisión 33).
+      ...(medidasDelCliente ? { medidasDelCliente: true } : {}),
     });
     estado.planResuelto = resuelto;
     estado.cotizacion = conFotosDeCatalogo(resolucion.cotizacion, resuelto.compras);

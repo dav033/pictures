@@ -20,6 +20,7 @@ import {
   type RelacionFisicaInput,
 } from "./composicion";
 import { ArmadoBouquetV1Schema } from "./armado-bouquet";
+import { ArmadoGuirnaldaV1Schema } from "./armado-guirnalda";
 import { PatronColorV1Schema } from "./patron-color";
 
 /**
@@ -113,6 +114,8 @@ const EstructuraPlanSchema = z.object({
   patron_color: PatronColorV1Schema.optional(),
   /** Armado de un bouquet por niveles (ADR-0030). Sus reglas cruzadas las valida solo Python. */
   armado_bouquet: ArmadoBouquetV1Schema.optional(),
+  /** Armado de una guirnalda por partes (ADR-0032). Sus reglas cruzadas las valida solo Python. */
+  armado_guirnalda: ArmadoGuirnaldaV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   for (const problema of incoherenciasEstructuraOficial(value)) {
     ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
@@ -342,6 +345,8 @@ export const EstructuraPlan1_1Schema = z.object({
   patron_color: PatronColorV1Schema.optional(),
   /** Armado de un bouquet por niveles (ADR-0030). Sus reglas cruzadas las valida solo Python. */
   armado_bouquet: ArmadoBouquetV1Schema.optional(),
+  /** Armado de una guirnalda por partes (ADR-0032). Sus reglas cruzadas las valida solo Python. */
+  armado_guirnalda: ArmadoGuirnaldaV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   validarRelacionesFisicasSchema(value.relaciones_fisicas, ctx);
   for (const problema of incoherenciasEstructuraOficial(value)) {

@@ -14,6 +14,13 @@ y es quien lleva el conteo a la cotización.
 
 Los números que aparecen en los textos son los de la leyenda de la gráfica
 numerada: el material ``i`` de la estructura es el color ``i + 1``.
+
+Guirnalda con armado (ADR-0032, entrega E5): el patrón decide el color de cada
+globo de los racimos; el armado (``armado_guirnalda.py``) decide la unidad, el
+soporte, la forma, el relleno y los remates. ``EstructuraPatron`` trae del
+armado solo sus globos por racimo y su forma: con ellos el preset va por racimo
+(espiral o anillos, nunca confeti), la unidad del armado manda sobre la de la
+foto y una guirnalda en U invertida admite el espejo desde el centro.
 """
 
 from __future__ import annotations
@@ -52,6 +59,36 @@ _MODOS_POR_TIPO: dict[str, tuple[str, ...]] = {
     "pared": ("anillos", "bloques", "degradado", "aleatorio", "damero"),
 }
 _TIPOS_ESPIRAL_SUGERIDA = frozenset({"columna", "arco", "semiarco", "guirnalda"})
+#: La forma del armado de guirnalda que se arma simétrica desde el centro (E5).
+FORMA_GUIRNALDA_ESPEJO = "u_invertida"
+AVISO_ESPEJO_GUIRNALDA = (
+    "El patrón de la guirnalda quedó sin espejo: solo una guirnalda en U invertida se arma"
+    " simétrica desde el centro."
+)
+
+
+def quitar_espejo_sin_u(estructura: dict[str, object], armado: object) -> list[str]:
+    """Quita el espejo del patrón de una guirnalda que ya no va en U invertida (E5).
+
+    El espejo de una guirnalda depende de su armado (``patron_color``): si el
+    armado se quita o cambia de forma, el patrón en espejo ya no vale y la
+    próxima resolución lo rechazaría. Se deja el mismo patrón sin espejo, con
+    aviso; quien llama resincroniza ``participacion``. Un solo dueño para la
+    edición (``plan_edicion``) y la vista previa del armado (``plan``, revisión 5).
+    """
+    patron = estructura.get("patron_color")
+    if (
+        estructura.get("tipo") != "guirnalda"
+        or not isinstance(patron, Mapping)
+        or patron.get("simetria") != "espejo"
+        or (isinstance(armado, Mapping) and armado.get("forma") == FORMA_GUIRNALDA_ESPEJO)
+    ):
+        return []
+    estructura["patron_color"] = {
+        clave: copy.deepcopy(valor) for clave, valor in patron.items() if clave != "simetria"
+    }
+    return [AVISO_ESPEJO_GUIRNALDA]
+
 
 # Tablas ES→EN de color y acabado (owners: taxonomy/v2.ts y
 # mezcla-color-escena.ts), exportadas en plan-decoracion.v1 para que los
@@ -130,7 +167,9 @@ class EstructuraPatron:
 
     ``total`` es ``T``, los globos por instancia que dan las medidas
     (``_total_globos``); ``un_tamano`` dice si la mezcla efectiva tiene un solo
-    diámetro.
+    diámetro. ``racimo_armado`` y ``forma_armado`` son los globos por racimo y
+    la forma del armado de una guirnalda por partes (ADR-0032), o ``None`` sin
+    armado: entonces todo es como antes.
     """
 
     estructura_id: str
@@ -141,6 +180,8 @@ class EstructuraPatron:
     alto_m: float | None
     repeticiones: int
     materiales: tuple[MaterialPatron, ...]
+    racimo_armado: int | None = None
+    forma_armado: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -369,6 +410,18 @@ def _validar_estructura(estructura: EstructuraPatron) -> None:
         )
 
 
+def _admite_espejo(estructura: EstructuraPatron) -> bool:
+    """Un arco, o una guirnalda armada en U invertida: simétrica desde el centro (E5)."""
+    return estructura.tipo == "arco" or (
+        estructura.tipo == "guirnalda" and estructura.forma_armado == FORMA_GUIRNALDA_ESPEJO
+    )
+
+
+def _racimo_de_armado(estructura: EstructuraPatron) -> int | None:
+    """Globos por racimo del armado de una guirnalda (ADR-0032), o ``None``."""
+    return estructura.racimo_armado if estructura.tipo == "guirnalda" else None
+
+
 def _globos_por_racimo(p: _Patron) -> int:
     if p.globos_por_racimo is not None:
         return p.globos_por_racimo
@@ -427,7 +480,13 @@ def _validar(estructura: EstructuraPatron, p: _Patron) -> tuple[str, int, int]:
         raise PatronColorInvalido(
             "direccion_no_permitida", "La diagonal solo se arma con un degradé."
         )
-    if p.espejo and tipo != "arco":
+    if p.espejo and not _admite_espejo(estructura):
+        if tipo == "guirnalda":
+            raise PatronColorInvalido(
+                "simetria_no_permitida",
+                "Una guirnalda solo se arma en espejo con el armado en U invertida, simétrica"
+                " desde el centro.",
+            )
         raise PatronColorInvalido("simetria_no_permitida", "El espejo solo se arma en un arco.")
     geometria, filas, columnas = _rejilla(estructura, p)
     if filas * columnas > MAX_CELDAS:
@@ -644,6 +703,34 @@ def validar_y_expandir(estructura: EstructuraPatron, patron: Mapping[str, object
     return _expandir(estructura, _leer(patron))
 
 
+def filas_de_racimos(
+    estructura: EstructuraPatron, patron: Mapping[str, object], racimos: int
+) -> tuple[tuple[int, ...], ...] | None:
+    """El patrón sobre ``racimos`` racimos seguidos: el color de cada racimo de un armado (E5).
+
+    La rejilla del patrón tiene ``round(T / k)`` filas porque cuenta todos los
+    globos de la pieza, y el armado de una guirnalda arma menos racimos: el
+    relleno y los remates toman el color de su material y no ocupan
+    posiciones. Tomar filas de la rejilla a lo largo rompía los estilos que se
+    repiten (unos anillos de tres colores sobre 8 de 12 filas perdían un
+    color) y el espejo. Aquí el patrón se expande con exactamente esas filas:
+    el racimo ``i`` es la fila ``i``, con el mismo estilo, el espejo desde el
+    centro y los acentos contados por racimo. El conteo y la compra siguen
+    saliendo de la rejilla completa (``conteo_por_instancia``).
+
+    ``None`` si el patrón no va por racimos o lleva globos pintados a mano (sus
+    filas son las de la rejilla completa: el armado las toma a lo largo, como
+    antes). Lanza ``PatronColorInvalido`` si el patrón no vale en la pieza.
+    """
+    p = _leer(patron)
+    geometria, _filas, columnas = _validar(estructura, p)
+    if geometria != "racimos" or p.pintados or racimos < 1:
+        return None
+    celdas, _extras = _base(p, racimos, columnas)
+    _aplicar_capas(p, celdas, _unidad(geometria, columnas, transversal=False).singular, [])
+    return tuple(tuple(fila) for fila in celdas)
+
+
 # --- Conteo (§5) -----------------------------------------------------------------
 
 
@@ -722,14 +809,53 @@ def _racimo_sugerido(estructura: EstructuraPatron, k: int = 4) -> list[int]:
     return racimo
 
 
+def _preset_por_racimo(estructura: EstructuraPatron, k: int) -> dict[str, object]:
+    """Preset de una guirnalda armada: los racimos de ``k`` globos de su armado (E5).
+
+    Con varios tamaños el preset de siempre caía en confeti; en una guirnalda
+    armada los globos del relleno y de los remates no ocupan posiciones del
+    patrón (toman el color de su material, ``armado_guirnalda._repartir``) y
+    lo que el patrón colorea son los racimos. Espiral si los colores caben en
+    un racimo (``_racimo_sugerido``); si no, anillos: cada racimo de un color,
+    en orden de participación. Si ninguno se puede armar, confeti con los
+    racimos del armado, para que la unidad siga siendo la suya.
+    """
+    cantidad = len(estructura.materiales)
+    base: dict[str, object] = (
+        {"modo": "espiral", "racimo": _racimo_sugerido(estructura, k), "trazo": "espiral"}
+        if cantidad <= k
+        else {"modo": "anillos", "secuencia": _por_participacion(estructura), "largo": 1}
+    )
+    confeti: dict[str, object] = {
+        "modo": "aleatorio",
+        "pesos": _pesos_por_participacion(estructura, range(cantidad)),
+        "semilla": _semilla(estructura.estructura_id),
+    }
+    for candidata in (base, confeti):
+        patron: dict[str, object] = {
+            "version": VERSION_PATRON,
+            "origen": "sugerido",
+            "globos_por_racimo": k,
+            "base": candidata,
+        }
+        if _armable(estructura, patron):
+            return patron
+    validar_y_expandir(estructura, patron)
+    return patron
+
+
 def sugerir_patron(estructura: EstructuraPatron) -> dict[str, object]:
     """Preset del oficio para una estructura sin patrón (``origen: "sugerido"``).
 
     Espiral de cuartetos en racimos de un solo tamaño con 2–4 colores; confeti
-    por ``participacion`` en el resto. Lanza ``PatronColorInvalido`` cuando la
-    estructura no admite patrón o el preset dejaría un color sin globos.
+    por ``participacion`` en el resto. Una guirnalda armada va por los racimos
+    de su armado (``_preset_por_racimo``). Lanza ``PatronColorInvalido`` cuando
+    la estructura no admite patrón o el preset dejaría un color sin globos.
     """
     _validar_estructura(estructura)
+    racimo_armado = _racimo_de_armado(estructura)
+    if racimo_armado is not None:
+        return _preset_por_racimo(estructura, racimo_armado)
     cantidad = len(estructura.materiales)
     base: dict[str, object]
     if estructura.tipo in _TIPOS_ESPIRAL_SUGERIDA and estructura.un_tamano and cantidad <= 4:
@@ -765,9 +891,10 @@ def modos_admitidos(estructura: EstructuraPatron) -> list[dict[str, object]]:
             {
                 "modo": modo,
                 "direcciones": direcciones,
-                # El espejo evalúa base y acentos desde los dos pies; el
-                # confeti lo ignora (§3), así que no se ofrece.
-                "espejo": estructura.tipo == "arco" and modo != "aleatorio",
+                # El espejo evalúa base y acentos desde los dos pies (o los
+                # dos extremos de una guirnalda en U); el confeti lo ignora
+                # (§3), así que no se ofrece.
+                "espejo": _admite_espejo(estructura) and modo != "aleatorio",
             }
         )
     return admitidos
@@ -941,7 +1068,8 @@ def sugerir_patron_modo(
     previo = _leer(desde) if desde is not None else None
     estilo = f"«{_MODO_ES[modo]}»"
     avisos: list[str] = []
-    k = (
+    # En una guirnalda armada la unidad la decide el armado (E5).
+    k = _racimo_de_armado(estructura) or (
         previo.globos_por_racimo
         if previo is not None and estructura.tipo in TIPOS_RACIMOS
         else None
@@ -1115,6 +1243,11 @@ def patron_desde_pista(
     confianza = pista.get("confianza")
     if not isinstance(confianza, (int, float)) or confianza < CONFIANZA_MINIMA_PISTA:
         return None
+    racimo_armado = _racimo_de_armado(estructura)
+    if racimo_armado is not None:
+        # Guirnalda armada (E5): la foto da los colores y el estilo; la unidad
+        # del racimo es la del armado.
+        pista = {**pista, "globos_por_racimo": racimo_armado}
     colores = pista.get("colores")
     if not isinstance(colores, list) or not colores:
         return None
@@ -1173,6 +1306,19 @@ _EJE_ES = {
     "centro_mesa": "de abajo arriba",
     "pared": "de arriba abajo",
 }
+#: Eje en espejo (en, es): desde los pies de un arco o los extremos de una guirnalda en U (E5).
+_EJE_ESPEJO = {
+    "arco": (
+        "from both bases up to the top, mirrored on each side",
+        "desde cada pie hasta la clave, en espejo",
+    ),
+    "guirnalda": (
+        "from both ends up to the center, mirrored on each side",
+        "desde cada extremo hasta el centro, en espejo",
+    ),
+}
+#: Desde dónde se cuenta y dónde se encuentran las dos mitades de una pieza en espejo.
+_PIE_Y_CLAVE_ES = {"arco": ("cada pie", "la clave"), "guirnalda": ("cada extremo", "el centro")}
 _K_EN = {1: "single", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
 _GIRO_EN = {
     1: "one half",
@@ -1329,10 +1475,10 @@ class _Redactor:
             self.eje_en = "diagonally from the top left corner to the bottom right corner"
             self.eje_es = "en diagonal, de la esquina superior izquierda a la inferior derecha"
         elif p.espejo:
-            self.eje_en = "from both bases up to the top, mirrored on each side"
-            self.eje_es = "desde cada pie hasta la clave, en espejo"
+            self.eje_en, self.eje_es = _EJE_ESPEJO.get(estructura.tipo, _EJE_ESPEJO["arco"])
         else:
             self.eje_en, self.eje_es = _EJE_EN[estructura.tipo], _EJE_ES[estructura.tipo]
+        self.pie_es, self.clave_es = _PIE_Y_CLAVE_ES.get(estructura.tipo, _PIE_Y_CLAVE_ES["arco"])
 
     def es(self, indice: int) -> str:
         return _nombre_color(self.estructura, indice)
@@ -1516,15 +1662,13 @@ class _Redactor:
         )
         if not self.p.espejo:
             return f"Arma los bloques en orden: {orden}."
+        desde = f"desde {self.pie_es} hasta {self.clave_es}"
         if clave is None:
-            return f"Arma los bloques en orden, desde cada pie hasta la clave: {orden}."
+            return f"Arma los bloques en orden, {desde}: {orden}."
         en_la_clave = f"{u.cantidad(1)} de {self.es(clave)}"
         if not orden:
-            return f"Arma {en_la_clave} en la clave."
-        return (
-            f"Arma los bloques en orden, desde cada pie hasta la clave: {orden}; en la clave,"
-            f" {en_la_clave}."
-        )
+            return f"Arma {en_la_clave} en {self.clave_es}."
+        return f"Arma los bloques en orden, {desde}: {orden}; en {self.clave_es}, {en_la_clave}."
 
     def degradado(self) -> _Texto:
         paradas = _enteros(self.p.base["paradas"])
@@ -1661,7 +1805,7 @@ class _Redactor:
                 numeros = [str(posicion + 1) for posicion in acento.posiciones]
                 posicion = _plural(len(numeros), "la posición", "las posiciones")
                 donde = f"en {posicion} {_lista_es(numeros)}"
-            contando = ", contando desde cada pie" if self.p.espejo else ""
+            contando = f", contando desde {self.pie_es}" if self.p.espejo else ""
             instrucciones.append(
                 f"Acento: cada {acento.cada} {u.plural}, empezando en {u.el} {u.singular}"
                 f" {acento.desde}{contando}, lleva {self.es(acento.material)} {donde}."
@@ -1848,10 +1992,13 @@ def patron_resuelto(
 
 
 __all__ = [
+    "AVISO_ESPEJO_GUIRNALDA",
+    "quitar_espejo_sin_u",
     "Conteo",
     "DIRECCIONES",
     "EstructuraPatron",
     "Expansion",
+    "FORMA_GUIRNALDA_ESPEJO",
     "MODOS",
     "MaterialPatron",
     "PatronColorInvalido",
@@ -1864,6 +2011,7 @@ __all__ = [
     "VERSION_PATRON",
     "color_con_acabado_en",
     "conteo_por_instancia",
+    "filas_de_racimos",
     "forma_valida",
     "lista_en",
     "material_de_color",

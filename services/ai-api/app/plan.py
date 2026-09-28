@@ -38,13 +38,15 @@ import math
 import os
 import re
 import unicodedata
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from functools import partial
 from math import isfinite
-from typing import Literal, Protocol, cast
+from typing import Annotated, Literal, Protocol, cast
 from urllib.parse import urlparse
 
+from jsonschema import Draft7Validator
 from pydantic import ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.generated_models import (
@@ -57,6 +59,8 @@ from app.generated_models import (
 )
 from app.armado_bouquet import (
     CONFIANZA_MINIMA_LECTURA,
+    MAX_CANTIDAD_NIVEL,
+    MAX_TOTAL_LEIDO,
     ArmadoInvalido,
     CompraLeida,
     EstructuraBouquet,
@@ -70,7 +74,20 @@ from app.armado_bouquet import (
     validar,
     variantes_admitidas,
 )
+from app.armado_guirnalda import ArmadoInvalido as ArmadoGuirnaldaInvalido
+from app.armado_guirnalda import (
+    EstructuraGuirnalda,
+    GloboGuirnalda,
+    OtraEstructura,
+)
+from app.armado_guirnalda import armado_resuelto as armado_guirnalda_resuelto
+from app.armado_guirnalda import opciones_admitidas as opciones_armado_guirnalda
+from app.armado_guirnalda import racimo_y_forma as racimo_y_forma_de_armado
+from app.armado_guirnalda import sugerir_armado as sugerir_armado_guirnalda
+from app.armado_guirnalda import validar as validar_armado_guirnalda
 from app.catalog import purchase_color_for_unsold
+from app import conteo_foto
+from app.supuestos import agregar_supuesto, supuesto
 from app.operational_models import ContractModel, OperationalRequest
 from app.plan_worker import run_plan_cpu
 from app.patron_color import (
@@ -90,6 +107,7 @@ from app.patron_color import (
     sugerir_patron_modo,
     validar_y_expandir,
 )
+from app.patron_color import filas_de_racimos, quitar_espejo_sin_u
 
 
 PLAN_RESOLUTION_SCOPE = "plan.resolve"
@@ -136,6 +154,41 @@ _BAND_WIDTH: dict[str, float] = {
 _OFFICIAL_GEOMETRY: dict[str, dict[str, object]] = cast(
     dict[str, dict[str, object]],
     contract_schema("PlanDecoracion").get("x-geometria-estructuras-oficiales", {}),
+)
+# Densities each official structure admits (arco_no_denso only sencilla,
+# pared_densa only media/lujosa...). Same owner, estructuras-oficiales.ts, which
+# exports them as the ``allOf`` coherence rules of the structure item; read from
+# there so the photo count never picks one the plan would reject (review 2).
+_OFFICIAL_DENSITIES: dict[str, tuple[str, ...]] = {
+    cast(str, rule["if"]["properties"]["estructura_oficial"]["const"]): tuple(
+        cast(list[str], rule["then"]["properties"]["densidad"]["enum"])
+    )
+    for rule in cast(
+        list[dict[str, dict[str, dict[str, dict[str, object]]]]],
+        contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"].get("allOf", []),
+    )
+    if "densidad" in rule["then"]["properties"]
+}
+
+
+def _admitted_densities(structure: Mapping[str, object]) -> tuple[str, ...]:
+    """The densities the structure's official variant admits; all three without one."""
+    return _OFFICIAL_DENSITIES.get(
+        _text(structure.get("estructura_oficial")) or "", tuple(_DENSITY_LAMBDA)
+    )
+
+
+# ADR-0032: geometry per shape of a garland that carries ``armado_guirnalda``
+# (same owner and table). Read strictly: without it a hanging garland would be
+# counted with its straight length.
+_GARLAND_SHAPES: dict[str, dict[str, object]] = cast(
+    dict[str, dict[str, object]], _OFFICIAL_GEOMETRY["guirnalda"]["formas"]
+)
+# ADR-0032, E4: the shape of a garland reading of the photo (``PistaGuirnaldaSchema``,
+# owner src/lib/plan/armado-guirnalda.ts), checked against the exported contract
+# instead of a second hand-written model.
+_GARLAND_HINT = Draft7Validator(
+    contract_schema("PlanResolutionRequest")["properties"]["pistas_guirnalda"]["items"]
 )
 _DEFAULT_MEASURES: dict[str, dict[str, dict[str, float]]] = {
     "arco": {"interior": {"ancho_m": 3, "alto_m": 2.4}, "exterior": {"ancho_m": 4, "alto_m": 2.6}},
@@ -273,6 +326,9 @@ class NivelLeido(ContractModel):
 
     unidad: Literal["suelto", "pareja", "trio", "cuarteto", "quinteto", "sexteto"]
     colores: list[str] = Field(min_length=1, max_length=6)
+    # Units of the level; absent in readings before bouquet-referencia v2 (worth 1).
+    cantidad: int | None = Field(default=None, ge=1, le=MAX_CANTIDAD_NIVEL)
+    clase_tamano: Literal["chico", "mediano", "grande", "gigante"] | None = None
 
 
 class RemateLeido(ContractModel):
@@ -301,6 +357,13 @@ class PistaArmado(ContractModel):
     numeros: list[NumeroLeido] | None = Field(default=None, max_length=3)
     disposicion: Literal["centro", "lados", "arriba", "abajo"] | None = None
     confianza: float = Field(ge=0, le=1)
+    # Published by the reading itself (``armado_bouquet.total_leido``). The
+    # resolution recounts the levels with that same function; it never trusts
+    # a number that travelled through Next.
+    total_globos: int | None = Field(default=None, ge=0, le=MAX_TOTAL_LEIDO)
+    avisos: list[Annotated[str, Field(min_length=1, max_length=200)]] | None = Field(
+        default=None, max_length=12
+    )
 
 
 class PlanResolutionRequest(OperationalRequest):
@@ -321,6 +384,33 @@ class PlanResolutionRequest(OperationalRequest):
     completar_armados: bool = Field(default=False, strict=True)
     pistas_armado: list[PistaArmado] = Field(default_factory=list, max_length=16)
     completar_armados_de: list[str] | None = Field(default=None, max_length=8)
+    # ADR-0032: the same one-time completion for garlands, behind its own flag
+    # (GUIRNALDAS_ARMADO_V1); ``completar_armados_de`` limits it too.
+    completar_armados_guirnalda: bool = Field(default=False, strict=True)
+    # E4: the garland readings of the photo, one per reference element.
+    pistas_guirnalda: list[dict[str, object]] = Field(default_factory=list, max_length=16)
+
+    @field_validator("pistas_guirnalda")
+    @classmethod
+    def validate_garland_hints(cls, values: list[dict[str, object]]) -> list[dict[str, object]]:
+        if any(next(_GARLAND_HINT.iter_errors(value), None) is not None for value in values):
+            raise ValueError("pistas_guirnalda must match the garland reading contract")
+        return values
+
+    # ADR-0031: the photo's balloon count, once, when the plan is confirmed; after
+    # a mix edit, only for the edited piece (``completar_conteos_de``). The shape
+    # of each hint is validated against the exported contract.
+    completar_conteos: bool = Field(default=False, strict=True)
+    pistas_conteo: list[dict[str, object]] = Field(default_factory=list, max_length=16)
+    completar_conteos_de: list[str] | None = Field(default=None, max_length=8)
+    # Review 33: the customer gave measures (Next's clienteDioMedidasEspacio), so
+    # the measures a structure declares are theirs and the count keeps them.
+    medidas_del_cliente: bool = Field(default=False, strict=True)
+
+    @field_validator("pistas_conteo")
+    @classmethod
+    def validate_count_hints(cls, values: list[dict[str, object]]) -> list[dict[str, object]]:
+        return cast(list[dict[str, object]], conteo_foto.validar_pistas(values))
 
     @field_validator("catalog_snapshot_id")
     @classmethod
@@ -640,6 +730,11 @@ def _pattern_context(
         _axis, total, proportions, _unplaced = _structure_count(plan, structure)
         single_size = len(proportions) == 1
     measures = _mapping(structure.get("medidas"))
+    # A garland built by clusters (ADR-0032, E5): the pattern reads the unit and
+    # the shape of its assembly (preset by cluster, mirror in an inverted U).
+    cluster, shape = racimo_y_forma_de_armado(
+        structure.get("armado_guirnalda") if _is_garland(structure) else None
+    )
     return EstructuraPatron(
         estructura_id=_text(structure.get("estructura_id")) or "",
         tipo=tipo,
@@ -656,6 +751,8 @@ def _pattern_context(
             )
             for material in _mappings(structure.get("materiales"))
         ),
+        racimo_armado=cluster,
+        forma_armado=shape,
     )
 
 
@@ -808,25 +905,10 @@ def _read_back_purchases(
     overrides = _mappings(structure.get("variant_overrides") or [])
     bought: dict[int, list[_BoughtLine]] = {}
     undecided: set[int] = set()
-    position = 0
-    for demand in demands:
-        wanted = _integer(demand.get("cantidad")) or 0
-        run: list[Mapping[str, object]] = []
-        units = 0
-        while units < wanted and position < len(lines):
-            run.append(lines[position])
-            units += _integer(lines[position].get("unidades")) or 0
-            position += 1
-        if units != wanted or len({_purchase_key(line) for line in run}) != 1:
-            return {}
-        delivered = _number(run[0].get("diam_pulg"))
-        requested = _number(demand.get("pulgadas"))
-        if (
-            delivered is not None
-            and requested is not None
-            and not _admissible_substitution(requested, delivered)
-        ):
-            return {}
+    runs = _runs_by_demand(demands, lines)
+    if runs is None:
+        return {}
+    for demand, run in zip(demands, runs, strict=True):
         index = _integer(demand.get("material_index")) or 0
         for line in run:
             replaced = _replaced_line(line, materials[index], overrides)
@@ -839,9 +921,42 @@ def _read_back_purchases(
                     finish=_text(line.get("acabado")),
                 )
             )
-    if position != len(lines):
-        return {}
     return {index: items for index, items in bought.items() if index not in undecided}
+
+
+def _runs_by_demand(
+    demands: Sequence[Mapping[str, object]], lines: Sequence[Mapping[str, object]]
+) -> list[list[Mapping[str, object]]] | None:
+    """The consecutive resolved lines that bought each demand, in demand order.
+
+    ``None`` when they do not correspond (see ``_read_back_purchases``): a run
+    that does not add up to its demand, mixes products, colors or sizes, buys
+    a size that is not an admissible substitute, or a line left over.
+    """
+    runs: list[list[Mapping[str, object]]] = []
+    position = 0
+    for demand in demands:
+        wanted = _integer(demand.get("cantidad")) or 0
+        run: list[Mapping[str, object]] = []
+        units = 0
+        while units < wanted and position < len(lines):
+            run.append(lines[position])
+            units += _integer(lines[position].get("unidades")) or 0
+            position += 1
+        if units != wanted or len({_purchase_key(line) for line in run}) != 1:
+            return None
+        delivered = _number(run[0].get("diam_pulg"))
+        requested = _number(demand.get("pulgadas"))
+        if (
+            delivered is not None
+            and requested is not None
+            and not _admissible_substitution(requested, delivered)
+        ):
+            return None
+        runs.append(run)
+    if position != len(lines):
+        return None
+    return runs
 
 
 def _expand_pattern(
@@ -854,32 +969,46 @@ def _expand_pattern(
         raise _pattern_error(context.estructura_id, error) from error
 
 
+def _suggested_pattern(
+    plan: Mapping[str, object],
+    structure: Mapping[str, object],
+    pistas: Sequence[Mapping[str, object]],
+) -> dict[str, object] | None:
+    """Photo hint first, preset otherwise (ADR-0028 §7), for one structure of a completed plan.
+
+    ``None`` when the structure admits no pattern: not geometric, a single
+    color, or a grid too small for the preset (it keeps today's organic
+    distribution).
+    """
+    context = _pattern_context(plan, structure)
+    element_id = _text(structure.get("referencia_element_id"))
+    hint = next(
+        (
+            pista
+            for pista in pistas
+            if element_id is not None
+            and pista.get("referencia_element_id") == element_id
+            and (_number(pista.get("confianza")) or 0.0) >= CONFIANZA_MINIMA_PISTA
+        ),
+        None,
+    )
+    pattern = patron_desde_pista(context, hint) if hint is not None else None
+    if pattern is None:
+        try:
+            pattern = sugerir_patron(context)
+        except PatronColorInvalido:
+            return None
+    return cast(dict[str, object], pattern)
+
+
 def _assign_patterns(plan: dict[str, object], pistas: Sequence[Mapping[str, object]]) -> None:
     """Photo hint first, preset otherwise (ADR-0028 §7); in place on a completed plan."""
     for structure in cast(list[dict[str, object]], plan["estructuras"]):
         if structure.get("patron_color") is not None:
             continue
-        context = _pattern_context(plan, structure)
-        element_id = _text(structure.get("referencia_element_id"))
-        hint = next(
-            (
-                pista
-                for pista in pistas
-                if element_id is not None
-                and pista.get("referencia_element_id") == element_id
-                and (_number(pista.get("confianza")) or 0.0) >= CONFIANZA_MINIMA_PISTA
-            ),
-            None,
-        )
-        pattern = patron_desde_pista(context, hint) if hint is not None else None
-        if pattern is None:
-            try:
-                pattern = sugerir_patron(context)
-            except PatronColorInvalido:
-                # Not geometric, a single color, or a grid too small for the
-                # preset: the structure keeps today's organic distribution.
-                continue
-        structure["patron_color"] = pattern
+        pattern = _suggested_pattern(plan, structure, pistas)
+        if pattern is not None:
+            structure["patron_color"] = pattern
 
 
 def _sync_participations(
@@ -1002,15 +1131,55 @@ def _product_variant_mismatches(
     return sorted(mismatches)
 
 
-def _eje(tipo: str, measures: Mapping[str, object], official: str | None = None) -> float:
+def _garland_cord(length: float, armado: Mapping[str, object]) -> float:
+    """Real length of a garland's cord with its assembly (ADR-0032).
+
+    A shape with ``conCaida`` in the contract table (``u_invertida``,
+    ``arco_caido``) and a ``caida_m`` hangs from its ends: each span between
+    anchors is a parabolic arc of that sag, the usual approximation of a
+    catenary, of length ``sqrt(a² + 4h²) + a² / (2h) · asinh(2h / a)`` with
+    ``a`` half the span. For a small sag that is ``span + 8/3 · h² / span``;
+    the closed form keeps a tall inverted U (1.5 m wide, 2.2 m drop) at 4.8 m
+    where the series says 10.1 m. An ``arco_caido`` hung from ``n`` points
+    makes ``n - 1`` swags. Any other shape keeps the straight length.
+    """
+    shape = armado.get("forma")
+    sag = _number(armado.get("caida_m")) or 0.0
+    geometry = _GARLAND_SHAPES.get(shape) if isinstance(shape, str) else None
+    if length <= 0 or sag <= 0 or geometry is None or geometry.get("conCaida") is not True:
+        return length
+    anchors = _integer(armado.get("puntos_de_anclaje")) or 2
+    spans = max(1, anchors - 1) if shape == "arco_caido" else 1
+    half = length / spans / 2
+    arc = math.sqrt(half * half + 4 * sag * sag) + half * half / (2 * sag) * math.asinh(
+        2 * sag / half
+    )
+    return spans * arc
+
+
+def _garland_profile(armado: Mapping[str, object]) -> float:
+    """Band profile of a garland's shape (``factorPerfil``, ADR-0032); 1 is the full band."""
+    shape = armado.get("forma")
+    geometry = _GARLAND_SHAPES.get(shape) if isinstance(shape, str) else None
+    factor = geometry.get("factorPerfil") if geometry is not None else None
+    return float(factor) if isinstance(factor, (int, float)) else 1.0
+
+
+def _eje(
+    tipo: str,
+    measures: Mapping[str, object],
+    official: str | None = None,
+    armado: Mapping[str, object] | None = None,
+) -> float:
     width = _number(measures.get("ancho_m")) or 0.0
     height = _number(measures.get("alto_m")) or 0.0
     length = _number(measures.get("largo_m")) or 0.0
     if _OFFICIAL_GEOMETRY.get(official or "", {}).get("eje") == "circunferencia":
         diameter = min(width, height) if width and height else width or height
         return math.pi * diameter
-    if tipo == "guirnalda":
-        return length or width
+    if tipo == "guirnalda" or _OFFICIAL_GEOMETRY.get(official or "", {}).get("eje") == "largo":
+        # Without an assembly, exactly the length as always (golden vectors).
+        return (length or width) if armado is None else _garland_cord(length or width, armado)
     if tipo == "semiarco":
         # A half arch rises ``alto`` and reaches ``ancho``: its axis is a quarter
         # ellipse (a = ancho, b = alto). The chat sends ``largo_m`` as depth, so
@@ -1044,17 +1213,21 @@ def _total_globos(
     mix: str,
     official: str | None = None,
     proportions: Sequence[tuple[int, float]] | None = None,
+    *,
+    armado: Mapping[str, object] | None = None,
 ) -> tuple[float, int]:
     """Axis and total balloon count of one structure.
 
     ``proportions`` is the effective mix when the customer fixed sizes: it
     decides the weighted balloon area and the dominant diameter, while the band
     width and the official structure profile still come from the plan mix.
+    ``armado`` is a garland's ``armado_guirnalda`` (ADR-0032): its shape and
+    drop decide the real axis (``_garland_cord``) and the band profile.
     """
     proportions = tuple(proportions) if proportions else _MIXES[mix]
     dominant = max(proportions, key=lambda item: item[1])
     dominant_diameter_cm = dominant[0] * 2.54 * 0.92
-    axis = _eje(tipo, measures, official)
+    axis = _eje(tipo, measures, official, armado)
     width = _number(measures.get("ancho_m")) or 0.0
     height = _number(measures.get("alto_m")) or 0.0
     area = (
@@ -1062,6 +1235,8 @@ def _total_globos(
         if tipo == "pared"
         else axis * (_BAND_WIDTH[mix] * dominant_diameter_cm / 100) * _band_profile_factor(official)
     )
+    if armado is not None and tipo != "pared":
+        area *= _garland_profile(armado)
     weighted_area = sum(
         proportion * math.pi * ((diameter * 2.54 * 0.92) / 100 / 2) ** 2
         for diameter, proportion in proportions
@@ -1430,8 +1605,15 @@ def _structure_count(
     mix = _text(structure.get("mezcla")) or "organica_fina"
     measures = _mapping(structure.get("medidas"))
     proportions, unplaced = _effective_proportions(mix, _required_sizes(plan))
+    armado = structure.get("armado_guirnalda") if tipo == "guirnalda" else None
     axis, total = _total_globos(
-        tipo, measures, density, mix, _text(structure.get("estructura_oficial")), proportions
+        tipo,
+        measures,
+        density,
+        mix,
+        _text(structure.get("estructura_oficial")),
+        proportions,
+        armado=armado if isinstance(armado, Mapping) else None,
     )
     return axis, total, proportions, unplaced
 
@@ -2985,6 +3167,10 @@ def _build_resolved(
     assemblies = _resolved_assemblies(plan, candidate_by_variant)
     if assemblies:
         result["armados_bouquet"] = assemblies
+    # ADR-0032: and for garland assemblies, named by the structure's lines.
+    garlands = _armados_guirnalda_resueltos(plan, structures)
+    if garlands:
+        result["armados_guirnalda"] = garlands
     PlanResuelto.model_validate(_compact_patterns(result))
     return result
 
@@ -3246,13 +3432,25 @@ def _comprar_lo_leido(
             f"{name}: la foto muestra {total} globos por bouquet, así que la cantidad quedó en "
             f"{total * reps} (el plan decía {before})."
         )
-    dropped = [
-        _text(materials[index].get("color")) or "un material"
-        for index, units in enumerate(bought.cantidades)
-        if units == 0
-    ]
-    if dropped:
-        notices.append(f"{name}: se quitó {', '.join(dropped)} porque la foto no lo lleva.")
+    # A latex whose color stays in another size was not "missing from the photo".
+    reasons = dict(bought.quitados)
+    dropped: dict[str, list[str]] = {}
+    for index, units in enumerate(bought.cantidades):
+        if units:
+            continue
+        label = _text(materials[index].get("color")) or "un material"
+        reason = reasons.get(index, "sin_color")
+        classified = context.materiales[index]
+        if reason != "sin_color" and classified is not None and classified.tamano_pulg:
+            label = f"{label} de {classified.tamano_pulg:g} pulgadas"
+        dropped.setdefault(reason, []).append(label)
+    because = {
+        "sin_color": "porque la foto no lo lleva",
+        "otro_tamano": "porque la foto lleva ese color en otro tamaño",
+        "sin_tamano": "porque la lectura de la foto no dice el tamaño de ese color",
+    }
+    for reason, labels in dropped.items():
+        notices.append(f"{name}: se quitó {', '.join(labels)} {because[reason]}.")
     return (
         {
             **dict(structure),
@@ -3468,6 +3666,22 @@ def _resolution_result(
             continue
         candidates_by_product.setdefault(candidate.product_id, []).append(candidate)
         candidate_by_variant[candidate.variant_id] = candidate
+    assembly_hints = [pista.model_dump(exclude_none=True) for pista in request.pistas_armado]
+    photo_counts: list[dict[str, object]] = []
+    if request.completar_conteos:
+        # Count first, then the bouquet and garland recipes: they see the final density and measures.
+        # ADR-0031: the count decides how many balloons a piece has and the
+        # assemblies only arrange them; it counts with _structure_count, so a
+        # hanging garland (ADR-0032) is compared by its cord. It rewrites the
+        # bouquet assembly hints it rescaled or discarded.
+        raw_plan, assembly_hints, photo_counts = _aplicar_conteos(
+            request,
+            raw_plan,
+            candidates_by_product,
+            candidate_by_variant,
+            allowlist,
+            assembly_hints,
+        )
     if request.completar_armados:
         # Needs the catalog (balloon kind and size), so it happens here and not
         # in _complete_plan; before _build_resolved, because the assembly is
@@ -3475,10 +3689,24 @@ def _resolution_result(
         raw_plan = _assign_assemblies(
             raw_plan,
             candidate_by_variant,
-            [pista.model_dump(exclude_none=True) for pista in request.pistas_armado],
+            assembly_hints,
             only=(
                 None if request.completar_armados_de is None else set(request.completar_armados_de)
             ),
+        )
+    if request.completar_armados_guirnalda:
+        # ADR-0032: the recipe needs no catalog, only the completed plan; it
+        # goes here, next to the bouquets, before _build_resolved signs it. A
+        # pattern this confirmation completed is suggested again by cluster
+        # once the garland has its assembly (decision 20).
+        raw_plan = _completar_armados_guirnalda(
+            raw_plan,
+            only=(
+                None if request.completar_armados_de is None else set(request.completar_armados_de)
+            ),
+            pistas=request.pistas_guirnalda,
+            patrones_completados=_patterns_completed(request),
+            pistas_patron=[pista.model_dump(exclude_none=True) for pista in request.pistas_patron],
         )
     resolved = _build_resolved(
         request,
@@ -3488,6 +3716,15 @@ def _resolution_result(
         candidate_by_variant,
         allowlist,
     )
+    if photo_counts:
+        # Derived, outside the snapshot and the hash (ADR-0031), like armados_bouquet.
+        resolved["conteos_referencia"] = photo_counts
+    garland_readings = _garland_readings(raw_plan, request.pistas_guirnalda)
+    if garland_readings:
+        # Outside the hash too (ADR-0032): Next sends them back when an edit
+        # re-resolves the plan, so a re-suggested assembly keeps the photo's
+        # support and shape (review finding 32), as the counts do.
+        resolved["lecturas_guirnalda"] = garland_readings
     estimate = _material_estimate(resolved)
     quote = _quote(resolved)
     result: dict[str, object] = {
@@ -3501,11 +3738,205 @@ def _resolution_result(
     return result
 
 
+def _patterns_completed(request: PlanResolutionRequest) -> set[str]:
+    """Structures whose ``patron_color`` this resolution completed (``completar_patrones``).
+
+    The ones the request's plan brings without a pattern; a pattern the
+    decorator or the chat declared is not suggested again.
+    """
+    if not request.completar_patrones:
+        return set()
+    return {
+        str(structure.get("estructura_id"))
+        for structure in _mappings(request.plan.get("estructuras"))
+        if structure.get("patron_color") is None
+    }
+
+
+def _garland_readings(
+    plan: Mapping[str, object], hints: Sequence[Mapping[str, object]]
+) -> list[dict[str, object]]:
+    """The request's garland readings that belong to a garland of the plan, as received.
+
+    What ``lecturas_guirnalda`` returns (review finding 32): the photo does
+    not travel with an edit, so these are what lets the next re-resolution
+    suggest the assembly from it again. Only readings whose reference element
+    is a garland of the plan; the confidence rule is applied where they are
+    used (``sugerir_armado``), not here.
+    """
+    garlands = {
+        _text(structure.get("referencia_element_id"))
+        for structure in _mappings(plan.get("estructuras"))
+        if _is_garland(structure)
+    } - {None}
+    return [dict(hint) for hint in hints if _text(hint.get("referencia_element_id")) in garlands]
+
+
 def _validate_plan(plan: Mapping[str, object]) -> None:
     try:
         PlanDecoracion.model_validate(plan)
     except ValidationError as error:
         raise PlanResolutionError("invalid_plan", 422) from error
+
+
+# --- Conteo de la foto (ADR-0031) -------------------------------------------------
+# The rules live in app/conteo_foto.py; this only hands them what they need from
+# the resolver (count, physical gate, mix coverage, kit context) and never
+# changes how any of those is computed.
+
+
+def _mix_covered(
+    structure: Mapping[str, object],
+    mix: str,
+    candidates_by_product: Mapping[str, Sequence[Candidate]],
+    allowlist: Mapping[str, set[str]],
+) -> bool:
+    """Every size of ``mix`` has a sellable round balloon for every material of the structure."""
+    for material in _mappings(structure.get("materiales")):
+        product_id = _text(material.get("product_id")) or ""
+        options = [
+            candidate
+            for candidate in candidates_by_product.get(product_id, ())
+            if candidate.variant_id in allowlist.get(product_id, set())
+        ]
+        color = _text(material.get("color"))
+        if any(not _compatible(options, diameter, color, False) for diameter, _p in _MIXES[mix]):
+            return False
+    return True
+
+
+def _within_physical_gate(
+    plan: Mapping[str, object], structure: Mapping[str, object], total: int
+) -> bool:
+    """``_physical_warnings`` on one instance with ``total`` balloons: no warning, inside the gate."""
+    axis = _structure_count(plan, structure)[0]
+    probe = {
+        "estructura_id": _text(structure.get("estructura_id")) or "",
+        "tipo": _text(structure.get("tipo")) or "",
+        "repeticiones": 1,
+        "eje_m": axis,
+        "lineas": [{"unidades": total, "diam_pulg": 12}],
+    }
+    return not _physical_warnings(
+        {"estructuras": [structure], "restricciones": plan.get("restricciones")}, [probe]
+    )
+
+
+def _resynced_pattern(
+    plan: Mapping[str, object], structure: Mapping[str, object]
+) -> dict[str, object] | None:
+    """The structure with ``participacion`` rewritten from its new grid, or ``None`` if the pattern no longer fits."""
+    single = {**dict(plan), "estructuras": [dict(structure)]}
+    try:
+        synced = _sync_participations(single, single, only=0)
+    except PlanResolutionError:
+        return None
+    return dict(_mappings(synced.get("estructuras"))[0])
+
+
+def _aplicar_conteos(
+    request: PlanResolutionRequest,
+    plan: Mapping[str, object],
+    candidates_by_product: Mapping[str, Sequence[Candidate]],
+    candidate_by_variant: Mapping[str, Candidate],
+    allowlist: Mapping[str, set[str]],
+    assembly_hints: Sequence[Mapping[str, object]],
+) -> tuple[dict[str, object], list[dict[str, object]], list[dict[str, object]]]:
+    """The plan adjusted to the photo's counts (ADR-0031), the assembly hints to use and ``conteos_referencia``."""
+    # Structures whose measures the request declared: with medidas_del_cliente
+    # those are the customer's (review 33); defaulted ones can still move.
+    customer_measures = (
+        {
+            _text(structure.get("estructura_id")) or ""
+            for structure in _mappings(request.plan.get("estructuras"))
+            if any(
+                _number(_mapping(structure.get("medidas") or {}).get(key)) is not None
+                for key in ("ancho_m", "alto_m", "largo_m")
+            )
+        }
+        if request.medidas_del_cliente
+        else set()
+    )
+    port = conteo_foto.PuertoPlan(
+        contar=lambda structure: _structure_count(plan, structure)[1],
+        dentro_de_puerta=lambda structure, total: _within_physical_gate(plan, structure, total),
+        mezcla_cubierta=lambda structure, mix: _mix_covered(
+            structure, mix, candidates_by_product, allowlist
+        ),
+        contexto_kit=lambda structure: _bouquet_context(structure, candidate_by_variant),
+        sincronizar_patron=lambda structure: _resynced_pattern(plan, structure),
+        mezclas=_MIXES,
+        tamanos_obligatorios=bool(_required_sizes(plan)),
+        densidades_admitidas=_admitted_densities,
+        medidas_del_cliente=lambda structure: (_text(structure.get("estructura_id")) or "")
+        in customer_measures,
+    )
+    adjusted, hints, counts = conteo_foto.aplicar(
+        plan,
+        request.pistas_conteo,
+        assembly_hints,
+        usar_armados=request.completar_armados,
+        solo=None if request.completar_conteos_de is None else set(request.completar_conteos_de),
+        puerto=port,
+    )
+    if any(count["decision"] == "ajustado" for count in counts):
+        adjusted = _garland_assemblies_after_count(adjusted, counts, request.pistas_guirnalda)
+        _validate_plan(adjusted)
+    return adjusted, hints, counts
+
+
+def _garland_assemblies_after_count(
+    plan: dict[str, object],
+    counts: Sequence[Mapping[str, object]],
+    readings: Sequence[Mapping[str, object]],
+) -> dict[str, object]:
+    """A garland the count adjusted keeps its assembly only if it still fits (review 4).
+
+    The count changes density or measures, and so what is bought; an assembly
+    that fitted before (a topper needs a big balloon of its color) may not fit
+    any more. It is suggested again from the photo reading or the recipe over
+    the new purchase, or dropped when nothing fits, with a notice; never a 422.
+    """
+    adjusted = {str(count["estructura_id"]) for count in counts if count["decision"] == "ajustado"}
+    structures = [dict(item) for item in _mappings(plan.get("estructuras"))]
+    assumptions = [a for a in cast(list[object], plan.get("supuestos") or []) if isinstance(a, str)]
+    changed = False
+    for index, item in enumerate(structures):
+        assembly = item.get("armado_guirnalda")
+        if assembly is None or (_text(item.get("estructura_id")) or "") not in adjusted:
+            continue
+        current = {**plan, "estructuras": structures}
+        try:
+            validar_armado_guirnalda(_garland_context(current, item), _mapping(assembly))
+            continue
+        except (ArmadoGuirnaldaInvalido, PlanResolutionError):
+            pass
+        bare = _without(item, "armado_guirnalda")
+        element_id = _text(item.get("referencia_element_id"))
+        reading = next(
+            (
+                r
+                for r in readings
+                if element_id is not None and r.get("referencia_element_id") == element_id
+            ),
+            None,
+        )
+        again = sugerir_armado_guirnalda(
+            _garland_context(_with_structure(current, index, bare), bare), reading
+        )
+        structures[index] = bare if again is None else {**bare, "armado_guirnalda": again}
+        agregar_supuesto(
+            assumptions,
+            supuesto(
+                _text(item.get("nombre")) or "Guirnalda",
+                "con la cantidad de la foto el armado anterior ya no cabía: "
+                + ("se volvió a sugerir." if again is not None else "queda sin armado."),
+            ),
+        )
+        changed = True
+    if not changed:
+        return plan
+    return {**plan, "estructuras": structures, "supuestos": assumptions}
 
 
 def _structure_index(plan: Mapping[str, object], estructura_id: str) -> int:
@@ -3714,6 +4145,378 @@ def sugerir_patron_para_estructura(
         return None
 
 
+# --- Guirnaldas por partes (ADR-0032) -------------------------------------------------
+
+_CEILING_PLACEMENTS = frozenset({"techo", "techo_multipunto"})
+
+
+def _is_garland(structure: Mapping[str, object]) -> bool:
+    """A garland built by clusters: not a ceiling installation (``techo_globos``)."""
+    return (
+        _text(structure.get("tipo")) == "guirnalda"
+        and _text(structure.get("estructura_oficial")) in (None, "guirnalda")
+        and _text(structure.get("ubicacion")) not in _CEILING_PLACEMENTS
+    )
+
+
+def _garland_context(
+    plan: Mapping[str, object],
+    structure: Mapping[str, object],
+    lines: Sequence[Mapping[str, object]] | None = None,
+) -> EstructuraGuirnalda:
+    """What the garland assembly rules need of one structure (ADR-0032).
+
+    ``plan`` has its measures completed and ``structure`` carries the assembly
+    being checked, if any: a hanging one changes the axis and so the count.
+    The balloons are this resolver's own split (``_despiece_with_plan_sizes``)
+    per instance, so an assembly can only arrange what the plan buys.
+    ``lines`` (the structure's resolved lines, from resolution or from the
+    browser) only name each material and size by what is bought, read back in
+    demand order as the pattern preview does; when they do not correspond,
+    each one is named as ``materiales`` declares it.
+    """
+    structure_id = _text(structure.get("estructura_id")) or ""
+    materials = _mappings(structure.get("materiales"))
+    repeats = max(1, _integer(structure.get("repeticiones")) or 1)
+    measures = _mapping(structure.get("medidas"))
+    length = _number(measures.get("largo_m")) or _number(measures.get("ancho_m")) or 0.0
+    garland = _is_garland(structure)
+    balloons: list[GloboGuirnalda] = []
+    cord = length
+    rows: tuple[tuple[int, ...], ...] | None = None
+    rows_by_cluster: Callable[[int], tuple[tuple[int, ...], ...] | None] | None = None
+    if garland:
+        armado = structure.get("armado_guirnalda")
+        cord = _eje(
+            "guirnalda",
+            measures,
+            _text(structure.get("estructura_oficial")),
+            armado if isinstance(armado, Mapping) else None,
+        )
+        _axis, demands, _unplaced = _despiece_with_plan_sizes(plan, structure)
+        runs = _runs_by_demand(demands, lines) if lines else None
+        for position, demand in enumerate(demands):
+            index = _integer(demand.get("material_index")) or 0
+            line = runs[position][0] if runs is not None else None
+            source = line if line is not None else materials[index]
+            balloons.append(
+                GloboGuirnalda(
+                    material=index,
+                    tamano_pulg=float(cast(float, demand["pulgadas"])),
+                    por_instancia=(_integer(demand.get("cantidad")) or 0) // repeats,
+                    color=_text(source.get("color")),
+                    acabado=_text(source.get("acabado")),
+                    product_id=_text(line.get("product_id")) if line is not None else None,
+                    variant_id=_text(line.get("variant_id")) if line is not None else None,
+                    tamano_codigo=_text(line.get("tamano_codigo")) if line is not None else None,
+                    diam_entregado=_number(line.get("diam_pulg")) if line is not None else None,
+                )
+            )
+        if structure.get("patron_color") is not None:
+            pattern_context, expansion = _expand_pattern(plan, structure)
+            if expansion.geometria == "racimos":
+                rows = expansion.celdas
+                # E5: the pattern laid over the clusters actually built.
+                rows_by_cluster = partial(
+                    filas_de_racimos, pattern_context, _mapping(structure.get("patron_color"))
+                )
+    return EstructuraGuirnalda(
+        estructura_id=structure_id,
+        nombre=_text(structure.get("nombre")) or structure_id,
+        es_guirnalda=garland,
+        ubicacion=_text(structure.get("ubicacion")) or "",
+        densidad=_text(structure.get("densidad")) or "media",
+        mezcla=_text(structure.get("mezcla")) or "organica_fina",
+        repeticiones=repeats,
+        largo_m=length,
+        largo_cuerda_m=cord,
+        materiales=tuple(
+            MaterialPatron(
+                color=_text(material.get("color")),
+                acabado=_text(material.get("acabado")),
+                participacion=_number(material.get("participacion")) or 0.0,
+            )
+            for material in materials
+        ),
+        globos=tuple(balloons),
+        otras=tuple(
+            OtraEstructura(
+                estructura_id=_text(other.get("estructura_id")) or "",
+                tipo=_text(other.get("tipo")) or "",
+                nombre=_text(other.get("nombre")) or _text(other.get("estructura_id")) or "",
+                referencia_element_id=_text(other.get("referencia_element_id")),
+            )
+            for other in _mappings(plan.get("estructuras"))
+            if _text(other.get("estructura_id")) != structure_id
+        ),
+        filas_patron=rows,
+        filas_de_racimos=rows_by_cluster,
+    )
+
+
+def _garland_error(estructura_id: str, error: ArmadoGuirnaldaInvalido) -> PlanResolutionError:
+    return PlanResolutionError(
+        "armado_invalido",
+        422,
+        {"estructura_id": estructura_id, "motivo": error.motivo, "mensaje": error.mensaje},
+    )
+
+
+def _with_structure(
+    plan: Mapping[str, object], index: int, structure: Mapping[str, object]
+) -> dict[str, object]:
+    structures = list(_mappings(plan.get("estructuras")))
+    structures[index] = structure
+    return {**dict(plan), "estructuras": structures}
+
+
+def _without(structure: Mapping[str, object], key: str) -> dict[str, object]:
+    return {name: value for name, value in structure.items() if name != key}
+
+
+def _assembly_with_pattern_by_cluster(
+    plan: Mapping[str, object],
+    index: int,
+    structure: Mapping[str, object],
+    reading: Mapping[str, object] | None,
+    pattern_hints: Sequence[Mapping[str, object]],
+) -> tuple[dict[str, object] | None, bool]:
+    """A garland whose pattern this confirmation completed: recipe, pattern by cluster, recipe.
+
+    ADR-0032, decision 20. The pattern completed in ``_complete_plan`` did not
+    know the assembly (a mix of sizes got confetti in quartets), so: (1) the
+    recipe or the photo reading without that pattern (the unit by density or
+    by the photo); (2) the pattern again with that assembly, which goes by its
+    clusters (``_preset_por_racimo``: spiral or rings, ``k`` = its unit), and
+    the shares synced to it; (3) the recipe again over the synced purchase, so
+    every topper has its big balloon in the colors the new split buys. Returns
+    the structure with its pattern and assembly, checked as resolution checks
+    it; ``(None, False)`` when the garland admits no assembly at all (as
+    before), ``(None, True)`` when the assembly fits but not the pattern by
+    cluster over it.
+    """
+    bare = _without(_without(structure, "patron_color"), "armado_guirnalda")
+    first = sugerir_armado_guirnalda(
+        _garland_context(_with_structure(plan, index, bare), bare), reading
+    )
+    if first is None:
+        return None, False
+    assembled = {**bare, "armado_guirnalda": first}
+    pattern = _suggested_pattern(_with_structure(plan, index, assembled), assembled, pattern_hints)
+    if pattern is None:
+        return None, True
+    candidate = _with_structure(plan, index, {**assembled, "patron_color": pattern})
+    try:
+        synced = _mappings(
+            _sync_participations(candidate, candidate, only=index).get("estructuras")
+        )[index]
+    except PlanResolutionError:
+        return None, True
+    patterned = _without(synced, "armado_guirnalda")
+    second = sugerir_armado_guirnalda(
+        _garland_context(_with_structure(plan, index, patterned), patterned), reading
+    )
+    if second is None:
+        return None, True
+    final = {**patterned, "armado_guirnalda": second}
+    try:
+        validar_armado_guirnalda(
+            _garland_context(_with_structure(plan, index, final), final), second
+        )
+    except (ArmadoGuirnaldaInvalido, PlanResolutionError):
+        return None, True
+    return final, False
+
+
+def _completar_armados_guirnalda(
+    plan: Mapping[str, object],
+    only: Collection[str] | None = None,
+    pistas: Sequence[Mapping[str, object]] = (),
+    *,
+    patrones_completados: Collection[str] = (),
+    pistas_patron: Sequence[Mapping[str, object]] = (),
+) -> dict[str, object]:
+    """Photo reading first, recipe otherwise, for every garland without an assembly.
+
+    ``completar_armados_guirnalda`` (ADR-0032). The reading of the garland's
+    reference element (``pistas_guirnalda``, E4, confidence at least 0.5)
+    decides its support, shape, unit, filler and toppers; it never declares a
+    drop and neither does the recipe, so the count and the total balloons stay
+    as they were. A garland neither can arrange keeps no assembly. With
+    ``only``, the other structures are left as they are (the re-resolution
+    after an edit). A plan without garlands comes back as it was.
+
+    ``patrones_completados`` are the structures whose pattern this same
+    confirmation completed (``completar_patrones``): for those, recipe →
+    pattern by cluster → recipe (``_assembly_with_pattern_by_cluster``,
+    decision 20). If that does not fit, the garland keeps the completed
+    pattern and gets the assembly of its unit, with a notice in ``supuestos``;
+    never an error.
+    """
+    structures: list[dict[str, object]] = [
+        dict(item) for item in _mappings(plan.get("estructuras"))
+    ]
+    raw_assumptions = plan.get("supuestos")
+    assumptions = [
+        a
+        for a in (raw_assumptions if isinstance(raw_assumptions, list) else [])
+        if isinstance(a, str)
+    ]
+    changed = False
+    notice = False
+    for index, item in enumerate(structures):
+        structure_id = _text(item.get("estructura_id"))
+        wanted = only is None or structure_id in only
+        if not wanted or item.get("armado_guirnalda") is not None or not _is_garland(item):
+            continue
+        element_id = _text(item.get("referencia_element_id"))
+        reading = next(
+            (
+                pista
+                for pista in pistas
+                if element_id is not None and pista.get("referencia_element_id") == element_id
+            ),
+            None,
+        )
+        current = {**dict(plan), "estructuras": structures}
+        if structure_id in patrones_completados and item.get("patron_color") is not None:
+            by_cluster, degraded = _assembly_with_pattern_by_cluster(
+                current, index, item, reading, pistas_patron
+            )
+            if by_cluster is not None:
+                structures[index] = by_cluster
+                changed = True
+                continue
+        else:
+            degraded = False
+        if degraded:
+            notice = True
+            name = _text(item.get("nombre")) or "Guirnalda"
+            # Within the contract's maxLength and maxItems (review finding 31).
+            agregar_supuesto(
+                assumptions,
+                supuesto(
+                    name,
+                    "el patrón por racimos no cabe en lo que se compra; queda el patrón"
+                    " sugerido y el armado de sus racimos.",
+                ),
+            )
+        assembly = sugerir_armado_guirnalda(_garland_context(current, item), reading)
+        if assembly is not None:
+            structures[index] = {**item, "armado_guirnalda": assembly}
+            changed = True
+    if not changed and not notice:
+        return dict(plan)
+    completed: dict[str, object] = {**dict(plan), "estructuras": structures}
+    if notice:
+        completed["supuestos"] = list(dict.fromkeys(assumptions))
+    _validate_plan(completed)
+    return completed
+
+
+def _armados_guirnalda_resueltos(
+    plan: Mapping[str, object], resolved_structures: Sequence[Mapping[str, object]]
+) -> list[dict[str, object]]:
+    """``armados_guirnalda``: one per structure that carries an assembly."""
+    lines = {
+        _text(structure.get("estructura_id")): _mappings(structure.get("lineas"))
+        for structure in resolved_structures
+    }
+    resolved: list[dict[str, object]] = []
+    for structure in _mappings(plan.get("estructuras")):
+        assembly = structure.get("armado_guirnalda")
+        if assembly is None:
+            continue
+        structure_id = _text(structure.get("estructura_id")) or ""
+        context = _garland_context(plan, structure, lines.get(structure_id))
+        try:
+            resolved.append(armado_guirnalda_resuelto(context, _mapping(assembly)))
+        except ArmadoGuirnaldaInvalido as error:
+            raise _garland_error(structure_id, error) from error
+    return resolved
+
+
+def _garland_context_with(
+    plan: Mapping[str, object],
+    estructura_id: str,
+    armado: Mapping[str, object] | None,
+    lines: Sequence[Mapping[str, object]] | None,
+) -> EstructuraGuirnalda:
+    """One garland's context with ``armado`` in place, completed as resolution completes it.
+
+    Measures are completed and the structure's pattern shares resynced (a
+    drop changes the count, and a pattern grid is sized from it). Raises
+    ``estructura_no_encontrada`` (404) or ``invalid_plan`` (422).
+    """
+    index = _structure_index(plan, estructura_id)
+    structures = [dict(structure) for structure in _mappings(plan.get("estructuras"))]
+    if armado is None:
+        structures[index].pop("armado_guirnalda", None)
+    else:
+        structures[index]["armado_guirnalda"] = json.loads(json.dumps(armado))
+    # As the edit does: a pattern mirrored for a U does not survive another
+    # shape or the recipe (review 5), or the preview would reject the draft.
+    quitar_espejo_sin_u(structures[index], armado)
+    candidate = {**dict(plan), "estructuras": structures}
+    _validate_plan(candidate)
+    measured = _complete_measures(candidate)
+    completed = _sync_participations(measured, measured, only=index)
+    return _garland_context(completed, _mappings(completed.get("estructuras"))[index], lines)
+
+
+@dataclass(frozen=True, slots=True)
+class VistaPreviaArmadoGuirnalda:
+    """One garland's resolved assembly and what the editor may offer for it."""
+
+    armado: dict[str, object]
+    opciones: dict[str, object]
+
+
+def vista_previa_de_armado_guirnalda(
+    plan: Mapping[str, object],
+    estructura_id: str,
+    armado: Mapping[str, object] | None,
+    lineas: Sequence[Mapping[str, object]] | None = None,
+) -> VistaPreviaArmadoGuirnalda:
+    """Resolved assembly of one garland, without a catalog (ADR-0032).
+
+    ``armado`` replaces the structure's own ``armado_guirnalda`` and comes back
+    resolved with the function resolution uses; ``None`` asks for the recipe.
+    ``lineas`` (the structure's resolved lines the browser holds) name each
+    code by what is bought, as at resolution. Raises ``PlanResolutionError``:
+    ``estructura_no_encontrada`` (404), ``invalid_plan`` (422) or
+    ``armado_invalido`` (422, with ``motivo`` and ``mensaje``;
+    ``sin_armado_posible`` when not even the recipe fits the purchase).
+    """
+    context = _garland_context_with(plan, estructura_id, armado, lineas)
+    try:
+        if not context.es_guirnalda:
+            raise ArmadoGuirnaldaInvalido(
+                "no_es_guirnalda", "Solo una guirnalda se arma por racimos."
+            )
+        chosen = dict(armado) if armado is not None else sugerir_armado_guirnalda(context)
+        if chosen is None:
+            raise ArmadoGuirnaldaInvalido(
+                "sin_armado_posible",
+                "Con estos globos no se puede armar la guirnalda sin cambiar la compra.",
+            )
+        resolved = armado_guirnalda_resuelto(context, chosen)
+    except ArmadoGuirnaldaInvalido as error:
+        raise _garland_error(estructura_id, error) from error
+    return VistaPreviaArmadoGuirnalda(armado=resolved, opciones=opciones_armado_guirnalda(context))
+
+
+def validar_armado_guirnalda_sin_catalogo(
+    plan: Mapping[str, object], estructura_id: str, armado: Mapping[str, object]
+) -> None:
+    """A garland assembly against the plan alone (the edit, ADR-0032).
+
+    Everything a garland assembly checks is known without the catalog.
+    Raises ``PlanResolutionError`` ``armado_invalido`` (or the plan errors).
+    """
+    vista_previa_de_armado_guirnalda(plan, estructura_id, armado)
+
+
 __all__ = [
     "CatalogPlanStore",
     "ComprasPorMaterial",
@@ -3724,6 +4527,7 @@ __all__ = [
     "PlanResolutionError",
     "PlanResolutionRequest",
     "VistaPreviaArmado",
+    "VistaPreviaArmadoGuirnalda",
     "VistaPreviaPatron",
     "compras_de_estructura",
     "contexto_bouquet_de_globos",
@@ -3733,7 +4537,9 @@ __all__ = [
     "resolve_plan",
     "sincronizar_participaciones",
     "sugerir_patron_para_estructura",
+    "validar_armado_guirnalda_sin_catalogo",
     "validar_armado_sin_catalogo",
     "vista_previa_de_armado",
+    "vista_previa_de_armado_guirnalda",
     "vista_previa_de_estructura",
 ]

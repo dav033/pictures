@@ -192,6 +192,11 @@ compra nada: entrega una cuenta y una confianza, y `plan.py` la convierte en
     `unidades_declaradas = globos_visibles × repeticiones` (el bouquet ya lo hace
     desde su propia lectura; aquí se unifica: la lectura del armado manda si existe,
     si no, el conteo).
+    **Enmienda del 2026-09-25: esta regla queda descartada.** Un bouquet de más de 30
+    globos salió con 11 porque la lectura del armado describe una unidad por nivel
+    (`SEGUIMIENTO-bouquets.md` §14, rama `feat/bouquets`). El conteo da la cantidad
+    y el armado la distribución, y un conteo no exacto también puede subir un kit
+    (ver `SEGUIMIENTO-conteo.md` §3).
   - Geométricas: se busca la combinación (densidad ∈ {sencilla, media, lujosa}, eje
     dentro de ±35 % del declarado, o del largo relativo si la foto trae referencia)
     cuyo total de `_total_globos` quede más cerca del `estimado_total` (o de
@@ -400,3 +405,507 @@ tope y crudos fuera del repo.
    globos) para la evaluación del conteo; guardar `sha256, globos, exacto` fuera del
    repo.
 4. Abrir `feat/conteo-referencia` desde `main` con `feat/bouquets` integrada.
+
+## 8. Estado de las entregas
+
+### E3 — guirnaldas por partes, backend sin UI (hecha el 2026-09-25, rama `feat/guirnaldas`)
+
+Decisiones en ADR-0032 (`docs/architecture/decisions/0032-guirnaldas-por-partes.md`).
+Referencias a la rama al cierre de la entrega.
+
+- **Contrato `armado-guirnalda.v1`**: dueño Zod `src/lib/plan/armado-guirnalda.ts`
+  (forma y `ArmadoGuirnaldaResueltoSchema`); campo opcional en Plan 1.0 y 1.1
+  (`src/lib/plan/tipos.ts:118` y `:349`); `armados_guirnalda` y
+  `completar_armados_guirnalda` en `src/lib/ia/contracts/domain-v1.ts:416` y
+  `:484`. Exportado (`contracts/domain/v1/*`, y `contracts/chat/v1/request.schema.json`
+  porque el chat lleva el plan vigente) y `generated_models.py` regenerado.
+- **Geometría**: entrada `guirnalda` en `src/lib/plan/estructuras-oficiales.ts:106`
+  (`eje: "largo"`, `factorPerfil` y `conCaida` por forma) →
+  `x-geometria-estructuras-oficiales`; en `services/ai-api/app/plan.py`:
+  `_GARLAND_SHAPES` (l.152), `_garland_cord` (l.1041, parábola exacta por tramo),
+  `_garland_profile` (l.1067), `_eje` (l.1075) y `_structure_count` (l.1515),
+  que pasa el armado a `_total_globos`. La puerta física mide sobre la cuerda
+  porque lee `eje_m`.
+- **Dueño de las reglas**: `services/ai-api/app/armado_guirnalda.py`: supuestos
+  del oficio (l.73–103), `_validar_forma_y_soporte` (l.287), `_tomar_relleno`
+  (l.356), `_tomar_remates` (l.413), `_racimos` (l.453), `_repartir` (l.506),
+  `validar` (l.546), `_receta` (l.571), `_desde_lectura` (l.605, punto de
+  entrada de E4), `sugerir_armado` (l.649), `opciones_admitidas` (l.681),
+  `_insumos` (l.798), `_duracion` (l.902), `_frases_prompt` (l.927),
+  `armado_resuelto` (l.1057).
+- **Resolución** (`plan.py`): `completar_armados_guirnalda` en la petición
+  (l.341), completitud en `_resolution_result` (l.3576), `armados_guirnalda`
+  fuera del hash en `_build_resolved` (l.3078); `_is_garland` (l.3824),
+  `_garland_context` (l.3833), `_completar_armados_guirnalda` (l.3929),
+  `_armados_guirnalda_resueltos` (l.3957), `vista_previa_de_armado_guirnalda`
+  (l.4012), `validar_armado_guirnalda_sin_catalogo` (l.4046); `_runs_by_demand`
+  (l.848) sale de `_read_back_purchases` para nombrar con las líneas.
+- **Vista previa y edición** (`services/ai-api/app/plan_edicion.py`):
+  `EdicionArmadoGuirnalda` (l.250), `completar_armados_guirnalda` en la edición
+  (l.312), `PlanArmadoGuirnaldaRequest` (l.408), `_fijar_armado_guirnalda`
+  (l.876), `_revisar_armado_guirnalda` (l.893), `vista_previa_armado_guirnalda`
+  (l.1052); endpoint `POST /internal/v1/plan/armado-guirnalda` en
+  `services/ai-api/app/main.py:1511` (scope `plan.armado_guirnalda`).
+- **Next**: bandera `GUIRNALDAS_ARMADO_V1` (`src/lib/ia/nucleo/feature-flags.ts:61`,
+  default OFF, y `.env.example`); confirmar pide la completitud
+  (`src/lib/ia/herramientas/registro-herramientas.ts:981`); `resolver-backend.ts`
+  (l.66) y `python-adapter.ts` (l.1173) la llevan solo cuando se pide; la
+  edición re-sugiere solo la pieza que perdió el armado
+  (`src/lib/plan/aplicar-edicion.ts:204`); acción `armado_guirnalda` en
+  `src/lib/plan/edicion-esquemas.ts:131` y `/api/plan-editar`.
+- **Limpieza (§1.8, punto 7)**: comentarios de `estructuras-oficiales.ts` y
+  `presentacion-cliente.ts` que citaban `src/lib/medidas/geometria.ts`;
+  `SEGUIMIENTO.md` §4 ya no dice que `MEZCLAS` está duplicada.
+
+**Verificación real** (2026-09-25):
+
+- `npx tsc --noEmit`: solo el TS2304 `LayoutProps` preexistente de
+  `src/app/layout.tsx`. `npm run -s lint`: 0 errores (26 avisos preexistentes).
+  `npm run -s contracts:check`: sin deriva. `npm run plan:test`: completo en 0,
+  con `plan:test-armado-guirnalda` (7 casos, salidas reales de Python fijadas
+  en `scripts/fixtures/armado-guirnalda/resueltos.json`).
+- `pytest -q`: 742 en verde (4 omitidas por falta de Postgres local), con
+  `tests/test_armado_guirnalda.py` (47 casos) y `tests/test_plan_guirnalda.py`
+  (20: bandera on/off, compra igual, hash, punto fijo, `completar_armados_de`,
+  techo y arco sin armado, cuerda y puerta física, vista previa = resolución,
+  edición, endpoint). `ruff check`, `ruff format --check`, `mypy app` y
+  `generate_models.py --check` limpios. Los 31 vectores dorados no cambian.
+- E2E local contra el catálogo real (ai-api del worktree en 8012, sin LLM ni
+  gasto): guirnalda de 2,5 m, `media`, `organica_fina`, dos colores Fashion:
+  48 globos y 50.436 COP con y sin bandera, mismas líneas, `plan_hash`
+  distinto, punto fijo, vista previa = resolución (armado dado y receta), una
+  caída de 0,6 m da 2,84 m de cuerda y 55 globos sin aviso de la puerta física,
+  y cambiar la mezcla a clásica quita el armado con aviso y la re-resolución
+  trae la receta nueva con el mismo total. 14/14.
+
+**Pendientes**:
+
+- Validar con el negocio los supuestos del oficio (ADR-0032): unidad por
+  densidad, relleno de 5", remates repartidos, soporte por ubicación, insumos y
+  ritmo de armado. `factorPerfil` está en 1 en todas las formas, sin calibrar.
+- E4 y E5 hechas (ver abajo). E6: UI y la ruta de Next de la vista previa (Python ya responde en
+  `/internal/v1/plan/armado-guirnalda`).
+- Un rechazo `armado_invalido` de la vista previa no trae `opciones` (la
+  frontera de `main.py` solo deja pasar campos conocidos); el editor de E6
+  puede pedirlas con `armado_guirnalda: null`.
+- Los remates son globos grandes de látex de la propia guirnalda: un foil o
+  una burbuja sobre la guirnalda sigue siendo otra estructura (la resolución
+  geométrica solo compra látex redondo).
+- Al fusionar con `feat/conteo-referencia`: `_aplicar_conteos` debe ir antes de
+  las completitudes de armados en `_resolution_result` (plan.py l.3576), para
+  que la receta vea la densidad y las medidas finales.
+
+### Fusión (2026-09-28, `27528f2` en `origin/feat/guirnaldas`)
+
+`feat/bouquets` (E0) y `feat/conteo-referencia` (E1) fusionadas con merges
+normales. Conflictos: `package.json` (la cadena de `plan:test` une
+`plan:test-armado-guirnalda`, `ia:test-conteo-referencia` e
+`ia:test-armado-bouquet-prompt`; un `&&npm` sin espacio de la rama de conteo
+quedó normalizado) y `generated_models.py` (regenerado desde el Zod fusionado;
+`contracts:export` y `contracts:export:domain` no cambiaron nada). Verificado
+tras la fusión: pytest 769, ruff check y format, mypy `app scripts`,
+`generate_models.py --check`, `contracts:check`, tsc (solo `LayoutProps`),
+lint 0 errores y `plan:test` en 0; los vectores dorados no cambian.
+
+### E4 — lectura de la guirnalda en la foto y ubicación (hecha el 2026-09-28)
+
+Decisiones 16 a 19 de ADR-0032 (numeradas 10 a 13 antes de fusionar E5).
+
+- **Python**: criterios, prompt, esquema y `validar_lecturas` en
+  `services/ai-api/app/amaterasu/estructuras/guirnalda.py` (la `DEFINICION` no
+  cambia); la llamada en `app/amaterasu/guirnalda_referencia.py` (comprueba
+  cada lectura contra `appearance.armado_guirnalda` del contrato); la ruta
+  `POST /internal/v1/ia/guirnalda-referencia` (scope `ia.guirnalda_referencia`)
+  en `app/main.py`. `pistas_guirnalda` en `PlanResolutionRequest` (`plan.py`,
+  validada contra el contrato) llega a `_completar_armados_guirnalda`, y
+  `armado_guirnalda.py` la traduce (`_forma_desde_lectura`, `_desde_lectura`;
+  `OtraEstructura.referencia_element_id` para la anfitriona).
+- **Contrato**: `LecturaGuirnaldaSchema` y `PistaGuirnaldaSchema` en
+  `src/lib/plan/armado-guirnalda.ts`; `appearance.armado_guirnalda` en
+  `reference-blueprint.ts`; `pistas_guirnalda` en `domain-v1.ts`. Exportado y
+  modelos regenerados.
+- **Next**: `src/lib/ia/amaterasu/guirnalda-referencia.ts` (qué se lee, caché
+  compartida, nunca rompe el análisis); `lecturas-foto.ts` (cuarta lectura y
+  `reubicarGuirnaldas`); bandera `GUIRNALDA_REFERENCIA_PYTHON_ENABLED`
+  (`feature-flags.ts`, `.env.example`) en `/api/references/analyze`;
+  `llamarPythonGuirnaldaReferencia` y `pistasGuirnalda` en `python-adapter.ts` y
+  `resolver-backend.ts`; `pistasGuirnaldaDelPlan` al confirmar
+  (`registro-herramientas.ts`); `refinarPlacementGuirnalda` y
+  `reubicarGuirnaldas` en `src/lib/ia/referencia/reference-structure.ts`.
+- **Pruebas**: `tests/test_guirnalda_referencia.py` (prompt, validación, contrato,
+  ruta y scope), casos nuevos en `tests/test_armado_guirnalda.py` y
+  `tests/test_plan_guirnalda.py` (la foto decide la distribución y no la compra,
+  anfitriona por elemento, pista mal formada); `scripts/test/test-guirnalda-referencia.ts`
+  en `plan:test` (qué se lee, caché, fallos, bandera apagada = mismo objeto,
+  ubicación, `pistas_guirnalda`).
+
+**Verificación real** (2026-09-28): pytest 783 en verde (4 omitidas por falta de
+Postgres local); ruff check y format, mypy `app scripts` y
+`generate_models.py --check` limpios; `contracts:check` sin deriva; tsc solo con
+el `LayoutProps` preexistente; lint 0 errores; `plan:test` en 0 con
+`ia:test-guirnalda-referencia` (7 casos). Versiones del prompt del patrón
+(`0d8c93d34d672014`) y del conteo sin cambios. Sin llamadas pagas: la lectura
+no se probó contra Gemini.
+
+**Pendientes de E4**: medir la lectura en fotos reales con tope de gasto (E7);
+calibrar los umbrales de ubicación (mesa, muebles, recorrido de piso); E5 puede
+usar `colores_por_racimo` para el patrón por racimo.
+
+**Fusión de conteo E2 (2026-09-28, `0072d33`):** `_aplicar_conteos` corre antes de
+las completitudes de bouquets y guirnaldas y cuenta con `_structure_count`, así
+que una guirnalda colgada se compara por su cuerda parabólica; pruebas
+`test_el_conteo_se_compara_con_la_cuerda_que_se_compra` y
+`test_la_cantidad_sale_del_conteo_y_la_distribucion_de_la_lectura`
+(`tests/test_plan_guirnalda.py`).
+
+**Fusión de E5 (2026-09-28, `7551491`) y orden al confirmar:** receta → patrón
+por racimos → receta en `_completar_armados_guirnalda` (ADR-0032, decisión 20;
+las de E4 pasaron a 16–19), degradando con un supuesto si no cabe; pruebas
+`test_una_guirnalda_nueva_con_las_dos_banderas_va_por_racimos` y siguientes en
+`tests/test_plan_guirnalda.py`. `colores_por_racimo` (E4) queda sin alimentar la
+pista del patrón hasta medir las dos lecturas (E7).
+
+### E5 — prompts, patrón por racimo y espejo (hecha el 2026-09-28, rama `feat/guirnaldas-e5`)
+
+Parte de `feat/guirnaldas` en `27528f2` (E0, E1 y E3 ya dentro). Decisiones
+10 a 15 de ADR-0032; enmiendas de §3 y §6 en ADR-0028. Sin bandera propia:
+sin `armados_guirnalda` nada cambia. Referencias a la rama al cierre.
+
+- **Python, dueño del patrón y del armado**:
+  - `services/ai-api/app/patron_color.py`: `EstructuraPatron.racimo_armado` y
+    `forma_armado` (l.155); `_admite_espejo` (l.385) y `_racimo_de_armado`
+    (l.392); `filas_de_racimos` (l.678), el patrón sobre los racimos que se
+    arman; `_preset_por_racimo` (l.784) y `sugerir_patron` (l.819);
+    `modos_admitidos` ofrece espejo en U (l.869); la unidad del armado manda
+    en `sugerir_patron_modo` (l.1044) y en `patron_desde_pista` (l.1222);
+    redacción en espejo `_EJE_ESPEJO` y `_PIE_Y_CLAVE_ES` (l.1282, l.1293).
+  - `services/ai-api/app/armado_guirnalda.py`: `EstructuraGuirnalda.filas_de_racimos`
+    (l.184), usada por `_racimos` (l.482); `racimo_y_forma` (l.569);
+    `_frase_lora` (l.1074), la frase LoRA como modificador.
+  - `services/ai-api/app/plan.py`: `_pattern_context` lee el armado de una
+    guirnalda por partes (l.666); `_garland_context` pasa el patrón por
+    racimos (l.3901, l.3933). Tres líneas de import aparte (`partial`,
+    `racimo_y_forma_de_armado`, `filas_de_racimos`).
+  - `services/ai-api/app/plan_edicion.py`: `AVISO_ESPEJO_GUIRNALDA` (l.141),
+    `_quitar_espejo_sin_u` (l.901), llamado al fijar el armado (l.891) y tras
+    `_revisar_armado_guirnalda` (l.1016).
+- **Next, solo inserta y elige frases fijas**:
+  - `src/lib/ia/uzume/mezcla-color-escena.ts`: `ArmadoGuirnaldaEnPrompt`
+    (l.91), `frasesDeEstructuras` con `armados_guirnalda` y la unión con el
+    patrón (l.138), `armadoGuirnaldaDeElemento` (l.183).
+  - `src/lib/ia/uzume/armado-en-prompt.ts`: `fraseSoporteGuirnalda` (l.140),
+    `FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA` (l.150),
+    `CARDINALIDAD_CON_GUIRNALDA_ABRAZADA` (l.157).
+  - `src/lib/ia/uzume/build-image-prompt.ts`: `shapeClause` con el armado
+    (l.119) y `anfitrionaEnPrompt` (l.147); excepción de mesa (l.280); de
+    cardinalidad (l.435); reparto orgánico sin patrón (l.506); `armadoClause`
+    (l.517).
+  - `src/lib/ia/kagutsuchi/lora-caption-compiler.ts`: `armadoGuirnalda` en la
+    cláusula (l.148, l.184, l.652, l.1168).
+  - `src/lib/ia/uzume/lora-gemini-composition.ts`: `GEMINI_COMPOSITION_GARLAND_LOCK`
+    (l.52), `hardLockComposicionGemini` con tercer candado (l.59),
+    `candadosDeComposicion` (l.77) y `conArmadoGuirnaldaEnCaption` (l.85);
+    `src/app/api/generate/route.ts:1118` lo pasa.
+- **Cómo convive el relleno con el patrón** (decidido): el patrón colorea los
+  racimos; el relleno y los remates toman el color de su material y no ocupan
+  posiciones del patrón. El racimo `i` es la fila `i` del patrón expandido
+  sobre los racimos que se arman. La compra sigue saliendo de la rejilla
+  completa (T/k filas); si un color no alcanza, `fuera_de_patron` lo avisa
+  (en la U en espejo de prueba: 3 de 44 globos).
+- **Pruebas nuevas**: `services/ai-api/tests/test_patron_guirnalda.py` (23:
+  preset sin armado igual, por racimo, unidad del armado sobre la de la foto,
+  espejo en U y fuera de ella, redacción, `filas_de_racimos`, resolución y
+  edición); frase LoRA por soporte y forma en `test_armado_guirnalda.py`;
+  `scripts/test/test-armado-guirnalda-prompt.ts` (`ia:test-armado-guirnalda-prompt`,
+  en `plan:test`) con `scripts/lib/escenas-armado-guirnalda.ts` y
+  `scripts/fixtures/armado-guirnalda-prompt/` (15 planes de Python de verdad,
+  escritos por `services/ai-api/scripts/fixture_armado_guirnalda_prompt.py`,
+  vista previa por defecto y `--escribir`; e instantánea de 16 prompts sin
+  armado, capturada con los constructores de `27528f2`). `resueltos.json` de
+  E3 lleva la frase LoRA nueva.
+- **Script para E7**: `scripts/ops/generar-guirnalda-armado.ts`, generación
+  real en fal.ai con y sin armado (pared, swags, U en espejo, piso, abrazada),
+  vista previa por defecto, gasto solo con `--confirm-spend --max-usd`. No se
+  corrió con gasto.
+
+**Verificación real** (2026-09-28):
+
+- Python: `pytest -q` 799 en verde (4 omitidas por falta de Postgres local);
+  `ruff check`, `ruff format --check`, `mypy app scripts` y
+  `generate_models.py --check` limpios. Los 31 vectores dorados no cambian
+  (`test_plan_parity`, `test_plan_regresion`). Los cinco planes sin armado de
+  la fixture salen idénticos resueltos con el código de `27528f2` y con E5.
+  `PROMPT_VERSION` del patrón de Amaterasu sigue en `0d8c93d34d672014`.
+- Next: `npx tsc --noEmit` solo con el TS2304 `LayoutProps` preexistente de
+  `src/app/layout.tsx`; `npm run -s lint` 0 errores (25 avisos
+  preexistentes); `npm run -s contracts:check` sin deriva (E5 no toca el
+  contrato); `ia:test-armado-guirnalda-prompt`, `ia:test-patron-color-prompt`,
+  `ia:test-armado-bouquet-prompt`, `ia:test-lora-compiler`,
+  `ia:test-lora-bilateral`, `ia:test-lora-v004-compactacion`,
+  `ia:test-prompts`, `lora:test-product-runtime`, `plan:test-prompt` y
+  `plan:test-armado-guirnalda` en verde. `npm run plan:test`: completo en 0
+  (85 scripts, con `ia:test-armado-guirnalda-prompt`: 12 casos).
+
+**Pendientes**:
+
+- **No se sabe si el LoRA v007 (ni el v004) aprendió guirnaldas por soporte**:
+  "draped between two anchor points", "in clusters of four" o "wrapped around
+  the balloon arch" nunca estuvieron en sus captions. Se mide en E7, con pago
+  y tope (`scripts/ops/generar-guirnalda-armado.ts`).
+- Al confirmar, el patrón se completa antes que la receta del armado, así que
+  una guirnalda nueva sigue recibiendo confeti con varios tamaños y cuarteto
+  (ADR-0032, decisión 15). Propuesta para la fusión con E2/E4: receta →
+  patrón por racimo → receta otra vez, validando que ningún remate quede sin
+  globo grande.
+- La compra por color sigue la rejilla completa y los racimos el patrón sobre
+  ellos: con anillos o espejo la diferencia sale como `fuera_de_patron`.
+  Contar la rejilla sobre los racimos cambiaría la compra: decisión de negocio.
+- La variante JSON del caption (experimental) dice "every listed decoration
+  appears once as a separate physical piece" también con una guirnalda
+  abrazada a otra pieza; el texto y Gemini ya lo exceptúan.
+- Para E6: la gráfica del armado debe dibujar `armados_guirnalda[].racimos`
+  (los colores que salen de `filas_de_racimos`), no las filas de
+  `patrones_color[].celdas`, que tienen T/k filas.
+- Para la fusión con E4: E5 toca `plan.py` solo en `_pattern_context`,
+  `_garland_context` y tres imports; ni el contrato ni `reference-structure.ts`.
+
+### E6 — UI del armado de la guirnalda (hecha el 2026-09-28, rama `feat/guirnaldas-e6`)
+
+Parte de `feat/guirnaldas` 27528f2 (sin E4 ni E5). Decisiones 21–25 en ADR-0032
+("Entrega E6"; eran 10–14 antes de fusionar E5). Sin Python, sin prompts y sin contratos exportados: la vista
+previa usa el endpoint que E3 ya dejó. Referencias a la rama al cierre.
+
+- **Ruta de Next** `POST /api/plan-armado-guirnalda`
+  (`src/app/api/plan-armado-guirnalda/route.ts:26` cuerpo estricto, `:63` handler):
+  sesión como `/api/plan-editar`, 400 deliberado, 413, líneas con solo los
+  campos del contrato (a lo sumo 256). Adaptador:
+  `llamarPythonPlanArmadoGuirnalda` (`src/lib/ia/nucleo/python-adapter.ts:2613`;
+  scope `plan.armado_guirnalda`, `PythonPlanArmadoGuirnaldaLineaSchema` `:1410`,
+  respuesta `plan-armado-guirnalda-result.v1` `:1603`, eco del armado dado
+  comparado sin orden de claves) y `vistaPreviaArmadoGuirnaldaPython`
+  (`src/lib/plan/edicion-python.ts:408`, plazo `EDICION_PYTHON_DEADLINE_MS`,
+  rechazos `:186`). Las opciones que Python admite viven en un módulo sin
+  dependencias de servidor, `src/lib/plan/opciones-armado-guirnalda.ts:18`, que
+  leen el adaptador y el navegador. Cliente: `pedirVistaArmadoGuirnalda`
+  (`src/lib/plan/peticion-armado-guirnalda.ts:61`), con los errores de la vista
+  del bouquet (`FalloPlanArmado`; `publicar` quedó exportado en
+  `peticion-armado.ts`).
+- **Bloque** `BloqueGuirnalda` (`src/components/plan/guirnalda/BloqueGuirnalda.tsx:44`):
+  soporte (y anfitriona), forma con caída y anclajes, largo y cuerda, racimo,
+  relleno, remates, leyenda de códigos, insumos no cotizados, duración marcada
+  "estimado", avisos. Montado en `DetalleEstructura.tsx:411` (misma posición del
+  árbol que el del bouquet) desde `TarjetaPlanDecoracion.tsx:1300`, solo con
+  `armados_guirnalda` (`:353`).
+- **Gráfica** `GraficaGuirnalda` (`GraficaGuirnalda.tsx:78`) sobre
+  `dibujarGuirnalda` (`geometria-guirnalda.ts:224`): los racimos de
+  `armados_guirnalda[].racimos` con la geometría pseudo-3D del patrón,
+  repartidos sobre `curvaGuirnalda` (`src/components/plan/patron/geometria-dibujo.ts:196`,
+  que `curvaDe` usa solo con armado, `:236`); relleno y sueltos en los huecos,
+  remates junto a su racimo, números de racimo por fuera de la curva, soporte
+  (pared, cuerda y anclajes, piso con pesas, mesa, pieza anfitriona). Figura con
+  texto alternativo y `<ol>` de racimos en orden de lectura; en el editor, cada
+  racimo es un destino (grupo con foco itinerante y zona para soltar). Con patrón
+  y armado, el bloque del patrón y la tira del resumen dibujan los racimos del
+  armado (`patronSobreArmado`, `geometria-guirnalda.ts:99`;
+  `TarjetaPlanDecoracion.tsx:381`), por pedido del orquestador tras E5.
+- **Editor** `EditorGuirnalda` (`EditorGuirnalda.tsx:80`) y `ControlesGuirnalda`
+  (`ControlesGuirnalda.tsx:116`): soporte, anfitriona, forma, caída (deslizador
+  que confirma al soltar), anclajes, unidad y tamaño del racimo, relleno y
+  remates (agregar, quitar, color, posición; arrastre con puntero o "Mover" +
+  flechas + Enter, Escape cancela y el foco vuelve al remate). Deshacer y
+  rehacer, autoguardado con `armado_guirnalda` (`TarjetaPlanDecoracion.tsx:833`),
+  aviso cuando el armado cambia la compra (con los números de Python). Estados
+  explícitos de la vista previa en `crearVistaGuirnalda` y
+  `panelVistaGuirnalda` (`vista-guirnalda.ts:82`, `:237`): cargando, vacío
+  (Python no puede armar la receta), error con Reintentar, listo con
+  "actualizando" y fallo del último borrador; gana el último borrador, se
+  cancela el anterior y lo ya dibujado no se vuelve a pedir.
+- **Hoja única** `HojaArmadoGuirnalda` (`HojaArmadoGuirnalda.tsx:75`, diálogo
+  `:236`): la del patrón y la del armado fundidas; "Hoja de armado" del bloque
+  del patrón abre esta cuando hay armado (`TarjetaPlanDecoracion.tsx:1289`).
+- **Edición**: "Quitar armado" no se vuelve a sugerir con la bandera
+  (`resugerirArmadoGuirnalda`, `src/lib/plan/aplicar-edicion.ts:137`, usado en `:230`).
+- **Pequeños cambios compartidos**: `LeyendaPatron` usa el número como clave
+  (varios códigos de un armado son del mismo material); `jsonEstable` exportado
+  en `bouquet/borrador-armado.ts`; `BloquePatron`/`VistaPatron` aceptan la curva
+  del armado (`guirnalda`, opcional).
+
+**Verificación real** (2026-09-28, en el worktree, sin llamadas pagas):
+
+- `npx tsc --noEmit`: solo el TS2304 `LayoutProps` preexistente de
+  `src/app/layout.tsx`. `npm run -s lint`: 0 errores (25 avisos preexistentes,
+  ninguno en archivos de E6). `npm run -s contracts:check`: sin deriva (no se
+  tocó ningún contrato exportado). `npm run plan:test`: completo en 0 (441 s),
+  con las dos pruebas nuevas dentro.
+- `plan:test-armado-guirnalda-ruta` (`scripts/test/test-plan-armado-guirnalda-ruta.ts`,
+  7 bloques): petición a Python (scope, plazo, campos de cada línea), cuerpo
+  estricto con 400 sin llamar a Python, respuesta validada (otra pieza, otro
+  armado, opciones fuera del contrato → 502), `armado_invalido` con motivo y
+  frase, Python caído (502 `PYTHON_UNAVAILABLE` sin detalles internos),
+  sesión, acción `armado_guirnalda` y "Quitar armado" sin re-sugerir.
+- `ui:test-armado-guirnalda` (`scripts/test/test-ui-armado-guirnalda.ts`, 10
+  casos, salidas reales de Python en `scripts/fixtures/guirnalda-ui/vistas-guirnalda.json`):
+  sin armado la tarjeta sale byte a byte igual (huella sha256 de 27528f2,
+  editable y de lectura); bloque con armado; las cinco formas (recta plana,
+  arco caído de 3 anclajes con 0,4 m a escala, U invertida de 1,2 m a escala,
+  ondulada, curva; caída de muestra avisada); cada globo de Python dibujado una
+  vez; con patrón, los racimos del armado y no la rejilla; accesibilidad
+  (figura, `<ol>` en orden, destinos con un solo Tab stop); controles; borrador;
+  hoja única; vista previa (cargando, vacío, error, rechazo, concurrencia,
+  Python caído) y la petición del navegador.
+- No se tocó Python: no aplica pytest, ruff ni mypy.
+
+**Pendientes**:
+
+- Verificación visual en el navegador: queda para el usuario (la app exige
+  login y `next dev` no corre en este worktree con la junction). Se revisó la
+  gráfica rasterizada (SVG → PNG con `sharp`) de las cinco formas reales.
+- El contrato no deja fijar un remate junto a un racimo cualquiera (solo
+  `extremo_izq`, `extremo_der`, `centro`, `cada_n`): soltar en otro racimo lo
+  reparte a lo largo. Si el negocio lo pide, haría falta `posicion: "racimo"`
+  con su número en `armado-guirnalda.v1`.
+- Las opciones de Python no dicen qué formas admite cada soporte: el editor
+  ofrece las cinco y Python rechaza con su frase (se deshace). Un
+  `opciones.formas` lo evitaría.
+- Sin armado no hay invitación a crearlo (pedido: la tarjeta sin armado queda
+  igual); tras "Quitar armado" se vuelve con "Deshacer" o al confirmar otra vez.
+- El editor del patrón de una guirnalda con armado sigue pintando la rejilla
+  completa del patrón; con E5, los racimos del armado son la fila `i` de
+  `filas_de_racimos`. **Revisado al fusionar E5 (queda pendiente):** el
+  editor dibuja el borrador desde la vista previa del patrón
+  (`plan-patron-result.v1`, la rejilla entera) y sus globos pintados a mano se
+  ubican por fila y columna de esa rejilla, mientras `filas_de_racimos`
+  devuelve `None` con pintados. Dibujar los racimos exige que Python devuelva
+  `filas_de_racimos` del borrador en la vista previa del patrón y decidir cómo
+  se pinta a mano sobre un racimo: no es un cambio acotado. El bloque del
+  patrón, la tira del resumen y la hoja sí dibujan los racimos del armado.
+- La huella de la tarjeta sin armado
+  (`scripts/fixtures/guirnalda-ui/tarjeta-sin-armado.json`) se tomó con el código
+  de 27528f2: si otra entrega cambia la tarjeta a propósito, se vuelve a tomar a
+  mano desde un commit sin E6 con esa entrega fusionada. **Comprobada tras
+  fusionar el arreglo del 11 ("unos N globos"):** la prueba pasa con la huella
+  de 27528f2 sin tocarla; el plan de la huella
+  (`scripts/fixtures/patron-color-ui/plan-con-patrones.json`) no lleva kits de
+  globos, así que el cambio no lo alcanza.
+
+**Fusiones del 2026-09-28 sobre `feat/guirnaldas`:** conteo con el arreglo del 11
+(`1ca3306`): solo `package.json` y `generated_models.py` en conflicto; E6
+(`b313970`): `python-adapter.ts` (importaciones de las dos ramas),
+`package.json`, ADR-0032 (las decisiones de E6 pasan de 10–14 a 21–25) y este
+documento.
+
+### Revisión adversaria, UI del armado (rama `fix/rev-ui`, 2026-09-28)
+
+Hallazgos 18–23. Cada uno tiene su prueba de regresión en `ui:test-armado-guirnalda`
+(§10 `probarRevision`), que falla sin el arreglo.
+
+- **18** (`6d61674`, arreglado): mostrar otro borrador cancela la petición en vuelo del
+  anterior aunque el nuevo espere su pausa (`vista-guirnalda.ts`, `programar`). Antes, un
+  rechazo tardío del viejo deshacía el nuevo.
+- **19** (`cc3f9f4`, arreglado): `alBorrador` deriva el estado del borrador de ese render
+  (pendiente si el controlador todavía no lo conoce) y lo usa `useVistaGuirnalda`. Antes, el
+  «listo» del borrador anterior validaba el nuevo y el autoguardado lo guardaba sin que Python
+  lo dibujara.
+- **20** (`27a09a5`, arreglado): `conSoporte` y `conForma` quitan `puntos_de_anclaje` cuando
+  la guirnalda deja de ir colgada o en arco caído, que es cuando se oculta su control. Queda
+  abierto un caso: un armado que llegue de la foto (E4) en pared, recta y con anclajes sigue
+  sin control para ellos.
+- **21** (`9f997b0`, arreglado): una receta que Python rechaza o que no llega ya no se tapa
+  con el armado recién quitado. El panel pasa a «vacío» o a «error» con Reintentar, y los
+  controles dicen por qué no hay armado (antes quedaba un esqueleto de carga).
+- **22** (`e82bad8`, arreglado): `cerrar()` deja el controlador sin borrador. Así el segundo
+  montaje de StrictMode y Fast Refresh vuelven a pedir la vista previa y las opciones.
+- **23** (`db46513`, arreglada solo la parte de UI): mientras el deslizador de confeti dibuja
+  en vivo, el bloque del patrón ya no pone la rejilla completa sobre la curva del armado.
+  **Pendiente en Python** (fuera de esta rama): `vista_previa_de_estructura` y
+  `_vista_previa_reparto` (`plan_edicion.py`) deben devolver `filas_de_racimos` con los
+  racimos del armado de una guirnalda armada. Con eso, el bloque puede volver a dibujar el
+  vivo sobre la curva. La tira del resumen (`MiniPatron`) muestra a lo sumo 12 racimos y
+  sigue tomando las filas de la rejilla en vivo.
+
+### Revisión adversaria, frontera TS y prompts (2026-09-28, rama `fix/rev-ts` desde `ef6e3aa`)
+
+Una línea por hallazgo de `hallazgos.json`; cada uno con su prueba, que fallaba antes y pasa después.
+
+- **12** (`7b69dfb`): `refinarPlacementGuirnalda` ya no devuelve `recorrido_suelo` ni `alrededor_mobiliario`, que Plan 1.0 no admite, y la regla de pared no lleva una guirnalda a `fondo_pared` si su foto ya tiene una pieza allí. Prueba en `scripts/test/test-guirnalda-referencia.ts`; ADR-0032 §19 enmendado.
+- **14** (`613e32d`): `armadoLeido` no pide "declara unidades_declaradas 0" con una lectura sin globos, ni escribe una línea vacía. Python ya no compra desde esa lectura, así que el arreglo va en el prompt. Prueba en `scripts/test/test-bouquet-referencia.ts`.
+- **15** (`e8f7b08`): la guirnalda #n abraza a la anfitriona #n. Sin pareja, "one of the approved structures". Prueba con el plan real de Python `sobre-columnas-repetidas`.
+- **16** (`12cbc74`): el soporte del armado decide la TABLE SUPPORT EXCEPTION en los dos sentidos; sin armado decide la ubicación, como siempre. Prueba con el plan `mesa` pasado a colgada, pared, piso y abrazada.
+- **17** (`437b852`): la frase de instancia y los candados del híbrido nombran solo el relleno, los remates, el remate y los números que el armado resuelto tiene. Con todas las piezas, las frases son byte a byte las de antes. Pruebas en los tests de guirnalda y de bouquet.
+- **32** (`91137b7`): `plan_resuelto.lecturas_guirnalda` (contrato nuevo, fuera del hash) y `lecturasGuirnaldaDeLaEdicion`: una edición que quita el armado lo re-sugiere con la foto y no con la receta. Pruebas en `tests/test_plan_guirnalda_lecturas.py` y `test-guirnalda-referencia.ts`; ADR-0032 §24 enmendado. App y `ai-api` se despliegan juntos.
+- Límite anotado (fuera de los hallazgos): con el soporte cambiado en el editor y la ubicación en la mesa, el caption LoRA sigue diciendo "placed on the main table", porque el preflight exige la mesa para `sobre_mesa_principal`.
+
+### Estado final (2026-09-28): todo integrado en `feat/guirnaldas`
+
+`feat/guirnaldas` contiene E0 a E6 (bouquets, conteo E1 y E2 con el arreglo del
+11, guirnaldas E3 a E6) y las cuatro ramas de la revisión adversaria, fusionadas
+en este orden: `fix/rev-eval` (24–30), `fix/rev-ui` (18–23), `fix/rev-ts`
+(12, 14–17, 32) y `fix/rev-python` (1–11, 13, 31, 33, 34). Ya no queda trabajo
+en otra rama; las ramas `feat/guirnaldas-e5`, `feat/guirnaldas-e6`, `wip/conteo-e2` y
+`fix/rev-*` se pueden borrar cuando el usuario quiera. Sin PR abierto. Las cuatro
+banderas (`BOUQUETS_ARMADO_V1`, `GUIRNALDAS_ARMADO_V1`, `CONTEO_REFERENCIA_V1` y
+`PATRONES_COLOR_V1`) siguen apagadas; con ellas apagadas, las peticiones son las de
+siempre, y los 31 vectores dorados no cambian respecto de `77d0985`.
+
+**Pendiente (técnico):**
+
+- **23, parte de Python:** `vista_previa_de_estructura` y `_vista_previa_reparto`
+  deben devolver `filas_de_racimos` de una guirnalda armada.
+- **20:** un armado leído de la foto (E4), en pared, recto y con anclajes, sigue sin
+  control para ellos.
+- `cuentaDeLectura` (`src/lib/eval/estructuras/conteo.ts`) es una copia en TS de
+  `cuenta_usable` (`services/ai-api/app/conteo_foto.py`), y ya divergen: no aplica
+  el tope de 10000 globos (revisión 10) y cae a `globos_visibles` donde Python no
+  usa la lectura. **Va a revisión:** o la cuenta viaja en la respuesta de Python,
+  o la evaluación declara que mide la lectura y no la cuenta del plan.
+- `scripts/bench/bench-fidelidad.ts` no aplica `--max-usd` a mitad de corrida, y
+  `resumirCorrida` tiene la forma del hallazgo 30 (`SEGUIMIENTO-conteo.md` §3.3).
+- Con el soporte cambiado en el editor y la ubicación en la mesa, el caption LoRA
+  sigue diciendo "placed on the main table".
+- La tarjeta no muestra `conteos_referencia`, y el supuesto "medidas asumidas"
+  queda con el valor anterior cuando el conteo mueve el largo
+  (`SEGUIMIENTO-conteo.md` §4).
+- Verificación visual de la UI en el navegador, y `npm run build`, que no corre en
+  el worktree con la junction.
+
+**Decide el usuario:**
+
+- **Evaluación pagada, con tope declarado:**
+  - conteo: 30 fotos contadas a mano, fuera del repo;
+  - lectura de guirnaldas (E7);
+  - si el LoRA v007 aprendió guirnaldas por soporte.
+- **Validar con el negocio los supuestos del oficio:**
+  - ADR-0031: ±15 %, ventana de ±35 %, alturas de referencia, umbral de mezcla,
+    un estimado nunca baja un kit;
+  - ADR-0032: unidad por densidad, relleno de 5", remates, soporte, insumos,
+    `factorPerfil`;
+  - la compra por color sobre la rejilla o sobre los racimos.
+- **Contrato:** si hace falta `posicion: "racimo"` en los remates y
+  `opciones.formas` por soporte.
+- **Salida:**
+  - abrir el PR de `feat/guirnaldas` a `main`;
+  - encender las banderas, primero las `*_PYTHON_ENABLED` y después las `*_V1`;
+  - desplegar app y `ai-api` juntos (`lecturas_guirnalda` y `medidas_del_cliente`
+    son campos nuevos de los dos lados).
+
+### Revisión adversaria (2026-09-28, rama `fix/rev-python`, sobre `ef6e3aa`)
+
+Hallazgos de Python que tocan guirnaldas. Cada uno tiene su prueba de regresión
+en `services/ai-api/tests/test_revision_guirnalda.py` o `test_revision_conteo.py`.
+Los del conteo y del bouquet están en `SEGUIMIENTO-conteo.md` §3.4.
+
+- **4** (`dfdc945`): tras editar la mezcla, el conteo cambiaba la densidad y
+  el armado conservado ya no cabía (422 armado_invalido). `_aplicar_conteos`
+  revisa ahora el armado de cada guirnalda ajustada: lo sugiere de nuevo o lo
+  quita, con un supuesto. La sonda pasa de 11 fallos a 0 en 276 casos.
+- **5** (`a85a28c`): la vista previa de una forma distinta de la U, o de la
+  receta, sobre un patrón en espejo daba 422. La regla pasa a
+  `patron_color.quitar_espejo_sin_u`, con un solo dueño para la edición y la
+  vista previa.
+- **6 = 13** (`9e39fe1`): la anfitriona de una guirnalda no podía ser un arco,
+  porque los arcos viajan en `elementos`, no en `otras`. Python y el adaptador
+  aceptan ahora la anfitriona de las dos listas, nunca la propia guirnalda. El
+  prompt de la lectura cambia de versión (`69be1090c6526060`).
+- **31** (`5e81129`): el aviso de patrón degradado de
+  `_completar_armados_guirnalda` pasa por `app/supuestos.py` y ya no rompe el
+  contrato con nombres largos.

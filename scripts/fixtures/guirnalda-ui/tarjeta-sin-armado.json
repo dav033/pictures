@@ -1,0 +1,12 @@
+{
+  "capturada_en": "27528f2",
+  "plan": "scripts/fixtures/patron-color-ui/plan-con-patrones.json",
+  "editable": {
+    "bytes": 380460,
+    "sha256": "23879334e7431a90fced1b5e448dd86b22f88e647d793619d216332f4b767409"
+  },
+  "lectura": {
+    "bytes": 331786,
+    "sha256": "4de985a95ae506b95e97ec257c8e1d7182bf5154173d42b174e4ea2365f72b9d"
+  }
+}

@@ -12,7 +12,9 @@ export type FeatureFlag =
   | "AMBIENTE_FIESTA_V1"
   | "REFERENCIA_EN_ETAPA1_V1"
   | "PATRONES_COLOR_V1"
-  | "BOUQUETS_ARMADO_V1";
+  | "BOUQUETS_ARMADO_V1"
+  | "GUIRNALDAS_ARMADO_V1"
+  | "CONTEO_REFERENCIA_V1";
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
@@ -51,6 +53,20 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // que se compra. Apagada, los planes nuevos salen sin armado; uno que ya lo
     // trae lo conserva.
     if (name === "BOUQUETS_ARMADO_V1") return false;
+    // Default OFF (ADR-0032). Al confirmar un plan, Next pide
+    // `completar_armados_guirnalda` y cada guirnalda sin armado recibe su
+    // receta (soporte, racimos, relleno y remates), sin cambiar lo que se
+    // compra; tras una edición que se lo quita, la re-resolución se lo vuelve a
+    // sugerir solo a esa pieza. Apagada, los planes nuevos salen sin armado; uno
+    // que ya lo trae lo conserva.
+    if (name === "GUIRNALDAS_ARMADO_V1") return false;
+    // Default OFF (ADR-0031, E2). Al confirmar un plan, Next pide
+    // `completar_conteos` con los conteos de la foto (`pistas_conteo`) y Python
+    // ajusta la cantidad de los kits y las medidas, la densidad o la mezcla de
+    // las geométricas a lo que la foto muestra, con un supuesto por cambio; al
+    // cambiar la mezcla de una pieza en el chat, la re-resolución lo repite solo
+    // para ella. Apagada, la petición es la de siempre y nada cambia.
+    if (name === "CONTEO_REFERENCIA_V1") return false;
     return true;
   }
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";
@@ -136,6 +152,30 @@ export function referenceAnalysisCacheEnabled(): boolean {
  * analysis. The readings only reach a plan while `BOUQUETS_ARMADO_V1` is on.
  */
 export const BOUQUET_REFERENCIA_PYTHON_ENABLED = process.env.BOUQUET_REFERENCIA_PYTHON_ENABLED === "true";
+
+/**
+ * Default: OFF (ADR-0031, E1). After the reference analysis, asks Python to
+ * count the balloons of each balloon structure in the photo and stores the
+ * reading on its blueprint element (`appearance.conteo`). One Gemini call per
+ * photo with balloon structures, in parallel with the pattern and bouquet
+ * readings and under the same deadline; a failure never breaks the analysis.
+ * A plan only uses the reading when `CONTEO_REFERENCIA_V1` is also on (E2);
+ * off, the blueprint is exactly what it was before.
+ */
+export const CONTEO_REFERENCIA_PYTHON_ENABLED = process.env.CONTEO_REFERENCIA_PYTHON_ENABLED === "true";
+
+/**
+ * Default: OFF (ADR-0032, E4). After the reference analysis, asks Python to
+ * read how each garland in the photo is built (support, shape, clusters,
+ * filler, toppers) and stores it on its blueprint element
+ * (`appearance.armado_guirnalda`); with it on, the placement of each garland
+ * is refined from that reading and the furniture of the photo
+ * (`reubicarGuirnaldas`). One Gemini call per photo with garlands (arches and
+ * half-arches included), in parallel with the other readings; a failure never
+ * breaks the analysis. The readings only reach a plan while
+ * `GUIRNALDAS_ARMADO_V1` is on, and never change what is bought.
+ */
+export const GUIRNALDA_REFERENCIA_PYTHON_ENABLED = process.env.GUIRNALDA_REFERENCIA_PYTHON_ENABLED === "true";
 
 // --- LoRA capability flags -------------------------------------------------
 

@@ -24,7 +24,7 @@ import {
   contar,
   describirEstructuraCliente,
   escenografiaCliente,
-  esEstructuraDeGlobos,
+  cuentaEnGlobos,
   faltantesCliente,
   medidasCortasCliente,
   muestraColor,
@@ -64,6 +64,11 @@ import { DialogoHojaArmadoBouquet } from "@/components/plan/bouquet/HojaArmadoBo
 import { leyendaBouquet } from "@/components/plan/bouquet/leyenda-bouquet";
 import type { ArmadoBouquetV1 } from "@/lib/plan/armado-bouquet";
 import { FalloPlanArmado, pedirPlanEditarArmado } from "@/lib/plan/peticion-armado";
+import { EditorGuirnalda } from "@/components/plan/guirnalda/EditorGuirnalda";
+import { DialogoHojaArmadoGuirnalda } from "@/components/plan/guirnalda/HojaArmadoGuirnalda";
+import { leyendaGuirnalda } from "@/components/plan/guirnalda/leyenda-guirnalda";
+import { patronSobreArmado } from "@/components/plan/guirnalda/geometria-guirnalda";
+import type { ArmadoGuirnaldaV1 } from "@/lib/plan/armado-guirnalda";
 import { avisosDeEdicion } from "@/components/plan/avisos-edicion";
 import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
 import { crearColaAjustes, crearPendientesAjustes, type TramoAjustes } from "@/components/plan/cola-ajustes";
@@ -303,6 +308,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const [falloArmado, setFalloArmado] = useState<{ mensaje: string; reintentar: (() => void) | null } | null>(null);
   const armadosRechazadosRef = useRef(new WeakSet<ArmadoBouquetV1>());
   const [hojaArmadoBouquet, setHojaArmadoBouquet] = useState<string | null>(null);
+  // Garland assembly editor and its single (pattern + assembly) sheet (ADR-0032, E6); same session contract.
+  const [guirnaldaEditando, setGuirnaldaEditando] = useState<SesionArmado | null>(null);
+  const [falloGuirnalda, setFalloGuirnalda] = useState<{ mensaje: string; reintentar: (() => void) | null } | null>(null);
+  const guirnaldasRechazadasRef = useRef(new WeakSet<ArmadoGuirnaldaV1>());
+  const [hojaGuirnalda, setHojaGuirnalda] = useState<string | null>(null);
   // Every edit of the proposal runs one at a time on the plan the previous one
   // signed: the controls save on their own, faster than the prop comes back.
   const [ajustesEnCurso, setAjustesEnCurso] = useState(0);
@@ -339,12 +349,15 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const patronesAplicados = new Map((plan.patrones_color ?? []).filter((patron) => patron.aplicado).map((patron) => [patron.estructura_id, patron]));
   // Bouquet assemblies as Python resolved them (ADR-0030), one per bouquet that has one.
   const armadosPorEstructura = new Map((plan.armados_bouquet ?? []).map((armado) => [armado.estructura_id, armado]));
+  // Garland assemblies as Python resolved them (ADR-0032); a garland without one shows exactly as before.
+  const armadosGuirnaldaPorEstructura = new Map((plan.armados_guirnalda ?? []).map((armado) => [armado.estructura_id, armado]));
   const vistasEstructura = plan.estructuras.map((estructura) => {
     const declarada = declaradasPorId.get(estructura.estructura_id);
     const oficial = identificarEstructuraOficial({ tipo: estructura.tipo, densidad: declarada?.densidad, ubicacion: estructura.ubicacion, nombre: estructura.nombre, estructura_oficial: declarada?.estructura_oficial });
     const paraDescribir = { oficialId: oficial?.id, nombre: estructura.nombre, ubicacion: estructura.ubicacion, repeticiones: estructura.repeticiones };
     const patron = patronesAplicados.get(estructura.estructura_id);
     const armado = armadosPorEstructura.get(estructura.estructura_id);
+    const armadoGuirnalda = armadosGuirnaldaPorEstructura.get(estructura.estructura_id);
     return {
       estructura,
       declarada,
@@ -361,16 +374,30 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       esBouquet: oficial?.id === "bouquet",
       armado,
       leyendaArmado: armado ? leyendaBouquet(armado, estructura.lineas) : [],
+      armadoGuirnalda,
+      leyendaGuirnalda: armadoGuirnalda ? leyendaGuirnalda(armadoGuirnalda, estructura.lineas) : [],
+      // What the pattern's drawings show: with a garland assembly, the clusters that are really built
+      // (`armados_guirnalda[].racimos`), not the full pattern grid (E5 `filas_de_racimos`).
+      patronDibujo: patron && armadoGuirnalda ? patronSobreArmado(patron, armadoGuirnalda) : patron,
     };
   });
+  const nombrePiezaPlan = (estructuraId: string): string => {
+    const vista = vistasEstructura.find((item) => item.estructura.estructura_id === estructuraId);
+    return vista ? vista.oficial?.nombre ?? productoCliente(vista.estructura.nombre) : estructuraId;
+  };
+  /** The host piece's name of a garland that goes over another one. */
+  const anfitrionaDe = (armado: { armado: ArmadoGuirnaldaV1 } | undefined): string | undefined =>
+    armado?.armado.soporte === "sobre_estructura" && armado.armado.estructura_id ? nombrePiezaPlan(armado.armado.estructura_id) : undefined;
   const descripcionesPorId = new Map(vistasEstructura.map((vista) => [vista.estructura.estructura_id, vista.descripcion]));
   const vistaEditorPatron = patronEditando ? vistasEstructura.find((vista) => vista.estructura.estructura_id === patronEditando.estructuraId) : undefined;
   const vistaHojaArmado = hojaArmado ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaArmado) : undefined;
   const vistaEditorArmado = armadoEditando ? vistasEstructura.find((vista) => vista.estructura.estructura_id === armadoEditando.estructuraId) : undefined;
   const vistaHojaArmadoBouquet = hojaArmadoBouquet ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaArmadoBouquet) : undefined;
+  const vistaEditorGuirnalda = guirnaldaEditando ? vistasEstructura.find((vista) => vista.estructura.estructura_id === guirnaldaEditando.estructuraId) : undefined;
+  const vistaHojaGuirnalda = hojaGuirnalda ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaGuirnalda) : undefined;
   const coloresPlan = [...new Set(vistasEstructura.flatMap((vista) => vista.colores.map((muestra) => muestra.color)))];
   const resumenPlan = resumenPlanCliente(vistasEstructura.map((vista) => vista.paraDescribir), coloresPlan);
-  const soloGlobos = plan.estructuras.every((estructura) => esEstructuraDeGlobos(estructura.tipo));
+  const soloGlobos = plan.estructuras.every(cuentaEnGlobos);
   // Escenografía: lo que se conserva de la foto del cliente. Entra en la
   // imagen, el cliente la enciende o la apaga, y nunca se cotiza — no toca el
   // plan, los materiales ni `plan_hash`.
@@ -404,7 +431,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     return src ? { src, caja: elemento.reference_bbox } : null;
   }
 
-  const piezas = vistasEstructura.map(({ estructura, declarada, oficial, paraDescribir, colores, leyenda, patron }, indice): PiezaPropuestaVista & { recorteCrudo: ReturnType<typeof recorteDe> } => {
+  const piezas = vistasEstructura.map(({ estructura, declarada, oficial, paraDescribir, colores, leyenda, patronDibujo: patron }, indice): PiezaPropuestaVista & { recorteCrudo: ReturnType<typeof recorteDe> } => {
     const recorte = recorteDe(declarada);
     const ubicacionCorta = mayusculaInicial(ubicacionCortaCliente(estructura.ubicacion, estructura.repeticiones));
     return {
@@ -415,7 +442,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       titulo: oficial ? nombreConCantidadCliente(paraDescribir) : productoCliente(estructura.nombre),
       subtitulo: [ubicacionCorta, medidasCortasCliente(estructura.tipo, declarada?.medidas)].filter(Boolean).join(" · "),
       globos: estructura.total_unidades,
-      unidad: esEstructuraDeGlobos(estructura.tipo) ? "globos" : "piezas",
+      // A bouquet or kit made of balloons says "globos"; only real pieces say "piezas".
+      unidad: cuentaEnGlobos(estructura) ? "globos" : "piezas",
       colores,
       recorte: recorte ? { ...recorte, alt: `${oficial?.nombre ?? productoCliente(estructura.nombre)} de tu foto de referencia, ${ubicacionCorta.toLowerCase()}` } : null,
       recorteCrudo: recorte,
@@ -800,6 +828,51 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   function reintentarArmado(sesion: SesionArmado, armado: ArmadoBouquetV1 | null): void {
     setFalloArmado(null);
     void guardarArmado(sesion, armado).then((error) => avisarSesionArmado(sesion, { guardados: error ? 0 : 1, error, sinGuardar: error ? { valor: armado } : null }));
+  }
+
+  /** One autosave of the garland assembly editor (ADR-0032, action `armado_guirnalda`). A rejection comes back with Python's sentence. */
+  function guardarGuirnalda(sesion: SesionArmado, armado: ArmadoGuirnaldaV1 | null): Promise<string | null> {
+    const pedir: typeof pedirPlanEditar = (cuerpo, respaldo, opciones) => pedirPlanEditarArmado(cuerpo, respaldo, opciones).catch((error: unknown) => {
+      // Python rejected this very assembly: retrying it would get the same answer.
+      if (armado && error instanceof FalloPlanArmado && error.armadoInvalido) guirnaldasRechazadasRef.current.add(armado);
+      throw error;
+    });
+    return aplicarAjusteDirecto(
+      { accion: "armado_guirnalda", estructura_id: sesion.estructuraId, armado_guirnalda: armado },
+      "",
+      { enDialogo: true, aviso: false, pedir, tramo: sesion.tramo, alAvisar: (avisos) => sesion.avisos.push(...avisos) },
+    );
+  }
+
+  function abrirEditorGuirnalda(estructuraId: string): void {
+    setFalloGuirnalda(null);
+    setGuirnaldaEditando({ estructuraId, tramo: cola.tramo(), avisos: [] });
+  }
+
+  /** Like the other editors: closes at once, then ONE notice for the whole session with a "Deshacer". */
+  function cerrarEditorGuirnalda(fin: Promise<ResumenAutoguardado<ArmadoGuirnaldaV1 | null>>): void {
+    const sesion = guirnaldaEditando;
+    setGuirnaldaEditando(null);
+    if (!sesion) return;
+    void fin.then((resumen) => avisarSesionGuirnalda(sesion, resumen));
+  }
+
+  function avisarSesionGuirnalda(sesion: SesionArmado, { guardados, error, sinGuardar }: ResumenAutoguardado<ArmadoGuirnaldaV1 | null>): void {
+    if (guardados > 0) {
+      setAvisoEdicion({
+        id: ++secuenciaAvisoRef.current,
+        texto: `Armado de la guirnalda actualizado. Nuevo total: ${pesos.format(cola.base().totales.total_cop)}.`,
+        deshacer: { tramo: sesion.tramo, texto: "Volví a como estaba." },
+        avisos: [...new Set(sesion.avisos)],
+      });
+    }
+    const reintentable = sinGuardar && !(sinGuardar.valor && guirnaldasRechazadasRef.current.has(sinGuardar.valor)) ? sinGuardar : null;
+    setFalloGuirnalda(error ? { mensaje: `El último cambio del armado no se guardó: ${error}`, reintentar: reintentable ? () => reintentarGuirnalda(sesion, reintentable.valor) : null } : null);
+  }
+
+  function reintentarGuirnalda(sesion: SesionArmado, armado: ArmadoGuirnaldaV1 | null): void {
+    setFalloGuirnalda(null);
+    void guardarGuirnalda(sesion, armado).then((error) => avisarSesionGuirnalda(sesion, { guardados: error ? 0 : 1, error, sinGuardar: error ? { valor: armado } : null }));
   }
 
   async function aplicarEdicion(evento?: FormEvent<HTMLFormElement>) {
@@ -1187,7 +1260,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           {!editorAbierto && errorEdicion && !seleccionCatalogo && <p role="alert" className="rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
 
           <ol className="space-y-2.5" aria-label="Piezas de la decoración">
-            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado }, indice) => (
+            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado, armadoGuirnalda, leyendaGuirnalda: leyendaDeGuirnalda, patronDibujo }, indice) => (
               <DetalleEstructura
                 key={estructura.estructura_id}
                 idBase={`${editorId}-pieza-${indice}`}
@@ -1210,10 +1283,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                 onRepartir={editorDisponible ? (participaciones) => aplicarAjusteDirecto({ accion: "repartir", estructura_id: estructura.estructura_id, participaciones }, "Listo, cambié la distribución de colores.", { enDialogo: true }) : undefined}
                 onCambiarMezcla={editorDisponible ? (mezcla) => aplicarAjusteDirecto({ accion: "mezcla", estructura_id: estructura.estructura_id, mezcla }, "Listo, cambié los tamaños de la pieza.", { enDialogo: true }) : undefined}
                 patron={conPatron || patron ? {
-                  resuelto: patron,
+                  resuelto: patronDibujo,
                   leyenda,
                   onEditar: editorDisponible && conPatron ? () => abrirEditorPatron(estructura.estructura_id) : undefined,
-                  onHojaArmado: patron ? () => setHojaArmado(estructura.estructura_id) : undefined,
+                  // A garland with its assembly has ONE sheet: the pattern's and the assembly's merged (ADR-0032, E6).
+                  onHojaArmado: patron ? () => (armadoGuirnalda ? setHojaGuirnalda : setHojaArmado)(estructura.estructura_id) : undefined,
                   // The session starts from the plan the pending slider changes sign.
                   ocupado: guardandoAjustes,
                 } : undefined}
@@ -1222,6 +1296,14 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                   leyenda: leyendaArmado,
                   onEditar: editorDisponible ? () => abrirEditorArmado(estructura.estructura_id) : undefined,
                   onHojaArmado: armado ? () => setHojaArmadoBouquet(estructura.estructura_id) : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                guirnalda={armadoGuirnalda ? {
+                  resuelto: armadoGuirnalda,
+                  leyenda: leyendaDeGuirnalda,
+                  anfitriona: anfitrionaDe(armadoGuirnalda),
+                  onEditar: editorDisponible && declarada ? () => abrirEditorGuirnalda(estructura.estructura_id) : undefined,
+                  onHojaArmado: () => setHojaGuirnalda(estructura.estructura_id),
                   ocupado: guardandoAjustes,
                 } : undefined}
                 vistaReparto={editorDisponible ? {
@@ -1335,6 +1417,17 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         </div>
       )}
 
+      {falloGuirnalda && (
+        <div data-testid="armado-guirnalda-sin-guardar" role="alert" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-borde-suave bg-error-suave px-4 py-2.5 text-xs font-medium text-error @xl:px-5.5">
+          <span className="min-w-0">{falloGuirnalda.mensaje}</span>
+          {falloGuirnalda.reintentar && (
+            <button type="button" onClick={falloGuirnalda.reintentar} className="shrink-0 rounded-full px-2.5 py-1 font-semibold text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+              Reintentar
+            </button>
+          )}
+        </div>
+      )}
+
       {editadoTrasAprobar && !aprobado && onAprobar && !bloqueo && (
         <p data-testid="plan-reaprobar" role="status" className="border-t border-borde-suave bg-acento-suave px-4 py-2.5 text-xs font-medium text-acento @xl:px-5.5">
           Cambiaste la propuesta: la imagen no se actualiza sola. Toca «Regenerar visual» cuando quieras verla.
@@ -1405,6 +1498,34 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           estructura={vistaHojaArmadoBouquet.estructura}
           declarada={vistaHojaArmadoBouquet.declarada}
           oficial={vistaHojaArmadoBouquet.oficial}
+          tituloPlan={plan.plan.concepto.titulo}
+        />
+      )}
+      {guirnaldaEditando && vistaEditorGuirnalda?.declarada && editorDisponible && (
+        <EditorGuirnalda
+          key={vistaEditorGuirnalda.estructura.estructura_id}
+          onCerrar={cerrarEditorGuirnalda}
+          plan={plan.plan}
+          estructura={vistaEditorGuirnalda.estructura}
+          declarada={vistaEditorGuirnalda.declarada}
+          oficial={vistaEditorGuirnalda.oficial}
+          resuelto={vistaEditorGuirnalda.armadoGuirnalda ?? null}
+          nombrePieza={nombrePiezaPlan}
+          aprobada={aprobado || editadoTrasAprobar}
+          onGuardar={(armado) => guardarGuirnalda(guirnaldaEditando, armado)}
+        />
+      )}
+      {vistaHojaGuirnalda?.armadoGuirnalda && (
+        <DialogoHojaArmadoGuirnalda
+          abierto
+          onAbiertoChange={(abierta) => { if (!abierta) setHojaGuirnalda(null); }}
+          resuelto={vistaHojaGuirnalda.armadoGuirnalda}
+          leyenda={vistaHojaGuirnalda.leyendaGuirnalda}
+          estructura={vistaHojaGuirnalda.estructura}
+          declarada={vistaHojaGuirnalda.declarada}
+          oficial={vistaHojaGuirnalda.oficial}
+          patron={vistaHojaGuirnalda.patron}
+          anfitriona={anfitrionaDe(vistaHojaGuirnalda.armadoGuirnalda)}
           tituloPlan={plan.plan.concepto.titulo}
         />
       )}

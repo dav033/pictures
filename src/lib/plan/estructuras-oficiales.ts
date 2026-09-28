@@ -1,3 +1,4 @@
+import type { FormaGuirnalda } from "./armado-guirnalda";
 import type { TipoEstructura } from "./composicion";
 
 /**
@@ -61,13 +62,16 @@ export type EstructuraOficial = {
 
 /**
  * Cómo cambia el cálculo de globos de una variante respecto a su tipo base.
- * Next (`src/lib/medidas/geometria.ts`) la aplica directamente y el servicio
- * Python la lee del contrato exportado (`x-geometria-estructuras-oficiales`),
- * así que esta tabla es la única fuente.
+ * Solo la aplica el resolutor Python (`services/ai-api/app/plan.py`, `_eje` y
+ * `_total_globos`), que la lee del contrato exportado
+ * (`x-geometria-estructuras-oficiales`), así que esta tabla es la única fuente.
  */
 export type GeometriaEstructuraOficial = {
-  /** "circunferencia": el eje es el perímetro de un círculo inscrito en ancho × alto. */
-  eje?: "circunferencia";
+  /**
+   * "circunferencia": el eje es el perímetro de un círculo inscrito en ancho × alto.
+   * "largo": el eje es `largo_m` (o `ancho_m` si falta), como en una guirnalda.
+   */
+  eje?: "circunferencia" | "largo";
   /**
    * Ancho de la banda en el extremo delgado, como fracción del ancho completo.
    * La banda se afina linealmente de un extremo al otro, así que el volumen
@@ -75,6 +79,15 @@ export type GeometriaEstructuraOficial = {
    * diseño sin calibrar, igual que λ.
    */
   anchoFinalBanda?: number;
+  /**
+   * Geometría por forma de una guirnalda con `armado_guirnalda` (ADR-0032).
+   * `factorPerfil` multiplica la banda como `anchoFinalBanda` (1 = banda
+   * completa; sin calibrar, igual que λ). Con `conCaida` y `caida_m` el eje es
+   * el largo real de la cuerda que cuelga: un arco de parábola por tramo entre
+   * anclajes, que para caídas chicas es largo + 8/3 · caída² / largo. Sin
+   * armado, la guirnalda se cuenta con su largo, como siempre.
+   */
+  formas?: Readonly<Record<FormaGuirnalda, { factorPerfil: number; conCaida: boolean }>>;
 };
 
 export type GeometriaEstructurasOficialesContrato = Partial<Record<EstructuraOficialId, GeometriaEstructuraOficial>>;
@@ -90,7 +103,16 @@ export const ESTRUCTURAS_OFICIALES: Readonly<Record<EstructuraOficialId, Estruct
   columna_no_densa: { id: "columna_no_densa", nombre: "Columna no densa", descripcion: "Columna ligera, con espacios entre los globos.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "simetrica", densidades: ["sencilla"], sustantivoEn: "airy organic balloon column" },
   pared_densa: { id: "pared_densa", nombre: "Pared de globos densa", descripcion: "Fondo completo de globos, sin huecos.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "simetrica", densidades: ["media", "lujosa"], sustantivoEn: "dense balloon wall installation" },
   pared_no_densa: { id: "pared_no_densa", nombre: "Pared de globos no densa", descripcion: "Fondo de globos ligero, deja ver la pared.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "organica", densidades: ["sencilla"], sustantivoEn: "airy balloon wall installation" },
-  guirnalda: { id: "guirnalda", nombre: "Guirnalda", descripcion: "Tira orgánica de globos sobre una superficie o el piso.", tipoBase: "guirnalda", tiposAdmitidos: ["guirnalda"], forma: "organica", sustantivoEn: "organic balloon garland" },
+  guirnalda: { id: "guirnalda", nombre: "Guirnalda", descripcion: "Tira orgánica de globos sobre una superficie o el piso.", tipoBase: "guirnalda", tiposAdmitidos: ["guirnalda"], forma: "organica", sustantivoEn: "organic balloon garland", geometria: {
+    eje: "largo",
+    formas: {
+      recta: { factorPerfil: 1, conCaida: false },
+      curva: { factorPerfil: 1, conCaida: false },
+      ondulada: { factorPerfil: 1, conCaida: false },
+      u_invertida: { factorPerfil: 1, conCaida: true },
+      arco_caido: { factorPerfil: 1, conCaida: true },
+    },
+  } },
   centro_mesa: { id: "centro_mesa", nombre: "Centro de mesa con globos", descripcion: "Arreglo bajo de globos sobre una mesa.", tipoBase: "centro_mesa", tiposAdmitidos: ["centro_mesa"], forma: "libre", sustantivoEn: "small balloon cluster centerpiece" },
   bouquet: { id: "bouquet", nombre: "Bouquet de globos", descripcion: "Ramillete de globos atados que flota o se apoya en un peso.", tipoBase: "kit", tiposAdmitidos: ["kit"], forma: "libre", sustantivoEn: "balloon bouquet", unidadesMinimasPorInstancia: 5 },
   figura: { id: "figura", nombre: "Figura con globos", descripcion: "Figura armada con globos (animal, número, personaje).", tipoBase: "kit", tiposAdmitidos: ["kit", "escultura"], forma: "libre", sustantivoEn: "balloon sculpture figure", unidadesMinimasPorInstancia: 20 },

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from typing import Callable, Literal
 
 from pydantic import Field, model_validator
@@ -27,16 +28,23 @@ BOUQUET_REFERENCIA_SCHEMA_VERSION = "bouquet-referencia.v1"
 BOUQUET_REFERENCIA_RESULT_VERSION = "bouquet-referencia-result.v1"
 MAX_ELEMENTOS = 12
 MAX_COLORES = 12
-MAX_OUTPUT_TOKENS = 2_048
+# v2 adds cantidad and clase_tamano per level: 12 bouquets of 8 levels need
+# ~4.5k tokens (review 8). As in the count reading, what is generated is paid.
+MAX_OUTPUT_TOKENS = 4_096
 
 SYSTEM_INSTRUCTION = bouquet.instruccion_sistema(PALETA)
 RESPONSE_SCHEMA = bouquet.esquema_respuesta(PALETA)
+#: v2 (2026-09-28): cada nivel trae cuántas unidades lo forman y su clase de
+#: tamaño; v1 describía una sola unidad por nivel y un bouquet de 36 globos
+#: salía con 11 (SEGUIMIENTO-bouquets.md §14).
 PROMPT_VERSION = (
-    "bouquet-referencia.v1:"
+    "bouquet-referencia.v2:"
     + hashlib.sha256(
         (SYSTEM_INSTRUCTION + json.dumps(RESPONSE_SCHEMA, sort_keys=True)).encode("utf-8")
     ).hexdigest()[:16]
 )
+
+logger = logging.getLogger("decoracion.ai_api.bouquet_referencia")
 
 
 class BouquetReferenciaError(LecturaFotoError):
@@ -90,11 +98,28 @@ async def leer_armados_referencia(
         error=BouquetReferenciaError,
         client_factory=client_factory,
     )
-    lecturas = bouquet.validar_lecturas(
+    validadas = bouquet.validar_lecturas_con_descartes(
         raw, [elemento.element_id for elemento in payload.elementos], PALETA
     )
-    if lecturas is None:
+    if validadas is None:
         raise BouquetReferenciaError("bouquet_referencia_invalid_output", 502)
+    lecturas = validadas.lecturas
+    avisos = {
+        str(lectura["element_id"]): lectura["avisos"] for lectura in lecturas if "avisos" in lectura
+    }
+    if validadas.descartes or avisos:
+        # Nada se descarta en silencio: lo que la validación quitó o recortó, con
+        # los ids de la petición (sin la foto ni texto libre del cliente).
+        logger.warning(
+            "bouquet reading adjusted",
+            extra={
+                "request_id": str(payload.context.request_id),
+                "correlation_id": str(payload.context.correlation_id),
+                "prompt_version": PROMPT_VERSION,
+                "descartes": validadas.descartes,
+                "avisos": avisos,
+            },
+        )
     return {
         "operation_schema_version": BOUQUET_REFERENCIA_RESULT_VERSION,
         "lecturas": lecturas,

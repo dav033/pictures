@@ -4,6 +4,7 @@ import path from "node:path";
 import { z } from "zod";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/uzume/build-image-prompt";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
+import { mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
 import { getGeminiClient } from "@/lib/gemini";
 import { GROUPING_ONLY_CONTEXT, LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/kagutsuchi/lora-prompt-format";
@@ -39,7 +40,7 @@ function requireResolvedLoras(loras: ResolvedLoraApplication[] | undefined): Res
   return loras;
 }
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/escena/visual-context";
-import { hardLockComposicionGemini, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
+import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, hardLockComposicionGemini, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, piezasDeLosArmados, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
 import { ambienteDeFiesta, AVISO_ESCENOGRAFIA_NO_COTIZADA, nivelAmbienteDe, requiereAvisoNoCotizado } from "@/lib/ia/uzume/ambiente-fiesta";
 import { referenciasParaEtapa1Hibrida } from "@/lib/ia/uzume/referencias-etapa1";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/nucleo/tipos";
@@ -896,32 +897,36 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       const grupo = element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!;
       if (!ubicacionPorEstructura.has(grupo)) ubicacionPorEstructura.set(grupo, placementDescription(element.target_bbox, element.category));
     }
+    // Con armado de bouquet, un globo número, metalizado o burbuja se nombra por
+    // su tipo en la leyenda de Python, no como "latex balloon" (ADR-0030).
+    const armadoPorEstructura = new Map((planResuelto?.armados_bouquet ?? []).map((armado) => [armado.estructura_id, armado] as const));
     const sizeMixBlock = planResuelto
       ? bloqueMezclaPorEstructura(planResuelto.estructuras.map((estructura) => ({
           nombre: estructura.nombre,
           total_unidades: estructura.total_unidades,
           repeticiones: estructura.repeticiones,
           ubicacion_en_palabras: ubicacionPorEstructura.get(estructura.estructura_id),
-          mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades })),
+          mezcla_real: mezclaRealConArmado(estructura.mezcla_real, armadoPorEstructura.get(estructura.estructura_id)),
         }))) ?? undefined
       : bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;
     // Mapa de estructuras oficiales declaradas en el plan, para nombrar el prompt de imagen con el mismo vocabulario que el catálogo.
     const officialStructures = officialStructuresDePlan(planResuelto);
+    // Patrón de color y armados de bouquet y de guirnalda por estructura tal
+    // como los firmó Python en el plan re-resuelto (ADR-0028 §12, ADR-0030,
+    // ADR-0032): los constructores solo insertan sus frases.
+    const colorPatterns = frasesDeEstructuras(planResuelto);
     // Lo que la escena aprobada dice de cada estructura, para la comprobación
-    // estructural de color de `verificarCoherenciaPrompt`.
+    // estructural de color de `verificarCoherenciaPrompt`. Con las mismas
+    // frases que el constructor: una pieza con armado lleva línea de color.
     const escenaParaCoherencia: EscenaParaCoherencia = {
       elementos: transformedSceneSpec.elements.map((element) => ({
         element_id: element.element_id,
         nombre_en_prompt: promptElementName(element.name),
         estructura_id: element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!,
         resolved_colors: element.resolved_colors,
-        espera_linea_de_color: tieneContratoDeColor(element),
+        espera_linea_de_color: tieneContratoDeColor(element, colorPatterns),
       })),
     };
-    // Patrón de color y armado de bouquet por estructura tal como los firmó
-    // Python en el plan re-resuelto (ADR-0028 §12, ADR-0030): los
-    // constructores solo insertan sus frases.
-    const colorPatterns = frasesDeEstructuras(planResuelto);
     const promptBase = { sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures, scenography: escenografiaParaEscena, colorPatterns };
     const providerPrompt = buildImagePrompt(promptBase);
     if (planResuelto) {
@@ -1110,7 +1115,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       ? `${buildImagePrompt({
           ...promptBase,
           inputs: inputsComposicionGemini.map(({ id, role, allowed_use }) => ({ image_id: id, role, allowed_use })),
-        })}\n\n${hardLockComposicionGemini(loraCompilation.clauses.some((clause) => Boolean(clause.colorPattern)))}${ambiente.instruccion ? `\n\n${ambiente.instruccion}` : ""}`
+        })}\n\n${hardLockComposicionGemini(...candadosDeComposicion(loraCompilation.clauses), conArmadoGuirnaldaEnCaption(loraCompilation.clauses), piezasDeLosArmados(loraCompilation.clauses))}${ambiente.instruccion ? `\n\n${ambiente.instruccion}` : ""}`
       : undefined;
     const result: { imagen: Imagen; interactionId?: string } = loraPrimaryImage && inputsComposicionGemini && promptComposicionGemini
       ? await port!.generar({

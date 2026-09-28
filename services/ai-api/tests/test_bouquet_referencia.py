@@ -6,6 +6,7 @@ import hashlib
 import json
 import time
 from types import SimpleNamespace
+from typing import cast
 from uuid import UUID
 
 import pytest
@@ -117,7 +118,27 @@ def test_el_prompt_nombra_variantes_unidades_y_la_paleta() -> None:
         assert palabra in SYSTEM_INSTRUCTION
     assert all(color in SYSTEM_INSTRUCTION for color in PALETA)
     assert "maxItems" not in json.dumps(RESPONSE_SCHEMA)
-    assert PROMPT_VERSION.startswith("bouquet-referencia.v1:")
+
+
+def test_la_version_del_prompt_esta_fijada() -> None:
+    # v2 (2026-09-28): cantidad y clase de tamaño por nivel. Un cambio al prompt
+    # o al esquema cambia este hash: se sube la versión a propósito, no se
+    # regenera para que pase (invalida la caché de lecturas y la comparación).
+    # b1f5cb19…: con números "a los lados" se describe un solo grupo (revisión 7).
+    assert PROMPT_VERSION == "bouquet-referencia.v2:b1f5cb194f104d59"
+
+
+def test_el_prompt_pide_cuantas_unidades_forman_cada_nivel_y_su_tamano() -> None:
+    assert "ONE unit" in SYSTEM_INSTRUCTION
+    assert "cantidad = how many identical units form that level" in SYSTEM_INSTRUCTION
+    assert "hidden behind it by symmetry" in SYSTEM_INSTRUCTION
+    for clase in ('"chico"', '"mediano"', '"grande"', '"gigante"'):
+        assert clase in SYSTEM_INSTRUCTION
+    lecturas = RESPONSE_SCHEMA["properties"]["lecturas"]  # type: ignore[index]
+    nivel = lecturas["items"]["properties"]["niveles"]["items"]
+    assert nivel["required"] == ["unidad", "colores", "cantidad"]
+    assert nivel["properties"]["cantidad"] == {"type": "integer", "minimum": 1, "maximum": 24}
+    assert nivel["properties"]["clase_tamano"]["enum"] == ["chico", "mediano", "grande", "gigante"]
 
 
 def test_lee_y_valida_la_respuesta() -> None:
@@ -128,8 +149,13 @@ def test_lee_y_valida_la_respuesta() -> None:
                     "element_id": "REF_01_E01",
                     "variante": "helio_apilado",
                     "niveles": [
-                        {"unidad": "trio", "colores": ["blanco", "Rosado", "magenta neón"]},
-                        {"unidad": "cuarteto", "colores": ["morado inexistente"]},
+                        {
+                            "unidad": "trio",
+                            "colores": ["blanco", "Rosado", "magenta neón"],
+                            "cantidad": 3,
+                            "clase_tamano": "Mediano",
+                        },
+                        {"unidad": "cuarteto", "colores": ["morado inexistente"], "cantidad": 2},
                     ],
                     "remate": {"clase": "metalizado", "color": "dorado"},
                     "numeros": [{"digito": "5", "clase_tamano": "grande"}, {"digito": "x"}],
@@ -154,11 +180,29 @@ def test_lee_y_valida_la_respuesta() -> None:
         "element_id": "REF_01_E01",
         "variante": "helio_apilado",
         # Colores fuera de la paleta fuera; un nivel sin colores fuera.
-        "niveles": [{"unidad": "trio", "colores": ["blanco", "rosado"]}],
+        "niveles": [
+            {
+                "unidad": "trio",
+                "colores": ["blanco", "rosado"],
+                "cantidad": 3,
+                "clase_tamano": "mediano",
+            }
+        ],
         "confianza": 1.0,
         "remate": {"clase": "metalizado", "color": "dorado"},
         "numeros": [{"digito": "5", "clase_tamano": "grande"}],
         "disposicion": "centro",
+        # 3 tríos + remate + el 5: la cuenta es de armado_bouquet.total_leido.
+        "total_globos": 11,
+        # Nada se quita en silencio.
+        "avisos": [
+            "confianza 1.4 fuera de 0-1; quedó en 1",
+            "nivel 1: 1 color fuera de la paleta; se descartaron",
+            "nivel 1: trio con 2 de 3 colores",
+            "nivel 2: 1 color fuera de la paleta; se descartaron",
+            "nivel 2: sin colores de la paleta; se descartó",
+            "números: 1 globo con dígito o tamaño inválido; se descartaron",
+        ],
     }
     config = client.aio.models.calls[0]["config"]
     assert config.system_instruction == SYSTEM_INSTRUCTION  # type: ignore[attr-defined]
@@ -192,8 +236,140 @@ def test_validar_descarta_variantes_y_elementos_desconocidos() -> None:
         PALETA,
     )
     assert lecturas == [
-        {"element_id": "A", "variante": "base_aire", "niveles": [], "confianza": 0.9}
+        {
+            "element_id": "A",
+            "variante": "base_aire",
+            "niveles": [],
+            "confianza": 0.9,
+            "total_globos": 0,
+        }
     ]
+    validadas = bouquet.validar_lecturas_con_descartes(
+        {
+            "lecturas": [
+                {"element_id": "A", "variante": "flotante", "niveles": [], "confianza": 0.9},
+                {"element_id": "B", "variante": "base_aire", "niveles": [], "confianza": 0.9},
+                "no es un objeto",
+            ]
+        },
+        ["A", "C"],
+        PALETA,
+    )
+    assert validadas is not None and validadas.lecturas == []
+    # Lo que se descarta entero no desaparece: va al log con correlación.
+    assert validadas.descartes == [
+        "A: variante desconocida",
+        "B: no se pidió",
+        "una entrada que no es un objeto",
+        "A: el proveedor no devolvió lectura",
+        "C: el proveedor no devolvió lectura",
+    ]
+
+
+def _una(item: dict[str, object]) -> dict[str, object]:
+    lecturas = bouquet.validar_lecturas(
+        {"lecturas": [{"element_id": "A", "confianza": 0.8, "variante": "base_aire", **item}]},
+        ["A"],
+        PALETA,
+    )
+    assert lecturas is not None and len(lecturas) == 1
+    return lecturas[0]
+
+
+def test_la_cantidad_de_cada_nivel_se_acota_con_aviso() -> None:
+    cuarteto = ["dorado", "negro", "dorado", "negro"]
+    lectura = _una(
+        {
+            "niveles": [
+                {"unidad": "cuarteto", "colores": cuarteto, "cantidad": 40},
+                {"unidad": "cuarteto", "colores": cuarteto, "cantidad": 0},
+                {"unidad": "cuarteto", "colores": cuarteto, "cantidad": 2.5},
+                {"unidad": "cuarteto", "colores": cuarteto, "cantidad": 4.0},
+                {"unidad": "cuarteto", "colores": cuarteto, "clase_tamano": "xl"},
+            ]
+        }
+    )
+    niveles = cast(list[dict[str, object]], lectura["niveles"])
+    assert [n["cantidad"] for n in niveles] == [24, 1, 1, 4, 1]
+    assert "clase_tamano" not in niveles[4]
+    assert lectura["avisos"] == [
+        "nivel 1: cantidad 40 fuera de 1-24; quedó en 24",
+        "nivel 2: cantidad 0 fuera de 1-24; quedó en 1",
+        "nivel 3: cantidad no entera; vale 1",
+        "nivel 5: sin cantidad; vale 1",
+        "nivel 5: clase de tamaño desconocida; se omitió",
+    ]
+    assert lectura["total_globos"] == 4 * (24 + 1 + 1 + 4 + 1)
+
+
+def test_los_recortes_de_colores_niveles_y_numeros_son_avisos() -> None:
+    sexteto = ["dorado", "negro", "blanco", "dorado", "negro", "blanco"]
+    lectura = _una(
+        {
+            "niveles": [{"unidad": "sexteto", "colores": sexteto, "cantidad": 1}] * 9
+            + [{"unidad": "suelto", "colores": ["dorado", "negro"] * 5, "cantidad": 1}],
+            "numeros": [{"digito": str(d), "clase_tamano": "grande"} for d in range(5)],
+            "disposicion": "a un lado",
+            "remate": {"clase": "metalizado", "color": "arcoíris"},
+        }
+    )
+    assert len(cast(list[object], lectura["niveles"])) == 8
+    assert len(cast(list[object], lectura["numeros"])) == 3
+    assert lectura["remate"] == {"clase": "metalizado"}
+    assert "disposicion" not in lectura
+    assert lectura["avisos"] == [
+        "nivel 10: 10 colores para suelto; se conservaron 6",
+        "se leyeron 10 niveles; se conservaron los primeros 8",
+        "remate: color fuera de la paleta; se omitió el color",
+        "números: se leyeron 5; se conservaron 3",
+        "disposición desconocida; se omitió",
+    ]
+    assert lectura["total_globos"] == 8 * 6 + 1 + 3
+
+
+def test_una_lectura_limpia_no_lleva_avisos() -> None:
+    lectura = _una(
+        {
+            "niveles": [
+                {
+                    "unidad": "cuarteto",
+                    "colores": ["dorado", "negro", "dorado", "negro"],
+                    "cantidad": 4,
+                    "clase_tamano": "grande",
+                }
+            ],
+        }
+    )
+    assert "avisos" not in lectura
+    assert lectura["total_globos"] == 16
+
+
+def test_el_ajuste_de_la_lectura_queda_en_el_log_con_correlacion(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    texto = json.dumps(
+        {
+            "lecturas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "variante": "base_aire",
+                    "niveles": [{"unidad": "cuarteto", "colores": ["dorado"] * 4, "cantidad": 99}],
+                    "confianza": 0.8,
+                },
+                {"element_id": "REF_09_E09", "variante": "base_aire", "confianza": 0.8},
+            ]
+        }
+    )
+    with caplog.at_level("WARNING", logger="decoracion.ai_api.bouquet_referencia"):
+        resultado = _run(_FakeClient(_respuesta(texto)))
+    [registro] = [r for r in caplog.records if r.message == "bouquet reading adjusted"]
+    assert getattr(registro, "correlation_id") == "ffffffff-ffff-ffff-ffff-ffffffffffff"
+    assert getattr(registro, "descartes") == ["REF_09_E09: no se pidió"]
+    assert getattr(registro, "avisos") == {
+        "REF_01_E01": ["nivel 1: cantidad 99 fuera de 1-24; quedó en 24"]
+    }
+    [lectura] = cast(list[dict[str, object]], resultado["lecturas"])
+    assert lectura["total_globos"] == 96
 
 
 def _signed(scopes: list[str], *, nonce: str) -> tuple[bytes, dict[str, str]]:

@@ -1,0 +1,980 @@
+[
+  {
+    "estructura_id": "EST_01_GUIRNALDA",
+    "armado": {
+      "version": "armado-guirnalda.v1",
+      "origen": "sugerido",
+      "soporte": "pared",
+      "forma": "recta",
+      "racimo": {
+        "unidad": "cuarteto",
+        "tamano_pulg_base": 12
+      },
+      "relleno": {
+        "material": 0,
+        "proporcion": 0.2083
+      },
+      "remates": [
+        {
+          "material": 0,
+          "posicion": "cada_n"
+        },
+        {
+          "material": 1,
+          "posicion": "cada_n"
+        }
+      ]
+    },
+    "repeticiones": 1,
+    "largo_m": 2.5,
+    "largo_cuerda_m": 2.5,
+    "globos_por_instancia": 48,
+    "leyenda": [
+      {
+        "codigo": 1,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-5",
+        "descripcion": "R-5 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 5.0,
+        "unidades_por_instancia": 6,
+        "unidades_total": 6
+      },
+      {
+        "codigo": 2,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-9",
+        "descripcion": "R-9 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 9.0,
+        "unidades_por_instancia": 5,
+        "unidades_total": 5
+      },
+      {
+        "codigo": 3,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-12",
+        "descripcion": "R-12 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 12.0,
+        "unidades_por_instancia": 16,
+        "unidades_total": 16
+      },
+      {
+        "codigo": 4,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-18",
+        "descripcion": "R-18 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 18.0,
+        "unidades_por_instancia": 1,
+        "unidades_total": 1
+      },
+      {
+        "codigo": 5,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-24",
+        "descripcion": "R-24 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 24.0,
+        "unidades_por_instancia": 1,
+        "unidades_total": 1
+      },
+      {
+        "codigo": 6,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-5",
+        "descripcion": "R-5 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 5.0,
+        "unidades_por_instancia": 4,
+        "unidades_total": 4
+      },
+      {
+        "codigo": 7,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-9",
+        "descripcion": "R-9 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 9.0,
+        "unidades_por_instancia": 4,
+        "unidades_total": 4
+      },
+      {
+        "codigo": 8,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-12",
+        "descripcion": "R-12 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 12.0,
+        "unidades_por_instancia": 10,
+        "unidades_total": 10
+      },
+      {
+        "codigo": 9,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-18",
+        "descripcion": "R-18 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 18.0,
+        "unidades_por_instancia": 1,
+        "unidades_total": 1
+      }
+    ],
+    "racimos": [
+      {
+        "numero": 1,
+        "codigos": [
+          3,
+          8,
+          3,
+          7
+        ]
+      },
+      {
+        "numero": 2,
+        "codigos": [
+          2,
+          3,
+          8,
+          3
+        ]
+      },
+      {
+        "numero": 3,
+        "codigos": [
+          8,
+          3,
+          2,
+          8
+        ]
+      },
+      {
+        "numero": 4,
+        "codigos": [
+          3,
+          7,
+          3,
+          3
+        ]
+      },
+      {
+        "numero": 5,
+        "codigos": [
+          8,
+          2,
+          8,
+          3
+        ]
+      },
+      {
+        "numero": 6,
+        "codigos": [
+          3,
+          7,
+          3,
+          8
+        ]
+      },
+      {
+        "numero": 7,
+        "codigos": [
+          2,
+          3,
+          8,
+          3
+        ]
+      },
+      {
+        "numero": 8,
+        "codigos": [
+          8,
+          3,
+          2,
+          7
+        ]
+      }
+    ],
+    "relleno": {
+      "material": 0,
+      "total": 10,
+      "codigos": [
+        {
+          "codigo": 1,
+          "cantidad": 6
+        },
+        {
+          "codigo": 6,
+          "cantidad": 4
+        }
+      ]
+    },
+    "remates": [
+      {
+        "posicion": "cada_n",
+        "codigo": 5,
+        "cantidad": 1,
+        "racimos": [
+          3
+        ]
+      },
+      {
+        "posicion": "cada_n",
+        "codigo": 4,
+        "cantidad": 1,
+        "racimos": [
+          7
+        ]
+      },
+      {
+        "posicion": "cada_n",
+        "codigo": 9,
+        "cantidad": 1,
+        "racimos": [
+          5
+        ]
+      }
+    ],
+    "sueltos": [
+      {
+        "codigo": 3,
+        "cantidad": 2
+      },
+      {
+        "codigo": 8,
+        "cantidad": 1
+      }
+    ],
+    "insumos": [
+      {
+        "insumo": "tira",
+        "cantidad": 3.0,
+        "unidad": "m",
+        "detalle": "tira perforada para armar la guirnalda: su largo más un 10 % para amarres",
+        "estimado": false
+      },
+      {
+        "insumo": "ganchos",
+        "cantidad": 6,
+        "unidad": "ganchos",
+        "detalle": "ganchos adhesivos o pegante para pared, uno cada 50 cm",
+        "estimado": false
+      },
+      {
+        "insumo": "pegante",
+        "cantidad": 16,
+        "unidad": "puntos",
+        "detalle": "puntos de pegamento para el relleno, los remates y los globos sueltos",
+        "estimado": true
+      },
+      {
+        "insumo": "tijeras",
+        "cantidad": 1,
+        "unidad": "tijeras",
+        "detalle": "",
+        "estimado": false
+      },
+      {
+        "insumo": "bomba",
+        "cantidad": 1,
+        "unidad": "bomba",
+        "detalle": "infladora con calibrador de tamaños",
+        "estimado": false
+      }
+    ],
+    "duracion_estimada": {
+      "horas_min": 0.75,
+      "horas_max": 1.75,
+      "estimado": true
+    },
+    "nombre": "Guirnalda en pared",
+    "descripcion": "8 cuartetos de 12\" de izquierda a derecha, relleno de 10 globos chicos y 3 globos grandes de remate, sobre la pared.",
+    "pasos": [
+      "Infla y calibra los 48 globos de cada guirnalda según la leyenda.",
+      "Arma 8 cuartetos de 12\": amarra dos parejas y crúzalas. Cada racimo lleva los códigos de la gráfica.",
+      "Pasa los racimos por la tira en orden, del 1 (extremo izquierdo) al 8 (extremo derecho), girando cada uno un cuarto de vuelta respecto del anterior.",
+      "Relleno: pega los 10 globos chicos en los huecos entre racimos, repartidos parejo: 6 de R-5 rosado (1), 4 de R-5 blanco (6).",
+      "Remate: 1 globo R-24 rosado (5) junto al racimo 3.",
+      "Remate: 1 globo R-18 rosado (4) junto al racimo 7.",
+      "Remate: 1 globo R-18 blanco (9) junto al racimo 5.",
+      "Reparte los globos sueltos entre los racimos para cerrar huecos: 2 de R-12 rosado (3), 1 de R-12 blanco (8).",
+      "Fija la guirnalda a la pared de izquierda a derecha con ganchos o pegante."
+    ],
+    "avisos": [
+      "Sobran 3 globos que no completan un cuarteto: van sueltos entre los racimos."
+    ],
+    "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland mounted flat against the wall, running straight along its length. Build it from 8 four-balloon clusters of 12\" balloons in pink and white, chained from the left end to the right end. Tuck small 5\" pink and white filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" pink balloons spaced along it, about one every 4 clusters; one large 18\" white balloon along it. Keep the clusters tight and twisted against each other so the garland reads as one continuous organic piece with no gaps.",
+    "prompt_lora": "mounted flat against the wall in clusters of four with small pink and white filler balloons and large pink and white accent balloons"
+  },
+  {
+    "estructura_id": "EST_01_GUIRNALDA",
+    "armado": {
+      "version": "armado-guirnalda.v1",
+      "origen": "decorador",
+      "soporte": "colgada",
+      "forma": "arco_caido",
+      "caida_m": 0.4,
+      "puntos_de_anclaje": 3,
+      "racimo": {
+        "unidad": "trio",
+        "tamano_pulg_base": 12
+      },
+      "relleno": {
+        "material": 1,
+        "proporcion": 0.15
+      },
+      "remates": [
+        {
+          "material": 0,
+          "posicion": "extremo_izq"
+        }
+      ]
+    },
+    "repeticiones": 1,
+    "largo_m": 2.5,
+    "largo_cuerda_m": 3.07,
+    "globos_por_instancia": 59,
+    "leyenda": [
+      {
+        "codigo": 1,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-5",
+        "descripcion": "R-5 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 5.0,
+        "unidades_por_instancia": 7,
+        "unidades_total": 7
+      },
+      {
+        "codigo": 2,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-9",
+        "descripcion": "R-9 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 9.0,
+        "unidades_por_instancia": 6,
+        "unidades_total": 6
+      },
+      {
+        "codigo": 3,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-12",
+        "descripcion": "R-12 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 12.0,
+        "unidades_por_instancia": 19,
+        "unidades_total": 19
+      },
+      {
+        "codigo": 4,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-18",
+        "descripcion": "R-18 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 18.0,
+        "unidades_por_instancia": 2,
+        "unidades_total": 2
+      },
+      {
+        "codigo": 5,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-24",
+        "descripcion": "R-24 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 24.0,
+        "unidades_por_instancia": 1,
+        "unidades_total": 1
+      },
+      {
+        "codigo": 6,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-5",
+        "descripcion": "R-5 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 5.0,
+        "unidades_por_instancia": 5,
+        "unidades_total": 5
+      },
+      {
+        "codigo": 7,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-9",
+        "descripcion": "R-9 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 9.0,
+        "unidades_por_instancia": 5,
+        "unidades_total": 5
+      },
+      {
+        "codigo": 8,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-12",
+        "descripcion": "R-12 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 12.0,
+        "unidades_por_instancia": 13,
+        "unidades_total": 13
+      },
+      {
+        "codigo": 9,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-18",
+        "descripcion": "R-18 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 18.0,
+        "unidades_por_instancia": 1,
+        "unidades_total": 1
+      }
+    ],
+    "racimos": [
+      {
+        "numero": 1,
+        "codigos": [
+          3,
+          8,
+          3
+        ]
+      },
+      {
+        "numero": 2,
+        "codigos": [
+          7,
+          2,
+          3
+        ]
+      },
+      {
+        "numero": 3,
+        "codigos": [
+          8,
+          1,
+          3
+        ]
+      },
+      {
+        "numero": 4,
+        "codigos": [
+          8,
+          3,
+          8
+        ]
+      },
+      {
+        "numero": 5,
+        "codigos": [
+          2,
+          4,
+          7
+        ]
+      },
+      {
+        "numero": 6,
+        "codigos": [
+          3,
+          8,
+          3
+        ]
+      },
+      {
+        "numero": 7,
+        "codigos": [
+          3,
+          8,
+          2
+        ]
+      },
+      {
+        "numero": 8,
+        "codigos": [
+          7,
+          3,
+          1
+        ]
+      },
+      {
+        "numero": 9,
+        "codigos": [
+          8,
+          3,
+          3
+        ]
+      },
+      {
+        "numero": 10,
+        "codigos": [
+          9,
+          2,
+          8
+        ]
+      },
+      {
+        "numero": 11,
+        "codigos": [
+          3,
+          3,
+          8
+        ]
+      },
+      {
+        "numero": 12,
+        "codigos": [
+          3,
+          7,
+          2
+        ]
+      },
+      {
+        "numero": 13,
+        "codigos": [
+          4,
+          8,
+          3
+        ]
+      },
+      {
+        "numero": 14,
+        "codigos": [
+          8,
+          3,
+          1
+        ]
+      },
+      {
+        "numero": 15,
+        "codigos": [
+          8,
+          3,
+          2
+        ]
+      },
+      {
+        "numero": 16,
+        "codigos": [
+          7,
+          3,
+          8
+        ]
+      }
+    ],
+    "relleno": {
+      "material": 1,
+      "total": 9,
+      "codigos": [
+        {
+          "codigo": 1,
+          "cantidad": 4
+        },
+        {
+          "codigo": 6,
+          "cantidad": 5
+        }
+      ]
+    },
+    "remates": [
+      {
+        "posicion": "extremo_izq",
+        "codigo": 5,
+        "cantidad": 1,
+        "racimos": [
+          1
+        ]
+      }
+    ],
+    "sueltos": [
+      {
+        "codigo": 3,
+        "cantidad": 1
+      }
+    ],
+    "insumos": [
+      {
+        "insumo": "tira",
+        "cantidad": 3.5,
+        "unidad": "m",
+        "detalle": "tira perforada para armar la guirnalda: su largo más un 10 % para amarres",
+        "estimado": false
+      },
+      {
+        "insumo": "cuerda",
+        "cantidad": 8.0,
+        "unidad": "m",
+        "detalle": "nailon o cuerda para colgarla: su largo más 1,5 m de bajada por anclaje",
+        "estimado": true
+      },
+      {
+        "insumo": "ganchos",
+        "cantidad": 3,
+        "unidad": "ganchos",
+        "detalle": "uno por punto de anclaje",
+        "estimado": false
+      },
+      {
+        "insumo": "pegante",
+        "cantidad": 11,
+        "unidad": "puntos",
+        "detalle": "puntos de pegamento para el relleno, los remates y los globos sueltos",
+        "estimado": true
+      },
+      {
+        "insumo": "tijeras",
+        "cantidad": 1,
+        "unidad": "tijeras",
+        "detalle": "",
+        "estimado": false
+      },
+      {
+        "insumo": "bomba",
+        "cantidad": 1,
+        "unidad": "bomba",
+        "detalle": "infladora con calibrador de tamaños",
+        "estimado": false
+      }
+    ],
+    "duracion_estimada": {
+      "horas_min": 1.25,
+      "horas_max": 2.75,
+      "estimado": true
+    },
+    "nombre": "Guirnalda colgada",
+    "descripcion": "16 tríos de 12\" de izquierda a derecha, relleno de 9 globos chicos y 1 globo grande de remate, colgada de sus puntos de anclaje.",
+    "pasos": [
+      "Infla y calibra los 59 globos de cada guirnalda según la leyenda.",
+      "Arma 16 tríos de 12\": amarra una pareja y suma un tercer globo al nudo. Cada racimo lleva los códigos de la gráfica.",
+      "Pasa los racimos por la tira en orden, del 1 (extremo izquierdo) al 16 (extremo derecho), girando cada uno un cuarto de vuelta respecto del anterior.",
+      "Relleno: pega los 9 globos chicos en los huecos entre racimos, repartidos parejo: 4 de R-5 rosado (1), 5 de R-5 blanco (6).",
+      "Remate: 1 globo R-24 rosado (5) en el extremo izquierdo.",
+      "Reparte los globos sueltos entre los racimos para cerrar huecos: 1 de R-12 rosado (3).",
+      "Cuélgala de sus 3 puntos de anclaje con la cuerda, con una caída de 0,4 m."
+    ],
+    "avisos": [
+      "Sobra 1 globo que no completa un trío: va suelto entre los racimos."
+    ],
+    "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland hung from 3 anchor points, dipping between its anchor points in 2 swags about 0.4 m deep. Build it from 16 three-balloon clusters of 12\" balloons in pink and white, chained from the left end to the right end. Tuck small 5\" pink and white filler balloons into the gaps between the clusters. Accents: a large 24\" pink balloon at the left end. Keep the clusters tight and twisted against each other so the garland reads as one continuous organic piece with no gaps.",
+    "prompt_lora": "draped across three anchor points dipping in swags in clusters of three with small pink and white filler balloons and large pink accent balloons"
+  },
+  {
+    "estructura_id": "EST_01_GUIRNALDA",
+    "armado": {
+      "version": "armado-guirnalda.v1",
+      "origen": "decorador",
+      "soporte": "sobre_estructura",
+      "estructura_id": "EST_02_ARCO",
+      "forma": "curva",
+      "racimo": {
+        "unidad": "cuarteto",
+        "tamano_pulg_base": 12
+      },
+      "relleno": null,
+      "remates": []
+    },
+    "repeticiones": 1,
+    "largo_m": 2.5,
+    "largo_cuerda_m": 2.5,
+    "globos_por_instancia": 48,
+    "leyenda": [
+      {
+        "codigo": 1,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-5",
+        "descripcion": "R-5 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 5.0,
+        "unidades_por_instancia": 6,
+        "unidades_total": 6
+      },
+      {
+        "codigo": 2,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-9",
+        "descripcion": "R-9 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 9.0,
+        "unidades_por_instancia": 5,
+        "unidades_total": 5
+      },
+      {
+        "codigo": 3,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-12",
+        "descripcion": "R-12 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 12.0,
+        "unidades_por_instancia": 16,
+        "unidades_total": 16
+      },
+      {
+        "codigo": 4,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-18",
+        "descripcion": "R-18 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 18.0,
+        "unidades_por_instancia": 1,
+        "unidades_total": 1
+      },
+      {
+        "codigo": 5,
+        "material": 0,
+        "product_id": "prod-rosado",
+        "variant_id": "var-rosado-24",
+        "descripcion": "R-24 rosado",
+        "color": "rosado",
+        "acabado": null,
+        "tamano_pulg": 24.0,
+        "unidades_por_instancia": 1,
+        "unidades_total": 1
+      },
+      {
+        "codigo": 6,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-5",
+        "descripcion": "R-5 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 5.0,
+        "unidades_por_instancia": 4,
+        "unidades_total": 4
+      },
+      {
+        "codigo": 7,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-9",
+        "descripcion": "R-9 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 9.0,
+        "unidades_por_instancia": 4,
+        "unidades_total": 4
+      },
+      {
+        "codigo": 8,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-12",
+        "descripcion": "R-12 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 12.0,
+        "unidades_por_instancia": 10,
+        "unidades_total": 10
+      },
+      {
+        "codigo": 9,
+        "material": 1,
+        "product_id": "prod-blanco",
+        "variant_id": "var-blanco-18",
+        "descripcion": "R-18 blanco",
+        "color": "blanco",
+        "acabado": null,
+        "tamano_pulg": 18.0,
+        "unidades_por_instancia": 1,
+        "unidades_total": 1
+      }
+    ],
+    "racimos": [
+      {
+        "numero": 1,
+        "codigos": [
+          3,
+          8,
+          1,
+          6
+        ]
+      },
+      {
+        "numero": 2,
+        "codigos": [
+          3,
+          2,
+          7,
+          3
+        ]
+      },
+      {
+        "numero": 3,
+        "codigos": [
+          8,
+          3,
+          1,
+          8
+        ]
+      },
+      {
+        "numero": 4,
+        "codigos": [
+          3,
+          8,
+          2,
+          3
+        ]
+      },
+      {
+        "numero": 5,
+        "codigos": [
+          6,
+          3,
+          7,
+          1
+        ]
+      },
+      {
+        "numero": 6,
+        "codigos": [
+          3,
+          8,
+          2,
+          4
+        ]
+      },
+      {
+        "numero": 7,
+        "codigos": [
+          9,
+          5,
+          8,
+          3
+        ]
+      },
+      {
+        "numero": 8,
+        "codigos": [
+          1,
+          6,
+          3,
+          7
+        ]
+      },
+      {
+        "numero": 9,
+        "codigos": [
+          3,
+          2,
+          8,
+          3
+        ]
+      },
+      {
+        "numero": 10,
+        "codigos": [
+          8,
+          1,
+          3,
+          8
+        ]
+      },
+      {
+        "numero": 11,
+        "codigos": [
+          3,
+          6,
+          2,
+          3
+        ]
+      },
+      {
+        "numero": 12,
+        "codigos": [
+          7,
+          1,
+          8,
+          3
+        ]
+      }
+    ],
+    "relleno": null,
+    "remates": [],
+    "sueltos": [],
+    "insumos": [
+      {
+        "insumo": "tira",
+        "cantidad": 3.0,
+        "unidad": "m",
+        "detalle": "tira perforada para armar la guirnalda: su largo más un 10 % para amarres",
+        "estimado": false
+      },
+      {
+        "insumo": "amarres",
+        "cantidad": 6,
+        "unidad": "amarres",
+        "detalle": "cintillos o amarres a la pieza anfitriona, uno cada 50 cm",
+        "estimado": false
+      },
+      {
+        "insumo": "tijeras",
+        "cantidad": 1,
+        "unidad": "tijeras",
+        "detalle": "",
+        "estimado": false
+      },
+      {
+        "insumo": "bomba",
+        "cantidad": 1,
+        "unidad": "bomba",
+        "detalle": "infladora con calibrador de tamaños",
+        "estimado": false
+      }
+    ],
+    "duracion_estimada": {
+      "horas_min": 0.75,
+      "horas_max": 1.5,
+      "estimado": true
+    },
+    "nombre": "Guirnalda sobre Arco",
+    "descripcion": "12 cuartetos de 12\" de izquierda a derecha, abrazada a Arco.",
+    "pasos": [
+      "Infla y calibra los 48 globos de cada guirnalda según la leyenda.",
+      "Arma 12 cuartetos de 12\": amarra dos parejas y crúzalas. Cada racimo lleva los códigos de la gráfica.",
+      "Pasa los racimos por la tira en orden, del 1 (extremo izquierdo) al 12 (extremo derecho), girando cada uno un cuarto de vuelta respecto del anterior.",
+      "Amárrala a Arco cada 50 cm, siguiendo su forma."
+    ],
+    "avisos": [],
+    "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland wrapped around the balloon arch, following its shape. Build it from 12 four-balloon clusters of 12\" balloons in pink and white, chained from the left end to the right end. Keep the clusters tight and twisted against each other so the garland reads as one continuous organic piece with no gaps.",
+    "prompt_lora": "wrapped around the balloon arch in clusters of four"
+  }
+]

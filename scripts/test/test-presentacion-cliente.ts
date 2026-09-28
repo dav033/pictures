@@ -12,6 +12,7 @@ import {
   ambientacionCliente,
   cantidadCliente,
   coloresCliente,
+  cuentaEnGlobos,
   coloresObservadosCliente,
   describirEstructuraCliente,
   medidasCliente,
@@ -53,6 +54,29 @@ assert.equal(medidasCliente("centro_mesa", { ancho_m: 0.4, alto_m: 0.5 }), "0,4 
 assert.equal(cantidadCliente(23, 1, "semiarco"), "unos 23 globos");
 assert.equal(cantidadCliente(71, 2, "columna"), "2 iguales · unos 35 o 36 globos cada una");
 assert.equal(cantidadCliente(1, 1, "backdrop"), "1 pieza");
+// Piezas en femenino: "unas 3 piezas", nunca "unos 3 piezas".
+assert.equal(cantidadCliente(3, 1, "backdrop"), "unas 3 piezas");
+assert.equal(cantidadCliente(6, 2, "accesorio"), "2 iguales · unas 3 piezas cada una");
+// Un bouquet o un kit hecho de globos cuenta globos (SEGUIMIENTO-bouquets.md §14:
+// la tarjeta decía "unos 11 piezas" para un bouquet de látex, números y corona).
+const bouquetDeGlobos = {
+  tipo: "kit",
+  lineas: [
+    { titulo: "Globo látex dorado", forma: "redondo" },
+    { titulo: "B2b Globo Metalizado Numero 3 Plateado — 40 IN / PAQUETE X 1", forma: null },
+    { titulo: "B2b Globo Metalizado Corona Dorado — 32 IN / PAQUETE X 1", forma: null },
+  ],
+};
+assert.equal(cuentaEnGlobos(bouquetDeGlobos), true);
+assert.equal(cantidadCliente(36, 1, bouquetDeGlobos), "unos 36 globos");
+// Piezas de verdad: un kit empaquetado, una figura sin globos, o una pieza sin líneas.
+const kitEmpaquetado = { tipo: "kit", lineas: [{ titulo: "Kit Globos Feliz Cumpleaños x 20", forma: null }] };
+const figuraSinGlobos = { tipo: "kit", lineas: [{ titulo: "Figura de icopor unicornio", forma: null }] };
+assert.equal(cantidadCliente(2, 1, kitEmpaquetado), "unas 2 piezas");
+assert.equal(cantidadCliente(2, 1, figuraSinGlobos), "unas 2 piezas");
+assert.equal(cuentaEnGlobos({ tipo: "kit", lineas: [...bouquetDeGlobos.lineas, ...figuraSinGlobos.lineas] }), false, "una figura sin globos dentro del kit lo vuelve piezas");
+assert.equal(cuentaEnGlobos({ tipo: "kit", lineas: [] }), false);
+assert.equal(cuentaEnGlobos({ tipo: "semiarco", lineas: [] }), true, "la geometría siempre cuenta globos");
 assert.equal(tamanosCliente([{ diam_pulg: 12 }, { diam_pulg: 5 }, { diam_pulg: 9 }, { diam_pulg: 12 }]), "globos de 5, 9 y 12 pulgadas");
 ok("medidas, cantidades y tamaños en palabras del cliente");
 
@@ -419,9 +443,14 @@ assert.match(texto, /En la imagen también pondré Luces Hojas y plantas · no s
 assert.match(texto, /Luces/);
 assert.match(texto, /no se cotiza/);
 assert.match(html, /style="background:/, "los colores se muestran como muestras visuales");
+// Decisión del usuario (2026-09-25): el desglose «Globos que lleva» muestra el
+// código de tamaño (R-12) y el SKU con que se pide cada variante; el resto de la
+// tarjeta sigue en palabras del cliente.
+assert.match(texto, /Fashion Blanco R-12 · blanco mate/, "el desglose nombra el tamaño por su código");
+const fueraDelDesglose = texto.replace(/Globos que lleva.*?(?=Esta pieza suma|Unos \d+ globos en total)/g, "");
+assert.doesNotMatch(fueraDelDesglose, /R-\d/, "la tarjeta no debe mostrar códigos de tamaño fuera del desglose");
 const prohibidos: ReadonlyArray<readonly [RegExp, string]> = [
   [/EST_\d/, "ids internos de estructura"],
-  [/R-\d/, "códigos de tamaño"],
   [/→/, "flechas de sustitución"],
   [/\bB2b\b/i, "prefijo comercial interno"],
   [/\b1 unidades\b/, "plural incorrecto"],
@@ -550,7 +579,7 @@ ok("modo dev conserva los datos crudos");
   const detalle = textoVisible(renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planReal })));
   const semiarco = detalle.slice(detalle.indexOf("Globos que lleva"), detalle.indexOf("Globos que lleva", detalle.indexOf("Globos que lleva") + 1));
   assert.equal([...semiarco.matchAll(/Reflex Plata/g)].length, 1, semiarco);
-  assert.match(semiarco, /Reflex Plata 12 pulgadas · [^0-9]+ 24 unidades/);
+  assert.match(semiarco, /Reflex Plata R-12 · [^0-9]+ SKU B2B-20014159 24 unidades/);
   ok("D3: una fila por producto, tamaño y color con paquetes combinados (plan real)");
 }
 
@@ -611,7 +640,7 @@ ok("modo dev conserva los datos crudos");
   const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan }));
   const detalle = textoVisible(html);
   const lleva = detalle.slice(detalle.indexOf("Globos que lleva"));
-  assert.deepEqual(orden(lleva, /Fashion Blanco (\d+) pulgadas/g), [5, 9, 12], `detalle «Globos que lleva»: ${lleva}`);
+  assert.deepEqual(orden(lleva, /Fashion Blanco R-(\d+)/g), [5, 9, 12], `detalle «Globos que lleva»: ${lleva}`);
   const mezcla = detalle.slice(detalle.indexOf("Mezcla de tamaños"), detalle.indexOf("Globos que lleva"));
   assert.deepEqual(orden(mezcla, /(\d+) pulgadas ·/g), [5, 9, 12], `barra de tamaños del detalle: ${mezcla}`);
   assert.deepEqual([...tamanosCliente([{ diam_pulg: 12 }, { diam_pulg: 5 }, { diam_pulg: 9 }])!.matchAll(/\d+/g)].map(Number), [5, 9, 12], "texto de la barra del resumen");

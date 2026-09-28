@@ -23,6 +23,8 @@ import {
   PropCatalogoSchema,
 } from "@/lib/plan/tipos";
 import { ArmadoBouquetResueltoSchema, PistaArmadoSchema } from "@/lib/plan/armado-bouquet";
+import { ArmadoGuirnaldaResueltoSchema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
+import { ConteoAplicadoSchema, PistaConteoSchema } from "@/lib/plan/conteo-referencia";
 import { PatronColorResueltoSchema, PistaPatronSchema } from "@/lib/plan/patron-color";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
 import { LoraSelectionSchema } from "@/lib/lora/schema";
@@ -406,6 +408,27 @@ export const PlanResueltoV1Schema = z.object({
    * firma `plan_hash`; se omite cuando no hay ninguno.
    */
   armados_bouquet: z.array(ArmadoBouquetResueltoSchema).optional(),
+  /**
+   * Armado de cada guirnalda (ADR-0032): leyenda por globo comprado, racimos
+   * de izquierda a derecha, relleno, remates, insumos no cotizados y pasos,
+   * escritos por Python. Fuera del snapshot que firma `plan_hash`; se omite
+   * cuando no hay ninguno.
+   */
+  armados_guirnalda: z.array(ArmadoGuirnaldaResueltoSchema).optional(),
+  /**
+   * Qué hizo Python con el conteo de la foto de cada estructura y por qué
+   * (ADR-0031). Fuera del snapshot que firma `plan_hash`; se omite sin conteos.
+   */
+  conteos_referencia: z.array(ConteoAplicadoSchema).max(32).optional(),
+  /**
+   * Las lecturas de la foto de las guirnaldas del plan (`pistas_guirnalda` de
+   * la petición, ADR-0032), devueltas para que la re-resolución de una
+   * edición las vuelva a mandar: sin ellas, un armado que la edición quita se
+   * re-sugería con la receta y perdía el soporte y la forma de la foto
+   * (hallazgo 32). Fuera del snapshot que firma `plan_hash`; se omite sin
+   * lecturas.
+   */
+  lecturas_guirnalda: z.array(PistaGuirnaldaSchema).max(16).optional(),
 }).strict();
 
 const quoteLineSchema = z.object({
@@ -468,6 +491,29 @@ export const PlanResolutionRequestV1Schema = z.object({
   pistas_armado: z.array(PistaArmadoSchema).max(16).optional(),
   /** Con `completar_armados`: solo estas estructuras (tras una edición, la pieza editada). */
   completar_armados_de: z.array(idSchema).max(8).optional(),
+  /**
+   * Solo al confirmar un plan: Python arma por partes las guirnaldas que no
+   * tienen armado (ADR-0032), sin cambiar lo que se compra. Independiente de
+   * `completar_armados`; `completar_armados_de` limita las dos.
+   */
+  completar_armados_guirnalda: z.boolean().optional(),
+  /** Con `completar_armados_guirnalda`: la lectura de cada guirnalda de la foto, por elemento (E4). */
+  pistas_guirnalda: z.array(PistaGuirnaldaSchema).max(16).optional(),
+  /** Al confirmar un plan: Python ajusta cantidad, medidas, densidad o mezcla al conteo de la foto (ADR-0031). */
+  completar_conteos: z.boolean().optional(),
+  pistas_conteo: z.array(PistaConteoSchema).max(16).optional(),
+  /**
+   * Tras una edición: solo estas estructuras se ajustan (la de la mezcla
+   * editada, o ninguna); las demás con pista conservan su lectura sin cambios.
+   */
+  completar_conteos_de: z.array(idSchema).max(8).optional(),
+  /**
+   * Con `completar_conteos`: el cliente dio medidas en su pedido
+   * (`clienteDioMedidasEspacio`). Las medidas que el plan declara para una
+   * estructura son entonces las suyas y el conteo no las mueve, aunque el
+   * espacio no tenga medidas (ADR-0031, revisión 33).
+   */
+  medidas_del_cliente: z.boolean().optional(),
 }).strict();
 
 export const PlanResolutionResultV1Schema = z.object({

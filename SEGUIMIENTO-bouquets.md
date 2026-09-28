@@ -321,3 +321,153 @@ Pruebas propias de la segunda entrega, sueltas:
 uv run --directory services/ai-api pytest -q tests/test_armado_bouquet.py tests/test_plan_armado.py tests/test_plan_armado_preview.py
 npm run -s plan:test-armado-ruta && npm run -s ia:test-patron-color-prompt && npm run -s ui:test-propuesta
 ```
+
+## 13. Armado y generación en fal.ai (2026-09-25, misma rama)
+
+Frente 3 de `SEGUIMIENTO-guirnaldas.md` §2.3: que el armado del bouquet llegue a la
+generación (Uzume/Gemini, Kagutsuchi/LoRA y la etapa híbrida). Cero llamadas pagas.
+
+Hallazgos:
+
+- **El armado nunca llegaba a Gemini.** `tieneContratoDeColor`
+  (`src/lib/ia/uzume/build-image-prompt.ts`) daba falso para un bouquet real: es
+  `kit`, el blueprint le pone categoría `other` y su nombre ("Bouquet de globos…")
+  no dice "balloon". La prueba existente no lo veía porque usaba un semiarco como
+  bouquet.
+- La frase LoRA del armado nombraba un segundo bouquet ("a balloon bouquet … a
+  helium balloon bouquet"); con `grupos: 2` chocaba con CARDINALITY/INSTANCE
+  ("exactly one"); el candado híbrido no mencionaba el armado; el bloque BALLOON
+  SIZE MIX llamaba "latex balloon" a números, metalizados y burbujas; el escalonado
+  sin remate ni números nombraba una pieza central.
+
+| Commit | Qué |
+|---|---|
+| `4dbc916` | La frase LoRA del armado es un modificador del bouquet (Python) |
+| `4143b31` | El escalonado sin remate ni números no nombra una pieza central (Python) |
+| `0f0196e` | El armado llega a Gemini, al caption LoRA y al híbrido; prueba `ia:test-armado-bouquet-prompt` con fixture real de Python |
+| `9955c9c` | `scripts/ops/generar-bouquet-armado.ts`: generación real con vista previa por defecto y tope `--max-usd` (no se corrió) |
+| `d17c462` | UI: "Globos que lleva" muestra el código de tamaño (R-12) y el SKU de cada variante |
+
+Verificación hecha por el agente: `tsc` y lint sin errores; pytest del armado (59) y
+14 scripts de prompts en verde; sin armado, 10 escenas capturadas salen byte a byte
+iguales. La corrida completa de `plan:test` y de pytest se cortó por una pausa; se
+repitió antes del push (ver el mensaje del commit de esta sección).
+
+Decisiones del usuario pendientes: el vocabulario LoRA no tiene burbuja ni corazón
+dorado mate; `STRUCTURE_DESCRIPTORS` llama "balloon decoration kit" al bouquet
+(cambiarlo altera los prompts sin armado); las referencias de `/edit` no llevan fotos
+de catálogo, por diseño.
+
+## 14. Un bouquet grande salía con 11 globos (arreglado en `fix/bouquet-conteo-niveles`)
+
+Caso real (2026-09-25): bouquet con más de 30 látex, números 3 y 5 y corona; la
+tarjeta decía "unos 11 piezas". Reproducido sin proveedores con el código real: una
+lectura de 2 cuartetos + corona + 3 y 5 daba 11, y `resolve_plan` también, aunque el
+modelo hubiera declarado 30.
+
+Causa (diagnóstico del 2026-09-25, líneas de `3291c23`): la lectura del armado
+describía **una unidad por nivel**.
+
+- El prompt pedía "the color of each balloon of ONE unit"
+  (`amaterasu/estructuras/bouquet.py:58`); el esquema (l.86–95) y
+  `LecturaArmadoSchema` (`armado-bouquet.ts:118–136`) no tenían cuántas unidades
+  forman el nivel; `_lectura` recortaba sin avisar (l.179–185).
+- `_niveles_leidos` ponía `cantidad: 1` a cada nivel (`armado_bouquet.py:591–629`) y
+  `compra_desde_lectura` (l.632) lo volvía compra; `_comprar_lo_leido`
+  (`plan.py:3259`) reemplaza `unidades_declaradas`, sin mínimo (ADR-0030, decisión 4
+  enmendada). Techo expresable: 8 sextetos = 51.
+- Desde `5560485`, `armadoLeido` (`src/lib/ia/omoikane/prompt-sistema.ts:162–180`,
+  regla l.118) recalculaba el mismo total en TypeScript (segundo dueño de la cuenta,
+  contra `AGENTS.md`) y le ordenaba al chat declararlo y no superarlo.
+- Secundario: la lectura no traía tamaño; `_material_del_color` asignaba cada color
+  al primer látex de ese color, así que un dorado de 18" quedaba en 0 y se quitaba
+  con el aviso engañoso "la foto no lo lleva". La tarjeta decía "piezas" porque un
+  kit no es tipo de globos (`presentacion-cliente.ts:95`), y "unos … piezas" tenía
+  mal el género.
+
+### 14.1 Arreglo (2026-09-28)
+
+Cero llamadas pagas; todo con pruebas deterministas. Líneas de la rama al cerrar.
+
+| Commit | Qué |
+|---|---|
+| `4a41f86` | Contrato: `LecturaArmadoSchema` gana `niveles[].cantidad` (1–24), `niveles[].clase_tamano`, `total_globos` y `avisos` (opcionales); exportado a `contracts/` y a `generated_models.py` en ese orden |
+| `cf1103c` | Python: lectura `bouquet-referencia.v2` con cantidad y tamaño por nivel, `total_leido` como único dueño de la cuenta, compra por niveles y por tamaño, avisos en vez de descartes mudos |
+| `61f58c5` | El chat recibe el total que contó Python; `armadoLeido` ya no suma |
+| `4d384a0` | La tarjeta cuenta globos en un bouquet o kit de globos y dice "unas N piezas" |
+
+Qué quedó arreglado:
+
+1. **La lectura trae cantidad y tamaño por nivel.** Prompt y esquema piden
+   `cantidad` (unidades iguales alrededor de la pieza, contando las ocultas por
+   simetría) y `clase_tamano` opcional (`chico` 5"–9", `mediano` 11"–12", `grande`
+   16"–18", `gigante` 24"–36"): `amaterasu/estructuras/bouquet.py:76` y l.90.
+   `PROMPT_VERSION` sube a `bouquet-referencia.v2:eda6064d204b746a`; desde la
+   revisión 7 de `feat/guirnaldas` (un solo grupo con números a los lados, ADR-0030
+   enmienda 2026-09-28) es `bouquet-referencia.v2:b1f5cb194f104d59`
+   (`bouquet_referencia.py:40`), fijada en
+   `tests/test_bouquet_referencia.py::test_la_version_del_prompt_esta_fijada`.
+2. **Nada se descarta en silencio.** `_lectura`/`_nivel`/`_cantidad`
+   (`bouquet.py:179–335`) dejan en `avisos` cada recorte (colores fuera de la paleta,
+   topes de colores, niveles y números, cantidad fuera de rango o ausente, tamaño o
+   disposición desconocidos, confianza acotada); `validar_lecturas_con_descartes`
+   (l.349) devuelve lo que descarta entero, y `leer_armados_referencia` lo registra
+   con `request_id` y `correlation_id` ("bouquet reading adjusted",
+   `bouquet_referencia.py:112`).
+3. **Python usa la cantidad y el tamaño.** `_niveles_leidos`
+   (`armado_bouquet.py:686`) compra `cantidad` unidades por nivel (1 en una lectura
+   v1) y junta niveles iguales sin pasar de 24; con base de aire los dos primeros
+   niveles son la base. `_material_del_color` (l.614) elige, entre los látex de ese
+   color, el de tamaño más cercano a la clase leída. El caso del 11 da 35 con
+   `cantidad: 4` (y 46 con cuerpo y acentos de 18"). Una foto que pida más de lo que
+   el plan puede declarar (999) no manda (l.827).
+4. **Un solo dueño de la cuenta.** `total_leido` (`armado_bouquet.py:668`) cuenta la
+   lectura; la validación la publica como `total_globos`, y `compra_desde_lectura`
+   compra exactamente ese total (prueba
+   `test_la_compra_leida_suma_lo_mismo_que_publica_la_lectura`). `armadoLeido`
+   (`prompt-sistema.ts:173`) solo muestra colores, tamaños, remate, números y ese
+   total; sin `total_globos` (lectura v1) no da cifra. La regla ARMADO LEÍDO (l.119)
+   sigue pidiendo declarar el total leído, ahora el de Python, y usar los tamaños
+   que lista. `PistaArmado` (`plan.py:297`) acepta los campos nuevos; la resolución
+   recuenta con la misma función, nunca con el número que viajó por Next.
+5. **El aviso del material quitado dice la verdad.** `CompraLeida.quitados` y
+   `_motivos_quitados` (`armado_bouquet.py:844`) distinguen "la foto no lo lleva",
+   "la foto lleva ese color en otro tamaño" y "la lectura de la foto no dice el
+   tamaño de ese color"; `_comprar_lo_leido` (`plan.py:3262`) arma el texto con el
+   tamaño ("blanco de 18 pulgadas").
+6. **Tarjeta.** `cuentaEnGlobos` (`presentacion-cliente.ts:105`): las estructuras
+   con geometría y los kits cuyas líneas son todas globos (látex con forma, o
+   productos "globo" que no son un kit empaquetado) cuentan globos; lo demás son
+   piezas, en femenino ("unas 3 piezas"). Lo usan `DetalleEstructura.tsx:267`,
+   `TarjetaPlanDecoracion.tsx:373` y l.419, `DialogoCotizacion.tsx:280` y
+   `PiezasPropuesta.tsx:112`.
+7. **Sin sobreconteo nuevo.** El bouquet de 5 (3 sueltos + "80") sigue dando 5
+   (`test_la_foto_dicta_cantidad_colores_y_armado`,
+   `test_el_bouquet_chico_de_la_foto_sigue_saliendo_con_cinco`,
+   `test-bouquet-referencia.ts`); una lectura con `cantidad: 1` compra lo mismo que
+   una v1; los 31 vectores dorados no cambian.
+
+Verificación hecha en el worktree (2026-09-28): `npx tsc --noEmit` sin errores
+(antes hubo que correr `npx next typegen`: el worktree no tenía los tipos de rutas
+que genera `next dev`, y `LayoutProps` fallaba sin relación con este cambio);
+`npm run -s lint` 0 errores (25 avisos previos, ninguno en archivos tocados);
+`npm run -s contracts:check` y `generate_models.py --check` al día; `npm run
+plan:test` en verde; pytest 696 pasan y 4 se omiten (base de datos); `ruff check`,
+`ruff format --check` y `mypy app scripts` sin hallazgos. El script de
+reproducción del 2026-09-25 da lo mismo que antes con lecturas v1 (11), ahora con
+el aviso correcto para el dorado de 18".
+
+### 14.2 Pendiente (no es de esta rama)
+
+- **Conciliación con el conteo de la foto** (rama `wip/conteo-e2`, E2 de
+  `feat/conteo-referencia`): el conteo da la cantidad y el armado la distribución.
+  Hoy la compra desde la foto sale solo del armado (`total_leido`); cuando E2 traiga
+  `_aplicar_conteos` en `plan.py`, decidir en Python cuál manda si difieren (p. ej.
+  escalar las cantidades del armado al total del conteo manteniendo su reparto) y que
+  `serializeReferenceBlueprint` muestre una sola cifra, la que decidió Python.
+  Archivos que tocan las dos ramas: `plan.py` (modelos de las pistas y
+  `_comprar_lo_leido`), `domain-v1.ts`/contratos generados, `generated_models.py` y
+  `prompt-sistema.ts` (`armadoLeido` y la regla ARMADO LEÍDO).
+- **Evaluación con fotos reales** de si el modelo lee bien `cantidad` y
+  `clase_tamano` (conjunto privado, con tope de gasto): no se corrió.
+- La regla de E2 "en kits la lectura del armado manda" queda descartada por este caso.

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ArmadoBouquetV1Schema } from "./armado-bouquet";
+import { ArmadoGuirnaldaV1Schema } from "./armado-guirnalda";
 import { PatronColorV1Schema } from "./patron-color";
 import { PlanDecoracionSchema } from "./tipos";
 
@@ -123,5 +124,17 @@ export const EdicionArmadoSchema = z.object({
 
 export type EdicionArmado = z.infer<typeof EdicionArmadoSchema>;
 
+/**
+ * Assembly of one garland (ADR-0032): `null` removes it. Only the shape is
+ * checked here; Python validates it against the plan (`armado_invalido`).
+ */
+export const EdicionArmadoGuirnaldaSchema = z.object({
+  accion: z.literal("armado_guirnalda"),
+  estructura_id: z.string().trim().min(1).max(160),
+  armado_guirnalda: ArmadoGuirnaldaV1Schema.nullable(),
+}).strict();
+
+export type EdicionArmadoGuirnalda = z.infer<typeof EdicionArmadoGuirnaldaSchema>;
+
 /** Every edit the plan editor applies (Python applies it: services/ai-api/app/plan_edicion.py). */
-export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado;
+export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado | EdicionArmadoGuirnalda;

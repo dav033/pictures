@@ -4,7 +4,7 @@ import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
 import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { frasePatronColor, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
+import { armadoDeElemento, armadoGuirnaldaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
 
@@ -131,6 +131,21 @@ export type LoraVisualClause = {
    * key, so every element of the clause shares it; never compacted or dropped.
    */
   colorPattern?: string;
+  /**
+   * Present when `colorPattern` is the `prompt_lora` of a bouquet assembly
+   * (ADR-0030) rather than a color pattern: `grupos` bouquets per instance, as
+   * Python decided. The route reads it to pick the hybrid stage-2 lock; the
+   * clause renders one bouquet noun per group. Absent otherwise, so a caption
+   * without an assembly keeps its clauses byte for byte.
+   */
+  armadoBouquet?: ArmadoBouquetEnPrompt;
+  /**
+   * Present when `colorPattern` is (or starts with) the `prompt_lora` of a
+   * garland assembly (ADR-0032, E5): its support and shape, and whether the
+   * phrase also carries a color pattern. The route reads it to pick the hybrid
+   * stage-2 locks; the clause text is the phrase, verbatim. Absent otherwise.
+   */
+  armadoGuirnalda?: ArmadoGuirnaldaEnPrompt;
 };
 
 export type LoraCaptionCompilation = {
@@ -163,6 +178,10 @@ type SemanticElement = {
   index: number;
   /** Python's `prompt_lora` for this element's structure, when it has an applied pattern. */
   colorPattern?: string;
+  /** Set when that `prompt_lora` is a bouquet assembly (ADR-0030). */
+  armadoBouquet?: ArmadoBouquetEnPrompt;
+  /** Set when that `prompt_lora` is a garland assembly (ADR-0032). */
+  armadoGuirnalda?: ArmadoGuirnaldaEnPrompt;
 };
 
 const STRUCTURE_NOUNS: Record<CaptionStructureType, string> = {
@@ -426,6 +445,9 @@ function numberWord(count: number): string {
 function scaleFor(items: SemanticElement[]): string | undefined {
   if (items.length > 1) return undefined;
   if (items[0]?.semantics.structure_type === "centro_mesa") return undefined;
+  // A bouquet's assembly already sizes it balloon by balloon: "a grand balloon
+  // bouquet" (focal + lujosa) contradicted a five-balloon assembly.
+  if (items[0]?.armadoBouquet) return undefined;
   const focal = items.some((item) => item.semantics.design_role === "focal");
   const dimensions = items.flatMap((item) => Object.values(item.semantics.dimensions_m ?? {})).filter((value): value is number => typeof value === "number");
   if (focal && (items.some((item) => item.semantics.density === "lujosa") || dimensions.some((value) => value >= 2.4))) return "grand";
@@ -594,9 +616,12 @@ function createClause(
   const printedMotifs = [...new Set(items.map((item) => item.element.catalog_visual?.pattern.motif).filter((value): value is string => Boolean(value)))];
   const physicalForm = items.length === 1 ? physicalFormFor(first.element) : undefined;
   const quantitySemantics = quantitySemanticsFor(first.element);
+  // An assembly with a number on each side is two bouquets per plan instance
+  // (Python's `grupos`): the noun counts bouquets, not plan instances.
+  const gruposBouquet = first.armadoBouquet?.grupos ?? 1;
   const visibleCount = quantitySemantics === "physical_instances"
     ? Math.max(1, first.element.quantity.min)
-    : undefined;
+    : gruposBouquet > 1 ? items.length * gruposBouquet : undefined;
   return {
     elementIds,
     structureType: first.semantics.structure_type,
@@ -623,6 +648,8 @@ function createClause(
     officialStructure: officialStructureOf(first),
     // Shared by every item: the pattern is part of the grouping key.
     ...(first.colorPattern ? { colorPattern: first.colorPattern } : {}),
+    ...(first.colorPattern && first.armadoBouquet ? { armadoBouquet: first.armadoBouquet } : {}),
+    ...(first.colorPattern && first.armadoGuirnalda ? { armadoGuirnalda: first.armadoGuirnalda } : {}),
   };
 }
 
@@ -1137,6 +1164,8 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
   const items = sceneSpec.elements.map((element, index) => ({
     ...semanticFor(element, index, sceneSpec, officialStructures?.get(element.element_id) ?? officialStructures?.get(element.element_id.split("#")[0]!)),
     colorPattern: frasePatronColor(colorPatterns, element, "prompt_lora"),
+    armadoBouquet: armadoDeElemento(colorPatterns, element),
+    armadoGuirnalda: armadoGuirnaldaDeElemento(colorPatterns, element),
   }));
   const used = new Set<string>();
   const clauses: LoraVisualClause[] = [];
@@ -1335,10 +1364,11 @@ export function compileLoraCaption(input: {
   /** Plain English styling cues of the creativity level (creatividad.ts); dropped first when compacting. */
   creativeCues?: readonly string[];
   /**
-   * `plan_resuelto.patrones_color` and `armados_bouquet` as Python wrote them
-   * (ADR-0028 §12, ADR-0030; `frasesDeEstructuras`). Only the `prompt_lora`
-   * of an applied phrase is inserted, verbatim; the compiler never words,
-   * expands or counts a pattern or an assembly. Absent: the legacy caption.
+   * `plan_resuelto.patrones_color`, `armados_bouquet` and `armados_guirnalda`
+   * as Python wrote them (ADR-0028 §12, ADR-0030, ADR-0032;
+   * `frasesDeEstructuras`). Only the `prompt_lora` of an applied phrase is
+   * inserted, verbatim; the compiler never words, expands or counts a pattern
+   * or an assembly. Absent: the legacy caption.
    */
   colorPatterns?: readonly FraseDeEstructura[];
 }): LoraCaptionCompilation {

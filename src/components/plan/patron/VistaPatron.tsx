@@ -3,11 +3,12 @@
 import { useId } from "react";
 import { useReducedMotion } from "motion/react";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
-import { dibujarPatron, type Dibujo, type EntradaDibujo, type GloboDibujo, type SoporteDibujo } from "./geometria-dibujo";
+import { dibujarPatron, type CurvaGuirnalda, type Dibujo, type EntradaDibujo, type GloboDibujo, type SoporteDibujo } from "./geometria-dibujo";
 import { colorDe, type BrilloGlobo, type ColorLeyenda } from "./leyenda";
 
 type ResueltoDibujo = Pick<PatronColorResuelto, "geometria" | "celdas" | "extras" | "patron">;
-type Forma = { tipo: string; oficialId?: string; espejo?: boolean; proporcion?: number };
+/** `guirnalda`: la forma real de una guirnalda con armado (ADR-0032); sin ella, la onda de siempre. */
+type Forma = { tipo: string; oficialId?: string; espejo?: boolean; proporcion?: number; guirnalda?: CurvaGuirnalda };
 
 /** Lo que dibuja `VistaPatron` para una expansión de Python (el trazo solo cambia el giro del dibujo). */
 function entradaDibujo(resuelto: ResueltoDibujo, forma: Forma, celdas?: readonly (readonly number[])[]): EntradaDibujo {
@@ -21,6 +22,7 @@ function entradaDibujo(resuelto: ResueltoDibujo, forma: Forma, celdas?: readonly
     trazo: base.modo === "espiral" ? base.trazo : undefined,
     espejo: forma.espejo ?? false,
     proporcion: forma.proporcion,
+    ...(forma.guirnalda ? { guirnalda: forma.guirnalda } : {}),
   };
 }
 
@@ -45,6 +47,8 @@ type Props = {
   espejo?: boolean;
   /** Alto / ancho declarado de la estructura. */
   proporcion?: number;
+  /** Guirnalda con armado: el patrón se dibuja sobre su forma real. */
+  guirnalda?: CurvaGuirnalda;
   /** Texto accesible del dibujo. */
   etiqueta: string;
   className?: string;
@@ -117,11 +121,11 @@ function Globo({ globo, color, id, retraso, transicion }: { globo: GloboDibujo; 
  * Los colores son datos de catálogo (`hex` de la leyenda); el soporte y los
  * bordes usan tokens del tema.
  */
-export function VistaPatron({ resuelto, celdas, dibujo: calculado, leyenda, tipo, oficialId, espejo = false, proporcion, etiqueta, className = "", animar = true }: Props) {
+export function VistaPatron({ resuelto, celdas, dibujo: calculado, leyenda, tipo, oficialId, espejo = false, proporcion, guirnalda, etiqueta, className = "", animar = true }: Props) {
   const reducir = useReducedMotion();
   const id = `patron-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const celdasDibujo = celdas ?? resuelto.celdas;
-  const dibujo = (!celdas && calculado) || dibujarPatron(entradaDibujo(resuelto, { tipo, oficialId, espejo, proporcion }, celdasDibujo));
+  const dibujo = (!celdas && calculado) || dibujarPatron(entradaDibujo(resuelto, { tipo, oficialId, espejo, proporcion, guirnalda }, celdasDibujo));
   const animarGlobos = animar && !reducir && dibujo.globos.length <= MAXIMO_ANIMADOS;
   const filas = Math.max(1, celdasDibujo.length);
   const { caja } = dibujo;

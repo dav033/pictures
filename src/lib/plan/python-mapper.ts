@@ -64,7 +64,7 @@ function prop(entrada: NonNullable<PlanResueltoV1["props"]>[number]): PropResuel
  * unknown value is a broken response, not something to coerce silently.
  */
 export function planResueltoDesdePython(payload: PlanResueltoV1): PlanResuelto {
-  const { schema_version: contrato, estructuras, props, costes_por_estructura: costesPorEstructura, patrones_color: patronesColor, armados_bouquet: armadosBouquet, ...resto } = payload;
+  const { schema_version: contrato, estructuras, props, costes_por_estructura: costesPorEstructura, patrones_color: patronesColor, armados_bouquet: armadosBouquet, armados_guirnalda: armadosGuirnalda, conteos_referencia: conteosReferencia, lecturas_guirnalda: lecturasGuirnalda, ...resto } = payload;
   // This mapper is where the transport marker is dropped, so it states which
   // contract it accepted instead of discarding it silently.
   if (contrato !== PLAN_RESUELTO_CONTRACT_VERSION) {
@@ -81,6 +81,12 @@ export function planResueltoDesdePython(payload: PlanResueltoV1): PlanResuelto {
     ...(patronesColor === undefined ? {} : { patrones_color: patronesColor }),
     // Lo mismo para el armado de los bouquets (ADR-0030).
     ...(armadosBouquet === undefined ? {} : { armados_bouquet: armadosBouquet }),
+    // Y para el de las guirnaldas (ADR-0032).
+    ...(armadosGuirnalda === undefined ? {} : { armados_guirnalda: armadosGuirnalda }),
+    // Y lo que Python hizo con el conteo de la foto (ADR-0031).
+    ...(conteosReferencia === undefined ? {} : { conteos_referencia: conteosReferencia }),
+    // Y las lecturas de la foto de las guirnaldas, que una edición vuelve a mandar (ADR-0032).
+    ...(lecturasGuirnalda === undefined ? {} : { lecturas_guirnalda: lecturasGuirnalda }),
     ...(props === undefined ? {} : { props: props.map(prop) }),
   };
 }

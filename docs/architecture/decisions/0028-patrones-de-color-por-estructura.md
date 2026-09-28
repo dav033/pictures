@@ -221,7 +221,9 @@ diámetro.
 
 **Simetría espejo** (solo `arco`): la base y los acentos se evalúan con
 `r' = min(r, filas - 1 - r)` y `L' = ceil(filas / 2)` en lugar de `r`/`L`.
-No aplica a `aleatorio` ni a `pintados`.
+No aplica a `aleatorio` ni a `pintados`. *Enmienda (ADR-0032, E5):* también
+una `guirnalda` cuyo armado va en `u_invertida`, simétrica desde el centro
+("desde cada extremo hasta el centro").
 
 Modos:
 
@@ -326,6 +328,11 @@ geométricos con ≥2 materiales. `origen: "sugerido"`.
 - Resto (mezclas orgánicas, 5–6 materiales, pared, centro de mesa) →
   `aleatorio` con `pesos = max(1, round_half_up(participacion * 100))` y
   `semilla = int(sha256(estructura_id).hexdigest()[:8], 16) % 2147483647`.
+- *Enmienda (ADR-0032, E5):* una guirnalda con armado va por los racimos de
+  su armado, con cualquier mezcla: `espiral` con `k` = la unidad del armado
+  si los colores caben en un racimo, `anillos` (`largo: 1`, por
+  participación) si no, `aleatorio` de esos racimos si ninguno se arma;
+  siempre con `globos_por_racimo = k`.
 
 ## 7. Pistas de la foto → patrón (`pistas_patron`)
 

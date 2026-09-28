@@ -1,3 +1,4 @@
+import type { FormaGuirnalda } from "@/lib/plan/armado-guirnalda";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 
 /**
@@ -35,6 +36,20 @@ export type Dibujo = {
 
 export type TrazoDibujo = "espiral" | "zigzag" | "recto";
 
+/**
+ * Forma real de una guirnalda con armado (ADR-0032): la curva sobre la que
+ * van sus racimos. Sale tal cual del `armado_guirnalda` que resolvió Python;
+ * aquí solo se dibuja.
+ */
+export type CurvaGuirnalda = {
+  forma: FormaGuirnalda;
+  /** Largo declarado de la pieza (m): el ancho del dibujo. */
+  largo_m: number;
+  /** Cuánto baja el centro respecto de los extremos (m), en las formas que cuelgan. */
+  caida_m?: number;
+  puntos_de_anclaje?: number;
+};
+
 export type EntradaDibujo = {
   geometria: PatronColorResuelto["geometria"];
   tipo: string;
@@ -47,17 +62,21 @@ export type EntradaDibujo = {
   espejo?: boolean;
   /** Alto / ancho declarado de la estructura, para la forma del arco. */
   proporcion?: number;
+  /** Guirnalda con armado: los racimos van sobre su forma real (sin ella, la onda de siempre). */
+  guirnalda?: CurvaGuirnalda;
 };
 
-type Punto = { x: number; y: number };
+export type Punto = { x: number; y: number };
 type Eje = { centro: Punto; normal: Punto; escala: number };
 
 /** Radio de un globo, en unidades del dibujo. */
-const R = 10;
+export const R = 10;
 /** Distancia del eje del racimo al centro de cada globo. */
-const ANILLO = R * 1.28;
+export const ANILLO = R * 1.28;
 const PASO_COLUMNA = R * 1.22;
 const PASO_CURVA = R * 1.18;
+/** Muestras con que se mide una curva para repartir los racimos a igual distancia. */
+const MUESTRAS_CURVA = 720;
 
 /**
  * Centésimas de unidad: el servidor y el navegador pueden diferir en el último
@@ -107,17 +126,32 @@ function globosDeRacimo(fila: number, materiales: readonly number[], eje: Eje, a
   });
 }
 
-/** Puntos de una curva paramétrica repartidos a igual distancia, con su normal. */
-function repartirEnCurva(curva: (t: number) => Punto, cantidad: number, cerrada: boolean): Array<{ punto: Punto; normal: Punto; t: number }> {
-  const muestras = 720;
-  const puntos = Array.from({ length: muestras + 1 }, (_, indice) => curva(indice / muestras));
+/** Largo de una curva paramétrica medido con `MUESTRAS_CURVA` tramos rectos, y sus puntos. */
+function medirCurva(curva: (t: number) => Punto): { puntos: Punto[]; acumulado: number[]; total: number } {
+  const puntos = Array.from({ length: MUESTRAS_CURVA + 1 }, (_, indice) => curva(indice / MUESTRAS_CURVA));
   const acumulado = [0];
   for (let indice = 1; indice < puntos.length; indice += 1) {
     const a = puntos[indice - 1]!;
     const b = puntos[indice]!;
     acumulado.push(acumulado[indice - 1]! + Math.hypot(b.x - a.x, b.y - a.y));
   }
-  const total = acumulado[muestras]!;
+  return { puntos, acumulado, total: acumulado[MUESTRAS_CURVA]! };
+}
+
+/**
+ * Escala con que `repartirEnCurva` lleva la curva al dibujo: los racimos
+ * quedan a `PASO_CURVA` uno de otro, así que el dibujo conserva las
+ * proporciones de la curva (una caída se ve a escala del largo).
+ */
+export function escalaEnCurva(curva: (t: number) => Punto, cantidad: number, cerrada: boolean): number {
+  const { total } = medirCurva(curva);
+  return total > 0 ? (PASO_CURVA * (cerrada ? cantidad : Math.max(1, cantidad - 1))) / total : 1;
+}
+
+/** Puntos de una curva paramétrica repartidos a igual distancia, con su normal. */
+export function repartirEnCurva(curva: (t: number) => Punto, cantidad: number, cerrada: boolean): Array<{ punto: Punto; normal: Punto; t: number }> {
+  const muestras = MUESTRAS_CURVA;
+  const { puntos, acumulado, total } = medirCurva(curva);
   const escala = total > 0 ? (PASO_CURVA * (cerrada ? cantidad : Math.max(1, cantidad - 1))) / total : 1;
   let cursor = 0;
   return Array.from({ length: cantidad }, (_, indice) => {
@@ -137,6 +171,60 @@ function repartirEnCurva(curva: (t: number) => Punto, cantidad: number, cerrada:
   });
 }
 
+/**
+ * Caída de muestra, como fracción del tramo, para dibujar una forma que
+ * cuelga sin `caida_m` declarada (la cuerda de Python es entonces el largo
+ * recto): solo para que la forma se reconozca; el dibujo avisa que no es a escala.
+ */
+export const CAIDA_DE_MUESTRA: Readonly<Record<"u_invertida" | "arco_caido", number>> = { u_invertida: 0.45, arco_caido: 0.25 };
+/** Una onda cada tanto de largo y su altura (m) en una guirnalda ondulada. */
+const LARGO_ONDA_M = 1.2;
+const ALTURA_ONDA_M = 0.18;
+
+/**
+ * La curva de una guirnalda con armado, en metros (y hacia abajo), del
+ * extremo izquierdo (t = 0) al derecho (t = 1), con `x = t · largo`:
+ * - recta: el largo en línea recta;
+ * - curva: un arco suave hacia arriba;
+ * - ondulada: sube y baja, una onda cada 1,2 m;
+ * - u_invertida: una U invertida cuyos lados bajan `caida_m` (arco de
+ *   parábola de ancho `largo`, el mismo con que Python mide la cuerda);
+ * - arco_caido: un arco de parábola que baja `caida_m` entre cada par de
+ *   anclajes (`puntos_de_anclaje − 1` tramos, como en Python).
+ * Solo geometría de pantalla: el largo de la cuerda y los globos los da Python.
+ */
+export function curvaGuirnalda({ forma, largo_m, caida_m, puntos_de_anclaje }: CurvaGuirnalda): (t: number) => Punto {
+  const largo = largo_m > 0 ? largo_m : 1;
+  switch (forma) {
+    case "curva":
+      return (t) => ({ x: t * largo, y: -0.12 * largo * Math.sin(Math.PI * t) });
+    case "ondulada": {
+      const ondas = Math.max(1, Math.round(largo / LARGO_ONDA_M));
+      const altura = Math.min(ALTURA_ONDA_M, 0.06 * largo);
+      return (t) => ({ x: t * largo, y: altura * Math.sin(2 * Math.PI * ondas * t) });
+    }
+    case "u_invertida": {
+      const caida = caida_m ?? CAIDA_DE_MUESTRA.u_invertida * largo;
+      return (t) => {
+        const u = 2 * t - 1;
+        return { x: t * largo, y: -caida * (1 - u * u) };
+      };
+    }
+    case "arco_caido": {
+      const tramos = Math.max(1, (puntos_de_anclaje ?? 2) - 1);
+      const caida = caida_m ?? CAIDA_DE_MUESTRA.arco_caido * (largo / tramos);
+      return (t) => {
+        const s = Math.min(1, Math.max(0, t)) * tramos;
+        const tramo = Math.min(tramos - 1, Math.floor(s));
+        const u = 2 * (s - tramo) - 1;
+        return { x: t * largo, y: caida * (1 - u * u) };
+      };
+    }
+    default:
+      return (t) => ({ x: t * largo, y: 0 });
+  }
+}
+
 function curvaDe(entrada: EntradaDibujo, filas: number): { curva: (t: number) => Punto; cerrada: boolean; afinar: boolean } {
   if (entrada.oficialId === "aro_circular") {
     // Empieza abajo y sube por la izquierda, como se arma el aro.
@@ -144,6 +232,9 @@ function curvaDe(entrada: EntradaDibujo, filas: number): { curva: (t: number) =>
   }
   if (entrada.tipo === "semiarco") {
     return { curva: (t) => { const phi = Math.PI - t * Math.PI * 0.6; return { x: Math.cos(phi), y: -1.7 * Math.sin(phi) }; }, cerrada: false, afinar: true };
+  }
+  if (entrada.tipo === "guirnalda" && entrada.guirnalda) {
+    return { curva: curvaGuirnalda(entrada.guirnalda), cerrada: false, afinar: false };
   }
   if (entrada.tipo === "guirnalda") {
     const ondas = Math.max(1, Math.round(filas / 16));

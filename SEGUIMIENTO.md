@@ -259,15 +259,16 @@ cercano se menciona de pasada, lejano se pregunta antes de seguir.
 
 ## 4. Deuda conocida, con su condición de retirada
 
-- **Tres cosas siguen duplicadas** entre `src/lib/plan/mezclas.ts` y `plan.py`:
-  la tabla `MEZCLAS` (`_MIXES`), el regex `TAMANO_OBLIGATORIO`
-  (`_MANDATORY_SIZE`) y **`sustitucionAdmisible`** (`_admissible_substitution`).
-  La tercera es la peor: no es una tabla sino una regla ejecutable que decide
-  **qué se puede vender**, porque de ella sale `mezclas_compatibles`. Si Python
-  cambiara el tope de 1.5 y TypeScript no, el chat prometería mezclas que el
-  resolutor rechaza después, en bucle.
-  **Salida limpia:** exportarlas al contrato `plan-decoracion.v1` como ya se hace
-  con `x-geometria-estructuras-oficiales`, que Python lee desde ahí.
+- ~~Tres cosas duplicadas entre `src/lib/plan/mezclas.ts` y `plan.py`~~
+  (**resuelto**): la tabla `MEZCLAS`, los diámetros estándar, el tope de
+  sustitución y el regex `TAMANO_OBLIGATORIO` tienen un solo dueño,
+  `mezclas.ts`, que los exporta al contrato `plan-decoracion.v1` como
+  `x-reglas-mezclas`; `plan.py` los lee de ahí (`_MIXES`, `_DIAMETROS_ESTANDAR`,
+  `_MAX_SUBSTITUTION_RATIO`, `_MANDATORY_SIZE`). Solo la forma de dos líneas de
+  `sustitucionAdmisible` existe en los dos lenguajes, y
+  `services/ai-api/tests/test_reglas_mezclas.py` exige que Python coincida par a
+  par con la tabla `sustituciones_admisibles` exportada (`AGENTS.md`, "Python
+  owns the commercial rules").
 - **`buscarCatalogoRag` hace `return buscarCatalogoPython(...)` incondicional**,
   así que todo el retrieval TypeScript por debajo es inalcanzable en producción:
   `retrieval/search.ts`, `rrf.ts`, `diversidad.ts`, `rerank.ts`, `match-level.ts`,

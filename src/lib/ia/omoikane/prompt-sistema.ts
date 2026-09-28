@@ -1,9 +1,11 @@
 import type { Brief } from "@/lib/types";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import type { ClaseTamanoNivel } from "@/lib/plan/armado-bouquet";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { EJEMPLO_UNIDADES_DECLARADAS, GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/escena/creatividad";
+import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 
 /**
  * Compartido por producción y los arneses de evaluación para evitar que el
@@ -115,7 +117,7 @@ DISEÑO DE LA DECORACIÓN (activo)
 - NUNCA le presentes al cliente un plan con PRESUPUESTO_EXCEDIDO como si fuera aprobable. Preguntas como "¿te gusta este diseño y presupuesto para aprobarlo?" sobre un plan que la herramienta rechazó son deshonestas: aprobarlo no haría nada, la generación está bloqueada por el mismo techo. Si después de rediseñar sigue sin caber, dile la verdad completa —cuánto es el mínimo real por paquetes cerrados, cuánto se pasa de su presupuesto (dilo así, nunca "techo" ni "límite") y qué se podría hacer con su presupuesto— y pregúntale si prefiere subir el presupuesto o quedarse con la versión más chica que sí cabe. No hay tercera opción.
 - Si el cliente adjuntó una imagen de referencia, ANALISIS_REFERENCIA_VISUAL (abajo, si está presente) lista cada elemento detectado con su element_id. Cada uno de esos ids debe aparecer o en materiales[].participacion de alguna estructura vía "referencia_element_id" (la estructura que lo materializa) o en "referencia_omitida" (con un motivo real de por qué no se incluye) — omitir uno en silencio es tan deshonesto como omitir un producto de la propuesta sin decirlo. Si confirmar_plan_decoracion devuelve ok:false por COBERTURA_REFERENCIA_INCOMPLETA, cubre los "elementos_sin_cubrir" que te indique antes de reintentar.
 - CANTIDADES: "piezas iguales en la foto" de ANALISIS_REFERENCIA_VISUAL es el número de piezas (2 columnas iguales → una estructura con repeticiones 2), nunca un número de globos. unidades_declaradas es otra cosa: el total de globos (o de piezas de catálogo, si es un kit empaquetado o un accesorio) de la estructura completa sumando sus repeticiones.
-- ARMADO LEÍDO EN LA FOTO: cuando un bouquet trae "armado leído en la foto", esa es la cuenta real de globos de la pieza: declara exactamente ese total en unidades_declaradas (por pieza, sumando repeticiones) y, si lista globos número, busca cada dígito por separado ("globo metalizado numero 8") y ponlos en materiales, un material por dígito; el sistema rechaza el plan si faltan (NUMEROS_REFERENCIA_OMITIDOS). No inventes más globos de los que la foto tiene.
+- ARMADO LEÍDO EN LA FOTO: cuando un bouquet trae "armado leído en la foto" con "total N globos", ese total es la cuenta real de globos de la pieza: declara exactamente ese número en unidades_declaradas (por pieza, sumando repeticiones). Usa látex de los colores que lista y, si dice su tamaño (chicos, medianos, grandes, gigantes), de esos tamaños. Si lista globos número, busca cada dígito por separado ("globo metalizado numero 8") y ponlos en materiales, un material por dígito; el sistema rechaza el plan si faltan (NUMEROS_REFERENCIA_OMITIDOS). No inventes más globos de los que la foto tiene.
 - FOTO SIN GLOBOS: si ANALISIS_REFERENCIA_VISUAL no trae ninguna estructura de globos (balloon_structure) y el cliente no nombró piezas (arco, columnas, centros de mesa, bouquet…), PREGUNTA antes de armar: dile en una frase que su foto no tiene decoración con globos y pregúntale qué piezas quiere, o sugiérele elegir una de las fotos de ejemplo. No inventes estructuras ni llames confirmar_plan_decoracion hasta que responda; con un nivel de CREATIVIDAD DEL DISEÑO que permita acentos extra sobre la foto sí puedes proponerlos. Si confirmar_plan_decoracion devuelve REFERENCIA_SIN_GLOBOS, haz esa pregunta.
 - Respeta alcance comercial de cada elemento: un elemento fuera_de_catalogo no dispara buscar_catalogo_rag ni una propuesta de emulación; decláralo con motivo_tipo "fuera_de_catalogo". Un elemento emulable solo puede quedar como propuesta pendiente con motivo_tipo "emulacion_propuesta" y propuesta explícita; no lo asignes a una estructura en el primer plan.
 - La respuesta de confirmar_plan_decoracion incluye \`evento.event_label\`, \`evento.original_request\`, \`evento.match_levels\` y \`evento.relaxations\`; consérvalos en el resumen. Si aparece \`thematic\` o \`adaptable\`, dilo como propuesta temática/adaptable, nunca como coincidencia exacta.
@@ -150,34 +152,93 @@ function sanearTextoObservado(texto: string): string {
   return texto.replace(/\s+/g, " ").replace(/"/g, "").trim().slice(0, 240);
 }
 
-const GLOBOS_POR_UNIDAD: Readonly<Record<string, number>> = { suelto: 1, pareja: 2, trio: 3, cuarteto: 4, quinteto: 5, sexteto: 6 };
+/** La clase de tamaño que la lectura dio a un nivel, en palabras para el modelo (rangos de `armado_bouquet.py`). */
+const TAMANO_LEIDO: Readonly<Record<ClaseTamanoNivel, string>> = {
+  chico: 'chicos (5"-9")',
+  mediano: 'medianos (11"-12")',
+  grande: 'grandes (16"-18")',
+  gigante: 'gigantes (24"-36")',
+};
 
 /**
- * Lo que Amaterasu leyó del armado de un bouquet de la foto (ADR-0030), contado
- * para el modelo: cuántos globos látex y de qué colores, el remate y los números.
- * Con esto el modelo declara la cantidad real de la pieza y busca cada dígito;
- * sin esto inventaba 12 o 15 globos para una pieza de 5. Solo con una lectura
- * confiable (>= 0,5, la misma barra que Python).
+ * Lo que Amaterasu leyó del armado de un bouquet de la foto (ADR-0030), para el
+ * modelo: los colores del látex (con su tamaño, si la foto lo dice), el remate,
+ * los números y el total de globos. Con esto el modelo declara la cantidad real
+ * de la pieza y busca cada dígito; sin esto inventaba 12 o 15 globos para una
+ * pieza de 5. Solo con una lectura confiable (>= 0,5, la misma barra que Python).
+ *
+ * Aquí no se cuenta nada: el total es `total_globos`, que publica Python
+ * (`armado_bouquet.total_leido`, el mismo que compra al confirmar). Una lectura
+ * anterior sin total no lleva cifra; el modelo no recibe una cuenta inventada.
+ * Con `sinTotal` (la pieza trae un conteo que manda, ADR-0031) el armado solo
+ * describe colores, remate y números: la cantidad la dice el conteo.
  */
-function armadoLeido(lectura: ReferenceBlueprintV2["elements"][number]["appearance"]["armado_bouquet"]): string {
+function armadoLeido(lectura: ReferenceBlueprintV2["elements"][number]["appearance"]["armado_bouquet"], sinTotal = false): string {
   if (!lectura || lectura.confianza < 0.5) return "";
-  const porColor = new Map<string, number>();
+  const tamanosPorColor = new Map<string, Set<string>>();
   for (const nivel of lectura.niveles) {
-    const globos = nivel.unidad === "suelto" ? nivel.colores : nivel.colores.slice(0, GLOBOS_POR_UNIDAD[nivel.unidad] ?? nivel.colores.length);
-    for (const color of globos) porColor.set(color, (porColor.get(color) ?? 0) + 1);
+    for (const color of nivel.colores) {
+      const tamanos = tamanosPorColor.get(color) ?? new Set<string>();
+      if (nivel.clase_tamano) tamanos.add(TAMANO_LEIDO[nivel.clase_tamano]);
+      tamanosPorColor.set(color, tamanos);
+    }
   }
-  const latex = [...porColor.values()].reduce((suma, n) => suma + n, 0);
+  const latex = [...tamanosPorColor].map(([color, tamanos]) => (tamanos.size > 0 ? `${color} ${[...tamanos].join(" y ")}` : color)).join(", ");
   const numeros = lectura.numeros ?? [];
-  const total = latex + (lectura.remate ? 1 : 0) + numeros.length;
+  // Un total de 0 (lectura confiable sin nada que comprar: Python tampoco
+  // compra desde ella) no es una cantidad que declarar: `unidades_declaradas`
+  // es positivo y "declara 0" hacía fallar el confirmar (hallazgo 14). Solo se
+  // mira la cifra de Python; no se recuenta nada.
+  const total = sinTotal || !lectura.total_globos ? undefined : lectura.total_globos;
   const partes = [
-    latex > 0 ? `${latex} globos látex (${[...porColor.entries()].map(([color, n]) => `${n} ${color}`).join(", ")})` : "",
+    latex ? `látex ${latex}` : "",
     lectura.remate ? `remate ${lectura.remate.clase}${lectura.remate.color ? ` ${lectura.remate.color}` : ""}` : "",
     numeros.length > 0 ? `globos número ${numeros.map((numero) => numero.digito).join(", ")} (${numeros.some((numero) => numero.clase_tamano === "grande") ? "grandes" : "chicos"})` : "",
+    total !== undefined ? `total ${total} globos` : "",
   ].filter(Boolean).join("; ");
-  const indicacion = numeros.length > 0
-    ? ` Declara unidades_declaradas ${total} por pieza (sumando repeticiones) y busca cada dígito como globo metalizado número (${numeros.map((numero) => `"globo metalizado numero ${numero.digito}"`).join(", ")}) para incluirlo en materiales: sin ellos el plan no puede seguir la foto`
-    : ` Declara unidades_declaradas ${total} por pieza (sumando repeticiones)`;
-  return `; armado leído en la foto: ${partes}; total ${total} globos.${indicacion}`;
+  if (!partes) return "";
+  const indicaciones = [
+    total !== undefined ? `declara unidades_declaradas ${total} por pieza (sumando repeticiones)` : "",
+    numeros.length > 0 ? `busca cada dígito como globo metalizado número (${numeros.map((numero) => `"globo metalizado numero ${numero.digito}"`).join(", ")}) para incluirlo en materiales: sin ellos el plan no puede seguir la foto` : "",
+  ].filter(Boolean).join(" y ");
+  const indicacion = indicaciones ? ` ${indicaciones.charAt(0).toUpperCase()}${indicaciones.slice(1)}` : "";
+  return `; armado leído en la foto: ${partes}.${indicacion}`;
+}
+
+type ConteoDelElemento = ReferenceBlueprintV2["elements"][number]["appearance"]["conteo"];
+
+/**
+ * El conteo de la foto manda sobre la cantidad (ADR-0031) cuando Python lo va a
+ * usar al confirmar (`CONTEO_REFERENCIA_V1`), es confiable (>= 0,5, la barra de
+ * Python) y trae una cifra leída: la cuenta exacta o el estimado. Aquí no se
+ * calcula ninguna (racimos × globos por racimo es de Python).
+ */
+function cantidadDelConteo(conteo: ConteoDelElemento): string | null {
+  if (!conteo || conteo.confianza < 0.5 || !featureEnabled("CONTEO_REFERENCIA_V1")) return null;
+  if (conteo.exacto) return `${conteo.globos_visibles}`;
+  return conteo.estimado_total !== null ? `unos ${conteo.estimado_total}` : null;
+}
+
+/**
+ * Lo que Amaterasu contó de una pieza de la foto (ADR-0031), dicho al modelo
+ * con los números tal como se leyeron. Cuando manda (`cantidadDelConteo`), es
+ * la cantidad que el modelo declara en un kit, y el armado leído de la misma
+ * pieza deja de dar su total. Solo con `CONTEO_REFERENCIA_V1` y una lectura
+ * confiable; sin eso, nada, y la línea del elemento es la de siempre.
+ */
+function conteoLeido(conteo: ConteoDelElemento): string {
+  if (!conteo || conteo.confianza < 0.5 || !featureEnabled("CONTEO_REFERENCIA_V1")) return "";
+  const cuenta = conteo.exacto
+    ? `${conteo.globos_visibles} globos (cuenta exacta)`
+    : conteo.estimado_total !== null
+      ? `unos ${conteo.estimado_total} globos (aproximado; ${conteo.globos_visibles} visibles)`
+      : `${conteo.globos_visibles} globos visibles (aproximado, hay ocultos)`;
+  const racimos = conteo.racimos !== null && conteo.globos_por_racimo !== null ? `, ${conteo.racimos} racimos de ${conteo.globos_por_racimo}` : "";
+  const cantidad = cantidadDelConteo(conteo);
+  const kit = cantidad === null
+    ? ""
+    : ` Si la pieza es un kit (bouquet, figura, racimo), declara unidades_declaradas ${cantidad} por pieza (sumando repeticiones): manda sobre el total de un armado leído.`;
+  return `; conteo leído en la foto: ${cuenta}${racimos}.${kit} Si es una estructura geométrica no calcules globos: al confirmar, Python ajusta densidad y medidas a esa cuenta`;
 }
 
 /**
@@ -220,7 +281,7 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       const estructura = semantica
         ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados (chrome/metallic = reflex, pearl = satin; "clear" junto a un color, como "clear pink", es la línea Cristal de ese color —un acabado translúcido, no un globo transparente—, y "clear" solo sí es transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
         : "";
-      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}${armadoLeido(element.appearance.armado_bouquet)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
+      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}${armadoLeido(element.appearance.armado_bouquet, cantidadDelConteo(element.appearance.conteo) !== null)}${conteoLeido(element.appearance.conteo)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
     })
     .join("\n");
   return elementos || "- Ningún elemento relevante detectado.";
