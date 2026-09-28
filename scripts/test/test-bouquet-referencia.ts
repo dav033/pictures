@@ -81,6 +81,22 @@ async function main(): Promise<void> {
   ok("appearance.armado_bouquet es opcional y tiene la forma de la lectura sin id");
 
   // ---------------------------------------------------------------------------
+  // v2: cantidad y clase de tamaño por nivel, total y avisos; una lectura v1 sigue valiendo.
+  const v2 = {
+    ...lectura,
+    niveles: [{ unidad: "trio", colores: ["blanco", "rosado", "blanco"], cantidad: 4, clase_tamano: "mediano" }],
+    total_globos: 13,
+    avisos: ["nivel 2: sin colores de la paleta; se descartó"],
+  };
+  assert.deepEqual(blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: v2 })]).elements[0]!.appearance.armado_bouquet, v2);
+  const nivelV2 = v2.niveles[0]!;
+  for (const mala of [{ ...nivelV2, cantidad: 25 }, { ...nivelV2, cantidad: 0 }, { ...nivelV2, cantidad: 2.5 }, { ...nivelV2, clase_tamano: "enorme" }]) {
+    assert.throws(() => blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: { ...v2, niveles: [mala] } })]), JSON.stringify(mala));
+  }
+  assert.throws(() => blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: { ...v2, total_globos: -1 } })]));
+  ok("la lectura v2 trae cantidad y tamaño por nivel, total y avisos; la v1 sigue siendo válida");
+
+  // ---------------------------------------------------------------------------
   const mezcla = blueprintDe([
     elemento("REF_01_E01", bouquet, "kit"),
     elemento("REF_01_E02", "tall column, on the left", "columna"),
