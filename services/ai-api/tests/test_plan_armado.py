@@ -66,20 +66,23 @@ ROWS = [
 
 
 class FakePlanStore:
+    def __init__(self, rows: list[dict[str, object]] = ROWS) -> None:
+        self.rows = rows
+
     async def published_snapshot(self, snapshot_id: str) -> str | None:
         return SNAPSHOT if snapshot_id == SNAPSHOT else None
 
     async def fetch_plan_rows(
         self, snapshot_id: str, product_ids: object, variant_ids: object, lora: object = ()
     ) -> list[dict[str, object]]:
-        return ROWS
+        return self.rows
 
     async def fetch_catalog_identity(
         self, snapshot_id: str, product_ids: object, variant_ids: object
     ) -> list[dict[str, object]]:
-        return [{"product_id": r["product_id"], "variant_id": r["variant_id"]} for r in ROWS] + [
-            {"product_id": r["product_id"], "variant_id": None} for r in ROWS
-        ]
+        return [
+            {"product_id": r["product_id"], "variant_id": r["variant_id"]} for r in self.rows
+        ] + [{"product_id": r["product_id"], "variant_id": None} for r in self.rows]
 
     async def check_ready(self) -> bool:
         return True
@@ -131,7 +134,9 @@ def _plan(*estructuras: dict[str, object]) -> dict[str, object]:
     }
 
 
-def _request(plan: Mapping[str, object], **extra: object) -> PlanResolutionRequest:
+def _request(
+    plan: Mapping[str, object], rows: list[dict[str, object]] = ROWS, **extra: object
+) -> PlanResolutionRequest:
     return PlanResolutionRequest.model_validate(
         {
             "context": {
@@ -147,7 +152,7 @@ def _request(plan: Mapping[str, object], **extra: object) -> PlanResolutionReque
             "plan": plan,
             "allowlist": [
                 {"product_id": row["product_id"], "variant_ids": [row["variant_id"]]}
-                for row in ROWS
+                for row in rows
             ],
             "catalog_snapshot_id": SNAPSHOT,
             **extra,
@@ -155,8 +160,10 @@ def _request(plan: Mapping[str, object], **extra: object) -> PlanResolutionReque
     )
 
 
-async def _resolve(plan: Mapping[str, object], **extra: object) -> dict[str, object]:
-    result = await resolve_plan(_request(plan, **extra), FakePlanStore())  # type: ignore[arg-type]
+async def _resolve(
+    plan: Mapping[str, object], rows: list[dict[str, object]] = ROWS, **extra: object
+) -> dict[str, object]:
+    result = await resolve_plan(_request(plan, rows, **extra), FakePlanStore(rows))  # type: ignore[arg-type]
     return cast(dict[str, object], result["plan_resuelto"])
 
 
@@ -340,3 +347,122 @@ async def test_la_foto_quita_el_color_que_no_lleva() -> None:
         cast(list[dict[str, object]], resolved["armados_bouquet"])[0]["leyenda"],
     )
     assert [e["codigo"] for e in leyenda] == [1, 2]
+
+
+# --- Cantidad y tamaño por nivel (bouquet-referencia v2, 2026-09-28) -----------------
+
+
+@pytest.mark.anyio
+async def test_la_foto_compra_el_bouquet_grande_por_niveles() -> None:
+    # SEGUIMIENTO-bouquets.md §14: dos niveles de 4 cuartetos + el corazón son 33
+    # globos; la lectura v1 (una unidad por nivel) los contaba como 9.
+    cuarteto = {"unidad": "cuarteto", "colores": ["blanco", "rosado", "blanco", "rosado"]}
+    pista = {
+        "referencia_element_id": "REF_01_E01",
+        "variante": "base_aire",
+        "niveles": [{**cuarteto, "cantidad": 4}, {**cuarteto, "cantidad": 4}],
+        "remate": {"clase": "metalizado", "color": "dorado"},
+        "confianza": 0.8,
+        # Lo que publicó la lectura; la resolución recuenta con la misma función.
+        "total_globos": 33,
+    }
+    resolved = await _resolve(_plan(_bouquet()), completar_armados=True, pistas_armado=[pista])
+    assert _lineas(resolved) == [
+        ("var-r12-blanco", 16),
+        ("var-r12-rosado", 16),
+        ("var-foil-dorado", 1),
+    ]
+    plan = cast(dict[str, object], resolved["plan"])
+    estructura = cast(list[dict[str, object]], plan["estructuras"])[0]
+    assert estructura["unidades_declaradas"] == 33
+    armado = cast(dict[str, object], estructura["armado_bouquet"])
+    assert armado["niveles"] == [
+        {"rol": "base", "unidad": "cuarteto", "cantidad": 8, "posiciones": [0, 1, 0, 1]}
+    ]
+    assert any("la foto muestra 33 globos" in s for s in cast(list[str], plan["supuestos"]))
+    segunda = await _resolve(plan)
+    assert segunda["plan_hash"] == resolved["plan_hash"]
+
+
+ROW_R18_BLANCO = _row(
+    "r18-blanco", "Globo látex blanco", "R-18", forma="redondo", diam=18, codigo="R-18"
+)
+ROWS_CON_R18 = [*ROWS, ROW_R18_BLANCO]
+
+
+def _bouquet_dos_tamanos() -> dict[str, object]:
+    bouquet = _bouquet(unidades_declaradas=12)
+    materiales = cast(list[dict[str, object]], bouquet["materiales"])
+    grande = {
+        **materiales[0],
+        "product_id": "prod-r18-blanco",
+        "variant_id": "var-r18-blanco",
+        "participacion": 0.25,
+        "rol_material": "secundario",
+    }
+    partes = (0.25, 0.25, 0.25)
+    return {
+        **bouquet,
+        "materiales": [
+            *({**m, "participacion": parte} for m, parte in zip(materiales, partes, strict=True)),
+            grande,
+        ],
+    }
+
+
+def _pista_dos_tamanos(**tamano: object) -> dict[str, object]:
+    return {
+        "referencia_element_id": "REF_01_E01",
+        "variante": "base_aire",
+        "niveles": [
+            {
+                "unidad": "cuarteto",
+                "colores": ["blanco", "rosado", "blanco", "rosado"],
+                "cantidad": 3,
+                **tamano,
+            },
+            {"unidad": "suelto", "colores": ["blanco"], "cantidad": 4, **tamano},
+        ],
+        "remate": {"clase": "metalizado", "color": "dorado"},
+        "confianza": 0.8,
+    }
+
+
+@pytest.mark.anyio
+async def test_la_clase_de_tamano_leida_conserva_cada_tamano() -> None:
+    pista = _pista_dos_tamanos()
+    niveles = cast(list[dict[str, object]], pista["niveles"])
+    niveles[0]["clase_tamano"] = "mediano"
+    niveles[1]["clase_tamano"] = "grande"
+    resolved = await _resolve(
+        _plan(_bouquet_dos_tamanos()), ROWS_CON_R18, completar_armados=True, pistas_armado=[pista]
+    )
+    assert sorted(_lineas(resolved)) == [
+        ("var-foil-dorado", 1),
+        ("var-r12-blanco", 6),
+        ("var-r12-rosado", 6),
+        ("var-r18-blanco", 4),
+    ]
+    plan = cast(dict[str, object], resolved["plan"])
+    assert not any("se quitó" in s for s in cast(list[str], plan["supuestos"]))
+
+
+@pytest.mark.anyio
+async def test_sin_tamano_leido_el_aviso_no_dice_que_la_foto_no_lo_lleva() -> None:
+    resolved = await _resolve(
+        _plan(_bouquet_dos_tamanos()),
+        ROWS_CON_R18,
+        completar_armados=True,
+        pistas_armado=[_pista_dos_tamanos()],
+    )
+    assert sorted(_lineas(resolved)) == [
+        ("var-foil-dorado", 1),
+        ("var-r12-blanco", 10),
+        ("var-r12-rosado", 6),
+    ]
+    supuestos = cast(list[str], cast(dict[str, object], resolved["plan"])["supuestos"])
+    assert (
+        "Bouquet de globos: se quitó blanco de 18 pulgadas porque la lectura de la foto no dice "
+        "el tamaño de ese color."
+    ) in supuestos
+    assert not any("porque la foto no lo lleva" in s for s in supuestos)

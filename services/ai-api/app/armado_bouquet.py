@@ -73,6 +73,21 @@ GLOBOS_POR_UNIDAD: Mapping[str, int] = {
     "quinteto": 5,
     "sexteto": 6,
 }
+#: Unidades iguales que puede tener un nivel (contrato ``armado-bouquet.v1``).
+MAX_CANTIDAD_NIVEL = 24
+#: Globos sueltos que la lectura describe por grupo repetido (``LecturaArmadoSchema``).
+MAX_SUELTOS_LEIDOS = 6
+#: Clase de tamaño que la lectura de la foto puede dar a un nivel, en pulgadas
+#: (rangos del catálogo Sempertex: R-5/R-9, R-11/R-12, R-16/R-18, R-24 a R-36).
+CLASES_TAMANO_NIVEL: Mapping[str, tuple[float, float]] = {
+    "chico": (5.0, 9.0),
+    "mediano": (11.0, 12.0),
+    "grande": (16.0, 18.0),
+    "gigante": (24.0, 36.0),
+}
+#: Techo de ``total_leido``: todos los niveles de sueltos al tope, remate y dos
+#: grupos (números a los lados), más tres dígitos.
+MAX_TOTAL_LEIDO = (MAX_NIVELES * MAX_SUELTOS_LEIDOS * MAX_CANTIDAD_NIVEL + 1) * 2 + 3
 VARIANTES_HELIO = frozenset({"helio_apilado", "helio_escalonado"})
 #: Por debajo de este diámetro el látex va con aire (Anagram; R-5 no flota).
 LATEX_MINIMO_HELIO_PULG = 9.0
@@ -113,13 +128,14 @@ _FOIL_JUMBO_36 = _Helio(55, False, 4.4 * _FT3_A_M3, 336, 504)
 _FOIL_FORMA_GRANDE = _Helio(50, True, 1.5 * _FT3_A_M3, 504, 840)
 _BURBUJA = _Helio(30, False, 1.2 * _FT3_A_M3, 168, 240)
 
-_ESQUEMA_ARMADO: Mapping[str, object] = cast(
-    Mapping[str, object],
-    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
-        "armado_bouquet"
-    ],
-)
+_ESQUEMA_ESTRUCTURA: Mapping[str, Mapping[str, object]] = contract_schema("PlanDecoracion")[
+    "properties"
+]["estructuras"]["items"]["properties"]
+_ESQUEMA_ARMADO: Mapping[str, object] = _ESQUEMA_ESTRUCTURA["armado_bouquet"]
 _FORMA = Draft7Validator(_ESQUEMA_ARMADO)
+#: Tope de ``unidades_declaradas`` del contrato del plan: una foto que pida más
+#: globos no manda (la compra sigue siendo la del plan).
+MAX_UNIDADES_DECLARADAS = cast(int, _ESQUEMA_ESTRUCTURA["unidades_declaradas"]["maximum"])
 
 
 class ArmadoInvalido(ValueError):
@@ -576,40 +592,128 @@ class CompraLeida:
 
     cantidades: tuple[int, ...]
     armado: dict[str, object]
+    #: Por qué queda en 0 cada material que la foto no usa, por índice:
+    #: ``sin_color`` (la foto no lleva ese color), ``otro_tamano`` (lo lleva en
+    #: otro tamaño, según la clase leída) o ``sin_tamano`` (lo lleva, pero la
+    #: lectura no dijo de qué tamaño y se usó el primero de ese color).
+    quitados: tuple[tuple[int, str], ...] = ()
 
     @property
     def total(self) -> int:
         return sum(self.cantidades)
 
 
-def _material_del_color(materiales: Sequence[MaterialBouquet], color: str) -> int | None:
+def _distancia_a_clase(tamano: float | None, clase: str) -> float:
+    """Pulgadas que separan un globo del rango de su clase; sin tamaño, la más lejana."""
+    if tamano is None:
+        return float("inf")
+    minimo, maximo = CLASES_TAMANO_NIVEL[clase]
+    return max(minimo - tamano, tamano - maximo, 0.0)
+
+
+def _material_del_color(
+    materiales: Sequence[MaterialBouquet], color: str, clase_tamano: str | None = None
+) -> int | None:
+    """El material de un color leído y, si la lectura dio su clase, del tamaño más cercano.
+
+    El color se casa como las pistas de patrón (igualdad o tono cercano). Con
+    ``clase_tamano`` se elige, entre los materiales de ese mismo color, el de
+    tamaño más cercano al rango de la clase (empate: el primero). Sin clase, el
+    primero de ese color, como siempre.
+    """
     patrones = [MaterialPatron(m.globo.color, m.globo.acabado, 1.0) for m in materiales]
     posicion = material_de_color(patrones, color)
-    return materiales[posicion].indice if posicion is not None else None
+    if posicion is None:
+        return None
+    elegido: MaterialBouquet = materiales[posicion]
+    if clase_tamano not in CLASES_TAMANO_NIVEL:
+        return elegido.indice
+    mismo_color = [
+        (orden, m)
+        for orden, m in enumerate(materiales)
+        if _plegar(m.globo.color or "").strip() == _plegar(elegido.globo.color or "").strip()
+    ]
+    _, mejor = min(
+        mismo_color,
+        key=lambda item: (
+            _distancia_a_clase(item[1].tamano_pulg, cast(str, clase_tamano)),
+            item[0],
+        ),
+    )
+    return mejor.indice
+
+
+def _cantidad_leida(nivel: Mapping[str, object]) -> int:
+    """Unidades iguales del nivel; una lectura anterior a la cantidad vale 1."""
+    cantidad = nivel.get("cantidad")
+    if isinstance(cantidad, int) and not isinstance(cantidad, bool):
+        return min(MAX_CANTIDAD_NIVEL, max(1, cantidad))
+    return 1
+
+
+def _globos_del_nivel(nivel: Mapping[str, object]) -> int:
+    """Globos de una unidad del nivel: los colores de un grupo de sueltos, o la unidad Sempertex."""
+    unidad = str(nivel.get("unidad"))
+    if unidad == "suelto":
+        return len(cast(list[str], nivel.get("colores") or []))
+    return GLOBOS_POR_UNIDAD.get(unidad, 0)
+
+
+def _grupos_leidos(lectura: Mapping[str, object]) -> int:
+    """Con dos números "a los lados" la foto muestra dos bouquets iguales, uno por dígito."""
+    numeros = cast(list[object], lectura.get("numeros") or [])
+    return 2 if lectura.get("disposicion") == "lados" and len(numeros) == 2 else 1
+
+
+def total_leido(lectura: Mapping[str, object]) -> int:
+    """Globos que la lectura de la foto cuenta en UNA pieza: el único dueño de esa cuenta.
+
+    Cada nivel suma ``cantidad`` unidades de sus globos (una lectura sin
+    cantidad vale 1), el remate uno, ambos por grupo (dos con números a los
+    lados), y cada dígito un globo número. Es lo que la lectura publica como
+    ``total_globos`` y lo que ``compra_desde_lectura`` compra cuando la foto
+    manda; TypeScript solo lo muestra (AGENTS.md: Python es dueño del conteo).
+    """
+    latex = sum(
+        _globos_del_nivel(nivel) * _cantidad_leida(nivel)
+        for nivel in cast(list[Mapping[str, object]], lectura.get("niveles") or [])
+    )
+    remate = 1 if isinstance(lectura.get("remate"), Mapping) else 0
+    numeros = cast(list[object], lectura.get("numeros") or [])
+    return (latex + remate) * _grupos_leidos(lectura) + len(numeros)
 
 
 def _niveles_leidos(
     lectura: Mapping[str, object], latex: Sequence[MaterialBouquet], variante: str
 ) -> list[dict[str, object]] | None:
-    """Los niveles de la lectura como niveles del armado; ``None`` si un color no se compra."""
-    unidades: list[tuple[str, list[int]]] = []
+    """Los niveles de la lectura como niveles del armado; ``None`` si un color no se compra.
+
+    Cada nivel leído trae cuántas unidades iguales lo forman (``cantidad``,
+    1 si la lectura es anterior) y, opcionalmente, su clase de tamaño. Con base
+    de aire los dos primeros niveles de unidades son la base y el resto el
+    cuerpo. Los niveles consecutivos iguales se juntan sin pasar del tope de
+    unidades por nivel del contrato.
+    """
+    unidades: list[tuple[str, list[int], int]] = []
     for nivel in cast(list[Mapping[str, object]], lectura.get("niveles", [])):
         unidad = str(nivel["unidad"])
+        cantidad = _cantidad_leida(nivel)
+        clase = nivel.get("clase_tamano")
         indices: list[int] = []
         for color in cast(list[str], nivel.get("colores", [])):
-            indice = _material_del_color(latex, color)
+            indice = _material_del_color(latex, color, clase if isinstance(clase, str) else None)
             if indice is None:
                 return None
             indices.append(indice)
         if unidad == "suelto":
-            unidades.extend(("suelto", [indice]) for indice in indices)
+            unidades.extend(("suelto", [indice], cantidad) for indice in indices)
         elif len(indices) == GLOBOS_POR_UNIDAD[unidad]:
-            unidades.append((unidad, indices))
+            unidades.append((unidad, indices, cantidad))
         else:
             return None
     niveles: list[dict[str, object]] = []
     con_unidad = 0
-    for unidad, posiciones in unidades:
+    for unidad, posiciones, cantidad in unidades:
         if unidad == "suelto":
             rol = "acento" if variante == "base_aire" else "alrededor"
         elif variante == "base_aire":
@@ -622,10 +726,13 @@ def _niveles_leidos(
             and niveles[-1]["unidad"] == unidad
             and niveles[-1]["posiciones"] == posiciones
             and niveles[-1]["rol"] == rol
+            and cast(int, niveles[-1]["cantidad"]) + cantidad <= MAX_CANTIDAD_NIVEL
         ):
-            niveles[-1]["cantidad"] = cast(int, niveles[-1]["cantidad"]) + 1
+            niveles[-1]["cantidad"] = cast(int, niveles[-1]["cantidad"]) + cantidad
         else:
-            niveles.append({"rol": rol, "unidad": unidad, "cantidad": 1, "posiciones": posiciones})
+            niveles.append(
+                {"rol": rol, "unidad": unidad, "cantidad": cantidad, "posiciones": posiciones}
+            )
     return niveles
 
 
@@ -638,9 +745,12 @@ def compra_desde_lectura(
     los materiales del bouquet: cada color de los niveles con un látex del
     plan (igualdad o tono cercano, como las pistas de patrón), el remate con
     un material de su clase (y color, si lo dijo) y cada dígito con su globo
-    número. Un material que la foto no muestra queda en 0: la resolución lo
-    quita. Sin números ni remate, nada que casar. Helio con látex chico o
-    número chico baja a base de aire, como la receta.
+    número. Cada nivel compra ``cantidad`` unidades (1 en una lectura
+    anterior) y, si la lectura dio la clase de tamaño, del látex de ese color
+    más cercano a ella. El total comprado es ``total_leido(lectura)``, el que
+    la lectura publicó. Un material que la foto no muestra queda en 0: la
+    resolución lo quita. Sin números ni remate, nada que casar. Helio con látex
+    chico o número chico baja a base de aire, como la receta.
     """
     if not estructura.es_bouquet:
         return None
@@ -714,6 +824,8 @@ def compra_desde_lectura(
         cantidades[indice] += 1
     if sum(cantidades) == 0 or len(niveles) > MAX_NIVELES:
         return None
+    if sum(cantidades) * estructura.repeticiones > MAX_UNIDADES_DECLARADAS:
+        return None
     armado: dict[str, object] = {
         "version": VERSION_ARMADO,
         "origen": "referencia",
@@ -724,7 +836,49 @@ def compra_desde_lectura(
         armado["remate"] = remate
     if digitos:
         armado["numero"] = {"digitos": digitos, "disposicion": disposicion}
-    return CompraLeida(tuple(cantidades), armado)
+    return CompraLeida(
+        tuple(cantidades), armado, _motivos_quitados(estructura, lectura, latex, cantidades)
+    )
+
+
+def _motivos_quitados(
+    estructura: EstructuraBouquet,
+    lectura: Mapping[str, object],
+    latex: Sequence[MaterialBouquet],
+    cantidades: Sequence[int],
+) -> tuple[tuple[int, str], ...]:
+    """Por qué la foto deja en 0 cada material (ver ``CompraLeida.quitados``).
+
+    Un látex cuyo color sí queda en otro tamaño no se quita "porque la foto no
+    lo lleva": o la lectura dio la clase de tamaño de ese color y la foto lo
+    muestra en otro, o no la dio y se usó el primero de ese color.
+    """
+
+    def color_de(material: MaterialBouquet) -> str:
+        return _plegar(material.globo.color or "").strip()
+
+    por_indice = {m.indice: m for m in latex}
+    usados = {color_de(m) for m in latex if cantidades[m.indice] > 0}
+    con_tamano: set[str] = set()
+    for nivel in cast(list[Mapping[str, object]], lectura.get("niveles") or []):
+        clase = nivel.get("clase_tamano")
+        if not isinstance(clase, str) or clase not in CLASES_TAMANO_NIVEL:
+            continue
+        for color in cast(list[str], nivel.get("colores") or []):
+            indice = _material_del_color(latex, color, clase)
+            if indice is not None:
+                con_tamano.add(color_de(por_indice[indice]))
+    motivos: list[tuple[int, str]] = []
+    for posicion, material in enumerate(estructura.materiales):
+        if cantidades[posicion] > 0:
+            continue
+        if material is None or material.tipo != "latex" or color_de(material) not in usados:
+            motivos.append((posicion, "sin_color"))
+        elif color_de(material) in con_tamano:
+            motivos.append((posicion, "otro_tamano"))
+        else:
+            motivos.append((posicion, "sin_tamano"))
+    return tuple(motivos)
 
 
 # --- Resolución (lo que dibuja la hoja de armado) -----------------------------
@@ -1187,10 +1341,14 @@ def armado_resuelto(
 
 __all__ = [
     "ArmadoInvalido",
+    "CLASES_TAMANO_NIVEL",
     "CompraLeida",
     "DISPOSICIONES",
     "EstructuraBouquet",
     "GloboCatalogo",
+    "MAX_CANTIDAD_NIVEL",
+    "MAX_SUELTOS_LEIDOS",
+    "MAX_TOTAL_LEIDO",
     "MaterialBouquet",
     "VARIANTES",
     "VERSION_ARMADO",
@@ -1199,6 +1357,7 @@ __all__ = [
     "compra_desde_lectura",
     "disposiciones_admitidas",
     "sugerir_armado",
+    "total_leido",
     "validar",
     "variantes_admitidas",
 ]
