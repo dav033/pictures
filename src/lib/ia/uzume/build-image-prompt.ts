@@ -1,7 +1,7 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, describirMezclaDeColor, frasePatronColor, idDeEstructura, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
-import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA, fraseInstanciaConArmado, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado, type AnfitrionaEnPrompt } from "./armado-en-prompt";
+import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, fraseInstanciaConArmadoGuirnalda, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado, type AnfitrionaEnPrompt } from "./armado-en-prompt";
 import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
 import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
 import { findSeparateSidePieces } from "./separate-side-pieces";
@@ -546,7 +546,8 @@ function armadoClause(element: SceneSpec["elements"][number], colorPatterns?: re
   if (!colorPatternSentence(element, colorPatterns)) return "";
   const armado = armadoDeElemento(colorPatterns, element);
   if (armado) return fraseInstanciaConArmado(armado.grupos);
-  return armadoGuirnaldaDeElemento(colorPatterns, element) ? FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA : "";
+  const guirnalda = armadoGuirnaldaDeElemento(colorPatterns, element);
+  return guirnalda ? fraseInstanciaConArmadoGuirnalda(guirnalda) : "";
 }
 
 function eventAuthorityContract(context?: VisualContext, styling: readonly AmbientacionImagen[] = []): string[] {

@@ -138,7 +138,10 @@ la cuerda real es más larga y la puerta física no lo veía
     (#n con #n; sin pareja, "una de" las anfitrionas; hallazgo 15).
     En el híbrido, `GEMINI_COMPOSITION_GARLAND_LOCK` se añade al hard lock solo
     cuando el caption llevó un armado de guirnalda; un armado sin patrón no
-    pide el candado del patrón.
+    pide el candado del patrón. La frase de instancia y los candados de la
+    guirnalda y del bouquet nombran solo el relleno, los remates, el remate y
+    los números que el armado resuelto de Python tiene (hallazgo 17 de la
+    revisión: nombrarlos siempre invitaba a añadir piezas no cotizadas).
 13. **Patrón por racimo** (`patron_color.py`). `EstructuraPatron` trae del
     armado sus globos por racimo y su forma (`racimo_y_forma`). Con armado,
     `sugerir_patron` va por los racimos del armado: espiral si los colores

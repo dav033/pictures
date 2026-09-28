@@ -163,9 +163,17 @@ export function fraseSoporteGuirnalda(armado: ArmadoGuirnaldaEnPrompt, anfitrion
 /**
  * Cierre de la línea del INSTANCE CONTRACT de una guirnalda con armado: su
  * armado (en COLOR VARIETY y en su `color_pattern`) manda sobre las
- * instrucciones genéricas de agrupar globos.
+ * instrucciones genéricas de agrupar globos. Nombra el relleno y los remates
+ * solo si el armado de Python los tiene: nombrarlos siempre invitaba al modelo
+ * a añadir globos chicos o grandes que no se cotizaron (hallazgo 17).
  */
-export const FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA = " Build it exactly as its GARLAND ASSEMBLY in COLOR VARIETY says: one continuous garland of the listed clusters with its filler and accent balloons, on that support and in that shape; never split it into separate clusters, bouquets or loose balloons.";
+export function fraseInstanciaConArmadoGuirnalda(armado: Pick<ArmadoGuirnaldaEnPrompt, "conRelleno" | "conRemates">): string {
+  const piezas = armado.conRelleno && armado.conRemates ? " with its filler and accent balloons"
+    : armado.conRelleno ? " with its filler balloons"
+      : armado.conRemates ? " with its accent balloons"
+        : "";
+  return ` Build it exactly as its GARLAND ASSEMBLY in COLOR VARIETY says: one continuous garland of the listed clusters${piezas}, on that support and in that shape; never split it into separate clusters, bouquets or loose balloons.`;
+}
 
 /**
  * Frase del contrato de cardinalidad cuando una guirnalda va abrazada a otra
