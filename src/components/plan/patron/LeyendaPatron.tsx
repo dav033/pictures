@@ -45,8 +45,9 @@ export function LeyendaPatron({ leyenda, pincel, onPincel, etiqueta = "Leyenda d
   if (!onPincel) {
     return (
       <ul aria-label={etiqueta} className={`flex flex-wrap items-center gap-x-3.5 gap-y-1.5 ${className}`}>
+        {/* Por número: en la leyenda de un armado varios códigos (tamaños) son del mismo material. */}
         {leyenda.map((color) => (
-          <li key={color.indice} className="inline-flex items-center gap-1.5 text-[13px] text-texto">
+          <li key={color.numero} className="inline-flex items-center gap-1.5 text-[13px] text-texto">
             <MuestraNumero color={color} tamano="sm" />
             <span><span className="sr-only">{color.numero}: </span>{color.etiqueta}</span>
           </li>

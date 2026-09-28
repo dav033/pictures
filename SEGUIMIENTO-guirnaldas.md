@@ -497,6 +497,114 @@ Referencias a la rama al cierre de la entrega.
   las completitudes de armados en `_resolution_result` (plan.py l.3576), para
   que la receta vea la densidad y las medidas finales.
 
+### E6 — UI del armado de la guirnalda (hecha el 2026-09-28, rama `feat/guirnaldas-e6`)
+
+Parte de `feat/guirnaldas` 27528f2 (sin E4 ni E5). Decisiones 10–14 en ADR-0032
+("Entrega E6"). Sin Python, sin prompts y sin contratos exportados: la vista
+previa usa el endpoint que E3 ya dejó. Referencias a la rama al cierre.
+
+- **Ruta de Next** `POST /api/plan-armado-guirnalda`
+  (`src/app/api/plan-armado-guirnalda/route.ts:26` cuerpo estricto, `:63` handler):
+  sesión como `/api/plan-editar`, 400 deliberado, 413, líneas con solo los
+  campos del contrato (a lo sumo 256). Adaptador:
+  `llamarPythonPlanArmadoGuirnalda` (`src/lib/ia/nucleo/python-adapter.ts:2613`;
+  scope `plan.armado_guirnalda`, `PythonPlanArmadoGuirnaldaLineaSchema` `:1410`,
+  respuesta `plan-armado-guirnalda-result.v1` `:1603`, eco del armado dado
+  comparado sin orden de claves) y `vistaPreviaArmadoGuirnaldaPython`
+  (`src/lib/plan/edicion-python.ts:408`, plazo `EDICION_PYTHON_DEADLINE_MS`,
+  rechazos `:186`). Las opciones que Python admite viven en un módulo sin
+  dependencias de servidor, `src/lib/plan/opciones-armado-guirnalda.ts:18`, que
+  leen el adaptador y el navegador. Cliente: `pedirVistaArmadoGuirnalda`
+  (`src/lib/plan/peticion-armado-guirnalda.ts:61`), con los errores de la vista
+  del bouquet (`FalloPlanArmado`; `publicar` quedó exportado en
+  `peticion-armado.ts`).
+- **Bloque** `BloqueGuirnalda` (`src/components/plan/guirnalda/BloqueGuirnalda.tsx:44`):
+  soporte (y anfitriona), forma con caída y anclajes, largo y cuerda, racimo,
+  relleno, remates, leyenda de códigos, insumos no cotizados, duración marcada
+  "estimado", avisos. Montado en `DetalleEstructura.tsx:411` (misma posición del
+  árbol que el del bouquet) desde `TarjetaPlanDecoracion.tsx:1300`, solo con
+  `armados_guirnalda` (`:353`).
+- **Gráfica** `GraficaGuirnalda` (`GraficaGuirnalda.tsx:78`) sobre
+  `dibujarGuirnalda` (`geometria-guirnalda.ts:224`): los racimos de
+  `armados_guirnalda[].racimos` con la geometría pseudo-3D del patrón,
+  repartidos sobre `curvaGuirnalda` (`src/components/plan/patron/geometria-dibujo.ts:196`,
+  que `curvaDe` usa solo con armado, `:236`); relleno y sueltos en los huecos,
+  remates junto a su racimo, números de racimo por fuera de la curva, soporte
+  (pared, cuerda y anclajes, piso con pesas, mesa, pieza anfitriona). Figura con
+  texto alternativo y `<ol>` de racimos en orden de lectura; en el editor, cada
+  racimo es un destino (grupo con foco itinerante y zona para soltar). Con patrón
+  y armado, el bloque del patrón y la tira del resumen dibujan los racimos del
+  armado (`patronSobreArmado`, `geometria-guirnalda.ts:99`;
+  `TarjetaPlanDecoracion.tsx:381`), por pedido del orquestador tras E5.
+- **Editor** `EditorGuirnalda` (`EditorGuirnalda.tsx:80`) y `ControlesGuirnalda`
+  (`ControlesGuirnalda.tsx:116`): soporte, anfitriona, forma, caída (deslizador
+  que confirma al soltar), anclajes, unidad y tamaño del racimo, relleno y
+  remates (agregar, quitar, color, posición; arrastre con puntero o "Mover" +
+  flechas + Enter, Escape cancela y el foco vuelve al remate). Deshacer y
+  rehacer, autoguardado con `armado_guirnalda` (`TarjetaPlanDecoracion.tsx:833`),
+  aviso cuando el armado cambia la compra (con los números de Python). Estados
+  explícitos de la vista previa en `crearVistaGuirnalda` y
+  `panelVistaGuirnalda` (`vista-guirnalda.ts:82`, `:237`): cargando, vacío
+  (Python no puede armar la receta), error con Reintentar, listo con
+  "actualizando" y fallo del último borrador; gana el último borrador, se
+  cancela el anterior y lo ya dibujado no se vuelve a pedir.
+- **Hoja única** `HojaArmadoGuirnalda` (`HojaArmadoGuirnalda.tsx:75`, diálogo
+  `:236`): la del patrón y la del armado fundidas; "Hoja de armado" del bloque
+  del patrón abre esta cuando hay armado (`TarjetaPlanDecoracion.tsx:1289`).
+- **Edición**: "Quitar armado" no se vuelve a sugerir con la bandera
+  (`resugerirArmadoGuirnalda`, `src/lib/plan/aplicar-edicion.ts:137`, usado en `:230`).
+- **Pequeños cambios compartidos**: `LeyendaPatron` usa el número como clave
+  (varios códigos de un armado son del mismo material); `jsonEstable` exportado
+  en `bouquet/borrador-armado.ts`; `BloquePatron`/`VistaPatron` aceptan la curva
+  del armado (`guirnalda`, opcional).
+
+**Verificación real** (2026-09-28, en el worktree, sin llamadas pagas):
+
+- `npx tsc --noEmit`: solo el TS2304 `LayoutProps` preexistente de
+  `src/app/layout.tsx`. `npm run -s lint`: 0 errores (25 avisos preexistentes,
+  ninguno en archivos de E6). `npm run -s contracts:check`: sin deriva (no se
+  tocó ningún contrato exportado). `npm run plan:test`: completo en 0 (441 s),
+  con las dos pruebas nuevas dentro.
+- `plan:test-armado-guirnalda-ruta` (`scripts/test/test-plan-armado-guirnalda-ruta.ts`,
+  7 bloques): petición a Python (scope, plazo, campos de cada línea), cuerpo
+  estricto con 400 sin llamar a Python, respuesta validada (otra pieza, otro
+  armado, opciones fuera del contrato → 502), `armado_invalido` con motivo y
+  frase, Python caído (502 `PYTHON_UNAVAILABLE` sin detalles internos),
+  sesión, acción `armado_guirnalda` y "Quitar armado" sin re-sugerir.
+- `ui:test-armado-guirnalda` (`scripts/test/test-ui-armado-guirnalda.ts`, 10
+  casos, salidas reales de Python en `scripts/fixtures/guirnalda-ui/vistas-guirnalda.json`):
+  sin armado la tarjeta sale byte a byte igual (huella sha256 de 27528f2,
+  editable y de lectura); bloque con armado; las cinco formas (recta plana,
+  arco caído de 3 anclajes con 0,4 m a escala, U invertida de 1,2 m a escala,
+  ondulada, curva; caída de muestra avisada); cada globo de Python dibujado una
+  vez; con patrón, los racimos del armado y no la rejilla; accesibilidad
+  (figura, `<ol>` en orden, destinos con un solo Tab stop); controles; borrador;
+  hoja única; vista previa (cargando, vacío, error, rechazo, concurrencia,
+  Python caído) y la petición del navegador.
+- No se tocó Python: no aplica pytest, ruff ni mypy.
+
+**Pendientes**:
+
+- Verificación visual en el navegador: queda para el usuario (la app exige
+  login y `next dev` no corre en este worktree con la junction). Se revisó la
+  gráfica rasterizada (SVG → PNG con `sharp`) de las cinco formas reales.
+- El contrato no deja fijar un remate junto a un racimo cualquiera (solo
+  `extremo_izq`, `extremo_der`, `centro`, `cada_n`): soltar en otro racimo lo
+  reparte a lo largo. Si el negocio lo pide, haría falta `posicion: "racimo"`
+  con su número en `armado-guirnalda.v1`.
+- Las opciones de Python no dicen qué formas admite cada soporte: el editor
+  ofrece las cinco y Python rechaza con su frase (se deshace). Un
+  `opciones.formas` lo evitaría.
+- Sin armado no hay invitación a crearlo (pedido: la tarjeta sin armado queda
+  igual); tras "Quitar armado" se vuelve con "Deshacer" o al confirmar otra vez.
+- El editor del patrón de una guirnalda con armado sigue pintando la rejilla
+  completa del patrón; con E5, los racimos del armado son la fila `i` de
+  `filas_de_racimos`. Revisar al fusionar E5.
+- La huella de la tarjeta sin armado
+  (`scripts/fixtures/guirnalda-ui/tarjeta-sin-armado.json`) se tomó con el código
+  de 27528f2: si otra entrega cambia la tarjeta a propósito, se vuelve a tomar a
+  mano desde un commit sin E6 con esa entrega fusionada.
+
 ### Estado de las ramas (2026-09-28, todas subidas a `origin`, sin PR abierto)
 
 | Rama | Contenido | Estado |

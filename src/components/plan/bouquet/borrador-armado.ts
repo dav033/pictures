@@ -11,8 +11,8 @@ import type { ArmadoBouquetV1 } from "@/lib/plan/armado-bouquet";
 /** Un globo del armado: uno de una unidad de un nivel, uno del remate o un número. */
 export type Posicion = { nivel: number; unidad: number; globo: number } | { remate: number } | { digito: number };
 
-/** JSON con las claves ordenadas: el eco de Python puede traerlas en otro orden. */
-function jsonEstable(valor: unknown): string {
+/** JSON con las claves ordenadas: el eco de Python puede traerlas en otro orden. También lo usa el armado de guirnaldas. */
+export function jsonEstable(valor: unknown): string {
   if (Array.isArray(valor)) return `[${valor.map(jsonEstable).join(",")}]`;
   if (valor && typeof valor === "object") {
     const entradas = Object.entries(valor as Record<string, unknown>).filter(([, campo]) => campo !== undefined).sort(([a], [b]) => a.localeCompare(b));

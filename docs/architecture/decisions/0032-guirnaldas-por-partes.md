@@ -149,8 +149,49 @@ Propuestos como en ADR-0030; ninguno tiene fuente escrita del oficio en el repo
   puede armar.
 - **E5 (pendiente):** frases en Uzume/Kagutsuchi, patrón por racimo (preset
   espiral/anillos con varios tamaños) y espejo en `u_invertida`.
-- **E6 (pendiente):** UI (bloque, gráfica sobre la forma, editor, hoja) y la
-  ruta de Next de la vista previa.
+- **E6 (hecha el 2026-09-28, rama `feat/guirnaldas-e6`):** UI (bloque, gráfica
+  sobre la forma, editor con autoguardado, hoja única) y la ruta de Next de la
+  vista previa. Ver "Entrega E6" abajo.
+
+## Entrega E6 (2026-09-28): UI del armado
+
+10. **Solo con armado.** El bloque "Armado de la guirnalda" se monta cuando
+    `plan_resuelto.armados_guirnalda` trae la pieza; sin él la tarjeta sale
+    byte a byte igual (huella de 27528f2 fijada en la prueba). El bloque del
+    bouquet y el de la guirnalda comparten una sola posición del árbol: una
+    posición nueva corría los `useId` de los controles siguientes y rompía
+    esa igualdad. No hay invitación "Crear armado": con la bandera, confirmar
+    ya completa la receta.
+11. **La gráfica dibuja los racimos del armado** (`armados_guirnalda[].racimos`),
+    nunca las celdas de `patrones_color[].celdas`, sobre la curva real de la
+    forma (recta, curva, ondulada, U invertida, arco caído por tramos entre
+    anclajes), con la misma parábola con que Python mide la cuerda: la caída
+    queda a escala del largo. Sin `caida_m` en una forma que cuelga se dibuja
+    una caída de muestra y el texto lo dice. Con patrón y armado, el bloque del
+    patrón y la tira del resumen también dibujan los racimos del armado (el
+    material de cada código): con E5 (`filas_de_racimos`) el racimo `i` es la
+    fila `i` del patrón expandido sobre los racimos que se arman; el conteo
+    del patrón sigue siendo el de la rejilla completa.
+12. **Editor con autoguardado** como el del bouquet: la vista previa va a
+    Python por `/api/plan-armado-guirnalda` (sesión, cuerpo estricto, líneas
+    con solo los campos del contrato, plazo corto de la edición, respuesta
+    validada con el mismo Zod de `plan_resuelto`) y guarda con la acción
+    `armado_guirnalda`. TypeScript no cuenta: solo cuida la forma del contrato
+    (la caída solo en las formas `conCaida` de la tabla de geometría, la
+    anfitriona solo sobre otra pieza, los 2 anclajes mínimos al colgar). Un
+    remate se lleva a un racimo arrastrándolo o con "Mover" y las flechas; el
+    contrato solo sabe cuatro posiciones, así que el primer racimo es el
+    extremo izquierdo, el último el derecho, el del centro "al centro" y otro
+    cualquiera "a lo largo"; junto a qué racimos quedan sus globos lo decide
+    Python.
+13. **"Quitar armado" es a propósito.** Con `GUIRNALDAS_ARMADO_V1`, una
+    edición que pierde el armado lo re-sugiere; la acción `armado_guirnalda`
+    con `null` no (`resugerirArmadoGuirnalda`).
+14. **Una sola hoja de armado** para guirnaldas con armado: la del patrón y la
+    del armado se funden (gráfica, leyenda de códigos por material y tamaño,
+    racimos en orden, relleno, remates, sueltos, insumos con metros de tira y
+    de cuerda, duración estimada, pasos de Python y, con patrón, su nombre y
+    sus consejos). "Hoja de armado" del bloque del patrón abre esta.
 
 ## Rollback
 

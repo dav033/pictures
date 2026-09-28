@@ -30,8 +30,11 @@ import type { PendientesAjustes } from "./cola-ajustes";
 import type { CajaNormalizada } from "@/components/referencia/recorte";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
+import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";
 import { BloquePatron } from "./patron/BloquePatron";
 import { BloqueBouquet } from "./bouquet/BloqueBouquet";
+import { BloqueGuirnalda } from "./guirnalda/BloqueGuirnalda";
+import { curvaDeArmado } from "./guirnalda/geometria-guirnalda";
 import type { VistasEnVivo } from "./vistas-en-vivo";
 import type { ColorLeyenda } from "./patron/leyenda";
 
@@ -97,6 +100,22 @@ type Props = {
     onEditar?: () => void;
     onHojaArmado?: () => void;
     /** Other edits are still saving: the editor opens once the plan they sign is in. */
+    ocupado?: boolean;
+  };
+  /**
+   * Garland assembly block (ADR-0032, E6): Python's resolved assembly, its
+   * numbered legend and the ways into the editor and the (single, merged)
+   * assembly sheet. Only when the plan carries the garland's assembly;
+   * without it the card stays exactly as before. With it, the pattern block
+   * draws its grid over the assembly's real shape.
+   */
+  guirnalda?: {
+    resuelto: ArmadoGuirnaldaResuelto;
+    leyenda: readonly ColorLeyenda[];
+    /** Name of the host piece when the garland goes over another one. */
+    anfitriona?: string;
+    onEditar?: () => void;
+    onHojaArmado?: () => void;
     ocupado?: boolean;
   };
   /**
@@ -249,7 +268,7 @@ function CantidadTexto({ texto }: { texto: string }) {
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
-  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, vistaReparto,
+  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, guirnalda, vistaReparto,
 }: Props) {
   const reducir = useReducedMotion();
   const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -364,6 +383,7 @@ export function DetalleEstructura({
               oficialId={oficial?.id ?? declarada?.estructura_oficial}
               espejo={estructura.ubicacion === "lateral_derecho"}
               proporcion={proporcion}
+              guirnalda={guirnalda ? curvaDeArmado(guirnalda.resuelto) : undefined}
               repeticiones={estructura.repeticiones}
               nombrePieza={nombreVisible}
               onEditar={patron.onEditar}
@@ -373,7 +393,12 @@ export function DetalleEstructura({
             />
           )}
 
-          {armado && (
+          {/*
+            The bouquet's and the garland's assembly share ONE child slot (a piece is never
+            both): a new slot would shift the `useId` of every control after it and the card
+            without an assembly would no longer render byte for byte as before (ADR-0032, E6).
+          */}
+          {armado ? (
             <BloqueBouquet
               resuelto={armado.resuelto}
               leyenda={armado.leyenda}
@@ -381,6 +406,17 @@ export function DetalleEstructura({
               onEditar={armado.onEditar}
               onHojaArmado={armado.onHojaArmado}
               ocupado={ocupado || Boolean(armado.ocupado)}
+              modoDev={modoDev}
+            />
+          ) : guirnalda && (
+            <BloqueGuirnalda
+              resuelto={guirnalda.resuelto}
+              leyenda={guirnalda.leyenda}
+              nombrePieza={nombreVisible}
+              anfitriona={guirnalda.anfitriona}
+              onEditar={guirnalda.onEditar}
+              onHojaArmado={guirnalda.onHojaArmado}
+              ocupado={ocupado || Boolean(guirnalda.ocupado)}
               modoDev={modoDev}
             />
           )}

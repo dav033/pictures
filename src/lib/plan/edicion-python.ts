@@ -4,13 +4,17 @@ import {
   llamarPythonCatalogRecommendations,
   llamarPythonCatalogSelection,
   llamarPythonPlanArmadoBouquet,
+  llamarPythonPlanArmadoGuirnalda,
   llamarPythonPlanEdit,
   llamarPythonPlanPatron,
+  type OpcionesArmadoGuirnalda,
   type PythonPlanArmadoGlobo,
+  type PythonPlanArmadoGuirnaldaLinea,
   type PythonPlanEditLineaBase,
   type PythonPlanPatronLinea,
 } from "@/lib/ia/nucleo/python-adapter";
 import type { ArmadoBouquetResuelto, ArmadoBouquetV1, DisposicionNumero, VarianteBouquet } from "./armado-bouquet";
+import type { ArmadoGuirnaldaResuelto, ArmadoGuirnaldaV1 } from "./armado-guirnalda";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { candidatoDesdePython } from "@/lib/rag/chat/candidato-python";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
@@ -176,6 +180,12 @@ const RECHAZOS_VISTA_PATRON: Readonly<Record<string, Rechazo>> = {
 const RECHAZOS_VISTA_ARMADO: Readonly<Record<string, Rechazo>> = {
   estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
   invalid_plan: { status: 422, mensaje: "El armado del bouquet no tiene un formato válido." },
+};
+
+/** Rejections of POST /internal/v1/plan/armado-guirnalda (ADR-0032). */
+const RECHAZOS_VISTA_ARMADO_GUIRNALDA: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
+  invalid_plan: { status: 422, mensaje: "El armado de la guirnalda no tiene un formato válido." },
 };
 
 /** Only when Python rejects an assembly without its own sentence (an older service). */
@@ -384,5 +394,38 @@ export async function vistaPreviaArmadoPython(input: {
       throw new RechazoVistaArmadoError(rechazo.message, rechazo.patron, opciones);
     }
     throw rechazo ?? error;
+  }
+}
+
+/**
+ * Assembly preview for the garland editor (ADR-0032): the assembly Python
+ * resolves (or suggests, with `null`) with the same legend, clusters,
+ * supplies and prompts the next resolution gives, and what the editor may
+ * offer for the piece. `lineas` are the garland's resolved lines as the
+ * browser holds them; they name each code, never count. An
+ * `armado_invalido` keeps Python's `motivo` and `mensaje`.
+ */
+export async function vistaPreviaArmadoGuirnaldaPython(input: {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  armadoGuirnalda: ArmadoGuirnaldaV1 | null;
+  lineas?: readonly PythonPlanArmadoGuirnaldaLinea[];
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<{ armado: ArmadoGuirnaldaResuelto; opciones: OpcionesArmadoGuirnalda }> {
+  try {
+    const resultado = await llamarPythonPlanArmadoGuirnalda({
+      plan: input.plan,
+      estructuraId: input.estructuraId,
+      armadoGuirnalda: input.armadoGuirnalda,
+      ...(input.lineas === undefined ? {} : { lineas: input.lineas }),
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return { armado: resultado.armado, opciones: resultado.opciones };
+  } catch (error) {
+    throw rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO_GUIRNALDA) ?? error;
   }
 }
