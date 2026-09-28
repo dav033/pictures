@@ -1,6 +1,6 @@
 # ADR-0032 — Guirnaldas por partes
 
-Date: 2026-09-25 (E4, E5, E6 y la caída de la foto: 2026-09-28)
+Date: 2026-09-25 (E4, E5, E6, la caída de la foto y la curvatura con sentido: 2026-09-28)
 Status: accepted (E3 a E6; E3 y E4 detrás de banderas apagadas, E5 y E6 sin
 bandera propia: sin armado todo es byte a byte lo de antes)
 Supersedes: nothing.
@@ -527,12 +527,122 @@ diagnóstico y la evidencia están en `SEGUIMIENTO-guirnaldas.md` §8.
     (0,05) y la regla "una curva que cae es un arco caído" son supuestos sin
     calibrar; la exactitud de la lectura se mide en E7, con tope de gasto.
 
+## Curvatura con sentido (2026-09-28, rama `fix/guirnalda-curvatura`)
+
+28. **La curva de la foto tiene sentido: arqueada hacia arriba o colgando hacia
+    abajo.** Enmienda la decisión 27. El usuario mostró otra vez la guirnalda
+    en la pared sobre flecos: va arqueada POR ENCIMA de la recta que une sus
+    extremos (convexa, como un techo) y el extremo derecho cuelga más bajo. La
+    gráfica del patrón y la del armado la dibujaron colgando en U, "al revés",
+    y la imagen LoRA la convirtió en un arco rectangular con patas y soportes
+    metálicos. Evidencia y diagnóstico en `SEGUIMIENTO-guirnaldas.md` §8: la
+    gráfica fue fiel al armado; el armado era un `arco_caido` con caída y
+    desnivel. Lo único que pone una guirnalda leída bajo la recta es la caída
+    de la lectura v2, que solo sabía caer: `caida_relativa` medía cuánto baja
+    el centro y valía 0 "cuando se arquea por encima", y
+    `geometria_de_lectura` convertía toda recta o curva con caída en arco
+    caído. Nada podía decir "hacia arriba".
+    - **Lectura** (`guirnalda-referencia.v3`, `LecturaGuirnaldaSchema`):
+      `sentido_curva` (`arriba`: el centro sube sobre la recta que une los
+      extremos, como un techo, y la U invertida es `arriba`; `abajo`: cuelga
+      bajo ella, como una sonrisa) y `flecha_relativa` (0 a 0,6 del largo
+      horizontal: cuánto se aparta, en ese sentido y en vertical). El prompt
+      avisa que un extremo más bajo no es `abajo` (eso es el desnivel) y que
+      el sentido se juzga contra la recta inclinada, con el caso de la foto
+      como ejemplo. Enum y magnitud, no un número con signo: la pregunta del
+      sentido es explícita. Misma llamada, mismo costo; versión
+      `guirnalda-referencia.v3:d1c0d73bb47a41ca`, fijada en la prueba. La v3
+      ya no pide ni devuelve `caida_relativa`; el contrato la conserva,
+      opcional, para que las `lecturas_guirnalda` guardadas con la v2 sigan
+      valiendo, y Python la lee como antes (solo hacia abajo).
+    - **De la lectura al armado** (`geometria_de_lectura`, en pared o colgada
+      y desde 0,05 del largo, como en la 27): `abajo` es un `arco_caido` con
+      `caida_m`, diga lo que diga la forma; `arriba` es una `curva` con
+      `arqueo_m`, salvo la U invertida, que se arquea por definición y lleva
+      la flecha como su `caida_m` de siempre (cuánto bajan sus lados desde lo
+      alto). Una ondulada no lleva flecha. Sin sentido o sin flecha, la forma
+      leída se conserva. Una lectura sin `sentido_curva` ni `flecha_relativa`
+      (v2) sigue el camino de la decisión 27, byte a byte.
+    - **Armado**: campo opcional `arqueo_m` en `armado-guirnalda.v1` (mayor
+      que 0, hasta 5 m): cuánto SUBE el centro sobre la recta entre los
+      extremos, el sentido contrario de `caida_m`. Un campo explícito y no una
+      `caida_m` negativa: `caida_m` tiene hoy lectores que la suponen hacia
+      abajo (U invertida, frases, hoja, editor) y una caída con dos sentidos
+      obligaba a revisarlos todos. Solo en las formas de
+      `FORMAS_CON_ARQUEO_GUIRNALDA` (la curva; exportado en
+      `x-reglas-guirnalda` como `formasConArqueo`, que Python lee como
+      `FORMAS_CON_ARQUEO`) y en pared o colgada: `arqueo_sin_curva` y
+      `arqueo_sin_soporte` si no. No toca la tabla de geometría de
+      `estructuras-oficiales.ts` (viaja entera en el caption LoRA).
+    - **Cuerda** (`plan._garland_cord`): la misma parábola reflejada.
+      Arquearse `a` sobre una recta que sube `r` mide lo mismo que colgar `a`
+      bajo la que sube `−r`; nivelada, la fórmula de siempre. Lo fija el mismo
+      valor de libro (y = 2x − x², √5/2 + asinh(2)/4) y la simetría en el signo.
+      Sin `arqueo_m`, nada cambia: los 31 vectores dorados siguen intactos.
+    - **Gráfica y editor** (`curvaGuirnalda`): la curva con `arqueo_m` es la
+      parábola que sube `arqueo_m` a mitad de tramo, a escala, sobre la recta
+      inclinada; sin él, el arco de muestra de E6. El caso de la foto se dibuja
+      alto a la izquierda, arqueado y cayendo a la derecha, con el centro sobre
+      la recta. El editor, en una curva en pared o colgada, ofrece "Arqueo
+      declarado" con su deslizador (0,05 a 5 m); la ayuda de la forma dice los
+      dos sentidos (la curva se arquea hacia arriba; el arco caído cuelga hacia
+      abajo). Texto alternativo, bloque y hoja: "Curva arqueada 0,35 m hacia
+      arriba, cae hacia la derecha…"; el paso de instalación de Python lo dice
+      en español.
+    - **Imagen.** Ninguna frase del armado llevaba "arch": la hipótesis de la
+      palabra no se sostuvo para las frases de Python ni para las del INSTANCE
+      CONTRACT; "arch" solo nombra la pieza anfitriona de una guirnalda
+      abrazada. Lo que sí empujaba a un arco de pie: el caption de una escena
+      que solo tiene la guirnalda de la pared cerraba con "natural depth,
+      grounded supports"; la forma se decía "dipping in swags" (la U que se leyó)
+      o "shaped as an inverted U"; y nada decía que los extremos quedan en el
+      aire. Sin generaciones pagas no hay medición: es la corrección más
+      pequeña coherente con la evidencia.
+      - Python (`armado_guirnalda.py`, dueño de las frases del armado): en la
+        pared, "mounted flat high on the wall"; la curva en pared o colgada,
+        "bowing gently upward along the top" (con su arqueo en metros en
+        Gemini); la U invertida, "running along the top with both sides
+        curving down". El fragmento LoRA dice la forma en positivo y sin
+        cifras, con el desnivel en palabras ("higher on the left, curving
+        along the top and dropping lower at the right end, both ends free");
+        enmienda la 27, que lo dejaba fuera del LoRA. Gemini, que sí sigue
+        exclusiones, termina en pared o colgada con "Both ends hang free in
+        the air, well above the floor: no stands, no legs, no poles and no
+        frame reaching the floor." En el piso, la mesa u otra pieza, las
+        frases de antes.
+      - TypeScript solo inserta, salvo dos frases suyas: el caption LoRA de
+        una escena en la que TODAS las piezas son guirnaldas con armado en
+        pared o colgada cierra en "natural depth" sin "grounded supports" (en
+        texto y en el JSON de FLUX.2); con cualquier otra pieza, o sin armado,
+        el de siempre. El candado del híbrido, con una guirnalda en alto,
+        descarta patas, postes, bases y marcos de la imagen LoRA.
+    - **Pruebas.** Lectura (sentido, rango, v2 que sigue valiendo, versión);
+      `geometria_de_lectura` (arriba → curva, abajo → arco caído, U invertida,
+      ondulada, umbrales); cuerda simétrica en el signo; resolución completa
+      de la foto arqueada con punto fijo; frases de cada forma en pared y
+      colgada sin "arch" ni patas; caption y candado; gráfica del caso de la
+      foto (extremo derecho más bajo, centro por encima de la recta, sin NaN),
+      editor y borrador. La instantánea de los prompts sin armado no cambió.
+      Las expectativas de frases con armado que cambiaron a propósito se
+      editaron a mano; `planes.json` y `vistas-guirnalda.json` (salidas de
+      Python que leen las pruebas de TypeScript) se regeneraron a propósito y
+      solo cambian en `prompt_gemini` y `prompt_lora`, más un caso nuevo cada
+      una con la guirnalda de la foto.
+
+    Contrato nuevo en los dos lados (`arqueo_m`, `sentido_curva`,
+    `flecha_relativa`, `formasConArqueo`): Zod → export → `generate_models.py`;
+    app y `ai-api` se despliegan juntos. Pendiente: medir en E7, con tope, si
+    Gemini lee bien el sentido y si el LoRA sigue la forma sin inventar patas.
+
 ## Rollback
 
 Apagar `GUIRNALDA_REFERENCIA_PYTHON_ENABLED` deja de leer las guirnaldas en la
 foto (y con ellas la caída y el desnivel de la decisión 27). Revertir la
 decisión 27 deja sin validar los planes que ya traen `desnivel_m`
-(`additionalProperties: false`): se revierte en app y `ai-api` a la vez. E5 no tiene bandera propia: todo depende de que la guirnalda traiga armado.
+(`additionalProperties: false`): se revierte en app y `ai-api` a la vez. Lo
+mismo con la decisión 28 y los planes que traen `arqueo_m` o las lecturas con
+`sentido_curva`: se revierten los commits de `fix/guirnalda-curvatura` en los
+dos lados a la vez. E5 no tiene bandera propia: todo depende de que la guirnalda traiga armado.
 Apagar `GUIRNALDAS_ARMADO_V1` deja de completar armados al confirmar; un
 armado puesto a mano en el editor sigue llegando a los prompts. Revertir los
 commits de E5 la quita del todo (un patrón con espejo sobre una guirnalda en U

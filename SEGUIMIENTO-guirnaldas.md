@@ -1175,3 +1175,115 @@ hizo falta un `ai-api` propio: las pruebas de Python usan `TestClient`.
   la foto puede traer una caída distinta de la del armado anterior, y la cuenta
   con que el conteo decidió era la de ese armado: caso límite, sin prueba.
 - Verificación visual en el navegador: queda para el usuario.
+
+### Curvatura con sentido (2026-09-28, rama `fix/guirnalda-curvatura` desde `main` 90da1ef)
+
+**Qué vio el usuario.** La foto: guirnalda orgánica en la pared sobre flecos,
+arqueada POR ENCIMA de la recta que une sus extremos (convexa, como un techo) y
+con el extremo derecho más bajo que el izquierdo. La gráfica del patrón y la
+del armado: una U colgando (alta a la izquierda, baja al centro, sube a la
+derecha). El desnivel estaba bien; la curvatura, al revés. La imagen LoRA ya no
+tenía cintas, pero convirtió la guirnalda en un arco rectangular con dos patas
+al piso y soportes metálicos.
+
+**Evidencia (solo lectura, sin gastar).** `plan_audit_log` de la base local,
+consulta `BEGIN READ ONLY`, filas más recientes: 20:39:12 UTC
+`PLAN_ESQUEMA_INVALIDO` (un `estructura_id` fuera de patrón en un turno
+intermedio), 20:39:18 `APROBACION_REQUERIDA` (`EST_01_GUIRNALDA`, 68 globos,
+con referencia, sin foto del espacio, `lora_mode` training_2) y 20:40:04
+`IMAGEN_GENERADA` (`motor_imagen_previsto` fal, `captionLongitud` 596,
+`preflightOk`). Los 68 globos son los de la captura (14 + 12 + 37 + 4 + 1).
+**Ni la auditoría ni ninguna otra tabla guardan la lectura**: ninguna columna de
+texto o JSON de la base contiene `caida_relativa`, y `armado_guirnalda` solo
+aparece en filas `PLAN_EDITED` de otro plan (19:43, colgada en arco caído). La
+salida cruda de la lectura no se puede recuperar sin volver a pagarla.
+
+Lo que sí se deduce sin gastar: `curvaGuirnalda` solo dibuja una guirnalda
+BAJO la recta entre extremos con `arco_caido` (la curva y la U invertida van
+por encima), y el dibujo de la captura baja al centro con el extremo derecho
+más bajo. El armado era, por tanto, un `arco_caido` con `caida_m` y `desnivel_m`
+negativo (a ojo, flecha ≈ 0,2 y desnivel ≈ −0,2 del largo). Ese armado solo
+sale de `geometria_de_lectura` con una `caida_relativa` desde 0,05 (una recta o
+una curva que "cae" pasaba a arco caído) o con el arco caído leído tal cual. En
+la foto el centro va por encima de la recta: con el prompt v2 la caída correcta
+era 0. El prompt v2 no tenía cómo decir "por encima" más que ese 0 escondido en
+la frase, y el nombre "caída" invitaba a reportar lo que baja el extremo
+derecho.
+
+**Dónde estaba el error.** En la semántica que se le pedía al modelo (la v2 no
+tenía sentido de la curva) y en la regla "toda caída es un arco caído" de
+`geometria_de_lectura`. La gráfica fue fiel al armado que recibió.
+
+**La imagen.** La hipótesis de la palabra "arch" no se sostuvo: ninguna frase
+del armado la usaba (Python, `armado-en-prompt.ts` y el candado); solo nombra la
+pieza anfitriona de una guirnalda abrazada. Lo que sí pedía un arco de pie en
+un caption con la guirnalda sola en la pared: la cola "natural depth, grounded
+supports" (TypeScript), la forma "dipping in swags" (la U que se leyó) y nada
+que dijera que los extremos quedan en el aire. Sin generaciones pagas, es una
+corrección, no una medición.
+
+**Arreglo** (decisión 28 de ADR-0032, enmienda la 27):
+
+- Lectura `guirnalda-referencia.v3:d1c0d73bb47a41ca`: `sentido_curva`
+  (`arriba`/`abajo`) y `flecha_relativa`; la v2 (`caida_relativa`) sigue
+  valiendo en el contrato y se lee como antes.
+- `geometria_de_lectura`: `arriba` → `curva` con `arqueo_m` (la U invertida,
+  con su caída); `abajo` → `arco_caido` con `caida_m`.
+- Contrato: `arqueo_m` en `armado-guirnalda.v1` y `formasConArqueo` en
+  `x-reglas-guirnalda`; `arqueo_sin_curva` y `arqueo_sin_soporte`.
+- Cuerda: la misma parábola reflejada (simétrica en el signo).
+- Gráfica, texto alternativo, hoja y editor ("Arqueo declarado").
+- Frases: "mounted flat high on the wall", la curva "bowing gently upward along
+  the top", la U invertida sin "inverted U"; LoRA con la forma y el desnivel en
+  palabras y "both ends free"; Gemini con la exclusión de patas y soportes.
+  TypeScript: sin "grounded supports" cuando todas las piezas son guirnaldas en
+  alto con armado; el candado del híbrido descarta patas y soportes.
+
+Caption LoRA v007 del caso (guirnalda sola en la pared, espiral de cuartetos),
+tramo de la guirnalda y cola:
+
+- Antes (reconstruido con el armado deducido): "…mounted flat against the wall
+  dipping in swags in clusters of four with … installed against the rear wall.
+  … wide photorealistic event photograph, natural depth, grounded supports."
+- Después: "…mounted flat high on the wall, higher on the left, curving along
+  the top and dropping lower at the right end, both ends free, in clusters of
+  four with small pink, white and gold filler balloons, every cluster holding
+  two pink, one white and one gold balloon installed against the rear wall. …
+  wide photorealistic event photograph, natural depth."
+
+**Fixtures.** `planes.json` (`fixture_armado_guirnalda_prompt.py --escribir`) y
+`vistas-guirnalda.json` (`vista_previa_de_armado_guirnalda`, a mano) se
+regeneraron a propósito porque cambiaron las frases de Python; comparadas
+campo a campo, solo cambian `prompt_gemini` y `prompt_lora`. Cada una suma el
+caso de la foto (`pared-arqueada-desnivel`, `pared_curva_arqueo_desnivel`).
+Los planes `*-sin-armado` y la instantánea de los prompts sin armado no
+cambiaron. Las expectativas de frases con armado se editaron a mano en las
+pruebas.
+
+**Verificación real** (2026-09-28, en el worktree, sin llamadas pagas):
+`npx tsc --noEmit` limpio (el `LayoutProps` de antes era falta de
+`next typegen` en el worktree); `npm run -s lint` 0 errores (los 25 avisos
+preexistentes, ninguno en archivos tocados); `npm run -s contracts:check` sin
+deriva; `npm run plan:test` en 0 (con la instantánea de los prompts sin armado
+intacta); pytest 969 en verde (4 omitidas por falta de Postgres),
+`test_plan_regresion.py` 31 en verde y `contracts/domain/v1/golden/` sin
+cambios; `ruff check` y `ruff format --check` de `app scripts tests` limpios;
+`mypy app scripts` sin errores; `generate_models.py --check` al día. La gráfica
+del caso de la foto se revisó rasterizada (SVG → PNG con `sharp`): alta a la
+izquierda, arqueada por arriba y cayendo a la derecha.
+
+**Pendientes.**
+
+- E7, con tope de gasto: ¿Gemini lee bien el sentido en fotos reales? ¿El LoRA
+  sigue "higher on the left, curving along the top…" sin inventar patas? Los
+  umbrales (0,05) siguen sin calibrar.
+- El prompt de Gemini conserva instrucciones genéricas que nombran "arch" y
+  "floor contact" para cualquier estructura de globos (`build-image-prompt.ts`);
+  no se tocaron porque no llevan armado y cambiarían la instantánea sin armado.
+  La línea de Python ("no stands, no legs…") las contradice explícitamente.
+- `armado-en-prompt.ts` sigue redactando soporte y forma en el INSTANCE
+  CONTRACT (un segundo dueño de la forma, de E5): la curva sigue siendo "a
+  gentle curve" y la U invertida "an inverted U" ahí. Migrar esas frases a
+  Python queda fuera de este arreglo.
+- Verificación visual en el navegador y una generación real: quedan para el
+  usuario.
