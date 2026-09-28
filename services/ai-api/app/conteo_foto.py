@@ -18,15 +18,20 @@ invoca con ``_aplicar_conteos`` antes de completar los armados.
   contradice claramente; luego la densidad con las medidas fijas; solo si no
   alcanza, las medidas dentro de ±35 % (del plan, o de la escala que la foto
   trae respecto de una persona, una puerta o una mesa), dichas como "largo
-  equivalente", nunca como medidas tomadas. Con ``espacio.fuente: cliente`` las
-  medidas no se tocan. Nunca fuera de la puerta física.
+  equivalente", nunca como medidas tomadas. Si ni así alcanza y la pieza tiene
+  un solo eje libre (guirnalda: largo; columna: alto), la cantidad de la foto
+  decide ese eje (enmienda del 2026-09-28: unas medidas que el cliente no dio no
+  pueden dejar la pieza en una fracción de la foto). Con ``espacio.fuente:
+  cliente`` o ``medidas_del_cliente`` las medidas no se tocan. Nunca fuera de la
+  puerta física.
 
 Lo que este módulo necesita del plan (contar globos, la puerta física, la
 cobertura de una mezcla, el contexto de un bouquet) llega en ``PuertoPlan``: así
 no depende de ``plan.py`` (que lo importa) y las reglas se prueban solas.
 
 Supuestos a validar con el negocio (ADR-0031): la tolerancia de ±15 % (mínimo 2
-globos), la ventana de ±35 % del eje, las alturas de referencia de una persona,
+globos), la ventana de ±35 % del eje (que un solo eje libre supera sin medidas
+del cliente), las alturas de referencia de una persona,
 una puerta y una mesa, y el umbral de "contradice claramente" de la mezcla.
 """
 
@@ -63,6 +68,8 @@ TOLERANCIA_MINIMA = 2
 #: Cuánto puede moverse el eje de una pieza geométrica respecto del plan o de la escala de la foto.
 VENTANA_EJE = 0.35
 PASO_VENTANA = 0.01
+#: Resolución del eje libre cuando lo decide la cantidad de la foto (un centímetro).
+PASO_EJE_M = 0.01
 DENSIDADES = ("sencilla", "media", "lujosa")
 #: Altura típica de cada referencia de escala, en metros (supuesto, ADR-0031).
 ALTURA_REFERENCIA_M: Mapping[str, float] = {"persona": 1.7, "puerta": 2.0, "mesa": 0.75}
@@ -708,6 +715,85 @@ def _opciones(
     return opciones
 
 
+def eje_libre(tipo: str, medidas: Mapping[str, float]) -> str | None:
+    """La única medida de la que depende la cuenta de la pieza, o ``None``.
+
+    Guirnalda: su largo (o su ancho si no trae largo), como la cuenta la mide
+    (``plan._eje``, también con la cuerda de un armado). Columna: su alto. Un
+    arco, un semiarco, una pared o un centro de mesa dependen de dos medidas: la
+    cantidad no decide cuál mover y se quedan en la ventana de ±35 %.
+    """
+    if tipo == "guirnalda":
+        return (
+            "largo_m" if medidas.get("largo_m") else "ancho_m" if medidas.get("ancho_m") else None
+        )
+    if tipo == "columna":
+        return "alto_m" if medidas.get("alto_m") else None
+    return None
+
+
+def _eje_desde_conteo(
+    estructura: Mapping[str, object],
+    densidad: str,
+    mezcla: str,
+    medidas: Mapping[str, float],
+    objetivo: int,
+    puerto: PuertoPlan,
+) -> Opcion | None:
+    """El eje libre que da la cantidad de la foto, o ``None``.
+
+    Con la densidad del plan (y, si no queda opción, la admitida más cercana) y
+    la mezcla elegida, el menor eje en centímetros cuya cuenta llega al
+    objetivo, o el anterior si queda más cerca. Se cuenta con ``puerto.contar``
+    (la cuerda con caída y arqueo si la guirnalda tiene armado), hasta
+    ``MAX_MEDIDA_M`` y dentro de la puerta física. La cuenta crece con el eje;
+    si en algún tramo no lo hiciera, la tolerancia y la puerta lo descartan.
+    """
+    clave = eje_libre(str(estructura.get("tipo")), medidas)
+    if clave is None:
+        return None
+    tope = round(MAX_MEDIDA_M / PASO_EJE_M)
+    admitidas = puerto.densidades_admitidas(estructura)
+    for opcion_densidad in sorted(
+        (d for d in DENSIDADES if d in admitidas),
+        key=lambda d: (_distancia_densidad(d, densidad), DENSIDADES.index(d)),
+    ):
+
+        def candidata(pasos: int, d: str = opcion_densidad) -> dict[str, object]:
+            return {
+                **dict(estructura),
+                "densidad": d,
+                "mezcla": mezcla,
+                "medidas": {**dict(medidas), clave: round(pasos * PASO_EJE_M, 2)},
+            }
+
+        bajo, alto = 1, tope
+        while bajo < alto:
+            medio = (bajo + alto) // 2
+            if puerto.contar(candidata(medio)) >= objetivo:
+                alto = medio
+            else:
+                bajo = medio + 1
+        validas: list[Opcion] = []
+        for pasos in (bajo - 1, bajo):
+            if not 1 <= pasos <= tope:
+                continue
+            probada = candidata(pasos)
+            total = puerto.contar(probada)
+            if (
+                total > 0
+                and dentro_de_tolerancia(objetivo, total)
+                and puerto.dentro_de_puerta(probada, total)
+            ):
+                nuevas = cast(Mapping[str, float], probada["medidas"])
+                validas.append(
+                    Opcion(opcion_densidad, mezcla, nuevas, total, nuevas[clave] / medidas[clave])
+                )
+        if validas:
+            return min(validas, key=lambda o: (abs(o.total - objetivo), o.medidas[clave]))
+    return None
+
+
 def _cambios(antes: Mapping[str, object], despues: Mapping[str, object]) -> list[dict[str, object]]:
     cambios: list[dict[str, object]] = []
     for campo in ("densidad", "mezcla"):
@@ -750,7 +836,9 @@ def _frases_de_cambios(cambios: Sequence[Mapping[str, object]]) -> str:
     que son equivalentes a la foto (el supuesto tiene que caber en el contrato)."""
     frases = [_frase_cambio(c) for c in cambios if not str(c["campo"]).endswith("_m")]
     medidas = [_frase_cambio(c) for c in cambios if str(c["campo"]).endswith("_m")]
-    if medidas:
+    if len(medidas) == 1:
+        frases.append(f"{medidas[0]} equivalente a la foto (no medido)")
+    elif medidas:
         frases.append(f"{' y '.join(medidas)} equivalentes a la foto (no medidos)")
     return ", ".join(frases)
 
@@ -805,13 +893,25 @@ def _geometrica(
             densidad,
             _opciones(estructura, mezcla_objetivo, centro, factores, puerto),
         )
-    if elegida is None:
-        motivo = (
-            "Con las medidas fijas (del cliente o tras una edición) ninguna densidad alcanza"
-            " la cuenta de la foto."
-            if medidas_fijas
-            else "Ninguna densidad ni largo dentro de ±35 % alcanza la cuenta de la foto."
+    # 3) Enmienda del 2026-09-28: las medidas no son del cliente y la ventana no
+    #    alcanza (su centro puede ser un largo que el chat puso sin dato): la
+    #    cantidad de la foto decide el eje libre, si la pieza tiene uno solo.
+    desde_conteo = False
+    if elegida is None and not medidas_fijas:
+        elegida = _eje_desde_conteo(
+            estructura, densidad, mezcla_objetivo, medidas, cuenta.globos, puerto
         )
+        desde_conteo = elegida is not None
+    if elegida is None:
+        if medidas_fijas:
+            motivo = (
+                "Con las medidas fijas (del cliente o tras una edición) ninguna densidad"
+                " alcanza la cuenta de la foto."
+            )
+        elif eje_libre(tipo, medidas) is None:
+            motivo = "Ninguna densidad ni medida dentro de ±35 % alcanza la cuenta de la foto."
+        else:
+            motivo = "Ningún largo dentro de la puerta física alcanza la cuenta de la foto."
         return _Resultado(estructura, "sin_ajuste_posible", cuenta.globos, antes, antes, [], motivo)
 
     candidata = _con(estructura, elegida)
@@ -841,7 +941,10 @@ def _geometrica(
     )
     medidas_movidas = any(str(cambio["campo"]).endswith("_m") for cambio in cambios)
     motivo = (
-        "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
+        "Las medidas no son del cliente y ±35 % no alcanzaba: la cantidad de la foto decide"
+        " el eje. Es un largo equivalente a la foto, no una medida tomada."
+        if desde_conteo and medidas_movidas
+        else "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
         if medidas_movidas
         else "Densidad y tamaños ajustados con las medidas del plan."
     )
@@ -1010,6 +1113,7 @@ __all__ = [
     "clase_de_diametro",
     "cuenta_usable",
     "dentro_de_tolerancia",
+    "eje_libre",
     "elegir_opcion",
     "medidas_desde_referencia",
     "mezcla_de_la_foto",

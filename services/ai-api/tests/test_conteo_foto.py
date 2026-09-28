@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Mapping, Sequence
 from typing import cast
 
@@ -16,11 +17,15 @@ from pydantic import ValidationError
 
 from app.conteo_foto import (
     ALTURA_REFERENCIA_M,
+    MAX_MEDIDA_M,
     Cuenta,
     Opcion,
+    PuertoPlan,
+    aplicar,
     clase_de_diametro,
     clases_desde_por_tamano,
     cuenta_usable,
+    eje_libre,
     elegir_opcion,
     medidas_desde_referencia,
     mezcla_de_la_foto,
@@ -28,8 +33,9 @@ from app.conteo_foto import (
     total_kit_con_armado,
     total_kit_sin_armado,
 )
-from app.armado_bouquet import total_leido
+from app.armado_bouquet import EstructuraBouquet, total_leido
 from app.plan import _MIXES, resolve_plan
+from app.supuestos import MAX_LARGO_SUPUESTO
 from tests.test_plan_armado import (
     ROWS,
     ROWS_CON_R18,
@@ -689,15 +695,205 @@ async def test_el_largo_se_mueve_solo_si_la_densidad_no_alcanza_y_se_dice_equiva
     estructura = _estructura(resolved)
     largo = cast(dict[str, float], estructura["medidas"])["largo_m"]
     assert estructura["densidad"] == "lujosa" and 2.5 < largo <= 2.5 * 1.35
-    assert any("equivalentes a la foto (no medidos)" in s for s in _supuestos(resolved))
-    # Fuera de ±35 % no hay ajuste: nada cambia.
-    lejos = await _resolver_geometrico(
-        _plan_geometrico(_guirnalda()),
+    # Una sola medida: en singular (2026-09-28).
+    assert any("m equivalente a la foto (no medido)" in s for s in _supuestos(resolved))
+    assert "dentro de ±35 %" in cast(str, _conteos(resolved)[0]["motivo"])
+
+
+# --- Enmienda 2026-09-28: sin medidas del cliente, la cantidad decide el eje libre ------
+
+#: La lectura real de la foto del caso (guirnalda orgánica en pared, 2026-09-28).
+LECTURA_DEL_CASO = _conteo(
+    globos_visibles=54,
+    exacto=False,
+    estimado_total=75,
+    por_tamano=[{"clase": "chico", "proporcion": 0.4}, {"clase": "mediano", "proporcion": 0.6}],
+    confianza=0.85,
+)
+
+
+def test_solo_la_guirnalda_y_la_columna_tienen_un_solo_eje_libre() -> None:
+    assert eje_libre("guirnalda", {"largo_m": 0.5}) == "largo_m"
+    assert eje_libre("guirnalda", {"ancho_m": 2.0}) == "ancho_m"
+    assert eje_libre("columna", {"alto_m": 1.8, "ancho_m": 0.4}) == "alto_m"
+    for tipo, medidas in (
+        ("arco", {"ancho_m": 3.0, "alto_m": 2.4}),
+        ("semiarco", {"ancho_m": 1.2, "alto_m": 2.2}),
+        ("pared", {"ancho_m": 2.4, "alto_m": 2.4}),
+        ("centro_mesa", {"ancho_m": 0.4, "alto_m": 0.5}),
+        ("guirnalda", {}),
+    ):
+        assert eje_libre(tipo, medidas) is None, tipo
+
+
+@pytest.mark.anyio
+async def test_un_largo_que_el_cliente_no_dio_no_deja_la_guirnalda_en_una_fraccion_de_la_foto() -> (
+    None
+):
+    # El caso: el chat declaró 0,5 m sin que el cliente diera medidas y la foto
+    # tiene unos 75 globos; ±35 % de 0,5 m no llega. La cantidad decide el largo,
+    # con la densidad y la mezcla que el plan eligió.
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(_guirnalda(medidas={"largo_m": 0.5})),
         completar_conteos=True,
-        pistas_conteo=[_conteo(estimado_total=200)],
+        pistas_conteo=[LECTURA_DEL_CASO],
     )
-    assert _estructura(lejos)["medidas"] == {"largo_m": 2.5}
-    assert _conteos(lejos)[0]["decision"] == "sin_ajuste_posible"
+    estructura = _estructura(resolved)
+    [conteo] = _conteos(resolved)
+    largo = cast(dict[str, float], estructura["medidas"])["largo_m"]
+    assert conteo["decision"] == "ajustado"
+    assert (estructura["densidad"], estructura["mezcla"]) == ("media", "organica_fina")
+    assert largo > 0.5 * 1.35
+    assert conteo["cambios"] == [{"campo": "largo_m", "antes": 0.5, "despues": largo}]
+    unidades = cast(list[dict[str, object]], resolved["estructuras"])[0]["total_unidades"]
+    assert conteo["globos_despues"] == unidades
+    assert abs(cast(int, unidades) - 75) <= 0.15 * 75, "dentro de la tolerancia del conteo"
+    assert "la cantidad de la foto decide el eje" in cast(str, conteo["motivo"])
+    [supuesto] = [s for s in _supuestos(resolved) if s.startswith("Guirnalda: la foto")]
+    assert "largo 0,5 → " in supuesto and "m equivalente a la foto (no medido)" in supuesto
+    assert len(supuesto) <= MAX_LARGO_SUPUESTO
+    assert not [
+        a for a in cast(list[str], resolved["advertencias"]) if a.startswith("puerta_fisica:")
+    ]
+    # Es el largo que da el conteo: un centímetro menos queda más lejos de la foto.
+    menos = await _resolver_geometrico(
+        _plan_geometrico(_guirnalda(medidas={"largo_m": round(largo - 0.01, 2)}))
+    )
+    total_menos = cast(list[dict[str, object]], menos["estructuras"])[0]["total_unidades"]
+    assert abs(cast(int, total_menos) - 75) >= abs(cast(int, unidades) - 75)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("fuente", "extra"),
+    [("cliente", {}), ("supuesto", {"medidas_del_cliente": True})],
+)
+async def test_con_medidas_del_cliente_el_conteo_no_toca_ni_un_largo_chico(
+    fuente: str, extra: dict[str, object]
+) -> None:
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(_guirnalda(medidas={"largo_m": 0.5}), fuente=fuente),
+        completar_conteos=True,
+        pistas_conteo=[LECTURA_DEL_CASO],
+        **extra,
+    )
+    assert _estructura(resolved)["medidas"] == {"largo_m": 0.5}
+    [conteo] = _conteos(resolved)
+    assert conteo["decision"] == "sin_ajuste_posible"
+    assert "medidas fijas" in cast(str, conteo["motivo"])
+
+
+@pytest.mark.anyio
+async def test_una_columna_sin_medidas_del_cliente_toma_el_alto_de_la_foto() -> None:
+    columna = {
+        **_guirnalda(),
+        "estructura_id": "EST_01_COLUMNA",
+        "nombre": "Columna",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {"alto_m": 0.6},
+    }
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(columna),
+        completar_conteos=True,
+        pistas_conteo=[_conteo(estimado_total=60)],
+    )
+    [conteo] = _conteos(resolved)
+    alto = cast(dict[str, float], _estructura(resolved)["medidas"])["alto_m"]
+    assert conteo["decision"] == "ajustado" and alto > 0.6 * 1.35
+    assert abs(cast(int, conteo["globos_despues"]) - 60) <= 0.15 * 60
+    assert any("alto 0,6 → " in s for s in _supuestos(resolved))
+
+
+@pytest.mark.anyio
+async def test_un_arco_tiene_dos_medidas_y_se_queda_en_la_ventana() -> None:
+    arco = {
+        **_guirnalda(),
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco",
+        "tipo": "arco",
+        "ubicacion": "arco_central",
+        "medidas": {"ancho_m": 1.0, "alto_m": 0.8},
+    }
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(arco),
+        completar_conteos=True,
+        pistas_conteo=[_conteo(estimado_total=300)],
+    )
+    assert _estructura(resolved)["medidas"] == {"ancho_m": 1.0, "alto_m": 0.8}
+    [conteo] = _conteos(resolved)
+    assert conteo["decision"] == "sin_ajuste_posible"
+    assert "±35 %" in cast(str, conteo["motivo"])
+
+
+def _puerto_lineal(por_metro: Mapping[str, float], largo_maximo: float) -> PuertoPlan:
+    """Un plan de mentira: globos por metro según la densidad y una puerta por largo."""
+
+    def largo(estructura: Mapping[str, object]) -> float:
+        return float(cast(Mapping[str, float], estructura["medidas"])["largo_m"])
+
+    def sin_kits(_estructura: Mapping[str, object]) -> EstructuraBouquet:
+        raise AssertionError("no hay kits en esta prueba")
+
+    return PuertoPlan(
+        contar=lambda e: math.ceil(por_metro[str(e["densidad"])] * largo(e)),
+        dentro_de_puerta=lambda e, _total: largo(e) <= largo_maximo,
+        mezcla_cubierta=lambda _e, _mezcla: True,
+        contexto_kit=sin_kits,
+        sincronizar_patron=lambda e: dict(e),
+        mezclas=_MIXES,
+        tamanos_obligatorios=False,
+    )
+
+
+def _plan_lineal() -> dict[str, object]:
+    return {
+        "espacio": {"tipo": "salon", "fuente": "supuesto"},
+        "estructuras": [
+            {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "nombre": "Guirnalda",
+                "tipo": "guirnalda",
+                "densidad": "media",
+                "mezcla": "organica_fina",
+                "medidas": {"largo_m": 0.5},
+                "referencia_element_id": "REF_01_E01",
+            }
+        ],
+        "supuestos": [],
+    }
+
+
+def test_la_cantidad_decide_el_largo_dentro_de_la_puerta_fisica_y_del_tope() -> None:
+    por_metro = {"sencilla": 16.0, "media": 20.0, "lujosa": 25.0}
+
+    def aplicar_con(globos: int, puerto: PuertoPlan) -> tuple[dict[str, object], dict[str, object]]:
+        plan_, _lecturas, [conteo] = aplicar(
+            _plan_lineal(),
+            [_conteo(estimado_total=globos)],
+            [],
+            usar_armados=False,
+            solo=None,
+            puerto=puerto,
+        )
+        return cast(list[dict[str, object]], plan_["estructuras"])[0], conteo
+
+    # Dentro de la puerta: la densidad del plan y el largo que da la cuenta.
+    estructura, conteo = aplicar_con(50, _puerto_lineal(por_metro, 3.0))
+    assert (conteo["decision"], conteo["globos_despues"]) == ("ajustado", 50)
+    largo = cast(dict[str, float], estructura["medidas"])["largo_m"]
+    assert estructura["densidad"] == "media" and largo == pytest.approx(2.5, abs=0.05)
+    # Fuera de la puerta con todas las densidades: nada cambia.
+    estructura, conteo = aplicar_con(100, _puerto_lineal(por_metro, 3.0))
+    assert conteo["decision"] == "sin_ajuste_posible"
+    assert estructura["medidas"] == {"largo_m": 0.5}
+    assert "puerta física" in cast(str, conteo["motivo"])
+    # Más allá de MAX_MEDIDA_M tampoco.
+    estructura, conteo = aplicar_con(
+        150, _puerto_lineal({"sencilla": 1.0, "media": 1.0, "lujosa": 1.0}, 1000.0)
+    )
+    assert conteo["decision"] == "sin_ajuste_posible"
+    assert 150 > MAX_MEDIDA_M and estructura["medidas"] == {"largo_m": 0.5}
 
 
 @pytest.mark.anyio

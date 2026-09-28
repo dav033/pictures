@@ -501,6 +501,34 @@ async def test_sin_medidas_fijas_el_conteo_mueve_el_largo_y_la_caida_lo_sigue() 
 
 
 @pytest.mark.anyio
+async def test_un_largo_chico_sin_dato_del_cliente_lo_decide_el_conteo_con_la_cuerda() -> None:
+    # Enmienda 2026-09-28 (ADR-0031): 0,5 m que el cliente no dio y la foto con
+    # unos 75 globos. ±35 % no llega; la cantidad decide el largo, contado con
+    # la cuerda que la caída y el desnivel de la lectura le van a dar.
+    plan_ = {
+        **plan(guirnalda(referencia_element_id="REF_01_E01", medidas={"largo_m": 0.5})),
+        "espacio": {"tipo": "salon", "fuente": "supuesto"},
+    }
+    pista = _pista_geometria(caida_relativa=0.3, desnivel_relativo=-0.2)
+    lectura = {"completar_conteos": True, "pistas_conteo": [_conteo(estimado_total=75)]}
+    ajustado = await resolver(
+        plan_, completar_armados_guirnalda=True, pistas_guirnalda=[pista], **lectura
+    )
+    recto = await resolver(plan_, **lectura)
+    [registro] = cast(list[dict[str, object]], ajustado["conteos_referencia"])
+    assert registro["decision"] == "ajustado"
+    largo = cast(dict[str, float], estructura_del_plan(ajustado)["medidas"])["largo_m"]
+    largo_recto = cast(dict[str, float], estructura_del_plan(recto)["medidas"])["largo_m"]
+    assert 0.5 * 1.35 < largo < largo_recto, "la cuerda colgada pide menos largo que la recta"
+    armado = cast(dict[str, object], estructura_del_plan(ajustado)["armado_guirnalda"])
+    assert armado["caida_m"] == round(0.3 * largo + 1e-9, 2)
+    eje = cast(list[dict[str, object]], ajustado["estructuras"])[0]["eje_m"]
+    assert eje == round(_garland_cord(largo, armado), 2)
+    assert registro["globos_despues"] == _unidades(ajustado)
+    assert abs(_unidades(ajustado) - 75) <= 0.15 * 75
+
+
+@pytest.mark.anyio
 async def test_la_cantidad_sale_del_conteo_y_la_distribucion_de_la_lectura() -> None:
     plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
     conteo = {"completar_conteos": True, "pistas_conteo": [_conteo(estimado_total=60)]}
