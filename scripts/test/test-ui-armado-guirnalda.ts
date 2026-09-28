@@ -45,8 +45,10 @@ import {
 import { conAnfitriona, conRelleno, MAXIMO_REMATES } from "@/components/plan/guirnalda/borrador-guirnalda";
 import { peticionVistaGuirnalda } from "@/components/plan/guirnalda/usarVistaGuirnalda";
 import { alBorrador } from "@/components/plan/guirnalda/vista-guirnalda";
-import { celdasDeArmado, patronSobreArmado } from "@/components/plan/guirnalda/geometria-guirnalda";
+import { celdasDeArmado, curvaDeArmado, patronSobreArmado } from "@/components/plan/guirnalda/geometria-guirnalda";
 import { dibujoPatron } from "@/components/plan/patron/VistaPatron";
+import { BloquePatron } from "@/components/plan/patron/BloquePatron";
+import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
 import { leyendaPatron } from "@/components/plan/patron/leyenda";
 import { ArmadoGuirnaldaResueltoSchema, type ArmadoGuirnaldaResuelto, type ArmadoGuirnaldaV1 } from "@/lib/plan/armado-guirnalda";
 import { OpcionesArmadoGuirnaldaSchema, type OpcionesArmadoGuirnalda } from "@/lib/plan/opciones-armado-guirnalda";
@@ -662,6 +664,28 @@ async function probarRevision(): Promise<void> {
     await receta.avanzar(0);
     assert.equal(receta.control.estado().borrador, "listo");
     ok("22: tras cerrar (StrictMode, Fast Refresh) el siguiente mostrar vuelve a pedir la vista y las opciones");
+  }
+  // 23 (parte de UI): mientras se mueve el deslizador de un confeti, la rejilla completa que dibuja Python
+  // en vivo no se pone sobre la curva del armado como si fueran sus racimos.
+  {
+    const patron = planBase.patrones_color!.find((item) => item.estructura_id === "EST_02_ARCO")! as PatronColorResuelto;
+    const curva = curvaDeArmado(U_INVERTIDA.armado);
+    const vistas = crearVistasEnVivo<PatronColorResuelto>();
+    const bloque = () => renderToStaticMarkup(React.createElement(BloquePatron, {
+      resuelto: patronSobreArmado(patron, U_INVERTIDA.armado), enVivo: { vistas, id: ID }, leyenda: leyendaPatron(declarada.materiales, estructura.lineas),
+      tipo: "guirnalda", guirnalda: curva, repeticiones: 1, nombrePieza: "Guirnalda",
+    }));
+    const vistaDe = (html: string) => /<svg viewBox="([^"]+)"/.exec(html)?.[1];
+    const caja = (dibujo: ReturnType<typeof dibujoPatron>) => `${dibujo.caja.x} ${dibujo.caja.y} ${dibujo.caja.ancho} ${dibujo.caja.alto}`;
+    const quieto = bloque();
+    assert.equal(vistaDe(quieto), caja(dibujoPatron(patronSobreArmado(patron, U_INVERTIDA.armado), { tipo: "guirnalda", guirnalda: curva })), "sin deslizar: los racimos del armado sobre su curva");
+    assert.equal((quieto.match(/class="patron-globo-entra"/g) ?? []).length, U_INVERTIDA.armado.racimos.length * 4);
+    vistas.fijar(ID, patron);
+    const enVivo = bloque();
+    assert.match(enVivo, /data-en-vivo="true"/);
+    assert.notEqual(vistaDe(enVivo), caja(dibujoPatron(patron, { tipo: "guirnalda", guirnalda: curva })), "23: la rejilla completa no va sobre la curva del armado");
+    assert.equal(vistaDe(enVivo), caja(dibujoPatron(patron, { tipo: "guirnalda" })), "23: en vivo se ve como la vista del patrón, sin la forma del armado");
+    ok("23 (UI): el deslizador en vivo no dibuja la rejilla completa sobre la curva del armado; los racimos exactos piden a Python");
   }
 }
 
