@@ -24,7 +24,7 @@ pagas: todo se verificó con dobles, catálogos falsos y un ai-api local sin lla
     `estructura_oficial`, `bbox` y `piezas` (cuántas piezas iguales representa el
     elemento; se cuenta una).
   - Prompt `SYSTEM_INSTRUCTION` (l.147), esquema `RESPONSE_SCHEMA` (l.179) y
-    `PROMPT_VERSION` (l.228) = `conteo-referencia.v1:bfd6604c6192ab95`, fijada en
+    `PROMPT_VERSION` (l.228) = `conteo-referencia.v1:bfd6604c6192ab95` (desde la revisión 1/11, `1b1d24d385008090`), fijada en
     `tests/test_conteo_referencia.py`. El esquema se serializa sin ordenar claves:
     el SDK manda `property_ordering` y el modelo escribe lo visible, luego los
     racimos y al final el estimado.
@@ -301,6 +301,41 @@ proveedores.
 Fuera de estos ids, sin tocar: `scripts/bench/bench-fidelidad.ts` lee el saldo de fal
 pero no aplica `--max-usd` a mitad de corrida, y `resumirCorrida`
 (`resumen-corrida.ts`, reconocimiento) tiene la misma forma que el hallazgo 30.
+
+### 3.4 Revisión adversaria de `feat/guirnaldas`: Python (rama `fix/rev-python`, 2026-09-28)
+
+Una línea por hallazgo, cada uno con su prueba de regresión
+(`services/ai-api/tests/test_revision_conteo.py` y `test_revision_bouquet.py`),
+que falla contra el código anterior al arreglo.
+
+- **3 = 9 = 31** (`5e81129`): un supuesto del conteo de más de 240 caracteres, o
+  un plan con 30 supuestos, daba 422 al confirmar. `app/supuestos.py` lee
+  `maxLength` y `maxItems` del contrato, acorta el nombre y corta con "…". Las
+  medidas van en una sola cláusula. Aplica también al aviso de patrón degradado
+  de la guirnalda.
+- **10** (`bdd2bdd`): racimos × globos por racimo pasaba de 10000 y rompía
+  `conteos_referencia`. `cuenta_usable` y la lectura lo descartan por encima del
+  tope del contrato.
+- **34** (`fcfa125`): editar la mezcla sumaba un supuesto de conteo al de la
+  confirmación. `aplicar` quita primero, en las piezas de `solo`, los supuestos
+  que escribió el conteo.
+- **2** (`f758bba`): el conteo elegía densidades que la estructura oficial no
+  admite y daba 422 invalid_plan. Las densidades salen ahora de las reglas
+  `allOf` del contrato (`plan._OFFICIAL_DENSITIES`).
+- **1 = 11** (`a5a9e26`): el conteo decía "grande" a 24" y el bouquet,
+  "gigante". Queda una sola escala, `armado_bouquet.CLASES_TAMANO_NIVEL`
+  (`clase_de_tamano`); el prompt del conteo sube a `1b1d24d385008090`.
+  Documentado en ADR-0031 §5 y ADR-0030.
+- **33** (`32ffc32`): las medidas que el cliente dio a una estructura se movían
+  si el espacio no tenía medidas. `plan-resolution.v1` gana
+  `medidas_del_cliente` y Python fija las medidas declaradas por estructura.
+  Tras una edición, la foto solo ajusta la densidad.
+  **Pendiente:** `aplicar-edicion.ts` no manda la señal (fuera de esta rama).
+- **7** (`a203645`): con números "a los lados" el prompt v2 permitía describir
+  los dos grupos juntos, y `total_leido` los duplicaba. El prompt dice ahora que
+  se describe un grupo (`bouquet-referencia.v2:b1f5cb194f104d59`).
+- **8** (`a203645`): el tope de salida de la lectura del bouquet sube de 2048 a
+  4096 tokens, y un JSON cortado lleva su `finish_reason` en `provider_detail`.
 
 ## 4. Pendientes
 

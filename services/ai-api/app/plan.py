@@ -87,6 +87,7 @@ from app.armado_guirnalda import sugerir_armado as sugerir_armado_guirnalda
 from app.armado_guirnalda import validar as validar_armado_guirnalda
 from app.catalog import purchase_color_for_unsold
 from app import conteo_foto
+from app.supuestos import agregar_supuesto, supuesto
 from app.operational_models import ContractModel, OperationalRequest
 from app.plan_worker import run_plan_cpu
 from app.patron_color import (
@@ -106,7 +107,7 @@ from app.patron_color import (
     sugerir_patron_modo,
     validar_y_expandir,
 )
-from app.patron_color import filas_de_racimos
+from app.patron_color import filas_de_racimos, quitar_espejo_sin_u
 
 
 PLAN_RESOLUTION_SCOPE = "plan.resolve"
@@ -154,6 +155,29 @@ _OFFICIAL_GEOMETRY: dict[str, dict[str, object]] = cast(
     dict[str, dict[str, object]],
     contract_schema("PlanDecoracion").get("x-geometria-estructuras-oficiales", {}),
 )
+# Densities each official structure admits (arco_no_denso only sencilla,
+# pared_densa only media/lujosa...). Same owner, estructuras-oficiales.ts, which
+# exports them as the ``allOf`` coherence rules of the structure item; read from
+# there so the photo count never picks one the plan would reject (review 2).
+_OFFICIAL_DENSITIES: dict[str, tuple[str, ...]] = {
+    cast(str, rule["if"]["properties"]["estructura_oficial"]["const"]): tuple(
+        cast(list[str], rule["then"]["properties"]["densidad"]["enum"])
+    )
+    for rule in cast(
+        list[dict[str, dict[str, dict[str, dict[str, object]]]]],
+        contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"].get("allOf", []),
+    )
+    if "densidad" in rule["then"]["properties"]
+}
+
+
+def _admitted_densities(structure: Mapping[str, object]) -> tuple[str, ...]:
+    """The densities the structure's official variant admits; all three without one."""
+    return _OFFICIAL_DENSITIES.get(
+        _text(structure.get("estructura_oficial")) or "", tuple(_DENSITY_LAMBDA)
+    )
+
+
 # ADR-0032: geometry per shape of a garland that carries ``armado_guirnalda``
 # (same owner and table). Read strictly: without it a hanging garland would be
 # counted with its straight length.
@@ -379,6 +403,9 @@ class PlanResolutionRequest(OperationalRequest):
     completar_conteos: bool = Field(default=False, strict=True)
     pistas_conteo: list[dict[str, object]] = Field(default_factory=list, max_length=16)
     completar_conteos_de: list[str] | None = Field(default=None, max_length=8)
+    # Review 33: the customer gave measures (Next's clienteDioMedidasEspacio), so
+    # the measures a structure declares are theirs and the count keeps them.
+    medidas_del_cliente: bool = Field(default=False, strict=True)
 
     @field_validator("pistas_conteo")
     @classmethod
@@ -3816,6 +3843,20 @@ def _aplicar_conteos(
     assembly_hints: Sequence[Mapping[str, object]],
 ) -> tuple[dict[str, object], list[dict[str, object]], list[dict[str, object]]]:
     """The plan adjusted to the photo's counts (ADR-0031), the assembly hints to use and ``conteos_referencia``."""
+    # Structures whose measures the request declared: with medidas_del_cliente
+    # those are the customer's (review 33); defaulted ones can still move.
+    customer_measures = (
+        {
+            _text(structure.get("estructura_id")) or ""
+            for structure in _mappings(request.plan.get("estructuras"))
+            if any(
+                _number(_mapping(structure.get("medidas") or {}).get(key)) is not None
+                for key in ("ancho_m", "alto_m", "largo_m")
+            )
+        }
+        if request.medidas_del_cliente
+        else set()
+    )
     port = conteo_foto.PuertoPlan(
         contar=lambda structure: _structure_count(plan, structure)[1],
         dentro_de_puerta=lambda structure, total: _within_physical_gate(plan, structure, total),
@@ -3826,6 +3867,9 @@ def _aplicar_conteos(
         sincronizar_patron=lambda structure: _resynced_pattern(plan, structure),
         mezclas=_MIXES,
         tamanos_obligatorios=bool(_required_sizes(plan)),
+        densidades_admitidas=_admitted_densities,
+        medidas_del_cliente=lambda structure: (_text(structure.get("estructura_id")) or "")
+        in customer_measures,
     )
     adjusted, hints, counts = conteo_foto.aplicar(
         plan,
@@ -3836,8 +3880,63 @@ def _aplicar_conteos(
         puerto=port,
     )
     if any(count["decision"] == "ajustado" for count in counts):
+        adjusted = _garland_assemblies_after_count(adjusted, counts, request.pistas_guirnalda)
         _validate_plan(adjusted)
     return adjusted, hints, counts
+
+
+def _garland_assemblies_after_count(
+    plan: dict[str, object],
+    counts: Sequence[Mapping[str, object]],
+    readings: Sequence[Mapping[str, object]],
+) -> dict[str, object]:
+    """A garland the count adjusted keeps its assembly only if it still fits (review 4).
+
+    The count changes density or measures, and so what is bought; an assembly
+    that fitted before (a topper needs a big balloon of its color) may not fit
+    any more. It is suggested again from the photo reading or the recipe over
+    the new purchase, or dropped when nothing fits, with a notice; never a 422.
+    """
+    adjusted = {str(count["estructura_id"]) for count in counts if count["decision"] == "ajustado"}
+    structures = [dict(item) for item in _mappings(plan.get("estructuras"))]
+    assumptions = [a for a in cast(list[object], plan.get("supuestos") or []) if isinstance(a, str)]
+    changed = False
+    for index, item in enumerate(structures):
+        assembly = item.get("armado_guirnalda")
+        if assembly is None or (_text(item.get("estructura_id")) or "") not in adjusted:
+            continue
+        current = {**plan, "estructuras": structures}
+        try:
+            validar_armado_guirnalda(_garland_context(current, item), _mapping(assembly))
+            continue
+        except (ArmadoGuirnaldaInvalido, PlanResolutionError):
+            pass
+        bare = _without(item, "armado_guirnalda")
+        element_id = _text(item.get("referencia_element_id"))
+        reading = next(
+            (
+                r
+                for r in readings
+                if element_id is not None and r.get("referencia_element_id") == element_id
+            ),
+            None,
+        )
+        again = sugerir_armado_guirnalda(
+            _garland_context(_with_structure(current, index, bare), bare), reading
+        )
+        structures[index] = bare if again is None else {**bare, "armado_guirnalda": again}
+        agregar_supuesto(
+            assumptions,
+            supuesto(
+                _text(item.get("nombre")) or "Guirnalda",
+                "con la cantidad de la foto el armado anterior ya no cabía: "
+                + ("se volvió a sugerir." if again is not None else "queda sin armado."),
+            ),
+        )
+        changed = True
+    if not changed:
+        return plan
+    return {**plan, "estructuras": structures, "supuestos": assumptions}
 
 
 def _structure_index(plan: Mapping[str, object], estructura_id: str) -> int:
@@ -4293,9 +4392,14 @@ def _completar_armados_guirnalda(
         if degraded:
             notice = True
             name = _text(item.get("nombre")) or "Guirnalda"
-            assumptions.append(
-                f"{name}: el patrón por racimos no cabe en lo que se compra; queda el patrón"
-                " sugerido y el armado de sus racimos."
+            # Within the contract's maxLength and maxItems (review finding 31).
+            agregar_supuesto(
+                assumptions,
+                supuesto(
+                    name,
+                    "el patrón por racimos no cabe en lo que se compra; queda el patrón"
+                    " sugerido y el armado de sus racimos.",
+                ),
             )
         assembly = sugerir_armado_guirnalda(_garland_context(current, item), reading)
         if assembly is not None:
@@ -4350,6 +4454,9 @@ def _garland_context_with(
         structures[index].pop("armado_guirnalda", None)
     else:
         structures[index]["armado_guirnalda"] = json.loads(json.dumps(armado))
+    # As the edit does: a pattern mirrored for a U does not survive another
+    # shape or the recipe (review 5), or the preview would reject the draft.
+    quitar_espejo_sin_u(structures[index], armado)
     candidate = {**dict(plan), "estructuras": structures}
     _validate_plan(candidate)
     measured = _complete_measures(candidate)

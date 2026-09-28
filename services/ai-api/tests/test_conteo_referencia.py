@@ -149,7 +149,8 @@ def test_la_version_del_prompt_de_conteo_esta_fijada() -> None:
             (SYSTEM_INSTRUCTION + json.dumps(RESPONSE_SCHEMA)).encode("utf-8")
         ).hexdigest()[:16]
     )
-    assert PROMPT_VERSION == "conteo-referencia.v1:bfd6604c6192ab95"
+    # 1b1d24d3…: las clases de tamaño con la escala del bouquet (revisión 1/11).
+    assert PROMPT_VERSION == "conteo-referencia.v1:1b1d24d385008090"
 
 
 def test_el_prompt_no_trae_cifras_del_plan() -> None:

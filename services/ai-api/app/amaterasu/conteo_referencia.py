@@ -39,6 +39,7 @@ from pydantic import Field, StringConstraints, model_validator
 from app.amaterasu.estructuras import definicion_de_pieza, reglas_de_conteo
 from app.amaterasu.patron_referencia import CajaElemento, ImagenReferencia, TextoCorto
 from app.amaterasu.vision_estructurada import DEFAULT_MODEL, LecturaFotoError, leer_foto
+from app.armado_bouquet import CLASES_TAMANO_NIVEL
 from app.generated_models import contract_schema
 from app.operational_models import ContractModel, OperationalRequest
 
@@ -144,6 +145,13 @@ class ConteoReferenciaRequest(OperationalRequest):
         return self
 
 
+#: Los rangos de cada clase de tamaño, de la única escala del sistema
+#: (``armado_bouquet.CLASES_TAMANO_NIVEL``, revisión 1/11).
+_RANGO = {
+    clase: f"{minimo:g} to {maximo:g} inch"
+    for clase, (minimo, maximo) in CLASES_TAMANO_NIVEL.items()
+}
+
 SYSTEM_INSTRUCTION = f"""You are an expert balloon decorator trained in the Sempertex method. You COUNT the balloons of each balloon piece in a customer's reference photo, the way a decorator sizes up a piece before quoting it. You do not name colors, price anything or judge quality.
 
 For each element listed in the message (element_id, its tipo and, when given, its bounding box as fractions of the image with the origin at the top-left corner), look only at that piece. When piezas is given, the element stands for that many identical pieces in the photo: count ONE of them, the most visible one.
@@ -152,7 +160,7 @@ globos_visibles: the balloons of the piece you can actually see and tell apart, 
 exacto: true only when the piece has at most {MAX_GLOBOS_EXACTO} visible balloons and none of its balloons is hidden (behind people, furniture, another piece, the piece's own front balloons or the edge of the photo), so that globos_visibles is its real total. Otherwise false.
 racimos and globos_por_racimo: when the piece is built from repeated clusters (quartets of 4 are the most common), how many clusters the whole piece has, hidden ones included, and the balloons in each cluster. Omit both when there are no clear clusters.
 estimado_total: when exacto is false, your estimate of ALL the balloons of the piece, hidden ones included: racimos times globos_por_racimo plus the loose balloons, or the balloons along one stretch times the stretches that make the whole piece. It is never less than globos_visibles. Omit it when exacto is true.
-por_tamano: the share of the piece's balloons in each size class, as fractions that add up to 1, each class once: "chico" (5 or 9 inch, small balloons often used as fillers), "mediano" (about 12 inch, the regular party balloon), "grande" (18 or 24 inch, clearly bigger than a regular balloon) and "gigante" (36 inch, about as tall as a table). Judge sizes against the other balloons and the room. Leave it empty when you cannot tell.
+por_tamano: the share of the piece's balloons in each size class, as fractions that add up to 1, each class once: "chico" ({_RANGO["chico"]}, small balloons often used as fillers), "mediano" ({_RANGO["mediano"]}, the regular party balloon), "grande" ({_RANGO["grande"]}, clearly bigger than a regular balloon) and "gigante" ({_RANGO["gigante"]}, jumbo balloons). Judge sizes against the other balloons and the room. Leave it empty when you cannot tell.
 largo_relativo and alto_relativo: only when a standing adult ("persona"), a door ("puerta") or a table ("mesa") is visible at about the same distance as the piece. referencia names it and veces is the piece's length (largo) or height (alto) divided by that reference's height. Omit them otherwise.
 
 How to count each tipo:
@@ -335,13 +343,18 @@ def _lectura(item: object, pendientes: set[str]) -> dict[str, object] | None:
     if estimado is not None and estimado < globos_visibles:
         # Un total menor que lo que se ve es incoherente: no se corrige, se descarta.
         estimado = None
+    racimos = _entero(item.get("racimos"), 1, MAX_RACIMOS)
+    por_racimo = _entero(item.get("globos_por_racimo"), 1, MAX_GLOBOS_POR_RACIMO)
+    if racimos is not None and por_racimo is not None and racimos * por_racimo > MAX_GLOBOS:
+        # Más globos que el tope del contrato: incoherente, se descarta (revisión 10).
+        racimos = por_racimo = None
     return {
         "element_id": element_id,
         "globos_visibles": globos_visibles,
         "exacto": exacto,
         "estimado_total": estimado,
-        "racimos": _entero(item.get("racimos"), 1, MAX_RACIMOS),
-        "globos_por_racimo": _entero(item.get("globos_por_racimo"), 1, MAX_GLOBOS_POR_RACIMO),
+        "racimos": racimos,
+        "globos_por_racimo": por_racimo,
         "por_tamano": _por_tamano(item.get("por_tamano")),
         "largo_relativo": _escala(item.get("largo_relativo")),
         "alto_relativo": _escala(item.get("alto_relativo")),

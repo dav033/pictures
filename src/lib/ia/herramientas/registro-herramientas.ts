@@ -1038,6 +1038,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         ...(completarArmadosGuirnalda ? { completarArmadosGuirnalda } : {}),
         ...(pistasGuirnalda.length > 0 ? { pistasGuirnalda } : {}),
         ...(pistasConteo.length > 0 ? { completarConteos: true, pistasConteo } : {}),
+        // ADR-0031, revisión 33: las medidas que el cliente dio para una pieza no las mueve la foto.
+        ...(pistasConteo.length > 0 && clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio) ? { medidasDelCliente: true } : {}),
         requestId: estado.ragRequestId,
         correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
         ...(options.signal ? { signal: options.signal } : {}),

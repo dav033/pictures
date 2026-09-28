@@ -68,6 +68,15 @@ repartido entre prompts y módulos sin un lugar por tipo.
    trae `cantidad` (1–24: cuántas unidades iguales lo forman alrededor de la
    pieza, contando las ocultas por simetría) y, si se ve, `clase_tamano`
    (`chico` 5"–9", `mediano` 11"–12", `grande` 16"–18", `gigante` 24"–36").
+   Esa es la única escala de clases de tamaño del sistema (revisión 1/11,
+   2026-09-28): el `por_tamano` del conteo (ADR-0031) usa los mismos rangos, que
+   el prompt del conteo toma de `armado_bouquet.CLASES_TAMANO_NIVEL`.
+   Con los números "a los lados" (`disposicion: lados`) la lectura describe UN
+   grupo: niveles, `cantidad` y remate son los de un solo bouquet, y
+   `total_leido` los cuenta dos veces (revisión 7; el prompt lo dice desde
+   `bouquet-referencia.v2:b1f5cb194f104d59`). El tope de salida de la lectura
+   v2 es de 4096 tokens, como el del conteo, y un JSON cortado por el tope llega
+   al log de Next con su `finish_reason` (revisión 8).
    Python compra `cantidad` unidades por nivel y, con la clase, el látex de ese
    color de tamaño más cercano (sin clase, el primero de ese color, como antes).
    La cuenta de la lectura tiene un solo dueño, `armado_bouquet.total_leido`: la

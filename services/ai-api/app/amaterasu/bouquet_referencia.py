@@ -28,7 +28,9 @@ BOUQUET_REFERENCIA_SCHEMA_VERSION = "bouquet-referencia.v1"
 BOUQUET_REFERENCIA_RESULT_VERSION = "bouquet-referencia-result.v1"
 MAX_ELEMENTOS = 12
 MAX_COLORES = 12
-MAX_OUTPUT_TOKENS = 2_048
+# v2 adds cantidad and clase_tamano per level: 12 bouquets of 8 levels need
+# ~4.5k tokens (review 8). As in the count reading, what is generated is paid.
+MAX_OUTPUT_TOKENS = 4_096
 
 SYSTEM_INSTRUCTION = bouquet.instruccion_sistema(PALETA)
 RESPONSE_SCHEMA = bouquet.esquema_respuesta(PALETA)

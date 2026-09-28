@@ -67,7 +67,7 @@ soporte: what holds the garland.
 - "colgada": hung from two or more points with the cord in the air (over a doorway, between two posts, from the ceiling).
 - "piso": resting on the floor.
 - "mesa": resting on a table or along its edge.
-- "sobre_estructura": wrapped around another balloon piece of the photo (an arch, a backdrop frame). Then anfitriona_element_id is that piece's element_id, taken from OTHER_PIECES.
+- "sobre_estructura": wrapped around another balloon piece of the photo (an arch, a backdrop frame). Then anfitriona_element_id is that piece's element_id, taken from OTHER_PIECES or an arch or half-arch listed in ELEMENTS (never the garland itself).
 forma: "recta" (straight), "curva" (one gentle curve), "ondulada" (rises and falls along its length), "u_invertida" (frames something from above with both sides dropping) or "arco_caido" (hangs between anchor points and dips at the center). puntos_de_anclaje: how many points it hangs or is fixed from, 2 to 6, only when you can see them.
 racimos_visibles: the clusters you can see from one end to the other. unidad_racimo: the balloons of one cluster, "trio" (3), "cuarteto" (4) or "quinteto" (5); omit it when you cannot tell. colores_por_racimo: the colors of a typical cluster in position order (at most {MAX_COLORES_RACIMO}).
 relleno: the small balloons tucked between the clusters, with their main color and the share of the garland's balloons they make up (0 to {MAX_PROPORCION_RELLENO}); omit it when there are none.
@@ -261,7 +261,9 @@ def validar_lecturas(
     o con soporte, forma o confianza desconocidos se descarta; los colores
     fuera de la paleta se quitan, un relleno sin color de la paleta o sin
     proporción queda en ``null``, un remate con clase o posición desconocidas se
-    quita, y la anfitriona solo queda si es otra pieza de la misma foto. El
+    quita, y la anfitriona solo queda si es otra pieza de la misma foto: de
+    ``otras`` o, como un arco que también se lee, de los elementos pedidos,
+    nunca la propia guirnalda (revisión 6/13). El
     contrato exportado lo comprueba después quien llama.
     """
     if not isinstance(raw, Mapping) or not isinstance(raw.get("lecturas"), list):
@@ -270,7 +272,9 @@ def validar_lecturas(
     color_de = {cast(str, _texto(color)): color for color in paleta}
     lecturas: list[dict[str, object]] = []
     for item in cast(list[object], raw["lecturas"]):
-        lectura = _lectura(item, pendientes, set(otras_ids), color_de)
+        # Un arco o semiarco viaja en los elementos (se lee como guirnalda posible)
+        # y también puede sostener una guirnalda (revisión 6/13).
+        lectura = _lectura(item, pendientes, set(otras_ids) | set(element_ids), color_de)
         if lectura is not None:
             lecturas.append(lectura)
     return lecturas

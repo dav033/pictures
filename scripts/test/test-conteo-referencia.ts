@@ -351,6 +351,10 @@ async function main(): Promise<void> {
   assert.equal(cuerpos[1]!.body.completar_conteos, true);
   assert.equal((cuerpos[1]!.body.pistas_conteo as Json[]).length, 1);
   assert.deepEqual(cuerpos[1]!.body.completar_conteos_de, ["EST_01"]);
+  // Revisión 33: las medidas del cliente viajan solo cuando se dicen.
+  assert.equal("medidas_del_cliente" in cuerpos[1]!.body, false);
+  await assert.rejects(llamarPythonPlanResolution({ ...peticion, completarConteos: true, pistasConteo: [{ referencia_element_id: "REF_01_E02", ...conteo } as never], medidasDelCliente: true }));
+  assert.equal(cuerpos[2]!.body.medidas_del_cliente, true);
 
   const { PlanResueltoV1Schema } = await import("../../src/lib/ia/contracts/domain-v1");
   const { planResueltoDesdePython } = await import("../../src/lib/plan/python-mapper");

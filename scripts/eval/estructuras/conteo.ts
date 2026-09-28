@@ -20,7 +20,7 @@ import { clasificarFalloConteo, comprobarLecturaConteo, FalloSistematicoConteo, 
 
 const REPO = process.cwd();
 /** Versión del prompt de la lectura (fijada en services/ai-api/tests/test_conteo_referencia.py). La corrida real registra la que Python devuelve. */
-const PROMPT_VERSION_CONOCIDA = "conteo-referencia.v1:bfd6604c6192ab95";
+const PROMPT_VERSION_CONOCIDA = "conteo-referencia.v1:1b1d24d385008090";
 /** PNG de 1×1 para la comprobación: el ai-api rechaza el cuerpo (sin elementos) antes de mirar la imagen. */
 const PNG_MINIMO = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mNgAAAAAgABXLzppwAAAABJRU5ErkJggg==";
 

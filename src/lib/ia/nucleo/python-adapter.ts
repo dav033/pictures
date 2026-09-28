@@ -1276,6 +1276,8 @@ export interface PythonPlanResolutionInput {
   completarConteos?: boolean;
   pistasConteo?: PistaConteo[];
   completarConteosDe?: string[];
+  /** With `completarConteos`: the customer gave measures, so the structures' declared measures stay (ADR-0031). */
+  medidasDelCliente?: boolean;
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -2268,11 +2270,12 @@ export async function llamarPythonGuirnaldaReferencia(
     maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
   });
   const parsed = guirnaldaReferenciaPayloadResultSchema.safeParse(response.payload);
-  const otrasIds = new Set(otras.map((otra) => otra.elementId));
+  // A host may be another piece or an arch/half-arch that is itself read (review 6/13), never the garland itself.
+  const otrasIds = new Set([...otras.map((otra) => otra.elementId), ...elementos.map((elemento) => elemento.elementId)]);
   if (
     !parsed.success
     || !lecturasPorElementoPedido(parsed.data.lecturas, elementos.map((elemento) => elemento.elementId))
-    || parsed.data.lecturas.some((lectura) => lectura.anfitriona_element_id !== undefined && !otrasIds.has(lectura.anfitriona_element_id))
+    || parsed.data.lecturas.some((lectura) => lectura.anfitriona_element_id !== undefined && (!otrasIds.has(lectura.anfitriona_element_id) || lectura.anfitriona_element_id === lectura.element_id))
   ) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
@@ -2488,6 +2491,7 @@ export async function llamarPythonPlanResolution(
     completarConteos,
     pistasConteo,
     completarConteosDe,
+    medidasDelCliente,
     ...rest
   } = input;
   const operationBody = {
@@ -2506,6 +2510,7 @@ export async function llamarPythonPlanResolution(
     ...(completarConteos === undefined ? {} : { completar_conteos: completarConteos }),
     ...(pistasConteo === undefined ? {} : { pistas_conteo: pistasConteo }),
     ...(completarConteosDe === undefined ? {} : { completar_conteos_de: completarConteosDe }),
+    ...(medidasDelCliente === undefined ? {} : { medidas_del_cliente: medidasDelCliente }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_RESOLUTION_PATH, PYTHON_PLAN_RESOLUTION_SCOPE, {
     ...rest,
