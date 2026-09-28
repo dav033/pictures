@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ArmadoGuirnaldaResuelto, ArmadoGuirnaldaV1 } from "@/lib/plan/armado-guirnalda";
 import { pedirVistaArmadoGuirnalda, type LineaVistaGuirnalda, type PeticionVistaArmadoGuirnalda } from "@/lib/plan/peticion-armado-guirnalda";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { crearVistaGuirnalda, type EstadoVistaGuirnalda, type PedirVistaGuirnalda } from "./vista-guirnalda";
+import { alBorrador, crearVistaGuirnalda, type EstadoVistaGuirnalda, type PedirVistaGuirnalda } from "./vista-guirnalda";
 
 /** La pieza sobre la que se pide la vista previa: el plan que había al abrir, la guirnalda y sus líneas resueltas. */
 export type PiezaVistaGuirnalda = {
@@ -42,5 +42,6 @@ export function useVistaGuirnalda({ pieza, armado, inicial, alRechazar }: {
   }, [control, armado]);
   useEffect(() => () => control.cerrar(), [control]);
   const estado = useSyncExternalStore(control.suscribir, control.estado, control.estado);
-  return { ...estado, reintentar: control.reintentar };
+  // Del borrador de este render, no del que el controlador conocía antes de su efecto `mostrar`.
+  return { ...alBorrador(estado, armado), reintentar: control.reintentar };
 }

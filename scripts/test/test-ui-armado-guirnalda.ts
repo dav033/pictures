@@ -21,7 +21,7 @@ import { resolve } from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
-import type { Reloj } from "@/components/plan/autoguardado";
+import { crearAutoguardado, type Reloj } from "@/components/plan/autoguardado";
 import {
   agregarRemate,
   BloqueGuirnalda,
@@ -44,6 +44,7 @@ import {
 } from "@/components/plan/guirnalda";
 import { conAnfitriona, conRelleno, MAXIMO_REMATES } from "@/components/plan/guirnalda/borrador-guirnalda";
 import { peticionVistaGuirnalda } from "@/components/plan/guirnalda/usarVistaGuirnalda";
+import { alBorrador } from "@/components/plan/guirnalda/vista-guirnalda";
 import { celdasDeArmado, patronSobreArmado } from "@/components/plan/guirnalda/geometria-guirnalda";
 import { dibujoPatron } from "@/components/plan/patron/VistaPatron";
 import { leyendaPatron } from "@/components/plan/patron/leyenda";
@@ -551,6 +552,46 @@ async function probarRevision(): Promise<void> {
     await avanzar(0);
     assert.equal(control.estado().borrador, "listo");
     ok("18: un rechazo tardío de un borrador viejo no deshace el nuevo");
+  }
+  // 19: el efecto de validación del editor no toma el "listo" del borrador anterior.
+  {
+    const { control, pedidos, avanzar, reloj } = banco(RECETA.armado);
+    const guardados: Array<ArmadoGuirnaldaV1 | null> = [];
+    const auto = crearAutoguardado<ArmadoGuirnaldaV1 | null>({
+      enPlan: RECETA.armado.armado, iguales: mismoArmadoGuirnalda, esperaMs: 700, validar: true, reloj,
+      guardar: async (valor) => { guardados.push(valor); return null; },
+    });
+    control.mostrar(RECETA.armado.armado);
+    pedidos[0]!.resolver(RECETA);
+    await avanzar(0);
+    const c = conCaida(conForma(conSoporte(RECETA.armado.armado, "pared"), "u_invertida"), 0.5);
+    /** Un render y sus efectos en el orden de EditorGuirnalda: el render lee la instantánea; después mostrar, cambiar y validar. */
+    const renderYEfectos = (primera: boolean) => {
+      const enRender = alBorrador(control.estado(), c);
+      if (primera) {
+        control.mostrar(c);
+        auto.cambiar(c);
+      }
+      if (enRender.borrador === "listo") auto.validar(c, { ok: true });
+    };
+    renderYEfectos(true);
+    renderYEfectos(false);
+    await avanzar(1000);
+    assert.deepEqual(guardados, [], "19: nada se guarda mientras Python no dibujó C");
+    pedidos[1]!.fallar(new FalloPlanArmado("No pudimos conectar con el servidor."));
+    await avanzar(0);
+    renderYEfectos(false);
+    assert.equal(alBorrador(control.estado(), c).borrador, "fallido");
+    await avanzar(1000);
+    assert.deepEqual(guardados, [], "19: ni después de una vista previa fallida");
+    control.reintentar();
+    await avanzar(300);
+    pedidos[2]!.resolver(conArmado(RECETA.armado, c));
+    await avanzar(0);
+    renderYEfectos(false);
+    await avanzar(1000);
+    assert.deepEqual(guardados, [c], "lo que Python dibujó sí se guarda, una vez");
+    ok("19: la validación del autoguardado usa el estado del borrador a la vista, no la instantánea anterior");
   }
 }
 

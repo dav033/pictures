@@ -48,6 +48,8 @@ export type EstadoVistaGuirnalda = {
   error: ErrorVistaGuirnalda | null;
   /** El borrador es la receta de Python (la pieza sin armado en la propuesta). */
   receta: boolean;
+  /** El borrador al que se refiere este estado (`CLAVE_RECETA` para la receta); `null` antes de mostrar ninguno. */
+  clave: string | null;
 };
 
 export type PedirVistaGuirnalda = (armado: ArmadoGuirnaldaV1 | null, signal: AbortSignal) => Promise<VistaArmadoGuirnalda>;
@@ -77,7 +79,7 @@ export type VistaGuirnalda = {
 type Objetivo = { clave: string; armado: ArmadoGuirnaldaV1 | null };
 type EnVuelo = { numero: number; clave: string; controlador: AbortController; soloOpciones: boolean };
 
-const INICIAL: EstadoVistaGuirnalda = { vista: null, opciones: null, borrador: "pendiente", enVuelo: false, error: null, receta: false };
+const INICIAL: EstadoVistaGuirnalda = { vista: null, opciones: null, borrador: "pendiente", enVuelo: false, error: null, receta: false, clave: null };
 
 export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuirnalda {
   const { esperaMs = ESPERA_VISTA_GUIRNALDA_MS, reloj = relojNavegador } = opciones;
@@ -114,6 +116,7 @@ export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuir
       enVuelo: vuelo !== null && !vuelo.soloOpciones,
       error: propio ? { mensaje: propio.mensaje, armadoInvalido: propio.armadoInvalido } : null,
       receta: objetivo.clave === CLAVE_RECETA,
+      clave: objetivo.clave,
     };
   }
 
@@ -223,6 +226,19 @@ export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuir
       vuelo = null;
     },
   };
+}
+
+/**
+ * El estado para el borrador que el editor tiene a la vista EN ESTE render.
+ * El borrador llega al controlador en un efecto (`mostrar`), después del
+ * render: mientras tanto la instantánea es la del borrador anterior, y su
+ * "listo" no vale para el nuevo (el autoguardado lo tomaba por dibujado y lo
+ * guardaba sin que Python lo viera). Si no son el mismo, el nuevo está pendiente.
+ */
+export function alBorrador(estado: EstadoVistaGuirnalda, armado: ArmadoGuirnaldaV1 | null): EstadoVistaGuirnalda {
+  const clave = armado ? claveArmadoGuirnalda(armado) : CLAVE_RECETA;
+  if (estado.clave === clave) return estado;
+  return { ...estado, clave, borrador: "pendiente", error: null, receta: armado === null };
 }
 
 /** Lo que muestra el panel de la vista previa, con cada estado explícito. */
