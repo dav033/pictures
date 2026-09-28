@@ -72,7 +72,7 @@ export type VistaGuirnalda = {
   reintentar: () => void;
   /** Otra función de pedir y otro aviso de rechazo (los del último render). */
   usar: (actual: Pick<OpcionesVistaGuirnalda, "pedir" | "alRechazar">) => void;
-  /** Cancela lo que quede (el editor se cerró). */
+  /** Cancela lo que quede (el editor se cerró); un `mostrar` después empieza de nuevo. */
   cerrar: () => void;
 };
 
@@ -224,6 +224,9 @@ export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuir
       alRechazar = actual.alRechazar;
     },
     cerrar() {
+      // Sin borrador: el siguiente `mostrar` (el segundo montaje de StrictMode, Fast Refresh) vuelve
+      // a pedir lo que esto cancela; si no, veía la misma clave y no pedía nada.
+      objetivo = null;
       detenerEspera();
       vuelo?.controlador.abort();
       vuelo = null;

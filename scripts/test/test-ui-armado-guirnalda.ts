@@ -638,6 +638,31 @@ async function probarRevision(): Promise<void> {
     assert.doesNotMatch(sinBorrador, /brillo-carga/, "21: no se quedan en un esqueleto de carga");
     ok("21: tras Quitar armado, receta imposible → vacío; Python caído → error con Reintentar; los controles lo dicen");
   }
+  // 22: el montaje doble de StrictMode (mostrar → cerrar → mostrar) vuelve a pedir lo que canceló.
+  {
+    const { control, pedidos, avanzar } = banco(RECETA.armado);
+    control.mostrar(RECETA.armado.armado);
+    assert.equal(pedidos.length, 1, "las opciones, al abrir");
+    control.cerrar();
+    assert.equal(pedidos[0]!.signal.aborted, true);
+    control.mostrar(RECETA.armado.armado);
+    assert.equal(pedidos.length, 2, "22: el segundo montaje vuelve a pedir las opciones");
+    assert.equal(pedidos[1]!.signal.aborted, false);
+    pedidos[1]!.resolver(RECETA);
+    await avanzar(0);
+    assert.deepEqual(control.estado().opciones, RECETA.opciones);
+    const receta = banco(null);
+    receta.control.mostrar(null);
+    receta.control.cerrar();
+    receta.control.mostrar(null);
+    await receta.avanzar(0);
+    assert.equal(receta.pedidos.length, 1, "22: la receta se pide tras el segundo montaje");
+    assert.equal(receta.pedidos[0]!.signal.aborted, false);
+    receta.pedidos[0]!.resolver(RECETA);
+    await receta.avanzar(0);
+    assert.equal(receta.control.estado().borrador, "listo");
+    ok("22: tras cerrar (StrictMode, Fast Refresh) el siguiente mostrar vuelve a pedir la vista y las opciones");
+  }
 }
 
 async function main(): Promise<void> {
