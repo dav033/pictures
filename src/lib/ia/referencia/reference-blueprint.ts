@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { LecturaArmadoSchema } from "../../plan/armado-bouquet";
+import { LecturaConteoSchema } from "../../plan/conteo-referencia";
 import { PistaPatronSchema } from "../../plan/patron-color";
 import { VisualSemanticsSchema } from "../escena/lora-semantics";
 import {
@@ -88,6 +89,12 @@ const AppearanceSchema = z
      * como `pistas_armado` y Python decide si la usa.
      */
     armado_bouquet: LecturaArmadoSchema.optional(),
+    /**
+     * Opcional: cuántos globos tiene la pieza según la foto (ADR-0031). Solo con
+     * la lectura encendida y en estructuras de globos. Es una lectura: ningún
+     * plan la usa todavía.
+     */
+    conteo: LecturaConteoSchema.optional(),
   })
   .strict();
 

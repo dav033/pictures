@@ -33,7 +33,14 @@ from typing import cast
 from app.amaterasu.estructuras.base import DefinicionEstructura
 from app.armado_bouquet import GLOBOS_POR_UNIDAD
 
-DEFINICION = DefinicionEstructura(clave="bouquet", inicio_de_pieza=None)
+DEFINICION = DefinicionEstructura(
+    clave="bouquet",
+    inicio_de_pieza=None,
+    como_contar=(
+        "balloons tied to one weight or stacked on one base. Count every balloon one by "
+        "one: latex, foil shapes, number balloons and bubble balloons alike"
+    ),
+)
 
 VARIANTES = ("base_aire", "helio_apilado", "helio_escalonado")
 UNIDADES = tuple(GLOBOS_POR_UNIDAD)

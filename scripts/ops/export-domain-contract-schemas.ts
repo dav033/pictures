@@ -100,12 +100,13 @@ async function main(): Promise<void> {
       : { $id: entry.id, ...generated };
     const target = path.join(outputDirectory, filename);
     const expected = `${JSON.stringify(jsonSchema, null, 2)}\n`;
+    const current = await readFile(target, "utf8").catch(() => null);
+    const alDia = normalizarFinDeLinea(current) === expected;
     if (checkOnly) {
-      const current = await readFile(target, "utf8").catch(() => null);
-      if (normalizarFinDeLinea(current) !== expected) {
-        throw new Error(`Contract drift detected: ${target}`);
-      }
-    } else {
+      if (!alDia) throw new Error(`Contract drift detected: ${target}`);
+    } else if (!alDia) {
+      // Solo se escribe lo que cambió: reescribir un archivo igual cambia su fin
+      // de línea (CRLF del checkout → LF) y git lo da por modificado.
       await writeFile(target, expected, "utf8");
     }
   }

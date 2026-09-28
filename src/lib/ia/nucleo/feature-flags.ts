@@ -145,6 +145,17 @@ export function referenceAnalysisCacheEnabled(): boolean {
  */
 export const BOUQUET_REFERENCIA_PYTHON_ENABLED = process.env.BOUQUET_REFERENCIA_PYTHON_ENABLED === "true";
 
+/**
+ * Default: OFF (ADR-0031, E1). After the reference analysis, asks Python to
+ * count the balloons of each balloon structure in the photo and stores the
+ * reading on its blueprint element (`appearance.conteo`). One Gemini call per
+ * photo with balloon structures, in parallel with the pattern and bouquet
+ * readings and under the same deadline; a failure never breaks the analysis.
+ * No plan uses the reading yet (E2 will, behind `CONTEO_REFERENCIA_V1`); off,
+ * the blueprint is exactly what it was before.
+ */
+export const CONTEO_REFERENCIA_PYTHON_ENABLED = process.env.CONTEO_REFERENCIA_PYTHON_ENABLED === "true";
+
 // --- LoRA capability flags -------------------------------------------------
 
 // --- Debug flags -----------------------------------------------------------

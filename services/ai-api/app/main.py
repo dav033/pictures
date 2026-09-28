@@ -48,6 +48,12 @@ from app.amaterasu.bouquet_referencia import (
     BouquetReferenciaRequest,
     leer_armados_referencia,
 )
+from app.amaterasu.conteo_referencia import (
+    CONTEO_REFERENCIA_SCOPE,
+    ConteoReferenciaError,
+    ConteoReferenciaRequest,
+    leer_conteos_referencia,
+)
 from app.amaterasu.patron_referencia import (
     PATRON_REFERENCIA_SCOPE,
     PatronReferenciaError,
@@ -265,6 +271,7 @@ HappieGenerateHandler = Callable[[HappieGenerateRequest], Awaitable[dict[str, ob
 ReferenceTurnHandler = Callable[[ReferenceTurnRequest], Awaitable[dict[str, object]]]
 PatronReferenciaHandler = Callable[[PatronReferenciaRequest], Awaitable[dict[str, object]]]
 BouquetReferenciaHandler = Callable[[BouquetReferenciaRequest], Awaitable[dict[str, object]]]
+ConteoReferenciaHandler = Callable[[ConteoReferenciaRequest], Awaitable[dict[str, object]]]
 ImageGenerateHandler = Callable[[ImageGenerateRequest], Awaitable[dict[str, object]]]
 LoraGenerateHandler = Callable[[LoraGenerateRequest], Awaitable[dict[str, object]]]
 # Not awaited: it validates what can fail before the stream opens (raising an
@@ -422,6 +429,19 @@ async def _default_bouquet_referencia_handler(
     try:
         result = await leer_armados_referencia(payload)
     except BouquetReferenciaError as error:
+        details: dict[str, object] = {}
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
+    return {"payload": result}
+
+
+async def _default_conteo_referencia_handler(
+    payload: ConteoReferenciaRequest,
+) -> dict[str, object]:
+    try:
+        result = await leer_conteos_referencia(payload)
+    except ConteoReferenciaError as error:
         details: dict[str, object] = {}
         if error.provider_detail is not None:
             details["provider_detail"] = error.provider_detail
@@ -1182,6 +1202,7 @@ def create_app(
     chat_turn_stream_handler: ChatTurnStreamHandler | None = None,
     patron_referencia_handler: PatronReferenciaHandler | None = None,
     bouquet_referencia_handler: BouquetReferenciaHandler | None = None,
+    conteo_referencia_handler: ConteoReferenciaHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
     default_store: object | None = None
@@ -1258,6 +1279,7 @@ def create_app(
     bouquet_referencia_handler_fn = (
         bouquet_referencia_handler or _default_bouquet_referencia_handler
     )
+    conteo_referencia_handler_fn = conteo_referencia_handler or _default_conteo_referencia_handler
     image_generate_handler_fn = image_generate_handler or _default_image_generate_handler
     lora_generate_handler_fn = lora_generate_handler or _default_lora_generate_handler
     chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
@@ -1583,6 +1605,18 @@ def create_app(
             model=BouquetReferenciaRequest,
             scope=BOUQUET_REFERENCIA_SCOPE,
             handler=cast(OperationalHandler, bouquet_referencia_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/conteo-referencia")
+    async def ia_conteo_referencia(request: Request) -> Response:
+        # One reference photo per call, like the pattern and bouquet readings (ADR-0031).
+        return await _handle_operational_request(
+            request,
+            operation="ia.conteo_referencia",
+            model=ConteoReferenciaRequest,
+            scope=CONTEO_REFERENCIA_SCOPE,
+            handler=cast(OperationalHandler, conteo_referencia_handler_fn),
             max_body_bytes=current_settings.max_body_bytes_imagenes,
         )
 
