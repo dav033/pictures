@@ -146,6 +146,20 @@ async function main(): Promise<void> {
   }));
   const ajena = await silencioso(() => leerGuirnaldasReferencia(mezcla, [foto], { ...contexto, cache: crearCacheLecturaGuirnalda() }));
   assert.equal(ajena, mezcla, "una anfitriona que no es de la foto invalida la respuesta y el blueprint sale tal cual");
+  // Revisión 6/13: un arco que también se lee (va en elementos, no en otras) puede ser la anfitriona; la propia guirnalda, no.
+  instalarPython((llamada) => sobre(llamada, {
+    operation_schema_version: "guirnalda-referencia-result.v1",
+    lecturas: [{ element_id: "REF_01_E01", ...lectura, soporte: "sobre_estructura", anfitriona_element_id: "REF_01_E02" }],
+    modelo: "gemini-test", prompt_version: "guirnalda-referencia.v1:test", usage: null,
+  }));
+  const sobreArco = await silencioso(() => leerGuirnaldasReferencia(mezcla, [foto], { ...contexto, cache: crearCacheLecturaGuirnalda() }));
+  assert.equal(sobreArco.elements[0]!.appearance.armado_guirnalda?.anfitriona_element_id, "REF_01_E02", "el arco de elementos es una anfitriona válida");
+  instalarPython((llamada) => sobre(llamada, {
+    operation_schema_version: "guirnalda-referencia-result.v1",
+    lecturas: [{ element_id: "REF_01_E01", ...lectura, soporte: "sobre_estructura", anfitriona_element_id: "REF_01_E01" }],
+    modelo: "gemini-test", prompt_version: "guirnalda-referencia.v1:test", usage: null,
+  }));
+  assert.equal(await silencioso(() => leerGuirnaldasReferencia(mezcla, [foto], { ...contexto, cache: crearCacheLecturaGuirnalda() })), mezcla, "la propia guirnalda no es su anfitriona");
   const fallos = instalarPython(() => new Response("caído", { status: 500 }));
   assert.equal(await silencioso(() => leerGuirnaldasReferencia(mezcla, [foto], { ...contexto, cache: crearCacheLecturaGuirnalda() })), mezcla);
   assert.equal(fallos.length, 1);

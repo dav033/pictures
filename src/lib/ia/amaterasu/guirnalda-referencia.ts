@@ -28,7 +28,9 @@ import { crearCacheLectura, leerCompartido, type CacheLectura } from "./deteccio
  * Se leen las guirnaldas y también los arcos y semiarcos (una guirnalda
  * colgada puede salir del reconocedor como arco; si no lo es, la lectura trae
  * confianza 0 y no se usa); las demás piezas de globos de la foto viajan como
- * posibles anfitrionas de una guirnalda que va sobre ellas. Nunca rompe el
+ * posibles anfitrionas de una guirnalda que va sobre ellas; un arco o semiarco
+ * que se lee también puede serlo (revisión 6/13: Python y el adaptador aceptan
+ * la anfitriona de las dos listas, nunca la propia guirnalda). Nunca rompe el
  * análisis: cualquier fallo se registra con los ids de la petición y el
  * blueprint sale sin lecturas.
  */

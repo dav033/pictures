@@ -2270,11 +2270,12 @@ export async function llamarPythonGuirnaldaReferencia(
     maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
   });
   const parsed = guirnaldaReferenciaPayloadResultSchema.safeParse(response.payload);
-  const otrasIds = new Set(otras.map((otra) => otra.elementId));
+  // A host may be another piece or an arch/half-arch that is itself read (review 6/13), never the garland itself.
+  const otrasIds = new Set([...otras.map((otra) => otra.elementId), ...elementos.map((elemento) => elemento.elementId)]);
   if (
     !parsed.success
     || !lecturasPorElementoPedido(parsed.data.lecturas, elementos.map((elemento) => elemento.elementId))
-    || parsed.data.lecturas.some((lectura) => lectura.anfitriona_element_id !== undefined && !otrasIds.has(lectura.anfitriona_element_id))
+    || parsed.data.lecturas.some((lectura) => lectura.anfitriona_element_id !== undefined && (!otrasIds.has(lectura.anfitriona_element_id) || lectura.anfitriona_element_id === lectura.element_id))
   ) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }

@@ -48,3 +48,35 @@ async def test_5_la_vista_previa_de_otra_forma_quita_el_espejo(
     # La U sigue admitiendo el espejo.
     en_u = vista_previa_de_armado_guirnalda(firmado, GUIRNALDA, U)
     assert cast(dict[str, object], en_u.armado["armado"])["forma"] == "u_invertida"
+
+
+# --- 6 = 13: un arco leído en ELEMENTS puede ser la anfitriona de una guirnalda --------------
+
+
+def test_6_un_arco_de_elements_es_anfitriona_y_la_propia_guirnalda_no() -> None:
+    from app.amaterasu.estructuras import guirnalda as registro
+    from app.amaterasu.patron_referencia import PALETA
+
+    base = {"soporte": "sobre_estructura", "forma": "curva", "confianza": 0.8}
+    lecturas = registro.validar_lecturas(
+        {
+            "lecturas": [
+                {"element_id": "REF_01_E01", **base, "anfitriona_element_id": "REF_01_E02"},
+                {"element_id": "REF_01_E02", **base, "anfitriona_element_id": "REF_01_E02"},
+            ]
+        },
+        ["REF_01_E01", "REF_01_E02"],
+        PALETA,
+        [],
+    )
+    assert lecturas is not None
+    por_id = {str(lectura["element_id"]): lectura for lectura in lecturas}
+    # Antes: la anfitriona solo podía salir de OTHER_PIECES y el arco se perdía.
+    assert por_id["REF_01_E01"].get("anfitriona_element_id") == "REF_01_E02"
+    assert "anfitriona_element_id" not in por_id["REF_01_E02"], "nunca la propia pieza"
+
+
+def test_6_el_prompt_admite_un_arco_de_elements_como_anfitriona() -> None:
+    from app.amaterasu.guirnalda_referencia import SYSTEM_INSTRUCTION
+
+    assert "or an arch or half-arch listed in ELEMENTS" in SYSTEM_INSTRUCTION
