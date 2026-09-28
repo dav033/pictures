@@ -329,10 +329,9 @@ def test_las_frases_del_prompt_describen_el_armado_en_ingles() -> None:
     assert gemini.startswith("BOUQUET ASSEMBLY — a helium balloon bouquet")
     assert "stacked in layers" in gemini and "Topper: gold foil heart." in gemini
     assert 'white 12" latex balloons' in gemini and "level 1 (layer)" in gemini
-    assert lora == (
-        "a helium balloon bouquet stacked in level layers of white and pink balloons"
-        " topped by gold foil heart"
-    )
+    # Modificador del sustantivo que ya escribe el caption ("a balloon bouquet ..."),
+    # como la frase de un patrón: sin artículo ni otro "bouquet" (2026-09-25).
+    assert lora == "floating on helium ribbons in level stacked layers, topped by gold foil heart"
 
 
 def test_la_frase_lora_deletrea_los_numeros_y_es_ascii() -> None:
@@ -343,10 +342,66 @@ def test_la_frase_lora_deletrea_los_numeros_y_es_ascii() -> None:
     lora = str(resuelto["prompt_lora"])
     gemini = str(resuelto["prompt_gemini"])
     assert lora.isascii() and not any(c.isdigit() for c in lora)
-    assert "foil number two balloon" in lora and "foil number five balloon" in lora
-    assert lora.endswith("one on each side")
+    # Dos números del mismo tamaño y color comparten el prefijo: más corto para el LoRA.
+    assert "large gold foil numbers two and five" in lora
+    assert lora.endswith(", one number in each bouquet")
     assert 'foil number "2" balloon' in gemini and "Build two matching bouquets" in gemini
     assert "one on each side, each with its own bouquet" in gemini
+
+
+def test_numeros_distintos_se_nombran_cada_uno_en_la_frase_lora() -> None:
+    estructura = _estructura([_latex(12, "blanco"), _numero("1", 16), _numero("8")], [4, 1, 1])
+    armado = sugerir_armado(estructura, variante="base_aire")
+    assert armado is not None
+    lora = str(armado_resuelto(estructura, armado)["prompt_lora"])
+    assert "small gold foil number one balloon and large gold foil number eight balloon" in lora
+
+
+@pytest.mark.parametrize(
+    ("globos", "cantidades", "eleccion"),
+    [
+        ([_latex(12, "blanco"), _latex(12, "rosado"), _corazon_18()], [3, 3, 1], {}),
+        ([_latex(12, "blanco"), _latex(5, "rosado"), _corazon_18()], [8, 3, 1], {}),
+        ([_latex(12, "blanco"), _numero("2"), _numero("5")], [4, 1, 1], {"disposicion": "abajo"}),
+        (
+            [_latex(12, "blanco"), _latex(12, "rosado")],
+            [3, 2],
+            {"variante": "helio_escalonado"},
+        ),
+    ],
+)
+def test_la_frase_lora_es_un_modificador_del_bouquet(
+    globos: list[GloboCatalogo], cantidades: list[int], eleccion: dict[str, str]
+) -> None:
+    estructura = _estructura(globos, cantidades)
+    armado = sugerir_armado(estructura, **eleccion)  # type: ignore[arg-type]
+    assert armado is not None
+    lora = str(armado_resuelto(estructura, armado)["prompt_lora"])
+    # El compilador del caption ya dice "a balloon bouquet": la frase lo sigue.
+    assert not lora.startswith(("a ", "an ")) and "balloon bouquet" not in lora
+    assert lora.isascii() and not any(c.isdigit() for c in lora)
+
+
+def test_con_base_de_aire_la_frase_gemini_solo_nombra_lo_que_va_en_varilla() -> None:
+    sin_numeros = _estructura([_latex(12, "blanco"), _latex(5, "rosado"), _corazon_18()], [8, 3, 1])
+    armado = sugerir_armado(sin_numeros)
+    assert armado is not None and armado["variante"] == "base_aire"
+    gemini = str(armado_resuelto(sin_numeros, armado)["prompt_gemini"])
+    # Antes decía "the topper and the numbers stand on sticks" sin números en la compra.
+    assert "numbers" not in gemini and gemini.endswith("the topper stands on a stick above it.")
+    # Un cuarteto de un solo globo se nombra una vez, no cuatro veces seguidas.
+    assert 'level 1 (base): 2 four-balloon clusters of white 12" latex balloons;' in gemini
+    assert gemini.count('white 12" latex balloons') == 1
+
+    con_numeros = _estructura([_latex(12, "blanco"), _numero("1", 16), _numero("8", 16)], [4, 1, 1])
+    armado = sugerir_armado(con_numeros)
+    assert armado is not None and armado["variante"] == "base_aire"
+    gemini = str(armado_resuelto(con_numeros, armado)["prompt_gemini"])
+    assert gemini.endswith("the numbers stand on sticks above it.")
+    abajo = sugerir_armado(con_numeros, disposicion="abajo")
+    assert abajo is not None
+    gemini = str(armado_resuelto(con_numeros, abajo)["prompt_gemini"])
+    assert gemini.endswith("Keep every balloon touching its cluster.")
 
 
 # --- La foto manda sobre la compra (2026-09-25) ------------------------------------
@@ -447,3 +502,22 @@ def test_los_numeros_abajo_van_de_pie_y_no_flotan() -> None:
     assert "de pie en la base" in " ".join(resuelto["pasos"])  # type: ignore[arg-type]
     assert "standing at the base" in str(resuelto["prompt_gemini"])
     assert str(resuelto["prompt_lora"]).endswith("standing at the base")
+
+
+def test_escalonado_sin_remate_ni_numeros_no_nombra_una_pieza_central() -> None:
+    estructura = _estructura([_latex(9, "negro")], [10])
+    armado = sugerir_armado(estructura)
+    assert armado is not None and armado["variante"] == "helio_escalonado"
+    gemini = str(armado_resuelto(estructura, armado)["prompt_gemini"])
+    # Sin remate ni números no hay pieza central que rodear ni que suba más alto.
+    assert "central piece" not in gemini
+    assert "staggered at clearly different heights." in gemini
+    assert gemini.endswith("No two balloons at the same height.")
+    con_estrella = _estructura(
+        [_latex(12, "blanco"), _globo("B2b Globo Metalizado Estrella Dorado Mate — 36 IN")],
+        [4, 1],
+    )
+    armado = sugerir_armado(con_estrella, variante="helio_escalonado")
+    assert armado is not None
+    gemini = str(armado_resuelto(con_estrella, armado)["prompt_gemini"])
+    assert "around the central piece" in gemini and gemini.endswith("floats highest.")

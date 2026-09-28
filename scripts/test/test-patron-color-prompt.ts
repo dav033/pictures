@@ -10,6 +10,7 @@ import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { PatronColorResueltoSchema, type PatronColorResuelto } from "@/lib/plan/patron-color";
 import { ArmadoBouquetResueltoSchema, type ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
+import { EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado } from "@/lib/ia/uzume/armado-en-prompt";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import { buildVisualContext } from "@/lib/ia/escena/visual-context";
@@ -330,7 +331,8 @@ function armadoDeBouquetEnLosPrompts(instantanea: Readonly<Record<string, string
   assert.equal(frasesDeEstructuras({}), undefined);
   assert.equal(frasesDeEstructuras(null), undefined);
   const frases = frasesDeEstructuras({ armados_bouquet: [bouquetHelio] })!;
-  assert.deepEqual(frases, [{ estructura_id: "EST_01_SEMIARCO", aplicado: true, prompt_gemini: bouquetHelio.prompt_gemini, prompt_lora: bouquetHelio.prompt_lora }]);
+  // `armado.grupos` marca la frase como la de un armado (cuántos bouquets por pieza).
+  assert.deepEqual(frases, [{ estructura_id: "EST_01_SEMIARCO", aplicado: true, prompt_gemini: bouquetHelio.prompt_gemini, prompt_lora: bouquetHelio.prompt_lora, armado: { grupos: 1 } }]);
   // Un patrón y un armado de piezas distintas conviven en la misma lista.
   const espiralColumna = patron("espiral-columna", { estructura_id: "EST_02_COLUMNA" });
   assert.equal(frasesDeEstructuras({ patrones_color: [espiralColumna], armados_bouquet: [bouquetHelio] })!.length, 2);
@@ -341,9 +343,13 @@ function armadoDeBouquetEnLosPrompts(instantanea: Readonly<Record<string, string
   const lineaSemiarco = prompt.split("\n").find((linea) => linea.startsWith("- Semiarco derecho: "))!;
   assert.ok(lineaSemiarco.endsWith(` ${bouquetHelio.prompt_gemini} Do not invent, recolor, or borrow any additional color.`), lineaSemiarco);
   assert.doesNotMatch(lineaSemiarco, /organic clusters/);
+  // Un armado también cierra su línea del INSTANCE CONTRACT y la regla de conteo
+  // (scripts/test/test-armado-bouquet-prompt.ts los prueba con bouquets reales).
   const deshecho = prompt
     .replace(bouquetHelio.prompt_gemini, "Distribute them through intentional organic clusters and transitions; avoid flat stripes, random speckles, or one color replacing another.")
-    .replace(`,"color_pattern":${JSON.stringify(bouquetHelio.prompt_gemini)}`, "");
+    .replace(`,"color_pattern":${JSON.stringify(bouquetHelio.prompt_gemini)}`, "")
+    .replace(fraseInstanciaConArmado(1), "")
+    .replace(EXCEPCION_CONTEO_CON_ARMADO, "");
   assert.equal(deshecho, instantanea["gemini/cumple-semiarco-columna"]);
 
   // LoRA: el fragmento va tras la frase de materiales, en su cláusula y en el JSON, y pasa el control de idioma y el preflight.

@@ -86,7 +86,15 @@ export function frasePatronColor(
  * armado de bouquet: a qué estructura pertenece, si está en el plan y las dos
  * frases que escribió Python. Un `PatronColorResuelto` lo cumple tal cual.
  */
-export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "aplicado" | "prompt_gemini" | "prompt_lora">;
+export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "aplicado" | "prompt_gemini" | "prompt_lora"> & {
+  /**
+   * Solo en la frase de un armado de bouquet (ADR-0030): cuántos bouquets
+   * forman cada instancia de la pieza, tal como lo decidió Python (`grupos`;
+   * 2 con un número a cada lado). El prompt lo lee para contar piezas, nunca
+   * para redactar el armado. Un patrón de color no lo lleva.
+   */
+  armado?: { grupos: number };
+};
 
 /**
  * Las frases por estructura de un plan resuelto: sus patrones de color
@@ -105,8 +113,23 @@ export function frasesDeEstructuras(
       aplicado: true,
       prompt_gemini: armado.prompt_gemini,
       prompt_lora: armado.prompt_lora,
+      armado: { grupos: armado.grupos },
     })),
   ];
+}
+
+/**
+ * El armado de bouquet de la estructura del elemento (sus instancias repetidas
+ * `EST_x#n` incluidas), cuando la frase aplicada de esa estructura es la de un
+ * armado. `undefined` con un patrón de color o sin frase: el prompt no cambia.
+ */
+export function armadoDeElemento(
+  frases: readonly FraseDeEstructura[] | undefined,
+  element: SceneSpec["elements"][number],
+): { grupos: number } | undefined {
+  if (!frases?.length) return undefined;
+  const estructura = idDeEstructura(element);
+  return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura && frase.armado)?.armado;
 }
 
 /**

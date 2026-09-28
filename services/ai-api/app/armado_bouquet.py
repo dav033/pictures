@@ -822,23 +822,33 @@ _DISPOSICION_EN = {
     "arriba": "on top, as the topper",
     "abajo": "at the bottom, standing at the base with the balloons rising above them",
 }
+# La frase LoRA sigue al sustantivo que ya escribe el compilador del caption
+# ("a balloon bouquet <materiales> <frase> placed on the main table"), como la del
+# patrón de color: es un modificador, nunca otro sustantivo. Empezaba por "a helium
+# balloon bouquet ..." y el caption nombraba dos bouquets seguidos (2026-09-25).
+_DISPOSICION_LORA = {
+    "centro": " at the center of the bouquet",
+    "lados": ", one number in each bouquet",
+    "arriba": " on top of the bouquet",
+    "abajo": " standing at the base",
+}
 _VARIANTE_EN = {
     "base_aire": (
         "an air-filled balloon bouquet fixed on a weighted base, built upward in tight clusters",
-        "Keep every balloon touching its cluster; the topper and the numbers stand on sticks above it.",
-        "an air-filled balloon bouquet built in tight clusters on a weighted base",
+        "Keep every balloon touching its cluster",
+        "built in tight air-filled clusters on a weighted base",
     ),
     "helio_apilado": (
         "a helium balloon bouquet on ribbons tied to one weight, stacked in layers of balloons"
         " at the same height, one layer directly above the other",
         "Keep each layer level and centered over the one below; the topper floats highest.",
-        "a helium balloon bouquet stacked in level layers",
+        "floating on helium ribbons in level stacked layers",
     ),
     "helio_escalonado": (
         "a helium balloon bouquet on ribbons of different lengths tied to one weight, the balloons"
         " staggered at clearly different heights around the central piece",
         "No two balloons at the same height; the central piece floats highest.",
-        "a helium balloon bouquet staggered at different heights",
+        "floating on helium ribbons at staggered heights",
     ),
 }
 
@@ -846,6 +856,16 @@ _VARIANTE_EN = {
 def _forma_foil_en(material: MaterialBouquet) -> str:
     titulo = _plegar(material.globo.titulo)
     return next((en for es, en in _FORMA_FOIL_EN if es in titulo), "foil balloon")
+
+
+def _prefijo_numero(material: MaterialBouquet, color: str) -> str:
+    """Lo que un globo número dice antes de "foil number": "large gold"."""
+    grande = material.tamano_pulg is not None and material.tamano_pulg > NUMERO_MAXIMO_AIRE_PULG
+    return " ".join(
+        parte
+        for parte in ("large" if grande else "small", color if material.globo.color else "")
+        if parte
+    )
 
 
 def _globo_en(material: MaterialBouquet, *, lora: bool) -> str:
@@ -860,15 +880,9 @@ def _globo_en(material: MaterialBouquet, *, lora: bool) -> str:
         return " ".join(parte for parte in (color, tamano, "latex balloons") if parte)
     if material.tipo == "numero":
         cifra = _DIGITO_EN[int(material.digito or 0)] if lora else f'"{material.digito}"'
-        grande = material.tamano_pulg is not None and material.tamano_pulg > NUMERO_MAXIMO_AIRE_PULG
         return " ".join(
             parte
-            for parte in (
-                "large" if grande else "small",
-                color if material.globo.color else "",
-                f"foil number {cifra} balloon",
-                tamano,
-            )
+            for parte in (_prefijo_numero(material, color), f"foil number {cifra} balloon", tamano)
             if parte
         )
     if material.tipo == "burbuja":
@@ -883,12 +897,56 @@ def _globo_en(material: MaterialBouquet, *, lora: bool) -> str:
     )
 
 
-def _colores_lora(nombres: Sequence[str]) -> str:
-    distintos = list(dict.fromkeys(nombres))
-    if len(distintos) > 4:
-        return f"a mix of {_DIGITO_EN[len(distintos)] if len(distintos) < 10 else 'many'} colors"
-    lista: str = lista_en(distintos)
-    return lista
+def _numeros_lora(digitos: Sequence[MaterialBouquet]) -> str:
+    """Los números deletreados para LoRA: "large gold foil numbers eight and zero"."""
+    prefijos = {_prefijo_numero(m, nombre_color_en(m.globo.color)) for m in digitos}
+    if len(digitos) > 1 and len(prefijos) == 1:
+        palabras = [_DIGITO_EN[int(m.digito or 0)] for m in digitos]
+        return " ".join(
+            parte for parte in (prefijos.pop(), "foil numbers", lista_en(palabras)) if parte
+        )
+    uno_por_uno: str = lista_en([_globo_en(m, lora=True) for m in digitos])
+    return uno_por_uno
+
+
+_SIN_PIEZA_CENTRAL = " around the central piece"
+
+
+def _con_pieza_central(con_remate: bool, con_numeros: bool, disposicion: str | None) -> bool:
+    """Si el bouquet escalonado tiene pieza central: el remate o números que flotan."""
+    return con_remate or (con_numeros and disposicion != "abajo")
+
+
+def _apertura(variante: str, apertura: str, pieza_central: bool) -> str:
+    """La primera frase Gemini; el escalonado sin remate ni números no rodea nada."""
+    if variante == "helio_escalonado" and not pieza_central:
+        return apertura.replace(_SIN_PIEZA_CENTRAL, "")
+    return apertura
+
+
+def _cierre(
+    variante: str, cierre: str, con_remate: bool, con_numeros: bool, disposicion: str | None
+) -> str:
+    """La última frase Gemini: nombra solo las piezas que la compra trae.
+
+    Con base de aire decía siempre "the topper and the numbers stand on sticks",
+    también sin números, y el escalonado "the central piece floats highest" sin
+    remate ni números: frases así le piden al modelo de imagen globos que no se
+    compran. Abajo, los números van de pie en la base, no en varilla.
+    """
+    if variante == "helio_escalonado" and not _con_pieza_central(
+        con_remate, con_numeros, disposicion
+    ):
+        return cierre.split(";")[0] + "."
+    if variante != "base_aire":
+        return cierre
+    en_varilla = (["the topper"] if con_remate else []) + (
+        ["the numbers"] if con_numeros and disposicion != "abajo" else []
+    )
+    if not en_varilla:
+        return f"{cierre}."
+    verbo = "stands on a stick" if en_varilla == ["the topper"] else "stand on sticks"
+    return f"{cierre}; {' and '.join(en_varilla)} {verbo} above it."
 
 
 def _frases_prompt(
@@ -911,47 +969,41 @@ def _frases_prompt(
     partes: list[str] = []
     for posicion, nivel in enumerate(niveles, start=1):
         cantidad = cast(int, nivel["cantidad"])
-        globos = [materiales[i] for i in cast(list[int], nivel["posiciones"])]
+        globos = [
+            _globo_en(materiales[i], lora=False) for i in cast(list[int], nivel["posiciones"])
+        ]
+        # Un cuarteto de un solo globo se nombra una vez, no cuatro veces seguidas;
+        # con globos distintos el orden de las posiciones es el del armado.
         partes.append(
             f"level {posicion} ({_ROL_EN[str(nivel['rol'])]}): "
             f"{_plural(cantidad, *_UNIDAD_EN[str(nivel['unidad'])])} of "
-            + lista_en([_globo_en(g, lora=False) for g in globos])
+            + (globos[0] if len(set(globos)) == 1 else lista_en(globos))
         )
-    frases = [f"BOUQUET ASSEMBLY — {apertura}."]
+    disposicion = str(numero["disposicion"]) if isinstance(numero, Mapping) else None
+    pieza_central = _con_pieza_central(bool(remate), bool(digitos), disposicion)
+    frases = [f"BOUQUET ASSEMBLY — {_apertura(variante, apertura, pieza_central)}."]
     if grupos > 1:
         frases.append("Build two matching bouquets, one per number.")
     if partes:
         frases.append("From the bottom up: " + "; ".join(partes) + ".")
     if remate:
         frases.append("Topper: " + lista_en([_globo_en(g, lora=False) for g in remate]) + ".")
-    if digitos and isinstance(numero, Mapping):
+    if digitos and disposicion is not None:
         frases.append(
             "Number balloons: "
             + lista_en([_globo_en(g, lora=False) for g in digitos])
-            + f", {_DISPOSICION_EN[str(numero['disposicion'])]}."
+            + f", {_DISPOSICION_EN[disposicion]}."
         )
-    frases.append(cierre)
+    frases.append(_cierre(variante, cierre, bool(remate), bool(digitos), disposicion))
 
-    colores = [
-        nombre_color_en(materiales[i].globo.color)
-        for nivel in niveles
-        for i in cast(list[int], nivel["posiciones"])
-        if materiales[i].tipo == "latex"
-    ]
-    lora = apertura_lora
-    if colores:
-        lora += f" of {_colores_lora(colores)} balloons"
+    # Sin los colores del látex: la cláusula del caption ya los nombra con su
+    # vocabulario, y repetirlos alargaba la frase que nunca se compacta.
+    partes_lora = [apertura_lora]
     if remate:
-        lora += " topped by " + lista_en([_globo_en(g, lora=True) for g in remate])
-    if digitos and isinstance(numero, Mapping):
-        lora += " with " + lista_en([_globo_en(g, lora=True) for g in digitos])
-        lora += {
-            "centro": " at the center",
-            "lados": " one on each side",
-            "arriba": " on top",
-            "abajo": " standing at the base",
-        }[str(numero["disposicion"])]
-    return " ".join(frases), lora
+        partes_lora.append("topped by " + lista_en([_globo_en(g, lora=True) for g in remate]))
+    if digitos and disposicion is not None:
+        partes_lora.append("with " + _numeros_lora(digitos) + _DISPOSICION_LORA[disposicion])
+    return " ".join(frases), ", ".join(partes_lora)
 
 
 def armado_resuelto(
