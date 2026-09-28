@@ -46,11 +46,22 @@ function sin<K extends keyof ArmadoGuirnaldaV1>(armado: ArmadoGuirnaldaV1, clave
   return copia;
 }
 
-/** Otro soporte. Sobre otra pieza lleva su `estructura_id`; colgada, al menos los anclajes que exige el contrato. */
+/** Los anclajes solo tienen control a la vista colgada o en arco caído (sus tramos). */
+function usaAnclajes(armado: Pick<ArmadoGuirnaldaV1, "soporte" | "forma">): boolean {
+  return armado.soporte === "colgada" || armado.forma === "arco_caido";
+}
+
+/**
+ * Otro soporte. Sobre otra pieza lleva su `estructura_id`; colgada, al menos
+ * los anclajes que exige el contrato. Al dejar de colgar (fuera de un arco
+ * caído) los anclajes se van: sin control a la vista quedaban ocultos y Python
+ * los usaba para contar los ganchos de una guirnalda en pared.
+ */
 export function conSoporte(armado: ArmadoGuirnaldaV1, soporte: SoporteGuirnalda, anfitriona?: string): ArmadoGuirnaldaV1 {
   let siguiente: ArmadoGuirnaldaV1 = { ...sin(armado, "estructura_id"), soporte };
   if (soporte === "sobre_estructura" && anfitriona) siguiente = { ...siguiente, estructura_id: anfitriona };
   if (soporte === "colgada" && siguiente.puntos_de_anclaje === undefined) siguiente = { ...siguiente, puntos_de_anclaje: ANCLAJES_MINIMOS };
+  if (usaAnclajes(armado) && !usaAnclajes(siguiente)) siguiente = sin(siguiente, "puntos_de_anclaje");
   return firmado(siguiente);
 }
 
@@ -58,10 +69,12 @@ export function conAnfitriona(armado: ArmadoGuirnaldaV1, anfitriona: string): Ar
   return firmado({ ...armado, soporte: "sobre_estructura", estructura_id: anfitriona });
 }
 
-/** Otra forma; la caída se va si la nueva forma no cuelga. */
+/** Otra forma; la caída se va si la nueva forma no cuelga, y los anclajes si ya no los usa (ver `conSoporte`). */
 export function conForma(armado: ArmadoGuirnaldaV1, forma: FormaGuirnalda): ArmadoGuirnaldaV1 {
-  const siguiente = { ...armado, forma };
-  return firmado(formaConCaida(forma) ? siguiente : sin(siguiente, "caida_m"));
+  let siguiente: ArmadoGuirnaldaV1 = { ...armado, forma };
+  if (!formaConCaida(forma)) siguiente = sin(siguiente, "caida_m");
+  if (usaAnclajes(armado) && !usaAnclajes(siguiente)) siguiente = sin(siguiente, "puntos_de_anclaje");
+  return firmado(siguiente);
 }
 
 /** La caída en metros, a dos decimales (el paso del control), o sin caída con `null`. */

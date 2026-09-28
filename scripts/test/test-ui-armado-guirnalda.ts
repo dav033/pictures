@@ -593,6 +593,19 @@ async function probarRevision(): Promise<void> {
     assert.deepEqual(guardados, [c], "lo que Python dibujó sí se guarda, una vez");
     ok("19: la validación del autoguardado usa el estado del borrador a la vista, no la instantánea anterior");
   }
+  // 20: los anclajes que solo existían por colgar se van al dejar de colgar (no quedan ocultos contando ganchos).
+  {
+    const colgada = conSoporte(RECETA.armado.armado, "colgada");
+    assert.equal(colgada.puntos_de_anclaje, 2);
+    assert.equal("puntos_de_anclaje" in conSoporte(colgada, "pared"), false, "20: colgada → pared (recta) sin anclajes");
+    assert.equal("puntos_de_anclaje" in conSoporte(colgada, "mesa"), false, "20: colgada → mesa sin anclajes");
+    const colgadaEnArco = conForma(colgada, "arco_caido");
+    const paredEnArco = conSoporte(colgadaEnArco, "pared");
+    assert.equal(paredEnArco.puntos_de_anclaje, 2, "un arco caído en pared conserva sus anclajes (sus tramos)");
+    assert.equal("puntos_de_anclaje" in conForma(paredEnArco, "recta"), false, "20: en pared, dejar el arco caído quita los anclajes");
+    assert.equal(conForma(colgadaEnArco, "recta").puntos_de_anclaje, 2, "colgada los conserva: los exige el contrato");
+    ok("20: al dejar de colgar (o el arco caído en pared) los anclajes se van del borrador");
+  }
 }
 
 async function main(): Promise<void> {
