@@ -807,3 +807,26 @@ documento.
 
 `feat/guirnaldas` incluye `feat/bouquets`, `feat/conteo-referencia` (E1, E2 y el
 arreglo del 11), `feat/guirnaldas-e5` y `feat/guirnaldas-e6`.
+
+### Revisión adversaria (2026-09-28, rama `fix/rev-python`, sobre `ef6e3aa`)
+
+Hallazgos de Python que tocan guirnaldas. Cada uno tiene su prueba de regresión
+en `services/ai-api/tests/test_revision_guirnalda.py` o `test_revision_conteo.py`.
+Los del conteo y del bouquet están en `SEGUIMIENTO-conteo.md` §3.3.
+
+- **4** (`dfdc945`): tras editar la mezcla, el conteo cambiaba la densidad y
+  el armado conservado ya no cabía (422 armado_invalido). `_aplicar_conteos`
+  revisa ahora el armado de cada guirnalda ajustada: lo sugiere de nuevo o lo
+  quita, con un supuesto. La sonda pasa de 11 fallos a 0 en 276 casos.
+- **5** (`a85a28c`): la vista previa de una forma distinta de la U, o de la
+  receta, sobre un patrón en espejo daba 422. La regla pasa a
+  `patron_color.quitar_espejo_sin_u`, con un solo dueño para la edición y la
+  vista previa.
+- **6 = 13** (`9e39fe1`): la anfitriona de una guirnalda no podía ser un arco,
+  porque los arcos viajan en `elementos`, no en `otras`. Python y el adaptador
+  aceptan ahora la anfitriona de las dos listas, nunca la propia guirnalda. El
+  prompt de la lectura cambia de versión (`69be1090c6526060`).
+- **31** (`5e81129`): el aviso de patrón degradado de
+  `_completar_armados_guirnalda` pasa por `app/supuestos.py` y ya no rompe el
+  contrato con nombres largos.
+

@@ -285,6 +285,41 @@ falsos en pytest.
 | `generate_models.py --check` | al día |
 | vectores dorados `plan-resolution` | 31, sin cambios |
 
+### 3.3 Revisión adversaria de `feat/guirnaldas` (2026-09-28, rama `fix/rev-python`)
+
+Una línea por hallazgo, cada uno con su prueba de regresión
+(`services/ai-api/tests/test_revision_conteo.py` y `test_revision_bouquet.py`),
+que falla contra el código anterior al arreglo.
+
+- **3 = 9 = 31** (`5e81129`): un supuesto del conteo de más de 240 caracteres, o
+  un plan con 30 supuestos, daba 422 al confirmar. `app/supuestos.py` lee
+  `maxLength` y `maxItems` del contrato, acorta el nombre y corta con "…". Las
+  medidas van en una sola cláusula. Aplica también al aviso de patrón degradado
+  de la guirnalda.
+- **10** (`bdd2bdd`): racimos × globos por racimo pasaba de 10000 y rompía
+  `conteos_referencia`. `cuenta_usable` y la lectura lo descartan por encima del
+  tope del contrato.
+- **34** (`fcfa125`): editar la mezcla sumaba un supuesto de conteo al de la
+  confirmación. `aplicar` quita primero, en las piezas de `solo`, los supuestos
+  que escribió el conteo.
+- **2** (`f758bba`): el conteo elegía densidades que la estructura oficial no
+  admite y daba 422 invalid_plan. Las densidades salen ahora de las reglas
+  `allOf` del contrato (`plan._OFFICIAL_DENSITIES`).
+- **1 = 11** (`a5a9e26`): el conteo decía "grande" a 24" y el bouquet,
+  "gigante". Queda una sola escala, `armado_bouquet.CLASES_TAMANO_NIVEL`
+  (`clase_de_tamano`); el prompt del conteo sube a `1b1d24d385008090`.
+  Documentado en ADR-0031 §5 y ADR-0030.
+- **33** (`32ffc32`): las medidas que el cliente dio a una estructura se movían
+  si el espacio no tenía medidas. `plan-resolution.v1` gana
+  `medidas_del_cliente` y Python fija las medidas declaradas por estructura.
+  Tras una edición, la foto solo ajusta la densidad.
+  **Pendiente:** `aplicar-edicion.ts` no manda la señal (fuera de esta rama).
+- **7** (`a203645`): con números "a los lados" el prompt v2 permitía describir
+  los dos grupos juntos, y `total_leido` los duplicaba. El prompt dice ahora que
+  se describe un grupo (`bouquet-referencia.v2:b1f5cb194f104d59`).
+- **8** (`a203645`): el tope de salida de la lectura del bouquet sube de 2048 a
+  4096 tokens, y un JSON cortado lleva su `finish_reason` en `provider_detail`.
+
 ## 4. Pendientes
 
 1. ~~Fusionar con `fix/bouquet-conteo-niveles`~~: hecho, ver §3.1.
