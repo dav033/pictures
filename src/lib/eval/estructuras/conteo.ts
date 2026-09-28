@@ -16,8 +16,9 @@ import { claveCorrida, LIMITES_RUNNER, type ItemSuite } from "./runner";
  * La verdad humana vive fuera del repositorio (`sha256,globos,exacto[,familia]`,
  * una fila por foto): el total de globos de las estructuras de globos de la foto.
  * Métricas: error relativo mediano por familia y, en fotos de hasta 15 globos
- * contadas una a una, la parte que queda a ±1. Todo costo es estimado salvo el
- * uso que reporta el proveedor.
+ * contadas una a una, la parte que queda a ±1. Toda otra foto (más de 15 globos,
+ * aunque se contaran una a una) cuenta en la meta del error relativo. Todo costo
+ * es estimado salvo el uso que reporta el proveedor.
  */
 
 export const PREDICCION_CONTEO_SCHEMA_ID = "prediccion-conteo.v1";
@@ -145,11 +146,21 @@ export function totalDePrediccion(linea: PrediccionConteoV1): { globos: number; 
 
 // --- Métricas ----------------------------------------------------------------------------
 
+/**
+ * La meta ±1 es de las fotos de hasta 15 globos contadas una a una. Toda otra
+ * foto con verdad (más de 15 globos, aunque se hayan contado una a una, o sin
+ * cuenta exacta) entra en la meta del error relativo mediano (`densas`): cada
+ * foto cuenta en exactamente una meta (SEGUIMIENTO-guirnaldas.md §2.1).
+ */
+function enMetaExacta(verdad: VerdadConteo): boolean {
+  return verdad.exacto && verdad.globos <= METAS_CONTEO.exactasHasta;
+}
+
 type Estrato = { n: number; error_relativo_mediano: number | null; dentro_15: number | null; exactas: { n: number; dentro_1: number | null } };
 
 function estrato(pares: ReadonlyArray<{ predichos: number; verdad: VerdadConteo }>): Estrato {
   const errores = pares.filter((par) => par.verdad.globos > 0).map((par) => Math.abs(par.predichos - par.verdad.globos) / par.verdad.globos);
-  const exactas = pares.filter((par) => par.verdad.exacto && par.verdad.globos <= METAS_CONTEO.exactasHasta);
+  const exactas = pares.filter((par) => enMetaExacta(par.verdad));
   const proporcion = (parte: number, total: number) => (total > 0 ? parte / total : null);
   return {
     n: pares.length,
@@ -192,7 +203,8 @@ export function metricasConteo(lineas: readonly PrediccionConteoV1[], verdad: Re
     pares.push({ predichos: prediccion.globos, verdad: real, familia: real.familia ?? prediccion.familia ?? "sin_familia" });
   }
   const familias = [...new Set(pares.map((par) => par.familia))].sort();
-  const densas = pares.filter((par) => !par.verdad.exacto);
+  const densas = pares.filter((par) => !enMetaExacta(par.verdad));
+  const exactas = estrato(pares).exactas;
   return {
     metas: METAS_CONTEO,
     total: estrato(pares),
@@ -201,9 +213,11 @@ export function metricasConteo(lineas: readonly PrediccionConteoV1[], verdad: Re
     fotos_sin_verdad: sinVerdad,
     fotos_con_verdad_sin_prediccion: [...verdad.keys()].filter((hash) => !lineas.some((linea) => linea.image_sha256 === hash && linea.resultado === "ok")).length,
     piezas_con_confianza_baja: { n: confianzaBaja, de: piezas },
+    // Veredictos, no proporciones: la meta ±1 no fija una parte admisible, así que
+    // se lee estricta (todas a ±1). La proporción queda en `total.exactas.dentro_1`.
     cumple: {
       densas: densas.length === 0 ? null : (estrato(densas).error_relativo_mediano ?? 1) <= METAS_CONTEO.errorMedianoDensas,
-      exactas: estrato(pares).exactas.dentro_1,
+      exactas: exactas.n === 0 ? null : exactas.dentro_1 === 1,
     },
   };
 }

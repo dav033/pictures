@@ -215,6 +215,14 @@ El trabajo se parte en dos entregas reversibles por separado
     (`sha256,globos,exacto[,familia]`) quedan fuera del repo.
     - Métricas: error relativo mediano por familia y en piezas densas (meta
       ≤ 25 %), y la parte a ±1 en fotos de hasta 15 globos contadas una a una.
+      Cada foto cuenta en una sola meta (2026-09-28, hallazgo 29): la de ±1 es
+      solo de las fotos de hasta 15 globos contadas una a una; toda otra foto
+      (más de 15 globos aunque el humano las contara una a una, o sin cuenta
+      exacta) va a la meta del error relativo (`densas`). La marca `exacto` de
+      la verdad ya no decide sola qué es denso. `cumple` son veredictos: la meta
+      ±1 no fija una proporción admisible, así que se lee estricta (todas a
+      ±1); la proporción queda en `total.exactas.dentro_1`. Si el negocio fija
+      una proporción, va a `METAS_CONTEO`.
     - Los tokens de la lectura de conteo no están medidos
       (`tokens-conteo-2026-09-28.json`, `medido: false`), y así se declara.
     - Solo se probó en vista previa y con un analizador simulado.

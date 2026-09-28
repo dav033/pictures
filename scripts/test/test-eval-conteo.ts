@@ -152,6 +152,25 @@ async function run(): Promise<void> {
     assert.equal(leerVerdadConteo(`${hash(1)},0,si`).get(hash(1))?.globos, 0, "un cero escrito sigue siendo una cuenta");
   });
 
+  await caso("#29 metas: cada foto cuenta en una sola meta y `cumple` son veredictos", () => {
+    const linea = (n: number, globos: number): PrediccionConteoV1 => ({
+      schema: "prediccion-conteo.v1", run_id: "conteo-prueba", corrida: 1, image_sha256: hash(n),
+      sistema: { modelo: sistema.modelo, prompt_version: sistema.promptVersion, commit: "abc1234" }, resultado: "ok",
+      piezas: [{ element_id: "REF_01_E01", tipo: "guirnalda", estructura_oficial: "guirnalda", piezas: 1, lectura: lectura({ globos_visibles: globos, exacto: true, estimado_total: null }) as never }],
+      uso_reportado: { tokens_entrada: 0, tokens_salida: 0, completo: true }, latencia_ms: 1, raw_output_sha256: null,
+    });
+    // Una foto de 60 globos contada una a una y leída como 20 (67 % de error) cuenta en la meta densa.
+    const exacta60 = metricasConteo([linea(1, 20)], leerVerdadConteo(`${hash(1)},60,si`));
+    assert.equal(exacta60.densas.n, 1);
+    assert.equal(exacta60.cumple.densas, false);
+    assert.equal(exacta60.cumple.exactas, null, "sin fotos de hasta 15 globos no hay veredicto ±1");
+    // Dos fotos chicas, una a ±1 y otra no: la proporción es 0,5 y la meta no se cumple.
+    const chicas = metricasConteo([linea(1, 6), linea(2, 9)], leerVerdadConteo(`${hash(1)},6,si\n${hash(2)},6,si`));
+    assert.equal(chicas.total.exactas.dentro_1, 0.5);
+    assert.equal(chicas.cumple.exactas, false);
+    assert.equal(metricasConteo([linea(1, 6)], leerVerdadConteo(`${hash(1)},7,si`)).cumple.exactas, true);
+  });
+
   console.log(`[PASS] ${casos} casos del runner de conteo`);
 }
 
