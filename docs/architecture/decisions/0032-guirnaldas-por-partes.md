@@ -1,6 +1,6 @@
 # ADR-0032 — Guirnaldas por partes
 
-Date: 2026-09-25 (E4, E5 y E6: 2026-09-28)
+Date: 2026-09-25 (E4, E5, E6 y la caída de la foto: 2026-09-28)
 Status: accepted (E3 a E6; E3 y E4 detrás de banderas apagadas, E5 y E6 sin
 bandera propia: sin armado todo es byte a byte lo de antes)
 Supersedes: nothing.
@@ -74,7 +74,7 @@ la cuerda real es más larga y la puerta física no lo veía
    (`techo_globos`) no es una guirnalda por partes y no recibe armado.
 6. **La receta nunca declara caída**, así que completar no cambia la compra:
    mismo total en COP con y sin bandera. Una caída entra solo cuando la declara
-   el decorador (edición) o, desde E4, la foto; entonces la compra sigue a la
+   el decorador (edición) o la foto (decisión 26); entonces la compra sigue a la
    cuerda (decisión 4).
 7. **Salida derivada** `plan_resuelto.armados_guirnalda[]`, fuera del snapshot
    y del hash; presente, `armado_guirnalda` entra en `plan_hash` (es parte del
@@ -191,6 +191,7 @@ la cuerda real es más larga y la puerta física no lo veía
 | Globos por unidad (trío 3, cuarteto 4, quinteto 5) | Sempertex, "Conceptos y técnicas – redondos" | tamaño del racimo |
 | Relleno de globos de 9" o menos | `SEGUIMIENTO-guirnaldas.md` §2.2 | `relleno_sin_globos_chicos` |
 | Largo de una cuerda colgada | Geometría (parábola como aproximación de la catenaria) | eje, conteo y puerta física |
+| Largo de una cuerda con los extremos a distinta altura | Geometría (la misma parábola entre dos alturas, decisión 26) | eje, conteo y puerta física |
 
 ## Supuestos del oficio (a validar con el negocio)
 
@@ -211,6 +212,9 @@ Propuestos como en ADR-0030; ninguno tiene fuente escrita del oficio en el repo
   bomba.
 - Ritmo: 12 a 20 racimos por hora, 40 a 60 globos pegados por hora, más la
   instalación por soporte; se muestra siempre como estimado.
+- Caída y desnivel de la foto (decisión 26): cuentan desde 0,05 del largo
+  (por debajo la guirnalda se lee recta y nivelada); una recta o una curva
+  que cae cuelga en arco caído; una ondulada no toma la caída.
 
 ## Consecuencias
 
@@ -249,6 +253,10 @@ Propuestos como en ADR-0030; ninguno tiene fuente escrita del oficio en el repo
 - **E6 (hecha el 2026-09-28, rama `feat/guirnaldas-e6`):** UI (bloque, gráfica
   sobre la forma, editor con autoguardado, hoja única) y la ruta de Next de la
   vista previa. Decisiones 21 a 25 ("Entrega E6", abajo).
+- **Caída y desnivel de la foto (hecha el 2026-09-28, rama `feat/guirnalda-caida`):**
+  la lectura trae la caída y el desnivel relativos al largo, el armado los
+  lleva en metros (`desnivel_m` nuevo), la cuerda y el conteo los siguen y la
+  gráfica dibuja la curva que cae. Decisión 26.
 
 ## Cuarta entrega, E4 (2026-09-28): la lectura de la guirnalda en la foto
 
@@ -274,7 +282,10 @@ Sigue la frontera de las anteriores: Amaterasu describe, Python arma.
     elemento que el plan hace arco nunca se usa.
 17. **La lectura da la distribución, nunca la cantidad.** No trae caída (los
     metros no se leen en una foto y la caída cambiaría el conteo, que es de
-    ADR-0031); `racimos_visibles` y `colores_por_racimo` solo informan (el color
+    ADR-0031). *Enmienda (decisión 26): trae la caída y el desnivel relativos
+    al largo, nunca metros; Python los pasa a metros con el largo del plan y
+    el conteo compara la foto con la cuerda que resulta.* `racimos_visibles` y
+    `colores_por_racimo` solo informan (el color
     de cada racimo es del patrón, E5). Al confirmar, con `GUIRNALDAS_ARMADO_V1`,
     Next manda `pistas_guirnalda` (una por elemento que el plan materializa, como
     `pistas_armado`) y `_completar_armados_guirnalda` pasa la de cada guirnalda a
@@ -397,10 +408,95 @@ E6 numeraba sus decisiones 10 a 14, como E5; al fusionarlas pasan a 21 a 25, det
     de cuerda, duración estimada, pasos de Python y, con patrón, su nombre y
     sus consejos). "Hoja de armado" del bloque del patrón abre esta.
 
+## La caída y el desnivel de la foto (2026-09-28, rama `feat/guirnalda-caida`)
+
+26. **La forma que se lee en la foto llega a la gráfica y a la compra.** El
+    usuario mostró una guirnalda en la pared, alta a la izquierda, que cae
+    hacia la derecha, y la gráfica dibujaba doce racimos en una joroba
+    simétrica. La causa tenía dos partes: la lectura no traía caída ni
+    desnivel (decisión 17), y la forma `curva` se dibuja, desde E6, como un
+    arco suave hacia arriba (`-0,12 · largo · sin(πt)`), porque el contrato
+    no le da dirección. Enmienda la decisión 17:
+    - **Lectura** (`guirnalda-referencia.v2`, `LecturaGuirnaldaSchema`):
+      `caida_relativa` (0 a 0,6: cuánto baja, como máximo, la línea central
+      bajo la recta que une los extremos, medido en vertical; en la U
+      invertida, cuánto bajan sus lados) y `desnivel_relativo` (−0,6 a 0,6: el
+      extremo derecho menos el izquierdo; negativo si cae hacia la derecha),
+      ambos como fracción del largo horizontal, **nunca metros**. `null` si el
+      modelo no los distingue; fuera de rango, `null` (no se recortan).
+      Opcionales en el contrato para que las `lecturas_guirnalda` guardadas
+      antes sigan valiendo. Misma llamada, mismo costo; sube la versión del
+      prompt (`guirnalda-referencia.v2:8d10b49acc1eda5f`, fijada en la prueba).
+    - **Armado**: campo opcional `desnivel_m` en `armado-guirnalda.v1` (−5 a
+      5 m, cualquier forma). Metros y no fracción, como `caida_m`: el editor
+      y la hoja hablan en metros y la cuerda se mide en metros. Solo en pared
+      o colgada (`desnivel_sin_soporte`): esos soportes tienen ahora un solo
+      dueño, el del contrato (`SOPORTES_CON_CAIDA_GUIRNALDA` en
+      `armado-guirnalda.ts`, exportado como `x-reglas-guirnalda`), que Python
+      lee como `SOPORTES_CON_CAIDA` y el editor usa para mostrar el control;
+      antes eran una constante de Python. No van en la tabla de geometría de
+      `estructuras-oficiales.ts`: esa entrada viaja entera en el caption LoRA
+      y cambiarla movía la instantánea de los prompts sin armado.
+    - **De la lectura al armado** (`geometria_de_lectura`, confianza desde
+      0,5, soporte leído pared o colgada): `caida_m = caida_relativa × largo` y
+      `desnivel_m = desnivel_relativo × largo`, a centímetros y dentro de ±5 m;
+      por debajo de 0,05 del largo no cuentan. Una recta o una curva que cae
+      pasa a `arco_caido`; una U invertida o un arco caído llevan la caída;
+      una ondulada no. Sin caída la forma leída se conserva (una curva que no
+      cae sigue siendo la curva de siempre, ahora sobre la recta inclinada).
+      El largo es el tramo horizontal del plan y **la caída nunca lo cambia**,
+      sean o no las medidas del cliente: con `medidas_del_cliente` el conteo
+      tampoco lo mueve y ajusta solo la densidad.
+    - **Cuerda** (`plan._garland_cord`): con `desnivel_m`, cada tramo es la
+      parábola entre dos extremos a distinta altura con la caída bajo la
+      recta que los une (su pendiente varía linealmente; el largo es la
+      primitiva cerrada de `√(1 + s²)`); los anclajes de un arco caído van
+      sobre la recta inclinada. Sin caída, la recta inclinada `√(largo² +
+      desnivel²)`. Sin `desnivel_m`, el camino de antes byte a byte: los 31
+      vectores dorados no cambian. Lo fija un valor de libro (y = x² de 0 a 1:
+      √5/2 + asinh(2)/4) y el límite con desnivel que tiende a cero.
+    - **Conteo** (ADR-0031): corre antes de completar los armados, así que
+      `_counted_with_read_geometry` cuenta una guirnalda que esta
+      confirmación va a armar con la geometría que su lectura le va a dar,
+      sobre las medidas que el conteo prueba: la foto se compara con la
+      cuerda que se compra, y lo que el conteo elige es lo que se compra
+      (`globos_despues` igual a las unidades). Solo para contar; no se
+      escribe nada en el plan.
+    - **Compra consistente** (`_suggest_garland_assembly`): un armado con
+      caída o desnivel se sugiere otra vez sobre la compra de su propia
+      cuerda y se conserva si conserva esa cuerda; si no, decide la lectura
+      sin su geometría (lo de antes). Con patrón, sus participaciones se
+      sincronizan con la rejilla nueva (el plan firmado es punto fijo); si el
+      patrón ya no cabe, la geometría se deja fuera en vez de fallar. Lo usan
+      la confirmación, el patrón por racimos (decisión 20) y el re-sugerido
+      tras el conteo (revisión 4).
+    - **Gráfica** (`curvaGuirnalda`): cada forma va sobre la recta que une
+      los extremos a distinta altura, a escala del largo: el extremo derecho
+      `desnivel_m` más alto (más bajo si es negativo), los racimos numerados
+      sobre esa curva. Texto alternativo, bloque y hoja lo dicen ("cae hacia
+      la derecha (el extremo derecho, 0,4 m más bajo)"). En el editor, en
+      pared o colgada, un interruptor y un deslizador de −5 a 5 m (paso 0,05,
+      `aria-valuetext` en palabras) con el autoguardado y la vista previa de
+      Python de siempre; TypeScript no recalcula nada. Sin `desnivel_m`, la
+      curva es la de antes: la joroba de `curva` queda para la guirnalda que
+      no cae.
+    - **Prompts**: `prompt_gemini` lleva al final una línea del desnivel
+      (`_frase_desnivel`, aparte de `_frases_prompt`); el paso de instalación
+      de la hoja la dice en español. El fragmento LoRA no cambia: ni v007 ni
+      v004 aprendieron el desnivel y no admite cifras.
+
+    Contrato nuevo en los dos lados (`desnivel_m`, `caida_relativa`,
+    `desnivel_relativo`, `x-reglas-guirnalda`): Zod → export →
+    `generate_models.py`; app y `ai-api` se despliegan juntos. Los umbrales
+    (0,05) y la regla "una curva que cae es un arco caído" son supuestos sin
+    calibrar; la exactitud de la lectura se mide en E7, con tope de gasto.
+
 ## Rollback
 
 Apagar `GUIRNALDA_REFERENCIA_PYTHON_ENABLED` deja de leer las guirnaldas en la
-foto. E5 no tiene bandera propia: todo depende de que la guirnalda traiga armado.
+foto (y con ellas la caída y el desnivel de la decisión 26). Revertir la
+decisión 26 deja sin validar los planes que ya traen `desnivel_m`
+(`additionalProperties: false`): se revierte en app y `ai-api` a la vez. E5 no tiene bandera propia: todo depende de que la guirnalda traiga armado.
 Apagar `GUIRNALDAS_ARMADO_V1` deja de completar armados al confirmar; un
 armado puesto a mano en el editor sigue llegando a los prompts. Revertir los
 commits de E5 la quita del todo (un patrón con espejo sobre una guirnalda en U

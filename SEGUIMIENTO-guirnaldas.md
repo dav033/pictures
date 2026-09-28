@@ -909,3 +909,118 @@ Los del conteo y del bouquet están en `SEGUIMIENTO-conteo.md` §3.4.
 - **31** (`5e81129`): el aviso de patrón degradado de
   `_completar_armados_guirnalda` pasa por `app/supuestos.py` y ya no rompe el
   contrato con nombres largos.
+
+### Caída y desnivel de la foto (2026-09-28, rama `feat/guirnalda-caida` desde `main` 94ad16b)
+
+ADR-0032, decisión 26 (enmienda la 17: "la lectura no trae caída").
+
+**Pedido.** En la foto del usuario la guirnalda va en la pared, más alta a la
+izquierda, y cae hacia la derecha; la gráfica del armado dibujaba doce racimos
+en una joroba simétrica hacia arriba. "Si ves que la guirnalda se ve un poco
+caída, soportarlo dentro de la gráfica."
+
+**Por qué salía la joroba.** Dos causas: (1) la lectura de la guirnalda no traía
+ni caída ni desnivel, así que el armado llegaba con `forma: curva` y nada más; (2)
+desde E6 `curva` se dibuja como un arco suave hacia arriba
+(`-0,12 · largo · sin(πt)` en `curvaGuirnalda`), porque el contrato no le da
+dirección. Una curva que no cae se sigue dibujando igual (prueba byte a byte).
+
+**Qué cambia.**
+
+- **Lectura** (`amaterasu/estructuras/guirnalda.py`, prompt `guirnalda-referencia.v2:8d10b49acc1eda5f`):
+  `caida_relativa` (0 a 0,6) y `desnivel_relativo` (−0,6 a 0,6, negativo si cae
+  hacia la derecha), fracciones del largo horizontal, nunca metros; `null` si no
+  se distinguen o salen de rango. Zod: `LecturaGuirnaldaSchema` (opcionales, para
+  que las `lecturas_guirnalda` guardadas sigan valiendo).
+- **Armado** (`armado_guirnalda.py`): `desnivel_m` opcional en
+  `armado-guirnalda.v1` (−5 a 5 m), solo en pared o colgada
+  (`desnivel_sin_soporte`). Esos soportes tienen un dueño en el contrato
+  (`SOPORTES_CON_CAIDA_GUIRNALDA` en `armado-guirnalda.ts`, exportado como
+  `x-reglas-guirnalda`). `geometria_de_lectura` pasa la lectura a metros sobre
+  el largo del plan (a centímetros, desde 0,05 del largo): una recta o curva que
+  cae pasa a `arco_caido` con `caida_m`; U invertida y arco caído llevan la caída;
+  la ondulada no; el desnivel en cualquier forma. El largo nunca cambia por la
+  caída (con o sin `medidas_del_cliente`).
+- **Cuerda** (`plan._garland_cord`): la parábola entre dos extremos a distinta
+  altura con la caída bajo su cuerda (`_parabola_arc`), por tramo; sin caída, la
+  recta inclinada. Sin `desnivel_m`, el cálculo de antes byte a byte.
+- **Conteo** (`_counted_with_read_geometry`): el conteo de la foto corre antes del
+  armado; ahora cuenta la guirnalda que se va a armar con la geometría de su
+  lectura, así que compara con la cuerda que se compra y `globos_despues` es lo
+  que se compra.
+- **Compra consistente** (`_suggest_garland_assembly`, `_with_garland_assembly`):
+  un armado con caída o desnivel se vuelve a sugerir sobre la compra de su propia
+  cuerda; con patrón, se sincronizan sus participaciones (punto fijo); si nada
+  cabe, la lectura sin su geometría (lo de antes).
+- **Gráfica** (`geometria-dibujo.ts`, `geometria-guirnalda.ts`): la forma va sobre
+  la recta inclinada entre los extremos, a escala; los racimos se numeran sobre
+  esa curva; los anclajes, sobre la recta. Texto alternativo, bloque y hoja:
+  "cae hacia la derecha (el extremo derecho, 0,4 m más bajo)".
+- **Editor** (`ControlesGuirnalda.tsx`, `borrador-guirnalda.ts`): en pared o
+  colgada, interruptor "Un extremo más alto que el otro" y deslizador de −5 a
+  5 m (paso 0,05; `aria-valuetext` en palabras); autoguardado y vista previa en
+  Python como el resto. `conSoporte`/`conAnfitriona` quitan el desnivel fuera de
+  pared o colgada. TypeScript no recalcula nada.
+- **Prompts**: una sola línea nueva para Uzume, aislada en `_frase_desnivel`
+  (`armado_guirnalda.py`) y añadida al final de `prompt_gemini` en
+  `armado_resuelto`; `_frases_prompt` y `_frase_lora` **no se tocaron** (la rama
+  `fix/armado-en-imagen` las reescribe). El paso de instalación de la hoja dice
+  el desnivel en español. LoRA sin cambios.
+
+**Archivos tocados** (para fusionar con `fix/armado-en-imagen`):
+`src/lib/plan/armado-guirnalda.ts`, `src/lib/plan/estructuras-oficiales.ts`
+(solo un comentario), `scripts/ops/export-domain-contract-schemas.ts`,
+`contracts/chat/v1/request.schema.json`, `contracts/domain/v1/{plan-decoracion,plan-resolution-request,plan-resolution-result,plan-resuelto,reference-blueprint}.schema.json`,
+`services/ai-api/app/{generated_models,armado_guirnalda,plan}.py`,
+`services/ai-api/app/amaterasu/{guirnalda_referencia.py,estructuras/guirnalda.py}`,
+`src/components/plan/patron/geometria-dibujo.ts`,
+`src/components/plan/guirnalda/{geometria-guirnalda,leyenda-guirnalda,borrador-guirnalda}.ts`,
+`src/components/plan/guirnalda/ControlesGuirnalda.tsx`, las pruebas
+(`tests/test_{guirnalda_referencia,armado_guirnalda,plan_guirnalda}.py`,
+`scripts/test/test-{armado-guirnalda,guirnalda-referencia,plan-armado-guirnalda-ruta,ui-armado-guirnalda}.ts`),
+`scripts/fixtures/guirnalda-ui/vistas-guirnalda.json` (tres casos nuevos, los
+anteriores intactos), ADR-0032 y este documento. En `armado_guirnalda.py` los
+cambios están en las constantes, `_validar_forma_y_soporte`,
+`geometria_de_lectura`/`_forma_desde_lectura` y `armado_resuelto` (pasos y la
+línea de Gemini): ninguno dentro de `_frases_prompt`.
+
+**Pruebas nuevas.** Python: validación y rangos de la lectura y la versión del
+prompt fijada; `geometria_de_lectura` (13 casos), `desnivel_sin_soporte`, pasos
+y línea de Gemini; cuerda desnivelada (y = x² de 0 a 1 = √5/2 + asinh(2)/4,
+signo, límite con desnivel → 0, recta inclinada, tres anclajes); la lectura
+llega al armado y a la compra con punto fijo, con patrón por racimos; conteo
+más caída con medidas del cliente (el largo no se mueve, `globos_antes` es la
+cuenta de la cuerda) y con largo asumido (la caída sigue al largo nuevo). Las
+dos del conteo fallan sin `_counted_with_read_geometry` (comprobado). TypeScript:
+contrato (`desnivel_m`, `x-reglas-guirnalda`), lectura con caída y desnivel
+hasta `pistas_guirnalda`, la ruta (viaja tal cual, 400 fuera de contrato,
+`desnivel_sin_soporte` con la frase de Python), la gráfica (sin NaN, extremo
+derecho más bajo a escala, curva sobre la recta inclinada, arco caído con los
+anclajes a distinta altura, texto alternativo, bloque, hoja, controles y
+borrador) y la huella de la tarjeta sin armado, intacta.
+
+**Verificación real** (2026-09-28, en el worktree, sin llamadas pagas):
+`npx tsc --noEmit` solo con el TS2304 `LayoutProps` preexistente; `npm run -s lint`
+0 errores (los 25 avisos preexistentes, ninguno en archivos tocados);
+`npm run -s contracts:check` sin deriva; `npm run plan:test` en 0 (las cuatro
+pruebas de guirnaldas dentro, y la instantánea de los prompts sin armado de
+`ia:test-armado-guirnalda-prompt` intacta); pytest 932 en verde (4 omitidas por
+falta de Postgres), `test_plan_regresion.py` 31 en verde y
+`contracts/domain/v1/golden/` sin cambios; `ruff check` y `ruff format --check`
+de `app scripts tests` limpios; `mypy app scripts` sin errores;
+`generate_models.py --check` al día. La gráfica se revisó rasterizada (SVG → PNG
+con `sharp`) en la curva desnivelada y el arco caído colgado con desnivel. No
+hizo falta un `ai-api` propio: las pruebas de Python usan `TestClient`.
+
+**Pendientes.**
+
+- Medir la lectura de la caída y el desnivel en fotos reales (E7, con tope de
+  gasto): los umbrales (0,05) y la regla "una curva que cae es un arco caído"
+  son supuestos sin calibrar. La foto del usuario no se leyó contra Gemini.
+- Al fusionar con `fix/armado-en-imagen`: si la frase nueva del armado ya dice
+  el desnivel, `_frase_desnivel` se puede quitar o integrar allí; hoy va al
+  final de `prompt_gemini`. El LoRA no lo dice.
+- Tras la revisión 4 (el conteo rompe un armado conservado), el re-sugerido con
+  la foto puede traer una caída distinta de la del armado anterior, y la cuenta
+  con que el conteo decidió era la de ese armado: caso límite, sin prueba.
+- Verificación visual en el navegador: queda para el usuario.
