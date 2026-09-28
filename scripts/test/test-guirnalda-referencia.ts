@@ -245,6 +245,30 @@ async function main(): Promise<void> {
   assert.equal((cuerpos[1]!.body.pistas_guirnalda as Json[]).length, 1);
   ok("pistas_guirnalda: una por elemento que el plan materializa, y solo viaja cuando se pide");
 
+  // ---------------------------------------------------------------------------
+  // Hallazgo 32: el navegador no tiene la foto. Python devuelve las lecturas de
+  // las guirnaldas del plan (`lecturas_guirnalda`, fuera del hash) y una edición
+  // las vuelve a mandar, para que un armado que la edición quita se re-sugiera
+  // con la foto y no con la receta (tests/test_plan_guirnalda_lecturas.py).
+  const { PlanResueltoV1Schema } = await import("../../src/lib/ia/contracts/domain-v1");
+  const { planResueltoDesdePython } = await import("../../src/lib/plan/python-mapper");
+  const { lecturasGuirnaldaDeLaEdicion } = await import("../../src/lib/plan/aplicar-edicion");
+  const fixtureResuelto = JSON.parse(readFileSync(path.join(process.cwd(), "contracts", "domain", "v1", "fixtures", "plan-resuelto-ok.json"), "utf8")) as Json;
+  const leidaDeLaFoto = { referencia_element_id: "REF_01_E01", ...lectura };
+  assert.deepEqual(planResueltoDesdePython(PlanResueltoV1Schema.parse({ ...fixtureResuelto, lecturas_guirnalda: [leidaDeLaFoto] })).lecturas_guirnalda, [leidaDeLaFoto]);
+  assert.equal("lecturas_guirnalda" in planResueltoDesdePython(PlanResueltoV1Schema.parse(fixtureResuelto)), false);
+  const baseConLecturas = { ...fixtureResuelto, lecturas_guirnalda: [leidaDeLaFoto] } as never;
+  assert.equal(lecturasGuirnaldaDeLaEdicion(baseConLecturas), undefined, "sin GUIRNALDAS_ARMADO_V1 la edición es la de siempre");
+  process.env.GUIRNALDAS_ARMADO_V1 = "true";
+  try {
+    assert.deepEqual(lecturasGuirnaldaDeLaEdicion(baseConLecturas), [leidaDeLaFoto], "vuelven a viajar en la re-resolución");
+    assert.equal(lecturasGuirnaldaDeLaEdicion(fixtureResuelto as never), undefined, "sin lecturas en el plan base, nada");
+    assert.equal(lecturasGuirnaldaDeLaEdicion({ ...fixtureResuelto, lecturas_guirnalda: [{ referencia_element_id: "REF_01_E01", soporte: "techo" }] } as never), undefined, "una lectura que no cumple el contrato no viaja");
+  } finally {
+    delete process.env.GUIRNALDAS_ARMADO_V1;
+  }
+  ok("lecturas_guirnalda: Python las devuelve y la re-resolución de una edición las vuelve a mandar");
+
   console.log(`\n${casos} casos en verde`);
 }
 

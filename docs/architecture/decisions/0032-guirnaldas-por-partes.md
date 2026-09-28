@@ -380,7 +380,17 @@ E6 numeraba sus decisiones 10 a 14, como E5; al fusionarlas pasan a 21 a 25, det
     Python.
 24. **"Quitar armado" es a propósito.** Con `GUIRNALDAS_ARMADO_V1`, una
     edición que pierde el armado lo re-sugiere; la acción `armado_guirnalda`
-    con `null` no (`resugerirArmadoGuirnalda`).
+    con `null` no (`resugerirArmadoGuirnalda`). *Enmienda (hallazgo 32 de la
+    revisión):* lo re-sugiere con la foto. El navegador no la tiene, así que
+    Python devuelve las lecturas de las guirnaldas del plan
+    (`plan_resuelto.lecturas_guirnalda`, las `pistas_guirnalda` de la petición
+    cuyo elemento es una guirnalda del plan, fuera del snapshot y del hash,
+    como `conteos_referencia`) y Next las vuelve a mandar en cada
+    re-resolución de una edición (`lecturasGuirnaldaDeLaEdicion`); Python solo
+    las usa en la pieza que se re-sugiere. Antes volvía la receta (pared,
+    recta) y una guirnalda leída abrazada al arco quedaba en la pared. Campo
+    nuevo del contrato (Zod → export → `generate_models.py`): app y `ai-api`
+    se despliegan juntos.
 25. **Una sola hoja de armado** para guirnaldas con armado: la del patrón y la
     del armado se funden (gráfica, leyenda de códigos por material y tamaño,
     racimos en orden, relleno, remates, sueltos, insumos con metros de tira y

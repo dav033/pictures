@@ -17,6 +17,7 @@ import type { PlanResuelto } from "./resuelto";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { BasePlan, EdicionPlan } from "./edicion-esquemas";
 import { ConteoAplicadoSchema, type PistaConteo } from "./conteo-referencia";
+import { PistaGuirnaldaSchema, type PistaGuirnalda } from "./armado-guirnalda";
 
 /**
  * Applies one edit (agregar/reemplazar/quitar/repartir/mezcla/patron) to an
@@ -165,6 +166,22 @@ export function conteosDeLaEdicion(base: BasePlan, edicion: EdicionPlan): Conteo
 }
 
 /**
+ * Las lecturas de la foto de las guirnaldas que la re-resolución de una edición
+ * vuelve a mandar (ADR-0032), desde `lecturas_guirnalda` del plan base, como
+ * los conteos. El navegador no tiene la foto: sin ellas, un armado que la
+ * edición quita se re-sugería con la receta (pared, recta) y perdía el soporte
+ * y la forma leídos (hallazgo 32). Viajan siempre que existan, para que Python
+ * las devuelva otra vez y la próxima edición las tenga; solo se usan en la
+ * pieza que se re-sugiere (`completar_armados_de`). Sin `GUIRNALDAS_ARMADO_V1`
+ * o sin lecturas en el plan base, nada: la petición es la de siempre.
+ */
+export function lecturasGuirnaldaDeLaEdicion(base: BasePlan): PistaGuirnalda[] | undefined {
+  if (!featureEnabled("GUIRNALDAS_ARMADO_V1")) return undefined;
+  const lecturas = z.array(PistaGuirnaldaSchema).max(16).safeParse((base as Record<string, unknown>).lecturas_guirnalda);
+  return lecturas.success && lecturas.data.length > 0 ? lecturas.data : undefined;
+}
+
+/**
  * Re-verifies the base plan's signed approval, re-resolves it against Python
  * to make sure nothing drifted since it was shown, admits the new variant
  * (when the edit adds one), has Python apply the edit and resolves the edited
@@ -185,6 +202,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     allowlistPython: ContextoPlan["allowlist"],
     rehacer?: { completarArmadosDe: readonly string[]; bouquet: boolean; guirnalda: boolean },
     conteos?: ConteosDeLaEdicion,
+    lecturasGuirnalda?: readonly PistaGuirnalda[],
   ) =>
     resolverPlan({
       plan,
@@ -199,6 +217,9 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
       // ADR-0031: the photo's counts travel again so they are not lost; only
       // a mix edit has Python adjust the edited piece to its count.
       ...(conteos ? { completarConteos: true, pistasConteo: conteos.pistas, completarConteosDe: conteos.ajustar } : {}),
+      // ADR-0032: the garland readings of the photo travel again too, so a
+      // re-suggested assembly keeps the support and shape the photo showed.
+      ...(lecturasGuirnalda ? { pistasGuirnalda: lecturasGuirnalda } : {}),
       requestId: crypto.randomUUID(),
       correlationId,
       ...(input.signal ? { signal: input.signal } : {}),
@@ -262,6 +283,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
       ? { completarArmadosDe: [edicion.estructura_id], bouquet: rehacerArmado, guirnalda: rehacerGuirnalda }
       : undefined,
     conteosDeLaEdicion(base, edicion),
+    lecturasGuirnaldaDeLaEdicion(base),
   );
   const resuelto = resolucionEditada.resuelto;
   if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");

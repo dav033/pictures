@@ -7520,6 +7520,151 @@
             ],
             "additionalProperties": false
           }
+        },
+        "lecturas_guirnalda": {
+          "maxItems": 16,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "soporte": {
+                "type": "string",
+                "enum": [
+                  "pared",
+                  "colgada",
+                  "piso",
+                  "mesa",
+                  "sobre_estructura"
+                ]
+              },
+              "anfitriona_element_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "forma": {
+                "type": "string",
+                "enum": [
+                  "recta",
+                  "curva",
+                  "ondulada",
+                  "u_invertida",
+                  "arco_caido"
+                ]
+              },
+              "puntos_de_anclaje": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 6
+              },
+              "racimos_visibles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2500
+              },
+              "unidad_racimo": {
+                "type": "string",
+                "enum": [
+                  "trio",
+                  "cuarteto",
+                  "quinteto"
+                ]
+              },
+              "colores_por_racimo": {
+                "maxItems": 5,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                }
+              },
+              "relleno": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "color": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      },
+                      "proporcion": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.5
+                      }
+                    },
+                    "required": [
+                      "color",
+                      "proporcion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "remates": {
+                "maxItems": 6,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "clase": {
+                      "type": "string",
+                      "enum": [
+                        "latex",
+                        "metalizado",
+                        "burbuja"
+                      ]
+                    },
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "posicion": {
+                      "type": "string",
+                      "enum": [
+                        "extremo_izq",
+                        "extremo_der",
+                        "centro",
+                        "cada_n"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "clase",
+                    "posicion"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "confianza": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "referencia_element_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              }
+            },
+            "required": [
+              "soporte",
+              "forma",
+              "racimos_visibles",
+              "colores_por_racimo",
+              "relleno",
+              "remates",
+              "confianza",
+              "referencia_element_id"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [

@@ -3692,6 +3692,12 @@ def _resolution_result(
     if photo_counts:
         # Derived, outside the snapshot and the hash (ADR-0031), like armados_bouquet.
         resolved["conteos_referencia"] = photo_counts
+    garland_readings = _garland_readings(raw_plan, request.pistas_guirnalda)
+    if garland_readings:
+        # Outside the hash too (ADR-0032): Next sends them back when an edit
+        # re-resolves the plan, so a re-suggested assembly keeps the photo's
+        # support and shape (review finding 32), as the counts do.
+        resolved["lecturas_guirnalda"] = garland_readings
     estimate = _material_estimate(resolved)
     quote = _quote(resolved)
     result: dict[str, object] = {
@@ -3718,6 +3724,25 @@ def _patterns_completed(request: PlanResolutionRequest) -> set[str]:
         for structure in _mappings(request.plan.get("estructuras"))
         if structure.get("patron_color") is None
     }
+
+
+def _garland_readings(
+    plan: Mapping[str, object], hints: Sequence[Mapping[str, object]]
+) -> list[dict[str, object]]:
+    """The request's garland readings that belong to a garland of the plan, as received.
+
+    What ``lecturas_guirnalda`` returns (review finding 32): the photo does
+    not travel with an edit, so these are what lets the next re-resolution
+    suggest the assembly from it again. Only readings whose reference element
+    is a garland of the plan; the confidence rule is applied where they are
+    used (``sugerir_armado``), not here.
+    """
+    garlands = {
+        _text(structure.get("referencia_element_id"))
+        for structure in _mappings(plan.get("estructuras"))
+        if _is_garland(structure)
+    } - {None}
+    return [dict(hint) for hint in hints if _text(hint.get("referencia_element_id")) in garlands]
 
 
 def _validate_plan(plan: Mapping[str, object]) -> None:
