@@ -3,17 +3,17 @@
 Documento de traspaso de la rama **`feat/conteo-referencia`** (creada desde
 `feat/bouquets` 77d0985). Plan de origen: `SEGUIMIENTO-guirnaldas.md` §2.1, §3 (E1,
 E2) y §4. Decisión: `docs/architecture/decisions/0031-conteo-desde-la-foto.md`.
-Lee primero `AGENTS.md` y ADR-0030. Fecha: 2026-09-25.
+Lee primero `AGENTS.md` y ADR-0030. Fecha: 2026-09-25 (E1) y 2026-09-28 (E2).
 
 ## 1. Estado
 
 | Entrega | Estado | Bandera |
 |---|---|---|
 | E1: lectura de conteo, contrato y blueprint, sin cambiar planes | hecha | `CONTEO_REFERENCIA_PYTHON_ENABLED` (OFF) |
-| E2: `_aplicar_conteos` al confirmar, texto para el chat y evaluación | a medias, en la rama `wip/conteo-e2` (ver §3) | `CONTEO_REFERENCIA_V1` (OFF) |
+| E2: `_aplicar_conteos` al confirmar, texto para el chat y evaluación sin costo | hecha (evaluación pagada pendiente, §4) | `CONTEO_REFERENCIA_V1` (OFF) |
 
-E1 subida a `origin/feat/conteo-referencia` el 2026-09-28. Cero llamadas pagas: todo
-se verificó con dobles y un ai-api local sin llave.
+E1 y E2 en `origin/feat/conteo-referencia`; el trabajo de E2 se hizo en `wip/conteo-e2`. Cero llamadas
+pagas: todo se verificó con dobles, catálogos falsos y un ai-api local sin llave.
 
 ## 2. E1: qué se hizo
 
@@ -120,50 +120,131 @@ contenido, con el fin de línea normalizado, cambió; `--check` sigue igual.
 | vectores dorados `plan-resolution` | 31, sin cambios |
 | e2e local (adaptador TS real → ai-api en 8011, sin llave de Gemini) | un cuerpo válido llega al dominio (`conteo_referencia_unavailable`, 503); `piezas: 0` → 422 antes del dominio |
 
-## 3. E2
+## 3. E2: qué se hizo
 
-Quedó a medias el 2026-09-25 por una pausa del usuario y se guardó tal cual en la rama
-`wip/conteo-e2` (un commit encima de esta rama). Ese estado **no pasa**
-`contracts:check`: el esquema Zod cambió después del último export. Al retomar, seguir
-desde esa rama y, al cerrar E2, llevar `feat/conteo-referencia` hasta ella.
+Hecho en `wip/conteo-e2` y llevado a `feat/conteo-referencia` (fast-forward). La
+decisión y sus supuestos están en ADR-0031, decisiones 11 a 16.
 
-**Cambio de diseño obligatorio para kits.** La regla del plan "en kits la lectura del
-armado manda si existe, si no, el conteo" (`SEGUIMIENTO-guirnaldas.md` §2.1) queda
-descartada: un bouquet de más de 30 globos salió con 11 porque la lectura del armado
-describe una unidad por nivel (diagnóstico completo en `SEGUIMIENTO-bouquets.md` §14,
-rama `feat/bouquets`). El conteo da la cantidad y el armado la distribución; un conteo
-no exacto también debe poder subir la cantidad de un kit (un bouquet apilado nunca es
-"exacto": siempre tiene globos ocultos).
+**Cambio de diseño en kits.** La regla del plan original ("en kits manda la
+lectura del armado") se reemplazó: un bouquet de más de 30 globos salía con 11
+porque la lectura del armado describe una unidad por nivel
+(`SEGUIMIENTO-bouquets.md` §14). Ahora el conteo da la cantidad y el armado la
+distribución. No se tocó `amaterasu/estructuras/bouquet.py`, `armado_bouquet.py`
+ni `armadoLeido`: los cambia la rama `fix/bouquet-conteo-niveles`.
 
-### Estado del commit WIP (rama `wip/conteo-e2`)
+### Python (`services/ai-api`)
 
-Hecho, sin verificar en conjunto:
+- `app/conteo_foto.py`: las reglas, sin importar `plan.py`.
+  - `validar_pistas` (l.90): contra el esquema exportado.
+  - `cuenta_usable` (l.116): exacta → estimado → racimos × globos por racimo, con
+    confianza de al menos 0,5.
+  - Kits: `total_kit_sin_armado` (l.150), `total_kit_con_armado` (l.163) y
+    `reescalar_lectura_armado` (l.206), que repite n veces un nivel de n unidades
+    para que el armado de hoy y el de la otra rama lo lean igual. `_kit` (l.451).
+  - Geométricas: `mezcla_de_la_foto` (l.307), `medidas_desde_referencia` (l.335),
+    `elegir_opcion` (l.387) y `_geometrica` (l.658).
+  - `PuertoPlan` (l.408) y `aplicar` (l.761): una entrada de
+    `conteos_referencia` por estructura con pista. Tras una edición, las piezas
+    no pedidas quedan `sin_aplicar`.
+- `app/plan.py`:
+  - campos `completar_conteos`, `pistas_conteo` y `completar_conteos_de` (l.328);
+  - enganche en `_resolution_result` antes de los armados (l.3485), y
+    `conteos_referencia` fuera del hash (l.3520);
+  - al final del archivo, un bloque nuevo y separado: `_mix_covered` (l.3547),
+    `_within_physical_gate` (l.3567, llama a `_physical_warnings` sin tocarla),
+    `_resynced_pattern` (l.3584) y `_aplicar_conteos` (l.3596).
+- `tests/test_conteo_foto.py` (24 casos):
+  - reglas puras;
+  - bouquet que sube de 9 a 30 con un solo supuesto y punto fijo;
+  - estimado que no baja y cuenta exacta que sí;
+  - kits sin armado, racimo, kit con armado propio y lectura poco confiable;
+  - densidad antes que largo, largo equivalente, medidas del cliente fijas y
+    escala de la foto;
+  - mezcla que cambia solo si el catálogo la cubre y no tras una edición;
+  - `completar_conteos_de` (también vacío);
+  - patrón re-sincronizado y punto fijo, y `conteos_referencia` fuera del hash.
 
-- `src/lib/plan/conteo-referencia.ts`: `PistaConteoSchema`, `DECISIONES_CONTEO` (con
-  `sin_aplicar`), `CAMPOS_AJUSTE_CONTEO` y `ConteoAplicadoSchema`, que ya lleva la
-  `lectura` entera en vez de `exacto`/`confianza`. **Este último cambio no está
-  exportado.**
-- `src/lib/ia/contracts/domain-v1.ts`: `completar_conteos`, `pistas_conteo` y
-  `completar_conteos_de` en la petición; `conteos_referencia` (fuera del hash) en el
-  plan resuelto.
-- Next: `python-adapter.ts` y `resolver-backend.ts` pasan los tres campos;
-  `resuelto.ts` y `python-mapper.ts` llevan `conteos_referencia`; `feature-flags.ts`
-  tiene `CONTEO_REFERENCIA_V1` (OFF); `registro-herramientas.ts` tiene
-  `pistasConteoDelPlan` y la confirmación manda `completarConteos` solo con pistas.
-- Regenerados pero desactualizados respecto del Zod: los tres JSON de
-  `plan-resolution-request`, `plan-resolution-result`, `plan-resuelto` y
-  `generated_models.py`.
+### Contrato
 
-Pendiente, en orden:
+- `src/lib/plan/conteo-referencia.ts`: `PistaConteoSchema` (l.84),
+  `DECISIONES_CONTEO` y `ConteoAplicadoSchema` (l.114), con la lectura, la
+  decisión, los globos de la foto, antes y después, los cambios y el motivo.
+- `src/lib/ia/contracts/domain-v1.ts`: `conteos_referencia` en `plan-resuelto.v1`
+  (l.414) y `completar_conteos`, `pistas_conteo` y `completar_conteos_de` en
+  `plan-resolution.v1` (l.478).
+- Regenerados: `plan-resolution-request`, `plan-resolution-result`,
+  `plan-resuelto.schema.json` y `generated_models.py`.
 
-1. `npm run contracts:export:domain` y `generate_models.py`.
-2. `services/ai-api/app/conteo_foto.py` (reglas, con la de kits aislada y según el
-   cambio de diseño de arriba) y `_aplicar_conteos` en `plan.py`, antes de las
-   completitudes de armados en `_resolution_result` (también las de guirnalda de
-   `feat/guirnaldas`).
-3. En la edición, repetir el ajuste solo al cambiar la mezcla, con la lectura que
-   viene en `base.conteos_referencia`.
-4. Texto para el chat en `serializeReferenceBlueprint` (sin conteo, byte a byte igual).
-5. Runner de evaluación en `src/lib/eval/estructuras/` (vista previa, tope, sin
-   correr contra proveedores).
-6. Pruebas, ADR-0031, este documento y verificación completa.
+### Next
+
+- `src/lib/ia/nucleo/feature-flags.ts:61`: `CONTEO_REFERENCIA_V1`, default OFF.
+- Transporte: `python-adapter.ts:1212` y `resolver-backend.ts:68` pasan los tres
+  campos; `python-mapper.ts:85` y `resuelto.ts` llevan `conteos_referencia`.
+- Confirmar: `pistasConteoDelPlan` (`registro-herramientas.ts:565`) y la bandera en
+  l.1001. Solo se mandan con pistas.
+- Editar: `conteosDeLaEdicion` (`aplicar-edicion.ts:133`, usada en l.225). Todas
+  las lecturas vuelven a viajar; solo una edición de mezcla ajusta su pieza.
+- Chat: `conteoLeido` (`prompt-sistema.ts:191`), solo con la bandera y confianza
+  de al menos 0,5.
+- Evaluación sin costo:
+  - `src/lib/eval/estructuras/conteo.ts`: verdad, predicción, métricas, costo
+    estimado y runner;
+  - `cli-conteo.ts` y `scripts/eval/estructuras/conteo.ts` (`npm run eval:conteo`);
+  - `eval/estructuras/supuestos/tokens-conteo-2026-09-28.json`, marcado
+    `medido: false`.
+- Pruebas:
+  - `scripts/test/test-conteo-referencia.ts` pasa a 9 casos (prompt con y sin
+    bandera, pistas, transporte, mapper y edición);
+  - `scripts/test/test-eval-conteo.ts`: 7 casos, en `plan:test` como
+    `eval:test-conteo`.
+
+### Verificación de E2 (resultados reales, 2026-09-28)
+
+| Comando | Resultado |
+|---|---|
+| `npx tsc --noEmit` | solo TS2304 `LayoutProps` (preexistente) |
+| `npm run -s lint` | 0 errores, 25 avisos (los mismos de antes) |
+| `npm run -s contracts:check` | 9 chat + 30 domain al día |
+| `npm run plan:test` | exit 0 (`ia:test-conteo-referencia` 9/9, `eval:test-conteo` 7/7) |
+| `pytest -q` | 719 passed, 4 skipped |
+| `ruff check` · `ruff format --check` · `mypy app` | limpio · 75 formateados · sin errores |
+| `generate_models.py --check` | al día |
+| vectores dorados `plan-resolution` | 31, sin cambios (`test_plan_regresion.py` en verde) |
+| `npm run eval:conteo` en vista previa con una suite de 30 fotos ficticia fuera del repo | 30 análisis, esperado US$0,35, cota US$0,94 (estimado, tokens sin medir), sin llamadas |
+
+No se corrió nada contra proveedores. No hubo e2e de `resolve_plan` contra el
+ai-api real: la resolución necesita la base del catálogo y se probó con catálogos
+falsos en pytest.
+
+## 4. Pendientes
+
+1. **Fusionar con `fix/bouquet-conteo-niveles`.** Cuando la lectura del armado
+   traiga `cantidad` y tamaño por nivel, revisar dos cosas:
+   - `reescalar_lectura_armado` debe seguir contando igual (las copias valen 1);
+   - repartir con `por_tamano` del conteo donde el nivel no traiga tamaño. Hoy
+     `_material_del_color` elige el primer látex del color.
+   `armadoLeido` debe dejar de contar en TypeScript.
+2. **Fusionar con `feat/guirnaldas`.** `_aplicar_conteos` va antes de
+   `completar_armados_guirnalda` en `_resolution_result`. La cuerda parabólica de
+   `_total_globos` y `_eje` entra sola: `conteo_foto.py` cuenta con `contar` de
+   `PuertoPlan`.
+3. **Evaluación.**
+   - Contar a mano 30 fotos (`sha256,globos,exacto[,familia]`) fuera del repo.
+   - Correr `npm run eval:conteo -- … --ejecutar --max-usd <tope> --crudos <dir>`
+     con tope declarado y confirmado.
+   - Con esos números, reemplazar el supuesto de tokens sin medir y validar las
+     metas (≤ 25 % en densas, ±1 hasta 15 globos).
+4. **Validar con el negocio los supuestos de ADR-0031:**
+   - la tolerancia de ±15 %;
+   - la ventana de ±35 %;
+   - las alturas de referencia;
+   - el umbral de la mezcla;
+   - que un estimado nunca baje un kit.
+5. **UI.**
+   - La tarjeta no muestra `conteos_referencia` (los ajustes llegan por
+     `supuestos`).
+   - El supuesto "medidas asumidas para …" de `_complete_measures` sigue con el
+     valor anterior cuando el conteo mueve el largo.
+6. **Encendido.** Primero `CONTEO_REFERENCIA_PYTHON_ENABLED` y después
+   `CONTEO_REFERENCIA_V1`, tras la evaluación (E7), y con app y `ai-api`
+   desplegados juntos.
