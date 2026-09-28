@@ -1,7 +1,7 @@
 # ADR-0032 — Guirnaldas por partes
 
 Date: 2026-09-25
-Status: accepted (entrega E3 sin UI, detrás de una bandera apagada)
+Status: accepted (E3 y E4 sin UI, detrás de banderas apagadas)
 Supersedes: nothing.
 
 ## Problema
@@ -142,19 +142,76 @@ Propuestos como en ADR-0030; ninguno tiene fuente escrita del oficio en el repo
 
 - **E3 (esta, hecha):** contrato, `armado_guirnalda.py`, geometría, completar
   al confirmar, vista previa, edición, bandera y cableado en Next, pruebas.
-- **E4 (pendiente):** lectura de la guirnalda en la foto (Amaterasu,
-  `GUIRNALDA_REFERENCIA_PYTHON_ENABLED`), `pistas` en `plan-resolution.v1` y
-  `placementFor`. El punto de entrada ya existe: `sugerir_armado(estructura,
-  lectura)` acepta la forma de la lectura de §2.2 y cae en la receta si no se
-  puede armar.
+- **E4 (hecha, 2026-09-28):** lectura de la guirnalda en la foto y ubicación
+  refinada; decisiones 10 a 13.
 - **E5 (pendiente):** frases en Uzume/Kagutsuchi, patrón por racimo (preset
   espiral/anillos con varios tamaños) y espejo en `u_invertida`.
 - **E6 (pendiente):** UI (bloque, gráfica sobre la forma, editor, hoja) y la
   ruta de Next de la vista previa.
 
+## Cuarta entrega, E4 (2026-09-28): la lectura de la guirnalda en la foto
+
+Sigue la frontera de las anteriores: Amaterasu describe, Python arma.
+
+10. **Lectura `lectura-guirnalda`** (`POST /internal/v1/ia/guirnalda-referencia`,
+    scope `ia.guirnalda_referencia`, bandera `GUIRNALDA_REFERENCIA_PYTHON_ENABLED`,
+    default OFF): una llamada de visión por foto con guirnaldas, en paralelo
+    con las lecturas del patrón, del bouquet y del conteo, con la misma
+    `vision_estructurada.py`. Criterios, prompt, esquema y `validar_lecturas`
+    viven en el registro (`amaterasu/estructuras/guirnalda.py`), cuya
+    `DEFINICION` no cambia (las versiones del prompt del patrón y del conteo
+    siguen iguales). Salida por elemento: `soporte` (con
+    `anfitriona_element_id`, otra pieza de la misma foto, en `sobre_estructura`),
+    `forma`, `puntos_de_anclaje`, `racimos_visibles`, `unidad_racimo`,
+    `colores_por_racimo`, `relleno`, `remates` (con su clase: látex, metalizado
+    o burbuja) y `confianza`. La forma es de Zod (`LecturaGuirnaldaSchema` en
+    `armado-guirnalda.ts`), viaja en `reference-blueprint.v2`
+    (`appearance.armado_guirnalda`) y Python comprueba cada lectura contra ese
+    contrato. Se leen también los arcos y semiarcos de la foto (una guirnalda
+    colgada puede salir del reconocedor como arco, §5 del seguimiento): una
+    pieza que no es guirnalda vuelve con confianza 0; una lectura de un
+    elemento que el plan hace arco nunca se usa.
+11. **La lectura da la distribución, nunca la cantidad.** No trae caída (los
+    metros no se leen en una foto y la caída cambiaría el conteo, que es de
+    ADR-0031); `racimos_visibles` y `colores_por_racimo` solo informan (el color
+    de cada racimo es del patrón, E5). Al confirmar, con `GUIRNALDAS_ARMADO_V1`,
+    Next manda `pistas_guirnalda` (una por elemento que el plan materializa, como
+    `pistas_armado`) y `_completar_armados_guirnalda` pasa la de cada guirnalda a
+    `sugerir_armado`: si la confianza llega a 0,5, soporte, forma, anclajes,
+    unidad, relleno y remates salen de la foto (`origen: referencia`). La
+    anfitriona se busca por el elemento de la foto (`referencia_element_id` de
+    otra pieza del plan); una forma que cuelga sin de dónde colgar queda recta;
+    una colgada sin anclajes visibles cuelga de dos; un remate metalizado o de
+    burbuja no se usa (la guirnalda solo compra látex). Si el relleno o los
+    remates leídos no caben en lo que se compra, se conserva la forma leída con
+    los de la receta; si ni eso, la receta. El total en COP no cambia.
+12. **`pistas_guirnalda` no tiene un segundo modelo en Python:** el campo de
+    `plan-resolution.v1` se valida contra el contrato exportado (`PistaGuirnaldaSchema`),
+    no contra un Pydantic escrito a mano.
+13. **Ubicación de las guirnaldas** (`refinarPlacementGuirnalda` y
+    `reubicarGuirnaldas`, junto a `placementFor` en
+    `src/lib/ia/referencia/reference-structure.ts`): con la lectura encendida,
+    después de las lecturas, la ubicación de cada guirnalda se refina. Con
+    soporte leído (confianza ≥ 0,5): `mesa` es `sobre_mesa_principal`; `piso`
+    es `recorrido_suelo` si la caja baja hasta el borde de la foto y es alta
+    (una corrida que se aleja hacia el fondo) y si no `piso_frontal`; `pared`
+    saca a la guirnalda del piso o de la mesa. Sin soporte, por geometría: su
+    borde de abajo sobre la mitad de arriba de una mesa detectada (un mueble
+    cuyo nombre dice table o mesa) que cubre a lo ancho es `sobre_mesa_principal`;
+    si su caja cubre un 30 % o más de un mueble, `alrededor_mobiliario`. Es un
+    posproceso: el prompt v16 del reconocedor sigue byte a byte y
+    `placementFor` no cambia, así que con la bandera apagada la ubicación es la
+    de siempre. Los umbrales son supuestos sin calibrar.
+
+Consecuencias añadidas: `GUIRNALDA_REFERENCIA_PYTHON_ENABLED` agrega una
+llamada a Gemini por foto con guirnaldas, arcos o semiarcos
+(~US$0,002–0,01, estimado); la exactitud de la lectura no se ha medido (E7, con
+tope de gasto). `reference-blueprint.v2` gana un campo opcional y
+`plan-resolution.v1` otro; ningún vector dorado cambia.
+
 ## Rollback
 
-Apagar `GUIRNALDAS_ARMADO_V1`. Para quitar el código: revertir los commits; los
+Apagar `GUIRNALDA_REFERENCIA_PYTHON_ENABLED` y `GUIRNALDAS_ARMADO_V1`. Para quitar el código: revertir los commits; los
 planes que ya traen `armado_guirnalda` los rechazaría la revisión anterior
 (`additionalProperties: false`), como en ADR-0028 y ADR-0030: app y `ai-api`
 se despliegan juntos.

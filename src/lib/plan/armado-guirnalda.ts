@@ -159,3 +159,54 @@ export const ArmadoGuirnaldaResueltoSchema = z.object({
 }).strict();
 
 export type ArmadoGuirnaldaResuelto = z.infer<typeof ArmadoGuirnaldaResueltoSchema>;
+
+/** Clase de un globo de remate leído en la foto; la guirnalda solo compra látex. */
+export const CLASES_REMATE_GUIRNALDA = ["latex", "metalizado", "burbuja"] as const;
+/** Tope de forma de los racimos que se ven: rechaza lo absurdo, no decide nada. */
+export const MAX_RACIMOS_LECTURA_GUIRNALDA = 2_500;
+
+const ColorLeido = z.string().trim().min(1).max(80);
+
+/**
+ * Lectura de una guirnalda en la foto de referencia (`lectura-guirnalda`,
+ * ADR-0032, E4): cómo está armada según Amaterasu. Es una lectura, no una
+ * decisión: la distribución (soporte, forma, unidad, relleno, remates) la usa
+ * `armado_guirnalda.py` al confirmar, si la confianza alcanza; la cantidad no,
+ * porque es del conteo (ADR-0031). `racimos_visibles` y `colores_por_racimo`
+ * solo informan (el patrón por racimo es de E5). No lleva caída: los metros no
+ * se miden en una foto.
+ *
+ * Este esquema es el dueño de la forma. Viaja exportado dentro de
+ * `reference-blueprint.v2` (`appearance.armado_guirnalda`) y Python comprueba
+ * cada lectura contra él.
+ */
+export const LecturaGuirnaldaSchema = z.object({
+  soporte: z.enum(SOPORTES_GUIRNALDA),
+  /** Con `soporte: "sobre_estructura"`: el elemento de la misma foto sobre el que va. */
+  anfitriona_element_id: z.string().trim().min(1).max(80).optional(),
+  forma: z.enum(FORMAS_GUIRNALDA),
+  puntos_de_anclaje: z.number().int().min(2).max(6).optional(),
+  racimos_visibles: z.number().int().min(0).max(MAX_RACIMOS_LECTURA_GUIRNALDA),
+  unidad_racimo: z.enum(UNIDADES_RACIMO_GUIRNALDA).optional(),
+  /** Colores de un racimo típico, en el orden de sus globos (nombres de la paleta del catálogo). */
+  colores_por_racimo: z.array(ColorLeido).max(5),
+  relleno: z.object({
+    color: ColorLeido,
+    proporcion: z.number().min(0).max(0.5),
+  }).strict().nullable(),
+  remates: z.array(z.object({
+    clase: z.enum(CLASES_REMATE_GUIRNALDA),
+    color: ColorLeido.optional(),
+    posicion: z.enum(POSICIONES_REMATE_GUIRNALDA),
+  }).strict()).max(6),
+  confianza: z.number().min(0).max(1),
+}).strict();
+
+export type LecturaGuirnalda = z.infer<typeof LecturaGuirnaldaSchema>;
+
+/** La lectura, dirigida al elemento de la referencia que materializa la estructura. */
+export const PistaGuirnaldaSchema = LecturaGuirnaldaSchema.extend({
+  referencia_element_id: z.string().trim().min(1).max(80),
+}).strict();
+
+export type PistaGuirnalda = z.infer<typeof PistaGuirnaldaSchema>;

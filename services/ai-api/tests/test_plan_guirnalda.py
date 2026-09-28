@@ -177,6 +177,75 @@ def test_la_bandera_es_un_booleano_estricto() -> None:
         request(plan(), completar_armados_guirnalda="true")
 
 
+# --- La lectura de la foto al confirmar (E4) ----------------------------------------------
+
+
+def _pista(**extra: object) -> dict[str, object]:
+    return {
+        "referencia_element_id": "REF_01_E01",
+        "soporte": "mesa",
+        "forma": "ondulada",
+        "racimos_visibles": 10,
+        "unidad_racimo": "trio",
+        "colores_por_racimo": ["rosado", "blanco", "rosado"],
+        "relleno": {"color": "blanco", "proporcion": 0.1},
+        "remates": [{"clase": "latex", "color": "rosado", "posicion": "extremo_izq"}],
+        "confianza": 0.85,
+        **extra,
+    }
+
+
+@pytest.mark.anyio
+async def test_la_lectura_de_la_foto_decide_la_distribucion_y_no_la_cantidad() -> None:
+    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    base = await resolver(plan_)
+    leida = await resolver(plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista()])
+    armado = cast(dict[str, object], estructura_del_plan(leida)["armado_guirnalda"])
+    assert (armado["origen"], armado["soporte"], armado["forma"]) == (
+        "referencia",
+        "mesa",
+        "ondulada",
+    )
+    assert armado["relleno"] == {"material": 1, "proporcion": 0.1}
+    assert armado["remates"] == [{"material": 0, "posicion": "extremo_izq"}]
+    assert cast(dict[str, object], armado["racimo"])["unidad"] == "trio"
+    assert lineas(leida) == lineas(base) and _total(leida) == _total(base), "la foto no compra"
+    dudosa = await resolver(
+        plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista(confianza=0.3)]
+    )
+    assert cast(dict[str, object], estructura_del_plan(dudosa)["armado_guirnalda"])["origen"] == (
+        "sugerido"
+    )
+    ajena = await resolver(
+        plan_,
+        completar_armados_guirnalda=True,
+        pistas_guirnalda=[_pista(referencia_element_id="REF_01_E09")],
+    )
+    assert cast(dict[str, object], estructura_del_plan(ajena)["armado_guirnalda"])["origen"] == (
+        "sugerido"
+    )
+
+
+@pytest.mark.anyio
+async def test_la_anfitriona_de_la_foto_es_la_pieza_que_la_materializa() -> None:
+    plan_ = plan(
+        guirnalda(referencia_element_id="REF_01_E01"), arco(referencia_element_id="REF_01_E02")
+    )
+    pista = _pista(soporte="sobre_estructura", anfitriona_element_id="REF_01_E02", forma="curva")
+    leida = await resolver(plan_, completar_armados_guirnalda=True, pistas_guirnalda=[pista])
+    armado = cast(dict[str, object], estructura_del_plan(leida)["armado_guirnalda"])
+    assert (armado["soporte"], armado["estructura_id"]) == ("sobre_estructura", "EST_02_ARCO")
+    resuelto = cast(list[dict[str, object]], leida["armados_guirnalda"])[0]
+    assert resuelto["nombre"] == "Guirnalda sobre Arco"
+
+
+def test_una_pista_mal_formada_se_rechaza() -> None:
+    with pytest.raises(ValidationError):
+        request(plan(), pistas_guirnalda=[_pista(soporte="techo")])
+    with pytest.raises(ValidationError):
+        request(plan(), pistas_guirnalda=[_pista(caida_m=0.5)])
+
+
 # --- Geometría: la cuerda y la puerta física -------------------------------------------------
 
 

@@ -45,6 +45,7 @@ from math import isfinite
 from typing import Literal, Protocol, cast
 from urllib.parse import urlparse
 
+from jsonschema import Draft7Validator
 from pydantic import ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.generated_models import (
@@ -151,6 +152,12 @@ _OFFICIAL_GEOMETRY: dict[str, dict[str, object]] = cast(
 # counted with its straight length.
 _GARLAND_SHAPES: dict[str, dict[str, object]] = cast(
     dict[str, dict[str, object]], _OFFICIAL_GEOMETRY["guirnalda"]["formas"]
+)
+# ADR-0032, E4: the shape of a garland reading of the photo (``PistaGuirnaldaSchema``,
+# owner src/lib/plan/armado-guirnalda.ts), checked against the exported contract
+# instead of a second hand-written model.
+_GARLAND_HINT = Draft7Validator(
+    contract_schema("PlanResolutionRequest")["properties"]["pistas_guirnalda"]["items"]
 )
 _DEFAULT_MEASURES: dict[str, dict[str, dict[str, float]]] = {
     "arco": {"interior": {"ancho_m": 3, "alto_m": 2.4}, "exterior": {"ancho_m": 4, "alto_m": 2.6}},
@@ -339,6 +346,15 @@ class PlanResolutionRequest(OperationalRequest):
     # ADR-0032: the same one-time completion for garlands, behind its own flag
     # (GUIRNALDAS_ARMADO_V1); ``completar_armados_de`` limits it too.
     completar_armados_guirnalda: bool = Field(default=False, strict=True)
+    # E4: the garland readings of the photo, one per reference element.
+    pistas_guirnalda: list[dict[str, object]] = Field(default_factory=list, max_length=16)
+
+    @field_validator("pistas_guirnalda")
+    @classmethod
+    def validate_garland_hints(cls, values: list[dict[str, object]]) -> list[dict[str, object]]:
+        if any(next(_GARLAND_HINT.iter_errors(value), None) is not None for value in values):
+            raise ValueError("pistas_guirnalda must match the garland reading contract")
+        return values
 
     @field_validator("catalog_snapshot_id")
     @classmethod
@@ -3581,6 +3597,7 @@ def _resolution_result(
             only=(
                 None if request.completar_armados_de is None else set(request.completar_armados_de)
             ),
+            pistas=request.pistas_guirnalda,
         )
     resolved = _build_resolved(
         request,
@@ -3910,6 +3927,7 @@ def _garland_context(
                 estructura_id=_text(other.get("estructura_id")) or "",
                 tipo=_text(other.get("tipo")) or "",
                 nombre=_text(other.get("nombre")) or _text(other.get("estructura_id")) or "",
+                referencia_element_id=_text(other.get("referencia_element_id")),
             )
             for other in _mappings(plan.get("estructuras"))
             if _text(other.get("estructura_id")) != structure_id
@@ -3927,14 +3945,19 @@ def _garland_error(estructura_id: str, error: ArmadoGuirnaldaInvalido) -> PlanRe
 
 
 def _completar_armados_guirnalda(
-    plan: Mapping[str, object], only: Collection[str] | None = None
+    plan: Mapping[str, object],
+    only: Collection[str] | None = None,
+    pistas: Sequence[Mapping[str, object]] = (),
 ) -> dict[str, object]:
-    """The recipe for every garland without an assembly (``completar_armados_guirnalda``).
+    """Photo reading first, recipe otherwise, for every garland without an assembly.
 
-    The recipe never declares a drop, so the count, the purchase and the total
-    stay as they were; a garland the recipe cannot arrange keeps no assembly.
-    With ``only``, the other structures are left as they are (the
-    re-resolution after an edit). A plan without garlands comes back as it was.
+    ``completar_armados_guirnalda`` (ADR-0032). The reading of the garland's
+    reference element (``pistas_guirnalda``, E4, confidence at least 0.5)
+    decides its support, shape, unit, filler and toppers; it never declares a
+    drop and neither does the recipe, so the count, the purchase and the total
+    stay as they were. A garland neither can arrange keeps no assembly. With
+    ``only``, the other structures are left as they are (the re-resolution
+    after an edit). A plan without garlands comes back as it was.
     """
     structures: list[object] = []
     changed = False
@@ -3942,7 +3965,16 @@ def _completar_armados_guirnalda(
         item = dict(structure)
         wanted = only is None or _text(item.get("estructura_id")) in only
         if wanted and item.get("armado_guirnalda") is None and _is_garland(item):
-            assembly = sugerir_armado_guirnalda(_garland_context(plan, item))
+            element_id = _text(item.get("referencia_element_id"))
+            reading = next(
+                (
+                    pista
+                    for pista in pistas
+                    if element_id is not None and pista.get("referencia_element_id") == element_id
+                ),
+                None,
+            )
+            assembly = sugerir_armado_guirnalda(_garland_context(plan, item), reading)
             if assembly is not None:
                 item["armado_guirnalda"] = assembly
                 changed = True

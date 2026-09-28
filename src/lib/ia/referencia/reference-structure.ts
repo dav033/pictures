@@ -200,6 +200,102 @@ function placementFor(structure: DetectedStructure, bbox: ReferenceBBox): LoraPl
   return "arco_central";
 }
 
+/** Soporte de una guirnalda según su lectura en la foto (`LecturaGuirnaldaSchema.soporte`). */
+export type SoporteGuirnaldaLeido = "pared" | "colgada" | "piso" | "mesa" | "sobre_estructura";
+
+/** Mueble de la foto (una caja de `furniture` o `plinth`); `mesa` si su nombre lo dice. */
+export type MuebleEnFoto = { bbox: ReferenceBBox; mesa: boolean };
+
+const MESA = /\b(?:table|tables|mesa|mesas|desk|counter)\b/i;
+const UBICACIONES_DE_PISO: ReadonlySet<LoraPlacement> = new Set(["piso_frontal", "recorrido_suelo"]);
+
+function solapeHorizontal(a: ReferenceBBox, b: ReferenceBBox): number {
+  return Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+}
+
+function areaSolapada(a: ReferenceBBox, b: ReferenceBBox): number {
+  const alto = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+  return solapeHorizontal(a, b) * alto;
+}
+
+/** La guirnalda descansa sobre la mesa: su borde de abajo cae en la mitad de arriba de la mesa y la cubre a lo ancho. */
+function sobreLaMesa(guirnalda: ReferenceBBox, mesa: ReferenceBBox): boolean {
+  const abajo = guirnalda.y + guirnalda.height;
+  return abajo >= mesa.y - 0.05
+    && abajo <= mesa.y + mesa.height * 0.5
+    && guirnalda.width > 0
+    && solapeHorizontal(guirnalda, mesa) / guirnalda.width >= 0.5;
+}
+
+/** Una corrida en el piso que se aleja hacia el fondo (un pasillo), no una tira baja al frente. */
+function recorridoDePiso(bbox: ReferenceBBox): boolean {
+  return bbox.y + bbox.height >= 0.75 && bbox.height > 0.35;
+}
+
+/**
+ * Ubicación de una guirnalda refinada después del análisis (ADR-0032, E4): la
+ * extensión de `placementFor` para guirnaldas, que corre como posproceso cuando
+ * la lectura de la guirnalda está encendida (`reubicarGuirnaldas`). El prompt
+ * del reconocedor (v16) no cambia, ni `placementFor`: apagada la lectura, la
+ * ubicación es byte a byte la de siempre.
+ *
+ * - Con soporte leído: `mesa` es `sobre_mesa_principal`; `piso` es
+ *   `recorrido_suelo` si la caja se aleja hacia el fondo y si no
+ *   `piso_frontal`; `pared` saca a la guirnalda del piso o de la mesa
+ *   (`fondo_pared`) y respeta un lado ya leído.
+ * - Sin soporte (o colgada, o sobre otra pieza), por la geometría: sobre una
+ *   mesa detectada es `sobre_mesa_principal`; si su caja cubre un 30 % o más
+ *   de un mueble es `alrededor_mobiliario`.
+ */
+export function refinarPlacementGuirnalda(
+  actual: LoraPlacement,
+  bbox: ReferenceBBox,
+  muebles: readonly MuebleEnFoto[],
+  soporte?: SoporteGuirnaldaLeido,
+): LoraPlacement {
+  if (actual === "techo" || actual === "techo_multipunto") return actual;
+  if (soporte === "mesa") return "sobre_mesa_principal";
+  if (soporte === "piso") {
+    if (UBICACIONES_DE_PISO.has(actual)) return actual;
+    return recorridoDePiso(bbox) ? "recorrido_suelo" : "piso_frontal";
+  }
+  if (soporte === "pared") {
+    return UBICACIONES_DE_PISO.has(actual) || actual === "sobre_mesa_principal" ? "fondo_pared" : actual;
+  }
+  if (muebles.some((mueble) => mueble.mesa && sobreLaMesa(bbox, mueble.bbox))) return "sobre_mesa_principal";
+  const area = bbox.width * bbox.height;
+  if (area > 0 && muebles.some((mueble) => areaSolapada(bbox, mueble.bbox) / area >= 0.3)) return "alrededor_mobiliario";
+  return actual;
+}
+
+/**
+ * El blueprint con la ubicación de cada guirnalda refinada por
+ * `refinarPlacementGuirnalda`, con su lectura (`appearance.armado_guirnalda`,
+ * si es confiable) y los muebles de su misma foto. Devuelve el mismo objeto si
+ * nada cambia; nunca modifica el recibido.
+ */
+export function reubicarGuirnaldas(blueprint: ReferenceBlueprintV2): ReferenceBlueprintV2 {
+  const muebles = new Map<string, MuebleEnFoto[]>();
+  for (const elemento of blueprint.elements) {
+    if (elemento.category !== "furniture" && elemento.category !== "plinth") continue;
+    const lista = muebles.get(elemento.source_image_id) ?? [];
+    lista.push({ bbox: elemento.reference_bbox, mesa: MESA.test(elemento.name) });
+    muebles.set(elemento.source_image_id, lista);
+  }
+  let cambio = false;
+  const elements = blueprint.elements.map((elemento) => {
+    const semantica = elemento.visual_semantics;
+    if (!elemento.approved || elemento.category !== "balloon_structure" || semantica?.structure_type !== "guirnalda") return elemento;
+    const lectura = elemento.appearance.armado_guirnalda;
+    const soporte = lectura && lectura.confianza >= 0.5 ? lectura.soporte : undefined;
+    const placement = refinarPlacementGuirnalda(semantica.placement, elemento.reference_bbox, muebles.get(elemento.source_image_id) ?? [], soporte);
+    if (placement === semantica.placement) return elemento;
+    cambio = true;
+    return { ...elemento, visual_semantics: { ...semantica, placement } };
+  });
+  return cambio ? { ...blueprint, elements } : blueprint;
+}
+
 export function shapeDescription(structure: DetectedStructure): string {
   const noun = structure.type === "half_arch" ? "half-arch" : structure.type === "hoop" ? "circular hoop" : structure.type.replace(/_/g, " ");
   const qualifiers = [structure.relativeHeight, structure.density === "dense" ? "dense" : structure.density === "airy" ? "airy" : "", structure.outline === "asymmetric" ? "asymmetrical" : ""].filter(Boolean).join(" ");

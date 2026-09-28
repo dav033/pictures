@@ -54,6 +54,12 @@ from app.amaterasu.conteo_referencia import (
     ConteoReferenciaRequest,
     leer_conteos_referencia,
 )
+from app.amaterasu.guirnalda_referencia import (
+    GUIRNALDA_REFERENCIA_SCOPE,
+    GuirnaldaReferenciaError,
+    GuirnaldaReferenciaRequest,
+    leer_guirnaldas_referencia,
+)
 from app.amaterasu.patron_referencia import (
     PATRON_REFERENCIA_SCOPE,
     PatronReferenciaError,
@@ -272,6 +278,7 @@ ReferenceTurnHandler = Callable[[ReferenceTurnRequest], Awaitable[dict[str, obje
 PatronReferenciaHandler = Callable[[PatronReferenciaRequest], Awaitable[dict[str, object]]]
 BouquetReferenciaHandler = Callable[[BouquetReferenciaRequest], Awaitable[dict[str, object]]]
 ConteoReferenciaHandler = Callable[[ConteoReferenciaRequest], Awaitable[dict[str, object]]]
+GuirnaldaReferenciaHandler = Callable[[GuirnaldaReferenciaRequest], Awaitable[dict[str, object]]]
 ImageGenerateHandler = Callable[[ImageGenerateRequest], Awaitable[dict[str, object]]]
 LoraGenerateHandler = Callable[[LoraGenerateRequest], Awaitable[dict[str, object]]]
 # Not awaited: it validates what can fail before the stream opens (raising an
@@ -442,6 +449,19 @@ async def _default_conteo_referencia_handler(
     try:
         result = await leer_conteos_referencia(payload)
     except ConteoReferenciaError as error:
+        details: dict[str, object] = {}
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
+    return {"payload": result}
+
+
+async def _default_guirnalda_referencia_handler(
+    payload: GuirnaldaReferenciaRequest,
+) -> dict[str, object]:
+    try:
+        result = await leer_guirnaldas_referencia(payload)
+    except GuirnaldaReferenciaError as error:
         details: dict[str, object] = {}
         if error.provider_detail is not None:
             details["provider_detail"] = error.provider_detail
@@ -1203,6 +1223,7 @@ def create_app(
     patron_referencia_handler: PatronReferenciaHandler | None = None,
     bouquet_referencia_handler: BouquetReferenciaHandler | None = None,
     conteo_referencia_handler: ConteoReferenciaHandler | None = None,
+    guirnalda_referencia_handler: GuirnaldaReferenciaHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
     default_store: object | None = None
@@ -1280,6 +1301,9 @@ def create_app(
         bouquet_referencia_handler or _default_bouquet_referencia_handler
     )
     conteo_referencia_handler_fn = conteo_referencia_handler or _default_conteo_referencia_handler
+    guirnalda_referencia_handler_fn = (
+        guirnalda_referencia_handler or _default_guirnalda_referencia_handler
+    )
     image_generate_handler_fn = image_generate_handler or _default_image_generate_handler
     lora_generate_handler_fn = lora_generate_handler or _default_lora_generate_handler
     chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
@@ -1617,6 +1641,18 @@ def create_app(
             model=ConteoReferenciaRequest,
             scope=CONTEO_REFERENCIA_SCOPE,
             handler=cast(OperationalHandler, conteo_referencia_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/guirnalda-referencia")
+    async def ia_guirnalda_referencia(request: Request) -> Response:
+        # One reference photo per call, like the other photo readings (ADR-0032, E4).
+        return await _handle_operational_request(
+            request,
+            operation="ia.guirnalda_referencia",
+            model=GuirnaldaReferenciaRequest,
+            scope=GUIRNALDA_REFERENCIA_SCOPE,
+            handler=cast(OperationalHandler, guirnalda_referencia_handler_fn),
             max_body_bytes=current_settings.max_body_bytes_imagenes,
         )
 

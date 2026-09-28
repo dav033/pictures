@@ -21,11 +21,14 @@ dominancia de color sobre píxeles reales, exclusiva de esta IA),
 
 Lecturas de la foto que corren después del análisis, en paralelo y con el
 mismo vencimiento: `patron-referencia.ts` (patrón de color, ADR-0028 §11),
-`bouquet-referencia.ts` (armado de cada bouquet, ADR-0030) y
-`conteo-referencia.ts` (cuántos globos tiene cada estructura, ADR-0031).
+`bouquet-referencia.ts` (armado de cada bouquet, ADR-0030),
+`conteo-referencia.ts` (cuántos globos tiene cada estructura, ADR-0031) y
+`guirnalda-referencia.ts` (cómo está armada cada guirnalda, ADR-0032).
 `lecturas-foto.ts` las lanza según sus banderas y las junta por elemento del
 blueprint (`appearance.patron_color`, `appearance.armado_bouquet`,
-`appearance.conteo`). Comparten la caché y las llamadas en vuelo de
+`appearance.conteo`, `appearance.armado_guirnalda`); con la de guirnaldas
+encendida, además refina la ubicación de cada guirnalda
+(`reubicarGuirnaldas`, en `../referencia/reference-structure.ts`). Comparten la caché y las llamadas en vuelo de
 `deteccion-compartida.ts`; un fallo deja el blueprint sin esa lectura y queda en
 el registro. Del lado de Python, lo que Amaterasu sabe de cada tipo de
 estructura (dónde empieza la pieza, cómo se cuenta) vive en un submódulo por

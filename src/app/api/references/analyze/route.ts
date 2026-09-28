@@ -6,6 +6,7 @@ import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
 import {
   BOUQUET_REFERENCIA_PYTHON_ENABLED,
   CONTEO_REFERENCIA_PYTHON_ENABLED,
+  GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
   PATRON_REFERENCIA_PYTHON_ENABLED,
   REFERENCE_ANALYSIS_PYTHON_ENABLED,
 } from "@/lib/ia/nucleo/feature-flags";
@@ -45,11 +46,14 @@ export async function POST(request: Request) {
     // con la del patrón y con el mismo vencimiento; las dos se juntan por elemento.
     // ADR-0031: el conteo de globos de cada estructura es la tercera lectura,
     // en paralelo con las otras dos (`leerLecturasDeFoto`).
+    // ADR-0032 (E4): el armado de cada guirnalda es la cuarta, y con ella la
+    // ubicación de las guirnaldas se refina con su lectura y los muebles.
     const lectura = { requestId, correlationId, signal: request.signal, vencimiento, sinCache: body.sinCache };
     const blueprint = await leerLecturasDeFoto(analisis.blueprint, references, lectura, {
       patron: PATRON_REFERENCIA_PYTHON_ENABLED,
       bouquet: BOUQUET_REFERENCIA_PYTHON_ENABLED,
       conteo: CONTEO_REFERENCIA_PYTHON_ENABLED,
+      guirnalda: GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
     });
     const result = { ...analisis, blueprint };
     // Qué vio el reconocedor y qué lecturas quedaron en cada elemento: solo
@@ -68,6 +72,9 @@ export async function POST(request: Request) {
         // Solo con la lectura encendida: apagada, esta línea es la de siempre.
         ...(elemento.appearance.conteo
           ? { conteo: { visibles: elemento.appearance.conteo.globos_visibles, exacto: elemento.appearance.conteo.exacto, estimado: elemento.appearance.conteo.estimado_total, confianza: elemento.appearance.conteo.confianza } }
+          : {}),
+        ...(elemento.appearance.armado_guirnalda
+          ? { guirnalda: { soporte: elemento.appearance.armado_guirnalda.soporte, forma: elemento.appearance.armado_guirnalda.forma, ubicacion: elemento.visual_semantics?.placement ?? null, confianza: elemento.appearance.armado_guirnalda.confianza } }
           : {}),
       })),
     }));

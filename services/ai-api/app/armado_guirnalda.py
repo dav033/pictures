@@ -157,6 +157,9 @@ class OtraEstructura:
     estructura_id: str
     tipo: str
     nombre: str
+    #: Elemento de la foto que materializa (``referencia_element_id``): la lectura
+    #: de la guirnalda nombra a su anfitriona por el elemento, no por el plan.
+    referencia_element_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -602,32 +605,69 @@ def _receta(estructura: EstructuraGuirnalda) -> dict[str, object] | None:
     }
 
 
-def _desde_lectura(
+def _forma_desde_lectura(
     estructura: EstructuraGuirnalda, lectura: Mapping[str, object], receta: Mapping[str, object]
 ) -> dict[str, object]:
-    """La receta con lo que la foto dice (E4): soporte, forma, anclajes, unidad, relleno, remates.
+    """La receta con la forma que la foto dice: soporte, anfitriona, forma, anclajes y unidad.
 
-    Forma de la lectura (``lectura-guirnalda``, SEGUIMIENTO-guirnaldas §2.2):
-    ``{soporte, forma, caida_m?, puntos_de_anclaje?, unidad_racimo?, relleno:
-    {color, proporcion} | null, remates: [{color, posicion}], confianza}``. Lo
-    que no se lee o no se compra se queda como en la receta.
+    ``sobre_estructura`` solo si la anfitriona que la foto nombra
+    (``anfitriona_element_id``) la materializa otra pieza del plan. Una forma
+    que cuelga sin un soporte de donde colgar se queda recta, y una guirnalda
+    colgada sin anclajes visibles cuelga de dos. Nunca lleva caída: los metros
+    no se leen en una foto y la caída cambiaría la cantidad, que no es de la
+    lectura (la cuenta la da el conteo, ADR-0031).
     """
     armado = dict(receta)
     armado["origen"] = "referencia"
     soporte = lectura.get("soporte")
-    if soporte in SOPORTES and soporte != "sobre_estructura":
+    if soporte == "sobre_estructura":
+        anfitriona = next(
+            (
+                otra
+                for otra in estructura.otras
+                if otra.referencia_element_id is not None
+                and otra.referencia_element_id == lectura.get("anfitriona_element_id")
+                and otra.tipo != "guirnalda"
+            ),
+            None,
+        )
+        if anfitriona is not None:
+            armado["soporte"] = soporte
+            armado["estructura_id"] = anfitriona.estructura_id
+    elif soporte in SOPORTES:
         armado["soporte"] = soporte
     forma = lectura.get("forma")
-    if forma in FORMAS:
+    if forma in FORMAS and (
+        forma not in FORMAS_CON_CAIDA or armado["soporte"] in SOPORTES_CON_CAIDA
+    ):
         armado["forma"] = forma
-    for campo in ("caida_m", "puntos_de_anclaje"):
-        if lectura.get(campo) is not None:
-            armado[campo] = lectura[campo]
+    puntos = lectura.get("puntos_de_anclaje")
+    if isinstance(puntos, int) and not isinstance(puntos, bool):
+        armado["puntos_de_anclaje"] = puntos
+    elif armado["soporte"] == "colgada":
+        armado["puntos_de_anclaje"] = 2
     unidad = lectura.get("unidad_racimo")
     if unidad in UNIDADES and (
         estructura.k_patron is None or GLOBOS_POR_UNIDAD[str(unidad)] == estructura.k_patron
     ):
         armado["racimo"] = {**cast(Mapping[str, object], receta["racimo"]), "unidad": unidad}
+    return armado
+
+
+def _desde_lectura(
+    estructura: EstructuraGuirnalda, lectura: Mapping[str, object], receta: Mapping[str, object]
+) -> dict[str, object]:
+    """La receta con todo lo que la foto dice (E4): la forma, el relleno y los remates.
+
+    Forma de la lectura: ``LecturaGuirnaldaSchema`` (``src/lib/plan/armado-guirnalda.ts``,
+    exportada en ``reference-blueprint.v2``). El relleno toma el material del
+    color leído y su proporción (``null`` si la foto no muestra relleno); los
+    remates, solo los de látex (un metalizado o una burbuja no se compra con la
+    guirnalda), con el material de su color. ``racimos_visibles`` y
+    ``colores_por_racimo`` no cambian el armado: el color de cada racimo es del
+    patrón (E5). Lo que no se lee o no se compra se queda como en la receta.
+    """
+    armado = _forma_desde_lectura(estructura, lectura, receta)
     relleno = lectura.get("relleno")
     if relleno is None and "relleno" in lectura:
         armado["relleno"] = None
@@ -638,10 +678,12 @@ def _desde_lectura(
             armado["relleno"] = {"material": material, "proporcion": min(0.5, float(proporcion))}
     remates: list[dict[str, object]] = []
     for remate in cast(list[Mapping[str, object]], lectura.get("remates") or []):
-        material = material_de_color(estructura.materiales, str(remate.get("color", "")))
+        if remate.get("clase", "latex") != "latex" or not isinstance(remate.get("color"), str):
+            continue
+        material = material_de_color(estructura.materiales, str(remate["color"]))
         if material is not None and remate.get("posicion") in POSICIONES_REMATE:
             remates.append({"material": material, "posicion": remate["posicion"]})
-    if remates:
+    if remates or lectura.get("remates") == []:
         armado["remates"] = remates[:MAX_REMATES]
     return armado
 
@@ -655,9 +697,11 @@ def sugerir_armado(
     (sin caída: el total no cambia), unidad por densidad (la del patrón, si lo
     hay), relleno de 5" en mezclas orgánicas y los globos grandes de remate
     repartidos. Con ``lectura`` confiable (E4, la lectura de la guirnalda en
-    la foto) lo que ella diga manda; si no se puede armar, la receta. ``None``
-    cuando ni la receta cabe (una mezcla sin globos de 9" a 12", un patrón con
-    racimos de otra unidad): la guirnalda queda como hoy.
+    la foto) lo que ella diga manda; si su relleno o sus remates no se pueden
+    armar con lo que se compra, se conserva al menos su forma (soporte, forma,
+    unidad) con el relleno y los remates de la receta; si ni eso, la receta.
+    ``None`` cuando ni la receta cabe (una mezcla sin globos de 9" a 12", un
+    patrón con racimos de otra unidad): la guirnalda queda como hoy.
     """
     receta = _receta(estructura)
     if receta is None:
@@ -668,6 +712,7 @@ def sugerir_armado(
         and float(cast(float, lectura.get("confianza", 0))) >= CONFIANZA_MINIMA_LECTURA
     ):
         candidatos.append(_desde_lectura(estructura, lectura, receta))
+        candidatos.append(_forma_desde_lectura(estructura, lectura, receta))
     candidatos.append(receta)
     for armado in candidatos:
         try:

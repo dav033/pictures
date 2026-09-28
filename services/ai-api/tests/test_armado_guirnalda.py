@@ -434,12 +434,71 @@ def test_una_lectura_confiable_manda_sobre_la_receta() -> None:
     assert cast(dict[str, object], armado["racimo"])["unidad"] == "trio"
 
 
-def test_una_lectura_dudosa_o_imposible_cae_en_la_receta() -> None:
+def test_una_lectura_dudosa_cae_en_la_receta() -> None:
     receta = sugerir_armado(_estructura())
     dudosa = {"soporte": "piso", "confianza": 0.3}
     assert sugerir_armado(_estructura(), dudosa) == receta
-    imposible = {"soporte": "piso", "forma": "arco_caido", "confianza": 0.9}
-    assert sugerir_armado(_estructura(), imposible) == receta
+
+
+def _lectura(**extra: object) -> dict[str, object]:
+    return {
+        "soporte": "pared",
+        "forma": "recta",
+        "racimos_visibles": 9,
+        "colores_por_racimo": ["rosado", "blanco"],
+        "relleno": None,
+        "remates": [],
+        "confianza": 0.9,
+        **extra,
+    }
+
+
+def test_la_lectura_nunca_trae_caida_y_una_forma_que_cuelga_necesita_de_donde() -> None:
+    en_piso = sugerir_armado(_estructura(), _lectura(soporte="piso", forma="arco_caido"))
+    assert en_piso is not None
+    assert (en_piso["origen"], en_piso["soporte"], en_piso["forma"]) == (
+        "referencia",
+        "piso",
+        "recta",
+    )
+    colgada = sugerir_armado(_estructura(), _lectura(soporte="colgada", forma="u_invertida"))
+    assert colgada is not None and colgada["puntos_de_anclaje"] == 2, "colgada cuelga de dos"
+    assert "caida_m" not in colgada, "la cantidad no es de la lectura"
+
+
+def test_la_anfitriona_se_busca_por_el_elemento_de_la_foto() -> None:
+    arco = OtraEstructura("EST_02_ARCO", "arco", "Arco", referencia_element_id="REF_01_E02")
+    estructura = _estructura(otras=(arco,))
+    sobre = sugerir_armado(
+        estructura, _lectura(soporte="sobre_estructura", anfitriona_element_id="REF_01_E02")
+    )
+    assert sobre is not None
+    assert (sobre["soporte"], sobre["estructura_id"]) == ("sobre_estructura", "EST_02_ARCO")
+    sin_anfitriona = sugerir_armado(
+        estructura, _lectura(soporte="sobre_estructura", anfitriona_element_id="REF_01_E09")
+    )
+    assert sin_anfitriona is not None and sin_anfitriona["soporte"] == "pared"
+    assert "estructura_id" not in sin_anfitriona
+
+
+def test_lo_que_no_se_compra_de_la_lectura_cae_en_la_receta_sin_perder_la_forma() -> None:
+    receta = cast(dict[str, object], sugerir_armado(_estructura()))
+    lectura = _lectura(
+        soporte="mesa",
+        unidad_racimo="trio",
+        relleno={"color": "blanco", "proporcion": 0.5},  # más globos chicos de los que se compran
+        remates=[{"clase": "metalizado", "color": "dorado", "posicion": "centro"}],
+    )
+    armado = sugerir_armado(_estructura(), lectura)
+    assert armado is not None
+    assert (armado["origen"], armado["soporte"]) == ("referencia", "mesa")
+    assert cast(dict[str, object], armado["racimo"])["unidad"] == "trio"
+    assert (armado["relleno"], armado["remates"]) == (receta["relleno"], receta["remates"])
+    sin_relleno = sugerir_armado(_estructura(), _lectura())
+    assert sin_relleno is not None and sin_relleno["relleno"] is None
+    assert sin_relleno["remates"] == [], (
+        "la foto no muestra remates: los grandes van en los racimos"
+    )
 
 
 def test_opciones_que_admite_la_pieza() -> None:

@@ -23,7 +23,7 @@ import {
   PropCatalogoSchema,
 } from "@/lib/plan/tipos";
 import { ArmadoBouquetResueltoSchema, PistaArmadoSchema } from "@/lib/plan/armado-bouquet";
-import { ArmadoGuirnaldaResueltoSchema } from "@/lib/plan/armado-guirnalda";
+import { ArmadoGuirnaldaResueltoSchema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
 import { PatronColorResueltoSchema, PistaPatronSchema } from "@/lib/plan/patron-color";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
 import { LoraSelectionSchema } from "@/lib/lora/schema";
@@ -482,6 +482,8 @@ export const PlanResolutionRequestV1Schema = z.object({
    * `completar_armados`; `completar_armados_de` limita las dos.
    */
   completar_armados_guirnalda: z.boolean().optional(),
+  /** Con `completar_armados_guirnalda`: la lectura de cada guirnalda de la foto, por elemento (E4). */
+  pistas_guirnalda: z.array(PistaGuirnaldaSchema).max(16).optional(),
 }).strict();
 
 export const PlanResolutionResultV1Schema = z.object({

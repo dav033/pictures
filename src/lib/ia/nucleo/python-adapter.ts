@@ -21,6 +21,7 @@ import {
   type ArmadoBouquetV1,
   type PistaArmado,
 } from "@/lib/plan/armado-bouquet";
+import { LecturaGuirnaldaSchema, type PistaGuirnalda } from "@/lib/plan/armado-guirnalda";
 import { LecturaConteoSchema } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import {
@@ -68,6 +69,8 @@ export const PYTHON_BOUQUET_REFERENCIA_PATH = "/internal/v1/ia/bouquet-referenci
 export const PYTHON_BOUQUET_REFERENCIA_SCOPE = "ia.bouquet_referencia";
 export const PYTHON_CONTEO_REFERENCIA_PATH = "/internal/v1/ia/conteo-referencia";
 export const PYTHON_CONTEO_REFERENCIA_SCOPE = "ia.conteo_referencia";
+export const PYTHON_GUIRNALDA_REFERENCIA_PATH = "/internal/v1/ia/guirnalda-referencia";
+export const PYTHON_GUIRNALDA_REFERENCIA_SCOPE = "ia.guirnalda_referencia";
 export const PYTHON_PLAN_EDIT_PATH = "/internal/v1/plan/edit";
 export const PYTHON_PLAN_EDIT_SCOPE = "plan.edit";
 export const PYTHON_PLAN_PATRON_PATH = "/internal/v1/plan/patron";
@@ -960,6 +963,46 @@ export interface PythonConteoReferenciaInput {
 /** One reading as Python validated it: the balloon count of one piece. */
 export type PythonConteoReferenciaLectura = z.infer<typeof conteoReferenciaLecturaSchema>;
 
+/** A garland the reference analysis found in one photo (ADR-0032, E4). */
+export interface PythonGuirnaldaReferenciaElemento {
+  elementId: string;
+  bbox?: { x: number; y: number; width: number; height: number };
+  coloresObservados: string[];
+}
+
+/** Another balloon piece of the same photo: a garland may be wrapped around it. */
+export interface PythonGuirnaldaReferenciaOtra {
+  elementId: string;
+  tipo: string;
+  bbox?: { x: number; y: number; width: number; height: number };
+}
+
+export interface PythonGuirnaldaReferenciaInput {
+  imagen: { mimeType: "image/png" | "image/jpeg" | "image/webp"; dataBase64: string };
+  /** 1..12, unique ids, all from the same photo as `imagen`. */
+  elementos: PythonGuirnaldaReferenciaElemento[];
+  /** 0..12 other balloon pieces of the photo; ids distinct from `elementos`. */
+  otras: PythonGuirnaldaReferenciaOtra[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+/** One reading as Python validated it: how one garland is built. */
+export type PythonGuirnaldaReferenciaLectura = z.infer<typeof guirnaldaReferenciaLecturaSchema>;
+
+export interface PythonGuirnaldaReferenciaResult {
+  lecturas: PythonGuirnaldaReferenciaLectura[];
+  modelo: string;
+  promptVersion: string;
+  usage: z.infer<typeof guirnaldaReferenciaPayloadResultSchema>["usage"];
+  replayed?: boolean;
+}
+
 export interface PythonConteoReferenciaResult {
   lecturas: PythonConteoReferenciaLectura[];
   modelo: string;
@@ -1210,6 +1253,8 @@ export interface PythonPlanResolutionInput {
   completarArmadosDe?: string[];
   /** Absent unless the caller passes it (ADR-0032): same byte-identical rule. */
   completarArmadosGuirnalda?: boolean;
+  /** Absent unless the caller passes it (ADR-0032, E4): the garland readings of the photo. */
+  pistasGuirnalda?: PistaGuirnalda[];
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1503,7 +1548,26 @@ const conteoReferenciaPayloadResultSchema = z.object({
   }).strict().nullable(),
 }).strict();
 
-/** Readings only for elements that were asked about, once each (bouquet and count readings). */
+// Local contract (ADR-0026 §3): the Pydantic side is
+// services/ai-api/app/amaterasu/guirnalda_referencia.py; the prompt and the
+// validation live in estructuras/guirnalda.py and the reading's shape is
+// `LecturaGuirnaldaSchema` (src/lib/plan/armado-guirnalda.ts), exported inside
+// reference-blueprint.v2.
+const guirnaldaReferenciaLecturaSchema = LecturaGuirnaldaSchema.extend({
+  element_id: z.string().min(1).max(80),
+}).strict();
+
+const guirnaldaReferenciaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("guirnalda-referencia-result.v1"),
+  lecturas: z.array(guirnaldaReferenciaLecturaSchema).max(12),
+  modelo: z.string().min(1),
+  prompt_version: z.string().min(1),
+  usage: intentParseUsageSchema.extend({
+    tool_use_prompt_token_count: z.number().int().nonnegative().optional(),
+  }).strict().nullable(),
+}).strict();
+
+/** Readings only for elements that were asked about, once each (bouquet, count and garland readings). */
 function lecturasPorElementoPedido(lecturas: readonly { element_id: string }[], elementIds: readonly string[]): boolean {
   const pedidos = new Set(elementIds);
   const vistos = new Set<string>();
@@ -2109,6 +2173,56 @@ export async function llamarPythonConteoReferencia(
 }
 
 /**
+ * Reads how each garland in one reference photo is built (ADR-0032, E4).
+ * Python owns the prompt, the palette, the response schema and the validation;
+ * this only transports the photo, the garlands the analysis found and the other
+ * balloon pieces a garland may be wrapped around, and checks the answer is
+ * about the garlands asked for. No idempotency key and no retry: the call has
+ * no side effect and the caller continues without readings on any failure.
+ */
+export async function llamarPythonGuirnaldaReferencia(
+  input: PythonGuirnaldaReferenciaInput,
+): Promise<PythonGuirnaldaReferenciaResult> {
+  const { imagen, elementos, otras, ...rest } = input;
+  const operationPayload = {
+    schema_version: "guirnalda-referencia.v1" as const,
+    imagen: { mime_type: imagen.mimeType, data_base64: imagen.dataBase64 },
+    elementos: elementos.map((elemento) => ({
+      element_id: elemento.elementId,
+      ...(elemento.bbox === undefined ? {} : { bbox: elemento.bbox }),
+      colores_observados: elemento.coloresObservados,
+    })),
+    otras: otras.map((otra) => ({
+      element_id: otra.elementId,
+      tipo: otra.tipo,
+      ...(otra.bbox === undefined ? {} : { bbox: otra.bbox }),
+    })),
+  };
+  const response = await llamarPythonOperacion(PYTHON_GUIRNALDA_REFERENCIA_PATH, PYTHON_GUIRNALDA_REFERENCIA_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+  });
+  const parsed = guirnaldaReferenciaPayloadResultSchema.safeParse(response.payload);
+  const otrasIds = new Set(otras.map((otra) => otra.elementId));
+  if (
+    !parsed.success
+    || !lecturasPorElementoPedido(parsed.data.lecturas, elementos.map((elemento) => elemento.elementId))
+    || parsed.data.lecturas.some((lectura) => lectura.anfitriona_element_id !== undefined && !otrasIds.has(lectura.anfitriona_element_id))
+  ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonGuirnaldaReferenciaResult = {
+    lecturas: parsed.data.lecturas,
+    modelo: parsed.data.modelo,
+    promptVersion: parsed.data.prompt_version,
+    usage: parsed.data.usage,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
  * The one Gemini Interactions call `crearImagenGemini`'s `generar()` makes
  * (src/lib/ia/uzume/imagen.ts, via the ImagenPort
  * src/lib/ia/uzume/imagen-python.ts wraps around this). `input` travels
@@ -2307,6 +2421,7 @@ export async function llamarPythonPlanResolution(
     pistasArmado,
     completarArmadosDe,
     completarArmadosGuirnalda,
+    pistasGuirnalda,
     ...rest
   } = input;
   const operationBody = {
@@ -2321,6 +2436,7 @@ export async function llamarPythonPlanResolution(
     ...(pistasArmado === undefined ? {} : { pistas_armado: pistasArmado }),
     ...(completarArmadosDe === undefined ? {} : { completar_armados_de: completarArmadosDe }),
     ...(completarArmadosGuirnalda === undefined ? {} : { completar_armados_guirnalda: completarArmadosGuirnalda }),
+    ...(pistasGuirnalda === undefined ? {} : { pistas_guirnalda: pistasGuirnalda }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_RESOLUTION_PATH, PYTHON_PLAN_RESOLUTION_SCOPE, {
     ...rest,

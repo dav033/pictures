@@ -156,6 +156,19 @@ export const BOUQUET_REFERENCIA_PYTHON_ENABLED = process.env.BOUQUET_REFERENCIA_
  */
 export const CONTEO_REFERENCIA_PYTHON_ENABLED = process.env.CONTEO_REFERENCIA_PYTHON_ENABLED === "true";
 
+/**
+ * Default: OFF (ADR-0032, E4). After the reference analysis, asks Python to
+ * read how each garland in the photo is built (support, shape, clusters,
+ * filler, toppers) and stores it on its blueprint element
+ * (`appearance.armado_guirnalda`); with it on, the placement of each garland
+ * is refined from that reading and the furniture of the photo
+ * (`reubicarGuirnaldas`). One Gemini call per photo with garlands (arches and
+ * half-arches included), in parallel with the other readings; a failure never
+ * breaks the analysis. The readings only reach a plan while
+ * `GUIRNALDAS_ARMADO_V1` is on, and never change what is bought.
+ */
+export const GUIRNALDA_REFERENCIA_PYTHON_ENABLED = process.env.GUIRNALDA_REFERENCIA_PYTHON_ENABLED === "true";
+
 // --- LoRA capability flags -------------------------------------------------
 
 // --- Debug flags -----------------------------------------------------------

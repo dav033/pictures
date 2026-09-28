@@ -483,8 +483,7 @@ Referencias a la rama al cierre de la entrega.
 - Validar con el negocio los supuestos del oficio (ADR-0032): unidad por
   densidad, relleno de 5", remates repartidos, soporte por ubicación, insumos y
   ritmo de armado. `factorPerfil` está en 1 en todas las formas, sin calibrar.
-- E4: lectura de la guirnalda en la foto y `placementFor`; hoy la bandera solo
-  completa por receta. E5: frases en Uzume/Kagutsuchi, patrón por racimo y
+- E4 hecha (ver abajo). E5: frases en Uzume/Kagutsuchi, patrón por racimo y
   espejo. E6: UI y la ruta de Next de la vista previa (Python ya responde en
   `/internal/v1/plan/armado-guirnalda`).
 - Un rechazo `armado_invalido` de la vista previa no trae `opciones` (la
@@ -497,6 +496,62 @@ Referencias a la rama al cierre de la entrega.
   las completitudes de armados en `_resolution_result` (plan.py l.3576), para
   que la receta vea la densidad y las medidas finales.
 
+### Fusión (2026-09-28, `27528f2` en `origin/feat/guirnaldas`)
+
+`feat/bouquets` (E0) y `feat/conteo-referencia` (E1) fusionadas con merges
+normales. Conflictos: `package.json` (la cadena de `plan:test` une
+`plan:test-armado-guirnalda`, `ia:test-conteo-referencia` e
+`ia:test-armado-bouquet-prompt`; un `&&npm` sin espacio de la rama de conteo
+quedó normalizado) y `generated_models.py` (regenerado desde el Zod fusionado;
+`contracts:export` y `contracts:export:domain` no cambiaron nada). Verificado
+tras la fusión: pytest 769, ruff check y format, mypy `app scripts`,
+`generate_models.py --check`, `contracts:check`, tsc (solo `LayoutProps`),
+lint 0 errores y `plan:test` en 0; los vectores dorados no cambian.
+
+### E4 — lectura de la guirnalda en la foto y ubicación (hecha el 2026-09-28)
+
+Decisiones 10 a 13 de ADR-0032.
+
+- **Python**: criterios, prompt, esquema y `validar_lecturas` en
+  `services/ai-api/app/amaterasu/estructuras/guirnalda.py` (la `DEFINICION` no
+  cambia); la llamada en `app/amaterasu/guirnalda_referencia.py` (comprueba
+  cada lectura contra `appearance.armado_guirnalda` del contrato); la ruta
+  `POST /internal/v1/ia/guirnalda-referencia` (scope `ia.guirnalda_referencia`)
+  en `app/main.py`. `pistas_guirnalda` en `PlanResolutionRequest` (`plan.py`,
+  validada contra el contrato) llega a `_completar_armados_guirnalda`, y
+  `armado_guirnalda.py` la traduce (`_forma_desde_lectura`, `_desde_lectura`;
+  `OtraEstructura.referencia_element_id` para la anfitriona).
+- **Contrato**: `LecturaGuirnaldaSchema` y `PistaGuirnaldaSchema` en
+  `src/lib/plan/armado-guirnalda.ts`; `appearance.armado_guirnalda` en
+  `reference-blueprint.ts`; `pistas_guirnalda` en `domain-v1.ts`. Exportado y
+  modelos regenerados.
+- **Next**: `src/lib/ia/amaterasu/guirnalda-referencia.ts` (qué se lee, caché
+  compartida, nunca rompe el análisis); `lecturas-foto.ts` (cuarta lectura y
+  `reubicarGuirnaldas`); bandera `GUIRNALDA_REFERENCIA_PYTHON_ENABLED`
+  (`feature-flags.ts`, `.env.example`) en `/api/references/analyze`;
+  `llamarPythonGuirnaldaReferencia` y `pistasGuirnalda` en `python-adapter.ts` y
+  `resolver-backend.ts`; `pistasGuirnaldaDelPlan` al confirmar
+  (`registro-herramientas.ts`); `refinarPlacementGuirnalda` y
+  `reubicarGuirnaldas` en `src/lib/ia/referencia/reference-structure.ts`.
+- **Pruebas**: `tests/test_guirnalda_referencia.py` (prompt, validación, contrato,
+  ruta y scope), casos nuevos en `tests/test_armado_guirnalda.py` y
+  `tests/test_plan_guirnalda.py` (la foto decide la distribución y no la compra,
+  anfitriona por elemento, pista mal formada); `scripts/test/test-guirnalda-referencia.ts`
+  en `plan:test` (qué se lee, caché, fallos, bandera apagada = mismo objeto,
+  ubicación, `pistas_guirnalda`).
+
+**Verificación real** (2026-09-28): pytest 783 en verde (4 omitidas por falta de
+Postgres local); ruff check y format, mypy `app scripts` y
+`generate_models.py --check` limpios; `contracts:check` sin deriva; tsc solo con
+el `LayoutProps` preexistente; lint 0 errores; `plan:test` en 0 con
+`ia:test-guirnalda-referencia` (7 casos). Versiones del prompt del patrón
+(`0d8c93d34d672014`) y del conteo sin cambios. Sin llamadas pagas: la lectura
+no se probó contra Gemini.
+
+**Pendientes de E4**: medir la lectura en fotos reales con tope de gasto (E7);
+calibrar los umbrales de ubicación (mesa, muebles, recorrido de piso); E5 puede
+usar `colores_por_racimo` para el patrón por racimo.
+
 ### Estado de las ramas (2026-09-28, todas subidas a `origin`, sin PR abierto)
 
 | Rama | Contenido | Estado |
@@ -504,7 +559,7 @@ Referencias a la rama al cierre de la entrega.
 | `feat/bouquets` | E0 (armado ↔ fal.ai), código R-12 y SKU en la tarjeta | hecha; PR #2 ya estaba fusionado, lo nuevo necesita otro PR |
 | `feat/conteo-referencia` | E1 (lectura de conteo, bandera OFF) | hecha |
 | `wip/conteo-e2` | E2 a medias | no pasa `contracts:check`; ver `SEGUIMIENTO-conteo.md` §3 |
-| `feat/guirnaldas` | E3 (armado de guirnalda, bandera OFF) | hecha; faltan E4–E6 |
+| `feat/guirnaldas` | E3 y E4 (armado y lectura de guirnalda, banderas OFF), con E0 y E1 fusionadas | hecha; faltan E5 y E6 |
 
-Ninguna rama incluye a las otras todavía; E4 en adelante debe partir de
-`feat/guirnaldas` con `feat/bouquets` y `feat/conteo-referencia` fusionadas.
+`feat/guirnaldas` incluye `feat/bouquets` y `feat/conteo-referencia` desde
+`27528f2`; E5 y E6 parten de ahí.

@@ -7,6 +7,7 @@ import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import { canonizarColoresPlan } from "./colores-catalogo";
 import type { EntradaAllowlistPlan } from "./aprobacion";
 import type { PistaArmado } from "./armado-bouquet";
+import type { PistaGuirnalda } from "./armado-guirnalda";
 import type { PistaPatron } from "./patron-color";
 import { cotizacionDesdePython, planResueltoDesdePython } from "./python-mapper";
 import type { PlanResuelto } from "./resuelto";
@@ -64,6 +65,8 @@ export type EntradaResolucionPlan = {
    * sin este campo la petición es la de siempre.
    */
   completarArmadosGuirnalda?: boolean;
+  /** Con `completarArmadosGuirnalda`: la lectura de cada guirnalda de la foto, por elemento (E4). */
+  pistasGuirnalda?: readonly PistaGuirnalda[];
   requestId: string;
   correlationId: string;
   signal?: AbortSignal;
@@ -100,6 +103,7 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       ...(entrada.pistasArmado === undefined ? {} : { pistasArmado: [...entrada.pistasArmado] }),
       ...(entrada.completarArmadosDe === undefined ? {} : { completarArmadosDe: [...entrada.completarArmadosDe] }),
       ...(entrada.completarArmadosGuirnalda === undefined ? {} : { completarArmadosGuirnalda: entrada.completarArmadosGuirnalda }),
+      ...(entrada.pistasGuirnalda === undefined ? {} : { pistasGuirnalda: [...entrada.pistasGuirnalda] }),
       requestId: entrada.requestId,
       correlationId: entrada.correlationId,
       ...(entrada.signal ? { parentSignal: entrada.signal } : {}),
