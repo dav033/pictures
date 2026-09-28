@@ -175,6 +175,8 @@ export async function ejecutarCorrida(input: {
         }
         const costo = costoReportado(analisis.pases, config);
         costoReal += costo;
+        // What went past the bound counts too: the cap follows spend, not the reservation.
+        if (costo > unitaria.cota_superior_usd) reservadoUsd += costo - unitaria.cota_superior_usd;
         // A timeout does not prove the provider did not bill: keep the full reservation then.
         reservadoUsd -= analisis.resultado === "timeout" ? 0 : Math.max(0, unitaria.cota_superior_usd - costo);
         pases.push(...analisis.pases);

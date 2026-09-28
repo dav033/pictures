@@ -339,6 +339,9 @@ export type ResultadoCorridaConteo = { plan: PlanConteo; lineas: PrediccionConte
  * antes de cada análisis el presupuesto restante tiene que cubrir su cota
  * superior (se reserva y se libera lo no usado solo si el uso reportado está
  * completo: un timeout o un uso sin reportar no prueban que no se cobró).
+ * Lo gastado por encima de la cota también se reserva, así que una foto más
+ * cara que su cota frena las siguientes: el gasto pasa del tope a lo sumo por
+ * el exceso de las fotos que ya estaban en curso.
  * `alEscribir` recibe cada línea en cuanto existe: una corrida cortada se reanuda.
  */
 export async function ejecutarConteo(input: {
@@ -394,6 +397,8 @@ export async function ejecutarConteo(input: {
         }
         const gastado = costo(analisis.uso, precio);
         costoReal += gastado;
+        // Lo que pasó de la cota también cuenta: el tope sigue el gasto, no la reserva.
+        if (gastado > unitaria.cota_superior_usd) reservado += gastado - unitaria.cota_superior_usd;
         if (analisis.uso.completo && analisis.resultado !== "timeout") reservado -= Math.max(0, unitaria.cota_superior_usd - gastado);
         nueva = linea(item, corrida, analisis);
       }

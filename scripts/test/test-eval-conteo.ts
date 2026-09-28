@@ -185,6 +185,16 @@ async function run(): Promise<void> {
     assert.ok(Math.abs(con.run.costo.reportado_usd - sin.run.costo.reportado_usd - (3 * 1000 * 3.75) / 1e6) < 1e-9, String(con.run.costo.reportado_usd));
   });
 
+  await caso("#25 tope: una foto más cara que su cota frena las siguientes", async () => {
+    // Cada análisis reporta 1 millón de tokens de entrada (0,75 US$), muy por encima de su cota.
+    const { deps, archivos, llamadas } = entorno({ uso: { entrada: 1_000_000, salida: 0, completo: true } });
+    const resultado = await ejecutarCliConteo([...base, "--ejecutar", "--max-usd", "1", "--concurrencia", "1", "--crudos", FUERA], deps);
+    assert.equal(llamadas(), 2, "tras 0,75 US$ la segunda aún cabe; tras 1,50 US$ la tercera no");
+    const lineas = leerPrediccionesConteo(archivos.get(resolve(salida, "predicciones.jsonl"))!);
+    assert.deepEqual(lineas.map((linea) => linea.resultado), ["ok", "ok", "omitida_por_presupuesto"]);
+    assert.ok(resultado.runJsonRuta);
+  });
+
   console.log(`[PASS] ${casos} casos del runner de conteo`);
 }
 
