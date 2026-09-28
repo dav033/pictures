@@ -17,6 +17,8 @@ const MAX_FAL_IMAGE_BYTES = 16_000_000;
  */
 export const DEFAULT_SEMPERTEX_LORA_TRIGGER = "eventdecor_style_v3" as const;
 const MAX_EDIT_IMAGES = 4;
+/** `promptVersion` de la telemetría cuando el `/edit` lleva la guía de estructura (ADR-0033). */
+export const PROMPT_VERSION_GUIA = "guia-estructura.v1";
 
 export type SempertexLoraOptions = {
   seed?: number;
@@ -32,7 +34,29 @@ export type SempertexLoraOptions = {
   /** Cancels provider I/O when the client disconnects or the route expires. */
   signal?: AbortSignal;
   telemetria?: ContextoTelemetriaIA;
+  /**
+   * Imágenes que quien llama ya eligió para `/edit`, en su orden: la guía de
+   * estructura con su carta (ADR-0033) o las referencias de la etapa 1 del
+   * híbrido (`REFERENCIA_EN_ETAPA1_V1`). No se vuelven a filtrar con
+   * `referenciasParaLoraEdit`, que las descartaba sin foto del espacio ni
+   * resultado previo. Ausente, el comportamiento es el de siempre: se filtran
+   * los `inputs`. `SEMPERTEX_LORA_EDIT=false` las apaga igual.
+   */
+  imagenesEdit?: readonly ImagenEditLora[];
 };
+
+/**
+ * Imágenes que solo recibe el `/edit` del LoRA (ADR-0033): el mapa de color
+ * plano de la estructura aprobada y su carta de color. No son `ImageInput`
+ * porque nunca pasan por Gemini, por `buildInputs` ni por el prompt de escena.
+ */
+export type RolGuiaLora = "structure_guide" | "color_chart";
+export type ImagenGuiaLora = Imagen & { id: string; role: RolGuiaLora };
+export type ImagenEditLora = ImageInput | ImagenGuiaLora;
+
+function esImagenGuia(imagen: ImagenEditLora): imagen is ImagenGuiaLora {
+  return imagen.role === "structure_guide" || imagen.role === "color_chart";
+}
 
 export type LoraApplication = {
   artifactId?: string;
@@ -197,7 +221,8 @@ async function readBoundedImage(response: Response): Promise<Buffer> {
   return Buffer.concat(chunks, total);
 }
 
-const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
+/** Tamaño de salida de fal para cada aspecto; la guía de estructura (ADR-0033) usa el mismo encuadre. */
+export const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
   switch (aspecto) {
     case "1:1": return { width: 1024, height: 1024 };
     case "2:3": return { width: 1024, height: 1536 };
@@ -230,6 +255,11 @@ const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
  * referencia ya llega resumida en el blueprint, el plan y el caption. Fotos de
  * producto tampoco cambian el endpoint.
  * `SEMPERTEX_LORA_EDIT=false` apaga `/edit` por completo (interruptor de retiro).
+ *
+ * La excepción es explícita y no pasa por aquí: con `GUIA_ESTRUCTURA_V1`, la
+ * ruta manda por `imagenesEdit` el mapa de color plano de la estructura
+ * aprobada y su carta (ADR-0033). No es una foto que copiar, y la nota del
+ * prompt lo dice.
  */
 const ROLES_QUE_ACTIVAN_EDIT = new Set<ImageInput["role"]>(["venue_base", "previous_generated_result"]);
 
@@ -251,6 +281,16 @@ export function referenciasParaLoraEdit(inputs: readonly ImageInput[], interrupt
     .filter((input) => input.role === "previous_generated_result")
     .sort((a, b) => a.priority - b.priority)
     .slice(0, MAX_EDIT_IMAGES);
+}
+
+/**
+ * Las imágenes que quien llama eligió de antemano (`imagenesEdit`), acotadas
+ * al máximo de `/edit`. Solo el interruptor de retiro las quita: no hay filtro
+ * por rol, porque la elección ya la hizo el dueño de cada caso.
+ */
+export function imagenesEditExplicitas(imagenes: readonly ImagenEditLora[], interruptor = process.env.SEMPERTEX_LORA_EDIT): ImagenEditLora[] {
+  if (interruptor === "false") return [];
+  return imagenes.slice(0, MAX_EDIT_IMAGES);
 }
 
 /** Whether a request with these images must be rejected for LoRA (only when /edit is switched off). */
@@ -299,9 +339,10 @@ export const LORA_EDIT_PROMPT_MAX_LENGTH = 2500;
  * fijas en inglés, una por imagen de entrada y con su posición explícita. Puro y sin ids,
  * para poder pasarlo por el preflight antes de llamar al proveedor.
  */
-export function buildLoraEditPrompt(prompt: string, references: readonly ImageInput[]): string {
+export function buildLoraEditPrompt(prompt: string, references: readonly ImagenEditLora[]): string {
   if (!references.length) return prompt;
-  const frases = references.map((image, index) => `Input image ${index + 1} (@image${index + 1}): ${FRASE_POR_ROL[image.role]}`);
+  if (references.some(esImagenGuia)) return promptConGuia(prompt, references);
+  const frases = references.filter((image): image is ImageInput => !esImagenGuia(image)).map((image, index) => `Input image ${index + 1} (@image${index + 1}): ${FRASE_POR_ROL[image.role]}`);
   const baseIndex = references.findIndex((image) => image.role === "previous_generated_result" || image.role === "venue_base");
   const baseInstruction = baseIndex < 0
     ? "No venue base; create venue from prompt."
@@ -309,6 +350,55 @@ export function buildLoraEditPrompt(prompt: string, references: readonly ImageIn
       ? `PRIMARY BASE @image${baseIndex + 1}: preserve current scene and venue; apply only requested change.`
       : `PRIMARY VENUE @image${baseIndex + 1}: preserve this venue; never use another input background.`;
   return `${prompt}\n\nINPUT IMAGES\n${baseInstruction}\n${frases.join("\n")}\nOne cohesive photorealistic scene; no collage, board, cutouts or samples.`;
+}
+
+/**
+ * Lo que se le dice a `/edit` de la guía de estructura (ADR-0033). Es la nota
+ * del modo "plano" de `clasificador-decoraciones` (`enfoques.ts`,
+ * `GUIA_POR_MODO.plano`), acortada al registro de los captions (de ~330 a ~240
+ * caracteres, sin quitar ninguna de sus tres ideas): `/edit` conserva la imagen
+ * que recibe, así que hay que decir que la entrada NO es una foto, que cada
+ * mancha es un globo y que se rehace con luz y sombra reales, o devuelve el
+ * dibujo retocado.
+ */
+export const NOTA_GUIA_ESTRUCTURA = "The first input image (@image1) is a flat color map of this balloon structure, not a photo: each disc is one balloon. Rebuild it as a real photograph with exactly that outline, layout and colors, real latex balloons, real light and shadows.";
+
+/**
+ * La nota de la carta de color (origen: `NOTA_CARTA`, ~390 caracteres, aquí
+ * ~100): es una referencia de color, no un objeto de la escena, y sus franjas
+ * no se pintan.
+ */
+export function notaCartaColor(posicion: number): string {
+  return `The last input image (@image${posicion}) is only a color chart: match the balloon colors to it, never draw its stripes.`;
+}
+
+/**
+ * Caracteres que las notas de la guía ocupan en el prompt del LoRA. La ruta
+ * los descuenta del presupuesto del caption (`LORA_PROMPT_MAX_LENGTH`), igual
+ * que la instrucción de presentación del híbrido: el compilador compacta el
+ * caption con sus pasos de siempre y el prompt entero sigue en el registro del
+ * LoRA.
+ */
+export function reservaNotasGuia(conCarta: boolean): number {
+  return NOTA_GUIA_ESTRUCTURA.length + 2 + (conCarta ? notaCartaColor(2).length + 2 : 0);
+}
+
+/**
+ * `trigger, <nota de la guía>\n\n<caption>[\n\n<nota de la carta>]`, como el
+ * origen: la nota va delante porque es la que evita el dibujo retocado. La
+ * guía es la primera imagen y solo la sigue su carta; cualquier otra mezcla
+ * falla cerrada antes de llegar al proveedor.
+ */
+function promptConGuia(prompt: string, references: readonly ImagenEditLora[]): string {
+  const [guia, ...resto] = references;
+  if (guia?.role !== "structure_guide" || resto.length > 1 || resto.some((imagen) => imagen.role !== "color_chart")) {
+    throw new Error("LORA_GUIA_INVALIDA: la guía de estructura va primera y solo la acompaña su carta de color.");
+  }
+  const texto = prompt.trim();
+  const triggers = LEADING_TRIGGER_RUN.exec(texto)?.[0] ?? "";
+  const cuerpo = texto.slice(triggers.length).trim();
+  const carta = resto.length ? `\n\n${notaCartaColor(references.length)}` : "";
+  return `${triggers}${NOTA_GUIA_ESTRUCTURA}\n\n${cuerpo}${carta}`;
 }
 
 /** Bounded to the range the creativity levels use; anything else keeps the historical 3.5. */
@@ -351,7 +441,7 @@ export function errorDeAdaptadorLora(error: unknown): Error {
 async function generarConSempertexLoraPython(
   prompt: string,
   aspecto: PeticionImagen["aspecto"],
-  references: readonly ImageInput[],
+  references: readonly ImagenEditLora[],
   options: SempertexLoraOptions,
   ids: { requestId: string; correlationId: string },
 ): Promise<{ imagen: Imagen; proveedorRequestId: string | undefined }> {
@@ -394,8 +484,11 @@ export async function generarConSempertexLora(
   const key = process.env.FAL_KEY;
   if (!key) throw new Error("LoRA Sempertex no está conectado todavía: falta FAL_KEY en .env.local.");
 
-  const references = referenciasParaLoraEdit(inputs);
+  // Lo que eligió quien llama (guía o referencias de la etapa 1) no se vuelve a
+  // filtrar: `referenciasParaLoraEdit` lo descartaba sin venue ni resultado previo.
+  const references: readonly ImagenEditLora[] = options.imagenesEdit ? imagenesEditExplicitas(options.imagenesEdit) : referenciasParaLoraEdit(inputs);
   const endpoint = references.length ? EDIT_ENDPOINT : TEXT_ENDPOINT;
+  const conGuia = references.some((image) => image.role === "structure_guide");
 
   const inicio = Date.now();
   const deadlineAt = inicio + 105_000;
@@ -420,6 +513,8 @@ export async function generarConSempertexLora(
     resultado,
     bytesImagenEntrada: references.reduce((total, image) => total + bytesDeBase64(image.base64), 0),
     unidadesFacturadas: resultado === "ok" ? 1 : undefined,
+    // Distingue en la telemetría las llamadas con guía de estructura (ADR-0033); sin ella, el evento de siempre.
+    ...(conGuia ? { promptVersion: PROMPT_VERSION_GUIA } : {}),
   });
 
   try {

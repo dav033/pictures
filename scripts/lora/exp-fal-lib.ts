@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -19,6 +20,14 @@ import path from "node:path";
  */
 
 export const ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora";
+/** `/edit`: solo para celdas con `imagenes` (la guía de estructura, ADR-0033). */
+export const ENDPOINT_EDIT = "https://queue.fal.run/fal-ai/flux-2/lora/edit";
+/**
+ * Precio por megapíxel de entrada y de salida de FLUX.2 en fal que usó
+ * `clasificador-decoraciones` (`presupuesto.ts`), sin verificar hoy: el coste
+ * que se calcula con él es ESTIMADO. El tope real lo sigue midiendo el saldo.
+ */
+export const PRECIO_MP_USD_ESTIMADO = 0.021;
 export const BALANCE_URL = "https://rest.alpha.fal.ai/billing/user_balance";
 export const TRIGGER = "eventdecor_style_v2";
 export const DEFAULT_LORA = "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors";
@@ -125,6 +134,12 @@ export type Celda = {
    */
   trigger?: boolean;
   nota?: string;
+  /**
+   * Imágenes de entrada (`data:` URL), en orden: con ellas la celda va a
+   * `/edit` con `image_urls`. Nunca se imprimen ni se guardan en el manifiesto:
+   * solo su tipo, tamaño y hash.
+   */
+  imagenes?: readonly string[];
 };
 
 /**
@@ -181,11 +196,36 @@ export function payloadDe(celda: Celda, defaults: Defaults) {
     num_inference_steps: 28,
     image_size: { width: celda.ancho ?? defaults.ancho, height: celda.alto ?? defaults.alto },
     seed: celda.seed ?? defaults.seed,
+    ...(celda.imagenes?.length ? { image_urls: [...celda.imagenes] } : {}),
     num_images: 1,
     enable_prompt_expansion: false,
     enable_safety_checker: celda.safety ?? true,
     output_format: "png",
   };
+}
+
+export function endpointDe(celda: Celda): string {
+  return celda.imagenes?.length ? ENDPOINT_EDIT : ENDPOINT;
+}
+
+/** Una `data:` URL resumida: tipo, bytes y hash, nunca su base64. */
+export function resumenDataUrl(url: string): string {
+  const coincidencia = /^data:([^;,]+);base64,([A-Za-z0-9+/=]*)$/.exec(url);
+  if (!coincidencia) return `<url ${url.length} caracteres>`;
+  const bytes = Buffer.from(coincidencia[2]!, "base64");
+  return `<${coincidencia[1]} · ${bytes.byteLength} bytes · sha256 ${crypto.createHash("sha256").update(bytes).digest("hex").slice(0, 12)}>`;
+}
+
+/** El payload para mostrar o guardar: las imágenes de entrada, resumidas. */
+export function payloadVisible(celda: Celda, defaults: Defaults) {
+  const payload = payloadDe(celda, defaults);
+  return celda.imagenes?.length ? { ...payload, image_urls: celda.imagenes.map(resumenDataUrl) } : payload;
+}
+
+/** Coste ESTIMADO de una celda: megapíxeles de salida (hacia arriba) más uno por imagen de entrada. */
+export function costeEstimadoUsd(celda: Celda, defaults: Defaults): number {
+  const megapixeles = Math.ceil(((celda.ancho ?? defaults.ancho) * (celda.alto ?? defaults.alto)) / (1024 * 1024));
+  return Math.round((megapixeles + (celda.imagenes?.length ?? 0)) * PRECIO_MP_USD_ESTIMADO * 1000) / 1000;
 }
 
 export async function generar(key: string, payload: object, endpoint: string = ENDPOINT): Promise<{ url: string; bytes: Buffer }> {
@@ -266,12 +306,26 @@ export function verificarIdentidadCoherente(defaults: Defaults): void {
  *   imagen), así que falla cerrado: sin saldo legible al empezar no se genera
  *   nada, y si deja de poder leerse a mitad (dos intentos) la tanda se detiene.
  */
+export type Manifiesto = {
+  experimento: string;
+  endpoint: string;
+  defaults: Defaults;
+  celdas: Array<Celda & { payload: unknown; endpoint: string; coste_estimado_usd: number }>;
+  coste_estimado_usd: number;
+  resultados: Array<Record<string, unknown>>;
+  saldo_antes: number | null;
+  saldo_despues: number | null;
+  gasto_usd: number | null;
+  detenido_por_limite: boolean;
+  detenido_por_saldo_ilegible: boolean;
+};
+
 export async function correrExperimento(opciones: {
   nombre: string;
   celdas: Celda[];
   defaults: Defaults;
   outDir: string;
-}): Promise<void> {
+}): Promise<Manifiesto> {
   const { nombre, defaults, outDir } = opciones;
   verificarIdentidadCoherente(defaults);
 
@@ -280,15 +334,23 @@ export async function correrExperimento(opciones: {
   const celdas = solo ? opciones.celdas.filter((celda) => celda.id.includes(solo)) : opciones.celdas;
   if (!celdas.length) throw new Error(`--solo ${solo} no coincide con ninguna celda.`);
 
-  const manifiesto = {
+  const manifiesto: Manifiesto = {
     experimento: nombre,
     endpoint: ENDPOINT,
     defaults,
-    celdas: celdas.map((celda) => ({ ...celda, payload: payloadDe(celda, defaults) })),
-    resultados: [] as Array<Record<string, unknown>>,
-    saldo_antes: null as number | null,
-    saldo_despues: null as number | null,
-    gasto_usd: null as number | null,
+    // Las imágenes de entrada van resumidas: el manifiesto nunca guarda un base64.
+    celdas: celdas.map(({ imagenes, ...celda }) => ({
+      ...celda,
+      ...(imagenes?.length ? { imagenes: imagenes.map(resumenDataUrl) } : {}),
+      payload: payloadVisible({ ...celda, imagenes }, defaults),
+      endpoint: endpointDe({ ...celda, imagenes }),
+      coste_estimado_usd: costeEstimadoUsd({ ...celda, imagenes }, defaults),
+    })),
+    coste_estimado_usd: Math.round(celdas.reduce((total, celda) => total + costeEstimadoUsd(celda, defaults), 0) * 1000) / 1000,
+    resultados: [],
+    saldo_antes: null,
+    saldo_despues: null,
+    gasto_usd: null,
     detenido_por_limite: false,
     /** El saldo dejó de poder leerse: sin él el tope no se puede aplicar. */
     detenido_por_saldo_ilegible: false,
@@ -296,8 +358,8 @@ export async function correrExperimento(opciones: {
 
   if (process.argv.includes("--dry-run")) {
     console.log(JSON.stringify(manifiesto.celdas, null, 2));
-    console.log(`\n[DRY-RUN] ${celdas.length} celdas. No se envió nada a fal.ai. FAL_KEY no hace falta para esto.`);
-    return;
+    console.log(`\n[DRY-RUN] ${celdas.length} celdas, coste ESTIMADO US$${manifiesto.coste_estimado_usd.toFixed(3)}. No se envió nada a fal.ai. FAL_KEY no hace falta para esto.`);
+    return manifiesto;
   }
 
   if (process.env.CI === "true") {
@@ -326,7 +388,7 @@ export async function correrExperimento(opciones: {
   for (const celda of celdas) {
     process.stdout.write(`-> ${celda.id} ... `);
     try {
-      const { url, bytes } = await generar(key, payloadDe(celda, defaults));
+      const { url, bytes } = await generar(key, payloadDe(celda, defaults), endpointDe(celda));
       const archivo = path.join(outDir, `${celda.id}.png`);
       fs.writeFileSync(archivo, bytes);
       const censurada = bytes.length < BYTES_SOSPECHOSOS;
@@ -365,4 +427,5 @@ export async function correrExperimento(opciones: {
   const rutaManifiesto = path.join(outDir, `manifiesto-${nombre}.json`);
   fs.writeFileSync(rutaManifiesto, JSON.stringify(manifiesto, null, 2));
   console.log(`payloads literales en ${path.relative(process.cwd(), rutaManifiesto)}`);
+  return manifiesto;
 }

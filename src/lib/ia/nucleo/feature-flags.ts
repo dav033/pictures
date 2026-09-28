@@ -14,7 +14,8 @@ export type FeatureFlag =
   | "PATRONES_COLOR_V1"
   | "BOUQUETS_ARMADO_V1"
   | "GUIRNALDAS_ARMADO_V1"
-  | "CONTEO_REFERENCIA_V1";
+  | "CONTEO_REFERENCIA_V1"
+  | "GUIA_ESTRUCTURA_V1";
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
@@ -67,6 +68,14 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // cambiar la mezcla de una pieza en el chat, la re-resolución lo repite solo
     // para ella. Apagada, la petición es la de siempre y nada cambia.
     if (name === "CONTEO_REFERENCIA_V1") return false;
+    // Default OFF (ADR-0033). Sin foto del espacio y con UNA estructura con
+    // armado de guirnalda o patrón, el LoRA pasa de texto a `/edit` con el mapa
+    // de color plano de esa estructura como primera imagen y su carta de color
+    // después. Cuesta dos imágenes de entrada más (estimado) y `v007` nunca se
+    // midió con `/edit`: se enciende tras la corrida comparativa
+    // (`scripts/ops/generar-guia-estructura.ts`). Apagada, la petición a fal es
+    // byte a byte la de siempre.
+    if (name === "GUIA_ESTRUCTURA_V1") return false;
     return true;
   }
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";
