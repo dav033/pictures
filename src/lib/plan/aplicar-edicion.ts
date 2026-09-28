@@ -16,6 +16,7 @@ import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
 import type { PlanResuelto } from "./resuelto";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { BasePlan, EdicionPlan } from "./edicion-esquemas";
+import { ConteoAplicadoSchema, type PistaConteo } from "./conteo-referencia";
 
 /**
  * Applies one edit (agregar/reemplazar/quitar/repartir/mezcla/patron) to an
@@ -119,6 +120,28 @@ function armadoQuitadoPorLaEdicion(base: PlanConArmados, editado: PlanConArmados
 
 export const AVISO_ARMADO_NO_REHECHO = "Con estos globos no se pudo volver a armar el bouquet: queda sin armado.";
 
+type ConteosDeLaEdicion = { pistas: PistaConteo[]; ajustar: string[] };
+
+/**
+ * Los conteos de la foto que la re-resolución de una edición vuelve a mandar
+ * (ADR-0031), desde `conteos_referencia` del plan base. Todos viajan, para que
+ * el plan editado los conserve; Python solo ajusta la pieza cuya mezcla se
+ * cambió (con la mezcla que eligió el decorador). Sin la bandera
+ * `CONTEO_REFERENCIA_V1` o sin conteos en el plan base, nada: la petición es la
+ * de siempre.
+ */
+export function conteosDeLaEdicion(base: BasePlan, edicion: EdicionPlan): ConteosDeLaEdicion | undefined {
+  if (!featureEnabled("CONTEO_REFERENCIA_V1")) return undefined;
+  const conteos = z.array(ConteoAplicadoSchema).max(32).safeParse((base as Record<string, unknown>).conteos_referencia);
+  if (!conteos.success || conteos.data.length === 0) return undefined;
+  const pistas = new Map<string, PistaConteo>();
+  for (const conteo of conteos.data) {
+    if (!pistas.has(conteo.referencia_element_id)) pistas.set(conteo.referencia_element_id, { referencia_element_id: conteo.referencia_element_id, ...conteo.lectura });
+  }
+  const editada = conteos.data.some((conteo) => conteo.estructura_id === edicion.estructura_id);
+  return { pistas: [...pistas.values()].slice(0, 16), ajustar: edicion.accion === "mezcla" && editada ? [edicion.estructura_id] : [] };
+}
+
 /**
  * Re-verifies the base plan's signed approval, re-resolves it against Python
  * to make sure nothing drifted since it was shown, admits the new variant
@@ -135,7 +158,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   const whitelist = mapaDesdeAllowlist(contextoPlan.allowlist);
   const correlationId = correlationDesde(input.correlationId ?? base.request_id ?? aprobacion.requestId);
 
-  const resolver = (plan: PlanDecoracion, allowlistPython: ContextoPlan["allowlist"], completarArmadosDe?: readonly string[]) =>
+  const resolver = (plan: PlanDecoracion, allowlistPython: ContextoPlan["allowlist"], completarArmadosDe?: readonly string[], conteos?: ConteosDeLaEdicion) =>
     resolverPlan({
       plan,
       allowlist: allowlistPython,
@@ -144,6 +167,9 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
       // ADR-0030: only the edited bouquet gets its assembly suggested again;
       // one the decorator removed on purpose stays without it.
       ...(completarArmadosDe ? { completarArmados: true, completarArmadosDe } : {}),
+      // ADR-0031: the photo's counts travel again so they are not lost; only
+      // a mix edit has Python adjust the edited piece to its count.
+      ...(conteos ? { completarConteos: true, pistasConteo: conteos.pistas, completarConteosDe: conteos.ajustar } : {}),
       requestId: crypto.randomUUID(),
       correlationId,
       ...(input.signal ? { signal: input.signal } : {}),
@@ -196,7 +222,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   });
   const allowlistFinal = allowlistDesdeMapa(whitelist);
   const rehacerArmado = completarArmados && armadoQuitadoPorLaEdicion(base.plan, planEditado, edicion.estructura_id);
-  const resolucionEditada = await resolver(planEditado, allowlistFinal, rehacerArmado ? [edicion.estructura_id] : undefined);
+  const resolucionEditada = await resolver(planEditado, allowlistFinal, rehacerArmado ? [edicion.estructura_id] : undefined, conteosDeLaEdicion(base, edicion));
   const resuelto = resolucionEditada.resuelto;
   if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");
   if (rehacerArmado && armadoQuitadoPorLaEdicion(base.plan, resuelto.plan, edicion.estructura_id)) {

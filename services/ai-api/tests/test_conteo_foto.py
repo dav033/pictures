@@ -552,7 +552,21 @@ async def test_solo_la_pieza_pedida_tras_una_edicion() -> None:
         list[dict[str, object]], cast(dict[str, object], resolved["plan"])["estructuras"]
     )
     assert [e["densidad"] for e in estructuras] == ["media", "lujosa"]
-    assert [c["estructura_id"] for c in _conteos(resolved)] == ["EST_02_GUIRNALDA"]
+    # La otra pieza conserva su lectura para una edición posterior, sin ajustarse.
+    assert [(c["estructura_id"], c["decision"]) for c in _conteos(resolved)] == [
+        ("EST_01_GUIRNALDA", "sin_aplicar"),
+        ("EST_02_GUIRNALDA", "ajustado"),
+    ]
+    # Sin pieza pedida (una edición que no es de mezcla) nada se ajusta y las lecturas siguen.
+    ninguna = await _resolver_geometrico(
+        _plan_geometrico(_guirnalda(), otra),
+        completar_conteos=True,
+        pistas_conteo=[_conteo(estimado_total=60)],
+        completar_conteos_de=[],
+    )
+    base = await _resolver_geometrico(_plan_geometrico(_guirnalda(), otra))
+    assert ninguna["plan_hash"] == base["plan_hash"]
+    assert {c["decision"] for c in _conteos(ninguna)} == {"sin_aplicar"}
 
 
 @pytest.mark.anyio

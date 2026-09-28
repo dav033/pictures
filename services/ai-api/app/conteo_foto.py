@@ -774,7 +774,9 @@ def aplicar(
     ``conteos_referencia``: una entrada por estructura con pista, con lo que se
     decidió y por qué. ``usar_armados``: la resolución completa armados de
     bouquet (sin eso, la lectura del armado no decide nada). ``solo``: tras una
-    edición, solo esas estructuras, con la mezcla que eligió el decorador.
+    edición, solo esas estructuras se ajustan (con la mezcla que eligió el
+    decorador); las demás con pista quedan ``sin_aplicar`` y conservan su
+    lectura en ``conteos_referencia``.
     """
     por_elemento = {str(p["referencia_element_id"]): p for p in pistas}
     armados = {str(p.get("referencia_element_id")): dict(p) for p in pistas_armado}
@@ -787,13 +789,26 @@ def aplicar(
         estructura_id = str(estructura.get("estructura_id"))
         elemento = estructura.get("referencia_element_id")
         pista = por_elemento.get(str(elemento)) if isinstance(elemento, str) else None
-        if pista is None or (solo is not None and estructura_id not in solo):
+        if pista is None:
             estructuras.append(cruda)
             continue
         lectura = {k: v for k, v in pista.items() if k != "referencia_element_id"}
         cuenta = cuenta_usable(lectura)
         tipo = estructura.get("tipo")
-        if cuenta is None:
+        if solo is not None and estructura_id not in solo:
+            # Tras una edición solo se ajusta la pieza editada; las demás
+            # conservan su lectura (una edición posterior la vuelve a mandar).
+            actual = _globos_actuales(estructura, puerto)
+            resultado = _Resultado(
+                estructura,
+                "sin_aplicar",
+                cuenta.globos if cuenta is not None else None,
+                actual,
+                actual,
+                [],
+                "Esta resolución solo ajusta la pieza editada.",
+            )
+        elif cuenta is None:
             actual = _globos_actuales(estructura, puerto)
             resultado = _Resultado(
                 estructura,

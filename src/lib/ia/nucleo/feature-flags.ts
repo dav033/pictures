@@ -151,8 +151,8 @@ export const BOUQUET_REFERENCIA_PYTHON_ENABLED = process.env.BOUQUET_REFERENCIA_
  * reading on its blueprint element (`appearance.conteo`). One Gemini call per
  * photo with balloon structures, in parallel with the pattern and bouquet
  * readings and under the same deadline; a failure never breaks the analysis.
- * No plan uses the reading yet (E2 will, behind `CONTEO_REFERENCIA_V1`); off,
- * the blueprint is exactly what it was before.
+ * A plan only uses the reading when `CONTEO_REFERENCIA_V1` is also on (E2);
+ * off, the blueprint is exactly what it was before.
  */
 export const CONTEO_REFERENCIA_PYTHON_ENABLED = process.env.CONTEO_REFERENCIA_PYTHON_ENABLED === "true";
 

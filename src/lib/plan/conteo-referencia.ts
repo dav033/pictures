@@ -95,8 +95,9 @@ export type PistaConteo = z.infer<typeof PistaConteoSchema>;
  * - `no_confiable`: la lectura no trae una cuenta usable (confianza menor que
  *   0,5, o sin cuenta exacta, estimado ni racimos);
  * - `sin_aplicar`: la pieza no se toca aunque difiera: ya trae su armado (que
- *   fija la cantidad), o un estimado queda por debajo de lo que el plan o el
- *   armado leído identifican (un estimado nunca baja la cantidad).
+ *   fija la cantidad), un estimado queda por debajo de lo que el plan o el
+ *   armado leído identifican (un estimado nunca baja la cantidad), o es una
+ *   re-resolución tras editar otra pieza (solo se ajusta la editada).
  */
 export const DECISIONES_CONTEO = ["ajustado", "coincide", "sin_ajuste_posible", "no_confiable", "sin_aplicar"] as const;
 export const CAMPOS_AJUSTE_CONTEO = ["unidades_declaradas", "densidad", "mezcla", "ancho_m", "alto_m", "largo_m"] as const;

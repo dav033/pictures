@@ -1,5 +1,5 @@
 /**
- * Conteo de globos leído en la foto (ADR-0031, E1), del lado de Next.
+ * Conteo de globos leído en la foto (ADR-0031, E1 y E2), del lado de Next.
  *
  * - `appearance.conteo` es opcional y tiene la forma de `conteo-referencia.v1`
  *   (el reparto por tamaño: cada clase una vez y proporciones que suman 1).
@@ -11,11 +11,13 @@
  *   mismo objeto) y queda en el registro con los ids de la petición.
  * - Con la bandera apagada no hay llamada y el blueprint es byte a byte el de
  *   siempre; encendida, se junta con el patrón y el armado por elemento.
- * - Ningún prompt cambia en E1: el chat no ve el conteo todavía.
+ * - El chat ve el conteo solo con `CONTEO_REFERENCIA_V1` (E2); apagada, el prompt no cambia.
+ * - E2: `pistas_conteo` al confirmar, su transporte, `conteos_referencia` y la
+ *   re-resolución tras editar la mezcla.
  * - La ruta, con la bandera encendida, guarda el conteo y sigue sin él si Python falla.
  *
  * Qué NO se prueba aquí: cómo cuenta Python ni qué hará el plan con la lectura
- * (eso es de `conteo_referencia.py` y de E2). Offline: Python lo responde un doble.
+ * (eso es de `conteo_referencia.py` y `conteo_foto.py`). Offline: Python lo responde un doble.
  * Run: npx tsx --conditions=react-server scripts/test/test-conteo-referencia.ts
  */
 import assert from "node:assert/strict";
@@ -306,9 +308,59 @@ async function main(): Promise<void> {
   ok("las tres lecturas se juntan por elemento; apagada o caída, el conteo no cambia nada");
 
   // ---------------------------------------------------------------------------
-  // E1 no le cuenta nada al chat: el prompt es el mismo con y sin conteo.
+  // El chat ve el conteo solo con CONTEO_REFERENCIA_V1 (E2); apagada, byte a byte igual.
+  delete process.env.CONTEO_REFERENCIA_V1;
   assert.equal(serializeReferenceBlueprint(conTodo), serializeReferenceBlueprint(sinConteo));
-  ok("el prompt del chat no cambia con la lectura (E2 lo hará)");
+  process.env.CONTEO_REFERENCIA_V1 = "true";
+  const conTexto = serializeReferenceBlueprint(conTodo).split("\n");
+  const lineaDe = (id: string) => conTexto.find((linea) => linea.includes(id)) ?? "";
+  assert.match(lineaDe("REF_01_E01"), /conteo leído en la foto: 5 globos \(cuenta exacta\)\. Si la pieza es un kit/);
+  assert.match(lineaDe("REF_01_E02"), /conteo leído en la foto: unos 96 globos \(aproximado; 58 visibles\), 24 racimos de 4\./);
+  assert.match(lineaDe("REF_01_E02"), /Python ajusta densidad y medidas a esa cuenta/);
+  assert.equal(serializeReferenceBlueprint(sinConteo), serializeReferenceBlueprint(conConteosDe(sinConteo, sinConteo)), "sin conteo, la línea de siempre");
+  const pocaConfianza = conConteosDe(sinConteo, blueprintDe([elemento("REF_01_E02", { tipo: "columna", conteo: { ...conteo, confianza: 0.3 } })]));
+  assert.doesNotMatch(serializeReferenceBlueprint(pocaConfianza), /conteo leído/, "una lectura poco confiable no se le cuenta al modelo");
+  delete process.env.CONTEO_REFERENCIA_V1;
+  ok("el prompt del chat cuenta el conteo leído solo con CONTEO_REFERENCIA_V1 y lectura confiable");
+
+  // ---------------------------------------------------------------------------
+  // E2: pistas al confirmar, transporte a Python, resultado y edición.
+  const { pistasConteoDelPlan } = await import("../../src/lib/ia/herramientas/registro-herramientas");
+  const planPistas = { estructuras: [{ referencia_element_id: "REF_01_E02" }, { referencia_element_id: "REF_01_E02" }, { referencia_element_id: "REF_01_E03" }, {}] } as never;
+  assert.deepEqual(pistasConteoDelPlan(planPistas, conTodo), [{ referencia_element_id: "REF_01_E02", ...conteo }], "una por elemento, solo con conteo");
+  assert.deepEqual(pistasConteoDelPlan(planPistas, undefined), []);
+
+  const { llamarPythonPlanResolution } = await import("../../src/lib/ia/nucleo/python-adapter");
+  const cuerpos = instalarPython(() => new Response("sin respuesta", { status: 503 }));
+  const peticion = { plan: {} as never, allowlist: [], catalogSnapshotId: "s", requestId: REQUEST_ID, correlationId: CORRELATION_ID };
+  await assert.rejects(llamarPythonPlanResolution(peticion));
+  await assert.rejects(llamarPythonPlanResolution({ ...peticion, completarConteos: true, pistasConteo: [{ referencia_element_id: "REF_01_E02", ...conteo } as never], completarConteosDe: ["EST_01"] }));
+  assert.ok(!Object.keys(cuerpos[0]!.body).some((clave) => clave.includes("conteo")), "sin pedirlo la petición es la de siempre");
+  assert.equal(cuerpos[1]!.body.completar_conteos, true);
+  assert.equal((cuerpos[1]!.body.pistas_conteo as Json[]).length, 1);
+  assert.deepEqual(cuerpos[1]!.body.completar_conteos_de, ["EST_01"]);
+
+  const { PlanResueltoV1Schema } = await import("../../src/lib/ia/contracts/domain-v1");
+  const { planResueltoDesdePython } = await import("../../src/lib/plan/python-mapper");
+  const fixture = JSON.parse(readFileSync(path.join(process.cwd(), "contracts", "domain", "v1", "fixtures", "plan-resuelto-ok.json"), "utf8")) as Json;
+  const aplicado = { estructura_id: "EST_01", referencia_element_id: "REF_01_E02", decision: "ajustado", lectura: conteo, globos_foto: 96, globos_antes: 80, globos_despues: 96, cambios: [{ campo: "densidad", antes: "media", despues: "lujosa" }], motivo: "Densidad y tamaños ajustados con las medidas del plan." };
+  const resuelto = planResueltoDesdePython(PlanResueltoV1Schema.parse({ ...fixture, conteos_referencia: [aplicado] }));
+  assert.deepEqual(resuelto.conteos_referencia, [aplicado]);
+  assert.equal("conteos_referencia" in planResueltoDesdePython(PlanResueltoV1Schema.parse(fixture)), false);
+  assert.equal(PlanResueltoV1Schema.safeParse({ ...fixture, conteos_referencia: [{ ...aplicado, decision: "aplazado" }] }).success, false);
+
+  const { conteosDeLaEdicion } = await import("../../src/lib/plan/aplicar-edicion");
+  const baseConConteos = { ...fixture, conteos_referencia: [aplicado, { ...aplicado, estructura_id: "EST_02", referencia_element_id: "REF_01_E03", decision: "coincide" }] } as never;
+  const mezclaDe = (estructuraId: string) => ({ accion: "mezcla", estructura_id: estructuraId, mezcla: "clasica" }) as never;
+  assert.equal(conteosDeLaEdicion(baseConConteos, mezclaDe("EST_01")), undefined, "sin la bandera, la edición es la de siempre");
+  process.env.CONTEO_REFERENCIA_V1 = "true";
+  const deMezcla = conteosDeLaEdicion(baseConConteos, mezclaDe("EST_01"));
+  assert.deepEqual(deMezcla?.ajustar, ["EST_01"]);
+  assert.deepEqual(deMezcla?.pistas.map((pista) => pista.referencia_element_id), ["REF_01_E02", "REF_01_E03"], "todas viajan para no perderse");
+  assert.deepEqual(conteosDeLaEdicion(baseConConteos, { accion: "repartir", estructura_id: "EST_01", participaciones: [1] } as never)?.ajustar, [], "otra edición no ajusta nada");
+  assert.equal(conteosDeLaEdicion(fixture as never, mezclaDe("EST_01")), undefined, "sin conteos en el plan base, nada");
+  delete process.env.CONTEO_REFERENCIA_V1;
+  ok("E2: pistas_conteo al confirmar, transporte, conteos_referencia y la edición de la mezcla");
 
   // ---------------------------------------------------------------------------
   // La ruta con la bandera encendida: foto de la galería (análisis guardado, sin proveedor).

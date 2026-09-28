@@ -474,10 +474,13 @@ export const PlanResolutionRequestV1Schema = z.object({
   pistas_armado: z.array(PistaArmadoSchema).max(16).optional(),
   /** Con `completar_armados`: solo estas estructuras (tras una edición, la pieza editada). */
   completar_armados_de: z.array(idSchema).max(8).optional(),
-  /** Solo al confirmar un plan: Python ajusta cantidad, medidas y densidad al conteo de la foto (ADR-0031). */
+  /** Al confirmar un plan: Python ajusta cantidad, medidas, densidad o mezcla al conteo de la foto (ADR-0031). */
   completar_conteos: z.boolean().optional(),
   pistas_conteo: z.array(PistaConteoSchema).max(16).optional(),
-  /** Con `completar_conteos`: solo estas estructuras (tras una edición de la mezcla, la pieza editada). */
+  /**
+   * Tras una edición: solo estas estructuras se ajustan (la de la mezcla
+   * editada, o ninguna); las demás con pista conservan su lectura sin cambios.
+   */
   completar_conteos_de: z.array(idSchema).max(8).optional(),
 }).strict();
 
