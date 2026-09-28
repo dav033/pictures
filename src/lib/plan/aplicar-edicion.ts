@@ -129,7 +129,17 @@ export function armadoQuitadoPorLaEdicion(
   return antes?.[campo] !== undefined && despues?.[campo] === undefined;
 }
 
-export const AVISO_ARMADO_NO_REHECHO = "Con estos globos no se pudo volver a armar el bouquet: queda sin armado.";
+/**
+ * A garland's assembly is suggested again after an edit only when the edit
+ * took it away as a side effect (its colors or mix no longer fit it), never
+ * when the decorator removed it on purpose ("Quitar armado" in the editor:
+ * the `armado_guirnalda` action with `null`). ADR-0032, E6.
+ */
+export function resugerirArmadoGuirnalda(edicion: Pick<EdicionPlan, "accion" | "estructura_id">, base: PlanConArmados, editado: PlanConArmados): boolean {
+  return edicion.accion !== "armado_guirnalda" && armadoQuitadoPorLaEdicion(base, editado, edicion.estructura_id, "armado_guirnalda");
+}
+
+export const AVISO_ARMADO_NO_REHECHO ="Con estos globos no se pudo volver a armar el bouquet: queda sin armado.";
 export const AVISO_ARMADO_GUIRNALDA_NO_REHECHO = "Con estos globos no se pudo volver a armar la guirnalda: queda sin armado.";
 
 type ConteosDeLaEdicion = { pistas: PistaConteo[]; ajustar: string[] };
@@ -244,8 +254,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   });
   const allowlistFinal = allowlistDesdeMapa(whitelist);
   const rehacerArmado = completarArmados && armadoQuitadoPorLaEdicion(base.plan, planEditado, edicion.estructura_id);
-  const rehacerGuirnalda = completarArmadosGuirnalda
-    && armadoQuitadoPorLaEdicion(base.plan, planEditado, edicion.estructura_id, "armado_guirnalda");
+  const rehacerGuirnalda = completarArmadosGuirnalda && resugerirArmadoGuirnalda(edicion, base.plan, planEditado);
   const resolucionEditada = await resolver(
     planEditado,
     allowlistFinal,

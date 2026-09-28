@@ -21,7 +21,14 @@ import {
   type ArmadoBouquetV1,
   type PistaArmado,
 } from "@/lib/plan/armado-bouquet";
-import { LecturaGuirnaldaSchema, type PistaGuirnalda } from "@/lib/plan/armado-guirnalda";
+import {
+  ArmadoGuirnaldaResueltoSchema,
+  LecturaGuirnaldaSchema,
+  type ArmadoGuirnaldaResuelto,
+  type ArmadoGuirnaldaV1,
+  type PistaGuirnalda,
+} from "@/lib/plan/armado-guirnalda";
+import { OpcionesArmadoGuirnaldaSchema, type OpcionesArmadoGuirnalda } from "@/lib/plan/opciones-armado-guirnalda";
 import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import {
@@ -77,6 +84,8 @@ export const PYTHON_PLAN_PATRON_PATH = "/internal/v1/plan/patron";
 export const PYTHON_PLAN_PATRON_SCOPE = "plan.patron";
 export const PYTHON_PLAN_ARMADO_PATH = "/internal/v1/plan/armado-bouquet";
 export const PYTHON_PLAN_ARMADO_SCOPE = "plan.armado_bouquet";
+export const PYTHON_PLAN_ARMADO_GUIRNALDA_PATH = "/internal/v1/plan/armado-guirnalda";
+export const PYTHON_PLAN_ARMADO_GUIRNALDA_SCOPE = "plan.armado_guirnalda";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
 export const PYTHON_EMBEDDING_DIMENSIONS = 768;
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
@@ -145,6 +154,14 @@ export const PYTHON_PLAN_ARMADO_DOMAIN_CODES = [
   "invalid_plan",
 ] as const;
 export type PythonPlanArmadoDomainCode = (typeof PYTHON_PLAN_ARMADO_DOMAIN_CODES)[number];
+
+/**
+ * Stable domain error codes reported by POST /internal/v1/plan/armado-guirnalda
+ * (ADR-0032). Its `armado_invalido` carries the structure, the stable
+ * `motivo` and Python's `mensaje` (`domainDetails`), never the options: the
+ * editor asks for them with `armado_guirnalda: null`.
+ */
+export const PYTHON_PLAN_ARMADO_GUIRNALDA_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
 
 /**
  * Stable domain error codes reported by POST /internal/v1/plan/patron (ADR-0028 §10).
@@ -1438,6 +1455,42 @@ export interface PythonPlanArmadoResult {
   replayed?: boolean;
 }
 
+/**
+ * One resolved line of the previewed garland (`LineaGuirnalda` in
+ * services/ai-api/app/plan_edicion.py): the pattern preview's line plus the
+ * size code, with which Python names each code of the legend as at
+ * resolution. It only names; the counts are the plan's own.
+ */
+export const PythonPlanArmadoGuirnaldaLineaSchema = PythonPlanPatronLineaSchema.extend({
+  tamano_codigo: z.string().max(40).nullable().optional(),
+}).strict();
+export type PythonPlanArmadoGuirnaldaLinea = z.infer<typeof PythonPlanArmadoGuirnaldaLineaSchema>;
+export const PythonPlanArmadoGuirnaldaLineasSchema = z.array(PythonPlanArmadoGuirnaldaLineaSchema).max(PYTHON_PLAN_PATRON_MAX_LINEAS);
+
+export { OpcionesArmadoGuirnaldaSchema, type OpcionesArmadoGuirnalda };
+
+export interface PythonPlanArmadoGuirnaldaInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /** `null` asks for the recipe of the garland (ADR-0032). */
+  armadoGuirnalda: ArmadoGuirnaldaV1 | null;
+  /** The garland's resolved lines as the browser holds them; only the contract fields travel. */
+  lineas?: readonly PythonPlanArmadoGuirnaldaLinea[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanArmadoGuirnaldaResult {
+  armado: ArmadoGuirnaldaResuelto;
+  opciones: OpcionesArmadoGuirnalda;
+  replayed?: boolean;
+}
+
 const rerankPayloadResultSchema = z.object({
   order: z.array(z.string().min(1)),
   scores: z.record(z.string().min(1), z.number().finite()),
@@ -1618,6 +1671,12 @@ const planArmadoPayloadResultSchema = z.object({
   armado: ArmadoBouquetResueltoSchema,
   variantes_admitidas: variantesAdmitidasSchema,
   disposiciones_admitidas: disposicionesAdmitidasSchema,
+}).strict();
+
+const planArmadoGuirnaldaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-armado-guirnalda-result.v1"),
+  armado: ArmadoGuirnaldaResueltoSchema,
+  opciones: OpcionesArmadoGuirnaldaSchema,
 }).strict();
 
 const imageGenerateUsageSchema = z.object({
@@ -2655,6 +2714,58 @@ export async function llamarPythonPlanArmadoBouquet(input: PythonPlanArmadoInput
     variantes_admitidas: parsed.data.variantes_admitidas,
     disposiciones_admitidas: parsed.data.disposiciones_admitidas,
   };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/** Exactly the fields of `plan-armado-guirnalda.v1`'s line, whatever else the caller's object carries. */
+function lineaPlanArmadoGuirnalda(linea: PythonPlanArmadoGuirnaldaLinea): PythonPlanArmadoGuirnaldaLinea {
+  return {
+    ...lineaPlanPatron(linea),
+    ...(linea.tamano_codigo === undefined ? {} : { tamano_codigo: linea.tamano_codigo }),
+  };
+}
+
+/** Same JSON whatever the key order (Python may echo an object's keys in another order). */
+function jsonOrdenado(valor: unknown): string {
+  if (Array.isArray(valor)) return `[${valor.map(jsonOrdenado).join(",")}]`;
+  if (valor && typeof valor === "object") {
+    const entradas = Object.entries(valor as Record<string, unknown>).filter(([, campo]) => campo !== undefined).sort(([a], [b]) => a.localeCompare(b));
+    return `{${entradas.map(([clave, campo]) => `${JSON.stringify(clave)}:${jsonOrdenado(campo)}`).join(",")}}`;
+  }
+  return JSON.stringify(valor);
+}
+
+/**
+ * Resolves one garland's assembly, or suggests one with `null` (ADR-0032),
+ * for the garland editor. No catalog and no side effect: the plan counts the
+ * balloons and the resolved lines only name each code. Returns what the
+ * editor may offer for the piece (`opciones`), decided by Python.
+ */
+export async function llamarPythonPlanArmadoGuirnalda(input: PythonPlanArmadoGuirnaldaInput): Promise<PythonPlanArmadoGuirnaldaResult> {
+  const { plan, estructuraId, armadoGuirnalda, lineas, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-armado-guirnalda.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    armado_guirnalda: armadoGuirnalda,
+    ...(lineas === undefined ? {} : { lineas: lineas.map(lineaPlanArmadoGuirnalda) }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_ARMADO_GUIRNALDA_PATH, PYTHON_PLAN_ARMADO_GUIRNALDA_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_ARMADO_GUIRNALDA_SCOPE],
+  });
+  const parsed = planArmadoGuirnaldaPayloadResultSchema.safeParse(response.payload);
+  // The answer is about the structure asked for; a given assembly comes back as given.
+  if (
+    !parsed.success
+    || parsed.data.armado.estructura_id !== estructuraId
+    || (armadoGuirnalda !== null && jsonOrdenado(parsed.data.armado.armado) !== jsonOrdenado(armadoGuirnalda))
+  ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = { armado: parsed.data.armado, opciones: parsed.data.opciones };
   return response.replayed ? { ...resultado, replayed: true } : resultado;
 }
 
