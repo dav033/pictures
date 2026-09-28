@@ -170,8 +170,10 @@ const TAMANO_LEIDO: Readonly<Record<ClaseTamanoNivel, string>> = {
  * Aquí no se cuenta nada: el total es `total_globos`, que publica Python
  * (`armado_bouquet.total_leido`, el mismo que compra al confirmar). Una lectura
  * anterior sin total no lleva cifra; el modelo no recibe una cuenta inventada.
+ * Con `sinTotal` (la pieza trae un conteo que manda, ADR-0031) el armado solo
+ * describe colores, remate y números: la cantidad la dice el conteo.
  */
-function armadoLeido(lectura: ReferenceBlueprintV2["elements"][number]["appearance"]["armado_bouquet"]): string {
+function armadoLeido(lectura: ReferenceBlueprintV2["elements"][number]["appearance"]["armado_bouquet"], sinTotal = false): string {
   if (!lectura || lectura.confianza < 0.5) return "";
   const tamanosPorColor = new Map<string, Set<string>>();
   for (const nivel of lectura.niveles) {
@@ -183,7 +185,7 @@ function armadoLeido(lectura: ReferenceBlueprintV2["elements"][number]["appearan
   }
   const latex = [...tamanosPorColor].map(([color, tamanos]) => (tamanos.size > 0 ? `${color} ${[...tamanos].join(" y ")}` : color)).join(", ");
   const numeros = lectura.numeros ?? [];
-  const total = lectura.total_globos;
+  const total = sinTotal ? undefined : lectura.total_globos;
   const partes = [
     latex ? `látex ${latex}` : "",
     lectura.remate ? `remate ${lectura.remate.clase}${lectura.remate.color ? ` ${lectura.remate.color}` : ""}` : "",
@@ -198,14 +200,28 @@ function armadoLeido(lectura: ReferenceBlueprintV2["elements"][number]["appearan
   return `; armado leído en la foto: ${partes}.${indicacion}`;
 }
 
+type ConteoDelElemento = ReferenceBlueprintV2["elements"][number]["appearance"]["conteo"];
+
+/**
+ * El conteo de la foto manda sobre la cantidad (ADR-0031) cuando Python lo va a
+ * usar al confirmar (`CONTEO_REFERENCIA_V1`), es confiable (>= 0,5, la barra de
+ * Python) y trae una cifra leída: la cuenta exacta o el estimado. Aquí no se
+ * calcula ninguna (racimos × globos por racimo es de Python).
+ */
+function cantidadDelConteo(conteo: ConteoDelElemento): string | null {
+  if (!conteo || conteo.confianza < 0.5 || !featureEnabled("CONTEO_REFERENCIA_V1")) return null;
+  if (conteo.exacto) return `${conteo.globos_visibles}`;
+  return conteo.estimado_total !== null ? `unos ${conteo.estimado_total}` : null;
+}
+
 /**
  * Lo que Amaterasu contó de una pieza de la foto (ADR-0031), dicho al modelo
- * con los números tal como se leyeron: no se deriva ninguna cantidad aquí
- * (Python decide la del plan al confirmar). Solo con `CONTEO_REFERENCIA_V1` y
- * una lectura confiable (>= 0,5, la barra de Python); sin eso, nada, y la línea
- * del elemento es la de siempre.
+ * con los números tal como se leyeron. Cuando manda (`cantidadDelConteo`), es
+ * la cantidad que el modelo declara en un kit, y el armado leído de la misma
+ * pieza deja de dar su total. Solo con `CONTEO_REFERENCIA_V1` y una lectura
+ * confiable; sin eso, nada, y la línea del elemento es la de siempre.
  */
-function conteoLeido(conteo: ReferenceBlueprintV2["elements"][number]["appearance"]["conteo"]): string {
+function conteoLeido(conteo: ConteoDelElemento): string {
   if (!conteo || conteo.confianza < 0.5 || !featureEnabled("CONTEO_REFERENCIA_V1")) return "";
   const cuenta = conteo.exacto
     ? `${conteo.globos_visibles} globos (cuenta exacta)`
@@ -213,7 +229,11 @@ function conteoLeido(conteo: ReferenceBlueprintV2["elements"][number]["appearanc
       ? `unos ${conteo.estimado_total} globos (aproximado; ${conteo.globos_visibles} visibles)`
       : `${conteo.globos_visibles} globos visibles (aproximado, hay ocultos)`;
   const racimos = conteo.racimos !== null && conteo.globos_por_racimo !== null ? `, ${conteo.racimos} racimos de ${conteo.globos_por_racimo}` : "";
-  return `; conteo leído en la foto: ${cuenta}${racimos}. Si la pieza es un kit (bouquet, figura, racimo), declara unidades_declaradas con esa cantidad por pieza (sumando repeticiones); esta cuenta manda sobre el total de un armado leído. Si es una estructura geométrica no calcules globos: al confirmar, Python ajusta densidad y medidas a esa cuenta`;
+  const cantidad = cantidadDelConteo(conteo);
+  const kit = cantidad === null
+    ? ""
+    : ` Si la pieza es un kit (bouquet, figura, racimo), declara unidades_declaradas ${cantidad} por pieza (sumando repeticiones): manda sobre el total de un armado leído.`;
+  return `; conteo leído en la foto: ${cuenta}${racimos}.${kit} Si es una estructura geométrica no calcules globos: al confirmar, Python ajusta densidad y medidas a esa cuenta`;
 }
 
 /**
@@ -256,7 +276,7 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       const estructura = semantica
         ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados (chrome/metallic = reflex, pearl = satin; "clear" junto a un color, como "clear pink", es la línea Cristal de ese color —un acabado translúcido, no un globo transparente—, y "clear" solo sí es transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
         : "";
-      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}${armadoLeido(element.appearance.armado_bouquet)}${conteoLeido(element.appearance.conteo)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
+      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}${armadoLeido(element.appearance.armado_bouquet, cantidadDelConteo(element.appearance.conteo) !== null)}${conteoLeido(element.appearance.conteo)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
     })
     .join("\n");
   return elementos || "- Ningún elemento relevante detectado.";

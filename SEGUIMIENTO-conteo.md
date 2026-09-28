@@ -138,9 +138,8 @@ ni `armadoLeido`: los cambia la rama `fix/bouquet-conteo-niveles`.
   - `validar_pistas` (l.90): contra el esquema exportado.
   - `cuenta_usable` (l.116): exacta → estimado → racimos × globos por racimo, con
     confianza de al menos 0,5.
-  - Kits: `total_kit_sin_armado` (l.150), `total_kit_con_armado` (l.163) y
-    `reescalar_lectura_armado` (l.206), que repite n veces un nivel de n unidades
-    para que el armado de hoy y el de la otra rama lo lean igual. `_kit` (l.451).
+  - Kits: `total_kit_sin_armado` (l.150), `total_kit_con_armado` (l.163),
+    `reescalar_lectura_armado` (l.209; ver §3.1) y `_kit` (l.490).
   - Geométricas: `mezcla_de_la_foto` (l.307), `medidas_desde_referencia` (l.335),
     `elegir_opcion` (l.387) y `_geometrica` (l.658).
   - `PuertoPlan` (l.408) y `aplicar` (l.761): una entrada de
@@ -216,14 +215,79 @@ No se corrió nada contra proveedores. No hubo e2e de `resolve_plan` contra el
 ai-api real: la resolución necesita la base del catálogo y se probó con catálogos
 falsos en pytest.
 
+### 3.1 Fusión con `fix/bouquet-conteo-niveles` (2026-09-28)
+
+`origin/fix/bouquet-conteo-niveles` (2932204) entró con un merge normal. Trae:
+- `cantidad` y `clase_tamano` por nivel en la lectura del armado, más
+  `total_globos` y `avisos`;
+- `armado_bouquet.total_leido` como único dueño de la cuenta;
+- `compra_desde_lectura` comprando ese total;
+- `_material_del_color` eligiendo por clase;
+- `armadoLeido` mostrando el total de Python.
+
+- **Conflictos textuales, dos:**
+  - `package.json`: la cadena de `plan:test` se unió. Quedaron
+    `ia:test-conteo-referencia`, `eval:test-conteo` e
+    `ia:test-armado-bouquet-prompt`: 82 pasos, sin duplicados.
+  - `generated_models.py`: se regeneró desde el Zod fusionado, después de
+    `contracts:export:domain` y `contracts:export`.
+  `plan.py`, `prompt-sistema.ts`, los contratos y `DetalleEstructura.tsx` se
+  fusionaron solos y se revisaron a mano.
+- **Reescalado** (`conteo_foto.py`):
+  - `reescalar_lectura_armado` (l.209) ya no repite niveles: ajusta la
+    `cantidad` de cada nivel por restos mayores, con la base primero en un
+    empate;
+  - las posiciones, los colores y la clase se conservan;
+  - el sobrante menor que una unidad va como sueltos de acento;
+  - un nivel que pasa de 24 unidades se parte en tramos (`_en_tramos`, l.199);
+  - las cuentas son las de `armado_bouquet.total_leido` (`_globos_de`, l.190),
+    sin una segunda regla.
+- **Tamaños desde `por_tamano`:** `clases_desde_por_tamano` (l.269) pone la clase
+  en los niveles leídos que no la traen, repartiendo por los globos que le faltan
+  a cada clase. `_kit` la aplica siempre que haya lectura del armado y conteo
+  confiable. El látex lo sigue eligiendo `_material_del_color`; no hizo falta
+  cambiar su firma, porque la clase viaja en el nivel.
+- **Chat** (`prompt-sistema.ts`):
+  - `cantidadDelConteo` (l.211) decide si el conteo manda: bandera, confianza de
+    al menos 0,5 y una cifra leída (cuenta exacta o estimado);
+  - si manda, `armadoLeido(…, sinTotal)` (l.176) omite el `total_globos` y la
+    orden de declararlo, y `conteoLeido` (l.224) da la cifra para declarar;
+  - si no, sigue el total que publicó Python;
+  - sin conteo o sin bandera, la línea es la de la rama del bouquet, byte a
+    byte;
+  - no se cuenta nada en TypeScript.
+- **Pruebas nuevas:**
+  - en `test_conteo_foto.py`:
+    - el bouquet del 11 (dos cuartetos sin `cantidad`, corona, 3 y 5) con un
+      conteo estimado de 35 sube a 35: un nivel base con cantidad 8, las
+      posiciones intactas y un solo supuesto;
+    - la misma lectura con `cantidad` 4 (35) y un conteo de 36: `coincide` y se
+      queda el armado;
+    - los tamaños salen de `por_tamano` (el blanco de 18" ya no se quita);
+    - el bouquet de 5 sigue dando 5, con y sin conteo;
+    - reescalado por `cantidad` y en tramos;
+    - la clase solo donde falta;
+  - en `test-conteo-referencia.ts`: el conteo manda sobre el total del armado en
+    el texto del chat; sin cifra leída, o sin la bandera, manda el total de
+    Python.
+- **Verificación:** ver §3.2.
+
+### 3.2 Verificación tras la fusión (resultados reales, 2026-09-28)
+
+| Comando | Resultado |
+|---|---|
+| `npx tsc --noEmit` | solo TS2304 `LayoutProps` (preexistente) |
+| `npm run -s lint` | 0 errores, 25 avisos (los mismos) |
+| `npm run -s contracts:check` | 9 chat + 30 domain al día |
+| `npm run plan:test` | exit 0 (82 pasos: `ia:test-bouquet-referencia` 11/11, `ia:test-conteo-referencia` 9/9, `ia:test-armado-bouquet-prompt`, `eval:test-conteo` 7/7) |
+| `pytest -q` | 745 passed, 4 skipped |
+| `ruff check app tests scripts` · `ruff format --check app tests` · `mypy app scripts` | limpio · 75 formateados · sin errores (41 archivos) |
+| `generate_models.py --check` | al día |
+| vectores dorados `plan-resolution` | 31, sin cambios |
+
 ## 4. Pendientes
 
-1. **Fusionar con `fix/bouquet-conteo-niveles`.** Cuando la lectura del armado
-   traiga `cantidad` y tamaño por nivel, revisar dos cosas:
-   - `reescalar_lectura_armado` debe seguir contando igual (las copias valen 1);
-   - repartir con `por_tamano` del conteo donde el nivel no traiga tamaño. Hoy
-     `_material_del_color` elige el primer látex del color.
-   `armadoLeido` debe dejar de contar en TypeScript.
+1. ~~Fusionar con `fix/bouquet-conteo-niveles`~~: hecho, ver §3.1.
 2. **Fusionar con `feat/guirnaldas`.** `_aplicar_conteos` va antes de
    `completar_armados_guirnalda` en `_resolution_result`. La cuerda parabólica de
    `_total_globos` y `_eje` entra sola: `conteo_foto.py` cuenta con `contar` de
