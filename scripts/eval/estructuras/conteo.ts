@@ -20,7 +20,7 @@ import type { AnalizadorConteo, PiezaContada } from "../../../src/lib/eval/estru
 
 const REPO = process.cwd();
 /** Versión del prompt de la lectura (fijada en services/ai-api/tests/test_conteo_referencia.py). La corrida real registra la que Python devuelve. */
-const PROMPT_VERSION_CONOCIDA = "conteo-referencia.v1:bfd6604c6192ab95";
+const PROMPT_VERSION_CONOCIDA = "conteo-referencia.v1:1b1d24d385008090";
 
 function detectarMime(bytes: Buffer): "image/jpeg" | "image/png" | "image/webp" {
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";

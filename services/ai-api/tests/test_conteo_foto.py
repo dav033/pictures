@@ -185,6 +185,7 @@ def test_la_clase_de_tamano_sale_del_reparto_del_conteo_solo_donde_falta() -> No
 
 
 def test_clases_de_tamano_del_conteo() -> None:
+    # Una sola escala con el armado del bouquet (revisión 1/11): 24" es gigante.
     assert [clase_de_diametro(d) for d in (5, 9, 11, 12, 16, 18, 24, 36)] == [
         "chico",
         "chico",
@@ -192,7 +193,7 @@ def test_clases_de_tamano_del_conteo() -> None:
         "mediano",
         "grande",
         "grande",
-        "grande",
+        "gigante",
         "gigante",
     ]
 

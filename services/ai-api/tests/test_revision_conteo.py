@@ -228,3 +228,61 @@ async def test_2_el_conteo_no_elige_una_densidad_que_la_estructura_oficial_no_ad
     assert estructura_del_plan(resolved)["densidad"] in admitidas
     [conteo] = _conteos(resolved)
     assert conteo["decision"] in ("ajustado", "sin_ajuste_posible")
+
+
+# --- 1 = 11: una sola escala de clases de tamaño (la del armado del bouquet) --------------
+
+
+def test_1_el_conteo_y_el_bouquet_clasifican_cada_diametro_igual() -> None:
+    from app.armado_bouquet import CLASES_TAMANO_NIVEL, clase_de_tamano
+    from app.conteo_foto import clase_de_diametro
+
+    for pulgadas in (5, 9, 10, 11, 12, 14, 16, 18, 20, 24, 30, 36):
+        assert clase_de_diametro(pulgadas) == clase_de_tamano(pulgadas), pulgadas
+    # 24" es gigante en las dos lecturas (antes el conteo lo llamaba grande).
+    assert clase_de_diametro(24) == "gigante"
+    assert CLASES_TAMANO_NIVEL["gigante"][0] <= 24
+
+
+def test_1_el_prompt_del_conteo_describe_las_clases_con_los_rangos_del_bouquet() -> None:
+    from app.amaterasu.conteo_referencia import SYSTEM_INSTRUCTION
+    from app.armado_bouquet import CLASES_TAMANO_NIVEL
+
+    for clase, (minimo, maximo) in CLASES_TAMANO_NIVEL.items():
+        assert f'"{clase}" ({minimo:g} to {maximo:g} inch' in SYSTEM_INSTRUCTION, clase
+    assert "18 or 24 inch" not in SYSTEM_INSTRUCTION
+
+
+@pytest.mark.anyio
+async def test_1_un_bouquet_de_24_contado_como_gigante_compra_el_de_24() -> None:
+    from tests.test_conteo_foto import (
+        _bouquet_dos_tamanos,
+        _pista_dos_tamanos,
+        _plan_bouquet,
+        _resolver_bouquet,
+    )
+    from tests.test_plan_armado import ROWS, _row
+
+    r24 = _row("r24-blanco", "Globo látex blanco", "R-24", forma="redondo", diam=24, codigo="R-24")
+    bouquet = _bouquet_dos_tamanos()
+    for material in cast(list[dict[str, object]], bouquet["materiales"]):
+        if material["product_id"] == "prod-r18-blanco":
+            material.update(product_id="prod-r24-blanco", variant_id="var-r24-blanco")
+    reparto = [{"clase": "mediano", "proporcion": 0.75}, {"clase": "gigante", "proporcion": 0.25}]
+    resolved = await _resolver_bouquet(
+        _plan_bouquet(bouquet),
+        [*ROWS, r24],
+        completar_armados=True,
+        pistas_armado=[_pista_dos_tamanos()],
+        completar_conteos=True,
+        pistas_conteo=[_conteo(globos_visibles=17, exacto=True, por_tamano=reparto)],
+    )
+    compras = {
+        str(linea["variant_id"]): cast(int, linea["unidades"])
+        for linea in cast(
+            list[dict[str, object]],
+            cast(list[dict[str, object]], resolved["estructuras"])[0]["lineas"],
+        )
+    }
+    assert compras.get("var-r24-blanco") == 4, compras
+    assert not any("otro tamaño" in s for s in _supuestos(resolved))

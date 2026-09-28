@@ -611,6 +611,16 @@ def _distancia_a_clase(tamano: float | None, clase: str) -> float:
     return max(minimo - tamano, tamano - maximo, 0.0)
 
 
+def clase_de_tamano(pulgadas: float) -> str:
+    """La clase de tamaño de un diámetro: la de rango más cercano (empate: la menor).
+
+    Es la única escala de clases de tamaño del sistema (revisión 1/11): la usan
+    la lectura del armado del bouquet y el conteo de la foto (``por_tamano``),
+    así que "grande" y "gigante" dicen lo mismo en las dos lecturas.
+    """
+    return min(CLASES_TAMANO_NIVEL, key=lambda clase: _distancia_a_clase(pulgadas, clase))
+
+
 def _material_del_color(
     materiales: Sequence[MaterialBouquet], color: str, clase_tamano: str | None = None
 ) -> int | None:

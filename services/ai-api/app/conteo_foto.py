@@ -46,6 +46,7 @@ from app.armado_bouquet import (
     MAX_CANTIDAD_NIVEL,
     CompraLeida,
     EstructuraBouquet,
+    clase_de_tamano,
     compra_desde_lectura,
     total_leido,
 )
@@ -328,14 +329,14 @@ def _partes(compra: CompraLeida) -> _PartesLeidas:
 
 
 def clase_de_diametro(pulgadas: float) -> str:
-    """Clase de tamaño del conteo: 5"/9" chico, 12" mediano, 18"/24" grande, 36" gigante."""
-    if pulgadas <= 10:
-        return "chico"
-    if pulgadas <= 14:
-        return "mediano"
-    if pulgadas < 30:
-        return "grande"
-    return "gigante"
+    """Clase de tamaño de un diámetro, con la escala del armado del bouquet.
+
+    Una sola escala (revisión 1/11): la dueña es
+    ``armado_bouquet.CLASES_TAMANO_NIVEL`` (5"–9" chico, 11"–12" mediano,
+    16"–18" grande, 24"–36" gigante), la que usa ``_material_del_color`` al
+    elegir el látex de una clase.
+    """
+    return str(clase_de_tamano(pulgadas))
 
 
 def _reparto_por_clase(proporciones: Sequence[tuple[int, float]]) -> dict[str, float]:

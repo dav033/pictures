@@ -24,7 +24,7 @@ pagas: todo se verificó con dobles, catálogos falsos y un ai-api local sin lla
     `estructura_oficial`, `bbox` y `piezas` (cuántas piezas iguales representa el
     elemento; se cuenta una).
   - Prompt `SYSTEM_INSTRUCTION` (l.147), esquema `RESPONSE_SCHEMA` (l.179) y
-    `PROMPT_VERSION` (l.228) = `conteo-referencia.v1:bfd6604c6192ab95`, fijada en
+    `PROMPT_VERSION` (l.228) = `conteo-referencia.v1:bfd6604c6192ab95` (desde la revisión 1/11, `1b1d24d385008090`), fijada en
     `tests/test_conteo_referencia.py`. El esquema se serializa sin ordenar claves:
     el SDK manda `property_ordering` y el modelo escribe lo visible, luego los
     racimos y al final el estimado.

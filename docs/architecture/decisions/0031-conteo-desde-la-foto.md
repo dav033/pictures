@@ -33,7 +33,8 @@ El trabajo se parte en dos entregas reversibles por separado
    `services/ai-api/app/amaterasu/conteo_referencia.py`; la llamada es la misma
    `vision_estructurada.leer_foto` (temperatura 0, sin razonamiento, sin
    reintentos). Versión propia del prompt, fijada en la prueba:
-   `conteo-referencia.v1:bfd6604c6192ab95`.
+   `conteo-referencia.v1:1b1d24d385008090` (antes `bfd6604c6192ab95`; cambió el
+   2026-09-28 con la escala única de tamaños, ver la revisión 1/11 abajo).
 3. **Cómo se cuenta cada tipo vive en el registro** (ADR-0030): campo nuevo
    `como_contar` en `DefinicionEstructura`, uno por submódulo
    (`estructuras/<tipo>.py`). Entran dos submódulos: `techo_globos` (estructura
@@ -62,8 +63,14 @@ El trabajo se parte en dos entregas reversibles por separado
      sería menor que lo visible (incoherente: se descarta, no se corrige);
    - `racimos`, `globos_por_racimo` (1–8) (enteros o `null`);
    - `por_tamano`: `[{clase: chico | mediano | grande | gigante, proporcion}]`
-     (5"/9" · 12" · 18"/24" · 36"). Cada clase una vez; si la suma del modelo está
-     en 1 ± 0,1 se normaliza a 1, si no el reparto queda vacío;
+     con **una sola escala de tamaños**, la del armado del bouquet
+     (`armado_bouquet.CLASES_TAMANO_NIVEL`: 5"–9" · 11"–12" · 16"–18" · 24"–36").
+     El prompt escribe los rangos desde esa tabla y `conteo_foto.clase_de_diametro`
+     clasifica con `armado_bouquet.clase_de_tamano`. Hasta la revisión 1/11
+     (2026-09-28) el conteo decía "grande" a 18"/24" y "gigante" a 36": al pasar la
+     clase a un nivel del bouquet, un 24" contado "grande" se compraba en 12". Cada
+     clase va una vez; si la suma del modelo está en 1 ± 0,1 se normaliza a 1; si
+     no, el reparto queda vacío;
    - `largo_relativo`, `alto_relativo`: `{referencia: persona | puerta | mesa, veces}`
      o `null`; `veces` es el largo o el alto de la pieza dividido por la **altura**
      de la referencia (una persona de pie, una puerta, una mesa);
