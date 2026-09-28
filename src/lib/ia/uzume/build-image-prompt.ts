@@ -295,10 +295,17 @@ function materialEstimateContract(sceneSpec: SceneSpec, colorPatterns?: readonly
  */
 function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: VisualContext, styling: readonly AmbientacionImagen[] = [], scenography: readonly SceneryElement[] = [], colorPatterns?: readonly FraseDeEstructura[]): string[] {
   const categories = new Set(sceneSpec.elements.map((element) => element.category));
-  // A garland whose assembly runs along the table edge (ADR-0032, E5) stands on a
-  // table too, whatever its placement: without it "no generic table" banned it.
+  // A garland's assembly (ADR-0032, E5) decides whether it stands on a table,
+  // in both directions: along the table edge it needs one whatever its
+  // placement ("no generic table" banned it), and hung, on the wall, on the
+  // floor or wrapped around another piece it has none even when placed on the
+  // table (review finding 16: a phantom table under a hanging garland).
+  // Without an assembly the placement decides, as always.
   const tableTop = tableSupportedElements(sceneSpec);
-  const tableSupports = [...tableTop, ...sceneSpec.elements.filter((element) => !tableTop.includes(element) && armadoGuirnaldaDeElemento(colorPatterns, element)?.soporte === "mesa")];
+  const tableSupports = sceneSpec.elements.filter((element) => {
+    const soporte = armadoGuirnaldaDeElemento(colorPatterns, element)?.soporte;
+    return soporte ? soporte === "mesa" : tableTop.includes(element);
+  });
   // Las prohibiciones generales de este contrato son lo primero y más fuerte
   // que lee el modelo. Sin nombrar aquí la escenografía conservada, el prompt
   // se contradice consigo mismo y el modelo borra justo lo que el cliente

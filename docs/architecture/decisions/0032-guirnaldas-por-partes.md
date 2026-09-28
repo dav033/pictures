@@ -130,8 +130,12 @@ la cuerda real es más larga y la puerta física no lo veía
     conserva el reparto orgánico y el armado va detrás (el armado dice cómo
     se arma, no dónde va cada color); con patrón, la frase del patrón lo
     reemplaza, como sin armado. Una guirnalda `sobre_estructura` abre una
-    excepción en el contrato de cardinalidad (las dos piezas se tocan) y una
-    `mesa` cuenta en la excepción de mesa aunque su ubicación no sea una mesa.
+    excepción en el contrato de cardinalidad (las dos piezas se tocan) y el
+    soporte del armado decide la excepción de mesa en los dos sentidos: una
+    `mesa` cuenta aunque su ubicación no sea una mesa, y una guirnalda ubicada
+    en la mesa con otro soporte no la recibe (hallazgo 16 de la revisión).
+    Una guirnalda abrazada a una anfitriona repetida abraza su instancia
+    (#n con #n; sin pareja, "una de" las anfitrionas; hallazgo 15).
     En el híbrido, `GEMINI_COMPOSITION_GARLAND_LOCK` se añade al hard lock solo
     cuando el caption llevó un armado de guirnalda; un armado sin patrón no
     pide el candado del patrón.

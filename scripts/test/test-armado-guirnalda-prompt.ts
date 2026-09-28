@@ -428,6 +428,27 @@ function anfitrionaRepetida(): void {
   console.log("[PASS] hallazgo 15: con la anfitriona repetida, la guirnalda #n abraza a su pieza #n (o a una de ellas si no hay pareja)");
 }
 
+/** Hallazgo 16: el soporte del armado manda sobre la ubicación para la excepción de mesa. */
+function mesaSegunElSoporte(): void {
+  const base = planGuirnalda("mesa");
+  const armado = armadoDelPlan(base.plan);
+  assert.match(promptGeminiDePlan(base, frasesDeEstructuras(base.plan)), /TABLE SUPPORT EXCEPTION: 1 approved table-top structure\(s\)/, "sobre la mesa y con soporte mesa");
+  const otros: ReadonlyArray<Partial<ArmadoGuirnaldaResuelto["armado"]>> = [
+    { soporte: "colgada", puntos_de_anclaje: 2 },
+    { soporte: "pared" },
+    { soporte: "piso" },
+    { soporte: "sobre_estructura", estructura_id: "EST_02_ARCO" },
+  ];
+  for (const cambio of otros) {
+    const plan = { ...base.plan, armados_guirnalda: [{ ...armado, armado: { ...armado.armado, ...cambio } }] };
+    const prompt = promptGeminiDePlan({ ...base, plan }, frasesDeEstructuras(plan));
+    assert.doesNotMatch(prompt, /TABLE SUPPORT EXCEPTION/, `${cambio.soporte}: la guirnalda ubicada en la mesa ya no se apoya en ella`);
+  }
+  // Sin armado la ubicación decide, como siempre (la instantánea lo fija byte a byte).
+  assert.match(INSTANTANEA["gemini/mesa"]!, /TABLE SUPPORT EXCEPTION: 1 approved table-top structure\(s\)/);
+  console.log("[PASS] hallazgo 16: una guirnalda ubicada en la mesa con otro soporte no recibe la excepción de mesa");
+}
+
 function main(): void {
   sinArmadoByteAByte();
   frasesDeLaGuirnalda();
@@ -442,6 +463,7 @@ function main(): void {
   loraLegacyDelPlan();
   hibridoConArmado();
   anfitrionaRepetida();
+  mesaSegunElSoporte();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
