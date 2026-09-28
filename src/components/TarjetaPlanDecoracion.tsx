@@ -24,7 +24,7 @@ import {
   contar,
   describirEstructuraCliente,
   escenografiaCliente,
-  esEstructuraDeGlobos,
+  cuentaEnGlobos,
   faltantesCliente,
   medidasCortasCliente,
   muestraColor,
@@ -370,7 +370,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const vistaHojaArmadoBouquet = hojaArmadoBouquet ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaArmadoBouquet) : undefined;
   const coloresPlan = [...new Set(vistasEstructura.flatMap((vista) => vista.colores.map((muestra) => muestra.color)))];
   const resumenPlan = resumenPlanCliente(vistasEstructura.map((vista) => vista.paraDescribir), coloresPlan);
-  const soloGlobos = plan.estructuras.every((estructura) => esEstructuraDeGlobos(estructura.tipo));
+  const soloGlobos = plan.estructuras.every(cuentaEnGlobos);
   // Escenografía: lo que se conserva de la foto del cliente. Entra en la
   // imagen, el cliente la enciende o la apaga, y nunca se cotiza — no toca el
   // plan, los materiales ni `plan_hash`.
@@ -415,7 +415,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       titulo: oficial ? nombreConCantidadCliente(paraDescribir) : productoCliente(estructura.nombre),
       subtitulo: [ubicacionCorta, medidasCortasCliente(estructura.tipo, declarada?.medidas)].filter(Boolean).join(" · "),
       globos: estructura.total_unidades,
-      unidad: esEstructuraDeGlobos(estructura.tipo) ? "globos" : "piezas",
+      // A bouquet or kit made of balloons says "globos"; only real pieces say "piezas".
+      unidad: cuentaEnGlobos(estructura) ? "globos" : "piezas",
       colores,
       recorte: recorte ? { ...recorte, alt: `${oficial?.nombre ?? productoCliente(estructura.nombre)} de tu foto de referencia, ${ubicacionCorta.toLowerCase()}` } : null,
       recorteCrudo: recorte,

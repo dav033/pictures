@@ -11,7 +11,7 @@ import type { EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import {
   acabadoCliente,
   cantidadCliente,
-  esEstructuraDeGlobos,
+  cuentaEnGlobos,
   medidasCliente,
   metrosCliente,
   muestraColor,
@@ -262,13 +262,14 @@ export function DetalleEstructura({
   const acciones = { imagenDe, fotoAusente, editable, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea };
   const nombreVisible = oficial?.nombre ?? productoCliente(estructura.nombre);
   const medidasTexto = medidasCliente(estructura.tipo, declarada?.medidas);
-  const cantidad = cantidadCliente(estructura.total_unidades, estructura.repeticiones, estructura.tipo);
-  const deGlobos = esEstructuraDeGlobos(estructura.tipo);
+  const cantidad = cantidadCliente(estructura.total_unidades, estructura.repeticiones, estructura);
+  // A bouquet or a kit made of balloons counts balloons, not pieces.
+  const deGlobos = cuentaEnGlobos(estructura);
   const tramos = tramosPorTamano(estructura.mezcla_real.map((linea) => ({ pulgadas: linea.diam_pulg, unidades: linea.unidades })));
   const mosaicos = [
     ...mosaicosMedidas(estructura.tipo, declarada?.medidas),
     ...(estructura.repeticiones > 1 ? [{ etiqueta: "Piezas iguales", valor: String(estructura.repeticiones) }] : []),
-    { etiqueta: deGlobos ? "Globos" : "Piezas", valor: `unos ${Math.round(estructura.total_unidades)}` },
+    { etiqueta: deGlobos ? "Globos" : "Piezas", valor: `${deGlobos ? "unos" : "unas"} ${Math.round(estructura.total_unidades)}` },
   ];
   const pequenosRellenan = tramos.length >= 2 && tramos[0]!.unidades > tramos[tramos.length - 1]!.unidades;
   // With a pattern, the grid decides how much of each color goes in; only confetti still takes a color split.
