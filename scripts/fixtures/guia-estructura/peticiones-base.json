@@ -1,0 +1,232 @@
+{
+  "_comentario": "Peticiones que generarConSempertexLora mandaba al proveedor ANTES de la guía de estructura (ADR-0033), capturadas una sola vez sobre 90da1ef con scripts/lib/capturar-peticion-lora.ts (casosBase, CAPTION_DE_PRUEBA, LORA_DE_PRUEBA, 3:2, semilla 101, guidance 3.5). directo: LORA_GENERATION_PYTHON_ENABLED apagada; python: encendida (sin el context del sobre). No se regenera desde el código bajo prueba.",
+  "directo": {
+    "sin-imagenes": {
+      "destino": "https://queue.fal.run/fal-ai/flux-2/lora",
+      "cuerpo": {
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": true,
+        "output_format": "png"
+      }
+    },
+    "solo-productos": {
+      "destino": "https://queue.fal.run/fal-ai/flux-2/lora",
+      "cuerpo": {
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": true,
+        "output_format": "png"
+      }
+    },
+    "venue": {
+      "destino": "https://queue.fal.run/fal-ai/flux-2/lora/edit",
+      "cuerpo": {
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.\n\nINPUT IMAGES\nPRIMARY VENUE @image1: preserve this venue; never use another input background.\nInput image 1 (@image1): venue base: preserve architecture, wall, ground, camera, crop and light; decorate only inside it.\nOne cohesive photorealistic scene; no collage, board, cutouts or samples.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "image_urls": [
+          "data:image/jpeg;base64,AA=="
+        ],
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": true,
+        "output_format": "png"
+      }
+    },
+    "previo": {
+      "destino": "https://queue.fal.run/fal-ai/flux-2/lora/edit",
+      "cuerpo": {
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.\n\nINPUT IMAGES\nPRIMARY BASE @image1: preserve current scene and venue; apply only requested change.\nInput image 1 (@image1): previous result: preserve current scene and venue; apply only requested change.\nOne cohesive photorealistic scene; no collage, board, cutouts or samples.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "image_urls": [
+          "data:image/jpeg;base64,AA=="
+        ],
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": true,
+        "output_format": "png"
+      }
+    },
+    "referencias-hibrido": {
+      "destino": "https://queue.fal.run/fal-ai/flux-2/lora",
+      "cuerpo": {
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": true,
+        "output_format": "png"
+      }
+    }
+  },
+  "python": {
+    "sin-imagenes": {
+      "destino": "/internal/v1/ia/lora-generate",
+      "cuerpo": {
+        "schema_version": "lora-generate.v1",
+        "mode": "text",
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_width": 1536,
+        "image_height": 1024,
+        "seed": 101,
+        "image_data_urls": []
+      }
+    },
+    "solo-productos": {
+      "destino": "/internal/v1/ia/lora-generate",
+      "cuerpo": {
+        "schema_version": "lora-generate.v1",
+        "mode": "text",
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_width": 1536,
+        "image_height": 1024,
+        "seed": 101,
+        "image_data_urls": []
+      }
+    },
+    "venue": {
+      "destino": "/internal/v1/ia/lora-generate",
+      "cuerpo": {
+        "schema_version": "lora-generate.v1",
+        "mode": "edit",
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.\n\nINPUT IMAGES\nPRIMARY VENUE @image1: preserve this venue; never use another input background.\nInput image 1 (@image1): venue base: preserve architecture, wall, ground, camera, crop and light; decorate only inside it.\nOne cohesive photorealistic scene; no collage, board, cutouts or samples.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_width": 1536,
+        "image_height": 1024,
+        "seed": 101,
+        "image_data_urls": [
+          "data:image/jpeg;base64,AA=="
+        ]
+      }
+    },
+    "previo": {
+      "destino": "/internal/v1/ia/lora-generate",
+      "cuerpo": {
+        "schema_version": "lora-generate.v1",
+        "mode": "edit",
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.\n\nINPUT IMAGES\nPRIMARY BASE @image1: preserve current scene and venue; apply only requested change.\nInput image 1 (@image1): previous result: preserve current scene and venue; apply only requested change.\nOne cohesive photorealistic scene; no collage, board, cutouts or samples.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_width": 1536,
+        "image_height": 1024,
+        "seed": 101,
+        "image_data_urls": [
+          "data:image/jpeg;base64,AA=="
+        ]
+      }
+    },
+    "referencias-hibrido": {
+      "destino": "/internal/v1/ia/lora-generate",
+      "cuerpo": {
+        "schema_version": "lora-generate.v1",
+        "mode": "text",
+        "prompt": "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_width": 1536,
+        "image_height": 1024,
+        "seed": 101,
+        "image_data_urls": []
+      }
+    }
+  }
+}
