@@ -87,6 +87,7 @@ from app.armado_guirnalda import sugerir_armado as sugerir_armado_guirnalda
 from app.armado_guirnalda import validar as validar_armado_guirnalda
 from app.catalog import purchase_color_for_unsold
 from app import conteo_foto
+from app.supuestos import agregar_supuesto, supuesto
 from app.operational_models import ContractModel, OperationalRequest
 from app.plan_worker import run_plan_cpu
 from app.patron_color import (
@@ -4268,9 +4269,14 @@ def _completar_armados_guirnalda(
         if degraded:
             notice = True
             name = _text(item.get("nombre")) or "Guirnalda"
-            assumptions.append(
-                f"{name}: el patrón por racimos no cabe en lo que se compra; queda el patrón"
-                " sugerido y el armado de sus racimos."
+            # Within the contract's maxLength and maxItems (review finding 31).
+            agregar_supuesto(
+                assumptions,
+                supuesto(
+                    name,
+                    "el patrón por racimos no cabe en lo que se compra; queda el patrón"
+                    " sugerido y el armado de sus racimos.",
+                ),
             )
         assembly = sugerir_armado_guirnalda(_garland_context(current, item), reading)
         if assembly is not None:

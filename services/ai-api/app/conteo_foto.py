@@ -49,6 +49,8 @@ from app.armado_bouquet import (
     total_leido,
 )
 from app.generated_models import contract_schema
+from app.supuestos import agregar_supuesto
+from app.supuestos import supuesto as acotar_supuesto
 
 #: La misma barra que las otras lecturas de la foto (patrón, armado).
 CONFIANZA_MINIMA = 0.5
@@ -562,9 +564,10 @@ def _kit(
         ):
             final = nueva.total
             item = {**estructura, "unidades_declaradas": final * reps}
-            supuesto = (
-                f"{nombre}: la foto muestra {_unos(cuenta)} globos; el armado leído tenía "
-                f"{partes.total}: la cantidad quedó en {final * reps} (el plan decía {antes_total})."
+            supuesto = acotar_supuesto(
+                nombre,
+                f"la foto muestra {_unos(cuenta)} globos; el armado leído tenía "
+                f"{partes.total}: la cantidad quedó en {final * reps} (el plan decía {antes_total}).",
             )
             return (
                 _Resultado(
@@ -613,9 +616,10 @@ def _kit(
             descartar,
         )
     item = {**estructura, "unidades_declaradas": nuevo_total}
-    supuesto = (
-        f"{nombre}: la foto muestra {_unos(cuenta)} globos por pieza, así que la cantidad quedó en "
-        f"{nuevo_total} (el plan decía {antes_total})."
+    supuesto = acotar_supuesto(
+        nombre,
+        f"la foto muestra {_unos(cuenta)} globos por pieza, así que la cantidad quedó en "
+        f"{nuevo_total} (el plan decía {antes_total}).",
     )
     return (
         _Resultado(
@@ -702,8 +706,18 @@ def _frase_cambio(cambio: Mapping[str, object]) -> str:
         )
     return (
         f"{_NOMBRE_MEDIDA[campo]} {_numero_es(float(cast(float, cambio['antes'])))} → "
-        f"{_numero_es(float(cast(float, cambio['despues'])))} m equivalentes a la foto (no medidos)"
+        f"{_numero_es(float(cast(float, cambio['despues'])))} m"
     )
+
+
+def _frases_de_cambios(cambios: Sequence[Mapping[str, object]]) -> str:
+    """Los cambios en palabras; las medidas en una sola cláusula que dice una vez
+    que son equivalentes a la foto (el supuesto tiene que caber en el contrato)."""
+    frases = [_frase_cambio(c) for c in cambios if not str(c["campo"]).endswith("_m")]
+    medidas = [_frase_cambio(c) for c in cambios if str(c["campo"]).endswith("_m")]
+    if medidas:
+        frases.append(f"{' y '.join(medidas)} equivalentes a la foto (no medidos)")
+    return ", ".join(frases)
 
 
 def _geometrica(
@@ -784,9 +798,10 @@ def _geometrica(
             estructura, "coincide", cuenta.globos, antes, antes, [], "El plan ya sigue la foto."
         )
     por_pieza = " por pieza" if cast(int, estructura.get("repeticiones") or 1) > 1 else ""
-    supuesto = (
-        f"{nombre}: la foto muestra {_unos(cuenta)} globos{por_pieza} y el plan tenía {antes}; "
-        f"{', '.join(_frase_cambio(c) for c in cambios)}: quedó en {elegida.total}."
+    supuesto = acotar_supuesto(
+        nombre,
+        f"la foto muestra {_unos(cuenta)} globos{por_pieza} y el plan tenía {antes}; "
+        f"{_frases_de_cambios(cambios)}: quedó en {elegida.total}.",
     )
     medidas_movidas = any(str(cambio["campo"]).endswith("_m") for cambio in cambios)
     motivo = (
@@ -908,7 +923,8 @@ def aplicar(
             )
         estructuras.append(resultado.estructura)
         if resultado.supuesto:
-            supuestos.append(resultado.supuesto)
+            # Dentro de maxItems; si no cabe, el ajuste sigue en conteos_referencia.
+            agregar_supuesto(supuestos, resultado.supuesto)
         conteos.append(
             {
                 "estructura_id": estructura_id,
