@@ -399,6 +399,35 @@ function gemniSinteticoSinPlan(): void {
   console.log("[PASS] Gemini sin plan: el soporte llega y una anfitriona desconocida no deja ids en el prompt");
 }
 
+// ---------------------------------------------------------------------------
+// 6. Revisión adversaria de feat/guirnaldas.
+// ---------------------------------------------------------------------------
+
+/** Hallazgo 15: cada instancia de una guirnalda abraza a su instancia de la anfitriona repetida. */
+function anfitrionaRepetida(): void {
+  // Python acepta dos guirnaldas abrazadas a un par de columnas (plan real).
+  const fijado = planGuirnalda("sobre-columnas-repetidas");
+  const frases = frasesDeEstructuras(fijado.plan)!;
+  const prompt = promptGeminiDePlan(fijado, frases);
+  for (const numero of [1, 2]) {
+    const linea = lineaDeInstancia(prompt, `Guirnalda #${numero} de 2`);
+    assert.ok(linea.includes(`Support: wrapped around the approved structure described by “Columna #${numero} de 2”`), linea);
+  }
+  const coherencia = verificarCoherenciaPrompt(prompt, fijado.plan, escenaParaCoherencia(escenaDePlan(fijado), frases));
+  assert.equal(coherencia.ok, true, coherencia.errores.join("; "));
+  // Con distinto número de instancias no hay pareja: la anfitriona se nombra sin su número.
+  const base = escenaGuirnalda();
+  const arco = base.elements.find((element) => element.element_id === "EST_01_ARCO")!;
+  const arcos = [1, 2].map((numero) => ({ ...arco, element_id: `EST_01_ARCO#${numero}`, name: `Arco orgánico #${numero} de 2`, visual_semantics: { ...arco.visual_semantics!, repetition_group: "EST_01_ARCO" } }));
+  const escena = { ...base, elements: [...arcos, ...base.elements.filter((element) => element !== arco)] };
+  const sobreArco = armadoDelPlan(planGuirnalda("sobre-arco").plan);
+  const frasesArco = frasesDeEstructuras({ armados_guirnalda: [{ ...sobreArco, estructura_id: GUIRNALDA_SINTETICA, armado: { ...sobreArco.armado, estructura_id: "EST_01_ARCO" } }] })!;
+  const linea = lineaDeInstancia(promptGeminiGuirnalda(escena, frasesArco), "Guirnalda orgánica");
+  assert.ok(linea.includes("Support: wrapped around one of the approved structures described by “Arco orgánico”"), linea);
+  assert.doesNotMatch(linea, /Arco orgánico #\d/, linea);
+  console.log("[PASS] hallazgo 15: con la anfitriona repetida, la guirnalda #n abraza a su pieza #n (o a una de ellas si no hay pareja)");
+}
+
 function main(): void {
   sinArmadoByteAByte();
   frasesDeLaGuirnalda();
@@ -412,6 +441,7 @@ function main(): void {
   loraRepetida();
   loraLegacyDelPlan();
   hibridoConArmado();
+  anfitrionaRepetida();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

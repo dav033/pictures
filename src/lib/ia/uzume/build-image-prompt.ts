@@ -1,7 +1,7 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, describirMezclaDeColor, frasePatronColor, idDeEstructura, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
-import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA, fraseInstanciaConArmado, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado } from "./armado-en-prompt";
+import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA, fraseInstanciaConArmado, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado, type AnfitrionaEnPrompt } from "./armado-en-prompt";
 import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
 import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
 import { findSeparateSidePieces } from "./separate-side-pieces";
@@ -118,7 +118,7 @@ function physicalScale(element: SceneSpec["elements"][number]): string {
  */
 function shapeClause(element: SceneSpec["elements"][number], officialStructures?: ReadonlyMap<string, string>, colorPatterns?: readonly FraseDeEstructura[], sceneSpec?: SceneSpec): string {
   const guirnalda = armadoGuirnaldaDeElemento(colorPatterns, element);
-  if (guirnalda) return fraseSoporteGuirnalda(guirnalda, anfitrionaEnPrompt(sceneSpec, guirnalda.anfitriona));
+  if (guirnalda) return fraseSoporteGuirnalda(guirnalda, anfitrionaEnPrompt(sceneSpec, guirnalda.anfitriona, element));
   const semantics = element.visual_semantics;
   if (!semantics) return "";
   const official = identificarEstructuraOficial({
@@ -143,11 +143,32 @@ function shapeClause(element: SceneSpec["elements"][number], officialStructures?
   return "";
 }
 
-/** Name in the prompt of the plan structure a garland is wrapped around (never its id). */
-function anfitrionaEnPrompt(sceneSpec: SceneSpec | undefined, estructuraId: string | undefined): string | undefined {
+/** Instance number of a repeated plan structure (`EST_x#2` -> "2"); undefined for a single one. */
+function numeroDeInstancia(element: SceneSpec["elements"][number]): string | undefined {
+  return element.element_id.split("#")[1];
+}
+
+/**
+ * The host a garland instance is wrapped around, by its name in the prompt
+ * (never its id). A repeated host pairs instance by instance with a garland
+ * repeated as many times (Guirnalda #n wraps Columna #n); naming only the
+ * first instance stacked every garland on host #1 and left the others bare
+ * (review finding 15). With different counts there is no pair: the host is
+ * named without its "#n de m", as one of its instances.
+ */
+function anfitrionaEnPrompt(sceneSpec: SceneSpec | undefined, estructuraId: string | undefined, guirnalda: SceneSpec["elements"][number]): AnfitrionaEnPrompt | undefined {
   if (!sceneSpec || !estructuraId) return undefined;
-  const anfitriona = sceneSpec.elements.find((element) => idDeEstructura(element) === estructuraId);
-  return anfitriona ? promptElementName(anfitriona.name) : undefined;
+  const instancias = sceneSpec.elements.filter((element) => idDeEstructura(element) === estructuraId);
+  const primera = instancias[0];
+  if (!primera) return undefined;
+  if (instancias.length === 1) return { nombre: promptElementName(primera.name) };
+  const propias = sceneSpec.elements.filter((element) => idDeEstructura(element) === idDeEstructura(guirnalda)).length;
+  const numero = numeroDeInstancia(guirnalda);
+  const pareja = propias === instancias.length && numero !== undefined
+    ? instancias.find((element) => numeroDeInstancia(element) === numero)
+    : undefined;
+  if (pareja) return { nombre: promptElementName(pareja.name) };
+  return { nombre: promptElementName(primera.name).replace(/\s*#\d+\s+de\s+\d+$/, ""), unaDeVarias: true };
 }
 
 function stylingOf(nivel: NivelCreatividad | undefined): readonly AmbientacionImagen[] {
