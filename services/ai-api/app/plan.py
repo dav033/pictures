@@ -403,6 +403,9 @@ class PlanResolutionRequest(OperationalRequest):
     completar_conteos: bool = Field(default=False, strict=True)
     pistas_conteo: list[dict[str, object]] = Field(default_factory=list, max_length=16)
     completar_conteos_de: list[str] | None = Field(default=None, max_length=8)
+    # Review 33: the customer gave measures (Next's clienteDioMedidasEspacio), so
+    # the measures a structure declares are theirs and the count keeps them.
+    medidas_del_cliente: bool = Field(default=False, strict=True)
 
     @field_validator("pistas_conteo")
     @classmethod
@@ -3815,6 +3818,20 @@ def _aplicar_conteos(
     assembly_hints: Sequence[Mapping[str, object]],
 ) -> tuple[dict[str, object], list[dict[str, object]], list[dict[str, object]]]:
     """The plan adjusted to the photo's counts (ADR-0031), the assembly hints to use and ``conteos_referencia``."""
+    # Structures whose measures the request declared: with medidas_del_cliente
+    # those are the customer's (review 33); defaulted ones can still move.
+    customer_measures = (
+        {
+            _text(structure.get("estructura_id")) or ""
+            for structure in _mappings(request.plan.get("estructuras"))
+            if any(
+                _number(_mapping(structure.get("medidas") or {}).get(key)) is not None
+                for key in ("ancho_m", "alto_m", "largo_m")
+            )
+        }
+        if request.medidas_del_cliente
+        else set()
+    )
     port = conteo_foto.PuertoPlan(
         contar=lambda structure: _structure_count(plan, structure)[1],
         dentro_de_puerta=lambda structure, total: _within_physical_gate(plan, structure, total),
@@ -3826,6 +3843,8 @@ def _aplicar_conteos(
         mezclas=_MIXES,
         tamanos_obligatorios=bool(_required_sizes(plan)),
         densidades_admitidas=_admitted_densities,
+        medidas_del_cliente=lambda structure: (_text(structure.get("estructura_id")) or "")
+        in customer_measures,
     )
     adjusted, hints, counts = conteo_foto.aplicar(
         plan,

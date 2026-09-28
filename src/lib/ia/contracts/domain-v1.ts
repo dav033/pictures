@@ -498,6 +498,13 @@ export const PlanResolutionRequestV1Schema = z.object({
    * editada, o ninguna); las demás con pista conservan su lectura sin cambios.
    */
   completar_conteos_de: z.array(idSchema).max(8).optional(),
+  /**
+   * Con `completar_conteos`: el cliente dio medidas en su pedido
+   * (`clienteDioMedidasEspacio`). Las medidas que el plan declara para una
+   * estructura son entonces las suyas y el conteo no las mueve, aunque el
+   * espacio no tenga medidas (ADR-0031, revisión 33).
+   */
+  medidas_del_cliente: z.boolean().optional(),
 }).strict();
 
 export const PlanResolutionResultV1Schema = z.object({

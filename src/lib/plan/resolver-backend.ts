@@ -79,6 +79,8 @@ export type EntradaResolucionPlan = {
   pistasConteo?: readonly PistaConteo[];
   /** Con `completarConteos`: solo estas piezas (la editada, tras cambiar su mezcla). */
   completarConteosDe?: readonly string[];
+  /** Con `completarConteos`: el cliente dio medidas; las que el plan declara por estructura no se mueven. */
+  medidasDelCliente?: boolean;
   requestId: string;
   correlationId: string;
   signal?: AbortSignal;
@@ -119,6 +121,7 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       ...(entrada.completarConteos === undefined ? {} : { completarConteos: entrada.completarConteos }),
       ...(entrada.pistasConteo === undefined ? {} : { pistasConteo: [...entrada.pistasConteo] }),
       ...(entrada.completarConteosDe === undefined ? {} : { completarConteosDe: [...entrada.completarConteosDe] }),
+      ...(entrada.medidasDelCliente === undefined ? {} : { medidasDelCliente: entrada.medidasDelCliente }),
       requestId: entrada.requestId,
       correlationId: entrada.correlationId,
       ...(entrada.signal ? { parentSignal: entrada.signal } : {}),

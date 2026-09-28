@@ -286,3 +286,47 @@ async def test_1_un_bouquet_de_24_contado_como_gigante_compra_el_de_24() -> None
     }
     assert compras.get("var-r24-blanco") == 4, compras
     assert not any("otro tamaño" in s for s in _supuestos(resolved))
+
+
+# --- 33: las medidas que el cliente dio para una estructura no las mueve el conteo ---------
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("fuente", ["foto", "supuesto"])
+async def test_33_las_medidas_del_cliente_de_una_estructura_no_se_mueven(fuente: str) -> None:
+    # "Quiero una guirnalda de 3 metros como la de la foto": el modelo escribe
+    # largo_m 3 en la estructura y el espacio queda sin medidas (fuente no cliente).
+    plan = _plan_geometrico(_guirnalda(medidas={"largo_m": 3}), fuente=fuente)
+    pista = _conteo(estimado_total=95, largo_relativo={"referencia": "persona", "veces": 2.4})
+    resolved = await _resolver_geometrico(
+        plan, completar_conteos=True, pistas_conteo=[pista], medidas_del_cliente=True
+    )
+    assert _estructura(resolved)["medidas"] == {"largo_m": 3}
+    [conteo] = _conteos(resolved)
+    assert not any(
+        str(c["campo"]).endswith("_m") for c in cast(list[dict[str, object]], conteo["cambios"])
+    )
+
+
+@pytest.mark.anyio
+async def test_33_sin_medidas_declaradas_el_conteo_sigue_pudiendo_mover_las_asumidas() -> None:
+    # El cliente dio medidas de otra cosa; esta guirnalda no declaró largo (2,5 m asumido).
+    plan = _plan_geometrico(_guirnalda(medidas={}))
+    resolved = await _resolver_geometrico(
+        plan,
+        completar_conteos=True,
+        pistas_conteo=[_conteo(estimado_total=75)],
+        medidas_del_cliente=True,
+    )
+    assert cast(dict[str, float], _estructura(resolved)["medidas"])["largo_m"] > 2.5
+
+
+@pytest.mark.anyio
+async def test_33_tras_una_edicion_el_conteo_solo_ajusta_la_densidad() -> None:
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(_guirnalda()),
+        completar_conteos=True,
+        pistas_conteo=[_conteo(estimado_total=75)],
+        completar_conteos_de=["EST_01_GUIRNALDA"],
+    )
+    assert _estructura(resolved)["medidas"] == {"largo_m": 2.5}

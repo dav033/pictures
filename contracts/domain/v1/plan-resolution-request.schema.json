@@ -2587,6 +2587,9 @@
         "minLength": 1,
         "maxLength": 160
       }
+    },
+    "medidas_del_cliente": {
+      "type": "boolean"
     }
   },
   "required": [

@@ -471,6 +471,8 @@ class PuertoPlan:
     #: Las densidades que admite la estructura oficial de la pieza (revisión 2):
     #: la tabla es de ``estructuras-oficiales.ts`` y llega por el contrato.
     densidades_admitidas: Callable[[Mapping[str, object]], Sequence[str]] = lambda _e: DENSIDADES
+    #: Las medidas de la estructura son del cliente (revisión 33): el conteo no las mueve.
+    medidas_del_cliente: Callable[[Mapping[str, object]], bool] = lambda _e: False
 
 
 @dataclass
@@ -805,7 +807,8 @@ def _geometrica(
         )
     if elegida is None:
         motivo = (
-            "Con las medidas del cliente ninguna densidad alcanza la cuenta de la foto."
+            "Con las medidas fijas (del cliente o tras una edición) ninguna densidad alcanza"
+            " la cuenta de la foto."
             if medidas_fijas
             else "Ninguna densidad ni largo dentro de ±35 % alcanza la cuenta de la foto."
         )
@@ -951,7 +954,11 @@ def aplicar(
                 estructura,
                 lectura,
                 cuenta,
-                medidas_fijas=medidas_fijas,
+                # Del cliente (espacio o estructura) o tras una edición: la foto
+                # solo ajusta densidad (revisión 33).
+                medidas_fijas=medidas_fijas
+                or puerto.medidas_del_cliente(estructura)
+                or solo is not None,
                 mezcla_fija=solo is not None,
                 puerto=puerto,
             )
