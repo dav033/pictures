@@ -10,9 +10,10 @@ Lee primero `AGENTS.md` y ADR-0030. Fecha: 2026-09-25.
 | Entrega | Estado | Bandera |
 |---|---|---|
 | E1: lectura de conteo, contrato y blueprint, sin cambiar planes | hecha | `CONTEO_REFERENCIA_PYTHON_ENABLED` (OFF) |
-| E2: `_aplicar_conteos` al confirmar, texto para el chat y evaluación | ver §3 | `CONTEO_REFERENCIA_V1` (OFF) |
+| E2: `_aplicar_conteos` al confirmar, texto para el chat y evaluación | a medias, en la rama `wip/conteo-e2` (ver §3) | `CONTEO_REFERENCIA_V1` (OFF) |
 
-Sin push. Cero llamadas pagas: todo se verificó con dobles y un ai-api local sin llave.
+E1 subida a `origin/feat/conteo-referencia` el 2026-09-28. Cero llamadas pagas: todo
+se verificó con dobles y un ai-api local sin llave.
 
 ## 2. E1: qué se hizo
 
@@ -121,4 +122,15 @@ contenido, con el fin de línea normalizado, cambió; `--check` sigue igual.
 
 ## 3. E2
 
-Ver §4 (se completa al cerrar E2).
+Quedó a medias el 2026-09-25 por una pausa del usuario y se guardó tal cual en la rama
+`wip/conteo-e2` (un commit encima de esta rama). Ese estado **no pasa**
+`contracts:check`: el esquema Zod cambió después del último export. Al retomar, seguir
+desde esa rama y, al cerrar E2, llevar `feat/conteo-referencia` hasta ella.
+
+**Cambio de diseño obligatorio para kits.** La regla del plan "en kits la lectura del
+armado manda si existe, si no, el conteo" (`SEGUIMIENTO-guirnaldas.md` §2.1) queda
+descartada: un bouquet de más de 30 globos salió con 11 porque la lectura del armado
+describe una unidad por nivel (diagnóstico completo en `SEGUIMIENTO-bouquets.md` §14,
+rama `feat/bouquets`). El conteo da la cantidad y el armado la distribución; un conteo
+no exacto también debe poder subir la cantidad de un kit (un bouquet apilado nunca es
+"exacto": siempre tiene globos ocultos).
