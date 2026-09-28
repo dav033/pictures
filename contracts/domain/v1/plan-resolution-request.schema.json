@@ -2093,6 +2093,182 @@
         "minLength": 1,
         "maxLength": 160
       }
+    },
+    "completar_conteos": {
+      "type": "boolean"
+    },
+    "pistas_conteo": {
+      "maxItems": 16,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "globos_visibles": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "exacto": {
+            "type": "boolean"
+          },
+          "estimado_total": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "racimos": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "globos_por_racimo": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "por_tamano": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "clase": {
+                  "type": "string",
+                  "enum": [
+                    "chico",
+                    "mediano",
+                    "grande",
+                    "gigante"
+                  ]
+                },
+                "proporcion": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "clase",
+                "proporcion"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "largo_relativo": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "referencia": {
+                    "type": "string",
+                    "enum": [
+                      "persona",
+                      "puerta",
+                      "mesa"
+                    ]
+                  },
+                  "veces": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 50
+                  }
+                },
+                "required": [
+                  "referencia",
+                  "veces"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alto_relativo": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "referencia": {
+                    "type": "string",
+                    "enum": [
+                      "persona",
+                      "puerta",
+                      "mesa"
+                    ]
+                  },
+                  "veces": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 50
+                  }
+                },
+                "required": [
+                  "referencia",
+                  "veces"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confianza": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "referencia_element_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "globos_visibles",
+          "exacto",
+          "estimado_total",
+          "racimos",
+          "globos_por_racimo",
+          "por_tamano",
+          "largo_relativo",
+          "alto_relativo",
+          "confianza",
+          "referencia_element_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "completar_conteos_de": {
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
     }
   },
   "required": [

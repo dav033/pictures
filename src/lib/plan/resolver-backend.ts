@@ -7,6 +7,7 @@ import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import { canonizarColoresPlan } from "./colores-catalogo";
 import type { EntradaAllowlistPlan } from "./aprobacion";
 import type { PistaArmado } from "./armado-bouquet";
+import type { PistaConteo } from "./conteo-referencia";
 import type { PistaPatron } from "./patron-color";
 import { cotizacionDesdePython, planResueltoDesdePython } from "./python-mapper";
 import type { PlanResuelto } from "./resuelto";
@@ -58,6 +59,17 @@ export type EntradaResolucionPlan = {
   pistasArmado?: readonly PistaArmado[];
   /** Con `completarArmados`: solo estas piezas (la editada, tras una edición que quitó su armado). */
   completarArmadosDe?: readonly string[];
+  /**
+   * Solo al confirmar un plan (ADR-0031): Python ajusta la cantidad (kits) o las
+   * medidas, la densidad y la mezcla (geométricas) de cada estructura al conteo
+   * de globos leído en la foto. Misma regla: sin estos campos la petición es la
+   * de siempre.
+   */
+  completarConteos?: boolean;
+  /** Conteos leídos en la foto, por elemento de referencia. */
+  pistasConteo?: readonly PistaConteo[];
+  /** Con `completarConteos`: solo estas piezas (la editada, tras cambiar su mezcla). */
+  completarConteosDe?: readonly string[];
   requestId: string;
   correlationId: string;
   signal?: AbortSignal;
@@ -93,6 +105,9 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       ...(entrada.completarArmados === undefined ? {} : { completarArmados: entrada.completarArmados }),
       ...(entrada.pistasArmado === undefined ? {} : { pistasArmado: [...entrada.pistasArmado] }),
       ...(entrada.completarArmadosDe === undefined ? {} : { completarArmadosDe: [...entrada.completarArmadosDe] }),
+      ...(entrada.completarConteos === undefined ? {} : { completarConteos: entrada.completarConteos }),
+      ...(entrada.pistasConteo === undefined ? {} : { pistasConteo: [...entrada.pistasConteo] }),
+      ...(entrada.completarConteosDe === undefined ? {} : { completarConteosDe: [...entrada.completarConteosDe] }),
       requestId: entrada.requestId,
       correlationId: entrada.correlationId,
       ...(entrada.signal ? { parentSignal: entrada.signal } : {}),

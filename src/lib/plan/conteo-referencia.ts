@@ -75,3 +75,56 @@ export const LecturaConteoSchema = z.object({
 }).strict();
 
 export type LecturaConteo = z.infer<typeof LecturaConteoSchema>;
+
+/**
+ * La lectura dirigida al elemento de la referencia que materializa la
+ * estructura (`pistas_conteo` de `plan-resolution.v1`, ADR-0031 E2), como
+ * `pistas_armado`. Python decide qué hace con ella al confirmar.
+ */
+export const PistaConteoSchema = LecturaConteoSchema.extend({
+  referencia_element_id: z.string().trim().min(1).max(80),
+}).strict();
+
+export type PistaConteo = z.infer<typeof PistaConteoSchema>;
+
+/**
+ * Qué decidió Python con la lectura de cada estructura:
+ * - `ajustado`: cambió la cantidad, las medidas, la densidad o la mezcla;
+ * - `coincide`: el plan ya estaba dentro de la tolerancia;
+ * - `sin_ajuste_posible`: ninguna combinación admitida alcanza la cuenta;
+ * - `no_confiable`: la lectura no alcanza la barra (confianza, cuenta exacta o escala);
+ * - `aplazado`: la regla de ese caso todavía no está decidida (ADR-0031);
+ * - `sin_aplicar`: la pieza difiere de la foto pero esta resolución no la ajusta
+ *   (tras una edición solo se ajusta la pieza editada).
+ */
+export const DECISIONES_CONTEO = ["ajustado", "coincide", "sin_ajuste_posible", "no_confiable", "aplazado", "sin_aplicar"] as const;
+export const CAMPOS_AJUSTE_CONTEO = ["unidades_declaradas", "densidad", "mezcla", "ancho_m", "alto_m", "largo_m"] as const;
+
+const ValorAjusteSchema = z.union([z.string().min(1).max(40), z.number().nonnegative()]);
+
+/**
+ * Una entrada de `plan_resuelto.conteos_referencia[]`: lo que Python hizo con
+ * la lectura y por qué. Fuera del snapshot que firma `plan_hash`, como
+ * `armados_bouquet`; lo que cambió del plan viaja además en `plan.supuestos`
+ * ("Ajustes que hice"). Lleva la lectura entera: una edición posterior de la
+ * pieza la vuelve a mandar como pista (`aplicar-edicion.ts`).
+ */
+export const ConteoAplicadoSchema = z.object({
+  estructura_id: z.string().trim().min(1).max(160),
+  referencia_element_id: z.string().trim().min(1).max(80),
+  decision: z.enum(DECISIONES_CONTEO),
+  lectura: LecturaConteoSchema,
+  /** Globos por pieza que el plan buscó (la cuenta exacta o el estimado); `null` si la cuenta no se usó. */
+  globos_foto: z.number().int().min(0).max(MAX_GLOBOS_CONTEO).nullable(),
+  /** Globos por pieza del plan antes y después (sin repeticiones). */
+  globos_antes: z.number().int().nonnegative(),
+  globos_despues: z.number().int().nonnegative(),
+  cambios: z.array(z.object({
+    campo: z.enum(CAMPOS_AJUSTE_CONTEO),
+    antes: ValorAjusteSchema,
+    despues: ValorAjusteSchema,
+  }).strict()).max(CAMPOS_AJUSTE_CONTEO.length),
+  motivo: z.string().min(1).max(400),
+}).strict();
+
+export type ConteoAplicado = z.infer<typeof ConteoAplicadoSchema>;

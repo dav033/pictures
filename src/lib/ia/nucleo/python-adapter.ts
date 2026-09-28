@@ -21,7 +21,7 @@ import {
   type ArmadoBouquetV1,
   type PistaArmado,
 } from "@/lib/plan/armado-bouquet";
-import { LecturaConteoSchema } from "@/lib/plan/conteo-referencia";
+import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import {
   MODOS_PATRON_COLOR,
@@ -1208,6 +1208,10 @@ export interface PythonPlanResolutionInput {
   completarArmados?: boolean;
   pistasArmado?: PistaArmado[];
   completarArmadosDe?: string[];
+  /** Absent unless the caller passes it (ADR-0031): same byte-identical rule. */
+  completarConteos?: boolean;
+  pistasConteo?: PistaConteo[];
+  completarConteosDe?: string[];
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -2302,6 +2306,9 @@ export async function llamarPythonPlanResolution(
     completarArmados,
     pistasArmado,
     completarArmadosDe,
+    completarConteos,
+    pistasConteo,
+    completarConteosDe,
     ...rest
   } = input;
   const operationBody = {
@@ -2315,6 +2322,9 @@ export async function llamarPythonPlanResolution(
     ...(completarArmados === undefined ? {} : { completar_armados: completarArmados }),
     ...(pistasArmado === undefined ? {} : { pistas_armado: pistasArmado }),
     ...(completarArmadosDe === undefined ? {} : { completar_armados_de: completarArmadosDe }),
+    ...(completarConteos === undefined ? {} : { completar_conteos: completarConteos }),
+    ...(pistasConteo === undefined ? {} : { pistas_conteo: pistasConteo }),
+    ...(completarConteosDe === undefined ? {} : { completar_conteos_de: completarConteosDe }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_RESOLUTION_PATH, PYTHON_PLAN_RESOLUTION_SCOPE, {
     ...rest,

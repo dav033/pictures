@@ -134,3 +134,36 @@ describe una unidad por nivel (diagnóstico completo en `SEGUIMIENTO-bouquets.md
 rama `feat/bouquets`). El conteo da la cantidad y el armado la distribución; un conteo
 no exacto también debe poder subir la cantidad de un kit (un bouquet apilado nunca es
 "exacto": siempre tiene globos ocultos).
+
+### Estado del commit WIP (rama `wip/conteo-e2`)
+
+Hecho, sin verificar en conjunto:
+
+- `src/lib/plan/conteo-referencia.ts`: `PistaConteoSchema`, `DECISIONES_CONTEO` (con
+  `sin_aplicar`), `CAMPOS_AJUSTE_CONTEO` y `ConteoAplicadoSchema`, que ya lleva la
+  `lectura` entera en vez de `exacto`/`confianza`. **Este último cambio no está
+  exportado.**
+- `src/lib/ia/contracts/domain-v1.ts`: `completar_conteos`, `pistas_conteo` y
+  `completar_conteos_de` en la petición; `conteos_referencia` (fuera del hash) en el
+  plan resuelto.
+- Next: `python-adapter.ts` y `resolver-backend.ts` pasan los tres campos;
+  `resuelto.ts` y `python-mapper.ts` llevan `conteos_referencia`; `feature-flags.ts`
+  tiene `CONTEO_REFERENCIA_V1` (OFF); `registro-herramientas.ts` tiene
+  `pistasConteoDelPlan` y la confirmación manda `completarConteos` solo con pistas.
+- Regenerados pero desactualizados respecto del Zod: los tres JSON de
+  `plan-resolution-request`, `plan-resolution-result`, `plan-resuelto` y
+  `generated_models.py`.
+
+Pendiente, en orden:
+
+1. `npm run contracts:export:domain` y `generate_models.py`.
+2. `services/ai-api/app/conteo_foto.py` (reglas, con la de kits aislada y según el
+   cambio de diseño de arriba) y `_aplicar_conteos` en `plan.py`, antes de las
+   completitudes de armados en `_resolution_result` (también las de guirnalda de
+   `feat/guirnaldas`).
+3. En la edición, repetir el ajuste solo al cambiar la mezcla, con la lectura que
+   viene en `base.conteos_referencia`.
+4. Texto para el chat en `serializeReferenceBlueprint` (sin conteo, byte a byte igual).
+5. Runner de evaluación en `src/lib/eval/estructuras/` (vista previa, tope, sin
+   correr contra proveedores).
+6. Pruebas, ADR-0031, este documento y verificación completa.

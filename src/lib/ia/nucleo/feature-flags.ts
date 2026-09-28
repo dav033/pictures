@@ -12,7 +12,8 @@ export type FeatureFlag =
   | "AMBIENTE_FIESTA_V1"
   | "REFERENCIA_EN_ETAPA1_V1"
   | "PATRONES_COLOR_V1"
-  | "BOUQUETS_ARMADO_V1";
+  | "BOUQUETS_ARMADO_V1"
+  | "CONTEO_REFERENCIA_V1";
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
@@ -51,6 +52,13 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // que se compra. Apagada, los planes nuevos salen sin armado; uno que ya lo
     // trae lo conserva.
     if (name === "BOUQUETS_ARMADO_V1") return false;
+    // Default OFF (ADR-0031, E2). Al confirmar un plan, Next pide
+    // `completar_conteos` con los conteos de la foto (`pistas_conteo`) y Python
+    // ajusta la cantidad de los kits y las medidas, la densidad o la mezcla de
+    // las geométricas a lo que la foto muestra, con un supuesto por cambio; al
+    // cambiar la mezcla de una pieza en el chat, la re-resolución lo repite solo
+    // para ella. Apagada, la petición es la de siempre y nada cambia.
+    if (name === "CONTEO_REFERENCIA_V1") return false;
     return true;
   }
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";

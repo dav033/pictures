@@ -6438,6 +6438,135 @@
             ],
             "additionalProperties": false
           }
+        },
+        "conteos_referencia": {
+          "maxItems": 32,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "estructura_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "referencia_element_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "decision": {
+                "type": "string",
+                "enum": [
+                  "ajustado",
+                  "coincide",
+                  "sin_ajuste_posible",
+                  "no_confiable",
+                  "aplazado"
+                ]
+              },
+              "globos_foto": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "exacto": {
+                "type": "boolean"
+              },
+              "confianza": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "globos_antes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "globos_despues": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "cambios": {
+                "maxItems": 6,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "campo": {
+                      "type": "string",
+                      "enum": [
+                        "unidades_declaradas",
+                        "densidad",
+                        "mezcla",
+                        "ancho_m",
+                        "alto_m",
+                        "largo_m"
+                      ]
+                    },
+                    "antes": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 40
+                        },
+                        {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      ]
+                    },
+                    "despues": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 40
+                        },
+                        {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "campo",
+                    "antes",
+                    "despues"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "motivo": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              }
+            },
+            "required": [
+              "estructura_id",
+              "referencia_element_id",
+              "decision",
+              "globos_foto",
+              "exacto",
+              "confianza",
+              "globos_antes",
+              "globos_despues",
+              "cambios",
+              "motivo"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [
