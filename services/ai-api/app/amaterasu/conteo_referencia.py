@@ -335,13 +335,18 @@ def _lectura(item: object, pendientes: set[str]) -> dict[str, object] | None:
     if estimado is not None and estimado < globos_visibles:
         # Un total menor que lo que se ve es incoherente: no se corrige, se descarta.
         estimado = None
+    racimos = _entero(item.get("racimos"), 1, MAX_RACIMOS)
+    por_racimo = _entero(item.get("globos_por_racimo"), 1, MAX_GLOBOS_POR_RACIMO)
+    if racimos is not None and por_racimo is not None and racimos * por_racimo > MAX_GLOBOS:
+        # Más globos que el tope del contrato: incoherente, se descarta (revisión 10).
+        racimos = por_racimo = None
     return {
         "element_id": element_id,
         "globos_visibles": globos_visibles,
         "exacto": exacto,
         "estimado_total": estimado,
-        "racimos": _entero(item.get("racimos"), 1, MAX_RACIMOS),
-        "globos_por_racimo": _entero(item.get("globos_por_racimo"), 1, MAX_GLOBOS_POR_RACIMO),
+        "racimos": racimos,
+        "globos_por_racimo": por_racimo,
         "por_tamano": _por_tamano(item.get("por_tamano")),
         "largo_relativo": _escala(item.get("largo_relativo")),
         "alto_relativo": _escala(item.get("alto_relativo")),

@@ -6,7 +6,6 @@ falla contra el código anterior al arreglo.
 
 from __future__ import annotations
 
-from typing import cast
 
 import pytest
 
@@ -91,5 +90,44 @@ def test_31_el_aviso_de_patron_degradado_de_la_guirnalda_cabe() -> None:
     assert agregar_supuesto(lista, texto) is False and len(lista) == MAX_SUPUESTOS
 
 
-def _cuenta_de(resolved: dict[str, object]) -> int:
-    return cast(int, _conteos(resolved)[0]["globos_despues"])
+# --- 10: racimos × globos por racimo no pasa del tope del contrato --------------------
+
+
+@pytest.mark.anyio
+async def test_10_racimos_por_encima_del_tope_no_rompen_la_confirmacion() -> None:
+    from app.conteo_foto import cuenta_usable
+
+    enorme = _conteo(racimos=1600, globos_por_racimo=8)
+    assert cuenta_usable(enorme) is None, "12800 pasa del tope de 10000 globos del contrato"
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(_guirnalda()), completar_conteos=True, pistas_conteo=[enorme]
+    )
+    [conteo] = _conteos(resolved)
+    assert (conteo["decision"], conteo["globos_foto"]) == ("no_confiable", None)
+
+
+def test_10_la_lectura_descarta_racimos_incoherentes_con_el_tope() -> None:
+    from app.amaterasu.conteo_referencia import validar_lecturas
+
+    [lectura] = validar_lecturas(
+        {
+            "lecturas": [
+                {
+                    "element_id": "E1",
+                    "globos_visibles": 900,
+                    "exacto": False,
+                    "estimado_total": 12000,
+                    "racimos": 1600,
+                    "globos_por_racimo": 8,
+                    "por_tamano": [],
+                    "confianza": 0.8,
+                }
+            ]
+        },
+        ["E1"],
+    ) or [{}]
+    assert (lectura["estimado_total"], lectura["racimos"], lectura["globos_por_racimo"]) == (
+        None,
+        None,
+        None,
+    )

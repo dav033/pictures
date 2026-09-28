@@ -48,6 +48,7 @@ from app.armado_bouquet import (
     compra_desde_lectura,
     total_leido,
 )
+from app.amaterasu.conteo_referencia import MAX_GLOBOS
 from app.generated_models import contract_schema
 from app.supuestos import agregar_supuesto
 from app.supuestos import supuesto as acotar_supuesto
@@ -135,8 +136,11 @@ def cuenta_usable(lectura: Mapping[str, object]) -> Cuenta | None:
     if isinstance(estimado, int) and estimado > 0:
         return Cuenta(estimado, False)
     racimos, por_racimo = lectura.get("racimos"), lectura.get("globos_por_racimo")
-    if isinstance(racimos, int) and isinstance(por_racimo, int) and racimos * por_racimo > 0:
-        return Cuenta(racimos * por_racimo, False)
+    if isinstance(racimos, int) and isinstance(por_racimo, int):
+        # Por encima del tope del contrato no es una cuenta: no cabe en
+        # conteos_referencia (revisión 10). Vale para lecturas ya guardadas.
+        if 0 < racimos * por_racimo <= MAX_GLOBOS:
+            return Cuenta(racimos * por_racimo, False)
     return None
 
 
