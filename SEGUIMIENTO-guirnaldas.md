@@ -794,6 +794,35 @@ previa usa el endpoint que E3 ya dejó. Referencias a la rama al cierre.
 `package.json`, ADR-0032 (las decisiones de E6 pasan de 10–14 a 21–25) y este
 documento.
 
+### Revisión adversaria, UI del armado (rama `fix/rev-ui`, 2026-09-28)
+
+Hallazgos 18–23. Cada uno tiene su prueba de regresión en `ui:test-armado-guirnalda`
+(§10 `probarRevision`), que falla sin el arreglo.
+
+- **18** (`6d61674`, arreglado): mostrar otro borrador cancela la petición en vuelo del
+  anterior aunque el nuevo espere su pausa (`vista-guirnalda.ts`, `programar`). Antes, un
+  rechazo tardío del viejo deshacía el nuevo.
+- **19** (`cc3f9f4`, arreglado): `alBorrador` deriva el estado del borrador de ese render
+  (pendiente si el controlador todavía no lo conoce) y lo usa `useVistaGuirnalda`. Antes, el
+  «listo» del borrador anterior validaba el nuevo y el autoguardado lo guardaba sin que Python
+  lo dibujara.
+- **20** (`27a09a5`, arreglado): `conSoporte` y `conForma` quitan `puntos_de_anclaje` cuando
+  la guirnalda deja de ir colgada o en arco caído, que es cuando se oculta su control. Queda
+  abierto un caso: un armado que llegue de la foto (E4) en pared, recta y con anclajes sigue
+  sin control para ellos.
+- **21** (`9f997b0`, arreglado): una receta que Python rechaza o que no llega ya no se tapa
+  con el armado recién quitado. El panel pasa a «vacío» o a «error» con Reintentar, y los
+  controles dicen por qué no hay armado (antes quedaba un esqueleto de carga).
+- **22** (`e82bad8`, arreglado): `cerrar()` deja el controlador sin borrador. Así el segundo
+  montaje de StrictMode y Fast Refresh vuelven a pedir la vista previa y las opciones.
+- **23** (`db46513`, arreglada solo la parte de UI): mientras el deslizador de confeti dibuja
+  en vivo, el bloque del patrón ya no pone la rejilla completa sobre la curva del armado.
+  **Pendiente en Python** (fuera de esta rama): `vista_previa_de_estructura` y
+  `_vista_previa_reparto` (`plan_edicion.py`) deben devolver `filas_de_racimos` con los
+  racimos del armado de una guirnalda armada. Con eso, el bloque puede volver a dibujar el
+  vivo sobre la curva. La tira del resumen (`MiniPatron`) muestra a lo sumo 12 racimos y
+  sigue tomando las filas de la rejilla en vivo.
+
 ### Estado de las ramas (2026-09-28, todas subidas a `origin`, sin PR abierto)
 
 | Rama | Contenido | Estado |

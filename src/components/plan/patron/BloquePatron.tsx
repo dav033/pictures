@@ -97,13 +97,17 @@ export function BloquePatron({ resuelto, enVivo, reparto, leyenda, tipo, oficial
   const mostrado = vivo ?? resuelto;
   // En vivo, lo que el reparto nuevo trae de más lo dice el deslizador: aquí no se repite ni se mueve lo de siempre.
   const avisos = vivo ? vivo.avisos.filter((aviso) => resuelto.avisos.includes(aviso)) : resuelto.avisos;
-  const dibujo = dibujoPatron(mostrado, { tipo, oficialId, espejo, proporcion, guirnalda });
+  // En vivo, Python dibuja la rejilla completa del patrón (cuenta también el relleno y los remates), no
+  // los racimos del armado: sobre la curva del armado parecería que cambian sus racimos. Hasta que la
+  // vista previa del reparto traiga `filas_de_racimos`, se dibuja sin la forma del armado.
+  const curva = vivo ? undefined : guirnalda;
+  const dibujo = dibujoPatron(mostrado, { tipo, oficialId, espejo, proporcion, guirnalda: curva });
   const ancho = dibujo.caja.alto > 0 ? dibujo.caja.ancho / dibujo.caja.alto : 1;
   return (
     <section aria-label="Patrón de color" data-testid="bloque-patron" data-en-vivo={vivo ? true : undefined} className="@container rounded-2xl bg-superficie-suave p-3 ring-1 ring-borde-suave ring-inset">
       <div className="flex flex-col gap-3 @md:flex-row">
         <div className={`relative overflow-hidden rounded-xl bg-superficie ring-1 ring-borde-suave ring-inset @md:h-auto @md:shrink-0 ${marcoDibujo(ancho)}`}>
-          <VistaPatron resuelto={mostrado} dibujo={dibujo} leyenda={leyenda} tipo={tipo} oficialId={oficialId} espejo={espejo} proporcion={proporcion} guirnalda={guirnalda} etiqueta={`${nombrePieza}: patrón ${mostrado.nombre.toLowerCase()}`} className="absolute inset-0 size-full p-1.5" />
+          <VistaPatron resuelto={mostrado} dibujo={dibujo} leyenda={leyenda} tipo={tipo} oficialId={oficialId} espejo={espejo} proporcion={proporcion} guirnalda={curva} etiqueta={`${nombrePieza}: patrón ${mostrado.nombre.toLowerCase()}`} className="absolute inset-0 size-full p-1.5" />
         </div>
         <div className="min-w-0 flex-1 space-y-2.5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

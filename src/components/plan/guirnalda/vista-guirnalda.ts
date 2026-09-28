@@ -13,7 +13,7 @@ import { claveArmadoGuirnalda } from "./borrador-guirnalda";
  *
  * - Un cambio espera `esperaMs` sin otro cambio antes de pedirse; la receta
  *   (`null`) sale en seguida.
- * - Gana el último borrador: pedir otro cancela la petición en vuelo y una
+ * - Gana el último borrador: mostrar otro cancela la petición en vuelo y una
  *   respuesta vieja que llegue igual no cuenta.
  * - Mientras llega la respuesta se conserva el último dibujo.
  * - Lo que Python ya dibujó se guarda: deshacer o volver a la receta lo
@@ -48,6 +48,8 @@ export type EstadoVistaGuirnalda = {
   error: ErrorVistaGuirnalda | null;
   /** El borrador es la receta de Python (la pieza sin armado en la propuesta). */
   receta: boolean;
+  /** El borrador al que se refiere este estado (`CLAVE_RECETA` para la receta); `null` antes de mostrar ninguno. */
+  clave: string | null;
 };
 
 export type PedirVistaGuirnalda = (armado: ArmadoGuirnaldaV1 | null, signal: AbortSignal) => Promise<VistaArmadoGuirnalda>;
@@ -70,14 +72,14 @@ export type VistaGuirnalda = {
   reintentar: () => void;
   /** Otra función de pedir y otro aviso de rechazo (los del último render). */
   usar: (actual: Pick<OpcionesVistaGuirnalda, "pedir" | "alRechazar">) => void;
-  /** Cancela lo que quede (el editor se cerró). */
+  /** Cancela lo que quede (el editor se cerró); un `mostrar` después empieza de nuevo. */
   cerrar: () => void;
 };
 
 type Objetivo = { clave: string; armado: ArmadoGuirnaldaV1 | null };
 type EnVuelo = { numero: number; clave: string; controlador: AbortController; soloOpciones: boolean };
 
-const INICIAL: EstadoVistaGuirnalda = { vista: null, opciones: null, borrador: "pendiente", enVuelo: false, error: null, receta: false };
+const INICIAL: EstadoVistaGuirnalda = { vista: null, opciones: null, borrador: "pendiente", enVuelo: false, error: null, receta: false, clave: null };
 
 export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuirnalda {
   const { esperaMs = ESPERA_VISTA_GUIRNALDA_MS, reloj = relojNavegador } = opciones;
@@ -107,13 +109,17 @@ export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuir
     const borrador: EstadoBorradorGuirnalda = respondido
       ? "listo"
       : propio && !propio.soloOpciones ? (propio.armadoInvalido ? "rechazado" : "fallido") : "pendiente";
+    // Una receta que Python no puede armar (o que no llegó) no se tapa con el último dibujo: ese
+    // armado es el que el decorador acaba de quitar. El panel pasa a vacío o a error.
+    const recetaSinDibujo = objetivo.clave === CLAVE_RECETA && propio !== null && !propio.soloOpciones;
     return {
-      vista: respondido ?? ultimo,
+      vista: respondido ?? (recetaSinDibujo ? null : ultimo),
       opciones: admitidas,
       borrador,
       enVuelo: vuelo !== null && !vuelo.soloOpciones,
       error: propio ? { mensaje: propio.mensaje, armadoInvalido: propio.armadoInvalido } : null,
       receta: objetivo.clave === CLAVE_RECETA,
+      clave: objetivo.clave,
     };
   }
 
@@ -168,13 +174,15 @@ export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuir
   function programar(): void {
     if (!objetivo) return;
     detenerEspera();
+    // Lo que vuele para otro borrador ya no cuenta, aunque el nuevo espere su pausa: si no, un
+    // rechazo tardío del viejo pasaba por el del borrador a la vista y el editor deshacía el nuevo.
+    if (vuelo && vuelo.clave !== objetivo.clave) {
+      vuelo.controlador.abort();
+      vuelo = null;
+    }
     const respondido = recordados.has(objetivo.clave);
     if (respondido) {
-      // Ya dibujado: lo que vuele para otro borrador ya no cuenta; faltando las opciones, se piden sin tapar el dibujo.
-      if (vuelo && vuelo.clave !== objetivo.clave) {
-        vuelo.controlador.abort();
-        vuelo = null;
-      }
+      // Ya dibujado; faltando las opciones, se piden sin tapar el dibujo.
       if (admitidas === null && !vuelo && fallo?.clave !== objetivo.clave) lanzar(true);
       emitir();
       return;
@@ -216,11 +224,27 @@ export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuir
       alRechazar = actual.alRechazar;
     },
     cerrar() {
+      // Sin borrador: el siguiente `mostrar` (el segundo montaje de StrictMode, Fast Refresh) vuelve
+      // a pedir lo que esto cancela; si no, veía la misma clave y no pedía nada.
+      objetivo = null;
       detenerEspera();
       vuelo?.controlador.abort();
       vuelo = null;
     },
   };
+}
+
+/**
+ * El estado para el borrador que el editor tiene a la vista EN ESTE render.
+ * El borrador llega al controlador en un efecto (`mostrar`), después del
+ * render: mientras tanto la instantánea es la del borrador anterior, y su
+ * "listo" no vale para el nuevo (el autoguardado lo tomaba por dibujado y lo
+ * guardaba sin que Python lo viera). Si no son el mismo, el nuevo está pendiente.
+ */
+export function alBorrador(estado: EstadoVistaGuirnalda, armado: ArmadoGuirnaldaV1 | null): EstadoVistaGuirnalda {
+  const clave = armado ? claveArmadoGuirnalda(armado) : CLAVE_RECETA;
+  if (estado.clave === clave) return estado;
+  return { ...estado, clave, borrador: "pendiente", error: null, receta: armado === null };
 }
 
 /** Lo que muestra el panel de la vista previa, con cada estado explícito. */

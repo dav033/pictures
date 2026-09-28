@@ -21,7 +21,7 @@ import { resolve } from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
-import type { Reloj } from "@/components/plan/autoguardado";
+import { crearAutoguardado, type Reloj } from "@/components/plan/autoguardado";
 import {
   agregarRemate,
   BloqueGuirnalda,
@@ -44,8 +44,11 @@ import {
 } from "@/components/plan/guirnalda";
 import { conAnfitriona, conRelleno, MAXIMO_REMATES } from "@/components/plan/guirnalda/borrador-guirnalda";
 import { peticionVistaGuirnalda } from "@/components/plan/guirnalda/usarVistaGuirnalda";
-import { celdasDeArmado, patronSobreArmado } from "@/components/plan/guirnalda/geometria-guirnalda";
+import { alBorrador } from "@/components/plan/guirnalda/vista-guirnalda";
+import { celdasDeArmado, curvaDeArmado, patronSobreArmado } from "@/components/plan/guirnalda/geometria-guirnalda";
 import { dibujoPatron } from "@/components/plan/patron/VistaPatron";
+import { BloquePatron } from "@/components/plan/patron/BloquePatron";
+import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
 import { leyendaPatron } from "@/components/plan/patron/leyenda";
 import { ArmadoGuirnaldaResueltoSchema, type ArmadoGuirnaldaResuelto, type ArmadoGuirnaldaV1 } from "@/lib/plan/armado-guirnalda";
 import { OpcionesArmadoGuirnaldaSchema, type OpcionesArmadoGuirnalda } from "@/lib/plan/opciones-armado-guirnalda";
@@ -386,7 +389,7 @@ function banco(inicial: ArmadoGuirnaldaResuelto | null) {
     pedir: (armado, signal) => new Promise((resolver, fallar) => pedidos.push({ armado, signal, resolver, fallar })),
     alRechazar: (mensaje) => rechazos.push(mensaje),
   });
-  return { control, pedidos, rechazos, avanzar };
+  return { control, pedidos, rechazos, avanzar, reloj };
 }
 
 const conArmado = (resuelto: ArmadoGuirnaldaResuelto, armado: ArmadoGuirnaldaV1): VistaArmadoGuirnalda => ({ armado: { ...resuelto, armado }, opciones: RECETA.opciones });
@@ -523,9 +526,173 @@ async function probarPeticion(): Promise<void> {
   ok("petición de la vista previa: solo el contrato, respuesta validada, rechazo con la frase de Python y Python caído sin detalles técnicos");
 }
 
+// ---------------------------------------------------------------------------
+// 10. Revisión adversaria de feat/guirnaldas (hallazgos 18–23): cada caso falla sin su arreglo.
+async function probarRevision(): Promise<void> {
+  const frase = "Una guirnalda que cuelga necesita la pared o puntos de anclaje de donde colgar.";
+  // 18: el rechazo tardío de un borrador viejo no deshace el nuevo.
+  {
+    const { control, pedidos, rechazos, avanzar } = banco(RECETA.armado);
+    control.mostrar(RECETA.armado.armado);
+    pedidos[0]!.resolver(RECETA);
+    await avanzar(0);
+    const b = conSoporte(conForma(RECETA.armado.armado, "u_invertida"), "piso");
+    const c = conSoporte(RECETA.armado.armado, "pared");
+    control.mostrar(b);
+    await avanzar(300);
+    assert.equal(pedidos.length, 2, "B sale tras la pausa");
+    control.mostrar(c);
+    assert.equal(pedidos[1]!.signal.aborted, true, "mostrar C cancela lo que vuela para B, aunque C espere su pausa");
+    pedidos[1]!.fallar(new FalloPlanArmado(frase, { motivo: "forma_no_admitida" }));
+    await avanzar(0);
+    assert.deepEqual(rechazos, [], "18: el rechazo de B no deshace C");
+    assert.equal(control.estado().borrador, "pendiente");
+    await avanzar(300);
+    assert.equal(pedidos.length, 3);
+    assert.equal(pedidos[2]!.armado, c, "sale C");
+    pedidos[2]!.resolver(conArmado(RECETA.armado, c));
+    await avanzar(0);
+    assert.equal(control.estado().borrador, "listo");
+    ok("18: un rechazo tardío de un borrador viejo no deshace el nuevo");
+  }
+  // 19: el efecto de validación del editor no toma el "listo" del borrador anterior.
+  {
+    const { control, pedidos, avanzar, reloj } = banco(RECETA.armado);
+    const guardados: Array<ArmadoGuirnaldaV1 | null> = [];
+    const auto = crearAutoguardado<ArmadoGuirnaldaV1 | null>({
+      enPlan: RECETA.armado.armado, iguales: mismoArmadoGuirnalda, esperaMs: 700, validar: true, reloj,
+      guardar: async (valor) => { guardados.push(valor); return null; },
+    });
+    control.mostrar(RECETA.armado.armado);
+    pedidos[0]!.resolver(RECETA);
+    await avanzar(0);
+    const c = conCaida(conForma(conSoporte(RECETA.armado.armado, "pared"), "u_invertida"), 0.5);
+    /** Un render y sus efectos en el orden de EditorGuirnalda: el render lee la instantánea; después mostrar, cambiar y validar. */
+    const renderYEfectos = (primera: boolean) => {
+      const enRender = alBorrador(control.estado(), c);
+      if (primera) {
+        control.mostrar(c);
+        auto.cambiar(c);
+      }
+      if (enRender.borrador === "listo") auto.validar(c, { ok: true });
+    };
+    renderYEfectos(true);
+    renderYEfectos(false);
+    await avanzar(1000);
+    assert.deepEqual(guardados, [], "19: nada se guarda mientras Python no dibujó C");
+    pedidos[1]!.fallar(new FalloPlanArmado("No pudimos conectar con el servidor."));
+    await avanzar(0);
+    renderYEfectos(false);
+    assert.equal(alBorrador(control.estado(), c).borrador, "fallido");
+    await avanzar(1000);
+    assert.deepEqual(guardados, [], "19: ni después de una vista previa fallida");
+    control.reintentar();
+    await avanzar(300);
+    pedidos[2]!.resolver(conArmado(RECETA.armado, c));
+    await avanzar(0);
+    renderYEfectos(false);
+    await avanzar(1000);
+    assert.deepEqual(guardados, [c], "lo que Python dibujó sí se guarda, una vez");
+    ok("19: la validación del autoguardado usa el estado del borrador a la vista, no la instantánea anterior");
+  }
+  // 20: los anclajes que solo existían por colgar se van al dejar de colgar (no quedan ocultos contando ganchos).
+  {
+    const colgada = conSoporte(RECETA.armado.armado, "colgada");
+    assert.equal(colgada.puntos_de_anclaje, 2);
+    assert.equal("puntos_de_anclaje" in conSoporte(colgada, "pared"), false, "20: colgada → pared (recta) sin anclajes");
+    assert.equal("puntos_de_anclaje" in conSoporte(colgada, "mesa"), false, "20: colgada → mesa sin anclajes");
+    const colgadaEnArco = conForma(colgada, "arco_caido");
+    const paredEnArco = conSoporte(colgadaEnArco, "pared");
+    assert.equal(paredEnArco.puntos_de_anclaje, 2, "un arco caído en pared conserva sus anclajes (sus tramos)");
+    assert.equal("puntos_de_anclaje" in conForma(paredEnArco, "recta"), false, "20: en pared, dejar el arco caído quita los anclajes");
+    assert.equal(conForma(colgadaEnArco, "recta").puntos_de_anclaje, 2, "colgada los conserva: los exige el contrato");
+    ok("20: al dejar de colgar (o el arco caído en pared) los anclajes se van del borrador");
+  }
+  // 21: tras "Quitar armado", si Python no puede armar la receta (o no responde), no se muestra el armado quitado.
+  {
+    const sinArmar = "Con estos globos no se puede armar la guirnalda sin cambiar la compra.";
+    const { control, pedidos, rechazos, avanzar } = banco(COLGADA.armado);
+    control.mostrar(COLGADA.armado.armado);
+    pedidos[0]!.resolver(COLGADA);
+    await avanzar(0);
+    control.mostrar(null);
+    await avanzar(0);
+    assert.equal(pedidos[1]!.armado, null, "se pide la receta");
+    pedidos[1]!.fallar(new FalloPlanArmado(sinArmar, { motivo: "sin_armado_posible" }));
+    await avanzar(0);
+    assert.deepEqual(panelVistaGuirnalda(control.estado()), { fase: "vacio", mensaje: sinArmar }, "21: vacío, no el armado quitado como listo");
+    assert.deepEqual(rechazos, [], "la receta rechazada no deshace nada");
+    const caido = banco(COLGADA.armado);
+    caido.control.mostrar(COLGADA.armado.armado);
+    caido.pedidos[0]!.resolver(COLGADA);
+    await caido.avanzar(0);
+    caido.control.mostrar(null);
+    await caido.avanzar(0);
+    caido.pedidos[1]!.fallar(new FalloPlanArmado("No pudimos conectar con el servidor."));
+    await caido.avanzar(0);
+    assert.deepEqual(panelVistaGuirnalda(caido.control.estado()), { fase: "error", mensaje: "No pudimos conectar con el servidor.", reintentable: true }, "21: error con Reintentar, no el armado quitado");
+    const colores = leyendaPatron(declarada.materiales, estructura.lineas);
+    const sinBorrador = renderToStaticMarkup(React.createElement(ControlesGuirnalda, {
+      borrador: null, opciones: null, colores, nombrePieza: (id: string) => id, aviso: sinArmar,
+      onCambiar: () => undefined, moviendo: null, onMover: () => undefined, onArrastrar: () => undefined,
+    }));
+    assert.match(textoVisible(sinBorrador), new RegExp(sinArmar.replace(/./g, "\.")), "21: los controles dicen por qué no hay armado");
+    assert.doesNotMatch(sinBorrador, /brillo-carga/, "21: no se quedan en un esqueleto de carga");
+    ok("21: tras Quitar armado, receta imposible → vacío; Python caído → error con Reintentar; los controles lo dicen");
+  }
+  // 22: el montaje doble de StrictMode (mostrar → cerrar → mostrar) vuelve a pedir lo que canceló.
+  {
+    const { control, pedidos, avanzar } = banco(RECETA.armado);
+    control.mostrar(RECETA.armado.armado);
+    assert.equal(pedidos.length, 1, "las opciones, al abrir");
+    control.cerrar();
+    assert.equal(pedidos[0]!.signal.aborted, true);
+    control.mostrar(RECETA.armado.armado);
+    assert.equal(pedidos.length, 2, "22: el segundo montaje vuelve a pedir las opciones");
+    assert.equal(pedidos[1]!.signal.aborted, false);
+    pedidos[1]!.resolver(RECETA);
+    await avanzar(0);
+    assert.deepEqual(control.estado().opciones, RECETA.opciones);
+    const receta = banco(null);
+    receta.control.mostrar(null);
+    receta.control.cerrar();
+    receta.control.mostrar(null);
+    await receta.avanzar(0);
+    assert.equal(receta.pedidos.length, 1, "22: la receta se pide tras el segundo montaje");
+    assert.equal(receta.pedidos[0]!.signal.aborted, false);
+    receta.pedidos[0]!.resolver(RECETA);
+    await receta.avanzar(0);
+    assert.equal(receta.control.estado().borrador, "listo");
+    ok("22: tras cerrar (StrictMode, Fast Refresh) el siguiente mostrar vuelve a pedir la vista y las opciones");
+  }
+  // 23 (parte de UI): mientras se mueve el deslizador de un confeti, la rejilla completa que dibuja Python
+  // en vivo no se pone sobre la curva del armado como si fueran sus racimos.
+  {
+    const patron = planBase.patrones_color!.find((item) => item.estructura_id === "EST_02_ARCO")! as PatronColorResuelto;
+    const curva = curvaDeArmado(U_INVERTIDA.armado);
+    const vistas = crearVistasEnVivo<PatronColorResuelto>();
+    const bloque = () => renderToStaticMarkup(React.createElement(BloquePatron, {
+      resuelto: patronSobreArmado(patron, U_INVERTIDA.armado), enVivo: { vistas, id: ID }, leyenda: leyendaPatron(declarada.materiales, estructura.lineas),
+      tipo: "guirnalda", guirnalda: curva, repeticiones: 1, nombrePieza: "Guirnalda",
+    }));
+    const vistaDe = (html: string) => /<svg viewBox="([^"]+)"/.exec(html)?.[1];
+    const caja = (dibujo: ReturnType<typeof dibujoPatron>) => `${dibujo.caja.x} ${dibujo.caja.y} ${dibujo.caja.ancho} ${dibujo.caja.alto}`;
+    const quieto = bloque();
+    assert.equal(vistaDe(quieto), caja(dibujoPatron(patronSobreArmado(patron, U_INVERTIDA.armado), { tipo: "guirnalda", guirnalda: curva })), "sin deslizar: los racimos del armado sobre su curva");
+    assert.equal((quieto.match(/class="patron-globo-entra"/g) ?? []).length, U_INVERTIDA.armado.racimos.length * 4);
+    vistas.fijar(ID, patron);
+    const enVivo = bloque();
+    assert.match(enVivo, /data-en-vivo="true"/);
+    assert.notEqual(vistaDe(enVivo), caja(dibujoPatron(patron, { tipo: "guirnalda", guirnalda: curva })), "23: la rejilla completa no va sobre la curva del armado");
+    assert.equal(vistaDe(enVivo), caja(dibujoPatron(patron, { tipo: "guirnalda" })), "23: en vivo se ve como la vista del patrón, sin la forma del armado");
+    ok("23 (UI): el deslizador en vivo no dibuja la rejilla completa sobre la curva del armado; los racimos exactos piden a Python");
+  }
+}
+
 async function main(): Promise<void> {
   await probarVistaPrevia();
   await probarPeticion();
+  await probarRevision();
   console.log(`\n${casos} casos en verde`);
 }
 
