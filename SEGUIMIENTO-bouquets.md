@@ -402,8 +402,10 @@ Qué quedó arreglado:
    `cantidad` (unidades iguales alrededor de la pieza, contando las ocultas por
    simetría) y `clase_tamano` opcional (`chico` 5"–9", `mediano` 11"–12", `grande`
    16"–18", `gigante` 24"–36"): `amaterasu/estructuras/bouquet.py:76` y l.90.
-   `PROMPT_VERSION` sube a `bouquet-referencia.v2:eda6064d204b746a`
-   (`bouquet_referencia.py:38`), fijada en
+   `PROMPT_VERSION` sube a `bouquet-referencia.v2:eda6064d204b746a`; desde la
+   revisión 7 de `feat/guirnaldas` (un solo grupo con números a los lados, ADR-0030
+   enmienda 2026-09-28) es `bouquet-referencia.v2:b1f5cb194f104d59`
+   (`bouquet_referencia.py:40`), fijada en
    `tests/test_bouquet_referencia.py::test_la_version_del_prompt_esta_fijada`.
 2. **Nada se descarta en silencio.** `_lectura`/`_nivel`/`_cantidad`
    (`bouquet.py:179–335`) dejan en `avisos` cada recorte (colores fuera de la paleta,

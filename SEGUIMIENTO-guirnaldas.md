@@ -835,19 +835,58 @@ Una línea por hallazgo de `hallazgos.json`; cada uno con su prueba, que fallaba
 - **32** (`91137b7`): `plan_resuelto.lecturas_guirnalda` (contrato nuevo, fuera del hash) y `lecturasGuirnaldaDeLaEdicion`: una edición que quita el armado lo re-sugiere con la foto y no con la receta. Pruebas en `tests/test_plan_guirnalda_lecturas.py` y `test-guirnalda-referencia.ts`; ADR-0032 §24 enmendado. App y `ai-api` se despliegan juntos.
 - Límite anotado (fuera de los hallazgos): con el soporte cambiado en el editor y la ubicación en la mesa, el caption LoRA sigue diciendo "placed on the main table", porque el preflight exige la mesa para `sobre_mesa_principal`.
 
-### Estado de las ramas (2026-09-28, todas subidas a `origin`, sin PR abierto)
+### Estado final (2026-09-28): todo integrado en `feat/guirnaldas`
 
-| Rama | Contenido | Estado |
-|---|---|---|
-| `feat/bouquets` | E0 (armado ↔ fal.ai), código R-12 y SKU en la tarjeta | hecha; PR #2 ya estaba fusionado, lo nuevo necesita otro PR |
-| `feat/conteo-referencia` | E1 (lectura de conteo, bandera OFF) | hecha |
-| `wip/conteo-e2` | E2 a medias | no pasa `contracts:check`; ver `SEGUIMIENTO-conteo.md` §3 |
-| `feat/guirnaldas` | E3 a E6 (armado, lectura, prompts, patrón por racimo y UI), con E0, E1, E2 y el arreglo del 11 fusionados | hecha |
-| `feat/guirnaldas-e5` | E5 (prompts, patrón por racimo, espejo), desde `feat/guirnaldas` `27528f2` | fusionada en `feat/guirnaldas` |
-| `feat/guirnaldas-e6` | E6 (UI del armado), desde `feat/guirnaldas` `27528f2` | fusionada en `feat/guirnaldas` |
+`feat/guirnaldas` contiene E0 a E6 (bouquets, conteo E1 y E2 con el arreglo del
+11, guirnaldas E3 a E6) y las cuatro ramas de la revisión adversaria, fusionadas
+en este orden: `fix/rev-eval` (24–30), `fix/rev-ui` (18–23), `fix/rev-ts`
+(12, 14–17, 32) y `fix/rev-python` (1–11, 13, 31, 33, 34). Ya no queda trabajo
+en otra rama; las ramas `feat/guirnaldas-e5`, `feat/guirnaldas-e6`, `wip/conteo-e2` y
+`fix/rev-*` se pueden borrar cuando el usuario quiera. Sin PR abierto. Las cuatro
+banderas (`BOUQUETS_ARMADO_V1`, `GUIRNALDAS_ARMADO_V1`, `CONTEO_REFERENCIA_V1` y
+`PATRONES_COLOR_V1`) siguen apagadas; con ellas apagadas, las peticiones son las de
+siempre, y los 31 vectores dorados no cambian respecto de `77d0985`.
 
-`feat/guirnaldas` incluye `feat/bouquets`, `feat/conteo-referencia` (E1, E2 y el
-arreglo del 11), `feat/guirnaldas-e5` y `feat/guirnaldas-e6`.
+**Pendiente (técnico):**
+
+- **23, parte de Python:** `vista_previa_de_estructura` y `_vista_previa_reparto`
+  deben devolver `filas_de_racimos` de una guirnalda armada.
+- **20:** un armado leído de la foto (E4), en pared, recto y con anclajes, sigue sin
+  control para ellos.
+- `cuentaDeLectura` (`src/lib/eval/estructuras/conteo.ts`) es una copia en TS de
+  `cuenta_usable` (`services/ai-api/app/conteo_foto.py`), y ya divergen: no aplica
+  el tope de 10000 globos (revisión 10) y cae a `globos_visibles` donde Python no
+  usa la lectura. **Va a revisión:** o la cuenta viaja en la respuesta de Python,
+  o la evaluación declara que mide la lectura y no la cuenta del plan.
+- `scripts/bench/bench-fidelidad.ts` no aplica `--max-usd` a mitad de corrida, y
+  `resumirCorrida` tiene la forma del hallazgo 30 (`SEGUIMIENTO-conteo.md` §3.3).
+- Con el soporte cambiado en el editor y la ubicación en la mesa, el caption LoRA
+  sigue diciendo "placed on the main table".
+- La tarjeta no muestra `conteos_referencia`, y el supuesto "medidas asumidas"
+  queda con el valor anterior cuando el conteo mueve el largo
+  (`SEGUIMIENTO-conteo.md` §4).
+- Verificación visual de la UI en el navegador, y `npm run build`, que no corre en
+  el worktree con la junction.
+
+**Decide el usuario:**
+
+- **Evaluación pagada, con tope declarado:**
+  - conteo: 30 fotos contadas a mano, fuera del repo;
+  - lectura de guirnaldas (E7);
+  - si el LoRA v007 aprendió guirnaldas por soporte.
+- **Validar con el negocio los supuestos del oficio:**
+  - ADR-0031: ±15 %, ventana de ±35 %, alturas de referencia, umbral de mezcla,
+    un estimado nunca baja un kit;
+  - ADR-0032: unidad por densidad, relleno de 5", remates, soporte, insumos,
+    `factorPerfil`;
+  - la compra por color sobre la rejilla o sobre los racimos.
+- **Contrato:** si hace falta `posicion: "racimo"` en los remates y
+  `opciones.formas` por soporte.
+- **Salida:**
+  - abrir el PR de `feat/guirnaldas` a `main`;
+  - encender las banderas, primero las `*_PYTHON_ENABLED` y después las `*_V1`;
+  - desplegar app y `ai-api` juntos (`lecturas_guirnalda` y `medidas_del_cliente`
+    son campos nuevos de los dos lados).
 
 ### Revisión adversaria (2026-09-28, rama `fix/rev-python`, sobre `ef6e3aa`)
 
@@ -870,4 +909,3 @@ Los del conteo y del bouquet están en `SEGUIMIENTO-conteo.md` §3.4.
 - **31** (`5e81129`): el aviso de patrón degradado de
   `_completar_armados_guirnalda` pasa por `app/supuestos.py` y ya no rompe el
   contrato con nombres largos.
-
