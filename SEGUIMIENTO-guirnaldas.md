@@ -1296,3 +1296,74 @@ guirnalda con armado (o un arco, columna o semiarco con patrón), el LoRA va a
 carta muda; de paso, `REFERENCIA_EN_ETAPA1_V1` por fin llega a fal. Sin gasto:
 la corrida comparativa (`scripts/ops/generar-guia-estructura.ts`, 12 imágenes,
 US$ 0,693 estimados) queda para el usuario.
+
+### El modelo ubica puntos y Python calcula la curva (2026-09-28, rama `fix/guirnalda-puntos` desde `main` f4ae25c)
+
+ADR-0032, decisión 29.
+
+**Defecto probado con una llamada real.** La foto del usuario, recortada a la
+foto (270 × 480 px): guirnalda en la pared que va casi horizontal por lo alto,
+más alta a la izquierda, con el centro por encima de la recta entre sus
+extremos y el extremo derecho más bajo. Lectura v3
+(`guirnalda-referencia.v3:d1c0d73bb47a41ca`):
+
+```
+"forma": "curva", "sentido_curva": "abajo", "flecha_relativa": 0.15,
+"desnivel_relativo": -0.2, "confianza": 0.95
+```
+
+El desnivel, bien; el sentido, al revés. `_forma_desde_lectura` lo volvió
+`arco_caido` y la gráfica dibujó una U. El prompt v3 ya explicaba el sentido
+contra la recta inclinada y traía este mismo caso como ejemplo: el modelo
+responde mal la pregunta abstracta, no le falta información.
+
+**Por qué puntos.** Ubicar un punto en la imagen es lo que un modelo de visión
+hace bien; comparar una altura con una recta inclinada imaginaria, no. La v4
+pide la línea central como tres puntos `{x, y}` en fracciones de toda la
+imagen (extremo izquierdo, punto medio a mitad del recorrido horizontal,
+extremo derecho) y `geometria_linea_central` calcula sentido, flecha y
+desnivel con el aspecto real de la foto (su cabecera; `tamano_imagen.py`). La
+salida de la lectura y el contrato no cambian.
+
+**Lectura v4 (`guirnalda-referencia.v4:d4b1aa13cddf1478`), la misma foto, una
+llamada.** Salida cruda del modelo (lo relevante):
+
+```
+"soporte": "pared", "forma": "curva", "puntos_de_anclaje": 3,
+"linea_central": {"extremo_izquierdo": {"x": 0.08, "y": 0.28},
+                  "punto_medio": {"x": 0.51, "y": 0.31},
+                  "extremo_derecho": {"x": 0.93, "y": 0.44}},
+"racimos_visibles": 12, "unidad_racimo": "cuarteto", "confianza": 0.92
+```
+
+Validada por Python: `"sentido_curva": "arriba"`, `"flecha_relativa": 0.107`,
+`"desnivel_relativo": -0.335`. A mano: en píxeles los extremos quedan en
+(21,6; 134,4) y (251,1; 211,2), largo 229,5; la recta pasa por y = 173,3 en
+x = 137,7 y el punto medio va en y = 148,8, 24,5 px por ENCIMA (0,107 del
+largo); el extremo derecho está 76,8 px más abajo (−0,335). El desnivel es
+mayor que el −0,2 de la v3 porque ahora cuenta el aspecto vertical de la foto
+en vez de una estimación a ojo. Uso: 2.208 tokens de entrada y 170 de salida
+(costo estimado muy por debajo del tope de US$ 0,05). No hizo falta la
+segunda llamada.
+
+**Pruebas deterministas** (`test_guirnalda_referencia.py`,
+`test_tamano_imagen.py`): el caso de la foto da `arriba` y desnivel negativo;
+una U colgada da `abajo`, también con la recta inclinada; una recta (y una
+flecha menor que 0,03) da flecha 0 sin sentido; los mismos puntos en una foto
+cuadrada, vertical y apaisada dan pendientes distintas; puntos ausentes,
+fuera de 0..1, no numéricos, extremos al revés o casi juntos, punto medio
+fuera de la mitad central o sin tamaño de foto dan `null`; lo que el modelo
+diga por su cuenta de sentido, flecha o desnivel se ignora; las lecturas v2 y
+v3 guardadas siguen cumpliendo el contrato; la ruta usa el tamaño de la foto
+recibida; cabeceras PNG, JPEG (con relleno y SOF progresivo) y las tres WebP.
+
+**Verificación.** `pytest` completo, `ruff check` y `ruff format --check` de
+`app scripts tests`, `mypy app scripts`, `generate_models.py --check` y
+`npm run -s contracts:check`. Sin cambios de TypeScript.
+
+**Pendientes.**
+
+- Una sola foto no calibra nada: medir en E7, con tope, sobre varias fotos
+  (colgadas en U, U invertidas, rectas) si los puntos salen bien y si los
+  umbrales (0,03 de flecha, mitad central del recorrido) sirven.
+- Desplegar `ai-api` para que la app use la v4; la app no cambia.

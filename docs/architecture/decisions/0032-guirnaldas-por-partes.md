@@ -634,6 +634,62 @@ diagnóstico y la evidencia están en `SEGUIMIENTO-guirnaldas.md` §8.
     app y `ai-api` se despliegan juntos. Pendiente: medir en E7, con tope, si
     Gemini lee bien el sentido y si el LoRA sigue la forma sin inventar patas.
 
+## El modelo ubica puntos y Python calcula la curva (2026-09-28, rama `fix/guirnalda-puntos`)
+
+29. **La lectura pide tres puntos de la línea central, no el sentido de la
+    curva.** Enmienda la decisión 28 solo en lo que se le pregunta al modelo.
+    Con la foto del usuario (guirnalda en la pared, alta a la izquierda, con el
+    centro POR ENCIMA de la recta entre sus extremos y el extremo derecho más
+    bajo), la lectura v3 (`guirnalda-referencia.v3:d1c0d73bb47a41ca`, una
+    llamada real a `gemini-3.6-flash`) devolvió `"forma": "curva"`,
+    `"sentido_curva": "abajo"`, `"flecha_relativa": 0.15` y
+    `"desnivel_relativo": -0.2` con confianza 0,95: el desnivel bien, el
+    sentido al revés. `geometria_de_lectura` lo volvió `arco_caido` y la
+    gráfica dibujó una U. La pregunta abstracta "¿el centro va por encima o
+    por debajo de la recta inclinada entre los extremos?" el modelo la
+    contesta mal aun con el caso de la foto como ejemplo en el prompt; ubicar
+    un punto en la imagen es una tarea que sí hace bien.
+    - **Lectura** (`guirnalda-referencia.v4:d4b1aa13cddf1478`, fijada en la
+      prueba): el esquema ya no tiene `sentido_curva`, `flecha_relativa` ni
+      `desnivel_relativo`; pide `linea_central`, opcional, con
+      `extremo_izquierdo`, `punto_medio` (a mitad del recorrido horizontal,
+      mirando en vertical dónde está la banda) y `extremo_derecho`, cada uno
+      `{x, y}` en fracciones de TODA la imagen con el origen arriba a la
+      izquierda, sobre los globos y no sobre la pared ni la caja. Misma
+      llamada, mismo costo.
+    - **Geometría** (`estructuras/guirnalda.geometria_linea_central`, pura y
+      determinista): los puntos pasan a píxeles con el ancho y el alto de la
+      foto recibida, leídos de su cabecera PNG, JPEG o WebP
+      (`amaterasu/tamano_imagen.py`, sin decodificar ni añadir Pillow, que
+      solo llega como dependencia de otra biblioteca; el navegador ya sube la
+      foto con la orientación EXIF aplicada). Sobre el largo horizontal entre
+      los extremos: `desnivel_relativo` = altura del extremo derecho menos la
+      del izquierdo (negativo si el derecho está más bajo);
+      `flecha_relativa` = distancia vertical del punto medio a la recta entre
+      los extremos (la misma medida vertical de la 28); `sentido_curva` =
+      `arriba` si el punto medio queda por encima de esa recta, `abajo` si
+      queda por debajo. Con una flecha menor que 0,03 del largo no hay curva
+      (flecha 0, sin sentido). Mismos rangos que la v3 (flecha 0 a 0,6,
+      desnivel ±0,6) y, fuera de ellos, `null` sin recortar; sin flecha no hay
+      sentido.
+    - **Sin inventar.** Todo `null` (la forma cae a la leída, sin curva) si no
+      hay `linea_central`, un punto no es un número de 0 a 1, los extremos van
+      al revés o están a menos de 0,05 del ancho, el punto medio no cae en la
+      mitad central del recorrido, o no se puede leer el tamaño de la foto
+      (con un aviso en el log). Un `sentido_curva`, `flecha_relativa` o
+      `desnivel_relativo` que el modelo diga por su cuenta se ignora.
+    - **Contrato: no cambia.** La salida de la lectura conserva exactamente
+      `sentido_curva`, `flecha_relativa` y `desnivel_relativo`; los puntos no
+      salen de Python. `LecturaGuirnaldaSchema`, `reference-blueprint.v2`,
+      `generated_models.py`, `geometria_de_lectura`, la gráfica y el editor
+      quedan igual, y las lecturas guardadas con la v2 o la v3 siguen
+      valiendo. No hay que desplegar la app: basta `ai-api`.
+    - **Evidencia** (misma foto, `SEGUIMIENTO-guirnaldas.md` §8): la v4
+      devolvió `extremo_izquierdo (0,08; 0,28)`, `punto_medio (0,51; 0,31)`,
+      `extremo_derecho (0,93; 0,44)` sobre 270 × 480 px, y Python calculó
+      `sentido_curva "arriba"`, `flecha_relativa 0,107` y `desnivel_relativo
+      −0,335`. Una llamada: 2.208 tokens de entrada y 170 de salida.
+
 ## Rollback
 
 Apagar `GUIRNALDA_REFERENCIA_PYTHON_ENABLED` deja de leer las guirnaldas en la
@@ -642,7 +698,8 @@ decisión 27 deja sin validar los planes que ya traen `desnivel_m`
 (`additionalProperties: false`): se revierte en app y `ai-api` a la vez. Lo
 mismo con la decisión 28 y los planes que traen `arqueo_m` o las lecturas con
 `sentido_curva`: se revierten los commits de `fix/guirnalda-curvatura` en los
-dos lados a la vez. E5 no tiene bandera propia: todo depende de que la guirnalda traiga armado.
+dos lados a la vez. La decisión 29 no toca el contrato: revertir los commits de
+`fix/guirnalda-puntos` en `ai-api` vuelve a la lectura v3 sin tocar la app. E5 no tiene bandera propia: todo depende de que la guirnalda traiga armado.
 Apagar `GUIRNALDAS_ARMADO_V1` deja de completar armados al confirmar; un
 armado puesto a mano en el editor sigue llegando a los prompts. Revertir los
 commits de E5 la quita del todo (un patrón con espejo sobre una guirnalda en U
