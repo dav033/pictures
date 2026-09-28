@@ -92,12 +92,13 @@ export type PistaConteo = z.infer<typeof PistaConteoSchema>;
  * - `ajustado`: cambió la cantidad, las medidas, la densidad o la mezcla;
  * - `coincide`: el plan ya estaba dentro de la tolerancia;
  * - `sin_ajuste_posible`: ninguna combinación admitida alcanza la cuenta;
- * - `no_confiable`: la lectura no alcanza la barra (confianza, cuenta exacta o escala);
- * - `aplazado`: la regla de ese caso todavía no está decidida (ADR-0031);
- * - `sin_aplicar`: la pieza difiere de la foto pero esta resolución no la ajusta
- *   (tras una edición solo se ajusta la pieza editada).
+ * - `no_confiable`: la lectura no trae una cuenta usable (confianza menor que
+ *   0,5, o sin cuenta exacta, estimado ni racimos);
+ * - `sin_aplicar`: la pieza no se toca aunque difiera: ya trae su armado (que
+ *   fija la cantidad), o un estimado queda por debajo de lo que el plan o el
+ *   armado leído identifican (un estimado nunca baja la cantidad).
  */
-export const DECISIONES_CONTEO = ["ajustado", "coincide", "sin_ajuste_posible", "no_confiable", "aplazado", "sin_aplicar"] as const;
+export const DECISIONES_CONTEO = ["ajustado", "coincide", "sin_ajuste_posible", "no_confiable", "sin_aplicar"] as const;
 export const CAMPOS_AJUSTE_CONTEO = ["unidades_declaradas", "densidad", "mezcla", "ancho_m", "alto_m", "largo_m"] as const;
 
 const ValorAjusteSchema = z.union([z.string().min(1).max(40), z.number().nonnegative()]);

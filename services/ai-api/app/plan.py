@@ -71,6 +71,7 @@ from app.armado_bouquet import (
     variantes_admitidas,
 )
 from app.catalog import purchase_color_for_unsold
+from app import conteo_foto
 from app.operational_models import ContractModel, OperationalRequest
 from app.plan_worker import run_plan_cpu
 from app.patron_color import (
@@ -321,6 +322,17 @@ class PlanResolutionRequest(OperationalRequest):
     completar_armados: bool = Field(default=False, strict=True)
     pistas_armado: list[PistaArmado] = Field(default_factory=list, max_length=16)
     completar_armados_de: list[str] | None = Field(default=None, max_length=8)
+    # ADR-0031: the photo's balloon count, once, when the plan is confirmed; after
+    # a mix edit, only for the edited piece (``completar_conteos_de``). The shape
+    # of each hint is validated against the exported contract.
+    completar_conteos: bool = Field(default=False, strict=True)
+    pistas_conteo: list[dict[str, object]] = Field(default_factory=list, max_length=16)
+    completar_conteos_de: list[str] | None = Field(default=None, max_length=8)
+
+    @field_validator("pistas_conteo")
+    @classmethod
+    def validate_count_hints(cls, values: list[dict[str, object]]) -> list[dict[str, object]]:
+        return cast(list[dict[str, object]], conteo_foto.validar_pistas(values))
 
     @field_validator("catalog_snapshot_id")
     @classmethod
@@ -3468,6 +3480,21 @@ def _resolution_result(
             continue
         candidates_by_product.setdefault(candidate.product_id, []).append(candidate)
         candidate_by_variant[candidate.variant_id] = candidate
+    assembly_hints = [pista.model_dump(exclude_none=True) for pista in request.pistas_armado]
+    photo_counts: list[dict[str, object]] = []
+    if request.completar_conteos:
+        # ADR-0031: before EVERY assembly completion (the bouquets below and, in
+        # feat/guirnaldas, completar_armados_guirnalda): the count decides how
+        # many balloons a piece has and the assemblies only arrange them. It
+        # rewrites the bouquet assembly hints it rescaled or discarded.
+        raw_plan, assembly_hints, photo_counts = _aplicar_conteos(
+            request,
+            raw_plan,
+            candidates_by_product,
+            candidate_by_variant,
+            allowlist,
+            assembly_hints,
+        )
     if request.completar_armados:
         # Needs the catalog (balloon kind and size), so it happens here and not
         # in _complete_plan; before _build_resolved, because the assembly is
@@ -3475,7 +3502,7 @@ def _resolution_result(
         raw_plan = _assign_assemblies(
             raw_plan,
             candidate_by_variant,
-            [pista.model_dump(exclude_none=True) for pista in request.pistas_armado],
+            assembly_hints,
             only=(
                 None if request.completar_armados_de is None else set(request.completar_armados_de)
             ),
@@ -3488,6 +3515,9 @@ def _resolution_result(
         candidate_by_variant,
         allowlist,
     )
+    if photo_counts:
+        # Derived, outside the snapshot and the hash (ADR-0031), like armados_bouquet.
+        resolved["conteos_referencia"] = photo_counts
     estimate = _material_estimate(resolved)
     quote = _quote(resolved)
     result: dict[str, object] = {
@@ -3506,6 +3536,94 @@ def _validate_plan(plan: Mapping[str, object]) -> None:
         PlanDecoracion.model_validate(plan)
     except ValidationError as error:
         raise PlanResolutionError("invalid_plan", 422) from error
+
+
+# --- Conteo de la foto (ADR-0031) -------------------------------------------------
+# The rules live in app/conteo_foto.py; this only hands them what they need from
+# the resolver (count, physical gate, mix coverage, kit context) and never
+# changes how any of those is computed.
+
+
+def _mix_covered(
+    structure: Mapping[str, object],
+    mix: str,
+    candidates_by_product: Mapping[str, Sequence[Candidate]],
+    allowlist: Mapping[str, set[str]],
+) -> bool:
+    """Every size of ``mix`` has a sellable round balloon for every material of the structure."""
+    for material in _mappings(structure.get("materiales")):
+        product_id = _text(material.get("product_id")) or ""
+        options = [
+            candidate
+            for candidate in candidates_by_product.get(product_id, ())
+            if candidate.variant_id in allowlist.get(product_id, set())
+        ]
+        color = _text(material.get("color"))
+        if any(not _compatible(options, diameter, color, False) for diameter, _p in _MIXES[mix]):
+            return False
+    return True
+
+
+def _within_physical_gate(
+    plan: Mapping[str, object], structure: Mapping[str, object], total: int
+) -> bool:
+    """``_physical_warnings`` on one instance with ``total`` balloons: no warning, inside the gate."""
+    axis = _structure_count(plan, structure)[0]
+    probe = {
+        "estructura_id": _text(structure.get("estructura_id")) or "",
+        "tipo": _text(structure.get("tipo")) or "",
+        "repeticiones": 1,
+        "eje_m": axis,
+        "lineas": [{"unidades": total, "diam_pulg": 12}],
+    }
+    return not _physical_warnings(
+        {"estructuras": [structure], "restricciones": plan.get("restricciones")}, [probe]
+    )
+
+
+def _resynced_pattern(
+    plan: Mapping[str, object], structure: Mapping[str, object]
+) -> dict[str, object] | None:
+    """The structure with ``participacion`` rewritten from its new grid, or ``None`` if the pattern no longer fits."""
+    single = {**dict(plan), "estructuras": [dict(structure)]}
+    try:
+        synced = _sync_participations(single, single, only=0)
+    except PlanResolutionError:
+        return None
+    return dict(_mappings(synced.get("estructuras"))[0])
+
+
+def _aplicar_conteos(
+    request: PlanResolutionRequest,
+    plan: Mapping[str, object],
+    candidates_by_product: Mapping[str, Sequence[Candidate]],
+    candidate_by_variant: Mapping[str, Candidate],
+    allowlist: Mapping[str, set[str]],
+    assembly_hints: Sequence[Mapping[str, object]],
+) -> tuple[dict[str, object], list[dict[str, object]], list[dict[str, object]]]:
+    """The plan adjusted to the photo's counts (ADR-0031), the assembly hints to use and ``conteos_referencia``."""
+    port = conteo_foto.PuertoPlan(
+        contar=lambda structure: _structure_count(plan, structure)[1],
+        dentro_de_puerta=lambda structure, total: _within_physical_gate(plan, structure, total),
+        mezcla_cubierta=lambda structure, mix: _mix_covered(
+            structure, mix, candidates_by_product, allowlist
+        ),
+        contexto_kit=lambda structure: _bouquet_context(structure, candidate_by_variant),
+        sincronizar_patron=lambda structure: _resynced_pattern(plan, structure),
+        mezclas=_MIXES,
+        tamanos_obligatorios=bool(_required_sizes(plan)),
+    )
+    adjusted, hints, counts = conteo_foto.aplicar(
+        plan,
+        request.pistas_conteo,
+        assembly_hints,
+        usar_armados=request.completar_armados,
+        solo=None if request.completar_conteos_de is None else set(request.completar_conteos_de),
+        puerto=port,
+    )
+    if any(count["decision"] == "ajustado" for count in counts):
+        _validate_plan(adjusted)
+    return adjusted, hints, counts
 
 
 def _structure_index(plan: Mapping[str, object], estructura_id: str) -> int:

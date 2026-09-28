@@ -1,0 +1,883 @@
+"""El conteo de globos de la foto al confirmar un plan (ADR-0031, entrega E2).
+
+Amaterasu cuenta los globos de cada pieza de la foto (``conteo-referencia.v1``)
+y aquí se decide qué hace el plan con esa cuenta. Es regla comercial:
+cuántos globos se compran. Por eso vive en Python, junto a ``plan.py``, que la
+invoca con ``_aplicar_conteos`` antes de completar los armados.
+
+- **Kits** (``tipo: kit``: bouquet, figura, racimo). El conteo da la CANTIDAD y la
+  lectura del armado del bouquet da la DISTRIBUCIÓN (``SEGUIMIENTO-bouquets.md``
+  §14: la lectura del armado subcuenta porque lee una unidad por nivel). Con
+  lectura del armado, dentro de la tolerancia se queda el armado; si no, el
+  total es la cuenta si es exacta, o el mayor de los dos si es un estimado (un
+  estimado puede subir la cifra, nunca bajarla por debajo de lo que el armado
+  identificó). Los niveles leídos se reescalan a ese total
+  (``reescalar_lectura_armado``). Sin lectura del armado: la cuenta exacta
+  manda; un estimado solo sube lo declarado.
+- **Geométricas**. Primero la mezcla, si el reparto por tamaño de la foto la
+  contradice claramente; luego la densidad con las medidas fijas; solo si no
+  alcanza, las medidas dentro de ±35 % (del plan, o de la escala que la foto
+  trae respecto de una persona, una puerta o una mesa), dichas como "largo
+  equivalente", nunca como medidas tomadas. Con ``espacio.fuente: cliente`` las
+  medidas no se tocan. Nunca fuera de la puerta física.
+
+Lo que este módulo necesita del plan (contar globos, la puerta física, la
+cobertura de una mezcla, el contexto de un bouquet) llega en ``PuertoPlan``: así
+no depende de ``plan.py`` (que lo importa) y las reglas se prueban solas.
+
+Supuestos a validar con el negocio (ADR-0031): la tolerancia de ±15 % (mínimo 2
+globos), la ventana de ±35 % del eje, las alturas de referencia de una persona,
+una puerta y una mesa, y el umbral de "contradice claramente" de la mezcla.
+"""
+
+from __future__ import annotations
+
+import math
+from collections.abc import Callable, Collection, Mapping, Sequence
+from dataclasses import dataclass
+from typing import cast
+
+from jsonschema import Draft7Validator
+
+from app.armado_bouquet import (
+    CONFIANZA_MINIMA_LECTURA,
+    GLOBOS_POR_UNIDAD,
+    CompraLeida,
+    EstructuraBouquet,
+    compra_desde_lectura,
+)
+from app.generated_models import contract_schema
+
+#: La misma barra que las otras lecturas de la foto (patrón, armado).
+CONFIANZA_MINIMA = 0.5
+#: Tolerancia de la cuenta aproximada (``SEGUIMIENTO-guirnaldas.md`` §4).
+TOLERANCIA_RELATIVA = 0.15
+TOLERANCIA_MINIMA = 2
+#: Cuánto puede moverse el eje de una pieza geométrica respecto del plan o de la escala de la foto.
+VENTANA_EJE = 0.35
+PASO_VENTANA = 0.01
+DENSIDADES = ("sencilla", "media", "lujosa")
+#: Altura típica de cada referencia de escala, en metros (supuesto, ADR-0031).
+ALTURA_REFERENCIA_M: Mapping[str, float] = {"persona": 1.7, "puerta": 2.0, "mesa": 0.75}
+#: Distancia de variación total a partir de la cual el reparto de la foto contradice la mezcla.
+CONTRADICCION_MEZCLA = 0.3
+#: Cuánto más cerca tiene que quedar la mezcla de la foto para cambiarla.
+MEJORA_MINIMA_MEZCLA = 0.15
+#: Topes del contrato ``plan-decoracion.v1``.
+MAX_UNIDADES_DECLARADAS = 999
+MAX_MEDIDA_M = 100.0
+TIPOS_GEOMETRICOS = frozenset({"arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"})
+
+_NOMBRE_MEZCLA = {
+    "clasica": "clásica",
+    "organica_fina": "orgánica fina",
+    "organica_gruesa": "orgánica gruesa",
+    "solo_grandes": "solo globos grandes",
+}
+_NOMBRE_MEDIDA = {"ancho_m": "ancho", "alto_m": "alto", "largo_m": "largo"}
+
+_PISTA = Draft7Validator(
+    cast(
+        Mapping[str, object],
+        cast(
+            Mapping[str, object],
+            contract_schema("PlanResolutionRequest")["properties"]["pistas_conteo"],
+        )["items"],
+    )
+)
+
+
+def validar_pistas(valores: Sequence[object]) -> list[dict[str, object]]:
+    """``pistas_conteo`` contra el esquema exportado (dueño Zod: ``conteo-referencia.ts``).
+
+    El contrato expresa la forma; lo que no expresa (reparto por tamaño con cada
+    clase una vez y suma 1, que ``conteo_referencia.py`` garantiza al leer) no se
+    vuelve a validar aquí: un reparto raro solo acerca menos la mezcla.
+    """
+    pistas: list[dict[str, object]] = []
+    for valor in valores:
+        if not isinstance(valor, Mapping) or not _PISTA.is_valid(valor):
+            raise ValueError("pistas_conteo no cumple conteo-referencia.v1")
+        pistas.append(dict(valor))
+    return pistas
+
+
+# --- La cuenta y su tolerancia -------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Cuenta:
+    """Globos de UNA pieza según la foto, y si es la cuenta exacta."""
+
+    globos: int
+    exacto: bool
+
+
+def cuenta_usable(lectura: Mapping[str, object]) -> Cuenta | None:
+    """La cuenta que el plan puede usar, o ``None``.
+
+    Con confianza de al menos 0,5: los globos visibles si la cuenta es exacta;
+    si no, el estimado del total; si no, racimos × globos por racimo. Los globos
+    visibles de una cuenta no exacta no bastan: dejan fuera los ocultos. Incluye
+    metalizados y números (el prompt de ``conteo_referencia.py`` los cuenta).
+    """
+    confianza = lectura.get("confianza")
+    if not isinstance(confianza, (int, float)) or confianza < CONFIANZA_MINIMA:
+        return None
+    visibles = lectura.get("globos_visibles")
+    if lectura.get("exacto") is True and isinstance(visibles, int) and visibles > 0:
+        return Cuenta(visibles, True)
+    estimado = lectura.get("estimado_total")
+    if isinstance(estimado, int) and estimado > 0:
+        return Cuenta(estimado, False)
+    racimos, por_racimo = lectura.get("racimos"), lectura.get("globos_por_racimo")
+    if isinstance(racimos, int) and isinstance(por_racimo, int) and racimos * por_racimo > 0:
+        return Cuenta(racimos * por_racimo, False)
+    return None
+
+
+def tolerancia(globos: int) -> float:
+    return max(TOLERANCIA_MINIMA, TOLERANCIA_RELATIVA * globos)
+
+
+def dentro_de_tolerancia(globos_foto: int, globos_plan: int) -> bool:
+    return abs(globos_foto - globos_plan) <= tolerancia(globos_foto)
+
+
+# --- Kits ------------------------------------------------------------------------
+
+
+def total_kit_sin_armado(cuenta: Cuenta, por_pieza: int) -> int:
+    """Globos por pieza de un kit sin lectura del armado.
+
+    La cuenta exacta manda. Un estimado solo sube lo declarado, y dentro de la
+    tolerancia lo deja como está.
+    """
+    if cuenta.exacto:
+        return cuenta.globos
+    if dentro_de_tolerancia(cuenta.globos, por_pieza):
+        return por_pieza
+    return max(por_pieza, cuenta.globos)
+
+
+def total_kit_con_armado(cuenta: Cuenta, leidos: int) -> int:
+    """Globos por pieza de un bouquet cuya lectura del armado identificó ``leidos``
+    (látex + remate + números).
+
+    Dentro de la tolerancia se queda el armado. Fuera de ella: la cuenta exacta,
+    o el mayor de los dos si la cuenta es un estimado (un bouquet apilado casi
+    nunca es exacto: tiene globos ocultos, y el estimado tiene que poder subirlo).
+    """
+    if dentro_de_tolerancia(cuenta.globos, leidos):
+        return leidos
+    return cuenta.globos if cuenta.exacto else max(leidos, cuenta.globos)
+
+
+def _unidades_de_nivel(nivel: Mapping[str, object]) -> tuple[int, int, list[str]] | None:
+    """(globos por unidad, unidades, colores) de un nivel leído; ``None`` si no se entiende.
+
+    Un nivel ``suelto`` son sus colores, un globo cada uno. Uno con unidad son
+    ``cantidad`` unidades (1 si la lectura no la trae) de esos colores.
+    """
+    unidad = nivel.get("unidad")
+    colores = [c for c in cast(list[object], nivel.get("colores") or []) if isinstance(c, str)]
+    if not isinstance(unidad, str) or unidad not in GLOBOS_POR_UNIDAD or not colores:
+        return None
+    if unidad == "suelto":
+        return 1, len(colores), colores
+    cantidad = nivel.get("cantidad", 1)
+    if not isinstance(cantidad, int) or cantidad < 1:
+        return None
+    return GLOBOS_POR_UNIDAD[unidad], cantidad, colores
+
+
+def _sueltos_por_color(colores: Sequence[str], cantidad: int) -> list[str]:
+    """``cantidad`` globos sueltos repartidos por turnos entre ``colores``, agrupados por color.
+
+    Agrupados para que el armado los junte en un nivel por color.
+    """
+    distintos = list(dict.fromkeys(colores))
+    cuentas = {color: 0 for color in distintos}
+    for posicion in range(cantidad):
+        cuentas[distintos[posicion % len(distintos)]] += 1
+    return [color for color in distintos for _ in range(cuentas[color])]
+
+
+def reescalar_lectura_armado(
+    lectura: Mapping[str, object], latex_por_grupo: int
+) -> dict[str, object] | None:
+    """La lectura del armado con sus niveles llevados a ``latex_por_grupo`` látex.
+
+    Cada nivel conserva su unidad y su secuencia de colores; las unidades se
+    reparten por restos mayores sobre la proporción leída (empate: el nivel
+    leído primero, así en una base de aire la base va primero). El sobrante que
+    no completa una unidad va como globos sueltos de acento con los colores
+    leídos. Remate, números y disposición no cambian.
+
+    Un nivel con ``n`` unidades se escribe ``n`` veces: es lo que el armado de
+    hoy lee como ``n`` unidades (``armado_bouquet._niveles_leidos`` junta las
+    consecutivas iguales), y también lo que leerá cuando la lectura traiga
+    ``cantidad`` por nivel (cada copia cuenta 1). ``None`` si no hay niveles o
+    no alcanza para nada.
+    """
+    niveles_crudos = cast(list[object], lectura.get("niveles") or [])
+    niveles: list[tuple[str, int, int, list[str]]] = []
+    for crudo in niveles_crudos:
+        if not isinstance(crudo, Mapping):
+            return None
+        leido = _unidades_de_nivel(crudo)
+        if leido is None:
+            return None
+        niveles.append((str(crudo["unidad"]), *leido))
+    actual = sum(k * n for _unidad, k, n, _colores in niveles)
+    if actual <= 0 or latex_por_grupo <= 0:
+        return None
+    cuotas = [n * latex_por_grupo / actual for _unidad, _k, n, _colores in niveles]
+    unidades = [math.floor(cuota) for cuota in cuotas]
+    sobrante = latex_por_grupo - sum(k * u for (_unidad, k, _n, _c), u in zip(niveles, unidades))
+    orden = sorted(range(len(niveles)), key=lambda i: (-(cuotas[i] - unidades[i]), i))
+    agregado = True
+    while agregado:
+        agregado = False
+        for i in orden:
+            k = niveles[i][1]
+            if k <= sobrante:
+                unidades[i] += 1
+                sobrante -= k
+                agregado = True
+        orden = list(range(len(niveles)))
+    nuevos: list[dict[str, object]] = []
+    for (unidad, _k, _n, colores), n in zip(niveles, unidades):
+        if n <= 0:
+            continue
+        if unidad == "suelto":
+            nuevos.append({"unidad": "suelto", "colores": _sueltos_por_color(colores, n)})
+        else:
+            nuevos.extend({"unidad": unidad, "colores": list(colores)} for _ in range(n))
+    if sobrante > 0:
+        todos = [color for _u, _k, _n, colores in niveles for color in colores]
+        nuevos.append({"unidad": "suelto", "colores": _sueltos_por_color(todos, sobrante)})
+    if not nuevos:
+        return None
+    return {**dict(lectura), "niveles": nuevos}
+
+
+@dataclass(frozen=True)
+class _PartesLeidas:
+    total: int
+    fijas: int
+    grupos: int
+
+
+def _partes(compra: CompraLeida) -> _PartesLeidas:
+    """Globos por pieza de una compra leída, las piezas fijas (remate × grupos + dígitos) y los grupos."""
+    numero = compra.armado.get("numero")
+    grupos = 2 if isinstance(numero, Mapping) and numero.get("disposicion") == "lados" else 1
+    digitos = len(cast(list[int], numero["digitos"])) if isinstance(numero, Mapping) else 0
+    remate = len(cast(list[int], compra.armado.get("remate") or []))
+    return _PartesLeidas(compra.total, remate * grupos + digitos, grupos)
+
+
+# --- Geométricas -------------------------------------------------------------------
+
+
+def clase_de_diametro(pulgadas: float) -> str:
+    """Clase de tamaño del conteo: 5"/9" chico, 12" mediano, 18"/24" grande, 36" gigante."""
+    if pulgadas <= 10:
+        return "chico"
+    if pulgadas <= 14:
+        return "mediano"
+    if pulgadas < 30:
+        return "grande"
+    return "gigante"
+
+
+def _reparto_por_clase(proporciones: Sequence[tuple[int, float]]) -> dict[str, float]:
+    reparto: dict[str, float] = {}
+    for diametro, proporcion in proporciones:
+        clase = clase_de_diametro(diametro)
+        reparto[clase] = reparto.get(clase, 0.0) + proporcion
+    return reparto
+
+
+def _variacion_total(a: Mapping[str, float], b: Mapping[str, float]) -> float:
+    return sum(abs(a.get(clase, 0.0) - b.get(clase, 0.0)) for clase in {*a, *b}) / 2
+
+
+def mezcla_de_la_foto(
+    por_tamano: Sequence[Mapping[str, object]],
+    mezclas: Mapping[str, Sequence[tuple[int, float]]],
+    actual: str,
+) -> str | None:
+    """La mezcla del contrato más cercana al reparto de la foto, solo si la de
+    ``actual`` lo contradice claramente; si no, ``None`` (la mezcla no se toca)."""
+    foto = {
+        str(item["clase"]): float(cast(float, item["proporcion"]))
+        for item in por_tamano
+        if isinstance(item, Mapping)
+    }
+    if not foto or actual not in mezclas:
+        return None
+    distancia = {
+        mezcla: _variacion_total(foto, _reparto_por_clase(proporciones))
+        for mezcla, proporciones in mezclas.items()
+    }
+    mejor = min(mezclas, key=lambda mezcla: (distancia[mezcla], mezcla != actual))
+    if (
+        mejor != actual
+        and distancia[actual] >= CONTRADICCION_MEZCLA
+        and distancia[mejor] <= distancia[actual] - MEJORA_MINIMA_MEZCLA
+    ):
+        return mejor
+    return None
+
+
+def medidas_desde_referencia(
+    tipo: str, medidas: Mapping[str, object], lectura: Mapping[str, object]
+) -> dict[str, float] | None:
+    """Medidas de la pieza según la escala de la foto (largo o alto × la altura de
+    la referencia), sobre las del plan; ``None`` si la foto no trae escala útil.
+
+    Son una estimación: sirven de centro de la ventana del eje, no de medida.
+    """
+
+    def metros(campo: str) -> float | None:
+        escala = lectura.get(campo)
+        if not isinstance(escala, Mapping):
+            return None
+        altura = ALTURA_REFERENCIA_M.get(str(escala.get("referencia")))
+        veces = escala.get("veces")
+        if altura is None or not isinstance(veces, (int, float)):
+            return None
+        valor = round(altura * float(veces), 2)
+        return valor if 0 < valor <= MAX_MEDIDA_M else None
+
+    largo, alto = metros("largo_relativo"), metros("alto_relativo")
+    nuevas = {k: float(cast(float, v)) for k, v in medidas.items() if isinstance(v, (int, float))}
+    cambiadas = False
+    if tipo == "guirnalda" and largo is not None:
+        clave = "largo_m" if "largo_m" in nuevas or "ancho_m" not in nuevas else "ancho_m"
+        nuevas[clave] = largo
+        cambiadas = True
+    if tipo in ("arco", "semiarco", "pared", "centro_mesa") and largo is not None:
+        nuevas["ancho_m"] = largo
+        cambiadas = True
+    if tipo in ("arco", "semiarco", "pared", "centro_mesa", "columna") and alto is not None:
+        nuevas["alto_m"] = alto
+        cambiadas = True
+    return nuevas if cambiadas else None
+
+
+@dataclass(frozen=True)
+class Opcion:
+    densidad: str
+    mezcla: str
+    medidas: Mapping[str, float]
+    total: int
+    #: Escala de las medidas respecto del centro de la ventana (1.0 = sin mover).
+    factor: float
+
+
+def _distancia_densidad(a: str, b: str) -> int:
+    return (
+        abs(DENSIDADES.index(a) - DENSIDADES.index(b)) if a in DENSIDADES and b in DENSIDADES else 3
+    )
+
+
+def elegir_opcion(objetivo: int, densidad_actual: str, opciones: Sequence[Opcion]) -> Opcion | None:
+    """La opción dentro de la tolerancia que menos cambia el plan: medidas más
+    cercanas, luego la densidad más cercana, luego la cuenta más cercana."""
+    validas = [o for o in opciones if dentro_de_tolerancia(objetivo, o.total)]
+    if not validas:
+        return None
+    return min(
+        validas,
+        key=lambda o: (
+            round(abs(o.factor - 1), 4),
+            _distancia_densidad(o.densidad, densidad_actual),
+            abs(o.total - objetivo),
+            DENSIDADES.index(o.densidad) if o.densidad in DENSIDADES else 3,
+        ),
+    )
+
+
+# --- Aplicación sobre el plan --------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PuertoPlan:
+    """Lo que las reglas necesitan del plan resuelto, sin depender de ``plan.py``."""
+
+    #: Globos por instancia de una estructura (con su densidad, mezcla y medidas).
+    contar: Callable[[Mapping[str, object]], int]
+    #: La estructura con ese total queda dentro de la puerta física.
+    dentro_de_puerta: Callable[[Mapping[str, object], int], bool]
+    #: El catálogo del turno cubre cada tamaño de esa mezcla para cada material.
+    mezcla_cubierta: Callable[[Mapping[str, object], str], bool]
+    #: Materiales clasificados y compra de un kit (``plan._bouquet_context``).
+    contexto_kit: Callable[[Mapping[str, object]], EstructuraBouquet]
+    #: La estructura con su patrón re-sincronizado tras cambiar su rejilla, o ``None`` si ya no cabe.
+    sincronizar_patron: Callable[[Mapping[str, object]], dict[str, object] | None]
+    mezclas: Mapping[str, Sequence[tuple[int, float]]]
+    #: El cliente fijó tamaños (``restricciones.tamanos``): la mezcla no se toca.
+    tamanos_obligatorios: bool
+
+
+@dataclass
+class _Resultado:
+    estructura: dict[str, object]
+    decision: str
+    globos_foto: int | None
+    globos_antes: int
+    globos_despues: int
+    cambios: list[dict[str, object]]
+    motivo: str
+    supuesto: str | None = None
+
+
+def _numero_es(valor: float) -> str:
+    return (f"{valor:.2f}".rstrip("0").rstrip(".")).replace(".", ",")
+
+
+def _nombre(estructura: Mapping[str, object], defecto: str) -> str:
+    nombre = estructura.get("nombre")
+    return nombre if isinstance(nombre, str) and nombre.strip() else defecto
+
+
+def _unos(cuenta: Cuenta) -> str:
+    return f"{cuenta.globos}" if cuenta.exacto else f"unos {cuenta.globos}"
+
+
+def _kit(
+    estructura: dict[str, object],
+    cuenta: Cuenta,
+    armado_leido: Mapping[str, object] | None,
+    puerto: PuertoPlan,
+) -> tuple[_Resultado, Mapping[str, object] | None, bool]:
+    """Un kit con la cuenta de la foto.
+
+    Devuelve el resultado, la lectura del armado que deben usar los armados (la
+    reescalada, o la de siempre) y si esa lectura se descarta.
+    """
+    reps = max(1, cast(int, estructura.get("repeticiones") or 1))
+    antes_total = cast(int, estructura.get("unidades_declaradas") or 0)
+    antes = round(antes_total / reps)
+    nombre = _nombre(estructura, "La pieza")
+
+    def sin_cambio(decision: str, motivo: str, despues: int = antes) -> _Resultado:
+        return _Resultado(estructura, decision, cuenta.globos, antes, despues, [], motivo)
+
+    if estructura.get("armado_bouquet") is not None:
+        return (
+            sin_cambio("sin_aplicar", "La pieza ya trae su armado, que fija la cantidad."),
+            armado_leido,
+            False,
+        )
+    contexto = puerto.contexto_kit(estructura)
+    if not contexto.materiales or any(m is None for m in contexto.materiales):
+        return (
+            sin_cambio("sin_ajuste_posible", "La pieza no se compra por globos sueltos."),
+            armado_leido,
+            False,
+        )
+
+    compra = (
+        compra_desde_lectura(contexto, armado_leido)
+        if armado_leido is not None and contexto.es_bouquet
+        else None
+    )
+    if compra is not None:
+        partes = _partes(compra)
+        total = total_kit_con_armado(cuenta, partes.total)
+        if total == partes.total:
+            resultado = (
+                sin_cambio(
+                    "coincide",
+                    f"La foto y el armado leído coinciden ({partes.total} globos por pieza).",
+                    partes.total,
+                )
+                if dentro_de_tolerancia(cuenta.globos, partes.total)
+                else sin_cambio(
+                    "sin_aplicar",
+                    f"Un estimado ({cuenta.globos}) no baja lo que el armado leído identificó "
+                    f"({partes.total}).",
+                    partes.total,
+                )
+            )
+            return resultado, armado_leido, False
+        latex = (total - partes.fijas) // partes.grupos
+        reescalada = reescalar_lectura_armado(armado_leido or {}, latex)
+        nueva = compra_desde_lectura(contexto, reescalada) if reescalada is not None else None
+        if nueva is not None and nueva.total * reps <= MAX_UNIDADES_DECLARADAS:
+            final = nueva.total
+            item = {**estructura, "unidades_declaradas": final * reps}
+            supuesto = (
+                f"{nombre}: la foto muestra {_unos(cuenta)} globos; el armado leído tenía "
+                f"{partes.total}: la cantidad quedó en {final * reps} (el plan decía {antes_total})."
+            )
+            return (
+                _Resultado(
+                    item,
+                    "ajustado",
+                    cuenta.globos,
+                    antes,
+                    final,
+                    [
+                        {
+                            "campo": "unidades_declaradas",
+                            "antes": antes_total,
+                            "despues": final * reps,
+                        }
+                    ],
+                    f"El conteo da la cantidad y el armado leído la distribución ({partes.total} → {final}).",
+                    supuesto,
+                ),
+                reescalada,
+                False,
+            )
+        # El armado leído no se puede llevar a esa cantidad: se descarta y la
+        # cuenta decide sola, como si no hubiera lectura del armado.
+        descartar = True
+    else:
+        descartar = False
+
+    por_pieza = total_kit_sin_armado(cuenta, antes)
+    if por_pieza == antes:
+        resultado = (
+            sin_cambio("coincide", "La cantidad del plan ya sigue la foto.")
+            if dentro_de_tolerancia(cuenta.globos, antes)
+            else sin_cambio(
+                "sin_aplicar",
+                f"Un estimado ({cuenta.globos}) no baja lo que el plan declara ({antes}).",
+            )
+        )
+        return resultado, armado_leido, descartar
+    nuevo_total = por_pieza * reps
+    if nuevo_total > MAX_UNIDADES_DECLARADAS or nuevo_total < len(contexto.materiales):
+        return (
+            sin_cambio(
+                "sin_ajuste_posible", "La cantidad de la foto no cabe en la compra de la pieza."
+            ),
+            armado_leido,
+            descartar,
+        )
+    item = {**estructura, "unidades_declaradas": nuevo_total}
+    supuesto = (
+        f"{nombre}: la foto muestra {_unos(cuenta)} globos por pieza, así que la cantidad quedó en "
+        f"{nuevo_total} (el plan decía {antes_total})."
+    )
+    return (
+        _Resultado(
+            item,
+            "ajustado",
+            cuenta.globos,
+            antes,
+            por_pieza,
+            [{"campo": "unidades_declaradas", "antes": antes_total, "despues": nuevo_total}],
+            "La cuenta exacta de la foto manda."
+            if cuenta.exacto
+            else "El estimado de la foto supera lo declarado.",
+            supuesto,
+        ),
+        armado_leido,
+        descartar,
+    )
+
+
+def _con(estructura: Mapping[str, object], opcion: Opcion) -> dict[str, object]:
+    return {
+        **dict(estructura),
+        "densidad": opcion.densidad,
+        "mezcla": opcion.mezcla,
+        "medidas": dict(opcion.medidas),
+    }
+
+
+def _opciones(
+    estructura: Mapping[str, object],
+    mezcla: str,
+    centro: Mapping[str, float],
+    factores: Sequence[float],
+    puerto: PuertoPlan,
+) -> list[Opcion]:
+    opciones: list[Opcion] = []
+    for factor in factores:
+        medidas = {clave: round(valor * factor, 2) for clave, valor in centro.items()}
+        if any(not 0 < valor <= MAX_MEDIDA_M for valor in medidas.values()):
+            continue
+        for densidad in DENSIDADES:
+            candidata = {
+                **dict(estructura),
+                "densidad": densidad,
+                "mezcla": mezcla,
+                "medidas": medidas,
+            }
+            total = puerto.contar(candidata)
+            if total > 0 and puerto.dentro_de_puerta(candidata, total):
+                opciones.append(Opcion(densidad, mezcla, medidas, total, factor))
+    return opciones
+
+
+def _cambios(antes: Mapping[str, object], despues: Mapping[str, object]) -> list[dict[str, object]]:
+    cambios: list[dict[str, object]] = []
+    for campo in ("densidad", "mezcla"):
+        if antes.get(campo) != despues.get(campo):
+            cambios.append(
+                {"campo": campo, "antes": antes.get(campo), "despues": despues.get(campo)}
+            )
+    medidas_antes = cast(Mapping[str, object], antes.get("medidas") or {})
+    medidas_despues = cast(Mapping[str, object], despues.get("medidas") or {})
+    for campo in ("ancho_m", "alto_m", "largo_m"):
+        if medidas_antes.get(campo) != medidas_despues.get(campo) and campo in medidas_despues:
+            cambios.append(
+                {
+                    "campo": campo,
+                    "antes": medidas_antes.get(campo, 0),
+                    "despues": medidas_despues[campo],
+                }
+            )
+    return cambios
+
+
+def _frase_cambio(cambio: Mapping[str, object]) -> str:
+    campo = str(cambio["campo"])
+    if campo == "densidad":
+        return f"densidad {cambio['antes']} → {cambio['despues']}"
+    if campo == "mezcla":
+        antes, despues = str(cambio["antes"]), str(cambio["despues"])
+        return (
+            f"tamaños {_NOMBRE_MEZCLA.get(antes, antes.replace('_', ' '))} → "
+            f"{_NOMBRE_MEZCLA.get(despues, despues.replace('_', ' '))}, los de la foto"
+        )
+    return (
+        f"{_NOMBRE_MEDIDA[campo]} {_numero_es(float(cast(float, cambio['antes'])))} → "
+        f"{_numero_es(float(cast(float, cambio['despues'])))} m equivalentes a la foto (no medidos)"
+    )
+
+
+def _geometrica(
+    estructura: dict[str, object],
+    lectura: Mapping[str, object],
+    cuenta: Cuenta,
+    *,
+    medidas_fijas: bool,
+    mezcla_fija: bool,
+    puerto: PuertoPlan,
+) -> _Resultado:
+    tipo = str(estructura.get("tipo"))
+    densidad = str(estructura.get("densidad") or "media")
+    mezcla = str(estructura.get("mezcla") or "organica_fina")
+    medidas = {
+        clave: float(cast(float, valor))
+        for clave, valor in cast(Mapping[str, object], estructura.get("medidas") or {}).items()
+        if isinstance(valor, (int, float))
+    }
+    antes = puerto.contar(estructura)
+    nombre = _nombre(estructura, tipo.capitalize())
+
+    cambiar_mezcla = None
+    if not mezcla_fija and not puerto.tamanos_obligatorios:
+        cambiar_mezcla = mezcla_de_la_foto(
+            cast(Sequence[Mapping[str, object]], lectura.get("por_tamano") or []),
+            puerto.mezclas,
+            mezcla,
+        )
+        if cambiar_mezcla is not None and not puerto.mezcla_cubierta(estructura, cambiar_mezcla):
+            cambiar_mezcla = None
+    mezcla_objetivo = cambiar_mezcla or mezcla
+
+    elegida: Opcion | None = None
+    if cambiar_mezcla is None and dentro_de_tolerancia(cuenta.globos, antes):
+        return _Resultado(
+            estructura, "coincide", cuenta.globos, antes, antes, [], "El plan ya sigue la foto."
+        )
+    # 1) Densidad (y la mezcla de la foto, si cambió) con las medidas del plan.
+    elegida = elegir_opcion(
+        cuenta.globos, densidad, _opciones(estructura, mezcla_objetivo, medidas, [1.0], puerto)
+    )
+    # 2) Solo si no alcanza: el eje dentro de ±35 % del plan o de la escala de la foto.
+    if elegida is None and not medidas_fijas:
+        centro = medidas_desde_referencia(tipo, medidas, lectura) or medidas
+        pasos = round(VENTANA_EJE / PASO_VENTANA)
+        factores = [round(1 + PASO_VENTANA * i, 2) for i in range(-pasos, pasos + 1)]
+        elegida = elegir_opcion(
+            cuenta.globos,
+            densidad,
+            _opciones(estructura, mezcla_objetivo, centro, factores, puerto),
+        )
+    if elegida is None:
+        motivo = (
+            "Con las medidas del cliente ninguna densidad alcanza la cuenta de la foto."
+            if medidas_fijas
+            else "Ninguna densidad ni largo dentro de ±35 % alcanza la cuenta de la foto."
+        )
+        return _Resultado(estructura, "sin_ajuste_posible", cuenta.globos, antes, antes, [], motivo)
+
+    candidata = _con(estructura, elegida)
+    if candidata.get("patron_color") is not None:
+        sincronizada = puerto.sincronizar_patron(candidata)
+        if sincronizada is None:
+            return _Resultado(
+                estructura,
+                "sin_ajuste_posible",
+                cuenta.globos,
+                antes,
+                antes,
+                [],
+                "El patrón de color de la pieza no cabe en la pieza ajustada.",
+            )
+        candidata = sincronizada
+    cambios = _cambios(estructura, candidata)
+    if not cambios:
+        return _Resultado(
+            estructura, "coincide", cuenta.globos, antes, antes, [], "El plan ya sigue la foto."
+        )
+    por_pieza = " por pieza" if cast(int, estructura.get("repeticiones") or 1) > 1 else ""
+    supuesto = (
+        f"{nombre}: la foto muestra {_unos(cuenta)} globos{por_pieza} y el plan tenía {antes}; "
+        f"{', '.join(_frase_cambio(c) for c in cambios)}: quedó en {elegida.total}."
+    )
+    medidas_movidas = any(str(cambio["campo"]).endswith("_m") for cambio in cambios)
+    motivo = (
+        "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
+        if medidas_movidas
+        else "Densidad y tamaños ajustados con las medidas del plan."
+    )
+    return _Resultado(
+        candidata, "ajustado", cuenta.globos, antes, elegida.total, cambios, motivo, supuesto
+    )
+
+
+def _globos_actuales(estructura: Mapping[str, object], puerto: PuertoPlan) -> int:
+    """Globos por pieza del plan tal como está (kits: lo declarado entre las repeticiones)."""
+    if estructura.get("tipo") in TIPOS_GEOMETRICOS:
+        return puerto.contar(estructura)
+    if estructura.get("tipo") == "kit":
+        reps = max(1, cast(int, estructura.get("repeticiones") or 1))
+        return round(cast(int, estructura.get("unidades_declaradas") or 0) / reps)
+    return 0
+
+
+def aplicar(
+    plan: Mapping[str, object],
+    pistas: Sequence[Mapping[str, object]],
+    pistas_armado: Sequence[Mapping[str, object]],
+    *,
+    usar_armados: bool,
+    solo: Collection[str] | None,
+    puerto: PuertoPlan,
+) -> tuple[dict[str, object], list[dict[str, object]], list[dict[str, object]]]:
+    """El plan con cada pieza ajustada a la cuenta de su foto.
+
+    Devuelve el plan, las lecturas del armado que deben usar los armados (las
+    reescaladas en lugar de las leídas, sin las descartadas) y
+    ``conteos_referencia``: una entrada por estructura con pista, con lo que se
+    decidió y por qué. ``usar_armados``: la resolución completa armados de
+    bouquet (sin eso, la lectura del armado no decide nada). ``solo``: tras una
+    edición, solo esas estructuras, con la mezcla que eligió el decorador.
+    """
+    por_elemento = {str(p["referencia_element_id"]): p for p in pistas}
+    armados = {str(p.get("referencia_element_id")): dict(p) for p in pistas_armado}
+    medidas_fijas = cast(Mapping[str, object], plan.get("espacio") or {}).get("fuente") == "cliente"
+    estructuras: list[object] = []
+    supuestos = [s for s in cast(list[object], plan.get("supuestos") or []) if isinstance(s, str)]
+    conteos: list[dict[str, object]] = []
+    for cruda in cast(list[object], plan.get("estructuras") or []):
+        estructura = dict(cast(Mapping[str, object], cruda))
+        estructura_id = str(estructura.get("estructura_id"))
+        elemento = estructura.get("referencia_element_id")
+        pista = por_elemento.get(str(elemento)) if isinstance(elemento, str) else None
+        if pista is None or (solo is not None and estructura_id not in solo):
+            estructuras.append(cruda)
+            continue
+        lectura = {k: v for k, v in pista.items() if k != "referencia_element_id"}
+        cuenta = cuenta_usable(lectura)
+        tipo = estructura.get("tipo")
+        if cuenta is None:
+            actual = _globos_actuales(estructura, puerto)
+            resultado = _Resultado(
+                estructura,
+                "no_confiable",
+                None,
+                actual,
+                actual,
+                [],
+                "La lectura no trae una cuenta confiable (confianza, exacta, estimado o racimos).",
+            )
+        elif tipo == "kit":
+            leida = armados.get(str(elemento)) if usar_armados else None
+            confiable = (
+                leida is not None
+                and float(cast(float, leida.get("confianza", 0))) >= CONFIANZA_MINIMA_LECTURA
+            )
+            resultado, lectura_armado, descartar = _kit(
+                estructura, cuenta, leida if confiable else None, puerto
+            )
+            if confiable and descartar:
+                armados.pop(str(elemento), None)
+            elif confiable and lectura_armado is not None:
+                armados[str(elemento)] = dict(lectura_armado)
+        elif tipo in TIPOS_GEOMETRICOS:
+            resultado = _geometrica(
+                estructura,
+                lectura,
+                cuenta,
+                medidas_fijas=medidas_fijas,
+                mezcla_fija=solo is not None,
+                puerto=puerto,
+            )
+        else:
+            resultado = _Resultado(
+                estructura,
+                "sin_ajuste_posible",
+                cuenta.globos,
+                0,
+                0,
+                [],
+                "Este tipo de pieza no se cuenta en globos.",
+            )
+        estructuras.append(resultado.estructura)
+        if resultado.supuesto:
+            supuestos.append(resultado.supuesto)
+        conteos.append(
+            {
+                "estructura_id": estructura_id,
+                "referencia_element_id": str(elemento),
+                "decision": resultado.decision,
+                "lectura": lectura,
+                "globos_foto": resultado.globos_foto,
+                "globos_antes": resultado.globos_antes,
+                "globos_despues": resultado.globos_despues,
+                "cambios": resultado.cambios,
+                "motivo": resultado.motivo,
+            }
+        )
+    nuevo = {**dict(plan), "estructuras": estructuras}
+    if any(c["decision"] == "ajustado" for c in conteos):
+        nuevo["supuestos"] = list(dict.fromkeys(supuestos))
+    # Las lecturas del armado en el orden en que llegaron, con las reescaladas en su lugar.
+    lecturas_armado = [
+        armados[str(p.get("referencia_element_id"))]
+        for p in pistas_armado
+        if str(p.get("referencia_element_id")) in armados
+    ]
+    return nuevo, lecturas_armado, conteos
+
+
+__all__ = [
+    "ALTURA_REFERENCIA_M",
+    "Cuenta",
+    "Opcion",
+    "PuertoPlan",
+    "aplicar",
+    "clase_de_diametro",
+    "cuenta_usable",
+    "dentro_de_tolerancia",
+    "elegir_opcion",
+    "medidas_desde_referencia",
+    "mezcla_de_la_foto",
+    "reescalar_lectura_armado",
+    "total_kit_con_armado",
+    "total_kit_sin_armado",
+    "validar_pistas",
+]
