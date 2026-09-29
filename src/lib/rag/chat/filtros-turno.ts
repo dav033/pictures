@@ -27,7 +27,16 @@ export function filtrosDurosDeBusqueda(input: {
   brief: Brief;
   coloresRetirados?: readonly string[];
 }): FiltrosDurosBusqueda {
-  const solicitud = input.solicitudOriginal.trim() || input.mensaje;
+  // `input.mensaje` lo escribe el MODELO, no el cliente. Con una foto y sin
+  // texto, `solicitudOriginal` viene vacía y este `||` caía al mensaje del
+  // modelo, que es exactamente lo que este módulo existe para impedir: al ver
+  // "chrome gold" en la foto el modelo busca "globo redondo reflex dorado" y su
+  // propia palabra se volvía restricción del cliente. `reflex` pasaba a filtro
+  // duro, no hay Reflex blanco en el pool, y de paso apagaba el rescate del
+  // catálogo (`tieneFiltrosNoRelajables`): la pared salió de un solo color y sin
+  // patrón (2026-09-29). Sin solicitud del cliente no hay filtros del cliente;
+  // el brief sigue mandando lo que el cliente sí dijo.
+  const solicitud = input.solicitudOriginal.trim();
   const delTurno = extraerFiltrosDurosBusqueda(solicitud, input.brief);
   const deLaBusqueda = extraerFiltrosDurosBusqueda(input.mensaje, {});
   const fuera = new Set((input.coloresRetirados ?? []).map(colorDeCatalogo));

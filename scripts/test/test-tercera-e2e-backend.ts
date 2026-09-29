@@ -300,6 +300,17 @@ async function main(): Promise<void> {
   assert.match(String(avisoFiltrosBusqueda(filtrosDurosDeBusqueda({ mensaje: "globo dorado 24 pulgadas", solicitudOriginal: boda, brief: {} }))), /No le digas al cliente que el catálogo no tiene/);
   assert.deepEqual(filtrosDurosDeBusqueda({ mensaje: "globo azul", solicitudOriginal: "40 en azul y plateado", brief: {}, coloresRetirados: ["plateado"] }).colores, ["azul"]);
   assert.match(construirSistema({ ragEnabled: true }), /limite_busqueda/, "the prompt forbids claiming total unavailability from a filtered search");
+  // 2026-09-29: con una foto y sin texto del cliente `solicitudOriginal` viene
+  // vacía, y el mensaje que escribe el MODELO se tomaba como restricción del
+  // cliente. Al leer "chrome gold" en la foto buscaba "reflex dorado", `reflex`
+  // pasaba a filtro duro (no hay Reflex blanco en el pool) y la pared salió de un
+  // solo color, sin patrón y sin gráfica.
+  const soloFoto = filtrosDurosDeBusqueda({ mensaje: "globo latex redondo reflex dorado", solicitudOriginal: "", brief: {} });
+  assert.deepEqual(soloFoto.acabados, [], "the model's own finish is not a customer constraint when the customer only sent a photo");
+  assert.deepEqual(soloFoto.colores, [], "nor is the color it wrote: photo colors travel as context, never as a hard filter");
+  assert.equal(avisoFiltrosBusqueda(soloFoto), null, "a search with no customer filter is not reported as limited");
+  // El brief sigue mandando lo que el cliente sí dijo, aunque no escribiera solicitud.
+  assert.ok(filtrosDurosDeBusqueda({ mensaje: "globo latex redondo reflex dorado", solicitudOriginal: "", brief: { colores: ["azul"] } as never }).colores.includes("azul"), "the brief still locks what the customer stated");
   ok("D3: el filtro de tamaño sale de cada búsqueda, no de la solicitud original");
 
   // ---------------------------------------------------------------------------
