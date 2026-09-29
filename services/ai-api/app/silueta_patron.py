@@ -65,17 +65,26 @@ from app.silueta import (
 _VUELTAS_GRAFICA = 16
 
 #: Globos por instancia que se dibujan desde la silueta. Por encima de esto la
-#: pieza se queda con la rejilla de siempre. Medido con ``_VUELTAS_GRAFICA``
-#: (2026-09-29): 200 globos 0,16 s · 300 0,25 s · 420 0,48 s · 600 0,68 s. El
-#: motor admite hasta 1600 (``silueta.MAX_GLOBOS``), pero eso son más de 5 s y
-#: esto corre dentro de cada resolución.
-MAX_GLOBOS_PIEZA = 420
+#: pieza se queda con la rejilla de siempre.
+#:
+#: 420 dejaba fuera el caso corriente: una pared orgánica de 2,4 x 2,4 m con la
+#: mezcla `organica_fina` lleva 483 globos y se quedaba sin croquis, que es
+#: justo la pieza para la que se hizo (2026-09-29, foto "Mr & Mrs" del usuario).
+#:
+#: Vuelto a medir el mismo día en la máquina del usuario, con carga real y no en
+#: reposo: 420 globos 1,5 s · 483 2,0 s · 600 2,8 s · 700 3,7 s · 900 5,5 s —
+#: unas cuatro veces lo que dio la primera medida. 600 cubre una pared grande y
+#: cuesta ~2,8 s la PRIMERA vez; después el croquis se recuerda por petición
+#: (``_disponer_recordado``) y cada repintado son 1-2 ms. El motor admite hasta
+#: 1600 (``silueta.MAX_GLOBOS``), pero eso pasa de 5 s dentro de la resolución.
+MAX_GLOBOS_PIEZA = 600
 
-#: Globos que puede dibujar una resolución completa, sumando todas sus piezas
-#: (≈ 1 s en el peor caso). Una propuesta con cuatro paredes grandes dibuja las
-#: primeras y las demás se quedan con la rejilla, en vez de que el plan entero
-#: tarde cinco segundos más.
-PRESUPUESTO_GLOBOS = 840
+#: Globos que puede dibujar una resolución completa, sumando todas sus piezas.
+#: Dos piezas grandes, no una. Una propuesta con cuatro paredes dibuja las
+#: primeras y las demás se quedan con la rejilla (con su motivo en el log), en
+#: vez de que el plan entero tarde diez segundos más. Con las medidas de arriba
+#: son ~5,6 s en el peor caso, y solo la primera vez que se dibuja cada pieza.
+PRESUPUESTO_GLOBOS = 1200
 
 
 #: Por qué una pieza se quedó sin croquis y la gráfica sigue con su rejilla.
