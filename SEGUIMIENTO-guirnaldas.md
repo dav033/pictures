@@ -7,6 +7,99 @@ Es un documento de traspaso: quien lo retome debe leer `AGENTS.md`, ADR-0028
 que dice "hoy" está verificado en el código de la rama `feat/bouquets` con la
 referencia `archivo:línea`.
 
+## Estado al 2026-09-29 (léelo primero)
+
+El detalle de cada entrega está en §8 y en los ADR 0030 (enmienda de la decisión 4),
+0031, 0032 (decisiones 1–29) y 0033. Este resumen dice dónde está cada cosa y qué falta.
+
+### Qué está hecho
+
+| Qué | Dónde | Detalle |
+|---|---|---|
+| Plan completo E0–E6: armado del bouquet en los prompts, conteo desde la foto (E1/E2), guirnaldas por partes (E3 backend, E4 lectura, E5 prompts y patrón por racimo, E6 UI) | `main` 94ad16b, **desplegado en producción el 2026-09-28** | §8, `SEGUIMIENTO-conteo.md`, `SEGUIMIENTO-bouquets.md` §13 |
+| Bouquet que salía con 11 globos: la lectura trae `cantidad` y `clase_tamano` por nivel; Python es el único dueño de la cuenta | idem | `SEGUIMIENTO-bouquets.md` §14, ADR-0030 |
+| ~30 defectos de la revisión adversaria (supuestos > 240 caracteres, escalas de tamaño, densidades por estructura, medidas del cliente, UI, topes de gasto) | idem | §8 "Revisión adversaria" |
+| Código de tamaño (R-12) y SKU en "Globos que lleva" | idem | `SEGUIMIENTO-bouquets.md` §13 |
+| La imagen sigue el armado: racimos en vez de "espiral de franjas" (salían cintas) | **solo `main` local** (d66e2a0) | ADR-0032 d26, §8 |
+| Caída y desnivel leídos en la foto; cuerda con extremos desnivelados | solo local | ADR-0032 d27 |
+| Curvatura con sentido (arqueada hacia arriba o colgando) y la guirnalda de pared sin "grounded supports" (salía un arco con patas) | solo local | ADR-0032 d28 |
+| La lectura pide 3 puntos de la línea central y Python calcula sentido, flecha y desnivel (Gemini decía "abajo" con 0,95 de confianza para una guirnalda arqueada) | solo local | ADR-0032 d29 |
+| Guía de estructura para la LoRA: mapa de color del armado + carta de color como imágenes de `/edit` (adaptación reducida de `clasificador-decoraciones/src/lib/render-ia`) | solo local, bandera `GUIA_ESTRUCTURA_V1` | ADR-0033 |
+| Sin medidas del cliente, la cantidad de la foto decide el eje libre (guirnalda 0,5 m → ~3,9 m, ~75 globos); el brief ya no cuenta como medida del cliente | solo local | ADR-0031 §12, `SEGUIMIENTO-conteo.md` §3.5 |
+
+### Despliegue
+
+- **Producción** = `main` 94ad16b. Next por CI; ai-api a mano con la imagen
+  `demo-decoracion-ai-api:94ad16b…` (rollback: `prev-20260928`). Banderas nuevas
+  **apagadas**: `CONTEO_REFERENCIA_*`, `GUIRNALDAS_ARMADO_V1`,
+  `GUIRNALDA_REFERENCIA_PYTHON_ENABLED`, `BOUQUETS_ARMADO_V1`,
+  `BOUQUET_REFERENCIA_PYTHON_ENABLED`, `GUIA_ESTRUCTURA_V1`.
+- **`main` local** = d66e2a0, **18 commits por delante de `origin/main`, sin subir**
+  (subir `main` despliega). El contrato cambió (`arqueo_m`, `sentido_curva`,
+  `flecha_relativa`, `desnivel_m`, `lecturas_guirnalda`, `medidas_del_cliente`…): la app
+  y ai-api se despliegan juntas. Procedimiento en la memoria del proyecto
+  ("Despliegue a producción"): imagen de ai-api, canario en `stack_web`, readyz,
+  `prev-<fecha>`, recrear el contenedor al pasar "Quality checks".
+- **Local**: `.env.local` tiene encendidas todas las banderas anteriores. Arranque:
+  dos ventanas de PowerShell con `python scripts/ops/supervisar-ai-api.py --port 8000`
+  y `npm run dev -- -p 3010`. `.claude/launch.json` tiene una configuración
+  `ai-api-8000` sin commitear.
+
+### Gasto en proveedores (estimado)
+
+Tres llamadas de visión a Gemini para diagnosticar con la foto del usuario (lectura de
+guirnalda v3 y v4, lectura de conteo): ~2.400 tokens cada una, menos de US$ 0,01 en total.
+Ninguna generación de imagen.
+
+### Pendiente
+
+1. **Probar en local** con la foto de la guirnalda de pared (sin foto del espacio):
+   la gráfica debe salir arqueada y cayendo a la derecha, de ~3–4 m y ~75 globos; la
+   imagen, sin cintas, sin patas y siguiendo la guía.
+2. **Corridas pagas preparadas, sin correr** (cada una necesita tope confirmado por el usuario):
+   - con/sin guía: `scripts/ops/generar-guia-estructura.ts`, 12 imágenes, ~US$ 0,69, `--max-usd 0.9`;
+   - redacción vieja/nueva del patrón: `scripts/ops/generar-guirnalda-espiral.ts`, 6 imágenes, ~US$ 0,2–0,4, `--max-usd 0.8`;
+   - E7: evaluación del conteo (30 fotos contadas a mano fuera del repo, ~US$ 0,94 estimados) y de v16 en guirnaldas.
+3. **Subir `main` y desplegar** app + ai-api juntas; después, decidir qué banderas se encienden en producción.
+4. **Decisiones del negocio**: tolerancias del conteo (±15 %, ventana ±35 % y el eje libre), supuestos del oficio de la guirnalda (racimo, relleno, insumos, ritmo), umbral de desnivel 0,05; vocabulario LoRA (burbuja, corazón dorado mate).
+5. **Huecos conocidos**:
+   - la forma "gancho" (recta arriba y caída concentrada en un extremo) no existe: la curva es una parábola;
+   - el patrón leído de la foto (racimos dorados chicos repartidos) no se refleja: el plan cae en espiral;
+   - el supuesto "medidas asumidas" muestra el largo viejo cuando el conteo lo cambia;
+   - la guía no se usa con foto del espacio;
+   - `cuentaDeLectura` (`src/lib/eval`) es una copia en TS de la cuenta de Python;
+   - `armado-en-prompt.ts` redacta soporte y forma en TS;
+   - `bench-fidelidad.ts` no aplica `--max-usd` a mitad de corrida;
+   - las instrucciones generales de Gemini aún mencionan "arch" y "floor contact".
+6. **Limpieza**: el worktree `../demo-decoracion-guirnaldas` (rama `feat/guirnaldas`, ya fusionada) y las ramas `fix/*`, `feat/*` y `wip/conteo-e2` en origin ya están en `main`; se pueden borrar tras el despliegue.
+
+### Prompt para retomar
+
+```
+Retoma demo-decoracion desde main (d66e2a0 o posterior). Lee AGENTS.md y la sección
+"Estado al 2026-09-29" de SEGUIMIENTO-guirnaldas.md; el detalle está en §8 y en los
+ADR 0030–0033. main local va 18 commits por delante de origin/main: no hagas push
+sin mi confirmación (push a main despliega Next; ai-api se despliega a mano y los
+dos juntos porque el contrato cambió).
+
+Objetivo de esta sesión, en orden:
+1. Levanta el entorno local (ai-api con scripts/ops/supervisar-ai-api.py en 8000 y
+   Next en 3010) y comprueba readyz y /login.
+2. Revisa conmigo la prueba de la guirnalda de pared (foto sin espacio): gráfica,
+   largo y cantidad desde el conteo, e imagen generada con GUIA_ESTRUCTURA_V1. Si algo
+   falla, diagnostica con evidencia (una llamada real como máximo, tope US$ 0,05)
+   antes de cambiar código.
+3. Propón qué corrida paga correr primero (guía con/sin, redacción del patrón o E7)
+   con su costo estimado y espera mi tope.
+4. Cuando lo apruebe: sube main y despliega app + ai-api juntas (canario, readyz,
+   prev-<fecha>), sin encender banderas nuevas en producción salvo que yo lo pida.
+
+Reglas: trabajo en worktrees aparte (el árbol principal corre mi app), revisiones
+ligeras (un revisor por área, verificar solo lo grave), nada de llamadas pagas sin
+tope confirmado, Python es el único dueño de cantidades y reglas comerciales, sin
+armado todo byte a byte igual, vectores dorados intactos. Háblame en español.
+```
+
 ## 0. Qué se pidió
 
 1. **Guirnaldas por partes**: llevar a las guirnaldas lo que ADR-0028 y ADR-0030
