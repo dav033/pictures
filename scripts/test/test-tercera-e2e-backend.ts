@@ -338,6 +338,9 @@ async function main(): Promise<void> {
   assert.match(ACCION_NUMEROS_EN_CATALOGO, /ofrécele el color que sí existe/);
   assert.match(ACCION_NUMERO_INCORRECTO, /ofrécele al cliente el color en que sí está ese dígito/);
   assert.match(construirSistema({ ragEnabled: true }), /numeros_en_catalogo/);
+  // Un color de la foto que la búsqueda no cubre: el modelo debe saber que
+  // `colores_en_catalogo` trae los productos que sí lo tienen (2026-09-29).
+  assert.match(construirSistema({ ragEnabled: true }), /colores_en_catalogo/);
   ok("D5: un dígito sin el color pedido ofrece el color disponible en vez de solo decir que no hay");
 
   console.log(`\n${casos} casos OK`);
