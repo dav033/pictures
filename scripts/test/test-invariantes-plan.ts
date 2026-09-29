@@ -58,7 +58,7 @@ import { validateMaterialEstimate, type DesignMaterialEstimate } from "@/lib/mat
 import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
 import type { EstructuraResuelta, PlanResuelto } from "@/lib/plan/resuelto";
 import { coloresDeProduccionPorVariante, escenaDeVector } from "../lib/escena-de-vector";
-import { loadVectors, planFijadoDeVector, type GoldenVector } from "../lib/vectores-golden";
+import { loadVectors, planFijadoDeVector, tienePlanFijado, type GoldenVector } from "../lib/vectores-golden";
 
 /** Suma con nombres, para que el mensaje de fallo diga de dónde sale cada lado. */
 function suma(valores: readonly number[]): number {
@@ -369,8 +369,17 @@ async function main(): Promise<void> {
 
   const errores: string[] = [];
   let omitidas = 0;
+  let sinPlanFijado = 0;
   for (const { vector } of vectores) {
     const informe: Informe = { errores: [], omisiones: [] };
+    // Sin `expected` no hay plan congelado offline que comprobar; ver
+    // `tienePlanFijado`. La regresión de esos vectores vive en Python
+    // (`test_plan_regresion.py`, sobre `expected_python`).
+    if (!tienePlanFijado(vector)) {
+      console.log(`[OMITIDA] ${vector.name}: sin bloque \`expected\`, no hay plan congelado que comprobar`);
+      sinPlanFijado += 1;
+      continue;
+    }
     // El oráculo congelado del vector, no una resolución nueva (ADR-0023, paso 5).
     const { plan, materialEstimate: estimate, cotizacion: quote } = planFijadoDeVector(vector);
 
@@ -400,7 +409,7 @@ async function main(): Promise<void> {
     console.log("[FAIL] ningún vector golden emite un rango N-N+1 por instancia");
   }
 
-  console.log(`\n${vectores.length} vector(es), ${omitidas} invariante(s) omitida(s) con razón, ${rangosPorInstanciaVistos} rango(s) por instancia comprobado(s), ${errores.length} fallo(s).`);
+  console.log(`\n${vectores.length - sinPlanFijado} de ${vectores.length} vector(es) con plan congelado, ${omitidas} invariante(s) omitida(s) con razón, ${rangosPorInstanciaVistos} rango(s) por instancia comprobado(s), ${errores.length} fallo(s).`);
   if (errores.length > 0) throw new Error(`${errores.length} invariante(s) rota(s) en los vectores golden.`);
 }
 

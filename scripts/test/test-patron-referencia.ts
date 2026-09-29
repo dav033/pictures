@@ -217,8 +217,10 @@ async function main(): Promise<void> {
   assert.deepEqual(lineas[0]!.estructuras, [
     { id: "EST_01_COLUMNA", tipo: "columna", referencia: "REF_01_E01", materiales: 2, patron_declarado: false },
   ]);
+  // `zonas` es el número de manchas de una pista en zonas (ADR-0036); en cualquier
+  // otro modo va `null`, que es el dato: la pista no traía manchas.
   assert.deepEqual(lineas[0]!.pistas, [
-    { referencia: "REF_01_E01", modo: "espiral", confianza: 0.8, colores: ["blanco", "negro", "blanco", "negro"] },
+    { referencia: "REF_01_E01", modo: "espiral", confianza: 0.8, colores: ["blanco", "negro", "blanco", "negro"], zonas: null },
   ]);
   // Sin pista el registro lo dice con la lista vacía: la pieza cayó al preset.
   const sinPistaLineas = await registrado(blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure")]));

@@ -33,10 +33,15 @@ const ESQUEMAS: Readonly<Record<IdEstilo, readonly Punto[]>> = {
   aleatorio: filas([[A, B, C], [B, A, B], [C, B, A], [B, C, B]]),
   flor: [[12, 12, C], [12, 6.4, A], [17.3, 10.3, A], [15.3, 16.6, A], [8.7, 16.6, A], [6.7, 10.3, A], [3.5, 3.5, B], [20.5, 3.5, B], [3.5, 20.5, B], [20.5, 20.5, B]],
   damero: rejilla((fila, columna) => ((fila >> 1) + (columna >> 1)) % 2 === 0 ? A : B),
+  // Fondo claro con dos manchas compactas en esquinas opuestas: lo que el modo
+  // dice y lo que el confeti no podía decir (ADR-0036).
+  zonas: rejilla((fila, columna) => (fila + (3 - columna) <= 1 || (3 - fila) + columna <= 1 ? A : B)),
 };
 
+const REJILLA: ReadonlySet<IdEstilo> = new Set<IdEstilo>(["diagonal", "damero", "zonas"]);
+
 export function IconoEstilo({ estilo, className }: { estilo: IdEstilo; className?: string }) {
-  const radio = estilo === "diagonal" || estilo === "damero" ? 2.3 : 2.6;
+  const radio = REJILLA.has(estilo) ? 2.3 : 2.6;
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" focusable="false">
       {ESQUEMAS[estilo].map(([x, y, tono], indice) => (

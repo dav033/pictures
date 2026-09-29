@@ -596,6 +596,66 @@
                               "tamano"
                             ],
                             "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "modo": {
+                                "type": "string",
+                                "const": "zonas"
+                              },
+                              "fondo": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 11
+                              },
+                              "zonas": {
+                                "minItems": 1,
+                                "maxItems": 8,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "material": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 11
+                                    },
+                                    "ancla": {
+                                      "type": "string",
+                                      "enum": [
+                                        "superior_izquierda",
+                                        "superior_centro",
+                                        "superior_derecha",
+                                        "media_izquierda",
+                                        "centro",
+                                        "media_derecha",
+                                        "inferior_izquierda",
+                                        "inferior_centro",
+                                        "inferior_derecha"
+                                      ]
+                                    },
+                                    "extension": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 60
+                                    }
+                                  },
+                                  "required": [
+                                    "material",
+                                    "ancla",
+                                    "extension"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "modo",
+                              "fondo",
+                              "zonas"
+                            ],
+                            "additionalProperties": false
                           }
                         ]
                       },
@@ -2911,6 +2971,66 @@
                               "modo",
                               "secuencia",
                               "tamano"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "modo": {
+                                "type": "string",
+                                "const": "zonas"
+                              },
+                              "fondo": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 11
+                              },
+                              "zonas": {
+                                "minItems": 1,
+                                "maxItems": 8,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "material": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 11
+                                    },
+                                    "ancla": {
+                                      "type": "string",
+                                      "enum": [
+                                        "superior_izquierda",
+                                        "superior_centro",
+                                        "superior_derecha",
+                                        "media_izquierda",
+                                        "centro",
+                                        "media_derecha",
+                                        "inferior_izquierda",
+                                        "inferior_centro",
+                                        "inferior_derecha"
+                                      ]
+                                    },
+                                    "extension": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 60
+                                    }
+                                  },
+                                  "required": [
+                                    "material",
+                                    "ancla",
+                                    "extension"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "modo",
+                              "fondo",
+                              "zonas"
                             ],
                             "additionalProperties": false
                           }
@@ -6087,6 +6207,66 @@
                       "modo",
                       "secuencia",
                       "tamano"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "modo": {
+                        "type": "string",
+                        "const": "zonas"
+                      },
+                      "fondo": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      },
+                      "zonas": {
+                        "minItems": 1,
+                        "maxItems": 8,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "material": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            },
+                            "ancla": {
+                              "type": "string",
+                              "enum": [
+                                "superior_izquierda",
+                                "superior_centro",
+                                "superior_derecha",
+                                "media_izquierda",
+                                "centro",
+                                "media_derecha",
+                                "inferior_izquierda",
+                                "inferior_centro",
+                                "inferior_derecha"
+                              ]
+                            },
+                            "extension": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 60
+                            }
+                          },
+                          "required": [
+                            "material",
+                            "ancla",
+                            "extension"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "modo",
+                      "fondo",
+                      "zonas"
                     ],
                     "additionalProperties": false
                   }

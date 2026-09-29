@@ -13,8 +13,12 @@ from app.patron_color import MODOS
 
 
 def test_mover_el_conocimiento_por_tipo_no_cambia_el_prompt_de_patrones() -> None:
-    # Valor anterior al registro: la frase y los modos se movieron sin tocar un byte.
-    assert patron_referencia.PROMPT_VERSION == "patron-referencia.v1:0d8c93d34d672014"
+    # El registro movió la frase y los modos sin tocar un byte del prompt. El
+    # valor congelado cambió una sola vez desde entonces, a propósito: ADR-0036
+    # añadió el modo `zonas` al prompt y a su esquema de salida (era
+    # patron-referencia.v1:0d8c93d34d672014). Lo que este test sigue vigilando
+    # es que un refactor no lo mueva sin querer.
+    assert patron_referencia.PROMPT_VERSION == "patron-referencia.v1:5cbba9bd04d02884"
     assert (
         "The start of a piece is: the base of a column; the left foot of an arch (going up "
         "over the top and down to the right foot); the base of a half-arch toward its open "

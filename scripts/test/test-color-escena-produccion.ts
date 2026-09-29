@@ -32,7 +32,7 @@ import assert from "node:assert/strict";
 import { basename } from "node:path";
 import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
 import { coloresDeProduccionPorVariante, escenaDeVector } from "../lib/escena-de-vector";
-import { loadVectors, planFijadoDeVector, type CatalogRow, type GoldenVector } from "../lib/vectores-golden";
+import { loadVectors, planFijadoDeVector, tienePlanFijado, type CatalogRow, type GoldenVector } from "../lib/vectores-golden";
 
 /** Los dos vectores cuyo catálogo separa el color de la variante del de la familia. */
 const VECTORES_DE_COLOR_DIVERGENTE = ["19-gris-no-es-plateado", "25-color-variante-primero"] as const;
@@ -63,10 +63,14 @@ async function main(): Promise<void> {
   const vectores = loadVectors();
   assert.ok(vectores.length > 0, "No hay vectores golden que comprobar");
   const vistos = new Set<string>();
+  const sinPlanFijado: string[] = [];
 
   for (const { file, vector } of vectores) {
     const nombre = basename(file, ".json");
     vistos.add(nombre);
+    // Sin `expected` no hay plan congelado offline del que sacar la escena; ver
+    // `tienePlanFijado`. Se dice por nombre para que la omisión no sea invisible.
+    if (!tienePlanFijado(vector)) { sinPlanFijado.push(nombre); continue; }
     const { plan, materialEstimate } = planFijadoDeVector(vector);
     // Una estructura que no compró nada no tiene producto de catálogo con el
     // que armar la escena; eso lo cubre `plan:test-invariantes` con su omisión.
@@ -94,7 +98,9 @@ async function main(): Promise<void> {
       }
     }
   }
-  console.log(`[PASS] los ${vectores.length} vectores golden arman un prompt coherente con los colores de producción`);
+  const comprobados = vectores.length - sinPlanFijado.length;
+  const omitidos = sinPlanFijado.length ? ` (${sinPlanFijado.length} sin plan congelado: ${sinPlanFijado.join(", ")})` : "";
+  console.log(`[PASS] ${comprobados} de ${vectores.length} vectores golden arman un prompt coherente con los colores de producción${omitidos}`);
 
   // Control negativo: los dos vectores que separan el color de la variante del
   // de la familia tienen que FALLAR con la regla anterior. Si no fallan, esta

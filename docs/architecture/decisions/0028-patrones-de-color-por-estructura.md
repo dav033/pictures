@@ -158,6 +158,8 @@ const BasePatron = z.discriminatedUnion("modo", [
   z.object({ modo: z.literal("aleatorio"), pesos: z.array(Peso).min(1).max(6), semilla: z.number().int().min(0).max(2147483647) }).strict(),
   z.object({ modo: z.literal("flor"), fondo: IndiceMaterial, petalo: IndiceMaterial, centro: IndiceMaterial, separacion: z.number().int().min(1).max(6) }).strict(),
   z.object({ modo: z.literal("damero"), secuencia: z.array(IndiceMaterial).min(2).max(4), tamano: z.number().int().min(1).max(4) }).strict(),
+  // Enmienda (ADR-0036): el octavo modo, solo en una pared.
+  z.object({ modo: z.literal("zonas"), fondo: IndiceMaterial, zonas: z.array(z.object({ material: IndiceMaterial, ancla: z.enum(ANCLAS_ZONA), extension: z.number().int().min(1).max(60) }).strict()).min(1).max(8) }).strict(),
 ]);
 
 export const PatronColorV1Schema = z.object({
@@ -291,7 +293,13 @@ Modos por tipo:
 |---|---|
 | columna, arco, semiarco, guirnalda | espiral, anillos, bloques, degradado, aleatorio, flor |
 | centro_mesa | espiral, anillos, bloques, aleatorio |
-| pared | anillos, bloques, degradado, aleatorio, damero |
+| pared | anillos, bloques, degradado, aleatorio, damero, **zonas** |
+
+*Enmienda (ADR-0036):* `zonas` es el octavo modo y va solo en una pared, la
+única geometría de dos dimensiones. Añade dos reglas cruzadas: la dirección
+tiene que ser `longitudinal` (las manchas son sitios absolutos de la pieza, no
+un recorrido por un eje) y las extensiones no pasan del 90 % entre todas, para
+que al fondo le quede sitio (`zonas_sin_fondo`).
 
 ## 5. Conteo por material
 
@@ -328,6 +336,11 @@ geométricos con ≥2 materiales. `origen: "sugerido"`.
 - Resto (mezclas orgánicas, 5–6 materiales, pared, centro de mesa) →
   `aleatorio` con `pesos = max(1, round_half_up(participacion * 100))` y
   `semilla = int(sha256(estructura_id).hexdigest()[:8], 16) % 2147483647`.
+- *Enmienda (ADR-0036):* una **pared** con un color que manda (participación
+  ≥ 0,5) y hasta 4 colores va en `zonas`, no en confeti: el principal es el
+  fondo y cada otro lleva UNA mancha del tamaño de su participación. Sin un
+  color que mande, el confeti sigue. Mueve `plan_hash` de toda pared cuyo
+  patrón fuera el preset.
 - *Enmienda (ADR-0032, E5):* una guirnalda con armado va por los racimos de
   su armado, con cualquier mezcla: `espiral` con `k` = la unidad del armado
   si los colores caben en un racimo, `anillos` (`largo: 1`, por
@@ -342,7 +355,8 @@ geométricos con ≥2 materiales. `origen: "sugerido"`.
 completar_patrones: z.boolean().optional(),
 pistas_patron: z.array(z.object({
   referencia_element_id: z.string().trim().min(1).max(80),
-  modo: z.enum(["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero"]),
+  modo: z.enum(["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero", "zonas"]),  // "zonas": ADR-0036
+  zonas: z.array(z.object({ color: z.string().trim().min(1).max(80), ancla: z.enum(ANCLAS_ZONA), extension: z.number().int().min(1).max(60) }).strict()).max(8).optional(),  // ADR-0036: el color va por NOMBRE, como `colores`
   colores: z.array(z.string().trim().min(1).max(80)).min(1).max(12),
   globos_por_racimo: z.number().int().min(1).max(8).optional(),
   pesos: z.array(z.number().int().min(1).max(100)).max(12).optional(),
@@ -436,6 +450,18 @@ pared):
 | aleatorio | `with A, B and C scattered evenly all over the piece` | `COLOR PATTERN — an even scatter of A, B and C intermixed balloon by balloon over the whole piece, every color reaching every area; no stripes, no bands, no blocks, no gradient, and no color gathered into a zone or a corner.` |
 | flor | `with daisy flowers of B petals and a C center set between A clusters` | `COLOR PATTERN — every S A clusters, three B clusters form a flower with one C balloon at its center; repeat {eje}.` |
 | damero | `in a checkerboard of A and B` (3–4 colores: `with diagonal rainbow bands of A, B and C`) | `COLOR PATTERN — a checkerboard of A and B squares of T balloons` / `diagonal bands of A, B, C` |
+
+*Enmienda (ADR-0036):* el modo `zonas` añade su fila. Gemini: `COLOR PATTERN — a
+base of A filling the whole piece, with B gathered into four compact patches at
+P, Q, R and S, plus C gathered into one compact patch at T; each patch is one
+solid group of touching balloons of that single color and the base color fills
+everything between the patches; no stripes, no bands, no gradient and no even
+scatter of the patch colors.` LoRA: `with B clustered in four compact patches,
+plus C clustered at T over an A base`. Las anclas se agrupan POR COLOR (cuatro
+cláusulas de dorado seguidas se leían como cuatro colores) y las cláusulas de
+cada color se unen con `, plus ` y no con ` and `, porque la lista de anclas ya
+lleva su propio `and`. El fragmento LoRA nombra el sitio solo cuando el color va
+en uno: con varios pesa demasiado para `LORA_PROMPT_MAX_LENGTH`.
 
 *Enmienda (ADR-0035):* la fila `aleatorio` de la tabla llevaba las dos frases
 vacías a propósito, para que el prompt conservara su reparto orgánico. Ese

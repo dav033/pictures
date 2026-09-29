@@ -305,9 +305,14 @@ def _sin_croquis(result: Mapping[str, object]) -> dict[str, object]:
 
 
 def _write_expected_python(vector: Mapping[str, object], result: Mapping[str, object]) -> None:
+    # Sin el croquis: no se compara (``_sin_croquis``) y guardarlo metía cientos
+    # de coordenadas por pieza en cada vector. Una regeneración rutinaria salía
+    # entonces con 2.379 líneas de dibujo añadidas y ningún número movido, que es
+    # el diff que nadie repasa caso por caso (2026-09-29, al añadir el vector 32).
+    stored_result = _sin_croquis(result)
     path = Path(_text(vector["__path__"], "__path__"))
     stored: dict[str, object] = json.loads(path.read_text(encoding="utf-8"))
-    stored["expected_python"] = result
+    stored["expected_python"] = stored_result
     path.write_text(
         json.dumps(stored, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

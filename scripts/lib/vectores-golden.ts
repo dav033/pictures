@@ -248,9 +248,29 @@ export type PlanFijado = {
  * Lo que NO hace: emitir `approval_token`. Un plan congelado es una entrada de
  * prueba, no una propuesta aprobada; quien necesite el token lo firma él.
  */
+/**
+ * Si un vector puede dar un plan congelado offline (`planFijadoDeVector`).
+ *
+ * `expected` es optativo en el esquema desde que el paso 3 del ADR-0023 lo dejó
+ * como oráculo escrito a mano: un vector añadido DESPUÉS de que el paso 5
+ * borrara el resolutor TypeScript no puede tener uno, porque la segunda
+ * implementación independiente que lo escribía ya no existe, y rellenarlo desde
+ * el resolutor que se está probando convertiría el oráculo en un espejo
+ * (AGENTS.md). El vector sigue siendo válido: `expected_python` es lo que la
+ * suite de regresión compara.
+ *
+ * Los scripts que recorren TODOS los vectores usan `expected` solo como fábrica
+ * de fixtures offline, así que saltan estos vectores y lo dicen por nombre. Un
+ * solo dueño de la regla, para que el próximo vector sin `expected` no rompa
+ * otro script. El primero fue `32-pared-organica-zonas-tres-colores` (ADR-0036).
+ */
+export function tienePlanFijado(vector: GoldenVector): boolean {
+  return vector.expected !== undefined;
+}
+
 export function planFijadoDeVector(vector: GoldenVector): PlanFijado {
   const expected = vector.expected;
-  assert.ok(expected, `${vector.name}: el vector no trae bloque \`expected\` y no puede dar un plan congelado`);
+  assert.ok(expected, `${vector.name}: el vector no trae bloque \`expected\` y no puede dar un plan congelado (ver \`tienePlanFijado\`)`);
   const plan = planResueltoDesdePython(PlanResueltoV1Schema.parse({
     schema_version: PLAN_RESUELTO_CONTRACT_VERSION,
     request_id: REQUEST_ID_PLAN_FIJADO,

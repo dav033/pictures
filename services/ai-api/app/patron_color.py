@@ -15,6 +15,12 @@ y es quien lleva el conteo a la cotización.
 Los números que aparecen en los textos son los de la leyenda de la gráfica
 numerada: el material ``i`` de la estructura es el color ``i + 1``.
 
+Zonas (ADR-0036): el único modo cuyo dibujo no es periódico ni va a lo largo de
+un eje. Dice "este color va AGRUPADO en estos sitios" sobre una pared, con el
+resto en un color de fondo. Es lo que ningún otro modo podía expresar y lo que
+una pared orgánica del oficio es de verdad; su preset y la pista de la foto
+salen de aquí igual que los demás.
+
 Guirnalda con armado (ADR-0032, entrega E5): el patrón decide el color de cada
 globo de los racimos; el armado (``armado_guirnalda.py``) decide la unidad, el
 soporte, la forma, el relleno y los remates. ``EstructuraPatron`` trae del
@@ -56,9 +62,17 @@ _MODOS_POR_TIPO: dict[str, tuple[str, ...]] = {
     "semiarco": _MODOS_LINEALES,
     "guirnalda": _MODOS_LINEALES,
     "centro_mesa": ("espiral", "anillos", "bloques", "aleatorio"),
-    "pared": ("anillos", "bloques", "degradado", "aleatorio", "damero"),
+    "pared": ("anillos", "bloques", "degradado", "aleatorio", "damero", "zonas"),
 }
 _TIPOS_ESPIRAL_SUGERIDA = frozenset({"columna", "arco", "semiarco", "guirnalda"})
+#: Participación del color principal desde la que el preset de una pared va en
+#: zonas (ADR-0036). Con un color que manda, una pared orgánica del oficio se
+#: arma con los demás colores agrupados en manchas, no salteados; sin él (tres
+#: o cuatro colores parejos) el confeti sigue siendo la lectura honesta.
+DOMINANCIA_ZONAS = 0.5
+#: Colores de una pared con los que el preset va en zonas: más allá, el fondo
+#: deja de mandar y la pieza se describe mejor como una mezcla.
+MAX_MATERIALES_ZONAS = 4
 #: La forma del armado de guirnalda que se arma simétrica desde el centro (E5).
 FORMA_GUIRNALDA_ESPEJO = "u_invertida"
 AVISO_ESPEJO_GUIRNALDA = (
@@ -118,6 +132,31 @@ MODOS: tuple[str, ...] = tuple(
 DIRECCIONES: tuple[str, ...] = tuple(
     str(direccion) for direccion in cast(list[object], _PROPIEDADES_PATRON["direccion"]["enum"])
 )
+#: Las propiedades de la base de un modo del contrato, por su nombre.
+def _base_del_contrato(modo: str) -> Mapping[str, Mapping[str, object]]:
+    for base in cast(list[Mapping[str, object]], _PROPIEDADES_PATRON["base"]["oneOf"]):
+        propiedades = cast(Mapping[str, Mapping[str, object]], base["properties"])
+        if propiedades["modo"].get("const") == modo:
+            return propiedades
+    raise KeyError(f"patron-color.v1 no define el modo {modo!r}")
+
+
+#: La mancha del modo ``zonas`` tal como la define el contrato.
+_ZONA_CONTRATO = cast(
+    Mapping[str, Mapping[str, object]],
+    cast(Mapping[str, Mapping[str, object]], _base_del_contrato("zonas")["zonas"]["items"])[
+        "properties"
+    ],
+)
+#: Las anclas del contrato, en su orden (dueño: el Zod de patron-color.v1). Lo que
+#: significa cada una —dónde cae en la pieza— es de aquí (``_ANCLAS``).
+ANCLAS: tuple[str, ...] = tuple(
+    str(ancla) for ancla in cast(list[object], _ZONA_CONTRATO["ancla"]["enum"])
+)
+#: Parte de la pieza que puede ocupar UNA mancha, también del contrato.
+EXTENSION_ZONA_MAXIMA: int = int(cast(int, _ZONA_CONTRATO["extension"]["maximum"]))
+#: Manchas por patrón, del contrato: quien lee la foto no puede devolver más.
+ZONAS_MAXIMAS: int = int(cast(int, _base_del_contrato("zonas")["zonas"]["maxItems"]))
 
 _TIPO_ES = {
     "columna": "una columna",
@@ -138,7 +177,64 @@ _MODO_ES = {
     "aleatorio": "confeti",
     "flor": "flores",
     "damero": "damero",
+    "zonas": "zonas",
 }
+#: Dónde cae el centro de cada ancla dentro de la pieza, en SEXTOS de su ancho y
+#: de su alto: el medio del tercio que nombra, no su borde (ADR-0036). ``y``
+#: crece hacia abajo, como las filas de la rejilla y como se lee una foto.
+#: Dueño de la geometría; la lista de valores admitidos es del contrato.
+_ANCLAS: Mapping[str, tuple[int, int]] = {
+    "superior_izquierda": (1, 1),
+    "superior_centro": (3, 1),
+    "superior_derecha": (5, 1),
+    "media_izquierda": (1, 3),
+    "centro": (3, 3),
+    "media_derecha": (5, 3),
+    "inferior_izquierda": (1, 5),
+    "inferior_centro": (3, 5),
+    "inferior_derecha": (5, 5),
+}
+_ANCLA_ES = {
+    "superior_izquierda": "la esquina superior izquierda",
+    "superior_centro": "el centro de arriba",
+    "superior_derecha": "la esquina superior derecha",
+    "media_izquierda": "el medio del lado izquierdo",
+    "centro": "el centro",
+    "media_derecha": "el medio del lado derecho",
+    "inferior_izquierda": "la esquina inferior izquierda",
+    "inferior_centro": "el centro de abajo",
+    "inferior_derecha": "la esquina inferior derecha",
+}
+_ANCLA_EN = {
+    "superior_izquierda": "the upper left corner",
+    "superior_centro": "the top center",
+    "superior_derecha": "the upper right corner",
+    "media_izquierda": "the middle of the left side",
+    "centro": "the center",
+    "media_derecha": "the middle of the right side",
+    "inferior_izquierda": "the lower left corner",
+    "inferior_centro": "the bottom center",
+    "inferior_derecha": "the lower right corner",
+}
+#: Anclas del preset, en el orden en que se reparten: primero las esquinas, y
+#: cada una en el lado opuesto de la anterior, para que dos manchas del preset
+#: no salgan pegadas.
+_ANCLAS_PRESET: tuple[str, ...] = (
+    "superior_derecha",
+    "inferior_izquierda",
+    "media_derecha",
+    "superior_izquierda",
+    "inferior_derecha",
+    "media_izquierda",
+    "superior_centro",
+    "inferior_centro",
+)
+#: Suma máxima de las extensiones de las manchas: el resto es del fondo, y un
+#: fondo que no llega a la décima parte de la pieza ya no es un fondo.
+MAX_EXTENSION_ZONAS = 90
+#: Presupuesto con el que se reparten unas extensiones que se pasaban del tope.
+#: Ocho manchas con al menos 1 % cada una no pueden pasar de ``MAX_EXTENSION_ZONAS``.
+_PRESUPUESTO_EXTENSION = MAX_EXTENSION_ZONAS - 10
 
 
 class PatronColorInvalido(ValueError):
@@ -263,6 +359,48 @@ def _enteros(valor: object) -> list[int]:
     return [_entero(item) for item in valor]
 
 
+@dataclass(frozen=True, slots=True)
+class _Zona:
+    """Una mancha de color agrupada en un sitio de la pieza (ADR-0036)."""
+
+    material: int
+    ancla: str
+    extension: int
+
+
+def _zonas(valor: object) -> list[_Zona]:
+    if not isinstance(valor, list):
+        raise ValueError("patron_color: se esperaba una lista de zonas")
+    manchas: list[_Zona] = []
+    for item in valor:
+        if not isinstance(item, Mapping):
+            raise ValueError("patron_color: zona inválida")
+        ancla = str(item.get("ancla"))
+        if ancla not in _ANCLAS:
+            raise ValueError("patron_color: ancla desconocida")
+        manchas.append(
+            _Zona(
+                material=_entero(item.get("material")),
+                ancla=ancla,
+                extension=_entero(item.get("extension")),
+            )
+        )
+    return manchas
+
+
+def _extensiones_acotadas(extensiones: Sequence[int]) -> list[int]:
+    """Extensiones que dejan sitio al fondo (``MAX_EXTENSION_ZONAS``).
+
+    Dueño único del tope, para el preset y para la pista de la foto: si lo que
+    se pide se pasa, se reparte el presupuesto por mayor resto conservando la
+    proporción entre las manchas y con al menos 1 % en cada una (el contrato no
+    admite 0). Si cabe, no se toca nada: la extensión leída es la que vale.
+    """
+    if sum(extensiones) <= MAX_EXTENSION_ZONAS:
+        return list(extensiones)
+    return [max(1, parte) for parte in _mayor_resto(_PRESUPUESTO_EXTENSION, extensiones)]
+
+
 def _pesos(valor: object) -> list[tuple[int, int]]:
     if not isinstance(valor, list):
         raise ValueError("patron_color: se esperaba una lista de pesos")
@@ -325,6 +463,9 @@ def _indices_base(p: _Patron) -> list[int]:
         return [material for material, _peso in _pesos(base["bloques"])]
     if p.modo == "aleatorio":
         return [material for material, _peso in _pesos(base["pesos"])]
+    if p.modo == "zonas":
+        # El fondo primero: es el color que manda en la pieza y el que abre los textos.
+        return [_entero(base["fondo"]), *(zona.material for zona in _zonas(base["zonas"]))]
     return [_entero(base["fondo"]), _entero(base["petalo"]), _entero(base["centro"])]
 
 
@@ -480,6 +621,23 @@ def _validar(estructura: EstructuraPatron, p: _Patron) -> tuple[str, int, int]:
         raise PatronColorInvalido(
             "direccion_no_permitida", "La diagonal solo se arma con un degradé."
         )
+    if p.modo == "zonas":
+        if p.direccion != "longitudinal":
+            # Las manchas son sitios de la pieza, no un recorrido por un eje:
+            # girar el patrón no querría decir nada.
+            raise PatronColorInvalido(
+                "direccion_no_permitida",
+                "Las zonas van donde las pone la gráfica: no se arman de lado a lado ni en"
+                " diagonal.",
+            )
+        extensiones = sum(zona.extension for zona in _zonas(p.base["zonas"]))
+        if extensiones > MAX_EXTENSION_ZONAS:
+            raise PatronColorInvalido(
+                "zonas_sin_fondo",
+                f"Las zonas ocupan el {extensiones} % de la pieza y no dejan sitio al fondo"
+                f" {_nombre_color(estructura, _entero(p.base['fondo']))}: bájalas hasta el"
+                f" {MAX_EXTENSION_ZONAS} % entre todas.",
+            )
     if p.espejo and not _admite_espejo(estructura):
         if tipo == "guirnalda":
             raise PatronColorInvalido(
@@ -576,6 +734,69 @@ def _aleatorio(
     return celdas
 
 
+def _celdas_de_zona(
+    ancla: str, cupo: int, libres: Sequence[tuple[int, int]], filas: int, columnas: int
+) -> list[tuple[int, int]]:
+    """Las ``cupo`` celdas libres más cercanas al ancla, de dentro afuera (ADR-0036).
+
+    Solo enteros: el centro de la celda ``(fila, columna)`` vale
+    ``(12·columna + 6, 12·fila + 6)`` en doceavos de celda y el ancla
+    ``(2·ax·columnas, 2·ay·filas)`` con ``(ax, ay)`` en sextos de la pieza, así
+    que la distancia al cuadrado es exacta y el orden no depende del redondeo
+    binario. Se mide sobre índices de celda, no sobre fracciones de la pieza,
+    porque la rejilla se arma con celdas casi cuadradas (``_rejilla``): una
+    mancha sale redonda en la pared, que es como se agrupan los globos.
+
+    Desempate por ``(distancia, fila, columna)``: determinista y sin ``sha256``.
+    """
+    ax, ay = _ANCLAS[ancla]
+    centro_x = 2 * ax * columnas
+    centro_y = 2 * ay * filas
+
+    def distancia(celda: tuple[int, int]) -> tuple[int, int, int]:
+        fila, columna = celda
+        dx = 12 * columna + 6 - centro_x
+        dy = 12 * fila + 6 - centro_y
+        return (dx * dx + dy * dy, fila, columna)
+
+    return sorted(libres, key=distancia)[:cupo]
+
+
+def _rejilla_de_zonas(
+    base: Mapping[str, object], filas: int, columnas: int
+) -> list[list[int]]:
+    """Fondo de un color con manchas agrupadas en sitios de la pieza (ADR-0036).
+
+    El tamaño de cada mancha sale por mayor resto de las extensiones declaradas
+    y del resto que queda para el fondo, con al menos una celda por mancha: así
+    el conteo por color de una pared en zonas se lee igual que el de un confeti
+    —una cuota exacta por color— y lo único que cambia es DÓNDE caen.
+
+    Las manchas se sirven en su orden y cada una toma solo celdas libres, así
+    que dos manchas que se solapan no se pisan: la primera manda y la segunda se
+    corre hacia afuera. Una mancha que no alcanza ninguna celda deja su color sin
+    globos, y ``_expandir`` lo rechaza como ``material_sin_uso`` igual que en
+    cualquier otro modo.
+    """
+    fondo = _entero(base["fondo"])
+    manchas = _zonas(base["zonas"])
+    celdas = [[fondo] * columnas for _fila in range(filas)]
+    total = filas * columnas
+    extensiones = [zona.extension for zona in manchas]
+    # Lo que no piden las manchas es del fondo. ``_validar`` ya garantizó que las
+    # extensiones no pasan de ``MAX_EXTENSION_ZONAS``, así que el fondo nunca es 0.
+    resto = max(0, 100 - sum(extensiones))
+    cupos = _mayor_resto(total, [*extensiones, resto])
+    libres = [(fila, columna) for fila in range(filas) for columna in range(columnas)]
+    tomadas: set[tuple[int, int]] = set()
+    for zona, cupo in zip(manchas, cupos[:-1], strict=True):
+        disponibles = [celda for celda in libres if celda not in tomadas]
+        for celda in _celdas_de_zona(zona.ancla, max(1, cupo), disponibles, filas, columnas):
+            celdas[celda[0]][celda[1]] = zona.material
+            tomadas.add(celda)
+    return celdas
+
+
 def _degradado_diagonal(
     paradas: Sequence[int], suave: bool, filas: int, columnas: int
 ) -> list[list[int]]:
@@ -601,6 +822,8 @@ def _base(p: _Patron, filas: int, columnas: int) -> tuple[list[list[int]], list[
         return [list(racimo) for _fila in range(filas)], []
     if p.modo == "aleatorio":
         return _aleatorio(_pesos(base["pesos"]), _entero(base["semilla"]), filas, columnas), []
+    if p.modo == "zonas":
+        return _rejilla_de_zonas(base, filas, columnas), []
     if p.modo == "damero":
         secuencia, tamano = _enteros(base["secuencia"]), _entero(base["tamano"])
         celdas = [
@@ -847,28 +1070,55 @@ def _preset_por_racimo(estructura: EstructuraPatron, k: int) -> dict[str, object
 def sugerir_patron(estructura: EstructuraPatron) -> dict[str, object]:
     """Preset del oficio para una estructura sin patrón (``origen: "sugerido"``).
 
-    Espiral de cuartetos en racimos de un solo tamaño con 2–4 colores; confeti
-    por ``participacion`` en el resto. Una guirnalda armada va por los racimos
-    de su armado (``_preset_por_racimo``). Lanza ``PatronColorInvalido`` cuando
-    la estructura no admite patrón o el preset dejaría un color sin globos.
+    Espiral de cuartetos en racimos de un solo tamaño con 2–4 colores; zonas en
+    una pared con un color que manda (``_pared_va_en_zonas``); confeti por
+    ``participacion`` en el resto. Una guirnalda armada va por los racimos de su
+    armado (``_preset_por_racimo``). Lanza ``PatronColorInvalido`` cuando la
+    estructura no admite patrón o el preset dejaría un color sin globos.
+
+    Si el preset elegido no se puede armar en la pieza, cae al confeti antes de
+    fallar: el preset es una sugerencia y una pared sin patrón se queda sin
+    gráfica y sin frase para el generador, que es el agujero que cerró ADR-0036.
     """
     _validar_estructura(estructura)
     racimo_armado = _racimo_de_armado(estructura)
     if racimo_armado is not None:
         return _preset_por_racimo(estructura, racimo_armado)
     cantidad = len(estructura.materiales)
-    base: dict[str, object]
+    confeti: dict[str, object] = {
+        "modo": "aleatorio",
+        "pesos": _pesos_por_participacion(estructura, range(cantidad)),
+        "semilla": _semilla(estructura.estructura_id),
+    }
+    base: dict[str, object] = confeti
     if estructura.tipo in _TIPOS_ESPIRAL_SUGERIDA and estructura.un_tamano and cantidad <= 4:
         base = {"modo": "espiral", "racimo": _racimo_sugerido(estructura), "trazo": "espiral"}
-    else:
-        base = {
-            "modo": "aleatorio",
-            "pesos": _pesos_por_participacion(estructura, range(cantidad)),
-            "semilla": _semilla(estructura.estructura_id),
-        }
+    elif _pared_va_en_zonas(estructura):
+        base = _base_de_zonas_sugerida(estructura, _por_participacion(estructura))
     patron: dict[str, object] = {"version": VERSION_PATRON, "origen": "sugerido", "base": base}
+    if base is not confeti and not _armable(estructura, patron):
+        patron = {"version": VERSION_PATRON, "origen": "sugerido", "base": confeti}
     validar_y_expandir(estructura, patron)
     return patron
+
+
+def _pared_va_en_zonas(estructura: EstructuraPatron) -> bool:
+    """Si el preset de una pared debe ir en zonas y no en confeti (ADR-0036).
+
+    Una pared con un color que manda (``DOMINANCIA_ZONAS``) y hasta
+    ``MAX_MATERIALES_ZONAS`` colores es la pared orgánica del oficio: el fondo
+    de un tono y los demás agrupados en manchas. Eso es además lo que el prompt
+    de imagen pedía por su cuenta cuando la pieza no traía patrón
+    (``ORGANIC_COLOR_DISTRIBUTION``: "intentional organic clusters"), y lo que un
+    confeti le contradecía. Con tres o cuatro colores parejos no hay fondo que
+    mande y el confeti sigue siendo la lectura honesta.
+    """
+    if estructura.tipo != TIPO_REJILLA or not 2 <= len(estructura.materiales) <= (
+        MAX_MATERIALES_ZONAS
+    ):
+        return False
+    principal = max(material.participacion for material in estructura.materiales)
+    return Fraction(str(principal)) >= Fraction(str(DOMINANCIA_ZONAS))
 
 
 def modos_admitidos(estructura: EstructuraPatron) -> list[dict[str, object]]:
@@ -998,9 +1248,47 @@ def _preset_de_estilo(estructura: EstructuraPatron, modo: str, k: int | None) ->
             "centro": centro,
             "separacion": SEPARACION_FLOR_PISTA,
         }
+    elif modo == "zonas":
+        patron["base"] = _base_de_zonas_sugerida(estructura, orden)
     else:
         patron["base"] = {"modo": "damero", "secuencia": orden[:4], "tamano": 1}
     return patron
+
+
+def _base_de_zonas_sugerida(
+    estructura: EstructuraPatron, orden: Sequence[int]
+) -> dict[str, object]:
+    """Base de un patrón en zonas desde la ``participacion`` (ADR-0036).
+
+    El color principal es el fondo y cada uno de los demás va en UNA mancha del
+    tamaño de su participación, repartidas por ``_ANCLAS_PRESET``. Sin la foto
+    no hay manera de saber en cuántos sitios va agrupado un color ni en cuáles:
+    una mancha por color es lo que el preset sabe de verdad, y la foto es la que
+    puede decir "el dorado va en cuatro zonas" (``_base_de_pista``).
+
+    Con más de nueve colores solo los ocho primeros llevan mancha y el resto
+    queda para los acentos: ``_con_acentos`` añade uno por color sin uso y con
+    doce colores (el tope del contrato) sobran tres, que caben en los cuatro
+    acentos que el contrato admite.
+    """
+    fondo, *resto = orden
+    manchas = list(resto[: min(ZONAS_MAXIMAS, len(_ANCLAS_PRESET))])
+    extensiones = _extensiones_acotadas(
+        [
+            max(1, _redondear(estructura.materiales[indice].participacion * 100))
+            for indice in manchas
+        ]
+    )
+    return {
+        "modo": "zonas",
+        "fondo": fondo,
+        "zonas": [
+            {"material": indice, "ancla": ancla, "extension": extension}
+            for indice, ancla, extension in zip(
+                manchas, _ANCLAS_PRESET, extensiones, strict=False
+            )
+        ],
+    }
 
 
 def _armable(estructura: EstructuraPatron, patron: Mapping[str, object]) -> bool:
@@ -1201,6 +1489,8 @@ def _base_de_pista(
             "pesos": _pesos_por_participacion(estructura, list(range(len(estructura.materiales)))),
             "semilla": _semilla(estructura.estructura_id),
         }
+    if modo == "zonas":
+        return _base_de_zonas_de_pista(estructura, indices, pista)
     if modo == "flor":
         if len(indices) < 3:
             return None
@@ -1213,6 +1503,48 @@ def _base_de_pista(
             "separacion": SEPARACION_FLOR_PISTA,
         }
     return {"modo": "damero", "secuencia": indices, "tamano": 1}
+
+
+def _base_de_zonas_de_pista(
+    estructura: EstructuraPatron, indices: Sequence[int], pista: Mapping[str, object]
+) -> dict[str, object] | None:
+    """Las manchas que la foto leyó, con el material de cada color (ADR-0036).
+
+    ``colores[0]`` es el fondo (lo dice el prompt) y cada mancha trae su color
+    por nombre, porque quien lee la foto no conoce los índices de la pieza: se
+    resuelven con la misma tabla de tonos que ``colores`` (``material_de_color``).
+
+    ``None`` —y quien llama cae al preset— cuando la pista no trae manchas, una
+    mancha nombra un color que la pieza no lleva, o el fondo se queda sin sitio.
+    Preferir el preset a inventar una mancha: una zona en el sitio equivocado
+    sale en la gráfica, en la hoja de armado y en el prompt de imagen.
+    """
+    manchas = pista.get("zonas")
+    if not isinstance(manchas, list) or not manchas:
+        return None
+    materiales: list[int] = []
+    anclas: list[str] = []
+    extensiones: list[int] = []
+    for item in manchas:
+        if not isinstance(item, Mapping):
+            return None
+        ancla = str(item.get("ancla"))
+        material = material_de_color(estructura.materiales, str(item.get("color")))
+        if ancla not in _ANCLAS or material is None:
+            return None
+        materiales.append(material)
+        anclas.append(ancla)
+        extensiones.append(_entero(item.get("extension")))
+    return {
+        "modo": "zonas",
+        "fondo": indices[0],
+        "zonas": [
+            {"material": material, "ancla": ancla, "extension": extension}
+            for material, ancla, extension in zip(
+                materiales, anclas, _extensiones_acotadas(extensiones), strict=True
+            )
+        ],
+    }
 
 
 def _materiales_de_base(base: Mapping[str, object]) -> set[int]:
@@ -1228,6 +1560,8 @@ def _materiales_de_base(base: Mapping[str, object]) -> set[int]:
     for clave in ("fondo", "petalo", "centro"):
         if base.get(clave) is not None:
             usados.add(_entero(base[clave]))
+    if base.get("zonas") is not None:
+        usados.update(zona.material for zona in _zonas(base["zonas"]))
     return usados
 
 
@@ -1915,6 +2249,107 @@ class _Redactor:
             )
         return _Texto("Damero", descripcion, [], gemini, f"in a checkerboard of {colores_lora}")
 
+    def zonas(self) -> _Texto:
+        """Zonas: un fondo con manchas de color AGRUPADAS en sitios de la pieza (ADR-0036).
+
+        Es el modo que existe para decir lo que ningún otro podía: "el dorado va
+        en cuatro zonas". Las dos frases se escriben con la gramática del corpus
+        (ADR-0035): un ``COLOR PATTERN — `` con su refuerzo tras el punto y coma
+        para Gemini, y una cláusula corta, ASCII y sin cifras ni negaciones para
+        el LoRA.
+
+        Las manchas se agrupan POR COLOR, no una por una: cuatro clausulas de
+        dorado seguidas hacían una frase que el generador leía como cuatro
+        colores distintos, y lo que la pieza dice es un color en cuatro sitios.
+        """
+        base = self.p.base
+        fondo = _entero(base["fondo"])
+        manchas = _zonas(base["zonas"])
+        # Un color y sus anclas, en el orden en que aparecen: el dorado con sus
+        # cuatro sitios en una sola cláusula.
+        agrupadas: dict[int, list[str]] = {}
+        porcentaje: dict[int, int] = {}
+        for zona in manchas:
+            agrupadas.setdefault(zona.material, []).append(zona.ancla)
+            porcentaje[zona.material] = porcentaje.get(zona.material, 0) + zona.extension
+        nombrados = len({fondo, *agrupadas})
+        detalle_es = "; ".join(
+            f"{self.es(material)} agrupado en {_lista_es([_ANCLA_ES[ancla] for ancla in anclas])}"
+            f" (~{porcentaje[material]} % de la pieza)"
+            for material, anclas in agrupadas.items()
+        )
+        instrucciones = [
+            f"El fondo de la pared es {self.es(fondo)}: rellena con él todo lo que no sea una"
+            " zona.",
+            *(
+                f"Agrupa {self.es(material)} en"
+                f" {_lista_es([_ANCLA_ES[ancla] for ancla in anclas])}, unos"
+                f" {porcentaje[material]} % de la pared en total; deja cada zona compacta, sin"
+                " globos suyos sueltos por el resto."
+                for material, anclas in agrupadas.items()
+            ),
+        ]
+        return _Texto(
+            "Zonas",
+            f"Fondo de {self.es(fondo)} con {detalle_es}.",
+            instrucciones,
+            self.zonas_gemini(fondo, agrupadas, len(manchas), nombrados),
+            self.zonas_lora(fondo, agrupadas, nombrados),
+        )
+
+    def zonas_gemini(
+        self, fondo: int, agrupadas: Mapping[int, Sequence[str]], manchas: int, nombrados: int
+    ) -> str:
+        """Frase Gemini de las zonas: un fondo y cada color con todos sus sitios.
+
+        Cuatro colores nombrados es el techo de todos los modos (ADR-0028 §8); por
+        encima se dice cuántas manchas y cuántos colores, sin nombrarlos.
+        """
+        remate = (
+            " each patch is one solid group of touching balloons of that single color and the"
+            " base color fills everything between the patches; no stripes, no bands, no gradient"
+            " and no even scatter of the patch colors."
+        )
+        cabeza = f"COLOR PATTERN — a base of {self.en(fondo)} filling the whole piece, with"
+        if nombrados > 4:
+            return (
+                f"{cabeza} {manchas} compact patches of {nombrados - 1} other colors gathered at"
+                f" particular places on it;{remate}"
+            )
+        # ", plus " y no " and ": la lista de anclas de cada color ya lleva su
+        # propio "and", y dos seguidos hacían una frase en la que el último sitio
+        # de un color parecía ser del siguiente.
+        clausulas = ", plus ".join(
+            f"{self.en(material)} gathered into {_CUENTA_EN.get(len(anclas), 'several')} compact"
+            f" {_plural(len(anclas), 'patch', 'patches')} at"
+            f" {_lista_en([_ANCLA_EN[ancla] for ancla in anclas])}"
+            for material, anclas in agrupadas.items()
+        )
+        return f"{cabeza} {clausulas};{remate}"
+
+    def zonas_lora(
+        self, fondo: int, agrupadas: Mapping[int, Sequence[str]], nombrados: int
+    ) -> str:
+        """Fragmento LoRA de las zonas: ASCII, sin cifras y sin negaciones (ADR-0028 §8).
+
+        Nombra el sitio solo cuando el color va en uno: con varios pesa más que
+        cualquier otro fragmento del caption y el compilador tiene un tope
+        (``LORA_PROMPT_MAX_LENGTH``) que empieza a tirar partes. "in four compact
+        patches" dice el mismo look sin cifras.
+        """
+        if nombrados > 4:
+            return f"with compact multicolor patches over a {self.lora(fondo)} base"
+        clausulas = _sin_repetir_seguidos(
+            [
+                f"{self.lora(material)} clustered at {_ANCLA_EN[anclas[0]]}"
+                if len(anclas) == 1
+                else f"{self.lora(material)} clustered in"
+                f" {_CUENTA_EN.get(len(anclas), 'several')} compact patches"
+                for material, anclas in agrupadas.items()
+            ]
+        )
+        return f"with {', plus '.join(clausulas)} over a {self.lora(fondo)} base"
+
     def acentos(self) -> tuple[list[str], list[str], str]:
         """Instrucciones, frases Gemini y fragmento LoRA de los acentos."""
         instrucciones: list[str] = []
@@ -1953,6 +2388,7 @@ class _Redactor:
             "aleatorio": self.aleatorio,
             "flor": self.flor,
             "damero": self.damero,
+            "zonas": self.zonas,
         }[self.p.modo]()
         instrucciones_acentos, gemini_acentos, lora_acentos = self.acentos()
         gemini, lora = modo.gemini, modo.lora
@@ -2116,10 +2552,14 @@ def patron_resuelto(
 
 
 __all__ = [
+    "ANCLAS",
     "AVISO_ESPEJO_GUIRNALDA",
     "quitar_espejo_sin_u",
     "Conteo",
     "DIRECCIONES",
+    "EXTENSION_ZONA_MAXIMA",
+    "MAX_EXTENSION_ZONAS",
+    "ZONAS_MAXIMAS",
     "EstructuraPatron",
     "Expansion",
     "FORMA_GUIRNALDA_ESPEJO",

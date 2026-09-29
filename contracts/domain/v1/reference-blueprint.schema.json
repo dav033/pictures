@@ -266,7 +266,8 @@
                       "degradado",
                       "aleatorio",
                       "flor",
-                      "damero"
+                      "damero",
+                      "zonas"
                     ]
                   },
                   "colores": {
@@ -291,6 +292,45 @@
                       "type": "integer",
                       "minimum": 1,
                       "maximum": 100
+                    }
+                  },
+                  "zonas": {
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "color": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        },
+                        "ancla": {
+                          "type": "string",
+                          "enum": [
+                            "superior_izquierda",
+                            "superior_centro",
+                            "superior_derecha",
+                            "media_izquierda",
+                            "centro",
+                            "media_derecha",
+                            "inferior_izquierda",
+                            "inferior_centro",
+                            "inferior_derecha"
+                          ]
+                        },
+                        "extension": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 60
+                        }
+                      },
+                      "required": [
+                        "color",
+                        "ancla",
+                        "extension"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "confianza": {

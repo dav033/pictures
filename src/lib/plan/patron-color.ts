@@ -15,12 +15,46 @@ import { z } from "zod";
 
 export const PATRON_COLOR_VERSION = "patron-color.v1" as const;
 
-export const MODOS_PATRON_COLOR = ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero"] as const;
+export const MODOS_PATRON_COLOR = ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero", "zonas"] as const;
 export type ModoPatronColor = (typeof MODOS_PATRON_COLOR)[number];
 
 export const TRAZOS_ESPIRAL = ["espiral", "zigzag", "recto"] as const;
 export const ORIGENES_PATRON_COLOR = ["decorador", "referencia", "sugerido"] as const;
 export const DIRECCIONES_PATRON_COLOR = ["longitudinal", "transversal", "diagonal"] as const;
+
+/**
+ * Dónde se agrupa una mancha de color sobre la pieza (modo `zonas`, ADR-0036).
+ * Los nueve sitios en que un decorador —y el modelo que lee la foto— parte una
+ * pared al describirla: tercio de arriba, del medio y de abajo por izquierda,
+ * centro y derecha. Son posiciones ABSOLUTAS de la pieza, no un recorrido a lo
+ * largo de un eje: por eso el modo no admite dirección ni espejo.
+ *
+ * El punto exacto de cada ancla dentro de la pieza lo decide Python
+ * (`patron_color._ANCLAS`), que es el dueño de la semántica del patrón; aquí
+ * solo vive la lista de valores admitidos.
+ */
+export const ANCLAS_ZONA = [
+  "superior_izquierda",
+  "superior_centro",
+  "superior_derecha",
+  "media_izquierda",
+  "centro",
+  "media_derecha",
+  "inferior_izquierda",
+  "inferior_centro",
+  "inferior_derecha",
+] as const;
+export type AnclaZona = (typeof ANCLAS_ZONA)[number];
+
+/** Parte de la pieza que puede ocupar UNA mancha, en porcentaje. */
+export const EXTENSION_ZONA_MAXIMA = 60;
+/**
+ * Manchas por patrón. Ocho cubre el caso del oficio (un color agrupado en tres
+ * o cuatro sitios más otro en uno o dos) y deja sitio al fondo: con doce
+ * colores, uno es el fondo, ocho van en manchas y los tres restantes caben en
+ * los cuatro `acentos` que el contrato admite.
+ */
+export const ZONAS_MAXIMAS = 8;
 
 const IndiceMaterialSchema = z.number().int().min(0).max(11);
 /**
@@ -80,6 +114,21 @@ export const BasePatronColorSchema = z.discriminatedUnion("modo", [
     modo: z.literal("damero"),
     secuencia: z.array(IndiceMaterialSchema).min(2).max(4),
     tamano: z.number().int().min(1).max(4),
+  }).strict(),
+  z.object({
+    modo: z.literal("zonas"),
+    /** El color que llena todo lo que las manchas no toman. */
+    fondo: IndiceMaterialSchema,
+    /**
+     * Manchas de un color AGRUPADAS en un sitio de la pieza. Varias pueden
+     * repetir color: así se dice "el dorado va en cuatro zonas". Las primeras
+     * mandan donde se solapen.
+     */
+    zonas: z.array(z.object({
+      material: IndiceMaterialSchema,
+      ancla: z.enum(ANCLAS_ZONA),
+      extension: z.number().int().min(1).max(EXTENSION_ZONA_MAXIMA),
+    }).strict()).min(1).max(ZONAS_MAXIMAS),
   }).strict(),
 ]);
 
@@ -261,6 +310,17 @@ export const PistaPatronSchema = z.object({
   colores: z.array(z.string().trim().min(1).max(80)).min(1).max(12),
   globos_por_racimo: z.number().int().min(1).max(8).optional(),
   pesos: z.array(z.number().int().min(1).max(100)).max(12).optional(),
+  /**
+   * Manchas leídas en la foto cuando `modo` es `zonas` (ADR-0036): el color va
+   * por NOMBRE de catálogo, como `colores`, porque quien lee la foto no conoce
+   * los índices de `materiales` de la pieza; Python los resuelve con la misma
+   * tabla de tonos (`material_de_color`). `colores[0]` es el fondo.
+   */
+  zonas: z.array(z.object({
+    color: z.string().trim().min(1).max(80),
+    ancla: z.enum(ANCLAS_ZONA),
+    extension: z.number().int().min(1).max(EXTENSION_ZONA_MAXIMA),
+  }).strict()).max(ZONAS_MAXIMAS).optional(),
   confianza: z.number().min(0).max(1),
 }).strict();
 

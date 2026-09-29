@@ -16,6 +16,7 @@ from dataclasses import replace
 import pytest
 
 from app.patron_color import (
+    ANCLAS,
     EstructuraPatron,
     MaterialPatron,
     PatronColorInvalido,
@@ -30,6 +31,7 @@ from app.patron_color import (
     sugerir_patron_modo,
     validar_y_expandir,
 )
+from app.patron_color import _ANCLAS
 
 COLORES = ("blanco", "negro", "azul")
 
@@ -654,7 +656,6 @@ def _semilla(estructura_id: str) -> int:
     "estructura",
     [
         _estructura(total=40, partes=(0.6, 0.3, 0.1), un_tamano=False),  # mezcla orgánica
-        _estructura(**{**PARED_3X4, "total": 40}, partes=(0.6, 0.3, 0.1)),
         _estructura(tipo="centro_mesa", total=40, partes=(0.6, 0.3, 0.1)),
     ],
 )
@@ -1279,6 +1280,8 @@ def test_modos_admitidos_de_una_pared_con_sus_direcciones() -> None:
         },
         {"modo": "aleatorio", "direcciones": ["longitudinal"], "espejo": False},
         {"modo": "damero", "direcciones": ["longitudinal"], "espejo": False},
+        # Las zonas son sitios absolutos de la pieza: ni dirección ni espejo (ADR-0036).
+        {"modo": "zonas", "direcciones": ["longitudinal"], "espejo": False},
     ]
 
 
@@ -1566,3 +1569,278 @@ def test_para_validar_no_deja_pasar_una_celda_fuera_del_contrato(malo: object) -
     for roto in ({**resuelto, "celdas": celdas}, {**resuelto, "pasos": pasos}):
         assert _errores_de_contrato(roto)
         assert _errores_de_contrato(para_validar(roto))
+
+
+# --- Zonas: un color agrupado en sitios de la pieza (ADR-0036) ------------------------
+
+# Pared de 3 × 4 con el ancla `superior_derecha` en (5, 1) sextos: su centro cae en
+# (2·5·4, 2·1·3) = (40, 6) doceavos de celda, y el centro de la celda (fila, columna)
+# en (12·columna + 6, 12·fila + 6). Distancias al cuadrado de las cinco más cercanas:
+# (0,3) 2² = 4; (0,2) 10² = 100; (1,3) 2² + 12² = 148; (1,2) 100 + 144 = 244;
+# (0,1) 22² = 484. El ancla `inferior_izquierda` (1, 5) cae en (8, 30) y su celda más
+# cercana es (2,0), a 2² = 4.
+ZONAS_DOS_MANCHAS = {
+    "modo": "zonas",
+    "fondo": 0,
+    "zonas": [
+        {"material": 1, "ancla": "superior_derecha", "extension": 30},
+        {"material": 2, "ancla": "inferior_izquierda", "extension": 10},
+    ],
+}
+
+
+def test_zonas_agrupa_las_celdas_alrededor_de_cada_ancla() -> None:
+    # 12 celdas por mayor resto de [30, 10, 60 del fondo]: 3,6 · 1,2 · 7,2 -> pisos
+    # 3, 1, 7 = 11, y la que sobra al mayor resto (0,6) -> {1: 4, 2: 1, fondo: 7}.
+    estructura = _estructura(**PARED_3X4, partes=(0.6, 0.3, 0.1))
+
+    assert _celdas(estructura, _patron(ZONAS_DOS_MANCHAS)) == [
+        [0, 0, 1, 1],
+        [0, 0, 1, 1],
+        [2, 0, 0, 0],
+    ]
+
+
+def test_el_conteo_de_zonas_sale_de_las_extensiones() -> None:
+    estructura = _estructura(**PARED_3X4, partes=(0.6, 0.3, 0.1))
+
+    assert _conteo(estructura, _patron(ZONAS_DOS_MANCHAS)) == [7, 4, 1]
+
+
+def test_un_color_puede_ir_en_varias_zonas_y_sus_globos_se_suman() -> None:
+    # El mismo color en dos anclas: 12 celdas por mayor resto de [20, 20, 60] son
+    # 2,4 · 2,4 · 7,2 -> 2, 2, 7 = 11 y la que sobra al primer mayor resto -> 3 + 2.
+    estructura = _estructura(**PARED_3X4, colores=COLORES[:2], partes=(0.6, 0.4))
+    patron = _patron(
+        {
+            "modo": "zonas",
+            "fondo": 0,
+            "zonas": [
+                {"material": 1, "ancla": "superior_derecha", "extension": 20},
+                {"material": 1, "ancla": "inferior_izquierda", "extension": 20},
+            ],
+        }
+    )
+
+    celdas = _celdas(estructura, patron)
+
+    assert sorted(valor for fila in celdas for valor in fila) == [0] * 7 + [1] * 5
+    assert _conteo(estructura, patron) == [7, 5]
+    assert celdas[0][3] == 1 and celdas[2][0] == 1  # una mancha en cada ancla
+
+
+def test_dos_zonas_en_el_mismo_ancla_no_se_pisan() -> None:
+    # La primera mancha toma sus celdas y la segunda solo puede tomar las libres:
+    # se corre hacia afuera en vez de borrar a la primera. Cupos de [20, 20, 60]
+    # sobre 12 celdas: 2,4 · 2,4 · 7,2 -> 2, 2, 7 = 11 y la que sobra al primer
+    # mayor resto (0,4, desempate por índice) -> {1: 3, 2: 2, fondo: 7}.
+    estructura = _estructura(**PARED_3X4, partes=(0.6, 0.2, 0.2))
+    patron = _patron(
+        {
+            "modo": "zonas",
+            "fondo": 0,
+            "zonas": [
+                {"material": 1, "ancla": "superior_derecha", "extension": 20},
+                {"material": 2, "ancla": "superior_derecha", "extension": 20},
+            ],
+        }
+    )
+
+    celdas = _celdas(estructura, patron)
+
+    assert sorted(valor for fila in celdas for valor in fila) == [0] * 7 + [1] * 3 + [2] * 2
+    assert celdas[0][3] == 1  # la celda más cercana al ancla es de la primera mancha
+
+
+def test_el_preset_de_una_pared_con_un_color_que_manda_va_en_zonas() -> None:
+    # 0,6 >= DOMINANCIA_ZONAS y tres colores <= MAX_MATERIALES_ZONAS: el principal
+    # es el fondo y cada otro va en una mancha del tamaño de su participación,
+    # sobre las dos primeras anclas del preset.
+    estructura = _estructura(**PARED_3X4, partes=(0.6, 0.3, 0.1))
+
+    assert sugerir_patron(estructura) == {
+        "version": "patron-color.v1",
+        "origen": "sugerido",
+        "base": ZONAS_DOS_MANCHAS,
+    }
+
+
+@pytest.mark.parametrize(
+    ("partes", "colores"),
+    [
+        # Ningún color manda: el confeti sigue siendo la lectura honesta.
+        ((0.4, 0.35, 0.25), COLORES),
+        # Manda uno, pero cinco colores son demasiados para un fondo con manchas.
+        ((0.6, 0.2, 0.1, 0.05, 0.05), ("blanco", "negro", "azul", "rosado", "dorado")),
+    ],
+)
+def test_una_pared_sin_fondo_que_mande_sigue_en_confeti(
+    partes: tuple[float, ...], colores: tuple[str, ...]
+) -> None:
+    estructura = _estructura(**{**PARED_3X4, "total": 40}, colores=colores, partes=partes)
+
+    base = sugerir_patron(estructura)["base"]
+
+    assert isinstance(base, Mapping) and base["modo"] == "aleatorio"
+
+
+def test_las_zonas_solo_se_arman_en_una_pared() -> None:
+    motivo = _motivo(_estructura(partes=(0.6, 0.3, 0.1)), _patron(ZONAS_DOS_MANCHAS))
+
+    assert motivo.motivo == "modo_no_permitido"
+    assert "zonas" in motivo.mensaje
+
+
+@pytest.mark.parametrize("direccion", ["transversal", "diagonal"])
+def test_las_zonas_no_se_giran(direccion: str) -> None:
+    estructura = _estructura(**PARED_3X4, partes=(0.6, 0.3, 0.1))
+
+    motivo = _motivo(estructura, _patron(ZONAS_DOS_MANCHAS, direccion=direccion))
+
+    assert motivo.motivo == "direccion_no_permitida"
+
+
+def test_unas_zonas_que_no_dejan_fondo_se_rechazan_con_su_motivo() -> None:
+    estructura = _estructura(**PARED_3X4, colores=COLORES[:2], partes=(0.5, 0.5))
+    patron = _patron(
+        {
+            "modo": "zonas",
+            "fondo": 0,
+            "zonas": [
+                {"material": 1, "ancla": "superior_derecha", "extension": 60},
+                {"material": 1, "ancla": "inferior_izquierda", "extension": 40},
+            ],
+        }
+    )
+
+    motivo = _motivo(estructura, patron)
+
+    assert motivo.motivo == "zonas_sin_fondo"
+    assert "100 %" in motivo.mensaje
+
+
+def test_un_fondo_sin_sitio_en_la_rejilla_deja_su_color_sin_globos() -> None:
+    # Pared de 1 × 2: las dos manchas se llevan las dos celdas y el fondo se queda
+    # sin globos, como cualquier otro color sin uso.
+    estructura = _estructura(
+        tipo="pared", total=2, ancho=1.0, alto=1.0, colores=COLORES[:2], partes=(0.5, 0.5)
+    )
+    patron = _patron(
+        {
+            "modo": "zonas",
+            "fondo": 0,
+            "zonas": [
+                {"material": 1, "ancla": "superior_derecha", "extension": 45},
+                {"material": 1, "ancla": "inferior_izquierda", "extension": 45},
+            ],
+        }
+    )
+
+    assert _motivo(estructura, patron).motivo == "material_sin_uso"
+
+
+def test_la_pista_de_la_foto_puede_traer_las_manchas_que_leyo() -> None:
+    estructura = _estructura(**PARED_3X4, partes=(0.6, 0.3, 0.1))
+    pista = {
+        "modo": "zonas",
+        "colores": ["blanco", "negro", "azul"],
+        "zonas": [
+            {"color": "negro", "ancla": "superior_derecha", "extension": 15},
+            {"color": "negro", "ancla": "inferior_centro", "extension": 15},
+            {"color": "azul", "ancla": "media_izquierda", "extension": 10},
+        ],
+        "confianza": 0.8,
+    }
+
+    patron = patron_desde_pista(estructura, pista)
+
+    assert patron is not None
+    assert patron["origen"] == "referencia"
+    assert patron["base"] == {
+        "modo": "zonas",
+        "fondo": 0,
+        "zonas": [
+            {"material": 1, "ancla": "superior_derecha", "extension": 15},
+            {"material": 1, "ancla": "inferior_centro", "extension": 15},
+            {"material": 2, "ancla": "media_izquierda", "extension": 10},
+        ],
+    }
+    # El patrón manda sobre `participacion`: 12 celdas de [15, 15, 10, 60].
+    assert _conteo(estructura, patron) == [7, 4, 1]
+
+
+@pytest.mark.parametrize(
+    "pista",
+    [
+        # Sin manchas no hay sitios: la base saldría de la lista de colores, que
+        # no los lleva.
+        {"modo": "zonas", "colores": ["blanco", "negro"], "confianza": 0.9},
+        {"modo": "zonas", "colores": ["blanco", "negro"], "zonas": [], "confianza": 0.9},
+        # Una mancha de un color que la pieza no lleva: mejor el preset que una
+        # mancha inventada en el sitio equivocado.
+        {
+            "modo": "zonas",
+            "colores": ["blanco", "negro"],
+            "zonas": [{"color": "verde", "ancla": "centro", "extension": 20}],
+            "confianza": 0.9,
+        },
+    ],
+)
+def test_una_pista_de_zonas_que_no_se_puede_usar_cae_al_preset(
+    pista: Mapping[str, object],
+) -> None:
+    estructura = _estructura(**PARED_3X4, colores=COLORES[:2], partes=(0.6, 0.4))
+
+    assert patron_desde_pista(estructura, pista) is None
+
+
+def test_las_frases_de_zonas_agrupan_los_sitios_de_cada_color() -> None:
+    estructura = _estructura(
+        **PARED_3X4,
+        colores=("rosado", "dorado", "blanco"),
+        acabados=("perlado", "cromado", "mate"),
+        partes=(0.6, 0.3, 0.1),
+    )
+    patron = _patron(
+        {
+            "modo": "zonas",
+            "fondo": 0,
+            "zonas": [
+                {"material": 1, "ancla": "superior_derecha", "extension": 15},
+                {"material": 1, "ancla": "inferior_centro", "extension": 15},
+                {"material": 2, "ancla": "media_izquierda", "extension": 10},
+            ],
+        }
+    )
+
+    resuelto = patron_resuelto(estructura, patron, aplicado=True)
+
+    assert resuelto["nombre"] == "Zonas"
+    gemini = str(resuelto["prompt_gemini"])
+    assert gemini.startswith("COLOR PATTERN — a base of pearl pink filling the whole piece")
+    # Un solo color con sus dos sitios en una cláusula, y la suma de sus manchas.
+    assert (
+        "high-shine chrome gold gathered into two compact patches at the upper right corner"
+        " and the bottom center" in gemini
+    )
+    assert (
+        "plus matte white gathered into one compact patch at the middle of the left side"
+        in gemini
+    )
+    assert "no even scatter of the patch colors" in gemini
+    assert "~30 % de la pieza" in str(resuelto["descripcion"])
+    # El fragmento LoRA no lleva cifras ni negaciones y es ASCII (ADR-0028 §8).
+    lora = str(resuelto["prompt_lora"])
+    assert lora == (
+        "with gold clustered in two compact patches, plus white clustered at the middle of the"
+        " left side over a pink base"
+    )
+    assert lora.isascii() and not re.search(r"\d|\bno\b|\bnot\b|avoid", lora)
+
+
+def test_cada_ancla_del_contrato_tiene_un_sitio_en_la_pieza() -> None:
+    # El contrato es el dueño de la lista; este módulo, de lo que significa cada
+    # una. Un valor nuevo en el Zod sin su sitio aquí pondría una mancha en el
+    # lugar equivocado, o rompería la lectura del patrón.
+    assert set(ANCLAS) == set(_ANCLAS)
+    assert len(ANCLAS) == 9
