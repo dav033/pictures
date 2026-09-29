@@ -112,6 +112,56 @@ function coloresDeParte(parte: string): string[] {
   return unico ? [unico] : [];
 }
 
+/**
+ * Catalog finish an observed label describes ("chrome gold" -> reflex).
+ *
+ * Until 2026-09-29 this lived only as a rule in the system prompt
+ * ("chrome/metallic = reflex, pearl = satin") that the model applied, or did
+ * not: it read "pearl blush pink" and bought a Reflex Dorado Rosa, dragging the
+ * gold's chrome onto the rest of the piece and opening the door to a chromed
+ * fuchsia the photo never had. Resolving it here makes the finish a datum of
+ * the photo, one per color, instead of an inference the model makes once for
+ * the whole structure.
+ *
+ * `undefined` when the label says nothing about finish: silence is not "mate".
+ */
+const ACABADO_DE_ETIQUETA: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\b(chrome|chromed|metallic|metalli[sz]ed|cromad[oa]|metalizad[oa])\b/i, "reflex"],
+  [/\b(pearl|pearlescent|pearly|perlad[oa]|nacarad[oa])\b/i, "satin"],
+  [/\b(satin|satinad[oa])\b/i, "satin"],
+  [/\b(matte|matt|mate)\b/i, "mate"],
+];
+
+export function acabadoDeEtiqueta(etiqueta: string): string | undefined {
+  for (const [patron, acabado] of ACABADO_DE_ETIQUETA) if (patron.test(etiqueta)) return acabado;
+  return undefined;
+}
+
+export type ColorObservadoConAcabado = { color: string; acabado?: string; etiqueta: string };
+
+/**
+ * Dominant colors of a reference element, each with the finish its own label
+ * showed. The finish travels WITH the color: a photo with one chromed gold and
+ * a pearl blush must not buy both in the same family.
+ */
+export function coloresConAcabadoReferencia(apariencia: AparienciaColor | readonly string[]): ColorObservadoConAcabado[] {
+  const entrada: AparienciaColor = Array.isArray(apariencia) ? { observed_colors: apariencia } : (apariencia as AparienciaColor);
+  const dominantes = coloresDominantesReferencia(entrada);
+  const pendientes = new Set(dominantes);
+  const resultado: ColorObservadoConAcabado[] = [];
+  for (const etiqueta of entrada.observed_colors) {
+    const acabado = acabadoDeEtiqueta(etiqueta);
+    for (const color of coloresDeEtiqueta(etiqueta)) {
+      if (!pendientes.has(color)) continue;
+      pendientes.delete(color);
+      resultado.push({ color, etiqueta, ...(acabado ? { acabado } : {}) });
+    }
+  }
+  // Un color medido en píxeles no tiene etiqueta que leer: viaja sin acabado.
+  for (const color of dominantes) if (pendientes.has(color)) resultado.push({ color, etiqueta: color });
+  return resultado;
+}
+
 /** Catalog-vocabulary colors of one observed label, in reading order. */
 function coloresDeEtiqueta(etiqueta: string): string[] {
   const colores: string[] = [];

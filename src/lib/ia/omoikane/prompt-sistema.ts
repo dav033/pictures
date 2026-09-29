@@ -4,6 +4,7 @@ import type { ClaseTamanoNivel } from "@/lib/plan/armado-bouquet";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { EJEMPLO_UNIDADES_DECLARADAS, GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { coloresConAcabadoReferencia } from "@/lib/plan/colores-referencia";
 import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/escena/creatividad";
 import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 
@@ -261,7 +262,15 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
     .map((element) => {
       const bbox = element.reference_bbox;
       const posicion = `x${bbox.x.toFixed(2)} y${bbox.y.toFixed(2)} w${bbox.width.toFixed(2)} h${bbox.height.toFixed(2)}`;
-      const colores = element.appearance.observed_colors.join(", ") || "no determinable";
+      // El acabado viaja PEGADO a su color, ya resuelto en código
+      // (`coloresConAcabadoReferencia`). Antes era una regla que el modelo
+      // aplicaba a ojo, y el cromado de un color se contagiaba al resto de la
+      // pieza: una foto de blush perlado + dorado cromado se compró entera en
+      // Reflex, con un fucsia cromado que la foto no tenía (2026-09-29).
+      const observados = coloresConAcabadoReferencia(element.appearance);
+      const colores = observados.length
+        ? observados.map((item) => `${item.color}${item.acabado ? ` ${item.acabado}` : ""} (visto como "${item.etiqueta}")`).join(", ")
+        : element.appearance.observed_colors.join(", ") || "no determinable";
       // La proporción de cada color ya la extrajo el análisis de la foto: sin
       // ella el plan inventa las participaciones (BLOQUE_PLAN, PROPORCIONES DE
       // LA FOTO). El valor por defecto no dice nada, así que no se manda.
@@ -281,7 +290,7 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
         ? identificarEstructuraOficial({ tipo: semantica.structure_type, densidad: semantica.density, ubicacion: semantica.placement, nombre: element.appearance.shape })
         : undefined;
       const estructura = semantica
-        ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados (chrome/metallic = reflex, pearl = satin; "clear" junto a un color, como "clear pink", es la línea Cristal de ese color —un acabado translúcido, no un globo transparente—, y "clear" solo sí es transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
+        ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados: cada color de "colores observados" trae YA RESUELTO su acabado (reflex, satin o mate) y ese es el que compras para ESE color, nunca el de otro color de la pieza; un color sin acabado indicado no obliga a ninguno (chrome/metallic = reflex, pearl = satin; "clear" junto a un color, como "clear pink", es la línea Cristal de ese color —un acabado translúcido, no un globo transparente—, y "clear" solo sí es transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
         : "";
       return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}${armadoLeido(element.appearance.armado_bouquet, cantidadDelConteo(element.appearance.conteo) !== null)}${conteoLeido(element.appearance.conteo)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
     })
