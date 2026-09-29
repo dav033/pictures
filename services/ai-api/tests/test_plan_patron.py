@@ -677,6 +677,20 @@ def _lineas_del_navegador(resolved: Mapping[str, object]) -> list[dict[str, obje
     ]
 
 
+def _patron_resuelto_comparable(resolved: Mapping[str, object]) -> dict[str, object]:
+    """El patrón resuelto de la primera estructura, sin el croquis de su silueta.
+
+    La resolución dibuja las posiciones reales de los globos
+    (``silueta_patron``) y la vista previa no: se repinta con cada toque del
+    editor y armar la silueta cuesta cientos de milisegundos. Lo que estas
+    pruebas comparan —cómo se nombra cada color, el conteo, la rejilla— es igual
+    en las dos, y eso es lo que tiene que seguir cuadrando.
+    """
+    patron = dict(cast(list[dict[str, object]], resolved["patrones_color"])[0])
+    patron.pop("posiciones", None)
+    return patron
+
+
 def _vista_previa(
     resolved: Mapping[str, object],
     lineas: Sequence[Mapping[str, object]] | None,
@@ -749,7 +763,7 @@ async def test_la_vista_previa_nombra_el_reemplazo_como_la_resolucion() -> None:
     resuelto = await _reemplazada(
         _plan(_columna(patron_color=ESPIRAL)), filas, "var-azul-12", "rojo"
     )
-    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    esperado = _patron_resuelto_comparable(resuelto)
     assert _colores_conteo(esperado) == ["blanco", "negro", "rojo"]
 
     assert _vista_previa(resuelto, _lineas_del_navegador(resuelto)) == esperado
@@ -799,7 +813,7 @@ async def test_la_vista_previa_de_un_reemplazo_por_tamano_es_la_de_la_resolucion
         for objetivo, color in destinos.items()
     ]
     resuelto = await _resolver_catalogo(plan, filas)
-    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    esperado = _patron_resuelto_comparable(resuelto)
 
     assert _vista_previa(resuelto, _lineas_del_navegador(resuelto)) == esperado
     if caso == "todos_a_rojo":
@@ -838,7 +852,7 @@ async def test_la_vista_previa_lee_las_lineas_tras_elegir_las_bolsas_de_todo_el_
     lineas = _lineas_del_navegador(resuelto)
     assert len([linea for linea in lineas if linea["color"] == "blanco"]) > 1
     assert [linea["variant_id"] for linea in lineas if linea["color"] == "rojo"] != ["var-rojo-12"]
-    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    esperado = _patron_resuelto_comparable(resuelto)
     assert _colores_conteo(esperado) == ["blanco", "negro", "rojo"]
 
     assert _vista_previa(resuelto, lineas) == esperado
@@ -852,7 +866,7 @@ async def test_un_reemplazo_por_el_color_de_otro_material_solo_renombra_el_reemp
     resuelto = await _reemplazada(
         _plan(_columna(patron_color=ESPIRAL)), filas, "var-azul-12", "blanco"
     )
-    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    esperado = _patron_resuelto_comparable(resuelto)
     assert _colores_conteo(esperado) == ["blanco", "negro", "blanco"]
 
     assert _vista_previa(resuelto, _lineas_del_navegador(resuelto)) == esperado
@@ -900,7 +914,7 @@ async def test_un_reemplazo_por_el_producto_de_un_color_reetiquetado_no_lo_renom
     assert {linea["color"] for linea in lineas if linea["product_id"] == "prod-azul"} == {
         "azul rey"
     }
-    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    esperado = _patron_resuelto_comparable(resuelto)
     assert _colores_conteo(esperado)[2] == "azul"
     assert not any("azul (3)" in aviso for aviso in cast(list[str], esperado["avisos"]))
 

@@ -1,5 +1,5 @@
 import type { FormaGuirnalda } from "@/lib/plan/armado-guirnalda";
-import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import type { GeometriaDibujoPatron, PosicionSilueta } from "@/lib/plan/patron-color";
 
 /**
  * Dónde DIBUJAR cada globo de la rejilla que devuelve Python. Solo geometría
@@ -10,7 +10,9 @@ import type { PatronColorResuelto } from "@/lib/plan/patron-color";
  *
  * Un racimo se dibuja pseudo-3D: sus globos rodean el eje de la estructura;
  * los de adelante (z = 1) son más grandes y claros, los de atrás más chicos y
- * oscuros. Puro: sin React.
+ * oscuros. Con `geometria: "silueta"` las posiciones no se calculan aquí: llegan
+ * en metros del motor de silueta y solo se llevan a la escala del dibujo.
+ * Puro: sin React.
  */
 
 export type GloboDibujo = {
@@ -22,7 +24,7 @@ export type GloboDibujo = {
   z: number;
   material: number;
   fila: number;
-  /** `null` para un globo extra (centro de flor). */
+  /** `null` cuando el globo no ocupa una celda: un extra (centro de flor) o una posición de la silueta. */
   columna: number | null;
 };
 
@@ -55,11 +57,13 @@ export type CurvaGuirnalda = {
 };
 
 export type EntradaDibujo = {
-  geometria: PatronColorResuelto["geometria"];
+  geometria: GeometriaDibujoPatron;
   tipo: string;
   oficialId?: string;
   celdas: readonly (readonly number[])[];
   extras: readonly { fila: number; material: number }[];
+  /** Obligatorias con `geometria: "silueta"`: el croquis real que armó Python, en metros. */
+  posiciones?: readonly PosicionSilueta[];
   /** Solo en modo espiral; los demás modos anidan los racimos como franjas rectas. */
   trazo?: TrazoDibujo;
   /** Semiarco a la derecha: la curva se voltea. */
@@ -328,8 +332,57 @@ function dibujarRejilla(entrada: EntradaDibujo): GloboDibujo[] {
   })));
 }
 
+/**
+ * Radio (m) de un R-12 inflado: `12 · 2,54 cm · 0,92 / 2`. Es la escala con que
+ * los metros del motor de silueta llegan al dibujo, para que un globo del tamaño
+ * más común mida lo mismo (`R`) que en la rejilla y las piezas conserven sus
+ * proporciones reales. Dueño del 0,92: `silueta.FACTOR_INFLADO`.
+ */
+const RADIO_R12_M = (12 * 0.0254 * 0.92) / 2;
+const ESCALA_SILUETA = R / RADIO_R12_M;
+/**
+ * Cuánto se achica un globo del fondo respecto de uno del frente. Solo
+ * perspectiva: el radio que manda sigue siendo el que dio el motor, así que un
+ * R-24 del fondo sigue viéndose más grande que un R-12 del frente.
+ */
+const PERSPECTIVA_CAPA = 0.12;
+
+/**
+ * Silueta: las posiciones que armó el motor, en metros, llevadas al dibujo. La
+ * pantalla crece hacia abajo y el motor hacia arriba (`y = 0` es el suelo), así
+ * que la y se voltea. La capa 0 es el fondo: se pinta primero, se achica un poco
+ * y `VistaPatron` la deja en sombra con su `z`, como el pseudo-3D de siempre.
+ * `fila` no es una fila de la rejilla: es la banda de altura que le toca, y solo
+ * escalona la animación de entrada.
+ */
+function dibujarSilueta(entrada: EntradaDibujo): GloboDibujo[] {
+  const posiciones = entrada.posiciones ?? [];
+  if (!posiciones.length) return [];
+  const capas = Math.max(1, ...posiciones.map((posicion) => posicion.capa + 1));
+  const alto = Math.max(...posiciones.map((posicion) => posicion.y)) || 1;
+  const bandas = Math.max(1, entrada.celdas.length);
+  return posiciones.map((posicion, indice) => {
+    const z = capas === 1 ? 1 : -1 + (2 * posicion.capa) / (capas - 1);
+    return {
+      clave: `silueta:${indice}`,
+      x: posicion.x * ESCALA_SILUETA,
+      y: -posicion.y * ESCALA_SILUETA,
+      r: posicion.r * ESCALA_SILUETA * (1 - PERSPECTIVA_CAPA * (1 - (z + 1) / 2)),
+      z,
+      material: posicion.material,
+      fila: Math.min(bandas - 1, Math.floor((1 - posicion.y / alto) * bandas)),
+      columna: null,
+    };
+  });
+}
+
 export function dibujarPatron(entrada: EntradaDibujo): Dibujo {
-  const { globos, soporte } = entrada.geometria === "rejilla" ? { globos: dibujarRejilla(entrada), soporte: null } : dibujarRacimos(entrada);
+  const { globos, soporte } =
+    entrada.geometria === "silueta"
+      ? { globos: dibujarSilueta(entrada), soporte: null }
+      : entrada.geometria === "rejilla"
+        ? { globos: dibujarRejilla(entrada), soporte: null }
+        : dibujarRacimos(entrada);
   if (!globos.length) return { caja: { x: 0, y: 0, ancho: R * 4, alto: R * 4 }, globos, soporte };
   let minX = Infinity;
   let minY = Infinity;

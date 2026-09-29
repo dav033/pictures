@@ -1,5 +1,5 @@
 import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";
-import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import { geometriaDeDibujo, type PatronColorResuelto } from "@/lib/plan/patron-color";
 import type { LineaMaterial, PlanResuelto } from "@/lib/plan/resuelto";
 // La geometría y la leyenda de la gráfica del plan (ADR-0028, ADR-0032),
 // importadas tal cual: la guía dibuja lo mismo que ve el decorador, sin repetirlo.
@@ -123,7 +123,8 @@ export function discosDeGuia(estructura: EstructuraConGuia): { discos: DiscoGuia
   // Lo mismo que `VistaPatron` le pasa a `dibujarPatron`; su soporte (la base de
   // una columna) no se dibuja: se leería como una pata.
   const entrada: EntradaDibujo = {
-    geometria: patron.geometria,
+    geometria: geometriaDeDibujo(patron),
+    ...(patron.posiciones ? { posiciones: patron.posiciones } : {}),
     tipo: estructura.tipo,
     oficialId: estructura.oficialId,
     celdas: patron.celdas,

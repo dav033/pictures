@@ -1,0 +1,494 @@
+"""Dónde queda cada globo de un patrón de color, sobre la silueta real de la pieza.
+
+Fase 2 del motor de silueta (``app.silueta``). La gráfica del patrón dibuja hoy
+una rejilla de filas × columnas que es la misma para una pared que para una
+guirnalda; aquí se convierte esa rejilla en las POSICIONES reales de los globos
+de la pieza, en metros, para que la interfaz las dibuje tal cual.
+
+Es **solo dibujo**. Tres cosas no cambian y están garantizadas por construcción,
+no por buena voluntad:
+
+* **El conteo no se recalcula.** Las cantidades por tamaño y por color salen de
+  la matriz tamaño × material que ya armó ``plan.py`` (``_pattern_matrix``, el
+  mismo despiece que se compra). Las sumas de sus filas son los ``cupos`` de la
+  silueta —así hay exactamente una posición por globo cotizado— y las sumas de
+  sus columnas son ``conteo_por_instancia``, el conteo por color de hoy. El
+  color se REASIGNA sobre otras posiciones; nadie vuelve a contar.
+* **``plan_hash`` no cambia.** Esto vive en ``plan_resuelto.patrones_color[]``,
+  que ``plan.py`` añade DESPUÉS de firmar ``{plan, snapshot}`` y fuera del
+  snapshot (ADR-0028 decisión 5). Añadir campos ahí no puede tocar la firma.
+* **Si falta un dato, no hay falla.** Cualquier pieza que no se pueda armar
+  —tipo sin silueta, medidas ausentes, presupuesto agotado— devuelve ``None`` y
+  la interfaz sigue con la rejilla de siempre.
+
+El grosor VISIBLE de la banda (lo que mide de ancho un arco orgánico al mirarlo)
+no tiene dueño en el repositorio: el ``_BAND_WIDTH`` de ``plan.py`` es la tira
+delgada cuya área, por λ, da el conteo, y λ absorbe la profundidad. Aquí se usa
+un valor de DIBUJO derivado de las medidas de la pieza, marcado como estético
+(``_GROSOR_*``); no entra en el conteo, en el despiece ni en la cotización.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import hashlib
+import math
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from typing import cast
+
+from app.generated_models import contract_schema
+from app.silueta import (
+    ESTILO,
+    Cupo,
+    GloboSilueta,
+    Medidas,
+    Peticion,
+    SiluetaInvalida,
+    TipoSilueta,
+    disponer,
+)
+
+# --- Presupuesto de dibujo ----------------------------------------------------
+
+#: Vueltas de relajación con que se arma el croquis de la gráfica. El motor usa
+#: 48 por defecto, que es lo que vale la pena para dibujar UNA pieza a pedido;
+#: aquí se arma una por estructura dentro de cada resolución del plan, así que
+#: 16 es el presupuesto. Medido en esta máquina (2026-09-29): una pared de 600
+#: globos tarda 2,6 s con 48 vueltas y 0,68 s con 16, con el mismo número de
+#: globos encimados (cero) y la misma ocupación. Es una perilla de forma del
+#: motor, no una regla comercial: no cambia cuántos globos hay ni de qué color.
+_VUELTAS_GRAFICA = 16
+
+#: Globos por instancia que se dibujan desde la silueta. Por encima de esto la
+#: pieza se queda con la rejilla de siempre. Medido con ``_VUELTAS_GRAFICA``
+#: (2026-09-29): 200 globos 0,16 s · 300 0,25 s · 420 0,48 s · 600 0,68 s. El
+#: motor admite hasta 1600 (``silueta.MAX_GLOBOS``), pero eso son más de 5 s y
+#: esto corre dentro de cada resolución.
+MAX_GLOBOS_PIEZA = 420
+
+#: Globos que puede dibujar una resolución completa, sumando todas sus piezas
+#: (≈ 1 s en el peor caso). Una propuesta con cuatro paredes grandes dibuja las
+#: primeras y las demás se quedan con la rejilla, en vez de que el plan entero
+#: tarde cinco segundos más.
+PRESUPUESTO_GLOBOS = 840
+
+
+class PresupuestoGrafica:
+    """Cuántos globos le queda por dibujar a una resolución.
+
+    Uno por resolución: el orden en que se gasta es el de las estructuras del
+    plan, así que dos resoluciones del mismo plan dibujan las mismas piezas.
+    """
+
+    __slots__ = ("restante",)
+
+    def __init__(self, globos: int = PRESUPUESTO_GLOBOS) -> None:
+        self.restante = globos
+
+    def alcanza(self, globos: int) -> bool:
+        return 0 < globos <= min(self.restante, MAX_GLOBOS_PIEZA)
+
+    def gastar(self, globos: int) -> None:
+        self.restante = max(0, self.restante - globos)
+
+
+# --- Grosor visible de la banda (estética) ------------------------------------
+
+#: Fracción de la medida menor de la pieza que mide de ancho la banda de un arco
+#: o un semiarco al VERLO, acotada al rango del oficio. Estética: un arco
+#: orgánico se lee con 0,6–1,1 m de banda y con 0,29 m (la tira del conteo) se
+#: leería como un alambre. No entra en ningún número que se cobre.
+_GROSOR_BANDA = 0.22
+_GROSOR_BANDA_MIN = 0.35
+_GROSOR_BANDA_MAX = 1.00
+#: Lo mismo para una guirnalda, sobre su largo: una tira de 6 m se ve con unos
+#: 0,4 m de banda.
+_GROSOR_GUIRNALDA = 0.07
+_GROSOR_GUIRNALDA_MIN = 0.22
+_GROSOR_GUIRNALDA_MAX = 0.60
+#: Una columna sin ancho declarado. El ancho declarado, cuando está, ES el
+#: grosor de su banda: no hay nada que inventar.
+_GROSOR_COLUMNA_M = 0.40
+#: Cuánto se afina la banda en la punta cuando la estructura oficial no declara
+#: su ``anchoFinalBanda``. Estética.
+_AFINADO_DIBUJO = 0.62
+
+#: Geometría de las estructuras oficiales, del contrato (dueño:
+#: ``src/lib/plan/estructuras-oficiales.ts``), igual que la lee ``plan.py``.
+#: De aquí sale ``anchoFinalBanda``, que ya es la razón entre el ancho final de
+#: la banda y el de su arranque: el afinado de la punta no se inventa cuando la
+#: estructura oficial lo declara.
+_GEOMETRIA_OFICIAL: dict[str, dict[str, object]] = cast(
+    dict[str, dict[str, object]],
+    contract_schema("PlanDecoracion").get("x-geometria-estructuras-oficiales", {}),
+)
+
+#: Tipos del plan que el motor sabe dibujar, con su silueta. Una pared se
+#: reparte aparte (densa u orgánica, según la estructura oficial).
+_TIPO_SILUETA: dict[str, TipoSilueta] = {
+    "arco": "arco",
+    "semiarco": "semiarco",
+    "columna": "columna",
+    "guirnalda": "guirnalda",
+}
+#: Estructuras oficiales cuya forma el motor no dibuja: un aro es una
+#: circunferencia cerrada y el motor solo tiene medio arco abierto. Dibujarlo
+#: como un arco sería peor que la rejilla de hoy.
+_OFICIALES_SIN_SILUETA = frozenset({"aro_circular"})
+#: La pared que se arma con borde vivo. Las demás son un rectángulo limpio.
+_OFICIAL_PARED_ORGANICA = "pared_organica"
+_TIPOS_PARED: frozenset[TipoSilueta] = frozenset({"pared_densa", "pared_organica"})
+
+
+@dataclass(frozen=True, slots=True)
+class PiezaSilueta:
+    """Lo que hace falta de una estructura del plan para armar su croquis.
+
+    Solo geometría declarada. Ni cantidades, ni precios, ni colores: eso entra
+    por la matriz del despiece y por la rejilla del patrón.
+    """
+
+    estructura_id: str
+    tipo: str
+    estructura_oficial: str | None = None
+    ancho_m: float = 0.0
+    alto_m: float = 0.0
+    largo_m: float = 0.0
+    #: Armado de una guirnalda (ADR-0032): su forma, su caída y sus anclajes.
+    forma_guirnalda: str | None = None
+    caida_m: float | None = None
+    anclajes: int | None = None
+
+
+def _acotar(valor: float, minimo: float, maximo: float) -> float:
+    return min(maximo, max(minimo, valor))
+
+
+def _semilla(estructura_id: str) -> int:
+    """Semilla de la FORMA de una pieza: la misma estructura, el mismo croquis.
+
+    Propia del croquis y no la del patrón (``patron_color._semilla``): la forma
+    de un arco no tiene que cambiar porque cambien las reglas con que se siembra
+    un patrón aleatorio.
+    """
+    return int(hashlib.sha256(f"silueta:{estructura_id}".encode()).hexdigest()[:8], 16)
+
+
+def _tipo_de_silueta(pieza: PiezaSilueta) -> TipoSilueta | None:
+    if pieza.estructura_oficial in _OFICIALES_SIN_SILUETA:
+        return None
+    if pieza.tipo == "pared":
+        return (
+            "pared_organica"
+            if pieza.estructura_oficial == _OFICIAL_PARED_ORGANICA
+            else "pared_densa"
+        )
+    return _TIPO_SILUETA.get(pieza.tipo)
+
+
+def _afinado(oficial: str | None) -> float:
+    ancho_final = _GEOMETRIA_OFICIAL.get(oficial or "", {}).get("anchoFinalBanda")
+    return (
+        float(ancho_final)
+        if isinstance(ancho_final, (int, float)) and 0 < float(ancho_final) <= 1
+        else _AFINADO_DIBUJO
+    )
+
+
+def _grosor_dibujo(pieza: PiezaSilueta, tipo: TipoSilueta) -> tuple[float, float] | None:
+    """Grosor visible de la banda en el arranque y en la punta (m), o ``None``.
+
+    Estética documentada, no una medida del oficio: ver ``_GROSOR_BANDA``.
+    """
+    if tipo == "columna":
+        base = pieza.ancho_m if pieza.ancho_m > 0 else _GROSOR_COLUMNA_M
+    elif tipo == "guirnalda":
+        largo = pieza.largo_m or pieza.ancho_m
+        if largo <= 0:
+            return None
+        base = _acotar(_GROSOR_GUIRNALDA * largo, _GROSOR_GUIRNALDA_MIN, _GROSOR_GUIRNALDA_MAX)
+    else:
+        menor = min(pieza.ancho_m, pieza.alto_m)
+        if menor <= 0:
+            return None
+        base = _acotar(_GROSOR_BANDA * menor, _GROSOR_BANDA_MIN, _GROSOR_BANDA_MAX)
+    return base, base * _afinado(pieza.estructura_oficial)
+
+
+def _peticion(pieza: PiezaSilueta, cupos: Sequence[Cupo], tipo: TipoSilueta) -> Peticion | None:
+    """La petición del motor para esta pieza, o ``None`` si le falta un dato."""
+    medidas = Medidas(ancho_m=pieza.ancho_m, alto_m=pieza.alto_m, largo_m=pieza.largo_m)
+    estilo = dataclasses.replace(ESTILO, vueltas=_VUELTAS_GRAFICA)
+    semilla = _semilla(pieza.estructura_id)
+    if tipo in _TIPOS_PARED:
+        if pieza.ancho_m <= 0 or pieza.alto_m <= 0:
+            return None
+        return Peticion(
+            tipo=tipo, medidas=medidas, cupos=tuple(cupos), estilo=estilo, semilla=semilla
+        )
+    grosores = _grosor_dibujo(pieza, tipo)
+    if grosores is None:
+        return None
+    base, punta = grosores
+    # Solo una guirnalda con armado trae forma; el motor rechaza una forma en
+    # cualquier otro tipo, y una caída en una forma que no cuelga.
+    con_armado = tipo == "guirnalda" and pieza.forma_guirnalda is not None
+    forma = pieza.forma_guirnalda if con_armado else None
+    caida = pieza.caida_m if con_armado and (pieza.caida_m or 0) > 0 else None
+    anclajes = pieza.anclajes if con_armado and (pieza.anclajes or 0) > 1 else None
+    return Peticion(
+        tipo=tipo,
+        medidas=medidas,
+        cupos=tuple(cupos),
+        grosor_m=base,
+        grosor_punta_m=punta,
+        forma=forma,
+        caida_m=caida,
+        anclajes=anclajes,
+        estilo=estilo,
+        semilla=semilla,
+    )
+
+
+def _cupos(matriz: Sequence[Sequence[int]], pulgadas: Sequence[int]) -> tuple[Cupo, ...]:
+    """Los cupos del motor: la suma de cada FILA de la matriz del despiece.
+
+    Una posición por globo cotizado, del tamaño con que se cotizó. El motor no
+    reparte nada: coloca exactamente estos.
+    """
+    return tuple(
+        Cupo(pulgadas=pulgadas[fila], cantidad=total)
+        for fila, total in enumerate(sum(cantidades) for cantidades in matriz)
+        if total > 0
+    )
+
+
+# --- De la rejilla del patrón a las posiciones ---------------------------------
+
+#: Qué eje recorre la rejilla de cada tipo de banda: la fila 0 es la base de una
+#: columna (sube) y el extremo izquierdo de un arco o una guirnalda (avanza a la
+#: derecha). Misma convención que ``extremosFilas`` en la interfaz.
+_EJE_VERTICAL = frozenset({"columna"})
+
+Preferencia = Callable[[GloboSilueta], int]
+
+
+def _celda(celdas: Sequence[Sequence[int]], fila: int, columna: int) -> int:
+    linea = celdas[min(max(fila, 0), len(celdas) - 1)]
+    return linea[min(max(columna, 0), len(linea) - 1)]
+
+
+def _lectura_pared(
+    globos: Sequence[GloboSilueta], celdas: Sequence[Sequence[int]]
+) -> tuple[list[GloboSilueta], Preferencia]:
+    """Una pared se lee por el sitio, remuestreando la rejilla sobre los globos.
+
+    ``celdas[fila][columna]`` va de arriba a abajo y de izquierda a derecha, así
+    que un degradé, unos bloques o un damero se leen sobre la silueta como se
+    leían sobre la rejilla. La correspondencia va por PUESTO y no por altura: los
+    globos se ordenan de arriba abajo y se parten en tantas bandas como filas
+    tiene la rejilla, con la misma cantidad en cada una; dentro de una banda, de
+    izquierda a derecha sobre las columnas. Repartir por altura en crudo dejaba
+    bandas con menos globos de los que su color tenía cupo —el croquis no llena
+    la altura de forma pareja, y menos con el borde vivo— y ese sobrante caía
+    todo junto en el borde de abajo, lejos de su bloque.
+    """
+    orden = sorted(globos, key=lambda globo: (-globo.y, globo.x, globo.indice))
+    filas = len(celdas)
+    cuantos = len(orden)
+    preferencias: dict[int, int] = {}
+    inicio = 0
+    for fila in range(filas):
+        fin = (fila + 1) * cuantos // filas
+        banda = sorted(orden[inicio:fin], key=lambda globo: (globo.x, globo.indice))
+        columnas = len(celdas[fila]) or 1
+        for puesto, globo in enumerate(banda):
+            preferencias[globo.indice] = _celda(
+                celdas, fila, puesto * columnas // max(1, len(banda))
+            )
+        inicio = fin
+    return orden, lambda globo: preferencias[globo.indice]
+
+
+def _lectura_banda(
+    globos: Sequence[GloboSilueta], tipo: TipoSilueta, celdas: Sequence[Sequence[int]]
+) -> tuple[list[GloboSilueta], Preferencia]:
+    """Una banda se lee por racimos: la fila del patrón es un racimo del armado.
+
+    El motor ya agrupa los globos en racimos (``GloboSilueta.racimo``) y los
+    siembra a lo largo de la espina en orden de razón dorada, no de extremo a
+    extremo, así que los racimos se ordenan por su sitio sobre el eje: de abajo
+    arriba en una columna y de izquierda a derecha en un arco, un semiarco o una
+    guirnalda. El racimo n.º ``i`` de los ``n`` que salieron toma la fila
+    ``i · filas / n`` de la rejilla, y el globo n.º ``k`` de su racimo la
+    posición ``k · columnas / tamaño``: el estilo se lee igual aunque el motor
+    arme más o menos racimos que filas tenga la rejilla.
+    """
+    miembros: dict[int, list[GloboSilueta]] = {}
+    for globo in sorted(globos, key=lambda globo: globo.indice):
+        miembros.setdefault(globo.racimo, []).append(globo)
+    vertical = tipo in _EJE_VERTICAL
+    centros = {
+        racimo: sum(globo.y if vertical else globo.x for globo in grupo) / len(grupo)
+        for racimo, grupo in miembros.items()
+    }
+    rango = {
+        racimo: puesto
+        for puesto, racimo in enumerate(sorted(centros, key=lambda item: (centros[item], item)))
+    }
+    tamano = {racimo: len(grupo) for racimo, grupo in miembros.items()}
+    puesto_en_racimo = {
+        globo.indice: puesto for grupo in miembros.values() for puesto, globo in enumerate(grupo)
+    }
+    filas = len(celdas)
+    racimos = max(1, len(rango))
+
+    def preferido(globo: GloboSilueta) -> int:
+        fila = min(filas - 1, rango[globo.racimo] * filas // racimos)
+        columnas = len(celdas[min(max(fila, 0), filas - 1)]) or 1
+        dentro = puesto_en_racimo[globo.indice] * columnas // max(1, tamano[globo.racimo])
+        return _celda(celdas, fila, dentro)
+
+    orden = sorted(globos, key=lambda globo: (rango[globo.racimo], puesto_en_racimo[globo.indice]))
+    return orden, preferido
+
+
+def _materiales(
+    orden: Sequence[GloboSilueta],
+    preferido: Preferencia,
+    matriz: Sequence[Sequence[int]],
+    pulgadas: Sequence[int],
+) -> dict[int, int] | None:
+    """El material de cada posición, con las cantidades de la matriz intactas.
+
+    Cada posición pide el color que el patrón pinta en su sitio; si a ese color
+    ya no le quedan globos DE ESE TAMAÑO se lleva el que más le queden (empate
+    al de menor número de leyenda). Las cantidades por color no se negocian: son
+    las columnas de la matriz, que son ``conteo_por_instancia``. El color se
+    mueve de sitio, nunca de cantidad.
+
+    ``None`` si las posiciones y los cupos no cuadran, que sería un motor y una
+    matriz que no hablan del mismo despiece: mejor la rejilla de siempre que una
+    gráfica que no suma.
+    """
+    fila_de_tamano = {pulgada: fila for fila, pulgada in enumerate(pulgadas)}
+    restantes = [list(cantidades) for cantidades in matriz]
+    salida: dict[int, int] = {}
+    for globo in orden:
+        fila = fila_de_tamano.get(globo.nominal)
+        if fila is None:
+            return None
+        quedan = restantes[fila]
+        material = preferido(globo)
+        if material >= len(quedan) or quedan[material] <= 0:
+            material = max(range(len(quedan)), key=lambda indice: (quedan[indice], -indice))
+            if quedan[material] <= 0:
+                return None
+        quedan[material] -= 1
+        salida[globo.indice] = material
+    if any(cantidad for quedan in restantes for cantidad in quedan):
+        return None
+    return salida
+
+
+def posiciones_de_patron(
+    pieza: PiezaSilueta,
+    celdas: Sequence[Sequence[int]],
+    matriz: Sequence[Sequence[int]],
+    proporciones: Sequence[tuple[int, float]],
+    presupuesto: PresupuestoGrafica | None = None,
+) -> list[dict[str, object]] | None:
+    """Las posiciones de los globos de una instancia, del fondo al frente.
+
+    ``matriz`` es la matriz tamaño × material del despiece de ``plan.py``: sus
+    filas son los tamaños de ``proporciones`` y sus columnas los materiales de
+    la pieza. ``celdas`` es la rejilla del patrón ya expandida, que dice el
+    color de cada sitio.
+
+    ``None`` —y la gráfica sigue con la rejilla— cuando el tipo no tiene
+    silueta, falta una medida, el presupuesto de dibujo no alcanza o el motor
+    rechaza la petición. Nunca lanza: esto es dibujo.
+    """
+    tipo = _tipo_de_silueta(pieza)
+    if tipo is None or not celdas or not matriz:
+        return None
+    if len(matriz) != len(proporciones):
+        return None
+    total = sum(cantidad for cantidades in matriz for cantidad in cantidades)
+    presupuesto = presupuesto or PresupuestoGrafica()
+    if not presupuesto.alcanza(total):
+        return None
+    cupos = _cupos(matriz, [pulgadas for pulgadas, _proporcion in proporciones])
+    peticion = _peticion(pieza, cupos, tipo)
+    if peticion is None:
+        return None
+    try:
+        disposicion = disponer(peticion)
+    except SiluetaInvalida:
+        return None
+    if len(disposicion.globos) != total:
+        return None
+    presupuesto.gastar(total)
+    pulgadas = [pulgada for pulgada, _proporcion in proporciones]
+    orden, preferido = (
+        _lectura_pared(disposicion.globos, celdas)
+        if tipo in _TIPOS_PARED
+        else _lectura_banda(disposicion.globos, tipo, celdas)
+    )
+    materiales = _materiales(orden, preferido, matriz, pulgadas)
+    if materiales is None:
+        return None
+    # Del fondo al frente y, dentro de una capa, de arriba abajo: la interfaz
+    # las pinta en este orden y lo de adelante queda encima, como el pseudo-3D
+    # de siempre.
+    return [
+        {
+            "x": round(globo.x, 4),
+            "y": round(globo.y, 4),
+            "r": round(globo.r, 4),
+            "capa": globo.capa,
+            "material": materiales[globo.indice],
+        }
+        for capa in disposicion.por_capa()
+        for globo in capa
+    ]
+
+
+def pieza_desde_estructura(
+    estructura_id: str,
+    tipo: str,
+    estructura_oficial: str | None,
+    medidas: Mapping[str, object],
+    armado: Mapping[str, object] | None = None,
+) -> PiezaSilueta:
+    """``PiezaSilueta`` desde una estructura del plan ya completada."""
+
+    def metros(clave: str) -> float:
+        valor = medidas.get(clave)
+        return float(valor) if isinstance(valor, (int, float)) and math.isfinite(valor) else 0.0
+
+    forma = armado.get("forma") if armado else None
+    caida = armado.get("caida_m") if armado else None
+    anclajes = armado.get("puntos_de_anclaje") if armado else None
+    return PiezaSilueta(
+        estructura_id=estructura_id,
+        tipo=tipo,
+        estructura_oficial=estructura_oficial,
+        ancho_m=metros("ancho_m"),
+        alto_m=metros("alto_m"),
+        largo_m=metros("largo_m"),
+        forma_guirnalda=forma if isinstance(forma, str) else None,
+        caida_m=float(caida) if isinstance(caida, (int, float)) else None,
+        anclajes=int(anclajes) if isinstance(anclajes, int) else None,
+    )
+
+
+__all__ = [
+    "MAX_GLOBOS_PIEZA",
+    "PRESUPUESTO_GLOBOS",
+    "PiezaSilueta",
+    "PresupuestoGrafica",
+    "pieza_desde_estructura",
+    "posiciones_de_patron",
+]

@@ -2,19 +2,27 @@
 
 import { useId } from "react";
 import { useReducedMotion } from "motion/react";
-import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import { geometriaDeDibujo, type PatronColorResuelto } from "@/lib/plan/patron-color";
 import { dibujarPatron, type CurvaGuirnalda, type Dibujo, type EntradaDibujo, type GloboDibujo, type SoporteDibujo } from "./geometria-dibujo";
 import { colorDe, type BrilloGlobo, type ColorLeyenda } from "./leyenda";
 
-type ResueltoDibujo = Pick<PatronColorResuelto, "geometria" | "celdas" | "extras" | "patron">;
+type ResueltoDibujo = Pick<PatronColorResuelto, "geometria" | "celdas" | "extras" | "patron"> &
+  Pick<Partial<PatronColorResuelto>, "posiciones">;
 /** `guirnalda`: la forma real de una guirnalda con armado (ADR-0032); sin ella, la onda de siempre. */
 type Forma = { tipo: string; oficialId?: string; espejo?: boolean; proporcion?: number; guirnalda?: CurvaGuirnalda };
 
-/** Lo que dibuja `VistaPatron` para una expansión de Python (el trazo solo cambia el giro del dibujo). */
+/**
+ * Lo que dibuja `VistaPatron` para una expansión de Python (el trazo solo cambia
+ * el giro del dibujo). Con el croquis real de la pieza (`posiciones`) se dibuja
+ * de ahí; el editor pinta celdas sueltas de la rejilla y esas no tienen posición
+ * en la silueta, así que mientras se pinta a mano vuelve la rejilla de siempre.
+ */
 function entradaDibujo(resuelto: ResueltoDibujo, forma: Forma, celdas?: readonly (readonly number[])[]): EntradaDibujo {
   const base = resuelto.patron.base;
+  const silueta = celdas === undefined ? geometriaDeDibujo(resuelto) === "silueta" : false;
   return {
-    geometria: resuelto.geometria,
+    geometria: silueta ? "silueta" : resuelto.geometria,
+    ...(silueta ? { posiciones: resuelto.posiciones } : {}),
     tipo: forma.tipo,
     oficialId: forma.oficialId,
     celdas: celdas ?? resuelto.celdas,

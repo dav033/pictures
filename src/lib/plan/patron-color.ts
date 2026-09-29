@@ -117,6 +117,31 @@ const EnteroNoNegativo = z.number().int().min(0);
 const EnteroPositivo = z.number().int().min(1);
 
 /**
+ * Un globo colocado sobre la silueta real de la pieza, en METROS, con `y = 0`
+ * en el suelo (el motor `services/ai-api/app/silueta.py` crece hacia arriba; la
+ * pantalla, hacia abajo). `capa` es la profundidad, 0 = fondo.
+ *
+ * Solo dibujo. Las cantidades por color no salen de aquí: salen de `conteo`, y
+ * son las mismas con posiciones o sin ellas (`app/silueta_patron.py` reasigna el
+ * color de sitio, nunca de cantidad). Tope: `silueta.MAX_GLOBOS`, el límite del
+ * propio motor; el presupuesto de dibujo de Python es más estricto y puede
+ * bajar o subir sin tocar el contrato.
+ */
+const MAX_POSICIONES_SILUETA = 1600;
+/** Ninguna pieza del oficio pasa de esto; acota un metraje absurdo, no dibuja nada. */
+const METROS_MAXIMOS = 60;
+const PosicionSiluetaSchema = z.object({
+  x: z.number().min(0).max(METROS_MAXIMOS),
+  y: z.number().min(0).max(METROS_MAXIMOS),
+  /** Radio inflado (m). */
+  r: z.number().gt(0).max(1),
+  capa: EnteroNoNegativo.max(15),
+  material: IndiceMaterialSchema,
+}).strict();
+
+export type PosicionSilueta = z.infer<typeof PosicionSiluetaSchema>;
+
+/**
  * Lo que Python devuelve de un patrón ya expandido: la rejilla, el conteo, el
  * paso a paso y los textos. Viaja en `plan_resuelto.patrones_color` (fuera del
  * snapshot que firma `plan_hash`) y en la vista previa del editor. La UI solo
@@ -136,6 +161,15 @@ export const PatronColorResueltoSchema = z.object({
   celdas: z.array(z.array(EnteroNoNegativo)),
   /** Globos que no ocupan una posición del racimo (el centro de una flor). */
   extras: z.array(z.object({ fila: EnteroNoNegativo, material: EnteroNoNegativo }).strict()),
+  /**
+   * Los globos de UNA instancia sobre la silueta real de la pieza, del fondo al
+   * frente (ADR-0028 decisión 5: derivado, fuera del snapshot, no toca
+   * `plan_hash`). Ausente cuando Python no pudo armar la silueta —tipo sin
+   * silueta, una medida que falta, el presupuesto de dibujo— y entonces la
+   * gráfica dibuja la rejilla de siempre. Solo geometría: `celdas` y `conteo`
+   * siguen siendo los mismos con posiciones o sin ellas.
+   */
+  posiciones: z.array(PosicionSiluetaSchema).max(MAX_POSICIONES_SILUETA).optional(),
   conteo: z.array(z.object({
     material: EnteroNoNegativo,
     color: z.string().nullable(),
@@ -159,6 +193,22 @@ export const PatronColorResueltoSchema = z.object({
 }).strict();
 
 export type PatronColorResuelto = z.infer<typeof PatronColorResueltoSchema>;
+
+/**
+ * Con qué geometría se DIBUJA un patrón resuelto: `silueta` cuando Python pudo
+ * armar el croquis real de la pieza, y los `racimos` o la `rejilla` de siempre
+ * cuando no. `geometria` sigue diciendo cómo se leen las FILAS de `celdas` (una
+ * pared va en filas, todo lo demás en racimos) porque de eso viven la gráfica
+ * numerada, la hoja de armado y las etiquetas del editor; la silueta solo cambia
+ * el dibujo, así que no puede pisar ese dato. Un solo dueño de la decisión.
+ */
+export type GeometriaDibujoPatron = PatronColorResuelto["geometria"] | "silueta";
+
+export function geometriaDeDibujo(
+  resuelto: Pick<PatronColorResuelto, "geometria" | "posiciones">,
+): GeometriaDibujoPatron {
+  return resuelto.posiciones && resuelto.posiciones.length > 0 ? "silueta" : resuelto.geometria;
+}
 
 /**
  * Un estilo que el editor puede ofrecer para una estructura, con sus
