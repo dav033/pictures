@@ -902,6 +902,25 @@ def test_espiral_nombra_los_colores_en_ingles_en_el_orden_del_patron() -> None:
             "Diagonal",
             "with diagonal rainbow bands of white, black and blue",
         ),
+        # El confeti también redacta sus dos frases (ADR-0035): antes iban vacías
+        # y el prompt de imagen se quedaba con el reparto orgánico, que pide
+        # racimos de un color y agrupaba los colores en franjas.
+        (
+            _estructura(**PARED_3X4),
+            _patron(
+                {
+                    "modo": "aleatorio",
+                    "semilla": 1,
+                    "pesos": [
+                        {"material": 0, "peso": 1},
+                        {"material": 1, "peso": 1},
+                        {"material": 2, "peso": 1},
+                    ],
+                }
+            ),
+            "Confeti",
+            "with white, black and blue scattered evenly all over the piece",
+        ),
     ],
 )
 def test_cada_modo_tiene_su_nombre_y_su_fragmento_lora(
@@ -917,22 +936,91 @@ def test_cada_modo_tiene_su_nombre_y_su_fragmento_lora(
     assert lora.isascii()
 
 
-def test_confeti_deja_las_frases_del_prompt_vacias() -> None:
+def test_confeti_le_dice_al_generador_lo_que_promete_la_tarjeta() -> None:
+    """El caso medido el 2026-09-29: pared «Mr & Mrs», 3 colores 75/20/5 (ADR-0035).
+
+    La tarjeta prometía "repartidos salteados, sin formar líneas" y las dos
+    frases del prompt iban vacías, así que la imagen salió en tres franjas
+    verticales. Rejilla 14 × 14 = 196 posiciones; cuotas por mayor resto con
+    pesos 75/20/5: 196 × 0,75 = 147 exacto; 196 × 0,20 = 39,2 → 39 (resto 0,2);
+    196 × 0,05 = 9,8 → 9 (resto 0,8). Los suelos dan 195 y el globo que sobra va
+    al mayor resto, el blanco: 147 + 39 + 10.
+    """
+    estructura = _estructura(
+        tipo="pared",
+        total=194,
+        ancho=2.4,
+        alto=2.4,
+        colores=("rosado", "dorado", "blanco"),
+        acabados=("mate", "cromado", "mate"),
+        partes=[0.75, 0.20, 0.05],
+        estructura_id="EST_01_PARED",
+    )
     patron = _patron(
         {
             "modo": "aleatorio",
-            "semilla": 1,
+            "semilla": 7,
             "pesos": [
-                {"material": 0, "peso": 1},
-                {"material": 1, "peso": 1},
-                {"material": 2, "peso": 1},
+                {"material": 0, "peso": 75},
+                {"material": 1, "peso": 20},
+                {"material": 2, "peso": 5},
             ],
         }
     )
 
-    textos = _textos(_estructura(), patron)
+    resuelto = _textos(estructura, patron)
 
-    assert (textos["nombre"], textos["prompt_gemini"], textos["prompt_lora"]) == ("Confeti", "", "")
+    assert (resuelto["filas"], resuelto["columnas"]) == (14, 14)
+    assert [conteo["unidades_por_instancia"] for conteo in resuelto["conteo"]] == [147, 39, 10]
+    assert resuelto["nombre"] == "Confeti"
+    # La frase Gemini nombra los tres colores CON su acabado, como los demás
+    # modos: el matiz que llega al generador es el del producto comprado.
+    assert resuelto["prompt_gemini"] == (
+        "COLOR PATTERN — an even scatter of matte pink, high-shine chrome gold and matte white"
+        " intermixed balloon by balloon over the whole piece, every color reaching every area;"
+        " no stripes, no bands, no blocks, no gradient, and no color gathered into a zone or a"
+        " corner."
+    )
+    assert resuelto["prompt_lora"] == "with pink, gold and white scattered evenly all over the piece"
+    # Lo que la tarjeta promete y lo que recibe el generador dicen lo mismo.
+    assert "repartidos salteados, sin formar líneas" in str(resuelto["descripcion"])
+
+
+def test_el_confeti_nunca_dice_confetti_al_generador() -> None:
+    """"confetti" en el inglés de este repo es un producto, no un reparto (ADR-0035).
+
+    ``balloon.round.foil.white.printed_confetti`` y "clear confetti-filled
+    balloons" viven en el vocabulario de productos: la palabra en el prompt
+    invitaría a rellenar de confeti globos de látex opaco que nadie compró.
+    """
+    patron = _patron(
+        {
+            "modo": "aleatorio",
+            "semilla": 1,
+            "pesos": [{"material": 0, "peso": 1}, {"material": 1, "peso": 1}],
+        }
+    )
+
+    textos = _textos(_estructura(colores=COLORES[:2]), patron)
+
+    assert "confetti" not in str(textos["prompt_gemini"]).lower()
+    assert "confetti" not in str(textos["prompt_lora"]).lower()
+
+
+def test_el_confeti_con_mas_de_cuatro_colores_no_los_nombra_uno_a_uno() -> None:
+    colores = ("blanco", "negro", "azul", "rojo", "verde")
+    patron = _patron(
+        {
+            "modo": "aleatorio",
+            "semilla": 1,
+            "pesos": [{"material": indice, "peso": 1} for indice in range(5)],
+        }
+    )
+
+    textos = _textos(_estructura(total=20, colores=colores), patron)
+
+    assert "an even scatter of 5 colors" in str(textos["prompt_gemini"])
+    assert textos["prompt_lora"] == "with multicolor scattered evenly all over the piece"
 
 
 def test_acentos_y_pintados_se_suman_a_las_frases() -> None:

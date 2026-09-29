@@ -301,8 +301,8 @@
     "nombre": "Confeti",
     "descripcion": "Los colores se reparten sin orden fijo, como hoy.",
     "instrucciones": [],
-    "prompt_gemini": "",
-    "prompt_lora": "",
+    "prompt_gemini": "COLOR PATTERN — an even scatter of red and gold intermixed balloon by balloon over the whole piece, every color reaching every area; no stripes, no bands, no blocks, no gradient, and no color gathered into a zone or a corner.",
+    "prompt_lora": "with red and gold scattered evenly all over the piece",
     "avisos": []
   },
   "sugerencia": {

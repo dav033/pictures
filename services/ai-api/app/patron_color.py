@@ -1830,7 +1830,26 @@ class _Redactor:
         return _Texto("Degradé", descripcion, [orden], gemini, lora)
 
     def aleatorio(self) -> _Texto:
+        """Confeti; sus dos frases dicen al generador lo que la tarjeta promete (ADR-0035).
+
+        Hasta el 2026-09-29 las dos frases iban vacías a propósito (ADR-0028 §8)
+        para que el prompt conservara su reparto orgánico. Ese reparto pide justo
+        lo contrario de un confeti ("intentional organic clusters and
+        transitions… avoid random speckles"), y una pared blush con racimos de
+        dorado salió en tres franjas verticales. ADR-0035 lo enmienda.
+
+        Ninguna de las dos frases dice "confetti": en el inglés de este repo es
+        un producto (``balloon.round.foil.white.printed_confetti``, "clear
+        confetti-filled balloons"), y nombrarlo invitaría a rellenar de confeti
+        globos de látex opaco. El reparto se dice "scattered evenly".
+        """
         colores = _distintos([material for material, _peso in _pesos(self.p.base["pesos"])])
+        # Máximo 4 colores nombrados, como en los demás modos (ADR-0028 §8).
+        nombrados_en = (
+            _lista_en([self.en(i) for i in colores])
+            if len(colores) <= 4
+            else f"{len(colores)} colors"
+        )
         return _Texto(
             "Confeti",
             f"Confeti: {_lista_es([self.es(i) for i in colores])} repartidos salteados, sin"
@@ -1839,8 +1858,10 @@ class _Redactor:
                 "Reparte los colores salteados, evitando que un mismo color forme líneas o"
                 " manchas; la gráfica numerada propone un lugar para cada globo."
             ],
-            "",
-            "",
+            f"COLOR PATTERN — an even scatter of {nombrados_en} intermixed balloon by balloon"
+            " over the whole piece, every color reaching every area; no stripes, no bands, no"
+            " blocks, no gradient, and no color gathered into a zone or a corner.",
+            f"with {self.lista_lora(colores)} scattered evenly all over the piece",
         )
 
     def flor(self) -> _Texto:
@@ -1935,8 +1956,10 @@ class _Redactor:
         }[self.p.modo]()
         instrucciones_acentos, gemini_acentos, lora_acentos = self.acentos()
         gemini, lora = modo.gemini, modo.lora
-        # El confeti deja vacías las dos frases: el prompt conserva su redacción
-        # orgánica de siempre (ADR-0028 §8).
+        # Todos los modos redactan sus dos frases, el confeti incluido desde
+        # ADR-0035. Las guardas siguen aquí porque un modo sin frase (o un
+        # `prompt_gemini` vacío que llegue de una versión anterior del servicio)
+        # no debe recibir los acentos pegados a una cadena vacía.
         if gemini:
             gemini = " ".join(
                 [
