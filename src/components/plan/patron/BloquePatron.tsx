@@ -113,6 +113,8 @@ export function BloquePatron({ resuelto, enVivo, reparto, leyenda, tipo, oficial
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <p className="text-[13px] font-semibold text-texto">Patrón de color</p>
             <span className="rounded-full bg-acento-suave px-2.5 py-0.5 text-xs font-semibold text-acento">{mostrado.nombre}</span>
+            {!vivo && resuelto?.patron.origen === "referencia" && <span className="text-[11px] font-medium text-texto-suave">· de tu foto</span>}
+            {!vivo && resuelto?.patron.origen === "sugerido" && <span className="text-[11px] font-medium text-texto-suave">· sugerido</span>}
             {vivo && <span className="text-[11px] font-medium text-texto-suave">· así queda con tu reparto</span>}
           </div>
           {reparto}

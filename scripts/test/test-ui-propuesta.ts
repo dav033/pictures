@@ -328,7 +328,8 @@ const leyendaDe = (id: string) => leyendaPatron(declaradaDe(id).materiales, estr
   const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planPatrones, onPlanActualizado: () => undefined, onAprobar: () => undefined }));
   const texto = textoVisible(html);
   assert.equal((html.match(/data-testid="bloque-patron"/g) ?? []).length, 3, "las tres piezas con patrón aplicado muestran su bloque");
-  assert.match(texto, /Patrón de color Espiral Cuartetos iguales de blanco \(1\), negro \(2\)/, "nombre y descripción de Python");
+  assert.match(texto, /Patrón de color Espiral · de tu foto Cuartetos iguales de blanco \(1\), negro \(2\)/, "nombre, origen y descripción de Python");
+  assert.match(texto, /Patrón de color Degradé Degradé en diagonal/, "un patrón sin origen declarado no inventa etiqueta");
   assert.match(texto, /Patrón de color Flores/);
   assert.match(texto, /Patrón de color Degradé Degradé en diagonal/);
   assert.match(texto, /1 Blanco mate 48 · 50 % 2 Negro mate 24 · 25 % 3 Azul cromado 24 · 25 %/, "conteo de Python con la leyenda numerada");

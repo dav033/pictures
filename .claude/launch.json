@@ -39,6 +39,16 @@
       "autoPort": true
     },
     {
+      "name": "ai-api-8000",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "scripts/ops/supervisar-ai-api.py",
+        "--port",
+        "8000"
+      ],
+      "port": 8000
+    },
+    {
       "name": "demo-decoracion-3010",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

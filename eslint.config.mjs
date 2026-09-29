@@ -16,6 +16,11 @@ const eslintConfig = defineConfig([
     "packages/*/dist/**",
     // Entorno virtual Python generado localmente; lo cubren Ruff y mypy.
     "services/ai-api/.venv/**",
+    // Worktrees temporales (los que crea un agente viven aqui dentro): son
+    // copias del repo, no codigo fuente de este arbol. Sin esto, el lint
+    // recorre cada copia y un arbol con cuatro worktrees pasa de 25 avisos
+    // a 685 problemas ajenos (2026-09-29).
+    ".claude/worktrees/**",
   ]),
 ]);
 
