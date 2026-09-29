@@ -65,7 +65,13 @@ export async function POST(request: Request) {
       elementos: result.blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => ({
         id: elemento.element_id,
         tipo: elemento.visual_semantics?.structure_type ?? null,
-        patron: elemento.appearance.patron_color?.modo ?? null,
+        // Con la confianza y los colores, no solo el modo: una pista por debajo de 0,5
+        // la descarta `patron_desde_pista` y la pieza cae al preset, que en una pared es
+        // confeti igual que la pista `aleatorio`. Sin la confianza aquí, el modo leído
+        // parecía correcto y la caída al preset no se veía en ningún registro.
+        patron: elemento.appearance.patron_color
+          ? { modo: elemento.appearance.patron_color.modo, confianza: elemento.appearance.patron_color.confianza, colores: elemento.appearance.patron_color.colores }
+          : null,
         armado: elemento.appearance.armado_bouquet
           ? { confianza: elemento.appearance.armado_bouquet.confianza, niveles: elemento.appearance.armado_bouquet.niveles.length, numeros: elemento.appearance.armado_bouquet.numeros?.map((numero) => numero.digito).join("") ?? null }
           : null,

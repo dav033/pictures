@@ -194,6 +194,35 @@ async function main(): Promise<void> {
   assert.equal("pistas_patron" in sinPista.llamadas[0]!.body, false, "sin pistas el campo no viaja");
   ok("confirmar_plan_decoracion resuelve con completar_patrones y las pistas de la foto");
 
+  // El preset de una pared es confeti y la pista `aleatorio` da el mismo patrón, así que
+  // el plan resuelto no dice de qué rama salió. Este registro sí: por estructura, si
+  // materializa un elemento y cuántos materiales tiene; por pista, su modo y su confianza.
+  const registrado = async (blueprint: Blueprint): Promise<Json[]> => {
+    const lineas: Json[] = [];
+    const original = console.info;
+    console.info = (...args: unknown[]) => {
+      if (args[0] === "[plan] pistas de patrón") lineas.push(JSON.parse(String(args[1])) as Json);
+    };
+    try {
+      assert.equal((await confirmarCon(blueprint).confirmar()).ok, true);
+    } finally {
+      console.info = original;
+    }
+    return lineas;
+  };
+  const lineas = await registrado(conPatron);
+  assert.equal(lineas.length, 1, "una línea por resolución de la confirmación");
+  assert.deepEqual(lineas[0]!.estructuras, [
+    { id: "EST_01_COLUMNA", tipo: "columna", referencia: "REF_01_E01", materiales: 2, patron_declarado: false },
+  ]);
+  assert.deepEqual(lineas[0]!.pistas, [
+    { referencia: "REF_01_E01", modo: "espiral", confianza: 0.8, colores: ["blanco", "negro", "blanco", "negro"] },
+  ]);
+  // Sin pista el registro lo dice con la lista vacía: la pieza cayó al preset.
+  const sinPistaLineas = await registrado(blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure")]));
+  assert.deepEqual(sinPistaLineas[0]!.pistas, [], "sin pista la lista viaja vacía, no ausente");
+  ok("el registro de la confirmación dice si la pista de patrón viajó y con qué confianza");
+
   // Convergencia: el reintento sin el material sin cobertura lleva las mismas opciones.
   const convergencia = confirmarCon(conPatron, {
     veredicto: (_plan, numero) => (numero === 1 ? { sinCobertura: [{ estructura_id: "EST_01_COLUMNA", product_id: "P-NEGRO", tamano: "R-12" }] } : {}),

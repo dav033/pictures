@@ -1046,6 +1046,14 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       const pistasGuirnalda = completarArmadosGuirnalda ? pistasGuirnaldaDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasConteo = completarConteos ? pistasConteoDelPlan(plan, estado.referenceBlueprint) : [];
       // Diagnóstico (ids y conteos, nunca la foto): qué lecturas de la foto viajan con la confirmación.
+      // El del patrón dice por qué una pieza salió con el preset en vez de con la foto: el
+      // preset de una pared es confeti y el de la pista también, así que el patrón resuelto no
+      // distingue las dos ramas (ADR-0028 §7). Cada campo descarta una causa: `referencia` nula
+      // (la pieza no materializa ningún elemento, la pista nunca puede casar), `materiales` < 2
+      // (no lleva patrón), `patron_declarado` (ya traía uno y no se sugiere otro), y en las
+      // pistas el `modo` (uno que el tipo no admite se descarta) y la `confianza` (< 0,5 se
+      // descarta). Sin esto la caída de la pista al preset era invisible.
+      if (completarPatrones) console.info("[plan] pistas de patrón", JSON.stringify({ request_id: estado.ragRequestId, estructuras: plan.estructuras.map((estructura) => ({ id: estructura.estructura_id, tipo: estructura.tipo, referencia: estructura.referencia_element_id ?? null, materiales: estructura.materiales.length, patron_declarado: estructura.patron_color !== undefined })), pistas: pistasPatron.map((pista) => ({ referencia: pista.referencia_element_id, modo: pista.modo, confianza: pista.confianza, colores: pista.colores })) }));
       if (completarArmados) console.info("[plan] pistas de armado", JSON.stringify({ request_id: estado.ragRequestId, bouquets: plan.estructuras.filter((estructura) => estructura.estructura_oficial === "bouquet").map((estructura) => ({ id: estructura.estructura_id, referencia: estructura.referencia_element_id ?? null, unidades: estructura.unidades_declaradas ?? null })), pistas: pistasArmado.map((pista) => ({ referencia: pista.referencia_element_id, confianza: pista.confianza, numeros: pista.numeros?.map((numero) => numero.digito).join("") ?? null })) }));
       return resolverPlan({
         plan,
