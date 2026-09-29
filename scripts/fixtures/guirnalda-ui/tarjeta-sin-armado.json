@@ -1,12 +1,13 @@
 {
-  "capturada_en": "27528f2",
+  "capturada_en": "27528f2; rebasada en 05966ae",
+  "nota": "El unico cambio frente a 27528f2 es la etiqueta de origen del patron ('· de tu foto' / '· sugerido') que BloquePatron muestra desde 05966ae: quitando ese span, las dos tarjetas vuelven byte a byte al hash anterior, y asi se comprobo antes de regenerar esta huella.",
   "plan": "scripts/fixtures/patron-color-ui/plan-con-patrones.json",
   "editable": {
-    "bytes": 380460,
-    "sha256": "23879334e7431a90fced1b5e448dd86b22f88e647d793619d216332f4b767409"
+    "bytes": 380535,
+    "sha256": "d773dc9737acb4c670ecbe4e7835890fef888c9b19d0794cb166566c86b5113a"
   },
   "lectura": {
-    "bytes": 331786,
-    "sha256": "4de985a95ae506b95e97ec257c8e1d7182bf5154173d42b174e4ea2365f72b9d"
+    "bytes": 331861,
+    "sha256": "6abeb6306e98f54913e8f75511ea2123b958ca1b811a9930260650a88bd5b6d5"
   }
 }
