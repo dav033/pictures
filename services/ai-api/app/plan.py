@@ -111,9 +111,10 @@ from app.patron_color import (
 )
 from app.patron_color import filas_de_racimos, quitar_espejo_sin_u
 from app.silueta_patron import (
+    Croquis,
     PresupuestoGrafica,
+    croquis_de_patron,
     pieza_desde_estructura,
-    posiciones_de_patron,
 )
 
 
@@ -3267,35 +3268,53 @@ def _resolved_patterns(
             raise _pattern_error(context.estructura_id, error) from error
         if notices:
             item["avisos"] = [*cast(list[str], item["avisos"]), *notices]
-        posiciones = _silhouette_positions(plan, structure, item, presupuesto)
-        if posiciones is not None:
-            item["posiciones"] = posiciones
+        _add_silhouette(plan, structure, item, presupuesto)
         resolved.append(item)
     return resolved
 
 
-def _silhouette_positions(
+def _pattern_extras(item: Mapping[str, object]) -> list[tuple[int, int]]:
+    """``extras`` of an expanded pattern as ``(fila, material)`` pairs."""
+    return [
+        (_integer(extra.get("fila")) or 0, _integer(extra.get("material")) or 0)
+        for extra in _mappings(item.get("extras"))
+    ]
+
+
+def _add_silhouette(
     plan: Mapping[str, object],
     structure: Mapping[str, object],
-    item: Mapping[str, object],
+    item: dict[str, object],
     presupuesto: PresupuestoGrafica,
-) -> list[dict[str, object]] | None:
-    """Where each balloon of this pattern goes, on the piece's real silhouette.
+) -> None:
+    """Adds this pattern's silhouette sketch (``posiciones``), or why there is none.
 
     Drawing only, and outside the snapshot: it rides in ``patrones_color[]``,
     which is added after ``plan_hash`` is signed. The quantities are not
     recomputed here -- the size x material matrix is this resolver's own split
     (``_pattern_matrix``, the same one ``_despiece_with_plan_sizes`` buys), so
     the silhouette gets one position per quoted balloon and the color count per
-    material is the matrix's own columns. ``None`` falls back to the grid.
+    material is the matrix's own columns.
+
+    Falling back to the grid is correct, but it may not be silent: without a
+    sketch the pattern carries ``sin_silueta`` with the reason, which is what
+    the resolver's caller logs.
+
+    Never raises, and that is deliberate rather than defensive. Deriving the
+    split calls ``_structure_count``/``_pattern_matrix``, which reject a pattern
+    the structure does not admit; a resolution has already run both to buy the
+    piece, so it cannot start failing here, but a preview quotes nothing and
+    never ran them. A drawing must not decide whether the preview answers, so the
+    rejection degrades to the grid with its reason instead of becoming a 422.
     """
     tipo = _text(structure.get("tipo")) or ""
     if tipo not in _GEOMETRIC_TYPES:
-        return None
+        item["sin_silueta"] = "tipo_sin_silueta"
+        return
     celdas = item.get("celdas")
     if not isinstance(celdas, list):
-        return None
-    _axis, _total, proportions, _unplaced = _structure_count(plan, structure)
+        item["sin_silueta"] = "despiece_incoherente"
+        return
     armado = structure.get("armado_guirnalda") if _is_garland(structure) else None
     pieza = pieza_desde_estructura(
         _text(structure.get("estructura_id")) or "",
@@ -3306,14 +3325,25 @@ def _silhouette_positions(
     )
     # Annotated because mypy runs with ``follow_imports = "skip"``: without it the
     # module boundary hands back ``Any`` and the declared return type is a lie.
-    posiciones: list[dict[str, object]] | None = posiciones_de_patron(
-        pieza,
-        cast(list[list[int]], celdas),
-        _pattern_matrix(plan, structure, proportions),
-        proportions,
-        presupuesto,
-    )
-    return posiciones
+    croquis: Croquis
+    try:
+        _axis, _total, proportions, _unplaced = _structure_count(plan, structure)
+        matrix = _pattern_matrix(plan, structure, proportions)
+    except PlanResolutionError:
+        croquis = Croquis(posiciones=None, motivo="despiece_incoherente")
+    else:
+        croquis = croquis_de_patron(
+            pieza,
+            cast(list[list[int]], celdas),
+            matrix,
+            proportions,
+            presupuesto,
+            _pattern_extras(item),
+        )
+    if croquis.posiciones is not None:
+        item["posiciones"] = croquis.posiciones
+    elif croquis.motivo is not None:
+        item["sin_silueta"] = croquis.motivo
 
 
 def _plan_to_resolve(request: PlanResolutionRequest) -> dict[str, object]:
@@ -4219,6 +4249,19 @@ def vista_previa_de_estructura(
         raise _pattern_error(estructura_id, error) from error
     if notices or purchase_notices:
         resolved["avisos"] = [*notices, *cast(list[str], resolved["avisos"]), *purchase_notices]
+    # The editor draws the same piece the proposal draws (ADR-0028 decision 5).
+    # The structure carries the pattern that was actually expanded -- the
+    # decorator's or the suggested one -- so the split the sketch is laid on is
+    # the one this preview counted. One budget per preview: a preview is one
+    # piece, so only the per-piece limit applies. The silhouette itself is
+    # remembered per request (``silueta_patron._disponer_recordado``): a touch
+    # changes the colors, not the piece, so it is not built again.
+    _add_silhouette(
+        completed,
+        {**_mappings(completed.get("estructuras"))[index], "patron_color": chosen},
+        resolved,
+        PresupuestoGrafica(),
+    )
     return VistaPreviaPatron(patron=resolved, modos_admitidos=admitted)
 
 

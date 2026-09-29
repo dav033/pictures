@@ -9,6 +9,7 @@ silenciosa y que el dibujo sea determinista.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from collections import Counter
 from collections.abc import Mapping, Sequence
@@ -20,10 +21,12 @@ import pytest
 from app.plan import PlanResolutionRequest, resolve_plan
 from app.silueta_patron import (
     MAX_GLOBOS_PIEZA,
+    MotivoSinSilueta,
     PiezaSilueta,
     PresupuestoGrafica,
+    _disponer_recordado,
+    croquis_de_patron,
     pieza_desde_estructura,
-    posiciones_de_patron,
 )
 
 # Una rejilla de damero de 12 filas × 4 posiciones con dos colores, y la matriz
@@ -65,10 +68,12 @@ def _armar(
     matriz: Sequence[Sequence[int]] = tuple(tuple(fila) for fila in MATRIZ_DOS_TAMANOS),
     proporciones: Sequence[tuple[int, float]] = tuple(PROPORCIONES_DOS_TAMANOS),
     presupuesto: PresupuestoGrafica | None = None,
+    extras: Sequence[tuple[int, int]] = (),
 ) -> list[dict[str, object]]:
-    posiciones = posiciones_de_patron(pieza, celdas, matriz, proporciones, presupuesto)
-    assert posiciones is not None, f"{pieza.tipo} debería tener silueta"
-    return posiciones
+    croquis = croquis_de_patron(pieza, celdas, matriz, proporciones, presupuesto, extras)
+    assert croquis.posiciones is not None, f"{pieza.tipo} sin silueta: {croquis.motivo}"
+    assert croquis.motivo is None, "un croquis armado no lleva motivo"
+    return croquis.posiciones
 
 
 @pytest.mark.parametrize("pieza", TODAS, ids=[pieza.estructura_id for pieza in TODAS])
@@ -133,50 +138,153 @@ def test_el_patron_se_lee_sobre_la_silueta() -> None:
 
 
 def test_el_croquis_es_determinista() -> None:
-    assert _armar(ARCO) == _armar(ARCO)
+    """Armarlo de cero dos veces da lo mismo: sin el recuerdo de por medio."""
+    primero = _armar(ARCO)
+    _disponer_recordado.cache_clear()
+    assert primero == _armar(ARCO)
+
+
+# --- La misma pieza con otro color no se vuelve a armar ------------------------
+
+
+def test_otro_patron_sobre_la_misma_pieza_no_rearma_la_silueta() -> None:
+    """Es lo que hace posible que el editor dibuje la pieza real.
+
+    La vista previa vuelve a pedir la MISMA pieza con otro patrón en cada toque
+    del decorador. Las posiciones no dependen del color —el motor solo mira tipo,
+    medidas y cupos—, así que se recuerdan: sin esto, cada toque pagaba el precio
+    entero de armar la silueta y el editor se quedó con la rejilla genérica.
+    """
+    otro = [[1, 0, 1, 0] if fila % 3 else [0, 1, 0, 1] for fila in range(12)]
+    _disponer_recordado.cache_clear()
+    primero = _armar(ARCO)
+    armadas = _disponer_recordado.cache_info().misses
+    segundo = _armar(ARCO, otro)
+    assert _disponer_recordado.cache_info().misses == armadas, "se rearmó la misma silueta"
+    # Mismo croquis, otro reparto de color: eso es "repintar solo el color".
+    assert [(p["x"], p["y"], p["r"], p["capa"]) for p in segundo] == [
+        (p["x"], p["y"], p["r"], p["capa"]) for p in primero
+    ]
+    assert [p["material"] for p in segundo] != [p["material"] for p in primero]
+
+
+def test_otras_medidas_si_rearman_la_silueta() -> None:
+    """El recuerdo es por petición: otra pieza es otra silueta, no la de antes."""
+    _disponer_recordado.cache_clear()
+    _armar(ARCO)
+    armadas = _disponer_recordado.cache_info().misses
+    _armar(dataclasses.replace(ARCO, ancho_m=4.0))
+    assert _disponer_recordado.cache_info().misses == armadas + 1
+
+
+# --- El centro de una flor va en medio de su flor ------------------------------
+
+
+def test_el_centro_de_la_flor_queda_en_el_corazon_de_su_racimo() -> None:
+    """Un ``extra`` no ocupa celda, pero sí tiene que verse donde va.
+
+    El modo ``flor`` cuelga el centro de la fila de su flor sin darle posición en
+    el racimo. Su globo existe igual (la matriz cuenta celdas más extras), pero
+    hasta que alguien lo pidió caía donde lo dejara el reparto de sobrantes, así
+    que las flores salían sin corazón y el color del centro aparecía al final de
+    la pieza. Aquí se comprueba lo que se ve: el globo del centro está más cerca
+    del centro de su racimo que el pétalo medio de ese racimo.
+    """
+    filas = 9
+    # Tres flores: dos filas de fondo (0) y una de pétalo (1) con su centro (2).
+    celdas = [[1 if fila % 3 == 2 else 0] * 4 for fila in range(filas)]
+    extras = [(fila, 2) for fila in range(filas) if fila % 3 == 2]
+    # Un solo tamaño y una columna por color: 36 celdas + 3 centros.
+    matriz = [[24, 9, 3]]
+    posiciones = _armar(COLUMNA, celdas, matriz, [(11, 1.0)], extras=extras)
+    centros = [p for p in posiciones if p["material"] == 2]
+    assert len(centros) == len(extras), "el cupo del centro no se movió"
+    petalos = [p for p in posiciones if p["material"] == 1]
+    assert petalos, "la flor tiene pétalos"
+    # El eje de la columna es x = ancho/2: un corazón está más cerca de él que el
+    # promedio de los pétalos, que rodean el racimo.
+    eje = COLUMNA.ancho_m / 2
+    distancia_centros = sum(abs(cast(float, p["x"]) - eje) for p in centros) / len(centros)
+    distancia_petalos = sum(abs(cast(float, p["x"]) - eje) for p in petalos) / len(petalos)
+    assert distancia_centros < distancia_petalos, "el centro no quedó dentro de su flor"
+
+
+def test_los_extras_no_mueven_ni_un_globo_del_conteo() -> None:
+    """Pedir el centro es una preferencia más: las cantidades son las de la matriz."""
+    filas = 9
+    celdas = [[1 if fila % 3 == 2 else 0] * 4 for fila in range(filas)]
+    extras = [(fila, 2) for fila in range(filas) if fila % 3 == 2]
+    matriz = [[24, 9, 3]]
+    for pieza in (COLUMNA, ARCO, GUIRNALDA):
+        posiciones = _armar(pieza, celdas, matriz, [(11, 1.0)], extras=extras)
+        por_color = Counter(cast(int, p["material"]) for p in posiciones)
+        assert dict(por_color) == {0: 24, 1: 9, 2: 3}, pieza.estructura_id
 
 
 @pytest.mark.parametrize(
-    "pieza",
+    ("pieza", "motivo"),
     [
-        PiezaSilueta(estructura_id="X1", tipo="centro_mesa", ancho_m=0.4, alto_m=0.6),
-        PiezaSilueta(estructura_id="X2", tipo="backdrop", ancho_m=2.0, alto_m=2.0),
-        PiezaSilueta(estructura_id="X3", tipo="arco", estructura_oficial="aro_circular",
-                     ancho_m=1.2, alto_m=1.2),
-        PiezaSilueta(estructura_id="X4", tipo="arco", ancho_m=0.0, alto_m=0.0),
-        PiezaSilueta(estructura_id="X5", tipo="pared", ancho_m=2.0, alto_m=0.0),
-        PiezaSilueta(estructura_id="X6", tipo="guirnalda"),
+        (PiezaSilueta(estructura_id="X1", tipo="centro_mesa", ancho_m=0.4, alto_m=0.6),
+         "tipo_sin_silueta"),
+        (PiezaSilueta(estructura_id="X2", tipo="backdrop", ancho_m=2.0, alto_m=2.0),
+         "tipo_sin_silueta"),
+        (PiezaSilueta(estructura_id="X3", tipo="arco", estructura_oficial="aro_circular",
+                      ancho_m=1.2, alto_m=1.2), "tipo_sin_silueta"),
+        (PiezaSilueta(estructura_id="X4", tipo="arco", ancho_m=0.0, alto_m=0.0),
+         "medidas_incompletas"),
+        (PiezaSilueta(estructura_id="X5", tipo="pared", ancho_m=2.0, alto_m=0.0),
+         "medidas_incompletas"),
+        (PiezaSilueta(estructura_id="X6", tipo="guirnalda"), "medidas_incompletas"),
     ],
     ids=["centro_mesa", "backdrop", "aro_circular", "arco_sin_medidas", "pared_sin_alto",
          "guirnalda_sin_largo"],
 )
-def test_sin_silueta_no_falla_y_la_grafica_sigue_con_su_rejilla(pieza: PiezaSilueta) -> None:
-    assert posiciones_de_patron(pieza, CELDAS_DAMERO, MATRIZ_DOS_TAMANOS,
-                                PROPORCIONES_DOS_TAMANOS) is None
+def test_sin_silueta_no_falla_y_la_grafica_sigue_con_su_rejilla(
+    pieza: PiezaSilueta, motivo: MotivoSinSilueta
+) -> None:
+    """La degradación es correcta, pero dice por qué: nunca es silenciosa."""
+    croquis = croquis_de_patron(
+        pieza, CELDAS_DAMERO, MATRIZ_DOS_TAMANOS, PROPORCIONES_DOS_TAMANOS
+    )
+    assert croquis.posiciones is None
+    assert croquis.motivo == motivo
 
 
 def test_una_pieza_mas_grande_que_el_presupuesto_se_queda_con_la_rejilla() -> None:
     globos = MAX_GLOBOS_PIEZA + 1
     celdas = [[0, 1] for _ in range(globos // 2)]
-    assert posiciones_de_patron(PARED, celdas, [[globos - 1, 1]], [(12, 1.0)]) is None
+    croquis = croquis_de_patron(PARED, celdas, [[globos - 1, 1]], [(12, 1.0)])
+    assert croquis.posiciones is None
+    assert croquis.motivo == "pieza_muy_grande"
 
 
 def test_el_presupuesto_de_una_resolucion_se_reparte_en_orden() -> None:
     """Las primeras piezas se dibujan y las que ya no caben vuelven a la rejilla."""
     presupuesto = PresupuestoGrafica(globos=60)
-    assert posiciones_de_patron(
+    primera = croquis_de_patron(
         PARED, CELDAS_DAMERO, MATRIZ_DOS_TAMANOS, PROPORCIONES_DOS_TAMANOS, presupuesto
-    ) is not None
+    )
+    assert primera.posiciones is not None
     assert presupuesto.restante == 12
-    assert posiciones_de_patron(
+    segunda = croquis_de_patron(
         ARCO, CELDAS_DAMERO, MATRIZ_DOS_TAMANOS, PROPORCIONES_DOS_TAMANOS, presupuesto
-    ) is None
+    )
+    assert segunda.posiciones is None
+    # No es la pieza: es lo que ya se gastaron las anteriores. Son dos motivos
+    # distintos porque se arreglan de dos maneras distintas.
+    assert segunda.motivo == "presupuesto_agotado"
 
 
 def test_una_matriz_que_no_cuadra_con_sus_proporciones_no_dibuja() -> None:
-    assert posiciones_de_patron(PARED, CELDAS_DAMERO, MATRIZ_DOS_TAMANOS, [(12, 1.0)]) is None
-    assert posiciones_de_patron(PARED, CELDAS_DAMERO, [], PROPORCIONES_DOS_TAMANOS) is None
-    assert posiciones_de_patron(PARED, [], MATRIZ_DOS_TAMANOS, PROPORCIONES_DOS_TAMANOS) is None
+    for celdas, matriz, proporciones in (
+        (CELDAS_DAMERO, MATRIZ_DOS_TAMANOS, [(12, 1.0)]),
+        (CELDAS_DAMERO, [], PROPORCIONES_DOS_TAMANOS),
+        ([], MATRIZ_DOS_TAMANOS, PROPORCIONES_DOS_TAMANOS),
+        (CELDAS_DAMERO, [[0, 0], [0, 0]], PROPORCIONES_DOS_TAMANOS),
+    ):
+        croquis = croquis_de_patron(PARED, celdas, matriz, proporciones)
+        assert croquis.posiciones is None
+        assert croquis.motivo == "despiece_incoherente"
 
 
 def test_las_posiciones_van_del_fondo_al_frente() -> None:

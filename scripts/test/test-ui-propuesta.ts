@@ -16,11 +16,11 @@ import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { PlanDecoracion } from "@/lib/plan/tipos";
-import { BloquePatron, ControlesPatron, GaleriaEstilos, GraficaPatron, HojaArmado, leyendaPatron, PieEditorPatron, ResumenPatron } from "@/components/plan/patron";
+import { BloquePatron, ControlesPatron, GaleriaEstilos, GraficaPatron, HojaArmado, leyendaPatron, PieEditorPatron, ResumenPatron, VistaPatron } from "@/components/plan/patron";
 import { crearAutoguardado, type Reloj } from "@/components/plan/autoguardado";
 import { crearColaAjustes, crearPendientesAjustes } from "@/components/plan/cola-ajustes";
 import { vistaDeAutoguardado, type VistaEstadoGuardado } from "@/components/plan/EstadoGuardado";
-import { borradorALaVista, conGlobosPorRacimo, conPintado, editar, enPropuesta, pintadosPendientes } from "@/components/plan/patron/borrador";
+import { borradorALaVista, celdasConPendientes, conGlobosPorRacimo, conPintado, editar, enPropuesta, pintadosPendientes } from "@/components/plan/patron/borrador";
 import { crearArranqueEstilo } from "@/components/plan/patron/arranque-estilo";
 import { peticionVistaPieza } from "@/components/plan/patron/peticion-pieza";
 import { admitePatron, controlesDeModo, iconoDeModo } from "@/components/plan/patron/modos";
@@ -36,7 +36,7 @@ import { avisosDeEdicion } from "@/components/plan/avisos-edicion";
 import { FalloPlanPatron, MENSAJE_PATRON_INVALIDO, pedirPlanEditarPatron, pedirVistaPatron, pedirVistaPatronDetallada, type VistaPatronDetallada } from "@/lib/plan/peticion-patron";
 import { FalloPlanEditar, mensajeFalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
-import { PatronColorResueltoSchema, type ModoAdmitido, type PatronColor, type PatronColorResuelto } from "@/lib/plan/patron-color";
+import { geometriaDeDibujo, PatronColorResueltoSchema, type ModoAdmitido, type PatronColor, type PatronColorResuelto } from "@/lib/plan/patron-color";
 import { ArmadoBouquetResueltoSchema, type ArmadoBouquetResuelto, type ArmadoBouquetV1 } from "@/lib/plan/armado-bouquet";
 import { BloqueBouquet, describirArmado, dibujarBouquet, GraficaBouquet, HojaArmadoBouquet, intercambiar, leyendaBouquet, mismoArmado, resumenInsumos } from "@/components/plan/bouquet";
 import { globosDeLineas } from "@/components/plan/bouquet/leyenda-bouquet";
@@ -400,6 +400,37 @@ const leyendaDe = (id: string) => leyendaPatron(declaradaDe(id).materiales, estr
   assert.match(flores, /^ Pie izquierdo 1 1 1 1 1/, "el arco empieza en el pie izquierdo");
   assert.match(renderToStaticMarkup(React.createElement(GraficaPatron, { resuelto: resueltoDe("EST_02_ARCO"), leyenda: leyendaDe("EST_02_ARCO"), tipo: "arco" })), /aria-label="Racimo 5: Rosado mate, Rosado mate, Rosado mate, Rosado mate, centro Amarillo mate"/, "el centro de la flor es un globo extra del racimo");
   ok("gráfica numerada: orden de armado, números de la leyenda y rejilla accesible");
+}
+
+// 7b-bis. El editor dibuja la MISMA pieza que la propuesta, también mientras el
+// decorador pinta a mano. La pintura optimista del editor entra por `celdas`, y
+// con ella el dibujo se iba a la rejilla genérica: la propuesta enseñaba la
+// columna real y el editor otra cosa con cada toque.
+{
+  const resuelto = resueltoDe("EST_01_COLUMNA");
+  // Croquis de mentira, con la forma del contrato: dos capas de globos en metros.
+  const posiciones = resuelto.celdas.flatMap((fila, indice) => fila.map((material, columna) => ({
+    x: 0.18 + columna * 0.09,
+    y: 0.2 + indice * 0.16,
+    r: 0.14,
+    capa: columna % 2,
+    material,
+  })));
+  const conCroquis: PatronColorResuelto = PatronColorResueltoSchema.parse({ ...resuelto, posiciones });
+  assert.equal(geometriaDeDibujo(resuelto), "racimos", "sin croquis, la geometría de siempre");
+  assert.equal(geometriaDeDibujo(conCroquis), "silueta");
+  const base = { resuelto: conCroquis, leyenda: leyendaDe("EST_01_COLUMNA"), tipo: "columna", etiqueta: "Columna", animar: false };
+  const propuesta = renderToStaticMarkup(React.createElement(VistaPatron, base));
+  // Un toque del pincel que Python todavía no devolvió: las celdas llegan con el
+  // color nuevo encima, pero el croquis sigue siendo el de la última respuesta.
+  const pintadas = celdasConPendientes(conCroquis.celdas, [{ fila: 0, columna: 1, material: 2 }]);
+  const editor = renderToStaticMarkup(React.createElement(VistaPatron, { ...base, celdas: pintadas }));
+  assert.equal(editor, propuesta, "el editor dibuja el croquis, no una rejilla, mientras llega la respuesta");
+  // La capa de volumen va una vez por globo: es el recuento de globos dibujados.
+  assert.equal((propuesta.match(/-volumen\)"/g) ?? []).length, posiciones.length, "un globo dibujado por posición del croquis");
+  const sinCroquis = renderToStaticMarkup(React.createElement(VistaPatron, { ...base, resuelto, celdas: pintadas }));
+  assert.notEqual(sinCroquis, propuesta, "sin croquis sigue la geometría de racimos de siempre");
+  ok("editor: la vista dibuja la pieza real, no la rejilla, también con pintura pendiente");
 }
 
 // 7c. Hoja de armado: paso a paso de `pasos`, instrucciones y conteos por color y por tamaño.

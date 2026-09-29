@@ -9,8 +9,9 @@ balloon counts, packages, prices, waste -- do not move by accident. Any change
 in them surfaces here as a field-by-field diff.
 
 What it does not lock: ``patrones_color[].posiciones``, the silhouette sketch of
-each piece (``_sin_posiciones``). It is derived drawing data outside the
-snapshot; the numbers it is drawn from are locked here as always.
+each piece, and ``sin_silueta``, the reason a piece has none (``_sin_croquis``).
+Both are derived drawing data outside the snapshot; the numbers they are drawn
+from are locked here as always.
 
 This is no longer a parity test. The vectors still carry a frozen ``expected``
 block, the output of the TypeScript resolver that no longer exists: nothing
@@ -259,21 +260,27 @@ def _differences(expected: object, actual: object, path: str) -> list[tuple[str,
     return [] if expected == actual else [(path, expected, actual)]
 
 
-def _sin_posiciones(result: Mapping[str, object]) -> dict[str, object]:
-    """``result`` sin las posiciones de la silueta de cada patrón de color.
+#: Lo que el croquis de una pieza añade al patrón resuelto: sus posiciones, o el
+#: motivo por el que no las tiene. Los dos son dibujo derivado.
+_CLAVES_CROQUIS = frozenset({"posiciones", "sin_silueta"})
+
+
+def _sin_croquis(result: Mapping[str, object]) -> dict[str, object]:
+    """``result`` sin el croquis de silueta de cada patrón de color.
 
     ``patrones_color[].posiciones`` es el croquis de la pieza: cientos de flotantes
     por estructura, derivados, fuera del snapshot y sin efecto en ``plan_hash``
-    ni en ninguna cantidad. Este oráculo vigila los NÚMEROS del resolutor
-    (globos, paquetes, precios, merma) y por eso no los congela: meterlos aquí
-    añadiría miles de coordenadas a los vectores y obligaría a reescribir el
-    oráculo cada vez que se afine el dibujo, que es justo la costumbre contra la
-    que advierte la cabecera de este módulo. Lo que sí se verifica —que cada
-    color reciba exactamente los globos de ``conteo`` y que ``plan_hash`` no se
-    mueva— vive en ``tests/test_silueta_patron.py``.
+    ni en ninguna cantidad, y ``sin_silueta`` es el motivo por el que una pieza no
+    lo tiene. Este oráculo vigila los NÚMEROS del resolutor (globos, paquetes,
+    precios, merma) y por eso no los congela: meterlos aquí añadiría miles de
+    coordenadas a los vectores y obligaría a reescribir el oráculo cada vez que se
+    afine el dibujo, que es justo la costumbre contra la que advierte la cabecera
+    de este módulo. Lo que sí se verifica —que cada color reciba exactamente los
+    globos de ``conteo``, que ``plan_hash`` no se mueva y que el motivo aparezca
+    cuando el croquis falta— vive en ``tests/test_silueta_patron.py``.
 
-    Se limpian los dos lados: un vector regenerado con ``posiciones`` dentro
-    tampoco debe hacer fallar la comparación por el dibujo.
+    Se limpian los dos lados: un vector regenerado con el croquis dentro tampoco
+    debe hacer fallar la comparación por el dibujo.
     """
     plan_resuelto = _json_object(result.get("plan_resuelto"))
     patrones = plan_resuelto.get("patrones_color") if plan_resuelto else None
@@ -284,7 +291,11 @@ def _sin_posiciones(result: Mapping[str, object]) -> dict[str, object]:
         "plan_resuelto": {
             **plan_resuelto,
             "patrones_color": [
-                {clave: valor for clave, valor in patron.items() if clave != "posiciones"}
+                {
+                    clave: valor
+                    for clave, valor in patron.items()
+                    if clave not in _CLAVES_CROQUIS
+                }
                 if isinstance(patron, dict)
                 else patron
                 for patron in patrones
@@ -321,8 +332,8 @@ async def test_resolver_matches_the_frozen_vector(vector: dict[str, object]) -> 
             "REGRESION_ACTUALIZAR=1 pytest tests/test_plan_regresion.py"
         )
     differences = _differences(
-        _sin_posiciones(_mapping(expected, f"{vector['name']}.expected_python")),
-        _sin_posiciones(result),
+        _sin_croquis(_mapping(expected, f"{vector['name']}.expected_python")),
+        _sin_croquis(result),
         "expected_python",
     )
     if differences:

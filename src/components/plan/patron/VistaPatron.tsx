@@ -14,12 +14,19 @@ type Forma = { tipo: string; oficialId?: string; espejo?: boolean; proporcion?: 
 /**
  * Lo que dibuja `VistaPatron` para una expansión de Python (el trazo solo cambia
  * el giro del dibujo). Con el croquis real de la pieza (`posiciones`) se dibuja
- * de ahí; el editor pinta celdas sueltas de la rejilla y esas no tienen posición
- * en la silueta, así que mientras se pinta a mano vuelve la rejilla de siempre.
+ * de ahí, también en el editor: la propuesta y el editor enseñan la misma pieza.
+ *
+ * `celdas` (la pintura optimista del editor) no llega a la silueta, y no puede:
+ * una celda de la rejilla no tiene posición en el croquis, y quien las reparte
+ * sobre él es Python. Así que un trazo del pincel se ve al instante en la
+ * gráfica numerada —donde se pinta— y en la silueta cuando llega la respuesta
+ * que lo incluye, igual que el conteo, que también es el de la última respuesta.
+ * Antes el dibujo cambiaba de geometría en ese hueco: la pieza real desaparecía
+ * y volvía la rejilla genérica con cada toque.
  */
 function entradaDibujo(resuelto: ResueltoDibujo, forma: Forma, celdas?: readonly (readonly number[])[]): EntradaDibujo {
   const base = resuelto.patron.base;
-  const silueta = celdas === undefined ? geometriaDeDibujo(resuelto) === "silueta" : false;
+  const silueta = geometriaDeDibujo(resuelto) === "silueta";
   return {
     geometria: silueta ? "silueta" : resuelto.geometria,
     ...(silueta ? { posiciones: resuelto.posiciones } : {}),
