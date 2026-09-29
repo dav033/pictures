@@ -536,7 +536,9 @@ export function validarCoberturaReferencia(plan: PlanDecoracion, blueprint: Refe
  * "gris", and the plan dropped both without a notice): every color the analysis
  * shows the customer (`coloresFotoCliente`) that no structure buys and no
  * structure already lists is appended to the first structure that materializes
- * a photo element, so the resolvers record it as a notice. Those extras are
+ * a photo element, so the resolvers record it as a notice. A color that only the
+ * venue contributes (the `backdrop` element: a brick wall, a curtain wall behind
+ * the piece) is not decoration and is left out. Those extras are
  * notices only: `confirmar_plan_decoracion` claims just the element colors
  * (`coloresElementoReferencia`).
  */
@@ -548,7 +550,15 @@ export function aplicarColoresReferencia<T extends PlanDecoracion>(plan: T, blue
   });
   const listados = new Set(porEstructura.flat());
   const comprados = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => normalizar(material.color ?? "").trim())).filter(Boolean));
-  const extras = coloresFotoCliente(blueprint).filter((color) => !listados.has(color) && !comprados.has(normalizar(color)));
+  // El color que solo aporta el local queda fuera: la pared de ladrillo de una
+  // foto ponía "cafe" y "rojo" en la paleta y de ahí en los colores que se le
+  // exigían a la pieza (2026-09-29). Un color que también está en un elemento
+  // decorativo (las sillas del E2E de 2026-09-15) sigue avisando.
+  const aprobados = (blueprint?.elements ?? []).filter((elemento) => elemento.approved);
+  const soloDelLocal = (color: string) =>
+    aprobados.some((elemento) => elemento.category === "backdrop" && coloresDominantesReferencia(elemento.appearance).includes(color)) &&
+    !aprobados.some((elemento) => elemento.category !== "backdrop" && coloresDominantesReferencia(elemento.appearance).includes(color));
+  const extras = coloresFotoCliente(blueprint).filter((color) => !listados.has(color) && !comprados.has(normalizar(color)) && !soloDelLocal(color));
   const primera = porEstructura.findIndex((colores) => colores.length > 0);
   return {
     ...plan,

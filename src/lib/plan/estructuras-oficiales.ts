@@ -26,7 +26,7 @@ export const ESTRUCTURAS_OFICIALES_IDS = [
   "arco", "arco_asimetrico", "arco_no_denso",
   "semiarco", "semiarco_asimetrico",
   "columna", "columna_asimetrica", "columna_no_densa",
-  "pared_densa", "pared_no_densa",
+  "pared_densa", "pared_no_densa", "pared_organica",
   "guirnalda", "centro_mesa", "bouquet", "figura",
   // Sugeridas y aprobadas: se construyen con los mismos tipos base.
   "aro_circular", "techo_globos",
@@ -106,6 +106,7 @@ export const ESTRUCTURAS_OFICIALES: Readonly<Record<EstructuraOficialId, Estruct
   columna_no_densa: { id: "columna_no_densa", nombre: "Columna no densa", descripcion: "Columna ligera, con espacios entre los globos.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "simetrica", densidades: ["sencilla"], sustantivoEn: "airy organic balloon column" },
   pared_densa: { id: "pared_densa", nombre: "Pared de globos densa", descripcion: "Fondo completo de globos, sin huecos.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "simetrica", densidades: ["media", "lujosa"], sustantivoEn: "dense balloon wall installation" },
   pared_no_densa: { id: "pared_no_densa", nombre: "Pared de globos no densa", descripcion: "Fondo de globos ligero, deja ver la pared.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "organica", densidades: ["sencilla"], sustantivoEn: "airy balloon wall installation" },
+  pared_organica: { id: "pared_organica", nombre: "Pared orgánica", descripcion: "Fondo completo de globos con racimos irregulares y borde vivo.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "asimetrica", densidades: ["media", "lujosa"], sustantivoEn: "asymmetrical organic balloon wall installation" },
   guirnalda: { id: "guirnalda", nombre: "Guirnalda", descripcion: "Tira orgánica de globos sobre una superficie o el piso.", tipoBase: "guirnalda", tiposAdmitidos: ["guirnalda"], forma: "organica", sustantivoEn: "organic balloon garland", geometria: {
     eje: "largo",
     formas: {
@@ -193,6 +194,10 @@ export function identificarEstructuraOficial(estructura: EstructuraPlanLigera): 
       if (asimetrica) return oficial("columna_asimetrica");
       return noDensa ? oficial("columna_no_densa") : oficial("columna");
     case "pared":
+      // Una pared puede ser densa y orgánica a la vez: cubre todo el fondo con
+      // racimos irregulares. Sin esta rama caía en `pared_densa`, que es
+      // simétrica, y el prompt de imagen pedía un muro plano.
+      if (asimetrica) return oficial("pared_organica");
       return noDensa && !densa ? oficial("pared_no_densa") : oficial("pared_densa");
     case "guirnalda":
       return oficial("guirnalda");

@@ -441,6 +441,7 @@ export const ACCION_NUMEROS_REFERENCIA_OMITIDOS = "La foto de referencia muestra
 export const MENSAJE_CLIENTE_NUMEROS_REFERENCIA = "Estoy agregando los globos de número que se ven en tu foto.";
 export const ACCION_NUMERO_INCORRECTO = "Los globos de número deben formar exactamente el número que pidió el cliente, un globo por dígito. Busca cada dígito por separado con buscar_catalogo_rag (por ejemplo \"globo metalizado numero 4 plata\" y \"globo metalizado numero 0 plata\"), usa esos productos en la figura y vuelve a confirmar. Si el catálogo no tiene uno de los dígitos en el color pedido, quita la figura de número y ofrécele al cliente el color en que sí está ese dígito (numeros_en_catalogo de la búsqueda) en vez de decirle solo que no hay. No anuncies ni generes una imagen.";
 export const ACCION_NUMEROS_EN_CATALOGO = "numeros_en_catalogo lista los globos de número que el catálogo disponible sí tiene para cada dígito que esta búsqueda no devolvió. No le digas al cliente solo que no hay ese número: ofrécele el color que sí existe para ese dígito (por ejemplo «el 4 lo tengo en latte, ¿te sirve?») y pregúntale si lo quiere; si disponibles está vacío, dile que ese dígito no está disponible y ofrece la decoración sin número. No uses ese globo en un plan hasta que el cliente lo acepte y lo busques.";
+export const ACCION_COLORES_EN_CATALOGO = "colores_en_catalogo lista los globos redondos del catálogo disponible que SÍ tienen cada color de la foto que esta búsqueda no devolvió. Búscalos con buscar_catalogo_rag por su título o su color antes de armar el plan y úsalos para cubrir ese color: un color de la foto que el plan no compra se le avisa al cliente como sustitución y, si la foto traía un patrón, lo descarta entero. Si disponibles está vacío, ese color no está en el catálogo activo: díselo al cliente y ofrécele con qué color se arma en su lugar.";
 export const ACCION_TAMANO_CLIENTE_SIN_COBERTURA = "Los tamaños que faltan son los que pidió el cliente y los productos de ese color no los tienen en el catálogo disponible. No reintentes el mismo plan: busca una vez ese tamaño en otro color o producto si no lo hiciste; si tampoco sirve, responde ya al cliente con lo que sí hay (el color en otros tamaños o ese tamaño en otro color) y pregúntale cómo prefiere seguir. No anuncies ni generes este plan.";
 
 /** Every uncovered size is a size the customer made mandatory: retrying the same plan cannot work. */
@@ -1290,10 +1291,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // Incondicional a propósito (fase 2.9): un color de la foto que la
       // búsqueda no puede ofrecer es la misma pérdida haya habido relajación o
       // no, y hasta ahora solo se veía en el caso raro.
-      if (coloresContexto.length > 0) {
-        const sinCubrir = coloresSinCubrir(coloresContexto, respuesta.candidatos);
-        if (sinCubrir.length > 0) estado.ragColoresFotoSinCubrir = [...new Set([...(estado.ragColoresFotoSinCubrir ?? []), ...sinCubrir])];
-      }
+      const coloresFotoSinCubrir = coloresContexto.length > 0 ? coloresSinCubrir(coloresContexto, respuesta.candidatos) : [];
+      if (coloresFotoSinCubrir.length > 0) estado.ragColoresFotoSinCubrir = [...new Set([...(estado.ragColoresFotoSinCubrir ?? []), ...coloresFotoSinCubrir])];
       if (respuesta.filtroRelajado === "colores") {
         estado.ragColorRelaxed = [...new Set([...(estado.ragColorRelaxed ?? []), "colores"])]
       }
@@ -1335,11 +1334,31 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         }
       }
 
+      // Un color de la foto que esta búsqueda no cubrió: decirle al modelo qué
+      // globos del catálogo activo sí lo tienen, como ya se hace con los dígitos
+      // de número. Hasta 2026-09-29 solo se registraba en
+      // `ragColoresFotoSinCubrir` y el modelo no se enteraba: el plan salía sin
+      // ese color y, con él, se caía entero el patrón leído en la foto
+      // (`patron_desde_pista` devuelve None si un color no tiene material).
+      let coloresEnCatalogo: Array<{ color: string; disponibles: Array<{ product_id: string; titulo: string }> }> = [];
+      if (coloresFotoSinCubrir.length > 0) {
+        try {
+          const porColor = await buscarGlobosPorColor(pool, coloresFotoSinCubrir, { variantIds: options.catalogAllowlist?.variantIds ?? null, catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
+          coloresEnCatalogo = coloresFotoSinCubrir.map((color) => ({
+            color,
+            disponibles: (porColor.get(color) ?? []).slice(0, 3).map((producto) => ({ product_id: producto.product_id, titulo: producto.titulo })),
+          }));
+        } catch (error) {
+          console.warn("[rag] no se pudo consultar globos por color de la foto", { requestId: estado.ragRequestId, error: error instanceof Error ? error.message : String(error) });
+        }
+      }
+
       return {
         status: respuesta.status,
         sku_status: respuesta.skuStatus,
         filtro_relajado: respuesta.filtroRelajado,
         ...(numerosEnCatalogo.length ? { numeros_en_catalogo: numerosEnCatalogo, accion_numeros: ACCION_NUMEROS_EN_CATALOGO } : {}),
+        ...(coloresEnCatalogo.length ? { colores_en_catalogo: coloresEnCatalogo, accion_colores: ACCION_COLORES_EN_CATALOGO } : {}),
         ...(avisoFiltros ? { limite_busqueda: avisoFiltros } : {}),
         evento: {
           event_label: eventIntent.event_label,
