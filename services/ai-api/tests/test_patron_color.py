@@ -1817,7 +1817,11 @@ def test_las_frases_de_zonas_agrupan_los_sitios_de_cada_color() -> None:
 
     assert resuelto["nombre"] == "Zonas"
     gemini = str(resuelto["prompt_gemini"])
-    assert gemini.startswith("COLOR PATTERN — a base of pearl pink filling the whole piece")
+    assert gemini.startswith("COLOR PATTERN — most of the balloons are pearl pink, covering the whole piece")
+    # Nada de la frase puede leerse como un fondo liso: el generador pintó un
+    # panel cuando decía "a base of … filling the whole piece" (2026-09-29).
+    assert "a base of" not in gemini
+    assert "the remaining balloons fill everything between the patches" in gemini
     # Un solo color con sus dos sitios en una cláusula, y la suma de sus manchas.
     assert (
         "high-shine chrome gold gathered into two compact patches at the upper right corner"

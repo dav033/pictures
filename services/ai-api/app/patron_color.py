@@ -2305,12 +2305,17 @@ class _Redactor:
         Cuatro colores nombrados es el techo de todos los modos (ADR-0028 §8); por
         encima se dice cuántas manchas y cuántos colores, sin nombrarlos.
         """
+        # "a base of X filling the whole piece" le hizo pintar a Gemini un PANEL
+        # liso de ese color con los globos colgando alrededor, en vez de una
+        # pared de globos (2026-09-29, pared "Mr & Mrs" del usuario): "base" y
+        # "fill" describen un fondo, no globos. Todo lo que se nombra aquí tiene
+        # que decir que son globos.
         remate = (
-            " each patch is one solid group of touching balloons of that single color and the"
-            " base color fills everything between the patches; no stripes, no bands, no gradient"
-            " and no even scatter of the patch colors."
+            " each patch is one solid group of touching balloons of that single color, and the"
+            " remaining balloons fill everything between the patches; no stripes, no bands, no"
+            " gradient and no even scatter of the patch colors."
         )
-        cabeza = f"COLOR PATTERN — a base of {self.en(fondo)} filling the whole piece, with"
+        cabeza = f"COLOR PATTERN — most of the balloons are {self.en(fondo)}, covering the whole piece, with"
         if nombrados > 4:
             return (
                 f"{cabeza} {manchas} compact patches of {nombrados - 1} other colors gathered at"
