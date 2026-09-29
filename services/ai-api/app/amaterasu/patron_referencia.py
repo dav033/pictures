@@ -32,6 +32,8 @@ from app.amaterasu.estructuras import frase_inicio_de_pieza
 from app.amaterasu.vision_estructurada import DEFAULT_MODEL, LecturaFotoError, leer_foto
 from app.generated_models import contract_schema
 from app.operational_models import ContractModel, OperationalRequest
+from app.patron_color import ANCLAS as ANCLAS_PATRON
+from app.patron_color import EXTENSION_ZONA_MAXIMA, ZONAS_MAXIMAS
 from app.patron_color import MODOS as MODOS_PATRON
 
 
@@ -48,6 +50,11 @@ MAX_OUTPUT_TOKENS = 2_048
 # Los modos los define el contrato (`patron-color.v1`); un solo dueño.
 MODOS: tuple[str, ...] = MODOS_PATRON
 MODO_NINGUNO = "ninguno"
+# Los sitios de una mancha, también del contrato (modo `zonas`, ADR-0036).
+ANCLAS: tuple[str, ...] = ANCLAS_PATRON
+#: Topes de una mancha, del contrato; se reexportan para el prompt y la validación.
+EXTENSION_MAXIMA = EXTENSION_ZONA_MAXIMA
+MAX_ZONAS = ZONAS_MAXIMAS
 
 # Vocabulario de color del catálogo: `x-paleta-colores` del contrato
 # `plan-decoracion.v1` (exportada desde PALETA_COLORES_V2 en TypeScript).
@@ -118,7 +125,10 @@ For each element listed in the message (element_id, its structure type and, when
 - "aleatorio" (confetti, organic mix): the colors are mixed with no regular order, as in an organic garland. colores = the colors present, the most used first. pesos = the approximate share of each color as integers from 1 to 100, one per color.
 - "flor" (daisy motif): runs of background clusters, then a flower made of petal clusters around one center balloon, repeating. colores = exactly three colors: background, petal, center.
 - "damero" (checkerboard, only on flat balloon walls): a checkerboard of 2 colors, or diagonal rainbow bands of 3 or 4 colors. colores = the colors in order.
+- "zonas" (color gathered in patches, only on flat balloon walls): one color covers most of the wall as a base and one or more OTHER colors sit GATHERED in compact patches at particular places on it, touching each other, instead of being spread over the whole wall. This is the usual organic wall: a pearl base with a metallic color clustered in a few spots. colores = the base color FIRST, then the patch colors in the order you list the patches. zonas = one entry per patch you can see, with the patch's color, where on the wall its middle sits (ancla) and roughly what percentage of the whole wall it covers (extension). Use several entries with the SAME color when one color is gathered in several separate spots — four patches of dorado is four entries. Do not use "zonas" when a color is sprinkled all over the piece: that is "aleatorio".
 - "ninguno": the piece is a single color, is hidden, or you cannot tell the arrangement. colores = [].
+
+The nine places a patch can sit (ancla), reading the piece as thirds: {", ".join(ANCLAS)}.
 
 {frase_inicio_de_pieza()}
 
@@ -150,6 +160,22 @@ RESPONSE_SCHEMA: dict[str, object] = {
                     "pesos": {
                         "type": "array",
                         "items": {"type": "integer", "minimum": 1, "maximum": 100},
+                    },
+                    "zonas": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "color": {"type": "string", "enum": list(PALETA)},
+                                "ancla": {"type": "string", "enum": list(ANCLAS)},
+                                "extension": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": EXTENSION_MAXIMA,
+                                },
+                            },
+                            "required": ["color", "ancla", "extension"],
+                        },
                     },
                     "confianza": {"type": "number", "minimum": 0, "maximum": 1},
                 },
@@ -259,7 +285,42 @@ def _pista(item: object, pendientes: set[str]) -> dict[str, object] | None:
         pista["globos_por_racimo"] = globos
     if pesos_alineados and pesos:
         pista["pesos"] = pesos[:MAX_COLORES]
+    manchas = _zonas(item.get("zonas"))
+    if manchas:
+        pista["zonas"] = manchas
+    elif modo == "zonas":
+        # Un patrón en zonas SIN manchas no dice dónde va nada, y su base la
+        # armaría `_base_de_zonas_de_pista` con la lista de colores, que no
+        # lleva sitios: se degrada a "ninguno" y la pieza cae al preset.
+        pista["modo"] = MODO_NINGUNO
+        pista["colores"] = []
     return pista
+
+
+def _zonas(valor: object) -> list[dict[str, object]]:
+    """Manchas del proveedor, validadas una a una (ADR-0036).
+
+    Forma, no criterio: una mancha sin color de la paleta, sin un ancla conocida
+    o sin extensión se descarta; el resto se acota al rango del contrato. Lo que
+    queda lo decide `patron_color.patron_desde_pista`, que resuelve cada color
+    contra los materiales de la pieza y cae al preset si no encaja.
+    """
+    if not isinstance(valor, list):
+        return []
+    manchas: list[dict[str, object]] = []
+    for item in cast(list[object], valor):
+        if not isinstance(item, dict) or len(manchas) >= MAX_ZONAS:
+            continue
+        color = item.get("color")
+        nombre = _PALETA_NORMALIZADA.get(_normalizar(color)) if isinstance(color, str) else None
+        ancla = item.get("ancla")
+        extension = _entero(item.get("extension"), 1, EXTENSION_MAXIMA)
+        if nombre is None or not isinstance(ancla, str) or ancla not in ANCLAS:
+            continue
+        if extension is None:
+            continue
+        manchas.append({"color": nombre, "ancla": ancla, "extension": extension})
+    return manchas
 
 
 def validar_pistas(raw: object, elementos: list[ElementoReferencia]) -> list[dict[str, object]]:

@@ -69,8 +69,11 @@ export async function POST(request: Request) {
         // la descarta `patron_desde_pista` y la pieza cae al preset, que en una pared es
         // confeti igual que la pista `aleatorio`. Sin la confianza aquí, el modo leído
         // parecía correcto y la caída al preset no se veía en ningún registro.
+        // `zonas` es el dato propio del modo del mismo nombre (ADR-0036): sin él
+        // no se distingue una pared en zonas leída con sus cuatro manchas de una
+        // que llegó sin ninguna y se degradó a "ninguno" en la validación.
         patron: elemento.appearance.patron_color
-          ? { modo: elemento.appearance.patron_color.modo, confianza: elemento.appearance.patron_color.confianza, colores: elemento.appearance.patron_color.colores }
+          ? { modo: elemento.appearance.patron_color.modo, confianza: elemento.appearance.patron_color.confianza, colores: elemento.appearance.patron_color.colores, zonas: elemento.appearance.patron_color.zonas?.map((zona) => `${zona.color}@${zona.ancla}:${zona.extension}`) ?? null }
           : null,
         armado: elemento.appearance.armado_bouquet
           ? { confianza: elemento.appearance.armado_bouquet.confianza, niveles: elemento.appearance.armado_bouquet.niveles.length, numeros: elemento.appearance.armado_bouquet.numeros?.map((numero) => numero.digito).join("") ?? null }

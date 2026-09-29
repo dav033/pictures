@@ -1,5 +1,5 @@
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
-import type { ModoAdmitido, ModoPatronColor, PatronColor } from "@/lib/plan/patron-color";
+import type { AnclaZona, ModoAdmitido, ModoPatronColor, PatronColor } from "@/lib/plan/patron-color";
 
 /**
  * Lo que el editor MUESTRA de cada estilo: el nombre del oficio, una frase y
@@ -9,7 +9,7 @@ import type { ModoAdmitido, ModoPatronColor, PatronColor } from "@/lib/plan/patr
  */
 
 /** Icono de un estilo: un modo, o la espiral por su trazo y el degradé en diagonal. */
-export type IdEstilo = "espiral" | "zigzag" | "recto" | "anillos" | "bloques" | "degradado" | "diagonal" | "aleatorio" | "flor" | "damero";
+export type IdEstilo = "espiral" | "zigzag" | "recto" | "anillos" | "bloques" | "degradado" | "diagonal" | "aleatorio" | "flor" | "damero" | "zonas";
 
 export type DireccionPatron = NonNullable<PatronColor["direccion"]>;
 
@@ -21,6 +21,24 @@ export const ESTILOS_MODO: Readonly<Record<ModoPatronColor, { nombre: string; ay
   aleatorio: { nombre: "Confeti", ayuda: "Mezcla orgánica" },
   flor: { nombre: "Flores", ayuda: "Margaritas entre racimos" },
   damero: { nombre: "Damero", ayuda: "Cuadros alternos" },
+  zonas: { nombre: "Zonas", ayuda: "Manchas de color agrupadas" },
+};
+
+/**
+ * Cómo se lee cada ancla en el editor (modo `zonas`). Solo presentación, como
+ * `ESTILOS_MODO`: la frase de la tarjeta y la del prompt las escribe Python,
+ * que es el dueño de la redacción del patrón (ADR-0028 decisión 2).
+ */
+export const ETIQUETA_ANCLA: Readonly<Record<AnclaZona, string>> = {
+  superior_izquierda: "Arriba izquierda",
+  superior_centro: "Arriba centro",
+  superior_derecha: "Arriba derecha",
+  media_izquierda: "Medio izquierda",
+  centro: "Centro",
+  media_derecha: "Medio derecha",
+  inferior_izquierda: "Abajo izquierda",
+  inferior_centro: "Abajo centro",
+  inferior_derecha: "Abajo derecha",
 };
 
 export const ETIQUETA_DIRECCION: Readonly<Record<DireccionPatron, string>> = {

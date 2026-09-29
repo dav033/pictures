@@ -118,7 +118,8 @@ def test_la_definicion_del_registro_no_cambia() -> None:
     assert registrado is not None
     assert registrado.inicio_de_pieza == "the left end of a garland"
     # La lectura de la guirnalda no toca las versiones de las otras lecturas.
-    assert patron_referencia.PROMPT_VERSION == "patron-referencia.v1:0d8c93d34d672014"
+    # El valor lo movió ADR-0036 (el modo `zonas` en el prompt del patrón), no esta lectura.
+    assert patron_referencia.PROMPT_VERSION == "patron-referencia.v1:5cbba9bd04d02884"
     assert conteo_referencia.PROMPT_VERSION.startswith("conteo-referencia.v1:")
 
 

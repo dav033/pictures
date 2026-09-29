@@ -1,0 +1,1225 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-ROSADO",
+      "variant_ids": [
+        "V-ROSADO-12"
+      ]
+    },
+    {
+      "product_id": "P-DORADO",
+      "variant_ids": [
+        "V-DORADO-12"
+      ]
+    },
+    {
+      "product_id": "P-BLANCO",
+      "variant_ids": [
+        "V-BLANCO-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [
+        "perlado"
+      ],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado perlado R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosado-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9500,
+      "product_id": "P-ROSADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado perlado",
+      "sku": "SKU-V-ROSADO-12",
+      "sku_original": "SHOP-V-ROSADO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSADO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-ROSADO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [
+        "cromado"
+      ],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "dorado"
+      ],
+      "colores_variante": [
+        "dorado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex dorado cromado R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-dorado-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 12000,
+      "product_id": "P-DORADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex dorado cromado",
+      "sku": "SKU-V-DORADO-12",
+      "sku_original": "SHOP-V-DORADO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-DORADO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-DORADO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [
+        "mate"
+      ],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco mate R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco mate",
+      "sku": "SKU-V-BLANCO-12",
+      "sku_original": "SHOP-V-BLANCO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-BLANCO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Pared organica de 2 x 1,5 m en el modo `zonas` (ADR-0036): fondo rosado perlado con una mancha de dorado cromado en la esquina superior derecha (30 % de la pieza) y una de blanco mate en la inferior izquierda (10 %). Unico vector con un patron cuyo dibujo no es periodico ni va a lo largo de un eje. La rejilla es la de siempre, proporcional a las medidas: 12 filas x 15 columnas = 180 globos (las medidas daban 175). Los cupos salen por mayor resto de [30, 10, 60 del fondo]: dorado 54 - blanco 18 - rosado 108, los mismos numeros que daria un confeti de los mismos pesos, asi que la participacion declarada 0,6/0,3/0,1 no se reescribe. Lo que este vector congela y ningun otro tenia es DONDE cae cada color (`celdas`: las manchas agrupadas alrededor de cada ancla) y la redaccion del modo. No lleva bloque `expected`: se escribio despues de que ADR-0023 retirara el resolutor de TypeScript, asi que nunca existio un segundo oraculo independiente para estos numeros.",
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rosado",
+          "design_quantity": 108,
+          "finish": "perlado",
+          "product_id": "P-ROSADO",
+          "required_quantity": 108,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-ROSADO-12",
+          "waste_adjusted_quantity": 108,
+          "waste_reserve": 0
+        },
+        {
+          "color": "dorado",
+          "design_quantity": 54,
+          "finish": "cromado",
+          "product_id": "P-DORADO",
+          "required_quantity": 54,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-DORADO-12",
+          "waste_adjusted_quantity": 54,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 18,
+          "finish": "mate",
+          "product_id": "P-BLANCO",
+          "required_quantity": 18,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 18,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.5,
+          "length": null,
+          "width": 2.0
+        },
+        "installation_length_m": null,
+        "shape": "clasica",
+        "type": "pared",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 3240,
+          "design_quantity": 18,
+          "leftover_inventory": 32,
+          "operational_surplus": 32,
+          "package_count": 1,
+          "potential_surplus": 32,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 18,
+          "units_per_package": 50,
+          "used": 18,
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 18,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 16560,
+          "design_quantity": 54,
+          "leftover_inventory": 31,
+          "operational_surplus": 31,
+          "package_count": 2,
+          "potential_surplus": 46,
+          "product_id": "P-DORADO",
+          "purchase_cost": 24000,
+          "purchase_quantity": 100,
+          "required_quantity": 69,
+          "units_per_package": 50,
+          "used": 54,
+          "variant_id": "V-DORADO-12",
+          "waste_adjusted_quantity": 69,
+          "waste_reserve": 15
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 20520,
+          "design_quantity": 108,
+          "leftover_inventory": 42,
+          "operational_surplus": 42,
+          "package_count": 3,
+          "potential_surplus": 42,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 28500,
+          "purchase_quantity": 150,
+          "required_quantity": 108,
+          "units_per_package": 50,
+          "used": 108,
+          "variant_id": "V-ROSADO-12",
+          "waste_adjusted_quantity": 108,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 40320,
+        "covered_waste_reserve": 15,
+        "design_quantity": 180,
+        "natural_package_surplus": 120,
+        "operational_surplus": 105,
+        "potential_surplus": 120,
+        "purchase_cost": 61500,
+        "purchase_quantity": 300,
+        "required_quantity": 195,
+        "target_waste_reserve": 15,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 195,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-DORADO-12"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-DORADO-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 3240,
+          "design_quantity": 18,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 32,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 18,
+          "sku": "SKU-V-BLANCO-12",
+          "sku_original": "SHOP-V-BLANCO-12",
+          "sobrante": 32,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco mate — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 18,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 18,
+          "unidades_paquete": 50,
+          "used": 18,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "dorado",
+          "consumption_cost": 16560,
+          "design_quantity": 54,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED"
+          ],
+          "imagen": "https://cdn.example.test/v-dorado-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 31,
+          "paquetes": 2,
+          "precio_paquete": 12000,
+          "product_id": "P-DORADO",
+          "purchase_cost": 24000,
+          "purchase_quantity": 100,
+          "required_quantity": 69,
+          "sku": "SKU-V-DORADO-12",
+          "sku_original": "SHOP-V-DORADO-12",
+          "sobrante": 46,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-DORADO-12",
+          "subtotal": 24000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex dorado cromado — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 69,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 54,
+          "unidades_paquete": 50,
+          "used": 54,
+          "variant_id": "V-DORADO-12",
+          "waste_reserve": 15
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 20520,
+          "design_quantity": 108,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 42,
+          "paquetes": 3,
+          "precio_paquete": 9500,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 28500,
+          "purchase_quantity": 150,
+          "required_quantity": 108,
+          "sku": "SKU-V-ROSADO-12",
+          "sku_original": "SHOP-V-ROSADO-12",
+          "sobrante": 42,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-12",
+          "subtotal": 28500,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rosado perlado — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 108,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 108,
+          "unidades_paquete": 50,
+          "used": 108,
+          "variant_id": "V-ROSADO-12",
+          "waste_reserve": 0
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 36720,
+          "estructura_id": "EST_01_PARED"
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 0.0,
+          "estructura_id": "EST_01_PARED",
+          "lineas": [
+            {
+              "acabado": "perlado",
+              "color": "rosado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-12",
+              "sku_original": "SHOP-V-ROSADO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rosado perlado — R-12 / PAQUETE X 50",
+              "unidades": 108,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-12"
+            },
+            {
+              "acabado": "cromado",
+              "color": "dorado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-dorado-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-DORADO",
+              "sku": "SKU-V-DORADO-12",
+              "sku_original": "SHOP-V-DORADO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-DORADO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex dorado cromado — R-12 / PAQUETE X 50",
+              "unidades": 54,
+              "unidades_inferidas": false,
+              "variant_id": "V-DORADO-12"
+            },
+            {
+              "acabado": "mate",
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-12",
+              "sku_original": "SHOP-V-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco mate — R-12 / PAQUETE X 50",
+              "unidades": 18,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 180
+            }
+          ],
+          "nombre": "Pared orgánica blush",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "pared",
+          "total_unidades": 180,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "patrones_color": [
+        {
+          "aplicado": true,
+          "avisos": [
+            "Con la rejilla completa (12 × 15) la pared lleva 180 globos; las medidas daban 175."
+          ],
+          "celdas": [
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            [
+              2,
+              2,
+              2,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              2,
+              2,
+              2,
+              2,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              2,
+              2,
+              2,
+              2,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              2,
+              2,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "columnas": 15,
+          "conteo": [
+            {
+              "acabado": "perlado",
+              "color": "rosado",
+              "material": 0,
+              "unidades_por_instancia": 108,
+              "unidades_total": 108
+            },
+            {
+              "acabado": "cromado",
+              "color": "dorado",
+              "material": 1,
+              "unidades_por_instancia": 54,
+              "unidades_total": 54
+            },
+            {
+              "acabado": "mate",
+              "color": "blanco",
+              "material": 2,
+              "unidades_por_instancia": 18,
+              "unidades_total": 18
+            }
+          ],
+          "descripcion": "Fondo de rosado (1) con dorado (2) agrupado en la esquina superior derecha (~30 % de la pieza); blanco (3) agrupado en la esquina inferior izquierda (~10 % de la pieza).",
+          "estructura_id": "EST_01_PARED",
+          "extras": [],
+          "filas": 12,
+          "geometria": "rejilla",
+          "globos_por_instancia": 180,
+          "instrucciones": [
+            "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+            "Arma la pared fila por fila, de arriba abajo, siguiendo la gráfica numerada: cada número es un color de la leyenda.",
+            "El fondo de la pared es rosado (1): rellena con él todo lo que no sea una zona.",
+            "Agrupa dorado (2) en la esquina superior derecha, unos 30 % de la pared en total; deja cada zona compacta, sin globos suyos sueltos por el resto.",
+            "Agrupa blanco (3) en la esquina inferior izquierda, unos 10 % de la pared en total; deja cada zona compacta, sin globos suyos sueltos por el resto."
+          ],
+          "nombre": "Zonas",
+          "pasos": [
+            {
+              "celdas": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              "desde": 1,
+              "extras": [],
+              "hasta": 5
+            },
+            {
+              "celdas": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              "desde": 6,
+              "extras": [],
+              "hasta": 6
+            },
+            {
+              "celdas": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              "desde": 7,
+              "extras": [],
+              "hasta": 7
+            },
+            {
+              "celdas": [
+                0,
+                0,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0
+              ],
+              "desde": 8,
+              "extras": [],
+              "hasta": 8
+            },
+            {
+              "celdas": [
+                2,
+                2,
+                2,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "desde": 9,
+              "extras": [],
+              "hasta": 9
+            },
+            {
+              "celdas": [
+                2,
+                2,
+                2,
+                2,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "desde": 10,
+              "extras": [],
+              "hasta": 11
+            },
+            {
+              "celdas": [
+                0,
+                2,
+                2,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "desde": 12,
+              "extras": [],
+              "hasta": 12
+            }
+          ],
+          "patron": {
+            "base": {
+              "fondo": 0,
+              "modo": "zonas",
+              "zonas": [
+                {
+                  "ancla": "superior_derecha",
+                  "extension": 30,
+                  "material": 1
+                },
+                {
+                  "ancla": "inferior_izquierda",
+                  "extension": 10,
+                  "material": 2
+                }
+              ]
+            },
+            "origen": "decorador",
+            "version": "patron-color.v1"
+          },
+          "prompt_gemini": "COLOR PATTERN — a base of pearl pink filling the whole piece, with high-shine chrome gold gathered into one compact patch at the upper right corner, plus matte white gathered into one compact patch at the lower left corner; each patch is one solid group of touching balloons of that single color and the base color fills everything between the patches; no stripes, no bands, no gradient and no even scatter of the patch colors.",
+          "prompt_lora": "with gold clustered at the upper right corner, plus white clustered at the lower left corner over a pink base",
+          "repeticiones": 1
+        }
+      ],
+      "plan": {
+        "concepto": {
+          "descripcion": "Pared orgánica blush con dorados agrupados y flores blancas.",
+          "paleta": [
+            "rosado",
+            "dorado",
+            "blanco"
+          ],
+          "titulo": "Pared orgánica blush"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_PARED",
+            "materiales": [
+              {
+                "acabado": "perlado",
+                "color": "rosado",
+                "participacion": 0.6,
+                "product_id": "P-ROSADO",
+                "rol_material": "principal"
+              },
+              {
+                "acabado": "cromado",
+                "color": "dorado",
+                "participacion": 0.3,
+                "product_id": "P-DORADO",
+                "rol_material": "secundario"
+              },
+              {
+                "acabado": "mate",
+                "color": "blanco",
+                "participacion": 0.1,
+                "product_id": "P-BLANCO",
+                "rol_material": "acento"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.5,
+              "ancho_m": 2
+            },
+            "mezcla": "clasica",
+            "nombre": "Pared orgánica blush",
+            "patron_color": {
+              "base": {
+                "fondo": 0,
+                "modo": "zonas",
+                "zonas": [
+                  {
+                    "ancla": "superior_derecha",
+                    "extension": 30,
+                    "material": 1
+                  },
+                  {
+                    "ancla": "inferior_izquierda",
+                    "extension": 10,
+                    "material": 2
+                  }
+                ]
+              },
+              "origen": "decorador",
+              "version": "patron-color.v1"
+            },
+            "porque": "Fondo blush con dorados agrupados, como la foto del cliente.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "pared",
+            "ubicacion": "fondo_pared"
+          }
+        ],
+        "plan_id": "32323232-3232-4323-8323-323232323232",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "6b56442c98c2ca02cdc2325a6f65084de12ecc0c943ee2814f4c56130637b2ac",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 40320,
+        "covered_waste_reserve": 15,
+        "design_quantity": 180,
+        "globos_por_tamano": {
+          "R-12": 180
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 120,
+        "purchase_cost": 61500,
+        "target_waste_reserve": 15,
+        "total_cop": 61500,
+        "total_unidades": 180,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 40320,
+      "covered_waste_reserve": 15,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 105,
+      "lines": [
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 3240,
+          "design_quantity": 18,
+          "diameter_inches": 12.0,
+          "id": "V-BLANCO-12",
+          "leftover_inventory": 32,
+          "origins": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 18,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_PARED"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 32,
+          "title": "Globo latex blanco mate — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 18,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "dorado",
+          "consumption_cost_cop": 16560,
+          "design_quantity": 54,
+          "diameter_inches": 12.0,
+          "id": "V-DORADO-12",
+          "leftover_inventory": 31,
+          "origins": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 12000,
+          "packages": 2,
+          "product_id": "P-DORADO",
+          "purchase_cost_cop": 24000,
+          "purchase_quantity": 100,
+          "required_quantity": 69,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_PARED"
+          ],
+          "subtotal_cop": 24000,
+          "surplus": 46,
+          "title": "Globo latex dorado cromado — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 54,
+          "variant_id": "V-DORADO-12",
+          "waste_reserve": 15
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 20520,
+          "design_quantity": 108,
+          "diameter_inches": 12.0,
+          "id": "V-ROSADO-12",
+          "leftover_inventory": 42,
+          "origins": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9500,
+          "packages": 3,
+          "product_id": "P-ROSADO",
+          "purchase_cost_cop": 28500,
+          "purchase_quantity": 150,
+          "required_quantity": 108,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_PARED"
+          ],
+          "subtotal_cop": 28500,
+          "surplus": 42,
+          "title": "Globo latex rosado perlado — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 108,
+          "variant_id": "V-ROSADO-12",
+          "waste_reserve": 0
+        }
+      ],
+      "plan_hash": "6b56442c98c2ca02cdc2325a6f65084de12ecc0c943ee2814f4c56130637b2ac",
+      "purchase_cost_cop": 61500,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 15,
+      "total_cop": 61500,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "32-pared-organica-zonas-tres-colores",
+  "plan": {
+    "concepto": {
+      "descripcion": "Pared orgánica blush con dorados agrupados y flores blancas.",
+      "paleta": [
+        "rosado",
+        "dorado",
+        "blanco"
+      ],
+      "titulo": "Pared orgánica blush"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_PARED",
+        "materiales": [
+          {
+            "acabado": "perlado",
+            "color": "rosado",
+            "participacion": 0.6,
+            "product_id": "P-ROSADO",
+            "rol_material": "principal"
+          },
+          {
+            "acabado": "cromado",
+            "color": "dorado",
+            "participacion": 0.3,
+            "product_id": "P-DORADO",
+            "rol_material": "secundario"
+          },
+          {
+            "acabado": "mate",
+            "color": "blanco",
+            "participacion": 0.1,
+            "product_id": "P-BLANCO",
+            "rol_material": "acento"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.5,
+          "ancho_m": 2
+        },
+        "mezcla": "clasica",
+        "nombre": "Pared orgánica blush",
+        "patron_color": {
+          "base": {
+            "fondo": 0,
+            "modo": "zonas",
+            "zonas": [
+              {
+                "ancla": "superior_derecha",
+                "extension": 30,
+                "material": 1
+              },
+              {
+                "ancla": "inferior_izquierda",
+                "extension": 10,
+                "material": 2
+              }
+            ]
+          },
+          "origen": "decorador",
+          "version": "patron-color.v1"
+        },
+        "porque": "Fondo blush con dorados agrupados, como la foto del cliente.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "pared",
+        "ubicacion": "fondo_pared"
+      }
+    ],
+    "plan_id": "32323232-3232-4323-8323-323232323232",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

@@ -10,6 +10,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.amaterasu.patron_referencia import (
+    ANCLAS,
+    EXTENSION_MAXIMA,
     MODOS,
     PALETA,
     PATRON_REFERENCIA_RESULT_VERSION,
@@ -515,3 +517,102 @@ def test_provider_schema_has_no_max_items() -> None:
         return set()
 
     assert "maxItems" not in claves(RESPONSE_SCHEMA)
+
+
+# --- Zonas: las manchas que la foto lee (ADR-0036) ---------------------------
+
+
+def test_prompt_and_schema_describe_the_zone_patches() -> None:
+    for ancla in ANCLAS:
+        assert ancla in SYSTEM_INSTRUCTION
+    # Lo que distingue "zonas" de "aleatorio", dicho en el prompt: agrupado
+    # contra repartido, y varias entradas del mismo color.
+    assert "GATHERED in compact patches" in SYSTEM_INSTRUCTION
+    assert "four patches of dorado is four entries" in SYSTEM_INSTRUCTION
+    zonas = RESPONSE_SCHEMA["properties"]["pistas"]["items"]["properties"]["zonas"]  # type: ignore[index]
+    assert zonas["items"]["properties"]["ancla"]["enum"] == list(ANCLAS)
+    assert zonas["items"]["properties"]["color"]["enum"] == list(PALETA)
+    assert zonas["items"]["required"] == ["color", "ancla", "extension"]
+
+
+def test_keeps_the_zone_patches_and_bounds_their_extension() -> None:
+    elementos = _payload().elementos
+    pistas = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "zonas",
+                    "colores": ["rosado", "dorado"],
+                    "zonas": [
+                        {"color": "dorado", "ancla": "superior_derecha", "extension": 12},
+                        # Se acota al tope del contrato en vez de descartarse.
+                        {"color": "dorado", "ancla": "inferior_centro", "extension": 900},
+                        # Sin ancla conocida, sin color de la paleta o sin extensión: fuera.
+                        {"color": "dorado", "ancla": "arriba", "extension": 10},
+                        {"color": "verde lima", "ancla": "centro", "extension": 10},
+                        {"color": "dorado", "ancla": "centro"},
+                    ],
+                    "confianza": 0.8,
+                }
+            ]
+        },
+        elementos,
+    )
+
+    assert pistas == [
+        {
+            "element_id": "REF_01_E01",
+            "modo": "zonas",
+            "colores": ["rosado", "dorado"],
+            "zonas": [
+                {"color": "dorado", "ancla": "superior_derecha", "extension": 12},
+                {"color": "dorado", "ancla": "inferior_centro", "extension": EXTENSION_MAXIMA},
+            ],
+            "confianza": 0.8,
+        }
+    ]
+
+
+def test_a_zone_pattern_without_patches_degrades_to_ninguno() -> None:
+    # Sin manchas no dice dónde va nada: mejor "ninguno" (la pieza cae al preset)
+    # que un patrón en zonas sin sitios, que `patron_desde_pista` descartaría igual.
+    elementos = _payload().elementos
+    pistas = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "zonas",
+                    "colores": ["rosado", "dorado"],
+                    "confianza": 0.9,
+                }
+            ]
+        },
+        elementos,
+    )
+
+    assert pistas == [
+        {"element_id": "REF_01_E01", "modo": "ninguno", "colores": [], "confianza": 0.9}
+    ]
+
+
+def test_patches_do_not_reach_a_hint_of_another_mode_without_them() -> None:
+    # Un confeti con manchas las conserva en la pista (no se inventan ni se
+    # borran aquí); quien decide si sirven es `patron_color.patron_desde_pista`.
+    elementos = _payload().elementos
+    pistas = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "aleatorio",
+                    "colores": ["rosado"],
+                    "confianza": 0.7,
+                }
+            ]
+        },
+        elementos,
+    )
+
+    assert "zonas" not in pistas[0]

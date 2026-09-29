@@ -1,9 +1,10 @@
 "use client";
 
 import { Plus, Shuffle, X } from "lucide-react";
-import type { BasePatronColor, PatronColor } from "@/lib/plan/patron-color";
+import { ANCLAS_ZONA, EXTENSION_ZONA_MAXIMA, ZONAS_MAXIMAS, type AnclaZona, type BasePatronColor, type PatronColor } from "@/lib/plan/patron-color";
 import { editar } from "./borrador";
 import type { ColorLeyenda } from "./leyenda";
+import { ETIQUETA_ANCLA } from "./modos";
 import { Apartado, Contador, Segmentado, SelectorColor } from "./controles-comunes";
 
 export type CambioPatron = (patron: PatronColor, grupo?: string) => void;
@@ -54,6 +55,53 @@ function FilaColor({ nombre, valor, leyenda, onColor, peso, onPeso, onQuitar, de
           <X className="size-3.5" aria-hidden="true" />
         </button>
       )}
+    </li>
+  );
+}
+
+type Zona = Extract<BasePatronColor, { modo: "zonas" }>["zonas"][number];
+
+/** El primer ancla que todavía no tiene mancha, o el centro si todas están. */
+function anclaLibre(zonas: readonly Zona[]): AnclaZona {
+  const usadas = new Set(zonas.map((zona) => zona.ancla));
+  return ANCLAS_ZONA.find((ancla) => !usadas.has(ancla)) ?? "centro";
+}
+
+/**
+ * Una zona del modo `zonas`: su color, dónde se agrupa y cuánto de la pieza
+ * ocupa. El tope de la extensión y el de las zonas son los del contrato; qué
+ * suma admite el patrón lo dice la vista previa de Python, no este control.
+ */
+function FilaZona({ nombre, zona, leyenda, onCambiar, onQuitar, deshabilitado }: {
+  nombre: string;
+  zona: Zona;
+  leyenda: readonly ColorLeyenda[];
+  onCambiar: (zona: Zona) => void;
+  onQuitar?: () => void;
+  deshabilitado?: boolean;
+}) {
+  return (
+    <li className="space-y-1.5 rounded-xl bg-superficie px-2.5 py-2 ring-1 ring-borde-suave ring-inset">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span className="w-[4.5rem] shrink-0 text-xs font-medium text-texto-suave">{nombre}</span>
+        <SelectorColor leyenda={leyenda} valor={zona.material} onCambiar={(material) => onCambiar({ ...zona, material })} etiqueta={`Color de ${nombre.toLowerCase()}`} deshabilitado={deshabilitado} />
+        <label className="flex items-center gap-2 text-xs text-texto-suave">
+          <span className="sr-only">Dónde se agrupa {nombre.toLowerCase()}</span>
+          <select value={zona.ancla} disabled={deshabilitado} onChange={(evento) => onCambiar({ ...zona, ancla: evento.target.value as AnclaZona })} className="h-8 rounded-lg bg-fondo px-2 text-xs text-texto ring-1 ring-borde-suave ring-inset focus-visible:outline-2 focus-visible:outline-acento disabled:opacity-40">
+            {ANCLAS_ZONA.map((ancla) => <option key={ancla} value={ancla}>{ETIQUETA_ANCLA[ancla]}</option>)}
+          </select>
+        </label>
+        {onQuitar && (
+          <button type="button" aria-label={`Quitar ${nombre.toLowerCase()}`} onClick={onQuitar} disabled={deshabilitado} className={`${botonQuitar} ml-auto`}>
+            <X className="size-3.5" aria-hidden="true" />
+          </button>
+        )}
+      </div>
+      <label className="flex items-center gap-2 text-xs text-texto-suave">
+        <span className="shrink-0">Cuánto ocupa</span>
+        <input type="range" min={1} max={EXTENSION_ZONA_MAXIMA} value={zona.extension} disabled={deshabilitado} onChange={(evento) => onCambiar({ ...zona, extension: Number(evento.target.value) })} className="min-w-0 flex-1 accent-[var(--acento)]" />
+        <output className="w-9 text-right tabular-nums text-texto">{zona.extension} %</output>
+      </label>
     </li>
   );
 }
@@ -184,6 +232,34 @@ export function ParametrosModo({ patron, leyenda, geometria, onCambiar, deshabil
           </Apartado>
           <Apartado titulo="Separación entre flores">
             <Contador etiqueta="Racimos de fondo entre flores" valor={base.separacion} min={1} max={6} deshabilitado={deshabilitado} onCambiar={(separacion) => conBase({ ...base, separacion })} formato={(valor) => `${valor} ${valor === 1 ? "racimo" : "racimos"} de fondo`} />
+          </Apartado>
+        </>
+      );
+    case "zonas":
+      return (
+        <>
+          <Apartado titulo="Color del fondo" ayuda="Rellena todo lo que no sea una zona">
+            <ol className="space-y-1.5">
+              <FilaColor nombre="Fondo" valor={base.fondo} leyenda={leyenda} deshabilitado={deshabilitado} onColor={(indice) => conBase({ ...base, fondo: indice })} />
+            </ol>
+          </Apartado>
+          <Apartado titulo="Zonas de color" ayuda="Cada zona es una mancha compacta; repite un color para ponerlo en varios sitios">
+            <ol className="space-y-1.5">
+              {base.zonas.map((zona, posicion) => (
+                <FilaZona
+                  key={posicion}
+                  nombre={`Zona ${posicion + 1}`}
+                  zona={zona}
+                  leyenda={leyenda}
+                  deshabilitado={deshabilitado}
+                  onCambiar={(siguiente) => conBase({ ...base, zonas: reemplazar(base.zonas, posicion, siguiente) }, `zona-${posicion}`)}
+                  onQuitar={base.zonas.length > 1 ? () => conBase({ ...base, zonas: quitar(base.zonas, posicion) }) : undefined}
+                />
+              ))}
+            </ol>
+            <button type="button" className={botonAnadir} disabled={deshabilitado || base.zonas.length >= ZONAS_MAXIMAS} onClick={() => conBase({ ...base, zonas: [...base.zonas, { material: colorNuevo([base.fondo, ...base.zonas.map((zona) => zona.material)], leyenda), ancla: anclaLibre(base.zonas), extension: 10 }] })}>
+              <Plus className="size-3.5" aria-hidden="true" />Añadir zona
+            </button>
           </Apartado>
         </>
       );
