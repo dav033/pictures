@@ -221,7 +221,7 @@ async function main(): Promise<void> {
   assert.equal(restricciones.aplicarColoresReferencia(planDosFotos, undefined).estructuras[0]!.colores_referencia, undefined, "no blueprint, no colors");
   ok("colores de la foto: cada estructura toma la paleta de la foto de su referencia");
 
-  const { coloresDominantesReferencia, sustitucionesColorReferencia } = await import("../../src/lib/plan/colores-referencia");
+  const { coloresDominantesReferencia, sustitucionesColorReferencia, acabadoDeEtiqueta, coloresConAcabadoReferencia } = await import("../../src/lib/plan/colores-referencia");
   // One observed label is one color: a shade named with two color words must not
   // become two photo colors (false "the photo shows green" notices for mint).
   assert.deepEqual(coloresDominantesReferencia(["mint green"]), ["menta"]);
@@ -239,6 +239,20 @@ async function main(): Promise<void> {
   assert.deepEqual(sustitucionesColorReferencia("EST_01_ARCO", ["lila", "blanco"], ["blanco", "lila"]), [], "every photo color is in the plan");
   assert.deepEqual(sustitucionesColorReferencia("EST_01_ARCO", ["lila"], []), [], "an uncovered structure is reported as uncovered, not as a color change");
   ok("colores de la foto: comprobación determinista contra las líneas compradas");
+
+  // 2026-09-29: el acabado viaja con SU color. La pared "Mr & Mrs" (blush
+  // perlado + dorado cromado + blanco mate) se compró entera en Reflex porque
+  // el acabado era una inferencia del modelo para toda la pieza.
+  assert.equal(acabadoDeEtiqueta("chrome gold"), "reflex");
+  assert.equal(acabadoDeEtiqueta("pearl blush pink"), "satin");
+  assert.equal(acabadoDeEtiqueta("matte white"), "mate");
+  assert.equal(acabadoDeEtiqueta("light pink"), undefined, "silence about finish is not 'mate'");
+  assert.deepEqual(
+    coloresConAcabadoReferencia(["pearl blush pink", "chrome gold", "matte white"]).map((item) => [item.color, item.acabado]),
+    [["rosado", "satin"], ["dorado", "reflex"], ["blanco", "mate"]],
+    "cada color se lleva el acabado de su propia etiqueta, no el del vecino",
+  );
+  ok("colores de la foto: el acabado viaja pegado a su color");
 
   const filasColumna = [{
     product_id: "P-LILA", variant_id: "V-LILA-12", sku: null, sku_original: null, source_snapshot_id: null, source_variant_id: null, inventory_quantity: null, unidades_inferidas: null,
