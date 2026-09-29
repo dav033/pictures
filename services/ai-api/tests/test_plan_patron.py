@@ -677,18 +677,26 @@ def _lineas_del_navegador(resolved: Mapping[str, object]) -> list[dict[str, obje
     ]
 
 
-def _patron_resuelto_comparable(resolved: Mapping[str, object]) -> dict[str, object]:
-    """El patrón resuelto de la primera estructura, sin el croquis de su silueta.
+def _sin_croquis(patron: Mapping[str, object]) -> dict[str, object]:
+    """Un patrón resuelto sin el croquis de su silueta (dibujo, no números).
 
-    La resolución dibuja las posiciones reales de los globos
-    (``silueta_patron``) y la vista previa no: se repinta con cada toque del
-    editor y armar la silueta cuesta cientos de milisegundos. Lo que estas
-    pruebas comparan —cómo se nombra cada color, el conteo, la rejilla— es igual
-    en las dos, y eso es lo que tiene que seguir cuadrando.
+    La resolución y la vista previa dibujan las dos las posiciones reales de los
+    globos (``silueta_patron``), y que sean el MISMO croquis lo prueba
+    ``test_la_vista_previa_dibuja_la_misma_pieza_que_la_propuesta``. Lo que estas
+    pruebas comparan es lo otro —cómo se nombra cada color, el conteo, la
+    rejilla—, así que el croquis se quita de los dos lados y no las hace fallar
+    por cientos de flotantes.
     """
-    patron = dict(cast(list[dict[str, object]], resolved["patrones_color"])[0])
-    patron.pop("posiciones", None)
-    return patron
+    return {
+        clave: valor
+        for clave, valor in patron.items()
+        if clave not in ("posiciones", "sin_silueta")
+    }
+
+
+def _patron_resuelto_comparable(resolved: Mapping[str, object]) -> dict[str, object]:
+    """El patrón resuelto de la primera estructura, sin el croquis de su silueta."""
+    return _sin_croquis(cast(list[dict[str, object]], resolved["patrones_color"])[0])
 
 
 def _vista_previa(
@@ -766,9 +774,53 @@ async def test_la_vista_previa_nombra_el_reemplazo_como_la_resolucion() -> None:
     esperado = _patron_resuelto_comparable(resuelto)
     assert _colores_conteo(esperado) == ["blanco", "negro", "rojo"]
 
-    assert _vista_previa(resuelto, _lineas_del_navegador(resuelto)) == esperado
+    assert _sin_croquis(_vista_previa(resuelto, _lineas_del_navegador(resuelto))) == esperado
     # Sin las líneas la vista previa no sabe qué se compra: nombra lo declarado.
     assert _colores_conteo(_vista_previa(resuelto, None)) == ["blanco", "negro", "azul"]
+
+
+def test_una_pieza_sin_silueta_dice_por_que_se_queda_con_la_rejilla() -> None:
+    """La caída a la rejilla es correcta; invisible, no.
+
+    El motor de silueta no dibuja un centro de mesa, así que esa pieza se dibuja
+    con los racimos de siempre. Hasta que el patrón resuelto llevó el motivo, eso
+    pasaba en silencio y no había forma de distinguirlo de un presupuesto agotado
+    o de una medida que falta.
+    """
+    estructura = _columna(
+        estructura_id="EST_01_CENTRO_MESA",
+        tipo="centro_mesa",
+        ubicacion="mesas_invitados",
+        medidas={"ancho_m": 0.4, "alto_m": 0.5},
+        patron_color=ESPIRAL,
+    )
+    resuelto = patron_resuelto_de_estructura(_plan(estructura), "EST_01_CENTRO_MESA", ESPIRAL)
+    assert "posiciones" not in resuelto
+    assert resuelto["sin_silueta"] == "tipo_sin_silueta"
+    # Y una columna igual de chica, que sí tiene silueta, la trae.
+    columna = patron_resuelto_de_estructura(
+        _plan(_columna(patron_color=ESPIRAL)), "EST_01_COLUMNA", ESPIRAL
+    )
+    assert columna["posiciones"]
+    assert "sin_silueta" not in columna
+
+
+@pytest.mark.anyio
+async def test_la_vista_previa_dibuja_la_misma_pieza_que_la_propuesta() -> None:
+    """El editor y la propuesta enseñan la misma pieza, globo por globo.
+
+    Mientras la vista previa no armaba el croquis, la propuesta dibujaba la
+    columna real y el editor una rejilla genérica de la misma pieza. El croquis
+    sale de la geometría de la estructura y de su despiece, que son los mismos
+    por los dos caminos, así que no se parece: es idéntico.
+    """
+    filas = [_row(color) for color in ("blanco", "negro", "azul")]
+    resuelto = await _resolver_catalogo(_plan(_columna(patron_color=ESPIRAL)), filas)
+    delPlan = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    previa = _vista_previa(resuelto, _lineas_del_navegador(resuelto))
+    assert delPlan.get("posiciones"), "la propuesta dibuja la columna"
+    assert previa["posiciones"] == delPlan["posiciones"]
+    assert "sin_silueta" not in previa
 
 
 @pytest.mark.anyio
@@ -815,7 +867,7 @@ async def test_la_vista_previa_de_un_reemplazo_por_tamano_es_la_de_la_resolucion
     resuelto = await _resolver_catalogo(plan, filas)
     esperado = _patron_resuelto_comparable(resuelto)
 
-    assert _vista_previa(resuelto, _lineas_del_navegador(resuelto)) == esperado
+    assert _sin_croquis(_vista_previa(resuelto, _lineas_del_navegador(resuelto))) == esperado
     if caso == "todos_a_rojo":
         assert _colores_conteo(esperado) == ["blanco", "negro", "rojo"]
     else:
@@ -855,7 +907,7 @@ async def test_la_vista_previa_lee_las_lineas_tras_elegir_las_bolsas_de_todo_el_
     esperado = _patron_resuelto_comparable(resuelto)
     assert _colores_conteo(esperado) == ["blanco", "negro", "rojo"]
 
-    assert _vista_previa(resuelto, lineas) == esperado
+    assert _sin_croquis(_vista_previa(resuelto, lineas)) == esperado
 
 
 @pytest.mark.anyio
@@ -869,7 +921,7 @@ async def test_un_reemplazo_por_el_color_de_otro_material_solo_renombra_el_reemp
     esperado = _patron_resuelto_comparable(resuelto)
     assert _colores_conteo(esperado) == ["blanco", "negro", "blanco"]
 
-    assert _vista_previa(resuelto, _lineas_del_navegador(resuelto)) == esperado
+    assert _sin_croquis(_vista_previa(resuelto, _lineas_del_navegador(resuelto))) == esperado
 
 
 def _azul_familia(fila: dict[str, object]) -> dict[str, object]:
@@ -918,7 +970,7 @@ async def test_un_reemplazo_por_el_producto_de_un_color_reetiquetado_no_lo_renom
     assert _colores_conteo(esperado)[2] == "azul"
     assert not any("azul (3)" in aviso for aviso in cast(list[str], esperado["avisos"]))
 
-    assert _vista_previa(resuelto, lineas) == esperado
+    assert _sin_croquis(_vista_previa(resuelto, lineas)) == esperado
 
 
 _CONFETI = {

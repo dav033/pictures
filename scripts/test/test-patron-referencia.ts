@@ -71,7 +71,9 @@ async function main(): Promise<void> {
   const { PlanDecoracionSchema } = await import("../../src/lib/plan/tipos");
   const { crearEstadoConversacion, crearRegistroHerramientas, pistasPatronDelPlan } = await import("../../src/lib/ia/herramientas/registro-herramientas");
   const { RECHAZOS_PARA_CONVERGER } = await import("../../src/lib/ia/herramientas/convergencia-plan");
-  const { resolverPlan } = await import("../../src/lib/plan/resolver-backend");
+  const { croquisDelPlan, resolverPlan } = await import("../../src/lib/plan/resolver-backend");
+  const { PatronColorResueltoSchema } = await import("../../src/lib/plan/patron-color");
+  type PatronColorResuelto = import("../../src/lib/plan/patron-color").PatronColorResuelto;
   const { crearCacheDeteccionPatron, detectarPatronesReferencia } = await import("../../src/lib/ia/amaterasu/patron-referencia");
   const { ANALISIS_EJEMPLOS } = await import("../../src/lib/ia/amaterasu/analisis-ejemplos");
   const { instalarResolutorPythonFalso, SNAPSHOT_FALSO } = await import("../lib/resolutor-python-falso");
@@ -245,6 +247,43 @@ async function main(): Promise<void> {
   assert.equal("completar_patrones" in directas[0]!.body, false);
   assert.equal("pistas_patron" in directas[0]!.body, false);
   ok("resolverPlan sin opciones manda la petición de siempre");
+
+  // Qué piezas se dibujan con su silueta real y cuáles con la rejilla de siempre.
+  // Una pared de más de 420 globos por instancia (o la que ya no cabe en los 840
+  // de la resolución) cae a la rejilla, y eso era invisible: ni un log ni un
+  // campo. No es un error; es una degradación que hay que poder ver.
+  {
+    const resueltoBase = PatronColorResueltoSchema.parse({
+      estructura_id: "EST_01_COLUMNA", aplicado: true,
+      patron: { version: "patron-color.v1", origen: "sugerido", base: { modo: "espiral", racimo: [0, 1], trazo: "espiral" } },
+      geometria: "racimos", filas: 1, columnas: 2, repeticiones: 1, globos_por_instancia: 2,
+      celdas: [[0, 1]], extras: [],
+      conteo: [{ material: 0, color: "blanco", acabado: "mate", unidades_por_instancia: 1, unidades_total: 1 }],
+      pasos: [{ desde: 1, hasta: 1, celdas: [0, 1], extras: [] }],
+      nombre: "Espiral", descripcion: "", instrucciones: [], prompt_gemini: "", prompt_lora: "", avisos: [],
+    });
+    const patron = (id: string, globos: number, extra: Partial<PatronColorResuelto>): PatronColorResuelto =>
+      ({ ...resueltoBase, estructura_id: id, globos_por_instancia: globos, ...extra });
+    assert.equal(croquisDelPlan([], REQUEST_ID), null, "sin patrones no hay nada que registrar");
+    const linea = croquisDelPlan([
+      patron("EST_01_COLUMNA", 48, { posiciones: [{ x: 0.2, y: 0.3, r: 0.14, capa: 0, material: 0 }] }),
+      patron("EST_03_PARED", 612, { sin_silueta: "pieza_muy_grande" }),
+      patron("EST_04_ARO", 90, { sin_silueta: "tipo_sin_silueta" }),
+      // Un servicio más viejo que el campo: falta el croquis y no dice por qué.
+      patron("EST_05_ARCO", 120, {}),
+    ], REQUEST_ID);
+    assert.deepEqual(linea, {
+      request_id: REQUEST_ID,
+      con_silueta: 1,
+      de: 4,
+      sin_silueta: [
+        { id: "EST_03_PARED", motivo: "pieza_muy_grande", globos: 612 },
+        { id: "EST_04_ARO", motivo: "tipo_sin_silueta", globos: 90 },
+        { id: "EST_05_ARCO", motivo: null, globos: 120 },
+      ],
+    });
+    ok("el registro dice qué piezas se quedaron con la rejilla y por qué");
+  }
 
   // ---------------------------------------------------------------------------
   // Detección: una llamada por foto con estructuras de globos aprobadas.

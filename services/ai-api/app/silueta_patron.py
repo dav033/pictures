@@ -18,8 +18,10 @@ no por buena voluntad:
   que ``plan.py`` añade DESPUÉS de firmar ``{plan, snapshot}`` y fuera del
   snapshot (ADR-0028 decisión 5). Añadir campos ahí no puede tocar la firma.
 * **Si falta un dato, no hay falla.** Cualquier pieza que no se pueda armar
-  —tipo sin silueta, medidas ausentes, presupuesto agotado— devuelve ``None`` y
-  la interfaz sigue con la rejilla de siempre.
+  —tipo sin silueta, medidas ausentes, presupuesto agotado— devuelve un
+  ``Croquis`` sin posiciones y con el MOTIVO, y la interfaz sigue con la rejilla
+  de siempre. La degradación es correcta; lo que no puede ser es invisible, así
+  que el motivo viaja en el patrón resuelto (``sin_silueta``) y de ahí al log.
 
 El grosor VISIBLE de la banda (lo que mide de ancho un arco orgánico al mirarlo)
 no tiene dueño en el repositorio: el ``_BAND_WIDTH`` de ``plan.py`` es la tira
@@ -35,12 +37,14 @@ import hashlib
 import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import cast
+from functools import lru_cache
+from typing import Literal, cast
 
 from app.generated_models import contract_schema
 from app.silueta import (
     ESTILO,
     Cupo,
+    Disposicion,
     GloboSilueta,
     Medidas,
     Peticion,
@@ -74,6 +78,34 @@ MAX_GLOBOS_PIEZA = 420
 PRESUPUESTO_GLOBOS = 840
 
 
+#: Por qué una pieza se quedó sin croquis y la gráfica sigue con su rejilla.
+#: Cada valor descarta una causa distinta al leer el log: el tipo (un aro, un
+#: centro de mesa), una medida que el plan no declara, el tamaño de la pieza, el
+#: presupuesto que se gastaron las piezas anteriores, el motor y un despiece que
+#: no corresponde con la rejilla. Son los valores del contrato
+#: (``patron-color.v1``, ``sin_silueta``): cambiarlos es cambiarlo.
+MotivoSinSilueta = Literal[
+    "tipo_sin_silueta",
+    "medidas_incompletas",
+    "pieza_muy_grande",
+    "presupuesto_agotado",
+    "motor_rechazo",
+    "despiece_incoherente",
+]
+
+
+@dataclass(frozen=True, slots=True)
+class Croquis:
+    """El croquis de una pieza, o por qué no lo hay. Nunca las dos cosas."""
+
+    posiciones: list[dict[str, object]] | None
+    motivo: MotivoSinSilueta | None
+
+
+def _sin_croquis(motivo: MotivoSinSilueta) -> Croquis:
+    return Croquis(posiciones=None, motivo=motivo)
+
+
 class PresupuestoGrafica:
     """Cuántos globos le queda por dibujar a una resolución.
 
@@ -86,11 +118,48 @@ class PresupuestoGrafica:
     def __init__(self, globos: int = PRESUPUESTO_GLOBOS) -> None:
         self.restante = globos
 
-    def alcanza(self, globos: int) -> bool:
-        return 0 < globos <= min(self.restante, MAX_GLOBOS_PIEZA)
+    def motivo(self, globos: int) -> MotivoSinSilueta | None:
+        """Por qué no alcanza para ``globos``, o ``None`` si alcanza."""
+        if globos > MAX_GLOBOS_PIEZA:
+            return "pieza_muy_grande"
+        return "presupuesto_agotado" if globos > self.restante else None
 
     def gastar(self, globos: int) -> None:
         self.restante = max(0, self.restante - globos)
+
+
+#: Croquis que se recuerdan a la vez. Las posiciones no dependen del color: la
+#: vista previa del editor vuelve a pedir la MISMA pieza (mismo tipo, mismas
+#: medidas, mismos cupos) con otro patrón en cada toque, y armarla otra vez
+#: costaba el precio entero cada vez; por eso el editor se había quedado con la
+#: rejilla genérica. Se recuerda por ``Peticion``, que es todo lo que el motor
+#: mira, así que un cambio de medidas, de tamaño de racimo o de despiece es una
+#: petición distinta y se vuelve a armar.
+#:
+#: Medido en esta máquina (2026-09-29, ocho toques por caso, cambiando solo el
+#: color, con ``_VUELTAS_GRAFICA``). Coste por toque, sin recordar → recordando:
+#: arco 200 globos 135 ms → 1,7 ms · 300 243 ms → 1,3 ms · 420 674 ms → 1,8 ms;
+#: pared 200 94 ms → 0,7 ms · 420 537 ms → 1,5 ms; columna 200 333 ms → 1,1 ms ·
+#: 420 878 ms → 2,0 ms. El primer croquis de una pieza sigue costando lo mismo
+#: (81–817 ms según el tipo y el tamaño); lo que desaparece es pagarlo en cada
+#: toque. Una pieza que el plan ya dibujó llega recordada al editor: la petición
+#: es la misma.
+#:
+#: Con 32 entradas cabe la pieza que se está editando y las de la última
+#: resolución; cada una son como mucho ``MAX_GLOBOS_PIEZA`` globos inmutables.
+_CROQUIS_RECORDADOS = 32
+
+
+@lru_cache(maxsize=_CROQUIS_RECORDADOS)
+def _disponer_recordado(peticion: Peticion) -> Disposicion:
+    """``silueta.disponer`` recordado por petición.
+
+    ``Disposicion`` y todo lo que cuelga de ella son inmutables, así que la
+    misma se puede entregar a dos llamadores; aquí solo se lee. No es una regla
+    comercial ni cambia lo que el motor coloca: la misma petición da el mismo
+    croquis, recordado o no (``test_el_croquis_es_determinista``).
+    """
+    return disponer(peticion)
 
 
 # --- Grosor visible de la banda (estética) ------------------------------------
@@ -311,8 +380,21 @@ def _lectura_pared(
     return orden, lambda globo: preferencias[globo.indice]
 
 
+def _corazones(
+    grupo: Sequence[GloboSilueta], cuantos: int
+) -> list[GloboSilueta]:
+    """Los ``cuantos`` globos más cercanos al centro del racimo, de dentro afuera."""
+    x = sum(globo.x for globo in grupo) / len(grupo)
+    y = sum(globo.y for globo in grupo) / len(grupo)
+    cercanos = sorted(grupo, key=lambda globo: (math.hypot(globo.x - x, globo.y - y), globo.indice))
+    return cercanos[:cuantos]
+
+
 def _lectura_banda(
-    globos: Sequence[GloboSilueta], tipo: TipoSilueta, celdas: Sequence[Sequence[int]]
+    globos: Sequence[GloboSilueta],
+    tipo: TipoSilueta,
+    celdas: Sequence[Sequence[int]],
+    extras: Sequence[tuple[int, int]] = (),
 ) -> tuple[list[GloboSilueta], Preferencia]:
     """Una banda se lee por racimos: la fila del patrón es un racimo del armado.
 
@@ -324,6 +406,19 @@ def _lectura_banda(
     ``i · filas / n`` de la rejilla, y el globo n.º ``k`` de su racimo la
     posición ``k · columnas / tamaño``: el estilo se lee igual aunque el motor
     arme más o menos racimos que filas tenga la rejilla.
+
+    ``extras`` son los globos que no ocupan posición de racimo: hoy solo el
+    centro de una flor, que la rejilla cuelga de su fila (``patron_color._lineas``
+    con el modo ``flor``, el único que los produce y que solo admiten las bandas,
+    ``_MODOS_POR_TIPO``). Sobre la silueta ese globo existe igual —su cupo lo
+    absorbe, porque la matriz del despiece cuenta celdas más extras— pero no
+    había nada que lo llevara al medio de su flor: ningún sitio pedía el color
+    del centro, así que caía donde cayera por el reparto de sobrantes y las
+    flores salían sin corazón. Aquí el centro lo pide el globo más cercano al
+    centro del racimo que le toca, y lo pide PRIMERO, antes que los pétalos de su
+    racimo, para que el cupo de ese color y ese tamaño llegue a tiempo. Sigue
+    siendo una preferencia: si a ese color ya no le quedan globos de ese tamaño,
+    ``_materiales`` decide como siempre. Nadie recuenta nada.
     """
     miembros: dict[int, list[GloboSilueta]] = {}
     for globo in sorted(globos, key=lambda globo: globo.indice):
@@ -344,13 +439,37 @@ def _lectura_banda(
     filas = len(celdas)
     racimos = max(1, len(rango))
 
+    def fila_de(racimo: int) -> int:
+        return min(filas - 1, rango[racimo] * filas // racimos)
+
+    extras_por_fila: dict[int, list[int]] = {}
+    for fila, material in extras:
+        extras_por_fila.setdefault(fila, []).append(material)
+    corazon: dict[int, int] = {}
+    for racimo, grupo in miembros.items():
+        pedidos = extras_por_fila.get(fila_de(racimo))
+        if not pedidos:
+            continue
+        for globo, material in zip(_corazones(grupo, len(pedidos)), pedidos, strict=False):
+            corazon[globo.indice] = material
+
     def preferido(globo: GloboSilueta) -> int:
-        fila = min(filas - 1, rango[globo.racimo] * filas // racimos)
+        centro = corazon.get(globo.indice)
+        if centro is not None:
+            return centro
+        fila = fila_de(globo.racimo)
         columnas = len(celdas[min(max(fila, 0), filas - 1)]) or 1
         dentro = puesto_en_racimo[globo.indice] * columnas // max(1, tamano[globo.racimo])
         return _celda(celdas, fila, dentro)
 
-    orden = sorted(globos, key=lambda globo: (rango[globo.racimo], puesto_en_racimo[globo.indice]))
+    orden = sorted(
+        globos,
+        key=lambda globo: (
+            rango[globo.racimo],
+            globo.indice not in corazon,
+            puesto_en_racimo[globo.indice],
+        ),
+    )
     return orden, preferido
 
 
@@ -392,67 +511,76 @@ def _materiales(
     return salida
 
 
-def posiciones_de_patron(
+def croquis_de_patron(
     pieza: PiezaSilueta,
     celdas: Sequence[Sequence[int]],
     matriz: Sequence[Sequence[int]],
     proporciones: Sequence[tuple[int, float]],
     presupuesto: PresupuestoGrafica | None = None,
-) -> list[dict[str, object]] | None:
+    extras: Sequence[tuple[int, int]] = (),
+) -> Croquis:
     """Las posiciones de los globos de una instancia, del fondo al frente.
 
     ``matriz`` es la matriz tamaño × material del despiece de ``plan.py``: sus
     filas son los tamaños de ``proporciones`` y sus columnas los materiales de
     la pieza. ``celdas`` es la rejilla del patrón ya expandida, que dice el
-    color de cada sitio.
+    color de cada sitio, y ``extras`` los globos que la rejilla cuelga de una
+    fila sin darles posición (el centro de una flor).
 
-    ``None`` —y la gráfica sigue con la rejilla— cuando el tipo no tiene
-    silueta, falta una medida, el presupuesto de dibujo no alcanza o el motor
-    rechaza la petición. Nunca lanza: esto es dibujo.
+    Un ``Croquis`` sin posiciones y con ``motivo`` —y la gráfica sigue con la
+    rejilla— cuando el tipo no tiene silueta, falta una medida, el presupuesto
+    de dibujo no alcanza o el motor rechaza la petición. Nunca lanza: esto es
+    dibujo.
     """
     tipo = _tipo_de_silueta(pieza)
-    if tipo is None or not celdas or not matriz:
-        return None
-    if len(matriz) != len(proporciones):
-        return None
+    if tipo is None:
+        return _sin_croquis("tipo_sin_silueta")
+    if not celdas or not matriz or len(matriz) != len(proporciones):
+        return _sin_croquis("despiece_incoherente")
     total = sum(cantidad for cantidades in matriz for cantidad in cantidades)
+    if total <= 0:
+        return _sin_croquis("despiece_incoherente")
     presupuesto = presupuesto or PresupuestoGrafica()
-    if not presupuesto.alcanza(total):
-        return None
+    falta = presupuesto.motivo(total)
+    if falta is not None:
+        return _sin_croquis(falta)
     cupos = _cupos(matriz, [pulgadas for pulgadas, _proporcion in proporciones])
     peticion = _peticion(pieza, cupos, tipo)
     if peticion is None:
-        return None
+        return _sin_croquis("medidas_incompletas")
     try:
-        disposicion = disponer(peticion)
+        disposicion = _disponer_recordado(peticion)
     except SiluetaInvalida:
-        return None
+        return _sin_croquis("motor_rechazo")
     if len(disposicion.globos) != total:
-        return None
+        return _sin_croquis("motor_rechazo")
     presupuesto.gastar(total)
     pulgadas = [pulgada for pulgada, _proporcion in proporciones]
     orden, preferido = (
         _lectura_pared(disposicion.globos, celdas)
         if tipo in _TIPOS_PARED
-        else _lectura_banda(disposicion.globos, tipo, celdas)
+        else _lectura_banda(disposicion.globos, tipo, celdas, extras)
     )
     materiales = _materiales(orden, preferido, matriz, pulgadas)
     if materiales is None:
-        return None
+        return _sin_croquis("despiece_incoherente")
     # Del fondo al frente y, dentro de una capa, de arriba abajo: la interfaz
     # las pinta en este orden y lo de adelante queda encima, como el pseudo-3D
     # de siempre.
-    return [
-        {
-            "x": round(globo.x, 4),
-            "y": round(globo.y, 4),
-            "r": round(globo.r, 4),
-            "capa": globo.capa,
-            "material": materiales[globo.indice],
-        }
-        for capa in disposicion.por_capa()
-        for globo in capa
-    ]
+    return Croquis(
+        posiciones=[
+            {
+                "x": round(globo.x, 4),
+                "y": round(globo.y, 4),
+                "r": round(globo.r, 4),
+                "capa": globo.capa,
+                "material": materiales[globo.indice],
+            }
+            for capa in disposicion.por_capa()
+            for globo in capa
+        ],
+        motivo=None,
+    )
 
 
 def pieza_desde_estructura(
@@ -487,8 +615,10 @@ def pieza_desde_estructura(
 __all__ = [
     "MAX_GLOBOS_PIEZA",
     "PRESUPUESTO_GLOBOS",
+    "Croquis",
+    "MotivoSinSilueta",
     "PiezaSilueta",
     "PresupuestoGrafica",
+    "croquis_de_patron",
     "pieza_desde_estructura",
-    "posiciones_de_patron",
 ]

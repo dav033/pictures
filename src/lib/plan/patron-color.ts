@@ -142,6 +142,30 @@ const PosicionSiluetaSchema = z.object({
 export type PosicionSilueta = z.infer<typeof PosicionSiluetaSchema>;
 
 /**
+ * Por qué una pieza se quedó SIN croquis y la gráfica se dibuja con la rejilla
+ * de siempre. La degradación es correcta —un aro no tiene silueta, una pared
+ * enorme no cabe en el presupuesto de dibujo— pero no puede ser invisible:
+ * hasta que este campo existió, una pieza de más de 420 globos por instancia (u
+ * 840 por resolución) volvía a la rejilla sin dejar rastro en ningún sitio.
+ *
+ * Cada valor descarta una causa al leer el log: el `tipo` de la pieza, una
+ * medida que el plan no declara, el tamaño de la pieza, el presupuesto que se
+ * gastaron las piezas anteriores de la misma resolución, el motor de silueta y
+ * un despiece que no corresponde con la rejilla. Dueño de los valores:
+ * `services/ai-api/app/silueta_patron.MotivoSinSilueta`.
+ */
+export const MOTIVOS_SIN_SILUETA = [
+  "tipo_sin_silueta",
+  "medidas_incompletas",
+  "pieza_muy_grande",
+  "presupuesto_agotado",
+  "motor_rechazo",
+  "despiece_incoherente",
+] as const;
+
+export type MotivoSinSilueta = (typeof MOTIVOS_SIN_SILUETA)[number];
+
+/**
  * Lo que Python devuelve de un patrón ya expandido: la rejilla, el conteo, el
  * paso a paso y los textos. Viaja en `plan_resuelto.patrones_color` (fuera del
  * snapshot que firma `plan_hash`) y en la vista previa del editor. La UI solo
@@ -170,6 +194,13 @@ export const PatronColorResueltoSchema = z.object({
    * siguen siendo los mismos con posiciones o sin ellas.
    */
   posiciones: z.array(PosicionSiluetaSchema).max(MAX_POSICIONES_SILUETA).optional(),
+  /**
+   * Por qué NO hay `posiciones`. Presente exactamente cuando faltan: las dos
+   * juntas serían un croquis que además se excusa, y ninguna de las dos es un
+   * plan sin patrón resuelto. Dibujo, como `posiciones`: no entra en el
+   * snapshot ni en `plan_hash`.
+   */
+  sin_silueta: z.enum(MOTIVOS_SIN_SILUETA).optional(),
   conteo: z.array(z.object({
     material: EnteroNoNegativo,
     color: z.string().nullable(),

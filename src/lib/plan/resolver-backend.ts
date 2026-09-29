@@ -9,7 +9,7 @@ import type { EntradaAllowlistPlan } from "./aprobacion";
 import type { PistaArmado } from "./armado-bouquet";
 import type { PistaGuirnalda } from "./armado-guirnalda";
 import type { PistaConteo } from "./conteo-referencia";
-import type { PistaPatron } from "./patron-color";
+import type { MotivoSinSilueta, PatronColorResuelto, PistaPatron } from "./patron-color";
 import { cotizacionDesdePython, planResueltoDesdePython } from "./python-mapper";
 import type { PlanResuelto } from "./resuelto";
 import type { PlanDecoracion } from "./tipos";
@@ -130,10 +130,49 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
   } catch (error) {
     throw errorAllowlistDesdePython(error) ?? error;
   }
+  const resuelto = planResueltoDesdePython(resultado.plan_resuelto);
+  const croquis = croquisDelPlan(resuelto.patrones_color ?? [], entrada.requestId);
+  if (croquis) console.info("[plan] croquis de silueta", JSON.stringify(croquis));
   return {
-    resuelto: planResueltoDesdePython(resultado.plan_resuelto),
+    resuelto,
     materialEstimate: resultado.material_estimate,
     cotizacion: cotizacionDesdePython(resultado),
+  };
+}
+
+/**
+ * Diagnóstico del croquis de silueta de cada patrón (nunca un número del plan,
+ * nunca datos del cliente): qué piezas se dibujan con su silueta real y cuáles
+ * se quedaron con la rejilla genérica, con el motivo que dio Python. `null`
+ * cuando la resolución no trae ningún patrón y no hay nada que decir.
+ *
+ * La caída a la rejilla es correcta —un aro no tiene silueta, una pieza de más de
+ * 420 globos por instancia no cabe en el presupuesto de dibujo, y 840 globos por
+ * resolución se los reparten las piezas en orden— pero era invisible: la
+ * propuesta enseñaba una pared con su contorno y la de al lado una rejilla, y no
+ * había ni un log ni un campo que dijera por qué. Con `globos` al lado del
+ * motivo se ve en una sola línea si sobró poco o mucho. No es un error y no se
+ * registra como tal.
+ *
+ * `motivo: null` es un croquis que falta sin que Python diga por qué: un
+ * servicio más viejo que este campo. Se distingue de un motivo conocido en vez
+ * de inventarle uno.
+ */
+export function croquisDelPlan(
+  patrones: readonly PatronColorResuelto[],
+  requestId: string,
+): { request_id: string; con_silueta: number; de: number; sin_silueta: { id: string; motivo: MotivoSinSilueta | null; globos: number }[] } | null {
+  if (patrones.length === 0) return null;
+  const sinCroquis = patrones.filter((patron) => patron.posiciones === undefined);
+  return {
+    request_id: requestId,
+    con_silueta: patrones.length - sinCroquis.length,
+    de: patrones.length,
+    sin_silueta: sinCroquis.map((patron) => ({
+      id: patron.estructura_id,
+      motivo: patron.sin_silueta ?? null,
+      globos: patron.globos_por_instancia,
+    })),
   };
 }
 
