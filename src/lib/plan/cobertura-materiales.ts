@@ -37,12 +37,17 @@ import type { PlanDecoracion } from "./tipos";
  * notice) to a material whose color the reference photo does not have, which is
  * a decision of the reference flow rather than of size coverage: the colors come
  * from `colores-referencia.ts` and this module only takes them out of the plan.
+ * `aplicarAcabadoReferencia` is the same split for the FINISH the photo shows:
+ * the demand comes from `colores-referencia.ts` and here it is either bought or
+ * reported through the notice rule 1 already had.
  *
  * Pure: no provider, HTTP, database or environment.
  */
 
 export type DisponibilidadProducto = {
   titulo: string;
+  /** Catalog category ("globo_latex", "globo_foil"…): un globo de látex solo se cambia por otro globo de látex. */
+  categoria: string | null;
   /** Real colors of the product (`coloresRealesProducto`), family colors from its tags included. */
   colores: readonly string[];
   /** Real colors of its available round variants (`coloresRealesVariante`); the product's when it has none. */
@@ -56,6 +61,8 @@ export type DisponibilidadProducto = {
 export type AjusteCobertura =
   | { tipo: "color_material"; estructura_id: string; product_id: string; antes: string; despues: string }
   | { tipo: "acabado_material"; estructura_id: string; product_id: string; antes: string; color: string | null }
+  /** El producto cambió para comprar el acabado de la foto en el MISMO color (`aplicarAcabadoReferencia`). */
+  | { tipo: "acabado_referencia"; estructura_id: string; product_id: string; despues: string; color: string | null; acabado: string }
   | { tipo: "mezcla"; estructura_id: string; antes: Mezcla; despues: Mezcla }
   | { tipo: "material_quitado"; estructura_id: string; product_id: string; color: string | null; aviso_cliente: string };
 
@@ -169,6 +176,119 @@ export function quitarMaterialesDeColorInventado(
 }
 
 /**
+ * Acabados del catálogo que cumplen un acabado observado en la foto. No es una
+ * tabla de gustos: son los nombres con que el catálogo vende la misma familia
+ * del vocabulario LoRA. `Fashion` es su mate y `Satin` su perlado, así que un
+ * producto cuyo texto solo dice "fashion" sí cumple "mate", y uno que dice
+ * "perlado" sí cumple "satin". `Metalizado` (mylar/foil) NO cumple "reflex":
+ * es otro material, no el cromado del látex.
+ */
+/**
+ * El acabado observado solo se le exige al globo de látex: Fashion, Reflex y
+ * Satin son sus líneas. Un número de mylar o una serpentina no son mate ni
+ * cromados en ese sentido, exigirles un acabado solo cambiaría un producto por
+ * otro de la misma categoría (un 3 por un 5) o dejaría un aviso sin sentido.
+ * Mismo criterio que `CATEGORIAS_GLOBO_COLOR` en colores-referencia.ts.
+ */
+const CATEGORIA_CON_ACABADO = "globo_latex";
+
+const ACABADOS_QUE_CUMPLEN: Readonly<Record<string, readonly string[]>> = {
+  reflex: ["reflex"],
+  satin: ["satin", "perlado"],
+  mate: ["mate", "fashion"],
+};
+
+/** El acabado con que ESTE producto cumple el observado, o `undefined` si no lo cumple. */
+function acabadoQueCumple(observado: string, acabados: readonly string[]): string | undefined {
+  const admitidos = ACABADOS_QUE_CUMPLEN[plegar(observado)] ?? [plegar(observado)];
+  return acabados.map(plegar).find((acabado) => admitidos.includes(acabado));
+}
+
+/**
+ * Respeta el acabado que la foto muestra para el color de cada material
+ * (`acabadosObservadosDeMateriales`, colores-referencia.ts), o lo avisa.
+ *
+ * Es la mitad que le faltaba a la auditoría de color: el color ya lo vigilan
+ * `coloresReferenciaOmitidos` (lo que la foto tiene y el plan no compra) y
+ * `materialesDeColorInventado` (lo que el plan compra y la foto no tiene), pero
+ * el ACABADO no lo vigilaba nadie. Con la pared "Mr & Mrs" el blush perlado se
+ * compró cromado y nada lo detectó (2026-09-29).
+ *
+ * Reglas, sobre el plan que el modelo confirmó y solo con los datos de la
+ * búsqueda de este turno:
+ * 1. Si el producto del material ya cumple el acabado observado, no se toca.
+ * 2. Si no lo cumple y la búsqueda de este turno tiene el MISMO color en ese
+ *    acabado (misma categoría, y para una estructura geométrica con los tamaños
+ *    de su mezcla), se compra ese producto: el acabado de la foto se respeta sin
+ *    tocar el color.
+ * 3. Si el catálogo no ofrece ese color en ese acabado, se deja el que hay y se
+ *    avisa por el canal que ya existe (`acabado_material` →
+ *    `avisosClienteAjustes`). Nunca se quita el material: dejar la pieza sin ese
+ *    color por un acabado es peor que el acabado equivocado.
+ * 4. Un producto sin acabados leídos no se juzga: no saber qué acabado tiene no
+ *    es saber que no lo tiene, y avisar de un catálogo que no vimos sería falso.
+ * 5. Solo se juzga el globo de látex (`CATEGORIA_CON_ACABADO`).
+ *
+ * El color NO lo decide esta regla: el material conserva el suyo, ya resuelto
+ * por la regla 1 de cobertura y por la maquinaria de color de la foto.
+ *
+ * Pura: sin proveedor, HTTP, base de datos ni entorno.
+ */
+export function aplicarAcabadoReferencia(
+  plan: PlanDecoracion,
+  esperados: ReadonlyArray<{ estructura_id: string; product_id: string; acabado: string }>,
+  disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
+): { plan: PlanDecoracion; ajustes: AjusteCobertura[] } {
+  if (esperados.length === 0) return { plan, ajustes: [] };
+  const ajustes: AjusteCobertura[] = [];
+  const estructuras = plan.estructuras.map((estructura) => {
+    const acabadoEsperado = new Map(esperados.filter((item) => item.estructura_id === estructura.estructura_id).map((item) => [item.product_id, item.acabado]));
+    if (acabadoEsperado.size === 0) return estructura;
+    const materiales = estructura.materiales.map((material) => {
+      const observado = acabadoEsperado.get(material.product_id);
+      const producto = observado ? disponibilidad.get(material.product_id) : undefined;
+      // Regla 4: sin acabados leídos no hay nada que comparar ni que avisar.
+      if (!observado || !producto || producto.acabados.length === 0) return material;
+      if (producto.categoria !== CATEGORIA_CON_ACABADO) return material;
+      if (acabadoQueCumple(observado, producto.acabados)) return material;
+      const color = plegar(material.color ?? "");
+      // Una variante fijada por el modelo, o una línea que un `variant_override`
+      // reemplaza, nombran ESE producto: cambiarlo debajo dejaría el plan
+      // contradiciéndose. En ese caso solo se avisa.
+      const puedeCambiar = !material.variant_id && !estructura.variant_overrides?.length;
+      const reemplazo = color && puedeCambiar ? buscarProductoConAcabado(estructura, producto, color, observado, disponibilidad) : undefined;
+      if (!reemplazo) {
+        ajustes.push({ tipo: "acabado_material", estructura_id: estructura.estructura_id, product_id: material.product_id, antes: observado, color: material.color ?? null });
+        return material;
+      }
+      ajustes.push({ tipo: "acabado_referencia", estructura_id: estructura.estructura_id, product_id: material.product_id, despues: reemplazo.product_id, color: material.color ?? null, acabado: observado });
+      return { ...material, product_id: reemplazo.product_id, acabado: reemplazo.acabado };
+    });
+    return { ...estructura, materiales };
+  });
+  return { plan: { ...plan, estructuras }, ajustes };
+}
+
+/** Primer candidato del turno con el mismo color en el acabado observado; el orden de la búsqueda decide, para que el reintento del mismo turno elija lo mismo. */
+function buscarProductoConAcabado(
+  estructura: Pick<PlanDecoracion["estructuras"][number], "tipo" | "mezcla">,
+  actual: DisponibilidadProducto,
+  color: string,
+  observado: string,
+  disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
+): { product_id: string; acabado: string } | undefined {
+  for (const [productId, candidato] of disponibilidad) {
+    if (candidato === actual || candidato.categoria !== actual.categoria) continue;
+    if (!candidato.coloresVariante.map(plegar).includes(color)) continue;
+    // Cambiar el acabado no puede dejar la pieza sin los tamaños de su mezcla.
+    if (GEOMETRICOS.has(estructura.tipo) && !candidato.mezclas.includes(estructura.mezcla)) continue;
+    const acabado = acabadoQueCumple(observado, candidato.acabados);
+    if (acabado) return { product_id: productId, acabado };
+  }
+  return undefined;
+}
+
+/**
  * Notices for the customer about the adjustments the server makes before
  * resolving. Without them the model describes a finish or a color the quote
  * does not have ("dorados cromados como en tu foto" over a plain metal line).
@@ -207,7 +327,10 @@ export function avisosClienteAjustes(
     ...(contexto.materialesFuera ?? []).map((item) => `${item.estructura_id}|${item.product_id}`),
   ]);
   return [...new Set(ajustes.flatMap((ajuste) => {
-    if (ajuste.tipo === "mezcla" || ajuste.tipo === "material_quitado") return [];
+    // `acabado_referencia` no lleva aviso: el acabado de la foto SÍ se respetó,
+    // y contarle al cliente que se cambió de producto para lograrlo sería
+    // hablarle de catálogo en vez de de su decoración.
+    if (ajuste.tipo === "mezcla" || ajuste.tipo === "material_quitado" || ajuste.tipo === "acabado_referencia") return [];
     if (fuera.has(`${ajuste.estructura_id}|${ajuste.product_id}`)) return [];
     const nombre = nombreDe(ajuste.estructura_id);
     if (ajuste.tipo === "acabado_material") {

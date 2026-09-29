@@ -434,7 +434,7 @@ async function main(): Promise<void> {
   // que la foto no tiene; en cadena, la pista de patrón de la foto no encontró
   // material para su rosado y el armado cayó al preset de confeti.
   const { materialesDeColorInventado, coloresObservadosElemento } = await import("../../src/lib/plan/colores-referencia");
-  const { quitarMaterialesDeColorInventado } = await import("../../src/lib/plan/cobertura-materiales");
+  const { aplicarAcabadoReferencia, avisosClienteAjustes, quitarMaterialesDeColorInventado } = await import("../../src/lib/plan/cobertura-materiales");
   const etiquetasPared = ["pearl blush pink", "chrome gold", "matte white"];
   const paredFoto = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Mr & Mrs organic balloon wall", "balloon_structure", etiquetasPared)]);
   // Lo observado NO se acota a los tres dominantes: acotarlo acusaría de
@@ -532,6 +532,133 @@ async function main(): Promise<void> {
     "el color que pidió el cliente se queda",
   );
   ok("simetría del color: el turno firma el plan sin el color inventado y avisa, salvo que lo pida el cliente");
+
+  // ---------------------------------------------------------------------------
+  // 2026-09-29, la otra mitad del mismo día: el ACABADO. La misma pared se leyó
+  // bien (blush PERLADO, dorado CROMADO, blanco MATE) y el modelo compró el
+  // blush como "Reflex Dorado Rosa": el cromado del dorado se contagió al rosa.
+  // El prompt ya le entregaba el acabado resuelto por color; nadie lo vigilaba.
+  const { acabadosObservadosDeMateriales } = await import("../../src/lib/plan/colores-referencia");
+  const { disponibilidadDelTurno } = await import("../../src/lib/ia/herramientas/convergencia-plan");
+  const esperadoPared = acabadosObservadosDeMateriales([pared(materialesReales)], paredFoto);
+  assert.deepEqual(esperadoPared, [
+    // El oro rosa sirve al blush (ΔE 23 del rosado observado): lleva SU acabado,
+    // no el del dorado de al lado.
+    { estructura_id: "EST_01_PARED", product_id: "P-ORO-ROSA", color: "dorado rosa", acabado: "satin" },
+    { estructura_id: "EST_01_PARED", product_id: "P-ORO", color: "dorado", acabado: "reflex" },
+    { estructura_id: "EST_01_PARED", product_id: "P-BLANCO-MATE", color: "blanco", acabado: "mate" },
+  ], "el fucsia no sirve a ningún color de la foto, así que la foto no le exige acabado");
+  // El silencio no es mate, y tampoco hereda el cromo del vecino: el rosado de
+  // esta foto no dice acabado y no debe acabar comprado en Reflex.
+  const paredSinAcabado = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Balloon wall", "balloon_structure", ["light pink", "chrome gold"])]);
+  assert.deepEqual(
+    acabadosObservadosDeMateriales([pared([materialPared("P-ROSADO", "rosado", 1, "principal")])], paredSinAcabado),
+    [],
+    "un color sin acabado en su etiqueta no exige ninguno ni hereda el del color de al lado",
+  );
+  assert.deepEqual(acabadosObservadosDeMateriales([pared(materialesReales)], undefined), [], "sin foto no hay acabado observado");
+  assert.deepEqual(acabadosObservadosDeMateriales([pared(materialesReales, null)], paredFoto), [], "una pieza que no materializa un elemento no sigue su acabado");
+
+  const globoConAcabado = (productId: string, color: string, acabados: string[]): ProductoCandidato => ({
+    ...candidato(productId, "globo_latex", color, [{ variantId: `V-${productId}-12`, diamPulg: 12 }]),
+    acabados,
+  });
+  const oroRosaReflex = globoConAcabado("P-ORO-ROSA", "dorado rosa", ["reflex"]);
+  const oroRosaSatin = globoConAcabado("P-ORO-ROSA-SATIN", "dorado rosa", ["satin"]);
+  const oroReflex = globoConAcabado("P-ORO", "dorado", ["reflex"]);
+  // Fashion es el mate del catálogo: un producto que solo dice "fashion" cumple.
+  const blancoFashion = globoConAcabado("P-BLANCO-MATE", "blanco", ["fashion"]);
+  const fucsiaReflex = globoConAcabado("P-FUCSIA", "fucsia", ["reflex"]);
+  // El plan ya podado (el fucsia fuera, participaciones reescaladas a 1).
+  const planPared = podado.plan;
+  const nombresPared = new Map([["EST_01_PARED", "Pared orgánica de globos"]]);
+
+  // El catálogo del turno tiene el MISMO color en el acabado de la foto: se compra ese.
+  const respetado = aplicarAcabadoReferencia(planPared, esperadoPared, disponibilidadDelTurno([oroRosaReflex, oroRosaSatin, oroReflex, blancoFashion]));
+  assert.deepEqual(
+    respetado.plan.estructuras[0]!.materiales.map((material) => [material.product_id, material.acabado ?? null]),
+    [["P-ORO-ROSA-SATIN", "satin"], ["P-ORO", null], ["P-BLANCO-MATE", null]],
+    "el blush se compra perlado; el cromado del dorado no se contagia y el mate no se degrada",
+  );
+  assert.deepEqual(respetado.ajustes.map((ajuste) => ajuste.tipo), ["acabado_referencia"], JSON.stringify(respetado.ajustes));
+  assert.deepEqual(
+    respetado.plan.estructuras[0]!.materiales.map((material) => material.color),
+    ["dorado rosa", "dorado", "blanco"],
+    "el acabado no decide el color: el material conserva el suyo",
+  );
+  assert.deepEqual(avisosClienteAjustes(respetado.ajustes, { nombres: nombresPared }), [], "el acabado se respetó: no hay nada que avisarle al cliente");
+
+  // El catálogo NO lo ofrece en ese color: se deja el que hay y se avisa. Quitar
+  // el color por un acabado dejaría la pieza sin el color de la foto, que es peor.
+  const avisado = aplicarAcabadoReferencia(planPared, esperadoPared, disponibilidadDelTurno([oroRosaReflex, oroReflex, blancoFashion]));
+  assert.deepEqual(
+    avisado.plan.estructuras[0]!.materiales.map((material) => [material.product_id, material.color]),
+    [["P-ORO-ROSA", "dorado rosa"], ["P-ORO", "dorado"], ["P-BLANCO-MATE", "blanco"]],
+    "nunca se quita el color ni el material por un acabado que el catálogo no tiene",
+  );
+  const avisosAcabado = avisosClienteAjustes(avisado.ajustes, { nombres: nombresPared });
+  assert.deepEqual(avisosAcabado, [
+    "En pared orgánica de globos los globos de color dorado rosa no vienen en acabado satin en el catálogo: van en su acabado normal.",
+  ], JSON.stringify(avisado.ajustes));
+  for (const aviso of avisosAcabado) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  // Metalizado (mylar) no es el cromado del látex: no cumple "reflex".
+  const metalizado = aplicarAcabadoReferencia(planPared, esperadoPared, disponibilidadDelTurno([oroRosaSatin, globoConAcabado("P-ORO", "dorado", ["metalizado"]), blancoFashion]));
+  assert.ok(metalizado.ajustes.some((ajuste) => ajuste.tipo === "acabado_material" && ajuste.antes === "reflex" && ajuste.color === "dorado"), JSON.stringify(metalizado.ajustes));
+  // Un producto cuyos acabados no se pudieron leer no se juzga: no saber qué
+  // acabado tiene no es saber que no lo tiene, y el aviso sería falso.
+  const sinLeer = aplicarAcabadoReferencia(planPared, esperadoPared, disponibilidadDelTurno([oroRosaReflex, oroReflex, blancoFashion].map((item) => ({ ...item, acabados: [] }))));
+  assert.deepEqual(sinLeer.ajustes, [], "sin acabados leídos no se juzga ni se avisa");
+  // Fashion, Reflex y Satin son líneas del globo de látex: a un número de mylar
+  // no se le exige acabado ni se le avisa uno.
+  const foilDorado: ProductoCandidato = { ...candidato("P-ORO", "globo_foil", "dorado", [{ variantId: "V-P-ORO-12", diamPulg: 12 }]), acabados: ["metalizado"] };
+  const sinLatex = aplicarAcabadoReferencia(planPared, esperadoPared, disponibilidadDelTurno([oroRosaReflex, oroRosaSatin, foilDorado, blancoFashion]));
+  assert.deepEqual(sinLatex.ajustes.map((ajuste) => ajuste.tipo), ["acabado_referencia"], JSON.stringify(sinLatex.ajustes));
+  // Una variante que el modelo fijó nombra ESE producto: cambiarlo debajo
+  // dejaría el plan contradiciéndose, así que solo se avisa.
+  const conVariante = aplicarAcabadoReferencia(
+    planDe(pared(materialesReales.map((material) => (material.product_id === "P-ORO-ROSA" ? { ...material, variant_id: "V-P-ORO-ROSA-12" } : material)))),
+    esperadoPared,
+    disponibilidadDelTurno([oroRosaReflex, oroRosaSatin, oroReflex, blancoFashion]),
+  );
+  assert.deepEqual(conVariante.plan.estructuras[0]!.materiales.map((material) => material.product_id), ["P-ORO-ROSA", "P-ORO", "P-BLANCO-MATE", "P-FUCSIA"]);
+  assert.ok(conVariante.ajustes.some((ajuste) => ajuste.tipo === "acabado_material" && ajuste.antes === "satin"), JSON.stringify(conVariante.ajustes));
+  ok("acabado de la foto: se compra el observado cuando el catálogo lo ofrece en ese color, y se avisa cuando no");
+
+  // El turno completo: el plan firmado compra el perlado, y cuando no se pudo el
+  // cliente se entera por el mismo canal de siempre.
+  const { estado: estadoSatin, confirmar: confirmarSatin } = herramienta("Quiero algo así para mi matrimonio", [oroRosaReflex, oroRosaSatin, oroReflex, blancoFashion, fucsiaReflex], paredFoto, 0);
+  const paredSatin = await confirmarSatin(argsPared, llamada) as Record<string, unknown>;
+  assert.equal(paredSatin.ok, true, JSON.stringify(paredSatin).slice(0, 500));
+  assert.deepEqual(
+    estadoSatin.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.product_id),
+    ["P-ORO-ROSA-SATIN", "P-ORO", "P-BLANCO-MATE"],
+    "el plan firmado compra el blush perlado, no el cromado",
+  );
+  const { estado: estadoCromado, confirmar: confirmarCromado } = herramienta("Quiero algo así para mi matrimonio", [oroRosaReflex, oroReflex, blancoFashion, fucsiaReflex], paredFoto, 0);
+  const paredCromada = await confirmarCromado(argsPared, llamada) as Record<string, unknown>;
+  assert.equal(paredCromada.ok, true, JSON.stringify(paredCromada).slice(0, 500));
+  assert.deepEqual(
+    estadoCromado.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.product_id),
+    ["P-ORO-ROSA", "P-ORO", "P-BLANCO-MATE"],
+    "sin el color en ese acabado el plan lo conserva: nunca se pierde el color",
+  );
+  const avisosCromada = paredCromada.avisos_cliente as string[];
+  assert.ok(avisosCromada.some((aviso) => /no vienen en acabado satin/.test(aviso)), avisosCromada.join(" | "));
+  for (const aviso of avisosCromada) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  // Si el cliente pidió el acabado, manda él y la foto no lo discute.
+  const argsParedReflex = {
+    ...argsPared,
+    estructuras: [pared(materialesReales.map((material) => ({ ...material, acabado: "reflex" })))],
+  };
+  const { estado: estadoPedidoAcabado, confirmar: confirmarPedidoAcabado } = herramienta("Quiero algo así para mi matrimonio, todo en acabado reflex", [oroRosaReflex, oroRosaSatin, oroReflex, blancoFashion, fucsiaReflex], paredFoto, 0);
+  const pedidoAcabado = await confirmarPedidoAcabado(argsParedReflex, llamada) as Record<string, unknown>;
+  assert.equal(pedidoAcabado.ok, true, JSON.stringify(pedidoAcabado).slice(0, 500));
+  assert.deepEqual(
+    estadoPedidoAcabado.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.product_id),
+    ["P-ORO-ROSA", "P-ORO", "P-BLANCO-MATE"],
+    "un acabado que pidió el cliente manda sobre el de la foto",
+  );
+  ok("acabado de la foto: el turno firma el acabado observado y avisa cuando el catálogo no lo tiene");
 
   // ---------------------------------------------------------------------------
   // E2E 2026-09-14 (D2): a venue photo came back as 3 × 3 × 2,5 m "measured from

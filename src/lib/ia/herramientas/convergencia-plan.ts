@@ -56,6 +56,7 @@ export function disponibilidadDelTurno(candidatos: readonly ProductoCandidato[])
     const colores = coloresRealesProducto(candidato.titulo, [...candidato.colores, ...candidato.variantes.flatMap((variante) => variante.colores)]);
     disponibilidad.set(candidato.productId, {
       titulo: candidato.titulo,
+      categoria: candidato.categoria,
       colores,
       // Coverage rule 1 needs the color the balloon really is, and a product's
       // colors carry the color families of its tags. Without round variants

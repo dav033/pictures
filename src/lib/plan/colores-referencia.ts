@@ -382,6 +382,64 @@ export function materialesDeColorInventado<E extends {
   return inventados;
 }
 
+export type AcabadoObservadoMaterial = { estructura_id: string; product_id: string; color: string; acabado: string };
+
+/**
+ * El acabado que la foto muestra para el color de cada material.
+ *
+ * `coloresConAcabadoReferencia` resuelve el acabado por color y el prompt se lo
+ * entrega al modelo ya resuelto, pero nadie vigilaba que lo usara: con la pared
+ * "Mr & Mrs" (blush perlado, dorado cromado, blanco mate) el modelo compró el
+ * blush como "Reflex Dorado Rosa" y el cromado del dorado se contagió al rosa
+ * (2026-09-29). Esto devuelve lo que la foto exige, material por material, para
+ * que `aplicarAcabadoReferencia` (cobertura-materiales.ts) lo respete o lo avise.
+ *
+ * A qué color de la foto sirve un material se decide con el mismo criterio con
+ * que `materialesDeColorInventado` distingue una sustitución de una invención
+ * (ADR-0024, ΔE): el "dorado rosa" que se compró está a 23 del "rosado"
+ * observado, así que sirve al blush y debe llevar SU acabado, no el del dorado.
+ * El vecino se busca entre TODOS los colores dominantes, no solo entre los que
+ * traen acabado: si no, un rosado sin acabado indicado caería en el dorado
+ * cromado de al lado y acabaríamos exigiendo cromo sobre un globo rosa.
+ *
+ * Un color sin acabado en su etiqueta no exige ninguno: el silencio no es mate.
+ *
+ * Pura: sin proveedor, HTTP, base de datos ni entorno.
+ */
+export function acabadosObservadosDeMateriales<E extends {
+  estructura_id: string;
+  referencia_element_id?: string;
+  materiales: ReadonlyArray<{ product_id: string; color?: string }>;
+}>(estructuras: readonly E[], blueprint: Pick<ReferenceBlueprintV2, "elements"> | undefined): AcabadoObservadoMaterial[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const esperados: AcabadoObservadoMaterial[] = [];
+  for (const estructura of estructuras) {
+    const elemento = estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id) : undefined;
+    if (!elemento) continue;
+    // Los mismos pares color→acabado que el prompt le entrega al modelo, así que
+    // la frontera exige exactamente lo que se le pidió y no otra lectura.
+    const acabadoPorColor = new Map<string, string>();
+    const tonos: string[] = [];
+    for (const observado of coloresConAcabadoReferencia(elemento.appearance)) {
+      const color = normalizarColor(observado.color);
+      if (!color || COLORES_SIN_TONO.has(color)) continue;
+      if (!tonos.includes(color)) tonos.push(color);
+      if (observado.acabado && !acabadoPorColor.has(color)) acabadoPorColor.set(color, observado.acabado);
+    }
+    if (acabadoPorColor.size === 0) continue;
+    for (const material of estructura.materiales) {
+      const color = normalizarColor(material.color ?? "");
+      if (!color || COLORES_SIN_TONO.has(color)) continue;
+      const servido = tonos.includes(color) ? color : LAB_COLORES[color] ? colorCatalogoMasCercano(color, tonos) : undefined;
+      const acabado = servido ? acabadoPorColor.get(servido) : undefined;
+      if (!acabado) continue;
+      esperados.push({ estructura_id: estructura.estructura_id, product_id: material.product_id, color, acabado });
+    }
+  }
+  return esperados;
+}
+
 const COLORES_CATALOGO: ReadonlySet<string> = new Set(PALETA_COLORES_V2);
 
 /**
