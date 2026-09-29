@@ -1,6 +1,6 @@
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { clasificarColores, PALETA_COLORES_V2, plegarTexto } from "@/lib/rag/taxonomy/v2";
-import { colorDeCompraSinVenta } from "@/lib/rag/catalog/similitud-color";
+import { colorCatalogoMasCercano, colorDeCompraSinVenta, LAB_COLORES } from "@/lib/rag/catalog/similitud-color";
 
 /** Lo que una apariencia aporta al color: los nombres que el analizador escribió y, si hay foto, la medida. */
 type AparienciaColor = {
@@ -299,6 +299,87 @@ export function coloresFotoCliente(blueprint: Pick<ReferenceBlueprintV2, "palett
 export function coloresElementoReferencia(blueprint: Pick<ReferenceBlueprintV2, "elements"> | undefined, elementId: string | undefined): string[] {
   const elemento = elementId ? blueprint?.elements.find((item) => item.approved && item.element_id === elementId) : undefined;
   return elemento ? coloresDominantesReferencia(elemento.appearance) : [];
+}
+
+/**
+ * Todo lo que un elemento de la foto muestra, sin el tope de
+ * `MAX_COLORES_REFERENCIA` y sin filtrar al catálogo: los colores de sus
+ * etiquetas y los medidos en píxeles.
+ *
+ * Los dominantes son lo que una pieza DEBE llevar, y por eso van acotados a
+ * tres. Esto es lo contrario: la lista contra la que se decide si un color que
+ * el plan compra existe en la foto. Acotarla aquí acusaría de invención al
+ * cuarto color de una foto que sí lo tiene.
+ */
+export function coloresObservadosElemento(apariencia: AparienciaColor): string[] {
+  const colores = coloresObservados(apariencia);
+  for (const entrada of apariencia.measured_colors ?? []) {
+    if (!colores.includes(entrada.color)) colores.push(entrada.color);
+  }
+  return colores;
+}
+
+export type MaterialColorInventado = { estructura_id: string; product_id: string; color: string };
+
+/**
+ * `transparente` es un acabado, no un tono, y `multicolor` no es un color: un
+ * globo cristal o un confeti no prometen un tono que la foto no tenga, así que
+ * ninguno se juzga contra ella. Que una pieza se arme ENTERA en transparente
+ * para una foto rosa y plata lo sigue atendiendo `coloresReferenciaOmitidos`,
+ * que es la mitad de la auditoría que mira la pérdida.
+ */
+const COLORES_SIN_TONO: ReadonlySet<string> = new Set([TRANSPARENTE, "multicolor"]);
+
+/**
+ * Materiales cuyo color la foto no tiene: el espejo que le faltaba a
+ * `coloresReferenciaOmitidos`.
+ *
+ * Toda la maquinaria de color miraba en una sola dirección —los colores de la
+ * foto que el plan NO compra— y nada vigilaba el caso inverso. El 2026-09-29,
+ * con una pared de globos leída bien (blush perlado, dorado cromado, blanco
+ * mate), el modelo compró además un "Reflex Fucsia" que la foto nunca tuvo, y
+ * de ahí en cadena la pista de patrón de la foto no encontró material para su
+ * rosado y el armado cayó al preset de confeti. El prompt ya lo prohibía con
+ * palabras; el modelo las ignoró.
+ *
+ * Una invención NO es una sustitución. La diferencia se mide con el mismo
+ * modelo cromático que ADR-0024 usa para resolver "gris" como "plateado" a
+ * ΔE 16: `colorCatalogoMasCercano` devuelve `undefined` por encima de
+ * `DELTA_E_MAXIMO`. "dorado rosa" está a 23 del "rosado" observado —es la
+ * sustitución que `sustitucionesColorReferencia` ya le reporta al cliente— y
+ * "fucsia" a 48 del rosado, 88 del blanco y 97 del dorado: no está en la foto.
+ *
+ * Solo juzga estructuras que materializan un elemento (`referencia_element_id`)
+ * y solo cuando se pudo leer TODA su paleta: una etiqueta que la taxonomía no
+ * alias a propósito ("copper", "taupe") es color de la foto que no vemos, y sin
+ * verlo no se puede afirmar que un material no le corresponda.
+ *
+ * Pura: sin proveedor, HTTP, base de datos ni entorno.
+ */
+export function materialesDeColorInventado<E extends {
+  estructura_id: string;
+  referencia_element_id?: string;
+  materiales: ReadonlyArray<{ product_id: string; color?: string }>;
+}>(estructuras: readonly E[], blueprint: Pick<ReferenceBlueprintV2, "elements"> | undefined): MaterialColorInventado[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const inventados: MaterialColorInventado[] = [];
+  for (const estructura of estructuras) {
+    const elemento = estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id) : undefined;
+    if (!elemento) continue;
+    if (elemento.appearance.observed_colors.some((etiqueta) => coloresDeEtiqueta(etiqueta).length === 0)) continue;
+    const observados = coloresObservadosElemento(elemento.appearance).map(normalizarColor).filter(Boolean);
+    if (observados.length === 0) continue;
+    for (const material of estructura.materiales) {
+      const color = normalizarColor(material.color ?? "");
+      if (!color || COLORES_SIN_TONO.has(color) || observados.includes(color)) continue;
+      // Sin tono medible no hay distancia que sostenga la acusación.
+      if (!LAB_COLORES[color]) continue;
+      if (colorCatalogoMasCercano(color, observados)) continue;
+      inventados.push({ estructura_id: estructura.estructura_id, product_id: material.product_id, color });
+    }
+  }
+  return inventados;
 }
 
 const COLORES_CATALOGO: ReadonlySet<string> = new Set(PALETA_COLORES_V2);
