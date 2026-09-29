@@ -433,9 +433,16 @@ pared):
 | anillos | `built with stacked bands of A, B and C repeating {eje}` | `COLOR PATTERN — each cluster is a single color; clusters follow the order A → B → C, N cluster(s) per color, repeating {eje}.` |
 | bloques | `color-blocked in sections of A, then B, then C {eje}` | `COLOR PATTERN — solid color blocks in this order {eje}: A (~p%), B (~p%), C (~p%); clean transitions between blocks.` |
 | degradado | `in an ombre gradient from A through B to C {eje}` (escalonada: `in stepped ombre bands of …`) | `COLOR PATTERN — a gradual ombré {eje}: A, blending through B into C; soft mixed transition zones, no hard lines.` (escalonada: "stepped bands") |
-| aleatorio | *(vacío: el caption orgánico de hoy)* | *(vacío: la frase orgánica de hoy)* |
+| aleatorio | `with A, B and C scattered evenly all over the piece` | `COLOR PATTERN — an even scatter of A, B and C intermixed balloon by balloon over the whole piece, every color reaching every area; no stripes, no bands, no blocks, no gradient, and no color gathered into a zone or a corner.` |
 | flor | `with daisy flowers of B petals and a C center set between A clusters` | `COLOR PATTERN — every S A clusters, three B clusters form a flower with one C balloon at its center; repeat {eje}.` |
 | damero | `in a checkerboard of A and B` (3–4 colores: `with diagonal rainbow bands of A, B and C`) | `COLOR PATTERN — a checkerboard of A and B squares of T balloons` / `diagonal bands of A, B, C` |
+
+*Enmienda (ADR-0035):* la fila `aleatorio` de la tabla llevaba las dos frases
+vacías a propósito, para que el prompt conservara su reparto orgánico. Ese
+reparto pide lo contrario de un confeti y agrupaba los colores en franjas: el
+confeti redacta sus dos frases como cualquier otro modo, y ninguna dice
+"confetti" (en el vocabulario de productos es un globo relleno de confeti). La
+tabla de arriba ya está corregida.
 
 Acentos añaden: `, with evenly spaced D accent clusters` (LoRA) y `Every
 {cada}th cluster (starting at cluster {desde}) carries D.` (Gemini).

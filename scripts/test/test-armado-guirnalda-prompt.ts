@@ -173,11 +173,13 @@ function frasesDeLaGuirnalda(): void {
   assert.equal(unidas[0]!.prompt_gemini, `${armadoConPatron.prompt_gemini} ${patron.prompt_gemini}`);
   assert.equal(unidas[0]!.prompt_lora, `${armadoConPatron.prompt_lora}, ${patron.prompt_lora}`);
   assert.deepEqual(unidas[0]!.guirnalda, { soporte: "pared", forma: "recta", conPatron: true, conRelleno: true, conRemates: false });
-  // Un confeti (frases vacías) no es un patrón en el prompt: queda el armado solo.
-  const confeti = { ...patron, prompt_gemini: "", prompt_lora: "" };
-  const conConfeti = frasesDeEstructuras({ patrones_color: [confeti], armados_guirnalda: [armadoConPatron] })!;
-  assert.equal(conConfeti[0]!.prompt_gemini, armadoConPatron.prompt_gemini);
-  assert.equal(conConfeti[0]!.guirnalda?.conPatron, false);
+  // Un patrón con las dos frases vacías no es un patrón en el prompt: queda el
+  // armado solo. Era el caso del confeti hasta ADR-0035; hoy el confeti redacta
+  // sus dos frases y se une al armado como cualquier otro modo.
+  const sinFrases = { ...patron, prompt_gemini: "", prompt_lora: "" };
+  const conSinFrases = frasesDeEstructuras({ patrones_color: [sinFrases], armados_guirnalda: [armadoConPatron] })!;
+  assert.equal(conSinFrases[0]!.prompt_gemini, armadoConPatron.prompt_gemini);
+  assert.equal(conSinFrases[0]!.guirnalda?.conPatron, false);
   // Colgada de tres puntos y abrazada al arco: lo que Python decidió, sin ids en el texto.
   assert.deepEqual(frasesDeEstructuras(planGuirnalda("colgada").plan)![0]!.guirnalda, { soporte: "colgada", forma: "arco_caido", puntos_de_anclaje: 3, conPatron: false, conRelleno: true, conRemates: false });
   assert.deepEqual(frasesDeEstructuras(planGuirnalda("sobre-arco").plan)![0]!.guirnalda, { soporte: "sobre_estructura", forma: "curva", anfitriona: "EST_02_ARCO", conPatron: false, conRelleno: true, conRemates: false });

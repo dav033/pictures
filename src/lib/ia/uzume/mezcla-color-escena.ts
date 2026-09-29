@@ -68,8 +68,11 @@ export function idDeEstructura(element: SceneSpec["elements"][number]): string {
  * nunca se redacta, se expande ni se cuenta un patrón.
  *
  * `undefined` cuando la estructura no tiene patrón aplicado (una sugerencia
- * `aplicado: false` no es del plan) o cuando la frase viene vacía (modo
- * aleatorio: el reparto orgánico de siempre). En ese caso el prompt no cambia.
+ * `aplicado: false` no es del plan) o cuando la frase viene vacía; en ese caso
+ * el prompt conserva su reparto orgánico y no cambia. Ningún modo de Python
+ * llega vacío desde ADR-0035 (el confeti era el último), pero la guarda se
+ * queda: una respuesta de una versión anterior del servicio no debe pegar los
+ * acentos ni el armado a una cadena vacía.
  */
 export function frasePatronColor(
   patrones: readonly FraseDeEstructura[] | undefined,

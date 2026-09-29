@@ -529,8 +529,10 @@ function colorVarietyContract(sceneSpec: SceneSpec, colorPatterns?: readonly Fra
     // El prefijo "APPROVED COLOR VARIETY — use exactly these catalog colors: X."
     // lo lee `verificarCoherenciaPrompt`; el patrón solo reemplaza la frase del
     // reparto orgánico, que pedía justo lo contrario ("avoid flat stripes").
-    // Una guirnalda armada sin patrón (o con confeti) conserva el reparto
-    // orgánico: su armado dice cómo se arma, no dónde va cada color (ADR-0032).
+    // Una guirnalda armada sin patrón conserva el reparto orgánico: su armado
+    // dice cómo se arma, no dónde va cada color (ADR-0032). Un confeti sí es un
+    // patrón desde ADR-0035, así que una guirnalda con confeti ya no cae en esa
+    // rama: su reparto lo dice la frase de Python, no el texto orgánico.
     const guirnalda = armadoGuirnaldaDeElemento(colorPatterns, element);
     const reparto = pattern && guirnalda && !guirnalda.conPatron ? `${ORGANIC_COLOR_DISTRIBUTION} ${pattern}` : pattern ?? ORGANIC_COLOR_DISTRIBUTION;
     return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}.${mezcla ? ` Approximate share of this structure's own balloons: ${mezcla}. Keep that balance visible; the dominant color must read as dominant.` : ""} ${reparto} Do not invent, recolor, or borrow any additional color.`;

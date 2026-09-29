@@ -295,8 +295,11 @@ function main(): void {
     const variantes: Record<string, readonly PatronColorResuelto[] | undefined> = {
       "sin patrones_color": undefined,
       "lista vacía": [],
-      // Modo aleatorio: Python deja las dos frases vacías y manda el reparto orgánico de siempre.
-      "modo aleatorio": caso.estructuras.map((id) => patron("aleatorio", { estructura_id: id })),
+      // Un patrón cuyas dos frases llegan vacías (una versión anterior del
+      // servicio, o un modo que no las redacte): el adaptador lo trata como
+      // ausente y manda el reparto orgánico de siempre. Hasta ADR-0035 este era
+      // el caso del confeti; ahora el confeti sí redacta (ver `confetiEnElPrompt`).
+      "frases vacías": caso.estructuras.map((id) => patron("aleatorio", { estructura_id: id, prompt_gemini: "", prompt_lora: "" })),
       // Una sugerencia (aplicado: false) nunca entra al prompt aunque traiga frases.
       "sugerencias": caso.estructuras.map((id) => patron("sugerencia", { estructura_id: id })),
     };
@@ -306,10 +309,11 @@ function main(): void {
   }
   assert.equal(GEMINI_COMPOSITION_HARD_LOCK, instantanea["hibrido/hard-lock"]);
   assert.equal(hardLockComposicionGemini(false), instantanea["hibrido/hard-lock"], "sin patrón el hard lock de la etapa 2 no cambia");
-  console.log("[PASS] sin patrón aplicado (ausente, vacío, aleatorio o sugerido) los prompts Gemini y LoRA son byte a byte los de antes");
+  console.log("[PASS] sin patrón aplicado (ausente, vacío, con frases vacías o sugerido) los prompts Gemini y LoRA son byte a byte los de antes");
 
   geminiConPatron(instantanea);
   loraConPatron(instantanea);
+  confetiEnElPrompt(instantanea);
   agrupacionConPatron();
   compactacionConPatron();
   armadoDeBouquetEnLosPrompts(instantanea);
@@ -524,6 +528,56 @@ function preflight(sceneSpec: SceneSpec, resultado: { clauses: LoraVisualClause[
 
 function vecesEn(texto: string, fragmento: string): number {
   return texto.split(fragmento).length - 1;
+}
+
+/**
+ * El confeti también llega al generador (ADR-0035, que enmienda ADR-0028 §8).
+ *
+ * Hasta el 2026-09-29 Python dejaba las dos frases del confeti vacías y el
+ * prompt conservaba su reparto orgánico, que pide justo lo contrario
+ * ("intentional organic clusters and transitions… avoid random speckles"): una
+ * pared blush con racimos de dorado salió con los colores en tres franjas
+ * verticales. Aquí se fija que la frase del confeti entra por la MISMA puerta
+ * que la de los demás modos y desaloja al reparto orgánico, y que ninguna de
+ * las dos frases dice "confetti" (en el vocabulario de productos de este repo
+ * es un globo relleno de confeti, no un reparto).
+ */
+function confetiEnElPrompt(instantanea: Readonly<Record<string, string>>): void {
+  const cumple = planFijado("calibracion-cumple-semiarco-columna");
+  const confeti = patron("aleatorio");
+  const frase = confeti.prompt_gemini;
+  assert.ok(frase.startsWith("COLOR PATTERN — "), frase);
+
+  const prompt = promptGemini(cumple, [confeti]);
+  const lineaSemiarco = prompt.split("\n").find((linea) => linea.startsWith("- Semiarco derecho: "))!;
+  assert.ok(lineaSemiarco.endsWith(` ${frase} Do not invent, recolor, or borrow any additional color.`), lineaSemiarco);
+  assert.doesNotMatch(lineaSemiarco, /organic clusters|avoid flat stripes|random speckles/, "el confeti desaloja el reparto orgánico que lo contradecía");
+  // Y nada más cambia: deshaciendo las dos inserciones queda el prompt de antes.
+  const deshecho = prompt
+    .replace(frase, "Distribute them through intentional organic clusters and transitions; avoid flat stripes, random speckles, or one color replacing another.")
+    .replace(`,"color_pattern":${JSON.stringify(frase)}`, "");
+  assert.equal(deshecho, instantanea["gemini/cumple-semiarco-columna"]);
+  // La línea sigue siendo legible para coherencia.ts.
+  const coherencia = verificarCoherenciaPrompt(prompt, conPatrones(cumple, [confeti]), escenaParaCoherencia(escenaDePlan(cumple)));
+  assert.equal(coherencia.ok, true, coherencia.errores.join("; "));
+
+  // LoRA: el fragmento entra en su cláusula y pasa el control de idioma y el preflight.
+  const escena = escenaDePlan(cumple);
+  const caption = captionLegacy(cumple, [confeti], "product_v007", CONTEXTO_CUMPLE);
+  assert.equal(clausulaDe(caption.clauses, "EST_01_SEMIARCO").colorPattern, confeti.prompt_lora);
+  assert.equal(vecesEn(caption.prompt, confeti.prompt_lora), 1, caption.prompt);
+  assert.deepEqual(findLoraPromptLanguageLeaks(caption.prompt), [], "el confeti de Python trae texto que el LoRA rechaza");
+  const reporte = preflight(escena, caption);
+  assert.equal(reporte.ok, true, reporte.errors.join("; "));
+  // El fragmento nombra colores: ninguno puede ser uno que el plan no compra.
+  const colores = verificarColoresCaptionLora(conPatrones(cumple, [confeti]), escenaParaCoherencia(escena), { clausulas: caption.clauses, traducirColor: translateLoraColor });
+  assert.equal(colores.ok, true, colores.errores.join("; "));
+
+  // "confetti" es un producto en este repo: nunca puede salir del reparto.
+  for (const texto of [frase, confeti.prompt_lora]) assert.doesNotMatch(texto, /confetti/i, texto);
+  // El confeti sí pide el candado de patrón de la etapa 2: su reparto es un patrón.
+  assert.notEqual(hardLockComposicionGemini(true), instantanea["hibrido/hard-lock"]);
+  console.log("[PASS] confeti: su frase entra por la misma puerta que los demás modos y desaloja el reparto orgánico, sin decir \"confetti\"");
 }
 
 /** LoRA: el fragmento de Python va justo detrás de la frase de materiales, en la misma cláusula. */
