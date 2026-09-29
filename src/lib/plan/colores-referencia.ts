@@ -259,13 +259,21 @@ const COLORES_CATALOGO: ReadonlySet<string> = new Set(PALETA_COLORES_V2);
  * when it has none. A color the catalog does not sell ("gris") is left out, so
  * it never forces the relaxation ladder to drop the occasion for nothing.
  */
-export function coloresFotoParaBusqueda(blueprint: Pick<ReferenceBlueprintV2, "palette" | "elements"> | undefined): string[] {
+/**
+ * Colors the photo's *balloon* structures show. The venue is not decoration: a
+ * brick wall behind the piece put "cafe" and "rojo" in `palette.observed`, and
+ * through it into the colors a piece was asked to cover (2026-09-29).
+ */
+export function coloresGlobosReferencia(blueprint: Pick<ReferenceBlueprintV2, "palette" | "elements"> | undefined): string[] {
   if (!blueprint) return [];
   const estructuras = blueprint.elements.filter((elemento) => elemento.approved && elemento.category === "balloon_structure");
-  const colores = estructuras.length
+  return estructuras.length
     ? [...new Set(estructuras.flatMap((elemento) => coloresDominantesReferencia(elemento.appearance)))]
     : coloresFotoCliente(blueprint).slice(0, MAX_COLORES_REFERENCIA);
-  return colores.filter((color) => COLORES_CATALOGO.has(color));
+}
+
+export function coloresFotoParaBusqueda(blueprint: Pick<ReferenceBlueprintV2, "palette" | "elements"> | undefined): string[] {
+  return coloresGlobosReferencia(blueprint).filter((color) => COLORES_CATALOGO.has(color));
 }
 
 function normalizarColor(color: string): string {

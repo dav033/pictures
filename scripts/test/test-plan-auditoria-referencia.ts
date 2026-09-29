@@ -280,6 +280,22 @@ async function main(): Promise<void> {
     espacio: { tipo: "salón", fuente: "foto" }, supuestos: [],
     estructuras: [{ ...arcoBlanco, referencia_element_id: "REF_01_E03" }],
   }), semiarcosFoto).estructuras[0]!.colores_referencia, ["rosado", "plateado", "gris", "transparente"], "the clear accents are claimed on top of the three hues (2026-09-24)");
+
+  // 2026-09-29: a brick wall behind the piece ("terracotta red") reached
+  // `palette.observed`, and from there the colors the wall was asked to cover;
+  // the customer got a "cafe -> rosado, dorado" substitution for the venue.
+  const paredConLadrillo = ReferenceBlueprintV2Schema.parse({
+    ...blueprintDe(["REF_01"], [
+      elemento("REF_01_E01", "REF_01", "balloon wall", "balloon_structure", ["pearl blush pink", "chrome gold", "matte white"]),
+      elemento("REF_01_E02", "REF_01", "brick wall", "backdrop", ["terracotta red", "brown"]),
+    ]),
+    palette: { observed: ["pearl blush pink", "chrome gold", "matte white", "terracotta red"], priority: ["pearl blush pink", "chrome gold", "matte white", "terracotta red"] },
+  });
+  assert.deepEqual(restricciones.aplicarColoresReferencia(PlanDecoracionSchema.parse({
+    plan_version: "1.0", plan_id: "01010101-0101-4010-8010-010101010102", concepto: { titulo: "x", descripcion: "x", paleta: [] },
+    espacio: { tipo: "salón", fuente: "foto" }, supuestos: [],
+    estructuras: [{ ...arcoBlanco, referencia_element_id: "REF_01_E01" }],
+  }), paredConLadrillo).estructuras[0]!.colores_referencia, ["rosado", "dorado", "blanco"], "the venue's brick does not ask the piece for a color (2026-09-29)");
   const filaGlobo = (productId: string, variantId: string, color: string) => ({
     product_id: productId, variant_id: variantId, sku: null, sku_original: null, source_snapshot_id: null, source_variant_id: null, inventory_quantity: null, unidades_inferidas: null,
     producto_titulo: `Globo ${color}`, variante_titulo: "R-12", precio: 4000, unidades_paq: 12, disponible: true, producto_disponible: true,
