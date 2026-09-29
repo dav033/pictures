@@ -33,6 +33,11 @@ import type { PlanDecoracion } from "./tipos";
  *    this turn's search did not return, is left as it is: the resolver reports
  *    it.
  *
+ * `quitarMaterialesDeColorInventado` applies the same removal (and the same
+ * notice) to a material whose color the reference photo does not have, which is
+ * a decision of the reference flow rather than of size coverage: the colors come
+ * from `colores-referencia.ts` and this module only takes them out of the plan.
+ *
  * Pure: no provider, HTTP, database or environment.
  */
 
@@ -89,6 +94,78 @@ export function mezclasAdmisiblesEstructura(
 
 function unirColores(colores: readonly string[]): string {
   return colores.length <= 1 ? (colores[0] ?? "") : `${colores.slice(0, -1).join(", ")} y ${colores.at(-1)}`;
+}
+
+/**
+ * Parte los materiales de una pieza en los que se quedan y los que salen, con
+ * las participaciones reescaladas para que sumen exactamente 1 (lo exige el
+ * esquema del plan) y el rol `principal` en el de mayor participación cuando el
+ * que lo era se fue (empates: el primero declarado).
+ *
+ * `null` cuando no queda ninguno o no sale ninguno: una pieza sin materiales no
+ * es una pieza, y quitarlos todos la borraría en silencio.
+ */
+function partirMateriales(
+  materiales: readonly Material[],
+  sale: (material: Material, indice: number) => boolean,
+): { quedan: Material[]; salen: Material[] } | null {
+  const salen = materiales.filter((material, indice) => sale(material, indice));
+  const conservados = materiales.filter((material, indice) => !sale(material, indice));
+  if (salen.length === 0 || conservados.length === 0) return null;
+  const total = conservados.reduce((suma, material) => suma + material.participacion, 0);
+  if (total <= 0) return null;
+  const quedan = conservados.map((material) => ({ ...material, participacion: material.participacion / total }));
+  const desfase = 1 - quedan.reduce((suma, material) => suma + material.participacion, 0);
+  quedan[0] = { ...quedan[0]!, participacion: quedan[0]!.participacion + desfase };
+  if (!quedan.some((material) => material.rol_material === "principal")) {
+    const mayor = quedan.reduce((mejor, material, indice) => (material.participacion > quedan[mejor]!.participacion ? indice : mejor), 0);
+    quedan[mayor] = { ...quedan[mayor]!, rol_material: "principal" };
+  }
+  return { quedan, salen };
+}
+
+/**
+ * Saca de cada estructura los materiales cuyo color la foto no tiene
+ * (`materialesDeColorInventado`, colores-referencia.ts) antes de validar y
+ * resolver el plan.
+ *
+ * Es acotar, no auditar: el color inventado no llega a cotizarse ni al prompt de
+ * la imagen, y el turno no gasta un rechazo ni una llamada más al modelo. Una
+ * pieza cuyos materiales serían TODOS de colores ajenos a la foto se deja como
+ * está: podarla la borraría, y ese caso ya lo atiende
+ * `COLORES_REFERENCIA_OMITIDOS`, que le pide al modelo armarla con los colores
+ * de la foto (registro-herramientas.ts).
+ *
+ * El aviso viaja por el mismo canal que un material sin cobertura de tamaños
+ * (`material_quitado`): el cliente ve en la tarjeta qué no lleva la pieza y por
+ * qué, y el modelo no promete en el resumen un color que la cotización no
+ * compra.
+ */
+export function quitarMaterialesDeColorInventado(
+  plan: PlanDecoracion,
+  inventados: ReadonlyArray<{ estructura_id: string; product_id: string }>,
+): { plan: PlanDecoracion; ajustes: AjusteCobertura[] } {
+  if (inventados.length === 0) return { plan, ajustes: [] };
+  const ajustes: AjusteCobertura[] = [];
+  const estructuras = plan.estructuras.map((estructura) => {
+    const fuera = new Set(inventados.filter((item) => item.estructura_id === estructura.estructura_id).map((item) => item.product_id));
+    if (fuera.size === 0) return estructura;
+    const partido = partirMateriales(estructura.materiales, (material) => fuera.has(material.product_id));
+    if (!partido) return estructura;
+    const coloresQuedan = [...new Set(partido.quedan.map((material) => material.color).filter((color): color is string => Boolean(color)))];
+    for (const material of partido.salen) {
+      const globos = material.color ? `globos ${material.color}` : "unos globos";
+      ajustes.push({
+        tipo: "material_quitado",
+        estructura_id: estructura.estructura_id,
+        product_id: material.product_id,
+        color: material.color ?? null,
+        aviso_cliente: `En ${estructura.nombre.toLowerCase()} no incluí ${globos} porque tu foto no los tiene${coloresQuedan.length ? `: la armé con ${unirColores(coloresQuedan)}` : ""}.`,
+      });
+    }
+    return { ...estructura, materiales: partido.quedan };
+  });
+  return { plan: { ...plan, estructuras }, ajustes };
 }
 
 /**
@@ -193,20 +270,11 @@ export function ajustarCoberturaPlan(
     if (opciones.length === 0 || materiales.length < 2) return estructura;
     const participacionQueQueda = (mezcla: Mezcla) => materiales.reduce((suma, material, indice) => suma + (cubre(indice, mezcla) ? material.participacion : 0), 0);
     const elegida = opciones.reduce((mejor, mezcla) => (participacionQueQueda(mezcla) > participacionQueQueda(mejor) ? mezcla : mejor), opciones[0]!);
-    const quedan = materiales.filter((_, indice) => cubre(indice, elegida));
-    const salen = materiales.filter((_, indice) => !cubre(indice, elegida));
-    const total = quedan.reduce((suma, material) => suma + material.participacion, 0);
-    const reescaladas = quedan.map((material) => ({ ...material, participacion: material.participacion / total }));
-    // Shares must add up to exactly 1 for the plan schema.
-    const desfase = 1 - reescaladas.reduce((suma, material) => suma + material.participacion, 0);
-    reescaladas[0] = { ...reescaladas[0]!, participacion: reescaladas[0]!.participacion + desfase };
     // El material que decide la mezcla es el `principal`: si el que lo era se
-    // fue, el rol pasa al de mayor participación reescalada (empates: el
-    // primero declarado), no al primero de la lista.
-    if (!reescaladas.some((material) => material.rol_material === "principal")) {
-      const mayor = reescaladas.reduce((mejor, material, indice) => (material.participacion > reescaladas[mejor]!.participacion ? indice : mejor), 0);
-      reescaladas[mayor] = { ...reescaladas[mayor]!, rol_material: "principal" };
-    }
+    // fue, el rol pasa al de mayor participación reescalada (`partirMateriales`).
+    const partido = partirMateriales(materiales, (_, indice) => !cubre(indice, elegida));
+    if (!partido) return estructura;
+    const { quedan: reescaladas, salen } = partido;
     const coloresQuedan = [...new Set(reescaladas.map((material) => material.color).filter((color): color is string => Boolean(color)))];
     for (const material of salen) {
       const nombre = material.color ? `globos ${material.color}` : "uno de los globos";

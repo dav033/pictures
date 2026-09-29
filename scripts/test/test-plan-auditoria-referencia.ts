@@ -427,6 +427,113 @@ async function main(): Promise<void> {
   ok("colores de la foto: búsqueda en el pool activo, catálogo sin el color y color explícito del cliente");
 
   // ---------------------------------------------------------------------------
+  // 2026-09-29: la mitad que le faltaba a la auditoría de color. Toda la
+  // maquinaria miraba un solo sentido —los colores de la foto que el plan NO
+  // compra— y nada el inverso. La pared "Mr & Mrs" se leyó bien (blush perlado,
+  // dorado cromado, blanco mate) y el modelo compró además un "Reflex Fucsia"
+  // que la foto no tiene; en cadena, la pista de patrón de la foto no encontró
+  // material para su rosado y el armado cayó al preset de confeti.
+  const { materialesDeColorInventado, coloresObservadosElemento } = await import("../../src/lib/plan/colores-referencia");
+  const { quitarMaterialesDeColorInventado } = await import("../../src/lib/plan/cobertura-materiales");
+  const etiquetasPared = ["pearl blush pink", "chrome gold", "matte white"];
+  const paredFoto = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Mr & Mrs organic balloon wall", "balloon_structure", etiquetasPared)]);
+  // Lo observado NO se acota a los tres dominantes: acotarlo acusaría de
+  // invención al cuarto color de una foto que sí lo tiene.
+  assert.deepEqual(coloresObservadosElemento({ observed_colors: etiquetasPared }), ["rosado", "dorado", "blanco"]);
+  assert.deepEqual(coloresObservadosElemento({ observed_colors: ["white, gold, silver, pink"] }), ["blanco", "dorado", "plateado", "rosado"], "los cuatro, aunque solo tres sean dominantes");
+  assert.deepEqual(coloresObservadosElemento({ observed_colors: ["chrome gold"], measured_colors: [{ color: "rosado", share: 0.4 }] }), ["dorado", "rosado"], "un tono medido en píxeles también está en la foto");
+
+  const materialPared = (productId: string, color: string, participacion: number, rol: "principal" | "secundario") => ({ product_id: productId, color, participacion, rol_material: rol });
+  const pared = (materiales: ReturnType<typeof materialPared>[], elementId: string | null = "REF_01_E01") => ({
+    ...arcoBlanco, estructura_id: "EST_01_PARED", nombre: "Pared orgánica de globos", tipo: "pared", ubicacion: "fondo_pared",
+    medidas: { ancho_m: 3, alto_m: 2.4 }, materiales, ...(elementId ? { referencia_element_id: elementId } : {}),
+  });
+  const planDe = (estructura: ReturnType<typeof pared>) => PlanDecoracionSchema.parse({
+    plan_version: "1.0", plan_id: "09090909-0909-4090-8090-090909090909",
+    concepto: { titulo: "Mr & Mrs", descripcion: "Pared orgánica de globos", paleta: ["rosado", "dorado", "blanco"] },
+    espacio: { tipo: "salón", fuente: "foto" }, supuestos: [], estructuras: [estructura],
+  });
+  // Lo que el modelo compró de verdad ese día.
+  const materialesReales = [
+    materialPared("P-ORO-ROSA", "dorado rosa", 0.5, "principal"),
+    materialPared("P-ORO", "dorado", 0.2, "secundario"),
+    materialPared("P-BLANCO-MATE", "blanco", 0.15, "secundario"),
+    materialPared("P-FUCSIA", "fucsia", 0.15, "secundario"),
+  ];
+  const inventados = materialesDeColorInventado([pared(materialesReales)], paredFoto);
+  assert.deepEqual(
+    inventados,
+    [{ estructura_id: "EST_01_PARED", product_id: "P-FUCSIA", color: "fucsia" }],
+    "el oro rosa es sustitución del blush (ΔE 23 del rosado observado) y el fucsia invención (48 del rosado, 88 del blanco, 97 del dorado)",
+  );
+  assert.deepEqual(materialesDeColorInventado([pared(materialesReales)], undefined), [], "sin foto no hay nada contra lo que medir");
+  assert.deepEqual(materialesDeColorInventado([pared(materialesReales, null)], paredFoto), [], "una pieza que no materializa un elemento no sigue su paleta");
+  // Una etiqueta que la taxonomía no alias a propósito es color de la foto que
+  // no vemos: sin verlo no se puede afirmar que un material no le corresponda.
+  const paredConCobre = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Copper and blush wall", "balloon_structure", ["copper", ...etiquetasPared])]);
+  assert.deepEqual(materialesDeColorInventado([pared(materialesReales)], paredConCobre), [], "paleta que no se supo leer completa: no se juzga");
+  // Transparente es acabado y multicolor no es un tono; un color que la tabla de
+  // tonos no conoce no tiene distancia que sostenga la acusación.
+  assert.deepEqual(materialesDeColorInventado([pared([
+    materialPared("P-CRISTAL", "transparente", 0.4, "principal"),
+    materialPared("P-CONFETI", "multicolor", 0.3, "secundario"),
+    materialPared("P-RARO", "frambuesa", 0.3, "secundario"),
+  ])], paredFoto), []);
+  ok("simetría del color: un material cuyo color la foto no tiene se distingue de una sustitución por ΔE");
+
+  const podado = quitarMaterialesDeColorInventado(planDe(pared(materialesReales)), inventados);
+  const materialesPodados = podado.plan.estructuras[0]!.materiales;
+  assert.deepEqual(materialesPodados.map((material) => material.color), ["dorado rosa", "dorado", "blanco"], "el color inventado no llega al plan que se cotiza");
+  assert.ok(Math.abs(materialesPodados.reduce((suma, material) => suma + material.participacion, 0) - 1) < 0.001, materialesPodados.map((material) => material.participacion).join(" "));
+  assert.deepEqual(materialesPodados.filter((material) => material.rol_material === "principal").map((material) => material.color), ["dorado rosa"], "el principal sigue siendo el de la foto");
+  const avisosPodado = podado.ajustes.flatMap((ajuste) => (ajuste.tipo === "material_quitado" ? [ajuste.aviso_cliente] : []));
+  assert.equal(avisosPodado.length, 1, podado.ajustes.map((ajuste) => ajuste.tipo).join(" "));
+  assert.match(avisosPodado[0]!, /globos fucsia/);
+  assert.match(avisosPodado[0]!, /tu foto no los tiene/);
+  assert.deepEqual(detectarJergaInterna(avisosPodado[0]!), [], avisosPodado[0]);
+  // Una pieza entera de colores ajenos no se puede podar sin borrarla: ese caso
+  // lo sigue atendiendo COLORES_REFERENCIA_OMITIDOS.
+  const soloFucsia = pared([materialPared("P-FUCSIA", "fucsia", 1, "principal")]);
+  const intacta = quitarMaterialesDeColorInventado(planDe(soloFucsia), materialesDeColorInventado([soloFucsia], paredFoto));
+  assert.deepEqual(intacta.plan.estructuras[0]!.materiales.map((material) => material.color), ["fucsia"], "podar la pieza entera la borraría");
+  assert.deepEqual(intacta.ajustes, []);
+  ok("simetría del color: se poda el material y se reescalan las participaciones, nunca la pieza completa");
+
+  // El turno completo: el fucsia no llega al plan firmado y el cliente se entera.
+  const globosPared = [
+    candidato("P-ORO-ROSA", "globo_latex", "dorado rosa", [{ variantId: "V-ORO-ROSA-12", diamPulg: 12 }]),
+    candidato("P-ORO", "globo_latex", "dorado", [{ variantId: "V-ORO-12", diamPulg: 12 }]),
+    candidato("P-BLANCO-MATE", "globo_latex", "blanco", [{ variantId: "V-BLANCO-MATE-12", diamPulg: 12 }]),
+    candidato("P-FUCSIA", "globo_latex", "fucsia", [{ variantId: "V-FUCSIA-12", diamPulg: 12 }]),
+  ];
+  const argsPared = {
+    concepto: { titulo: "Mr & Mrs", descripcion: "Pared orgánica de globos", paleta: ["rosado", "dorado", "blanco"] },
+    espacio: { tipo: "salón", fuente: "foto" },
+    estructuras: [pared(materialesReales)],
+  };
+  const { estado: estadoPared, confirmar: confirmarPared } = herramienta("Quiero algo así para mi matrimonio", globosPared, paredFoto, 0);
+  const paredConfirmada = await confirmarPared(argsPared, llamada) as Record<string, unknown>;
+  assert.equal(paredConfirmada.ok, true, JSON.stringify(paredConfirmada).slice(0, 500));
+  assert.deepEqual(
+    estadoPared.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.color),
+    ["dorado rosa", "dorado", "blanco"],
+    "el plan firmado (y lo que se envía a Python) no compra el color que el modelo inventó",
+  );
+  const avisosPared = paredConfirmada.avisos_cliente as string[];
+  assert.ok(avisosPared.some((aviso) => /fucsia/.test(aviso) && /tu foto no los tiene/.test(aviso)), avisosPared.join(" | "));
+  for (const aviso of avisosPared) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  // El cliente manda sobre la foto: si él pidió el color, no es una invención.
+  const { estado: estadoPedido, confirmar: confirmarPedido } = herramienta("Quiero algo así para mi matrimonio pero con un toque fucsia", globosPared, paredFoto, 0);
+  const pedidoConfirmado = await confirmarPedido(argsPared, llamada) as Record<string, unknown>;
+  assert.equal(pedidoConfirmado.ok, true, JSON.stringify(pedidoConfirmado).slice(0, 500));
+  assert.deepEqual(
+    estadoPedido.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.color),
+    ["dorado rosa", "dorado", "blanco", "fucsia"],
+    "el color que pidió el cliente se queda",
+  );
+  ok("simetría del color: el turno firma el plan sin el color inventado y avisa, salvo que lo pida el cliente");
+
+  // ---------------------------------------------------------------------------
   // E2E 2026-09-14 (D2): a venue photo came back as 3 × 3 × 2,5 m "measured from
   // the photo". The model does not measure: those numbers are estimates.
   // The resolver's own normalization (foto + measures -> supuesto) is locked in

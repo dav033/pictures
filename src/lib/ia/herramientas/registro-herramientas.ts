@@ -47,7 +47,7 @@ import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
 import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
 import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
 import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/plan/medidas-defecto";
-import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
+import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, materialesDeColorInventado, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { colorDeCompraSinVenta } from "@/lib/rag/catalog/similitud-color";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
@@ -58,7 +58,7 @@ import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { ajustarCoberturaPlan, avisosClienteAjustes, mezclasAdmisiblesEstructura, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
+import { ajustarCoberturaPlan, avisosClienteAjustes, mezclasAdmisiblesEstructura, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
@@ -719,9 +719,27 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // one-color product keeps its color and a structure gets a close mix every
     // material can build (cobertura-materiales.ts, E2E 2026-09-15).
     const cobertura = ajustarCoberturaPlan(canonizarColoresPlan(parseado.data).plan, disponibilidadDelTurno(estado.ragCandidatos ?? []));
-    estado.ajustesCobertura = cobertura.ajustes;
+    // Un color que la foto no tiene no entra al plan (2026-09-29): se poda aquí,
+    // con el color REAL del producto ya resuelto por la regla 1 y antes de que
+    // `aplicarColoresReferencia` cuente qué colores compra el plan. Es la mitad
+    // que le faltaba a la auditoría de color, y se acota en vez de rechazarse:
+    // no gasta un rechazo ni otra llamada al modelo. Si el cliente pidió colores,
+    // la foto ya no es la única autoridad y no se juzga nada — la misma regla que
+    // usa `coloresReferenciaOmitidosDelTurno` para el caso inverso.
+    const coloresInventados = estado.restriccionesUsuario.colores.length > 0
+      ? []
+      : materialesDeColorInventado(cobertura.plan.estructuras, estado.referenceBlueprint);
+    const podado = quitarMaterialesDeColorInventado(cobertura.plan, coloresInventados);
+    if (coloresInventados.length > 0) {
+      encolarEscrituraObservabilidad(auditarPlan({
+        requestId: estado.ragRequestId,
+        status: "PLAN_COLOR_SIN_REFERENCIA",
+        error: coloresInventados.map((item) => `${item.estructura_id}:${item.color}`).join(" | "),
+      }));
+    }
+    estado.ajustesCobertura = [...cobertura.ajustes, ...podado.ajustes];
     let planCanonico = sanearMarcasPlan(sanearPorquesPlan(aplicarFuenteMedidasEspacio(
-      aplicarColoresReferencia(cobertura.plan, estado.referenceBlueprint),
+      aplicarColoresReferencia(podado.plan, estado.referenceBlueprint),
       clienteDioMedidasEspacio(estado.solicitudOriginal),
     )));
     const erroresDeIntencion = validarRestriccionesPlan(

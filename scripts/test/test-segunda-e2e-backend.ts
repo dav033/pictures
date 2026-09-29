@@ -362,8 +362,22 @@ async function main(): Promise<void> {
   assert.deepEqual((reclamoVino.colores_omitidos as Array<{ color: string }>).map((item) => item.color), ["burdeos"]);
   const vinoConfirmado = await turnoVino.confirmar(argsVino);
   assert.equal(vinoConfirmado.ok, true, JSON.stringify(vinoConfirmado).slice(0, 400));
-  assert.equal((vinoConfirmado.avisos_cliente as string[]).length, 3, (vinoConfirmado.avisos_cliente as string[]).join(" | "));
-  ok("D5: todo color de la foto que la propuesta no lleva se avisa (gris y rosado incluidos)");
+  const avisosVino = vinoConfirmado.avisos_cliente as string[];
+  // 2026-09-29, simetría del color: el violeta que el modelo le puso a un arco
+  // burdeos/blanco/plata no está en la foto y no sustituye a nada de ella
+  // (ΔE 72 del burdeos, 77 del gris, 79 del plateado; el tope de sustitución es
+  // 45, y un rojo —a 41 del burdeos— sí se habría quedado). El servidor lo saca
+  // antes de cotizar y lo avisa: el arco queda en plateado y blanco, y los avisos
+  // pasan de tres a cuatro. Antes el violeta se cotizaba y se dibujaba.
+  assert.deepEqual(
+    turnoVino.estado.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.color),
+    ["plateado", "blanco"],
+    "un color que la foto no tiene no llega a la cotización",
+  );
+  assert.ok(avisosVino.some((aviso) => /violeta/.test(aviso) && /tu foto no los tiene/.test(aviso)), avisosVino.join(" | "));
+  assert.equal(avisosVino.length, 4, avisosVino.join(" | "));
+  for (const aviso of avisosVino) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  ok("D5: todo color de la foto que la propuesta no lleva se avisa (gris y rosado incluidos) y un color que la foto no tiene no se compra");
 
   // ---------------------------------------------------------------------------
   // D6: character and brand names, and X-Request-ID on /api/generate.
