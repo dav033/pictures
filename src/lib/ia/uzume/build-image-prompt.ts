@@ -383,6 +383,7 @@ const SUSTANTIVO_CARDINALIDAD: Readonly<Record<string, string>> = {
   columna_no_densa: "column",
   pared_densa: "balloon wall",
   pared_no_densa: "balloon wall",
+  pared_organica: "balloon wall",
   guirnalda: "garland",
   centro_mesa: "table centerpiece",
   bouquet: "balloon bouquet",

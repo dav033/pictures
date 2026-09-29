@@ -311,6 +311,7 @@
                       "columna_no_densa",
                       "pared_densa",
                       "pared_no_densa",
+                      "pared_organica",
                       "guirnalda",
                       "centro_mesa",
                       "bouquet",
@@ -1214,6 +1215,33 @@
                     "if": {
                       "properties": {
                         "estructura_oficial": {
+                          "const": "pared_organica"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "media",
+                            "lujosa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
                           "const": "guirnalda"
                         }
                       },
@@ -1569,6 +1597,33 @@
                         "densidad": {
                           "enum": [
                             "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_organica"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "media",
+                            "lujosa"
                           ]
                         }
                       }
@@ -2573,6 +2628,7 @@
                       "columna_no_densa",
                       "pared_densa",
                       "pared_no_densa",
+                      "pared_organica",
                       "guirnalda",
                       "centro_mesa",
                       "bouquet",
@@ -3477,6 +3533,33 @@
                     "if": {
                       "properties": {
                         "estructura_oficial": {
+                          "const": "pared_organica"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "media",
+                            "lujosa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
                           "const": "guirnalda"
                         }
                       },
@@ -3832,6 +3915,33 @@
                         "densidad": {
                           "enum": [
                             "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_organica"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "media",
+                            "lujosa"
                           ]
                         }
                       }

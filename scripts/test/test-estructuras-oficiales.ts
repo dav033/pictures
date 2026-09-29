@@ -35,8 +35,8 @@ for (const id of ESTRUCTURAS_OFICIALES_IDS) {
   assert.ok((TIPOS_ESTRUCTURA_1_0 as readonly string[]).includes(estructura.tipoBase), `${id} needs a Plan 1.0 type`);
   assert.ok(GUIA_ESTRUCTURAS_OFICIALES.includes(`- ${estructura.nombre} (estructura_oficial ${id}):`), `${id} must be in the chat guide`);
 }
-assert.equal(ESTRUCTURAS_OFICIALES_IDS.length, 16);
-pass("the 14 requested structures plus hoop and balloon ceiling exist, use Plan 1.0 types and are in the chat guide");
+assert.equal(ESTRUCTURAS_OFICIALES_IDS.length, 17);
+pass("the 14 requested structures plus hoop, balloon ceiling and the organic wall exist, use Plan 1.0 types and are in the chat guide");
 
 // 2. Recognition from what the chat writes in the plan.
 const casos: Array<[Parameters<typeof identificarEstructuraOficial>[0], string | undefined]> = [
@@ -52,6 +52,8 @@ const casos: Array<[Parameters<typeof identificarEstructuraOficial>[0], string |
   [{ tipo: "pared", densidad: "lujosa", nombre: "Pared de globos" }, "pared_densa"],
   [{ tipo: "pared", densidad: "sencilla", nombre: "Pared de globos" }, "pared_no_densa"],
   [{ tipo: "pared", densidad: "media", nombre: "Pared de globos no densa" }, "pared_no_densa"],
+  [{ tipo: "pared", densidad: "lujosa", nombre: "tall dense asymmetrical balloon wall, on the center, standing on the floor" }, "pared_organica"],
+  [{ tipo: "pared", densidad: "media", nombre: "organic asymmetrical balloon wall" }, "pared_organica"],
   [{ tipo: "guirnalda", densidad: "media", nombre: "Guirnalda de mesa" }, "guirnalda"],
   [{ tipo: "centro_mesa", densidad: "media", nombre: "Centro de mesa" }, "centro_mesa"],
   [{ tipo: "kit", nombre: "Bouquet de globos" }, "bouquet"],

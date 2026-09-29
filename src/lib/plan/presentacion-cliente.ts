@@ -138,6 +138,7 @@ const GRAMATICA_OFICIAL: Readonly<Record<EstructuraOficialId, { genero: Genero; 
   columna_no_densa: { genero: "f", plural: "columnas no densas" },
   pared_densa: { genero: "f", plural: "paredes de globos densas" },
   pared_no_densa: { genero: "f", plural: "paredes de globos no densas" },
+  pared_organica: { genero: "f", plural: "paredes orgánicas" },
   guirnalda: { genero: "f", plural: "guirnaldas" },
   centro_mesa: { genero: "m", plural: "centros de mesa con globos" },
   bouquet: { genero: "m", plural: "bouquets de globos" },
