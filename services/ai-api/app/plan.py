@@ -110,6 +110,11 @@ from app.patron_color import (
     validar_y_expandir,
 )
 from app.patron_color import filas_de_racimos, quitar_espejo_sin_u
+from app.silueta_patron import (
+    PresupuestoGrafica,
+    pieza_desde_estructura,
+    posiciones_de_patron,
+)
 
 
 PLAN_RESOLUTION_SCOPE = "plan.resolve"
@@ -3248,6 +3253,7 @@ def _resolved_patterns(
     plan order.
     """
     resolved: list[dict[str, object]] = []
+    presupuesto = PresupuestoGrafica()
     for position, structure in enumerate(_mappings(plan.get("estructuras"))):
         pattern = structure.get("patron_color")
         if pattern is None:
@@ -3261,8 +3267,53 @@ def _resolved_patterns(
             raise _pattern_error(context.estructura_id, error) from error
         if notices:
             item["avisos"] = [*cast(list[str], item["avisos"]), *notices]
+        posiciones = _silhouette_positions(plan, structure, item, presupuesto)
+        if posiciones is not None:
+            item["posiciones"] = posiciones
         resolved.append(item)
     return resolved
+
+
+def _silhouette_positions(
+    plan: Mapping[str, object],
+    structure: Mapping[str, object],
+    item: Mapping[str, object],
+    presupuesto: PresupuestoGrafica,
+) -> list[dict[str, object]] | None:
+    """Where each balloon of this pattern goes, on the piece's real silhouette.
+
+    Drawing only, and outside the snapshot: it rides in ``patrones_color[]``,
+    which is added after ``plan_hash`` is signed. The quantities are not
+    recomputed here -- the size x material matrix is this resolver's own split
+    (``_pattern_matrix``, the same one ``_despiece_with_plan_sizes`` buys), so
+    the silhouette gets one position per quoted balloon and the color count per
+    material is the matrix's own columns. ``None`` falls back to the grid.
+    """
+    tipo = _text(structure.get("tipo")) or ""
+    if tipo not in _GEOMETRIC_TYPES:
+        return None
+    celdas = item.get("celdas")
+    if not isinstance(celdas, list):
+        return None
+    _axis, _total, proportions, _unplaced = _structure_count(plan, structure)
+    armado = structure.get("armado_guirnalda") if _is_garland(structure) else None
+    pieza = pieza_desde_estructura(
+        _text(structure.get("estructura_id")) or "",
+        tipo,
+        _text(structure.get("estructura_oficial")),
+        _mapping(structure.get("medidas")),
+        armado if isinstance(armado, Mapping) else None,
+    )
+    # Annotated because mypy runs with ``follow_imports = "skip"``: without it the
+    # module boundary hands back ``Any`` and the declared return type is a lie.
+    posiciones: list[dict[str, object]] | None = posiciones_de_patron(
+        pieza,
+        cast(list[list[int]], celdas),
+        _pattern_matrix(plan, structure, proportions),
+        proportions,
+        presupuesto,
+    )
+    return posiciones
 
 
 def _plan_to_resolve(request: PlanResolutionRequest) -> dict[str, object]:

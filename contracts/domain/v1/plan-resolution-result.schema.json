@@ -6254,6 +6254,48 @@
                   "additionalProperties": false
                 }
               },
+              "posiciones": {
+                "maxItems": 1600,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 60
+                    },
+                    "y": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 60
+                    },
+                    "r": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    },
+                    "capa": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 15
+                    },
+                    "material": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 11
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "r",
+                    "capa",
+                    "material"
+                  ],
+                  "additionalProperties": false
+                }
+              },
               "conteo": {
                 "type": "array",
                 "items": {
