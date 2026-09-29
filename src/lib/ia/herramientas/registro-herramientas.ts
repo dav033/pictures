@@ -47,7 +47,7 @@ import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
 import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
 import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
 import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/plan/medidas-defecto";
-import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, materialesDeColorInventado, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
+import { acabadosObservadosDeMateriales, coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, materialesDeColorInventado, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { colorDeCompraSinVenta } from "@/lib/rag/catalog/similitud-color";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
@@ -58,7 +58,7 @@ import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { ajustarCoberturaPlan, avisosClienteAjustes, mezclasAdmisiblesEstructura, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
+import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, mezclasAdmisiblesEstructura, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
@@ -718,7 +718,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // Materials follow the sizes and colors this turn's search really has: a
     // one-color product keeps its color and a structure gets a close mix every
     // material can build (cobertura-materiales.ts, E2E 2026-09-15).
-    const cobertura = ajustarCoberturaPlan(canonizarColoresPlan(parseado.data).plan, disponibilidadDelTurno(estado.ragCandidatos ?? []));
+    const disponibilidadTurno = disponibilidadDelTurno(estado.ragCandidatos ?? []);
+    const cobertura = ajustarCoberturaPlan(canonizarColoresPlan(parseado.data).plan, disponibilidadTurno);
     // Un color que la foto no tiene no entra al plan (2026-09-29): se poda aquí,
     // con el color REAL del producto ya resuelto por la regla 1 y antes de que
     // `aplicarColoresReferencia` cuente qué colores compra el plan. Es la mitad
@@ -737,9 +738,18 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         error: coloresInventados.map((item) => `${item.estructura_id}:${item.color}`).join(" | "),
       }));
     }
-    estado.ajustesCobertura = [...cobertura.ajustes, ...podado.ajustes];
+    // Y el acabado que la foto muestra PARA ESE COLOR (2026-09-29): el blush
+    // perlado de la pared "Mr & Mrs" se compró cromado y nada lo detectaba. Se
+    // acota igual que el color inventado —el producto del mismo color en el
+    // acabado de la foto, si la búsqueda del turno lo tiene— y si el catálogo no
+    // lo ofrece se deja el que hay con aviso, nunca se quita el color. Un
+    // acabado que el cliente pidió manda sobre la foto, como con los colores.
+    const acabadoReferencia = estado.restriccionesUsuario.acabados.length > 0
+      ? { plan: podado.plan, ajustes: [] as AjusteCobertura[] }
+      : aplicarAcabadoReferencia(podado.plan, acabadosObservadosDeMateriales(podado.plan.estructuras, estado.referenceBlueprint), disponibilidadTurno);
+    estado.ajustesCobertura = [...cobertura.ajustes, ...podado.ajustes, ...acabadoReferencia.ajustes];
     let planCanonico = sanearMarcasPlan(sanearPorquesPlan(aplicarFuenteMedidasEspacio(
-      aplicarColoresReferencia(podado.plan, estado.referenceBlueprint),
+      aplicarColoresReferencia(acabadoReferencia.plan, estado.referenceBlueprint),
       clienteDioMedidasEspacio(estado.solicitudOriginal),
     )));
     const erroresDeIntencion = validarRestriccionesPlan(

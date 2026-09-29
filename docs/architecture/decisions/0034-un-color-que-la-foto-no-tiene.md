@@ -98,3 +98,73 @@ the fourth colour of a photo that does have it.
 Additive and local: one pure function per module plus one call site in
 `confirmar_plan_decoracion`. No contract, no `plan_hash`, no golden vector and no
 migration is touched, so reverting the commit is the whole rollback.
+
+## Amendment 2026-09-29 — the finish, not only the colour
+
+The same photo showed the same gap one level down. Its three colours were read
+**with their finishes** (pearl blush pink, chrome gold, matte white →
+`rosado satin`, `dorado reflex`, `blanco mate`), `coloresConAcabadoReferencia`
+resolves that pair per colour and the system prompt hands it to the model
+already resolved — and nothing checked that the model used it. The blush was
+bought as `Reflex Dorado Rosa`: the gold's chrome spread onto a pearl pink, and
+no rule noticed.
+
+### Decision
+
+`acabadosObservadosDeMateriales` (colores-referencia.ts) returns the finish the
+photo shows for each material's colour, and `aplicarAcabadoReferencia`
+(cobertura-materiales.ts) applies it, in the same place and the same style as
+Decision 1 above — bounded at the boundary, never refused back to the model:
+
+1. The product already offering that finish is left alone.
+2. Otherwise, if this turn's search has the **same colour** in that finish (same
+   category, and for a geometric structure with the sizes of its mix), that
+   product is bought. The finish is respected without touching the colour.
+3. If the catalog does not offer that colour in that finish, the material stays
+   and the customer is told, through the notice `acabado_material` already had
+   ("… no vienen en acabado satin en el catálogo: van en su acabado normal").
+   **The colour is never removed over a finish**: leaving the piece without a
+   colour the photo has is worse than the wrong sheen, and Decision 1's removal
+   is for colours the photo does not have at all.
+
+Which photo colour a material serves is the ΔE question of Decision 2, asked
+against **all** the element's dominant colours and not only those carrying a
+finish: `dorado rosa` is 23 from the observed `rosado`, so it serves the blush
+and owes the blush's finish, not the gold's. Restricting the nearest-neighbour
+search to colours that declare a finish would have pushed a finish-less pink
+onto the chrome gold next to it — the very contagion being fixed.
+
+`ACABADOS_QUE_CUMPLEN` maps an observed finish to the catalog names of the same
+LoRA family: `Fashion` is the catalog's matte and `Satin` its pearl, so a
+product whose text only says `fashion` does satisfy `mate`. `Metalizado`
+(mylar/foil) does not satisfy `reflex`: it is another material, not chromed
+latex.
+
+### What is deliberately not judged
+
+- A colour whose label says nothing about finish. Silence is not `mate`.
+- A product whose catalog finishes could not be read: not knowing which finish
+  it has is not knowing that it lacks one, and the notice would be false.
+- Anything that is not a latex balloon (`CATEGORIA_CON_ACABADO`). Fashion,
+  Reflex and Satin are its lines; a foil number is neither matte nor chromed in
+  that sense, and swapping one foil for another of the same colour could change
+  the digit.
+- A material with a pinned `variant_id`, or a structure with
+  `variant_overrides`: they name that product, so replacing it underneath would
+  leave the plan contradicting itself. Rule 3's notice still applies.
+- Everything, when the customer asked for a finish: they outrank the photo, the
+  same way Decision 3 hands colours to the customer.
+
+### Consequences
+
+- A plan can be signed with a different `product_id` than the model chose, in
+  the same colour and category. It is inside the turn's allowlist (the
+  replacement comes from this turn's search), it carries the finish in
+  `materiales[].acabado` — which `plan.py` then uses to narrow that product's
+  variants — and the swap is recorded as the `acabado_referencia` adjustment.
+  It produces no customer notice: the photo's finish was honoured.
+- Pure boundary policy: no contract, no `plan_hash`, no golden vector. Reverting
+  the commit is the whole rollback.
+- Left open for the business: whether the pearl/chrome distinction is worth a
+  price difference or a second search when the active catalog lacks the finish,
+  and whether `Silk`, `Pastel Matte` and `Pastel Dusk` should map onto `mate`.
