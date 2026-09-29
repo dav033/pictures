@@ -54,6 +54,13 @@ const casos: Array<[Parameters<typeof identificarEstructuraOficial>[0], string |
   [{ tipo: "pared", densidad: "media", nombre: "Pared de globos no densa" }, "pared_no_densa"],
   [{ tipo: "pared", densidad: "lujosa", nombre: "tall dense asymmetrical balloon wall, on the center, standing on the floor" }, "pared_organica"],
   [{ tipo: "pared", densidad: "media", nombre: "organic asymmetrical balloon wall" }, "pared_organica"],
+  // El nombre oficial en español no lleva "asimétrica" sino "orgánica", y el plan
+  // llega con él: sin esto una pared del propio catálogo volvía a `pared_densa`
+  // (2026-09-29). Acotado a la pared: `arco` y `guirnalda` dicen "organic" en su
+  // sustantivo inglés siendo simétricos.
+  [{ tipo: "pared", densidad: "media", nombre: "Pared orgánica blush" }, "pared_organica"],
+  [{ tipo: "pared", densidad: "media", nombre: "Pared organica" }, "pared_organica"],
+  [{ tipo: "arco", densidad: "media", nombre: "organic balloon garland arch" }, "arco"],
   [{ tipo: "guirnalda", densidad: "media", nombre: "Guirnalda de mesa" }, "guirnalda"],
   [{ tipo: "centro_mesa", densidad: "media", nombre: "Centro de mesa" }, "centro_mesa"],
   [{ tipo: "kit", nombre: "Bouquet de globos" }, "bouquet"],

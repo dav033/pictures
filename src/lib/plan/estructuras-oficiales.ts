@@ -197,7 +197,7 @@ export function identificarEstructuraOficial(estructura: EstructuraPlanLigera): 
       // Una pared puede ser densa y orgánica a la vez: cubre todo el fondo con
       // racimos irregulares. Sin esta rama caía en `pared_densa`, que es
       // simétrica, y el prompt de imagen pedía un muro plano.
-      if (asimetrica) return oficial("pared_organica");
+      if (asimetrica || /\borg[áa]nic/.test(nombre)) return oficial("pared_organica");
       return noDensa && !densa ? oficial("pared_no_densa") : oficial("pared_densa");
     case "guirnalda":
       return oficial("guirnalda");
