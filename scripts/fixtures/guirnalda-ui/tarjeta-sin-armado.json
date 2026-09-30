@@ -1,12 +1,14 @@
 {
   "capturada_en": "27528f2",
+  "recapturada_en": "feat/cotizacion-profesional",
+  "motivo_recaptura": "La tarjeta perdió `max-w-190` en su clase raíz y ganó el hueco `precioCliente` (vacío en esta prueba). Comprobado a mano: con `max-w-190` reinsertado, la única diferencia con 27528f2 son los ids de useId desplazados por ese hueco (_R_1aa69a_ -> _R_1aa69e_). Sin armado, la tarjeta sigue sin cambios de contenido.",
   "plan": "scripts/fixtures/patron-color-ui/plan-con-patrones.json",
   "editable": {
-    "bytes": 380460,
-    "sha256": "23879334e7431a90fced1b5e448dd86b22f88e647d793619d216332f4b767409"
+    "bytes": 380450,
+    "sha256": "da954a457a042f7ecb358a24f231f0c93758698d8fdf22e4568229fa93d52950"
   },
   "lectura": {
-    "bytes": 331786,
-    "sha256": "4de985a95ae506b95e97ec257c8e1d7182bf5154173d42b174e4ea2365f72b9d"
+    "bytes": 331776,
+    "sha256": "4f1843d32abad2a61e13d90ba0adc3aec5f4af3cb7ce24a1cb933a1c0f70b581"
   }
 }
