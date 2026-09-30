@@ -571,12 +571,41 @@ def _globos_por_racimo(p: _Patron) -> int:
     return 4
 
 
+def _columnas_de_rejilla(estructura: EstructuraPatron) -> int:
+    """Ancho de la rejilla de una pared. Depende SOLO de la estructura (total y
+    proporción), no del patrón, así que se puede saber antes de armarlo."""
+    total = max(0, estructura.total)
+    ancho, alto = estructura.ancho_m, estructura.alto_m
+    razon = ancho / alto if ancho and alto else 1.0
+    return max(2, _redondear(math.sqrt(total * razon)))
+
+
+def _posiciones_de_acento(estructura: EstructuraPatron, orden: int) -> dict[str, object]:
+    """Dónde cae un acento de relleno: el color que la base no llegó a usar.
+
+    En una pieza de racimos va en la posición 0 de cada racimo, como siempre.
+
+    En una PARED, un acento SIN ``posiciones`` pinta la FILA ENTERA: ``_aplicar_capas``
+    recorre ``range(columnas)`` cuando faltan, así que con ``cada: 3`` sale un TERCIO
+    de la pieza en bandas horizontales de lado a lado. Es lo contrario de lo que pide
+    la frase del propio modo (``no stripes, no bands``) y es lo que se ve cuando la
+    foto muestra ese color MEZCLADO entre el dominante en vez de agrupado — el blanco
+    perlado de una pared blush, por ejemplo.
+
+    Con el mismo paso en columnas que en filas, el cruce de los dos deja puntos
+    sueltos en vez de franjas: salpicado entre el dominante, que es como se arma
+    (decisión del 2026-09-30). Con paso 3 pinta ~1/9 de la pieza en vez de 1/3.
+    """
+    if estructura.tipo != TIPO_REJILLA:
+        return {"posiciones": [0]}
+    paso = 3 + orden
+    return {"posiciones": list(range(orden % paso, _columnas_de_rejilla(estructura), paso))}
+
+
 def _rejilla(estructura: EstructuraPatron, p: _Patron) -> tuple[str, int, int]:
     total = max(0, estructura.total)
     if estructura.tipo == TIPO_REJILLA:
-        ancho, alto = estructura.ancho_m, estructura.alto_m
-        razon = ancho / alto if ancho and alto else 1.0
-        columnas = max(2, _redondear(math.sqrt(total * razon)))
+        columnas = _columnas_de_rejilla(estructura)
         return "rejilla", max(1, _redondear(total / columnas)), columnas
     k = _globos_por_racimo(p)
     return "racimos", max(1, _redondear(total / k)), k
@@ -1183,7 +1212,7 @@ def _con_acentos(
             "material": material,
             "cada": 3 + orden,
             "desde": 2 + orden,
-            **({"posiciones": [0]} if estructura.tipo != TIPO_REJILLA else {}),
+            **_posiciones_de_acento(estructura, orden),
         }
         for orden, material in enumerate(sin_uso)
     ] + [_acento_json(acento) for acento in conservados]
@@ -1609,7 +1638,7 @@ def patron_desde_pista(
                 "material": material,
                 "cada": 3 + orden,
                 "desde": 2 + orden,
-                **({"posiciones": [0]} if estructura.tipo != TIPO_REJILLA else {}),
+                **_posiciones_de_acento(estructura, orden),
             }
             for orden, material in enumerate(sin_uso)
         ]
