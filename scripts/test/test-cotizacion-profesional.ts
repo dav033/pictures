@@ -86,6 +86,49 @@ async function probarBorrador(): Promise<void> {
   assert.equal(b.leerPesos("$ 1.250.000"), 1250000);
   assert.equal(b.leerPesos("0"), 0);
   for (const texto of ["", "12,5", "-3", "doce", "1e5"]) assert.equal(b.leerPesos(texto), null, texto);
+  // Los miles separados son SOLO esteticos: lo que se escribe se guarda ya
+  // formateado y `leerPesos` quita los puntos, asi que el valor no cambia.
+  assert.equal(b.formatearPesos("1000"), "1.000");
+  assert.equal(b.formatearPesos("1000000"), "1.000.000");
+  assert.equal(b.formatearPesos("999"), "999");
+  assert.equal(b.formatearPesos("$ 12.000"), "12.000", "vuelve a formatear lo ya formateado sin duplicar puntos");
+  assert.equal(b.formatearPesos("007"), "7", "sin ceros a la izquierda");
+  assert.equal(b.formatearPesos(""), "", "se puede vaciar el campo");
+  assert.equal(b.formatearPesos("doce"), "", "sin digitos no hay cifra");
+  // La invariante que importa: formatear no mueve el valor.
+  for (const crudo of ["1000", "1250000", "999", "0", "12.000"]) {
+    assert.equal(b.leerPesos(b.formatearPesos(crudo)), b.leerPesos(crudo), crudo);
+  }
+  // El cursor se queda tras el mismo digito que tenia delante.
+  assert.equal(b.posicionTrasDigitos("1.000", 1), 1, "tras el primer digito");
+  assert.equal(b.posicionTrasDigitos("1.000", 2), 3, "el punto no cuenta como digito");
+  assert.equal(b.posicionTrasDigitos("1.000", 4), 5);
+  assert.equal(b.posicionTrasDigitos("1.000", 0), 0, "al principio");
+  assert.equal(b.posicionTrasDigitos("1.000", 9), 5, "mas digitos de los que hay: al final");
+  // La secuencia real de `EntradaPesos`: lo que pasa tecla a tecla.
+  const teclear = (inicial: string, cursorInicial: number, teclas: string) => {
+    let valor = inicial;
+    let cursor = cursorInicial;
+    for (const tecla of teclas) {
+      const escrito = valor.slice(0, cursor) + tecla + valor.slice(cursor);
+      const digitos = escrito.slice(0, cursor + 1).replace(/\D/g, "").length;
+      valor = b.formatearPesos(escrito);
+      cursor = b.posicionTrasDigitos(valor, digitos);
+    }
+    return { valor, cursor };
+  };
+  const mil = teclear("", 0, "1000");
+  assert.equal(mil.valor, "1.000", "escribir 1000 se ve 1.000");
+  assert.equal(mil.cursor, 5, "el cursor queda al final, no antes del punto");
+  assert.equal(b.leerPesos(mil.valor), 1000, "y el valor sigue siendo 1000");
+  const millon = teclear("", 0, "1250000");
+  assert.equal(millon.valor, "1.250.000");
+  assert.equal(b.leerPesos(millon.valor), 1250000);
+  // Corregir en medio: un 5 tras el "1" de "1.000" da "15.000" y el cursor no
+  // salta al final (era 1, queda 2: justo detras del 5 recien escrito).
+  const enMedio = teclear("1.000", 1, "5");
+  assert.equal(enMedio.valor, "15.000");
+  assert.equal(enMedio.cursor, 2, "el cursor se queda donde se escribio");
   assert.equal(b.leerCantidad("1,5"), 1.5);
   assert.equal(b.leerCantidad("0.25"), 0.25);
   for (const texto of ["0", "1,234", "-1", "", "100001"]) assert.equal(b.leerCantidad(texto), null, texto);

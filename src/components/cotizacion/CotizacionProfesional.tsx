@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type InputHTMLAttributes } from "react";
 import { Calculator, ChevronDown, Plus, RotateCcw, Trash2 } from "lucide-react";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { SECCIONES_COSTO, type CotizacionProfesionalResultado, type EntradaCotizacionProfesional, type SeccionCosto } from "@/lib/cotizacion/profesional";
@@ -11,7 +11,9 @@ import {
   TITULOS_SECCION,
   borradorVacio,
   filaVacia,
+  formatearPesos,
   leerBorrador,
+  posicionTrasDigitos,
   materialesDesdeCotizacion,
   pedirCotizacionProfesional,
   type BorradorProfesional,
@@ -88,6 +90,44 @@ function idFila(): string {
  * catálogo de cada bolsa. Python calcula cada total
  * (/api/cotizacion-profesional); aquí solo se escribe y se muestra.
  */
+/**
+ * Entrada de pesos que se ve con los miles separados mientras se escribe:
+ * "1000" aparece como "1.000". El punto es SOLO estetico — lo que se guarda es
+ * ese mismo texto y `leerPesos` quita los puntos, asi que el valor enviado a
+ * Python sigue siendo 1000.
+ *
+ * Conserva el cursor por numero de digitos escritos antes de el. Sin eso, al
+ * reformatear en cada tecla el cursor salta al final y corregir una cifra en
+ * medio ("1.0|00" -> borrar) se vuelve imposible.
+ */
+function EntradaPesos({ valor, onValor, ...resto }: { valor: string; onValor: (texto: string) => void } & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
+  const ref = useRef<HTMLInputElement>(null);
+  const cursor = useRef<number | null>(null);
+  useEffect(() => {
+    const nodo = ref.current;
+    if (cursor.current === null || !nodo) return;
+    nodo.setSelectionRange(cursor.current, cursor.current);
+    cursor.current = null;
+  });
+  return (
+    <input
+      {...resto}
+      ref={ref}
+      inputMode="numeric"
+      value={valor}
+      onChange={(evento) => {
+        const escrito = evento.target.value;
+        const hasta = evento.target.selectionStart ?? escrito.length;
+        const digitos = escrito.slice(0, hasta).replace(/\D/g, "").length;
+        const formateado = formatearPesos(escrito);
+        cursor.current = posicionTrasDigitos(formateado, digitos);
+        onValor(formateado);
+      }}
+    />
+  );
+}
+
+
 export function CotizacionProfesional({ cotizacion, clave, incrustada = false }: Props) {
   // El borrador guardado de esta cotización: la tarjeta solo existe en el navegador
   // (los mensajes salen de sessionStorage), así que se lee al crear el estado.
@@ -272,11 +312,10 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
                       </span>
                       <span className="flex items-center gap-1">
                         <label htmlFor={idEntrada} className="sr-only">Precio por bolsa de {productoCliente(material.descripcion)}</label>
-                        <input
+                        <EntradaPesos
                           id={idEntrada}
-                          inputMode="numeric"
-                          value={editado ? escrito : numero.format(material.precio_paquete_catalogo_cop)}
-                          onChange={(evento) => cambiarPrecio(material.variant_id, evento.target.value)}
+                          valor={editado ? escrito : numero.format(material.precio_paquete_catalogo_cop)}
+                          onValor={(texto) => cambiarPrecio(material.variant_id, texto)}
                           aria-invalid={invalido}
                           className={`${claseEntrada} ${invalido ? "border-error" : editado ? "border-acento" : "border-borde"} text-right tabular-nums`}
                         />
@@ -369,11 +408,10 @@ function SeccionCostos(props: {
                   aria-invalid={invalida && !fila.descripcion.trim()}
                   className={`${claseEntrada} ${bordeEntrada(invalida && !fila.descripcion.trim())} col-span-4 @xl:col-span-1`}
                 />
-                <input
+                <EntradaPesos
                   aria-label={`Costo unitario (${titulo})`}
-                  inputMode="numeric"
-                  value={fila.costo}
-                  onChange={(evento) => props.onCambiar(fila.id, { costo: evento.target.value })}
+                  valor={fila.costo}
+                  onValor={(texto) => props.onCambiar(fila.id, { costo: texto })}
                   placeholder="Costo unit."
                   aria-invalid={invalida}
                   className={`${claseEntrada} ${bordeEntrada(invalida)} text-right tabular-nums`}

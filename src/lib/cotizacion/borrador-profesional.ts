@@ -60,6 +60,38 @@ export function leerPesos(texto: string): number | null {
   return Number.isSafeInteger(valor) && valor <= MAX_COP ? valor : null;
 }
 
+/**
+ * Lo escrito con los miles separados, como se ve un precio en Colombia:
+ * "1000" -> "1.000". Es SOLO estetico: `leerPesos` quita los puntos, asi que el
+ * valor que se envia a Python sigue siendo 1000. Descarta todo lo que no sea
+ * digito (el "$" que alguien pegue, espacios), y una cadena sin digitos vuelve
+ * vacia para poder borrar el campo.
+ */
+export function formatearPesos(texto: string): string {
+  const digitos = texto.replace(/\D/g, "");
+  if (!digitos) return "";
+  // Sin ceros a la izquierda: "007" se escribe "7", no "007".
+  const limpio = digitos.replace(/^0+(?=\d)/, "");
+  return limpio.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/**
+ * Donde dejar el cursor despues de reformatear: al final del digito numero
+ * `digitos` del texto ya formateado. Sin esto el cursor salta al final y
+ * corregir una cifra en medio es imposible.
+ */
+export function posicionTrasDigitos(texto: string, digitos: number): number {
+  if (digitos <= 0) return 0;
+  let vistos = 0;
+  for (let i = 0; i < texto.length; i += 1) {
+    if (/\d/.test(texto[i]!)) {
+      vistos += 1;
+      if (vistos === digitos) return i + 1;
+    }
+  }
+  return texto.length;
+}
+
 /** Hasta dos decimales, con coma o punto: "2", "1,5", "0.25". */
 function leerDecimal(texto: string, maximo: number): number | null {
   const limpio = texto.trim().replace(",", ".");
