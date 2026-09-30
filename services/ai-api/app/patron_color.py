@@ -2337,13 +2337,19 @@ class _Redactor:
     ) -> str:
         """Fragmento LoRA de las zonas: ASCII, sin cifras y sin negaciones (ADR-0028 §8).
 
+        "over a X base" le hacía pintar al LoRA un PANEL liso de ese color con
+        los globos alrededor, igual que "a base of" en la frase Gemini
+        (2026-09-29): la imagen la genera el LoRA, así que esta es la frase que
+        de verdad decide. "among X balloons" dice lo mismo y todo lo que nombra
+        son globos.
+
         Nombra el sitio solo cuando el color va en uno: con varios pesa más que
         cualquier otro fragmento del caption y el compilador tiene un tope
         (``LORA_PROMPT_MAX_LENGTH``) que empieza a tirar partes. "in four compact
         patches" dice el mismo look sin cifras.
         """
         if nombrados > 4:
-            return f"with compact multicolor patches over a {self.lora(fondo)} base"
+            return f"with compact multicolor patches among {self.lora(fondo)} balloons"
         clausulas = _sin_repetir_seguidos(
             [
                 f"{self.lora(material)} clustered at {_ANCLA_EN[anclas[0]]}"
@@ -2353,7 +2359,7 @@ class _Redactor:
                 for material, anclas in agrupadas.items()
             ]
         )
-        return f"with {', plus '.join(clausulas)} over a {self.lora(fondo)} base"
+        return f"with {', plus '.join(clausulas)} among {self.lora(fondo)} balloons"
 
     def acentos(self) -> tuple[list[str], list[str], str]:
         """Instrucciones, frases Gemini y fragmento LoRA de los acentos."""

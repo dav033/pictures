@@ -917,7 +917,7 @@
             "version": "patron-color.v1"
           },
           "prompt_gemini": "COLOR PATTERN — most of the balloons are pearl pink, covering the whole piece, with high-shine chrome gold gathered into one compact patch at the upper right corner, plus matte white gathered into one compact patch at the lower left corner; each patch is one solid group of touching balloons of that single color, and the remaining balloons fill everything between the patches; no stripes, no bands, no gradient and no even scatter of the patch colors.",
-          "prompt_lora": "with gold clustered at the upper right corner, plus white clustered at the lower left corner over a pink base",
+          "prompt_lora": "with gold clustered at the upper right corner, plus white clustered at the lower left corner among pink balloons",
           "repeticiones": 1
         }
       ],

@@ -1835,10 +1835,14 @@ def test_las_frases_de_zonas_agrupan_los_sitios_de_cada_color() -> None:
     assert "~30 % de la pieza" in str(resuelto["descripcion"])
     # El fragmento LoRA no lleva cifras ni negaciones y es ASCII (ADR-0028 §8).
     lora = str(resuelto["prompt_lora"])
+    # 2026-09-29: "over a X base" le hacía pintar al LoRA un panel liso de ese
+    # color con los globos alrededor. La imagen la genera el LoRA, así que esta
+    # es la frase que decide: todo lo que nombra tiene que ser globos.
     assert lora == (
         "with gold clustered in two compact patches, plus white clustered at the middle of the"
-        " left side over a pink base"
+        " left side among pink balloons"
     )
+    assert "base" not in lora
     assert lora.isascii() and not re.search(r"\d|\bno\b|\bnot\b|avoid", lora)
 
 
