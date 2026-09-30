@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ConstruccionArco } from "./ConstruccionArco";
 
 /**
  * Honest phase by elapsed time: the provider reports no progress, so this
@@ -25,34 +26,13 @@ type Props = {
 };
 
 /**
- * Wait for the proposal image: a balloon inflates and deflates softly while
- * the phase text changes. Replaces a bare shimmer box that gave no sense of
- * what was happening during a wait of up to two minutes.
+ * Wait for the proposal image: an arch of balloons in the proposal's colors
+ * builds itself while the phase text changes (`ConstruccionArco`), instead
+ * of a bare shimmer box during a wait of up to two minutes.
  */
 export function CargaImagen({ segundos, conMarco = true, colores = [], onCancelar }: Props) {
   const reducir = useReducedMotion();
   const fase = faseCargaImagen(segundos);
-  const color = colores.length ? colores[Math.floor(segundos / 6) % colores.length]! : "var(--acento)";
-  const globo = (
-    <motion.svg
-      viewBox="0 0 40 56"
-      className="h-16 w-12 drop-shadow-[0_8px_16px_var(--sombra)]"
-      aria-hidden="true"
-      animate={reducir ? undefined : { scale: [0.82, 1, 0.82], y: [0, -4, 0] }}
-      transition={reducir ? undefined : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-    >
-      <defs>
-        <radialGradient id="brillo-globo" cx="35%" cy="30%" r="60%">
-          <stop offset="0%" stopColor="white" stopOpacity="0.55" />
-          <stop offset="60%" stopColor="white" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="20" cy="20" rx="16" ry="19" style={{ fill: color, transition: "fill 0.8s ease" }} />
-      <ellipse cx="20" cy="20" rx="16" ry="19" fill="url(#brillo-globo)" />
-      <path d="M17.5 38.5h5l-2.5 3.5z" style={{ fill: color, transition: "fill 0.8s ease" }} />
-      <path d="M20 42c-3 4 3 7 0 13" fill="none" strokeWidth="1" className="stroke-texto-tenue" />
-    </motion.svg>
-  );
   return (
     <div role="status" aria-live="polite" className="space-y-2.5">
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-texto">
@@ -74,11 +54,16 @@ export function CargaImagen({ segundos, conMarco = true, colores = [], onCancela
         )}
       </p>
       {conMarco ? (
-        <div className="brillo-carga relative grid aspect-[3/2] w-full place-items-center rounded-2xl" aria-hidden="true">
-          {globo}
+        <div className="relative aspect-[3/2] w-full overflow-hidden rounded-2xl bg-superficie-2 ring-1 ring-borde-suave ring-inset" aria-hidden="true">
+          <ConstruccionArco segundos={segundos} colores={colores} className="absolute inset-0 size-full p-4" />
+          <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-superficie/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-acento ring-1 ring-borde-suave backdrop-blur-sm">
+            Construyendo tu decoración
+          </span>
         </div>
       ) : (
-        <div className="flex justify-center" aria-hidden="true">{globo}</div>
+        <div className="flex justify-center" aria-hidden="true">
+          <ConstruccionArco segundos={segundos} colores={colores} className="h-28 w-auto" />
+        </div>
       )}
     </div>
   );

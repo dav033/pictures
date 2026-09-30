@@ -13,6 +13,7 @@ import { EstadoError } from "@/components/propuesta/EstadoError";
 import { imagenDeReferencia, urlImagen } from "./recorte";
 import { vistaAnalisisFoto, type EstadoAnalisisFoto } from "./textos-analisis";
 import { ubicarEtiquetas, type PosicionEtiqueta, type TamanoFoto } from "./etiquetas-analisis";
+import { EscanerFoto } from "./EscanerFoto";
 
 export type { EstadoAnalisisFoto } from "./textos-analisis";
 
@@ -52,22 +53,50 @@ function PuntosEspera() {
   );
 }
 
+const ESQUINAS_PIEZA = [
+  { clase: "-left-px -top-px border-l-[3px] border-t-[3px] rounded-tl-[14px]", x: -6, y: -6 },
+  { clase: "-right-px -top-px border-r-[3px] border-t-[3px] rounded-tr-[14px]", x: 6, y: -6 },
+  { clase: "-left-px -bottom-px border-l-[3px] border-b-[3px] rounded-bl-[14px]", x: -6, y: 6 },
+  { clase: "-right-px -bottom-px border-r-[3px] border-b-[3px] rounded-br-[14px]", x: 6, y: 6 },
+] as const;
+
 function RecuadroPieza({ pieza, numero, orden, posicion }: { pieza: PiezaVistaEnReferencia; numero: number; orden: number; posicion: PosicionEtiqueta }) {
   const reducir = useReducedMotion();
   const { x, y, width, height } = pieza.bbox;
   const retraso = reducir ? 0 : 0.15 + orden * 0.4;
   return (
     <>
+      {/* Lock-on: the brackets close in on the piece, the frame settles and a light sweeps it once. */}
       <motion.div
         aria-hidden="true"
-        className="pointer-events-none absolute rounded-[18px] border-[2.5px] border-white bg-acento-suave/20 shadow-[0_0_0_1px_rgb(0_0_0/0.08)]"
+        className="pointer-events-none absolute"
         style={{ left: `${x * 100}%`, top: `${y * 100}%`, width: `${width * 100}%`, height: `${height * 100}%` }}
-        initial={reducir ? false : { opacity: 0, clipPath: "inset(0% 100% 100% 0% round 18px)" }}
-        animate={{ opacity: 1, clipPath: "inset(0% 0% 0% 0% round 18px)" }}
-        transition={{ duration: 0.8, delay: retraso, ease: [0.65, 0, 0.35, 1] }}
-      />
+        initial={reducir ? false : { opacity: 0, scale: 1.12 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.55, delay: retraso, ease: EASE }}
+      >
+        <div className="absolute inset-0 overflow-hidden rounded-[14px] border border-white/60 bg-linear-to-br from-acento/25 via-acento/5 to-acento-2/15 shadow-[inset_0_0_28px_color-mix(in_srgb,var(--acento)_45%,transparent),0_0_0_1px_rgb(0_0_0/0.12),0_0_24px_color-mix(in_srgb,var(--acento)_35%,transparent)]">
+          {!reducir && (
+            <motion.span
+              className="absolute inset-y-0 -left-1/2 w-1/2 -skew-x-12 bg-linear-to-r from-transparent via-white/35 to-transparent"
+              initial={{ x: "0%" }}
+              animate={{ x: "400%" }}
+              transition={{ duration: 0.9, delay: retraso + 0.35, ease: "easeInOut" }}
+            />
+          )}
+        </div>
+        {ESQUINAS_PIEZA.map((esquina) => (
+          <motion.span
+            key={esquina.clase}
+            className={`absolute size-4 border-white drop-shadow-[0_0_5px_var(--acento)] ${esquina.clase}`}
+            initial={reducir ? false : { opacity: 0, x: esquina.x, y: esquina.y }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            transition={{ duration: 0.45, delay: retraso + 0.1, ease: EASE }}
+          />
+        ))}
+      </motion.div>
       <motion.p
-        className="absolute z-10 flex max-w-full -translate-y-full items-center gap-1.5 rounded-full bg-superficie py-1 pl-1 pr-2.5 text-xs shadow-[0_8px_24px_rgb(0_0_0/0.25)] sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-3 sm:text-[13px]"
+        className="absolute z-10 flex max-w-full -translate-y-full items-center gap-1.5 rounded-full bg-superficie/90 py-1 pl-1 pr-2.5 text-xs shadow-[0_8px_24px_rgb(0_0_0/0.3)] ring-1 ring-white/15 backdrop-blur-md sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-3 sm:text-[13px]"
         data-etiqueta-pieza={numero}
         style={{
           // Overlapping boxes stack their labels instead of covering each other (etiquetas-analisis.ts).
@@ -79,7 +108,7 @@ function RecuadroPieza({ pieza, numero, orden, posicion }: { pieza: PiezaVistaEn
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 380, damping: 20, delay: retraso + 0.45 }}
       >
-        <span className="relative grid size-5 shrink-0 place-items-center rounded-full bg-acento text-[11px] font-semibold text-sobre-acento">
+        <span className="relative grid size-5 shrink-0 place-items-center rounded-full bg-linear-to-br from-acento to-acento-2 text-[11px] font-semibold text-white shadow-[0_0_10px_var(--sombra-acento)]">
           {numero}
           {/* One ring bursts out of the number when the piece is found. */}
           {!reducir && (
@@ -96,6 +125,34 @@ function RecuadroPieza({ pieza, numero, orden, posicion }: { pieza: PiezaVistaEn
         {pieza.ubicacionCorta && posicion.conExtra && <span className="shrink-0 text-texto-suave">{pieza.ubicacionCorta}</span>}
       </motion.p>
     </>
+  );
+}
+
+/** What the assistant says it is doing while it looks, one step after another. */
+const PASOS_ANALISIS = ["Buscando las piezas de globos", "Midiendo proporciones", "Leyendo los colores", "Reconociendo el espacio"] as const;
+
+function FraseAnalisis({ titulo }: { titulo: string }) {
+  const [paso, setPaso] = useState(0);
+  useEffect(() => {
+    const intervalo = window.setInterval(() => setPaso((previo) => previo + 1), 2200);
+    return () => window.clearInterval(intervalo);
+  }, []);
+  const frases = [titulo, ...PASOS_ANALISIS];
+  const frase = frases[paso % frases.length]!;
+  return (
+    <span className="relative inline-grid overflow-hidden">
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={frase}
+          initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
+          transition={{ duration: 0.35, ease: EASE }}
+        >
+          {frase}
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 }
 
@@ -150,20 +207,9 @@ export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar,
           <img ref={fotoRef} src={src} alt="Tu foto de referencia" draggable={false} className="block h-auto max-h-[min(480px,60vh)] w-auto max-w-full" />
           <AnimatePresence>
             {conVelo && (
-              <motion.div key="velo" aria-hidden="true" className="absolute inset-0 bg-overlay" initial={{ opacity: 0 }} animate={{ opacity: vista.caso === "analizando" ? 0.75 : 0.55 }} exit={{ opacity: 0, transition: { duration: 0.6 } }} />
+              <motion.div key="velo" aria-hidden="true" className="absolute inset-0 bg-overlay" initial={{ opacity: 0 }} animate={{ opacity: vista.caso === "analizando" ? 0.1 : 0.55 }} exit={{ opacity: 0, transition: { duration: 0.6 } }} />
             )}
-            {estado === "analizando" && !reducir && (
-              <motion.div
-                key="escaneo"
-                aria-hidden="true"
-                className="absolute inset-x-0 h-[70px] bg-linear-to-b from-transparent via-acento/25 to-acento-suave/95 mix-blend-screen"
-                initial={{ top: "-70px", opacity: 0 }}
-                animate={{ top: ["-70px", "100%"], opacity: [0, 1, 1, 0] }}
-                // The loop transition must not apply to the exit, or the exit never ends.
-                exit={{ opacity: 0, transition: { duration: 0.3 } }}
-                transition={{ top: { duration: 2.6, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }, opacity: { duration: 2.6, repeat: Infinity, times: [0, 0.1, 0.85, 1] } }}
-              />
-            )}
+            {estado === "analizando" && <EscanerFoto key="escaneo" src={src} />}
           </AnimatePresence>
           {piezasImagen.map(({ pieza, numero }, orden) => <RecuadroPieza key={pieza.elementId} pieza={pieza} numero={numero} orden={orden} posicion={posiciones[orden]!} />)}
           {vista.caso === "listo" && vista.piezas.length > 0 && (
@@ -212,7 +258,7 @@ export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar,
             <AnimatePresence mode="wait" initial={false}>
               {vista.caso === "analizando" ? (
                 <motion.p key="mirando" className="flex items-center gap-2 text-[15px] font-medium text-texto" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.25 }}>
-                  {vista.titulo}
+                  <FraseAnalisis titulo={vista.titulo} />
                   <PuntosEspera />
                 </motion.p>
               ) : vista.caso === "sin_globos" ? (
