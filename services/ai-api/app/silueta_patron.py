@@ -367,33 +367,46 @@ def _celda(celdas: Sequence[Sequence[int]], fila: int, columna: int) -> int:
 def _lectura_pared(
     globos: Sequence[GloboSilueta], celdas: Sequence[Sequence[int]]
 ) -> tuple[list[GloboSilueta], Preferencia]:
-    """Una pared se lee por el sitio, remuestreando la rejilla sobre los globos.
+    """Una pared se lee POR EL SITIO: cada globo toma la celda donde de verdad está.
 
     ``celdas[fila][columna]`` va de arriba a abajo y de izquierda a derecha, así
-    que un degradé, unos bloques o un damero se leen sobre la silueta como se
-    leían sobre la rejilla. La correspondencia va por PUESTO y no por altura: los
-    globos se ordenan de arriba abajo y se parten en tantas bandas como filas
-    tiene la rejilla, con la misma cantidad en cada una; dentro de una banda, de
-    izquierda a derecha sobre las columnas. Repartir por altura en crudo dejaba
-    bandas con menos globos de los que su color tenía cupo —el croquis no llena
-    la altura de forma pareja, y menos con el borde vivo— y ese sobrante caía
-    todo junto en el borde de abajo, lejos de su bloque.
+    que un degradé, unos bloques, un damero o unas manchas se leen sobre la
+    silueta como se leían sobre la rejilla.
+
+    La correspondencia va por POSICIÓN normalizada dentro de la pieza. Antes iba
+    por PUESTO: los globos se partían en tantas bandas como filas, con la misma
+    cantidad en cada una, y dentro de la banda por orden de izquierda a derecha.
+    Eso se eligió porque repartir por altura en crudo dejaba bandas con menos
+    globos de los que su color tenía cupo. Pero el cupo lo hace cumplir
+    ``_materiales`` aguas abajo —esto es solo una PREFERENCIA—, así que el
+    argumento no se sostenía, y el precio era alto: en una pared orgánica las
+    filas de arriba tienen menos globos y la banda se estiraba igual sobre todo
+    el ancho, de modo que el color de un sitio se pintaba en otro.
+
+    Medido el 2026-09-30 sobre una pared de 483 globos con manchas en zonas:
+    solo el **72 %** de los globos recibía el color de su propio sitio. Uno de
+    cada cuatro se pintaba con el de otra parte de la pared, y eso es lo que
+    deshacía las manchas y las dejaba salpicadas.
     """
     orden = sorted(globos, key=lambda globo: (-globo.y, globo.x, globo.indice))
     filas = len(celdas)
-    cuantos = len(orden)
-    preferencias: dict[int, int] = {}
-    inicio = 0
-    for fila in range(filas):
-        fin = (fila + 1) * cuantos // filas
-        banda = sorted(orden[inicio:fin], key=lambda globo: (globo.x, globo.indice))
+    xs = [globo.x for globo in globos]
+    ys = [globo.y for globo in globos]
+    x0, x1 = min(xs), max(xs)
+    y0, y1 = min(ys), max(ys)
+    ancho = (x1 - x0) or 1.0
+    alto = (y1 - y0) or 1.0
+
+    def preferencia(globo: GloboSilueta) -> int:
+        # El motor crece hacia arriba (`y = 0` es el suelo) y la rejilla va de
+        # arriba a abajo, así que la altura se voltea.
+        fila = int((1.0 - (globo.y - y0) / alto) * filas)
+        fila = max(0, min(filas - 1, fila))
         columnas = len(celdas[fila]) or 1
-        for puesto, globo in enumerate(banda):
-            preferencias[globo.indice] = _celda(
-                celdas, fila, puesto * columnas // max(1, len(banda))
-            )
-        inicio = fin
-    return orden, lambda globo: preferencias[globo.indice]
+        columna = int(((globo.x - x0) / ancho) * columnas)
+        return _celda(celdas, fila, max(0, min(columnas - 1, columna)))
+
+    return orden, preferencia
 
 
 def _corazones(
@@ -510,16 +523,31 @@ def _materiales(
     fila_de_tamano = {pulgada: fila for fila, pulgada in enumerate(pulgadas)}
     restantes = [list(cantidades) for cantidades in matriz]
     salida: dict[int, int] = {}
+    # DOS pasadas. En una sola, una posición que no podía tener su color se
+    # llevaba "el que más le quedaba" y con eso ROBABA el cupo a otra posición
+    # que sí lo prefería: la sustitución se propagaba y deshacía las manchas.
+    # El dorado de una pared salía salpicado en vez de agrupado, y los globos
+    # grandes acababan del color equivocado (visto 2026-09-30).
+    #
+    # Primera pasada: todo el que PUEDE tener su color lo tiene. Segunda: solo
+    # los que no pudieron reparten lo que sobra, sin quitárselo a nadie.
+    pendientes: list[GloboSilueta] = []
     for globo in orden:
         fila = fila_de_tamano.get(globo.nominal)
         if fila is None:
             return None
         quedan = restantes[fila]
         material = preferido(globo)
-        if material >= len(quedan) or quedan[material] <= 0:
-            material = max(range(len(quedan)), key=lambda indice: (quedan[indice], -indice))
-            if quedan[material] <= 0:
-                return None
+        if material < len(quedan) and quedan[material] > 0:
+            quedan[material] -= 1
+            salida[globo.indice] = material
+        else:
+            pendientes.append(globo)
+    for globo in pendientes:
+        quedan = restantes[fila_de_tamano[globo.nominal]]
+        material = max(range(len(quedan)), key=lambda indice: (quedan[indice], -indice))
+        if quedan[material] <= 0:
+            return None
         quedan[material] -= 1
         salida[globo.indice] = material
     if any(cantidad for quedan in restantes for cantidad in quedan):

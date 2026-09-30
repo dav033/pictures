@@ -301,6 +301,48 @@ def test_ningun_globo_se_sale_de_las_medidas_de_la_pared() -> None:
         assert -1e-6 <= y - r and y + r <= PARED.alto_m + 1e-6
 
 
+def test_cada_globo_de_una_pared_lleva_el_color_de_SU_sitio() -> None:
+    """Una mancha se dibuja donde el patrón la puso, no corrida.
+
+    `_lectura_pared` mapeaba la rejilla sobre los globos por PUESTO dentro de una
+    banda, no por posición: en una pared orgánica las filas de arriba tienen
+    menos globos y la banda se estiraba igual sobre todo el ancho, así que el
+    color de un sitio se pintaba en otro. Medido el 2026-09-30 sobre 483 globos:
+    solo el 72 % recibía el color de su propia celda, y eso deshacía las manchas.
+
+    Aquí se usa un damero de bloques grandes —mitad izquierda un color, mitad
+    derecha el otro—, que es lo que deja ver un corrimiento a simple vista: cada
+    globo de la izquierda tiene que salir del color de la izquierda.
+    """
+    filas, columnas = 12, 4
+    izquierda_derecha = tuple(
+        tuple(0 if columna < columnas // 2 else 1 for columna in range(columnas))
+        for _fila in range(filas)
+    )
+    posiciones = _armar(PARED_ORGANICA, celdas=izquierda_derecha)
+    assert posiciones, "la pared tiene croquis"
+
+    xs = [cast(float, posicion["x"]) for posicion in posiciones]
+    medio = (min(xs) + max(xs)) / 2
+    correctos = sum(
+        1
+        for posicion in posiciones
+        if (cast(int, posicion["material"]) == 0) == (cast(float, posicion["x"]) <= medio)
+    )
+    fidelidad = correctos / len(posiciones)
+    # 0,85 y no 1,0 a propósito: el resto son conflictos REALES entre el sitio y
+    # la matriz tamaño × material. Si a la mitad izquierda le toca un globo de un
+    # tamaño que a su color ya no le queda, `_materiales` lo sustituye — el color
+    # se mueve de sitio, nunca de cantidad. Cerrar ese hueco pide decidir el
+    # tamaño y el color JUNTOS (el modelo de capas de `clasificador-decoraciones`,
+    # `src/lib/organico/capas.ts`), que es otro trabajo. Con el mapeo por puesto
+    # esto daba 0,72; el umbral protege la mejora sin fingir que es perfecta.
+    assert fidelidad >= 0.85, (
+        f"solo el {fidelidad:.0%} de los globos lleva el color de su mitad;"
+        " las manchas se están dibujando corridas de donde el patrón las puso"
+    )
+
+
 def test_pieza_desde_estructura_lee_el_armado_de_una_guirnalda() -> None:
     pieza = pieza_desde_estructura(
         "E9",
