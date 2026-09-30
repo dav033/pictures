@@ -843,6 +843,53 @@ def _frases_de_cambios(cambios: Sequence[Mapping[str, object]]) -> str:
     return ", ".join(frases)
 
 
+def _solo_mezcla(
+    estructura: dict[str, object],
+    lectura: Mapping[str, object],
+    *,
+    mezcla_fija: bool,
+    puerto: PuertoPlan,
+) -> _Resultado | None:
+    """La mezcla de tamaños que muestra la foto, SIN tocar la cantidad.
+
+    ``por_tamano`` es un dato independiente de la cuenta: una foto puede enseñar
+    clarísimamente que hay muchos globos chicos de relleno y unos pocos grandes
+    sin que se pueda contar cuántos hay. Hasta el 2026-09-30 el despachador se
+    rendía antes de mirarlo —si la cuenta no era usable, la lectura ENTERA se
+    tiraba— y la mezcla se quedaba con la de la tabla.
+
+    Lo que costó: en la pared "Mr & Mrs" el plan compró 10 globos de 24"
+    (0,56 m de diámetro, un cuarto del ancho de la pieza) porque la tabla
+    `organica_fina` lleva un 2 % de R-24. La foto no tiene ninguno.
+
+    Solo mueve la mezcla. La cantidad, las medidas y la densidad no se tocan:
+    para eso hace falta una cuenta, y no la hay.
+    """
+    if mezcla_fija or puerto.tamanos_obligatorios:
+        return None
+    por_tamano = cast(Sequence[Mapping[str, object]], lectura.get("por_tamano") or [])
+    if not por_tamano:
+        return None
+    confianza = lectura.get("confianza")
+    if not isinstance(confianza, (int, float)) or float(confianza) < CONFIANZA_MINIMA_LECTURA:
+        return None
+    mezcla = str(estructura.get("mezcla") or "organica_fina")
+    cambiar = mezcla_de_la_foto(por_tamano, puerto.mezclas, mezcla)
+    if cambiar is None or not puerto.mezcla_cubierta(estructura, cambiar):
+        return None
+    despues = {**estructura, "mezcla": cambiar}
+    return _Resultado(
+        despues,
+        "ajustado",
+        None,
+        puerto.contar(estructura),
+        puerto.contar(despues),
+        _cambios(estructura, despues),
+        "La lectura no trae una cuenta confiable, pero sí el reparto por tamaño:"
+        " se ajusta la mezcla y no la cantidad.",
+    )
+
+
 def _geometrica(
     estructura: dict[str, object],
     lectura: Mapping[str, object],
@@ -1025,16 +1072,24 @@ def aplicar(
                 "Esta resolución solo ajusta la pieza editada.",
             )
         elif cuenta is None:
-            actual = _globos_actuales(estructura, puerto)
-            resultado = _Resultado(
-                estructura,
-                "no_confiable",
-                None,
-                actual,
-                actual,
-                [],
-                "La lectura no trae una cuenta confiable (confianza, exacta, estimado o racimos).",
+            # Sin cuenta usable no se puede ajustar la cantidad, pero el reparto
+            # por TAMAÑO es otro dato y puede venir perfectamente legible.
+            por_mezcla = _solo_mezcla(
+                dict(estructura), lectura, mezcla_fija=solo is not None, puerto=puerto
             )
+            if por_mezcla is not None:
+                resultado = por_mezcla
+            else:
+                actual = _globos_actuales(estructura, puerto)
+                resultado = _Resultado(
+                    estructura,
+                    "no_confiable",
+                    None,
+                    actual,
+                    actual,
+                    [],
+                    "La lectura no trae una cuenta confiable (confianza, exacta, estimado o racimos).",
+                )
         elif tipo == "kit":
             leida = armados.get(str(elemento)) if usar_armados else None
             confiable = (

@@ -413,6 +413,44 @@ async def test_una_lectura_poco_confiable_no_cambia_nada() -> None:
     ]
 
 
+@pytest.mark.anyio
+async def test_sin_cuenta_usable_el_reparto_por_tamano_de_la_foto_sigue_valiendo() -> None:
+    """La foto puede enseñar los TAMAÑOS aunque no se puedan contar los globos.
+
+    Hasta el 2026-09-30 el despachador se rendía antes de mirar `por_tamano`: si
+    la cuenta no era usable, la lectura entera se tiraba y la mezcla se quedaba
+    con la de la tabla. En la pared "Mr & Mrs" eso hizo que el plan comprara 10
+    globos de 24" (un cuarto del ancho de la pieza) que la foto no tiene, porque
+    `organica_fina` lleva un 2 % de R-24.
+
+    Son dos datos independientes: sin cuenta no se toca la cantidad, pero el
+    reparto por tamaño sí se aplica.
+    """
+    base = await _resolver_geometrico(_plan_geometrico(_guirnalda()))
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(_guirnalda()),
+        completar_conteos=True,
+        # Sin cuenta usable: ni exacta, ni estimado, ni racimos. Pero el reparto
+        # por tamaño dice claramente que esto son globos de 12", sin gigantes.
+        pistas_conteo=[
+            _conteo(
+                globos_visibles=0,
+                exacto=False,
+                estimado_total=None,
+                racimos=None,
+                por_tamano=[{"clase": "mediano", "proporcion": 1.0}],
+                confianza=0.8,
+            )
+        ],
+    )
+
+    assert _conteos(resolved)[0]["globos_foto"] is None, "sin cuenta, la cantidad no se toca"
+    assert _estructura(resolved)["mezcla"] != _estructura(base)["mezcla"], (
+        "el reparto por tamaño de la foto sí cambia la mezcla"
+    )
+    assert _estructura(resolved)["mezcla"] == "clasica", "la foto dice un solo tamaño mediano"
+
+
 def test_una_pista_fuera_de_contrato_se_rechaza() -> None:
     with pytest.raises(ValidationError):
         _peticion_geometrica(
