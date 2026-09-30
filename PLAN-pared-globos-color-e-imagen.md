@@ -59,6 +59,50 @@ canal estaba cerrado **para todas las piezas**, no solo para la pared.
 
 ---
 
+## ⚠ Lo primero al retomar: cuatro minas del cable, verificadas
+
+Segundo barrido (51 agentes, 16 minas confirmadas, 6 refutadas). Tres de sus
+pasos ya están hechos —la raíz del 422, su prueba y los comentarios corregidos—.
+Estas quedan, en orden:
+
+### 1. `_complete_plan` lanza un 422 al RE-resolver un patrón de zonas guardado
+
+`services/ai-api/app/plan.py:1079` — `_sync_participations` llama a
+`_expand_pattern` **sin capturar** `PatronColorInvalido`, y lo convierte en
+`PlanResolutionError("patron_invalido", 422)`.
+
+En la primera resolución no pasa nada, porque `patron_desde_pista` ya validó.
+Pero **el patrón queda guardado**, y en cualquier re-resolución con la rejilla
+más chica —el decorador edita medidas, densidad o mezcla— las manchas de la foto
+más el acento se comen todas las celdas del fondo: `material_sin_uso` sobre el
+color dominante y **la app cae**. El preset no puede llegar ahí porque pone una
+sola mancha por color con `extension = participacion`.
+
+**Por qué no lo arreglé**: degradar aquí toca el dueño comercial y necesita un
+canal de `avisos` que hoy `_sync_participations` no tiene. Hacerlo con prisa es
+cómo se crea el siguiente incidente. Es la tanda E aplicada aquí, no solo en
+`patron_desde_pista`, y conviene hacerlas juntas.
+
+### 2. Los textos mienten sobre el conteo
+
+`patron_color.py:2318` dice *"most of the balloons are pink"* con el rosado al
+13 % y el dorado al 55 %. Y `:2382` dice *"no stripes, no bands"* y **dos
+palabras después** pide una banda cada 3 filas. Los dos describen el patrón
+declarado, no la rejilla que salió.
+
+### 3. Una mancha puede caer en el MISMO material que el fondo
+
+`patron_color.py:1540` — la tarjeta dice *"Fondo de rosado con rosado agrupado
+en…"*. `material_de_color` resuelve por ΔE ≤ 25 y nada impide que dos colores
+distintos de la pista caigan en el mismo material.
+
+### 4. `pared_no_densa` se dibuja como un panel rectangular
+
+`silueta_patron.py:218` — solo `pared_organica` recibe el borde vivo; cualquier
+otra pared oficial sale como un rectángulo limpio.
+
+---
+
 ## Alcance decidido (2026-09-30)
 
 **El LoRA se queda como está.** No se cambia de versión, no se reentrena, no se
