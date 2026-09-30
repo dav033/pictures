@@ -197,7 +197,15 @@ ESTILO = Estilo()
 
 #: Amplitud máxima del borde vivo (fracción del lado): más que esto y dos lados
 #: opuestos se cruzan y el contorno deja de ser un polígono simple.
-_BORDE_VIVO_TOPE = 0.18
+_BORDE_VIVO_TOPE = 0.20
+#: Cuánto muerde el borde vivo, medido en DIÁMETROS del globo dominante. La
+#: mordida se mide en globos y no en fracción de la pieza: con 0,09 del lado
+#: menor, una pared de 2,0 × 1,5 m mordía 13,5 cm — menos de medio globo de 12",
+#: un borde "orgánico" indistinguible de uno recto (medido 2026-09-30).
+_MORDIDA_EN_GLOBOS = 1.2
+#: Suelo de la envolvente del borde: lo que muerde la esquina respecto del
+#: centro. Con 0 las cuatro esquinas salían rectas.
+_SUELO_ENVOLVENTE = 0.35
 
 
 @dataclass(frozen=True)
@@ -311,7 +319,13 @@ class Borde:
         if self.amplitud <= 0:
             return 0.0
         t = _acotar(t, 0.0, 1.0)
-        envolvente: float = math.sin(math.pi * t) ** 0.7
+        # La envolvente afina la mordida hacia los extremos para que dos lados
+        # contiguos no la sumen entera en la esquina. Pero valía CERO en t=0 y
+        # t=1, así que una pared orgánica tenía las cuatro esquinas perfectamente
+        # rectas (medido 2026-09-30) — y en una pared de racimos la esquina es de
+        # lo más irregular que hay. Con suelo, la esquina muerde una parte y el
+        # centro sigue mordiendo entero.
+        envolvente: float = _SUELO_ENVOLVENTE + (1.0 - _SUELO_ENVOLVENTE) * math.sin(math.pi * t) ** 0.7
         a = self.fases[lado * 2] * math.tau
         b = self.fases[lado * 2 + 1] * math.tau
         onda = 0.65 * math.sin(2.3 * math.tau * t + a) + 0.35 * math.sin(
@@ -785,6 +799,18 @@ def _espina_guirnalda(
 # --- Construcción de la silueta -----------------------------------------------
 
 
+def _diametro_dominante_m(cupos: tuple[Cupo, ...]) -> float:
+    """Diámetro (m) del tamaño que más globos aporta.
+
+    Es la unidad con la que se mide una mordida del borde: un borde que muerde
+    menos de un globo no se distingue de uno recto.
+    """
+    if not cupos:
+        return 0.0
+    dominante = max(cupos, key=lambda cupo: (cupo.cantidad, cupo.pulgadas))
+    return dominante.pulgadas * 0.0254
+
+
 def _fases(semilla: int) -> tuple[float, ...]:
     """Ocho números sorteados de una vez: la forma no cambia por otra perilla."""
     azar = _Azar(semilla * 7919 + 13)
@@ -864,10 +890,17 @@ def crear_silueta(peticion: Peticion) -> Silueta:
     estilo = peticion.estilo
     fases = _fases(peticion.semilla)
     if tipo in _TIPOS_PARED:
+        lado_menor = min(medidas.ancho_m, medidas.alto_m)
+        # La mordida se mide en GLOBOS, no en fracción de la pieza: la misma
+        # fracción daba media mordida en una pared pequeña y dos en una grande,
+        # y lo que hace que un borde se lea como roto es que falte un globo.
+        # `borde_vivo` sigue mandando: en 0 la pared vuelve al rectángulo limpio.
         amplitud = (
-            _acotar(estilo.borde_vivo, 0.0, _BORDE_VIVO_TOPE)
-            * min(medidas.ancho_m, medidas.alto_m)
-            if tipo == "pared_organica"
+            min(
+                _MORDIDA_EN_GLOBOS * _diametro_dominante_m(peticion.cupos),
+                _BORDE_VIVO_TOPE * lado_menor,
+            )
+            if tipo == "pared_organica" and estilo.borde_vivo > 0.0
             else 0.0
         )
         borde = Borde(
