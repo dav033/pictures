@@ -335,7 +335,20 @@ class PlanPatronRequest(OperationalRequest):
     participaciones: list[float] | None = Field(default=None, min_length=2, max_length=6)
     #: Con ``patron_color`` nulo, el punto de partida de ese estilo en vez del preset.
     modo: (
-        Literal["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero"] | None
+        Literal[
+            "espiral",
+            "anillos",
+            "bloques",
+            "degradado",
+            "aleatorio",
+            "flor",
+            "damero",
+            # `patron_color` declara `zonas` entre los modos de una pared y el
+            # editor lo ofrece en la galería de estilos; sin este literal, pulsar
+            # "Zonas" devolvía 422 (2026-09-30).
+            "zonas",
+        ]
+        | None
     ) = None
     #: Con ``modo``: el borrador del que viene el decorador (forma de ``patron-color.v1``).
     desde: dict[str, object] | None = None

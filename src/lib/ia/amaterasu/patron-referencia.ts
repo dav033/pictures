@@ -100,11 +100,11 @@ function patronDePista(pista: PythonPatronReferenciaPista): PatronColorReferenci
     ...(pista.globos_por_racimo === undefined ? {} : { globos_por_racimo: pista.globos_por_racimo }),
     ...(pista.pesos === undefined ? {} : { pesos: pista.pesos }),
     // Solo con `modo: "zonas"`. El lector de Python adjunta las manchas para
-    // CUALQUIER modo, y los modelos de la petición de plan son por modo: el de
-    // `zonas` exige ese literal y los demás PROHÍBEN el campo, así que una pista
-    // `aleatorio` con manchas no encaja en ninguna variante y Python rechaza la
-    // petición ENTERA (`pistas_patron.0.zonas: extra_forbidden`, 2026-09-30).
-    // Antes de que la frontera dejara pasar `zonas` esto era inalcanzable.
+    // CUALQUIER modo, y solo `_base_de_zonas_de_pista` las lee: mandarlas con
+    // otro modo es ruido que ninguna etapa usa. (El 2026-09-30 esto se creyó la
+    // causa del 422 de producción y no lo era: la causa estaba en `PistaPatron`
+    // de `plan.py`, un modelo a mano que se quedó sin `zonas` y sin ese literal
+    // cuando nació el modo. Se arregló allí; esta guarda se queda por higiene.)
     ...(pista.modo === "zonas" && pista.zonas !== undefined ? { zonas: pista.zonas } : {}),
     confianza: pista.confianza,
   };

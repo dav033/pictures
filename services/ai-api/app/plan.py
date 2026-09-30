@@ -293,16 +293,50 @@ class PlanAllowlistEntry(ContractModel):
         return normalized
 
 
+class ZonaLeida(ContractModel):
+    """Una mancha de color leída en la foto (``PistaPatronSchema.zonas``, ADR-0036).
+
+    El color va por NOMBRE de catálogo, no por índice: quien mira la foto no
+    conoce los materiales de la pieza. ``patron_color.material_de_color`` los
+    resuelve con la misma tabla de tonos.
+    """
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    color: str = Field(min_length=1, max_length=80)
+    ancla: Literal[
+        "superior_izquierda",
+        "superior_centro",
+        "superior_derecha",
+        "media_izquierda",
+        "centro",
+        "media_derecha",
+        "inferior_izquierda",
+        "inferior_centro",
+        "inferior_derecha",
+    ]
+    extension: int = Field(ge=1, le=60)
+
+
 class PistaPatron(ContractModel):
     """Color pattern read in the reference photo (``PistaPatronSchema``, ADR-0028 §7)."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
     referencia_element_id: str = Field(min_length=1, max_length=80)
-    modo: Literal["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero"]
+    modo: Literal[
+        "espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero", "zonas"
+    ]
     colores: list[str] = Field(min_length=1, max_length=12)
     globos_por_racimo: int | None = Field(default=None, ge=1, le=8)
     pesos: list[int] | None = Field(default=None, max_length=12)
+    #: Manchas leídas en la foto (ADR-0036). Este modelo se mantiene A MANO y se
+    #: quedó sin `zonas` cuando nació el modo: `extra="forbid"` hacía que una
+    #: pista real de zonas rechazara la petición de plan ENTERA con 422, y la app
+    #: respondía SERVICIO_NO_DISPONIBLE (2026-09-30). `patron_color` sí sabía
+    #: armarla desde el 29: era código inalcanzable porque la puerta de entrada
+    #: no la dejaba pasar.
+    zonas: list[ZonaLeida] | None = Field(default=None, max_length=8)
     confianza: float = Field(ge=0, le=1)
 
     @field_validator("referencia_element_id")

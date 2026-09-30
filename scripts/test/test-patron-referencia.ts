@@ -350,12 +350,11 @@ async function main(): Promise<void> {
   );
   ok("cuatro manchas del mismo color cruzan la frontera y llegan al blueprint");
 
-  // El lector de Python adjunta `zonas` para CUALQUIER modo. Los modelos de la
-  // petición de plan son POR MODO: el de `zonas` exige ese literal y los demás
-  // prohíben el campo, así que una pista `aleatorio` con manchas no encaja en
-  // ninguna variante y Python rechaza la petición ENTERA con
-  // `pistas_patron.0.zonas: extra_forbidden`. Rompió la app el 2026-09-30, en
-  // cuanto la frontera dejó pasar `zonas` por primera vez.
+  // El lector de Python adjunta `zonas` para CUALQUIER modo, y solo el modo
+  // `zonas` las usa: mandarlas con otro modo es ruido que ninguna etapa lee.
+  // (La caída del 2026-09-30 se atribuyó a esto y no era: la causa estaba en
+  // `PistaPatron` de `plan.py`, cubierta ahora por
+  // `test_la_pista_de_zonas_de_la_foto_cruza_el_modelo_de_la_peticion`.)
   const manchasEnOtroModo = instalarPythonPatron((l) => sobre(l, resultadoPatron([{
     element_id: "REF_01_E01",
     modo: "aleatorio",

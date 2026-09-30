@@ -449,6 +449,76 @@ async def test_la_pista_se_lee_por_el_tono_mas_cercano() -> None:
     assert _por_color(resolved) == {"lila": 20, "blanco": 20}
 
 
+def _pared(
+    colores: Sequence[str] = ("rosado", "dorado", "blanco"),
+    partes: Sequence[float] = (0.65, 0.25, 0.10),
+    **extra: object,
+) -> dict[str, object]:
+    return {
+        "estructura_id": "EST_01_PARED",
+        "nombre": "Pared",
+        "tipo": "pared",
+        "rol_escena": "focal",
+        "ubicacion": "fondo_pared",
+        "medidas": {"ancho_m": 2.0, "alto_m": 1.5},
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+            {
+                "product_id": f"prod-{color}",
+                "color": color,
+                "participacion": parte,
+                "rol_material": "principal" if indice == 0 else "secundario",
+            }
+            for indice, (color, parte) in enumerate(zip(colores, partes, strict=True))
+        ],
+        "porque": "Pared de prueba.",
+        **extra,
+    }
+
+
+@pytest.mark.anyio
+async def test_la_pista_de_zonas_de_la_foto_cruza_el_modelo_de_la_peticion() -> None:
+    """Cuatro manchas del mismo color, por el camino REAL de la petición.
+
+    `PistaPatron` se mantiene a mano y se quedó sin `zonas` cuando nació el modo
+    (ADR-0036): con `extra="forbid"` y un `Literal` sin "zonas", una pista real
+    rechazaba la petición de plan ENTERA con 422 y la app respondía
+    SERVICIO_NO_DISPONIBLE. Los demás tests de zonas llaman a las funciones de
+    patrón directamente y se saltan el modelo, así que no lo veían; éste sí pasa
+    por `_resolve` -> `_request` -> `PlanResolutionRequest.model_validate`.
+    """
+    plan = _plan(_pared(referencia_element_id="ref-pared"))
+    pista = {
+        "referencia_element_id": "ref-pared",
+        "modo": "zonas",
+        "colores": ["rosado", "dorado", "blanco"],
+        "zonas": [
+            {"color": "dorado", "ancla": "superior_derecha", "extension": 8},
+            {"color": "dorado", "ancla": "media_izquierda", "extension": 6},
+            {"color": "dorado", "ancla": "inferior_centro", "extension": 6},
+            {"color": "dorado", "ancla": "inferior_izquierda", "extension": 5},
+        ],
+        "confianza": 0.7,
+    }
+
+    resolved = await _resolve(plan, completar_patrones=True, pistas_patron=[pista])
+
+    patron = _patron_del_plan(resolved)
+    assert patron["origen"] == "referencia", "la pista de la foto manda, no el preset"
+    base = cast(dict[str, object], patron["base"])
+    assert base["modo"] == "zonas"
+    manchas = cast(list[dict[str, object]], base["zonas"])
+    assert len(manchas) == 4, "las cuatro manchas del mismo color sobreviven"
+    assert {str(mancha["ancla"]) for mancha in manchas} == {
+        "superior_derecha",
+        "media_izquierda",
+        "inferior_centro",
+        "inferior_izquierda",
+    }
+
+
 @pytest.mark.anyio
 async def test_una_pista_dudosa_o_de_otro_elemento_cae_al_preset() -> None:
     plan = _plan(_columna(referencia_element_id="ref-col"))
