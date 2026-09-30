@@ -33,6 +33,76 @@ Los marcados **(3/3)** o **(2/3)** pasaron la verificación adversaria con ese v
 
 ---
 
+## CIERRE DE LA PASADA DEL 2026-09-30
+
+Rama **`fix/pared-organica-color-e-imagen`**, 17 commits, **sin subir**.
+Verificado a cada paso: **1187 pruebas de Python**, `plan:test`, `tsc`, lint en
+25 avisos (la línea base exacta), `ruff`, `mypy`. Cero vectores dorados tocados.
+
+### Lo que se arregló
+
+| | qué estaba roto |
+|---|---|
+| **El cable** | El modo `zonas` existía desde el 2026-09-29 y **nunca se había ejecutado desde una foto**. Tres cortes en serie: un esquema Zod copiado a mano, un copiado campo a campo, y `PistaPatron` de `plan.py` — otro modelo a mano sin `zonas` ni en el literal ni en los campos. Ninguna prueba lo cubría porque el test de TS fabricaba él mismo la respuesta de Python. |
+| **La proporción** | La `extension` que el modelo estima **a ojo** sobrescribía la participación. Medido en la pieza real: **dorado 53 % → 22 %**. Y movía dinero, porque el patrón manda sobre el conteo. |
+| **Los tamaños** | `por_tamano` se tiraba entero si no venía con una cuenta usable, así que la mezcla salía de la tabla. De ahí **10 globos de 24"** (0,56 m) que la foto no tiene. |
+| **El mapeo del croquis** | `_lectura_pared` mapeaba por **puesto dentro de una banda**, no por posición: **solo el 72 %** de los globos llevaba el color de su propia celda. **Ahora 100 %.** Esto era lo salpicado. |
+| **El borde orgánico** | Mordía menos de medio globo y **cero en las esquinas**. Ahora ~1 globo, y escala con el globo en vez de con la pieza. |
+| **El canal de la guía** | Dos candados en serie: el filtro de tipos y el formato JSON del único LoRA aprobado. **Ningún croquis había llegado nunca al generador**, ni de paredes ni de guirnaldas. |
+| **El caption** | La bandera `g` convertía «pearl pink» en «pearl white pink». Y la carta de color se llevaba por delante los diámetros. |
+| **Diagnóstico** | Un rechazo de contrato ya dice **qué campo** falló, sin los valores. Sin eso, el fallo de la mañana habrían sido otras dos horas. |
+| **Desarrollo** | `APROBACION_SIN_HUELLA_PARA_PRUEBAS`, que falla cerrado en producción. |
+
+### Medido con dinero: US$ 0,252
+
+6 imágenes en fal con el LoRA **aprobado**. **Sin guía: un arco sobre patas en el
+suelo. Con guía: la guirnalda montada en la pared.** El canal que se abrió hoy es
+decisivo, y funciona con el modelo que iría a producción.
+
+### La conclusión de fondo, que es lo más valioso
+
+**El croquis decide el color y el tamaño por separado, y luego los reconcilia
+sustituyendo.** El patrón pinta un color por celda; la mezcla reparte los globos
+por tamaño; `_materiales` intenta cumplir los dos y sustituye cuando chocan.
+
+`clasificador-decoraciones` —el otro repo del usuario— **no tiene ese problema
+porque no los separa**: su unidad es una **capa = (tamaño, color)** con su
+aporte (`src/lib/organico/capas.ts`), así que el conflicto no puede existir. Y
+tiene el modo que aquí falta: `reparto: "racimos"` — *"cada racimo es de un solo
+color, como en los arreglos profesionales"*.
+
+`silueta.py` se hizo inspirado en ese motor, pero **se llevó la geometría y no el
+modelo de capas**. Ese es el pedazo que falta, y es el techo de lo de hoy: la
+prueba nueva mide **88 %** de fidelidad y el 12 % restante son conflictos reales
+entre el sitio y la matriz tamaño×material.
+
+**Llevarse el modelo de capas es el arreglo de fondo del croquis.** No es un
+parche más: es el que cierra el 12 % y de paso da `racimos`.
+
+### Pendiente, en orden
+
+1. **El modelo de capas** (arriba). El de fondo.
+2. **Un 422 al RE-resolver un patrón de zonas guardado** — `plan.py:1079`,
+   `_sync_participations` no captura `PatronColorInvalido`. Salta cuando el
+   decorador edita medidas o densidad. **Puede volver a tumbar la app.** Degradar
+   ahí necesita un canal de avisos que no existe; va con la decisión E.
+3. **Los textos mienten sobre el conteo** — la descripción y el prompt de imagen
+   se calculan del patrón declarado, no de la rejilla que sale.
+4. **Una mancha puede caer en el mismo material que el fondo** (ΔE ≤ 25).
+5. **`pared_no_densa` se dibuja como un panel** rectangular.
+6. **A2** — el caption nombra los colores en orden alfabético, así que el
+   dominante va el último. Pide enhebrar la participación hasta
+   `ProductConceptClauseInput`.
+7. **Los globos blancos gigantes** del croquis: sin explicar. Con 10 de 24"
+   repartidos por participación, al blanco (10 %) le tocaría **uno**.
+
+### Sin commitear, a propósito
+
+Nada mío. Los ficheros que el árbol muestre modificados son de **otra sesión en
+paralelo** (ADR-0037, paridad de color), confirmada por el usuario.
+
+---
+
 ## ✅ Medido con dinero real: la guía es decisiva
 
 **2026-09-30, corrida pagada.** 6 imágenes en fal con el LoRA **aprobado**
