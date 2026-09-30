@@ -85,6 +85,13 @@ export function elementosParaDeteccion(blueprint: ReferenceBlueprintV2): Map<str
   return porFoto;
 }
 
+/**
+ * Copia campo a campo, así que CADA campo nuevo del contrato hay que añadirlo
+ * aquí: `zonas` se perdió justo así cuando ADR-0036 lo añadió, y el elemento
+ * quedaba con `modo: "zonas"` y sin una sola mancha. Lo que impide que vuelva a
+ * pasar es la prueba de `scripts/test/test-patron-referencia.ts`, que exige que
+ * una pista con manchas llegue entera hasta `pistas_patron`.
+ */
 function patronDePista(pista: PythonPatronReferenciaPista): PatronColorReferencia | undefined {
   if (pista.modo === "ninguno" || pista.colores.length === 0) return undefined;
   return {
@@ -92,6 +99,13 @@ function patronDePista(pista: PythonPatronReferenciaPista): PatronColorReferenci
     colores: pista.colores,
     ...(pista.globos_por_racimo === undefined ? {} : { globos_por_racimo: pista.globos_por_racimo }),
     ...(pista.pesos === undefined ? {} : { pesos: pista.pesos }),
+    // Solo con `modo: "zonas"`. El lector de Python adjunta las manchas para
+    // CUALQUIER modo, y los modelos de la petición de plan son por modo: el de
+    // `zonas` exige ese literal y los demás PROHÍBEN el campo, así que una pista
+    // `aleatorio` con manchas no encaja en ninguna variante y Python rechaza la
+    // petición ENTERA (`pistas_patron.0.zonas: extra_forbidden`, 2026-09-30).
+    // Antes de que la frontera dejara pasar `zonas` esto era inalcanzable.
+    ...(pista.modo === "zonas" && pista.zonas !== undefined ? { zonas: pista.zonas } : {}),
     confianza: pista.confianza,
   };
 }

@@ -36,6 +36,7 @@ import {
   MODOS_PATRON_COLOR,
   ModoAdmitidoSchema,
   PatronColorResueltoSchema,
+  PistaPatronSchema,
   type ModoAdmitido,
   type ModoPatronColor,
   type PatronColor,
@@ -1540,14 +1541,23 @@ const referenceTurnPayloadResultSchema = z.object({
 // Local contract (ADR-0026 §3): the Pydantic side is
 // services/ai-api/app/amaterasu/patron_referencia.py, which owns the prompt,
 // the palette and the validation of the provider output.
-const patronReferenciaPistaSchema = z.object({
-  element_id: z.string().min(1).max(80),
-  modo: z.enum([...MODOS_PATRON_COLOR, "ninguno"]),
-  colores: z.array(z.string().min(1).max(80)).max(12),
-  globos_por_racimo: z.number().int().min(1).max(8).optional(),
-  pesos: z.array(z.number().int().min(1).max(100)).max(12).optional(),
-  confianza: z.number().min(0).max(1),
-}).strict();
+//
+// Derived from the contract's own `PistaPatronSchema` instead of re-typed here.
+// A hand-written copy drifted once and cost the whole feature: ADR-0036 added
+// `zonas` to the contract and to Python, this copy was not updated, and because
+// it is `.strict()` every reading that carried patches failed with
+// PYTHON_INVALID_RESPONSE — so the `zonas` mode never once ran from a photo.
+// `.omit().extend()` keeps the strictness; a new contract field arrives here on
+// its own.
+const patronReferenciaPistaSchema = PistaPatronSchema
+  .omit({ referencia_element_id: true, modo: true, colores: true })
+  .extend({
+    element_id: z.string().min(1).max(80),
+    // "ninguno" is not a contract mode: the reader sends it when the photo shows
+    // no pattern, and only then may the hint come without colors.
+    modo: z.enum([...MODOS_PATRON_COLOR, "ninguno"]),
+    colores: z.array(z.string().trim().min(1).max(80)).max(12),
+  });
 
 const patronReferenciaPayloadResultSchema = z.object({
   operation_schema_version: z.literal("patron-referencia-result.v1"),

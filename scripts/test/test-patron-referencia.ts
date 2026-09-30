@@ -320,6 +320,59 @@ async function main(): Promise<void> {
   assert.equal(dosFotos.elements[0]!.appearance.patron_color, undefined, "el blueprint recibido no se modifica");
   ok("la detección arma una petición por foto y un fallo solo deja esa foto sin pistas");
 
+  // El cable de las manchas, extremo a extremo. Esta es la pista que Python
+  // devuelve de verdad para una pared con un color agrupado en varios sitios
+  // (ADR-0036): CUATRO manchas del MISMO color. Hasta el 2026-09-30 este caso no
+  // existía, y el transporte llevaba roto desde que nació el modo: el esquema
+  // del adaptador era una copia a mano, no declaraba `zonas`, y al ser
+  // `.strict()` tumbaba la respuesta ENTERA con PYTHON_INVALID_RESPONSE; aguas
+  // abajo `patronDePista` tampoco copiaba el campo. Con cualquiera de los dos
+  // cortes vivo, este caso sale en rojo.
+  const cuatroManchas: Json = {
+    modo: "zonas",
+    colores: ["rosado", "dorado", "blanco"],
+    zonas: [
+      { color: "dorado", ancla: "superior_derecha", extension: 8 },
+      { color: "dorado", ancla: "media_izquierda", extension: 6 },
+      { color: "dorado", ancla: "inferior_centro", extension: 6 },
+      { color: "dorado", ancla: "inferior_izquierda", extension: 5 },
+    ],
+    confianza: 0.7,
+  };
+  const conManchas = instalarPythonPatron((l) => sobre(l, resultadoPatron([{ element_id: "REF_01_E01", ...cuatroManchas }])));
+  const soloPared = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure")]);
+  const conZonas = await detectarPatronesReferencia(soloPared, referencias, contexto());
+  assert.equal(conManchas.length, 1);
+  assert.deepEqual(
+    conZonas.elements[0]!.appearance.patron_color,
+    cuatroManchas,
+    "la pista de zonas llega ENTERA al blueprint: las cuatro manchas del mismo color, con su ancla y su extensión",
+  );
+  ok("cuatro manchas del mismo color cruzan la frontera y llegan al blueprint");
+
+  // El lector de Python adjunta `zonas` para CUALQUIER modo. Los modelos de la
+  // petición de plan son POR MODO: el de `zonas` exige ese literal y los demás
+  // prohíben el campo, así que una pista `aleatorio` con manchas no encaja en
+  // ninguna variante y Python rechaza la petición ENTERA con
+  // `pistas_patron.0.zonas: extra_forbidden`. Rompió la app el 2026-09-30, en
+  // cuanto la frontera dejó pasar `zonas` por primera vez.
+  const manchasEnOtroModo = instalarPythonPatron((l) => sobre(l, resultadoPatron([{
+    element_id: "REF_01_E01",
+    modo: "aleatorio",
+    colores: ["rosado", "dorado"],
+    pesos: [70, 30],
+    zonas: [{ color: "dorado", ancla: "superior_derecha", extension: 8 }],
+    confianza: 0.6,
+  }])));
+  const sinManchas = await detectarPatronesReferencia(soloPared, referencias, contexto());
+  assert.equal(manchasEnOtroModo.length, 1);
+  assert.deepEqual(
+    sinManchas.elements[0]!.appearance.patron_color,
+    { modo: "aleatorio", colores: ["rosado", "dorado"], pesos: [70, 30], confianza: 0.6 },
+    "un modo que no es `zonas` viaja SIN manchas: con ellas, Python rechaza la petición de plan entera",
+  );
+  ok("las manchas solo viajan con el modo que las admite");
+
   const ninguno = instalarPythonPatron((l) => sobre(l, resultadoPatron([{ element_id: "REF_01_E01", modo: "ninguno", colores: [], confianza: 0.2 }])));
   const soloUna = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure")]);
   assert.equal(await detectarPatronesReferencia(soloUna, referencias, contexto()), soloUna, "\"ninguno\" no deja pista");
