@@ -33,6 +33,32 @@ Los marcados **(3/3)** o **(2/3)** pasaron la verificación adversaria con ese v
 
 ---
 
+## ✅ Medido con dinero real: la guía es decisiva
+
+**2026-09-30, corrida pagada.** 6 imágenes en fal con el LoRA **aprobado**
+(`v004-1000`, `eventdecor_style_v2`), 3 semillas, dos brazos —sin guía y con
+guía— sobre la guirnalda en pared. **Gasto real US$ 0,252** (tope 0,35; saldo
+41,231 → 40,979). Salidas fuera del repo, en
+`<tmp>/demo-decoracion-eval/guia-estructura-v004-1000/`.
+
+| brazo | qué dibuja el LoRA |
+|---|---|
+| **sin guía** | un **arco completo apoyado en el suelo**, con patas, cruzando un vano |
+| **con guía** | la **guirnalda montada en la pared**, siguiendo la forma del croquis, sin patas |
+
+Es el mismo fallo que el repo ya tenía documentado —*"una guirnalda de pared
+salió como un arco rectangular sobre patas metálicas"*— y **la guía lo corrige**.
+
+Cuidado con las métricas: el IoU no lo capta (sin 0,60 · con 0,58) porque compara
+siluetas alineadas y las dos son manchas alargadas parecidas. Lo que cambia es
+**semántico**: patas contra pared, suelo contra montada. El encuadre sí mejora
+(0,42 → 0,48). **No leer esta corrida por el IoU.**
+
+Consecuencia: el trabajo de croquis y el de hacerlos llegar valen los dos, y el
+canal estaba cerrado **para todas las piezas**, no solo para la pared.
+
+---
+
 ## Alcance decidido (2026-09-30)
 
 **El LoRA se queda como está.** No se cambia de versión, no se reentrena, no se
@@ -712,6 +738,16 @@ rellena con lo que sí sabe poner ahí: **superficie de fondo**. Dos celdas más
   está rota** por partida triple: se arregla antes de gastar. La infraestructura
   del LoRA (escala 0,8, 28 pasos, guidance 3,5, registro de identidad) está sana y
   no se toca.
+- **2026-09-30, 6.ª — IMPLEMENTADO Y MEDIDO.** Nueve commits en
+  `fix/pared-organica-color-e-imagen`. El cable (B1/B2/B4/B6), el acento
+  salpicado, la `g` del caption, el log del campo rechazado, la bandera de
+  desarrollo, **el canal de la guía abierto para paredes Y guirnaldas** (D1 + el
+  candado del formato), el borde orgánico que muerde un globo y el tope del
+  croquis. Verificado: 1180 pruebas de Python, `plan:test`, `tsc`, lint en 25
+  avisos (la línea base), `ruff` y `mypy`. Y **medido con 6 imágenes pagadas**:
+  la guía convierte un arco sobre patas en una guirnalda montada en la pared.
+  Queda A2 (dominante primero en el caption), que exige enhebrar la
+  participación hasta `ProductConceptClauseInput` y no cabía en esta pasada.
 - **2026-09-30, 5.ª — ALCANCE DECIDIDO.** El usuario fija el objetivo: **el LoRA
   se queda como está y lo que tiene que quedar bien es la distribución de
   colores.** Nueva sección de alcance arriba. Las tres decisiones de oficio quedan
