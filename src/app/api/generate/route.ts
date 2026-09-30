@@ -1044,6 +1044,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
           maximo: LORA_PROMPT_MAX_LENGTH,
           reserva: reservaNotasGuia,
           compilar: compilarCaption,
+          largo: (compilacion) => compilacion.prompt.length,
           cabe: (compilacion, imagenes) => preflightLoraPrompt({
             sceneSpec: transformedSceneSpec,
             clauses: compilacion.clauses,

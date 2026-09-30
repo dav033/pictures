@@ -259,11 +259,29 @@ export function elegirCaptionConGuia<T, I>(entrada: {
   reserva: (conCarta: boolean) => number;
   compilar: (maxLength: number) => T;
   cabe: (compilacion: T, imagenes: readonly I[]) => boolean;
+  /**
+   * Cuánto caption sobrevive a la compactación. Sin él se conserva el
+   * comportamiento viejo (la primera que quepa); con él se elige la que menos
+   * pierde, que es lo que evita que la carta se lleve por delante los diámetros.
+   */
+  largo?: (compilacion: T) => number;
 }): { compilacion: T; imagenes: readonly I[] } | null {
   const intentos = entrada.imagenes.length > 1 ? [entrada.imagenes, entrada.imagenes.slice(0, 1)] : [entrada.imagenes];
+  const validos: Array<{ compilacion: T; imagenes: readonly I[] }> = [];
   for (const imagenes of intentos) {
     const compilacion = entrada.compilar(entrada.maximo - entrada.reserva(imagenes.length > 1));
-    if (entrada.cabe(compilacion, imagenes)) return { compilacion, imagenes };
+    if (entrada.cabe(compilacion, imagenes)) validos.push({ compilacion, imagenes });
   }
-  return null;
+  if (!validos.length) return null;
+  if (!entrada.largo) return validos[0]!;
+  // No basta con "la primera que quepa": las notas de la guía y de la carta se
+  // descuentan del presupuesto ANTES de compilar, así que la variante CON carta
+  // compila con 353 caracteres menos y el compilador compacta más. Con una pared
+  // de zonas eso borraba los tres "(12-inch)" del caption (medido 2026-09-30),
+  // y los diámetros son justo lo que la guía NO transporta: dibuja el sitio y el
+  // color, no el tamaño. La carta es lo prescindible, no el globo.
+  //
+  // Se queda con la que MENOS pierde, y a igualdad manda la primera, que es la
+  // que lleva carta: mientras no cueste nada, la carta viaja.
+  return validos.reduce((mejor, actual) => (entrada.largo!(actual.compilacion) > entrada.largo!(mejor.compilacion) ? actual : mejor));
 }
