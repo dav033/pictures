@@ -68,7 +68,7 @@ import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
-import { abrirContextoPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
+import { abrirContextoPlan, aprobacionSinHuellaEnPruebas, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import {
   designQuantityForProduct,
@@ -609,13 +609,28 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     });
     const planResuelto = resolucion.resuelto;
     const cotizacionPlan = resolucion.cotizacion;
-    if (body.planHash && body.planHash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
-    if (body.plan.plan_hash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
+    // La huella ata la propuesta que el cliente aprobó al plan que el servidor
+    // acaba de re-resolver. En desarrollo se puede soltar (ver
+    // `aprobacionSinHuellaEnPruebas`): iterar sobre el reparto de color mueve
+    // `plan_hash` en cada cambio y obligaría a reaprobar sin aportar nada.
+    const sinHuella = aprobacionSinHuellaEnPruebas();
+    if (sinHuella) {
+      console.warn("[generate] APROBACIÓN SIN HUELLA: solo desarrollo, la propuesta aprobada no se está atando al plan resuelto", {
+        request_id: generationRequestId,
+        plan_hash_cliente: body.plan.plan_hash,
+        plan_hash_servidor: planResuelto.plan_hash,
+      });
+    }
+    if (!sinHuella) {
+      if (body.planHash && body.planHash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
+      if (body.plan.plan_hash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
+    }
     if (planResuelto.sin_cobertura.length > 0) throw new Error("El plan tiene materiales sin cobertura en la selección validada; no se generó una imagen incoherente.");
     if (planResuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
       throw new Error(`PRESUPUESTO_EXCEDIDO: ${planResuelto.totales.total_cop} COP supera el techo de ${planResuelto.comercial.techo_cop} COP por ${planResuelto.comercial.delta_cop} COP.`);
     }
-    const approvalContext = verificarTokenAprobacion(body.plan.approval_token, planResuelto.plan_hash);
+    const approvalContext = verificarTokenAprobacion(body.plan.approval_token, planResuelto.plan_hash)
+      ?? (sinHuella ? { requestId: generationRequestId, expiresAt: 0 } : null);
     if (!approvalContext) throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
     const auditarImagen = async (status: string, scene: SceneSpec) => {
       await registrarPlanAudit(getRagPool(), {

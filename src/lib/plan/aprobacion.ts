@@ -194,6 +194,29 @@ export function crearTokenAprobacion(planHash: string, requestId: string, ttlMs 
   return crearTokenPlan({ planHash, requestId, backend: "next", catalogSnapshotId: null, allowlist: [] }, ttlMs);
 }
 
+/**
+ * Desarrollo: deja de exigir que la huella del plan coincida con la que el
+ * cliente aprobó. Mismo patrón que `LORA_ALLOW_REJECTED_FOR_TESTING`
+ * (`src/lib/lora/mode-resolver.ts:81`): **falla cerrado en producción**, porque
+ * `NODE_ENV` no es "development" allí.
+ *
+ * Por qué existe: cualquier cambio en el reparto de color mueve `plan_hash`, y
+ * entonces toda propuesta aprobada antes del cambio deja de generar. Mientras se
+ * itera sobre el patrón de color eso obliga a reaprobar en cada recarga, sin que
+ * aporte nada.
+ *
+ * Qué NO abre: el token sigue siendo obligatorio, porque transporta la allowlist
+ * y el snapshot de catálogo con los que se re-resuelve el plan. Siguen vivas la
+ * puerta de presupuesto, la de cobertura y la de la estimación de materiales.
+ * Lo único que se deja de exigir es que la huella sea la misma.
+ *
+ * Condición de retirada: cuando el reparto de color se estabilice y deje de
+ * mover `plan_hash` en cada iteración.
+ */
+export function aprobacionSinHuellaEnPruebas(): boolean {
+  return process.env.NODE_ENV === "development" && process.env.APROBACION_SIN_HUELLA_PARA_PRUEBAS === "true";
+}
+
 /** Approval gate: the token must be valid, unexpired and bound to this exact plan hash. */
 export function verificarTokenAprobacion(token: string | undefined, planHash: string): { requestId: string; expiresAt: number } | null {
   const payload = abrir(token);
