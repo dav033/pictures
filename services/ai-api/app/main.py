@@ -649,6 +649,20 @@ def _parse_model(model: type[ContractModel], raw_body: bytes) -> ContractModel:
             return cast(ContractModel, model.model_validate_json(raw_body))
         return cast(ContractModel, model.parse_raw(raw_body))
     except ValidationError as error:
+        # The caller only ever gets `invalid_request`: the body may carry customer
+        # data and a validation message quotes the value that failed. But throwing
+        # the error away entirely left the operator with nothing — a rejected plan
+        # was a full hour of guessing on 2026-09-30, because nobody could say WHICH
+        # field the contract refused. Log the field paths and the rule that failed,
+        # never the values, so the next one is one log line instead of a morning.
+        logger.warning(
+            "contract validation rejected %s: %s",
+            model.__name__,
+            "; ".join(
+                f"{'.'.join(str(part) for part in item.get('loc', ())) or '<root>'}: {item.get('type', 'unknown')}"
+                for item in error.errors()[:8]
+            ),
+        )
         del error
         raise _invalid_request() from None
 
