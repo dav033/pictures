@@ -77,14 +77,21 @@ _VUELTAS_GRAFICA = 16
 #: cuesta ~2,8 s la PRIMERA vez; después el croquis se recuerda por petición
 #: (``_disponer_recordado``) y cada repintado son 1-2 ms. El motor admite hasta
 #: 1600 (``silueta.MAX_GLOBOS``), pero eso pasa de 5 s dentro de la resolución.
-MAX_GLOBOS_PIEZA = 600
+#:
+#: Subido a 700 el 2026-09-30: el tope se calibró contra la pared INTERIOR y una
+#: pared EXTERIOR de 3 × 2,4 m con densidad lujosa y mezcla `organica_fina`
+#: cuenta 603 globos — tres por encima. Se quedaba sin croquis y la gráfica
+#: volvía a la rejilla genérica, que es un damero regular: lo peor que se le
+#: puede enseñar al generador de una pared orgánica, y justo la pieza donde más
+#: falta hace. 700 cubre esa pared y cuesta 3,45 s la primera vez (medido).
+MAX_GLOBOS_PIEZA = 700
 
 #: Globos que puede dibujar una resolución completa, sumando todas sus piezas.
 #: Dos piezas grandes, no una. Una propuesta con cuatro paredes dibuja las
 #: primeras y las demás se quedan con la rejilla (con su motivo en el log), en
 #: vez de que el plan entero tarde diez segundos más. Con las medidas de arriba
-#: son ~5,6 s en el peor caso, y solo la primera vez que se dibuja cada pieza.
-PRESUPUESTO_GLOBOS = 1200
+#: son ~7,4 s en el peor caso, y solo la primera vez que se dibuja cada pieza.
+PRESUPUESTO_GLOBOS = 1400
 
 
 #: Por qué una pieza se quedó sin croquis y la gráfica sigue con su rejilla.
