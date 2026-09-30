@@ -1,6 +1,6 @@
 import "server-only";
 
-import { SESSION_COOKIE, sessionToken } from "./session";
+import { SESSION_COOKIE, loginOmitidoEnDesarrollo, sessionToken } from "./session";
 
 function cookieValue(request: Request, name: string): string | undefined {
   const header = request.headers.get("cookie");
@@ -21,6 +21,7 @@ function cookieValue(request: Request, name: string): string | undefined {
 
 /** Guardia de servidor para Route Handlers; Proxy sigue siendo una primera barrera. */
 export function isAuthenticatedRequest(request: Request): boolean {
+  if (loginOmitidoEnDesarrollo()) return true;
   const expected = process.env.APP_PASSWORD;
   // Desarrollo sin secreto sigue siendo explícitamente permisivo; producción
   // falla cerrado para que un despliegue incompleto no exponga mutaciones.

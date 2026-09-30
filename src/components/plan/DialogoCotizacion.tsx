@@ -3,12 +3,11 @@
 /* Catalog images come from runtime URLs and already carry explicit dimensions. */
 /* eslint-disable @next/next/no-img-element */
 
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion, useReducedMotion } from "motion/react";
-import { Check, FileSpreadsheet, TriangleAlert, X } from "lucide-react";
+import { Check, TriangleAlert, X } from "lucide-react";
 import type { CompraConsolidada, PlanResuelto } from "@/lib/plan/resuelto";
-import { DialogoPlantillaCotizacion } from "@/components/cotizacion/DialogoPlantillaCotizacion";
 import { acabadoCliente, agruparComprasCliente, cuentaEnGlobos, familiasEnOrden, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente, tonoCliente, type GrupoCompraCliente } from "@/lib/plan/presentacion-cliente";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 import { BotonAprobar } from "@/components/propuesta/BotonAprobar";
@@ -200,10 +199,6 @@ export function FilasCotizacion({ compras, imagenDe }: PropsFilas) {
 export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, onAprobar, aprobarDeshabilitado = false, textoAprobar = "Aprobar y ver cómo queda", generando = false }: Props) {
   const focoRetorno = useFocoDeRetorno();
   const reducir = useReducedMotion();
-  // La hoja de cotización del proyecto queda montada siempre (Radix no dibuja
-  // nada mientras está cerrada) para que lo que la persona escribió no se pierda
-  // al cerrarla y volver a abrirla.
-  const [plantillaAbierta, setPlantillaAbierta] = useState(false);
   const techo = plan.comercial.techo_cop;
   const total = plan.totales.total_cop;
   // El veredicto de presupuesto y su delta son de Python. Volver a compararlos aqui
@@ -214,7 +209,6 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
   const enDecoracion = plan.totales.design_quantity;
 
   return (
-    <>
     <Dialog.Root open={abierto} onOpenChange={onAbiertoChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px]" />
@@ -288,15 +282,6 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
               </div>
               <p className="mt-3 text-xs text-texto-tenue">Incluye una reserva del {plan.totales.merma_porcentaje}% por globos que se revientan al inflar o montar. No incluye montaje.</p>
               <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={() => setPlantillaAbierta(true)}
-                  aria-haspopup="dialog"
-                  className="ui-pressable inline-flex h-11 items-center justify-center gap-1.5 rounded-[0.8rem] border border-borde bg-superficie px-4 text-sm font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento sm:mr-auto"
-                >
-                  <FileSpreadsheet className="size-4" aria-hidden="true" />
-                  Cotizar el proyecto completo
-                </button>
                 <Dialog.Close className="ui-pressable inline-flex h-11 items-center justify-center rounded-[0.8rem] border border-borde bg-superficie px-4 text-sm font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
                   Volver a la propuesta
                 </Dialog.Close>
@@ -311,14 +296,5 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-
-    <DialogoPlantillaCotizacion
-      abierto={plantillaAbierta}
-      onAbiertoChange={setPlantillaAbierta}
-      clave={plan.plan_hash}
-      proyecto={plan.plan.concepto.titulo}
-      compras={plan.compras}
-    />
-    </>
   );
 }

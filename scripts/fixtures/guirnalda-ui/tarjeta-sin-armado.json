@@ -1,13 +1,14 @@
 {
-  "capturada_en": "27528f2; rebasada en 05966ae",
-  "nota": "El unico cambio frente a 27528f2 es la etiqueta de origen del patron ('· de tu foto' / '· sugerido') que BloquePatron muestra desde 05966ae: quitando ese span, las dos tarjetas vuelven byte a byte al hash anterior, y asi se comprobo antes de regenerar esta huella.",
+  "capturada_en": "27528f2",
+  "recapturada_en": "integracion/cotizacion-profesional (merge de feat/cotizacion-profesional y main)",
+  "motivo_recaptura": "Dos cambios deliberados, uno de cada rama, y se comprobo que son los UNICOS. (1) feat/cotizacion-profesional: la tarjeta perdio `max-w-190` en su clase raiz y gano el hueco `precioCliente` (vacio en esta prueba); con `max-w-190` reinsertado la unica diferencia con 27528f2 eran los ids de useId desplazados (_R_1aa69a_ -> _R_1aa69e_). (2) main: BloquePatron muestra el origen del patron ('· de tu foto' / '· sugerido') desde 05966ae. Comprobado en el merge: quitando del HTML unicamente ese <span>, las dos tarjetas vuelven byte a byte al sha256 de la recaptura de feat/cotizacion-profesional (una sola aparicion en cada una, 75 bytes). Ningun otro byte se movio.",
   "plan": "scripts/fixtures/patron-color-ui/plan-con-patrones.json",
   "editable": {
-    "bytes": 380535,
-    "sha256": "d773dc9737acb4c670ecbe4e7835890fef888c9b19d0794cb166566c86b5113a"
+    "bytes": 380525,
+    "sha256": "8fb489f913c03339ed25b38f6de3a653e94994439cbc3f8a375214f8bc7a82fd"
   },
   "lectura": {
-    "bytes": 331861,
-    "sha256": "6abeb6306e98f54913e8f75511ea2123b958ca1b811a9930260650a88bd5b6d5"
+    "bytes": 331851,
+    "sha256": "8208993975a1a3d0016364aba8df7178bb2c31ce29739fb33d4ce872164a7133"
   }
 }

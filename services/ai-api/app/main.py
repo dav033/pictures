@@ -123,6 +123,11 @@ from app.plan import (
     resolve_plan,
 )
 from app.armado_bouquet import DISPOSICIONES as DISPOSICIONES_BOUQUET
+from app.cotizacion_profesional import (
+    COTIZACION_PROFESIONAL_SCOPE,
+    CotizacionProfesionalRequest,
+    cotizar_profesional,
+)
 from app.armado_bouquet import VARIANTES as VARIANTES_BOUQUET
 from app.plan_edicion import (
     PLAN_ARMADO_GUIRNALDA_SCOPE,
@@ -1573,6 +1578,24 @@ def create_app(
             operation="plan.armado_guirnalda",
             model=PlanArmadoGuirnaldaRequest,
             scope=PLAN_ARMADO_GUIRNALDA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/cotizacion-profesional")
+    async def plan_cotizacion_profesional(request: Request) -> Response:
+        # The professional decorator's costs on top of the plan's materials:
+        # pure arithmetic on what the decorator typed, no catalog, no side
+        # effect, outside plan_hash.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, CotizacionProfesionalRequest):
+                raise _error("invalid_request", 422)
+            return {"payload": cotizar_profesional(payload)}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.cotizacion_profesional",
+            model=CotizacionProfesionalRequest,
+            scope=COTIZACION_PROFESIONAL_SCOPE,
             handler=handler,
         )
 

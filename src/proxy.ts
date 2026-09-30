@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE, sessionToken } from "@/lib/auth/session";
+import { SESSION_COOKIE, loginOmitidoEnDesarrollo, sessionToken } from "@/lib/auth/session";
 
 export function proxy(request: NextRequest) {
+  if (loginOmitidoEnDesarrollo()) return NextResponse.next();
   const expected = process.env.APP_PASSWORD;
   if (!expected) {
     if (process.env.NODE_ENV !== "production") return NextResponse.next();

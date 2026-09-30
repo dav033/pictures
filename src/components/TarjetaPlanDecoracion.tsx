@@ -3,7 +3,7 @@
 /* Catalog images come from runtime URLs and already carry explicit dimensions. */
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { ArrowLeftRight, Check, ChevronDown, Info, Plus, Search, X } from "lucide-react";
@@ -129,6 +129,8 @@ type Props = {
    * botón en vez de dejarlo gris sin explicación.
    */
   onPedirAjuste?: (mensaje: string) => void;
+  /** El precio al cliente del decorador, al principio de la propuesta (`CotizacionProfesional`). */
+  precioCliente?: ReactNode;
 };
 
 const CASCADA: Variants = {
@@ -257,7 +259,7 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
   );
 }
 
-export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle, onPedirAjuste }: Props) {
+export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle, onPedirAjuste, precioCliente }: Props) {
   const [celebracion, setCelebracion] = useState(0);
   // Feedback after an edit: what changed, the new total and a way back while it is still the last change.
   // `avisos`: Python's own sentences about the edit (/api/plan-editar), verbatim.
@@ -1090,7 +1092,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       variants={CASCADA}
       initial={reducir ? false : "oculto"}
       animate="visible"
-      className="@container mt-3 w-full max-w-190 overflow-hidden rounded-[20px] border border-borde-suave bg-superficie text-texto shadow-[0_1px_2px_var(--sombra),0_18px_40px_var(--sombra)]"
+      className="@container mt-3 w-full overflow-hidden rounded-[20px] border border-borde-suave bg-superficie text-texto shadow-[0_1px_2px_var(--sombra),0_18px_40px_var(--sombra)]"
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 pt-4 @xl:px-5.5 @xl:pt-4.5">
         <div className="min-w-0 flex-1 basis-60">
@@ -1118,6 +1120,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           </motion.div>
         )}
       </div>
+      {precioCliente && <motion.div variants={ENTRADA_CASCADA} className="px-4 pt-4 @xl:px-5.5">{precioCliente}</motion.div>}
       {/* The concept description is free model text and may name pieces the plan does not have; the summary above is derived from the real structures. */}
       {modoDev && <p className="px-4 pt-2 text-xs text-texto-suave @xl:px-5.5">{plan.plan.concepto.descripcion}</p>}
 

@@ -12,6 +12,7 @@ import { PromptModal } from "@/components/PromptModal";
 import { Markdown } from "@/components/Markdown";
 import { ProductoCard } from "@/components/ProductoCard";
 import { TarjetaCotizacion } from "@/components/TarjetaCotizacion";
+import { CotizacionProfesional } from "@/components/cotizacion/CotizacionProfesional";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { ReferenceAnalysisController } from "@/components/references/ReferenceAnalysisController";
 import type { ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
@@ -1972,16 +1973,16 @@ export default function Page() {
                           onEscenografiaToggle={alternarEscenografia}
                           onPedirAjuste={m.plan.plan_hash === planActual?.plan_hash && !cargandoChat ? (texto) => void enviar(texto) : undefined}
                           loraMode={loraModeParaBadge}
+                          precioCliente={m.cotizacion ? <CotizacionProfesional cotizacion={m.cotizacion} clave={m.id} incrustada /> : undefined}
                         />
                       )}
-                      {/* With a proposal, its card already shows the price and "Ver
-                          cotización": the quote card appears once, as the final one,
-                          when the proposal is approved. */}
-                      {m.cotizacion && (!m.plan || planAprobadoHash === m.plan.plan_hash) && (
+                      {/* With a proposal there is no separate quote card, not even once
+                          it is approved: the proposal already shows the price, "Ver
+                          cotización" and the price for the client. */}
+                      {m.cotizacion && !m.plan && (
                         <TarjetaCotizacion
                           cotizacion={m.cotizacion}
                           referenceBlueprint={m.referenceBlueprint}
-                          final={Boolean(m.plan)}
                         />
                       )}
 

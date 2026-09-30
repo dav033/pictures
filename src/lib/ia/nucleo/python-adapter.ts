@@ -31,6 +31,7 @@ import {
 import { OpcionesArmadoGuirnaldaSchema, type OpcionesArmadoGuirnalda } from "@/lib/plan/opciones-armado-guirnalda";
 import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
+import { CotizacionProfesionalResultadoSchema, type CotizacionProfesionalResultado, type EntradaCotizacionProfesional } from "@/lib/cotizacion/profesional";
 import {
   MODOS_PATRON_COLOR,
   ModoAdmitidoSchema,
@@ -86,6 +87,8 @@ export const PYTHON_PLAN_ARMADO_PATH = "/internal/v1/plan/armado-bouquet";
 export const PYTHON_PLAN_ARMADO_SCOPE = "plan.armado_bouquet";
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_PATH = "/internal/v1/plan/armado-guirnalda";
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_SCOPE = "plan.armado_guirnalda";
+export const PYTHON_COTIZACION_PROFESIONAL_PATH = "/internal/v1/plan/cotizacion-profesional";
+export const PYTHON_COTIZACION_PROFESIONAL_SCOPE = "plan.cotizacion_profesional";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
 export const PYTHON_EMBEDDING_DIMENSIONS = 768;
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
@@ -2772,6 +2775,43 @@ export async function llamarPythonPlanArmadoGuirnalda(input: PythonPlanArmadoGui
   }
   const resultado = { armado: parsed.data.armado, opciones: parsed.data.opciones };
   return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+export interface PythonCotizacionProfesionalInput {
+  entrada: EntradaCotizacionProfesional;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+/**
+ * The professional quote (`cotizacion-profesional.v1`): the decorator's own
+ * costs and profit on top of the plan's materials. Python computes every
+ * total; no catalog and no side effect, so nothing here touches `plan_hash`.
+ */
+export async function llamarPythonCotizacionProfesional(input: PythonCotizacionProfesionalInput): Promise<CotizacionProfesionalResultado> {
+  const { entrada, ...rest } = input;
+  const operationBody = { schema_version: "cotizacion-profesional.v1" as const, ...entrada };
+  const response = await llamarPythonOperacion(PYTHON_COTIZACION_PROFESIONAL_PATH, PYTHON_COTIZACION_PROFESIONAL_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_COTIZACION_PROFESIONAL_SCOPE],
+  });
+  const parsed = CotizacionProfesionalResultadoSchema.safeParse(response.payload);
+  // The answer is about the lines asked for, in the same order.
+  if (
+    !parsed.success
+    || parsed.data.materiales.lineas.length !== entrada.materiales.length
+    || parsed.data.materiales.lineas.some((linea, indice) => linea.variant_id !== entrada.materiales[indice]!.variant_id)
+  ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return parsed.data;
 }
 
 export function pythonErrorBody(error: PythonAdapterError): {

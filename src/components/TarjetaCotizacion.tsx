@@ -92,7 +92,7 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
       initial={reducir ? false : { opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
-      className="@container mt-3 w-full max-w-190 overflow-hidden rounded-[20px] border border-borde-suave bg-superficie shadow-[0_1px_2px_var(--sombra),0_12px_32px_var(--sombra)]"
+      className="@container mt-3 w-full overflow-hidden rounded-[20px] border border-borde-suave bg-superficie shadow-[0_1px_2px_var(--sombra),0_12px_32px_var(--sombra)]"
     >
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 px-4 pt-4 @xl:px-5.5">
         <div>
