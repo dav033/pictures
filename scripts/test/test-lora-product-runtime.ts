@@ -924,7 +924,16 @@ console.log("18. Reference structures, relative heights, styling and JSON prompt
   assert.equal(resolveLoraPromptFormat("json", "eventdecor_style_v3"), "json", "explicit json wins on any trigger");
   assert.throws(() => resolveLoraPromptFormat("yaml", "eventdecor_style_v2"), "an unknown prompt format is a client error");
   assert.throws(() => resolveLoraPromptFormat("", "eventdecor_style_v3"), "an empty prompt format is not an omission");
-  pass("prompt format defaults by trigger (style_v2 json, others texto), explicit wins, unknown values are rejected");
+  // La guía de estructura (ADR-0033) SOLO viaja con el caption de texto, y el
+  // único LoRA aprobado es justo el único con JSON por defecto: sin esto, la
+  // guía nunca se envía en producción. El JSON por defecto se eligió porque
+  // separaba las piezas laterales, y la guía exige una única estructura sin
+  // props, donde no hay piezas laterales que separar.
+  assert.equal(resolveLoraPromptFormat(undefined, "eventdecor_style_v2", true), "texto", "con guía de estructura, style_v2 pasa a texto para que la guía viaje");
+  assert.equal(resolveLoraPromptFormat(undefined, "eventdecor_style_v3", true), "texto");
+  assert.equal(resolveLoraPromptFormat("json", "eventdecor_style_v2", true), "json", "un formato pedido explícitamente sigue mandando sobre la guía");
+  assert.equal(resolveLoraPromptFormat(undefined, "eventdecor_style_v2", false), "json", "sin guía, el defecto del trigger no cambia");
+  pass("prompt format defaults by trigger (style_v2 json, others texto), la guía fuerza texto, explicit wins, unknown values are rejected");
 }
 
 console.log(`\nAll ${passCount} assertions passed.`);

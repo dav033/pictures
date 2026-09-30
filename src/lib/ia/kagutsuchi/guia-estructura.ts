@@ -47,8 +47,8 @@ export function costeEntradasUsdEstimado(entradas: number): number {
   return Math.round(entradas * PRECIO_MP_USD_ESTIMADO * 1000) / 1000;
 }
 
-type TipoConPatron = "arco" | "columna" | "semiarco";
-const TIPOS_CON_PATRON: ReadonlySet<string> = new Set<TipoConPatron>(["arco", "columna", "semiarco"]);
+type TipoConPatron = "arco" | "columna" | "semiarco" | "pared";
+const TIPOS_CON_PATRON: ReadonlySet<string> = new Set<TipoConPatron>(["arco", "columna", "semiarco", "pared"]);
 
 export type EstructuraConGuia =
   | { clase: "guirnalda"; estructura_id: string; armado: ArmadoGuirnaldaResuelto; lineas: readonly LineaMaterial[] }
@@ -69,7 +69,13 @@ export type EstructuraConGuia =
  * en la escena (una sola pieza, sin props de catálogo): una guía de varias
  * piezas tendría que repartirlas por `target_bbox` y eso es otro trabajo.
  * - guirnalda con armado (sus racimos);
- * - arco, columna o semiarco con un patrón aplicado de racimos.
+ * - arco, columna o semiarco con un patrón aplicado de racimos;
+ * - pared con un patrón aplicado y la silueta real de Python. Sin la guía, el
+ *   único canal que le queda al generador es el texto, y el caption NO puede
+ *   decirle dónde va un color: `corner` no existe en el corpus de v007 y en el
+ *   de v004 significa una esquina del local, no un cuadrante de la pieza. Una
+ *   pared con el color agrupado en zonas (ADR-0036) solo es transportable
+ *   dibujada.
  */
 export function estructuraParaGuia(plan: Pick<PlanResuelto, "plan" | "estructuras" | "props" | "patrones_color" | "armados_guirnalda">): EstructuraConGuia | null {
   if (plan.estructuras.length !== 1 || (plan.props?.length ?? 0) > 0) return null;
@@ -84,7 +90,14 @@ export function estructuraParaGuia(plan: Pick<PlanResuelto, "plan" | "estructura
   }
   if (!TIPOS_CON_PATRON.has(estructura.tipo) || !declarada) return null;
   const patron = plan.patrones_color?.find((item) => item.estructura_id === estructura.estructura_id && item.aplicado);
-  if (!patron || patron.geometria !== "racimos" || patron.repeticiones !== 1 || !patron.celdas.length) return null;
+  if (!patron || patron.repeticiones !== 1 || !patron.celdas.length) return null;
+  // Arco, columna y semiarco dibujan sus racimos. Una pared es una rejilla, y
+  // solo sirve de guía con la SILUETA real que armó Python: el contorno de borde
+  // vivo y la posición de cada globo. Sin `posiciones` el dibujo sería una
+  // rejilla regular, que es exactamente lo que no hay que enseñarle al
+  // generador de una pared orgánica; en ese caso no se manda guía.
+  const admitida = estructura.tipo === "pared" ? geometriaDeDibujo(patron) === "silueta" : patron.geometria === "racimos";
+  if (!admitida) return null;
   const medidas = "medidas" in declarada ? declarada.medidas : undefined;
   const proporcion = medidas?.alto_m && medidas.ancho_m ? medidas.alto_m / medidas.ancho_m : undefined;
   const oficialId = "estructura_oficial" in declarada ? declarada.estructura_oficial : undefined;

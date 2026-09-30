@@ -26,7 +26,7 @@ import { chatDe, imagenDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { buildLoraEditPrompt, DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit, reservaNotasGuia, type ImagenEditLora, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
-import { costeEntradasUsdEstimado, elegirCaptionConGuia, generacionAdmiteGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
+import { costeEntradasUsdEstimado, elegirCaptionConGuia, estructuraParaGuia, generacionAdmiteGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { prepararGuiaEstructura } from "@/lib/ia/kagutsuchi/rasterizar-guia";
 import { LoraModeSlugSchema, LoraSelectionSchema } from "@/lib/lora/schema";
 import { resolveLoraMode, resolveLoraModeDatasetAllowlist, resolveLoraSelection, type ResolvedLoraApplication } from "@/lib/lora/mode-resolver";
@@ -972,7 +972,21 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         if (product.familiaId) productCatalogTitles.set(product.familiaId, catalogTitle);
       }
     }
-    const promptFormat = resolveLoraPromptFormat(body.promptFormat, usarLora ? resolvedLoras?.[0]?.trigger : undefined);
+    // La guía de estructura (ADR-0033) solo viaja con el caption de texto, y el
+    // formato se decide ANTES de prepararla, así que hay que saber aquí si va a
+    // haber guía. Sin esto el único LoRA aprobado nunca la recibe: su trigger es
+    // el único cuyo formato por defecto es JSON (ver `resolveLoraPromptFormat`).
+    const guiaPosible = Boolean(
+      featureEnabled("GUIA_ESTRUCTURA_V1")
+        && usarLora
+        && !usarComposicionLoraGemini
+        && !venue
+        && !previous
+        && !loraEditApagado()
+        && planResuelto
+        && estructuraParaGuia(planResuelto),
+    );
+    const promptFormat = resolveLoraPromptFormat(body.promptFormat, usarLora ? resolvedLoras?.[0]?.trigger : undefined, guiaPosible);
     // Mismo dueño que el prompt de Gemini: la escenografía que el cliente dejó
     // encendida. El caption LoRA solo admite tres nombres de styling.
     // En el pipeline híbrido LoRA no debe heredar objetos de una referencia:
