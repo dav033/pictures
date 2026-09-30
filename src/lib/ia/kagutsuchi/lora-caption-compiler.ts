@@ -1002,7 +1002,11 @@ function withApprovedColorTones(material: string, colors: string[]): string {
     if (result.toLowerCase().includes(color.toLowerCase())) continue;
     const shade = (SHADE_FAMILIES[color.toLowerCase()] ?? []).find((candidate) => new RegExp(`\\b${candidate}\\b`, "i").test(result));
     if (shade) {
-      result = result.replace(new RegExp(`\\b${shade}\\b`, "gi"), (match) => `${match} ${color}`);
+      // Sin bandera `g`: solo la PRIMERA aparición del tono. La palabra del tono
+      // puede repetirse siendo el acabado de OTRO material — con dos materiales
+      // perlados, "pearl" sale dos veces y el global convertía el blush en
+      // "pearl white pink" (2026-09-30). El tono se ata a un color, no a todos.
+      result = result.replace(new RegExp(`\\b${shade}\\b`, "i"), (match) => `${match} ${color}`);
     } else {
       unmatched.push(color);
     }
