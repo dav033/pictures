@@ -1534,6 +1534,39 @@ def _base_de_pista(
     return {"modo": "damero", "secuencia": indices, "tamano": 1}
 
 
+def _extensiones_por_participacion(
+    estructura: EstructuraPatron, materiales: Sequence[int], extensiones: Sequence[int]
+) -> list[int]:
+    """Reescala las extensiones leídas contra la participación de cada material.
+
+    El lector de la foto estima la extensión A OJO ("roughly what percentage of
+    the whole wall it covers"), y con varias manchas del mismo color la suma se
+    dispara: cuatro manchas de dorado estimadas al 20 % declaran un 80 % para un
+    color que la foto tiene al 25 %. Medido en la pared "Mr & Mrs" el 2026-09-30:
+    el dorado salía al **53 %** con la tarjeta diciendo "~60 % de la pieza".
+
+    Y eso no es solo un dibujo feo: el patrón manda sobre el conteo (ADR-0028
+    decisión 3), así que la extensión estimada a ojo estaba decidiendo cuántos
+    globos se compran y cuánto se cobra — un segundo dueño de un número que ya
+    tenía uno.
+
+    El reparto: la foto sabe DÓNDE está cada mancha y CUÁNTAS hay, que es lo que
+    se ve en una foto; la participación sabe CUÁNTO. Así que la foto decide el
+    reparto RELATIVO entre las manchas de un mismo color y la participación
+    decide su total.
+    """
+    resultado = [0] * len(materiales)
+    for material in sorted(set(materiales)):
+        posiciones = [i for i, indice in enumerate(materiales) if indice == material]
+        participacion = estructura.materiales[material].participacion
+        # Al menos 1 % por mancha: una mancha de 0 celdas no es una mancha.
+        total = max(len(posiciones), round(participacion * 100))
+        pesos = [max(1, extensiones[i]) for i in posiciones]
+        for posicion, cuota in zip(posiciones, _mayor_resto(total, pesos), strict=True):
+            resultado[posicion] = max(1, min(EXTENSION_ZONA_MAXIMA, cuota))
+    return resultado
+
+
 def _base_de_zonas_de_pista(
     estructura: EstructuraPatron, indices: Sequence[int], pista: Mapping[str, object]
 ) -> dict[str, object] | None:
@@ -1570,7 +1603,12 @@ def _base_de_zonas_de_pista(
         "zonas": [
             {"material": material, "ancla": ancla, "extension": extension}
             for material, ancla, extension in zip(
-                materiales, anclas, _extensiones_acotadas(extensiones), strict=True
+                materiales,
+                anclas,
+                _extensiones_acotadas(
+                    _extensiones_por_participacion(estructura, materiales, extensiones)
+                ),
+                strict=True,
             )
         ],
     }

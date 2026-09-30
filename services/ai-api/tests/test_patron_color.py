@@ -1739,6 +1739,54 @@ def test_un_fondo_sin_sitio_en_la_rejilla_deja_su_color_sin_globos() -> None:
     assert _motivo(estructura, patron).motivo == "material_sin_uso"
 
 
+def test_la_extension_a_ojo_no_manda_sobre_la_participacion() -> None:
+    """Cinco manchas de dorado estimadas al 60 % para un color que vale el 25 %.
+
+    El lector de la foto estima la extensión a ojo y con varias manchas del mismo
+    color la suma se dispara. Como el patrón manda sobre el conteo, esa cifra
+    decidía cuántos globos se compran: en la pared "Mr & Mrs" el dorado salía al
+    53 % con la tarjeta diciendo "~60 % de la pieza" (2026-09-30). La foto decide
+    dónde y cuántas manchas; la participación decide cuánto.
+    """
+    estructura = EstructuraPatron(
+        estructura_id="EST_01_PARED",
+        tipo="pared",
+        total=483,
+        un_tamano=False,
+        ancho_m=2.4,
+        alto_m=2.4,
+        repeticiones=1,
+        materiales=(
+            MaterialPatron(color="rosado", acabado="mate", participacion=0.65),
+            MaterialPatron(color="dorado", acabado="reflex", participacion=0.25),
+            MaterialPatron(color="blanco", acabado="mate", participacion=0.10),
+        ),
+    )
+    pista = {
+        "modo": "zonas",
+        "colores": ["rosado", "dorado", "blanco"],
+        "confianza": 0.7,
+        "zonas": [
+            {"color": "dorado", "ancla": "superior_derecha", "extension": 15},
+            {"color": "dorado", "ancla": "inferior_centro", "extension": 12},
+            {"color": "dorado", "ancla": "inferior_derecha", "extension": 12},
+            {"color": "dorado", "ancla": "media_izquierda", "extension": 11},
+            {"color": "dorado", "ancla": "inferior_izquierda", "extension": 10},
+        ],
+    }
+
+    patron = patron_desde_pista(estructura, pista)
+
+    assert patron is not None
+    manchas = patron["base"]["zonas"]  # type: ignore[index]
+    assert len(manchas) == 5, "las cinco manchas sobreviven: la foto decide dónde"
+    total = sum(int(mancha["extension"]) for mancha in manchas)
+    assert total == 25, f"la suma es la participación del dorado, no los 60 leídos: {total}"
+    # El reparto RELATIVO entre manchas sigue el de la foto: la mayor sigue siendo
+    # la mayor.
+    assert manchas[0]["extension"] >= manchas[-1]["extension"]
+
+
 def test_la_pista_de_la_foto_puede_traer_las_manchas_que_leyo() -> None:
     estructura = _estructura(**PARED_3X4, partes=(0.6, 0.3, 0.1))
     pista = {
