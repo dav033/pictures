@@ -99,3 +99,9 @@ packages/*/dist
 # versioned: the scripts regenerate it on demand.
 /reports/
 /informes/
+
+# Registros de los servidores de desarrollo locales (`scripts/ops/supervisar-ai-api.py`
+# y `next dev`). Son artefactos de runtime: se regeneran en cada arranque.
+/.ai-api.log
+/.ai-api.err
+/.next-*.log
