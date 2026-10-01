@@ -1,7 +1,7 @@
 # ADR-0034 — A colour the photo does not have never reaches the quote
 
 Date: 2026-09-29
-Status: accepted
+Status: superseded by ADR-0037 for the COLOUR (the FINISH decision stays)
 Complements ADR-0024 (what the reference photo's colour is allowed to decide).
 Does not supersede it: Decision 2 there — the photo's palette is not a hard
 search filter — still holds. This is about the plan, not the search.
