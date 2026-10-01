@@ -387,6 +387,335 @@
                         "properties": {
                           "modo": {
                             "type": "string",
+                            "const": "intercalado"
+                          },
+                          "secuencia": {
+                            "minItems": 2,
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "paso": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 3
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "secuencia",
+                          "paso"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "franjas"
+                          },
+                          "secuencia": {
+                            "minItems": 2,
+                            "maxItems": 5,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "ancho": {
+                            "type": "number",
+                            "minimum": 0.5,
+                            "maximum": 6
+                          },
+                          "inclinacion": {
+                            "type": "number",
+                            "minimum": -3,
+                            "maximum": 3
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "secuencia",
+                          "ancho",
+                          "inclinacion"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "zigzag"
+                          },
+                          "secuencia": {
+                            "minItems": 2,
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "ancho": {
+                            "type": "number",
+                            "minimum": 0.5,
+                            "maximum": 6
+                          },
+                          "amplitud": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 8
+                          },
+                          "periodo": {
+                            "type": "number",
+                            "minimum": 1,
+                            "maximum": 8
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "secuencia",
+                          "ancho",
+                          "amplitud",
+                          "periodo"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "chevron"
+                          },
+                          "secuencia": {
+                            "minItems": 2,
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "ancho": {
+                            "type": "number",
+                            "minimum": 0.5,
+                            "maximum": 6
+                          },
+                          "inclinacion": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 4
+                          },
+                          "invertir": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "secuencia",
+                          "ancho",
+                          "inclinacion",
+                          "invertir"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "diamante"
+                          },
+                          "centro": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "contorno": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "fondo": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "separacion": {
+                            "type": "integer",
+                            "minimum": 4,
+                            "maximum": 16
+                          },
+                          "radio": {
+                            "type": "number",
+                            "minimum": 0.8,
+                            "maximum": 5
+                          },
+                          "aspecto": {
+                            "type": "number",
+                            "minimum": 0.5,
+                            "maximum": 1.8
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "centro",
+                          "contorno",
+                          "fondo",
+                          "separacion",
+                          "radio",
+                          "aspecto"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "punteado"
+                          },
+                          "fondo": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "punto": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "separacion": {
+                            "type": "integer",
+                            "minimum": 2,
+                            "maximum": 12
+                          },
+                          "cada": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 4
+                          },
+                          "escalonar": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "fondo",
+                          "punto",
+                          "separacion",
+                          "cada",
+                          "escalonar"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "apilado"
+                          },
+                          "capas": {
+                            "minItems": 2,
+                            "maxItems": 5,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "invertir": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "capas",
+                          "invertir"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "arcoiris"
+                          },
+                          "bandas": {
+                            "minItems": 3,
+                            "maxItems": 8,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "invertir": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "bandas",
+                          "invertir"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "doslados"
+                          },
+                          "exterior": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "interior": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "corte": {
+                            "type": "number",
+                            "minimum": 0.2,
+                            "maximum": 0.8
+                          },
+                          "alternar": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "exterior",
+                          "interior",
+                          "corte",
+                          "alternar"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
                             "const": "anillos"
                           },
                           "secuencia": {
@@ -2177,6 +2506,15 @@
             "type": "string",
             "enum": [
               "espiral",
+              "intercalado",
+              "franjas",
+              "zigzag",
+              "chevron",
+              "diamante",
+              "punteado",
+              "apilado",
+              "arcoiris",
+              "doslados",
               "anillos",
               "bloques",
               "degradado",

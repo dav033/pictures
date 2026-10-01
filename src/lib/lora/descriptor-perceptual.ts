@@ -1,3 +1,5 @@
+import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
+import { matizMedido } from "./matiz-medido";
 import type { ProductConcept } from "./product-vocabulary";
 
 /**
@@ -59,6 +61,15 @@ export const TERMINOS_COMERCIALES: readonly string[] = [
 ];
 
 /**
+ * Si el color ya tiene una descripción escrita a mano, que es prosa revisada y
+ * en un caso (`spring pink`) verificada contra la foto del producto. Cuando la
+ * tiene, el matiz medido no se añade: no hace falta y se leería doble.
+ */
+export function tieneDescripcionEscritaAMano(color: string): boolean {
+  return COLORES.some(([patron]) => new RegExp(patron.source, "i").test(color));
+}
+
+/**
  * Idempotente: una frase ya perceptual no contiene ninguno de los patrones, así
  * que puede aplicarse sobre vocabulario viejo o ya corregido sin romperlo.
  */
@@ -90,13 +101,31 @@ function patternDescription(pattern: ProductConcept["visual"]["pattern"]): strin
   return parts;
 }
 
+/**
+ * El color con el matiz que sostiene la medición del globo inflado, cuando la
+ * hay (`COLOR_INFLADO_MEDIDO_V1`). El nombre no se toca: se le añade delante
+ * «pale», «very pale muted» o «deep», porque el nombre del catálogo viene del
+ * color de la tinta y el globo inflado se ve más claro (ver `matiz-medido.ts`).
+ *
+ * Apagada la bandera, o sin medición para ese color y acabado, devuelve el
+ * color tal cual: es exactamente lo que había antes.
+ */
+function colorConMatizMedido(visual: ProductConcept["visual"]): string {
+  const color = visual.color.trim();
+  if (!color || !featureEnabled("COLOR_INFLADO_MEDIDO_V1")) return color;
+  if (tieneDescripcionEscritaAMano(color)) return color;
+  const matiz = matizMedido(color, visual.finish.trim());
+  return matiz ? `${matiz} ${color}` : color;
+}
+
 /** Compila solo atributos visuales evidenciados; nunca usa título, SKU o familia comercial. */
 export function compilarDescriptorProductoPerceptual(concepto: ProductConcept): string {
   const visual = concepto.visual;
+  const color = colorConMatizMedido(visual);
   const parts = [
     visual.shape.trim(),
     visual.material.trim(),
-    visual.color.trim() ? `in ${visual.color.trim()}` : "",
+    color ? `in ${color}` : "",
     visual.finish.trim() ? `with ${visual.finish.trim()} finish` : "",
     visual.transparency?.trim() ? visual.transparency.trim() : "",
     ...patternDescription(visual.pattern),

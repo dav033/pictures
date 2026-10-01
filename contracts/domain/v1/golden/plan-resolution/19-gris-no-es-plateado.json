@@ -529,28 +529,28 @@
       "balloons": [
         {
           "color": "plateado",
-          "design_quantity": 71,
+          "design_quantity": 67,
           "finish": null,
           "product_id": "P-19-PLATA",
-          "required_quantity": 71,
+          "required_quantity": 67,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-19-PLATA-12",
-          "waste_adjusted_quantity": 71,
+          "waste_adjusted_quantity": 67,
           "waste_reserve": 0
         },
         {
           "color": "gris",
-          "design_quantity": 47,
+          "design_quantity": 45,
           "finish": null,
           "product_id": "P-19-GRIS",
-          "required_quantity": 47,
+          "required_quantity": 45,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-19-GRIS-12",
-          "waste_adjusted_quantity": 47,
+          "waste_adjusted_quantity": 45,
           "waste_reserve": 0
         }
       ],
@@ -571,57 +571,57 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 8460,
-          "design_quantity": 47,
-          "leftover_inventory": 3,
-          "operational_surplus": 3,
+          "consumption_cost": 8100,
+          "design_quantity": 45,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
           "package_count": 1,
-          "potential_surplus": 3,
+          "potential_surplus": 5,
           "product_id": "P-19-GRIS",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 47,
+          "required_quantity": 45,
           "units_per_package": 50,
-          "used": 47,
+          "used": 45,
           "variant_id": "V-19-GRIS-12",
-          "waste_adjusted_quantity": 47,
+          "waste_adjusted_quantity": 45,
           "waste_reserve": 0
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 17820,
-          "design_quantity": 71,
-          "leftover_inventory": 19,
-          "operational_surplus": 19,
+          "consumption_cost": 16720,
+          "design_quantity": 67,
+          "leftover_inventory": 24,
+          "operational_surplus": 24,
           "package_count": 2,
-          "potential_surplus": 29,
+          "potential_surplus": 33,
           "product_id": "P-19-PLATA",
           "purchase_cost": 22000,
           "purchase_quantity": 100,
-          "required_quantity": 81,
+          "required_quantity": 76,
           "units_per_package": 50,
-          "used": 71,
+          "used": 67,
           "variant_id": "V-19-PLATA-12",
-          "waste_adjusted_quantity": 81,
-          "waste_reserve": 10
+          "waste_adjusted_quantity": 76,
+          "waste_reserve": 9
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 26280,
-        "covered_waste_reserve": 10,
-        "design_quantity": 118,
-        "natural_package_surplus": 32,
-        "operational_surplus": 22,
-        "potential_surplus": 32,
+        "consumption_cost": 24820,
+        "covered_waste_reserve": 9,
+        "design_quantity": 112,
+        "natural_package_surplus": 38,
+        "operational_surplus": 29,
+        "potential_surplus": 38,
         "purchase_cost": 31000,
         "purchase_quantity": 150,
-        "required_quantity": 128,
-        "target_waste_reserve": 10,
+        "required_quantity": 121,
+        "target_waste_reserve": 9,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 128,
-        "waste_only_savings_cop": 9000
+        "waste_adjusted_quantity": 121,
+        "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
       "warnings": [
@@ -642,8 +642,8 @@
         {
           "additional_package_for_waste": false,
           "color": "gris",
-          "consumption_cost": 8460,
-          "design_quantity": 47,
+          "consumption_cost": 8100,
+          "design_quantity": 45,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -656,34 +656,34 @@
           ],
           "imagen": "https://cdn.example.test/v-19-gris-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 3,
+          "leftover_inventory": 5,
           "paquetes": 1,
           "precio_paquete": 9000,
           "product_id": "P-19-GRIS",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 47,
+          "required_quantity": 45,
           "sku": "SKU-V-19-GRIS-12",
           "sku_original": "SHOP-V-19-GRIS-12",
-          "sobrante": 3,
+          "sobrante": 5,
           "source_snapshot_id": "SNAP-GOLDEN-19",
           "source_variant_id": "SOURCE-V-19-GRIS-12",
           "subtotal": 9000,
           "tamano_codigo": "R-12",
           "titulo": "Globo Latex Redondo Fashion Gris — R-12",
-          "unidades_con_merma": 47,
+          "unidades_con_merma": 45,
           "unidades_inferidas": false,
-          "unidades_necesarias": 47,
+          "unidades_necesarias": 45,
           "unidades_paquete": 50,
-          "used": 47,
+          "used": 45,
           "variant_id": "V-19-GRIS-12",
           "waste_reserve": 0
         },
         {
           "additional_package_for_waste": false,
           "color": "plateado",
-          "consumption_cost": 17820,
-          "design_quantity": 71,
+          "consumption_cost": 16720,
+          "design_quantity": 67,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -696,33 +696,33 @@
           ],
           "imagen": "https://cdn.example.test/v-19-plata-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 19,
+          "leftover_inventory": 24,
           "paquetes": 2,
           "precio_paquete": 11000,
           "product_id": "P-19-PLATA",
           "purchase_cost": 22000,
           "purchase_quantity": 100,
-          "required_quantity": 81,
+          "required_quantity": 76,
           "sku": "SKU-V-19-PLATA-12",
           "sku_original": "SHOP-V-19-PLATA-12",
-          "sobrante": 29,
+          "sobrante": 33,
           "source_snapshot_id": "SNAP-GOLDEN-19",
           "source_variant_id": "SOURCE-V-19-PLATA-12",
           "subtotal": 22000,
           "tamano_codigo": "R-12",
           "titulo": "Globo Latex Redondo Reflex Plata — R-12",
-          "unidades_con_merma": 81,
+          "unidades_con_merma": 76,
           "unidades_inferidas": false,
-          "unidades_necesarias": 71,
+          "unidades_necesarias": 67,
           "unidades_paquete": 50,
-          "used": 71,
+          "used": 67,
           "variant_id": "V-19-PLATA-12",
-          "waste_reserve": 10
+          "waste_reserve": 9
         }
       ],
       "costes_por_estructura": [
         {
-          "consumo_cop": 24080,
+          "consumo_cop": 22840,
           "estructura_id": "EST_01_ARCO"
         }
       ],
@@ -752,7 +752,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo Latex Redondo Reflex Plata — R-12",
-              "unidades": 71,
+              "unidades": 67,
               "unidades_inferidas": false,
               "variant_id": "V-19-PLATA-12"
             },
@@ -777,7 +777,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo Latex Redondo Fashion Gris — R-12",
-              "unidades": 47,
+              "unidades": 45,
               "unidades_inferidas": false,
               "variant_id": "V-19-GRIS-12"
             }
@@ -787,14 +787,14 @@
               "diam_pulg": 12.0,
               "forma": "redondo",
               "pct": 100.0,
-              "unidades": 118
+              "unidades": 112
             }
           ],
           "nombre": "Arco asimetrico",
           "repeticiones": 1,
           "supuestos": [],
           "tipo": "arco",
-          "total_unidades": 118,
+          "total_unidades": 112,
           "ubicacion": "arco_central"
         }
       ],
@@ -854,7 +854,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "0fde4d2c8c91b665b2773bc4c2259eaded9f28c8af1c8790b43f52848f60ce67",
+      "plan_hash": "16fa5bd50cc6c44e20d29c952fbd1cb1c323c1512dadfccc8dac315956a6d403",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -869,38 +869,38 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 26280,
-        "covered_waste_reserve": 10,
-        "design_quantity": 118,
+        "consumption_cost": 24820,
+        "covered_waste_reserve": 9,
+        "design_quantity": 112,
         "globos_por_tamano": {
-          "R-12": 118
+          "R-12": 112
         },
         "incluye_iva": true,
         "merma_porcentaje": 8.0,
-        "natural_package_surplus": 32,
+        "natural_package_surplus": 38,
         "purchase_cost": 31000,
-        "target_waste_reserve": 10,
+        "target_waste_reserve": 9,
         "total_cop": 31000,
-        "total_unidades": 118,
+        "total_unidades": 112,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 9000
+        "waste_only_savings_cop": 0
       }
     },
     "quote": {
-      "consumption_cost_cop": 26280,
-      "covered_waste_reserve": 10,
+      "consumption_cost_cop": 24820,
+      "covered_waste_reserve": 9,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 22,
+      "leftover_inventory": 29,
       "lines": [
         {
           "available": true,
           "color": "gris",
-          "consumption_cost_cop": 8460,
-          "design_quantity": 47,
+          "consumption_cost_cop": 8100,
+          "design_quantity": 45,
           "diameter_inches": 12.0,
           "id": "V-19-GRIS-12",
-          "leftover_inventory": 3,
+          "leftover_inventory": 5,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -912,28 +912,28 @@
           "product_id": "P-19-GRIS",
           "purchase_cost_cop": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 47,
+          "required_quantity": 45,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_ARCO"
           ],
           "subtotal_cop": 9000,
-          "surplus": 3,
+          "surplus": 5,
           "title": "Globo Latex Redondo Fashion Gris — R-12",
           "units_per_package": 50,
-          "used": 47,
+          "used": 45,
           "variant_id": "V-19-GRIS-12",
           "waste_reserve": 0
         },
         {
           "available": true,
           "color": "plateado",
-          "consumption_cost_cop": 17820,
-          "design_quantity": 71,
+          "consumption_cost_cop": 16720,
+          "design_quantity": 67,
           "diameter_inches": 12.0,
           "id": "V-19-PLATA-12",
-          "leftover_inventory": 19,
+          "leftover_inventory": 24,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -945,26 +945,26 @@
           "product_id": "P-19-PLATA",
           "purchase_cost_cop": 22000,
           "purchase_quantity": 100,
-          "required_quantity": 81,
+          "required_quantity": 76,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_ARCO"
           ],
           "subtotal_cop": 22000,
-          "surplus": 29,
+          "surplus": 33,
           "title": "Globo Latex Redondo Reflex Plata — R-12",
           "units_per_package": 50,
-          "used": 71,
+          "used": 67,
           "variant_id": "V-19-PLATA-12",
-          "waste_reserve": 10
+          "waste_reserve": 9
         }
       ],
-      "plan_hash": "0fde4d2c8c91b665b2773bc4c2259eaded9f28c8af1c8790b43f52848f60ce67",
+      "plan_hash": "16fa5bd50cc6c44e20d29c952fbd1cb1c323c1512dadfccc8dac315956a6d403",
       "purchase_cost_cop": 31000,
       "schema_version": "quote.v1",
       "supported_complements": false,
-      "target_waste_reserve": 10,
+      "target_waste_reserve": 9,
       "total_cop": 31000,
       "waste_percentage": 8.0
     }

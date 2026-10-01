@@ -89,6 +89,10 @@ function geometriaAuditada(edicion: EdicionPlan): Record<string, unknown> {
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, mezcla: edicion.mezcla };
     case "patron":
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, modo: edicion.patron_color?.base.modo ?? null };
+    case "patron_modo":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, modo: edicion.modo };
+    case "densidad":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, densidad: edicion.densidad };
     case "armado":
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, variante: edicion.armado_bouquet?.variante ?? null };
     case "armado_guirnalda":

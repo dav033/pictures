@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { ArmadoBouquetV1Schema } from "./armado-bouquet";
 import { ArmadoGuirnaldaV1Schema } from "./armado-guirnalda";
-import { PatronColorV1Schema } from "./patron-color";
-import { PlanDecoracionSchema } from "./tipos";
+import { MODOS_PATRON_COLOR, PatronColorV1Schema } from "./patron-color";
+import { DENSIDADES, PlanDecoracionSchema } from "./tipos";
 
 /**
  * Wire shapes for editing an already-resolved plan: the base plan the client
@@ -136,5 +136,90 @@ export const EdicionArmadoGuirnaldaSchema = z.object({
 
 export type EdicionArmadoGuirnalda = z.infer<typeof EdicionArmadoGuirnaldaSchema>;
 
+/**
+ * Density of one structure. It is the same field the plan already declares, so
+ * nothing is added to the contract: what changes is that the chat can move it.
+ *
+ * On a **classic arch** the density is not a multiplier: it is how the piece is
+ * built. `sencilla` is a quartet (four balloons per ring), `media` a quintet and
+ * `lujosa` a sextet (`services/ai-api/app/arco_clasico.ARMADO_POR_DENSIDAD`),
+ * and the count is `rings x balloons per ring`. Python rejects a density the
+ * official structure does not admit (`arco_no_denso` only takes `sencilla`).
+ */
+export const EdicionDensidadSchema = z.object({
+  accion: z.literal("densidad"),
+  estructura_id: z.string().trim().min(1).max(160),
+  densidad: z.enum(DENSIDADES),
+}).strict();
+
+export type EdicionDensidad = z.infer<typeof EdicionDensidadSchema>;
+
+/**
+ * Color pattern of one structure **by style name**: the caller asks for a mode
+ * and Python builds the starting point for it (`sugerir_patron_modo`), keeping
+ * what that style admits of the pattern the piece already had.
+ *
+ * It exists because the chat cannot compose a whole `patron-color.v1` document
+ * in a tool call without inviting invalid patterns, while the editor card can
+ * (`accion: "patron"`). A style the piece does not admit comes back as
+ * `patron_invalido` naming the ones it does, so the model can correct itself.
+ */
+export const EdicionPatronModoSchema = z.object({
+  accion: z.literal("patron_modo"),
+  estructura_id: z.string().trim().min(1).max(160),
+  modo: z.enum(MODOS_PATRON_COLOR),
+  /**
+   * The style's own knobs, asked for by their common name so the chat does not
+   * have to know which field each style calls them. Python maps each one to the
+   * field that style carries, clamps it to what the contract admits and returns
+   * a notice for a style that does not have it, so no combination of these can
+   * produce an invalid pattern.
+   */
+  ajustes: z.object({
+    /** Stripe thickness in rows: `franjas`, `zigzag`, `chevron`. */
+    ancho: z.number().min(0.5).max(6).optional(),
+    /** Rows between repeats: `anillos`, `flor`, `diamante`, `punteado`, `intercalado`, `damero`. */
+    separacion: z.number().min(1).max(24).optional(),
+    /** How much the stripe slants: `franjas`, `chevron`. */
+    inclinacion: z.number().min(-3).max(4).optional(),
+    /** Flips the style's order or direction: `chevron`, `apilado`, `arcoiris`, `doslados`. */
+    invertir: z.boolean().optional(),
+  }).strict().optional(),
+}).strict();
+
+export type EdicionPatronModo = z.infer<typeof EdicionPatronModoSchema>;
+
 /** Every edit the plan editor applies (Python applies it: services/ai-api/app/plan_edicion.py). */
-export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado | EdicionArmadoGuirnalda;
+export type EdicionPlan =
+  | Edicion
+  | EdicionReparto
+  | EdicionMezcla
+  | EdicionPatron
+  | EdicionPatronModo
+  | EdicionDensidad
+  | EdicionArmado
+  | EdicionArmadoGuirnalda;
+
+/**
+ * What the chat turn may ask for with `ajustar_plan_decoracion`: a material
+ * edit, the density, or a pattern by style name. The editor card's own actions
+ * (`repartir`, `patron` with a whole document, the assemblies) are not here:
+ * those come from a person moving a control, not from a tool call.
+ */
+export const EdicionChatSchema = z.union([
+  EdicionSchema,
+  EdicionDensidadSchema,
+  EdicionPatronModoSchema,
+]);
+
+export type EdicionChat = z.infer<typeof EdicionChatSchema>;
+
+/**
+ * Whether this edit is one of the material ones, which are the only edits that
+ * carry a `variante` and an `objetivo_variant_id`. `accion !== "densidad"` does
+ * not narrow the union on its own, so the check lives here once instead of
+ * being re-derived wherever an edit is read.
+ */
+export function esEdicionDeMaterial(edicion: EdicionChat): edicion is Edicion {
+  return edicion.accion === "agregar" || edicion.accion === "reemplazar" || edicion.accion === "quitar";
+}

@@ -178,6 +178,17 @@ function lecturasDeFoto(
         usage: resultado.usage,
         elementos: elementos.length,
         lecturas: resultado.lecturas.length,
+        // Las clases de tamaño que vio la foto, que son lo que decide si la
+        // pieza se cotiza clásica u orgánica. Sin esto, cuando un arco de
+        // cuartetos salía dibujado como orgánico no se podía saber si la foto
+        // se leyó mal o el plan eligió mal; son cuatro números, ni imagen ni
+        // dato de cliente.
+        tamanos: resultado.lecturas.map((lectura) => ({
+          elemento: lectura.element_id,
+          clases: lectura.por_tamano.map((item) => `${item.clase} ${Math.round(item.proporcion * 100)}%`),
+          racimos: lectura.racimos,
+          por_racimo: lectura.globos_por_racimo,
+        })),
       }));
       return resultado.lecturas;
     },

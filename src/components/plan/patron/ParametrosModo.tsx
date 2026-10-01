@@ -5,7 +5,7 @@ import { ANCLAS_ZONA, EXTENSION_ZONA_MAXIMA, ZONAS_MAXIMAS, type AnclaZona, type
 import { editar } from "./borrador";
 import type { ColorLeyenda } from "./leyenda";
 import { ETIQUETA_ANCLA } from "./modos";
-import { Apartado, Contador, Segmentado, SelectorColor } from "./controles-comunes";
+import { Apartado, Contador, Interruptor, Segmentado, SelectorColor } from "./controles-comunes";
 
 export type CambioPatron = (patron: PatronColor, grupo?: string) => void;
 
@@ -260,6 +260,157 @@ export function ParametrosModo({ patron, leyenda, geometria, onCambiar, deshabil
             <button type="button" className={botonAnadir} disabled={deshabilitado || base.zonas.length >= ZONAS_MAXIMAS} onClick={() => conBase({ ...base, zonas: [...base.zonas, { material: colorNuevo([base.fondo, ...base.zonas.map((zona) => zona.material)], leyenda), ancla: anclaLibre(base.zonas), extension: 10 }] })}>
               <Plus className="size-3.5" aria-hidden="true" />Añadir zona
             </button>
+          </Apartado>
+        </>
+      );
+    case "intercalado":
+      return (
+        <>
+          <Apartado titulo="Colores que se turnan" ayuda="Se alternan globo a globo; ninguno queda junto a otro de su color">
+            <ol className="space-y-1.5">
+              {base.secuencia.map((material, posicion) => (
+                <FilaColor key={posicion} nombre={`Color ${posicion + 1}`} valor={material} leyenda={leyenda} deshabilitado={deshabilitado}
+                  onColor={(indice) => conBase({ ...base, secuencia: reemplazar(base.secuencia, posicion, indice) })}
+                  onQuitar={base.secuencia.length > 2 ? () => conBase({ ...base, secuencia: quitar(base.secuencia, posicion) }) : undefined} />
+              ))}
+            </ol>
+            <button type="button" className={botonAnadir} disabled={deshabilitado || base.secuencia.length >= 4} onClick={() => conBase({ ...base, secuencia: [...base.secuencia, colorNuevo(base.secuencia, leyenda)] })}>
+              <Plus className="size-3.5" aria-hidden="true" />Añadir color
+            </button>
+          </Apartado>
+          <Apartado titulo="Cuánto corre" ayuda="Puestos que se corre el color de una fila a la siguiente">
+            <Contador etiqueta="Puestos por fila" valor={base.paso} min={1} max={3} deshabilitado={deshabilitado} onCambiar={(paso) => conBase({ ...base, paso })} formato={(valor) => `${valor} ${valor === 1 ? "puesto" : "puestos"}`} />
+          </Apartado>
+        </>
+      );
+    case "franjas":
+    case "zigzag":
+    case "chevron":
+      return (
+        <>
+          <Apartado titulo="Colores de la franja" ayuda="Se repiten a lo largo de la pieza">
+            <ol className="space-y-1.5">
+              {base.secuencia.map((material, posicion) => (
+                <FilaColor key={posicion} nombre={`Franja ${posicion + 1}`} valor={material} leyenda={leyenda} deshabilitado={deshabilitado}
+                  onColor={(indice) => conBase({ ...base, secuencia: reemplazar(base.secuencia, posicion, indice) })}
+                  onQuitar={base.secuencia.length > 2 ? () => conBase({ ...base, secuencia: quitar(base.secuencia, posicion) }) : undefined} />
+              ))}
+            </ol>
+            <button type="button" className={botonAnadir} disabled={deshabilitado || base.secuencia.length >= (base.modo === "franjas" ? 5 : 4)} onClick={() => conBase({ ...base, secuencia: [...base.secuencia, colorNuevo(base.secuencia, leyenda)] })}>
+              <Plus className="size-3.5" aria-hidden="true" />Añadir franja
+            </button>
+          </Apartado>
+          <Apartado titulo="Grosor de la franja">
+            <Contador etiqueta="Globos de ancho" valor={base.ancho} min={0.5} max={6} paso={0.5} deshabilitado={deshabilitado} onCambiar={(ancho) => conBase({ ...base, ancho })} formato={(valor) => `${valor} ${valor === 1 ? "globo" : "globos"}`} />
+          </Apartado>
+          {base.modo === "franjas" ? (
+            <Apartado titulo="Inclinación" ayuda="0 las deja rectas de través; el signo cambia el lado por el que suben">
+              <Contador etiqueta="Inclinación de la franja" valor={base.inclinacion} min={-3} max={3} paso={0.5} deshabilitado={deshabilitado} onCambiar={(inclinacion) => conBase({ ...base, inclinacion })} formato={(valor) => `${valor}`} />
+            </Apartado>
+          ) : null}
+          {base.modo === "zigzag" ? (
+            <>
+              <Apartado titulo="Altura del quiebre" ayuda="Cuánto sube y baja cada quiebre, en filas">
+                <Contador etiqueta="Altura del zigzag" valor={base.amplitud} min={0} max={8} paso={0.5} deshabilitado={deshabilitado} onCambiar={(amplitud) => conBase({ ...base, amplitud })} formato={(valor) => `${valor}`} />
+              </Apartado>
+              <Apartado titulo="Largo del quiebre" ayuda="Globos que tarda en cambiar de dirección">
+                <Contador etiqueta="Largo del zigzag" valor={base.periodo} min={1} max={8} paso={0.5} deshabilitado={deshabilitado} onCambiar={(periodo) => conBase({ ...base, periodo })} formato={(valor) => `${valor}`} />
+              </Apartado>
+            </>
+          ) : null}
+          {base.modo === "chevron" ? (
+            <>
+              <Apartado titulo="Apertura de la V">
+                <Contador etiqueta="Apertura de la flecha" valor={base.inclinacion} min={0} max={4} paso={0.5} deshabilitado={deshabilitado} onCambiar={(inclinacion) => conBase({ ...base, inclinacion })} formato={(valor) => `${valor}`} />
+              </Apartado>
+              <Apartado titulo="Dirección">
+                <Interruptor etiqueta="Invertir la punta" activo={base.invertir} deshabilitado={deshabilitado} onCambiar={(invertir) => conBase({ ...base, invertir })} descripcion="La punta de la flecha mira al otro lado" />
+              </Apartado>
+            </>
+          ) : null}
+        </>
+      );
+    case "diamante":
+      return (
+        <>
+          <Apartado titulo="Colores del rombo">
+            <ol className="space-y-1.5">
+              <FilaColor nombre="Fondo" valor={base.fondo} leyenda={leyenda} deshabilitado={deshabilitado} onColor={(fondo) => conBase({ ...base, fondo })} />
+              <FilaColor nombre="Contorno" valor={base.contorno} leyenda={leyenda} deshabilitado={deshabilitado} onColor={(contorno) => conBase({ ...base, contorno })} />
+              <FilaColor nombre="Centro" valor={base.centro} leyenda={leyenda} deshabilitado={deshabilitado} onColor={(centro) => conBase({ ...base, centro })} />
+            </ol>
+          </Apartado>
+          <Apartado titulo="Cada cuánto aparece">
+            <Contador etiqueta="Separación entre rombos" valor={base.separacion} min={4} max={16} deshabilitado={deshabilitado} onCambiar={(separacion) => conBase({ ...base, separacion })} formato={(valor) => `${valor} filas`} />
+          </Apartado>
+          <Apartado titulo="Tamaño del rombo">
+            <Contador etiqueta="Tamaño del rombo" valor={base.radio} min={0.8} max={5} paso={0.2} deshabilitado={deshabilitado} onCambiar={(radio) => conBase({ ...base, radio })} formato={(valor) => `${valor}`} />
+          </Apartado>
+          <Apartado titulo="Alargado" ayuda="Más de 1 lo aplasta a lo largo de la pieza">
+            <Contador etiqueta="Alargado del rombo" valor={base.aspecto} min={0.5} max={1.8} paso={0.1} deshabilitado={deshabilitado} onCambiar={(aspecto) => conBase({ ...base, aspecto })} formato={(valor) => `${valor}`} />
+          </Apartado>
+        </>
+      );
+    case "punteado":
+      return (
+        <>
+          <Apartado titulo="Colores">
+            <ol className="space-y-1.5">
+              <FilaColor nombre="Fondo" valor={base.fondo} leyenda={leyenda} deshabilitado={deshabilitado} onColor={(fondo) => conBase({ ...base, fondo })} />
+              <FilaColor nombre="Lunar" valor={base.punto} leyenda={leyenda} deshabilitado={deshabilitado} onColor={(punto) => conBase({ ...base, punto })} />
+            </ol>
+          </Apartado>
+          <Apartado titulo="Separación entre hileras">
+            <Contador etiqueta="Separación entre hileras de lunares" valor={base.separacion} min={2} max={12} deshabilitado={deshabilitado} onCambiar={(separacion) => conBase({ ...base, separacion })} formato={(valor) => `${valor} filas`} />
+          </Apartado>
+          <Apartado titulo="Lunares de la hilera">
+            <Contador etiqueta="Un lunar cada tantos globos" valor={base.cada} min={1} max={4} deshabilitado={deshabilitado} onCambiar={(cada) => conBase({ ...base, cada })} formato={(valor) => (valor === 1 ? "todos" : `cada ${valor}`)} />
+          </Apartado>
+          <Apartado titulo="Escalonar">
+            <Interruptor etiqueta="Escalonar los lunares" activo={base.escalonar} deshabilitado={deshabilitado} onCambiar={(escalonar) => conBase({ ...base, escalonar })} descripcion="Las hileras se corren para que no queden en columna" />
+          </Apartado>
+        </>
+      );
+    case "apilado":
+    case "arcoiris": {
+      const lista = base.modo === "apilado" ? base.capas : base.bandas;
+      const minimo = base.modo === "apilado" ? 2 : 3;
+      const maximo = base.modo === "apilado" ? 5 : 8;
+      const conLista = (valores: number[]) => conBase(base.modo === "apilado" ? { ...base, capas: valores } : { ...base, bandas: valores });
+      return (
+        <>
+          <Apartado titulo={base.modo === "apilado" ? "Capas, del borde al centro" : "Bandas, de afuera adentro"}>
+            <ol className="space-y-1.5">
+              {lista.map((material, posicion) => (
+                <FilaColor key={posicion} nombre={`${base.modo === "apilado" ? "Capa" : "Banda"} ${posicion + 1}`} valor={material} leyenda={leyenda} deshabilitado={deshabilitado}
+                  onColor={(indice) => conLista([...reemplazar(lista, posicion, indice)])}
+                  onQuitar={lista.length > minimo ? () => conLista([...quitar(lista, posicion)]) : undefined} />
+              ))}
+            </ol>
+            <button type="button" className={botonAnadir} disabled={deshabilitado || lista.length >= maximo} onClick={() => conLista([...lista, colorNuevo(lista, leyenda)])}>
+              <Plus className="size-3.5" aria-hidden="true" />Añadir
+            </button>
+          </Apartado>
+          <Apartado titulo="Orden">
+            <Interruptor etiqueta="Invertir el orden" activo={base.invertir} deshabilitado={deshabilitado} onCambiar={(invertir) => conBase({ ...base, invertir })} descripcion="El primer color pasa al otro extremo" />
+          </Apartado>
+        </>
+      );
+    }
+    case "doslados":
+      return (
+        <>
+          <Apartado titulo="Los dos lados">
+            <ol className="space-y-1.5">
+              <FilaColor nombre="Exterior" valor={base.exterior} leyenda={leyenda} deshabilitado={deshabilitado} onColor={(exterior) => conBase({ ...base, exterior })} />
+              <FilaColor nombre="Interior" valor={base.interior} leyenda={leyenda} deshabilitado={deshabilitado} onColor={(interior) => conBase({ ...base, interior })} />
+            </ol>
+          </Apartado>
+          <Apartado titulo="Dónde cambia" ayuda="A lo ancho de la banda: menos deja más interior, más deja más exterior">
+            <Contador etiqueta="Posición del corte" valor={base.corte} min={0.2} max={0.8} paso={0.05} deshabilitado={deshabilitado} onCambiar={(corte) => conBase({ ...base, corte })} formato={(valor) => `${Math.round(valor * 100)} %`} />
+          </Apartado>
+          <Apartado titulo="Intercambiar">
+            <Interruptor etiqueta="Intercambiar en la clave" activo={base.alternar} deshabilitado={deshabilitado} onCambiar={(alternar) => conBase({ ...base, alternar })} descripcion="Pasada la mitad de la pieza, los lados cambian de color" />
           </Apartado>
         </>
       );

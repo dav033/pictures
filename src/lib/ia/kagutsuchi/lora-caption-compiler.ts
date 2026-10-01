@@ -199,6 +199,21 @@ const STRUCTURE_NOUNS: Record<CaptionStructureType, string> = {
   escultura: "balloon sculpture",
 };
 
+/**
+ * Estructuras oficiales cuyo sustantivo NO puede salir de la tabla por `tipo`,
+ * porque comparten el tipo con una pieza que se ve distinta.
+ *
+ * Hoy solo el **arco clásico**: su tipo es `arco`, igual que el del arco
+ * orgánico y el ligero, pero se arma en anillos de globos del mismo tamaño y
+ * llamarlo «organic balloon arch» es falso. Las demás variantes oficiales sí
+ * salen de la tabla, porque su diferencia es un adjetivo que se le añade
+ * («asymmetrical», «airy», «dense»): eso lo hace `productDialectNoun`.
+ *
+ * Va aquí, en el sustantivo de la cláusula, y no en un dialecto: así el prompt
+ * del LoRA y el de Gemini nombran la misma pieza igual.
+ */
+const SUSTANTIVO_DE_LA_OFICIAL = new Set(["arco"]);
+
 const PLACEMENT_PHRASES: Record<LoraPlacement, string> = {
   entrada: "framing the venue entrance",
   arco_central: "centered around the stage photo area",
@@ -626,7 +641,7 @@ function createClause(
   return {
     elementIds,
     structureType: first.semantics.structure_type,
-    noun: STRUCTURE_NOUNS[first.semantics.structure_type],
+    noun: sustantivoDeClausula(first),
     count: items.length,
     colors: uniqueEnglish(items.flatMap((item) => item.element.resolved_colors), translateLoraColor),
     finishes: uniqueEnglish(items.flatMap((item) => item.element.resolved_finishes ?? []), englishFinish),
@@ -1058,6 +1073,14 @@ function colorFinishPhrase(clause: LoraVisualClause, render?: CaptionRenderState
   const color = clause.colors.length ? `in ${joinNatural(clause.colors)}` : "";
   const finish = clause.finishes.length ? `with ${joinNatural(clause.finishes)} finishes` : "";
   return [color, finish].filter(Boolean).join(" ");
+}
+
+/** Sustantivo de la pieza: el de su estructura oficial cuando el tipo no alcanza. */
+function sustantivoDeClausula(item: { semantics: { structure_type: CaptionStructureType } }): string {
+  const oficial = officialStructureOf(item as Parameters<typeof officialStructureOf>[0]);
+  return oficial && SUSTANTIVO_DE_LA_OFICIAL.has(oficial.id)
+    ? oficial.sustantivoEn
+    : STRUCTURE_NOUNS[item.semantics.structure_type];
 }
 
 /** Product-wording noun with the official variant (asymmetrical, airy, dense) and pieces that have no plan type. */

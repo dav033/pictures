@@ -112,10 +112,10 @@ const blueprint = blueprintDe([
   const texto = textoVisible(html);
   assert.match(texto, /Basada en tu foto/);
   assert.match(texto, /2 de 2 piezas incluidas/);
-  assert.match(html, /alt="Arco de tu foto de referencia, centro"/, "el arco muestra su recorte de la foto");
+  assert.match(html, /alt="Arco clásico de tu foto de referencia, centro"/, "el arco muestra su recorte de la foto");
   assert.match(html, /alt="Columna de tu foto de referencia, ambos lados"/);
   assert.equal((html.match(/src="data:image\/png;base64,/g) ?? []).length >= 3, true, "miniatura y recortes usan la foto local, sin pedir nada");
-  assert.match(texto, /Arco Centro · 3 × 2,5 m/);
+  assert.match(texto, /Arco clásico Centro · 3 × 2,5 m/);
   assert.match(texto, /2 columnas Ambos lados · 0,6 × 2 m/);
   assert.match(texto, /unos 123 globos/);
   assert.match(texto, /En la imagen también pondré Flores · no se cotizan/);
@@ -124,7 +124,7 @@ const blueprint = blueprintDe([
   assert.match(texto, /Aprobar y ver cómo queda/, "texto del botón de la maqueta Main");
   assert.doesNotMatch(texto, /Globos que usaré/, "con fotos de la referencia no se repite la grilla de productos");
   // Detalle de estructura (maqueta DetallePieza).
-  assert.match(texto, /Arco al centro 3 m de ancho × 0,5 m de fondo × 2,5 m de alto · unos 123 globos/);
+  assert.match(texto, /Arco clásico al centro 3 m de ancho × 0,5 m de fondo × 2,5 m de alto · unos 123 globos/);
   assert.match(texto, /Ancho 3 m Alto 2,5 m Fondo 0,5 m Globos unos 123/);
   assert.match(texto, /Mezcla de tamaños/);
   assert.match(texto, /Globos que lleva/);
@@ -215,8 +215,8 @@ const blueprint = blueprintDe([
   assert.match(analizando, /Estoy mirando tu foto/);
 
   const listo = textoVisible(renderToStaticMarkup(React.createElement(ReferenceReviewPanel, { references: [imagen], blueprint, status: "ready", error: null })));
-  assert.match(listo, /Veo un arco al centro y una columna a la izquierda\./);
-  assert.match(listo, /1 Arco centro/);
+  assert.match(listo, /Veo un arco clásico al centro y una columna a la izquierda\./);
+  assert.match(listo, /1 Arco clásico centro/);
   assert.match(listo, /2 Columna izquierda/);
   assert.match(listo, /Blanco/);
   assert.match(listo, /Dorado/);

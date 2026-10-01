@@ -176,6 +176,53 @@ async function main(): Promise<void> {
     console.log("[PASS] quitar el único material → AJUSTE_RECHAZADO/UNICO_MATERIAL (misma regla que la ruta HTTP)");
   }
 
+  // --- 3b. densidad y patron_modo: los dos cambios que NO son de material.
+  // Ninguno trae variante, así que ninguno pasa por la allowlist del turno: no
+  // hay nada que buscar en el catálogo, cambian cómo se arma o cómo se pinta lo
+  // que ya se eligió. En un arco clásico la densidad es el anillo (cuarteto,
+  // quinteto, sexteto) y de ahí sale el conteo.
+  {
+    const llamadas = instalarFetch(conEdicion((l) => sobre(l, payloadResolucion())));
+    const { registro } = turno({ ragVistos: [] });
+    const r = await registro.ajustar_plan_decoracion!({ accion: "densidad", estructura_id: "EST_01_ARCO", densidad: "lujosa" }, llamada);
+    assert.equal(r.ok, true, JSON.stringify(r).slice(0, 400));
+    assert.equal(r.accion, "densidad");
+    assert.equal(r.densidad_nueva, "lujosa", "el modelo sabe qué quedó, para decírselo al cliente");
+    assert.equal(r.material_nuevo, undefined, "una densidad no estrena material");
+    assert.ok(llamadas.some((l) => l.path === "/internal/v1/plan/edit"), "la edición llega a Python");
+    assert.ok(!llamadas.some((l) => l.path === "/internal/v1/catalog/selection"), "no admite ninguna variante: no hay variante");
+    console.log("[PASS] densidad: ok:true, sin allowlist de variante y sin admisión de catálogo");
+  }
+  {
+    instalarFetch(conEdicion((l) => sobre(l, payloadResolucion())));
+    const { registro } = turno({ ragVistos: [] });
+    const r = await registro.ajustar_plan_decoracion!({ accion: "patron_modo", estructura_id: "EST_01_ARCO", modo: "espiral" }, llamada);
+    assert.equal(r.ok, true, JSON.stringify(r).slice(0, 400));
+    assert.equal(r.accion, "patron_modo");
+    assert.equal(r.patron_nuevo, "espiral");
+    console.log("[PASS] patron_modo: ok:true y el estilo aplicado vuelve al modelo");
+  }
+  {
+    // Un estilo que la pieza no admite: Python lo rechaza nombrando los que sí,
+    // y el modelo recibe el rechazo en vez de una propuesta con un patrón falso.
+    instalarFetch(conEdicion((l) => sobre(l, payloadResolucion()), { code: "patron_invalido", status: 422 }));
+    const { registro } = turno({ ragVistos: [] });
+    const r = await registro.ajustar_plan_decoracion!({ accion: "patron_modo", estructura_id: "EST_01_ARCO", modo: "damero" }, llamada);
+    assert.equal(r.ok, false);
+    assert.equal(r.status, "AJUSTE_RECHAZADO");
+    console.log("[PASS] patron_modo con un estilo que la pieza no admite → AJUSTE_RECHAZADO");
+  }
+  {
+    // El esquema sigue cerrado: una acción que no existe no llega a Python.
+    const llamadas = instalarFetch(() => { throw new Error("una acción inválida no debe llegar a Python"); });
+    const { registro } = turno({ ragVistos: [] });
+    const r = await registro.ajustar_plan_decoracion!({ accion: "densidad", estructura_id: "EST_01_ARCO", densidad: "altisima" }, llamada);
+    assert.equal(r.ok, false);
+    assert.equal(r.status, "AJUSTE_ESQUEMA_INVALIDO");
+    assert.equal(llamadas.length, 0, "no llama a Python");
+    console.log("[PASS] una densidad que no existe → AJUSTE_ESQUEMA_INVALIDO, cero llamadas a Python");
+  }
+
   // --- 4. Same-turn search gate: a variant the model never searched this turn is rejected before touching Python.
   {
     const llamadas = instalarFetch(() => { throw new Error("una variante fuera de la búsqueda de este turno no debe llegar a Python"); });

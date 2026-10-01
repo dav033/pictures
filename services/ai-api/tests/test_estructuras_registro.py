@@ -14,11 +14,13 @@ from app.patron_color import MODOS
 
 def test_mover_el_conocimiento_por_tipo_no_cambia_el_prompt_de_patrones() -> None:
     # El registro movió la frase y los modos sin tocar un byte del prompt. El
-    # valor congelado cambió una sola vez desde entonces, a propósito: ADR-0036
-    # añadió el modo `zonas` al prompt y a su esquema de salida (era
-    # patron-referencia.v1:0d8c93d34d672014). Lo que este test sigue vigilando
-    # es que un refactor no lo mueva sin querer.
-    assert patron_referencia.PROMPT_VERSION == "patron-referencia.v1:5cbba9bd04d02884"
+    # valor congelado ha cambiado dos veces desde entonces, las dos a propósito:
+    # ADR-0036 añadió el modo `zonas` al prompt y a su esquema de salida (era
+    # patron-referencia.v1:0d8c93d34d672014) y el 2026-10-01 entraron los nueve
+    # modos porteados del diseñador de arcos del clasificador, empezando por
+    # `intercalado` (era patron-referencia.v1:5cbba9bd04d02884). Lo que este
+    # test sigue vigilando es que un refactor no lo mueva sin querer.
+    assert patron_referencia.PROMPT_VERSION == "patron-referencia.v1:f23dbed88181c5ce"
     assert (
         "The start of a piece is: the base of a column; the left foot of an arch (going up "
         "over the top and down to the right foot); the base of a half-arch toward its open "

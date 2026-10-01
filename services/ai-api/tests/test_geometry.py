@@ -27,8 +27,11 @@ from typing import Mapping, Sequence, cast
 
 import pytest
 
+from app.arco_clasico import arco_de_densidad
+from app.arco_clasico import contar as contar_arco
 from app.plan import (
     BalloonApportionmentError,
+    PlanResolutionError,
     _BAND_WIDTH,
     _DENSITY_LAMBDA,
     _MIXES,
@@ -40,6 +43,7 @@ from app.plan import (
     _required_sizes,
     _total_globos,
 )
+from app.plan import cabe_arco_como_arco
 
 
 ARCO = {"ancho_m": 3, "alto_m": 2.4}
@@ -379,6 +383,22 @@ def test_el_factor_de_globos_por_metro_vale_1_sin_tamanos_obligatorios() -> None
                 )
             )
             assert factor > 0, f"{mezcla} {tamanos}: factor {factor}"
+            if mezcla == "clasica":
+                # Un arco de mezcla `clasica` ya no lo cuenta la fórmula: lo
+                # arma `app.arco_clasico` (anillos × globos por anillo), así que
+                # su conteo no tiene por qué escalar EXACTAMENTE por el factor.
+                # Escala parecido —los dos van con 1/diámetro— pero el armado
+                # además afina la banda, y con ella se alarga la línea por donde
+                # van los anillos: con R-5 la banda pasa de 0,76 a 0,32 m. Lo
+                # que este test cuida es la puerta física, y para ella basta con
+                # caer dentro de su propia tolerancia (0,6 a 1,3 veces), que es
+                # lo que se comprueba aquí.
+                razon = restringido / max(1.0, completo * factor)
+                assert 0.6 <= razon <= 1.3, (
+                    f"{mezcla} {tamanos}: {restringido} globos frente a {completo} × {factor}"
+                    f" (razón {razon:.2f}) saca a la puerta física de su tolerancia"
+                )
+                continue
             assert abs(restringido - completo * factor) <= 1 + factor, (
                 f"{mezcla} {tamanos}: {restringido} globos frente a {completo} × {factor}"
             )
@@ -454,3 +474,127 @@ def test_los_dos_margenes_cierran_exactos_en_cada_figura(
                         f"{etiqueta}: material {indice} con {cantidad / repeticiones}"
                         f" frente a {esperado}"
                     )
+
+
+# --- El arco clásico se arma, no se estima ------------------------------------
+#
+# A partir de aquí, lo que cuida el conteo de un arco clásico: que lo cuente el
+# motor de anillos (`app/arco_clasico.py`) y no la fórmula de densidad, y que
+# las piezas que el motor no sabe describir sigan con la fórmula.
+
+
+ARCO_CLASICO = {"ancho_m": 4, "alto_m": 2.5}
+
+
+def _formula_pura(
+    medidas: Mapping[str, float], densidad: str = "media", mezcla: str = "clasica"
+) -> int:
+    """El conteo de la fórmula de densidad, sin pasar por el enrutado."""
+    proporciones = _MIXES[mezcla]
+    dominante = max(proporciones, key=lambda item: item[1])
+    diametro_cm = dominante[0] * 2.54 * 0.92
+    area = _eje("arco", medidas, None, None) * (_BAND_WIDTH[mezcla] * diametro_cm / 100)
+    area_globo = sum(
+        proporcion * math.pi * ((diametro * 2.54 * 0.92) / 100 / 2) ** 2
+        for diametro, proporcion in proporciones
+    )
+    return math.ceil(_DENSITY_LAMBDA[densidad] * area / area_globo)
+
+
+@pytest.mark.parametrize("densidad", ["sencilla", "media", "lujosa"])
+def test_un_arco_clasico_lo_cuenta_el_motor_de_anillos(densidad: str) -> None:
+    _eje_m, total = _total_globos("arco", ARCO_CLASICO, densidad, "clasica", "arco")
+    esperado = contar_arco(arco_de_densidad(4.0, 2.5, densidad))
+    assert total == esperado
+    # Y no es la fórmula: si coincidieran, este test no probaría nada.
+    assert total != _formula_pura(ARCO_CLASICO, densidad)
+
+
+def test_el_arco_clasico_sin_estructura_oficial_declarada_tambien_se_arma() -> None:
+    """Un arco de un solo tamaño no puede ser el orgánico, lo diga o no.
+
+    La mezcla `clasica` es 100 % R-12, y una estructura orgánica toda de doce
+    pulgadas se ve plana: el modelo no tiene que declarar `estructura_oficial`
+    para que el arco se cuente como lo que es.
+    """
+    sin_declarar = _total_globos("arco", ARCO_CLASICO, "media", "clasica", None)[1]
+    declarado = _total_globos("arco", ARCO_CLASICO, "media", "clasica", "arco")[1]
+    assert sin_declarar == declarado
+
+
+@pytest.mark.parametrize(
+    "oficial",
+    ["arco_asimetrico", "arco_no_denso", "aro_circular"],
+)
+def test_los_arcos_que_no_son_clasicos_siguen_con_la_formula(oficial: str) -> None:
+    """El orgánico, el ligero y el aro no se arman con anillos.
+
+    El orgánico lleva racimos de varios tamaños, el ligero deja huecos a
+    propósito y el aro tiene su propia geometría (la circunferencia).
+    """
+    total = _total_globos("arco", ARCO_CLASICO, "media", "clasica", oficial)[1]
+    assert total != contar_arco(arco_de_densidad(4.0, 2.5, "media"))
+
+
+def test_un_arco_organico_sigue_con_la_formula() -> None:
+    total = _total_globos("arco", ARCO_CLASICO, "media", "organica_fina", "arco")[1]
+    assert total == _formula_pura(ARCO_CLASICO, "media", "organica_fina")
+
+
+def test_un_arco_clasico_con_dos_tamanos_efectivos_vuelve_a_la_formula() -> None:
+    """El motor de anillos describe un arco de un solo diámetro.
+
+    Si el cliente fija un tamaño que deja la mezcla con dos diámetros, la pieza
+    ya no es un arco de anillos y la cuenta la fórmula: mejor la fórmula que un
+    modelo de armado que no describe la pieza.
+    """
+    # Un solo tamaño obligatorio REEMPLAZA al R-12 de la mezcla clásica; hacen
+    # falta dos para que la mezcla efectiva quede con dos diámetros.
+    proporciones, _sin_ubicar = _effective_proportions("clasica", {5, 18})
+    assert len(proporciones) > 1
+    total = _total_globos("arco", ARCO_CLASICO, "media", "clasica", "arco", proporciones)[1]
+    assert total != contar_arco(arco_de_densidad(4.0, 2.5, "media"))
+
+
+def test_un_arco_de_globos_gigantes_vuelve_a_la_formula_en_vez_de_fallar() -> None:
+    """Sin vano no hay anillos, y la pieza se cotiza igual.
+
+    Cinco R-36 hacen una banda de 2,27 m: en un arco de 3 m no queda hueco
+    entre las patas. El motor se negaría, así que el enrutado pregunta antes y
+    la fórmula sigue contando la pieza.
+    """
+    proporciones, _sin_ubicar = _effective_proportions("clasica", {36})
+    assert len(proporciones) == 1 and proporciones[0][0] == 36
+    assert not cabe_arco_como_arco(3.0, 36, 5)
+    total = _total_globos("arco", ARCO, "media", "clasica", "arco", proporciones)[1]
+    assert total > 0
+
+
+def test_un_arco_imposible_de_armar_se_rechaza_con_su_motivo() -> None:
+    """No se cotiza con un número inventado: se rechaza y se dice por qué."""
+    # Un arco de 30 × 10 m con globos R-5: 448 anillos de cuatro globos son
+    # 2.240 globos, y el motor arma hasta 1.600.
+    with pytest.raises(PlanResolutionError) as fallo:
+        _despiece_with_plan_sizes(
+            _plan_con_tamanos(5),
+            _estructura(
+                "arco",
+                {"ancho_m": 30, "alto_m": 10},
+                UN_MATERIAL,
+                densidad="sencilla",
+                mezcla="clasica",
+            ),
+        )
+    assert fallo.value.code == "arco_invalido"
+    assert fallo.value.details is not None
+    assert fallo.value.details["motivo"] == "demasiados_globos"
+
+
+def test_mas_densidad_son_mas_globos_en_un_arco_clasico() -> None:
+    """Cuarteto, quinteto y sexteto: la densidad es cuántos van en el anillo."""
+    totales = [
+        _total_globos("arco", ARCO_CLASICO, densidad, "clasica", "arco")[1]
+        for densidad in ("sencilla", "media", "lujosa")
+    ]
+    assert totales == sorted(totales)
+    assert len(set(totales)) == 3

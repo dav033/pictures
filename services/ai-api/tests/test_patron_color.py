@@ -8,6 +8,9 @@ repasar a mano.
 
 from __future__ import annotations
 
+import dataclasses
+from typing import cast
+
 import hashlib
 import re
 from collections.abc import Mapping, Sequence
@@ -17,6 +20,7 @@ import pytest
 
 from app.patron_color import (
     ANCLAS,
+    ajustar_perillas,
     EstructuraPatron,
     MaterialPatron,
     PatronColorInvalido,
@@ -624,18 +628,27 @@ def test_pasos_de_anillos_largos_juntan_las_filas_iguales() -> None:
     ("partes", "racimo"),
     [
         # 4p - 1 = 1, 0.2, -0.2 -> sobra 1 posición, al primero: {A:2, B:1, C:1}.
-        ((0.5, 0.3, 0.2), [0, 1, 0, 2]),
-        ((0.5, 0.5), [0, 1, 0, 1]),  # {A:2, B:2}
+        ((0.5, 0.3, 0.2), [0, 0, 1, 2]),
+        ((0.5, 0.5), [0, 0, 1, 1]),  # {A:2, B:2}
         ((0.25, 0.25, 0.25, 0.25), [0, 1, 2, 3]),  # {A, B, C, D}
         # 4p - 1 = 1.8, 0.2; sobran 2 -> 1.8 y 0.2 -> 1, 0 y la otra al 0.8: {A:3, B:1}.
-        ((0.7, 0.3), [0, 1, 0, 0]),
+        ((0.7, 0.3), [0, 0, 0, 1]),
         # 4p - 1 = 1.4, 0.6; sobran 2 -> 1, 0 y la otra al mayor resto 0.6: {A:2, B:2}.
-        ((0.6, 0.4), [0, 1, 0, 1]),
+        ((0.6, 0.4), [0, 0, 1, 1]),
     ],
 )
-def test_preset_de_racimos_de_un_tamano_es_una_espiral_intercalada(
+def test_el_racimo_del_preset_agrupa_cada_color_en_un_sector(
     partes: tuple[float, ...], racimo: list[int]
 ) -> None:
+    """Cuántos puestos lleva cada color lo decide la participación; el ORDEN, la espiral.
+
+    Hasta el 2026-10-01 el racimo se intercalaba (``A, B, A, B``), y eso en un
+    anillo que gira media vuelta de paso por capa no dibuja una espiral: dibuja
+    el tejido de cuadros, que desde ese día tiene su propio estilo
+    (``intercalado``). Para que haya espiral, un color tiene que ocupar puestos
+    SEGUIDOS del anillo. Los repartos no se movieron —{A:2, B:1, C:1} sigue
+    siendo {A:2, B:1, C:1}—, así que el conteo y el precio son los mismos.
+    """
     colores = ("rosado", "blanco", "dorado", "negro")[: len(partes)]
     estructura = _estructura(total=39, colores=colores, partes=partes)
 
@@ -1252,7 +1265,9 @@ def test_dos_acabados_del_mismo_color_son_un_solo_nombre_en_el_lora(
 
 # --- Estilos que ofrece el editor y su punto de partida ------------------------------
 
-_LINEAL = ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor"]
+# Los estilos que ofrece una pieza con eje, en el orden del editor. Los nueve
+# del medio son los porteados del diseñador de arcos del clasificador.
+_LINEAL = ["espiral", "intercalado", "franjas", "zigzag", "chevron", "diamante", "punteado", "apilado", "arcoiris", "doslados", "anillos", "bloques", "degradado", "aleatorio", "flor"]
 
 
 def test_modos_admitidos_de_una_columna_sin_espejo_ni_direcciones() -> None:
@@ -1271,6 +1286,21 @@ def test_modos_admitidos_de_un_arco_llevan_espejo_menos_el_confeti() -> None:
 
 def test_modos_admitidos_de_una_pared_con_sus_direcciones() -> None:
     assert modos_admitidos(_estructura(**PARED_3X4)) == [
+        # Los modos porteados se leen sobre la rejilla tal como están: ninguno
+        # ofrece dirección, porque girarlos sería otro patrón, no el mismo.
+        *(
+            {"modo": modo, "direcciones": ["longitudinal"], "espejo": False}
+            for modo in (
+                "intercalado",
+                "franjas",
+                "zigzag",
+                "chevron",
+                "diamante",
+                "punteado",
+                "apilado",
+                "arcoiris",
+            )
+        ),
         {"modo": "anillos", "direcciones": ["longitudinal", "transversal"], "espejo": False},
         {"modo": "bloques", "direcciones": ["longitudinal", "transversal"], "espejo": False},
         {
@@ -1900,3 +1930,567 @@ def test_cada_ancla_del_contrato_tiene_un_sitio_en_la_pieza() -> None:
     # lugar equivocado, o rompería la lectura del patrón.
     assert set(ANCLAS) == set(_ANCLAS)
     assert len(ANCLAS) == 9
+
+
+
+# --- El arco clásico impone su anillo al patrón --------------------------------
+
+
+def _arco_clasico_patron(**extra: object) -> EstructuraPatron:
+    """Un arco clásico de 4 × 2,5 m en densidad media: quintetos, 145 globos."""
+    return EstructuraPatron(
+        estructura_id="EST_01_ARCO",
+        tipo="arco",
+        total=145,
+        un_tamano=True,
+        ancho_m=4.0,
+        alto_m=2.5,
+        repeticiones=1,
+        materiales=(
+            MaterialPatron(color="blanco", acabado=None, participacion=0.6),
+            MaterialPatron(color="dorado", acabado=None, participacion=0.4),
+        ),
+        racimo_armado=5,
+        **extra,  # type: ignore[arg-type]
+    )
+
+
+def test_la_rejilla_de_un_arco_clasico_es_su_armado() -> None:
+    """Una fila por anillo y una posición por hilo, sin redondear nada.
+
+    El total de un arco clásico ES ``anillos × globos del anillo``, así que con
+    el racimo del armado la rejilla no aproxima la pieza: es la pieza.
+    """
+    estructura = _arco_clasico_patron()
+    expansion = validar_y_expandir(estructura, sugerir_patron(estructura))
+    assert (expansion.filas, expansion.columnas) == (29, 5)
+    assert conteo_por_instancia(estructura, expansion).total == 145
+
+
+def test_un_patron_con_otro_racimo_no_se_arma_en_un_arco_clasico() -> None:
+    """Pintaría una rejilla que no es la pieza que se cotiza."""
+    estructura = _arco_clasico_patron()
+    patron = _patron(
+        {"modo": "anillos", "secuencia": [0, 1], "largo": 1}, globos_por_racimo=4
+    )
+    with pytest.raises(PatronColorInvalido) as fallo:
+        validar_y_expandir(estructura, patron)
+    assert fallo.value.motivo == "racimo_no_es_el_del_anillo"
+
+
+def test_la_flor_no_se_arma_en_un_arco_de_anillos() -> None:
+    """Colgaría globos por encima del armado, y el armado es lo que se cotiza."""
+    estructura = _arco_clasico_patron()
+    # La flor suma un globo POR ENCIMA de la rejilla (``extras``); en un arco de
+    # anillos ese globo no existe en el armado, que es lo que se cotiza.
+    patron = _patron(
+        {"modo": "flor", "fondo": 0, "petalo": 0, "centro": 1, "separacion": 2},
+        globos_por_racimo=5,
+    )
+    with pytest.raises(PatronColorInvalido) as fallo:
+        validar_y_expandir(estructura, patron)
+    assert fallo.value.motivo == "modo_no_permitido"
+
+
+def test_el_preset_de_un_arco_clasico_va_por_su_anillo() -> None:
+    """Espiral si los colores caben en el anillo; si no, un color por anillo."""
+    dos_colores = sugerir_patron(_arco_clasico_patron())
+    assert dos_colores["globos_por_racimo"] == 5
+    base = dos_colores["base"]
+    assert isinstance(base, dict) and base["modo"] == "espiral"
+
+
+# --- Intercalado, y el giro del anillo ----------------------------------------
+#
+# El arco de cuartetos alternados: cada globo rodeado de los del otro color. Es
+# un patrón distinto de la espiral (que mantiene cada color en su puesto) y del
+# damero (que pinta cuadros sobre una pared).
+
+
+def _arco_de_anillos() -> EstructuraPatron:
+    """Un arco clásico de cuartetos: 10 anillos × 4 = 40 globos.
+
+    ``racimo_armado`` es lo que hace que la rejilla SEA el armado: una fila por
+    anillo y una posición por hilo (``plan._ancho_de_arco_clasico``).
+    """
+    return dataclasses.replace(
+        _estructura(tipo="arco", total=40, colores=("violeta", "lila")), racimo_armado=4
+    )
+
+
+def test_el_intercalado_no_pone_dos_globos_del_mismo_color_juntos() -> None:
+    patron = _patron({"modo": "intercalado", "secuencia": [0, 1], "paso": 1})
+    celdas = validar_y_expandir(_arco_de_anillos(), patron).celdas
+    assert len(celdas) == 10 and all(len(fila) == 4 for fila in celdas)
+    for indice, fila in enumerate(celdas):
+        for posicion in range(len(fila) - 1):
+            assert fila[posicion] != fila[posicion + 1], "dos vecinos del anillo, mismo color"
+        if indice:
+            anterior = celdas[indice - 1]
+            assert all(
+                fila[posicion] != anterior[posicion] for posicion in range(len(fila))
+            ), "el anillo no se corrió respecto del anterior"
+
+
+def test_el_intercalado_reparte_los_colores_por_igual() -> None:
+    """El tejido no cambia cuántos globos lleva cada color: los parte en dos."""
+    patron = _patron({"modo": "intercalado", "secuencia": [0, 1], "paso": 1})
+    expansion = validar_y_expandir(_arco_de_anillos(), patron)
+    assert list(conteo_por_instancia(_arco_de_anillos(), expansion).unidades) == [20, 20]
+
+
+def test_la_espiral_de_un_arco_clasico_se_corre_un_puesto_por_anillo() -> None:
+    """Sin correrla, la espiral de un arco se dibuja como rayas paralelas.
+
+    La rejilla de un arco clásico es su banda estirada y cada hilo es una
+    columna fija del dibujo, así que el medio paso de giro con que se arma el
+    arco de verdad tiene que estar en el color. En una guirnalda no: ahí el
+    racimo se gira al armarlo y correrlo además lo giraría dos veces.
+    """
+    patron = _patron({"modo": "espiral", "racimo": [0, 0, 1, 1], "trazo": "espiral"})
+    arco = validar_y_expandir(_arco_de_anillos(), patron).celdas
+    assert arco[0] == (0, 0, 1, 1)
+    assert arco[1] == (1, 0, 0, 1), "el anillo siguiente va corrido un puesto"
+    assert arco[4] == arco[0], "con cuatro puestos la espiral da la vuelta"
+    # Y el conteo es el mismo con giro y sin él: rotar una fila no cambia
+    # cuántos globos de cada color lleva.
+    conteo = conteo_por_instancia(_arco_de_anillos(), validar_y_expandir(_arco_de_anillos(), patron))
+    assert list(conteo.unidades) == [20, 20]
+
+
+def test_la_espiral_de_una_guirnalda_no_se_corre() -> None:
+    guirnalda = dataclasses.replace(
+        _estructura(tipo="guirnalda", total=40, colores=("violeta", "lila")), racimo_armado=4
+    )
+    patron = _patron({"modo": "espiral", "racimo": [0, 0, 1, 1], "trazo": "espiral"})
+    celdas = validar_y_expandir(guirnalda, patron).celdas
+    assert all(fila == (0, 0, 1, 1) for fila in celdas)
+
+
+def test_el_intercalado_de_un_arco_va_en_los_puestos_del_anillo() -> None:
+    """Un intercalado sobre un arco clásico se expande a la rejilla del armado."""
+    patron = _patron({"modo": "intercalado", "secuencia": [0, 1], "paso": 1})
+    expansion = validar_y_expandir(_arco_de_anillos(), patron)
+    assert (expansion.geometria, expansion.filas, expansion.columnas) == ("racimos", 10, 4)
+
+
+def test_el_intercalado_se_redacta_como_tejido_y_no_como_rayas() -> None:
+    patron = _patron({"modo": "intercalado", "secuencia": [0, 1], "paso": 1})
+    resuelto = patron_resuelto(_arco_de_anillos(), patron, aplicado=True)
+    assert "alternados globo a globo" in str(resuelto["descripcion"])
+    assert "alternate one by one" in str(resuelto["prompt_gemini"])
+    # Lo que NO puede decir: que son franjas o bandas, que es justo lo que
+    # dibujaría el modelo si se le describiera como una espiral.
+    for clave in ("prompt_gemini", "prompt_lora"):
+        texto = str(resuelto[clave])
+        assert "stripe" not in texto and "band" not in texto
+
+
+# --- Los nueve estilos porteados del diseñador de arcos ------------------------
+#
+# `intercalado` es nuevo (sale de la foto del usuario); los otros ocho vienen de
+# `src/lib/arco/patrones.ts` del clasificador de decoraciones. Lo que se vigila
+# aquí es lo que el chat y el editor van a pedir de verdad: que cada estilo se
+# arme solo con el nombre, que pinte lo que dice y que no se le escape ningún
+# globo sin color.
+
+PORTEADOS = (
+    "intercalado",
+    "franjas",
+    "zigzag",
+    "chevron",
+    "diamante",
+    "punteado",
+    "apilado",
+    "arcoiris",
+    "doslados",
+)
+
+
+@pytest.mark.parametrize("modo", PORTEADOS)
+def test_cada_estilo_porteado_se_arma_solo_con_su_nombre(modo: str) -> None:
+    """Es exactamente lo que hace el chat: pedir un estilo y nada más.
+
+    Si un estilo no tuviera punto de partida propio caería en el `else` de
+    `_preset_de_estilo` y saldría un damero con otro nombre, que es el defecto
+    que esto impide.
+    """
+    estructura = _estructura(tipo="arco", total=48)
+    partida = sugerir_patron_modo(estructura, modo)
+    base = cast(Mapping[str, object], cast(Mapping[str, object], partida.patron)["base"])
+    assert base["modo"] == modo, "el estilo cayó en el punto de partida de otro"
+    expansion = validar_y_expandir(estructura, partida.patron)
+    # Cada globo de la pieza tiene color, y todos los colores se usan.
+    assert sum(len(fila) for fila in expansion.celdas) == expansion.filas * expansion.columnas
+    usados = {celda for fila in expansion.celdas for celda in fila}
+    assert usados <= set(range(len(estructura.materiales)))
+
+
+@pytest.mark.parametrize("modo", PORTEADOS)
+def test_cada_estilo_porteado_se_redacta_en_los_dos_idiomas(modo: str) -> None:
+    """Sin frase para el modelo de imagen, la pieza se generaría sin su patrón."""
+    estructura = _estructura(tipo="arco", total=48)
+    partida = sugerir_patron_modo(estructura, modo)
+    resuelto = patron_resuelto(estructura, partida.patron, aplicado=True)
+    assert str(resuelto["descripcion"]).strip()
+    assert "COLOR PATTERN" in str(resuelto["prompt_gemini"])
+    assert str(resuelto["prompt_lora"]).strip()
+
+
+def test_las_franjas_son_mas_gruesas_que_una_fila() -> None:
+    """Es lo que las separa de la espiral: la raya ocupa varias filas."""
+    estructura = _estructura(tipo="arco", total=48, colores=("blanco", "negro"))
+    celdas = _celdas(
+        estructura,
+        _patron({"modo": "franjas", "secuencia": [0, 1], "ancho": 4, "inclinacion": 0}),
+    )
+    # Sin inclinación, cada fila es de un solo color y el color dura 4 filas.
+    assert all(len(set(fila)) == 1 for fila in celdas)
+    colores = [fila[0] for fila in celdas]
+    assert colores[:8] == [0, 0, 0, 0, 1, 1, 1, 1]
+
+
+def test_la_inclinacion_de_las_franjas_las_pone_en_diagonal() -> None:
+    estructura = _estructura(tipo="arco", total=48, colores=("blanco", "negro"))
+    recta = _celdas(
+        estructura,
+        _patron({"modo": "franjas", "secuencia": [0, 1], "ancho": 2, "inclinacion": 0}),
+    )
+    diagonal = _celdas(
+        estructura,
+        _patron({"modo": "franjas", "secuencia": [0, 1], "ancho": 2, "inclinacion": 2}),
+    )
+    assert all(len(set(fila)) == 1 for fila in recta), "sin inclinación, filas de un color"
+    assert any(len(set(fila)) > 1 for fila in diagonal), "con inclinación, la fila se parte"
+
+
+def test_el_chevron_es_simetrico_respecto_del_centro_de_la_banda() -> None:
+    """Una V es una V: los dos lados de la banda llevan lo mismo."""
+    estructura = _estructura(tipo="arco", total=48, colores=("blanco", "negro"))
+    celdas = _celdas(
+        estructura,
+        _patron(
+            {
+                "modo": "chevron",
+                "secuencia": [0, 1],
+                "ancho": 1,
+                "inclinacion": 2,
+                "invertir": False,
+            }
+        ),
+    )
+    assert all(fila == list(reversed(fila)) for fila in celdas)
+
+
+def test_el_apilado_pone_el_primer_color_en_los_dos_bordes() -> None:
+    """Las capas envuelven: la primera por fuera, a los dos lados de la banda."""
+    estructura = _estructura(tipo="arco", total=48, colores=("blanco", "negro"))
+    celdas = _celdas(estructura, _patron({"modo": "apilado", "capas": [0, 1], "invertir": False}))
+    fila = celdas[0]
+    assert fila[0] == 0 and fila[-1] == 0, "la primera capa va por fuera"
+    assert 1 in fila, "la segunda capa va por dentro"
+    assert fila == list(reversed(fila)), "las capas son simétricas"
+    volteado = _celdas(
+        estructura, _patron({"modo": "apilado", "capas": [0, 1], "invertir": True})
+    )
+    assert volteado[0][0] == 1, "invertir manda el primer color al centro"
+
+
+def test_el_arcoiris_va_de_afuera_adentro_y_no_se_repite() -> None:
+    estructura = _estructura(tipo="arco", total=48, colores=("blanco", "negro", "azul"))
+    celdas = _celdas(
+        estructura, _patron({"modo": "arcoiris", "bandas": [0, 1, 2], "invertir": False})
+    )
+    fila = celdas[0]
+    # Cada banda ocupa un tramo contiguo y van en orden de afuera adentro.
+    assert fila == sorted(fila), "las bandas salieron desordenadas"
+    assert set(fila) == {0, 1, 2}, "falta alguna banda"
+    volteado = _celdas(
+        estructura, _patron({"modo": "arcoiris", "bandas": [0, 1, 2], "invertir": True})
+    )
+    assert volteado[0] == list(reversed(fila))
+
+
+def test_dos_lados_parte_la_banda_en_el_corte() -> None:
+    estructura = _estructura(tipo="arco", total=48, colores=("blanco", "negro"))
+    fila = _celdas(
+        estructura,
+        _patron(
+            {
+                "modo": "doslados",
+                "exterior": 0,
+                "interior": 1,
+                "corte": 0.5,
+                "alternar": False,
+            }
+        ),
+    )[0]
+    assert fila[0] == 0 and fila[-1] == 1, "afuera un color, adentro el otro"
+    assert len(set(fila)) == 2
+    # Un corte más alto deja más pieza del lado de afuera.
+    mas_exterior = _celdas(
+        estructura,
+        _patron(
+            {
+                "modo": "doslados",
+                "exterior": 0,
+                "interior": 1,
+                "corte": 0.8,
+                "alternar": False,
+            }
+        ),
+    )[0]
+    assert mas_exterior.count(0) >= fila.count(0)
+
+
+def test_dos_lados_con_alternar_intercambia_pasada_la_mitad() -> None:
+    estructura = _estructura(tipo="arco", total=48, colores=("blanco", "negro"))
+    celdas = _celdas(
+        estructura,
+        _patron(
+            {"modo": "doslados", "exterior": 0, "interior": 1, "corte": 0.5, "alternar": True}
+        ),
+    )
+    assert celdas[0] == list(reversed(celdas[-1])), "los dos lados no se intercambiaron"
+
+
+def test_el_punteado_reparte_lunares_y_no_los_amontona() -> None:
+    estructura = _estructura(tipo="arco", total=48, colores=("blanco", "negro"))
+    celdas = _celdas(
+        estructura,
+        _patron(
+            {
+                "modo": "punteado",
+                "fondo": 0,
+                "punto": 1,
+                "separacion": 4,
+                "cada": 2,
+                "escalonar": True,
+            }
+        ),
+    )
+    con_lunares = [indice for indice, fila in enumerate(celdas) if 1 in fila]
+    assert con_lunares, "no quedó ningún lunar"
+    # Una hilera cada 4 filas, ni dos seguidas ni todas iguales.
+    assert all(
+        siguiente - anterior == 4 for anterior, siguiente in zip(con_lunares, con_lunares[1:])
+    )
+    assert all(set(celdas[indice]) == {0} for indice in range(len(celdas)) if indice not in con_lunares)
+
+
+def test_el_diamante_tiene_centro_contorno_y_fondo() -> None:
+    """El rombo se lee donde hay ancho: una pared.
+
+    En una banda de cuatro globos un rombo de radio 1,8 ocupa todo el ancho y el
+    patrón degenera en franjas. No es un defecto del rombo, es la pieza: por eso
+    se mide sobre una pared, que es donde el estilo dice algo.
+    """
+    estructura = _estructura(
+        tipo="pared", total=400, ancho=4.0, alto=2.4, colores=("blanco", "negro", "azul")
+    )
+    celdas = _celdas(
+        estructura,
+        _patron(
+            {
+                "modo": "diamante",
+                "fondo": 0,
+                "contorno": 1,
+                "centro": 2,
+                "separacion": 8,
+                "radio": 1.8,
+                "aspecto": 0.9,
+            }
+        ),
+    )
+    plano = [celda for fila in celdas for celda in fila]
+    assert set(plano) == {0, 1, 2}, "al rombo le falta alguno de sus tres colores"
+    # El fondo manda: un rombo cada 8 filas no puede comerse la pared.
+    assert plano.count(0) > plano.count(1) + plano.count(2)
+    # Y el centro es un globo por rombo, no una mancha.
+    assert plano.count(2) < plano.count(1)
+
+
+# --- Las perillas de un estilo, por su nombre común ----------------------------
+#
+# Es lo que el chat puede pedir además del estilo: «las franjas más anchas»,
+# «los lunares más juntos», «al revés». Lo que se vigila es que no exista un
+# ajuste capaz de dejar un patrón inválido.
+
+
+def test_una_perilla_mueve_el_campo_que_ese_estilo_lleva() -> None:
+    patron = _patron({"modo": "franjas", "secuencia": [0, 1], "ancho": 4, "inclinacion": 2})
+    ajustado, avisos = ajustar_perillas(patron, {"ancho": 2, "inclinacion": 0})
+    base = cast(Mapping[str, object], ajustado["base"])
+    assert (base["ancho"], base["inclinacion"]) == (2, 0)
+    assert avisos == []
+    # El original no se tocó: el ajuste devuelve otro patrón.
+    assert cast(Mapping[str, object], patron["base"])["ancho"] == 4
+
+
+def test_la_misma_perilla_mueve_campos_distintos_segun_el_estilo() -> None:
+    """«Separación» es `largo` en anillos, `paso` en intercalado y `separacion` en flor."""
+    anillos, _ = ajustar_perillas(
+        _patron({"modo": "anillos", "secuencia": [0, 1], "largo": 1}), {"separacion": 3}
+    )
+    intercalado, _ = ajustar_perillas(
+        _patron({"modo": "intercalado", "secuencia": [0, 1], "paso": 1}), {"separacion": 2}
+    )
+    flor, _ = ajustar_perillas(
+        _patron({"modo": "flor", "fondo": 0, "petalo": 1, "centro": 2, "separacion": 2}),
+        {"separacion": 5},
+    )
+    assert cast(Mapping[str, object], anillos["base"])["largo"] == 3
+    assert cast(Mapping[str, object], intercalado["base"])["paso"] == 2
+    assert cast(Mapping[str, object], flor["base"])["separacion"] == 5
+
+
+def test_una_perilla_que_el_estilo_no_tiene_avisa_y_no_rompe() -> None:
+    patron = _patron({"modo": "anillos", "secuencia": [0, 1], "largo": 1})
+    ajustado, avisos = ajustar_perillas(patron, {"ancho": 3})
+    assert ajustado == patron, "no se inventó un campo que ese estilo no lleva"
+    assert len(avisos) == 1 and "no lleva el ancho" in avisos[0]
+
+
+def test_una_perilla_fuera_de_rango_se_acota_al_contrato_y_se_dice() -> None:
+    """El tope sale del esquema exportado, no de una copia: un solo dueño."""
+    patron = _patron({"modo": "franjas", "secuencia": [0, 1], "ancho": 4, "inclinacion": 0})
+    ajustado, avisos = ajustar_perillas(patron, {"ancho": 99})
+    assert cast(Mapping[str, object], ajustado["base"])["ancho"] == 6
+    assert len(avisos) == 1 and "se dejó en 6" in avisos[0]
+
+
+def test_una_perilla_entera_no_se_queda_con_decimales() -> None:
+    patron = _patron({"modo": "punteado", "fondo": 0, "punto": 1, "separacion": 4, "cada": 2, "escalonar": True})
+    ajustado, _avisos = ajustar_perillas(patron, {"separacion": 6.4})
+    separacion = cast(Mapping[str, object], ajustado["base"])["separacion"]
+    assert separacion == 6 and isinstance(separacion, int)
+
+
+def test_invertir_mueve_alternar_en_dos_lados() -> None:
+    """Cada estilo llama a lo suyo como quiere; el nombre común es uno solo."""
+    patron = _patron(
+        {"modo": "doslados", "exterior": 0, "interior": 1, "corte": 0.5, "alternar": False}
+    )
+    ajustado, avisos = ajustar_perillas(patron, {"invertir": True})
+    assert cast(Mapping[str, object], ajustado["base"])["alternar"] is True
+    assert avisos == []
+
+
+@pytest.mark.parametrize("modo", PORTEADOS)
+def test_ninguna_perilla_rompe_un_estilo_sin_decir_por_que(modo: str) -> None:
+    """Todas las perillas contra todos los estilos, en los dos extremos.
+
+    La promesa NO es que todo valga: un rombo cada 24 filas no cabe en una pieza
+    de 12 y deja sus colores sin un solo globo, y eso hay que decirlo. La
+    promesa es que el resultado sea una de dos cosas —se aplica, o se rechaza
+    con un motivo estable— y nunca un reventón. Es lo que deja que el chat mande
+    una perilla sin saber de antemano cuál lleva cada estilo:
+    `patron_de_modo_para_estructura` convierte ese rechazo en un
+    `patron_invalido` con su frase.
+    """
+    estructura = _estructura(tipo="arco", total=48)
+    partida = sugerir_patron_modo(estructura, modo)
+    motivos = set()
+    for perilla, valores in (
+        ("ancho", (0.5, 6)),
+        ("separacion", (1, 24)),
+        ("inclinacion", (-3, 4)),
+        ("invertir", (True, False)),
+    ):
+        for valor in valores:
+            ajustado, _avisos = ajustar_perillas(partida.patron, {perilla: valor})
+            try:
+                validar_y_expandir(estructura, ajustado)
+            except PatronColorInvalido as error:
+                motivos.add(error.motivo)
+    assert motivos <= {"material_sin_uso"}, (
+        f"una perilla rompió «{modo}» por algo que no es un color sin globos: {motivos}"
+    )
+
+
+def test_juntar_los_rombos_hasta_tapar_el_fondo_se_rechaza_con_su_motivo() -> None:
+    """El caso concreto que destapó la prueba de arriba, fijado a propósito.
+
+    En una banda de cuatro globos un rombo de radio 1,8 ya ocupa todo el ancho,
+    así que pedirlos cada dos filas no deja una sola celda de fondo y el color
+    del fondo se quedaría sin comprar. Se rechaza nombrando ese color, que es lo
+    que deja al chat corregirse solo —subir la separación o bajar el radio— en
+    vez de cotizar una pieza que no lleva uno de sus colores.
+    """
+    estructura = _estructura(tipo="arco", total=48)
+    partida = sugerir_patron_modo(estructura, "diamante")
+    apretados, _avisos = ajustar_perillas(partida.patron, {"separacion": 2})
+    with pytest.raises(PatronColorInvalido) as fallo:
+        validar_y_expandir(estructura, apretados)
+    assert fallo.value.motivo == "material_sin_uso"
+    # Y con sitio de sobra sí se arma, con sus tres colores.
+    holgados, _avisos = ajustar_perillas(partida.patron, {"separacion": 24})
+    expansion = validar_y_expandir(estructura, holgados)
+    assert {celda for fila in expansion.celdas for celda in fila} == {0, 1, 2}
+
+
+# --- Que una espiral sea una espiral -------------------------------------------
+#
+# Lo que faltaba. Había pruebas del racimo y pruebas del giro, y por separado las
+# dos pasaban mientras el estilo «espiral» de un arco clásico dibujaba cuadros:
+# un racimo alternado (A, B, A, B) girado un puesto por anillo vuelve a ser él
+# mismo cada dos anillos, y eso es un damero, no una espiral.
+
+
+def test_la_espiral_de_un_arco_no_es_un_damero() -> None:
+    """La prueba que habría encontrado el defecto del 2026-10-01.
+
+    Dos marcas de que hay espiral y no tejido: un globo tiene al lado a otro de
+    su mismo color (en un damero no lo tiene nunca), y el dibujo tarda más de
+    dos anillos en repetirse.
+    """
+    estructura = _arco_de_anillos()
+    partida = sugerir_patron_modo(estructura, "espiral")
+    celdas = [list(fila) for fila in validar_y_expandir(estructura, partida.patron).celdas]
+    vecinos_iguales = any(
+        fila[posicion] == fila[posicion + 1]
+        for fila in celdas
+        for posicion in range(len(fila) - 1)
+    )
+    assert vecinos_iguales, "cada globo tiene al lado uno de otro color: eso es un damero"
+    assert celdas[0] != celdas[2], "el dibujo se repite cada dos anillos: eso es un damero"
+
+
+def test_la_espiral_corre_un_puesto_por_anillo_y_da_la_vuelta() -> None:
+    """La banda de color avanza una posición por anillo y cierra en `k` anillos."""
+    estructura = _arco_de_anillos()
+    partida = sugerir_patron_modo(estructura, "espiral")
+    celdas = [list(fila) for fila in validar_y_expandir(estructura, partida.patron).celdas]
+    k = len(celdas[0])
+    for indice, fila in enumerate(celdas[:-1]):
+        corrida = [fila[(posicion - 1) % k] for posicion in range(k)]
+        assert celdas[indice + 1] == corrida, f"el anillo {indice + 1} no corrió un puesto"
+    assert celdas[k] == celdas[0], "la espiral no cerró la vuelta"
+
+
+def test_cada_color_ocupa_un_sector_seguido_del_anillo() -> None:
+    """Es la condición que hace posible la espiral, y por eso se exige aparte."""
+    estructura = _arco_de_anillos()
+    racimo = cast(
+        Mapping[str, object], cast(Mapping[str, object], sugerir_patron_modo(estructura, "espiral").patron)["base"]
+    )["racimo"]
+    puestos = list(cast(list[int], racimo))
+    # Un color no puede aparecer, desaparecer y volver: eso lo partiría en dos
+    # sectores y la espiral saldría cortada.
+    for color in set(puestos):
+        indices = [posicion for posicion, valor in enumerate(puestos) if valor == color]
+        assert indices == list(range(indices[0], indices[-1] + 1)), (
+            f"el color {color} va en puestos sueltos del racimo {puestos}"
+        )
+
+
+def test_el_intercalado_y_la_espiral_no_dibujan_lo_mismo() -> None:
+    """Son dos estilos distintos y el cliente tiene que verlos distintos."""
+    estructura = _arco_de_anillos()
+    espiral = validar_y_expandir(
+        estructura, sugerir_patron_modo(estructura, "espiral").patron
+    ).celdas
+    intercalado = validar_y_expandir(
+        estructura, sugerir_patron_modo(estructura, "intercalado").patron
+    ).celdas
+    assert espiral != intercalado

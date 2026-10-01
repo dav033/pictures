@@ -1,14 +1,14 @@
 {
   "capturada_en": "27528f2",
-  "recapturada_en": "integracion/cotizacion-profesional (merge de feat/cotizacion-profesional y main)",
-  "motivo_recaptura": "Dos cambios deliberados, uno de cada rama, y se comprobo que son los UNICOS. (1) feat/cotizacion-profesional: la tarjeta perdio `max-w-190` en su clase raiz y gano el hueco `precioCliente` (vacio en esta prueba); con `max-w-190` reinsertado la unica diferencia con 27528f2 eran los ids de useId desplazados (_R_1aa69a_ -> _R_1aa69e_). (2) main: BloquePatron muestra el origen del patron ('· de tu foto' / '· sugerido') desde 05966ae. Comprobado en el merge: quitando del HTML unicamente ese <span>, las dos tarjetas vuelven byte a byte al sha256 de la recaptura de feat/cotizacion-profesional (una sola aparicion en cada una, 75 bytes). Ningun otro byte se movio.",
+  "recapturada_en": "arco-clasico (rebanada 5: `arco` pasa a llamarse Arco clasico)",
+  "motivo_recaptura": "Un solo cambio deliberado, y se comprobo que es el UNICO. La estructura oficial `arco` paso de llamarse \"Arco\" a \"Arco clasico\" (src/lib/plan/estructuras-oficiales.ts), porque desde el arco de anillos ya no es la guirnalda organica que su nombre y su sustantivoEn decian. En la tarjeta ese nombre sale 5 veces: 4 con mayuscula (titulo, sr-only de colores, titulo de la seccion y aria-label de la grafica) y una en minuscula dentro del resumen que se le escribe al cliente (\"un arco clasico al centro\"). Sustituyendo en el HTML unicamente esas 5 apariciones por el nombre anterior, las dos tarjetas vuelven byte a byte a la recaptura previa (editable 380525 / 8fb489f9..., lectura 331851 / 82089939...). Ningun otro byte se movio: ni el conteo del arco de anillos, ni el croquis, ni las dos acciones nuevas de ajustar_plan_decoracion. La descripcion de la pieza se dejo como estaba a proposito: el detalle del armado en anillos es jerga de decorador y vive en la guia del modelo, no en la tarjeta del cliente.",
   "plan": "scripts/fixtures/patron-color-ui/plan-con-patrones.json",
   "editable": {
-    "bytes": 380525,
-    "sha256": "8fb489f913c03339ed25b38f6de3a653e94994439cbc3f8a375214f8bc7a82fd"
+    "bytes": 380570,
+    "sha256": "5757482755da3839cd19af49f135b77af1776f4f9db7f60cd3a5be3563f75d29"
   },
   "lectura": {
-    "bytes": 331851,
-    "sha256": "8208993975a1a3d0016364aba8df7178bb2c31ce29739fb33d4ce872164a7133"
+    "bytes": 331896,
+    "sha256": "57f2b45bb349fecc95f1caf1ce793ef384741197ce5acb281c49cc601bfec48f"
   }
 }

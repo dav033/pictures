@@ -303,8 +303,11 @@ def test_drops_unrequested_duplicate_and_unknown_mode_hints() -> None:
                     "confianza": 1,
                 },
                 {
+                    # Un modo que el contrato no tiene y no va a tener: sirve de
+                    # ejemplo de lo que el modelo puede inventarse. Antes estaba
+                    # "arcoiris", que el 2026-10-01 pasó a ser un modo de verdad.
                     "element_id": "REF_01_E01",
-                    "modo": "arcoiris",
+                    "modo": "tornasolado",
                     "colores": ["rojo"],
                     "confianza": 1,
                 },

@@ -54,7 +54,13 @@ import {
  * Las frases son salidas reales de Python
  * (`scripts/fixtures/armado-guirnalda-prompt/planes.json`). Determinista y sin red.
  * Run: npx tsx --conditions=react-server scripts/test/test-armado-guirnalda-prompt.ts
- */
+ *
+ * Recaptura del 2026-09-30 (arco clasico): la estructura oficial `arco` paso a
+ * ser el ARCO CLASICO y su sustantivo en ingles cambio. Se comprobo entrada por
+ * entrada: las 9 de LoRA cambian SOLO por ese renombre (aplicarselo al oraculo
+ * viejo da exactamente lo que genera el codigo de ahora) y las 7 de Gemini no
+ * cambiaron. Ninguna cifra, ninguna frase de armado y ninguna agrupacion se
+ * movio. */
 
 const DIRECTORIO_FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "armado-guirnalda-prompt");
 const INSTANTANEA = z.record(z.string(), z.string()).parse(JSON.parse(readFileSync(join(DIRECTORIO_FIXTURES, "prompts-sin-armado.json"), "utf8")) as unknown);

@@ -537,15 +537,15 @@
       "balloons": [
         {
           "color": "rojo",
-          "design_quantity": 116,
+          "design_quantity": 109,
           "finish": null,
           "product_id": "P-RED",
-          "required_quantity": 116,
+          "required_quantity": 109,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-RED-12",
-          "waste_adjusted_quantity": 116,
+          "waste_adjusted_quantity": 109,
           "waste_reserve": 0
         },
         {
@@ -592,38 +592,38 @@
       "purchases": [
         {
           "additional_package_for_waste": true,
-          "consumption_cost": 74600,
-          "design_quantity": 345,
-          "leftover_inventory": 27,
-          "operational_surplus": 27,
+          "consumption_cost": 73200,
+          "design_quantity": 338,
+          "leftover_inventory": 34,
+          "operational_surplus": 34,
           "package_count": 8,
-          "potential_surplus": 55,
+          "potential_surplus": 62,
           "product_id": "P-RED",
           "purchase_cost": 80000,
           "purchase_quantity": 400,
-          "required_quantity": 373,
+          "required_quantity": 366,
           "units_per_package": 50,
-          "used": 345,
+          "used": 338,
           "variant_id": "V-RED-12",
-          "waste_adjusted_quantity": 373,
+          "waste_adjusted_quantity": 366,
           "waste_reserve": 28
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 1,
-        "consumption_cost": 74600,
+        "consumption_cost": 73200,
         "covered_waste_reserve": 28,
-        "design_quantity": 345,
-        "natural_package_surplus": 55,
-        "operational_surplus": 27,
-        "potential_surplus": 55,
+        "design_quantity": 338,
+        "natural_package_surplus": 62,
+        "operational_surplus": 34,
+        "potential_surplus": 62,
         "purchase_cost": 80000,
         "purchase_quantity": 400,
-        "required_quantity": 373,
+        "required_quantity": 366,
         "target_waste_reserve": 28,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 373,
+        "waste_adjusted_quantity": 366,
         "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
@@ -649,8 +649,8 @@
         {
           "additional_package_for_waste": true,
           "color": "rojo",
-          "consumption_cost": 74600,
-          "design_quantity": 345,
+          "consumption_cost": 73200,
+          "design_quantity": 338,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -673,33 +673,33 @@
           ],
           "imagen": "https://cdn.example.test/red-12.jpg",
           "inventory_quantity": 200,
-          "leftover_inventory": 27,
+          "leftover_inventory": 34,
           "paquetes": 8,
           "precio_paquete": 10000,
           "product_id": "P-RED",
           "purchase_cost": 80000,
           "purchase_quantity": 400,
-          "required_quantity": 373,
+          "required_quantity": 366,
           "sku": "SKU-RED-12",
           "sku_original": "SHOP-RED-12",
-          "sobrante": 55,
+          "sobrante": 62,
           "source_snapshot_id": "SNAP-GOLDEN-001",
           "source_variant_id": "SOURCE-RED-12",
           "subtotal": 80000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex rojo — R-12",
-          "unidades_con_merma": 373,
+          "unidades_con_merma": 366,
           "unidades_inferidas": false,
-          "unidades_necesarias": 345,
+          "unidades_necesarias": 338,
           "unidades_paquete": 50,
-          "used": 345,
+          "used": 338,
           "variant_id": "V-RED-12",
           "waste_reserve": 28
         }
       ],
       "costes_por_estructura": [
         {
-          "consumo_cop": 23200,
+          "consumo_cop": 21800,
           "estructura_id": "EST_01_ARCO"
         },
         {
@@ -737,7 +737,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo latex rojo — R-12",
-              "unidades": 116,
+              "unidades": 109,
               "unidades_inferidas": false,
               "variant_id": "V-RED-12"
             }
@@ -747,14 +747,14 @@
               "diam_pulg": 12.0,
               "forma": "redondo",
               "pct": 100.0,
-              "unidades": 116
+              "unidades": 109
             }
           ],
           "nombre": "Arco",
           "repeticiones": 1,
           "supuestos": [],
           "tipo": "arco",
-          "total_unidades": 116,
+          "total_unidades": 109,
           "ubicacion": "arco_central"
         },
         {
@@ -940,7 +940,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "dbabec49bc4fbd66c32f07dace16e045569164035679b47a0ad8c465736e77f6",
+      "plan_hash": "c34df078b0ad8456d27846ff8392eb63bc7855092b83517ea4f557fff640abf5",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -948,38 +948,38 @@
       "totales": {
         "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 74600,
+        "consumption_cost": 73200,
         "covered_waste_reserve": 28,
-        "design_quantity": 345,
+        "design_quantity": 338,
         "globos_por_tamano": {
-          "R-12": 345
+          "R-12": 338
         },
         "incluye_iva": true,
         "merma_porcentaje": 8.0,
-        "natural_package_surplus": 5,
+        "natural_package_surplus": 12,
         "purchase_cost": 80000,
         "target_waste_reserve": 28,
         "total_cop": 80000,
-        "total_unidades": 345,
+        "total_unidades": 338,
         "uncovered_waste_reserve": 0,
         "waste_only_savings_cop": 0
       }
     },
     "quote": {
-      "consumption_cost_cop": 74600,
+      "consumption_cost_cop": 73200,
       "covered_waste_reserve": 28,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 27,
+      "leftover_inventory": 34,
       "lines": [
         {
           "available": true,
           "color": "rojo",
-          "consumption_cost_cop": 74600,
-          "design_quantity": 345,
+          "consumption_cost_cop": 73200,
+          "design_quantity": 338,
           "diameter_inches": 12.0,
           "id": "V-RED-12",
-          "leftover_inventory": 27,
+          "leftover_inventory": 34,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -999,7 +999,7 @@
           "product_id": "P-RED",
           "purchase_cost_cop": 80000,
           "purchase_quantity": 400,
-          "required_quantity": 373,
+          "required_quantity": 366,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1008,15 +1008,15 @@
             "EST_03_ARCO"
           ],
           "subtotal_cop": 80000,
-          "surplus": 55,
+          "surplus": 62,
           "title": "Globo latex rojo — R-12",
           "units_per_package": 50,
-          "used": 345,
+          "used": 338,
           "variant_id": "V-RED-12",
           "waste_reserve": 28
         }
       ],
-      "plan_hash": "dbabec49bc4fbd66c32f07dace16e045569164035679b47a0ad8c465736e77f6",
+      "plan_hash": "c34df078b0ad8456d27846ff8392eb63bc7855092b83517ea4f557fff640abf5",
       "purchase_cost_cop": 80000,
       "schema_version": "quote.v1",
       "supported_complements": false,

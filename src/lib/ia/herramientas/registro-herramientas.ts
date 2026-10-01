@@ -7,7 +7,6 @@ import { advertenciasPuertaFisica, mezclasCompatiblesConDiametros, tamanosObliga
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { avisoFiltrosBusqueda, filtrosDurosDeBusqueda } from "@/lib/rag/chat/filtros-turno";
-import type { FiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion, type HechosPeticionPlan } from "@/lib/rag/observability/log";
@@ -23,7 +22,7 @@ import { parseEventIntent } from "@/lib/rag/query-parser/parse-event";
 import type { CatalogAllowlist, EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
 import { abrirContextoPlan, allowlistDesdeMapa, crearTokenPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import { aplicarEdicionPlan } from "@/lib/plan/aplicar-edicion";
-import { EdicionSchema, type BasePlan, type Edicion } from "@/lib/plan/edicion-esquemas";
+import { EdicionChatSchema, esEdicionDeMaterial, type BasePlan, type EdicionChat } from "@/lib/plan/edicion-esquemas";
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { respuestaCatalogoLoraNoDisponible } from "@/lib/lora/catalogo-no-disponible";
 import {
@@ -47,8 +46,7 @@ import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
 import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
 import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
 import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/plan/medidas-defecto";
-import { acabadosObservadosDeMateriales, coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, materialesDeColorInventado, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
-import { colorDeCompraSinVenta } from "@/lib/rag/catalog/similitud-color";
+import { acabadosObservadosDeMateriales, coloresFotoParaBusqueda, esSustitucionDeColor } from "@/lib/plan/colores-referencia";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
 import { RAG_ENABLED, featureEnabled } from "@/lib/ia/nucleo/feature-flags";
@@ -58,8 +56,7 @@ import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, mezclasAdmisiblesEstructura, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
-import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
+import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
 import { AJUSTAR_PLAN_DECORACION, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
@@ -133,11 +130,6 @@ export type EstadoConversacion = {
   /** The assistant already told the customer the photo has no balloons and the
    * customer replied (`referenciaSinGlobosYaPreguntada`): do not ask again. */
   referenciaSinGlobosPreguntada: boolean;
-  /** Photo colors `confirmar_plan_decoracion` already sent back this turn
-   * (COLORES_REFERENCIA_OMITIDOS). The refusal is sent at most once per turn:
-   * any later omission goes on with a notice, so a search that cannot find the
-   * color never loops. */
-  coloresReferenciaReclamados: Set<string>;
   /** Structures already asked to carry the photo's number balloons (once per turn, like the colors). */
   numerosReferenciaReclamados: Set<string>;
   /** Refusals of `confirmar_plan_decoracion` in this turn (convergencia-plan.ts). */
@@ -281,7 +273,6 @@ export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", re
     brief: { ...brief },
     solicitudOriginal,
     referenciaSinGlobosPreguntada: opciones.referenciaSinGlobosPreguntada ?? false,
-    coloresReferenciaReclamados: new Set(),
     numerosReferenciaReclamados: new Set(),
     rechazosPlan: 0,
     inicioTurnoMs: Date.now(),
@@ -427,16 +418,6 @@ export function describirAjustesParticipacion(ajustes: readonly AjusteParticipac
     .join(" | ");
 }
 
-// El material lleva el color REAL del producto elegido, nunca la palabra de la
-// foto (colores_omitidos.color): esta acción existe porque un color de la foto
-// puede cubrirse con una SUSTITUCIÓN (el catálogo no tiene "burdeos" exacto,
-// pero sí "rojo") y el modelo declarando el color de la foto sobre ese
-// material dispara el mismo perdón que _relabelled_color usa para una etiqueta
-// mal escrita (plan.py) -- equivalent_colors lo cuenta como cubierto y
-// _reference_color_substitutions nunca reporta la sustitución al cliente. Con
-// el color real declarado, colores_referencia (que sigue diciendo "burdeos")
-// diverge honestamente de la línea comprada y el aviso sí dispara.
-export const ACCION_COLORES_REFERENCIA_OMITIDOS ="La foto de referencia muestra colores dominantes que estas estructuras no usan y el catálogo sí tiene (colores_omitidos). Cubre cada estructura con uno de esos productos: si tiene en_busqueda true, úsalo en materiales; si no, búscalo una sola vez con buscar_catalogo_rag usando una consulta de un solo color (por ejemplo \"globo latex redondo rosado\"): la búsqueda deja de exigir la ocasión cuando esta esconde los colores de la foto. En el material declara el color REAL de ese producto (el que trae el catálogo), nunca la palabra de la foto si el producto no la tiene tal cual: el sistema solo avisa la sustitución al cliente cuando el material dice la verdad. Luego vuelve a confirmar con lo que tengas; si la búsqueda no devolvió un color, confirma igual y el sistema se lo avisará al cliente. Este aviso llega una sola vez por mensaje. No anuncies ni generes una imagen.";
 export const ACCION_NUMEROS_REFERENCIA_OMITIDOS = "La foto de referencia muestra globos de número que la propuesta no lleva (numeros_omitidos, uno por estructura con sus dígitos). Busca cada dígito por separado con buscar_catalogo_rag (por ejemplo \"globo metalizado numero 8 dorado\" y \"globo metalizado numero 0 dorado\"), agrégalos a materiales de esa estructura (un material por dígito, con su variant_id) y vuelve a confirmar. Si el catálogo no tiene un dígito en ese color, usa el color en que sí está (numeros_en_catalogo de la búsqueda) y díselo al cliente en una frase. Este aviso llega una sola vez por mensaje. No anuncies ni generes una imagen.";
 export const MENSAJE_CLIENTE_NUMEROS_REFERENCIA = "Estoy agregando los globos de número que se ven en tu foto.";
 export const ACCION_NUMERO_INCORRECTO = "Los globos de número deben formar exactamente el número que pidió el cliente, un globo por dígito. Busca cada dígito por separado con buscar_catalogo_rag (por ejemplo \"globo metalizado numero 4 plata\" y \"globo metalizado numero 0 plata\"), usa esos productos en la figura y vuelve a confirmar. Si el catálogo no tiene uno de los dígitos en el color pedido, quita la figura de número y ofrécele al cliente el color en que sí está ese dígito (numeros_en_catalogo de la búsqueda) en vez de decirle solo que no hay. No anuncies ni generes una imagen.";
@@ -448,73 +429,6 @@ export const ACCION_TAMANO_CLIENTE_SIN_COBERTURA = "Los tamaños que faltan son 
 function faltanTamanosDelCliente(sinCobertura: ReadonlyArray<{ tamano: string }>, plan: PlanDecoracion): boolean {
   const delCliente = new Set(tamanosObligatorios(plan.restricciones).map((pulgadas) => `R-${pulgadas}`));
   return delCliente.size > 0 && sinCobertura.length > 0 && sinCobertura.every((item) => delCliente.has(item.tamano));
-}
-
-export const MENSAJE_CLIENTE_COLORES_REFERENCIA = "Estoy ajustando la propuesta para que lleve los colores de tu foto.";
-
-/** Hard filters the relaxation ladder never loosens (relajacion-filtros.ts). */
-function tieneFiltrosNoRelajables(filtros: FiltrosDurosBusqueda): boolean {
-  return filtros.categorias.length > 0 || filtros.formas.length > 0 || filtros.acabados.length > 0 || filtros.diametros_pulgadas.length > 0 || filtros.precio_max != null;
-}
-
-/**
- * Photo colors the plan dropped while the catalog offers them (E2E 2026-09-14).
- * Availability comes from this turn's search first and, for colors it did not
- * return, from a read-only lookup inside the active catalog pool (the LoRA
- * dataset when present). A color the customer chose explicitly overrides the
- * photo. A lookup failure never blocks the plan: the resolver still records the
- * notice.
- *
- * No loop (E2E 2026-09-15, "Semiarcos rosa y plata" + "para un cumpleaños" ran
- * out of turns): only the dominant colors of the referenced element are claimed
- * (never the palette extras `aplicarColoresReferencia` adds for the notice), the
- * refusal is sent at most once per turn, and a catalog product found only by the
- * lookup counts when this turn's search can actually return it — i.e. the turn
- * has no hard filter the ladder never relaxes (category, shape, finish, size,
- * price). Otherwise the plan goes on and the customer gets the notice.
- */
-async function coloresReferenciaOmitidosDelTurno(
-  plan: PlanDecoracion,
-  estado: EstadoConversacion,
-  pool: Pool,
-  catalogAllowlist: CatalogAllowlist | undefined,
-) {
-  if (!estado.referenceBlueprint || estado.restriccionesUsuario.colores.length > 0 || estado.coloresReferenciaReclamados.size > 0) return [];
-  // After repeated refusals the photo colors are notices, never another refusal.
-  if (estado.rechazosPlan >= RECHAZOS_PARA_CONVERGER) return [];
-  const pendientes = plan.estructuras.map((estructura) => ({
-    ...estructura,
-    colores_referencia: coloresElementoReferencia(estado.referenceBlueprint, estructura.referencia_element_id),
-  }));
-  const faltantes = [...new Set(pendientes.flatMap((estructura) => {
-    const usados = new Set(estructura.materiales.map((material) => material.color?.trim().toLowerCase()).filter(Boolean));
-    // An unsold photo color is covered by the color it is bought as ("gris" as "plateado").
-    return estructura.colores_referencia.filter((color) => !usados.has(color.trim().toLowerCase()) && !usados.has(colorDeCompraSinVenta(color) ?? ""));
-  }))];
-  if (faltantes.length === 0) return [];
-  const disponibles = new Map<string, ProductoColorDisponible[]>(productosGloboPorColor(estado.ragCandidatos ?? [], faltantes));
-  const sinBusqueda = faltantes.filter((color) => !disponibles.has(color));
-  const busquedaLosPuedeDevolver = !tieneFiltrosNoRelajables(filtrosDurosDeBusqueda({ mensaje: "", solicitudOriginal: estado.solicitudOriginal, brief: estado.brief }));
-  if (sinBusqueda.length > 0 && busquedaLosPuedeDevolver) {
-    try {
-      const catalogo = await buscarGlobosPorColor(pool, sinBusqueda, { variantIds: catalogAllowlist?.variantIds ?? null, catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
-      for (const [color, productos] of catalogo) disponibles.set(color, productos);
-    } catch (error) {
-      console.warn("[plan] no se pudo consultar colores de la foto en el catálogo", { requestId: estado.ragRequestId, error: error instanceof Error ? error.message : String(error) });
-    }
-  }
-  // A color is claimed only when one of its products can build the structure
-  // in a mix close to the one chosen: otherwise the claim contradicts
-  // SIN_COBERTURA (E2E 2026-09-15, clear balloon without R-5).
-  const disponibilidad = disponibilidadDelTurno(estado.ragCandidatos ?? []);
-  const geometricas = new Set<string>(TIPOS_ESTRUCTURA_GEOMETRICOS);
-  return coloresReferenciaOmitidos(pendientes, disponibles, (estructura, producto) => {
-    if (!geometricas.has(estructura.tipo) || !producto.diametros) return true;
-    const admisibles = mezclasAdmisiblesEstructura(estructura, disponibilidad);
-    if (admisibles.length === 0) return true;
-    const mezclasProducto = mezclasCompatiblesConDiametros(producto.diametros);
-    return admisibles.some((mezcla) => mezclasProducto.includes(mezcla));
-  });
 }
 
 /** Tope de `pistas_patron` en `plan-resolution.v1`. */
@@ -720,34 +634,16 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // material can build (cobertura-materiales.ts, E2E 2026-09-15).
     const disponibilidadTurno = disponibilidadDelTurno(estado.ragCandidatos ?? []);
     const cobertura = ajustarCoberturaPlan(canonizarColoresPlan(parseado.data).plan, disponibilidadTurno);
-    // Un color que la foto no tiene no entra al plan (2026-09-29): se poda aquí,
-    // con el color REAL del producto ya resuelto por la regla 1 y antes de que
-    // `aplicarColoresReferencia` cuente qué colores compra el plan. Es la mitad
-    // que le faltaba a la auditoría de color, y se acota en vez de rechazarse:
-    // no gasta un rechazo ni otra llamada al modelo. Si el cliente pidió colores,
-    // la foto ya no es la única autoridad y no se juzga nada — la misma regla que
-    // usa `coloresReferenciaOmitidosDelTurno` para el caso inverso.
-    const coloresInventados = estado.restriccionesUsuario.colores.length > 0
-      ? []
-      : materialesDeColorInventado(cobertura.plan.estructuras, estado.referenceBlueprint);
-    const podado = quitarMaterialesDeColorInventado(cobertura.plan, coloresInventados);
-    if (coloresInventados.length > 0) {
-      encolarEscrituraObservabilidad(auditarPlan({
-        requestId: estado.ragRequestId,
-        status: "PLAN_COLOR_SIN_REFERENCIA",
-        error: coloresInventados.map((item) => `${item.estructura_id}:${item.color}`).join(" | "),
-      }));
-    }
-    // Y el acabado que la foto muestra PARA ESE COLOR (2026-09-29): el blush
+    // El acabado que la foto muestra PARA ESE COLOR (2026-09-29): el blush
     // perlado de la pared "Mr & Mrs" se compró cromado y nada lo detectaba. Se
-    // acota igual que el color inventado —el producto del mismo color en el
-    // acabado de la foto, si la búsqueda del turno lo tiene— y si el catálogo no
-    // lo ofrece se deja el que hay con aviso, nunca se quita el color. Un
-    // acabado que el cliente pidió manda sobre la foto, como con los colores.
+    // acota sin rechazar —el producto del mismo color en el acabado de la foto,
+    // si la búsqueda del turno lo tiene— y si el catálogo no lo ofrece se deja
+    // el que hay con aviso, nunca se quita el color. Un acabado que el cliente
+    // pidió manda sobre la foto.
     const acabadoReferencia = estado.restriccionesUsuario.acabados.length > 0
-      ? { plan: podado.plan, ajustes: [] as AjusteCobertura[] }
-      : aplicarAcabadoReferencia(podado.plan, acabadosObservadosDeMateriales(podado.plan.estructuras, estado.referenceBlueprint), disponibilidadTurno);
-    estado.ajustesCobertura = [...cobertura.ajustes, ...podado.ajustes, ...acabadoReferencia.ajustes];
+      ? { plan: cobertura.plan, ajustes: [] as AjusteCobertura[] }
+      : aplicarAcabadoReferencia(cobertura.plan, acabadosObservadosDeMateriales(cobertura.plan.estructuras, estado.referenceBlueprint), disponibilidadTurno);
+    estado.ajustesCobertura = [...cobertura.ajustes, ...acabadoReferencia.ajustes];
     let planCanonico = sanearMarcasPlan(sanearPorquesPlan(aplicarFuenteMedidasEspacio(
       aplicarColoresReferencia(acabadoReferencia.plan, estado.referenceBlueprint),
       clienteDioMedidasEspacio(estado.solicitudOriginal),
@@ -941,28 +837,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         elementos_sin_cubrir: elementosSinCubrir,
         accion_requerida: "Para cada elemento sin cubrir: asígnale una estructura con referencia_element_id, o decláralo en referencia_omitida con un motivo real. No anuncies ni generes esta imagen hasta cubrir todos.",
         mensaje_cliente: MENSAJE_CLIENTE_REFERENCIA,
-      };
-    }
-    const coloresOmitidos = await coloresReferenciaOmitidosDelTurno(planCanonico, estado, ragPool, options.catalogAllowlist);
-    if (coloresOmitidos.length > 0) {
-      for (const item of coloresOmitidos) estado.coloresReferenciaReclamados.add(`${item.estructura_id}|${item.color}`);
-      estado.planResuelto = undefined;
-      estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(auditarPlan({
-        requestId: estado.ragRequestId,
-        solicitudOriginal: estado.solicitudOriginal,
-        restricciones: estado.restriccionesUsuario,
-        candidateProductIds: [...estado.ragIdsRecuperados],
-        status: "COLORES_REFERENCIA_OMITIDOS",
-        error: coloresOmitidos.map((item) => `${item.estructura_id}:${item.color}`).join(" | "),
-      }));
-      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-      return {
-        ok: false,
-        status: "COLORES_REFERENCIA_OMITIDOS",
-        colores_omitidos: coloresOmitidos,
-        accion_requerida: ACCION_COLORES_REFERENCIA_OMITIDOS,
-        mensaje_cliente: MENSAJE_CLIENTE_COLORES_REFERENCIA,
       };
     }
     if (featureEnabled("SCENE_PLAN_V2_SHADOW") && estado.solicitudOriginal.trim()) {
@@ -1550,7 +1424,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE,
         };
       }
-      const parsedEdicion = EdicionSchema.safeParse(args);
+      const parsedEdicion = EdicionChatSchema.safeParse(args);
       if (!parsedEdicion.success) {
         const errores = parsedEdicion.error.issues.map((issue) => `${issue.path.join(".") || "edicion"}: ${issue.message}`);
         encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_ESQUEMA_INVALIDO", error: errores.join(" | ") }));
@@ -1558,18 +1432,20 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           ok: false,
           status: "AJUSTE_ESQUEMA_INVALIDO",
           errores,
-          accion_requerida: "Corrige accion/estructura_id/objetivo_variant_id/variante/participacion según el esquema y vuelve a llamar ajustar_plan_decoracion.",
+          accion_requerida: "Corrige accion/estructura_id y los campos que esa accion pide (variante y objetivo_variant_id en las de material, densidad, modo) según el esquema y vuelve a llamar ajustar_plan_decoracion.",
           mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE,
         };
       }
-      const edicion: Edicion = parsedEdicion.data;
+      const edicion: EdicionChat = parsedEdicion.data;
       // Misma allowlist que confirmar_plan_decoracion (allowlistDesdeMapa(estado.ragVariantIdsRecuperados)):
       // el variant_id que el modelo propone tiene que haber salido de
       // buscar_catalogo_rag EN ESTE MISMO turno. `aplicarEdicionPlan` admite la
       // variante contra el snapshot firmado, pero eso no exige que el modelo la
       // haya buscado — sin este paso podría "recordar" un variant_id sin
       // pasarlo por el catálogo de este turno.
-      if (edicion.accion !== "quitar") {
+      // `densidad` y `patron_modo` no traen variante: no hay nada que buscar en
+      // el catálogo, cambian cómo se arma o cómo se pinta lo que ya se eligió.
+      if (esEdicionDeMaterial(edicion) && edicion.accion !== "quitar") {
         const variante = edicion.variante!;
         const vistas = estado.ragVariantIdsRecuperados.get(variante.product_id);
         if (!vistas?.has(variante.variant_id)) {
@@ -1598,7 +1474,15 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           requestId: estado.ragRequestId,
           planHash: resuelto.plan_hash,
           status: "PLAN_AJUSTADO_CHAT",
-          geometry: { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id },
+          geometry: {
+            accion: edicion.accion,
+            estructura_id: edicion.estructura_id,
+            ...(esEdicionDeMaterial(edicion)
+              ? { objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id }
+              : edicion.accion === "densidad"
+                ? { densidad: edicion.densidad }
+                : { modo: edicion.modo }),
+          },
           costChosenCop: resuelto.totales.total_cop,
         }));
         return {
@@ -1608,7 +1492,14 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           // can say it instead of presenting the update as a first proposal.
           estructura_ajustada: edicion.estructura_id,
           accion: edicion.accion,
-          material_nuevo: edicion.accion === "quitar" ? undefined : `${edicion.variante!.product_id}/${edicion.variante!.variant_id}`,
+          material_nuevo:
+            esEdicionDeMaterial(edicion) && edicion.accion !== "quitar"
+              ? `${edicion.variante!.product_id}/${edicion.variante!.variant_id}`
+              : undefined,
+          // Qué se movió cuando el cambio no fue de material, para que el
+          // modelo se lo pueda decir al cliente sin repetir lo que pidió.
+          ...(edicion.accion === "densidad" ? { densidad_nueva: edicion.densidad } : {}),
+          ...(edicion.accion === "patron_modo" ? { patron_nuevo: edicion.modo } : {}),
           total_cop: resuelto.totales.total_cop,
           // Python's own sentences about the edit (e.g. the color pattern was
           // rebuilt because a color left the piece): relay them, don't reword.

@@ -311,7 +311,9 @@ ok("referencia: estructuras vistas y ambientación en español");
   assert.equal(medidasCortasCliente("columna", { alto_m: 2 }), "2 m de alto");
   assert.equal(medidasCortasCliente("guirnalda", { ancho_m: 1.5, largo_m: 3.5 }), "3,5 m de largo");
   assert.equal(medidasCortasCliente("pared", {}), null);
-  assert.equal(nombreConCantidadCliente({ oficialId: "arco", nombre: "Arco Orgánico", ubicacion: "fondo_pared", repeticiones: 1 }), "Arco");
+  // La etiqueta oficial manda sobre el nombre que escribió el modelo: un `arco`
+  // es el Arco clásico aunque el modelo lo llamara "Arco Orgánico".
+  assert.equal(nombreConCantidadCliente({ oficialId: "arco", nombre: "Arco Orgánico", ubicacion: "fondo_pared", repeticiones: 1 }), "Arco clásico");
   assert.equal(nombreConCantidadCliente({ oficialId: "columna", nombre: "Columnas", ubicacion: "entrada", repeticiones: 2 }), "2 columnas");
   assert.equal(ubicacionCortaCliente("lateral_izquierdo"), "izquierda");
   assert.equal(ubicacionCortaCliente("lateral_izquierdo", 2), "ambos lados");

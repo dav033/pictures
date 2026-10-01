@@ -15,7 +15,8 @@ export type FeatureFlag =
   | "BOUQUETS_ARMADO_V1"
   | "GUIRNALDAS_ARMADO_V1"
   | "CONTEO_REFERENCIA_V1"
-  | "GUIA_ESTRUCTURA_V1";
+  | "GUIA_ESTRUCTURA_V1"
+  | "COLOR_INFLADO_MEDIDO_V1";
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
@@ -48,6 +49,11 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // ("Crear patrón" incluido) y la resolución lo tratan igual, porque
     // ninguno lee la bandera. Apagarla no quita patrones.
     if (name === "PATRONES_COLOR_V1") return false;
+    // Default OFF: el matiz medido del globo inflado cambia el texto que se le
+    // pide al modelo de imagen para 71 referencias, y si eso mejora la foto o
+    // no se decide midiendo contra fal, que cuesta dinero. Encenderla es una
+    // corrida con tope declarado y esta como unica variable.
+    if (name === "COLOR_INFLADO_MEDIDO_V1") return false;
     // Default OFF (ADR-0030). Al confirmar un plan, Next pide
     // `completar_armados` con las lecturas de la foto (`pistas_armado`) y cada
     // bouquet sin armado recibe el de su lectura o su receta, sin cambiar lo

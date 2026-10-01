@@ -26,6 +26,17 @@ export type GloboDibujo = {
   fila: number;
   /** `null` cuando el globo no ocupa una celda: un extra (centro de flor) o una posición de la silueta. */
   columna: number | null;
+  /**
+   * El volumen que midió el motor para ESTE globo, cuando lo dio: el giro con
+   * que su óvalo sigue la pieza y cuánto se va al fondo. Lo trae hoy el motor
+   * del arco clásico (`arco_clasico.py`, porteado de `motor.ts`).
+   *
+   * Sin él, el dibujo deduce la sombra de `z` como siempre, que es lo que hacen
+   * la rejilla, los racimos y la silueta orgánica. Con él no se deduce nada: el
+   * motor ya sabe dónde da la luz, y deducirlo otra vez era lo que dejaba el
+   * fondo de un gris sucio parejo en vez de un tono del mismo color.
+   */
+  relieve?: { velo: number; giro: number };
 };
 
 export type SoporteDibujo = { tipo: "base" | "mesa"; x: number; y: number; ancho: number };
@@ -355,6 +366,14 @@ const PERSPECTIVA_CAPA = 0.12;
  * `fila` no es una fila de la rejilla: es la banda de altura que le toca, y solo
  * escalona la animación de entrada.
  */
+/**
+ * Cuánto oscurece el fondo, con la profundidad que midió el motor. Es el velo
+ * de `motor.ts`: `0,34 · −prof · profundidad`, con `profundidad = 0,8`, y solo
+ * en la mitad de atrás (`prof < 0`). Los de delante no llevan velo ninguno.
+ */
+const PROFUNDIDAD_MOTOR = 0.8;
+const veloDelMotor = (prof: number) => (prof < 0 ? 0.34 * -prof * PROFUNDIDAD_MOTOR : 0);
+
 function dibujarSilueta(entrada: EntradaDibujo): GloboDibujo[] {
   const posiciones = entrada.posiciones ?? [];
   if (!posiciones.length) return [];
@@ -362,16 +381,24 @@ function dibujarSilueta(entrada: EntradaDibujo): GloboDibujo[] {
   const alto = Math.max(...posiciones.map((posicion) => posicion.y)) || 1;
   const bandas = Math.max(1, entrada.celdas.length);
   return posiciones.map((posicion, indice) => {
-    const z = capas === 1 ? 1 : -1 + (2 * posicion.capa) / (capas - 1);
+    // Con `prof` la profundidad es la del motor; sin ella se deduce de la capa,
+    // como siempre en la silueta orgánica.
+    const z = posicion.prof ?? (capas === 1 ? 1 : -1 + (2 * posicion.capa) / (capas - 1));
+    // El motor que manda `prof` ya achicó el globo del fondo (`0,92 + 0,08 · frente`):
+    // volver a achicarlo aquí lo encogía un 12 % de más.
+    const perspectiva = posicion.prof === undefined ? 1 - PERSPECTIVA_CAPA * (1 - (z + 1) / 2) : 1;
     return {
       clave: `silueta:${indice}`,
       x: posicion.x * ESCALA_SILUETA,
       y: -posicion.y * ESCALA_SILUETA,
-      r: posicion.r * ESCALA_SILUETA * (1 - PERSPECTIVA_CAPA * (1 - (z + 1) / 2)),
+      r: posicion.r * ESCALA_SILUETA * perspectiva,
       z,
       material: posicion.material,
       fila: Math.min(bandas - 1, Math.floor((1 - posicion.y / alto) * bandas)),
       columna: null,
+      ...(posicion.prof !== undefined
+        ? { relieve: { velo: veloDelMotor(posicion.prof), giro: posicion.giro ?? 0 } }
+        : {}),
     };
   });
 }

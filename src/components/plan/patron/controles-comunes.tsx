@@ -56,23 +56,28 @@ export function SelectorColor({ leyenda, valor, onCambiar, etiqueta, deshabilita
 }
 
 /** Número con − y + ("3 racimos"), para cantidades pequeñas y acotadas. */
-export function Contador({ valor, min, max, onCambiar, etiqueta, formato, deshabilitado = false }: {
+export function Contador({ valor, min, max, paso = 1, onCambiar, etiqueta, formato, deshabilitado = false }: {
   valor: number;
   min: number;
   max: number;
+  /** Cuánto mueve cada botón. Medio globo en los anchos e inclinaciones de las franjas. */
+  paso?: number;
   onCambiar: (valor: number) => void;
   etiqueta: string;
   formato: (valor: number) => string;
   deshabilitado?: boolean;
 }) {
+  // Con un paso fraccionario, redondear al paso evita que el valor se vaya
+  // acumulando error (0.1 + 0.2) y que el contrato reciba 2.9999999999.
+  const aPaso = (siguiente: number) => Math.round(siguiente / paso) * paso;
   const boton = "grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-superficie-2 hover:text-texto focus-visible:outline-2 focus-visible:outline-acento disabled:opacity-40 disabled:hover:bg-transparent";
   return (
     <div role="group" aria-label={etiqueta} className="inline-flex items-center gap-1 rounded-xl bg-superficie p-0.5 ring-1 ring-borde-suave ring-inset">
-      <button type="button" aria-label={`Menos: ${etiqueta}`} disabled={deshabilitado || valor <= min} onClick={() => onCambiar(Math.max(min, valor - 1))} className={boton}>
+      <button type="button" aria-label={`Menos: ${etiqueta}`} disabled={deshabilitado || valor <= min} onClick={() => onCambiar(Math.max(min, aPaso(valor - paso)))} className={boton}>
         <Minus className="size-3.5" aria-hidden="true" />
       </button>
       <output aria-live="polite" className="min-w-[5.5rem] text-center text-[13px] font-medium tabular-nums text-texto">{formato(valor)}</output>
-      <button type="button" aria-label={`Más: ${etiqueta}`} disabled={deshabilitado || valor >= max} onClick={() => onCambiar(Math.min(max, valor + 1))} className={boton}>
+      <button type="button" aria-label={`Más: ${etiqueta}`} disabled={deshabilitado || valor >= max} onClick={() => onCambiar(Math.min(max, aPaso(valor + paso)))} className={boton}>
         <Plus className="size-3.5" aria-hidden="true" />
       </button>
     </div>

@@ -781,7 +781,11 @@ async def test_official_structure_is_accepted_and_bound_to_the_plan_hash() -> No
         "total_unidades"
     ]
     assert isinstance(plain_units, int) and isinstance(asymmetrical_units, int)
-    assert abs(asymmetrical_units - plain_units * 0.7) <= 1
+    # Within 3 %, not within one balloon: the plain arch is counted by the
+    # arch engine (which places the balloons and counts what it placed)
+    # while the asymmetrical variant still goes through the density
+    # formula, so the ratio between them cannot land on an exact balloon.
+    assert abs(asymmetrical_units - plain_units * 0.7) <= plain_units * 0.03
 
 
 def test_half_arch_axis_is_a_quarter_ellipse_that_uses_the_height() -> None:

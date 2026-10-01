@@ -15,7 +15,25 @@ import { z } from "zod";
 
 export const PATRON_COLOR_VERSION = "patron-color.v1" as const;
 
-export const MODOS_PATRON_COLOR = ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero", "zonas"] as const;
+export const MODOS_PATRON_COLOR = [
+  "espiral",
+  "intercalado",
+  "franjas",
+  "zigzag",
+  "chevron",
+  "diamante",
+  "punteado",
+  "apilado",
+  "arcoiris",
+  "doslados",
+  "anillos",
+  "bloques",
+  "degradado",
+  "aleatorio",
+  "flor",
+  "damero",
+  "zonas",
+] as const;
 export type ModoPatronColor = (typeof MODOS_PATRON_COLOR)[number];
 
 export const TRAZOS_ESPIRAL = ["espiral", "zigzag", "recto"] as const;
@@ -78,6 +96,117 @@ export const BasePatronColorSchema = z.discriminatedUnion("modo", [
     /** Colores de las posiciones de cada racimo; todos los racimos son iguales. */
     racimo: RacimoSchema,
     trazo: z.enum(TRAZOS_ESPIRAL),
+  }).strict(),
+  z.object({
+    modo: z.literal("intercalado"),
+    /**
+     * Colores que se van turnando a lo ancho de la pieza, y que ADEMÁS corren
+     * `paso` puestos de una fila a la siguiente: dos colores con `paso: 1` dan
+     * el tejido de un arco de cuartetos alternados (cada globo tiene al lado
+     * uno del otro color, en los dos sentidos).
+     *
+     * Se parece al damero y no es el damero: el damero pinta cuadros de
+     * `tamano × tamano` sobre una pared, y esto turna globo a globo sobre el
+     * armado de la pieza. Con `tamano: 1` los dos coinciden; de ahí para
+     * arriba, no.
+     */
+    secuencia: z.array(IndiceMaterialSchema).min(2).max(4),
+    /** Puestos que corre la secuencia de una fila a la siguiente. */
+    paso: z.number().int().min(1).max(3),
+  }).strict(),
+  /**
+   * Rayas diagonales gruesas a lo largo de la pieza (el bastón de caramelo).
+   *
+   * `ancho` es el grosor de cada raya en filas e `inclinacion` cuánto se corre
+   * de una columna a la siguiente: 0 deja las rayas rectas de través, 2 sigue
+   * la diagonal de los globos y el signo cambia el lado por el que suben.
+   */
+  z.object({
+    modo: z.literal("franjas"),
+    secuencia: z.array(IndiceMaterialSchema).min(2).max(5),
+    ancho: z.number().min(0.5).max(6),
+    inclinacion: z.number().min(-3).max(3),
+  }).strict(),
+  /**
+   * Rayas que quiebran de un lado a otro de la banda, como un rayo. `amplitud`
+   * es cuánto sube y baja cada quiebre (en filas) y `periodo`, los globos que
+   * tarda en cambiar de dirección.
+   */
+  z.object({
+    modo: z.literal("zigzag"),
+    secuencia: z.array(IndiceMaterialSchema).min(2).max(4),
+    ancho: z.number().min(0.5).max(6),
+    amplitud: z.number().min(0).max(8),
+    periodo: z.number().min(1).max(8),
+  }).strict(),
+  /** Rayas en V que apuntan a lo largo de la pieza; `invertir` las voltea. */
+  z.object({
+    modo: z.literal("chevron"),
+    secuencia: z.array(IndiceMaterialSchema).min(2).max(4),
+    ancho: z.number().min(0.5).max(6),
+    inclinacion: z.number().min(0).max(4),
+    invertir: z.boolean(),
+  }).strict(),
+  /**
+   * Rombos que se repiten a lo largo de la pieza: un globo de `centro`, un
+   * borde de `contorno` y el resto de `fondo`. `separacion` es cada cuántas
+   * filas aparece uno, `radio` su tamaño y `aspecto` cuánto se aplasta a lo
+   * largo (más de 1 = más achatado).
+   */
+  z.object({
+    modo: z.literal("diamante"),
+    centro: IndiceMaterialSchema,
+    contorno: IndiceMaterialSchema,
+    fondo: IndiceMaterialSchema,
+    separacion: z.number().int().min(4).max(16),
+    radio: z.number().min(0.8).max(5),
+    aspecto: z.number().min(0.5).max(1.8),
+  }).strict(),
+  /**
+   * Un fondo con lunares de otro color repartidos con regularidad: `separacion`
+   * filas entre una hilera de lunares y la siguiente, un lunar `cada` tantos
+   * globos de la hilera, y `escalonar` corre media hilera para que no queden
+   * alineados en columna.
+   */
+  z.object({
+    modo: z.literal("punteado"),
+    fondo: IndiceMaterialSchema,
+    punto: IndiceMaterialSchema,
+    separacion: z.number().int().min(2).max(12),
+    cada: z.number().int().min(1).max(4),
+    escalonar: z.boolean(),
+  }).strict(),
+  /**
+   * Capas de color A LO ANCHO de la banda, del borde hacia el centro: la
+   * primera envuelve a la segunda y así. `invertir` las da vuelta (el primer
+   * color al centro).
+   */
+  z.object({
+    modo: z.literal("apilado"),
+    capas: z.array(IndiceMaterialSchema).min(2).max(5),
+    invertir: z.boolean(),
+  }).strict(),
+  /**
+   * Bandas paralelas al eje de la pieza, una por color, como un arcoíris de
+   * verdad: el primer color por fuera y el último por dentro. Si la banda es
+   * tan angosta que no caben todas, se reparten las que quepan.
+   */
+  z.object({
+    modo: z.literal("arcoiris"),
+    bandas: z.array(IndiceMaterialSchema).min(3).max(8),
+    invertir: z.boolean(),
+  }).strict(),
+  /**
+   * El lado de afuera y el de adentro de la pieza en colores distintos.
+   * `corte` es dónde cambia, de 0 (todo interior) a 1 (todo exterior), y
+   * `alternar` los intercambia al pasar la mitad de la pieza.
+   */
+  z.object({
+    modo: z.literal("doslados"),
+    exterior: IndiceMaterialSchema,
+    interior: IndiceMaterialSchema,
+    corte: z.number().min(0.2).max(0.8),
+    alternar: z.boolean(),
   }).strict(),
   z.object({
     modo: z.literal("anillos"),
@@ -186,6 +315,24 @@ const PosicionSiluetaSchema = z.object({
   r: z.number().gt(0).max(1),
   capa: EnteroNoNegativo.max(15),
   material: IndiceMaterialSchema,
+  /**
+   * Profundidad continua: −1 al fondo, 1 de frente. La trae el motor del arco
+   * clásico, que la calcula por globo (`arco_clasico.GloboArco.profundidad`);
+   * `capa` es esa misma profundidad en escalones, y sigue siendo quien ordena.
+   *
+   * Está porque dos escalones no bastan para que una banda se lea como un tubo:
+   * con `capa` sola, todos los globos del fondo se oscurecían lo mismo y salían
+   * de color sucio. El motor de silueta orgánico no la manda, y entonces el
+   * dibujo la deriva de `capa` como siempre.
+   */
+  prof: z.number().min(-1).max(1).optional(),
+  /**
+   * Giro del globo en grados, ya cuantizado a pasos de 15° igual que en
+   * `motor.ts`: es el ángulo de la línea guía en ese punto, y es lo que hace que
+   * el óvalo del globo siga el arco en vez de quedarse vertical. Sin él la
+   * banda se lee plana en la clave del arco, que es donde más se nota.
+   */
+  giro: z.number().min(0).max(345).optional(),
 }).strict();
 
 export type PosicionSilueta = z.infer<typeof PosicionSiluetaSchema>;

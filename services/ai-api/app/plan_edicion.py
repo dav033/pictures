@@ -44,7 +44,7 @@ from jsonschema import Draft7Validator
 from pydantic import ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.generated_models import PlanDecoracion, contract_schema
-from app.operational_models import ContractModel, OperationalRequest
+from app.operational_models import ContractModel, ModoPatronColor, OperationalRequest
 from app.patron_color import TIPO_REJILLA, forma_valida, para_validar
 from app.patron_color import AVISO_ESPEJO_GUIRNALDA as AVISO_ESPEJO_GUIRNALDA
 from app.patron_color import quitar_espejo_sin_u
@@ -54,7 +54,9 @@ from app.plan import (
     PlanResolutionError,
     VistaPreviaPatron,
     compras_de_estructura,
+    densidades_admitidas_de_estructura,
     modos_admitidos_de_estructura,
+    patron_de_modo_para_estructura,
     opciones_de_armado,
     sincronizar_participaciones,
     sugerir_patron_para_estructura,
@@ -226,6 +228,48 @@ class EdicionMezcla(_Estricto):
     mezcla: Literal["clasica", "organica_fina", "organica_gruesa", "solo_grandes"]
 
 
+class EdicionDensidad(_Estricto):
+    """Cambia la densidad de una estructura.
+
+    En un arco clásico la densidad no es un multiplicador: es cómo se arma la
+    pieza (cuarteto, quinteto o sexteto, ``arco_clasico.ARMADO_POR_DENSIDAD``),
+    y el conteo sale de ahí. En el resto sigue siendo la λ de la fórmula.
+    """
+
+    accion: Literal["densidad"]
+    estructura_id: Identificador
+    densidad: Literal["sencilla", "media", "lujosa"]
+
+
+class AjustesPatron(_Estricto):
+    """Perillas de un estilo pedidas por su nombre común (no por su campo)."""
+
+    ancho: float | None = Field(default=None, ge=0.5, le=6)
+    separacion: float | None = Field(default=None, ge=1, le=24)
+    inclinacion: float | None = Field(default=None, ge=-3, le=4)
+    invertir: bool | None = None
+
+
+class EdicionPatronModo(_Estricto):
+    """Pone el patrón de color de una estructura **por el nombre de su estilo**.
+
+    Es lo que el chat puede pedir: un estilo, no un documento
+    ``patron-color.v1`` entero. Python arma el punto de partida de ese estilo
+    (``patron_de_modo_para_estructura``) conservando del patrón que la pieza ya
+    tenía lo que el estilo nuevo admite.
+    """
+
+    accion: Literal["patron_modo"]
+    estructura_id: Identificador
+    modo: str = Field(min_length=1, max_length=40)
+    #: Las perillas del estilo, por su nombre común. Python las traduce al campo
+    #: que lleva cada estilo y las acota a lo que admite el contrato
+    #: (``patron_color.ajustar_perillas``), así que de aquí no puede salir un
+    #: patrón inválido. Espeja el zod de ``edicion-esquemas.ts`` a mano, como
+    #: las demás acciones de edición.
+    ajustes: AjustesPatron | None = None
+
+
 class EdicionPatron(_Estricto):
     """Fija (o, con ``None``, quita) el patrón de color de una estructura."""
 
@@ -268,7 +312,9 @@ EdicionPlan = (
     EdicionMaterial
     | EdicionReparto
     | EdicionMezcla
+    | EdicionDensidad
     | EdicionPatron
+    | EdicionPatronModo
     | EdicionArmado
     | EdicionArmadoGuirnalda
 )
@@ -334,22 +380,8 @@ class PlanPatronRequest(OperationalRequest):
     patron_color: dict[str, object] | None
     participaciones: list[float] | None = Field(default=None, min_length=2, max_length=6)
     #: Con ``patron_color`` nulo, el punto de partida de ese estilo en vez del preset.
-    modo: (
-        Literal[
-            "espiral",
-            "anillos",
-            "bloques",
-            "degradado",
-            "aleatorio",
-            "flor",
-            "damero",
-            # `patron_color` declara `zonas` entre los modos de una pared y el
-            # editor lo ofrece en la galería de estilos; sin este literal, pulsar
-            # "Zonas" devolvía 422 (2026-09-30).
-            "zonas",
-        ]
-        | None
-    ) = None
+    #: Validado contra los modos del contrato: ver `ModoPatronColor`.
+    modo: ModoPatronColor | None = None
     #: Con ``modo``: el borrador del que viene el decorador (forma de ``patron-color.v1``).
     desde: dict[str, object] | None = None
     #: Líneas resueltas de la pieza (``plan_resuelto.estructuras[].lineas``): solo nombran.
@@ -705,6 +737,33 @@ _AVISO_CAPAS_CONFETI = (
 )
 
 
+def _fijar_densidad(estructura: dict[str, object], densidad: str) -> list[str]:
+    """Cambia la densidad, o se niega si la estructura oficial no la admite.
+
+    La validación del plan ya rechazaría la incoherencia (las reglas del propio
+    contrato), pero con un error de esquema: aquí se dice con una frase, que es
+    lo que deja que quien pidió el cambio se corrija.
+    """
+    oficial = estructura.get("estructura_oficial")
+    admitidas = densidades_admitidas_de_estructura(
+        oficial if isinstance(oficial, str) else None
+    )
+    if densidad not in admitidas:
+        raise PlanResolutionError(
+            "densidad_no_admitida",
+            422,
+            {
+                "estructura_id": str(estructura.get("estructura_id") or ""),
+                "densidad": densidad,
+                "admitidas": list(admitidas),
+            },
+        )
+    if estructura.get("densidad") == densidad:
+        return []
+    estructura["densidad"] = densidad
+    return []
+
+
 def _repartir(estructura: dict[str, object], participaciones: Sequence[float]) -> list[str]:
     """Solo cambian las participaciones; con confeti, también sus pesos (conserva la semilla).
 
@@ -990,6 +1049,17 @@ def editar_plan(
         avisos += _quitar_armado(estructura, rehacer=completar_armados)
     elif isinstance(edicion, EdicionMezcla):
         estructura["mezcla"] = edicion.mezcla
+    elif isinstance(edicion, EdicionDensidad):
+        avisos = _fijar_densidad(estructura, edicion.densidad)
+    elif isinstance(edicion, EdicionPatronModo):
+        patron, avisos = patron_de_modo_para_estructura(
+            editado,
+            edicion.estructura_id,
+            edicion.modo,
+            edicion.ajustes.model_dump(exclude_none=True) if edicion.ajustes else None,
+        )
+        estructura["patron_color"] = patron
+        avisos = list(avisos)
     else:
         materiales_antes = len(_materiales(estructura))
         _editar_materiales(estructura, edicion, lineas_base, colores_variante)

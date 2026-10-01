@@ -87,10 +87,20 @@ from app.armado_guirnalda import opciones_admitidas as opciones_armado_guirnalda
 from app.armado_guirnalda import racimo_y_forma as racimo_y_forma_de_armado
 from app.armado_guirnalda import sugerir_armado as sugerir_armado_guirnalda
 from app.armado_guirnalda import validar as validar_armado_guirnalda
+from app.arco_clasico import ARMADO_POR_DENSIDAD as ARMADO_ARCO_POR_DENSIDAD
+from app.arco_clasico import ArcoInvalido
+from app.arco_clasico import arco_de_densidad as arco_clasico_de_densidad
+from app.arco_clasico import cabe_como_arco as cabe_arco_como_arco
+from app.arco_clasico import carril_sin_globo as carril_sin_globo_de_arco
+from app.arco_clasico import contar as contar_arco_clasico
+from app.arco_clasico import globos_ancho_que_cabe as globos_ancho_de_arco_que_cabe
+from app.columna_clasica import ARMADO_POR_DENSIDAD as ARMADO_COLUMNA_POR_DENSIDAD
+from app.columna_clasica import columna_de_densidad as columna_clasica_de_densidad
+from app.columna_clasica import contar as contar_columna_clasica
 from app.catalog import purchase_color_for_unsold
 from app import conteo_foto
 from app.supuestos import agregar_supuesto, supuesto
-from app.operational_models import ContractModel, OperationalRequest
+from app.operational_models import ContractModel, ModoPatronColor, OperationalRequest
 from app.plan_worker import run_plan_cpu
 from app.patron_color import (
     CONFIANZA_MINIMA_PISTA,
@@ -98,6 +108,7 @@ from app.patron_color import (
     Expansion,
     MaterialPatron,
     PatronColorInvalido,
+    ajustar_perillas,
     conteo_por_instancia,
     forma_valida,
     modos_admitidos,
@@ -324,9 +335,9 @@ class PistaPatron(ContractModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     referencia_element_id: str = Field(min_length=1, max_length=80)
-    modo: Literal[
-        "espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero", "zonas"
-    ]
+    #: Validado contra los modos del contrato, no contra una lista a mano: ver
+    #: `ModoPatronColor`.
+    modo: ModoPatronColor
     colores: list[str] = Field(min_length=1, max_length=12)
     globos_por_racimo: int | None = Field(default=None, ge=1, le=8)
     pesos: list[int] | None = Field(default=None, max_length=12)
@@ -762,6 +773,48 @@ def _pattern_error(structure_id: str, error: PatronColorInvalido) -> PlanResolut
     )
 
 
+def _ancho_de_arco_clasico(
+    plan: Mapping[str, object], structure: Mapping[str, object]
+) -> int | None:
+    """Balloons across the band of a classic arch, or ``None`` for anything else.
+
+    It is the width of the pattern grid: the engine lays the arch out in rows of
+    this many (odd rows carry one less, staggered). Asks the same predicate the
+    count uses, so the pattern's unit and the quoted number can never describe
+    different pieces.
+
+    The density **asks** for a band width and a narrow arch narrows it
+    (``globos_ancho_que_cabe``), so what is returned here is the band the engine
+    will actually build, not the one the table names. Returning the asked-for one
+    would make the pattern grid wider than the arch, and
+    ``silueta_patron._croquis_de_arco`` would drop the whole drawing with
+    ``despiece_incoherente`` -- silently, back to the generic grid.
+    """
+    tipo = _text(structure.get("tipo")) or ""
+    mix = _text(structure.get("mezcla")) or "organica_fina"
+    density = _text(structure.get("densidad")) or "media"
+    proportions, _unplaced = _effective_proportions(mix, _required_sizes(plan))
+    if not _es_arco_clasico(
+        tipo,
+        mix,
+        _text(structure.get("estructura_oficial")),
+        proportions,
+        _mapping(structure.get("medidas")),
+        density,
+    ):
+        return None
+    armado = ARMADO_ARCO_POR_DENSIDAD.get(density)
+    if armado is None:
+        return None
+    return int(
+        globos_ancho_de_arco_que_cabe(
+            _number(_mapping(structure.get("medidas")).get("ancho_m")) or 0.0,
+            proportions[0][0],
+            armado[0],
+        )
+    )
+
+
 def _pattern_context(
     plan: Mapping[str, object], structure: Mapping[str, object]
 ) -> EstructuraPatron:
@@ -777,6 +830,17 @@ def _pattern_context(
     cluster, shape = racimo_y_forma_de_armado(
         structure.get("armado_guirnalda") if _is_garland(structure) else None
     )
+    # A classic arch brings its unit from its assembly too: the ring. With it
+    # the pattern grid IS the arch -- one row per ring, one position per thread
+    # -- instead of a grid that approximates the total.
+    ring = _ancho_de_arco_clasico(plan, structure)
+    if ring is not None:
+        cluster = ring
+    # A classic column brings its unit the same way: the ring of each layer.
+    layer = _capa_de_columna_clasica(plan, structure)
+    if layer is not None:
+        cluster = layer
+    escalonado = not _arco_en_anillos(plan, structure)
     return EstructuraPatron(
         estructura_id=_text(structure.get("estructura_id")) or "",
         tipo=tipo,
@@ -795,6 +859,15 @@ def _pattern_context(
         ),
         racimo_armado=cluster,
         forma_armado=shape,
+        # En un arco clásico las filas van escalonadas y un carril se queda sin
+        # globo en las impares: la rejilla tiene esa celda y nadie la compra.
+        # Cuál es lo dice el motor que coloca, no esta función.
+        escalonado=escalonado,
+        carril_sin_globo_impar=(
+            carril_sin_globo_de_arco(cluster, escalonado)
+            if cluster is not None and tipo == "arco"
+            else None
+        ),
     )
 
 
@@ -1292,6 +1365,116 @@ def _band_profile_factor(official: str | None) -> float:
     return 1.0 if not isinstance(end_width, (int, float)) else (1 + float(end_width)) / 2
 
 
+#: Official arch variants that are NOT the classic ring arch: the organic one,
+#: the airy one (spaced balloons, not rings) and the hoop (its own geometry).
+#: Everything else typed ``arco`` with a single-size mix is a classic arch,
+#: whether or not the model named the official structure: an organic arch needs
+#: mixed sizes, so one made only of R-12 cannot be one.
+_NON_CLASSIC_ARCHES = frozenset({"arco_asimetrico", "arco_no_denso", "aro_circular"})
+
+
+def _es_arco_clasico(
+    tipo: str,
+    mix: str,
+    official: str | None,
+    proportions: Sequence[tuple[int, float]],
+    measures: Mapping[str, object],
+    density: str,
+) -> bool:
+    """Whether this structure is a classic arch, counted by assembling it.
+
+    Two guards send a piece back to the density formula, and both mean the same
+    thing: the ring engine only counts what it can describe.
+
+    * The engine models a **single-diameter** arch, so a fixed size that turns
+      the mix into two diameters is not one.
+    * With a very large balloon the ring's band eats the arch (five R-36 make a
+      2,27 m band, and a 3 m arch has no opening left), and what is left is not
+      an arch with a band.
+
+    This is not a second owner of the count: the ring engine owns ring arches
+    and the formula owns everything else, the same way it owns organic garlands.
+    """
+    if (
+        tipo != "arco"
+        or mix != "clasica"
+        or (official or "") in _NON_CLASSIC_ARCHES
+        or len(proportions) != 1
+    ):
+        return False
+    armado = ARMADO_ARCO_POR_DENSIDAD.get(density)
+    if armado is None:
+        return False
+    # ``bool(...)`` porque mypy corre con ``follow_imports = "skip"``: lo que
+    # devuelve un módulo importado es ``Any`` desde aquí.
+    return bool(
+        cabe_arco_como_arco(
+            _number(measures.get("ancho_m")) or 0.0,
+            proportions[0][0],
+            armado[0],
+        )
+    )
+
+
+#: Official column variants that are NOT the classic stacked-ring column: the
+#: organic one and the airy one (spaced balloons, not rings). Everything else
+#: typed ``columna`` with a single-size mix is a classic column, the same rule
+#: the classic arch follows.
+_NON_CLASSIC_COLUMNS = frozenset({"columna_asimetrica", "columna_no_densa"})
+
+
+def _es_columna_clasica(
+    tipo: str,
+    mix: str,
+    official: str | None,
+    proportions: Sequence[tuple[int, float]],
+    density: str,
+) -> bool:
+    """Whether this structure is a classic column, counted by assembling it.
+
+    One guard sends a piece back to the density formula, and it means what it
+    meant for the arch: the ring engine only counts what it can describe. The
+    engine models a **single-diameter** column, so a fixed size that turns the
+    mix into two diameters is not one -- a column of mixed sizes is an organic
+    one and the formula owns it.
+
+    There is no width guard here, unlike the arch: a column has no free measure
+    across. Its diameter is derived from the balloon and the ring
+    (``columna_clasica.diametro_columna_m``), so there is nothing that can fail
+    to fit.
+    """
+    if (
+        tipo != "columna"
+        or mix != "clasica"
+        or (official or "") in _NON_CLASSIC_COLUMNS
+        or len(proportions) != 1
+    ):
+        return False
+    return density in ARMADO_COLUMNA_POR_DENSIDAD
+
+
+def _capa_de_columna_clasica(
+    plan: Mapping[str, object], structure: Mapping[str, object]
+) -> int | None:
+    """Balloons in one ring of a classic column, or ``None`` for anything else.
+
+    It is the width of the pattern grid: the engine stacks the column in rings
+    of this many, so the grid is one row per ring and one position per place in
+    it. Asks the same predicate the count uses, so the pattern's unit and the
+    quoted number can never describe different pieces.
+    """
+    tipo = _text(structure.get("tipo")) or ""
+    mix = _text(structure.get("mezcla")) or "organica_fina"
+    density = _text(structure.get("densidad")) or "media"
+    proportions, _unplaced = _effective_proportions(mix, _required_sizes(plan))
+    if not _es_columna_clasica(
+        tipo, mix, _text(structure.get("estructura_oficial")), proportions, density
+    ):
+        return None
+    armado = ARMADO_COLUMNA_POR_DENSIDAD.get(density)
+    return None if armado is None else armado[0]
+
+
 def _total_globos(
     tipo: str,
     measures: Mapping[str, object],
@@ -1301,6 +1484,7 @@ def _total_globos(
     proportions: Sequence[tuple[int, float]] | None = None,
     *,
     armado: Mapping[str, object] | None = None,
+    escalonado: bool = True,
 ) -> tuple[float, int]:
     """Axis and total balloon count of one structure.
 
@@ -1309,11 +1493,43 @@ def _total_globos(
     width and the official structure profile still come from the plan mix.
     ``armado`` is a garland's ``armado_guirnalda`` (ADR-0032): its shape and
     drop decide the real axis (``_garland_cord``) and the band profile.
+
+    A **classic arch is assembled, not estimated**: its count is
+    counted by ``app.arco_clasico``, which places the balloons and counts what it placed, so the drawing the
+    customer sees has exactly the balloons that are quoted. Everything else
+    still comes from the density formula, which was calibrated for organic
+    garlands. The axis stays ``_eje`` on purpose even for the classic arch:
+    the axis is the extent of the PIECE (the outer contour, what the physical
+    gate divides by), while the engine's spine is the centreline of the band,
+    where the rings go. They are two different lengths, not two definitions of
+    one; do not "fix" one into the other.
     """
     proportions = tuple(proportions) if proportions else _MIXES[mix]
     dominant = max(proportions, key=lambda item: item[1])
     dominant_diameter_cm = dominant[0] * 2.54 * 0.92
     axis = _eje(tipo, measures, official, armado)
+    if _es_arco_clasico(tipo, mix, official, proportions, measures, density):
+        return axis, contar_arco_clasico(
+            arco_clasico_de_densidad(
+                _number(measures.get("ancho_m")) or 0.0,
+                _number(measures.get("alto_m")) or 0.0,
+                density,
+                dominant[0],
+                escalonado,
+            )
+        )
+    # A **classic column is assembled too**: ``app.columna_clasica`` stacks its
+    # rings and counts what it placed. Its diameter is not an input -- it comes
+    # out of the balloon and the ring -- so only the height goes in. What the
+    # formula used to do here looked at neither: a column's area was its height
+    # times the BALLOON's diameter, so a 0,25 m column and a 1,80 m one quoted
+    # the same number.
+    if _es_columna_clasica(tipo, mix, official, proportions, density):
+        return axis, contar_columna_clasica(
+            columna_clasica_de_densidad(
+                _number(measures.get("alto_m")) or 0.0, density, dominant[0]
+            )
+        )
     width = _number(measures.get("ancho_m")) or 0.0
     height = _number(measures.get("alto_m")) or 0.0
     area = (
@@ -1682,6 +1898,42 @@ def _physical_warnings(
     return warnings
 
 
+#: Modos de patrón que se arman en **anillos iguales** y no en banda
+#: escalonada. Un arco de anillos no es un arco con otro color: es otro montaje.
+#: Con el escalonado, un color caería siempre en las filas de ``n`` y el otro en
+#: las de ``n − 1``, así que sus anillos saldrían más estrechos y hundidos y el
+#: reparto no sería mitad y mitad. Cuesta un 13-14 % más de globos.
+_MODOS_EN_ANILLOS = frozenset({"anillos", "bloques"})
+
+
+def _arco_en_anillos(plan: Mapping[str, object], structure: Mapping[str, object]) -> bool:
+    """Si este arco se monta en anillos iguales en vez de banda escalonada.
+
+    Lo dice **el modo del patrón, y solo él**. Un arco de anillos no es un arco
+    con otro color: es otro montaje. Con el escalonado, un color cae siempre en
+    las hileras de ``n`` y el otro en las de ``n − 1``, así que sus anillos salen
+    más estrechos, hundidos entre los de al lado y con el reparto torcido.
+
+    **Solo el patrón, y esto importa.** Esta pregunta se hace a los dos lados del
+    conteo: antes, cuando todavía no hay patrón, y después, cuando ya se asignó.
+    Mientras la respuesta salga del mismo sitio, las dos coinciden en cuanto el
+    patrón existe, y la única llamada que ve «escalonado» es la provisional con
+    la que se ELIGE el patrón —un total que no se cotiza—. Intenté adivinarlo
+    antes de tiempo (por el número de colores de la estructura) y eso sí rompió:
+    una pista de ``espiral`` con ``[lila, morado, lila, morado]`` tiene cuatro
+    entradas y dos materiales, así que una regla decía anillos y la otra
+    escalonado, la pieza se contaba de una forma y se pintaba de otra, y la
+    resolución entera moría con ``patron_invalido``.
+    """
+    patron = structure.get("patron_color")
+    if not isinstance(patron, Mapping):
+        return False
+    base = patron.get("base")
+    if not isinstance(base, Mapping):
+        return False
+    return (_text(base.get("modo")) or "") in _MODOS_EN_ANILLOS
+
+
 def _structure_count(
     plan: Mapping[str, object], structure: Mapping[str, object]
 ) -> tuple[float, int, tuple[tuple[int, float], ...], tuple[int, ...]]:
@@ -1692,15 +1944,30 @@ def _structure_count(
     measures = _mapping(structure.get("medidas"))
     proportions, unplaced = _effective_proportions(mix, _required_sizes(plan))
     armado = structure.get("armado_guirnalda") if tipo == "guirnalda" else None
-    axis, total = _total_globos(
-        tipo,
-        measures,
-        density,
-        mix,
-        _text(structure.get("estructura_oficial")),
-        proportions,
-        armado=armado if isinstance(armado, Mapping) else None,
-    )
+    try:
+        axis, total = _total_globos(
+            tipo,
+            measures,
+            density,
+            mix,
+            _text(structure.get("estructura_oficial")),
+            proportions,
+            armado=armado if isinstance(armado, Mapping) else None,
+            escalonado=not _arco_en_anillos(plan, structure),
+        )
+    except ArcoInvalido as error:
+        # An arch that cannot be assembled is not quoted with a guessed number:
+        # there is no formula left to fall back to, because falling back would
+        # put two owners on the same count.
+        raise PlanResolutionError(
+            "arco_invalido",
+            422,
+            {
+                "estructura_id": _text(structure.get("estructura_id")) or "",
+                "motivo": error.motivo,
+                "mensaje": error.mensaje,
+            },
+        ) from error
     return axis, total, proportions, unplaced
 
 
@@ -3356,6 +3623,17 @@ def _add_silhouette(
         _text(structure.get("estructura_oficial")),
         _mapping(structure.get("medidas")),
         armado if isinstance(armado, Mapping) else None,
+        # Solo cuando la pieza es un arco clásico: el croquis se arma con la
+        # misma banda que se contó.
+        _text(structure.get("densidad")) or "media"
+        if _ancho_de_arco_clasico(plan, structure) is not None
+        else None,
+        # Y lo mismo para una columna clásica, con sus mismas capas.
+        _text(structure.get("densidad")) or "media"
+        if _capa_de_columna_clasica(plan, structure) is not None
+        else None,
+        # El montaje del arco: el croquis tiene que ser la pieza que se contó.
+        not _arco_en_anillos(plan, structure),
     )
     # Annotated because mypy runs with ``follow_imports = "skip"``: without it the
     # module boundary hands back ``Any`` and the declared return type is a lie.
@@ -4365,6 +4643,61 @@ def sugerir_patron_para_estructura(
         return cast(dict[str, object], sugerir_patron(context))
     except PatronColorInvalido:
         return None
+
+
+def patron_de_modo_para_estructura(
+    plan: Mapping[str, object],
+    estructura_id: str,
+    modo: str,
+    ajustes: Mapping[str, object] | None = None,
+) -> tuple[dict[str, object], tuple[str, ...]]:
+    """``patron_color`` starting point of one style for a structure, and its notices.
+
+    The same thing the pattern editor shows when the decorator picks a style
+    (``sugerir_patron_modo``), for a caller that wants to *apply* it instead of
+    preview it: the chat, which cannot compose a whole ``patron-color.v1``
+    document in a tool call. The piece's current pattern is the draft it starts
+    from, so whatever the new style admits of it is kept.
+
+    Raises ``PlanResolutionError``: ``estructura_no_encontrada`` (404),
+    ``invalid_plan`` (422) or ``patron_invalido`` (422, with ``estructura_id``,
+    ``motivo`` and ``mensaje`` -- the message names the styles the piece does
+    admit, so whoever asked can correct itself).
+    """
+    _validate_plan(plan)
+    index = _structure_index(plan, estructura_id)
+    measured = _complete_measures(plan)
+    structure = _mappings(measured.get("estructuras"))[index]
+    context = _pattern_context(measured, structure)
+    desde = structure.get("patron_color")
+    try:
+        start = sugerir_patron_modo(
+            context, modo, desde if isinstance(desde, Mapping) and forma_valida(desde) else None
+        )
+    except PatronColorInvalido as error:
+        raise _pattern_error(estructura_id, error) from error
+    patron = cast(dict[str, object], start.patron)
+    avisos = list(start.avisos)
+    if ajustes:
+        # Las perillas van DESPUÉS del punto de partida: primero el estilo con
+        # lo que la pieza ya tenía, y encima lo que pidió quien edita.
+        patron, mas = ajustar_perillas(patron, ajustes)
+        avisos.extend(mas)
+        try:
+            validar_y_expandir(context, patron)
+        except PatronColorInvalido as error:
+            raise _pattern_error(estructura_id, error) from error
+    return patron, tuple(avisos)
+
+
+def densidades_admitidas_de_estructura(estructura_oficial: str | None) -> tuple[str, ...]:
+    """Densities one official structure admits, or all of them when it sets none.
+
+    Read from the contract's own coherence rules (``_OFFICIAL_DENSITIES``), so
+    the editor rejects exactly what the plan's validation would reject, and with
+    a sentence instead of a schema error.
+    """
+    return _OFFICIAL_DENSITIES.get(estructura_oficial or "", tuple(_DENSITY_LAMBDA))
 
 
 # --- Guirnaldas por partes (ADR-0032) -------------------------------------------------

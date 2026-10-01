@@ -5,8 +5,8 @@
  *
  * - D1 `guardar_brief` stored invented keys ("estilo_decorativo", "paleta") and
  *   the strict `fin` event rejected the brief: "No pude responder".
- * - D2 SIN_COBERTURA + COLORES_REFERENCIA_OMITIDOS looped until the 75 s
- *   deadline: the LoRA catalog only has some sizes of each balloon.
+ * - D2 repairable refusals looped until the 75 s deadline: the LoRA catalog
+ *   only has some sizes of each balloon.
  * - D3 the size of the original request ("globos de 24 pulgadas") filtered
  *   every later search.
  * - D4 Fashion Gris is filed as "plateado": false grey notice / no coverage.
@@ -202,13 +202,13 @@ async function main(): Promise<void> {
   assert.ok(satin.estado.ajustesCobertura.some((ajuste) => ajuste.tipo === "acabado_material" && ajuste.antes === "satin"));
   ok("D2: el material que no tiene los tamaños de la pieza sale con aviso al cliente; un acabado que el producto no tiene se ignora");
 
-  // A photo color whose only product cannot build the structure is not claimed.
+  // A photo color whose only product cannot build the structure: the plan goes
+  // on and the customer is told, never a refusal that contradicts SIN_COBERTURA.
   const azul = turno({ colores: ["light pink", "chrome silver", "blue"], candidatos: ["P-ROSADO", "P-PLATA", "P-AZUL"] });
   const sinAzul = await azul.confirmar(plan("organica_fina", [["P-ROSADO", "rosado", 0.6], ["P-PLATA", "plateado", 0.4]]));
-  assert.notEqual(sinAzul.status, "COLORES_REFERENCIA_OMITIDOS", `R-5-only blue cannot build a column: ${JSON.stringify(sinAzul).slice(0, 400)}`);
-  assert.equal(sinAzul.ok, true);
+  assert.equal(sinAzul.ok, true, `R-5-only blue cannot build a column: ${JSON.stringify(sinAzul).slice(0, 400)}`);
   assert.ok((sinAzul.avisos_cliente as string[]).some((aviso) => /muestra azul/.test(aviso)), "the customer is still told");
-  ok("D2: COLORES_REFERENCIA_OMITIDOS no reclama un color sin cobertura de tamaño (no contradice SIN_COBERTURA)");
+  ok("D2: un color de la foto sin cobertura de tamaño se avisa y no contradice SIN_COBERTURA");
 
   // Convergence: after two refusals an uncovered material leaves instead of a third refusal.
   const lila = { "P-LILA": ["P-LILA-12"] };

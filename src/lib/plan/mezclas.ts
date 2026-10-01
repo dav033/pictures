@@ -28,6 +28,8 @@
  * la de Python dé exactamente lo mismo par por par.
  */
 
+import type { Densidad } from "./tipos";
+
 export type Mezcla = "clasica" | "organica_fina" | "organica_gruesa" | "solo_grandes";
 
 /** Una línea del despiece de una estructura, tal como la devuelve el resolutor. */
@@ -69,6 +71,27 @@ export function pulgadasDeMezcla(mezcla: Mezcla): number[] {
 }
 
 const DIAMETROS_ESTANDAR = [5, 9, 12, 18, 24] as const;
+
+/**
+ * A cuántas **pulgadas reales** queda inflado un globo de cada tamaño nominal.
+ *
+ * No es `nominal × un factor`: un globo no se infla proporcional a su etiqueta.
+ * Un R-5 queda en 4″ (un 80 % del nominal) y un R-12 en 10,5″ (un 87,5 %). Es la
+ * tabla `INFLADO_PULG` del diseñador de arcos y columnas del clasificador
+ * (`src/lib/arco/tipos.ts`), y es dato del oficio medido sobre globos inflados,
+ * no una fórmula.
+ *
+ * Sustituye al factor lineal `0,92` que usaba `silueta.diametro_inflado_m`. Ese
+ * 0,92 **sigue vivo** en la fórmula de densidad λ de `plan.py`, escrito a mano,
+ * y ahí se queda a propósito: λ se calibró con él, así que cambiárselo movería
+ * el precio de paredes, guirnaldas y semiarcos sin que nadie lo pidiera. Son dos
+ * definiciones de cuánto mide un globo conviviendo, y eso es deuda: la de aquí
+ * es la buena y λ es la que falta migrar.
+ *
+ * Los cinco tamaños del catálogo (`DIAMETROS_ESTANDAR`) están todos en la tabla,
+ * así que ningún tamaño que se cotice necesita el respaldo.
+ */
+export const INFLADO_PULGADAS: Record<string, number> = { 5: 4, 9: 8, 12: 10.5, 18: 14, 24: 20, 36: 30 };
 
 /** Cuánto puede crecer (o encoger) un globo al servirse con el escalón contiguo. */
 const RAZON_MAXIMA_SUSTITUCION = 1.5;
@@ -123,6 +146,123 @@ export function tamanosObligatorios(
   return [...pulgadas].sort((a, b) => a - b);
 }
 
+/**
+ * Cómo se arma un **arco clásico** según la densidad declarada: globos a lo
+ * ancho de la banda y separación entre filas.
+ *
+ * Es una regla comercial, no una perilla estética: decide cuántos globos lleva
+ * el arco y por tanto lo que cuesta (`services/ai-api/app/arco_clasico.py`, que
+ * la lee del contrato igual que lee la tabla de mezclas).
+ *
+ * **Los dos valores están dentro del rango que el motor admite, y antes no lo
+ * estaban** (2026-10-01). La separación entre filas del motor porteado es la
+ * misma perilla que el diseñador del clasificador deja mover entre **0,7 y 1,4**
+ * (`src/components/arco/Disenador.tsx`), con 1 por defecto: 1 es el
+ * empaquetado hexagonal, donde dos filas vecinas se tocan. Aquí valía de 0,485
+ * a 0,5975, por debajo de ese suelo: con R-12 eso deja **0,10 m entre centros de
+ * fila para un globo de 0,28 m**, o sea un 63 % de solape. Ese arco no se puede
+ * armar —dos anillos no caben uno dentro de otro— y el dibujo salía, con razón,
+ * como un montón de globos. Los valores viejos se habían elegido para que el
+ * CONTEO no se desviara más de un 3,1 % de la fórmula λ anterior, y mientras ese
+ * número mandara el arco no podía verse bien.
+ *
+ * **La densidad es la separación entre filas, y nada más**, que es como está
+ * hecho el motor de referencia: allá la banda es una perilla de forma con un
+ * solo valor por defecto (4) y lo que llena la pieza es cuánto se aprietan las
+ * filas. Las tres separaciones recorren casi todo el rango del deslizador —1,3 /
+ * 1,0 / 0,7—; 1,3 es el tope con el que dos filas vecinas todavía se tocan
+ * (`paso · 0,866 · sep ≤ diámetro`), medido y dan un reparto parejo de 2× entre sencilla y lujosa en todas las
+ * medidas de catálogo.
+ *
+ * **Por qué la banda no la mueve la densidad**, que fue un intento anterior de
+ * este mismo día (3/4/5): el ancho del arco limita la banda al 36 % (la regla
+ * `RAZON_GROSOR_MAX`, en `arco_saneado`), así que en un arco de 2,4 m las tres
+ * densidades caían igualmente a 3 y dejaban de distinguirse —un 20 % de
+ * diferencia entre sencilla y lujosa, cuando es lo que el cliente paga—. Y
+ * peor: con la banda en 3 el ciclo de color de una espiral no cabe en las filas
+ * cortas y la cinta se parte. Una sola banda arregla las dos cosas.
+ *
+ * Contra la fórmula λ anterior esto baja el conteo de un 31 % a un 46 % según la
+ * medida (medido el 2026-10-01 sobre ocho tamaños de catálogo). Esa bajada es el
+ * cambio buscado y lo decidió el usuario: λ estaba calibrada para guirnaldas
+ * orgánicas, que llevan racimos, y pedía para un arco clásico más globos de los
+ * que caben físicamente en la pieza.
+ */
+export const ARMADO_ARCO_CLASICO: Record<Densidad, { globosAncho: number; separacionFilas: number }> = {
+  sencilla: { globosAncho: 4, separacionFilas: 1.3 },
+  media: { globosAncho: 4, separacionFilas: 1 },
+  lujosa: { globosAncho: 4, separacionFilas: 0.7 },
+};
+
+/**
+ * Cómo se arma una **columna clásica** según la densidad declarada: globos por
+ * capa y alto de la capa en diámetros de globo.
+ *
+ * Igual que la del arco, es una regla comercial: decide cuántos globos lleva la
+ * pieza (`services/ai-api/app/columna_clasica.py`, porteado del diseñador de
+ * columnas del clasificador).
+ *
+ * **La densidad es el anillo, y nada más.** Una columna se arma en capas de
+ * tres, cuatro, cinco o seis globos alrededor del eje, y el oficio ya les tiene
+ * nombre: `NOMBRE_DEL_RACIMO` de este mismo archivo las llama cuarteto,
+ * quinteto y sexteto, y `RACIMO_DE_LA_FOTO` ya mapeaba esas tres a sencilla,
+ * media y lujosa al leerlas de una foto. Esto no hace más que usar el mismo
+ * vocabulario para armarlas.
+ *
+ * La **compresión** —el alto de una capa en diámetros— se queda en 0,80 en las
+ * tres. El deslizador del motor de referencia la llama «la fórmula profesional»
+ * en ese valor y la acota a 0,7–1,0; apretarla o soltarla cambia la altura a la
+ * que llega la pieza, no lo llena que se ve, así que no es la perilla de la
+ * densidad. Está aquí porque es la otra mitad del armado y porque, si algún día
+ * se mueve, se mueve en un solo sitio.
+ *
+ * Contra la fórmula λ que contaba las columnas hasta ahora, esto queda entre
+ * **−6 % y +8 %** según la medida (medido el 2026-10-01 sobre seis alturas de
+ * catálogo): la λ de las columnas sí estaba bien calibrada, y lo que faltaba era
+ * el motor que las dibuja. Por eso esta tabla **no** es un cambio de precio
+ * como lo fue la del arco.
+ */
+export const ARMADO_COLUMNA_CLASICA: Record<Densidad, { globosCapa: number; compresion: number }> = {
+  sencilla: { globosCapa: 4, compresion: 0.8 },
+  media: { globosCapa: 5, compresion: 0.8 },
+  lujosa: { globosCapa: 6, compresion: 0.8 },
+};
+
+
+/**
+ * La densidad que corresponde a los racimos que se ven en la foto de una pieza
+ * clásica: cuarteto `sencilla`, quinteto `media`, sexteto `lujosa`.
+ *
+ * Ya no es que la densidad SEA el racimo. Desde que el motor de arcos se porteó
+ * entero (2026-10-01), lo que cambia con la densidad es cuánto se aprietan las
+ * filas, no cuántos globos van a lo ancho. Pero la lectura sigue valiendo
+ * porque mide lo mismo: **globos por metro de recorrido**. Medido sobre un arco
+ * de 3 × 2,4 m:
+ *
+ * | racimo de la foto | globos/m | densidad | globos/m |
+ * |---|---|---|---|
+ * | cuarteto | 18,7 | `sencilla` | 19,6 |
+ * | quinteto | 23,4 | `media`    | 24,3 |
+ * | sexteto  | 28,1 | `lujosa`   | 32,4 |
+ *
+ * Sin esto el modelo elige la densidad por el aspecto general, y un arco de
+ * cuartetos sale declarado `lujosa`: un 50 % más de globos de los que se ven en
+ * la foto. Pasó el 2026-10-01, justo después de quitar esta función por creer
+ * —mal— que el porteo del motor la había dejado sin sentido.
+ */
+export function densidadDeRacimoEnFoto(globosPorRacimo: number): Densidad | null {
+  return RACIMO_DE_LA_FOTO[globosPorRacimo] ?? null;
+}
+
+const RACIMO_DE_LA_FOTO: Record<number, Densidad> = { 4: "sencilla", 5: "media", 6: "lujosa" };
+
+/** Cómo se llama en el oficio un racimo de ese tamaño. */
+export const NOMBRE_DEL_RACIMO: Record<number, string> = {
+  4: "cuarteto",
+  5: "quinteto",
+  6: "sexteto",
+};
+
 /** Lo que viaja en `plan-decoracion.v1` como `x-reglas-mezclas`. */
 export type ReglasMezclasContrato = {
   mezclas: Record<Mezcla, ProporcionTamano[]>;
@@ -136,6 +276,12 @@ export type ReglasMezclasContrato = {
    * necesita `re.ASCII`).
    */
   patron_tamano_obligatorio: string;
+  /** Globos a lo ancho y separación entre filas de un arco clásico, por densidad. */
+  armado_arco_clasico: Record<string, { globos_ancho: number; separacion_filas: number }>;
+  /** Globos por capa y alto de capa de una columna clásica, por densidad. */
+  armado_columna_clasica: Record<string, { globos_capa: number; compresion: number }>;
+  /** A cuántas pulgadas reales queda inflado cada tamaño nominal. */
+  inflado_pulgadas: Record<string, number>;
 };
 
 export function reglasMezclas(): ReglasMezclasContrato {
@@ -150,6 +296,25 @@ export function reglasMezclas(): ReglasMezclasContrato {
       ]),
     ),
     patron_tamano_obligatorio: TAMANO_OBLIGATORIO.source,
+    armado_arco_clasico: Object.fromEntries(
+      (Object.keys(ARMADO_ARCO_CLASICO) as Densidad[]).map((densidad) => [
+        densidad,
+        {
+          globos_ancho: ARMADO_ARCO_CLASICO[densidad].globosAncho,
+          separacion_filas: ARMADO_ARCO_CLASICO[densidad].separacionFilas,
+        },
+      ]),
+    ),
+    inflado_pulgadas: { ...INFLADO_PULGADAS },
+    armado_columna_clasica: Object.fromEntries(
+      (Object.keys(ARMADO_COLUMNA_CLASICA) as Densidad[]).map((densidad) => [
+        densidad,
+        {
+          globos_capa: ARMADO_COLUMNA_CLASICA[densidad].globosCapa,
+          compresion: ARMADO_COLUMNA_CLASICA[densidad].compresion,
+        },
+      ]),
+    ),
   };
 }
 

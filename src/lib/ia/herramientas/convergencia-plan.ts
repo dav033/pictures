@@ -7,13 +7,12 @@ import type { PlanDecoracion } from "@/lib/plan/tipos";
 /**
  * Deterministic convergence of one chat turn (E2E 2026-09-15: "Semiarcos rosa
  * y plata" + "Quiero algo así para un cumpleaños" failed 4 of 5 real runs, two
- * of them looping SIN_COBERTURA + COLORES_REFERENCIA_OMITIDOS until the 75 s
- * deadline).
+ * of them looping on repairable refusals until the 75 s deadline).
  *
  * - After `RECHAZOS_PARA_CONVERGER` refusals of `confirmar_plan_decoracion` in
- *   the same turn, a refusal the server can repair is not sent back: photo
- *   colors stop being claimed and the materials without size coverage are
- *   removed (with a customer notice) before resolving again.
+ *   the same turn, a refusal the server can repair is not sent back: the
+ *   materials without size coverage are removed (with a customer notice)
+ *   before resolving again.
  * - After `RECHAZOS_MAXIMOS` refusals the tool stops answering with repair
  *   instructions: the model must reply to the customer.
  * - `cierreAnticipado` ends the turn before the next model call once the turn

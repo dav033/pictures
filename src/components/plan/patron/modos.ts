@@ -9,12 +9,26 @@ import type { AnclaZona, ModoAdmitido, ModoPatronColor, PatronColor } from "@/li
  */
 
 /** Icono de un estilo: un modo, o la espiral por su trazo y el degradé en diagonal. */
-export type IdEstilo = "espiral" | "zigzag" | "recto" | "anillos" | "bloques" | "degradado" | "diagonal" | "aleatorio" | "flor" | "damero" | "zonas";
+/**
+ * Icono de un estilo. `zigzag` y `recto` lo comparten un modo y un trazo de la
+ * espiral: el modo `zigzag` son franjas que quiebran y el trazo `zigzag` es una
+ * espiral que cambia de sentido, y se dibujan igual a propósito.
+ */
+export type IdEstilo = "espiral" | "zigzag" | "recto" | "intercalado" | "franjas" | "chevron" | "diamante" | "punteado" | "apilado" | "arcoiris" | "doslados" | "anillos" | "bloques" | "degradado" | "diagonal" | "aleatorio" | "flor" | "damero" | "zonas";
 
 export type DireccionPatron = NonNullable<PatronColor["direccion"]>;
 
 export const ESTILOS_MODO: Readonly<Record<ModoPatronColor, { nombre: string; ayuda: string }>> = {
   espiral: { nombre: "Espiral", ayuda: "Racimos iguales que giran" },
+  intercalado: { nombre: "Intercalado", ayuda: "Alternados globo a globo" },
+  franjas: { nombre: "Franjas", ayuda: "Rayas diagonales gruesas" },
+  zigzag: { nombre: "Zigzag", ayuda: "Franjas que quiebran" },
+  chevron: { nombre: "Flechas", ayuda: "Franjas en V" },
+  diamante: { nombre: "Diamantes", ayuda: "Rombos repetidos" },
+  punteado: { nombre: "Punteado", ayuda: "Lunares sobre un fondo" },
+  apilado: { nombre: "Apilado", ayuda: "Capas del borde al centro" },
+  arcoiris: { nombre: "Arcoíris", ayuda: "Una banda por color" },
+  doslados: { nombre: "Dos lados", ayuda: "Afuera y adentro distintos" },
   anillos: { nombre: "Anillos", ayuda: "Salvavidas de un color" },
   bloques: { nombre: "Bloques", ayuda: "Tramos de color" },
   degradado: { nombre: "Degradé", ayuda: "De un color a otro" },
