@@ -75,6 +75,7 @@ from __future__ import annotations
 import json
 import math
 import struct
+import sys
 from pathlib import Path
 from typing import Callable
 
@@ -222,11 +223,23 @@ def test_la_libm_no_sirve_para_exp() -> None:
     este caso y no uno de los motores.
     """
     distintos = [c for c in EXP["exp"] if not igual(_libm_exp(float(c[0])), float(c[1]))]
-    assert len(distintos) == 297, (
-        "math.exp se desvía de Node en %d de los %d casos del motor, no en 297: o cambió la libm de este "
+    # La libm es de cada plataforma, así que el número también: lo medido en Windows (donde se generó el oráculo)
+    # y en Linux (glibc, el de CI y el de la imagen de producción). En otra plataforma solo se exige que difiera.
+    esperado = _DESVIOS_DE_LA_LIBM.get(sys.platform)
+    if esperado is None:
+        assert distintos, (
+            "math.exp coincide con Node en todos los casos: el puerto de exp ya no haría falta"
+        )
+        return
+    assert len(distintos) == esperado, (
+        "math.exp se desvía de Node en %d de los %d casos del motor, no en %d: o cambió la libm de este "
         "equipo, o se regeneró el oráculo con otra versión de Node"
-        % (len(distintos), len(EXP["exp"]))
+        % (len(distintos), len(EXP["exp"]), esperado)
     )
+
+
+#: Casos (de 4000) en que ``math.exp`` no da el bit de Node, medidos por plataforma.
+_DESVIOS_DE_LA_LIBM = {"win32": 297, "linux": 300}
 
 
 def _libm_exp(x: float) -> float:
