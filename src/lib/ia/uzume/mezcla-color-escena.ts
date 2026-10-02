@@ -1,5 +1,6 @@
 import { porcentajesMayorResto } from "../escena/tamano-fisico";
 import type { SceneSpec } from "../escena/scene-spec";
+import type { ArcoResuelto } from "@/lib/plan/armado-arco";
 import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
 import type { ArmadoGuirnaldaResuelto, FormaGuirnalda, SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
@@ -148,17 +149,23 @@ function unirFrases(armado: string, patron: string | undefined, separador: strin
  * guirnalda (ADR-0032), que siempre son del plan (`aplicado: true`). Una
  * guirnalda con armado y patrón da una sola frase: la del armado seguida de la
  * del patrón (en Gemini con un espacio, en el caption LoRA con una coma), que
- * reemplaza a la del patrón solo. `undefined` cuando el plan no trae ninguno,
- * para que la petición de siempre siga byte a byte igual.
+ * reemplaza a la del patrón solo. Un arco armado con el motor (ADR-0035) entra con
+ * la frase que escribió Python y **reemplaza** la de su patrón, si lo traía: el
+ * armado ya dice qué patrón lleva y con qué colores. `undefined` cuando el plan no
+ * trae ninguno, para que la petición de siempre siga byte a byte igual.
  */
 export function frasesDeEstructuras(
   plan: {
     patrones_color?: readonly PatronColorResuelto[];
     armados_bouquet?: readonly ArmadoBouquetResuelto[];
     armados_guirnalda?: readonly ArmadoGuirnaldaResuelto[];
+    armados_arco?: readonly ArcoResuelto[];
   } | null | undefined,
 ): FraseDeEstructura[] | undefined {
-  if (!plan || (plan.patrones_color === undefined && plan.armados_bouquet === undefined && plan.armados_guirnalda === undefined)) return undefined;
+  // Un arco armado cuenta solo si trae su frase: un plan resuelto antes de ADR-0035 no la trae, y sin ella la
+  // petición tiene que seguir siendo la de siempre.
+  const arcos = (plan?.armados_arco ?? []).filter((arco) => arco.estructura_id && (arco.prompt_gemini?.trim() || arco.prompt_lora?.trim()));
+  if (!plan || (plan.patrones_color === undefined && plan.armados_bouquet === undefined && plan.armados_guirnalda === undefined && arcos.length === 0)) return undefined;
   const frases: FraseDeEstructura[] = [
     ...(plan.patrones_color ?? []),
     ...(plan.armados_bouquet ?? []).map((armado) => ({
@@ -187,6 +194,17 @@ export function frasesDeEstructuras(
         conRemates: armado.remates.length > 0,
       },
     };
+    if (indice >= 0) frases[indice] = entrada;
+    else frases.push(entrada);
+  }
+  for (const arco of arcos) {
+    const entrada: FraseDeEstructura = {
+      estructura_id: arco.estructura_id!,
+      aplicado: true,
+      prompt_gemini: arco.prompt_gemini ?? "",
+      prompt_lora: arco.prompt_lora ?? "",
+    };
+    const indice = frases.findIndex((frase) => frase.aplicado && frase.estructura_id === entrada.estructura_id && !frase.armado && !frase.guirnalda);
     if (indice >= 0) frases[indice] = entrada;
     else frases.push(entrada);
   }

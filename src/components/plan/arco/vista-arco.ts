@@ -24,6 +24,14 @@ export type PiezaVistaArco = {
   colores?: readonly string[];
 };
 
+/**
+ * Los colores con los que se dibuja la pieza, como una sola cadena: si cambia, lo que el motor dibujó y lo que se
+ * recordó de él ya no vale (otro color, o otro número de colores, cambia a qué apunta cada índice del armado).
+ */
+export function firmaColoresArco(pieza: Pick<PiezaVistaArco, "colores">): string {
+  return JSON.stringify(pieza.colores ?? null);
+}
+
 /** Cuerpo de /api/plan-armado-arco para una pieza. Solo transporte. */
 export function peticionVistaArco(pieza: PiezaVistaArco, armado: ArmadoArcoV1 | null): PeticionVistaArmadoArco {
   return {
@@ -52,7 +60,10 @@ export type RespuestaVistaArco = { clave: string; vista: VistaArmadoArco };
 /** Lo último que falló y por cuál dibujo: `armadoInvalido` no se reintenta solo ni a mano. */
 export type FalloVistaArco = { clave: string; mensaje: string; armadoInvalido: boolean };
 
-/** Lo que muestra el bloque, con cada estado explícito. */
+/**
+ * Lo que muestra el bloque, con cada estado explícito. `vencido` (solo al editar): el dibujo es el último que
+ * llegó y el cambio que se pidió después no se pudo dibujar, así que no es el del borrador.
+ */
 export type PanelVistaArco =
   /** Nada que dibujar todavía: el motor está armando. */
   | { fase: "cargando" }
@@ -61,7 +72,7 @@ export type PanelVistaArco =
   /** Nada que dibujar y el motor no respondió: esto sí se reintenta (lo de `vacio`, no). */
   | { fase: "error"; mensaje: string }
   /** Un dibujo del motor; `actualizando`: el del armado nuevo está en camino; `fallo`: el último no llegó. */
-  | { fase: "listo"; vista: VistaArmadoArco; actualizando: boolean; fallo: string | null };
+  | { fase: "listo"; vista: VistaArmadoArco; actualizando: boolean; fallo: string | null; vencido?: boolean };
 
 /**
  * El estado del bloque para el dibujo que se quiere ver (`clave`), sin estado derivado guardado aparte: sale

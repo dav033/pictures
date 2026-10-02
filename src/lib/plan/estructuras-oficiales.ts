@@ -145,7 +145,7 @@ export function esEstructuraOficialId(valor: unknown): valor is EstructuraOficia
  * resuelven la estructura. Vacío = coherente. El backend Python aplica la
  * misma tabla (`services/ai-api/app/plan.py`).
  */
-export function incoherenciasEstructuraOficial(estructura: { estructura_oficial?: string; tipo: string; densidad: string; ubicacion: string }): Array<{ campo: "estructura_oficial" | "tipo" | "densidad" | "ubicacion"; mensaje: string }> {
+export function incoherenciasEstructuraOficial(estructura: { estructura_oficial?: string; tipo: string; densidad: string; ubicacion?: string }): Array<{ campo: "estructura_oficial" | "tipo" | "densidad" | "ubicacion"; mensaje: string }> {
   if (estructura.estructura_oficial === undefined) return [];
   if (!esEstructuraOficialId(estructura.estructura_oficial)) {
     return [{ campo: "estructura_oficial", mensaje: "Estructura oficial desconocida." }];
@@ -158,7 +158,8 @@ export function incoherenciasEstructuraOficial(estructura: { estructura_oficial?
   if (oficial.densidades && !(oficial.densidades as readonly string[]).includes(estructura.densidad)) {
     problemas.push({ campo: "densidad", mensaje: `${oficial.nombre} requiere densidad ${oficial.densidades.join(" o ")}.` });
   }
-  if (oficial.ubicacion === "techo" && !["techo", "techo_multipunto"].includes(estructura.ubicacion)) {
+  // Sin `ubicacion` (una consulta que no la lleva, como `estimar-conteo.v1`) no hay nada que comparar: igual que el JSON Schema exportado.
+  if (estructura.ubicacion !== undefined && oficial.ubicacion === "techo" && !["techo", "techo_multipunto"].includes(estructura.ubicacion)) {
     problemas.push({ campo: "ubicacion", mensaje: `${oficial.nombre} se ubica en el techo.` });
   }
   return problemas;

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
-import { esCancelacion, FalloPlanEditar, MENSAJE_UNICO_MATERIAL, mensajeErrorRespuesta, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
+import { esCancelacion, FalloPlanEditar, MENSAJE_EDICION_LENTA, MENSAJE_UNICO_MATERIAL, mensajeErrorRespuesta, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
 
 /**
  * Errores de /api/plan-editar en el navegador (iteración 3b, punto D): el
@@ -69,6 +69,29 @@ async function main(): Promise<void> {
     const error = await fallo(pedirPlanEditar({}, RESPALDO, { signal: controlador.signal, fetcher: async () => { throw new DOMException("The operation was aborted.", "AbortError"); } }));
     assert.equal(esCancelacion(error), true);
     ok("cancelación → AbortError sin traducir");
+  }
+
+  // 5b. Una petición que nunca responde no deja la cola esperando para siempre: vence con un mensaje.
+  {
+    // El temporizador de AbortSignal.timeout no mantiene vivo a Node: sin esto el proceso saldría en silencio con 0.
+    const colgado: typeof fetch = (_url, init) => new Promise((_resolver, rechazar) => {
+      const vivo = setInterval(() => undefined, 1_000);
+      init?.signal?.addEventListener("abort", () => {
+        clearInterval(vivo);
+        rechazar(init.signal?.reason);
+      }, { once: true });
+    });
+    const error = await fallo(pedirPlanEditar({}, RESPALDO, { fetcher: colgado, plazoMs: 20 }));
+    assert.ok(error instanceof FalloPlanEditar);
+    assert.equal(esCancelacion(error), false);
+    assert.equal(mensajeFalloPlanEditar(error, RESPALDO), MENSAJE_EDICION_LENTA);
+    ok("sin respuesta → el plazo vence con un mensaje, no es una cancelación");
+
+    const controlador = new AbortController();
+    const espera = fallo(pedirPlanEditar({}, RESPALDO, { signal: controlador.signal, fetcher: colgado, plazoMs: 5_000 }));
+    controlador.abort();
+    assert.equal(esCancelacion(await espera), true);
+    ok("cancelar antes del plazo sigue siendo una cancelación");
   }
 
   // 6. Éxito: devuelve el cuerpo y envía POST JSON a /api/plan-editar.

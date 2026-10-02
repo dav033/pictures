@@ -1000,6 +1000,56 @@ def _geometrica(
     )
 
 
+@dataclass(frozen=True)
+class Ajuste:
+    """Lo que la búsqueda geométrica halla para una pieza y una cuenta, sin tocar ningún plan.
+
+    ``decision``: ``coincide`` (ya está dentro de la tolerancia), ``ajustado`` (``estructura``
+    es la pieza con la menor variación que llega) o ``sin_ajuste_posible``.
+    """
+
+    decision: str
+    estructura: Mapping[str, object]
+    globos_antes: int
+    globos_despues: int
+    cambios: tuple[Mapping[str, object], ...]
+    motivo: str
+
+
+def buscar_ajuste(
+    estructura: Mapping[str, object],
+    cuenta: Cuenta,
+    puerto: PuertoPlan,
+    *,
+    medidas_fijas: bool,
+) -> Ajuste:
+    """La menor variación de densidad y medidas que acerca una pieza geométrica a ``cuenta``.
+
+    Es la misma búsqueda que corre al confirmar un plan con la foto (``_geometrica``: la
+    densidad con las medidas fijas, luego las medidas dentro de ±35 %, y por último, si la
+    pieza tiene un solo eje libre, el eje que da la cantidad), expuesta para consultarla
+    sin aplicarla. Sin lectura de la foto no hay escala ni reparto por tamaño que la
+    guíen, así que la mezcla nunca cambia. ``medidas_fijas``: las medidas son del cliente
+    y no se mueven. Lo que devuelve es una propuesta; este módulo no la escribe.
+    """
+    resultado = _geometrica(
+        dict(estructura),
+        {},
+        cuenta,
+        medidas_fijas=medidas_fijas,
+        mezcla_fija=True,
+        puerto=puerto,
+    )
+    return Ajuste(
+        resultado.decision,
+        resultado.estructura,
+        resultado.globos_antes,
+        resultado.globos_despues,
+        tuple(resultado.cambios),
+        resultado.motivo,
+    )
+
+
 def _globos_actuales(estructura: Mapping[str, object], puerto: PuertoPlan) -> int:
     """Globos por pieza del plan tal como está (kits: lo declarado entre las repeticiones)."""
     if estructura.get("tipo") in TIPOS_GEOMETRICOS:
@@ -1161,10 +1211,12 @@ def aplicar(
 
 __all__ = [
     "ALTURA_REFERENCIA_M",
+    "Ajuste",
     "Cuenta",
     "Opcion",
     "PuertoPlan",
     "aplicar",
+    "buscar_ajuste",
     "clase_de_diametro",
     "cuenta_usable",
     "dentro_de_tolerancia",

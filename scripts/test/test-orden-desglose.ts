@@ -26,6 +26,12 @@ assert.ok(page.includes('if (!planActual || !planActualAprobado || !ajuste.trim(
 assert.ok(chatRoute.includes('referenceBlueprint: r.referenceBlueprint'));
 assert.ok(pageCompacta.includes('<TarjetaPlanDecoracion plan={m.plan} aprobado={planAprobadoHash === m.plan.plan_hash}'));
 const planCard = readFileSync("src/components/TarjetaPlanDecoracion.tsx", "utf8");
-assert.ok(planCard.includes('scrollIntoView({ behavior: "smooth", block: "nearest" })'), "opening inline plan editing must reveal the editor");
+// Plan editing opens as a modal dialog, not as an inline block that had to be scrolled into view: it is always
+// centered over the page and takes focus on open, so there is no hidden-editor case left to reveal.
+assert.ok(planCard.includes("<ModalAjustarPropuesta"), "plan editing must open in the adjust modal");
+assert.ok(!planCard.includes("id={editorId}"), "the inline editor block must not come back");
+const modalAjuste = readFileSync("src/components/plan/ajuste/ModalAjustarPropuesta.tsx", "utf8");
+assert.ok(modalAjuste.includes("<Dialog.Root open"), "the adjust editor must be a modal dialog");
+assert.ok(modalAjuste.includes("onOpenAutoFocus"), "opening the adjust modal must move focus into it");
 assert.ok(generateRoute.includes("estructura.materiales.map((material) => material.variant_id)"), "generation must whitelist declarative material variants before hashing");
 console.log("[PASS] orden del desglose — el plan se muestra antes y la generación requiere aprobación explícita");

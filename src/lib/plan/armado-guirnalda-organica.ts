@@ -52,7 +52,7 @@ const porTamano = <T extends z.ZodType>(valor: T) =>
   }).strict();
 
 const PesosPorTamanoSchema = porTamano(z.number().min(0).max(100));
-const CantidadesPorTamanoSchema = porTamano(z.number().int().nonnegative());
+export const CantidadesPorTamanoSchema = porTamano(z.number().int().nonnegative());
 
 /** La línea de la guirnalda, en metros. */
 export const FormaGuirnaldaOrganicaSchema = z

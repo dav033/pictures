@@ -30,12 +30,14 @@ from typing import Any, Mapping, Sequence, cast
 
 from jsonschema import Draft7Validator
 
+from app.armado_validacion import MENSAJE_NO_FINITO, MOTIVO_NO_FINITO, hay_numero_no_finito
 from app.arco.limites import ALTO_MAX, ALTO_MIN, ANCHO_MAX, ANCHO_MIN, limites
 from app.arco.medidas import calcular_compra, calcular_medidas
 from app.arco.motor import LIENZO, generar, svg_documento
 from app.arco.patrones import PATRONES, normalizar_config_con_cambios
 from app.arco.tipos import MAX_SECUENCIA_ARCO, PATRON_IDS, SECCION_M, TAMANOS_GLOBO, Config
 from app.generated_models import contract_schema
+from app.merma import MERMA
 
 VERSION = "armado-arco.v1"
 
@@ -45,9 +47,20 @@ MAX_MATERIALES = 8
 
 FORMAS = ("alto", "semi", "herradura")
 
-#: Margen de compra cuando quien llama no dice otro. Es el del diseñador (`REAL_INICIAL`), para que una pieza
-#: armada aquí y la misma pieza abierta allá den la misma lista de compra.
-DESPERDICIO_POR_DEFECTO = 0.08
+#: Margen de compra cuando quien llama no dice otro: el del plan (``app/merma.py``), que es también el del diseñador
+#: del arco (`REAL_INICIAL`), para que una pieza armada aquí y la misma pieza abierta allá den la misma lista de compra.
+DESPERDICIO_POR_DEFECTO = MERMA
+
+#: Cuántos globos puede publicar un arco resuelto: el tope de ``armados_arco[].globos`` del contrato. Se lee del
+#: esquema exportado y no se repite aquí, porque el dueño es el Zod de ``src/lib/plan/armado-arco.ts``.
+MAX_GLOBOS: int = int(
+    cast(
+        Mapping[str, Any],
+        contract_schema("PlanResuelto")["properties"]["armados_arco"]["items"]["properties"][
+            "globos"
+        ],
+    )["maxItems"]
+)
 
 
 class ArmadoInvalido(ValueError):
@@ -69,6 +82,27 @@ class EstructuraArco:
 
     es_arco: bool
     materiales: Sequence[str]
+
+
+def avisos_colores_sin_uso(nombres: Sequence[str], usados: Sequence[int]) -> list[str]:
+    """Qué colores de la pieza el armado no toma, para decirlo antes de que se guarde.
+
+    Un color de la pieza que ningún globo del arco usa no se compra, pero sigue en el plan con su participación:
+    el plan dice una cosa y la compra otra. No es un armado inválido (un arco sólido sobre una pieza de dos
+    colores es lo que pidió el decorador), así que no se rechaza: se avisa, con qué hacer. ``nombres`` son los
+    colores de la pieza en su orden (el de ``materiales``); ``usados``, los índices que usa ``armado.materiales``.
+    """
+    sin_uso = [nombre for indice, nombre in enumerate(nombres) if indice not in set(usados)]
+    return [
+        f"El arco no usa el color {nombre.capitalize() if nombre else 'sin nombre'} de la pieza: no se "
+        "comprarán globos de ese color. Elige un patrón que lo tome o quítalo de la pieza."
+        for nombre in sin_uso
+    ]
+
+
+def _miles(valor: int) -> str:
+    """1613 -> ``1.613``: el separador de miles con el que se lee en español."""
+    return f"{valor:,}".replace(",", ".")
 
 
 def _testigos(cuantos: int) -> list[str]:
@@ -101,7 +135,9 @@ def _lista(valor: object) -> Sequence[object] | None:
 
 _ESQUEMA_ARMADO: Mapping[str, object] = cast(
     Mapping[str, object],
-    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"]["armado_arco"],
+    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
+        "armado_arco"
+    ],
 )
 _FORMA = Draft7Validator(_ESQUEMA_ARMADO)
 
@@ -125,14 +161,18 @@ def _indices_de_secuencias(armado: Mapping[str, object], clave: str, cuantos: in
             continue
         colores = _lista(cruda)
         if colores is None or not colores:
-            raise ArmadoInvalido(f"{clave}_invalidas", f"La {clave[:-1]} {numero} no dice de que color es.")
+            raise ArmadoInvalido(
+                f"{clave}_invalidas", f"La {clave[:-1]} {numero} no dice de que color es."
+            )
         if len(colores) > MAX_SECUENCIA_ARCO:
             raise ArmadoInvalido(
                 f"{clave}_invalidas",
                 f"La {clave[:-1]} {numero} usa mas de {MAX_SECUENCIA_ARCO} colores seguidos.",
             )
         for valor in colores:
-            indice = _entero(valor, "material_invalido", f"La {clave[:-1]} {numero} nombra un color raro.")
+            indice = _entero(
+                valor, "material_invalido", f"La {clave[:-1]} {numero} nombra un color raro."
+            )
             if indice < 0 or indice >= cuantos:
                 raise ArmadoInvalido(
                     "material_fuera_de_rango",
@@ -143,14 +183,22 @@ def _indices_de_secuencias(armado: Mapping[str, object], clave: str, cuantos: in
 def validar(estructura: EstructuraArco, armado: Mapping[str, object]) -> None:
     """Valida el armado contra la pieza. Lanza ``ArmadoInvalido`` si no se sostiene."""
     if not estructura.es_arco:
-        raise ArmadoInvalido("no_es_arco", "Solo un arco se arma como una banda sobre una linea guia.")
+        raise ArmadoInvalido(
+            "no_es_arco", "Solo un arco se arma como una banda sobre una linea guia."
+        )
+    if hay_numero_no_finito(armado):
+        raise ArmadoInvalido(MOTIVO_NO_FINITO, MENSAJE_NO_FINITO)
     _validar_forma(armado)
     if not estructura.materiales:
         raise ArmadoInvalido("sin_materiales", "El arco no lleva colores que armar.")
     materiales = cast(Sequence[object], armado["materiales"])
-    indices = [_entero(m, "material_invalido", "Un color del armado no es un indice.") for m in materiales]
+    indices = [
+        _entero(m, "material_invalido", "Un color del armado no es un indice.") for m in materiales
+    ]
     if any(i < 0 or i >= len(estructura.materiales) for i in indices):
-        raise ArmadoInvalido("material_fuera_de_rango", "El armado nombra un color que el arco no lleva.")
+        raise ArmadoInvalido(
+            "material_fuera_de_rango", "El armado nombra un color que el arco no lleva."
+        )
     patron = PATRONES[cast(str, armado["patron"])]
     minimo = patron.lista["min"] if patron.lista else len(patron.colores)
     if len(indices) < minimo:
@@ -174,7 +222,9 @@ def _secuencias(armado: Mapping[str, object], clave: str, colores: Sequence[str]
     return salida
 
 
-def _config_desde_armado(armado: Mapping[str, object], colores: Sequence[str]) -> tuple[Config, list[str]]:
+def _config_desde_armado(
+    armado: Mapping[str, object], colores: Sequence[str]
+) -> tuple[Config, list[str]]:
     """El diseño del motor a partir del armado, con la lista de colores que se le quiera dar.
 
     Se llama dos veces: con los testigos, para poder volver de un globo a su material, y con los colores de
@@ -197,7 +247,9 @@ def _config_desde_armado(armado: Mapping[str, object], colores: Sequence[str]) -
 
 
 def armado_resuelto(
-    estructura: EstructuraArco, armado: Mapping[str, object], desperdicio: float = DESPERDICIO_POR_DEFECTO
+    estructura: EstructuraArco,
+    armado: Mapping[str, object],
+    desperdicio: float = DESPERDICIO_POR_DEFECTO,
 ) -> dict[str, Any]:
     """El arco resuelto: cada globo colocado, el conteo, la compra, los avisos y el dibujo.
 
@@ -214,6 +266,15 @@ def armado_resuelto(
 
     cfg_testigo, cambios = _config_desde_armado(armado, testigos)
     res = generar(cfg_testigo)
+    if len(res.globos) > MAX_GLOBOS:
+        # El contrato no publica más de MAX_GLOBOS globos por arco, y un armado así no se arma ni se compra: es
+        # un armado inválido con su frase, no un fallo del servidor. Lo dice Python porque cuenta Python.
+        raise ArmadoInvalido(
+            "demasiados_globos",
+            f"Con globos R{cast(Mapping[str, Any], armado['globo'])['nominal']} y ese tamaño el arco llevaría "
+            f"{_miles(len(res.globos))} globos y el máximo son {_miles(MAX_GLOBOS)}: usa un globo más grande "
+            "o reduce el ancho o el alto.",
+        )
     # El dibujo con los colores de verdad. La geometría es la misma: el color no mueve ningún globo ni cambia
     # cuántas veces se tira el azar, y el saneado trabaja sobre la geometría, no sobre la lista de colores.
     cfg_real, _ = _config_desde_armado(armado, reales)
@@ -288,8 +349,12 @@ def opciones_admitidas() -> dict[str, Any]:
                 "descripcion": PATRONES[pid].descripcion,
                 "roles": PATRONES[pid].roles,
                 "lista": PATRONES[pid].lista,
-                "min_colores": PATRONES[pid].lista["min"] if PATRONES[pid].lista else len(PATRONES[pid].colores),
-                "max_colores": PATRONES[pid].lista["max"] if PATRONES[pid].lista else len(PATRONES[pid].colores),
+                "min_colores": PATRONES[pid].lista["min"]
+                if PATRONES[pid].lista
+                else len(PATRONES[pid].colores),
+                "max_colores": PATRONES[pid].lista["max"]
+                if PATRONES[pid].lista
+                else len(PATRONES[pid].colores),
                 "controles": [
                     {
                         "clave": c["clave"],

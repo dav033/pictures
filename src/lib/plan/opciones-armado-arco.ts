@@ -7,9 +7,12 @@ import { FORMAS_ARCO, MAX_SECUENCIA_ARCO, PATRONES_ARCO, TAMANOS_ARCO } from "./
  * del diseñador: los catorce patrones con sus mandos, rangos y ayudas, las formas de la línea guía, los
  * tamaños de globo y los rangos que la interfaz puede mover con el armado puesto.
  *
- * **Esta lista no se escribe aquí.** Sale del motor en cada llamada (ADR-0034, decisión 5): si allá se añade
- * un patrón o cambia un rango, aquí se ve sin tocar nada. Lo único que este archivo hace es comprobar que lo
- * que llegó tiene la forma esperada antes de que el editor lo dibuje; los valores siguen siendo de Python.
+ * **Esta lista no se escribe aquí.** Sale del motor en cada llamada (ADR-0034, decisión 5): si allá cambia un
+ * rango o un texto, aquí se ve sin tocar nada. Un patrón nuevo, en cambio, necesita además estar en el contrato
+ * `armado-arco.v1` (`PATRONES_ARCO`: Zod, exportación y modelos), porque es lo único que deja guardarlo; mientras no
+ * esté, la lista lo ignora (`soloPatronesDelContrato`) en vez de tumbar toda la vista previa. Lo demás que este
+ * archivo hace es comprobar que lo que llegó tiene la forma esperada antes de que el editor lo dibuje; los
+ * valores siguen siendo de Python.
  *
  * Parte del contrato local de la vista previa (`plan-armado-arco-result.v1`), no de un contrato de dominio:
  * no viaja dentro del plan ni entra en `plan_hash`. Sin dependencias de servidor: lo leen la ruta de Next y
@@ -62,12 +65,22 @@ export const PatronArcoAdmitidoSchema = z
 
 export type PatronArcoAdmitido = z.infer<typeof PatronArcoAdmitidoSchema>;
 
+/** ¿Es un patrón que el contrato del armado conoce? Los demás no se pueden guardar y no se ofrecen. */
+function esPatronDelContrato(patron: unknown): boolean {
+  return typeof patron === "object" && patron !== null && "id" in patron && typeof patron.id === "string" && (PATRONES_ARCO as readonly string[]).includes(patron.id);
+}
+
+/** Descarta de la lista del motor los patrones que el contrato aún no conoce, sin tocar los demás. */
+export function soloPatronesDelContrato(patrones: unknown): unknown {
+  return Array.isArray(patrones) ? patrones.filter(esPatronDelContrato) : patrones;
+}
+
 const RangoSchema = z.object({ min: z.number().positive(), max: z.number().positive() }).strict();
 
 export const OpcionesArmadoArcoSchema = z
   .object({
     formas: z.array(z.enum(FORMAS_ARCO)).max(FORMAS_ARCO.length).refine(sinRepetidos),
-    patrones: z.array(PatronArcoAdmitidoSchema).max(PATRONES_ARCO.length).refine((lista) => sinRepetidos(lista.map((p) => p.id))),
+    patrones: z.preprocess(soloPatronesDelContrato, z.array(PatronArcoAdmitidoSchema).max(PATRONES_ARCO.length).refine((lista) => sinRepetidos(lista.map((p) => p.id)))),
     tamanos: z.array(z.literal(TAMANOS_ARCO)).max(TAMANOS_ARCO.length).refine(sinRepetidos),
     /** Ancho y alto exteriores que el motor admite, en metros. */
     ancho_m: RangoSchema,

@@ -26,12 +26,14 @@ from typing import Any, Mapping, Sequence, cast
 
 from jsonschema import Draft7Validator
 
+from app.armado_validacion import MENSAJE_NO_FINITO, MOTIVO_NO_FINITO, hay_numero_no_finito
 from app.guirnalda.limites import (
     ALTURA_TOPE,
     GROSOR_MIN,
     GROSOR_TOPE,
     LARGO_MAX,
     LARGO_MIN,
+    estimar_globos,
     limites,
     normalizar_config_con_cambios,
 )
@@ -40,15 +42,27 @@ from app.guirnalda.tipos import ConfigGuir, config_inicial
 from app.organico.dibujo import svg_documento
 from app.organico.medidas import calcular_compra, calcular_medidas
 from app.generated_models import contract_schema
+from app.merma import MERMA
 from app.organico.tipos import ACABADOS, REPARTOS, TAMANOS_GLOBO
+from app.organico.unir import unir_compra, unir_conteo
 
 VERSION = "armado-guirnalda-organica.v1"
 
 #: Hasta cuántos colores admite una guirnalda. Es el tope de la paleta del motor.
 MAX_MATERIALES = 8
 
-#: Margen de compra cuando quien llama no dice otro, el mismo que el diseñador.
-DESPERDICIO_POR_DEFECTO = 0.12
+#: Margen de compra cuando quien llama no dice otro: el del plan (``app/merma.py``). El diseñador orgánico abre con
+#: 0,12 (`REAL_INICIAL`, dentro de los vectores de oro), pero ninguna llamada de la aplicación lo usa: el margen es
+#: política de compra del plan y una vista previa con otro número daría una compra distinta de la que se cobra.
+DESPERDICIO_POR_DEFECTO = MERMA
+
+
+#: Hasta cuántos globos **estimados** (antes de colocarlos) arma un guirnalda orgánica. Colocar es una relajación de colisiones y su
+#: coste crece más que lineal con los globos: medido en esta máquina (una sola hebra, Python 3.11), 102 globos reales en 0,4 s, 427 en 3,3 s, 795 en 8,7 s y 900 en 11,8 s. El
+#: plazo de la edición es de 5 s y el hilo no se cancela cuando vence, así que lo que pasa de aquí se rechaza con su
+#: frase en vez de dejar el hilo ocupado ~10 s detrás de una petición que ya dio por perdida. La estimación del motor
+#: (``estimar_globos``) es la misma con la que ``sanear`` baja el relleno: sale sin colocar nada.
+MAX_GLOBOS_ESTIMADOS = 300
 
 #: Los papeles que puede tener un color: uno normal, o un acento repartido suelto entre los demás.
 ROLES = ("normal", "acento")
@@ -61,6 +75,23 @@ class ArmadoInvalido(ValueError):
         super().__init__(motivo)
         self.motivo = motivo
         self.mensaje = mensaje
+
+
+def avisos_colores_sin_uso(nombres: Sequence[str], usados: Sequence[int]) -> list[str]:
+    """Qué colores de la pieza la paleta del armado no toma, para decirlo antes de que se guarde.
+
+    Un color de la pieza que ningún globo de la guirnalda usa no se compra, pero sigue en el plan con su
+    participación: el plan dice una cosa y la compra otra. No es un armado inválido (una guirnalda de un solo
+    color sobre una pieza de dos es lo que pidió el decorador), así que no se rechaza: se avisa, con qué
+    hacer. ``nombres`` son los colores de la pieza en su orden (el de ``materiales``); ``usados``, los índices
+    de ``armado.colores.paleta[].material``. Es el gemelo de ``armado_arco.avisos_colores_sin_uso``.
+    """
+    sin_uso = [nombre for indice, nombre in enumerate(nombres) if indice not in set(usados)]
+    return [
+        f"La guirnalda no usa el color {nombre.capitalize() if nombre else 'sin nombre'} de la pieza: no se "
+        "comprarán globos de ese color. Agrégalo a la paleta o quítalo de la pieza."
+        for nombre in sin_uso
+    ]
 
 
 @dataclass(frozen=True)
@@ -115,18 +146,26 @@ def _validar_forma(armado: Mapping[str, object]) -> None:
 def validar(estructura: EstructuraGuirnalda, armado: Mapping[str, object]) -> None:
     """Valida el armado contra la pieza. Lanza ``ArmadoInvalido`` si no se sostiene."""
     if not estructura.es_guirnalda:
-        raise ArmadoInvalido("no_es_guirnalda", "Solo una guirnalda se arma como una tira ondulada.")
+        raise ArmadoInvalido(
+            "no_es_guirnalda", "Solo una guirnalda se arma como una tira ondulada."
+        )
+    if hay_numero_no_finito(armado):
+        raise ArmadoInvalido(MOTIVO_NO_FINITO, MENSAJE_NO_FINITO)
     _validar_forma(armado)
     # Lo que el esquema no puede decir: «al menos un tamaño». Todas las claves de la mezcla son opcionales
     # —una guirnalda nombra los tamaños que usa y no más—, así que un `{}` pasa la forma y no es una mezcla.
     mezcla = _mapa(armado, "tamanos").get("mezcla")
-    if not isinstance(mezcla, Mapping) or not any(float(cast(float, v)) > 0 for v in mezcla.values()):
+    if not isinstance(mezcla, Mapping) or not any(
+        float(cast(float, v)) > 0 for v in mezcla.values()
+    ):
         raise ArmadoInvalido("sin_mezcla", "El armado no dice de que tamanos son los globos.")
     if not estructura.materiales:
         raise ArmadoInvalido("sin_materiales", "La guirnalda no lleva colores que armar.")
     paleta = cast(Sequence[Mapping[str, object]], _mapa(armado, "colores")["paleta"])
     for numero, color in enumerate(paleta, start=1):
-        indice = _entero(color.get("material"), "material_invalido", f"El color {numero} no es un indice.")
+        indice = _entero(
+            color.get("material"), "material_invalido", f"El color {numero} no es un indice."
+        )
         if indice < 0 or indice >= len(estructura.materiales):
             raise ArmadoInvalido(
                 "material_fuera_de_rango", "El armado nombra un color que la guirnalda no lleva."
@@ -189,6 +228,13 @@ def armado_resuelto(
     tonos = [estructura.materiales[i] for i in materiales]
 
     cfg, cambios = _config_desde_armado(armado, tonos, desperdicio)
+    estimados = estimar_globos(cfg)
+    if estimados > MAX_GLOBOS_ESTIMADOS:
+        raise ArmadoInvalido(
+            "demasiado_grande",
+            f"Con ese largo y grosor la guirnalda llevaría unos {int(estimados)} globos y aquí se arman hasta "
+            f"{MAX_GLOBOS_ESTIMADOS} a la vez: usa globos más grandes, una guirnalda más corta o más delgada, o menos relleno.",
+        )
     disposicion = disposicion_guir(cfg)
     res = pintar_guir(cfg, disposicion)
     medidas = calcular_medidas(res, cfg)
@@ -222,7 +268,7 @@ def armado_resuelto(
         "globos_por_pie": medidas["globosPorPie"],
         # Globos que quedaron sin tocar a ningún otro: con el motor bien puesto es 0, y si no lo es, se ve.
         "sueltos": int(res.sueltos),
-        "conteo": [
+        "conteo": unir_conteo(
             {
                 "material": material_de(int(cast(int, e["indice"]))),
                 "tamano": int(cast(int, e["nominal"])),
@@ -230,8 +276,9 @@ def armado_resuelto(
                 "cantidad": int(cast(int, e["cantidad"])),
             }
             for e in res.conteo
-        ],
-        "compra": [
+        ),
+        # Una fila por material de la pieza: dos entradas de la paleta pueden ser el mismo material con otro acabado.
+        "compra": unir_compra(
             {
                 "material": material_de(int(cast(int, fila["indice"]))),
                 # `Math.ceil` devuelve un número en JavaScript y aquí un `float`; el contrato pide enteros,
@@ -239,12 +286,15 @@ def armado_resuelto(
                 # La clave es la pulgada **en texto**, como la publica `armados_guirnalda_organica[]` (y como
                 # la escribe `tamanos.mezcla` del armado): un entero pasa el `json.dumps` sin ruido pero
                 # rompe la validación del contrato contra el diccionario, que es donde se comprueba.
-                "por_tamano": {str(int(t)): int(c) for t, c in cast(Mapping[Any, Any], fila["porTamano"]).items()},
+                "por_tamano": {
+                    str(int(t)): int(c)
+                    for t, c in cast(Mapping[Any, Any], fila["porTamano"]).items()
+                },
                 "cantidad": int(cast(int, fila["cantidad"])),
                 "comprar": int(cast(float, fila["comprar"])),
             }
             for fila in cast(Sequence[Mapping[str, object]], compra["filas"])
-        ],
+        ),
         "total_comprar": int(cast(float, compra["total"])),
         # El follaje y las flores no se cotizan en el catálogo de globos: se listan para que nadie los olvide.
         "adornos": {"ramas": len(res.ramas), "flores": len(res.flores)},
@@ -254,7 +304,9 @@ def armado_resuelto(
             "ancho": LIENZO_GUIR["w"],
             "alto": LIENZO_GUIR["h"],
             "svg": res.svg,
-            "documento": svg_documento(res.svg, "Guirnalda de globos", LIENZO_GUIR["w"], LIENZO_GUIR["h"]),
+            "documento": svg_documento(
+                res.svg, "Guirnalda de globos", LIENZO_GUIR["w"], LIENZO_GUIR["h"]
+            ),
         },
     }
 

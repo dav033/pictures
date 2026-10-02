@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from app import generated_models
 from app.catalog import (
+    CatalogColorsRequest,
     CatalogStore,
     CatalogSearchRequest,
     CatalogSelectionRequest,
@@ -1200,3 +1201,258 @@ def test_catalog_recommendations_endpoint_translates_domain_errors(code: str) ->
 
     assert status == 422
     assert cast(dict[str, object], body["detail"])["code"] == code
+
+
+# --- Explorer of the editor: /catalog/colors and filter-only browsing -------------------
+
+
+def _colors_request(**overrides: object) -> CatalogColorsRequest:
+    value: dict[str, object] = {
+        "context": {
+            "schema_version": "operational.v1",
+            "request_id": "00000000-0000-4000-8000-000000000041",
+            "correlation_id": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+            "deadline_at": "2030-01-01T00:00:00Z",
+            "deadline_ms": 1000,
+            "body_sha256": "a" * 64,
+            "scopes": ["catalog.colors"],
+        },
+        "schema_version": "catalog-colors.v1",
+        "allowlist": [],
+    }
+    value.update(overrides)
+    return CatalogColorsRequest.model_validate(value)
+
+
+class FakeColorsConnection:
+    """Answers the colors query with rows in an arbitrary order, and knows which
+    snapshots are published."""
+
+    def __init__(
+        self, rows: list[dict[str, object]], published: tuple[str, ...] = ("products_catalog:test",)
+    ) -> None:
+        self.rows = rows
+        self.published = published
+        self.fetch_calls: list[tuple[str, tuple[object, ...]]] = []
+
+    async def fetchval(self, _query: str, *args: object) -> object:
+        if args:
+            return args[0] if args[0] in self.published else None
+        return self.published[0] if self.published else None
+
+    async def fetch(self, query: str, *args: object) -> list[dict[str, object]]:
+        self.fetch_calls.append((query, args))
+        return self.rows
+
+
+class FakeColorsPool:
+    def __init__(self, connection: FakeColorsConnection) -> None:
+        self.connection = connection
+
+    def acquire(self) -> AbstractAsyncContextManager[FakeColorsConnection]:
+        connection = self.connection
+
+        class Acquire:
+            async def __aenter__(self) -> FakeColorsConnection:
+                return connection
+
+            async def __aexit__(self, *_args: object) -> None:
+                return None
+
+        return Acquire()
+
+
+def _colors_store(connection: FakeColorsConnection) -> CatalogStore:
+    return CatalogStore("postgresql://demo:demo@localhost/demo", pool=FakeColorsPool(connection))
+
+
+@pytest.mark.anyio
+async def test_catalog_colors_lists_the_most_stocked_color_first() -> None:
+    connection = FakeColorsConnection(
+        [
+            {"color": "azul", "total": 12},
+            {"color": "Rojo ", "total": 40},
+            {"color": "dorado", "total": 12},
+            {"color": "   ", "total": 99},
+            {"color": "negro", "total": 0},
+        ]
+    )
+
+    result = await _colors_store(connection).colors(_colors_request())
+
+    assert result["operation_schema_version"] == "catalog-colors-result.v1"
+    assert result["catalog_snapshot_id"] == "products_catalog:test"
+    # Most stocked first, ties alphabetical; blank names and empty counts never reach a chip.
+    assert result["colors"] == [
+        {"value": "rojo", "total": 40},
+        {"value": "azul", "total": 12},
+        {"value": "dorado", "total": 12},
+    ]
+    query, args = connection.fetch_calls[0]
+    normalized = " ".join(query.split())
+    for predicate in (
+        "p.status = 'ACTIVE'",
+        "p.source_snapshot_id = $1",
+        "v.source_snapshot_id = $1",
+        "p.available = TRUE",
+        "v.available = TRUE",
+    ):
+        assert predicate in normalized
+    assert "COUNT(DISTINCT product_id)" in normalized
+    assert args == ("products_catalog:test",)
+
+
+@pytest.mark.anyio
+async def test_catalog_colors_apply_the_allowlist_and_pin_the_snapshot() -> None:
+    connection = FakeColorsConnection(
+        [{"color": "rojo", "total": 1}], published=("snap-a", "snap-b")
+    )
+    store = _colors_store(connection)
+
+    await store.colors(
+        _colors_request(
+            catalog_snapshot_id="snap-b",
+            allowlist=[
+                {"product_id": "P-1", "variant_ids": ["V-2", "V-1"]},
+                {"product_id": "P-2", "variant_ids": []},
+            ],
+        )
+    )
+    await store.colors(
+        _colors_request(
+            allowlist=[
+                {"product_id": "P-9", "variant_ids": []},
+                {"product_id": "P-3", "variant_ids": []},
+            ]
+        )
+    )
+
+    by_variant_query, by_variant_args = connection.fetch_calls[0]
+    assert by_variant_args == ("snap-b", ["V-1", "V-2"])
+    assert "v.variant_id = ANY($2::text[])" in " ".join(by_variant_query.split())
+    by_product_query, by_product_args = connection.fetch_calls[1]
+    assert by_product_args == ("snap-a", ["P-3", "P-9"])
+    assert "p.product_id = ANY($2::text[])" in " ".join(by_product_query.split())
+
+
+@pytest.mark.anyio
+async def test_catalog_colors_of_an_unpublished_snapshot_are_empty_and_unqueried() -> None:
+    connection = FakeColorsConnection([{"color": "rojo", "total": 5}])
+
+    result = await _colors_store(connection).colors(
+        _colors_request(catalog_snapshot_id="snapshot-que-no-existe")
+    )
+
+    assert result["catalog_snapshot_id"] is None
+    assert result["colors"] == []
+    assert connection.fetch_calls == []
+
+
+def test_catalog_colors_request_is_strict() -> None:
+    assert _colors_request().allowlist == []
+    with pytest.raises(ValidationError):
+        _colors_request(unexpected=True)
+    with pytest.raises(ValidationError):
+        _colors_request(catalog_snapshot_id="  ")
+    with pytest.raises(ValidationError):
+        _colors_request(schema_version="catalog-colors.v2")
+
+
+class ColoringCatalogStore(FakeCatalogStore):
+    async def colors(self, operation: CatalogColorsRequest) -> dict[str, object]:
+        return {
+            "operation_schema_version": "catalog-colors-result.v1",
+            "catalog_snapshot_id": operation.catalog_snapshot_id or "products_catalog:test",
+            "colors": [{"value": "rojo", "total": 3}],
+        }
+
+
+def _post_colors(scopes: list[str], nonce: UUID) -> tuple[int, dict[str, object]]:
+    operation: dict[str, object] = {
+        "schema_version": "catalog-colors.v1",
+        "allowlist": [],
+        "catalog_snapshot_id": "products_catalog:test",
+    }
+    body, headers = _signed_operation("/internal/v1/catalog/colors", operation, scopes, nonce)
+    app = create_app(
+        Settings(environment="test", hmac_secret=SECRET),
+        operational_store=InMemoryOperationalStore(),
+        catalog_store=ColoringCatalogStore(),
+    )
+    with TestClient(app) as client:
+        response = client.post("/internal/v1/catalog/colors", content=body, headers=headers)
+    return response.status_code, response.json()
+
+
+def test_catalog_colors_endpoint_uses_signed_python_contract() -> None:
+    status, body = _post_colors(["catalog.colors"], UUID("00000000-0000-4000-8000-000000000051"))
+
+    assert status == 200, body
+    assert body["payload"] == {
+        "operation_schema_version": "catalog-colors-result.v1",
+        "catalog_snapshot_id": "products_catalog:test",
+        "colors": [{"value": "rojo", "total": 3}],
+    }
+    generated_models.CatalogColorsResult.model_validate(body["payload"])
+
+
+def test_catalog_colors_endpoint_requires_its_own_scope() -> None:
+    status, body = _post_colors(["catalog.search"], UUID("00000000-0000-4000-8000-000000000052"))
+
+    assert status == 403
+    assert cast(dict[str, object], body["detail"])["code"] == "insufficient_scope"
+
+
+@pytest.mark.anyio
+async def test_catalog_browse_recalls_by_filters_alone_in_title_order() -> None:
+    """Filters without text: a textual hit would drop products whose name lacks
+    the word, so browsing recalls by the hard filters and orders by title."""
+    first = {
+        **_red_balloon_row("rojo"),
+        "product_id": "P-A",
+        "title": "Aluminio rojo",
+        "score": 1.0,
+    }
+    second = {
+        **_red_balloon_row("rojo"),
+        "product_id": "P-B",
+        "title": "Latex rojo",
+        "score": 0.5,
+        "variant_id": "V-B",
+    }
+    pool = FakeColorResolutionPool(present_colors=["rojo"], candidate_rows=[second, first])
+    store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
+
+    result = await store.search(
+        _request(
+            message="SKU-ABC-12345",
+            browse=True,
+            filters={"available": True, "colors": ["rojo"], "diameters_inches": [12]},
+            limit=2,
+        )
+    )
+
+    candidates = cast(list[dict[str, object]], result["candidates"])
+    assert [candidate["product_id"] for candidate in candidates] == ["P-A", "P-B"]
+    queries = [" ".join(query.split()) for query, _args in pool.connection.fetch_calls]
+    # `message` is only a label: no SKU lookup, no tsquery, no trigram predicate.
+    assert not any("plainto_tsquery" in query or "similarity(" in query for query in queries)
+    assert not any("sku_canonical" in query for query in queries)
+    # Browsing never scans the snapshot's colors looking for a nearest one.
+    assert not any("SELECT DISTINCT color" in query for query in queries)
+    assert ["rojo"] in pool.connection.fetch_calls[-1][1]
+    browse_query, browse_args = pool.connection.fetch_calls[-1]
+    normalized = " ".join(browse_query.split())
+    for predicate in (
+        "p.status = 'ACTIVE'",
+        "p.available = TRUE",
+        "v.available = TRUE",
+        "v.forma = 'redondo'",
+    ):
+        assert predicate in normalized
+    assert browse_args[-1] == 2
+
+
+def test_catalog_search_request_still_defaults_to_text_search() -> None:
+    assert _request().browse is False
+    assert _request(browse=True).browse is True

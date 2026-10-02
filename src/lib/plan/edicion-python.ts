@@ -5,13 +5,19 @@ import {
   llamarPythonCatalogSelection,
   llamarPythonPlanArmadoArco,
   llamarPythonPlanArmadoBouquet,
+  llamarPythonPlanArmadoColumna,
+  llamarPythonPlanArmadoColumnaOrganica,
   llamarPythonPlanArmadoGuirnalda,
   llamarPythonPlanArmadoGuirnaldaOrganica,
   llamarPythonPlanEdit,
   llamarPythonPlanPatron,
   type LimitesArco,
+  type LimitesColumna,
+  type LimitesColumnaOrganica,
   type LimitesGuirnaldaOrganica,
   type OpcionesArmadoArco,
+  type OpcionesArmadoColumna,
+  type OpcionesArmadoColumnaOrganica,
   type OpcionesArmadoGuirnalda,
   type OpcionesArmadoGuirnaldaOrganica,
   type PythonPlanArmadoGlobo,
@@ -21,6 +27,9 @@ import {
 } from "@/lib/ia/nucleo/python-adapter";
 import type { ArmadoArcoV1, VistaArco } from "./armado-arco";
 import type { ArmadoBouquetResuelto, ArmadoBouquetV1, DisposicionNumero, VarianteBouquet } from "./armado-bouquet";
+import type { ArmadoColumnaV1, VistaColumna } from "./armado-columna";
+import type { ArmadoColumnaOrganicaV1 } from "./armado-columna-organica";
+import type { VistaColumnaOrganica } from "./opciones-armado-columna-organica";
 import type { ArmadoGuirnaldaResuelto, ArmadoGuirnaldaV1 } from "./armado-guirnalda";
 import type { ArmadoGuirnaldaOrganicaV1 } from "./armado-guirnalda-organica";
 import type { VistaGuirnaldaOrganica } from "./opciones-armado-guirnalda-organica";
@@ -172,6 +181,11 @@ const RECHAZOS_EDICION: Readonly<Record<string, Rechazo>> = {
   unico_material: { status: 400, mensaje: MENSAJE_UNICO_MATERIAL, causa: "UNICO_MATERIAL" },
   sin_participacion: { status: 400, mensaje: "La estructura quedó sin participación de materiales." },
   patron_activo: { status: 409, mensaje: MENSAJE_PATRON_ACTIVO, causa: "PATRON_ACTIVO" },
+  // ADR-0035: la compra de un arco armado sale de su armado, no del reparto ni de la mezcla.
+  armado_arco_activo: { status: 409, mensaje: "Este arco está armado con el motor: cambia sus colores y su globo desde «Editar arco»." },
+  armado_guirnalda_organica_activo: { status: 409, mensaje: "Esta guirnalda está armada con el motor: cambia sus colores y sus globos desde «Editar guirnalda»." },
+  armado_columna_organica_activo: { status: 409, mensaje: "Esta columna está armada con el motor: cambia sus colores, su forma y su globo desde «Editar columna»." },
+  armado_columna_activo: { status: 409, mensaje: "Esta columna está armada con el motor: cambia sus colores y su globo desde «Editar columna»." },
   invalid_plan: { status: 400, mensaje: "La edición del plan no tiene un formato válido." },
 };
 
@@ -201,6 +215,18 @@ const RECHAZOS_VISTA_ARMADO_GUIRNALDA: Readonly<Record<string, Rechazo>> = {
 const RECHAZOS_VISTA_ARMADO_ARCO: Readonly<Record<string, Rechazo>> = {
   estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
   invalid_plan: { status: 422, mensaje: "El armado del arco no tiene un formato válido." },
+};
+
+/** Rejections of POST /internal/v1/plan/armado-columna (ADR-0034). */
+const RECHAZOS_VISTA_ARMADO_COLUMNA: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
+  invalid_plan: { status: 422, mensaje: "El armado de la columna no tiene un formato válido." },
+};
+
+/** Rejections of POST /internal/v1/plan/armado-columna-organica (ADR-0034). */
+const RECHAZOS_VISTA_ARMADO_COLUMNA_ORGANICA: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
+  invalid_plan: { status: 422, mensaje: "El armado de la columna no tiene un formato válido." },
 };
 
 /** Rejections of POST /internal/v1/plan/armado-guirnalda-organica (ADR-0034). */
@@ -500,6 +526,114 @@ export async function vistaPreviaArmadoArcoPython(input: {
     };
   } catch (error) {
     throw rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO_ARCO) ?? error;
+  }
+}
+
+/**
+ * What the column editor gets back: `VistaColumnaSchema` (the resolved column
+ * and its drawing) plus the assembly it was resolved with, the designer's tools
+ * and the live ranges. Nothing here is recomputed in TypeScript.
+ */
+export type VistaPreviaArmadoColumna = VistaColumna & {
+  armado: ArmadoColumnaV1;
+  opciones: OpcionesArmadoColumna;
+  limites: LimitesColumna;
+};
+
+/**
+ * Assembly preview for the column editor (ADR-0034, ADR-0035 step 3): the
+ * column Python resolves (or the recipe it suggests, with `null`) **and the SVG
+ * its own engine emitted**, so the drawing never recomputes a geometry here.
+ * `colores` are the piece's tones as the browser holds them once the catalog
+ * resolved them; they only paint, since the count goes by material index.
+ * `opciones` are the designer's tools for the piece and `limites` the ranges the
+ * interface may move with this assembly in place, both decided by Python. An
+ * `armado_invalido` keeps Python's `motivo` and `mensaje`.
+ */
+export async function vistaPreviaArmadoColumnaPython(input: {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  armadoColumna: ArmadoColumnaV1 | null;
+  colores?: readonly string[];
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<VistaPreviaArmadoColumna> {
+  try {
+    const resultado = await llamarPythonPlanArmadoColumna({
+      plan: input.plan,
+      estructuraId: input.estructuraId,
+      armadoColumna: input.armadoColumna,
+      ...(input.colores === undefined ? {} : { colores: input.colores }),
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return {
+      columna: resultado.columna,
+      grafica: resultado.grafica,
+      armado: resultado.armado,
+      opciones: resultado.opciones,
+      limites: resultado.limites,
+    };
+  } catch (error) {
+    throw rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO_COLUMNA) ?? error;
+  }
+}
+
+/**
+ * What the organic column editor gets back: `VistaColumnaOrganicaSchema` (the
+ * resolved column and its drawing) plus the assembly it was resolved with, the
+ * designer's tools and the live ranges. Nothing here is recomputed in
+ * TypeScript.
+ */
+export type VistaPreviaArmadoColumnaOrganica = VistaColumnaOrganica & {
+  armado: ArmadoColumnaOrganicaV1;
+  opciones: OpcionesArmadoColumnaOrganica;
+  limites: LimitesColumnaOrganica;
+};
+
+/**
+ * Assembly preview for the organic column editor (ADR-0034): the column Python
+ * resolves (or the recipe it suggests, with `null`) **and the SVG its own
+ * engine emitted**, so the drawing never recomputes a geometry here.
+ *
+ * This is not the ring-tower preview (`vistaPreviaArmadoColumnaPython`): both
+ * describe a column and coexist. `colores` are the piece's tones as the
+ * browser holds them once the catalog resolved them; they only paint, since
+ * the count and the purchase go by material index. `opciones` are the
+ * designer's tools for the piece and `limites` the ranges the interface may
+ * move with this assembly in place, both decided by Python. An
+ * `armado_invalido` keeps Python's `motivo` and `mensaje`.
+ */
+export async function vistaPreviaArmadoColumnaOrganicaPython(input: {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  armadoColumnaOrganica: ArmadoColumnaOrganicaV1 | null;
+  colores?: readonly string[];
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<VistaPreviaArmadoColumnaOrganica> {
+  try {
+    const resultado = await llamarPythonPlanArmadoColumnaOrganica({
+      plan: input.plan,
+      estructuraId: input.estructuraId,
+      armadoColumnaOrganica: input.armadoColumnaOrganica,
+      ...(input.colores === undefined ? {} : { colores: input.colores }),
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return {
+      columna: resultado.columna,
+      grafica: resultado.grafica,
+      armado: resultado.armado,
+      opciones: resultado.opciones,
+      limites: resultado.limites,
+    };
+  } catch (error) {
+    throw rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO_COLUMNA_ORGANICA) ?? error;
   }
 }
 

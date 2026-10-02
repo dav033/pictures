@@ -8,9 +8,15 @@ import {
   sha256Body,
 } from "@/lib/ia/contracts/operational-v1";
 import {
+  CATALOG_COLORS_CONTRACT_VERSION,
   CATALOG_RECOMMENDATIONS_CONTRACT_VERSION,
+  CatalogColorsResultV1Schema,
   CatalogRecommendationsResultV1Schema,
+  ESTIMAR_CONTEO_CONTRACT_VERSION,
+  EstimarConteoResultV1Schema,
   PlanResolutionResultV1Schema,
+  type EstimarConteoRequestV1,
+  type EstimarConteoResultV1,
 } from "@/lib/ia/contracts/domain-v1";
 import {
   ArmadoBouquetResueltoSchema,
@@ -44,6 +50,20 @@ import {
   type OpcionesArmadoArco,
 } from "@/lib/plan/opciones-armado-arco";
 import {
+  ArmadoColumnaOrganicaV1Schema,
+  ColumnaOrganicaResueltaSchema,
+  type ArmadoColumnaOrganicaV1,
+  type ColumnaOrganicaResuelta,
+} from "@/lib/plan/armado-columna-organica";
+import {
+  LimitesColumnaOrganicaSchema,
+  OpcionesArmadoColumnaOrganicaSchema,
+  VistaColumnaOrganicaSchema,
+  type LimitesColumnaOrganica,
+  type OpcionesArmadoColumnaOrganica,
+  type VistaColumnaOrganica,
+} from "@/lib/plan/opciones-armado-columna-organica";
+import {
   ArmadoGuirnaldaOrganicaV1Schema,
   GuirnaldaOrganicaResueltaSchema,
   type ArmadoGuirnaldaOrganicaV1,
@@ -74,7 +94,8 @@ import {
   type TipoArmadoMotor,
   type VolumenPedido,
 } from "@/lib/plan/armado-estructura-ia";
-import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
+import { ArmadoColumnaV1Schema, ColumnaResueltaSchema, VistaColumnaSchema, type ArmadoColumnaV1, type ColumnaResuelta, type VistaColumna } from "@/lib/plan/armado-columna";
+import { LimitesColumnaSchema, OpcionesArmadoColumnaSchema, type LimitesColumna, type OpcionesArmadoColumna } from "@/lib/plan/opciones-armado-columna";
 import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import { CotizacionProfesionalResultadoSchema, type CotizacionProfesionalResultado, type EntradaCotizacionProfesional } from "@/lib/cotizacion/profesional";
@@ -100,6 +121,8 @@ export const PYTHON_EMBEDDING_PATH = "/internal/v1/embed";
 export const PYTHON_EMBEDDING_SCOPE = "ai.embedding";
 export const PYTHON_CATALOG_SEARCH_PATH = "/internal/v1/catalog/search";
 export const PYTHON_CATALOG_SEARCH_SCOPE = "catalog.search";
+export const PYTHON_CATALOG_COLORS_PATH = "/internal/v1/catalog/colors";
+export const PYTHON_CATALOG_COLORS_SCOPE = "catalog.colors";
 export const PYTHON_CATALOG_SELECTION_PATH = "/internal/v1/catalog/selection";
 export const PYTHON_CATALOG_SELECTION_SCOPE = "catalog.selection";
 export const PYTHON_PLAN_RESOLUTION_PATH = "/internal/v1/plan/resolve";
@@ -136,13 +159,20 @@ export const PYTHON_PLAN_ARMADO_GUIRNALDA_PATH = "/internal/v1/plan/armado-guirn
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_SCOPE = "plan.armado_guirnalda";
 export const PYTHON_PLAN_ARMADO_ARCO_PATH = "/internal/v1/plan/armado-arco";
 export const PYTHON_PLAN_ARMADO_ARCO_SCOPE = "plan.armado_arco";
+export const PYTHON_PLAN_ARMADO_COLUMNA_PATH = "/internal/v1/plan/armado-columna";
+export const PYTHON_PLAN_ARMADO_COLUMNA_SCOPE = "plan.armado_columna";
 /** The organic garland of the designer's engine. It does NOT replace PYTHON_PLAN_ARMADO_GUIRNALDA_PATH (ADR-0032, clusters and toppers): both coexist on the same piece. */
+/** The organic column of the designer's engine. It does NOT replace PYTHON_PLAN_ARMADO_COLUMNA_PATH (the ring tower with patterns): both coexist on the same kind of piece. */
+export const PYTHON_PLAN_ARMADO_COLUMNA_ORGANICA_PATH = "/internal/v1/plan/armado-columna-organica";
+export const PYTHON_PLAN_ARMADO_COLUMNA_ORGANICA_SCOPE = "plan.armado_columna_organica";
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_PATH = "/internal/v1/plan/armado-guirnalda-organica";
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE = "plan.armado_guirnalda_organica";
 export const PYTHON_OMOIKANE_ARMADO_PATH = "/internal/v1/omoikane/armado-estructura";
 export const PYTHON_OMOIKANE_ARMADO_SCOPE = "omoikane.armado_estructura";
 export const PYTHON_COTIZACION_PROFESIONAL_PATH = "/internal/v1/plan/cotizacion-profesional";
 export const PYTHON_COTIZACION_PROFESIONAL_SCOPE = "plan.cotizacion_profesional";
+export const PYTHON_ESTIMAR_CONTEO_PATH = "/internal/v1/plan/estimar-conteo";
+export const PYTHON_ESTIMAR_CONTEO_SCOPE = "plan.estimar_conteo";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
 export const PYTHON_EMBEDDING_DIMENSIONS = 768;
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
@@ -230,6 +260,15 @@ export const PYTHON_PLAN_ARMADO_GUIRNALDA_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMA
 export const PYTHON_PLAN_ARMADO_ARCO_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
 
 /**
+ * Stable domain error codes reported by POST /internal/v1/plan/armado-columna
+ * (ADR-0034, ADR-0035 step 3). The same three as the arch's: its
+ * `armado_invalido` carries the structure, the stable `motivo` and Python's
+ * `mensaje` (`domainDetails`), and never the options -- the editor asks for
+ * them with `armado_columna: null`.
+ */
+export const PYTHON_PLAN_ARMADO_COLUMNA_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
+
+/**
  * Stable domain error codes reported by POST
  * /internal/v1/plan/armado-guirnalda-organica (ADR-0034). The same three as
  * the arch's: its `armado_invalido` carries the structure, the stable
@@ -237,6 +276,15 @@ export const PYTHON_PLAN_ARMADO_ARCO_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CO
  * the editor asks for them with `armado_guirnalda_organica: null`.
  */
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
+
+/**
+ * Stable domain error codes reported by POST
+ * /internal/v1/plan/armado-columna-organica (ADR-0034). The same three as the
+ * arch's: its `armado_invalido` carries the structure, the stable `motivo` and
+ * Python's `mensaje` (`domainDetails`), and never the options -- the editor
+ * asks for them with `armado_columna_organica: null`.
+ */
+export const PYTHON_PLAN_ARMADO_COLUMNA_ORGANICA_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
 
 /**
  * Stable domain error codes reported by POST /internal/v1/omoikane/armado-estructura
@@ -248,6 +296,21 @@ export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_DOMAIN_CODES = PYTHON_PLAN_AR
  */
 export const PYTHON_OMOIKANE_ARMADO_DOMAIN_CODES = ["armado_invalido", "invalid_plan"] as const;
 export type PythonOmoikaneArmadoDomainCode = (typeof PYTHON_OMOIKANE_ARMADO_DOMAIN_CODES)[number];
+
+/**
+ * Stable domain error codes reported by POST /internal/v1/plan/estimar-conteo
+ * (ADR-0038, the chat agent's read-only count estimate). Both carry
+ * `domainDetails`: the candidate's label (as `estructuraId`), a stable `motivo`
+ * and Python's Spanish `mensaje`, so the refusal that reaches the model says
+ * which candidate failed and why. `candidato_invalido`: two candidates share a
+ * label, an assembly does not belong to the piece's type, or more guirnaldas with
+ * an assembly than one query admits; `armado_invalido`: the engine's gate rejected
+ * the assembly; `invalid_request`: the body does not meet the contract (a 422 with
+ * no details); `estimacion_ocupada` (HTTP 429): another estimate is running and the
+ * route does not queue behind it -- the caller retries.
+ */
+export const PYTHON_ESTIMAR_CONTEO_DOMAIN_CODES = ["candidato_invalido", "armado_invalido", "invalid_request", "estimacion_ocupada"] as const;
+export type PythonEstimarConteoDomainCode = (typeof PYTHON_ESTIMAR_CONTEO_DOMAIN_CODES)[number];
 
 /**
  * Stable domain error codes reported by POST /internal/v1/plan/patron (ADR-0028 §10).
@@ -1248,6 +1311,8 @@ export interface PythonCatalogSearchInput {
   allowlist: PythonCatalogSearchAllowlistEntry[];
   limit?: number;
   catalogSnapshotId?: string;
+  /** Recall by `filters` alone; `message` is only a label (the editor's explorer without text). */
+  browse?: boolean;
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1290,6 +1355,23 @@ export interface PythonCatalogSearchResult {
   color_substitutions?: Array<{ pedido: string; entregado: string }>;
   replayed?: boolean;
 }
+
+export interface PythonCatalogColorsInput {
+  /** Empty means unrestricted; a restricted mode with no entries fails closed before calling. */
+  allowlist: PythonCatalogSearchAllowlistEntry[];
+  catalogSnapshotId?: string;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export type PythonCatalogColorsResult = z.infer<typeof CatalogColorsResultV1Schema> & {
+  replayed?: boolean;
+};
 
 export interface PythonCatalogSelectionInput {
   items: Array<{
@@ -1580,6 +1662,39 @@ export interface PythonPlanArmadoGuirnaldaResult {
 }
 
 export { LimitesArcoSchema, OpcionesArmadoArcoSchema, type LimitesArco, type OpcionesArmadoArco };
+export { LimitesColumnaSchema, OpcionesArmadoColumnaSchema, type LimitesColumna, type OpcionesArmadoColumna };
+
+export interface PythonPlanArmadoColumnaInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /** `null` asks for the recipe of the column (ADR-0034). */
+  armadoColumna: ArmadoColumnaV1 | null;
+  /**
+   * The piece's tones as `#rrggbb`, one per material and in its order, as the
+   * browser holds them once the catalog resolved them. Optional: without them
+   * Python draws in its neutral grey and says so in the column's `avisos`. They
+   * only paint -- the count goes by material index.
+   */
+  colores?: readonly string[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanArmadoColumnaResult {
+  columna: ColumnaResuelta;
+  /** The engine's own drawing: the canvas and the `<svg>` interior. Derived, never part of `plan_hash`. */
+  grafica: VistaColumna["grafica"];
+  /** The assembly it was resolved with, so the editor can keep the recipe it asked for. */
+  armado: ArmadoColumnaV1;
+  opciones: OpcionesArmadoColumna;
+  limites: LimitesColumna;
+  replayed?: boolean;
+}
 
 export interface PythonPlanArmadoArcoInput {
   plan: PlanDecoracion;
@@ -1610,6 +1725,46 @@ export interface PythonPlanArmadoArcoResult {
   armado: ArmadoArcoV1;
   opciones: OpcionesArmadoArco;
   limites: LimitesArco;
+  replayed?: boolean;
+}
+
+export {
+  LimitesColumnaOrganicaSchema,
+  OpcionesArmadoColumnaOrganicaSchema,
+  type LimitesColumnaOrganica,
+  type OpcionesArmadoColumnaOrganica,
+  type VistaColumnaOrganica,
+};
+
+export interface PythonPlanArmadoColumnaOrganicaInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /** `null` asks for the recipe of the column (ADR-0034). */
+  armadoColumnaOrganica: ArmadoColumnaOrganicaV1 | null;
+  /**
+   * The piece's tones as `#rrggbb`, one per material and in its order, as the
+   * browser holds them once the catalog resolved them. Optional: without them
+   * Python draws in its neutral grey and says so in the column's `avisos`.
+   * They only paint -- the count and the purchase go by material index.
+   */
+  colores?: readonly string[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanArmadoColumnaOrganicaResult {
+  columna: ColumnaOrganicaResuelta;
+  /** The engine's own drawing. Its canvas is not square, so both sides travel. Derived, never part of `plan_hash`. */
+  grafica: VistaColumnaOrganica["grafica"];
+  /** The assembly it was resolved with, so the editor can keep the recipe it asked for. */
+  armado: ArmadoColumnaOrganicaV1;
+  opciones: OpcionesArmadoColumnaOrganica;
+  limites: LimitesColumnaOrganica;
   replayed?: boolean;
 }
 
@@ -1957,6 +2112,21 @@ const planArmadoArcoPayloadResultSchema = z.object({
 }).strict();
 
 /**
+ * `plan-armado-columna-result.v1`: the resolved column and its drawing exactly
+ * as `VistaColumnaSchema` publishes them (its own `grafica` shape, so the
+ * published contract stays the single owner of that form), plus the assembly it
+ * was resolved with and what the editor may offer for the piece.
+ */
+const planArmadoColumnaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-armado-columna-result.v1"),
+  columna: ColumnaResueltaSchema,
+  grafica: VistaColumnaSchema.shape.grafica,
+  armado: ArmadoColumnaV1Schema,
+  opciones: OpcionesArmadoColumnaSchema,
+  limites: LimitesColumnaSchema,
+}).strict();
+
+/**
  * `plan-armado-guirnalda-organica-result.v1`: the resolved garland and its
  * drawing exactly as `VistaGuirnaldaOrganicaSchema` publishes them (its own
  * `grafica` shape, so that file stays the single owner of that form), plus
@@ -1969,6 +2139,21 @@ const planArmadoGuirnaldaOrganicaPayloadResultSchema = z.object({
   armado: ArmadoGuirnaldaOrganicaV1Schema,
   opciones: OpcionesArmadoGuirnaldaOrganicaSchema,
   limites: LimitesGuirnaldaOrganicaSchema,
+}).strict();
+
+/**
+ * `plan-armado-columna-organica-result.v1`: the resolved column and its drawing
+ * exactly as `VistaColumnaOrganicaSchema` publishes them (its own `grafica`
+ * shape, so that file stays the single owner of that form), plus the assembly
+ * it was resolved with and what the editor may offer.
+ */
+const planArmadoColumnaOrganicaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-armado-columna-organica-result.v1"),
+  columna: ColumnaOrganicaResueltaSchema,
+  grafica: VistaColumnaOrganicaSchema.shape.grafica,
+  armado: ArmadoColumnaOrganicaV1Schema,
+  opciones: OpcionesArmadoColumnaOrganicaSchema,
+  limites: LimitesColumnaOrganicaSchema,
 }).strict();
 
 const imageGenerateUsageSchema = z.object({
@@ -2713,7 +2898,7 @@ export async function* llamarPythonChatTurnStream(
 export async function llamarPythonCatalogSearch(
   input: PythonCatalogSearchInput,
 ): Promise<PythonCatalogSearchResult> {
-  const { message, filters, allowlist, limit = 15, catalogSnapshotId, ...rest } = input;
+  const { message, filters, allowlist, limit = 15, catalogSnapshotId, browse, ...rest } = input;
   const operationBody = {
     schema_version: "catalog-search.v1" as const,
     message,
@@ -2721,6 +2906,7 @@ export async function llamarPythonCatalogSearch(
     allowlist,
     limit,
     ...(catalogSnapshotId === undefined ? {} : { catalog_snapshot_id: catalogSnapshotId }),
+    ...(browse ? { browse: true } : {}),
   };
   const response = await llamarPythonOperacion(PYTHON_CATALOG_SEARCH_PATH, PYTHON_CATALOG_SEARCH_SCOPE, {
     ...rest,
@@ -2730,6 +2916,40 @@ export async function llamarPythonCatalogSearch(
   });
   const parsed = catalogPayloadResultSchema.safeParse(response.payload);
   if (!parsed.success || !catalogSearchPayloadIsConsistent(parsed.data, catalogSnapshotId)) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return response.replayed
+    ? { ...parsed.data, replayed: true }
+    : parsed.data;
+}
+
+/**
+ * Colors of the published catalog with how many available products carry each
+ * (the editor's explorer chips). Python owns the predicates; Next only checks
+ * the answer is for the snapshot it pinned and that no color repeats.
+ */
+export async function llamarPythonCatalogColors(
+  input: PythonCatalogColorsInput,
+): Promise<PythonCatalogColorsResult> {
+  const { allowlist, catalogSnapshotId, ...rest } = input;
+  const operationBody = {
+    schema_version: CATALOG_COLORS_CONTRACT_VERSION,
+    allowlist,
+    ...(catalogSnapshotId === undefined ? {} : { catalog_snapshot_id: catalogSnapshotId }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_CATALOG_COLORS_PATH, PYTHON_CATALOG_COLORS_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_CATALOG_COLORS_SCOPE],
+  });
+  const parsed = CatalogColorsResultV1Schema.safeParse(response.payload);
+  if (
+    !parsed.success
+    || (catalogSnapshotId !== undefined && parsed.data.catalog_snapshot_id !== catalogSnapshotId)
+    || (parsed.data.catalog_snapshot_id === null && parsed.data.colors.length > 0)
+    || !hasUniqueStrings(parsed.data.colors.map((color) => color.value))
+  ) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
   return response.replayed
@@ -3102,6 +3322,43 @@ export async function llamarPythonPlanArmadoArco(input: PythonPlanArmadoArcoInpu
 }
 
 /**
+ * Resolves one column's assembly, or asks for its recipe with `null`
+ * (ADR-0034), for the column editor, and brings back **the SVG the engine
+ * itself emitted**. No catalog and no side effect: the plan says what the
+ * piece is and `colores` only paint it. The drawing is derived -- it travels
+ * on this route alone and never enters the plan, the snapshot or `plan_hash`.
+ */
+export async function llamarPythonPlanArmadoColumna(input: PythonPlanArmadoColumnaInput): Promise<PythonPlanArmadoColumnaResult> {
+  const { plan, estructuraId, armadoColumna, colores, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-armado-columna.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    armado_columna: armadoColumna,
+    ...(colores === undefined ? {} : { colores: [...colores] }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_ARMADO_COLUMNA_PATH, PYTHON_PLAN_ARMADO_COLUMNA_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_ARMADO_COLUMNA_SCOPE],
+  });
+  const parsed = planArmadoColumnaPayloadResultSchema.safeParse(response.payload);
+  // A given assembly comes back as given: the engine corrects a draft in `avisos`, never behind the editor's back.
+  if (!parsed.success || (armadoColumna !== null && jsonOrdenado(parsed.data.armado) !== jsonOrdenado(armadoColumna))) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = {
+    columna: parsed.data.columna,
+    grafica: parsed.data.grafica,
+    armado: parsed.data.armado,
+    opciones: parsed.data.opciones,
+    limites: parsed.data.limites,
+  };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/**
  * One call of the chat agent's engine operation (ADR-0034 §5). The three
  * actions share the signing, the scope and the response envelope; what each
  * one answers is validated by its own schema at the call site.
@@ -3267,6 +3524,45 @@ export async function llamarPythonPlanArmadoGuirnaldaOrganica(input: PythonPlanA
   return response.replayed ? { ...resultado, replayed: true } : resultado;
 }
 
+/**
+ * Resolves one column's assembly with the designer's organic engine, or asks
+ * for its recipe with `null` (ADR-0034), and brings back **the SVG the engine
+ * itself emitted**. It does NOT replace `llamarPythonPlanArmadoColumna` (the
+ * ring tower with patterns): both describe a column and coexist. No catalog
+ * and no side effect: the plan says what the piece is and `colores` only paint
+ * it. The drawing is derived -- it travels on this route alone and never
+ * enters the plan, the snapshot or `plan_hash`.
+ */
+export async function llamarPythonPlanArmadoColumnaOrganica(input: PythonPlanArmadoColumnaOrganicaInput): Promise<PythonPlanArmadoColumnaOrganicaResult> {
+  const { plan, estructuraId, armadoColumnaOrganica, colores, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-armado-columna-organica.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    armado_columna_organica: armadoColumnaOrganica,
+    ...(colores === undefined ? {} : { colores: [...colores] }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_ARMADO_COLUMNA_ORGANICA_PATH, PYTHON_PLAN_ARMADO_COLUMNA_ORGANICA_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_ARMADO_COLUMNA_ORGANICA_SCOPE],
+  });
+  const parsed = planArmadoColumnaOrganicaPayloadResultSchema.safeParse(response.payload);
+  // A given assembly comes back as given: the engine corrects a draft in `avisos`, never behind the editor's back.
+  if (!parsed.success || (armadoColumnaOrganica !== null && jsonOrdenado(parsed.data.armado) !== jsonOrdenado(armadoColumnaOrganica))) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = {
+    columna: parsed.data.columna,
+    grafica: parsed.data.grafica,
+    armado: parsed.data.armado,
+    opciones: parsed.data.opciones,
+    limites: parsed.data.limites,
+  };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
 export interface PythonCotizacionProfesionalInput {
   entrada: EntradaCotizacionProfesional;
   requestId: string;
@@ -3302,6 +3598,48 @@ export async function llamarPythonCotizacionProfesional(input: PythonCotizacionP
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
   return parsed.data;
+}
+
+export interface PythonEstimarConteoInput {
+  /** The question, without its version: the adapter stamps `estimar-conteo.v1`. */
+  solicitud: Omit<EstimarConteoRequestV1, "schema_version">;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+/**
+ * How many balloons the plan would charge for some candidates, and which
+ * variation of knobs brings them closer to a target count (`estimar-conteo.v1`,
+ * ADR-0038). A read: no catalog, no database and no side effect, so nothing here
+ * touches `planResuelto`, the approval token or `plan_hash`. Python decides every
+ * figure; the answer is only checked against its contract and for being about
+ * the candidates asked, in the same order.
+ */
+export async function llamarPythonEstimarConteo(input: PythonEstimarConteoInput): Promise<EstimarConteoResultV1 & { replayed?: boolean }> {
+  const { solicitud, ...rest } = input;
+  const operationBody = { schema_version: ESTIMAR_CONTEO_CONTRACT_VERSION, ...solicitud };
+  const response = await llamarPythonOperacion(PYTHON_ESTIMAR_CONTEO_PATH, PYTHON_ESTIMAR_CONTEO_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_ESTIMAR_CONTEO_SCOPE],
+  });
+  const parsed = EstimarConteoResultV1Schema.safeParse(response.payload);
+  if (
+    !parsed.success
+    || parsed.data.candidatos.length !== solicitud.candidatos.length
+    || parsed.data.candidatos.some((candidato, indice) => candidato.etiqueta !== solicitud.candidatos[indice]!.etiqueta)
+    || (solicitud.objetivo === undefined) !== (parsed.data.objetivo === null)
+    || (solicitud.objetivo !== undefined && parsed.data.objetivo?.conteo !== solicitud.objetivo.conteo)
+  ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return response.replayed ? { ...parsed.data, replayed: true } : parsed.data;
 }
 
 export function pythonErrorBody(error: PythonAdapterError): {

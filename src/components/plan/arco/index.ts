@@ -1,4 +1,12 @@
 export { BloqueArco, PanelArco } from "./BloqueArco";
+export { EditorArco } from "./EditorArco";
+export { ControlesArco } from "./ControlesArco";
+export { useEditorArco } from "./usarEditorArco";
 export { useVistaArco } from "./usarVistaArco";
+export { useVistaBorradorArco } from "./usarVistaBorradorArco";
+export { puedeGuardarArco } from "./guardar-arco";
+export type { PuedeGuardarArco } from "./guardar-arco";
 export { claveVistaArco, panelVistaArco, peticionVistaArco } from "./vista-arco";
 export type { FalloVistaArco, PanelVistaArco, PiezaVistaArco, RespuestaVistaArco } from "./vista-arco";
+export { alBorradorArco, crearVistaBorradorArco, panelDeBorradorArco, ESPERA_VISTA_ARCO_MS } from "./vista-borrador-arco";
+export type { EstadoBorradorArco, EstadoVistaBorradorArco, PedirVistaBorradorArco, VistaBorradorArco } from "./vista-borrador-arco";

@@ -126,14 +126,20 @@ function unirPorReferencia(colores: readonly ColorConReferencia[]): {
   const unidos = [...porCodigo.values()].sort((a, b) => b.parte - a.parte);
   const juntados = colores.length - unidos.length;
   if (juntados > 0) {
-    avisos.push(`${juntados} zona(s) eran el mismo globo con otra luz y se juntaron con el suyo.`);
+    avisos.push(
+      juntados === 1
+        ? "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+        : `${juntados} colores eran el mismo globo visto con otra luz y se juntaron con el suyo.`,
+    );
   }
   // Un color que ninguna referencia alcanza de cerca se lista igual, con la más cercana, pero se dice: es la
   // diferencia entre «es este globo» y «el que más se le parece de los que se venden».
   const lejanos = unidos.filter((c) => c.cruce.sinReferencia);
   if (lejanos.length > 0) {
     avisos.push(
-      `${lejanos.length} color(es) no tienen una referencia cercana en el catálogo: se muestra la que más se le parece.`,
+      lejanos.length === 1
+        ? "Un color no tiene un globo igual en el catálogo."
+        : `${lejanos.length} colores no tienen un globo igual en el catálogo.`,
     );
   }
   return { colores: unidos, avisos };
@@ -210,7 +216,7 @@ export async function medirColoresSempertex(
         ...avisos,
         ...(acabado.familias.length || acabado.nombradas.length
           ? []
-          : ["El analizador no dijo el acabado: un cromado se puede confundir con un mate."]),
+          : ["No se distingue el acabado en la foto: un globo cromado podría confundirse con uno mate."]),
       ],
     });
   }

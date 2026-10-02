@@ -235,11 +235,58 @@ def test_sin_los_tonos_resueltos_el_dibujo_lo_avisa() -> None:
         }
     )
 
-    tira = cast(
-        dict[str, object], vista_previa_armado_guirnalda_organica(peticion)["guirnalda"]
-    )
+    tira = cast(dict[str, object], vista_previa_armado_guirnalda_organica(peticion)["guirnalda"])
 
     assert AVISO_SIN_COLORES in cast(list[str], tira["avisos"])
+
+
+def test_la_compra_de_la_vista_previa_es_la_que_cobra_el_plan() -> None:
+    """Lo que la vista previa dice que hay que comprar es lo que el plan cobra: el mismo margen (`MERMA`).
+
+    La vista previa usaba el margen del diseñador (12 %) y el plan compra con el suyo (8 %): el editor mostraba
+    una lista de compra que la resolución nunca iba a cobrar.
+    """
+    from app.plan import _resolver_con_el_motor  # noqa: PLC0415 - privado a propósito: es la puerta de la resolución
+
+    armado = _receta_de()
+    pieza = guirnalda()
+    vista = cast(
+        dict[str, object], vista_previa_armado_guirnalda_organica(_peticion(armado))["guirnalda"]
+    )
+    del_plan = _resolver_con_el_motor("guirnalda", armado, pieza)
+
+    assert vista["compra"] == del_plan["compra"]
+    assert vista["total_comprar"] == del_plan["total_comprar"]
+
+
+def test_un_color_de_la_pieza_que_la_paleta_no_toma_se_avisa_antes_de_guardar() -> None:
+    receta = _receta_de()
+    colores = cast(dict[str, object], receta["colores"])
+    solo_el_primero = {
+        **receta,
+        "colores": {**colores, "paleta": cast(list[object], colores["paleta"])[:1]},
+    }
+
+    avisos = cast(
+        list[str],
+        cast(
+            dict[str, object],
+            vista_previa_armado_guirnalda_organica(_peticion(solo_el_primero))["guirnalda"],
+        )["avisos"],
+    )
+
+    assert any("no usa el color" in aviso and "no se comprarán" in aviso for aviso in avisos), (
+        avisos
+    )
+    # Una paleta que toma los dos colores de la pieza no avisa nada de eso.
+    completos = cast(
+        list[str],
+        cast(
+            dict[str, object],
+            vista_previa_armado_guirnalda_organica(_peticion(receta))["guirnalda"],
+        )["avisos"],
+    )
+    assert not any("no usa el color" in aviso for aviso in completos), completos
 
 
 # --- Los rechazos ------------------------------------------------------------------
@@ -401,9 +448,7 @@ def test_el_endpoint_exige_su_propio_scope() -> None:
 
 def test_la_ruta_por_racimos_sigue_viva_y_es_otra() -> None:
     """ADR-0032 y ADR-0034 conviven sobre la misma pieza: dos rutas, dos scopes, dos contratos."""
-    organica, cuerpo_organica = _post(
-        _operacion(None), "00000000-0000-4000-8000-000000000f04"
-    )
+    organica, cuerpo_organica = _post(_operacion(None), "00000000-0000-4000-8000-000000000f04")
     racimos, cuerpo_racimos = _post(
         {
             "schema_version": "plan-armado-guirnalda.v1",
@@ -417,9 +462,11 @@ def test_la_ruta_por_racimos_sigue_viva_y_es_otra() -> None:
     )
 
     assert (organica, racimos) == (200, 200)
-    assert cast(dict[str, object], cuerpo_organica["payload"])[
-        "operation_schema_version"
-    ] == "plan-armado-guirnalda-organica-result.v1"
-    assert cast(dict[str, object], cuerpo_racimos["payload"])[
-        "operation_schema_version"
-    ] == "plan-armado-guirnalda-result.v1"
+    assert (
+        cast(dict[str, object], cuerpo_organica["payload"])["operation_schema_version"]
+        == "plan-armado-guirnalda-organica-result.v1"
+    )
+    assert (
+        cast(dict[str, object], cuerpo_racimos["payload"])["operation_schema_version"]
+        == "plan-armado-guirnalda-result.v1"
+    )

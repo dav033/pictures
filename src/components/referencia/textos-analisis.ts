@@ -42,7 +42,7 @@ function chipsDeColor(blueprint: ReferenceBlueprintV2, medidos: AnalisisColorSem
 }
 
 /** El círculo del chip, con el brillo que le toca a su acabado: un cromado no se ve como un mate. */
-function muestraDeGlobo(hex: string, acabado: string): string {
+export function muestraDeGlobo(hex: string, acabado: string): string {
   const texto = acabado.toLowerCase();
   if (texto.includes("translucent")) {
     return `radial-gradient(circle at 35% 30%, #ffffff 0 25%, ${hex}59 60%)`;

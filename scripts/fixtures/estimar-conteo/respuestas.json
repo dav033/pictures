@@ -1,0 +1,494 @@
+{
+  "_comentario": "Salidas reales de app/estimar_conteo.py (sin red, sin catálogo y sin escribir nada): una estimación con la fórmula hacia un objetivo, una con un arco que trae armado del motor (el de armar_arco de scripts/fixtures/armado-estructura-ia) y una sin objetivo. Generado con services/ai-api/scripts/fixture_estimar_conteo.py --escribir; regenerar solo a propósito cuando el motor o la fórmula cambien, nunca para que pase una prueba de TypeScript.",
+  "formula": {
+    "pregunta": {
+      "candidatos": [
+        {
+          "etiqueta": "arco 3,2 m",
+          "tipo": "arco",
+          "medidas": {
+            "ancho_m": 3.2,
+            "alto_m": 2.3
+          },
+          "densidad": "media",
+          "mezcla": "organica_fina"
+        },
+        {
+          "etiqueta": "guirnalda 2,5 m",
+          "tipo": "guirnalda",
+          "medidas": {
+            "largo_m": 2.5
+          },
+          "densidad": "media",
+          "mezcla": "organica_fina"
+        }
+      ],
+      "objetivo": {
+        "conteo": 60,
+        "exacto": false
+      }
+    },
+    "respuesta": {
+      "operation_schema_version": "estimar-conteo-result.v1",
+      "objetivo": {
+        "conteo": 60,
+        "exacto": false,
+        "tolerancia": 9.0
+      },
+      "candidatos": [
+        {
+          "etiqueta": "arco 3,2 m",
+          "tipo": "arco",
+          "repeticiones": 1,
+          "total_formula": 119,
+          "total_motor": null,
+          "total_vigente": 119,
+          "fuente": "formula",
+          "total_instalado": 119,
+          "eje_m": 6.18,
+          "globos_por_metro": 19.27,
+          "formula_clasica": null,
+          "reparto_por_tamano": [
+            {
+              "pulgadas": 5,
+              "cantidad": 25,
+              "proporcion": 0.2101
+            },
+            {
+              "pulgadas": 9,
+              "cantidad": 22,
+              "proporcion": 0.1849
+            },
+            {
+              "pulgadas": 12,
+              "cantidad": 64,
+              "proporcion": 0.5378
+            },
+            {
+              "pulgadas": 18,
+              "cantidad": 6,
+              "proporcion": 0.0504
+            },
+            {
+              "pulgadas": 24,
+              "cantidad": 2,
+              "proporcion": 0.0168
+            }
+          ],
+          "puerta_fisica": {
+            "dentro": true,
+            "avisos": []
+          },
+          "avisos": [],
+          "nota": null,
+          "brecha": {
+            "objetivo": 60,
+            "diferencia": 59,
+            "absoluta": 59,
+            "relativa": 0.9833,
+            "tolerancia": 9.0,
+            "dentro_de_tolerancia": false
+          },
+          "sugerencia": {
+            "estado": "propuesta",
+            "via": "formula",
+            "cambios": [
+              {
+                "campo": "densidad",
+                "antes": "media",
+                "despues": "sencilla"
+              },
+              {
+                "campo": "ancho_m",
+                "antes": 3.2,
+                "despues": 2.4
+              },
+              {
+                "campo": "alto_m",
+                "antes": 2.3,
+                "despues": 1.72
+              }
+            ],
+            "total_resultante": 69,
+            "brecha": {
+              "objetivo": 60,
+              "diferencia": 9,
+              "absoluta": 9,
+              "relativa": 0.15,
+              "tolerancia": 9.0,
+              "dentro_de_tolerancia": true
+            },
+            "motivo": "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada. Es una propuesta: nada del plan cambia hasta confirmarlo."
+          }
+        },
+        {
+          "etiqueta": "guirnalda 2,5 m",
+          "tipo": "guirnalda",
+          "repeticiones": 1,
+          "total_formula": 48,
+          "total_motor": null,
+          "total_vigente": 48,
+          "fuente": "formula",
+          "total_instalado": 48,
+          "eje_m": 2.5,
+          "globos_por_metro": 19.2,
+          "formula_clasica": null,
+          "reparto_por_tamano": [
+            {
+              "pulgadas": 5,
+              "cantidad": 10,
+              "proporcion": 0.2083
+            },
+            {
+              "pulgadas": 9,
+              "cantidad": 9,
+              "proporcion": 0.1875
+            },
+            {
+              "pulgadas": 12,
+              "cantidad": 26,
+              "proporcion": 0.5417
+            },
+            {
+              "pulgadas": 18,
+              "cantidad": 2,
+              "proporcion": 0.0417
+            },
+            {
+              "pulgadas": 24,
+              "cantidad": 1,
+              "proporcion": 0.0208
+            }
+          ],
+          "puerta_fisica": {
+            "dentro": true,
+            "avisos": []
+          },
+          "avisos": [],
+          "nota": null,
+          "brecha": {
+            "objetivo": 60,
+            "diferencia": -12,
+            "absoluta": 12,
+            "relativa": 0.2,
+            "tolerancia": 9.0,
+            "dentro_de_tolerancia": false
+          },
+          "sugerencia": {
+            "estado": "propuesta",
+            "via": "formula",
+            "cambios": [
+              {
+                "campo": "densidad",
+                "antes": "media",
+                "despues": "lujosa"
+              }
+            ],
+            "total_resultante": 60,
+            "brecha": {
+              "objetivo": 60,
+              "diferencia": 0,
+              "absoluta": 0,
+              "relativa": 0.0,
+              "tolerancia": 9.0,
+              "dentro_de_tolerancia": true
+            },
+            "motivo": "Densidad y tamaños ajustados con las medidas del plan. Es una propuesta: nada del plan cambia hasta confirmarlo."
+          }
+        }
+      ],
+      "mejor": null
+    }
+  },
+  "motor": {
+    "pregunta": {
+      "candidatos": [
+        {
+          "etiqueta": "arco con motor",
+          "tipo": "arco",
+          "medidas": {
+            "ancho_m": 3.2,
+            "alto_m": 2.3
+          },
+          "densidad": "media",
+          "mezcla": "organica_fina",
+          "armado_arco": {
+            "version": "armado-arco.v1",
+            "origen": "sugerido",
+            "patron": "chevron",
+            "opciones": {
+              "ancho": 3.0,
+              "inclinacion": 2.0,
+              "invertir": 0.0,
+              "espejo": 1.0
+            },
+            "geometria": {
+              "forma": "herradura",
+              "anchoM": 3.2,
+              "altoM": 2.3,
+              "globosAncho": 4,
+              "suelo": true
+            },
+            "globo": {
+              "nominal": 12,
+              "inflado": 1,
+              "tamano": 1.14,
+              "ovalo": 1.06,
+              "separacion": 1,
+              "compensacion": 0.85,
+              "variacionTam": 0,
+              "variacionTono": 0.03,
+              "desorden": 0,
+              "brillo": 0.6,
+              "sombra": 0.17,
+              "contorno": 1,
+              "profundidad": 0.8,
+              "semilla": 7
+            },
+            "capas": [],
+            "secciones": [],
+            "materiales": [
+              0,
+              1
+            ]
+          }
+        },
+        {
+          "etiqueta": "arco con formula",
+          "tipo": "arco",
+          "medidas": {
+            "ancho_m": 3.2,
+            "alto_m": 2.3
+          },
+          "densidad": "media",
+          "mezcla": "organica_fina"
+        }
+      ],
+      "objetivo": {
+        "conteo": 70,
+        "exacto": false
+      }
+    },
+    "respuesta": {
+      "operation_schema_version": "estimar-conteo-result.v1",
+      "objetivo": {
+        "conteo": 70,
+        "exacto": false,
+        "tolerancia": 10.5
+      },
+      "candidatos": [
+        {
+          "etiqueta": "arco con motor",
+          "tipo": "arco",
+          "repeticiones": 1,
+          "total_formula": 119,
+          "total_motor": 88,
+          "total_vigente": 88,
+          "fuente": "motor",
+          "total_instalado": 88,
+          "eje_m": 4.96,
+          "globos_por_metro": 17.75,
+          "formula_clasica": 89.2,
+          "reparto_por_tamano": [
+            {
+              "pulgadas": 12,
+              "cantidad": 88,
+              "proporcion": 1.0
+            }
+          ],
+          "puerta_fisica": {
+            "dentro": true,
+            "avisos": []
+          },
+          "avisos": [],
+          "nota": "Esta pieza trae armado del motor: su total (88) sale de colocar cada globo y la densidad, la mezcla y las medidas del plan NO lo mueven (la fórmula daría 119); solo lo mueven los mandos del armado.",
+          "brecha": {
+            "objetivo": 70,
+            "diferencia": 18,
+            "absoluta": 18,
+            "relativa": 0.2571,
+            "tolerancia": 10.5,
+            "dentro_de_tolerancia": false
+          },
+          "sugerencia": {
+            "estado": "propuesta",
+            "via": "motor",
+            "cambios": [
+              {
+                "campo": "globos_ancho",
+                "antes": 4,
+                "despues": 3
+              }
+            ],
+            "total_resultante": 68,
+            "brecha": {
+              "objetivo": 70,
+              "diferencia": -2,
+              "absoluta": 2,
+              "relativa": 0.0286,
+              "tolerancia": 10.5,
+              "dentro_de_tolerancia": true
+            },
+            "motivo": "Moviendo globos_ancho de 4 a 3 en el armado, el motor deja la pieza en 68 globos, dentro de la tolerancia del objetivo. Aplícalo con armar_estructura (geometria.globos_ancho). Es una propuesta: ni el plan ni el armado guardado cambian."
+          }
+        },
+        {
+          "etiqueta": "arco con formula",
+          "tipo": "arco",
+          "repeticiones": 1,
+          "total_formula": 119,
+          "total_motor": null,
+          "total_vigente": 119,
+          "fuente": "formula",
+          "total_instalado": 119,
+          "eje_m": 6.18,
+          "globos_por_metro": 19.27,
+          "formula_clasica": null,
+          "reparto_por_tamano": [
+            {
+              "pulgadas": 5,
+              "cantidad": 25,
+              "proporcion": 0.2101
+            },
+            {
+              "pulgadas": 9,
+              "cantidad": 22,
+              "proporcion": 0.1849
+            },
+            {
+              "pulgadas": 12,
+              "cantidad": 64,
+              "proporcion": 0.5378
+            },
+            {
+              "pulgadas": 18,
+              "cantidad": 6,
+              "proporcion": 0.0504
+            },
+            {
+              "pulgadas": 24,
+              "cantidad": 2,
+              "proporcion": 0.0168
+            }
+          ],
+          "puerta_fisica": {
+            "dentro": true,
+            "avisos": []
+          },
+          "avisos": [],
+          "nota": null,
+          "brecha": {
+            "objetivo": 70,
+            "diferencia": 49,
+            "absoluta": 49,
+            "relativa": 0.7,
+            "tolerancia": 10.5,
+            "dentro_de_tolerancia": false
+          },
+          "sugerencia": {
+            "estado": "propuesta",
+            "via": "formula",
+            "cambios": [
+              {
+                "campo": "densidad",
+                "antes": "media",
+                "despues": "sencilla"
+              },
+              {
+                "campo": "ancho_m",
+                "antes": 3.2,
+                "despues": 2.78
+              },
+              {
+                "campo": "alto_m",
+                "antes": 2.3,
+                "despues": 2.0
+              }
+            ],
+            "total_resultante": 80,
+            "brecha": {
+              "objetivo": 70,
+              "diferencia": 10,
+              "absoluta": 10,
+              "relativa": 0.1429,
+              "tolerancia": 10.5,
+              "dentro_de_tolerancia": true
+            },
+            "motivo": "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada. Es una propuesta: nada del plan cambia hasta confirmarlo."
+          }
+        }
+      ],
+      "mejor": null
+    }
+  },
+  "sin_objetivo": {
+    "pregunta": {
+      "candidatos": [
+        {
+          "etiqueta": "columna 1,6 m",
+          "tipo": "columna",
+          "medidas": {
+            "alto_m": 1.6
+          },
+          "densidad": "media",
+          "mezcla": "organica_fina"
+        }
+      ]
+    },
+    "respuesta": {
+      "operation_schema_version": "estimar-conteo-result.v1",
+      "objetivo": null,
+      "candidatos": [
+        {
+          "etiqueta": "columna 1,6 m",
+          "tipo": "columna",
+          "repeticiones": 1,
+          "total_formula": 31,
+          "total_motor": null,
+          "total_vigente": 31,
+          "fuente": "formula",
+          "total_instalado": 31,
+          "eje_m": 1.6,
+          "globos_por_metro": 19.38,
+          "formula_clasica": null,
+          "reparto_por_tamano": [
+            {
+              "pulgadas": 5,
+              "cantidad": 6,
+              "proporcion": 0.1935
+            },
+            {
+              "pulgadas": 9,
+              "cantidad": 6,
+              "proporcion": 0.1935
+            },
+            {
+              "pulgadas": 12,
+              "cantidad": 17,
+              "proporcion": 0.5484
+            },
+            {
+              "pulgadas": 18,
+              "cantidad": 1,
+              "proporcion": 0.0323
+            },
+            {
+              "pulgadas": 24,
+              "cantidad": 1,
+              "proporcion": 0.0323
+            }
+          ],
+          "puerta_fisica": {
+            "dentro": true,
+            "avisos": []
+          },
+          "avisos": [],
+          "nota": null,
+          "brecha": null,
+          "sugerencia": null
+        }
+      ],
+      "mejor": null
+    }
+  }
+}

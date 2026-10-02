@@ -50,8 +50,8 @@ def _load_sources() -> tuple[SchemaSource, ...]:
                 raise ValueError(f"duplicate generated model name: {model_name}")
             names.add(model_name)
             sources.append(SchemaSource(relative, model_name, schema))
-    if len(sources) != 39:
-        raise ValueError(f"expected 39 schemas, found {len(sources)}")
+    if len(sources) != 43:
+        raise ValueError(f"expected 43 schemas, found {len(sources)}")
     return tuple(sources)
 
 

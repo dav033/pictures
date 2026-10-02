@@ -1,0 +1,221 @@
+{
+  "base": {
+    "version": "armado-arco.v1",
+    "origen": "sugerido",
+    "patron": "chevron",
+    "opciones": {
+      "ancho": 3,
+      "inclinacion": 2,
+      "invertir": 0,
+      "espejo": 1
+    },
+    "geometria": {
+      "forma": "herradura",
+      "anchoM": 3.2,
+      "altoM": 2.3,
+      "globosAncho": 4,
+      "suelo": true
+    },
+    "globo": {
+      "nominal": 12,
+      "inflado": 1,
+      "tamano": 1.14,
+      "ovalo": 1.06,
+      "separacion": 1,
+      "compensacion": 0.85,
+      "variacionTam": 0,
+      "variacionTono": 0.03,
+      "desorden": 0,
+      "brillo": 0.6,
+      "sombra": 0.17,
+      "contorno": 1,
+      "profundidad": 0.8,
+      "semilla": 7
+    },
+    "capas": [],
+    "secciones": [],
+    "materiales": [
+      0,
+      1
+    ]
+  },
+  "colores": [
+    "#ffffff",
+    "#1f4fbf",
+    "#c9a227"
+  ],
+  "por_tamano": {
+    "5": {
+      "limites": {
+        "anchoMin": 0.8,
+        "anchoMax": 10.0,
+        "altoMin": 1.9,
+        "altoMax": 6.0,
+        "nMin": 2,
+        "nMax": 8,
+        "nPaso": 1
+      },
+      "avisos": [],
+      "globos": 270
+    },
+    "9": {
+      "limites": {
+        "anchoMin": 1.0,
+        "anchoMax": 10.0,
+        "altoMin": 1.9,
+        "altoMax": 6.0,
+        "nMin": 2,
+        "nMax": 6.0,
+        "nPaso": 1
+      },
+      "avisos": [],
+      "globos": 123
+    },
+    "12": {
+      "limites": {
+        "anchoMin": 1.3,
+        "anchoMax": 10.0,
+        "altoMin": 1.9,
+        "altoMax": 6.0,
+        "nMin": 2,
+        "nMax": 4.0,
+        "nPaso": 1
+      },
+      "avisos": [],
+      "globos": 88
+    },
+    "18": {
+      "limites": {
+        "anchoMin": 1.8,
+        "anchoMax": 10.0,
+        "altoMin": 1.9,
+        "altoMax": 6.0,
+        "nMin": 2,
+        "nMax": 3.0,
+        "nPaso": 1
+      },
+      "avisos": [
+        "Con globos R18 en 3,2 m caben como máximo 3 a lo ancho: se redujeron para que la banda no tape la abertura."
+      ],
+      "globos": 48
+    },
+    "24": {
+      "limites": {
+        "anchoMin": 2.5,
+        "anchoMax": 10.0,
+        "altoMin": 1.9,
+        "altoMax": 6.0,
+        "nMin": 2,
+        "nMax": 2.0,
+        "nPaso": 1
+      },
+      "avisos": [
+        "Con globos R24 en 3,2 m caben como máximo 2 a lo ancho: se redujeron para que la banda no tape la abertura."
+      ],
+      "globos": 20
+    },
+    "36": {
+      "limites": {
+        "anchoMin": 3.8,
+        "anchoMax": 10.0,
+        "altoMin": 2.3,
+        "altoMax": 6.0,
+        "nMin": 2,
+        "nMax": 2.0,
+        "nPaso": 1
+      },
+      "avisos": [
+        "Con globos R36 el arco necesita al menos 3,8 m de ancho: se subió el ancho y quedaron 2 globos a lo ancho."
+      ],
+      "globos": 14
+    }
+  },
+  "avisos_alto_imposible": {
+    "armado": {
+      "version": "armado-arco.v1",
+      "origen": "sugerido",
+      "patron": "chevron",
+      "opciones": {
+        "ancho": 3,
+        "inclinacion": 2,
+        "invertir": 0,
+        "espejo": 1
+      },
+      "geometria": {
+        "forma": "herradura",
+        "anchoM": 3.2,
+        "altoM": 0.8,
+        "globosAncho": 4,
+        "suelo": true
+      },
+      "globo": {
+        "nominal": 12,
+        "inflado": 1,
+        "tamano": 1.14,
+        "ovalo": 1.06,
+        "separacion": 1,
+        "compensacion": 0.85,
+        "variacionTam": 0,
+        "variacionTono": 0.03,
+        "desorden": 0,
+        "brillo": 0.6,
+        "sombra": 0.17,
+        "contorno": 1,
+        "profundidad": 0.8,
+        "semilla": 7
+      },
+      "capas": [],
+      "secciones": [],
+      "materiales": [
+        0,
+        1
+      ]
+    },
+    "avisos": [
+      "El alto se ajustó a 1,9 m: fuera de ese rango el arco deja de parecer un arco."
+    ]
+  },
+  "rechazo": {
+    "armado": {
+      "version": "armado-arco.v1",
+      "origen": "sugerido",
+      "patron": "chevron",
+      "opciones": {
+        "ancho": 3,
+        "inclinacion": 2,
+        "invertir": 0,
+        "espejo": 1
+      },
+      "geometria": {
+        "forma": "herradura",
+        "anchoM": 3.2,
+        "altoM": 2.3,
+        "globosAncho": 4,
+        "suelo": true
+      },
+      "globo": {
+        "nominal": 12,
+        "inflado": 1,
+        "tamano": 1.14,
+        "ovalo": 1.06,
+        "separacion": 1,
+        "compensacion": 0.85,
+        "variacionTam": 0,
+        "variacionTono": 0.03,
+        "desorden": 0,
+        "brillo": 0.6,
+        "sombra": 0.17,
+        "contorno": 1,
+        "profundidad": 0.8,
+        "semilla": 7
+      },
+      "capas": [],
+      "secciones": [],
+      "materiales": [
+        0
+      ]
+    },
+    "motivo": "pocos_materiales",
+    "mensaje": "El patron «Flecha / Chevron» necesita al menos 2 colores y el armado trae 1."
+  }
+}

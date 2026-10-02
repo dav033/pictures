@@ -65,3 +65,24 @@ export const OpcionesArmadoColumnaSchema = z
   });
 
 export type OpcionesArmadoColumna = z.infer<typeof OpcionesArmadoColumnaSchema>;
+
+/**
+ * Los rangos que la interfaz puede mover **con este armado puesto** (`limites_de` en
+ * services/ai-api/app/armado_columna.py): el alto que cabe depende del diámetro de la columna, que sube con el
+ * tamaño del globo y los globos por capa; el foil, también; y qué globo o racimo guarda proporción como remate
+ * cambia con el inflado. Van en camelCase porque son los mandos del motor.
+ */
+export const LimitesColumnaSchema = z
+  .object({
+    diametro: z.number().positive(),
+    altoMin: z.number().positive(),
+    altoMax: z.number().positive(),
+    foilMin: z.number().positive(),
+    foilMax: z.number().positive(),
+    /** Los tamaños de globo que caben como remate de un solo globo, y los que caben en un racimo. */
+    rematesGlobo: z.array(z.literal(TAMANOS_COLUMNA)).max(TAMANOS_COLUMNA.length).refine(sinRepetidos),
+    rematesRacimo: z.array(z.literal(TAMANOS_COLUMNA)).max(TAMANOS_COLUMNA.length).refine(sinRepetidos),
+  })
+  .strict();
+
+export type LimitesColumna = z.infer<typeof LimitesColumnaSchema>;

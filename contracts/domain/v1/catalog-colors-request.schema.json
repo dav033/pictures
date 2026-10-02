@@ -1,0 +1,56 @@
+{
+  "$id": "catalog-colors.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "catalog-colors.v1"
+    },
+    "allowlist": {
+      "maxItems": 256,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "variant_ids": {
+            "maxItems": 256,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          }
+        },
+        "required": [
+          "product_id",
+          "variant_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "catalog_snapshot_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "allowlist"
+  ],
+  "additionalProperties": false
+}

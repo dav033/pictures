@@ -384,3 +384,32 @@ que falla contra el código anterior al arreglo.
 6. **Encendido.** Primero `CONTEO_REFERENCIA_PYTHON_ENABLED` y después
    `CONTEO_REFERENCIA_V1`, tras la evaluación (E7), y con app y `ai-api`
    desplegados juntos.
+
+## 5. Estimar el conteo desde el chat (ADR-0038, 2026-10-02)
+
+**Estado:** hecho y probado sin proveedores; sin evaluación con foto real. Bandera `ESTIMAR_CONTEO_V1` (encendida
+fuera de producción, apagada en producción).
+
+Hasta aquí la IA solo veía el número de globos al confirmar el plan. Ahora tiene `estimar_conteo_globos`, de solo
+lectura: para hasta 6 candidatos devuelve el total que se cobraría (`total_vigente`, de la fórmula o del motor), su
+reparto por tamaño, la puerta física y, contra el conteo de la foto, la brecha y la menor variación de mandos que la
+cierra. No toca estado, token ni `plan_hash`; el número del cliente sigue saliendo de `confirmar_plan_decoracion`.
+
+- Python: `app/estimar_conteo.py` (ruta `POST /internal/v1/plan/estimar-conteo`; la sugerencia y los mandos en
+  `estimar_conteo_sugerencia.py` y `estimar_conteo_mandos.py`), `plan.contar_pieza` y
+  `plan.puerto_de_conteo`, y `conteo_foto.buscar_ajuste`, que expone la búsqueda de §3 (`_geometrica`) sin copiarla.
+- Contrato: `estimar-conteo.v1` y `estimar-conteo-result.v1` (zod → export → `generate_models.py`, 41 contratos).
+- TS: `src/lib/ia/herramientas/estimar-conteo.ts` y el handler de `registro-herramientas.ts`; el objetivo por
+  defecto es el conteo de la foto con la regla del prompt (`objetivoDelConteo`).
+- **Con armado del motor** la pieza cuenta el motor y la densidad, la mezcla y las medidas del plan no la mueven; la
+  sugerencia barre los mandos del armado. `ESTIMACION_INCONSISTENTE` ya no manda a tocar esos mandos en una pieza con
+  armado.
+- Pruebas: `tests/test_estimar_conteo.py` (paridad con `resolve_plan` y `armar`, 94 casos),
+  `scripts/test/test-estimar-conteo-globos.ts` (`npm run plan:test-estimar-conteo`, dentro de `plan:test`) y la fixture
+  `scripts/fixtures/estimar-conteo/respuestas.json` (`services/ai-api/scripts/fixture_estimar_conteo.py`).
+
+**Abierto, no corregido aquí:** `aro_circular` y las variantes asimétricas o no densas entran al motor por `tipo` y
+se cuentan como arco o columna normal (un aro de 1,5 × 1,5 m: 91 con la fórmula, 23 con el motor, y la puerta
+física lo marca «demasiado bajo»); el total de una guirnalda con motor depende de la semilla (56–89 globos con 40
+semillas a 3 m). La herramienta lo reporta en `nota` y no lo esconde. Qué no se comprobó: ADR-0038, «Lo que no se pudo
+comprobar».

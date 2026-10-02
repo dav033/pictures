@@ -16,7 +16,14 @@ razona sobre un turno de conversación y decide qué herramienta ejecutar.
 - **Consumidor principal**: [api/chat/route.ts](../../../app/api/chat/route.ts).
 
 Archivos propios: `ejecutar.ts`, `prompt-sistema.ts`, `historial-chat.ts`,
-`texto-final-turno.ts`, `jerga-interna.ts`.
+`texto-final-turno.ts`, `jerga-interna.ts`, `resumen-plan-vigente.ts`.
+
+`resumen-plan-vigente.ts` describe al modelo la propuesta que el cliente ya tiene
+en pantalla (estructuras, líneas y sus identificadores) para que pueda ajustarla
+con `ajustar_plan_decoracion`. Solo se agrega al final del prompt del turno
+cuando el token firmado de esa propuesta se verificó (`planVigenteDelTurno`); el
+texto congelado de `prompt-sistema.ts` no cambia. Nunca incluye el token, su
+firma ni el `plan_hash`.
 
 Lo que NO vive aquí, a propósito: el registro de herramientas
 ([`../herramientas/`](../herramientas/)) y el registro de proveedores

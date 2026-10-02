@@ -75,11 +75,15 @@ from app.armado_bouquet import (
     variantes_admitidas,
 )
 from app.armado_arco import ArmadoInvalido as ArmadoArcoInvalido
+from app.armado_arco_prompt import frases_arco
 from app.armado_arco import EstructuraArco
 from app.armado_arco import armado_resuelto as armado_arco_resuelto
 from app.armado_columna import ArmadoInvalido as ArmadoColumnaInvalido
 from app.armado_columna import EstructuraColumna
 from app.armado_columna import armado_resuelto as armado_columna_resuelto
+from app.armado_columna_organica import ArmadoInvalido as ArmadoColumnaOrganicaInvalido
+from app.armado_columna_organica import EstructuraColumnaOrganica
+from app.armado_columna_organica import armado_resuelto as armado_columna_organica_resuelto
 from app.armado_guirnalda_organica import ArmadoInvalido as ArmadoGuirnaldaOrganicaInvalido
 from app.armado_guirnalda_organica import EstructuraGuirnalda as EstructuraGuirnaldaOrganica
 from app.armado_guirnalda_organica import armado_resuelto as armado_guirnalda_organica_resuelto
@@ -99,6 +103,7 @@ from app.armado_guirnalda import validar as validar_armado_guirnalda
 from app.catalog import purchase_color_for_unsold
 from app import conteo_foto
 from app.supuestos import agregar_supuesto, supuesto
+from app.merma import MERMA as _MERMA_COMPARTIDA
 from app.operational_models import ContractModel, OperationalRequest
 from app.plan_worker import run_plan_cpu
 from app.patron_color import (
@@ -131,7 +136,9 @@ PLAN_RESOLUTION_SCOPE = "plan.resolve"
 PLAN_RESOLUTION_REQUEST_VERSION = "plan-resolution.v1"
 PLAN_RESOLUTION_RESULT_VERSION = "plan-resolution-result.v1"
 PLAN_RESOLVED_VERSION = "plan-resuelto.v1"
-MERMA = 0.08
+#: La merma vive en ``app/merma.py`` (las puertas de los motores la necesitan y ``plan.py`` las importa); aquí se
+#: re-exporta con su tipo, porque el resto del código y de las pruebas la lee de ``app.plan``.
+MERMA: float = _MERMA_COMPARTIDA
 MAX_SAFE_INTEGER = 9_007_199_254_740_991
 # Mirrors PLAN_RESOLUTION_MAX_LORA_VARIANTS (domain-v1.ts) and the recommendations
 # bound: the same LoRA dataset pool reaches both. 2048 ids x 17 bytes (14-digit
@@ -1705,8 +1712,14 @@ def _physical_warnings(
 _ARMADOS_DEL_MOTOR: dict[str, tuple[str, str, str]] = {
     "arco": ("armado_arco", "largo_m", "armados_arco"),
     "columna": ("armado_columna", "alto_total_m", "armados_columna"),
+    "columna_organica": ("armado_columna_organica", "alto_m", "armados_columna_organica"),
     "guirnalda": ("armado_guirnalda_organica", "largo_m", "armados_guirnalda_organica"),
 }
+
+
+#: Las clases de armado que no se llaman como el tipo de la pieza que arman: la columna orgánica es una columna.
+#: Cuando una pieza trae el armado clásico y el orgánico, manda el primero de la tabla (el clásico, que ya existía).
+_TIPO_DE_CLASE: dict[str, str] = {"columna_organica": "columna"}
 
 
 def _campos_publicados(lista: str) -> frozenset[str]:
@@ -1748,6 +1761,13 @@ class _ConteoDelMotor:
 
     eje_m: float
     celdas: tuple[tuple[int, int, int], ...]
+    #: Lo que el motor avisó al armar (lo que acotó o corrigió). Solo informa a quien
+    #: pregunta (``contar_pieza``); no entra en ningún conteo ni en el plan resuelto.
+    avisos: tuple[str, ...] = ()
+    #: La fórmula clásica ``4,8 · L / d`` que el motor del arco publica junto a su
+    #: conteo; ``None`` en las piezas que no la tienen. Un ancla independiente de
+    #: ``_total_globos``, solo para quien pregunta.
+    formula_clasica: float | None = None
 
     @property
     def total(self) -> int:
@@ -1792,18 +1812,21 @@ def _armado_del_motor(
     de las dos se queda en el camino de siempre sin preguntar nada.
     """
     tipo = _text(structure.get("tipo")) or ""
-    entrada = _ARMADOS_DEL_MOTOR.get(tipo)
-    if entrada is None:
-        return None
-    armado = structure.get(entrada[0])
-    if not isinstance(armado, Mapping):
-        return None
-    return tipo, cast(Mapping[str, object], armado)
+    for clase, (campo, _eje, _lista) in _ARMADOS_DEL_MOTOR.items():
+        if _TIPO_DE_CLASE.get(clase, clase) != tipo:
+            continue
+        armado = structure.get(campo)
+        if isinstance(armado, Mapping):
+            return clase, cast(Mapping[str, object], armado)
+    return None
 
 
 def _armado_del_motor_error(
     estructura_id: str,
-    error: ArmadoArcoInvalido | ArmadoColumnaInvalido | ArmadoGuirnaldaOrganicaInvalido,
+    error: ArmadoArcoInvalido
+    | ArmadoColumnaInvalido
+    | ArmadoColumnaOrganicaInvalido
+    | ArmadoGuirnaldaOrganicaInvalido,
 ) -> PlanResolutionError:
     """Un armado que no se sostiene es un error del cliente, no un plan callado.
 
@@ -1850,13 +1873,15 @@ def _pieza_del_motor(clave: str) -> dict[str, object]:
         resuelto = armado_guirnalda_organica_resuelto(
             EstructuraGuirnaldaOrganica(es_guirnalda=True, materiales=colores), armado, MERMA
         )
+    elif tipo == "columna_organica":
+        resuelto = armado_columna_organica_resuelto(
+            EstructuraColumnaOrganica(es_columna=True, materiales=colores), armado, MERMA
+        )
     else:
         resuelto = armado_columna_resuelto(
             EstructuraColumna(es_columna=True, materiales=colores), armado
         )
-    return {
-        campo: valor for campo, valor in resuelto.items() if campo in _CAMPOS_DEL_MOTOR[tipo]
-    }
+    return {campo: valor for campo, valor in resuelto.items() if campo in _CAMPOS_DEL_MOTOR[tipo]}
 
 
 def _resolver_con_el_motor(
@@ -1884,6 +1909,7 @@ def _resolver_con_el_motor(
     except (
         ArmadoArcoInvalido,
         ArmadoColumnaInvalido,
+        ArmadoColumnaOrganicaInvalido,
         ArmadoGuirnaldaOrganicaInvalido,
     ) as error:
         raise _armado_del_motor_error(_text(structure.get("estructura_id")) or "", error) from error
@@ -1930,6 +1956,12 @@ def _conteo_del_motor(structure: Mapping[str, object]) -> _ConteoDelMotor | None
             (pulgadas, material, cantidad)
             for (pulgadas, material), cantidad in sorted(por_celda.items())
         ),
+        avisos=tuple(
+            aviso
+            for aviso in cast(Sequence[object], resuelto.get("avisos") or ())
+            if isinstance(aviso, str)
+        ),
+        formula_clasica=_number(resuelto.get("formula_clasica")),
     )
 
 
@@ -1949,6 +1981,18 @@ def _structure_count(
             motor.proporciones,
             motor.sin_ubicar(_required_sizes(plan)),
         )
+    return _formula_count(plan, structure)
+
+
+def _formula_count(
+    plan: Mapping[str, object], structure: Mapping[str, object]
+) -> tuple[float, int, tuple[tuple[int, float], ...], tuple[int, ...]]:
+    """Axis, balloons per instance, effective mix and unplaced sizes by the formula.
+
+    Es la rama sin armado de ``_structure_count``, tal cual; está aparte para que
+    ``contar_pieza`` pueda decir qué daría la fórmula de una pieza que además trae
+    armado del motor, sin una segunda copia de ella.
+    """
     tipo = _text(structure.get("tipo")) or ""
     density = _text(structure.get("densidad")) or "media"
     mix = _text(structure.get("mezcla")) or "organica_fina"
@@ -3548,6 +3592,9 @@ def _build_resolved(
     columnas = _armados_del_motor_resueltos(plan, "columna")
     if columnas:
         result["armados_columna"] = columnas
+    columnas_organicas = _armados_del_motor_resueltos(plan, "columna_organica")
+    if columnas_organicas:
+        result["armados_columna_organica"] = columnas_organicas
     organicas = _armados_del_motor_resueltos(plan, "guirnalda")
     if organicas:
         result["armados_guirnalda_organica"] = organicas
@@ -3673,9 +3720,8 @@ def _add_silhouette(
     elif croquis.motivo is not None:
         item["sin_silueta"] = croquis.motivo
 
-def _armados_del_motor_resueltos(
-    plan: Mapping[str, object], tipo: str
-) -> list[dict[str, object]]:
+
+def _armados_del_motor_resueltos(plan: Mapping[str, object], tipo: str) -> list[dict[str, object]]:
     """``armados_arco`` / ``armados_columna``: una pieza por armado, en orden de plan.
 
     Fuera del snapshot y del ``plan_hash``, como los demás resueltos: es la
@@ -3694,7 +3740,18 @@ def _armados_del_motor_resueltos(
         if entrada is None or entrada[0] != tipo:
             continue
         resuelto = _resolver_con_el_motor(entrada[0], entrada[1], structure)
-        resueltos.append(cast(dict[str, object], json.loads(json.dumps(resuelto))))
+        publicado = cast(dict[str, object], json.loads(json.dumps(resuelto)))
+        if tipo == "arco":
+            # ADR-0035: Python cuenta el armado a los modelos de imagen. Derivado, fuera del snapshot y del hash.
+            materiales = [
+                (_text(material.get("color")), _text(material.get("acabado")))
+                for material in _mappings(structure.get("materiales"))
+            ]
+            publicado["estructura_id"] = _text(structure.get("estructura_id")) or ""
+            publicado["prompt_gemini"], publicado["prompt_lora"] = frases_arco(
+                entrada[1], resuelto, materiales
+            )
+        resueltos.append(publicado)
     return resueltos
 
 
@@ -4284,10 +4341,10 @@ def _mix_covered(
     return True
 
 
-def _within_physical_gate(
+def _gate_warnings(
     plan: Mapping[str, object], structure: Mapping[str, object], total: int
-) -> bool:
-    """``_physical_warnings`` on one instance with ``total`` balloons: no warning, inside the gate."""
+) -> list[str]:
+    """``_physical_warnings`` on one instance with ``total`` balloons."""
     axis = _structure_count(plan, structure)[0]
     probe = {
         "estructura_id": _text(structure.get("estructura_id")) or "",
@@ -4296,9 +4353,16 @@ def _within_physical_gate(
         "eje_m": axis,
         "lineas": [{"unidades": total, "diam_pulg": 12}],
     }
-    return not _physical_warnings(
+    return _physical_warnings(
         {"estructuras": [structure], "restricciones": plan.get("restricciones")}, [probe]
     )
+
+
+def _within_physical_gate(
+    plan: Mapping[str, object], structure: Mapping[str, object], total: int
+) -> bool:
+    """``_physical_warnings`` on one instance with ``total`` balloons: no warning, inside the gate."""
+    return not _gate_warnings(plan, structure, total)
 
 
 def _resynced_pattern(
@@ -4311,6 +4375,136 @@ def _resynced_pattern(
     except PlanResolutionError:
         return None
     return dict(_mappings(synced.get("estructuras"))[0])
+
+
+# --- Estimar el conteo (solo lectura) -----------------------------------------------
+# ``app/estimar_conteo.py`` responde a la herramienta de la IA cuántos globos
+# cobraría una pieza y qué mando la acerca a un objetivo. Aquí solo se abre, sin
+# escribir nada ni duplicar nada, lo que ya decide el conteo: la fórmula, el motor
+# y la puerta física. Ninguna función de esta sección toca un plan resuelto, un token ni
+# ``plan_hash``.
+
+
+def _plan_de_estimacion(
+    structure: Mapping[str, object], tamanos_obligatorios: Collection[int]
+) -> dict[str, object]:
+    """El plan mínimo que ``_structure_count`` y la puerta física leen: la pieza y los tamaños fijos."""
+    return {
+        "estructuras": [dict(structure)],
+        "restricciones": {
+            "tamanos": [
+                {"valor": f"R-{pulgadas}", "polaridad": "obligatorio"}
+                for pulgadas in sorted(set(tamanos_obligatorios))
+            ]
+        },
+    }
+
+
+def con_medidas_por_defecto(structure: Mapping[str, object]) -> tuple[dict[str, object], bool]:
+    """La pieza con las medidas que el plan le asumiría si le faltan, y si asumió alguna.
+
+    Es ``_complete_measures``, la misma que corre al confirmar: un arco sin medidas se cuenta
+    con las de por defecto, no se rechaza. Sin el tipo de espacio no se sabe si es exterior,
+    así que se asume interior, como el plan cuando el espacio no lo dice.
+    """
+    completo = _complete_measures({"espacio": {}, "estructuras": [dict(structure)]})
+    return dict(_mappings(completo.get("estructuras"))[0]), bool(completo.get("supuestos"))
+
+
+@dataclass(frozen=True, slots=True)
+class PiezaContada:
+    """Lo que cuenta una pieza por instancia: la fórmula, el motor y el que se cobraría.
+
+    ``total_vigente`` es el que ``resolve_plan`` cobraría: el del motor si la pieza
+    trae su armado, si no el de la fórmula. ``total_formula`` se calcula siempre, para
+    poder decir cuánto se aleja el motor de ella; con armado, la fórmula **no** manda.
+    """
+
+    eje_m: float
+    total_vigente: int
+    fuente: Literal["formula", "motor"]
+    total_formula: int
+    total_motor: int | None
+    #: Pulgadas y cantidad del conteo vigente, de menor a mayor tamaño.
+    reparto_por_tamano: tuple[tuple[int, int], ...]
+    #: Tamaños obligatorios del cliente que la mezcla o el armado no colocaron.
+    tamanos_sin_ubicar: tuple[int, ...]
+    avisos_motor: tuple[str, ...]
+    #: ``4,8 · L / d`` del motor del arco: un ancla independiente de ``total_formula``.
+    formula_clasica: float | None
+    avisos_puerta: tuple[str, ...]
+
+
+def contar_pieza(
+    structure: Mapping[str, object], tamanos_obligatorios: Collection[int] = ()
+) -> PiezaContada:
+    """Cuenta una pieza (``estructuras[]`` del plan) por instancia, como la contaría ``resolve_plan``.
+
+    Es de solo lectura y pura CPU. Con armado del motor lo cuenta el motor (que ignora
+    medidas, densidad y mezcla del plan); un armado que no se sostiene lanza
+    ``PlanResolutionError("armado_invalido")``, igual que la resolución.
+    """
+    plan = _plan_de_estimacion(structure, tamanos_obligatorios)
+    eje_formula, total_formula, proportions, sin_ubicar = _formula_count(plan, structure)
+    motor = _conteo_del_motor(structure)
+    if motor is None:
+        reparto = tuple(
+            (pulgadas, cantidad)
+            for (pulgadas, _proporcion), cantidad in zip(
+                proportions, _size_totals(total_formula, proportions), strict=True
+            )
+            if cantidad > 0
+        )
+        total, eje, fuente = total_formula, eje_formula, "formula"
+    else:
+        por_tamano: dict[int, int] = {}
+        for pulgadas, _material, cantidad in motor.celdas:
+            por_tamano[pulgadas] = por_tamano.get(pulgadas, 0) + cantidad
+        reparto = tuple(sorted((pulgadas, cantidad) for pulgadas, cantidad in por_tamano.items()))
+        total, eje, fuente = motor.total, motor.eje_m, "motor"
+        sin_ubicar = motor.sin_ubicar(_required_sizes(plan))
+    return PiezaContada(
+        eje_m=eje,
+        total_vigente=total,
+        fuente=cast(Literal["formula", "motor"], fuente),
+        total_formula=total_formula,
+        total_motor=None if motor is None else motor.total,
+        reparto_por_tamano=reparto,
+        tamanos_sin_ubicar=tuple(sin_ubicar),
+        avisos_motor=() if motor is None else motor.avisos,
+        formula_clasica=None if motor is None else motor.formula_clasica,
+        avisos_puerta=tuple(_gate_warnings(plan, structure, total)),
+    )
+
+
+def puerto_de_conteo(tamanos_obligatorios: Collection[int] = ()) -> conteo_foto.PuertoPlan:
+    """El ``PuertoPlan`` de ``conteo_foto`` para piezas contadas por la fórmula, sin catálogo.
+
+    Lo usa la estimación para reutilizar la búsqueda de ``conteo_foto`` (la que corre al
+    confirmar un plan con la foto) en vez de duplicarla. Cuenta con la fórmula y mide la
+    puerta física con la del plan; no hay catálogo, así que no puede afirmar que una mezcla
+    esté cubierta (``mezcla_cubierta`` es falsa y la mezcla nunca cambia) ni hay kits ni
+    patrones de color que sincronizar.
+    """
+    tamanos = frozenset(tamanos_obligatorios)
+
+    def sin_kits(_structure: Mapping[str, object]) -> EstructuraBouquet:
+        raise PlanResolutionError("invalid_plan", 422)
+
+    return conteo_foto.PuertoPlan(
+        contar=lambda structure: _formula_count(_plan_de_estimacion(structure, tamanos), structure)[
+            1
+        ],
+        dentro_de_puerta=lambda structure, total: not _gate_warnings(
+            _plan_de_estimacion(structure, tamanos), structure, total
+        ),
+        mezcla_cubierta=lambda _structure, _mix: False,
+        contexto_kit=sin_kits,
+        sincronizar_patron=lambda structure: dict(structure),
+        mezclas=_MIXES,
+        tamanos_obligatorios=bool(tamanos),
+        densidades_admitidas=_admitted_densities,
+    )
 
 
 def _aplicar_conteos(
@@ -5159,14 +5353,18 @@ __all__ = [
     "PlanAllowlistEntry",
     "PlanResolutionError",
     "PlanResolutionRequest",
+    "PiezaContada",
     "VistaPreviaArmado",
     "VistaPreviaArmadoGuirnalda",
     "VistaPreviaPatron",
     "compras_de_estructura",
+    "con_medidas_por_defecto",
+    "contar_pieza",
     "contexto_bouquet_de_globos",
     "modos_admitidos_de_estructura",
     "opciones_de_armado",
     "patron_resuelto_de_estructura",
+    "puerto_de_conteo",
     "resolve_plan",
     "sincronizar_participaciones",
     "sugerir_patron_para_estructura",

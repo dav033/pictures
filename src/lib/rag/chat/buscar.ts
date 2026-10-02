@@ -10,9 +10,27 @@ import { candidatoDesdePython } from "./candidato-python";
 import { coloresRealesProducto } from "@/lib/plan/colores-producto";
 import { recorrerEscalera } from "./relajacion-filtros";
 
+/**
+ * Filters the customer clicked in the editor's catalog explorer. They are free
+ * text because the options come from the catalog itself (`/catalog/colors`),
+ * and a click is an explicit requirement: it is never relaxed by the ladder.
+ */
+export type FiltrosExploracion = {
+  colores?: readonly string[];
+  formas?: readonly string[];
+  acabados?: readonly string[];
+  diametros_pulgadas?: readonly number[];
+};
+
 export type OpcionesBusquedaRag = {
   /** Customer-verified filters; component wording cannot alter them. */
   filtrosDuros?: IntentQuery["filtros_duros"];
+  /** Editor explorer filters (see `FiltrosExploracion`). Disables the relaxation ladder. */
+  exploracion?: FiltrosExploracion;
+  /** Recall by `exploracion` alone: `mensaje` is only a label and does not narrow the result. */
+  sinTexto?: boolean;
+  /** Candidates Python returns (1-50). Absent means the service default. */
+  limite?: number;
   eventIntent?: EventSearchIntent;
   focusedQueries?: readonly string[];
   allowlist?: CatalogAllowlist;
@@ -111,9 +129,16 @@ async function buscarCatalogoPython(
   const allowlist = opciones.allowlist
     ? opciones.allowlist.entries.map((entry) => ({ product_id: entry.productId, variant_ids: [...entry.variantIds] }))
     : [];
+  const exploracion = opciones.exploracion;
   const llamar = (paso: IntentQuery["filtros_duros"] | undefined) => llamarPythonCatalogSearch({
     message: mensaje,
+    ...(opciones.limite === undefined ? {} : { limit: opciones.limite }),
+    ...(opciones.sinTexto ? { browse: true } : {}),
     filters: {
+      ...(exploracion?.colores?.length ? { colors: [...exploracion.colores] } : {}),
+      ...(exploracion?.formas?.length ? { shapes: [...exploracion.formas] } : {}),
+      ...(exploracion?.acabados?.length ? { finishes: [...exploracion.acabados] } : {}),
+      ...(exploracion?.diametros_pulgadas?.length ? { diameters_inches: [...exploracion.diametros_pulgadas] } : {}),
       available: paso?.solo_disponibles ?? true,
       ...(paso?.precio_max === null || paso?.precio_max === undefined ? {} : { price_max: paso.precio_max }),
       ...(paso?.categorias?.length ? { categories: paso.categorias } : {}),
@@ -134,7 +159,7 @@ async function buscarCatalogoPython(
   // with fewer verified filters duplicates no effect; the shared deadline
   // bounds the total, and a step is skipped once that deadline has passed.
   const primera = await llamar(filtros);
-  const { respuesta: response, relajado: filtroRelajado } = filtros
+  const { respuesta: response, relajado: filtroRelajado } = filtros && !exploracion
     ? await recorrerEscalera(filtros, primera, {
         buscar: llamar,
         cantidad: (respuesta) => respuesta.candidates.length,

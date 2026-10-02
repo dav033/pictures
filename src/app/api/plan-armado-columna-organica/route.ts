@@ -1,0 +1,143 @@
+import { z } from "zod";
+import { isAuthenticatedRequest } from "@/lib/auth/request";
+import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
+import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
+import { isPythonAdapterError, pythonErrorBody, PYTHON_MAX_BODY_BYTES } from "@/lib/ia/nucleo/python-adapter";
+import { ArmadoColumnaOrganicaV1Schema } from "@/lib/plan/armado-columna-organica";
+import { PlanEditError } from "@/lib/plan/edicion-error";
+import { vistaPreviaArmadoColumnaOrganicaPython } from "@/lib/plan/edicion-python";
+import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+
+/**
+ * Vista previa del editor de columnas orgánicas (ADR-0034): el navegador
+ * manda el plan, la pieza, el armado en borrador (`null` pide la receta) y los
+ * tonos resueltos de la pieza (`colores`, solo pintan), y recibe la columna
+ * resuelta —cada globo colocado, las capas, los sueltos, el conteo, la compra
+ * por material y tamaño, los adornos y los avisos— con **la gráfica que emite
+ * el mismo motor que colocó los globos**, más el armado con el que se resolvió,
+ * las herramientas del diseñador (`opciones`) y los rangos vivos (`limites`).
+ * Transporte puro: no firma, no escribe en la base y no toca el catálogo.
+ *
+ * **No reemplaza a `/api/plan-armado-columna`** (la torre de anillos y patrones). Son
+ * dos cosas distintas sobre el mismo tipo de pieza y conviven: aquella arma una
+ * torre de cuartetos, esta coloca los globos de una pila irregular. El sufijo
+ * `-organica` está en la ruta, en el scope y en el contrato para que no haya
+ * duda de cuál es cuál.
+ *
+ * El SVG sale por aquí y **nunca dentro del plan ni del snapshot que firma
+ * `plan_hash`** (ADR-0034, consecuencia 2): es derivado y se regenera cuando
+ * haga falta. Su lienzo no es cuadrado, así que la gráfica lleva `ancho` y
+ * `alto`. La edición que sí cambia el plan va por `/api/plan-editar`.
+ *
+ * Misma autenticación que `/api/plan-editar` (la sesión que exige
+ * `src/proxy.ts`), repetida aquí como guardia del handler. El plazo con
+ * Python es el corto del editor (`EDICION_PYTHON_DEADLINE_MS`).
+ */
+
+const BodySchema = z.object({
+  plan: PlanDecoracionSchema,
+  estructura_id: z.string().trim().min(1).max(160),
+  armado_columna_organica: ArmadoColumnaOrganicaV1Schema.nullable(),
+  /** Los tonos de la pieza, uno por material y en su orden (a lo sumo 6, los del plan): pintan, nunca cuentan. */
+  colores: z.array(z.string().regex(/^#[0-9a-fA-F]{6}$/)).max(6).optional(),
+}).strict();
+
+/**
+ * Cuántos dibujos puede tener en vuelo este proceso. El motor corre en el mismo trabajador de CPU que la
+ * resolución y la edición del plan (`PLAN_CPU_WORKERS`) y el de la columna orgánica es de los más caros
+ * (cientos de milisegundos por pieza): una ráfaga de dibujos haría esperar a quien está guardando. El editor cancela lo que
+ * supera (`AbortController`), así que el tope solo se alcanza con muchos editores a la vez o con un cliente que no
+ * cancela: responde 429 con una frase y `Retry-After`, no encola sin límite. Mismo tope que `/api/plan-armado-arco`.
+ */
+const MAX_DIBUJOS_EN_VUELO = 4;
+let dibujosEnVuelo = 0;
+
+/** Lo que se reenvía a Python cabe en su límite de cuerpo; un cuerpo mayor nunca llegaría. */
+const LIMITE_CUERPO_BYTES = PYTHON_MAX_BODY_BYTES;
+const SUPERFICIE = "/api/plan-armado-columna-organica";
+
+function requestIdDe(request: Request): string {
+  const cabecera = request.headers.get("x-request-id");
+  return z.string().uuid().safeParse(cabecera).success ? cabecera! : crypto.randomUUID();
+}
+
+type CuerpoLeido = { ok: true; json: unknown } | { ok: false; status: 400 | 413; mensaje: string; codigo: string };
+
+async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
+  const demasiado = { ok: false, status: 413, mensaje: "La solicitud es demasiado grande.", codigo: "PAYLOAD_TOO_LARGE" } as const;
+  const declarado = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declarado) && declarado > LIMITE_CUERPO_BYTES) return demasiado;
+  let texto: string;
+  try {
+    texto = await request.text();
+  } catch {
+    return { ok: false, status: 400, mensaje: "El cuerpo de la solicitud no se pudo leer.", codigo: "INVALID_JSON" };
+  }
+  if (Buffer.byteLength(texto, "utf8") > LIMITE_CUERPO_BYTES) return demasiado;
+  try {
+    return { ok: true, json: JSON.parse(texto) as unknown };
+  } catch {
+    return { ok: false, status: 400, mensaje: "El cuerpo de la solicitud no es JSON válido.", codigo: "INVALID_JSON" };
+  }
+}
+
+export async function POST(request: Request) {
+  if (dibujosEnVuelo >= MAX_DIBUJOS_EN_VUELO) {
+    const requestId = requestIdDe(request);
+    const mensaje = "Hay demasiados dibujos de la columna en curso. Espera un momento y vuelve a intentarlo.";
+    const uiError = construirUiErrorV1("SOLICITUD_INVALIDA", { mensaje, codigoOrigen: "DEMASIADAS_SOLICITUDES", requestId });
+    registrarFalloUi(SUPERFICIE, uiError);
+    return Response.json({ error: mensaje, ui_error: uiError }, { status: 429, headers: { "X-Request-ID": requestId, "Retry-After": "1" } });
+  }
+  dibujosEnVuelo += 1;
+  try {
+    return await atender(request);
+  } finally {
+    dibujosEnVuelo -= 1;
+  }
+}
+
+async function atender(request: Request) {
+  const requestIdHttp = requestIdDe(request);
+  const cabeceras = { "X-Request-ID": requestIdHttp };
+  const rechazoTransporte = (status: number, mensaje: string, codigo: string) => {
+    const uiError = construirUiErrorV1("SOLICITUD_INVALIDA", { mensaje, codigoOrigen: codigo, requestId: requestIdHttp });
+    registrarFalloUi(SUPERFICIE, uiError);
+    return Response.json({ error: mensaje, ui_error: uiError }, { status, headers: cabeceras });
+  };
+
+  if (!isAuthenticatedRequest(request)) return rechazoTransporte(401, "La sesión no es válida.", "UNAUTHORIZED");
+  const cuerpo = await leerCuerpo(request);
+  if (!cuerpo.ok) return rechazoTransporte(cuerpo.status, cuerpo.mensaje, cuerpo.codigo);
+
+  try {
+    const body = BodySchema.parse(cuerpo.json);
+    const resultado = await vistaPreviaArmadoColumnaOrganicaPython({
+      plan: body.plan,
+      estructuraId: body.estructura_id,
+      armadoColumnaOrganica: body.armado_columna_organica,
+      ...(body.colores === undefined ? {} : { colores: body.colores }),
+      correlationId: requestIdHttp,
+      signal: request.signal,
+    });
+    return Response.json(resultado, { headers: cabeceras });
+  } catch (error) {
+    const uiError = traducirErrorServidor(error, isPythonAdapterError(error) ? error.requestId : requestIdHttp);
+    registrarFalloUi(SUPERFICIE, uiError);
+    const responder = (datos: Record<string, unknown>, status: number) => Response.json({ ...datos, ui_error: uiError }, { status, headers: cabeceras });
+    if (error instanceof z.ZodError) return responder({ error: "La vista previa del armado no tiene un formato válido.", detalles: error.issues }, 400);
+    if (error instanceof PlanEditError) {
+      // `armado_invalido`: `motivo` estable y `mensaje` de Python para el decorador.
+      return responder({
+        error: error.message,
+        ...(error.causa ? { causa: error.causa } : {}),
+        ...(error.patron ? { motivo: error.patron.motivo, mensaje: error.patron.mensaje } : {}),
+      }, error.status);
+    }
+    if (isPythonAdapterError(error)) {
+      return responder(pythonErrorBody(error), error.status >= 400 && error.status <= 599 ? error.status : 502);
+    }
+    console.error("[plan-armado-columna-organica] error inesperado:", error);
+    return responder({ error: "No se pudo dibujar la columna." }, 500);
+  }
+}

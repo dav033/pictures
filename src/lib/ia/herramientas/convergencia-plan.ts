@@ -31,6 +31,20 @@ export const LIMITE_TURNO_CON_PLAN_MS = 58_000;
 
 export const ACCION_PLAN_NO_CONVERGE = "No vuelvas a llamar confirmar_plan_decoracion ni a buscar en este mensaje. Responde ya al cliente, en una o dos frases y sin jerga: dile qué no pudiste armar con el catálogo disponible y pregúntale cómo prefiere seguir (por ejemplo con otros colores, otros tamaños u otra pieza).";
 
+/**
+ * Lo que el modelo debe corregir cuando la cantidad física estimada no cuadra (`ESTIMACION_INCONSISTENTE`).
+ * Sin piezas con armado del motor es la instrucción de siempre. Con ellas, no se le manda a tocar medidas,
+ * densidad ni mezcla de esa pieza: el motor las cuenta colocando cada globo y esos mandos no mueven su total,
+ * así que el modelo repetiría el mismo plan hasta agotar los intentos.
+ */
+export const ACCION_ESTIMACION_INCONSISTENTE = "Revisa las medidas, densidad, mezcla o número de estructuras; la cantidad física estimada no es compatible con la escala solicitada. No cotices ni generes la imagen hasta corregirlo.";
+
+export function accionEstimacionInconsistente(piezasConArmadoDelMotor: readonly string[]): string {
+  if (piezasConArmadoDelMotor.length === 0) return ACCION_ESTIMACION_INCONSISTENTE;
+  const verbo = piezasConArmadoDelMotor.length === 1 ? "lleva" : "llevan";
+  return `La cantidad física estimada no es compatible con la escala solicitada. ${piezasConArmadoDelMotor.join(", ")} ${verbo} armado del motor y se cuenta con él: su densidad, su mezcla y sus medidas NO cambian el total, así que no las toques para corregirlo. Cambia el armado de esa pieza con armar_estructura (tamaño de globo, globos a lo ancho o por capa, largo) o vuelve a confirmarla sin armado. En las demás piezas sí revisa medidas, densidad, mezcla o número de estructuras. No cotices ni generes la imagen hasta corregirlo.`;
+}
+
 /** Candidates of several searches of the same turn: one entry per product with every variant seen. */
 export function unirCandidatosTurno(previos: readonly ProductoCandidato[], nuevos: readonly ProductoCandidato[]): ProductoCandidato[] {
   const porProducto = new Map<string, ProductoCandidato>();

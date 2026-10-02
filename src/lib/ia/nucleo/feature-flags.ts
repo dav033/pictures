@@ -15,6 +15,7 @@ export type FeatureFlag =
   | "BOUQUETS_ARMADO_V1"
   | "GUIRNALDAS_ARMADO_V1"
   | "ARMADO_ARCO_COLUMNA_V1"
+  | "ESTIMAR_CONTEO_V1"
   | "CONTEO_REFERENCIA_V1"
   | "ANALISIS_COLOR_SEMPERTEX_V1"
   | "GUIA_ESTRUCTURA_V1";
@@ -83,6 +84,17 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // **No toca `armado_guirnalda`** (ADR-0032): ese campo tiene su propia
     // bandera (`GUIRNALDAS_ARMADO_V1`) y una guirnalda puede traer los dos.
     if (name === "ARMADO_ARCO_COLUMNA_V1") return process.env.NODE_ENV !== "production";
+    // Default: ENCENDIDA fuera de producción, APAGADA en producción (ADR-0038).
+    // Le da al chat `estimar_conteo_globos`, una consulta de SOLO LECTURA: para
+    // unos candidatos (medidas, densidad, mezcla y, si la pieza lo trae, su
+    // armado del motor) pregunta a Python cuántos globos cobraría el plan, de
+    // dónde sale ese número y qué variación de mandos lo acerca al conteo de la
+    // foto. No escribe estado, no toca `planResuelto`, el token ni `plan_hash`:
+    // el número que se le dice al cliente sigue saliendo de
+    // `confirmar_plan_decoracion`. Apagada, el modelo no ve la herramienta ni la
+    // línea del prompt y el turno es el de siempre. Va aparte de
+    // `ARMADO_ARCO_COLUMNA_V1` porque estimar sirve también sin armado.
+    if (name === "ESTIMAR_CONTEO_V1") return process.env.NODE_ENV !== "production";
     // Default OFF (ADR-0031, E2). Al confirmar un plan, Next pide
     // `completar_conteos` con los conteos de la foto (`pistas_conteo`) y Python
     // ajusta la cantidad de los kits y las medidas, la densidad o la mezcla de

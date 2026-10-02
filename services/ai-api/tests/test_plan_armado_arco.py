@@ -115,7 +115,8 @@ def test_la_receta_resuelve_un_arco_con_globos_y_con_svg() -> None:
     assert all(globo["material"] in (0, 1) for globo in globos)
     assert cast(int, arco_resuelto["total_comprar"]) >= len(globos), "la compra lleva desperdicio"
     assert sum(
-        cast(int, linea["cantidad"]) for linea in cast(list[dict[str, object]], arco_resuelto["conteo"])
+        cast(int, linea["cantidad"])
+        for linea in cast(list[dict[str, object]], arco_resuelto["conteo"])
     ) == len(globos)
     assert arco_resuelto["ancho_m"] > 0 and arco_resuelto["largo_m"] > 0
     # El dibujo lo emite el mismo motor: la gráfica no recalcula nada.
@@ -198,6 +199,41 @@ def test_un_armado_invalido_responde_con_motivo_y_mensaje() -> None:
     assert (error.value.code, error.value.status_code) == ("armado_invalido", 422)
     assert (detalles["estructura_id"], detalles["motivo"]) == (ARCO, "pocos_materiales")
     assert "Espiral" in str(detalles["mensaje"]), "la frase es la de Python, para el decorador"
+
+
+def _armado_gigante() -> dict[str, object]:
+    """Globos R5 en 10 por 6 m con 8 a lo ancho: 1.613 globos, más de los que el contrato publica."""
+    receta = _receta_de()
+    return {
+        **receta,
+        "geometria": {
+            **cast(dict[str, object], receta["geometria"]),
+            "anchoM": 10,
+            "altoM": 6,
+            "globosAncho": 8,
+        },
+        "globo": {**cast(dict[str, object], receta["globo"]), "nominal": 5},
+    }
+
+
+def test_un_arco_con_mas_globos_de_los_permitidos_es_armado_invalido_no_un_500() -> None:
+    with pytest.raises(PlanResolutionError) as error:
+        vista_previa_armado_arco(_peticion(_armado_gigante()))
+
+    detalles = error.value.details or {}
+    assert (error.value.code, error.value.status_code) == ("armado_invalido", 422)
+    assert (detalles["estructura_id"], detalles["motivo"]) == (ARCO, "demasiados_globos")
+    mensaje = str(detalles["mensaje"])
+    assert "1.200" in mensaje and "R5" in mensaje, "dice con qué globo y cuántos caben"
+    assert "usa un globo más grande" in mensaje, "y qué hacer: lo calcula Python, no el cliente"
+
+
+def test_el_endpoint_responde_422_y_no_500_con_un_arco_demasiado_grande() -> None:
+    status, body = _post(_operacion(_armado_gigante()), "00000000-0000-4000-8000-000000000e04")
+
+    detail = cast(dict[str, object], body["detail"])
+    assert (status, detail["code"]) == (422, "armado_invalido")
+    assert detail["motivo"] == "demasiados_globos"
 
 
 def test_una_pieza_que_no_es_un_arco_no_se_arma_asi() -> None:

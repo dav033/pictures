@@ -44,6 +44,15 @@ export const CLAVE_ARMADO = {
 export const CLAVES_ARMADO_MOTOR = ["armado_arco", "armado_columna", "armado_guirnalda_organica"] as const;
 
 /**
+ * Los campos del plan que la salida del modelo no escribe: los tres que esta capacidad decide y el
+ * `armado_columna_organica` (la columna del diseñador, ADR-0034), que **no** completa ninguna herramienta del
+ * modelo: lo escribe el decorador desde su editor, por la edición del plan. Con la bandera apagada se descartan los
+ * cuatro (los planes nuevos salen sin armado) y con ella encendida se descarta el último, porque ninguna
+ * herramienta lo decide y un plan del modelo no puede traer un armado que nadie validó contra la pieza.
+ */
+export const CLAVES_FUERA_DEL_MODELO = [...CLAVES_ARMADO_MOTOR, "armado_columna_organica"] as const;
+
+/**
  * Lo que la pieza dice de sí misma, que es de dónde sale la geometría por defecto: el modelo no tiene que
  * repetir el ancho ni el alto. `colores` es cuántos materiales lleva, y es el tope de los índices que su
  * armado puede nombrar.
@@ -389,13 +398,13 @@ export function aplicarArmadosCompletados(plan: PlanDecoracion, armados: readonl
   };
 }
 
-/** Si la estructura trae alguno de los tres armados que esta capacidad decide. */
+/** Si la estructura trae alguno de los armados que la salida del modelo no escribe. */
 function traeArmadoDeMotor(estructura: EstructuraPlan): boolean {
-  return CLAVES_ARMADO_MOTOR.some((clave) => estructura[clave] !== undefined);
+  return CLAVES_FUERA_DEL_MODELO.some((clave) => estructura[clave] !== undefined);
 }
 
 /**
- * Quita los tres armados del motor que trajera el plan. Es lo que corre con la bandera apagada: la salida del
+ * Quita los armados del motor que trajera el plan (los tres de esta capacidad y la columna orgánica). Es lo que corre con la bandera apagada: la salida del
  * modelo no escribe en el plan un campo que la capacidad no tiene encendida.
  *
  * **No toca `armado_guirnalda`** (ADR-0032): ese campo no es de esta capacidad, lo completa la resolución y
@@ -411,6 +420,25 @@ export function sinArmadosDeMotor(plan: PlanDecoracion): PlanDecoracion {
       delete limpia.armado_arco;
       delete limpia.armado_columna;
       delete limpia.armado_guirnalda_organica;
+      delete limpia.armado_columna_organica;
+      return limpia;
+    }),
+  };
+}
+
+/**
+ * Quita solo el `armado_columna_organica` que trajera el plan del modelo. Es lo que corre con la bandera encendida,
+ * donde los otros tres armados sí los decide la capacidad: ninguna herramienta completa la columna orgánica, así que
+ * la que llega en un plan del modelo no pasó por ninguna puerta y no entra.
+ */
+export function sinColumnaOrganicaDelModelo(plan: PlanDecoracion): PlanDecoracion {
+  if (!plan.estructuras.some((estructura) => estructura.armado_columna_organica !== undefined)) return plan;
+  return {
+    ...plan,
+    estructuras: plan.estructuras.map((estructura) => {
+      if (estructura.armado_columna_organica === undefined) return estructura;
+      const limpia: EstructuraPlan = { ...estructura };
+      delete limpia.armado_columna_organica;
       return limpia;
     }),
   };

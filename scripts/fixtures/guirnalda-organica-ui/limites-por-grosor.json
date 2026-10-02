@@ -1,0 +1,454 @@
+{
+ "_comentario": "Salida real del motor de la guirnalda (ADR-0034): los rangos vivos de limites_de y los avisos de lo que corrige, por grosor de banda; un caso imposible (largo corto con banda gruesa); y un rechazo con su frase. Tomada llamando a armado_resuelto y limites_de sobre el armado de vista-guirnalda-organica.json con los tonos de ese archivo. Regenerar solo a proposito cuando el motor cambie, nunca para que pase una prueba de TypeScript.",
+ "base": {
+  "version": "armado-guirnalda-organica.v1",
+  "origen": "sugerido",
+  "forma": {
+   "largoM": 3.5,
+   "alturaM": 2.2,
+   "pendienteM": 0,
+   "ondaM": 0.12,
+   "ondas": 1.5,
+   "colgadoM": 0,
+   "festones": 1,
+   "carga": 0,
+   "suelo": true,
+   "persona": true
+  },
+  "volumen": {
+   "grosorPatasM": 0.4,
+   "grosorCimaM": 0.62,
+   "irregularidad": 0.4,
+   "relleno": 0.72,
+   "racimo": 4,
+   "salientes": 0.35
+  },
+  "tamanos": {
+   "mezcla": {
+    "5": 32.0,
+    "12": 45.0,
+    "18": 18.0,
+    "24": 5.0
+   },
+   "grandesAbajo": 0.3,
+   "inflado": 1,
+   "variacion": 0.1
+  },
+  "colores": {
+   "paleta": [
+    {
+     "material": 0,
+     "peso": 60,
+     "acabado": "mate",
+     "rol": "normal"
+    },
+    {
+     "material": 1,
+     "peso": 40,
+     "acabado": "mate",
+     "rol": "normal"
+    }
+   ],
+   "reparto": "azar",
+   "mezcla": 0.5
+  },
+  "adornos": {
+   "follaje": 0.5,
+   "flores": 0
+  },
+  "aspecto": {
+   "brillo": 0.6,
+   "sombra": 0.2,
+   "contorno": 0.8,
+   "profundidad": 0.5,
+   "semilla": 11
+  }
+ },
+ "colores": [
+  "#ffffff",
+  "#c5a253"
+ ],
+ "por_grosor": {
+  "0.4": {
+   "armado": {
+    "version": "armado-guirnalda-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "largoM": 3.5,
+     "alturaM": 2.2,
+     "pendienteM": 0,
+     "ondaM": 0.12,
+     "ondas": 1.5,
+     "colgadoM": 0,
+     "festones": 1,
+     "carga": 0,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 0.4,
+     "grosorCimaM": 0.4,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32.0,
+      "12": 45.0,
+      "18": 18.0,
+      "24": 5.0
+     },
+     "grandesAbajo": 0.3,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 60,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 40,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.5,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    }
+   },
+   "limites": {
+    "largoMin": 1.0,
+    "largoMax": 10,
+    "grosorExtremosMin": 0.3,
+    "grosorExtremosMax": 1.4,
+    "grosorCentroMin": 0.3,
+    "grosorCentroMax": 1.4,
+    "alturaMin": 0.35,
+    "alturaMax": 4.35,
+    "pendienteMax": 0.85,
+    "ondaMax": 0.4,
+    "colgadoMax": 1.05,
+    "festonesMax": 3.0
+   },
+   "avisos": [
+    "R24 no cabe en ese grosor: se quitó de la mezcla."
+   ],
+   "globos": 77
+  },
+  "0.8": {
+   "armado": {
+    "version": "armado-guirnalda-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "largoM": 3.5,
+     "alturaM": 2.2,
+     "pendienteM": 0,
+     "ondaM": 0.12,
+     "ondas": 1.5,
+     "colgadoM": 0,
+     "festones": 1,
+     "carga": 0,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 0.8,
+     "grosorCimaM": 0.8,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32.0,
+      "12": 45.0,
+      "18": 18.0,
+      "24": 5.0
+     },
+     "grandesAbajo": 0.3,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 60,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 40,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.5,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    }
+   },
+   "limites": {
+    "largoMin": 1.95,
+    "largoMax": 10,
+    "grosorExtremosMin": 0.3,
+    "grosorExtremosMax": 1.4,
+    "grosorCentroMin": 0.3,
+    "grosorCentroMax": 1.4,
+    "alturaMin": 0.55,
+    "alturaMax": 4.35,
+    "pendienteMax": 0.85,
+    "ondaMax": 0.4,
+    "colgadoMax": 1.05,
+    "festonesMax": 3.0
+   },
+   "avisos": [],
+   "globos": 195
+  },
+  "1.2": {
+   "armado": {
+    "version": "armado-guirnalda-organica.v1",
+    "origen": "sugerido",
+    "forma": {
+     "largoM": 3.5,
+     "alturaM": 2.2,
+     "pendienteM": 0,
+     "ondaM": 0.12,
+     "ondas": 1.5,
+     "colgadoM": 0,
+     "festones": 1,
+     "carga": 0,
+     "suelo": true,
+     "persona": true
+    },
+    "volumen": {
+     "grosorPatasM": 1.2,
+     "grosorCimaM": 1.2,
+     "irregularidad": 0.4,
+     "relleno": 0.72,
+     "racimo": 4,
+     "salientes": 0.35
+    },
+    "tamanos": {
+     "mezcla": {
+      "5": 32.0,
+      "12": 45.0,
+      "18": 18.0,
+      "24": 5.0
+     },
+     "grandesAbajo": 0.3,
+     "inflado": 1,
+     "variacion": 0.1
+    },
+    "colores": {
+     "paleta": [
+      {
+       "material": 0,
+       "peso": 60,
+       "acabado": "mate",
+       "rol": "normal"
+      },
+      {
+       "material": 1,
+       "peso": 40,
+       "acabado": "mate",
+       "rol": "normal"
+      }
+     ],
+     "reparto": "azar",
+     "mezcla": 0.5
+    },
+    "adornos": {
+     "follaje": 0.5,
+     "flores": 0
+    },
+    "aspecto": {
+     "brillo": 0.6,
+     "sombra": 0.2,
+     "contorno": 0.8,
+     "profundidad": 0.5,
+     "semilla": 11
+    }
+   },
+   "limites": {
+    "largoMin": 2.9,
+    "largoMax": 10,
+    "grosorExtremosMin": 0.3,
+    "grosorExtremosMax": 1.4,
+    "grosorCentroMin": 0.3,
+    "grosorCentroMax": 1.4,
+    "alturaMin": 0.75,
+    "alturaMax": 4.35,
+    "pendienteMax": 0.85,
+    "ondaMax": 0.4,
+    "colgadoMax": 1.05,
+    "festonesMax": 3.0
+   },
+   "avisos": [],
+   "globos": 392
+  }
+ },
+ "avisos_largo_imposible": {
+  "armado": {
+   "version": "armado-guirnalda-organica.v1",
+   "origen": "sugerido",
+   "forma": {
+    "largoM": 0.8,
+    "alturaM": 2.2,
+    "pendienteM": 0,
+    "ondaM": 0.12,
+    "ondas": 1.5,
+    "colgadoM": 0,
+    "festones": 1,
+    "carga": 0,
+    "suelo": true,
+    "persona": true
+   },
+   "volumen": {
+    "grosorPatasM": 1.4,
+    "grosorCimaM": 1.4,
+    "irregularidad": 0.4,
+    "relleno": 0.72,
+    "racimo": 4,
+    "salientes": 0.35
+   },
+   "tamanos": {
+    "mezcla": {
+     "5": 32.0,
+     "12": 45.0,
+     "18": 18.0,
+     "24": 5.0
+    },
+    "grandesAbajo": 0.3,
+    "inflado": 1,
+    "variacion": 0.1
+   },
+   "colores": {
+    "paleta": [
+     {
+      "material": 0,
+      "peso": 60,
+      "acabado": "mate",
+      "rol": "normal"
+     },
+     {
+      "material": 1,
+      "peso": 40,
+      "acabado": "mate",
+      "rol": "normal"
+     }
+    ],
+    "reparto": "azar",
+    "mezcla": 0.5
+   },
+   "adornos": {
+    "follaje": 0.5,
+    "flores": 0
+   },
+   "aspecto": {
+    "brillo": 0.6,
+    "sombra": 0.2,
+    "contorno": 0.8,
+    "profundidad": 0.5,
+    "semilla": 11
+   }
+  },
+  "avisos": [
+   "Con 0,8 m de largo el grosor no puede pasar de 0,30 m: una guirnalda es mucho más larga que gruesa.",
+   "R18, R24 no caben en ese grosor: se quitó de la mezcla."
+  ]
+ },
+ "rechazo": {
+  "armado": {
+   "version": "armado-guirnalda-organica.v1",
+   "origen": "sugerido",
+   "forma": {
+    "largoM": 3.5,
+    "alturaM": 2.2,
+    "pendienteM": 0,
+    "ondaM": 0.12,
+    "ondas": 1.5,
+    "colgadoM": 0,
+    "festones": 1,
+    "carga": 0,
+    "suelo": true,
+    "persona": true
+   },
+   "volumen": {
+    "grosorPatasM": 0.4,
+    "grosorCimaM": 0.62,
+    "irregularidad": 0.4,
+    "relleno": 0.72,
+    "racimo": 4,
+    "salientes": 0.35
+   },
+   "tamanos": {
+    "mezcla": {},
+    "grandesAbajo": 0.3,
+    "inflado": 1,
+    "variacion": 0.1
+   },
+   "colores": {
+    "paleta": [
+     {
+      "material": 0,
+      "peso": 60,
+      "acabado": "mate",
+      "rol": "normal"
+     },
+     {
+      "material": 1,
+      "peso": 40,
+      "acabado": "mate",
+      "rol": "normal"
+     }
+    ],
+    "reparto": "azar",
+    "mezcla": 0.5
+   },
+   "adornos": {
+    "follaje": 0.5,
+    "flores": 0
+   },
+   "aspecto": {
+    "brillo": 0.6,
+    "sombra": 0.2,
+    "contorno": 0.8,
+    "profundidad": 0.5,
+    "semilla": 11
+   }
+  },
+  "motivo": "sin_mezcla",
+  "mensaje": "El armado no dice de que tamanos son los globos."
+ }
+}

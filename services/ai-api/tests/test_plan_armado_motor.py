@@ -248,7 +248,9 @@ def unidades_por_tamano_y_color(pieza: Mapping[str, object]) -> dict[tuple[float
     return totales
 
 
-def conteo_del_motor(resuelto_motor: Mapping[str, object], colores: tuple[str, ...]) -> dict[tuple[float, str], int]:
+def conteo_del_motor(
+    resuelto_motor: Mapping[str, object], colores: tuple[str, ...]
+) -> dict[tuple[float, str], int]:
     """El conteo del motor leído como lo lee el plan: por diámetro y color.
 
     El arco cuenta solo por material porque toda su banda es del mismo globo; la
@@ -435,7 +437,9 @@ async def test_los_acabados_del_motor_se_suman_en_la_linea_de_su_material() -> N
     del_motor = armado_organico_resuelto(
         EstructuraGuirnalda(es_guirnalda=True, materiales=COLORES_GUIRNALDA), armado, MERMA
     )
-    acabados = {str(entrada["acabado"]) for entrada in cast(list[dict[str, Any]], del_motor["conteo"])}
+    acabados = {
+        str(entrada["acabado"]) for entrada in cast(list[dict[str, Any]], del_motor["conteo"])
+    }
     assert acabados == {"mate", "cromado"}, "el caso solo prueba algo con dos acabados"
 
     pieza = estructura(await resolver(plan(guirnalda(armado_guirnalda_organica=armado))), GUIRNALDA)
@@ -497,7 +501,9 @@ async def test_los_adornos_de_la_guirnalda_no_se_cotizan() -> None:
         cast(list[dict[str, Any]], resuelto["armados_guirnalda_organica"])[0]["adornos"],
     )
     assert adornos == del_motor["adornos"]
-    assert adornos["ramas"] > 0 and adornos["flores"] > 0, "el caso necesita adornos para probar algo"
+    assert adornos["ramas"] > 0 and adornos["flores"] > 0, (
+        "el caso necesita adornos para probar algo"
+    )
     # El total es exactamente lo que el motor contó: los adornos no entran.
     pieza = estructura(resuelto, GUIRNALDA)
     assert pieza["total_unidades"] == sum(
@@ -557,9 +563,18 @@ async def test_los_armados_resueltos_se_publican_sin_el_dibujo() -> None:
         armado_de_guirnalda,
         MERMA,
     )
-    assert resuelto["armados_arco"] == [
+    # El arco publica además lo que la imagen lee de su armado (ADR-0035): derivado, escrito por la resolución y
+    # no por el motor. El resto es exactamente lo que el motor contó.
+    publicado = cast(dict[str, object], cast(list[object], resuelto["armados_arco"])[0])
+    derivados = {
+        clave: publicado.pop(clave) for clave in ("estructura_id", "prompt_gemini", "prompt_lora")
+    }
+    assert [publicado] == [
         {clave: valor for clave, valor in del_arco.items() if clave not in SOLO_DEL_MOTOR}
     ]
+    assert derivados["estructura_id"] == ARCO
+    assert str(derivados["prompt_gemini"]).startswith("ARCH ASSEMBLY")
+    assert str(derivados["prompt_lora"]).isascii() and str(derivados["prompt_lora"]).strip()
     assert resuelto["armados_columna"] == [del_columna]
     assert resuelto["armados_guirnalda_organica"] == [
         {clave: valor for clave, valor in del_guirnalda.items() if clave not in SOLO_DEL_MOTOR}
@@ -594,9 +609,7 @@ async def test_un_tamano_obligatorio_que_el_armado_no_coloca_sigue_avisando() ->
         ],
     }
     resuelto = await resolver(con_tamanos)
-    assert f"tamano_obligatorio_sin_ubicar:{ARCO}:R-24" in cast(
-        list[str], resuelto["advertencias"]
-    )
+    assert f"tamano_obligatorio_sin_ubicar:{ARCO}:R-24" in cast(list[str], resuelto["advertencias"])
     assert {
         float(linea["diam_pulg"])
         for linea in cast(list[dict[str, Any]], estructura(resuelto, ARCO)["lineas"])

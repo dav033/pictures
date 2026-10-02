@@ -1,18 +1,34 @@
 "use client";
 
-import type { AnalisisColorSempertex, ColorDePieza } from "@/lib/plan/analisis-color";
+import { ChevronDown, Info } from "lucide-react";
+import type { AnalisisColorSempertex } from "@/lib/plan/analisis-color";
+import {
+  bloqueAbiertoPorDefecto,
+  notasDelBloque,
+  resumenDeColores,
+  vistaDeColores,
+  type NivelParecido,
+  type VistaColor,
+  type VistaPieza,
+} from "@/lib/plan/presentacion-color";
+import { DetalleTecnicoColores } from "./DetalleTecnicoColores";
+import { muestraDeGlobo } from "./textos-analisis";
 
 /**
- * Los colores que se midieron en la foto, con la referencia Sempertex y el Pantone de cada uno.
+ * Los colores de la foto, contados para quien la subió: por cada pieza, qué globo del catálogo se parece más a
+ * cada color de su foto y cuánto. Es una guía para mirar, no decide qué se compra (eso lo siguen decidiendo las
+ * etiquetas del analizador, `colores-referencia.ts`).
  *
- * Es un bloque **para mirar**, no para decidir: estos colores no son los que compra el plan todavía (eso lo
- * siguen decidiendo las etiquetas del analizador, `colores-referencia.ts`). Está en pantalla para poder
- * comparar lo que mide con lo que se ve, antes de que mande.
+ * **Compacto a propósito.** Una fila por color (muestra de la foto, muestra del globo, nombre, porcentaje y una
+ * píldora de parecido); todo lo demás va plegado al final: otras opciones parecidas, notas de la medición y el
+ * detalle técnico. Con más de `MAX_COLORES_BLOQUE_ABIERTO` colores el bloque entero llega cerrado, con un
+ * resumen de una línea («7 colores» y las muestras en miniatura); con pocos, abierto, porque no ahorra nada
+ * esconderlos.
  *
- * Lo que se enseña a propósito, y no se esconde: el **ΔE** de cada candidata (un ΔE alto significa que el color
- * medido no se parece a ninguna referencia, casi siempre porque ese grupo de píxeles es sombra o fondo), y las
- * marcas de *ambigua* (dos referencias indistinguibles para la foto), *neutro* (un blanco o un gris no se
- * identifica por tono) y *débil* (ese color ocupa muy poco).
+ * Aquí solo se pinta: qué se dice, con qué palabras y qué se esconde lo decide `presentacion-color.ts`. Lo que
+ * suena a depuración —el id interno de la pieza, el croquis, los píxeles, el hex, el Pantone, el tono y el
+ * croma, las distancias y las marcas internas— no se ve en el bloque: vive entero, sin traducir, en
+ * `DetalleTecnicoColores`.
  */
 
 type Props = {
@@ -20,129 +36,210 @@ type Props = {
   className?: string;
 };
 
-const pct = (valor: number) => `${Math.round(valor * 100)} %`;
+/** Colores de la píldora de parecido. Siempre van con palabra y puntos: el color nunca es la única señal. */
+const CLASE_DEL_NIVEL: Readonly<Record<NivelParecido, string>> = {
+  muy_parecido: "bg-exito-suave text-exito",
+  parecido: "bg-aviso-suave text-aviso",
+  aproximado: "bg-superficie-2 text-texto",
+};
 
-/**
- * El color del número según cuánto se parece. La escala es la distancia de globo (grados de tono, con la
- * claridad a la mitad y el croma solo cuando se sale de lo que la sombra explica), no ΔE.
- */
-function tonoDeDistancia(distancia: number): string {
-  if (distancia <= 14) return "text-emerald-600 dark:text-emerald-400";
-  if (distancia <= 26) return "text-amber-600 dark:text-amber-400";
-  return "text-rose-600 dark:text-rose-400";
+const FOCO = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento";
+const SIN_MARCADOR = "list-none [&::-webkit-details-marker]:hidden";
+
+/** Una muestra pequeña. El color es dato (la foto, el catálogo), no del tema: el anillo sí usa tokens. */
+function Punto({ fondo, className = "size-5" }: { fondo: string; className?: string }) {
+  return <span aria-hidden="true" className={`${className} shrink-0 rounded-full ring-1 ring-borde ring-inset`} style={{ background: fondo }} />;
 }
 
-function Marca({ children }: { children: React.ReactNode }) {
+function Parecido({ parecido }: { parecido: NonNullable<VistaColor["parecido"]> }) {
   return (
-    <span className="rounded-sm border border-current/30 px-1 py-px text-[10px] uppercase tracking-wide opacity-80">
-      {children}
+    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${CLASE_DEL_NIVEL[parecido.nivel]}`}>
+      <span aria-hidden="true" className="flex gap-0.5">
+        {[1, 2, 3].map((punto) => (
+          <span key={punto} className={`size-1.5 rounded-full ${punto <= parecido.puntos ? "bg-current" : "ring-1 ring-current ring-inset"}`} />
+        ))}
+      </span>
+      {parecido.texto}
     </span>
   );
 }
 
-function Pieza({ pieza }: { pieza: ColorDePieza }) {
+function NotaDeColor({ texto }: { texto: string }) {
   return (
-    <li className="border-t border-black/10 py-3 first:border-t-0 dark:border-white/10">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs opacity-70">
-        <span className="font-medium opacity-100">{pieza.elementId}</span>
-        <span>{pieza.tipo || "sin tipo"}</span>
-        <span>
-          croquis: {pieza.croquis.forma} ({pct(pieza.croquis.parteDeLaCaja)} de la caja)
-        </span>
-        <span>
-          {pieza.pixeles.medidos.toLocaleString("es")} px medidos de {pieza.pixeles.deLaCaja.toLocaleString("es")}
-        </span>
-        {pieza.colores[0]?.cruce.familias.length ? (
-          <span>acabado visto: {pieza.colores[0].cruce.familias.join(" o ")}</span>
-        ) : null}
-      </div>
+    <span className="inline-flex max-w-full items-start gap-1 rounded-full bg-superficie-2 px-2 py-0.5 text-xs leading-snug text-texto">
+      <Info className="mt-0.5 size-3 shrink-0 text-texto-suave" aria-hidden="true" />
+      {texto}
+    </span>
+  );
+}
 
-      {pieza.colores.length === 0 ? (
-        <p className="mt-2 text-xs opacity-60">Sin colores medibles en esta pieza.</p>
-      ) : (
-        <ul className="mt-2 flex flex-col gap-2">
-          {pieza.colores.map((color) => {
-            const mejor = color.cruce.candidatas[0];
-            return (
-              <li key={color.hex} className="flex items-start gap-3">
-                <span
-                  aria-hidden="true"
-                  className="mt-px size-9 shrink-0 rounded-md border border-black/15 dark:border-white/20"
-                  style={{ backgroundColor: color.hex }}
-                />
-                <div className="min-w-0 text-xs">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <code className="font-mono opacity-70">{color.hex}</code>
-                    <span className="opacity-60">{pct(color.parte)}</span>
-                    {color.cruce.sinReferencia ? (
-                      <>
-                        {/* Con la más cercana tan lejos, nombrarla sería inventar: casi siempre es sombra o fondo. */}
-                        <span className="font-medium opacity-70">Ningún globo del catálogo se parece</span>
-                        <span className={tonoDeDistancia(mejor.distancia)}>la más cercana, a {mejor.distancia}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="font-medium">
-                          {mejor.nombreCompleto} · {mejor.codigo}
-                        </span>
-                        {mejor.pms ? <span className="opacity-70">PMS {mejor.pms}</span> : <span className="opacity-50">sin PMS</span>}
-                        <span className="opacity-70">{mejor.acabado}</span>
-                        <span className={tonoDeDistancia(mejor.distancia)}>
-                          tono {mejor.tono}° · croma ×{mejor.razonCroma}
-                        </span>
-                        {color.cruce.porNombre ? <Marca>lo nombró el análisis</Marca> : null}
-                        {color.cruce.ambigua && !color.cruce.porNombre ? <Marca>ambigua</Marca> : null}
-                        {color.cruce.neutro ? <Marca>neutro</Marca> : null}
-                      </>
-                    )}
-                  </div>
-                  {color.cruce.candidatas.length > 1 ? (
-                    <p className="mt-0.5 opacity-55">
-                      {color.cruce.sinReferencia ? "lo más cercano, y queda lejos: " : "también: "}
-                      {color.cruce.candidatas.map((otra, indice) =>
-                        color.cruce.sinReferencia || indice > 0 ? (
-                          <span key={otra.codigo}>
-                            {indice > 0 ? " · " : ""}
-                            {otra.nombreCompleto} ({otra.distancia})
-                          </span>
-                        ) : null,
-                      )}
-                    </p>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {pieza.avisos.length > 0 ? (
-        <ul className="mt-2 flex flex-col gap-0.5 text-[11px] opacity-60">
-          {pieza.avisos.map((aviso) => (
-            <li key={aviso}>— {aviso}</li>
+/** Una fila por color: las dos muestras, el globo con su referencia, cuánto ocupa y las píldoras. */
+function FilaDeColor({ color }: { color: VistaColor }) {
+  const { globo, parecido } = color;
+  const titulo = globo ? `${globo.nombre} · Ref. ${globo.codigo} · ${globo.acabado}` : undefined;
+  return (
+    <li data-color="" className="flex flex-wrap items-center gap-x-2.5 gap-y-1 py-1">
+      <span className="flex shrink-0 items-center gap-1" title={globo ? "Tu foto, y el globo sugerido" : "Tu foto"}>
+        <Punto fondo={color.hexEnFoto} />
+        {globo ? <Punto fondo={muestraDeGlobo(globo.hexGlobo, globo.acabadoOriginal)} /> : null}
+        <span className="sr-only">{globo ? "En tu foto, y globo sugerido:" : "En tu foto:"}</span>
+      </span>
+      {globo ? (
+        <span className="min-w-0 flex-1 basis-36 text-[13px] leading-snug text-texto" title={titulo}>
+          <span className="font-medium">{globo.nombre}</span>
+          <span className="text-texto-suave">
+            {" "}
+            Ref. {globo.codigo}
+            <span className="sr-only sm:not-sr-only"> · {globo.acabado}</span>
+          </span>
+        </span>
+      ) : null}
+      <span className="flex shrink-0 items-center gap-1.5 text-xs tabular-nums text-texto-suave" title={color.textoPorcentaje}>
+        <span aria-hidden="true" className="hidden h-1 w-8 overflow-hidden sm:block rounded-full bg-superficie-2">
+          <span className="block h-full rounded-full bg-acento" style={{ width: `${color.porcentaje}%` }} />
+        </span>
+        <span className="whitespace-nowrap">
+          {color.porcentajeCorto}
+          <span className="sr-only"> de la pieza</span>
+        </span>
+      </span>
+      {parecido || color.notas.length > 0 ? (
+        <span className="flex w-full flex-wrap items-center gap-1.5 pl-[3.25rem] sm:w-auto sm:pl-0">
+          {parecido ? <Parecido parecido={parecido} /> : null}
+          {color.notas.map((nota) => (
+            <NotaDeColor key={nota} texto={nota} />
           ))}
-        </ul>
+        </span>
       ) : null}
     </li>
   );
 }
 
-export function ColoresSempertex({ analisis, className }: Props) {
-  if (!analisis || analisis.piezas.length === 0) return null;
+function Pieza({ pieza }: { pieza: VistaPieza }) {
   return (
-    <section className={className}>
-      <header className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-medium">Color medido de la foto</h3>
-        <p className="text-[11px] opacity-55">
-          De 2 a 5 colores por pieza, medidos en su croquis y cruzados con el globo real del catálogo. No decide
-          qué se compra.
-        </p>
-      </header>
-      <ul className="mt-1 flex flex-col">
-        {analisis.piezas.map((pieza) => (
-          <Pieza key={pieza.elementId} pieza={pieza} />
+    <li className="border-t border-borde-suave pt-2 first:border-t-0 first:pt-0">
+      <h4 className="text-xs font-semibold text-texto-suave">{pieza.nombre}</h4>
+      {pieza.sinColores ? (
+        <p className="py-1.5 text-xs text-texto-suave">{pieza.sinColores}</p>
+      ) : (
+        <ul>
+          {pieza.colores.map((color) => (
+            <FilaDeColor key={color.clave} color={color} />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function Plegable({ marca, titulo, children }: { marca: string; titulo: string; children: React.ReactNode }) {
+  return (
+    <details data-plegable={marca} className="group open:basis-full">
+      <summary className={`flex min-h-11 w-fit cursor-pointer items-center gap-1.5 rounded-md text-xs font-medium text-acento ${SIN_MARCADOR} ${FOCO}`}>
+        {titulo}
+        <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      {children}
+    </details>
+  );
+}
+
+function OtrasOpciones({ piezas }: { piezas: VistaPieza[] }) {
+  const conOtras = piezas
+    .map((pieza) => ({ pieza, colores: pieza.colores.filter((color) => color.otras.length > 0) }))
+    .filter(({ colores }) => colores.length > 0);
+  if (conOtras.length === 0) return null;
+  const variasPiezas = piezas.length > 1;
+  return (
+    <Plegable marca="otras" titulo="Otras opciones parecidas">
+      <div className="flex flex-col gap-2 pb-2">
+        {conOtras.map(({ pieza, colores }) => (
+          <div key={pieza.clave}>
+            {variasPiezas ? <p className="mb-1 text-xs font-semibold text-texto-suave">{pieza.nombre}</p> : null}
+            <ul className="flex flex-col gap-1.5">
+              {colores.map((color) => (
+                <li key={color.clave} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                  <span className="flex items-center gap-1.5 text-texto-suave">
+                    <Punto fondo={color.hexEnFoto} className="size-4" />
+                    {color.etiquetaOtras}:
+                  </span>
+                  {color.otras.map((otra) => (
+                    <span key={otra.codigo} className="inline-flex items-center gap-1.5 rounded-full bg-superficie-suave py-0.5 pl-1 pr-2 text-texto ring-1 ring-borde-suave ring-inset">
+                      <Punto fondo={muestraDeGlobo(otra.hexGlobo, otra.acabadoOriginal)} className="size-4" />
+                      {otra.nombre}
+                    </span>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </Plegable>
+  );
+}
+
+function NotasDeLaMedicion({ piezas }: { piezas: VistaPieza[] }) {
+  const notas = notasDelBloque(piezas);
+  if (notas.length === 0) return null;
+  return (
+    <Plegable marca="notas" titulo={notas.length === 1 ? "1 nota sobre la medición" : `${notas.length} notas sobre la medición`}>
+      <ul className="flex flex-col gap-1 pb-2">
+        {notas.map(({ pieza, aviso }) => (
+          <li key={`${pieza ?? ""}${aviso}`} className="flex gap-1.5 text-xs leading-snug text-texto-suave">
+            <Info className="mt-0.5 size-3 shrink-0 text-texto-tenue" aria-hidden="true" />
+            <span>
+              {pieza ? <span className="font-medium">{pieza}: </span> : null}
+              {aviso}
+            </span>
+          </li>
         ))}
       </ul>
+    </Plegable>
+  );
+}
+
+export function ColoresSempertex({ analisis, className = "" }: Props) {
+  if (!analisis || analisis.piezas.length === 0) return null;
+  const piezas = vistaDeColores(analisis);
+  const resumen = resumenDeColores(piezas);
+  return (
+    <section aria-label="Colores de tu foto" className={className}>
+      <details
+        data-bloque-colores=""
+        open={bloqueAbiertoPorDefecto(piezas)}
+        className="group/bloque rounded-2xl border border-borde-suave bg-superficie shadow-[0_1px_2px_var(--sombra)]"
+      >
+        <summary className={`flex min-h-11 cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 ${SIN_MARCADOR} ${FOCO}`}>
+          <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+            <h3 className="text-sm font-semibold text-texto">Colores de tu foto</h3>
+            {resumen.texto ? <span className="text-xs text-texto-suave">{resumen.texto}</span> : null}
+          </span>
+          <span aria-hidden="true" className="flex shrink-0 items-center gap-0.5">
+            {resumen.muestras.map((globo) => (
+              <Punto key={globo.codigo} fondo={muestraDeGlobo(globo.hexGlobo, globo.acabadoOriginal)} className="size-4" />
+            ))}
+          </span>
+          <ChevronDown className="size-4 shrink-0 text-texto-suave transition-transform group-open/bloque:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="px-3.5 pb-2">
+          <p className="text-xs leading-snug text-texto-suave">
+            Globos del catálogo que más se parecen a tu foto. Es solo una guía: no cambia lo que se compra.
+          </p>
+          <p className="mt-0.5 text-xs leading-snug text-texto-tenue">En cada fila: tu foto, y a su lado el globo sugerido.</p>
+          <ul className="mt-2 flex flex-col gap-1">
+            {piezas.map((pieza) => (
+              <Pieza key={pieza.clave} pieza={pieza} />
+            ))}
+          </ul>
+          {/* Los tres plegables comparten renglón mientras están cerrados; el que se abre ocupa el ancho entero. */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-5">
+            <OtrasOpciones piezas={piezas} />
+            <NotasDeLaMedicion piezas={piezas} />
+            <DetalleTecnicoColores analisis={analisis} />
+          </div>
+        </div>
+      </details>
     </section>
   );
 }

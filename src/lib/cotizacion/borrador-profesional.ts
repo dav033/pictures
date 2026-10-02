@@ -1,12 +1,11 @@
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { CATALOGO_ERRORES_UI_V1 } from "@/lib/ia/contracts/ui-error-v1";
 import { esCancelacion, mensajeErrorRespuesta } from "@/lib/plan/peticion-plan-editar";
+import { productoCliente, pulgadasCliente } from "@/lib/plan/presentacion-cliente";
+import { errorDeCantidad, errorDeGanancia, errorDePesos, leerCantidad, leerPesos, leerPorcentaje } from "./lectura-numeros";
+import { estadoFilas } from "./limites-filas";
 import {
   CotizacionProfesionalResultadoSchema,
-  MAX_CANTIDAD,
-  MAX_COP,
-  MAX_LINEAS_SECCION,
-  MAX_UTILIDAD_PORCENTAJE,
   SECCIONES_COSTO,
   type CotizacionProfesionalResultado,
   type EntradaCotizacionProfesional,
@@ -32,16 +31,21 @@ export type BorradorProfesional = {
   utilidad: string;
 };
 
+/**
+ * Lo que se lee en pantalla. Una palabra por concepto: «gastos» es lo que le
+ * cuesta a quien cotiza (los nombres del contrato —mano_de_obra,
+ * equipos_transporte, indirectos, utilidad— no se tocan: solo este texto).
+ */
 export const TITULOS_SECCION: Record<SeccionCosto, string> = {
-  mano_de_obra: "Mano de obra",
-  equipos_transporte: "Equipos y transporte",
-  indirectos: "Costos indirectos",
+  mano_de_obra: "Tu trabajo y ayudantes",
+  equipos_transporte: "Transporte y equipos",
+  indirectos: "Otros gastos",
 };
 
 export const DESCRIPCIONES_SECCION: Record<SeccionCosto, string> = {
-  mano_de_obra: "Horas propias, ayudantes, montaje.",
-  equipos_transporte: "Transporte de ida y regreso, alquiler de bases, estructuras o equipos.",
-  indirectos: "La parte de este proyecto de publicidad, oficina o personal administrativo.",
+  mano_de_obra: "Tus horas, ayudantes, montaje.",
+  equipos_transporte: "Ida y regreso, alquiler de bases, estructuras o equipos.",
+  indirectos: "Una parte de publicidad, oficina o personal de apoyo.",
 };
 
 export function filaVacia(id: string): FilaCosto {
@@ -52,64 +56,10 @@ export function borradorVacio(): BorradorProfesional {
   return { costos: { mano_de_obra: [], equipos_transporte: [], indirectos: [] }, precios: {}, utilidad: "" };
 }
 
-/** Pesos enteros como se escriben en Colombia: "12.000", "$ 12.000" o "12000". Los decimales no existen en COP. */
-export function leerPesos(texto: string): number | null {
-  const limpio = texto.replace(/[\s$.]/g, "");
-  if (!/^\d+$/.test(limpio)) return null;
-  const valor = Number(limpio);
-  return Number.isSafeInteger(valor) && valor <= MAX_COP ? valor : null;
-}
+// La lectura de números vive en `lectura-numeros.ts`; se reexporta aquí porque es la puerta de este módulo.
+export { ecoDePesos, escrituraPesos, FICHAS_GANANCIA, fichaActiva, errorDeCantidad, errorDeGanancia, errorDePesos, formatearPesos, leerCantidad, leerPesos, leerPorcentaje, posicionTrasDigitos } from "./lectura-numeros";
 
-/**
- * Lo escrito con los miles separados, como se ve un precio en Colombia:
- * "1000" -> "1.000". Es SOLO estetico: `leerPesos` quita los puntos, asi que el
- * valor que se envia a Python sigue siendo 1000. Descarta todo lo que no sea
- * digito (el "$" que alguien pegue, espacios), y una cadena sin digitos vuelve
- * vacia para poder borrar el campo.
- */
-export function formatearPesos(texto: string): string {
-  const digitos = texto.replace(/\D/g, "");
-  if (!digitos) return "";
-  // Sin ceros a la izquierda: "007" se escribe "7", no "007".
-  const limpio = digitos.replace(/^0+(?=\d)/, "");
-  return limpio.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
-/**
- * Donde dejar el cursor despues de reformatear: al final del digito numero
- * `digitos` del texto ya formateado. Sin esto el cursor salta al final y
- * corregir una cifra en medio es imposible.
- */
-export function posicionTrasDigitos(texto: string, digitos: number): number {
-  if (digitos <= 0) return 0;
-  let vistos = 0;
-  for (let i = 0; i < texto.length; i += 1) {
-    if (/\d/.test(texto[i]!)) {
-      vistos += 1;
-      if (vistos === digitos) return i + 1;
-    }
-  }
-  return texto.length;
-}
-
-/** Hasta dos decimales, con coma o punto: "2", "1,5", "0.25". */
-function leerDecimal(texto: string, maximo: number): number | null {
-  const limpio = texto.trim().replace(",", ".");
-  if (!/^\d+(\.\d{1,2})?$/.test(limpio)) return null;
-  const valor = Number(limpio);
-  return valor <= maximo ? valor : null;
-}
-
-export function leerCantidad(texto: string): number | null {
-  const valor = leerDecimal(texto, MAX_CANTIDAD);
-  return valor !== null && valor > 0 ? valor : null;
-}
-
-export function leerPorcentaje(texto: string): number | null {
-  return leerDecimal(texto.replace("%", ""), MAX_UTILIDAD_PORCENTAJE);
-}
-
-function filaEnBlanco(fila: FilaCosto): boolean {
+export function filaEnBlanco(fila: FilaCosto): boolean {
   return !fila.descripcion.trim() && !fila.costo.trim() && !fila.cantidad.trim();
 }
 
@@ -138,6 +88,9 @@ export function materialesDesdeCotizacion(cotizacion: Pick<Cotizacion, "lineas">
   return { materiales: [...porVariante.values()], sinPrecio };
 }
 
+/** Qué tiene mal cada celda de una fila empezada (una celda sin entrada está bien). */
+export type ErroresFila = { descripcion?: string; costo?: string; cantidad?: string };
+
 export type EntradaLeida = {
   /** `null` mientras algo escrito no se puede leer: no se envía nada. */
   entrada: EntradaCotizacionProfesional | null;
@@ -145,24 +98,67 @@ export type EntradaLeida = {
   enviadas: Record<SeccionCosto, string[]>;
   /** Filas empezadas pero incompletas o con un número que no se puede leer. */
   invalidas: Set<string>;
-  /** Precios por bolsa escritos que no son pesos. */
+  /** Por fila empezada, qué dice cada celda que está mal (mensaje para el usuario). */
+  erroresFila: Record<string, ErroresFila>;
+  /** Precios por paquete escritos que no son pesos, o que se dejaron en blanco. */
   preciosInvalidos: Set<string>;
+  erroresPrecio: Record<string, string>;
   utilidadInvalida: boolean;
+  errorUtilidad: string | null;
+  /** Listas con más gastos que el tope: no se calcula con menos de los que se ven. Mensaje por lista. */
+  excesos: Partial<Record<SeccionCosto, string>>;
 };
+
+/** En qué está el precio por paquete de un material: el del catálogo, uno propio, o un campo que no se puede dar por bueno. */
+export type EstadoPrecio = "catalogo" | "propio" | "vacio" | "ilegible";
+
+/**
+ * Sin entrada: el del catálogo. Un campo VACÍO no es «vuelve al catálogo»: es
+ * un precio a medio escribir y no se envía nada hasta que se escriba uno o se
+ * pida volver al del catálogo (así nunca se cobra un precio que el campo no
+ * muestra). Un precio igual al del catálogo cuenta como el del catálogo.
+ */
+export function estadoPrecioMaterial(escrito: string | undefined, catalogo: number): EstadoPrecio {
+  if (escrito === undefined) return "catalogo";
+  if (!escrito.trim()) return "vacio";
+  const precio = leerPesos(escrito);
+  if (precio === null) return "ilegible";
+  return precio === catalogo ? "catalogo" : "propio";
+}
+
+export const TEXTO_ESTADO_PRECIO: Record<EstadoPrecio, string> = {
+  catalogo: "precio de catálogo",
+  propio: "tu precio",
+  vacio: "falta el precio",
+  ilegible: "precio no válido",
+};
+
+const MENSAJE_PRECIO_VACIO = "Escribe el precio por paquete o vuelve al de catálogo.";
 
 export function leerBorrador(borrador: BorradorProfesional, materiales: readonly LineaMaterialProfesional[]): EntradaLeida {
   const invalidas = new Set<string>();
+  const erroresFila: Record<string, ErroresFila> = {};
   const preciosInvalidos = new Set<string>();
+  const erroresPrecio: Record<string, string> = {};
+  const excesos: Partial<Record<SeccionCosto, string>> = {};
   const enviadas = { mano_de_obra: [], equipos_transporte: [], indirectos: [] } as Record<SeccionCosto, string[]>;
   const secciones = { mano_de_obra: [], equipos_transporte: [], indirectos: [] } as Record<SeccionCosto, LineaCosto[]>;
   for (const seccion of SECCIONES_COSTO) {
-    for (const fila of borrador.costos[seccion].slice(0, MAX_LINEAS_SECCION)) {
-      if (filaEnBlanco(fila)) continue;
+    // Primero se descartan las filas en blanco y luego se cuentan: así ninguna fila con algo escrito se pierde por estar después del tope.
+    const conContenido = borrador.costos[seccion].filter((fila) => !filaEnBlanco(fila));
+    const exceso = estadoFilas(conContenido.length).avisoDeExceso;
+    if (exceso) excesos[seccion] = exceso;
+    for (const fila of conContenido) {
       const descripcion = fila.descripcion.trim().slice(0, 120);
       const costo = leerPesos(fila.costo);
       const cantidad = leerCantidad(fila.cantidad);
       if (!descripcion || costo === null || cantidad === null) {
         invalidas.add(fila.id);
+        const errores: ErroresFila = {};
+        if (!descripcion) errores.descripcion = "Escribe qué es este gasto.";
+        if (costo === null) errores.costo = errorDePesos(fila.costo, "Escribe cuánto cuesta cada unidad, por ejemplo 12.500.") ?? undefined;
+        if (cantidad === null) errores.cantidad = errorDeCantidad(fila.cantidad) ?? undefined;
+        erroresFila[fila.id] = errores;
         continue;
       }
       secciones[seccion].push({ descripcion, costo_unitario_cop: costo, cantidad });
@@ -171,27 +167,69 @@ export function leerBorrador(borrador: BorradorProfesional, materiales: readonly
   }
   const lineas = materiales.map((material) => {
     const escrito = borrador.precios[material.variant_id];
-    if (escrito === undefined || !escrito.trim()) return material;
-    const precio = leerPesos(escrito);
-    if (precio === null) {
+    const estado = estadoPrecioMaterial(escrito, material.precio_paquete_catalogo_cop);
+    if (estado === "vacio" || estado === "ilegible") {
       preciosInvalidos.add(material.variant_id);
+      erroresPrecio[material.variant_id] = errorDePesos(escrito ?? "", MENSAJE_PRECIO_VACIO) ?? MENSAJE_PRECIO_VACIO;
       return material;
     }
-    return precio === material.precio_paquete_catalogo_cop ? material : { ...material, precio_paquete_cop: precio };
+    // «Propio» siempre trae un precio legible; el del catálogo escrito de vuelta no es una edición.
+    return estado === "propio" ? { ...material, precio_paquete_cop: leerPesos(escrito ?? "") ?? material.precio_paquete_catalogo_cop } : material;
   });
   const utilidad = borrador.utilidad.trim() ? leerPorcentaje(borrador.utilidad) : null;
   const utilidadInvalida = Boolean(borrador.utilidad.trim()) && utilidad === null;
-  const valida = lineas.length > 0 && invalidas.size === 0 && preciosInvalidos.size === 0 && !utilidadInvalida;
+  const valida = lineas.length > 0 && invalidas.size === 0 && preciosInvalidos.size === 0 && !utilidadInvalida && Object.keys(excesos).length === 0;
   return {
     entrada: valida ? { materiales: lineas, ...secciones, utilidad_porcentaje: utilidad } : null,
     enviadas,
     invalidas,
+    erroresFila,
     preciosInvalidos,
+    erroresPrecio,
     utilidadInvalida,
+    errorUtilidad: utilidadInvalida ? errorDeGanancia(borrador.utilidad) : null,
+    excesos,
   };
 }
 
-export const RESPALDO_COTIZACION_PROFESIONAL = "No pude calcular la cotización profesional. Intenta de nuevo en un momento.";
+/**
+ * ¿Hay algo escrito? Un borrador vacío no se guarda y no abre el panel al
+ * recargar. Un precio de material a medio escribir (vacío) sí cuenta: es una
+ * edición empezada.
+ */
+export function borradorConContenido(borrador: BorradorProfesional): boolean {
+  return SECCIONES_COSTO.some((seccion) => borrador.costos[seccion].some((fila) => !filaEnBlanco(fila)))
+    || Object.keys(borrador.precios).length > 0
+    || borrador.utilidad.trim() !== "";
+}
+
+/**
+ * Cómo se llama un material para quien cotiza: el producto y su tamaño, para
+ * que dos paquetes del mismo producto no se vean iguales
+ * («Globo Latex Redondo Fashion Blanco de 5 pulgadas»).
+ */
+export function nombreMaterialCliente(descripcion: string): string {
+  const producto = productoCliente(descripcion);
+  const tamano = /\bR-(\d+(?:[.,]\d+)?)\b/i.exec(descripcion)?.[1];
+  return tamano ? `${producto} de ${pulgadasCliente(tamano)}` : producto;
+}
+
+/** Aviso, visible sin abrir nada, de lo que la propuesta tiene y el precio NO incluye; `null` si todo se incluye. */
+export function avisoProductosExcluidos(sinPrecio: number): string | null {
+  if (sinPrecio <= 0) return null;
+  return sinPrecio === 1
+    ? "Un producto de esta propuesta no tiene precio en el catálogo y no está en este precio."
+    : `${sinPrecio} productos de esta propuesta no tienen precio en el catálogo y no están en este precio.`;
+}
+
+/** Por qué no hay nada que cotizar, con qué hacer. */
+export function textoSinMateriales(sinPrecio: number): string {
+  return sinPrecio > 0
+    ? "Ningún producto de esta propuesta tiene precio en el catálogo, así que no puedo armar tu precio. Cámbialos en la propuesta por productos del catálogo y el precio aparecerá aquí."
+    : "Esta propuesta todavía no tiene materiales. Cuando los tenga, aquí verás tu precio al cliente.";
+}
+
+export const RESPALDO_COTIZACION_PROFESIONAL = "No pude calcular tu precio. Intenta de nuevo en un momento.";
 
 export class FalloCotizacionProfesional extends Error {}
 

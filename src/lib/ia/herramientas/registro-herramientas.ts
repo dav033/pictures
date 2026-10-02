@@ -18,14 +18,16 @@ import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
 import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
 import type { ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
 import {
+  CLAVE_ARMADO,
   TIPOS_ARMADO_MOTOR,
   aplicarArmadosCompletados,
   piezaDelPlan,
   sinArmadosDeMotor,
+  sinColumnaOrganicaDelModelo,
   type PiezaArmado,
   type TipoArmadoMotor,
 } from "@/lib/plan/armado-estructura-ia";
-import { llamarPythonOmoikaneArmarEstructura, llamarPythonOmoikaneCatalogoArmado, llamarPythonOmoikaneCompletarArmados } from "@/lib/ia/nucleo/python-adapter";
+import { llamarPythonEstimarConteo, llamarPythonOmoikaneArmarEstructura, llamarPythonOmoikaneCatalogoArmado, llamarPythonOmoikaneCompletarArmados } from "@/lib/ia/nucleo/python-adapter";
 import type { PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { PistaPatron } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
@@ -35,7 +37,9 @@ import { parseEventIntent } from "@/lib/rag/query-parser/parse-event";
 import type { CatalogAllowlist, EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
 import { abrirContextoPlan, allowlistDesdeMapa, crearTokenPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import { aplicarEdicionPlan } from "@/lib/plan/aplicar-edicion";
-import { EdicionSchema, type BasePlan, type Edicion } from "@/lib/plan/edicion-esquemas";
+import type { BasePlan } from "@/lib/plan/edicion-esquemas";
+import { leerEdicionesChat } from "@/lib/plan/edicion-chat";
+import { aplicarEdicionesEncadenadas, cambioParaElModelo, EdicionEncadenadaError, geometriaAuditadaChat, mensajeClienteDeRechazo, primeraVarianteNoBuscada } from "./ajustar-plan-chat";
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { respuestaCatalogoLoraNoDisponible } from "@/lib/lora/catalogo-no-disponible";
 import {
@@ -72,10 +76,12 @@ import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, mezclasAdmisiblesEstructura, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
-import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
+import { ACCION_PLAN_NO_CONVERGE, accionEstimacionInconsistente, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
 import { ArgsArmarEstructuraSchema, ArgsConsultarOpcionesArmadoSchema, erroresDeArgs, opcionesDePares } from "./armado-motor";
-import { AJUSTAR_PLAN_DECORACION, HERRAMIENTAS_ARMADO_MOTOR, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
+import { EstimarConteoRequestV1Schema } from "@/lib/ia/contracts/domain-v1";
+import { ArgsEstimarConteoGlobosSchema, erroresDeEstimacion, objetivoDeLaFoto, solicitudDeEstimacion, type ObjetivoDeLaEstimacion } from "./estimar-conteo";
+import { AJUSTAR_PLAN_DECORACION, ESTIMAR_CONTEO_GLOBOS, HERRAMIENTAS_ARMADO_MOTOR, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "../referencia/reference-blueprint";
 import type { Herramienta } from "../nucleo/tipos";
 import { z } from "zod";
@@ -102,6 +108,12 @@ export const HERRAMIENTAS_SOLO_LECTURA = new Set([
   // vuelta. `armar_estructura` queda fuera a propósito: escribe en
   // `armadosEstructura`.
   "consultar_opciones_armado",
+  // ADR-0038: estimar el conteo es una consulta pura a Python. No escribe en
+  // `EstadoConversacion` (solo lee `armadosEstructura`, el blueprint y las
+  // restricciones), no toca `planResuelto`, el token ni `plan_hash`, y su
+  // respuesta no depende del orden: puede correr junto a una búsqueda o a una
+  // consulta de armado en la misma vuelta.
+  "estimar_conteo_globos",
 ]);
 
 /**
@@ -120,15 +132,21 @@ export const HERRAMIENTAS_SOLO_LECTURA = new Set([
  * (ADR-0034 §5) detrás de `ARMADO_ARCO_COLUMNA_V1`, encendida fuera de
  * producción. Con la bandera apagada el modelo no las ve y el turno es
  * exactamente el de antes.
+ *
+ * `estimarConteo` expone `estimar_conteo_globos` (ADR-0038, solo lectura)
+ * detrás de `ESTIMAR_CONTEO_V1`, con el mismo default: encendida fuera de
+ * producción, apagada en producción.
  */
-export function herramientasActivas(flags: { ragEnabled?: boolean; planVigente?: boolean; armadoMotor?: boolean } = {}): Herramienta[] {
+export function herramientasActivas(flags: { ragEnabled?: boolean; planVigente?: boolean; armadoMotor?: boolean; estimarConteo?: boolean } = {}): Herramienta[] {
   const ragEnabled = flags.ragEnabled ?? RAG_ENABLED;
   if (!ragEnabled) return [];
   const armadoMotor = flags.armadoMotor ?? featureEnabled("ARMADO_ARCO_COLUMNA_V1");
+  const estimarConteo = flags.estimarConteo ?? featureEnabled("ESTIMAR_CONTEO_V1");
   return [
     ...HERRAMIENTAS_RAG,
     ...HERRAMIENTAS_PLAN,
     ...(armadoMotor ? HERRAMIENTAS_ARMADO_MOTOR : []),
+    ...(estimarConteo ? [ESTIMAR_CONTEO_GLOBOS] : []),
     ...(flags.planVigente ? [AJUSTAR_PLAN_DECORACION] : []),
   ];
 }
@@ -1125,7 +1143,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
      */
     const conArmadosDeMotor = async (plan: PlanDecoracion): Promise<PlanDecoracion> => {
       if (!armadoMotor) return sinArmadosDeMotor(plan);
-      if (!plan.estructuras.some((estructura) => (TIPOS_ARMADO_MOTOR as readonly string[]).includes(estructura.tipo))) return plan;
+      if (!plan.estructuras.some((estructura) => (TIPOS_ARMADO_MOTOR as readonly string[]).includes(estructura.tipo))) return sinColumnaOrganicaDelModelo(plan);
       const armados = [...(estado.armadosEstructura ?? new Map())].map(([estructura_id, armado]) => ({ estructura_id, ...armado }));
       try {
         const respuesta = await llamarPythonOmoikaneCompletarArmados({
@@ -1137,7 +1155,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         });
         // Diagnóstico (ids y origen, nunca el armado entero): de dónde salió el armado de cada pieza.
         console.info("[plan] armados de motor", JSON.stringify({ request_id: estado.ragRequestId, armados: respuesta.armados.map((completado) => ({ id: completado.estructura_id, tipo: completado.tipo, origen: completado.origen, avisos: completado.avisos.length })) }));
-        return aplicarArmadosCompletados(plan, respuesta.armados);
+        return sinColumnaOrganicaDelModelo(aplicarArmadosCompletados(plan, respuesta.armados));
       } catch (error) {
         // No es `BACKEND_NO_DISPONIBLE`: la resolución sí está disponible y el
         // plan se confirma igual, solo sin armado. Queda registrado aparte para
@@ -1259,13 +1277,20 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
       const error = [...estimateValidation.errors, ...physicalWarnings].join(" | ");
+      // Una pieza que cuenta el motor (trae su armado) no cambia de total con las medidas, la densidad ni la
+      // mezcla: si es la que la puerta física señala, mandar al modelo a tocarlas repite el mismo plan.
+      const piezasConArmadoDelMotor = resuelto.plan.estructuras
+        .filter((estructura) => (TIPOS_ARMADO_MOTOR as readonly string[]).includes(estructura.tipo)
+          && (estructura as Record<string, unknown>)[CLAVE_ARMADO[estructura.tipo as TipoArmadoMotor]] !== undefined
+          && physicalWarnings.some((aviso) => aviso.includes(estructura.estructura_id)))
+        .map((estructura) => estructura.estructura_id);
       auditarResuelto("ESTIMACION_INCONSISTENTE", error);
       encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
       return {
         ok: false,
         status: "ESTIMACION_INCONSISTENTE",
         advertencias: [...new Set([...estimateValidation.warnings, ...physicalWarnings])],
-        accion_requerida: "Revisa las medidas, densidad, mezcla o número de estructuras; la cantidad física estimada no es compatible con la escala solicitada. No cotices ni generes la imagen hasta corregirlo.",
+        accion_requerida: accionEstimacionInconsistente(piezasConArmadoDelMotor),
         mensaje_cliente: MENSAJE_CLIENTE_ESTIMACION,
       };
     }
@@ -1777,6 +1802,133 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       }
     },
 
+    /**
+     * Estimar cuántos globos cobraría el plan (ADR-0038). De SOLO LECTURA: no
+     * escribe en el estado, no toca `planResuelto`, el token ni `plan_hash`, y
+     * el número que se le dice al cliente sigue saliendo de
+     * `confirmar_plan_decoracion`. Este handler valida el borde, junta lo que el
+     * turno ya sabe (el armado que `armar_estructura` guardó, el conteo de la
+     * foto, los tamaños y las medidas del cliente) y llama a Python, que es el
+     * único dueño de cada cifra; no calcula ni compara nada.
+     */
+    estimar_conteo_globos: async (args) => {
+      if (!featureEnabled("ESTIMAR_CONTEO_V1")) {
+        return {
+          ok: false,
+          status: "HERRAMIENTA_NO_DISPONIBLE",
+          accion_requerida: "estimar_conteo_globos no está disponible. Sigue con la propuesta: el número real sale de confirmar_plan_decoracion.",
+        };
+      }
+      const parseado = ArgsEstimarConteoGlobosSchema.safeParse(args);
+      if (!parseado.success) {
+        return {
+          ok: false,
+          status: "ARGUMENTOS_INVALIDOS",
+          errores: erroresDeEstimacion(parseado.error),
+          accion_requerida: "Corrige los argumentos de estimar_conteo_globos (de 1 a 6 candidatos con etiqueta única, tipo, densidad y mezcla; las medidas son opcionales y, si faltan, se asumen las de por defecto como al confirmar; el objetivo, si lo mandas, lleva un conteo entero positivo) y vuelve a llamarla.",
+        };
+      }
+      const pedido = parseado.data;
+      // El objetivo del modelo manda; sin él, el conteo leído en la foto (la regla de confianza y bandera es la
+      // del prompt: una lectura que el modelo no vio no es un objetivo).
+      let objetivo: ObjetivoDeLaEstimacion | undefined = pedido.objetivo === undefined
+        ? undefined
+        : { conteo: pedido.objetivo.conteo, exacto: pedido.objetivo.exacto ?? false, origen: "modelo" };
+      let objetivoAmbiguo: string[] | undefined;
+      if (objetivo === undefined) {
+        const delaFoto = objetivoDeLaFoto(estado.referenceBlueprint, pedido.referencia_element_id);
+        if (delaFoto && "objetivo" in delaFoto) objetivo = delaFoto.objetivo;
+        else if (delaFoto) objetivoAmbiguo = delaFoto.ambiguo;
+      }
+      const armada = solicitudDeEstimacion(pedido, {
+        armados: estado.armadosEstructura,
+        objetivo,
+        tamanosObligatorios: tamanosObligatorios(estado.restriccionesUsuario),
+        medidasDelCliente: clienteDioMedidasEspacio(estado.solicitudOriginal),
+      });
+      if ("armadoNoResuelto" in armada) {
+        const { estructura_id: estructuraId, motivo } = armada.armadoNoResuelto;
+        return {
+          ok: false,
+          status: motivo === "no_guardado" ? "ARMADO_NO_ENCONTRADO" : "ARMADO_NO_CORRESPONDE",
+          estructura_id: estructuraId,
+          accion_requerida: motivo === "no_guardado"
+            ? `No hay un armado guardado para ${estructuraId} en este turno. Arma la pieza con armar_estructura primero, o quita armado_de para estimarla con la fórmula.`
+            : `El armado guardado para ${estructuraId} es de otro tipo de pieza que el candidato. Usa el mismo tipo o quita armado_de.`,
+        };
+      }
+      // La pregunta completa contra el contrato, antes de salir: lo que Python rechazaría por la forma se le dice
+      // al modelo aquí, con el campo, en vez de volver como «no disponible».
+      const contrato = EstimarConteoRequestV1Schema.safeParse({ schema_version: "estimar-conteo.v1", ...armada.solicitud });
+      if (!contrato.success) {
+        return {
+          ok: false,
+          status: "ARGUMENTOS_INVALIDOS",
+          errores: erroresDeEstimacion(contrato.error),
+          accion_requerida: "Corrige esos campos de estimar_conteo_globos y vuelve a llamarla, o sigue sin estimar: confirmar_plan_decoracion da el número real.",
+        };
+      }
+      try {
+        const resultado = await llamarPythonEstimarConteo({
+          solicitud: armada.solicitud,
+          requestId: estado.ragRequestId,
+          correlationId: options.correlationId ?? estado.ragRequestId,
+          ...(options.signal ? { parentSignal: options.signal } : {}),
+        });
+        return {
+          ok: true,
+          status: "ESTIMACION",
+          origen_objetivo: objetivo?.origen ?? "ninguno",
+          ...(objetivo?.elemento === undefined ? {} : { elemento_objetivo: objetivo.elemento }),
+          ...(objetivoAmbiguo === undefined ? {} : { elementos_con_conteo: objetivoAmbiguo }),
+          objetivo: resultado.objetivo,
+          candidatos: resultado.candidatos,
+          mejor: resultado.mejor,
+          accion_requerida: `${objetivoAmbiguo === undefined ? "" : "La foto trae conteos de varios elementos y no elegiste cuál: manda referencia_element_id u objetivo para comparar contra uno. "}Esto es una ESTIMACIÓN de solo lectura: no cambió el plan, no fijó estado ni token y no cobra nada. ${resultado.objetivo === null ? "Compara los candidatos por su total_vigente y su puerta_fisica." : "Elige el candidato con brecha.dentro_de_tolerancia y sin avisos en puerta_fisica (mejor es el más cercano que cumple ambas)."} Lee la nota de cada pieza con armado: su densidad, su mezcla y sus medidas NO mueven un total que sale del motor; la sugerencia indica qué mando del armado mover. Luego arma (armar_estructura) y confirma (confirmar_plan_decoracion) con ese candidato. El número que le digas al cliente sale SIEMPRE de confirmar_plan_decoracion, nunca de esta estimación.`,
+        };
+      } catch (error) {
+        // `candidato_invalido` y `armado_invalido` son lo único que el modelo puede corregir, con el motivo
+        // estable de Python y su frase.
+        if (isPythonAdapterError(error) && (error.domainCode === "candidato_invalido" || error.domainCode === "armado_invalido")) {
+          const detalles = error.domainDetails;
+          return {
+            ok: false,
+            status: error.domainCode === "candidato_invalido" ? "CANDIDATO_INVALIDO" : "ARMADO_INVALIDO",
+            ...(detalles?.estructuraId ? { candidato: detalles.estructuraId } : {}),
+            ...(detalles?.motivo ? { motivo: detalles.motivo } : {}),
+            ...(detalles?.mensaje ? { detalle: detalles.mensaje } : {}),
+            accion_requerida: "Corrige ese candidato (etiquetas distintas, y un armado que corresponda a su tipo y a sus colores) y vuelve a llamar estimar_conteo_globos, o sigue sin estimar: confirmar_plan_decoracion da el número real.",
+          };
+        }
+        // Otra estimación está corriendo: la ruta no hace cola detrás de la resolución. Es reintentable.
+        if (isPythonAdapterError(error) && error.domainCode === "estimacion_ocupada") {
+          return {
+            ok: false,
+            status: "ESTIMACION_OCUPADA",
+            reintentable: true,
+            accion_requerida: "Hay otra estimación en curso. Espera unos segundos y vuelve a llamar estimar_conteo_globos una vez; si sigue ocupada, sigue sin estimar: confirmar_plan_decoracion da el número real.",
+          };
+        }
+        // Python rechazó la forma de la pregunta aunque Zod la aceptó (el contrato derivó): es de los argumentos, no de la disponibilidad.
+        if (isPythonAdapterError(error) && error.domainCode === "invalid_request") {
+          return {
+            ok: false,
+            status: "ARGUMENTOS_INVALIDOS",
+            errores: ["La pregunta no cumple estimar-conteo.v1 (coherencia de la estructura oficial con su tipo y densidad, medidas finitas y positivas, un objetivo entero positivo)."],
+            accion_requerida: "Corrige los candidatos (que la estructura oficial corresponda al tipo y a la densidad, y que las medidas sean números positivos) y vuelve a llamarla una vez, o sigue sin estimar.",
+          };
+        }
+        if (isPythonAdapterError(error)) {
+          return {
+            ok: false,
+            status: "ESTIMACION_NO_DISPONIBLE",
+            accion_requerida: "No pude estimar el conteo ahora. Sigue sin estimarlo: el número real sale de confirmar_plan_decoracion.",
+          };
+        }
+        throw error;
+      }
+    },
+
     confirmar_plan_decoracion: async (args) => {
       const bloqueo = bloqueoHerramientaComercial("confirmar_plan_decoracion");
       if (bloqueo) return bloqueo;
@@ -1807,6 +1959,12 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
      * (`herramientasActivas`), pero el handler igual repite la comprobación:
      * el modelo nunca autoriza nada con solo llamarla, la autorización es el
      * token firmado que ya verificó `planVigenteDelTurno`.
+     *
+     * Una edición suelta (la forma original) o `ediciones` (1 a 8): se aplican
+     * en orden, cada una sobre el plan que firmó la anterior, y de forma
+     * atómica: `estado.planResuelto` solo cambia si TODAS se aplicaron. Cada
+     * edición conserva las comprobaciones de siempre (variante de este turno,
+     * allowlist del modo LoRA, rechazos de Python → `mensaje_cliente`).
      */
     ajustar_plan_decoracion: async (args) => {
       const bloqueo = bloqueoHerramientaComercial("ajustar_plan_decoracion");
@@ -1820,47 +1978,53 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE,
         };
       }
-      const parsedEdicion = EdicionSchema.safeParse(args);
-      if (!parsedEdicion.success) {
-        const errores = parsedEdicion.error.issues.map((issue) => `${issue.path.join(".") || "edicion"}: ${issue.message}`);
-        encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_ESQUEMA_INVALIDO", error: errores.join(" | ") }));
+      const lectura = leerEdicionesChat(args);
+      if (!lectura.ok) {
+        encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_ESQUEMA_INVALIDO", error: lectura.errores.join(" | ") }));
         return {
           ok: false,
           status: "AJUSTE_ESQUEMA_INVALIDO",
-          errores,
-          accion_requerida: "Corrige accion/estructura_id/objetivo_variant_id/variante/participacion según el esquema y vuelve a llamar ajustar_plan_decoracion.",
+          errores: lectura.errores,
+          ...(lectura.indice !== undefined && "ediciones" in args ? { edicion_fallida: lectura.indice, ediciones_aplicadas: 0 } : {}),
+          accion_requerida: "Corrige los argumentos según el esquema y vuelve a llamar ajustar_plan_decoracion: accion (agregar, reemplazar, quitar, repartir o mezcla) y estructura_id en cada edición; objetivo_variant_id en reemplazar y quitar; variante en agregar y reemplazar; participaciones en repartir; mezcla en mezcla. Varios cambios van en `ediciones` (de 1 a 8), sin mezclarlos con los campos sueltos. No se aplicó ninguna edición.",
           mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE,
         };
       }
-      const edicion: Edicion = parsedEdicion.data;
+      const ediciones = lectura.ediciones;
+      const varias = ediciones.length > 1;
       // Misma allowlist que confirmar_plan_decoracion (allowlistDesdeMapa(estado.ragVariantIdsRecuperados)):
       // el variant_id que el modelo propone tiene que haber salido de
       // buscar_catalogo_rag EN ESTE MISMO turno. `aplicarEdicionPlan` admite la
       // variante contra el snapshot firmado, pero eso no exige que el modelo la
       // haya buscado — sin este paso podría "recordar" un variant_id sin
-      // pasarlo por el catálogo de este turno.
-      if (edicion.accion !== "quitar") {
-        const variante = edicion.variante!;
-        const vistas = estado.ragVariantIdsRecuperados.get(variante.product_id);
-        if (!vistas?.has(variante.variant_id)) {
-          encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_VARIANTE_FUERA_DE_BUSQUEDA", error: `${variante.product_id}:${variante.variant_id}` }));
-          return {
-            ok: false,
-            status: "VARIANTE_FUERA_DE_BUSQUEDA",
-            accion_requerida: "El product_id/variant_id de `variante` debe haber aparecido en buscar_catalogo_rag de este mismo turno. Búscalo primero y usa exactamente ese par.",
-            mensaje_cliente: MENSAJE_CLIENTE_PIEZAS,
-          };
-        }
+      // pasarlo por el catálogo de este turno. Se revisan TODAS antes de aplicar
+      // la primera: una variante sin buscar no gasta ninguna llamada a Python.
+      const sinBuscar = primeraVarianteNoBuscada(ediciones, estado.ragVariantIdsRecuperados);
+      if (sinBuscar) {
+        encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_VARIANTE_FUERA_DE_BUSQUEDA", error: `${sinBuscar.product_id}:${sinBuscar.variant_id}` }));
+        return {
+          ok: false,
+          status: "VARIANTE_FUERA_DE_BUSQUEDA",
+          ...(varias ? { edicion_fallida: sinBuscar.indice, ediciones_aplicadas: 0 } : {}),
+          accion_requerida: `El product_id/variant_id de \`variante\`${varias ? ` en la edición ${sinBuscar.indice}` : ""} debe haber aparecido en buscar_catalogo_rag de este mismo turno. Búscalo primero y usa exactamente ese par.${varias ? " No se aplicó ninguna edición." : ""}`,
+          mensaje_cliente: MENSAJE_CLIENTE_PIEZAS,
+        };
       }
       try {
-        const { plan: resuelto, cotizacion, avisos } = await aplicarEdicionPlan({
+        const { plan: resuelto, cotizacion, pasos } = await aplicarEdicionesEncadenadas({
           base: planVigente.base,
-          edicion,
-          catalogAllowlist: options.catalogAllowlist ?? null,
-          correlationId: options.correlationId,
-          pool: ragPool,
-          ...(options.signal ? { signal: options.signal } : {}),
+          ediciones,
+          aplicar: ({ base, edicion, esUltima }) => aplicarEdicionPlan({
+            base,
+            edicion,
+            catalogAllowlist: options.catalogAllowlist ?? null,
+            correlationId: options.correlationId,
+            pool: ragPool,
+            ...(esUltima ? {} : { omitirAuditoria: true }),
+            ...(options.signal ? { signal: options.signal } : {}),
+          }),
         });
+        // Todas se aplicaron: solo ahora cambia lo que ve la tarjeta.
         estado.planResuelto = resuelto;
         estado.cotizacion = cotizacion;
         estado.seleccionFinalIA = [];
@@ -1868,35 +2032,44 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           requestId: estado.ragRequestId,
           planHash: resuelto.plan_hash,
           status: "PLAN_AJUSTADO_CHAT",
-          geometry: { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id },
+          geometry: geometriaAuditadaChat(ediciones),
           costChosenCop: resuelto.totales.total_cop,
         }));
+        // Python's own sentences about the edits (e.g. the color pattern was
+        // rebuilt because a color left the piece): relay them, don't reword.
+        const avisos = [...new Set(pasos.flatMap((paso) => paso.avisos))];
+        const cambios = ediciones.map((edicion, posicion) => cambioParaElModelo(edicion, posicion + 1));
+        const primera = cambios[0]!;
         return {
           ok: true,
           status: "PLAN_AJUSTADO",
           // Point 4 of §7: what changed vs. the previous card, so the model
           // can say it instead of presenting the update as a first proposal.
-          estructura_ajustada: edicion.estructura_id,
-          accion: edicion.accion,
-          material_nuevo: edicion.accion === "quitar" ? undefined : `${edicion.variante!.product_id}/${edicion.variante!.variant_id}`,
+          ediciones_aplicadas: ediciones.length,
+          cambios,
+          estructuras_ajustadas: [...new Set(ediciones.map((edicion) => edicion.estructura_id))],
+          // The original single-edit answer keeps its flat fields.
+          ...(varias ? {} : { estructura_ajustada: primera.estructura_id, accion: primera.accion, ...(primera.material_nuevo !== undefined ? { material_nuevo: primera.material_nuevo } : {}) }),
           total_cop: resuelto.totales.total_cop,
-          // Python's own sentences about the edit (e.g. the color pattern was
-          // rebuilt because a color left the piece): relay them, don't reword.
           ...(avisos.length > 0 ? { avisos } : {}),
-          accion_requerida: avisos.length > 0
-            ? "Cuéntale al cliente qué cambiaste (la estructura y el material, no todo el plan), incluidos los avisos tal cual, y que el desglose en pantalla ya lo refleja. No llames confirmar_plan_decoracion en este turno ni presentes esto como una propuesta nueva."
-            : "Cuéntale al cliente qué cambiaste (la estructura y el material, no todo el plan) y que el desglose en pantalla ya lo refleja. No llames confirmar_plan_decoracion en este turno ni presentes esto como una propuesta nueva.",
+          accion_requerida: `Cuéntale al cliente en una frase qué cambiaste (${varias ? "las estructuras y los materiales" : "la estructura y el material"}, no todo el plan), el nuevo total (total_cop, exactamente ese número) y que el desglose en pantalla ya lo refleja.${avisos.length > 0 ? " Incluye los avisos tal cual." : ""} No llames confirmar_plan_decoracion en este turno ni presentes esto como una propuesta nueva.`,
           fase: "propuesta_actualizada; el desglose en pantalla ya refleja el ajuste",
         };
-      } catch (error) {
+      } catch (envuelto) {
+        // Which edit failed (1-based) when there were several; nothing was applied either way.
+        const fallida = envuelto instanceof EdicionEncadenadaError ? envuelto : undefined;
+        const error = fallida ? fallida.causa : envuelto;
+        const donde = varias && fallida ? { edicion_fallida: fallida.indice, ediciones_aplicadas: 0 } : {};
+        const prefijoModelo = varias && fallida ? `La edición ${fallida.indice} de ${fallida.total} falló y NO se aplicó ninguna: la propuesta sigue exactamente igual. ` : "";
         if (error instanceof PlanEditError) {
-          encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_RECHAZADO", error: `${error.causa ?? "sin_causa"}: ${error.message}` }));
+          encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_RECHAZADO", error: `${varias && fallida ? `edicion ${fallida.indice}: ` : ""}${error.causa ?? "sin_causa"}: ${error.message}` }));
           return {
             ok: false,
             status: "AJUSTE_RECHAZADO",
             ...(error.causa ? { causa: error.causa } : {}),
-            accion_requerida: "El ajuste no se pudo aplicar. Dile al cliente el motivo; si la propuesta expiró o el catálogo cambió, ofrécele pedirla de nuevo en vez de inventar un resultado.",
-            mensaje_cliente: error.message,
+            ...donde,
+            accion_requerida: `${prefijoModelo}El ajuste no se pudo aplicar. Dile al cliente el motivo; si la propuesta expiró o el catálogo cambió, ofrécele pedirla de nuevo en vez de inventar un resultado.${varias ? " Si el cliente quiere el resto de los cambios, vuelve a llamar sin la edición que falló o corrigiéndola." : ""}`,
+            mensaje_cliente: varias ? `La propuesta sigue como estaba. ${mensajeClienteDeRechazo(error.message)}` : mensajeClienteDeRechazo(error.message),
           };
         }
         if (error instanceof AllowlistProductoVarianteError) {
@@ -1904,7 +2077,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           return {
             ok: false,
             status: "PRODUCTO_VARIANTE_INCONSISTENTE",
-            accion_requerida: "El variant_id no pertenece a ese product_id según buscar_catalogo_rag; corrige el par y vuelve a llamar ajustar_plan_decoracion.",
+            ...donde,
+            accion_requerida: `${prefijoModelo}El variant_id no pertenece a ese product_id según buscar_catalogo_rag; corrige el par y vuelve a llamar ajustar_plan_decoracion.`,
             mensaje_cliente: MENSAJE_CLIENTE_PIEZAS,
           };
         }

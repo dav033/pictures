@@ -1,6 +1,10 @@
 import { z } from "zod";
+import { ArmadoArcoV1Schema } from "./armado-arco";
 import { ArmadoBouquetV1Schema } from "./armado-bouquet";
+import { ArmadoColumnaV1Schema } from "./armado-columna";
+import { ArmadoColumnaOrganicaV1Schema } from "./armado-columna-organica";
 import { ArmadoGuirnaldaV1Schema } from "./armado-guirnalda";
+import { ArmadoGuirnaldaOrganicaV1Schema } from "./armado-guirnalda-organica";
 import { PatronColorV1Schema } from "./patron-color";
 import { PlanDecoracionSchema } from "./tipos";
 
@@ -74,8 +78,9 @@ export const PARTICIPACION_MINIMA_REPARTO = 0.05;
 /**
  * Redistribution of the colors of one structure from the proposal card's
  * slider: the new `participacion` of each material, in the order of the
- * structure's `materiales`. Only the HTTP editor offers it; the chat tool
- * keeps `EdicionSchema`. Python resolves the counts, as for any edit.
+ * structure's `materiales`. The HTTP editor and the chat tool
+ * (`ajustar_plan_decoracion`, via `src/lib/plan/edicion-chat.ts`) both offer
+ * it. Python resolves the counts, as for any edit.
  */
 export const EdicionRepartoSchema = z.object({
   accion: z.literal("repartir"),
@@ -88,7 +93,8 @@ export type EdicionReparto = z.infer<typeof EdicionRepartoSchema>;
 /**
  * Size balance of one structure from the card's "más pequeños ↔ más grandes"
  * slider: it picks one of the existing mixes (`mezclas.ts`). The contract and
- * the resolver are unchanged; Python counts the balloons of the new mix.
+ * the resolver are unchanged; Python counts the balloons of the new mix. The
+ * chat tool offers it too ("globos más grandes").
  */
 export const EdicionMezclaSchema = z.object({
   accion: z.literal("mezcla"),
@@ -136,5 +142,59 @@ export const EdicionArmadoGuirnaldaSchema = z.object({
 
 export type EdicionArmadoGuirnalda = z.infer<typeof EdicionArmadoGuirnaldaSchema>;
 
+/**
+ * Assembly of one arch from the arch editor (ADR-0035, step 1): `null` removes
+ * it. Only the shape is checked here (`armado-arco.v1`); Python validates it
+ * against the piece (`armado_invalido`) and the resolver that follows counts it.
+ */
+export const EdicionArmadoArcoSchema = z.object({
+  accion: z.literal("armado_arco"),
+  estructura_id: z.string().trim().min(1).max(160),
+  armado_arco: ArmadoArcoV1Schema.nullable(),
+}).strict();
+
+export type EdicionArmadoArco = z.infer<typeof EdicionArmadoArcoSchema>;
+
+/**
+ * Assembly of one column from the column editor (ADR-0035, step 3): `null` removes
+ * it. Only the shape is checked here (`armado-columna.v1`); Python validates it
+ * against the piece (`armado_invalido`) and the resolver that follows counts it.
+ */
+export const EdicionArmadoColumnaSchema = z.object({
+  accion: z.literal("armado_columna"),
+  estructura_id: z.string().trim().min(1).max(160),
+  armado_columna: ArmadoColumnaV1Schema.nullable(),
+}).strict();
+
+export type EdicionArmadoColumna = z.infer<typeof EdicionArmadoColumnaSchema>;
+
+/**
+ * Assembly of one column built by the designer's organic engine, from its editor (ADR-0035, step 3): `null` removes
+ * it. Only the shape is checked here (`armado-columna-organica.v1`); Python validates it against the piece
+ * (`armado_invalido`) and the resolver that follows counts it. It is NOT `armado_columna` (the ring tower with
+ * patterns): both describe a column and coexist; when a piece has both, the classic one rules.
+ */
+export const EdicionArmadoColumnaOrganicaSchema = z.object({
+  accion: z.literal("armado_columna_organica"),
+  estructura_id: z.string().trim().min(1).max(160),
+  armado_columna_organica: ArmadoColumnaOrganicaV1Schema.nullable(),
+}).strict();
+
+export type EdicionArmadoColumnaOrganica = z.infer<typeof EdicionArmadoColumnaOrganicaSchema>;
+
+/**
+ * Assembly of one garland built by the designer's engine, from its editor (ADR-0035, step 3): `null` removes it. Only
+ * the shape is checked here (`armado-guirnalda-organica.v1`); Python validates it against the piece
+ * (`armado_invalido`) and the resolver that follows counts it. It is NOT `armado_guirnalda` (ADR-0032: clusters,
+ * fill and toppers): both describe the same piece and coexist.
+ */
+export const EdicionArmadoGuirnaldaOrganicaSchema = z.object({
+  accion: z.literal("armado_guirnalda_organica"),
+  estructura_id: z.string().trim().min(1).max(160),
+  armado_guirnalda_organica: ArmadoGuirnaldaOrganicaV1Schema.nullable(),
+}).strict();
+
+export type EdicionArmadoGuirnaldaOrganica = z.infer<typeof EdicionArmadoGuirnaldaOrganicaSchema>;
+
 /** Every edit the plan editor applies (Python applies it: services/ai-api/app/plan_edicion.py). */
-export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado | EdicionArmadoGuirnalda;
+export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado | EdicionArmadoGuirnalda | EdicionArmadoArco | EdicionArmadoColumna | EdicionArmadoColumnaOrganica | EdicionArmadoGuirnaldaOrganica;

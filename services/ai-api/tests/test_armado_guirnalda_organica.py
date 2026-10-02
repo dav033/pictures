@@ -12,6 +12,7 @@ from typing import Any
 
 import pytest
 
+from app.merma import MERMA
 from app.armado_guirnalda_organica import (
     DESPERDICIO_POR_DEFECTO,
     VERSION,
@@ -47,7 +48,12 @@ def armado(**cambios: Any) -> dict[str, Any]:
             "racimo": 4,
             "salientes": 0.35,
         },
-        "tamanos": {"mezcla": {"5": 32, "12": 45, "18": 18}, "grandesAbajo": 0.3, "inflado": 1, "variacion": 0.1},
+        "tamanos": {
+            "mezcla": {"5": 32, "12": 45, "18": 18},
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.1,
+        },
         "colores": {
             "paleta": [
                 {"material": 0, "peso": 40, "acabado": "mate", "rol": "normal"},
@@ -57,14 +63,22 @@ def armado(**cambios: Any) -> dict[str, Any]:
             "mezcla": 0.5,
         },
         "adornos": {"follaje": 0.5, "flores": 0},
-        "aspecto": {"brillo": 0.6, "sombra": 0.2, "contorno": 0.8, "profundidad": 0.5, "semilla": 11},
+        "aspecto": {
+            "brillo": 0.6,
+            "sombra": 0.2,
+            "contorno": 0.8,
+            "profundidad": 0.5,
+            "semilla": 11,
+        },
     }
     base.update(cambios)
     return base
 
 
 def guirnalda(*colores: str) -> EstructuraGuirnalda:
-    return EstructuraGuirnalda(es_guirnalda=True, materiales=list(colores or ("#1f7a52", "#ffffff")))
+    return EstructuraGuirnalda(
+        es_guirnalda=True, materiales=list(colores or ("#1f7a52", "#ffffff"))
+    )
 
 
 def paleta(*entradas: dict[str, Any]) -> dict[str, Any]:
@@ -87,14 +101,61 @@ def test_una_pieza_que_no_es_guirnalda() -> None:
     [
         ({"version": "armado-guirnalda-organica.v2"}, "forma_invalida"),
         ({"colores": paleta()}, "forma_invalida"),
-        ({"colores": {**paleta({"material": 0, "peso": 1, "acabado": "mate", "rol": "normal"}), "reparto": "inventado"}}, "forma_invalida"),
-        ({"colores": paleta({"material": 0, "peso": 1, "acabado": "terciopelo", "rol": "normal"})}, "forma_invalida"),
-        ({"colores": paleta({"material": 0, "peso": 1, "acabado": "mate", "rol": "protagonista"})}, "forma_invalida"),
-        ({"tamanos": {"mezcla": {}, "grandesAbajo": 0.3, "inflado": 1, "variacion": 0.1}}, "sin_mezcla"),
-        ({"tamanos": {"mezcla": {"12": 0}, "grandesAbajo": 0.3, "inflado": 1, "variacion": 0.1}}, "sin_mezcla"),
-        ({"tamanos": {"mezcla": {"7": 100}, "grandesAbajo": 0.3, "inflado": 1, "variacion": 0.1}}, "forma_invalida"),
+        (
+            {
+                "colores": {
+                    **paleta({"material": 0, "peso": 1, "acabado": "mate", "rol": "normal"}),
+                    "reparto": "inventado",
+                }
+            },
+            "forma_invalida",
+        ),
+        (
+            {
+                "colores": paleta(
+                    {"material": 0, "peso": 1, "acabado": "terciopelo", "rol": "normal"}
+                )
+            },
+            "forma_invalida",
+        ),
+        (
+            {
+                "colores": paleta(
+                    {"material": 0, "peso": 1, "acabado": "mate", "rol": "protagonista"}
+                )
+            },
+            "forma_invalida",
+        ),
+        (
+            {"tamanos": {"mezcla": {}, "grandesAbajo": 0.3, "inflado": 1, "variacion": 0.1}},
+            "sin_mezcla",
+        ),
+        (
+            {"tamanos": {"mezcla": {"12": 0}, "grandesAbajo": 0.3, "inflado": 1, "variacion": 0.1}},
+            "sin_mezcla",
+        ),
+        (
+            {
+                "tamanos": {
+                    "mezcla": {"7": 100},
+                    "grandesAbajo": 0.3,
+                    "inflado": 1,
+                    "variacion": 0.1,
+                }
+            },
+            "forma_invalida",
+        ),
     ],
-    ids=["version", "sin-colores", "reparto", "acabado", "rol", "sin-mezcla", "mezcla-en-cero", "tamano"],
+    ids=[
+        "version",
+        "sin-colores",
+        "reparto",
+        "acabado",
+        "rol",
+        "sin-mezcla",
+        "mezcla-en-cero",
+        "tamano",
+    ],
 )
 def test_lo_que_no_se_sostiene(cambio: dict[str, Any], motivo: str) -> None:
     with pytest.raises(ArmadoInvalido) as caso:
@@ -104,7 +165,10 @@ def test_lo_que_no_se_sostiene(cambio: dict[str, Any], motivo: str) -> None:
 
 def test_un_color_que_la_pieza_no_lleva() -> None:
     with pytest.raises(ArmadoInvalido) as caso:
-        armado_resuelto(guirnalda("#1f7a52", "#ffffff"), armado(colores=paleta({"material": 7, "peso": 1, "acabado": "mate", "rol": "normal"})))
+        armado_resuelto(
+            guirnalda("#1f7a52", "#ffffff"),
+            armado(colores=paleta({"material": 7, "peso": 1, "acabado": "mate", "rol": "normal"})),
+        )
     assert caso.value.motivo == "material_fuera_de_rango"
 
 
@@ -123,7 +187,9 @@ def test_cada_globo_vuelve_a_su_material() -> None:
     resuelto = armado_resuelto(guirnalda("#1f7a52", "#ffffff"), armado())
     assert {g["material"] for g in resuelto["globos"]} <= {0, 1}
     assert sum(c["cantidad"] for c in resuelto["conteo"]) == len(resuelto["globos"])
-    assert resuelto["sueltos"] == 0, "un globo que no toca a ningún otro es un fallo del motor, no del armado"
+    assert resuelto["sueltos"] == 0, (
+        "un globo que no toca a ningún otro es un fallo del motor, no del armado"
+    )
 
 
 def test_el_indice_del_motor_distingue_dos_materiales_del_mismo_tono() -> None:
@@ -136,10 +202,12 @@ def test_los_materiales_apuntan_a_la_pieza_y_no_a_la_paleta() -> None:
     """La paleta del armado puede nombrar los colores de la pieza en otro orden, o repetir uno."""
     resuelto = armado_resuelto(
         guirnalda("#1f7a52", "#ffffff", "#c5a253"),
-        armado(colores=paleta(
-            {"material": 2, "peso": 50, "acabado": "cromado", "rol": "normal"},
-            {"material": 0, "peso": 50, "acabado": "mate", "rol": "normal"},
-        )),
+        armado(
+            colores=paleta(
+                {"material": 2, "peso": 50, "acabado": "cromado", "rol": "normal"},
+                {"material": 0, "peso": 50, "acabado": "mate", "rol": "normal"},
+            )
+        ),
     )
     assert {g["material"] for g in resuelto["globos"]} <= {0, 2}
     assert 1 not in {g["material"] for g in resuelto["globos"]}
@@ -167,7 +235,7 @@ def test_el_desperdicio_es_politica_del_plan() -> None:
     sin_margen = armado_resuelto(guirnalda(), armado(), desperdicio=0)
     con_margen = armado_resuelto(guirnalda(), armado(), desperdicio=0.3)
     assert con_margen["total_comprar"] > sin_margen["total_comprar"]
-    assert DESPERDICIO_POR_DEFECTO == 0.12
+    assert DESPERDICIO_POR_DEFECTO == MERMA
 
 
 def test_los_adornos_se_listan_pero_no_se_cotizan() -> None:
@@ -183,14 +251,19 @@ def test_el_motor_avisa_de_lo_que_corrigio() -> None:
     """Una guirnalda de 0,8 m no puede ser tan gruesa como una de cuatro metros, y el motor lo dice."""
     resuelto = armado_resuelto(
         guirnalda(),
-        armado(forma={**armado()["forma"], "largoM": 0.8}, volumen={**armado()["volumen"], "grosorCimaM": 1.4}),
+        armado(
+            forma={**armado()["forma"], "largoM": 0.8},
+            volumen={**armado()["volumen"], "grosorCimaM": 1.4},
+        ),
     )
     assert resuelto["avisos"]
 
 
 def test_un_reparto_distinto_cambia_donde_cae_cada_color_pero_no_cuantos_globos_hay() -> None:
     azar = armado_resuelto(guirnalda(), armado())
-    racimos = armado_resuelto(guirnalda(), armado(colores={**armado()["colores"], "reparto": "racimos"}))
+    racimos = armado_resuelto(
+        guirnalda(), armado(colores={**armado()["colores"], "reparto": "racimos"})
+    )
     assert len(azar["globos"]) == len(racimos["globos"])
     assert [g["material"] for g in azar["globos"]] != [g["material"] for g in racimos["globos"]]
 
@@ -202,7 +275,12 @@ def test_un_reparto_distinto_cambia_donde_cae_cada_color_pero_no_cuantos_globos_
 
 def test_las_opciones_salen_del_motor() -> None:
     opciones = opciones_admitidas()
-    assert {a["valor"] for a in opciones["acabados"]} == {"mate", "cromado", "confeti", "transparente"}
+    assert {a["valor"] for a in opciones["acabados"]} == {
+        "mate",
+        "cromado",
+        "confeti",
+        "transparente",
+    }
     assert {r["valor"] for r in opciones["repartos"]} == {"azar", "tramos", "racimos"}
     assert opciones["roles"] == ["normal", "acento"]
     assert opciones["tamanos"] == [5, 9, 12, 18, 24, 36]

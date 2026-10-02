@@ -77,16 +77,30 @@ export function mensajeErrorRespuesta(datos: unknown, respaldo: string): string 
  * validar (cada llamador comprueba lo que necesita). Una cancelación se
  * relanza tal cual para que el llamador la ignore.
  */
+/**
+ * Cuánto se espera a /api/plan-editar. Una edición normal tarda menos de un segundo; sin plazo, una petición
+ * que nunca responde dejaba la cola de ajustes de la tarjeta esperando para siempre y «Quitar», «Modificar»
+ * y «Agregar» quedaban muertos sin ningún aviso. El plan vive en el cliente: cancelar no deja nada a medias.
+ */
+export const PLAZO_EDICION_MS = 60_000;
+
+export const MENSAJE_EDICION_LENTA = "La edición tardó demasiado y se canceló. Tu propuesta sigue como estaba; inténtalo de nuevo.";
+
 export async function pedirPlanEditar(
   cuerpo: unknown,
   respaldo: string,
-  opciones: { signal?: AbortSignal; fetcher?: typeof fetch } = {},
+  opciones: { signal?: AbortSignal; fetcher?: typeof fetch; plazoMs?: number } = {},
 ): Promise<unknown> {
   const fetcher = opciones.fetcher ?? fetch;
+  const plazo = AbortSignal.timeout(opciones.plazoMs ?? PLAZO_EDICION_MS);
+  const signal = opciones.signal ? AbortSignal.any([opciones.signal, plazo]) : plazo;
+  // El plazo vencido es un fallo con mensaje; una cancelación de quien llama se relanza para que la ignore.
+  const vencio = (): boolean => plazo.aborted && !opciones.signal?.aborted;
   let respuesta: Response;
   try {
-    respuesta = await fetcher("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal: opciones.signal, body: JSON.stringify(cuerpo) });
+    respuesta = await fetcher("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal, body: JSON.stringify(cuerpo) });
   } catch (error) {
+    if (vencio()) throw new FalloPlanEditar(MENSAJE_EDICION_LENTA, { cause: error });
     if (esCancelacion(error)) throw error;
     throw new FalloPlanEditar(CATALOGO_ERRORES_UI_V1.SIN_CONEXION.mensaje_usuario, { cause: error });
   }
@@ -94,6 +108,7 @@ export async function pedirPlanEditar(
   try {
     datos = await respuesta.json();
   } catch (error) {
+    if (vencio()) throw new FalloPlanEditar(MENSAJE_EDICION_LENTA, { cause: error });
     if (esCancelacion(error)) throw error;
     throw new FalloPlanEditar(respaldo, { cause: error });
   }

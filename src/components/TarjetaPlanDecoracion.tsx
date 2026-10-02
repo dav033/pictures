@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
-import { ArrowLeftRight, Check, ChevronDown, Info, Plus, Search, X } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronDown, Info, Plus, Search } from "lucide-react";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
@@ -27,7 +27,6 @@ import {
   cuentaEnGlobos,
   faltantesCliente,
   medidasCortasCliente,
-  muestraColor,
   nombreConCantidadCliente,
   paquetesCliente,
   piezasVistasEnReferencia,
@@ -50,6 +49,9 @@ import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 import { BotonAprobar } from "@/components/propuesta/BotonAprobar";
 import { GlobosCelebracion } from "@/components/propuesta/GlobosCelebracion";
 import { AjustesPropuesta, type AjustePropuesta } from "@/components/plan/AjustesPropuesta";
+import { ModalAjustarPropuesta, type AperturaAjuste } from "@/components/plan/ajuste/ModalAjustarPropuesta";
+import type { ModoAjuste } from "@/components/plan/ajuste/ajuste-propuesta";
+import { precalentarExplorador } from "@/components/plan/ajuste/cliente-explorador";
 import { PanelEspacio } from "@/components/referencia/PanelEspacio";
 import { imagenDeReferencia, urlImagen } from "@/components/referencia/recorte";
 import { EditorPatron } from "@/components/plan/patron/EditorPatron";
@@ -69,6 +71,10 @@ import { DialogoHojaArmadoGuirnalda } from "@/components/plan/guirnalda/HojaArma
 import { leyendaGuirnalda } from "@/components/plan/guirnalda/leyenda-guirnalda";
 import { patronSobreArmado } from "@/components/plan/guirnalda/geometria-guirnalda";
 import type { ArmadoGuirnaldaV1 } from "@/lib/plan/armado-guirnalda";
+import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
+import type { ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
+import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
+import type { ArmadoColumnaOrganicaV1 } from "@/lib/plan/armado-columna-organica";
 import { avisosDeEdicion } from "@/components/plan/avisos-edicion";
 import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
 import { crearColaAjustes, crearPendientesAjustes, type TramoAjustes } from "@/components/plan/cola-ajustes";
@@ -84,8 +90,6 @@ type LineaCatalogoSeleccionada = {
   estructura: string;
 };
 
-type ModoEdicion = "agregar" | "reemplazar";
-type VarianteEdicion = VarianteCandidata & { productId: string };
 type ReferenciaEntrenamiento = { total: number; bySize?: Record<string, number> };
 type ReferenciasEntrenamientoResponse = { countsByCatalogId?: Record<string, ReferenciaEntrenamiento> };
 type ReferenciaEvidenciaSeleccionada = {
@@ -286,16 +290,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const [resultadosCatalogo, setResultadosCatalogo] = useState<ProductoCandidato[]>([]);
   const [consultaCatalogo, setConsultaCatalogo] = useState("");
   const [buscandoCatalogo, setBuscandoCatalogo] = useState(false);
-  const [editorAbierto, setEditorAbierto] = useState(false);
-  const [modoEdicion, setModoEdicion] = useState<ModoEdicion>("agregar");
-  const [estructuraEdicion, setEstructuraEdicion] = useState(plan.plan.estructuras[0]?.estructura_id ?? "");
-  const [objetivoEdicion, setObjetivoEdicion] = useState<string | null>(null);
-  const [consultaEdicion, setConsultaEdicion] = useState("");
-  const [candidatosEdicion, setCandidatosEdicion] = useState<ProductoCandidato[]>([]);
-  const [varianteEdicion, setVarianteEdicion] = useState<VarianteEdicion | null>(null);
-  const [colorEdicion, setColorEdicion] = useState("");
-  const [participacionEdicion, setParticipacionEdicion] = useState("20");
-  const [buscandoEdicion, setBuscandoEdicion] = useState(false);
+  // "Ajusta la propuesta" (modal) keeps its own open state and everything the customer picks inside it, so opening it
+  // does not repaint this (large) card: it hands us the function that opens it.
+  const abrirAjusteRef = useRef<((apertura: AperturaAjuste) => void) | null>(null);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null);
   const [opcionBusquedaActiva, setOpcionBusquedaActiva] = useState(-1);
@@ -388,6 +385,22 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
        */
       armadoArco: declarada?.armado_arco,
       /**
+       * El armado de la columna que trae la pieza (ADR-0034, ADR-0035 paso 3). Igual que el del arco: con él, el
+       * bloque de la columna toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide.
+       */
+      armadoColumna: declarada?.armado_columna,
+      /**
+       * El armado de la columna orgánica del motor (ADR-0034, `armado_columna_organica`; no el de anillos). Con él, su
+       * bloque toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia. Si la
+       * pieza trae también el clásico, manda el clásico (es el que ya existía) y este no se dibuja.
+       */
+      armadoColumnaOrganica: declarada?.armado_columna ? undefined : declarada?.armado_columna_organica,
+      /**
+       * El armado de la guirnalda del motor (ADR-0034, `armado_guirnalda_organica`; no el de ADR-0032). Con él, su
+       * bloque toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia.
+       */
+      armadoGuirnaldaOrganica: declarada?.armado_guirnalda_organica,
+      /**
        * Un tono `#rrggbb` por material, en el orden de `materiales`, ya resuelto por el catálogo: el
        * motor pinta con ellos. Nunca cuenta con ellos — el conteo y la compra van por índice.
        */
@@ -424,7 +437,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const textosSustitucion = sustitucionesCliente(sustituciones.filter((item) => !esSustitucionDeColor(item)), descripcionesPorId);
   const textosColorReferencia = sustitucionesCliente(sustituciones.filter(esSustitucionDeColor), descripcionesPorId);
   const textosFaltantes = faltantesCliente(sinCobertura, descripcionesPorId);
-  const estructuraSeleccionada = plan.plan.estructuras.find((estructura) => estructura.estructura_id === estructuraEdicion);
   const opcionesRecomendadas = seleccionCatalogo ? opcionesCatalogo(recomendaciones, seleccionCatalogo.linea, true) : [];
   const opcionesBusqueda = seleccionCatalogo ? opcionesCatalogo(resultadosCatalogo, seleccionCatalogo.linea, false) : [];
   const idDetalle = `${editorId}-detalle`;
@@ -593,24 +605,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setEstadoEvidencia("idle");
   }
 
-  function abrirEditor(modo: ModoEdicion, estructuraId: string, objetivo?: PlanResuelto["estructuras"][number]["lineas"][number]) {
-    setModoEdicion(modo);
-    setEstructuraEdicion(estructuraId);
-    setObjetivoEdicion(objetivo?.variant_id ?? null);
-    setConsultaEdicion(objetivo ? [objetivo.tamano_codigo ? pulgadasCliente(objetivo.tamano_codigo) : null, objetivo.color].filter(Boolean).join(" ") : "");
-    setCandidatosEdicion([]);
-    setVarianteEdicion(null);
-    setColorEdicion(objetivo?.color ?? "");
-    setParticipacionEdicion("20");
+  /** Opens "Ajusta la propuesta" (a modal) on a piece, and on a balloon of it when the customer chose "Modificar". */
+  function abrirEditor(modo: ModoAjuste, estructuraId: string, objetivo?: PlanResuelto["estructuras"][number]["lineas"][number]) {
     setErrorEdicion(null);
     setDetalleAbierto(true);
-    setEditorAbierto(true);
-  }
-
-  function cerrarEditor() {
-    if (guardandoEdicion) return;
-    setEditorAbierto(false);
-    setErrorEdicion(null);
+    abrirAjusteRef.current?.({ modo, estructuraId, objetivoVariantId: objetivo?.variant_id ?? null });
   }
 
   /** Shape and size of the line a search would replace, so the server only offers compatible balloons. */
@@ -618,33 +617,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     if (!variantId) return undefined;
     const linea = plan.estructuras.flatMap((estructura) => estructura.lineas).find((item) => item.variant_id === variantId);
     return linea ? { forma: linea.forma ?? null, diam_pulg: linea.diam_pulg ?? null } : undefined;
-  }
-
-  async function buscarVariantes(evento: FormEvent<HTMLFormElement>) {
-    evento.preventDefault();
-    const consulta = consultaEdicion.trim();
-    if (!consulta || buscandoEdicion) return;
-    setBuscandoEdicion(true);
-    setErrorEdicion(null);
-    try {
-      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode, ...(modoEdicion === "reemplazar" && lineaObjetivoDe(objetivoEdicion) ? { linea_objetivo: lineaObjetivoDe(objetivoEdicion) } : {}) }, "No se pudo buscar en el catálogo.") as { candidatos?: ProductoCandidato[] };
-      setCandidatosEdicion(datos.candidatos ?? []);
-      if (!datos.candidatos?.length) setErrorEdicion("No encontré una variante disponible. Prueba con el tamaño y el color, por ejemplo: globo rojo de 5 pulgadas.");
-    } catch (error) {
-      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo buscar en el catálogo."));
-    } finally {
-      setBuscandoEdicion(false);
-    }
-  }
-
-  function elegirVariante(candidato: ProductoCandidato, variante: VarianteCandidata) {
-    setVarianteEdicion({ ...variante, productId: candidato.productId });
-    // El color sigue a la variante elegida, siempre. Antes solo se rellenaba
-    // cuando estaba vacío, y al abrir el editor ya venía con el color de la
-    // pieza que se reemplaza: cambiar de variante dejaba globos azules
-    // cotizados como "rosado".
-    setColorEdicion(variante.colores.length === 1 ? variante.colores[0]! : "");
-    setErrorEdicion(null);
   }
 
   function navegarOpcionesBusqueda(evento: React.KeyboardEvent<HTMLInputElement>): void {
@@ -857,6 +829,62 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     );
   }
 
+  /**
+   * "Guardar arco" of the arch editor (ADR-0035, step 1): writes the assembly the decorator drafted into the
+   * proposal with the `armado_arco` edit, through the same queue and signature as every other edit, so the plan
+   * is resolved and signed again (new `plan_hash`, new total) and the notice offers "Deshacer". The editor stays
+   * open on a failure, with Python's own sentence for a rejected assembly.
+   */
+  function guardarArco(estructuraId: string, armado: ArmadoArcoV1): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_arco", estructura_id: estructuraId, armado_arco: armado },
+      "Arco guardado: la propuesta cambió de firma, así que es otra decoración.",
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
+  /**
+   * "Guardar columna" del editor de columnas (ADR-0035, paso 3): escribe el armado que el decorador dibujó en la
+   * propuesta con la edición `armado_columna`, por la misma cola y la misma firma que cualquier otra edición, así que
+   * el plan se resuelve y se firma otra vez (nuevo `plan_hash`, nuevo total) y el aviso ofrece «Deshacer». El editor
+   * sigue abierto si falla, con la frase de Python cuando rechazó el armado.
+   */
+  function guardarColumna(estructuraId: string, armado: ArmadoColumnaV1): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_columna", estructura_id: estructuraId, armado_columna: armado },
+      "Columna guardada: la propuesta cambió de firma, así que es otra decoración.",
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
+  /**
+   * "Guardar columna" del editor de columnas orgánicas (ADR-0035, paso 3): escribe el armado que el decorador dibujó
+   * en la propuesta con la edición `armado_columna_organica`, por la misma cola y la misma firma que cualquier otra
+   * edición, así que el plan se resuelve y se firma otra vez (nuevo `plan_hash`, nuevo total) y el aviso ofrece
+   * «Deshacer». El editor sigue abierto si falla, con la frase de Python cuando rechazó el armado.
+   */
+  function guardarColumnaOrganica(estructuraId: string, armado: ArmadoColumnaOrganicaV1): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_columna_organica", estructura_id: estructuraId, armado_columna_organica: armado },
+      "Columna guardada: la propuesta cambió de firma, así que es otra decoración.",
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
+  /**
+   * "Guardar guirnalda" del editor de guirnaldas del motor (ADR-0035, paso 3): escribe el armado que el decorador
+   * dibujó en la propuesta con la edición `armado_guirnalda_organica`, por la misma cola y la misma firma que
+   * cualquier otra edición, así que el plan se resuelve y se firma otra vez (nuevo `plan_hash`, nuevo total) y el
+   * aviso ofrece «Deshacer». El editor sigue abierto si falla, con la frase de Python cuando rechazó el armado.
+   */
+  function guardarGuirnaldaOrganica(estructuraId: string, armado: ArmadoGuirnaldaOrganicaV1): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_guirnalda_organica", estructura_id: estructuraId, armado_guirnalda_organica: armado },
+      "Guirnalda guardada: la propuesta cambió de firma, así que es otra decoración.",
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
   function abrirEditorGuirnalda(estructuraId: string): void {
     setFalloGuirnalda(null);
     setGuirnaldaEditando({ estructuraId, tramo: cola.tramo(), avisos: [] });
@@ -886,39 +914,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   function reintentarGuirnalda(sesion: SesionArmado, armado: ArmadoGuirnaldaV1 | null): void {
     setFalloGuirnalda(null);
     void guardarGuirnalda(sesion, armado).then((error) => avisarSesionGuirnalda(sesion, { guardados: error ? 0 : 1, error, sinGuardar: error ? { valor: armado } : null }));
-  }
-
-  async function aplicarEdicion(evento?: FormEvent<HTMLFormElement>) {
-    evento?.preventDefault();
-    if (!onPlanActualizado || guardandoEdicion || !estructuraSeleccionada) return;
-    if (modoEdicion !== "agregar" && !objetivoEdicion) return;
-    if (!varianteEdicion) {
-      setErrorEdicion(modoEdicion === "agregar" ? "Elige primero una variante del catálogo." : "Elige primero la variante que reemplazará la pieza actual.");
-      return;
-    }
-    const participacion = Number(participacionEdicion) / 100;
-    if (modoEdicion === "agregar" && (!Number.isFinite(participacion) || participacion <= 0.01 || participacion >= 0.8)) {
-      setErrorEdicion("La participación debe estar entre 2% y 79%.");
-      return;
-    }
-    setGuardandoEdicion(true);
-    setErrorEdicion(null);
-    try {
-      await cola.encolar(async (base) => {
-        const datos = await pedirPlanEditar(
-          { modo: "aplicar", base, edicion: { accion: modoEdicion, estructura_id: estructuraEdicion, objetivo_variant_id: objetivoEdicion ?? undefined, variante: { product_id: varianteEdicion.productId, variant_id: varianteEdicion.variantId, color: colorEdicion.trim() || undefined }, participacion: modoEdicion === "agregar" ? participacion : undefined }, loraMode },
-          "No se pudo actualizar el plan.",
-        ) as { plan?: PlanResuelto; cotizacion?: Cotizacion };
-        if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo actualizar el plan."));
-        planEditado(datos.plan, datos.cotizacion, modoEdicion === "agregar" ? "Listo, agregué el globo." : "Listo, cambié el globo.", undefined, avisosDeEdicion(datos));
-        return datos.plan;
-      });
-      cerrarEditor();
-    } catch (error) {
-      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo actualizar el plan."));
-    } finally {
-      setGuardandoEdicion(false);
-    }
   }
 
   async function reemplazarDesdeCatalogo(opcion: OpcionCatalogo) {
@@ -960,7 +955,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       });
     } catch (error) {
       setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo quitar la pieza."));
-      setEditorAbierto(true);
     } finally {
       setGuardandoEdicion(false);
     }
@@ -1085,16 +1079,13 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   }, [aprobado]);
 
   useEffect(() => {
-    if (!editorAbierto) return;
-    document.getElementById(editorId)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [editorAbierto, editorId]);
-
-  useEffect(() => {
     if (!intercambioAbierto) return;
     requestAnimationFrame(() => volverDetalleRef.current?.focus() ?? busquedaCatalogoRef.current?.focus());
   }, [intercambioAbierto]);
 
-  const botonAjustar = editorDisponible && <button type="button" data-testid="editar-plan" aria-expanded={editorAbierto} aria-controls={editorId} onClick={() => { setDetalleAbierto(true); setEditorAbierto((abierto) => !abierto); }} className="ui-pressable inline-flex items-center gap-1 rounded-full border border-borde px-2.5 py-1 text-xs font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"><Plus className="size-3" aria-hidden="true" />Ajustar plan</button>;
+  /** The explorer's colors and first page start loading when the customer reaches for "Ajustar plan". */
+  const precalentarAjuste = () => precalentarExplorador(plan.approval_token, loraMode);
+  const botonAjustar = editorDisponible && <button type="button" data-testid="editar-plan" aria-expanded="false" aria-controls={editorId} onPointerEnter={precalentarAjuste} onFocus={precalentarAjuste} onTouchStart={precalentarAjuste} onClick={() => abrirEditor("agregar", plan.plan.estructuras[0]?.estructura_id ?? "")} className="ui-pressable inline-flex items-center gap-1 rounded-full border border-borde px-2.5 py-1 text-xs font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"><Plus className="size-3" aria-hidden="true" />Ajustar plan</button>;
 
   return (
     <motion.section
@@ -1217,64 +1208,23 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
             {botonAjustar}
           </div>
 
-          {editorDisponible && editorAbierto && (
-            <section id={editorId} aria-labelledby={`${editorId}-titulo`} className="space-y-3 rounded-2xl border border-borde bg-superficie-suave p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 id={`${editorId}-titulo`} className="text-sm font-semibold text-texto">Ajusta la propuesta</h3>
-                  <p className="mt-0.5 text-xs text-texto-suave">Busca el globo que quieres, elige su tamaño y color, y guárdalo. El total se actualiza al instante.</p>
-                </div>
-                <button type="button" aria-label="Cerrar editor del plan" onClick={cerrarEditor} className="rounded-md p-1 text-texto-suave hover:bg-superficie hover:text-texto focus-visible:outline-2 focus-visible:outline-acento"><X className="size-4" aria-hidden="true" /></button>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <label className="text-xs text-texto-suave">¿En qué pieza?<select name="estructura-plan" value={estructuraEdicion} onChange={(evento) => { setEstructuraEdicion(evento.target.value); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento">{plan.plan.estructuras.map((estructura) => <option key={estructura.estructura_id} value={estructura.estructura_id}>{descripcionesPorId.get(estructura.estructura_id) ?? estructura.nombre}</option>)}</select></label>
-                <label className="text-xs text-texto-suave">¿Qué quieres hacer?<select name="accion-plan" value={modoEdicion} onChange={(evento) => { setModoEdicion(evento.target.value as ModoEdicion); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="agregar">Agregar un globo</option><option value="reemplazar">Cambiar un globo</option></select></label>
-              </div>
-              {modoEdicion === "reemplazar" && <label className="block text-xs text-texto-suave">¿Qué globo cambias?<select name="objetivo-plan" value={objetivoEdicion ?? ""} onChange={(evento) => setObjetivoEdicion(evento.target.value || null)} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="">Elige un globo</option>{lineasVisiblesPorVariante(plan.estructuras.find((estructura) => estructura.estructura_id === estructuraEdicion)?.lineas ?? []).map((linea) => <option key={linea.variant_id} value={linea.variant_id}>{[productoCliente(linea.titulo), linea.tamano_codigo ? pulgadasCliente(linea.tamano_codigo) : null, linea.color].filter(Boolean).join(" · ")}</option>)}</select></label>}
-              <form onSubmit={buscarVariantes} className="flex gap-2"><label htmlFor={`${editorId}-buscar`} className="sr-only">Buscar un globo en el catálogo</label><input id={`${editorId}-buscar`} name="consulta-variante-plan" autoComplete="off" value={consultaEdicion} onChange={(evento) => setConsultaEdicion(evento.target.value)} placeholder="Ej. globo rojo de 5 pulgadas…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-tenue focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoEdicion || !consultaEdicion.trim()} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-sm font-semibold text-sobre-acento disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoEdicion ? "Buscando…" : "Buscar"}</button></form>
-              {candidatosEdicion.length > 0 && <ul className="space-y-2" aria-label="Resultados del catálogo">{candidatosEdicion.map((candidato) => <li key={candidato.productId} className="rounded-md border border-borde bg-superficie/70 p-2"><p className="text-xs font-semibold text-texto">{productoCliente(candidato.titulo)}</p><div className="mt-1.5 flex flex-wrap gap-1.5">{candidato.variantes.map((variante) => { const elegido = varianteEdicion?.variantId === variante.variantId; return <button key={variante.variantId} type="button" aria-pressed={elegido} onClick={() => elegirVariante(candidato, variante)} className={`rounded-md border px-2 py-1 text-left text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-acento ${elegido ? "border-acento bg-acento-suave text-acento" : "border-borde text-texto hover:bg-fondo"}`}><span className="font-semibold">{variante.codigoTamano ? pulgadasCliente(variante.codigoTamano) : variante.titulo ?? "Variante"}</span><span className="ml-1 text-texto-suave">{pesos.format(variante.precio)}{variante.colores.length ? ` · ${variante.colores.join(", ")}` : ""}</span></button>; })}</div></li>)}</ul>}
-              {varianteEdicion && (
-                <form onSubmit={aplicarEdicion} className="space-y-3 rounded-xl bg-superficie p-3">
-                  {varianteEdicion.colores.length > 1 ? (
-                    <fieldset>
-                      <legend className="text-xs text-texto-suave">¿De qué color?</legend>
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {varianteEdicion.colores.map((color) => {
-                          const elegido = colorEdicion === color;
-                          return (
-                            <button key={color} type="button" aria-pressed={elegido} onClick={() => setColorEdicion(color)} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ring-1 ring-inset transition-colors focus-visible:outline-2 focus-visible:outline-acento ${elegido ? "bg-acento-suave font-semibold text-acento ring-acento" : "text-texto ring-borde-suave hover:bg-superficie-suave"}`}>
-                              <span aria-hidden="true" className="size-3.5 rounded-full ring-1 ring-black/10" style={{ background: muestraColor(color, null).fondo }} />
-                              {color}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </fieldset>
-                  ) : varianteEdicion.colores.length === 1 ? (
-                    <p className="flex items-center gap-1.5 text-xs text-texto-suave">
-                      <span aria-hidden="true" className="size-3.5 rounded-full ring-1 ring-black/10" style={{ background: muestraColor(varianteEdicion.colores[0]!, null).fondo }} />
-                      Color: <span className="font-medium text-texto">{varianteEdicion.colores[0]}</span>
-                    </p>
-                  ) : (
-                    <label className="block text-xs text-texto-suave">Color (opcional)<input name="color-variante-plan" autoComplete="off" value={colorEdicion} onChange={(evento) => setColorEdicion(evento.target.value)} placeholder="Según catálogo…" className="mt-1 w-full rounded-md border border-borde bg-fondo px-2 py-1.5 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento" /></label>
-                  )}
-                  {modoEdicion === "agregar" && (
-                    <label className="block text-xs text-texto-suave">
-                      <span className="flex items-center justify-between">Cuánto de la pieza lleva este globo<output className="font-semibold tabular-nums text-texto">{participacionEdicion}%</output></span>
-                      <input name="participacion-variante-plan" type="range" min="2" max="79" step="1" value={participacionEdicion} onChange={(evento) => setParticipacionEdicion(evento.target.value)} className="mt-1.5 w-full accent-[var(--acento)]" />
-                      <span className="mt-0.5 flex justify-between text-[11px] text-texto-tenue"><span>Un toque</span><span>Protagonista</span></span>
-                    </label>
-                  )}
-                  <button type="submit" disabled={guardandoEdicion} data-testid="guardar-edicion-plan" className="ui-pressable w-full rounded-lg bg-acento px-3 py-2 text-sm font-semibold text-sobre-acento disabled:opacity-50 sm:w-auto">{guardandoEdicion ? "Guardando…" : modoEdicion === "agregar" ? "Agregar a la pieza" : "Cambiar el globo"}</button>
-                </form>
-              )}
-              {errorEdicion && <p role="alert" aria-live="polite" className="text-xs font-medium text-error">{errorEdicion}</p>}
-            </section>
+          {editorDisponible && (
+            <ModalAjustarPropuesta
+              abrirRef={abrirAjusteRef}
+              piezas={plan.plan.estructuras.map((estructura) => ({ id: estructura.estructura_id, nombre: descripcionesPorId.get(estructura.estructura_id) ?? estructura.nombre }))}
+              lineasDe={(estructuraId) => lineasVisiblesPorVariante(plan.estructuras.find((estructura) => estructura.estructura_id === estructuraId)?.lineas ?? [])}
+              imagenDeLinea={(linea) => imagenLinea(linea.variant_id, linea.imagen)}
+              approvalToken={plan.approval_token}
+              loraMode={loraMode}
+              variantIdsDelPlan={new Set(plan.estructuras.flatMap((estructura) => estructura.lineas.map((linea) => linea.variant_id)))}
+              idContenido={editorId}
+              onAplicar={(edicion, aviso) => aplicarAjusteDirecto(edicion, aviso, { enDialogo: true })}
+            />
           )}
-          {!editorAbierto && errorEdicion && !seleccionCatalogo && <p role="alert" className="rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
+          {errorEdicion && !seleccionCatalogo && <p role="alert" className="rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
 
           <ol className="space-y-2.5" aria-label="Piezas de la decoración">
-            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado, armadoGuirnalda, leyendaGuirnalda: leyendaDeGuirnalda, patronDibujo, armadoArco, tonos }, indice) => (
+            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado, armadoGuirnalda, leyendaGuirnalda: leyendaDeGuirnalda, patronDibujo, armadoArco, armadoColumna, armadoColumnaOrganica, armadoGuirnaldaOrganica, tonos }, indice) => (
               <DetalleEstructura
                 key={estructura.estructura_id}
                 idBase={`${editorId}-pieza-${indice}`}
@@ -1326,6 +1276,32 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                   armado: armadoArco,
                   pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
                   leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarArco(estructura.estructura_id, armado) : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                // Igual que el arco: el dibujo de la columna es derivado, se pide a /api/plan-armado-columna y no entra en `plan_hash`.
+                columna={armadoColumna ? {
+                  armado: armadoColumna,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarColumna(estructura.estructura_id, armado) : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                // Igual que la columna de anillos: el dibujo es derivado, se pide a /api/plan-armado-columna-organica y no entra en `plan_hash`.
+                columnaOrganica={armadoColumnaOrganica ? {
+                  armado: armadoColumnaOrganica,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarColumnaOrganica(estructura.estructura_id, armado) : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                // Igual que el arco: el dibujo es derivado, se pide a /api/plan-armado-guirnalda-organica y no entra en `plan_hash`.
+                guirnaldaOrganica={armadoGuirnaldaOrganica ? {
+                  armado: armadoGuirnaldaOrganica,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarGuirnaldaOrganica(estructura.estructura_id, armado) : undefined,
+                  ocupado: guardandoAjustes,
                 } : undefined}
                 vistaReparto={editorDisponible ? {
                   pedir: (participaciones, signal) => pedirVistaPatron(peticionVistaPieza({ plan: plan.plan, estructuraId: estructura.estructura_id, lineas: estructura.lineas }, { patron_color: null, participaciones: [...participaciones] }), { signal }),

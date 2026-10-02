@@ -1,5 +1,6 @@
 import type { Herramienta } from "../nucleo/tipos";
 import { DENSIDADES, MEZCLAS, ROLES_ESCENA, ROLES_MATERIAL, TIPOS_ESTRUCTURA, UBICACIONES } from "@/lib/plan/tipos";
+import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { EJEMPLO_UNIDADES_DECLARADAS, ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 
 const SELECCION_PROPIEDADES = {
@@ -340,43 +341,144 @@ export const ARMAR_ESTRUCTURA: Herramienta = {
 export const HERRAMIENTAS_ARMADO_MOTOR: Herramienta[] = [CONSULTAR_OPCIONES_ARMADO, ARMAR_ESTRUCTURA];
 
 /**
+ * Estimar el conteo de globos (ADR-0038), detrás de `ESTIMAR_CONTEO_V1`. Hasta ahora la IA solo obtenía el
+ * número de globos confirmando el plan, que fija estado y token de aprobación. Esta herramienta lo
+ * **consulta** sin comprometer nada: para unos candidatos le pregunta a Python cuántos globos cobraría el plan
+ * y qué variación de mandos los acerca a un conteo objetivo (el de la foto).
+ *
+ * Es de solo lectura (`HERRAMIENTAS_SOLO_LECTURA`): no escribe en el estado, no toca `planResuelto`, el token
+ * ni `plan_hash`. Las cifras son de Python; la descripción no repite ninguna regla ni tolerancia, y el
+ * número que se le dice al cliente sigue saliendo de `confirmar_plan_decoracion`.
+ */
+export const ESTIMAR_CONTEO_GLOBOS: Herramienta = {
+  nombre: "estimar_conteo_globos",
+  descripcion:
+    "Consulta de SOLO LECTURA: te dice cuántos globos cobraría el plan para hasta 6 candidatos de una pieza (cada uno con sus medidas, densidad y mezcla) y cuál de ellos queda más cerca de un conteo objetivo, por ejemplo el conteo leído en la foto. Por candidato devuelve total_vigente (el que de verdad se cobraría por pieza) y su fuente (formula, o motor si la pieza trae armado), total_formula y total_motor, el reparto por tamaño, si pasa la puerta física, la brecha contra el objetivo con su tolerancia y una sugerencia: la menor variación de mandos que lo acerca. Si la pieza trae armado del motor (armado_de = el estructura_id que ya armaste con armar_estructura en este turno), el total sale del motor y su densidad, su mezcla y sus medidas NO lo mueven: la sugerencia mueve entonces los mandos del armado y la nota lo explica. Úsala antes de armar y de confirmar para elegir entre candidatos; una consulta admite hasta 2 candidatos con armado de guirnalda y, si hay otra estimación en curso, responde ocupado: reintenta una vez. No cambia el plan, no fija estado ni token de aprobación y NO sustituye a confirmar_plan_decoracion: el número que le dices al cliente sale SIEMPRE de confirmar_plan_decoracion, nunca de esta estimación. Si no mandas objetivo y la foto trae un conteo leído de un único elemento, se usa ese.",
+  esquema: {
+    type: "object",
+    required: ["candidatos"],
+    properties: {
+      candidatos: {
+        type: "array",
+        minItems: 1,
+        maxItems: 6,
+        description: "Las variantes de la pieza que quieres comparar: normalmente 2 o 3 que cambien medidas, densidad o mezcla. Cada etiqueta es única y es lo que vuelve en la respuesta.",
+        items: {
+          type: "object",
+          required: ["etiqueta", "tipo", "densidad", "mezcla"],
+          properties: {
+            etiqueta: { type: "string", description: "Cómo llamas a este candidato (por ejemplo 'arco 3 m media'). No se repite entre candidatos." },
+            tipo: { type: "string", enum: [...TIPOS_ESTRUCTURA_GEOMETRICOS], description: "El tipo de la estructura: el que mide la geometría. Un aro circular o un arco asimétrico son tipo arco." },
+            estructura_oficial: { type: "string", enum: [...ESTRUCTURAS_OFICIALES_IDS], description: "Opcional. Coherente con tipo y densidad, como en confirmar_plan_decoracion." },
+            medidas: {
+              type: "object",
+              description: "Las medidas que declararías en la estructura. Las que falten se asumen como al confirmar el plan (las de por defecto del tipo) y la respuesta lo avisa; si el cliente no dio medidas, déjalas vacías.",
+              properties: {
+                ancho_m: { type: "number" },
+                alto_m: { type: "number" },
+                largo_m: { type: "number" },
+              },
+            },
+            densidad: { type: "string", enum: [...DENSIDADES] },
+            mezcla: { type: "string", enum: [...MEZCLAS] },
+            colores: { type: "integer", minimum: 1, maximum: 12, description: "Solo importa con armado: cuántos materiales llevaría la pieza. Sin esto se usan los que el armado nombra." },
+            repeticiones: { type: "integer", minimum: 1, maximum: 24, description: "Cuántas piezas iguales. El conteo vigente es por pieza; total_instalado las multiplica." },
+            armado_de: { type: "string", description: "El estructura_id de una pieza que armar_estructura ya validó en este turno: su armado entra al candidato y la pieza se cuenta con el motor. Sin esto, se cuenta con la fórmula." },
+          },
+        },
+      },
+      objetivo: {
+        type: "object",
+        required: ["conteo"],
+        description: "El conteo de globos por pieza al que quieres acercarte, tal como lo leíste en la foto. Sin esto, y si la foto trae un conteo leído de un solo elemento, se usa ese.",
+        properties: {
+          conteo: { type: "integer", minimum: 1 },
+          exacto: { type: "boolean", description: "Solo informativo: se devuelve tal cual en la respuesta; no cambia la tolerancia ni la búsqueda." },
+        },
+      },
+      referencia_element_id: { type: "string", description: "Si la foto trae conteos de varios elementos y no mandas objetivo: de cuál tomarlo." },
+    },
+  },
+};
+
+/**
+ * Propiedades de UNA edición de `ajustar_plan_decoracion`. Se usan dos veces:
+ * sueltas en la raíz (una sola edición, la forma original) y como elementos de
+ * `ediciones` (varias, todas o ninguna). Este JSON Schema solo guía al modelo:
+ * lo que de verdad valida los argumentos es `leerEdicionesChat`
+ * (src/lib/plan/edicion-chat.ts), con los mismos esquemas que el editor de la
+ * tarjeta (`EdicionSchema`, `EdicionRepartoSchema`, `EdicionMezclaSchema` en
+ * src/lib/plan/edicion-esquemas.ts). Igual que el resto de herramientas de este
+ * archivo, los requisitos condicionales van en texto y no en el esquema.
+ */
+const PROPIEDADES_EDICION_PLAN: Record<string, unknown> = {
+  accion: {
+    type: "string",
+    enum: ["agregar", "reemplazar", "quitar", "repartir", "mezcla"],
+    description:
+      "agregar: suma un material nuevo a la estructura (\"agrégale unos morados\"). reemplazar: cambia el material objetivo por `variante` (\"cambia el azul por rojo\"). quitar: elimina el material objetivo (\"quita las servilletas\"); no sirve si es el único material de la estructura: ahí se reemplaza. repartir: cambia cuánto lleva cada color de la estructura sin cambiar los colores (\"que el rosado sea el protagonista\", \"menos blanco y más dorado\"). mezcla: cambia el balance de tamaños de los globos de la estructura (\"globos más grandes\", \"más pequeños\", \"solo globos grandes\").",
+  },
+  estructura_id: { type: "string", description: "estructura_id de la propuesta vigente que se va a tocar, tal como aparece en la lista de la propuesta vigente." },
+  objetivo_variant_id: { type: "string", description: "Obligatorio en reemplazar y quitar: variant_id actual de esa estructura (de la lista de la propuesta vigente) que se reemplaza o elimina." },
+  variante: {
+    type: "object",
+    description: "Obligatoria en agregar y reemplazar: la pieza nueva, recuperada con buscar_catalogo_rag en este mismo turno (el par product_id/variant_id exacto que devolvió).",
+    required: ["product_id", "variant_id"],
+    properties: {
+      product_id: { type: "string" },
+      variant_id: { type: "string" },
+      color: { type: "string" },
+      acabado: { type: "string" },
+    },
+  },
+  participacion: { type: "number", minimum: 0.01, maximum: 0.8, description: "Solo para agregar: fracción de la estructura que ocupa el material nuevo (0,01 a 0,8). Si no la mandas, el sistema usa 0,2." },
+  participaciones: {
+    type: "array",
+    minItems: 2,
+    maxItems: 6,
+    items: { type: "number", minimum: 0.05, maximum: 0.95 },
+    description:
+      "Solo para repartir: cuánto pesa cada color, un número por material de la estructura y en el MISMO orden en que la lista de la propuesta vigente los muestra (reparto actual), sumando 1. Cada color pesa al menos 0,05; para quitar un color usa quitar. Ejemplo, rosado protagonista en una estructura rosado, blanco y dorado: [0.6, 0.25, 0.15].",
+  },
+  mezcla: {
+    type: "string",
+    enum: ["organica_fina", "clasica", "organica_gruesa", "solo_grandes"],
+    description:
+      "Solo para la acción mezcla, ordenadas de globos más pequeños a más grandes: organica_fina (muchos globos chicos y pocos grandes de acento), clasica (todos de 12 pulgadas), organica_gruesa (menos chicos y más volumen: \"más grandes\"), solo_grandes (solo globos de 18 y 24 pulgadas). \"Un poco más grandes\" es el escalón siguiente al que tiene ahora la estructura; \"más pequeños\", el anterior.",
+  },
+};
+
+/**
  * Ajusta la propuesta ya vigente en vez de diseñar una nueva (§7 "editar una
- * propuesta desde el chat"). Mismo esquema que `EdicionSchema`
- * (src/lib/plan/edicion-esquemas.ts), que es lo que de verdad valida los
- * argumentos en el handler — este JSON Schema solo guía al modelo, igual que
- * el resto de herramientas de este archivo describe requisitos condicionales
- * en texto en vez de en el esquema. Se registra aparte de `HERRAMIENTAS_PLAN`
- * porque `herramientasActivas()` solo la expone cuando `estado.planVigente`
- * existe: el modelo no puede convocarla por su cuenta sin evidencia firmada
- * de que hay algo que editar.
+ * propuesta desde el chat"). Una edición suelta (la forma original) o varias en
+ * `ediciones`, aplicadas en orden y de forma atómica: cada una parte de la
+ * propuesta que dejó la anterior y, si una falla, no se aplica ninguna.
+ *
+ * Se registra aparte de `HERRAMIENTAS_PLAN` porque `herramientasActivas()` solo
+ * la expone cuando `estado.planVigente` existe: el modelo no puede convocarla
+ * por su cuenta sin evidencia firmada de que hay algo que editar. Solo ofrece
+ * agregar/reemplazar/quitar/repartir/mezcla; el patrón de color y los armados
+ * (arco, columna, guirnalda) se quedan en el editor de la tarjeta.
  */
 export const AJUSTAR_PLAN_DECORACION: Herramienta = {
   nombre: "ajustar_plan_decoracion",
   descripcion:
-    "Ajusta la propuesta YA vigente de este turno (agrega, reemplaza o quita un material de una sola estructura) en vez de diseñar una propuesta nueva. Solo existe cuando hay una propuesta vigente. Úsala cuando el cliente pide un cambio puntual sobre lo que ya vio (\"cambia el globo rosado por dorado\", \"quita la columna izquierda\", \"agrégale unos morados\"); usa confirmar_plan_decoracion solo si el cliente pide diseñar algo distinto desde cero. No llames esta herramienta y confirmar_plan_decoracion en el mismo turno: es una u otra. El product_id y variant_id de `variante` deben haber aparecido en buscar_catalogo_rag de este mismo turno, igual que en confirmar_plan_decoracion. Nunca mandes precios: el backend los recalcula. Devuelve el desglose actualizado que reemplaza al de la propuesta vigente.",
+    "Ajusta la propuesta YA vigente (la que el cliente ve en pantalla y se describe al final de las instrucciones) en vez de diseñar una nueva. Solo existe cuando hay una propuesta vigente. Úsala para cualquier cambio sobre lo que el cliente ya vio: cambiar un color o un material (\"cambia el azul por rojo en las tres columnas\"), quitar una pieza (\"quita las servilletas\"), agregar un color (\"agrégale dorado\"), cambiar cuánto pesa cada color (\"que el rosado sea el protagonista\") o el tamaño de los globos (\"globos más grandes\"). Para un solo cambio manda los campos de la edición directamente; para varios manda `ediciones` (de 1 a 8): se aplican en orden, cada una sobre el resultado de la anterior, y si una falla no se aplica ninguna. Un \"cámbialo en todas\" son varias ediciones, una por estructura que tenga ese material. Usa confirmar_plan_decoracion solo si el cliente pide diseñar algo distinto desde cero. No llames esta herramienta y confirmar_plan_decoracion en el mismo turno: es una u otra. El product_id y variant_id de cada `variante` deben haber aparecido en buscar_catalogo_rag de este mismo turno, igual que en confirmar_plan_decoracion. Nunca mandes precios ni cantidades de globos: el backend los recalcula. No sirve para el patrón de color ni para armar arcos, columnas o guirnaldas: eso lo cambia el cliente desde la tarjeta. Devuelve el desglose actualizado, que reemplaza al de la propuesta vigente, y su nuevo total.",
   esquema: {
     type: "object",
-    required: ["accion", "estructura_id"],
     properties: {
-      accion: {
-        type: "string",
-        enum: ["agregar", "reemplazar", "quitar"],
-        description: "agregar: suma un material nuevo a la estructura con la participación indicada. reemplazar: cambia la variante objetivo (objetivo_variant_id) por la de `variante`. quitar: elimina la variante objetivo (no la uses si es el único material de la estructura).",
-      },
-      estructura_id: { type: "string", description: "estructura_id de la propuesta vigente que se va a tocar." },
-      objetivo_variant_id: { type: "string", description: "Obligatorio en reemplazar y quitar: variant_id actual de la propuesta vigente que se reemplaza o elimina." },
-      variante: {
-        type: "object",
-        description: "Obligatoria en agregar y reemplazar: la pieza nueva, recuperada con buscar_catalogo_rag en este mismo turno.",
-        required: ["product_id", "variant_id"],
-        properties: {
-          product_id: { type: "string" },
-          variant_id: { type: "string" },
-          color: { type: "string" },
-          acabado: { type: "string" },
+      ...PROPIEDADES_EDICION_PLAN,
+      ediciones: {
+        type: "array",
+        minItems: 1,
+        maxItems: 8,
+        description: "Varios cambios en una sola llamada (alternativa a mandar una edición suelta; no mezcles las dos formas). Se aplican en el orden dado y son atómicos: o quedan todos o no queda ninguno.",
+        items: {
+          type: "object",
+          required: ["accion", "estructura_id"],
+          properties: PROPIEDADES_EDICION_PLAN,
         },
       },
-      participacion: { type: "number", minimum: 0.01, maximum: 0.8, description: "Solo para agregar: fracción de la estructura que ocupa el material nuevo (0,01 a 0,8). Si no la mandas, el sistema usa 0,2." },
     },
   },
 };

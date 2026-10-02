@@ -1,5 +1,6 @@
 import type { PlanDecoracion, PlanDecoracion1_1, PropCatalogo } from "./tipos";
 import type { TipoEstructura, Ubicacion } from "./composicion";
+import type { ArcoResuelto } from "./armado-arco";
 import type { ArmadoBouquetResuelto } from "./armado-bouquet";
 import type { ArmadoGuirnaldaResuelto, PistaGuirnalda } from "./armado-guirnalda";
 import type { ConteoAplicado } from "./conteo-referencia";
@@ -185,6 +186,11 @@ export type PlanResuelto = {
   armados_bouquet?: ArmadoBouquetResuelto[];
   /** Armado de cada guirnalda (ADR-0032), escrito por Python; la UI solo lo dibuja. */
   armados_guirnalda?: ArmadoGuirnaldaResuelto[];
+  /**
+   * Cada arco armado con el motor (ADR-0034), escrito por Python: sus globos, su conteo, su compra y, para la imagen,
+   * `estructura_id`, `prompt_gemini` y `prompt_lora` (ADR-0035). Fuera del snapshot y del hash.
+   */
+  armados_arco?: ArcoResuelto[];
   /** Qué hizo Python con el conteo de la foto de cada estructura y por qué (ADR-0031). */
   conteos_referencia?: ConteoAplicado[];
   /**

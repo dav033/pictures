@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
+import { buscarCatalogoRag, type FiltrosExploracion, type ProductoCandidato } from "@/lib/rag/chat/buscar";
+import { listarColoresCatalogo } from "@/lib/rag/chat/colores-catalogo";
+import { allowlistParaExplorar, claveColores, coloresParaExplorar } from "@/lib/rag/chat/cache-exploracion";
 import { getRagPool } from "@/lib/rag/db";
 import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/nucleo/python-adapter";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
@@ -17,12 +19,38 @@ import {
   aplicarEdicionPlan,
   correlationDesde,
 } from "@/lib/plan/aplicar-edicion";
-import { BasePlanSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
+import { BasePlanSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
+
+/** Candidates a search returns when the caller does not say (what the inline editor always got). */
+const LIMITE_BUSQUEDA_PREDETERMINADO = 8;
+/** Python's own cap: with a target line it is asked for everything so the compatibility filter cannot starve the page. */
+const LIMITE_PYTHON_MAXIMO = 50;
+/** Python never reads this text when the search has filters and no text (`sinTexto`): it only labels the request. */
+const ETIQUETA_EXPLORACION = "catalogo";
+
+const FiltrosBusquedaSchema = z.object({
+  colores: z.array(z.string().trim().min(1).max(60)).max(8).optional(),
+  tamanos_pulgadas: z.array(z.number().positive().max(100)).max(8).optional(),
+  formas: z.array(z.string().trim().min(1).max(40)).max(4).optional(),
+  acabados: z.array(z.string().trim().min(1).max(40)).max(4).optional(),
+}).strict();
+
+function exploracionDe(filtros: z.infer<typeof FiltrosBusquedaSchema> | undefined): FiltrosExploracion | undefined {
+  if (!filtros) return undefined;
+  const exploracion: FiltrosExploracion = {
+    ...(filtros.colores?.length ? { colores: filtros.colores } : {}),
+    ...(filtros.formas?.length ? { formas: filtros.formas } : {}),
+    ...(filtros.acabados?.length ? { acabados: filtros.acabados } : {}),
+    ...(filtros.tamanos_pulgadas?.length ? { diametros_pulgadas: filtros.tamanos_pulgadas } : {}),
+  };
+  return Object.keys(exploracion).length ? exploracion : undefined;
+}
 
 const BodySchema = z.discriminatedUnion("modo", [
   z.object({
     modo: z.literal("buscar"),
-    consulta: z.string().trim().min(2).max(240),
+    /** Free text; it may be empty (or one character) only when `filtros` carries at least one filter. */
+    consulta: z.string().trim().max(240),
     approval_token: z.string().min(1).max(256 * 1024).optional(),
     loraMode: LoraModeSlugSchema.optional(),
     /** Line the search would replace ("Modificar"): a balloon only accepts balloons of the same shape. */
@@ -30,21 +58,41 @@ const BodySchema = z.discriminatedUnion("modo", [
       forma: z.string().trim().min(1).max(40).nullable().optional(),
       diam_pulg: z.number().positive().max(100).nullable().optional(),
     }).strict().optional(),
+    /** What the customer clicked in the explorer; explicit requirements, never relaxed. */
+    filtros: FiltrosBusquedaSchema.optional(),
+    /** How many candidates to return (default 8). */
+    limite: z.number().int().min(1).max(40).optional(),
+  }).strict().superRefine((valor, contexto) => {
+    if (valor.consulta.length < 2 && exploracionDe(valor.filtros) === undefined) {
+      contexto.addIssue({ code: "custom", path: ["consulta"], message: "Escribe al menos 2 caracteres o elige algún filtro." });
+    }
+  }),
+  z.object({
+    modo: z.literal("colores"),
+    approval_token: z.string().min(1).max(256 * 1024).optional(),
+    loraMode: LoraModeSlugSchema.optional(),
   }).strict(),
   z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1), loraMode: LoraModeSlugSchema.optional() }).strict(),
-  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema]), loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema]), loraMode: LoraModeSlugSchema.optional() }).strict(),
 ]);
 
 const MENSAJE_JSON_INVALIDO = "El cuerpo de la solicitud no es JSON válido.";
 
-function serializarCandidatos(candidatos: readonly ProductoCandidato[]) {
-  return candidatos.slice(0, 8).map((candidato) => ({
+/**
+ * Variants kept per product. The explorer shows one option per size and color and folds the package sizes into it,
+ * so cutting the list would hide sizes or colors the customer could pick. The catalog's most-varied product has 20
+ * (measured); 48 leaves room without letting one product bloat the answer.
+ */
+const MAX_VARIANTES_POR_PRODUCTO = 48;
+
+function serializarCandidatos(candidatos: readonly ProductoCandidato[], limite: number) {
+  return candidatos.slice(0, limite).map((candidato) => ({
     productId: candidato.productId,
     titulo: candidato.titulo,
     categoria: candidato.categoria,
     imagen: candidato.imagen,
     disponible: candidato.disponible,
-    variantes: candidato.variantes.slice(0, 16),
+    variantes: candidato.variantes.slice(0, MAX_VARIANTES_POR_PRODUCTO),
   }));
 }
 
@@ -85,15 +133,45 @@ export async function POST(request: Request) {
       // sin token (o con uno de Next) conserva el comportamiento anterior.
       const contextoBusqueda = body.approval_token === undefined ? null : abrirContextoExigido(body.approval_token);
       const catalogSnapshotId = contextoBusqueda?.backend === "python" ? exigirContextoPython(contextoBusqueda) : undefined;
-      const catalogAllowlist = await resolverCatalogAllowlist();
-      const resultado = await buscarCatalogoRag(pool, body.consulta, {
+      // Leer el catálogo no decide nada que se guarde: la allowlist se recuerda un minuto (aplicar siempre la resuelve de nuevo).
+      const catalogAllowlist = await allowlistParaExplorar(body.loraMode, resolverCatalogAllowlist);
+      const exploracion = exploracionDe(body.filtros);
+      const sinTexto = body.consulta.length < 2;
+      const limite = body.limite ?? LIMITE_BUSQUEDA_PREDETERMINADO;
+      const limitePython = body.linea_objetivo ? LIMITE_PYTHON_MAXIMO : body.limite;
+      const resultado = await buscarCatalogoRag(pool, sinTexto ? ETIQUETA_EXPLORACION : body.consulta, {
         allowlist: catalogAllowlist ?? undefined,
         ...(catalogSnapshotId === undefined ? {} : { catalogSnapshotId }),
+        ...(exploracion === undefined ? {} : { exploracion }),
+        ...(sinTexto ? { sinTexto: true } : {}),
+        ...(limitePython === undefined ? {} : { limite: limitePython }),
       });
+      const compatibles = filtrarCandidatosCompatibles(resultado.candidatos, body.linea_objetivo);
+      // `hayMas`: there are candidates beyond the page (the compatible ones exceed it, or Python filled the page it was asked for).
+      const hayMas = compatibles.length > limite || (limitePython !== undefined && resultado.candidatos.length >= limitePython);
       return Response.json(
-        { status: resultado.status, candidatos: serializarCandidatos(filtrarCandidatosCompatibles(resultado.candidatos, body.linea_objetivo)), filtroRelajado: resultado.filtroRelajado },
+        { status: resultado.status, candidatos: serializarCandidatos(compatibles, limite), filtroRelajado: resultado.filtroRelajado, hayMas },
         { headers: cabeceras },
       );
+    }
+
+    if (body.modo === "colores") {
+      // Same snapshot pin and allowlist as `buscar`: the chips can only offer
+      // colors the plan could actually be edited with.
+      const contextoColores = body.approval_token === undefined ? null : abrirContextoExigido(body.approval_token);
+      const catalogSnapshotId = contextoColores?.backend === "python" ? exigirContextoPython(contextoColores) : undefined;
+      const catalogAllowlist = await allowlistParaExplorar(body.loraMode, resolverCatalogAllowlist);
+      // La lista de un catálogo publicado no cambia: se recuerda por snapshot, modo y allowlist (cache-exploracion.ts).
+      const colores = await coloresParaExplorar(
+        claveColores(catalogSnapshotId, body.loraMode, catalogAllowlist),
+        catalogSnapshotId !== undefined,
+        () => listarColoresCatalogo({
+          allowlist: catalogAllowlist ?? undefined,
+          ...(catalogSnapshotId === undefined ? {} : { catalogSnapshotId }),
+          requestId: requestIdHttp,
+        }),
+      );
+      return Response.json({ colores }, { headers: cabeceras });
     }
 
     if (body.modo === "recomendadas") {

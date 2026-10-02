@@ -1961,6 +1961,14 @@ export default function Page() {
                         </div>
                       )}
 
+                      {/* Cuando un ajuste (por chat o por la tarjeta nueva) genera otra
+                          propuesta, esta queda de solo lectura: se dice con claridad
+                          que ya no es la vigente. */}
+                      {m.plan && m.plan.plan_hash !== planActual?.plan_hash && (
+                        <p role="note" data-testid="plan-reemplazado" className="rounded-xl border border-borde-suave bg-superficie px-3 py-2 text-xs text-texto-suave">
+                          Versión anterior de la propuesta: ya la reemplazó la más reciente, más abajo en la conversación.
+                        </p>
+                      )}
                       {m.plan && (
                         <TarjetaPlanDecoracion
                           plan={m.plan}

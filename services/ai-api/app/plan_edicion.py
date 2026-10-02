@@ -2,7 +2,7 @@
 
 Dueño único de la mutación declarativa de un plan: ``agregar``, ``reemplazar``,
 ``quitar``, ``repartir``, ``mezcla``, ``patron``, ``armado`` (bouquet, ADR-0030)
-y ``armado_guirnalda`` (ADR-0032). Las cinco primeras son el
+``armado_guirnalda`` (ADR-0032) y ``armado_arco`` (ADR-0035). Las cinco primeras son el
 port uno a uno de ``aplicarEdicion`` (antes en ``src/lib/plan/aplicar-edicion.ts``,
 con su redondeo de ``participacion`` a seis decimales); encima van las reglas
 de patrón del §9. Next conserva lo que no es del dominio: el token firmado, la
@@ -43,7 +43,25 @@ from typing import Annotated, Literal, cast
 from jsonschema import Draft7Validator
 from pydantic import ConfigDict, Field, ValidationError, field_validator, model_validator
 
+from app.armado_arco import ArmadoInvalido as ArmadoArcoInvalido
+from app.armado_arco import EstructuraArco, armado_resuelto, avisos_colores_sin_uso
+from app.armado_arco import validar as validar_armado_arco
 from app.generated_models import PlanDecoracion, contract_schema
+from app.plan_edicion_columna import (
+    fijar_armado_columna,
+    revisar_armado_columna,
+    sin_armado_columna,
+)
+from app.plan_edicion_columna_organica import (
+    fijar_armado_columna_organica,
+    revisar_armado_columna_organica,
+    sin_armado_columna_organica,
+)
+from app.plan_edicion_guirnalda_organica import (
+    fijar_armado_guirnalda_organica,
+    revisar_armado_guirnalda_organica,
+    sin_armado_guirnalda_organica,
+)
 from app.operational_models import ContractModel, OperationalRequest
 from app.patron_color import TIPO_REJILLA, forma_valida, para_validar
 from app.patron_color import AVISO_ESPEJO_GUIRNALDA as AVISO_ESPEJO_GUIRNALDA
@@ -64,6 +82,7 @@ from app.plan import (
     vista_previa_de_armado_guirnalda,
     vista_previa_de_estructura,
 )
+from app.plan_armado_comun import TONO_NEUTRO
 
 PLAN_EDIT_SCOPE = "plan.edit"
 PLAN_EDIT_REQUEST_VERSION = "plan-edit.v1"
@@ -138,6 +157,41 @@ AVISO_ARMADO_GUIRNALDA_QUITADO = (
 AVISO_ARMADO_GUIRNALDA_COLOR = "El armado de la guirnalda se quitó porque quitaste un color."
 AVISO_ARMADO_GUIRNALDA_REHACER = (
     "El armado de la guirnalda se vuelve a sugerir con los globos nuevos."
+)
+AVISO_ARMADO_ARCO_COLORES = (
+    "Quitaste un color: el armado del arco se ajustó a los colores que quedan. "
+    "Revisa el patrón con «Editar arco»."
+)
+AVISO_ARMADO_ARCO_SOLIDO = (
+    "Quitaste un color y el patrón del arco ya no cabe con los que quedan: el arco pasó a sólido. "
+    "Elige otro patrón con «Editar arco»."
+)
+AVISO_ARMADO_ARCO_COLOR_NUEVO = (
+    "Agregaste un color: el arco no lo usa todavía. Elige un patrón que lo tome con «Editar arco»."
+)
+# Arcos (ADR-0035): la forma de `armado_arco` la valida el contrato exportado, como en `app/armado_arco.py`.
+_ARMADO_ARCO_FORMA = Draft7Validator(
+    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
+        "armado_arco"
+    ]
+)
+# Columnas (ADR-0035, paso 3): la forma de `armado_columna` la valida el contrato exportado, igual que la del arco.
+_ARMADO_COLUMNA_FORMA = Draft7Validator(
+    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
+        "armado_columna"
+    ]
+)
+# Columnas orgánicas (ADR-0035, paso 3): la forma de `armado_columna_organica` la valida el contrato exportado.
+_ARMADO_COLUMNA_ORGANICA_FORMA = Draft7Validator(
+    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
+        "armado_columna_organica"
+    ]
+)
+# Guirnaldas del motor (ADR-0035, paso 3): la forma de `armado_guirnalda_organica` la valida el contrato exportado.
+_ARMADO_GUIRNALDA_ORGANICA_FORMA = Draft7Validator(
+    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
+        "armado_guirnalda_organica"
+    ]
 )
 
 
@@ -264,6 +318,72 @@ class EdicionArmadoGuirnalda(_Estricto):
         return valor
 
 
+class EdicionArmadoArco(_Estricto):
+    """Fija (o, con ``None``, quita) el armado de un arco (ADR-0035, paso 1)."""
+
+    accion: Literal["armado_arco"]
+    estructura_id: Identificador
+    armado_arco: dict[str, object] | None
+
+    @field_validator("armado_arco")
+    @classmethod
+    def validar_forma(cls, valor: dict[str, object] | None) -> dict[str, object] | None:
+        if valor is not None and next(_ARMADO_ARCO_FORMA.iter_errors(valor), None) is not None:
+            raise ValueError("armado_arco no cumple armado-arco.v1")
+        return valor
+
+
+class EdicionArmadoColumna(_Estricto):
+    """Fija (o, con ``None``, quita) el armado de una columna (ADR-0035, paso 3)."""
+
+    accion: Literal["armado_columna"]
+    estructura_id: Identificador
+    armado_columna: dict[str, object] | None
+
+    @field_validator("armado_columna")
+    @classmethod
+    def validar_forma(cls, valor: dict[str, object] | None) -> dict[str, object] | None:
+        if valor is not None and next(_ARMADO_COLUMNA_FORMA.iter_errors(valor), None) is not None:
+            raise ValueError("armado_columna no cumple armado-columna.v1")
+        return valor
+
+
+class EdicionArmadoColumnaOrganica(_Estricto):
+    """Fija (o, con ``None``, quita) el armado de la columna orgánica del motor (ADR-0035, paso 3)."""
+
+    accion: Literal["armado_columna_organica"]
+    estructura_id: Identificador
+    armado_columna_organica: dict[str, object] | None
+
+    @field_validator("armado_columna_organica")
+    @classmethod
+    def validar_forma(cls, valor: dict[str, object] | None) -> dict[str, object] | None:
+        if (
+            valor is not None
+            and next(_ARMADO_COLUMNA_ORGANICA_FORMA.iter_errors(valor), None) is not None
+        ):
+            raise ValueError("armado_columna_organica no cumple armado-columna-organica.v1")
+        return valor
+
+
+class EdicionArmadoGuirnaldaOrganica(_Estricto):
+    """Fija (o, con ``None``, quita) el armado de la guirnalda del motor (ADR-0035, paso 3)."""
+
+    accion: Literal["armado_guirnalda_organica"]
+    estructura_id: Identificador
+    armado_guirnalda_organica: dict[str, object] | None
+
+    @field_validator("armado_guirnalda_organica")
+    @classmethod
+    def validar_forma(cls, valor: dict[str, object] | None) -> dict[str, object] | None:
+        if (
+            valor is not None
+            and next(_ARMADO_GUIRNALDA_ORGANICA_FORMA.iter_errors(valor), None) is not None
+        ):
+            raise ValueError("armado_guirnalda_organica no cumple armado-guirnalda-organica.v1")
+        return valor
+
+
 EdicionPlan = (
     EdicionMaterial
     | EdicionReparto
@@ -271,6 +391,10 @@ EdicionPlan = (
     | EdicionPatron
     | EdicionArmado
     | EdicionArmadoGuirnalda
+    | EdicionArmadoArco
+    | EdicionArmadoColumna
+    | EdicionArmadoColumnaOrganica
+    | EdicionArmadoGuirnaldaOrganica
 )
 Edicion = Annotated[EdicionPlan, Field(discriminator="accion")]
 
@@ -908,6 +1032,166 @@ def _fijar_armado_guirnalda(
     return avisos
 
 
+def _fijar_armado_arco(estructura: dict[str, object], edicion: EdicionArmadoArco) -> list[str]:
+    """Fija o quita el armado de un arco; lo comprueba contra la pieza sin catálogo (``armado_invalido``).
+
+    Lo que el motor exige del armado —que la pieza sea un arco, que el patrón tenga los colores que pide, que
+    cada índice exista en ``materiales`` y que no salgan más globos de los que el contrato publica— se sabe sin
+    catálogo: es ``armado_arco.armado_resuelto``, la misma puerta de la vista previa y de la resolución, así que
+    guardar no acepta lo que luego la resolución rechazaría. Lo demás (el ancho que cabe, el alto de la forma) el
+    motor lo corrige al resolver y lo cuenta en los avisos; no se rechaza. Los colores no importan aquí, solo
+    cuántos son.
+
+    **Las medidas de la pieza las pone el armado.** Un arco armado mide lo que el motor dice que mide (su ancho y
+    su alto exteriores, ya corregidos), no lo que el plan declaraba antes: si no, la tarjeta, el cálculo y la
+    imagen hablarían de dos arcos. Devuelve los avisos de lo que guardar deja sin comprar (un color de la pieza que
+    el armado no toma).
+    """
+    if edicion.armado_arco is None:
+        estructura.pop("armado_arco", None)
+        return []
+    armado = copy.deepcopy(edicion.armado_arco)
+    pieza = EstructuraArco(
+        es_arco=estructura.get("tipo") == "arco",
+        materiales=[TONO_NEUTRO] * len(_materiales(estructura)),
+    )
+    try:
+        resuelto = armado_resuelto(pieza, armado)
+    except ArmadoArcoInvalido as error:
+        raise PlanResolutionError(
+            "armado_invalido",
+            422,
+            {
+                "estructura_id": edicion.estructura_id,
+                "motivo": error.motivo,
+                "mensaje": error.mensaje,
+            },
+        ) from error
+    estructura["armado_arco"] = armado
+    medidas = estructura.get("medidas")
+    estructura["medidas"] = {
+        **(cast(Mapping[str, object], medidas) if isinstance(medidas, Mapping) else {}),
+        "ancho_m": round(float(resuelto["ancho_m"]), 2),
+        "alto_m": round(float(resuelto["alto_m"]), 2),
+    }
+    return _colores_sin_uso(estructura)
+
+
+def _colores_sin_uso(estructura: Mapping[str, object]) -> list[str]:
+    """Los colores de la pieza que el armado del arco no toma, como avisos para el decorador."""
+    armado = estructura.get("armado_arco")
+    if not isinstance(armado, Mapping):
+        return []
+    return cast(
+        list[str],
+        avisos_colores_sin_uso(
+            [str(material.get("color") or "") for material in _materiales(estructura)],
+            cast(Sequence[int], armado["materiales"]),
+        ),
+    )
+
+
+def _sin_armado_arco(estructura: Mapping[str, object]) -> None:
+    """El reparto y la mezcla no se editan en un arco armado: la compra sale de su armado.
+
+    Con ``armado_arco`` la cuenta es la del motor (cada globo colocado), así que ni ``participacion`` ni
+    ``mezcla`` cambian cuántos globos se compran: aceptarlos solo movería el ``plan_hash`` con el mismo total y
+    diría «listo, cambié…» sin cambiar nada. Los colores y el tamaño del globo se cambian desde el armado.
+    """
+    if estructura.get("armado_arco") is not None:
+        raise PlanResolutionError("armado_arco_activo", 409)
+
+
+def _identidades(materiales: Sequence[Mapping[str, object]]) -> list[tuple[object, object, object]]:
+    return [(m.get("product_id"), m.get("variant_id"), m.get("color")) for m in materiales]
+
+
+def _indice_quitado(
+    antes: Sequence[tuple[object, object, object]], despues: Sequence[tuple[object, object, object]]
+) -> int | None:
+    """La posición del material que una edición quitó, o ``None`` si no se quitó ninguno."""
+    if len(despues) != len(antes) - 1:
+        return None
+    return next(
+        (i for i, previo in enumerate(antes) if i >= len(despues) or despues[i] != previo), None
+    )
+
+
+def _sin_posiciones(secuencias: object, nuevas: Mapping[int, int]) -> list[list[int] | None]:
+    """Las capas o secciones del armado tras quitar posiciones de ``materiales``.
+
+    Capas y secciones nombran POSICIONES de ``armado_arco.materiales`` (no índices de la pieza): al quitar una
+    posición se descartan sus apariciones y las demás se corren. Una secuencia que se queda vacía vuelve a
+    seguir el patrón (``None``).
+    """
+    salida: list[list[int] | None] = []
+    for secuencia in cast(Sequence[Sequence[int] | None], secuencias):
+        if secuencia is None:
+            salida.append(None)
+            continue
+        quedan = [nuevas[i] for i in secuencia if i in nuevas]
+        salida.append(quedan or None)
+    return salida
+
+
+def _revisar_armado_arco(
+    estructura: dict[str, object],
+    antes: Sequence[tuple[object, object, object]],
+) -> list[str]:
+    """Un arco armado vuelve a validarse contra los colores que la pieza lleva ahora (ADR-0035).
+
+    ``armado_arco.materiales`` nombra los colores de la pieza por índice (y sus capas y secciones, las
+    posiciones de esa lista), así que cambiar los colores de la pieza los puede dejar apuntando a otro color o a
+    ninguno. Nunca se guarda así:
+
+    - **Quitar un color**: los índices mayores se corren y las posiciones que lo usaban se descartan. Si con lo
+      que queda el patrón sigue cabiendo, se conserva y se avisa; si no (pide más colores de los que quedan), el
+      arco baja a ``solido`` con el primer color y las capas y secciones se quitan, y se dice. Si el color que
+      sale es posterior a todos los que usa el armado, no hay nada que mover.
+    - **Agregar un color**: los índices no se mueven y el armado vale tal cual; el color nuevo no se usa hasta
+      que el decorador elija un patrón que lo tome, y se avisa.
+    - Reemplazar o repartir no cambian cuántos son ni su orden: nada que revisar.
+    """
+    armado = estructura.get("armado_arco")
+    if not isinstance(armado, dict):
+        return []
+    despues = _identidades(_materiales(estructura))
+    if len(despues) == len(antes) + 1:
+        return [AVISO_ARMADO_ARCO_COLOR_NUEVO]
+    quitado = _indice_quitado(antes, despues)
+    if quitado is None:
+        return []
+    usados = cast(list[int], armado["materiales"])
+    if all(indice < quitado for indice in usados):
+        return []
+    posiciones = {p: i for p, i in enumerate(usados) if i != quitado}
+    nuevas = {viejo: nuevo for nuevo, viejo in enumerate(posiciones)}
+    ajustado = {
+        **armado,
+        "origen": "decorador",
+        "materiales": [i - 1 if i > quitado else i for i in posiciones.values()],
+        "capas": _sin_posiciones(armado["capas"], nuevas),
+        "secciones": _sin_posiciones(armado["secciones"], nuevas),
+    }
+    pieza = EstructuraArco(es_arco=True, materiales=[TONO_NEUTRO] * len(despues))
+    try:
+        if not ajustado["materiales"]:
+            raise ArmadoArcoInvalido("sin_materiales", "El arco no lleva colores que armar.")
+        validar_armado_arco(pieza, ajustado)
+    except ArmadoArcoInvalido:
+        estructura["armado_arco"] = {
+            **ajustado,
+            "patron": "solido",
+            "opciones": {},
+            "materiales": [0],
+            "capas": [],
+            "secciones": [],
+        }
+        return [AVISO_ARMADO_ARCO_SOLIDO, *_colores_sin_uso(estructura)]
+    estructura["armado_arco"] = ajustado
+    return [AVISO_ARMADO_ARCO_COLORES, *_colores_sin_uso(estructura)]
+
+
 def _quitar_espejo_sin_u(estructura: dict[str, object], armado: object) -> list[str]:
     """La regla vive en ``patron_color.quitar_espejo_sin_u`` (la usa también la vista previa)."""
     avisos: list[str] = quitar_espejo_sin_u(estructura, armado)
@@ -985,21 +1269,56 @@ def editar_plan(
         _fijar_armado(estructura, edicion)
     elif isinstance(edicion, EdicionArmadoGuirnalda):
         avisos = _fijar_armado_guirnalda(editado, estructura, edicion)
+    elif isinstance(edicion, EdicionArmadoArco):
+        avisos = _fijar_armado_arco(estructura, edicion)
+    elif isinstance(edicion, EdicionArmadoColumna):
+        avisos = fijar_armado_columna(estructura, edicion.armado_columna, edicion.estructura_id)
+    elif isinstance(edicion, EdicionArmadoColumnaOrganica):
+        avisos = fijar_armado_columna_organica(
+            estructura, edicion.armado_columna_organica, edicion.estructura_id
+        )
+    elif isinstance(edicion, EdicionArmadoGuirnaldaOrganica):
+        avisos = fijar_armado_guirnalda_organica(
+            estructura, edicion.armado_guirnalda_organica, edicion.estructura_id
+        )
     elif isinstance(edicion, EdicionReparto):
+        _sin_armado_arco(estructura)
+        sin_armado_columna(estructura)
+        sin_armado_columna_organica(estructura)
+        sin_armado_guirnalda_organica(estructura)
         avisos = _repartir(estructura, edicion.participaciones)
         avisos += _quitar_armado(estructura, rehacer=completar_armados)
     elif isinstance(edicion, EdicionMezcla):
+        _sin_armado_arco(estructura)
+        sin_armado_columna(estructura)
+        sin_armado_columna_organica(estructura)
+        sin_armado_guirnalda_organica(estructura)
         estructura["mezcla"] = edicion.mezcla
     else:
         materiales_antes = len(_materiales(estructura))
+        identidades_antes = _identidades(_materiales(estructura))
         _editar_materiales(estructura, edicion, lineas_base, colores_variante)
         avisos = _ajustar_patron(editado, indice, edicion, materiales_antes, completar_patrones)
         avisos += _quitar_armado(estructura, rehacer=completar_armados)
+        avisos += _revisar_armado_arco(estructura, identidades_antes)
+        avisos += revisar_armado_columna(estructura, identidades_antes)
+        avisos += revisar_armado_columna_organica(estructura, identidades_antes)
+        avisos += revisar_armado_guirnalda_organica(estructura, identidades_antes)
     if _estructura(editado, indice).get("patron_color") is not None:
         # Valida el patrón (forma y reglas del §4) y reescribe participacion,
         # solo en la pieza editada: las demás no cambiaron.
         editado = sincronizar_participaciones(editado, edicion.estructura_id)
-    if not isinstance(edicion, (EdicionArmado, EdicionArmadoGuirnalda)):
+    if not isinstance(
+        edicion,
+        (
+            EdicionArmado,
+            EdicionArmadoGuirnalda,
+            EdicionArmadoArco,
+            EdicionArmadoColumna,
+            EdicionArmadoColumnaOrganica,
+            EdicionArmadoGuirnaldaOrganica,
+        ),
+    ):
         avisos += _revisar_armado_guirnalda(
             editado,
             indice,
@@ -1226,6 +1545,8 @@ __all__ = [
     "AVISO_ARMADO_QUITADO",
     "AVISO_ARMADO_REHACER",
     "EdicionArmado",
+    "EdicionArmadoColumna",
+    "EdicionArmadoColumnaOrganica",
     "EdicionArmadoGuirnalda",
     "EdicionPlan",
     "EdicionMaterial",

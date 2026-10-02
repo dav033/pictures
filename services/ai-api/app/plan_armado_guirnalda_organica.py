@@ -41,19 +41,20 @@ from jsonschema import Draft7Validator
 from pydantic import Field, field_validator
 
 from app.armado_guirnalda_organica import (
-    DESPERDICIO_POR_DEFECTO,
     MAX_MATERIALES,
     VERSION,
     ArmadoInvalido,
     EstructuraGuirnalda,
     armado_resuelto,
+    avisos_colores_sin_uso,
     limites_de,
     opciones_admitidas,
 )
 from app.generated_models import contract_schema
 from app.guirnalda.tipos import config_inicial
 from app.operational_models import OperationalRequest
-from app.plan import PlanResolutionError
+from app.plan import MERMA, PlanResolutionError
+
 # La frontera comparte con la del otro motor la lectura del plan y la política del gris neutro
 # (``app/plan_armado_comun.py``). Los tres ``X as X`` son re-exportaciones deliberadas: el aviso, el tono y el
 # tope de colores se siguen leyendo desde este módulo (lo hacen sus pruebas y ``__all__``), pero su dueño es
@@ -130,6 +131,7 @@ ACABADO_POR_DEFECTO = "mate"
 #: Papel de un color de la receta: todos normales. Un acento es una decisión de diseño, no un valor por
 #: defecto que se pueda deducir de la pieza.
 ROL_POR_DEFECTO = "normal"
+
 
 class PlanArmadoGuirnaldaOrganicaRequest(OperationalRequest):
     """``plan-armado-guirnalda-organica.v1``: resolver el armado de una guirnalda (o, con ``None``, su receta).
@@ -284,9 +286,9 @@ def vista_previa_armado_guirnalda_organica(
         else _receta(estructura, opciones, tonos)
     )
     try:
-        # El desperdicio es política del plan, no del armado; aquí se usa el del diseñador, que es el mismo
-        # con el que la pieza se abre en el repositorio dueño.
-        resuelto = armado_resuelto(pieza, armado, DESPERDICIO_POR_DEFECTO)
+        # El desperdicio es política del plan, no del armado: el mismo `MERMA` con el que la resolución compra,
+        # para que lo que la vista previa dice que hay que comprar sea lo que el plan cobra.
+        resuelto = armado_resuelto(pieza, armado, MERMA)
         limites = limites_de(armado, pieza)
     except ArmadoInvalido as error:
         raise PlanResolutionError(
@@ -304,6 +306,15 @@ def vista_previa_armado_guirnalda_organica(
         guirnalda["avisos"] = avisos_con_tono_neutro(
             cast(Sequence[str], guirnalda["avisos"]), MAX_AVISOS
         )
+    # Los colores de la pieza que la paleta no toma no se comprarían: se dice antes de guardar.
+    paleta = cast(
+        Sequence[Mapping[str, object]], cast(Mapping[str, object], armado["colores"])["paleta"]
+    )
+    sin_uso = avisos_colores_sin_uso(
+        [str(material.get("color") or "") for material in materiales_de(estructura)],
+        [cast(int, color["material"]) for color in paleta],
+    )
+    guirnalda["avisos"] = [*cast(Sequence[str], guirnalda["avisos"]), *sin_uso][:MAX_AVISOS]
     if next(_GUIRNALDA_RESUELTA.iter_errors(guirnalda), None) is not None:
         raise RuntimeError("la guirnalda resuelta no cumple plan-resuelto.v1")
     grafica = cast(Mapping[str, object], resuelto["grafica"])

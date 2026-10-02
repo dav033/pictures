@@ -15,12 +15,14 @@ lo comprueba contra los vectores que genera
 globo, color por color, aviso por aviso. Un cambio de criterio se hace **allá
 primero**; aquí solo se replica y se vuelven a generar los vectores.
 
+El dibujo SÍ entra (ADR-0034, consecuencia 2): el SVG lo emite el mismo motor que
+coloca los globos (``app/columna/motor.py``, verificado contra
+``vectores-columna-dibujo.json``) y la vista previa lo devuelve con
+``grafica_de``. Si la gráfica se volviera a pintar en el cliente habría dos
+motores y lo que se ve no sería lo que se cobra.
+
 Lo que NO entra, a propósito:
 
-- **El dibujo.** El SVG, la escala, el lienzo, la persona de 1,70 m y la regla
-  son pantalla, y en ``pictures`` los pinta su propio componente. Aquí está
-  dónde va cada globo (x, y, z en metros, radio y profundidad), que es lo que
-  el dibujo necesita y lo único que se puede verificar sin mirar píxeles.
 - **Resolver un color del catálogo.** Un ``sx:041`` lo resuelve la tabla de
   Sempertex antes de llegar aquí (en un plan, los colores son índices de
   ``materiales``). Este módulo solo ve ``#rrggbb``.
@@ -46,6 +48,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping, Sequence, cast
 
+from app.armado_validacion import MENSAJE_NO_FINITO, MOTIVO_NO_FINITO, hay_numero_no_finito
 from app.columna.js import crear_rng, mezclar
 from app.columna.limites import (
     ALTO_MAX,
@@ -66,6 +69,8 @@ from app.columna.limites import (
 from app.columna.medidas import Compra, FilaCompra, Medidas, calcular_compra, calcular_medidas
 from app.columna.motor import (
     BASE_ALTO_M,
+    LIENZO_H,
+    LIENZO_W,
     Capa,
     GloboCol,
     RemateResumen,
@@ -78,6 +83,7 @@ from app.columna.motor import (
     es_por_capas,
     generar,
     radio_anillo,
+    svg_documento,
     tamanos_entre,
 )
 from app.columna.patrones import PATRONES, Control, Ctx, Patron, opciones_iniciales
@@ -104,6 +110,10 @@ __all__ = [
     "ArmadoInvalido",
     "EstructuraColumna",
     "armado_resuelto",
+    "avisos_colores_sin_uso",
+    "grafica_de",
+    "materiales_con_globos",
+    "limites_de",
     "opciones_admitidas",
     "validar",
     # El motor (puerto 1 a 1; su dueño es `clasificador-decoraciones`)
@@ -254,6 +264,8 @@ def validar(estructura: EstructuraColumna, armado: Mapping[str, object]) -> None
     """Valida el armado contra la pieza. Lanza ``ArmadoInvalido`` si no se sostiene."""
     if not estructura.es_columna:
         raise ArmadoInvalido("no_es_columna", "Solo una columna se arma por capas y anillos.")
+    if hay_numero_no_finito(armado):
+        raise ArmadoInvalido(MOTIVO_NO_FINITO, MENSAJE_NO_FINITO)
     _validar_forma(armado)
     if not estructura.materiales:
         raise ArmadoInvalido("sin_materiales", "La columna no lleva colores que armar.")
@@ -265,6 +277,16 @@ def validar(estructura: EstructuraColumna, armado: Mapping[str, object]) -> None
     if armado["modo"] == "capas" and not capas:
         raise ArmadoInvalido("capas_faltantes", "Por capas, la columna necesita al menos una capa.")
     cuantos = len(cast(Sequence[object], armado["materiales"]))
+    # Un patrón de color pide un mínimo de colores (la espiral, dos; el ombré, tres) y el motor no sabe pintarlo con
+    # menos: sin esto un armado que el contrato admite rompía el motor con un error interno en vez de decir qué falta.
+    # Por capas el patrón no decide nada: cada capa trae sus colores.
+    patron = PATRONES[cast(str, armado["patron"])]
+    if armado["modo"] == "altura" and cuantos < patron.min_colores:
+        raise ArmadoInvalido(
+            "pocos_colores",
+            f"El patrón {patron.nombre.lower()} necesita al menos {patron.min_colores} colores y el armado "
+            f"nombra {cuantos}: elige otro patrón o agrega colores.",
+        )
     for numero, capa in enumerate(capas, start=1):
         if not isinstance(capa, Mapping):
             raise ArmadoInvalido("capa_invalida", f"La capa {numero} no tiene forma de capa.")
@@ -280,13 +302,20 @@ def validar(estructura: EstructuraColumna, armado: Mapping[str, object]) -> None
                 )
 
 
-def _config_desde_armado(armado: Mapping[str, object]) -> tuple[Config, list[str]]:
-    """El diseno del motor a partir del armado, con los colores testigo de cada material."""
+def _config_desde_armado(
+    armado: Mapping[str, object], colores: Sequence[str] | None = None
+) -> tuple[Config, list[str]]:
+    """El diseno del motor a partir del armado, con los colores testigo de cada material.
+
+    ``colores`` (opcional) son los tonos de verdad, uno por material del armado y en su orden: solo
+    para el dibujo. El color no mueve ningun globo ni cambia cuantas veces se tira el azar, asi que la
+    geometria es la misma con testigos que con tonos reales.
+    """
     cuerpo = cast(Mapping[str, object], armado["cuerpo"])
     inflado = cast(Mapping[str, object], armado["inflado"])
     remate = cast(Mapping[str, object], armado["remate"])
     materiales = cast(Sequence[object], armado["materiales"])
-    testigos = _testigos(len(materiales))
+    testigos = list(colores) if colores is not None else _testigos(len(materiales))
     indice_remate = _entero(remate.get("material"), "material_invalido", "Remate sin color.")
     # El remate apunta a un material de la estructura; para el motor es su testigo cuando el
     # armado lo nombra y, si no, el primero: el motor solo necesita un color con el que dibujarlo.
@@ -338,7 +367,8 @@ def _config_desde_armado(armado: Mapping[str, object]) -> tuple[Config, list[str
 
 def _remate_resuelto(res: Resultado, de_testigo: Mapping[str, int]) -> dict[str, object]:
     resumen: dict[str, object] = {
-        "descripcion": res.remate.descripcion,
+        # Sin remate el motor no escribe descripcion y el contrato exige una frase: se publica «Sin remate».
+        "descripcion": res.remate.descripcion or "Sin remate",
         "globos": [
             {
                 "material": de_testigo[cast(str, g["color"])],
@@ -384,7 +414,11 @@ def armado_resuelto(
                 "tamano": b.nominal,
                 "capa": b.capa,
                 "puesto": b.k,
-                "prof": b.prof,
+                # El contrato publica la profundidad en [-1, 1] y el motor la calcula como ``z / rho_max``, que con
+                # desorden y variacion de tamano en sus extremos se pasa un poco (hasta ~1,06): el globo sale del
+                # radio con el que se midio el cuerpo. Es una profundidad relativa, solo sirve para ordenar y
+                # oscurecer, asi que se publica acotada; el motor y su dibujo conservan el valor sin acotar.
+                "prof": min(1.0, max(-1.0, b.prof)),
             }
             for b in res.globos
         ],
@@ -403,6 +437,88 @@ def armado_resuelto(
         ],
         "remate": _remate_resuelto(res, de_testigo),
         "avisos": avisos,
+    }
+
+
+def avisos_colores_sin_uso(nombres: Sequence[str], usados: Sequence[int]) -> list[str]:
+    """Que colores de la pieza el armado no toma, para decirlo antes de que se guarde.
+
+    Un color de la pieza que ningun globo de la columna usa no se compra, pero sigue en el plan con su
+    participacion: el plan dice una cosa y la compra otra. No es un armado invalido (una columna solida
+    sobre una pieza de dos colores es lo que pidio el decorador), asi que no se rechaza: se avisa, con
+    que hacer. ``nombres`` son los colores de la pieza en su orden (el de ``materiales``); ``usados``, los
+    indices que usa el armado (los de ``materiales`` y el del remate).
+    """
+    tomados = set(usados)
+    return [
+        f"La columna no usa el color {nombre.capitalize() if nombre else 'sin nombre'} de la pieza: no se "
+        "comprarán globos de ese color. Elige un patrón que lo tome o quítalo de la pieza."
+        for indice, nombre in enumerate(nombres)
+        if indice not in tomados
+    ]
+
+
+def materiales_con_globos(resuelto: Mapping[str, object]) -> list[int]:
+    """Los materiales de la pieza que la columna resuelta **sí compra**: los que tienen globos en el conteo o el remate.
+
+    Sale de lo que el motor colocó y no de los índices que el armado declara: ``materiales`` lista posiciones que el
+    patrón puede no tocar (un ``solido`` con cuatro índices usa solo el primero, un ``diamante`` deja el último) y un
+    remate ``ninguno`` conserva un ``material`` que no compra nada. Con los declarados el aviso de «color sin
+    globos» no salía en esos casos.
+    """
+    usados = {
+        cast(int, linea["material"])
+        for linea in cast(Sequence[Mapping[str, object]], resuelto["conteo"])
+    }
+    remate = cast(Mapping[str, object], resuelto["remate"])
+    usados.update(
+        cast(int, globo["material"])
+        for globo in cast(Sequence[Mapping[str, object]], remate["globos"])
+    )
+    return sorted(usados)
+
+
+def grafica_de(estructura: EstructuraColumna, armado: Mapping[str, object]) -> dict[str, object]:
+    """El dibujo de la columna con los tonos de la pieza: ``lienzo`` (ancho y alto) y ``svg``.
+
+    El SVG viene del mismo motor que coloco los globos, asi que la grafica no recalcula nada: la muestra.
+    Es derivado: no entra en el plan, ni en el snapshot, ni en ``plan_hash``. ``estructura.materiales``
+    son los tonos ``#rrggbb`` de la pieza en su orden; para un armado que no se sostiene lanza
+    ``ArmadoInvalido`` igual que ``armado_resuelto``.
+    """
+    validar(estructura, armado)
+    materiales = [
+        _entero(m, "material_invalido", "Un color del armado no es un indice.")
+        for m in cast(Sequence[object], armado["materiales"])
+    ]
+    reales = [estructura.materiales[i] for i in materiales]
+    cfg, _avisos = _config_desde_armado(armado, reales)
+    dibujo = generar(cfg)
+    return {
+        "lienzo": {"ancho": LIENZO_W, "alto": LIENZO_H},
+        "svg": dibujo.svg,
+        "documento": svg_documento(dibujo.svg),
+    }
+
+
+def limites_de(armado: Mapping[str, object], estructura: EstructuraColumna) -> dict[str, object]:
+    """Los rangos que la interfaz puede ofrecer con este armado puesto.
+
+    El alto que cabe depende del diametro (que sube con el tamano del globo y los globos por capa), el
+    foil del remate tambien, y que globo o racimo cabe como remate cambia con el inflado. Salen de
+    ``limites`` del motor: la interfaz no los escribe.
+    """
+    validar(estructura, armado)
+    cfg, _avisos = _config_desde_armado(armado)
+    ellos = limites(cfg)
+    return {
+        "diametro": ellos.diametro,
+        "altoMin": ellos.alto_min,
+        "altoMax": ellos.alto_max,
+        "foilMin": ellos.foil_min,
+        "foilMax": ellos.foil_max,
+        "rematesGlobo": [t for t in TAMANOS_GLOBO if ellos.remates_globo[t]],
+        "rematesRacimo": [t for t in TAMANOS_GLOBO if ellos.remates_racimo[t]],
     }
 
 

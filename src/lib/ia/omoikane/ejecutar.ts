@@ -16,6 +16,7 @@ import { cierreAnticipado, disponibilidadDelTurno } from "@/lib/ia/herramientas/
 import { colorDeCatalogo } from "@/lib/plan/colores-catalogo";
 import { coloresFotoParaBusqueda } from "@/lib/plan/colores-referencia";
 import { textoFinalTurno } from "./texto-final-turno";
+import { sistemaConPropuestaVigente } from "./resumen-plan-vigente";
 import type { ChatPort, Mensaje } from "@/lib/ia/nucleo/tipos";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { FlujoIA } from "@sempertex/agente-core";
@@ -166,7 +167,7 @@ export async function ejecutarConversacion(opts: {
   const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint, opts.planVigente);
   const resultado = await core({
     chat: opts.chat,
-    sistema: opts.sistema,
+    sistema: sistemaConPropuestaVigente(opts.sistema, estado.planVigente),
     historial: opts.historial,
     herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
     registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, hechosPeticion: hechosDelTurno(opts) }),
@@ -211,7 +212,7 @@ export async function* ejecutarConversacionStream(opts: {
   const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint, opts.planVigente);
   const generador = coreStream({
     chat: opts.chat,
-    sistema: opts.sistema,
+    sistema: sistemaConPropuestaVigente(opts.sistema, estado.planVigente),
     historial: opts.historial,
     herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
     registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad, hechosPeticion: hechosDelTurno(opts) }),

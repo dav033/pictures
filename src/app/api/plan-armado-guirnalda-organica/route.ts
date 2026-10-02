@@ -42,6 +42,16 @@ const BodySchema = z.object({
   colores: z.array(z.string().regex(/^#[0-9a-fA-F]{6}$/)).max(6).optional(),
 }).strict();
 
+/**
+ * Cuántos dibujos puede tener en vuelo este proceso. El motor corre en el mismo trabajador de CPU que la
+ * resolución y la edición del plan (`PLAN_CPU_WORKERS`) y el de la guirnalda es el más caro de los tres
+ * (~230 ms por pieza): una ráfaga de dibujos haría esperar a quien está guardando. El editor cancela lo que
+ * supera (`AbortController`), así que el tope solo se alcanza con muchos editores a la vez o con un cliente que no
+ * cancela: responde 429 con una frase y `Retry-After`, no encola sin límite. Mismo tope que `/api/plan-armado-arco`.
+ */
+const MAX_DIBUJOS_EN_VUELO = 4;
+let dibujosEnVuelo = 0;
+
 /** Lo que se reenvía a Python cabe en su límite de cuerpo; un cuerpo mayor nunca llegaría. */
 const LIMITE_CUERPO_BYTES = PYTHON_MAX_BODY_BYTES;
 const SUPERFICIE = "/api/plan-armado-guirnalda-organica";
@@ -72,6 +82,22 @@ async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
 }
 
 export async function POST(request: Request) {
+  if (dibujosEnVuelo >= MAX_DIBUJOS_EN_VUELO) {
+    const requestId = requestIdDe(request);
+    const mensaje = "Hay demasiados dibujos de la guirnalda en curso. Espera un momento y vuelve a intentarlo.";
+    const uiError = construirUiErrorV1("SOLICITUD_INVALIDA", { mensaje, codigoOrigen: "DEMASIADAS_SOLICITUDES", requestId });
+    registrarFalloUi(SUPERFICIE, uiError);
+    return Response.json({ error: mensaje, ui_error: uiError }, { status: 429, headers: { "X-Request-ID": requestId, "Retry-After": "1" } });
+  }
+  dibujosEnVuelo += 1;
+  try {
+    return await atender(request);
+  } finally {
+    dibujosEnVuelo -= 1;
+  }
+}
+
+async function atender(request: Request) {
   const requestIdHttp = requestIdDe(request);
   const cabeceras = { "X-Request-ID": requestIdHttp };
   const rechazoTransporte = (status: number, mensaje: string, codigo: string) => {

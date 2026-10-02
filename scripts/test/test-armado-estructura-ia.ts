@@ -142,13 +142,14 @@ function argsPlan(estructuras: Json[]): Json {
 async function main(): Promise<void> {
   const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas, HERRAMIENTAS_SOLO_LECTURA } = await import("../../src/lib/ia/herramientas/registro-herramientas");
   const { ARMAR_ESTRUCTURA, CONSULTAR_OPCIONES_ARMADO } = await import("../../src/lib/ia/herramientas/herramientas");
-  const { CLAVES_ARMADO_MOTOR, CLAVE_ARMADO, TIPOS_ARMADO_MOTOR, aplicarArmadosCompletados, piezaDeEstructura, sinArmadosDeMotor } = await import("../../src/lib/plan/armado-estructura-ia");
+  const { CLAVES_ARMADO_MOTOR, CLAVE_ARMADO, TIPOS_ARMADO_MOTOR, aplicarArmadosCompletados, piezaDeEstructura, sinArmadosDeMotor, sinColumnaOrganicaDelModelo, CLAVES_FUERA_DEL_MODELO } = await import("../../src/lib/plan/armado-estructura-ia");
   const { PlanDecoracionSchema } = await import("../../src/lib/plan/tipos");
 
   // ---------------------------------------------------------------------------
   // 1. Las herramientas solo existen con la bandera encendida.
-  const conBandera = herramientasActivas({ armadoMotor: true }).map((herramienta) => herramienta.nombre);
-  const sinBandera = herramientasActivas({ armadoMotor: false }).map((herramienta) => herramienta.nombre);
+  const conBandera = herramientasActivas({ armadoMotor: true, estimarConteo: false }).map((herramienta) => herramienta.nombre);
+  // `estimarConteo: false`: esta prueba es de la bandera del armado; estimar_conteo_globos tiene la suya (test-estimar-conteo-globos.ts).
+  const sinBandera = herramientasActivas({ armadoMotor: false, estimarConteo: false }).map((herramienta) => herramienta.nombre);
   assert.ok(conBandera.includes("consultar_opciones_armado") && conBandera.includes("armar_estructura"), conBandera.join(","));
   assert.ok(!sinBandera.includes("consultar_opciones_armado") && !sinBandera.includes("armar_estructura"), sinBandera.join(","));
   assert.deepEqual(sinBandera, ["guardar_brief", "buscar_catalogo_rag", "confirmar_seleccion_rag", "confirmar_plan_decoracion"]);
@@ -584,6 +585,24 @@ async function main(): Promise<void> {
   assert.equal(limpio.estructuras[1]!.armado_guirnalda_organica, undefined);
   assert.equal(sinArmadosDeMotor(plan), plan, "sin armados no se copia el plan");
   ok("piezaDeEstructura, aplicarArmadosCompletados y sinArmadosDeMotor: traducción, no decisión");
+
+  // ---------------------------------------------------------------------------
+  // 9. La columna orgánica (ADR-0034) la escribe el decorador, no el modelo: ninguna herramienta la completa.
+  const columnaOrganica = JSON.parse(readFileSync(path.join(process.cwd(), "scripts/fixtures/columna-organica-ui/vista-columna-organica.json"), "utf8")) as { peticion: { armado_columna_organica: never } };
+  assert.deepEqual([...CLAVES_FUERA_DEL_MODELO], [...CLAVES_ARMADO_MOTOR, "armado_columna_organica"]);
+  assert.ok(!(CLAVES_ARMADO_MOTOR as readonly string[]).includes("armado_columna_organica"), "no es una de las que la capacidad decide");
+  const conColumnaOrganica: typeof plan = {
+    ...plan,
+    estructuras: plan.estructuras.map((estructura, lugar) => (lugar === 0 ? { ...estructura, armado_columna_organica: columnaOrganica.peticion.armado_columna_organica } : estructura)),
+  };
+  assert.equal(sinArmadosDeMotor(conColumnaOrganica).estructuras[0]!.armado_columna_organica, undefined, "con la bandera apagada se descarta");
+  const soloOrganica = sinColumnaOrganicaDelModelo(conColumnaOrganica);
+  assert.equal(soloOrganica.estructuras[0]!.armado_columna_organica, undefined, "con la bandera encendida también");
+  assert.deepEqual(soloOrganica.estructuras.slice(1), conColumnaOrganica.estructuras.slice(1), "no toca las demás piezas");
+  assert.equal(sinColumnaOrganicaDelModelo(plan), plan, "sin columna orgánica no se copia el plan");
+  // Y lo demás de la pieza se queda: solo se quita ese campo.
+  assert.deepEqual({ ...soloOrganica.estructuras[0]!, armado_columna_organica: undefined }, { ...conColumnaOrganica.estructuras[0]!, armado_columna_organica: undefined });
+  ok("la columna orgánica que trae el plan del modelo se descarta, con la bandera apagada o encendida");
 
   console.log(`\n${casos} casos OK`);
 }

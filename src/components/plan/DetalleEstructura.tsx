@@ -32,11 +32,20 @@ import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
 import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";
 import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
+import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
+import type { ArmadoColumnaOrganicaV1 } from "@/lib/plan/armado-columna-organica";
+import type { ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
 import { BloquePatron } from "./patron/BloquePatron";
 import { BloqueBouquet } from "./bouquet/BloqueBouquet";
 import { BloqueGuirnalda } from "./guirnalda/BloqueGuirnalda";
 import { BloqueArco } from "./arco/BloqueArco";
 import type { PiezaVistaArco } from "./arco/vista-arco";
+import { BloqueColumna } from "./columna/BloqueColumna";
+import type { PiezaVistaColumna } from "./columna/vista-columna";
+import { BloqueColumnaOrganica } from "./columna-organica/BloqueColumnaOrganica";
+import type { PiezaVistaColumnaOrganica } from "./columna-organica/vista-columna-organica";
+import { BloqueGuirnaldaOrganica } from "./guirnalda-organica/BloqueGuirnaldaOrganica";
+import type { PiezaVistaGuirnaldaOrganica } from "./guirnalda-organica/vista-guirnalda-organica";
 import { curvaDeArmado } from "./guirnalda/geometria-guirnalda";
 import type { VistasEnVivo } from "./vistas-en-vivo";
 import type { ColorLeyenda } from "./patron/leyenda";
@@ -134,6 +143,70 @@ type Props = {
     armado: ArmadoArcoV1;
     pieza: PiezaVistaArco;
     leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the arch assembly into the proposal (`armado_arco` edit; ADR-0035, step 1) and resolves the
+     * reason when it did not get in, or `null`. Without it the block is read-only.
+     */
+    onGuardar?: (armado: ArmadoArcoV1) => Promise<string | null>;
+    ocupado?: boolean;
+  };
+  /**
+   * Column block drawn by the designer's engine (ADR-0034, ADR-0035 step 3): the piece's
+   * `armado_columna` and what the drawing needs to be asked for
+   * (`/api/plan-armado-columna`). Same rules as `arco`: only when the piece carries
+   * the assembly, and then it takes the pattern block's place and the engine is the
+   * one that draws, counts and measures. Without the assembly the card stays exactly as
+   * before, which is what makes the change reversible.
+   */
+  columna?: {
+    armado: ArmadoColumnaV1;
+    pieza: PiezaVistaColumna;
+    leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the column assembly into the proposal (`armado_columna` edit; ADR-0035, step 3) and resolves the
+     * reason when it did not get in, or `null`. Without it the block is read-only.
+     */
+    onGuardar?: (armado: ArmadoColumnaV1) => Promise<string | null>;
+    ocupado?: boolean;
+  };
+  /**
+   * Organic column block drawn by the designer's engine (ADR-0034, ADR-0035 step 3): the piece's
+   * `armado_columna_organica` and what the drawing needs to be asked for
+   * (`/api/plan-armado-columna-organica`). Same rules as `columna`: only when the piece carries the assembly, and
+   * then it takes the pattern block's place and the engine is the one that draws, counts and measures. It is NOT the
+   * ring tower (`columna`: patterns); when a piece carries both assemblies the classic one wins and this block is
+   * not drawn.
+   */
+  columnaOrganica?: {
+    armado: ArmadoColumnaOrganicaV1;
+    pieza: PiezaVistaColumnaOrganica;
+    leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the column assembly into the proposal (`armado_columna_organica` edit; ADR-0035, step 3) and resolves
+     * the reason when it did not get in, or `null`. Without it the block is read-only.
+     */
+    onGuardar?: (armado: ArmadoColumnaOrganicaV1) => Promise<string | null>;
+    ocupado?: boolean;
+  };
+  /**
+   * Garland block drawn by the designer's engine (ADR-0034): the piece's
+   * `armado_guirnalda_organica` and what the drawing needs to be asked for
+   * (`/api/plan-armado-guirnalda-organica`). Same rules as `arco`: only when the
+   * piece carries the assembly, and then it takes the pattern block's place and
+   * the engine is the one that draws, counts and measures. It is NOT the
+   * ADR-0032 garland block (`guirnalda`: clusters, fill and toppers); when a
+   * piece carries both assemblies the engine's wins and that block is not drawn.
+   */
+  guirnaldaOrganica?: {
+    armado: ArmadoGuirnaldaOrganicaV1;
+    pieza: PiezaVistaGuirnaldaOrganica;
+    leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the garland assembly into the proposal (`armado_guirnalda_organica` edit; ADR-0035, step 3) and resolves
+     * the reason when it did not get in, or `null`. Without it the block is read-only.
+     */
+    onGuardar?: (armado: ArmadoGuirnaldaOrganicaV1) => Promise<string | null>;
+    ocupado?: boolean;
   };
   /**
    * Live drawing of the colors slider on a confetti pattern (ADR-0028 §10):
@@ -285,7 +358,7 @@ function CantidadTexto({ texto }: { texto: string }) {
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
-  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, guirnalda, arco, vistaReparto,
+  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, guirnalda, arco, columna, columnaOrganica, guirnaldaOrganica, vistaReparto,
 }: Props) {
   const reducir = useReducedMotion();
   const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -313,7 +386,10 @@ export function DetalleEstructura({
   const repartoLibre = !declarada?.patron_color || confeti;
   const proporcion = declarada?.medidas.alto_m && declarada.medidas.ancho_m ? declarada.medidas.alto_m / declarada.medidas.ancho_m : undefined;
   const idCuerpo = `${idBase}-cuerpo`;
-  const ajustable = editable && declarada && TIPOS_GEOMETRICOS.has(estructura.tipo);
+  // Un arco armado con el motor compra lo que su armado coloca: ni el reparto de colores ni la mezcla de tamaños lo
+  // cambian (solo moverían el `plan_hash` con el mismo total), así que esos controles no se ofrecen (ADR-0035).
+  const ajustable = editable && declarada && TIPOS_GEOMETRICOS.has(estructura.tipo) && !arco && !columna && !columnaOrganica && !guirnaldaOrganica;
+  const armadoSinReparto = Boolean(editable && (arco || columna || columnaOrganica || guirnaldaOrganica) && (onRepartir || onCambiarMezcla));
   // On a confetti the slider changes the drawing: it goes inside the pattern block, next to (on a phone, right under) it.
   const repartoEnBloque = confeti && Boolean(patron?.resuelto);
   const reparto = ajustable && onRepartir && repartoLibre && declarada.materiales.length >= 2 && declarada.materiales.every((material) => typeof material.participacion === "number") ? (
@@ -406,6 +482,38 @@ export function DetalleEstructura({
               leyenda={arco.leyenda}
               nombrePieza={nombreVisible}
               repeticiones={estructura.repeticiones}
+              onGuardar={arco.onGuardar}
+              ocupado={ocupado || Boolean(arco.ocupado)}
+            />
+          ) : columna ? (
+            <BloqueColumna
+              armado={columna.armado}
+              pieza={columna.pieza}
+              leyenda={columna.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+              onGuardar={columna.onGuardar}
+              ocupado={ocupado || Boolean(columna.ocupado)}
+            />
+          ) : columnaOrganica ? (
+            <BloqueColumnaOrganica
+              armado={columnaOrganica.armado}
+              pieza={columnaOrganica.pieza}
+              leyenda={columnaOrganica.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+              onGuardar={columnaOrganica.onGuardar}
+              ocupado={ocupado || Boolean(columnaOrganica.ocupado)}
+            />
+          ) : guirnaldaOrganica ? (
+            <BloqueGuirnaldaOrganica
+              armado={guirnaldaOrganica.armado}
+              pieza={guirnaldaOrganica.pieza}
+              leyenda={guirnaldaOrganica.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+              onGuardar={guirnaldaOrganica.onGuardar}
+              ocupado={ocupado || Boolean(guirnaldaOrganica.ocupado)}
             />
           ) : patron ? (
             <BloquePatron
@@ -442,7 +550,7 @@ export function DetalleEstructura({
               ocupado={ocupado || Boolean(armado.ocupado)}
               modoDev={modoDev}
             />
-          ) : guirnalda && (
+          ) : guirnalda && !guirnaldaOrganica && (
             <BloqueGuirnalda
               resuelto={guirnalda.resuelto}
               leyenda={guirnalda.leyenda}
@@ -455,7 +563,16 @@ export function DetalleEstructura({
             />
           )}
 
-          {ajustable && ((reparto && !repartoEnBloque) || onCambiarMezcla) && (
+          {/*
+            Un solo hijo para los dos casos, a propósito: un hermano más delante de este hueco corre el `useId` de
+            todos los controles que vienen después y una pieza sin armado de arco dejaría de pintarse byte por byte
+            como antes (`ui:test-armado-guirnalda`). Con armado de arco el hueco explica por qué no hay reparto ni mezcla.
+          */}
+          {armadoSinReparto ? (
+            <p data-testid="arco-sin-reparto" className="rounded-xl bg-superficie-suave px-3 py-2 text-xs text-texto-suave">
+              {arco ? "Los colores y los globos de este arco los define su armado: cámbialos con «Editar arco»." : columna || columnaOrganica ? "Los colores y los globos de esta columna los define su armado: cámbialos con «Editar columna»." : "Los colores y los globos de esta guirnalda los define su armado: el motor los coloca y los cuenta, por eso aquí no se reparten. Cámbialos con «Editar guirnalda»."}
+            </p>
+          ) : ajustable && ((reparto && !repartoEnBloque) || onCambiarMezcla) && (
             <div className="space-y-2.5">
               {!repartoEnBloque && reparto}
               {onCambiarMezcla && (

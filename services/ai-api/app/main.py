@@ -66,7 +66,13 @@ from app.amaterasu.patron_referencia import (
     PatronReferenciaRequest,
     detectar_patrones_referencia,
 )
-from app.catalog import CATALOG_SCOPE, CatalogSearchRequest, CatalogStore
+from app.catalog import (
+    CATALOG_COLORS_SCOPE,
+    CATALOG_SCOPE,
+    CatalogColorsRequest,
+    CatalogSearchRequest,
+    CatalogStore,
+)
 from app.happie.generacion import (
     HAPPIE_GENERATE_SCOPE,
     HappieGenerateError,
@@ -117,6 +123,7 @@ from app.uzume.interaction import (
     crear_interaccion_gemini,
 )
 from app.operational_store import InMemoryOperationalStore, StoredHttpResponse
+from app.exclusion_motores import ACCIONES_DE_MOTOR, correr_motor
 from app.plan_worker import run_plan_cpu
 from app.patron_color import DIRECCIONES as _PATTERN_DIRECTIONS, MODOS as _PATTERN_MODES
 from app.operational_models import ContractModel, OperationalRequest
@@ -134,10 +141,25 @@ from app.cotizacion_profesional import (
     cotizar_profesional,
 )
 from app.armado_bouquet import VARIANTES as VARIANTES_BOUQUET
+from app.estimar_conteo import (
+    ESTIMAR_CONTEO_SCOPE,
+    EXCLUSION as ESTIMACION_EXCLUSIVA,
+    EstimarConteoRequest,
+)
 from app.plan_armado_arco import (
     PLAN_ARMADO_ARCO_SCOPE,
     PlanArmadoArcoRequest,
     vista_previa_armado_arco,
+)
+from app.plan_armado_columna import (
+    PLAN_ARMADO_COLUMNA_SCOPE,
+    PlanArmadoColumnaRequest,
+    vista_previa_armado_columna,
+)
+from app.plan_armado_columna_organica import (
+    PLAN_ARMADO_COLUMNA_ORGANICA_SCOPE,
+    PlanArmadoColumnaOrganicaRequest,
+    vista_previa_armado_columna_organica,
 )
 from app.plan_armado_guirnalda_organica import (
     PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE,
@@ -312,6 +334,8 @@ class CatalogStoreBoundary(Protocol):
     async def check_ready(self) -> bool: ...
 
     async def search(self, operation: CatalogSearchRequest) -> dict[str, object]: ...
+
+    async def colors(self, operation: CatalogColorsRequest) -> dict[str, object]: ...
 
     async def select(self, operation: CatalogSelectionRequest) -> dict[str, object]: ...
 
@@ -1456,6 +1480,25 @@ def create_app(
             handler=handler,
         )
 
+    @application.post("/internal/v1/catalog/colors")
+    async def catalog_colors(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, CatalogColorsRequest):
+                raise _error("invalid_request", 422)
+            result = await catalog.colors(payload)
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="catalog.colors",
+            model=CatalogColorsRequest,
+            scope=CATALOG_COLORS_SCOPE,
+            handler=handler,
+        )
+
     @application.post("/internal/v1/catalog/selection")
     async def catalog_selection(request: Request) -> Response:
         async def handler(payload: OperationalRequest) -> dict[str, object]:
@@ -1530,8 +1573,13 @@ def create_app(
             if not isinstance(payload, PlanEditRequest):
                 raise _error("invalid_request", 422)
             try:
-                # CPU-bound (pattern expansion and contract checks): off the loop.
-                result = await run_plan_cpu(ejecutar_edicion, payload)
+                # CPU-bound (pattern expansion and contract checks): off the loop. An edit that places the
+                # engine's balloons (arch, column, organic column, organic garland) takes the global engine slot:
+                # one at a time, `motor_ocupado` (429) otherwise. The rest of the edits are cheap and do not.
+                if payload.edicion.accion in ACCIONES_DE_MOTOR:
+                    result = await correr_motor(ejecutar_edicion, payload)
+                else:
+                    result = await run_plan_cpu(ejecutar_edicion, payload)
             except PlanResolutionError as error:
                 raise _error(error.code, error.status_code, error.details) from None
             return {"payload": result}
@@ -1646,7 +1694,7 @@ def create_app(
                 raise _error("invalid_request", 422)
             try:
                 # CPU-bound (it places every balloon and emits the SVG): off the loop.
-                result = await run_plan_cpu(vista_previa_armado_arco, payload)
+                result = await correr_motor(vista_previa_armado_arco, payload)
             except PlanResolutionError as error:
                 raise _error(error.code, error.status_code, error.details) from None
             return {"payload": result}
@@ -1656,6 +1704,56 @@ def create_app(
             operation="plan.armado_arco",
             model=PlanArmadoArcoRequest,
             scope=PLAN_ARMADO_ARCO_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-columna")
+    async def plan_armado_columna(request: Request) -> Response:
+        # ADR-0034 / ADR-0035 paso 3: resolves (or suggests) one column's
+        # assembly for the editor with the designer's migrated engine, and
+        # answers with its SVG. Same shape as /plan/armado-arco: no catalog (the
+        # plan says what the piece is, the browser hands over the resolved
+        # tones) and the drawing is derived -- it never enters the plan, the
+        # snapshot or `plan_hash`. What the piece costs is counted by plan.py.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoColumnaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # CPU-bound (it places every balloon and emits the SVG): off the loop.
+                result = await correr_motor(vista_previa_armado_columna, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_columna",
+            model=PlanArmadoColumnaRequest,
+            scope=PLAN_ARMADO_COLUMNA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-columna-organica")
+    async def plan_armado_columna_organica(request: Request) -> Response:
+        # ADR-0034: resuelve (o sugiere) el armado de una columna orgánica con el motor migrado del diseñador y
+        # responde con su SVG. No reemplaza a /plan/armado-columna (la torre de anillos): conviven. Sin catálogo;
+        # el dibujo es derivado y nunca entra en `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoColumnaOrganicaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # Relaja colisiones hasta que ningún globo pisa a otro y luego emite el SVG: CPU pesada que no
+                # puede correr en el bucle de eventos.
+                result = await correr_motor(vista_previa_armado_columna_organica, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_columna_organica",
+            model=PlanArmadoColumnaOrganicaRequest,
+            scope=PLAN_ARMADO_COLUMNA_ORGANICA_SCOPE,
             handler=handler,
         )
 
@@ -1673,7 +1771,7 @@ def create_app(
                 # The most expensive CPU work of the three engines (it relaxes
                 # collisions until no balloon overlaps another, then emits the
                 # SVG): it cannot run on the event loop.
-                result = await run_plan_cpu(vista_previa_armado_guirnalda_organica, payload)
+                result = await correr_motor(vista_previa_armado_guirnalda_organica, payload)
             except PlanResolutionError as error:
                 raise _error(error.code, error.status_code, error.details) from None
             return {"payload": result}
@@ -1683,6 +1781,41 @@ def create_app(
             operation="plan.armado_guirnalda_organica",
             model=PlanArmadoGuirnaldaOrganicaRequest,
             scope=PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/estimar-conteo")
+    async def plan_estimar_conteo(request: Request) -> Response:
+        # Solo lectura: cuántos globos cobraría el plan para unos candidatos y
+        # qué variación de mandos los acerca a un conteo objetivo (el de la
+        # foto). Sin catálogo ni base de datos y sin escribir nada: no toca el
+        # plan resuelto, el token ni `plan_hash`. Cada cifra es de `plan.py`, del
+        # motor y de `conteo_foto`; aquí solo se valida y se traduce el error.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, EstimarConteoRequest):
+                raise _error("invalid_request", 422)
+            # A lo sumo una estimación a la vez y sin cola: el plan corre su CPU en un solo hilo y una
+            # estimación con motor puede tardar segundos; la segunda responde ocupado y se reintenta, en vez
+            # de esperar delante de `resolve_plan`.
+            reserva = ESTIMACION_EXCLUSIVA.reservar()
+            if reserva is None:
+                raise _error("estimacion_ocupada", 429)
+            try:
+                # CPU-bound (el motor coloca cada globo de la pieza): off the loop. El hilo suelta la reserva.
+                result = await run_plan_cpu(ESTIMACION_EXCLUSIVA.estimar, reserva, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            except BaseException:
+                # Cancelada o vencida en la cola sin haber corrido: nadie más soltaría la reserva.
+                ESTIMACION_EXCLUSIVA.soltar_si_no_inicio(reserva)
+                raise
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.estimar_conteo",
+            model=EstimarConteoRequest,
+            scope=ESTIMAR_CONTEO_SCOPE,
             handler=handler,
         )
 

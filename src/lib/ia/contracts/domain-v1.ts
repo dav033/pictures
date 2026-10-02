@@ -18,16 +18,21 @@ import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-bluepr
 import { SceneSpecSchema } from "@/lib/ia/escena/scene-spec";
 import { MaterialEstimateSchema } from "@/lib/materiales/estimacion";
 import {
+  DENSIDADES,
+  MEZCLAS,
   PlanDecoracion1_1Schema,
   PlanDecoracionSchema,
   PropCatalogoSchema,
 } from "@/lib/plan/tipos";
-import { ArcoResueltoSchema } from "@/lib/plan/armado-arco";
+import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
+import { ESTRUCTURAS_OFICIALES_IDS, incoherenciasEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { ArcoResueltoSchema, ArmadoArcoV1Schema } from "@/lib/plan/armado-arco";
 import { ArmadoBouquetResueltoSchema, PistaArmadoSchema } from "@/lib/plan/armado-bouquet";
-import { ColumnaResueltaSchema } from "@/lib/plan/armado-columna";
-import { GuirnaldaOrganicaResueltaSchema } from "@/lib/plan/armado-guirnalda-organica";
-import { ArmadoGuirnaldaResueltoSchema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
-import { ConteoAplicadoSchema, PistaConteoSchema } from "@/lib/plan/conteo-referencia";
+import { ArmadoColumnaV1Schema, ColumnaResueltaSchema } from "@/lib/plan/armado-columna";
+import { ColumnaOrganicaResueltaSchema } from "@/lib/plan/armado-columna-organica";
+import { ArmadoGuirnaldaOrganicaV1Schema, GuirnaldaOrganicaResueltaSchema } from "@/lib/plan/armado-guirnalda-organica";
+import { ArmadoGuirnaldaResueltoSchema, ArmadoGuirnaldaV1Schema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
+import { ConteoAplicadoSchema, MAX_GLOBOS_CONTEO, PistaConteoSchema } from "@/lib/plan/conteo-referencia";
 import { PatronColorResueltoSchema, PistaPatronSchema } from "@/lib/plan/patron-color";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
 import { LoraSelectionSchema } from "@/lib/lora/schema";
@@ -36,6 +41,8 @@ import { productVocabularySchema } from "@/lib/lora/product-vocabulary";
 export const CATALOG_SELECTION_CONTRACT_VERSION = "catalog-selection.v1" as const;
 export const CATALOG_SEARCH_CONTRACT_VERSION = "catalog-search.v1" as const;
 export const CATALOG_SEARCH_RESULT_CONTRACT_VERSION = "catalog-search-result.v1" as const;
+export const CATALOG_COLORS_CONTRACT_VERSION = "catalog-colors.v1" as const;
+export const CATALOG_COLORS_RESULT_CONTRACT_VERSION = "catalog-colors-result.v1" as const;
 export const PLAN_RESUELTO_CONTRACT_VERSION = "plan-resuelto.v1" as const;
 export const QUOTE_CONTRACT_VERSION = "quote.v1" as const;
 export const PLAN_RESOLUTION_CONTRACT_VERSION = "plan-resolution.v1" as const;
@@ -142,6 +149,11 @@ export const CatalogSearchRequestV1Schema = z.object({
   allowlist: z.array(CatalogSearchAllowlistV1Schema).max(256),
   limit: z.number().int().min(1).max(50),
   catalog_snapshot_id: idSchema.nullable().optional(),
+  /**
+   * Browsing: recall comes from `filters` alone and `message` is only a label
+   * (the editor's catalog explorer without text). Absent means a text search.
+   */
+  browse: z.boolean().optional(),
 }).strict();
 
 const CatalogSearchVariantV1Schema = z.object({
@@ -190,6 +202,28 @@ export const CatalogSearchResultV1Schema = z.object({
   latency_parse_ms: z.number().int().nonnegative(),
   latency_retrieval_ms: z.number().int().nonnegative(),
   color_substitutions: z.array(CatalogSearchColorSubstitutionV1Schema).optional(),
+}).strict();
+
+/**
+ * Colors the editor's explorer can offer, with how many available products
+ * carry each (read-only). Same snapshot pin and allowlist semantics as
+ * `catalog-search.v1`: an empty allowlist is unrestricted.
+ */
+export const CatalogColorsRequestV1Schema = z.object({
+  schema_version: z.literal(CATALOG_COLORS_CONTRACT_VERSION),
+  allowlist: z.array(CatalogSearchAllowlistV1Schema).max(256),
+  catalog_snapshot_id: idSchema.nullable().optional(),
+}).strict();
+
+export const CatalogColorsResultV1Schema = z.object({
+  operation_schema_version: z.literal(CATALOG_COLORS_RESULT_CONTRACT_VERSION),
+  /** `null` when the requested snapshot is not published (and `colors` is empty). */
+  catalog_snapshot_id: idSchema.nullable(),
+  /** Most stocked first; `value` is the lowercase catalog color, `total` the distinct available products. */
+  colors: z.array(z.object({
+    value: z.string().min(1),
+    total: z.number().int().min(1),
+  }).strict()).max(256),
 }).strict();
 
 /**
@@ -431,6 +465,7 @@ export const PlanResueltoV1Schema = z.object({
    */
   armados_arco: z.array(ArcoResueltoSchema).optional(),
   armados_columna: z.array(ColumnaResueltaSchema).optional(),
+  armados_columna_organica: z.array(ColumnaOrganicaResueltaSchema).optional(),
   armados_guirnalda_organica: z.array(GuirnaldaOrganicaResueltaSchema).optional(),
   /**
    * Qué hizo Python con el conteo de la foto de cada estructura y por qué
@@ -541,6 +576,182 @@ export const PlanResolutionResultV1Schema = z.object({
   quote: QuoteV1Schema,
 }).strict();
 
+// --- Estimar el conteo de globos (`estimar-conteo.v1`) -----------------------------------------
+//
+// Una consulta de SOLO LECTURA: la IA pregunta cuántos globos cobraría el plan para unos candidatos
+// (medidas, densidad, mezcla y, si la pieza lo trae, el armado del motor) y qué variación de mandos los
+// acerca a un conteo objetivo (el de la foto). Python es el único dueño de cada cifra: este contrato es la
+// forma de la pregunta y de la respuesta, y no escribe nada en el plan, el token ni `plan_hash`.
+
+export const ESTIMAR_CONTEO_CONTRACT_VERSION = "estimar-conteo.v1" as const;
+export const ESTIMAR_CONTEO_RESULT_CONTRACT_VERSION = "estimar-conteo-result.v1" as const;
+/** Candidatos que una estimación compara a la vez. */
+export const ESTIMAR_CONTEO_MAX_CANDIDATOS = 6;
+/** Un tamaño obligatorio del cliente en pulgadas (`restricciones.tamanos`), como lo lee `mezclas.ts`. */
+const ESTIMAR_CONTEO_MAX_TAMANOS = 6;
+
+/**
+ * Los mandos que una sugerencia puede mover. Los de la fórmula son la densidad y las medidas del plan; los
+ * del motor son los de `armar_estructura` (`geometria`): el tamaño del globo y cuántos van a lo ancho en un
+ * arco, los de la capa y los tamaños de la columna. `via` dice cuál de los dos juegos es.
+ */
+export const CAMPOS_CAMBIO_ESTIMACION = [
+  "densidad",
+  "ancho_m",
+  "alto_m",
+  "largo_m",
+  "tamano_globo",
+  "globos_ancho",
+  "globos_capa",
+  "abajo",
+  "arriba",
+] as const;
+/**
+ * `cortada_por_tope`: la búsqueda se cortó por el tiempo o las evaluaciones que una petición puede gastar y no halló
+ * nada; no es un error ni un «sin ajuste posible», porque no se sabe si existía una variación.
+ */
+export const ESTADOS_SUGERENCIA_CONTEO = ["no_necesaria", "propuesta", "sin_ajuste_posible", "no_evaluada", "cortada_por_tope"] as const;
+export const FUENTES_CONTEO_ESTIMADO = ["formula", "motor"] as const;
+
+const estimarConteoMedidasSchema = z.object({
+  ancho_m: z.number().positive().max(100).optional(),
+  alto_m: z.number().positive().max(100).optional(),
+  largo_m: z.number().positive().max(100).optional(),
+}).strict();
+
+const estimarConteoTextoSchema = z.string().trim().min(1).max(400);
+
+/**
+ * Una pieza a contar, con los campos de una estructura del plan que mueven su conteo y nada más: no
+ * lleva materiales (el motor no mira tonos), precios ni catálogo. `colores` es cuántos materiales
+ * tendría; solo importa si trae armado, porque el armado nombra materiales por índice.
+ */
+export const EstimarConteoCandidatoV1Schema = z.object({
+  /** Cómo lo nombra quien consulta; es lo que vuelve en la respuesta, sin repetirse. */
+  etiqueta: z.string().trim().min(1).max(80),
+  tipo: z.enum(TIPOS_ESTRUCTURA_GEOMETRICOS),
+  estructura_oficial: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
+  medidas: estimarConteoMedidasSchema,
+  densidad: z.enum(DENSIDADES),
+  mezcla: z.enum(MEZCLAS),
+  colores: z.number().int().min(1).max(12).optional(),
+  repeticiones: z.number().int().min(1).max(24).optional(),
+  /** Armado por partes (ADR-0032): decide el eje real de la guirnalda en la fórmula. */
+  armado_guirnalda: ArmadoGuirnaldaV1Schema.optional(),
+  /** Armado del motor (ADR-0034): con uno, cuenta el motor y no la fórmula. Solo el de su `tipo`. */
+  armado_arco: ArmadoArcoV1Schema.optional(),
+  armado_columna: ArmadoColumnaV1Schema.optional(),
+  armado_guirnalda_organica: ArmadoGuirnaldaOrganicaV1Schema.optional(),
+}).strict().superRefine((value, ctx) => {
+  // La coherencia de `estructura_oficial` con tipo y densidad: la misma tabla que el JSON Schema exportado
+  // (`reglasJsonSchemaEstructuraOficial`), para que Zod y el esquema que valida Python no discrepen.
+  for (const problema of incoherenciasEstructuraOficial(value)) {
+    ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
+  }
+});
+
+export const EstimarConteoObjetivoV1Schema = z.object({
+  /** Globos por pieza que se quiere alcanzar (por ejemplo, el conteo leído en la foto). */
+  conteo: z.number().int().min(1).max(MAX_GLOBOS_CONTEO),
+  /** Se devuelve tal cual en la respuesta: en las piezas geométricas no cambia la tolerancia ni la búsqueda. */
+  exacto: z.boolean().optional(),
+}).strict();
+
+export const EstimarConteoRequestV1Schema = z.object({
+  schema_version: z.literal(ESTIMAR_CONTEO_CONTRACT_VERSION),
+  candidatos: z.array(EstimarConteoCandidatoV1Schema).min(1).max(ESTIMAR_CONTEO_MAX_CANDIDATOS),
+  objetivo: EstimarConteoObjetivoV1Schema.optional(),
+  /** Tamaños que el cliente hizo obligatorios (`restricciones.tamanos`): la mezcla efectiva los respeta. */
+  tamanos_obligatorios: z.array(z.number().int().min(1).max(100)).max(ESTIMAR_CONTEO_MAX_TAMANOS).optional(),
+  /** Las medidas son del cliente: la sugerencia no las mueve, igual que el conteo de la foto al confirmar. */
+  medidas_del_cliente: z.boolean().optional(),
+}).strict();
+
+const valorDeMandoSchema = z.union([z.string().min(1).max(40), z.number()]);
+
+const estimarConteoCambioSchema = z.object({
+  campo: z.enum(CAMPOS_CAMBIO_ESTIMACION),
+  antes: valorDeMandoSchema,
+  despues: valorDeMandoSchema,
+}).strict();
+
+/** Qué tan lejos queda el total vigente del objetivo, con la tolerancia de `conteo_foto.py`. */
+const estimarConteoBrechaSchema = z.object({
+  objetivo: z.number().int().min(1),
+  /** Total vigente menos el objetivo: negativo es quedarse corto. */
+  diferencia: z.number().int(),
+  absoluta: z.number().int().nonnegative(),
+  /** `absoluta` entre el objetivo. */
+  relativa: z.number().nonnegative(),
+  /** La tolerancia, en globos, que `conteo_foto.tolerancia` da a ese objetivo. */
+  tolerancia: z.number().nonnegative(),
+  dentro_de_tolerancia: z.boolean(),
+}).strict();
+
+/**
+ * La menor variación de mandos que acerca el total al objetivo. Honesta: si no hay ninguna, o si esa
+ * pieza no se puede barrer, lo dice en `estado` y `motivo` en vez de proponer algo.
+ */
+const estimarConteoSugerenciaSchema = z.object({
+  estado: z.enum(ESTADOS_SUGERENCIA_CONTEO),
+  /** Qué juego de mandos se exploró o se movió: los de la fórmula o los del armado del motor. `null` si no hizo falta. */
+  via: z.enum(FUENTES_CONTEO_ESTIMADO).nullable(),
+  cambios: z.array(estimarConteoCambioSchema).max(CAMPOS_CAMBIO_ESTIMACION.length),
+  /** El total vigente con los cambios puestos; `null` sin propuesta. */
+  total_resultante: z.number().int().nonnegative().nullable(),
+  brecha: estimarConteoBrechaSchema.nullable(),
+  motivo: estimarConteoTextoSchema,
+}).strict();
+
+const estimarConteoRepartoSchema = z.object({
+  pulgadas: z.number().int().positive(),
+  cantidad: z.number().int().nonnegative(),
+  proporcion: z.number().nonnegative(),
+}).strict();
+
+export const EstimarConteoCandidatoResultadoV1Schema = z.object({
+  etiqueta: z.string().trim().min(1).max(80),
+  tipo: z.enum(TIPOS_ESTRUCTURA_GEOMETRICOS),
+  repeticiones: z.number().int().min(1).max(24),
+  /** Lo que daría la fórmula, haya o no armado del motor. */
+  total_formula: z.number().int().nonnegative(),
+  /** Lo que cuenta el motor; `null` sin armado del motor. */
+  total_motor: z.number().int().nonnegative().nullable(),
+  /** El que de verdad se cobraría por pieza: el del motor si hay armado, si no el de la fórmula. */
+  total_vigente: z.number().int().nonnegative(),
+  fuente: z.enum(FUENTES_CONTEO_ESTIMADO),
+  /** `total_vigente` por las repeticiones. */
+  total_instalado: z.number().int().nonnegative(),
+  eje_m: z.number().nonnegative(),
+  /** Globos por metro de eje por pieza, lo que mira la puerta física; `null` sin eje. */
+  globos_por_metro: z.number().nonnegative().nullable(),
+  /** La fórmula clásica `4,8 · L / d` que publica el motor del arco: un ancla independiente de la fórmula del plan. `null` fuera del arco con armado. */
+  formula_clasica: z.number().nonnegative().nullable(),
+  reparto_por_tamano: z.array(estimarConteoRepartoSchema).max(12),
+  puerta_fisica: z.object({
+    dentro: z.boolean(),
+    avisos: z.array(estimarConteoTextoSchema).max(12),
+  }).strict(),
+  avisos: z.array(estimarConteoTextoSchema).max(24),
+  /** Lo que el que consulta no debe pasar por alto de esta pieza (el motor ignora medidas, densidad y mezcla). */
+  nota: z.string().trim().min(1).max(900).nullable(),
+  brecha: estimarConteoBrechaSchema.nullable(),
+  /** `null` sin objetivo. */
+  sugerencia: estimarConteoSugerenciaSchema.nullable(),
+}).strict();
+
+export const EstimarConteoResultV1Schema = z.object({
+  operation_schema_version: z.literal(ESTIMAR_CONTEO_RESULT_CONTRACT_VERSION),
+  objetivo: z.object({
+    conteo: z.number().int().min(1),
+    exacto: z.boolean(),
+    tolerancia: z.number().nonnegative(),
+  }).strict().nullable(),
+  candidatos: z.array(EstimarConteoCandidatoResultadoV1Schema).min(1).max(ESTIMAR_CONTEO_MAX_CANDIDATOS),
+  /** Etiqueta del candidato dentro de tolerancia y de la puerta física más cerca del objetivo; `null` si ninguno. */
+  mejor: z.string().trim().min(1).max(80).nullable(),
+}).strict();
+
 export const DomainContractSchemas = {
   "catalog-product.v1": CatalogProductSchema,
   "catalog-variant.v1": CatalogVariantSchema,
@@ -548,6 +759,8 @@ export const DomainContractSchemas = {
   "catalog-selection-result.v1": CatalogSelectionResultV1Schema,
   "catalog-search.v1": CatalogSearchRequestV1Schema,
   "catalog-search-result.v1": CatalogSearchResultV1Schema,
+  "catalog-colors.v1": CatalogColorsRequestV1Schema,
+  "catalog-colors-result.v1": CatalogColorsResultV1Schema,
   "catalog-recommendations.v1": CatalogRecommendationsRequestV1Schema,
   "catalog-recommendations-result.v1": CatalogRecommendationsResultV1Schema,
   "plan-decoracion.v1": PlanDecoracionSchema,
@@ -556,6 +769,8 @@ export const DomainContractSchemas = {
   "quote.v1": QuoteV1Schema,
   "plan-resolution.v1": PlanResolutionRequestV1Schema,
   "plan-resolution-result.v1": PlanResolutionResultV1Schema,
+  "estimar-conteo.v1": EstimarConteoRequestV1Schema,
+  "estimar-conteo-result.v1": EstimarConteoResultV1Schema,
   "reference-blueprint.v2": ReferenceBlueprintV2Schema,
   "scene-spec.v1": SceneSpecSchema,
   "lora-selection.v1": LoraSelectionSchema,
@@ -578,9 +793,13 @@ export type CatalogSelectionRequestV1 = z.infer<typeof CatalogSelectionRequestV1
 export type CatalogSelectionResultV1 = z.infer<typeof CatalogSelectionResultV1Schema>;
 export type CatalogSearchRequestV1 = z.infer<typeof CatalogSearchRequestV1Schema>;
 export type CatalogSearchResultV1 = z.infer<typeof CatalogSearchResultV1Schema>;
+export type CatalogColorsRequestV1 = z.infer<typeof CatalogColorsRequestV1Schema>;
+export type CatalogColorsResultV1 = z.infer<typeof CatalogColorsResultV1Schema>;
 export type CatalogRecommendationsRequestV1 = z.infer<typeof CatalogRecommendationsRequestV1Schema>;
 export type CatalogRecommendationsResultV1 = z.infer<typeof CatalogRecommendationsResultV1Schema>;
 export type PlanResueltoV1 = z.infer<typeof PlanResueltoV1Schema>;
 export type QuoteV1 = z.infer<typeof QuoteV1Schema>;
 export type PlanResolutionRequestV1 = z.infer<typeof PlanResolutionRequestV1Schema>;
 export type PlanResolutionResultV1 = z.infer<typeof PlanResolutionResultV1Schema>;
+export type EstimarConteoRequestV1 = z.infer<typeof EstimarConteoRequestV1Schema>;
+export type EstimarConteoResultV1 = z.infer<typeof EstimarConteoResultV1Schema>;

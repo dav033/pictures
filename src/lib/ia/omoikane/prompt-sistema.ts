@@ -221,6 +221,19 @@ function cantidadDelConteo(conteo: ConteoDelElemento): string | null {
 }
 
 /**
+ * La misma cifra que `cantidadDelConteo`, como número, para quien la usa de objetivo
+ * (`estimar_conteo_globos`): la cuenta exacta o el estimado de una lectura confiable
+ * mientras `CONTEO_REFERENCIA_V1` la deja valer. Es la misma regla, no otra: una
+ * lectura que el prompt no le presenta al modelo tampoco es un objetivo. Nada se
+ * calcula aquí; sin cifra leída (solo racimos) no hay objetivo.
+ */
+export function objetivoDelConteo(conteo: ConteoDelElemento): { conteo: number; exacto: boolean } | null {
+  if (cantidadDelConteo(conteo) === null || !conteo) return null;
+  const cifra = conteo.exacto ? conteo.globos_visibles : conteo.estimado_total;
+  return cifra !== null && cifra > 0 ? { conteo: cifra, exacto: conteo.exacto } : null;
+}
+
+/**
  * Lo que Amaterasu contó de una pieza de la foto (ADR-0031), dicho al modelo
  * con los números tal como se leyeron. Cuando manda (`cantidadDelConteo`), es
  * la cantidad que el modelo declara en un kit, y el armado leído de la misma
@@ -338,6 +351,24 @@ ARMADO DEL ARCO, LA COLUMNA Y LA GUIRNALDA
 - Armar es opcional: si no armas una pieza, el sistema le pone el armado por defecto del motor. Y no cambia lo que se cobra por tu cuenta: las cantidades y el precio siguen saliendo de confirmar_plan_decoracion.
 - Al cliente háblale de cómo se verá ("alternando el rosado y el blanco", "con el color subiendo de claro a oscuro", "una guirnalda suelta con follaje"), nunca del id del patrón, del acabado interno, de los mandos ni de los índices de material.`;
 
+/**
+ * Cuando la foto trae un conteo leído, el modelo puede acercar la propuesta a ese número
+ * antes de armar o confirmar (`estimar_conteo_globos`, ADR-0038). Solo aparece con la
+ * bandera encendida y un conteo que el prompt ya le presenta, para que el prompt de los
+ * demás turnos no cambie. No dice cuántos globos lleva ninguna pieza: eso lo calcula
+ * Python y el cliente lo oye de `confirmar_plan_decoracion`.
+ */
+export const BLOQUE_ESTIMAR_CONTEO = `
+
+ACERCAR LA PROPUESTA AL CONTEO DE LA FOTO
+- Cuando una pieza trae "conteo leído en la foto", antes de armar_estructura y de confirmar_plan_decoracion llama estimar_conteo_globos con 2 o 3 candidatos de esa pieza (cambia medidas, densidad o mezcla) y elige el que deja total_vigente dentro de la tolerancia del objetivo (brecha.dentro_de_tolerancia) y sin avisos en puerta_fisica.
+- Es una consulta: no cambia el plan ni cobra nada. Una pieza que ya trae armado del motor se cuenta con él y su densidad, su mezcla y sus medidas NO cambian el total (lo dice su nota): para acercarla usa la sugerencia, que mueve los mandos del armado.
+- El número que le dices al cliente sale SIEMPRE de confirmar_plan_decoracion, nunca de esta estimación.`;
+
+function hayConteoUsable(blueprint: ReferenceBlueprintV2 | undefined): boolean {
+  return Boolean(blueprint?.elements.some((element) => element.approved && objetivoDelConteo(element.appearance.conteo) !== null));
+}
+
 export function construirSistema(opts: { ragEnabled: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2; catalogAllowlist?: CatalogAllowlist; catalogoLoraNoDisponible?: boolean; creatividad?: NivelCreatividad; sugerenciaEscena?: SugerenciaEscena }): string {
   const contexto =
     opts.brief && Object.keys(opts.brief).length ? `\n\nDatos del evento que ya conoces: ${JSON.stringify(opts.brief)}` : "";
@@ -352,6 +383,7 @@ export function construirSistema(opts: { ragEnabled: boolean; brief?: Brief; ref
     (opts.ragEnabled ? BLOQUE_RAG : "") +
     (opts.ragEnabled ? BLOQUE_PLAN + GUIA_ESTRUCTURAS_OFICIALES : "") +
     (opts.ragEnabled && featureEnabled("ARMADO_ARCO_COLUMNA_V1") ? BLOQUE_ARMADO_MOTOR : "") +
+    (opts.ragEnabled && featureEnabled("ESTIMAR_CONTEO_V1") && hayConteoUsable(opts.referenceBlueprint) ? BLOQUE_ESTIMAR_CONTEO : "") +
     // El bloque de referencia describe cómo confirmar_plan_decoracion lee
     // referencia_element_id / referencia_omitida, así que acompaña siempre al
     // catálogo RAG.

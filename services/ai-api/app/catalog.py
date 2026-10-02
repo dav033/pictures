@@ -23,7 +23,11 @@ from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, StrictInt, field
 
 from app.operational_models import OperationalRequest
 from app.postgres_store import validate_database_url
-from app.generated_models import CatalogRecommendationsResult, contract_schema
+from app.generated_models import (
+    CatalogColorsResult,
+    CatalogRecommendationsResult,
+    contract_schema,
+)
 from app.recommendations import (
     CATALOG_RECOMMENDATIONS_RESULT_SCHEMA_VERSION,
     CatalogRecommendationError,
@@ -42,6 +46,9 @@ POOL_MAX_INACTIVE_CONNECTION_LIFETIME_SECONDS = 60.0
 CATALOG_SCOPE = "catalog.search"
 CATALOG_SCHEMA_VERSION = "catalog-search.v1"
 CATALOG_RESULT_SCHEMA_VERSION = "catalog-search-result.v1"
+CATALOG_COLORS_SCOPE = "catalog.colors"
+CATALOG_COLORS_SCHEMA_VERSION = "catalog-colors.v1"
+CATALOG_COLORS_RESULT_SCHEMA_VERSION = "catalog-colors-result.v1"
 MAX_CATALOG_LIMIT = 50
 DEFAULT_CATALOG_LIMIT = 15
 TRIGRAM_MIN_SIMILARITY = 0.3
@@ -136,6 +143,10 @@ class CatalogSearchRequest(OperationalRequest):
     allowlist: list[AllowlistEntry] = Field(max_length=256)
     limit: StrictInt = Field(ge=1, le=MAX_CATALOG_LIMIT)
     catalog_snapshot_id: CatalogId | None = None
+    # Browsing (the editor's catalog explorer with filters and no text): recall
+    # comes from the hard filters alone and ``message`` is only a label. Every
+    # predicate in ``_base_query`` still applies; nothing is widened.
+    browse: bool = False
 
     @field_validator("message")
     @classmethod
@@ -144,6 +155,26 @@ class CatalogSearchRequest(OperationalRequest):
         if not normalized:
             raise ValueError("message must not be blank")
         return normalized
+
+    @field_validator("catalog_snapshot_id")
+    @classmethod
+    def normalize_snapshot_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("catalog_snapshot_id must not be blank")
+        return normalized
+
+
+class CatalogColorsRequest(OperationalRequest):
+    """Authenticated body of ``/internal/v1/catalog/colors`` (read-only)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["catalog-colors.v1"]
+    allowlist: list[AllowlistEntry] = Field(max_length=256)
+    catalog_snapshot_id: CatalogId | None = None
 
     @field_validator("catalog_snapshot_id")
     @classmethod
@@ -502,7 +533,7 @@ class CatalogStore:
             raise RuntimeError("CATALOG_STORE_NOT_STARTED")
 
         parse_started = time.perf_counter()
-        extracted_sku = extract_sku(operation.message)
+        extracted_sku = None if operation.browse else extract_sku(operation.message)
         parse_ms = round((time.perf_counter() - parse_started) * 1000)
         retrieval_started = time.perf_counter()
         sku_status = "not_sku"
@@ -518,9 +549,15 @@ class CatalogStore:
                     parse_ms,
                     _elapsed_ms(retrieval_started),
                 )
-            resolved_colors, color_substitutions = await _resolve_colors(
-                connection, operation.filters.colors, str(snapshot_id)
-            )
+            if operation.browse:
+                # The explorer only offers colors the snapshot stocks (/catalog/colors): a
+                # stale chip is an honest NO_MATCH, not worth a full scan of the colors
+                # per request to look for a nearest one.
+                resolved_colors, color_substitutions = None, []
+            else:
+                resolved_colors, color_substitutions = await _resolve_colors(
+                    connection, operation.filters.colors, str(snapshot_id)
+                )
             if extracted_sku is not None:
                 rows, sku_status = await self._exact_rows(
                     connection, operation, extracted_sku, str(snapshot_id), resolved_colors
@@ -533,6 +570,10 @@ class CatalogStore:
                         parse_ms,
                         _elapsed_ms(retrieval_started),
                     )
+            elif operation.browse:
+                rows = await self._browse_rows(
+                    connection, operation, str(snapshot_id), resolved_colors
+                )
             else:
                 rows = await self._lexical_rows(
                     connection, operation, str(snapshot_id), resolved_colors
@@ -560,6 +601,42 @@ class CatalogStore:
             "latency_retrieval_ms": _elapsed_ms(retrieval_started),
             "color_substitutions": color_substitutions,
         }
+
+    async def colors(self, operation: CatalogColorsRequest) -> dict[str, object]:
+        """Colors the explorer can offer, with how many products carry each.
+
+        Same commercial predicates as ``search`` (ACTIVE product, published
+        snapshot, available product and variant, allowlist) and the same
+        effective color of a variant as ``_base_query``, so a chip's count is
+        what picking it returns. Read-only; an unknown snapshot answers an empty
+        list with no snapshot id, as ``search`` does.
+        """
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+        async with self._reading(pool) as connection:
+            snapshot_id = await self._selection_snapshot(connection, operation.catalog_snapshot_id)
+            rows: Sequence[Mapping[str, object]] = []
+            if snapshot_id is not None:
+                query, params = _colors_query(operation, str(snapshot_id))
+                rows = await connection.fetch(query, *params)
+        totals: dict[str, int] = {}
+        for row in rows:
+            color = row.get("color")
+            total = _integer_or_none(row.get("total"))
+            if isinstance(color, str) and color.strip() and total is not None:
+                value = color.strip().lower()
+                totals[value] = totals.get(value, 0) + total
+        result: dict[str, object] = {
+            "operation_schema_version": CATALOG_COLORS_RESULT_SCHEMA_VERSION,
+            "catalog_snapshot_id": str(snapshot_id) if snapshot_id is not None else None,
+            "colors": [
+                {"value": value, "total": total}
+                for value, total in sorted(totals.items(), key=lambda item: (-item[1], item[0]))
+            ],
+        }
+        CatalogColorsResult.model_validate(result)
+        return result
 
     async def select(self, operation: CatalogSelectionRequest) -> dict[str, object]:
         """Validate model-selected identifiers against the published catalog."""
@@ -896,6 +973,49 @@ class CatalogStore:
             *params,
         )
 
+    async def _browse_rows(
+        self,
+        connection: CatalogConnection,
+        operation: CatalogSearchRequest,
+        snapshot_id: str,
+        resolved_colors: Sequence[str] | None = None,
+    ) -> Sequence[Mapping[str, object]]:
+        """Every variant that satisfies the hard filters, products in title order.
+
+        Used when the caller has filters and no text: ``_lexical_rows`` needs a
+        textual hit, which would silently drop products whose name lacks the
+        word. The first ``limit`` products by title are picked in SQL (so a
+        product with many variants cannot crowd the others out) and the score
+        is their descending rank, which keeps ``_group_candidates`` in title
+        order. Recall only: every commercial predicate stays in ``_base_query``.
+        """
+        base, params = _base_query(operation, snapshot_id, resolved_colors)
+        params.append(operation.limit)
+        limit_position = len(params)
+        return await connection.fetch(
+            f"""
+            WITH picked AS (
+              SELECT product_id,
+                     row_number() OVER (ORDER BY title, product_id) AS rank
+                FROM (
+                  SELECT DISTINCT p.product_id, p.title
+                    FROM catalog_products p
+                    JOIN catalog_variants v ON v.product_id = p.product_id
+                   {base}
+                ) matching
+               ORDER BY rank
+               LIMIT ${limit_position}
+            )
+            SELECT {CATALOG_COLUMNS}, (1.0 / picked.rank)::float8 AS score
+              FROM catalog_products p
+              JOIN catalog_variants v ON v.product_id = p.product_id
+              JOIN picked ON picked.product_id = p.product_id
+             {base}
+             ORDER BY picked.rank, v.diam_pulg ASC NULLS LAST, v.variant_id
+            """,
+            *params,
+        )
+
 
 CATALOG_COLUMNS = """
     p.product_id, p.title, p.derived, p.available AS product_available,
@@ -1130,6 +1250,52 @@ async def _resolve_colors(
             seen_substitutions.add(requested)
             substitutions.append({"pedido": requested, "entregado": nearest})
     return resolved, substitutions
+
+
+def _colors_query(operation: CatalogColorsRequest, snapshot_id: str) -> tuple[str, list[object]]:
+    """Distinct products per effective color, most stocked first.
+
+    The effective color of a variant is the one ``_base_query`` filters by: its
+    own ``derived_colors`` or, when it has none, the product's single color.
+    """
+    clauses = [
+        "p.status = 'ACTIVE'",
+        "p.source_snapshot_id = $1",
+        "v.source_snapshot_id = $1",
+        "p.available = TRUE",
+        "v.available = TRUE",
+    ]
+    params: list[object] = [snapshot_id]
+    variant_ids = [variant_id for entry in operation.allowlist for variant_id in entry.variant_ids]
+    if variant_ids:
+        params.append(sorted(set(variant_ids)))
+        clauses.append(f"v.variant_id = ANY(${len(params)}::text[])")
+    elif operation.allowlist:
+        params.append(sorted({entry.product_id for entry in operation.allowlist}))
+        clauses.append(f"p.product_id = ANY(${len(params)}::text[])")
+    return (
+        f"""
+        WITH eligible AS (
+          SELECT p.product_id,
+                 CASE
+                   WHEN cardinality(v.derived_colors) > 0 THEN v.derived_colors
+                   WHEN jsonb_array_length(COALESCE(p.derived->'colors', '[]'::jsonb)) = 1
+                     THEN ARRAY(SELECT jsonb_array_elements_text(p.derived->'colors'))
+                   ELSE ARRAY[]::text[]
+                 END AS colors
+            FROM catalog_variants v
+            JOIN catalog_products p ON p.product_id = v.product_id
+           WHERE {" AND ".join(clauses)}
+        )
+        SELECT LOWER(BTRIM(color)) AS color, COUNT(DISTINCT product_id)::int AS total
+          FROM eligible
+         CROSS JOIN LATERAL unnest(colors) AS color
+         WHERE BTRIM(color) <> ''
+         GROUP BY 1
+         ORDER BY total DESC, color ASC
+        """,
+        params,
+    )
 
 
 def _recommendation_query(
@@ -1394,7 +1560,9 @@ def _elapsed_ms(started: float) -> int:
 
 
 __all__ = [
+    "CATALOG_COLORS_SCOPE",
     "CATALOG_SCOPE",
+    "CatalogColorsRequest",
     "CatalogRecommendationsRequest",
     "CatalogSearchRequest",
     "CatalogSelectionRequest",

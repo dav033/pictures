@@ -141,7 +141,7 @@ export function paletaMedida(pixeles: readonly Pixel[]): PaletaMedida {
     return {
       colores: [],
       pixeles: pixeles.length,
-      avisos: [`La zona solo tiene ${pixeles.length} píxeles y hacen falta ${PIXELES_MINIMOS} para medir color.`],
+      avisos: ["La pieza se ve demasiado pequeña en la foto para medir su color."],
     };
   }
 
@@ -182,7 +182,12 @@ export function paletaMedida(pixeles: readonly Pixel[]): PaletaMedida {
     }
   }
   if (juntados.length < grupos.length) {
-    avisos.push(`${grupos.length - juntados.length} grupo(s) eran el mismo color con otra luz y se juntaron.`);
+    const unidos = grupos.length - juntados.length;
+    avisos.push(
+      unidos === 1
+        ? "Un tono era el mismo color con otra luz y se juntó con el suyo."
+        : `${unidos} tonos eran el mismo color con otra luz y se juntaron con el suyo.`,
+    );
   }
 
   juntados.sort((a, b) => b.pixeles.length - a.pixeles.length);
@@ -204,7 +209,12 @@ export function paletaMedida(pixeles: readonly Pixel[]): PaletaMedida {
     });
   }
   if (descartados > 0) {
-    avisos.push(`${descartados} grupo(s) ocupaban menos del ${Math.round(PARTE_MINIMA * 100)} % y se descartaron.`);
+    const minimo = Math.round(PARTE_MINIMA * 100);
+    avisos.push(
+      descartados === 1
+        ? `Se dejó fuera un color que ocupaba menos del ${minimo} % de la pieza (un reflejo, un borde o parte del fondo).`
+        : `Se dejaron fuera ${descartados} colores que ocupaban menos del ${minimo} % de la pieza (reflejos, bordes o fondo).`,
+    );
   }
 
   return { colores, pixeles: total, avisos };

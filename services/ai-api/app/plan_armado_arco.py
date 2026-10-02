@@ -36,17 +36,19 @@ from pydantic import Field, field_validator
 
 from app.arco.patrones import config_inicial
 from app.armado_arco import (
-    DESPERDICIO_POR_DEFECTO,
     VERSION,
     ArmadoInvalido,
     EstructuraArco,
     armado_resuelto,
+    avisos_colores_sin_uso,
     limites_de,
     opciones_admitidas,
 )
+from app.armado_arco_prompt import frases_arco
 from app.generated_models import contract_schema
 from app.operational_models import OperationalRequest
-from app.plan import PlanResolutionError
+from app.plan import MERMA, PlanResolutionError
+
 # La frontera comparte con la del otro motor la lectura del plan y la política del gris neutro
 # (``app/plan_armado_comun.py``). Los tres ``X as X`` son re-exportaciones deliberadas: el aviso, el tono y el
 # tope de colores se siguen leyendo desde este módulo (lo hacen sus pruebas y ``__all__``), pero su dueño es
@@ -61,12 +63,18 @@ from app.plan_armado_comun import (
     acotar,
     avisos_con_tono_neutro,
     estructura_de,
+    materiales_de,
     medida,
     sub_esquema,
     tonos_de,
     tope,
     validar_plan,
 )
+
+
+def _texto(valor: object) -> str | None:
+    return valor.strip() or None if isinstance(valor, str) else None
+
 
 PLAN_ARMADO_ARCO_SCOPE = "plan.armado_arco"
 PLAN_ARMADO_ARCO_REQUEST_VERSION = "plan-armado-arco.v1"
@@ -163,9 +171,9 @@ def _receta(
         "patron": patron,
         "opciones": {
             clave: float(valor)
-            for clave, valor in cast(
-                Mapping[str, Mapping[str, float]], inicial["opciones"]
-            )[patron].items()
+            for clave, valor in cast(Mapping[str, Mapping[str, float]], inicial["opciones"])[
+                patron
+            ].items()
         },
         "geometria": geometria,
         "globo": dict(cast(Mapping[str, object], inicial["globo"])),
@@ -195,9 +203,9 @@ def vista_previa_armado_arco(request: PlanArmadoArcoRequest) -> dict[str, object
         else _receta(estructura, opciones, len(tonos))
     )
     try:
-        # El desperdicio es política del plan, no del armado; aquí se usa el del diseñador, que es el mismo
-        # con el que la pieza se abre en el repositorio dueño.
-        resuelto = armado_resuelto(pieza, armado, DESPERDICIO_POR_DEFECTO)
+        # El desperdicio es política del plan, no del armado: el mismo `MERMA` con el que la resolución compra,
+        # para que lo que la vista previa dice que hay que comprar sea lo que el plan cobra.
+        resuelto = armado_resuelto(pieza, armado, MERMA)
         limites = limites_de(armado, pieza)
     except ArmadoInvalido as error:
         raise PlanResolutionError(
@@ -210,9 +218,27 @@ def vista_previa_armado_arco(request: PlanArmadoArcoRequest) -> dict[str, object
             },
         ) from error
 
-    arco: dict[str, object] = {campo: resuelto[campo] for campo in _CAMPOS_ARCO}
+    arco: dict[str, object] = {
+        campo: resuelto[campo] for campo in _CAMPOS_ARCO if campo in resuelto
+    }
+    # Lo que la imagen lee de este armado (ADR-0035): la misma frase que publicará la resolución.
+    arco["estructura_id"] = request.estructura_id
+    arco["prompt_gemini"], arco["prompt_lora"] = frases_arco(
+        armado,
+        resuelto,
+        [
+            (_texto(material.get("color")), _texto(material.get("acabado")))
+            for material in materiales_de(estructura)
+        ],
+    )
     if not resueltos:
         arco["avisos"] = avisos_con_tono_neutro(cast(Sequence[str], arco["avisos"]), MAX_AVISOS)
+    # Los colores de la pieza que el armado no toma no se comprarían: se dice antes de guardar.
+    sin_uso = avisos_colores_sin_uso(
+        [str(material.get("color") or "") for material in materiales_de(estructura)],
+        cast(Sequence[int], armado["materiales"]),
+    )
+    arco["avisos"] = [*cast(Sequence[str], arco["avisos"]), *sin_uso][:MAX_AVISOS]
     if next(_ARCO_RESUELTO.iter_errors(arco), None) is not None:
         raise RuntimeError("el arco resuelto no cumple plan-resuelto.v1")
     grafica = cast(Mapping[str, object], resuelto["grafica"])

@@ -393,3 +393,21 @@ observado en la referencia. El QA visual, que lo detectaba después de generar
 Pendiente de decidir: si la proporción de la referencia debe ser una
 restricción del plan (y entonces el guard la defiende como a los colores), o
 solo una advertencia. Lo primero es más fiel; lo segundo deja más margen creativo.
+
+---
+
+## 8. Editar el arco desde la propuesta (2026-10-02, ADR-0035 paso 1)
+
+El arco con `armado_arco` ofrece «Editar arco» (plegado por defecto): patrón con sus mandos y los colores de la pieza
+que cumple cada papel, forma, ancho, alto, globos a lo ancho, tamaño de globo e inflado, con el dibujo del motor en vivo
+(pausa de 300 ms, `AbortController`, gana la última; los deslizadores aplican al soltar porque la latencia pasa de
+250 ms) y «Guardar arco» por `/api/plan-editar` (acción nueva `armado_arco`). Una revisión adversaria encontró y se
+corrigió: el 500 de un arco que el contrato no admite (ahora `armado_invalido` con su frase), los índices de color tras
+quitar o agregar un color (Python revalida; el editor avisa y no pierde el borrador), las medidas que no seguían al
+armado, los colores sin uso, el reparto y la mezcla sobre un arco armado, la falta de cobertura de catálogo al guardar,
+y varios puntos de accesibilidad. Detalle, latencias y lo no probado: ADR-0035, «Estado del paso 1».
+
+La imagen ya lee el armado del arco (frases de Python en `armados_arco[]`, derivadas y fuera de `plan_hash`; sin medir con
+generación real). Pendiente: capas y secciones (paso 2); un arco sin armado no se edita; a 360 px el dibujo se pierde de vista al bajar
+a los mandos. Preexistente que vio la revisión: `/api/plan-editar` sin `isAuthenticatedRequest` propio y «Deshacer» que no
+limpia `editadoTrasAprobar`.

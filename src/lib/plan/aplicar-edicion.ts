@@ -93,6 +93,14 @@ function geometriaAuditada(edicion: EdicionPlan): Record<string, unknown> {
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, variante: edicion.armado_bouquet?.variante ?? null };
     case "armado_guirnalda":
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, soporte: edicion.armado_guirnalda?.soporte ?? null, forma: edicion.armado_guirnalda?.forma ?? null };
+    case "armado_arco":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, patron: edicion.armado_arco?.patron ?? null, forma: edicion.armado_arco?.geometria.forma ?? null };
+    case "armado_columna":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, patron: edicion.armado_columna?.patron ?? null, modo: edicion.armado_columna?.modo ?? null };
+    case "armado_columna_organica":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, reparto: edicion.armado_columna_organica?.colores.reparto ?? null, alto_m: edicion.armado_columna_organica?.forma.altoM ?? null };
+    case "armado_guirnalda_organica":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, reparto: edicion.armado_guirnalda_organica?.colores.reparto ?? null, largo_m: edicion.armado_guirnalda_organica?.forma.largoM ?? null };
     default:
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id };
   }
@@ -107,6 +115,12 @@ export type AplicarEdicionInput = {
   correlationId?: string;
   signal?: AbortSignal;
   pool?: Pool;
+  /**
+   * An intermediate step of several chained edits (chat tool `ediciones`): its
+   * plan is never shown if a later edit fails, so it leaves no `PLAN_EDITED` row.
+   * Default: audit, as every other caller does.
+   */
+  omitirAuditoria?: boolean;
 };
 
 /** `avisos`: sentences for the decorator from the edit itself (e.g. a color pattern that was rebuilt). */
@@ -138,6 +152,24 @@ export function armadoQuitadoPorLaEdicion(
  */
 export function resugerirArmadoGuirnalda(edicion: Pick<EdicionPlan, "accion" | "estructura_id">, base: PlanConArmados, editado: PlanConArmados): boolean {
   return edicion.accion !== "armado_guirnalda" && armadoQuitadoPorLaEdicion(base, editado, edicion.estructura_id, "armado_guirnalda");
+}
+
+/**
+ * Un arco o una columna armados cuyo globo el catálogo no vende no se firman (ADR-0035): la resolución lo dice en `sin_cobertura`
+ * y firmarlo dejaba una propuesta a la que le faltan globos y que cuesta menos de lo que dice el dibujo. Solo
+ * cuenta lo que el armado nuevo dejó sin cobertura: lo que ya faltaba antes no es culpa de esta edición.
+ * Devuelve la frase para el decorador, o `null` si no falta nada.
+ */
+export function faltaCoberturaPorElArmado(edicion: EdicionPlan, antes: PlanResuelto, despues: PlanResuelto): string | null {
+  const armadoNuevo = edicion.accion === "armado_arco" ? edicion.armado_arco : edicion.accion === "armado_columna" ? edicion.armado_columna : edicion.accion === "armado_columna_organica" ? edicion.armado_columna_organica : edicion.accion === "armado_guirnalda_organica" ? edicion.armado_guirnalda_organica : null;
+  if (armadoNuevo === null) return null;
+  const clave = (item: PlanResuelto["sin_cobertura"][number]) => `${item.estructura_id}|${item.product_id}|${item.tamano}`;
+  const yaFaltaba = new Set(antes.sin_cobertura.map(clave));
+  const nuevas = despues.sin_cobertura.filter((item) => item.estructura_id === edicion.estructura_id && !yaFaltaba.has(clave(item)));
+  if (nuevas.length === 0) return null;
+  const tamanos = [...new Set(nuevas.map((item) => item.tamano))].join(", ");
+  const pieza = edicion.accion === "armado_columna" || edicion.accion === "armado_columna_organica" ? "esa columna" : edicion.accion === "armado_guirnalda_organica" ? "esa guirnalda" : "ese arco";
+  return `El catálogo no vende los globos que ${pieza} necesita (${tamanos}). Elige otro tamaño de globo o cambia los colores: así no se puede guardar.`;
 }
 
 export const AVISO_ARMADO_NO_REHECHO ="Con estos globos no se pudo volver a armar el bouquet: queda sin armado.";
@@ -291,6 +323,8 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   );
   const resuelto = resolucionEditada.resuelto;
   if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");
+  const sinCobertura = faltaCoberturaPorElArmado(edicion, planBaseVerificado.resuelto, resuelto);
+  if (sinCobertura) throw new PlanEditError(422, sinCobertura, "ARMADO_INVALIDO", { motivo: "sin_cobertura", mensaje: sinCobertura });
   if (rehacerArmado && armadoQuitadoPorLaEdicion(base.plan, resuelto.plan, edicion.estructura_id)) {
     // Python avisó que lo volvería a sugerir y no pudo (la compra no se arma): el decorador lo sabe.
     avisos.push(AVISO_ARMADO_NO_REHECHO);
@@ -329,7 +363,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   }
   // Observability, not part of the answer: the decorator does not wait for it
   // (it already swallows its own failures), same as the chat's plan audits.
-  encolarEscrituraObservabilidad(registrarPlanAudit(pool, {
+  if (!input.omitirAuditoria) encolarEscrituraObservabilidad(registrarPlanAudit(pool, {
     requestId,
     planHash: resuelto.plan_hash,
     restricciones: resuelto.plan.restricciones,

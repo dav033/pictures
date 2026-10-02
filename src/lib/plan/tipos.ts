@@ -22,6 +22,7 @@ import {
 import { ArmadoArcoV1Schema } from "./armado-arco";
 import { ArmadoBouquetV1Schema } from "./armado-bouquet";
 import { ArmadoColumnaV1Schema } from "./armado-columna";
+import { ArmadoColumnaOrganicaV1Schema } from "./armado-columna-organica";
 import { ArmadoGuirnaldaOrganicaV1Schema } from "./armado-guirnalda-organica";
 import { ArmadoGuirnaldaV1Schema } from "./armado-guirnalda";
 import { PatronColorV1Schema } from "./patron-color";
@@ -132,6 +133,12 @@ const EstructuraPlanSchema = z.object({
    * que es el que coloca cada globo. Sus reglas cruzadas las valida solo Python.
    */
   armado_guirnalda_organica: ArmadoGuirnaldaOrganicaV1Schema.optional(),
+  /**
+   * Armado de una columna orgánica con el motor del diseñador (ADR-0034): una columna irregular de globos de varios
+   * tamaños, más ancha abajo que arriba. Convive con `armado_columna` (la clásica, de anillos); cuando están los dos,
+   * manda la clásica. Sus reglas cruzadas las valida solo Python (`app/armado_columna_organica.py`).
+   */
+  armado_columna_organica: ArmadoColumnaOrganicaV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   for (const problema of incoherenciasEstructuraOficial(value)) {
     ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
@@ -376,6 +383,12 @@ export const EstructuraPlan1_1Schema = z.object({
    * que es el que coloca cada globo. Sus reglas cruzadas las valida solo Python.
    */
   armado_guirnalda_organica: ArmadoGuirnaldaOrganicaV1Schema.optional(),
+  /**
+   * Armado de una columna orgánica con el motor del diseñador (ADR-0034): una columna irregular de globos de varios
+   * tamaños, más ancha abajo que arriba. Convive con `armado_columna` (la clásica, de anillos); cuando están los dos,
+   * manda la clásica. Sus reglas cruzadas las valida solo Python (`app/armado_columna_organica.py`).
+   */
+  armado_columna_organica: ArmadoColumnaOrganicaV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   validarRelacionesFisicasSchema(value.relaciones_fisicas, ctx);
   for (const problema of incoherenciasEstructuraOficial(value)) {

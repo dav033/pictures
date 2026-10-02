@@ -1,0 +1,6 @@
+{
+  "estructura_id": "EST_01_ARCO",
+  "armado_patron": "chevron",
+  "prompt_gemini": "ARCH ASSEMBLY — a horseshoe arch with straight legs, about 3.2 m wide and 2.3 m tall, built as a band 4 balloons wide of round 12-inch latex balloons packed tightly in staggered rows, with V-shaped chevron stripes of pink and white pointing along the arch. Keep that pattern readable on the band and make the whole arch only of round latex balloons: no ribbons, streamers or fabric.",
+  "prompt_lora": "a horseshoe balloon arch with straight legs made of round balloons with V-shaped chevron stripes of pink and white pointing along the arch"
+}

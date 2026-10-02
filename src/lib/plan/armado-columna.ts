@@ -272,3 +272,27 @@ export const ColumnaResueltaSchema = z
   .strict();
 
 export type ColumnaResuelta = z.infer<typeof ColumnaResueltaSchema>;
+
+/**
+ * Lo que devuelve la ruta del editor: la columna resuelta **y su dibujo** (ADR-0034, ADR-0035 paso 3).
+ *
+ * El SVG lo emite el mismo motor que colocó los globos, así que la gráfica no vuelve a calcular nada: lo
+ * muestra. Va aquí y no dentro del plan a propósito —son decenas de kilobytes por pieza, se regenera cuando haga
+ * falta y no tiene por qué viajar en cada resolución ni entrar en `plan_hash`—. A diferencia del arco, el lienzo
+ * de la columna no es cuadrado (600 × 720): lleva ancho y alto.
+ */
+export const VistaColumnaSchema = z
+  .object({
+    columna: ColumnaResueltaSchema,
+    grafica: z
+      .object({
+        /** Lienzo del motor, para el `viewBox`. */
+        lienzo: z.object({ ancho: z.number().int().positive(), alto: z.number().int().positive() }).strict(),
+        /** El interior del `<svg>`: `<defs>` con los degradados y los globos, la base y el remate. */
+        svg: z.string().min(1),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type VistaColumna = z.infer<typeof VistaColumnaSchema>;
