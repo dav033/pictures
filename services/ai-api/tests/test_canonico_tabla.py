@@ -22,14 +22,18 @@ CONTRATO = AI_API.parents[1] / "contracts" / "domain" / "v1" / "sempertex" / "ta
 
 def test_la_tabla_esta_dentro_de_app() -> None:
     assert canonico.TABLA.is_file()
-    assert AI_API / "app" in canonico.TABLA.parents, "la tabla debe viajar dentro de app/ para llegar a la imagen"
+    assert AI_API / "app" in canonico.TABLA.parents, (
+        "la tabla debe viajar dentro de app/ para llegar a la imagen"
+    )
 
 
 def test_la_copia_es_identica_al_contrato() -> None:
     # En el repo completo la tabla del contrato es la dueña; la copia de app/ nunca puede quedarse atrás.
     if not CONTRATO.is_file():
         return
-    assert json.loads(canonico.TABLA.read_text(encoding="utf-8")) == json.loads(CONTRATO.read_text(encoding="utf-8"))
+    assert json.loads(canonico.TABLA.read_text(encoding="utf-8")) == json.loads(
+        CONTRATO.read_text(encoding="utf-8")
+    )
 
 
 def test_el_servicio_importa_sin_el_resto_del_repositorio(tmp_path: Path) -> None:
@@ -40,10 +44,17 @@ def test_el_servicio_importa_sin_el_resto_del_repositorio(tmp_path: Path) -> Non
         destino,
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
     )
-    entorno = {**os.environ, "APP_ENV": "build", "PYTHONPATH": str(destino.parent), "PYTHONDONTWRITEBYTECODE": "1"}
+    entorno = {
+        **os.environ,
+        "APP_ENV": "build",
+        "PYTHONPATH": str(destino.parent),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
     # Importar no basta: la ruta vieja solo reventaba al importar si la imagen era poco profunda (``parents[4]``) y,
     # en cualquier otro sitio, al LEER la tabla. Se carga de verdad para que falle con cualquier profundidad.
-    programa = "import app.main; from app.motores import canonico; assert len(canonico._catalogo()) > 0"
+    programa = (
+        "import app.main; from app.motores import canonico; assert len(canonico._catalogo()) > 0"
+    )
     resultado = subprocess.run(
         [sys.executable, "-c", programa],
         cwd=destino.parent,
