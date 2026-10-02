@@ -101,43 +101,31 @@ function Soporte({ soporte }: { soporte: SoporteDibujo }) {
  */
 function Globo({ globo, color, id, retraso, transicion }: { globo: GloboDibujo; color: ColorLeyenda; id: string; retraso: number | null; transicion: boolean }) {
   const ry = globo.r * 1.06;
-  // Con el relieve del motor, la sombra y el giro son los suyos; sin él se
-  // deducen de `z`, como siempre. Los centros de flor (z > 1) no llevan sombra.
-  const sombra = globo.relieve ? globo.relieve.velo : globo.z < 1 ? ((1 - globo.z) / 2) * 0.34 : 0;
-  const giro = globo.relieve?.giro ?? 0;
+  // Los de atrás quedan en sombra; los centros de flor (z > 1) no.
+  const sombra = globo.z < 1 ? ((1 - globo.z) / 2) * 0.34 : 0;
   const relleno = color.brillo === "multicolor" ? `url(#${id}-multicolor)` : color.hex;
   const forma = { cx: globo.x, cy: globo.y, rx: globo.r, ry };
-  // Un globo del motor lleva contorno siempre: es lo que separa uno de otro en
-  // una banda apretada, y es lo que hace `motor.ts` con `contorno: 1`.
-  const conBorde = Boolean(globo.relieve) || color.muestra.conBorde || color.numeroClaro;
-  const vuelta = giro ? `rotate(${giro} ${globo.x} ${globo.y})` : undefined;
   const contenido = (
-    // El óvalo sigue la línea de la pieza; el reflejo NO gira con él (la luz de
-    // la escena no se mueve con cada globo), así que se desgira por dentro.
-    <g transform={vuelta}>
+    <>
       <ellipse
         {...forma}
         fill={relleno}
         fillOpacity={color.brillo === "transparente" ? 0.28 : 1}
         // Los claros se pierden en el fondo claro y los oscuros en el oscuro: los dos llevan contorno.
-        className={conBorde && !globo.relieve ? "stroke-borde" : undefined}
-        stroke={globo.relieve ? "#000" : undefined}
-        strokeOpacity={globo.relieve ? 0.28 : undefined}
+        className={color.muestra.conBorde || color.numeroClaro ? "stroke-borde" : undefined}
         // Contorno de un píxel a cualquier escala: nítido en un bloque pequeño y en la vista grande.
-        strokeWidth={conBorde ? 1 : undefined}
+        strokeWidth={color.muestra.conBorde || color.numeroClaro ? 1 : undefined}
         vectorEffect="non-scaling-stroke"
         // El color cambia con un fundido corto (la vista previa en vivo); sin movimiento, al instante.
         style={transicion ? { transition: "fill 260ms var(--ease-out)" } : undefined}
       />
       <ellipse {...forma} fill={`url(#${id}-volumen)`} />
-      <g transform={giro ? `rotate(${-giro} ${globo.x} ${globo.y})` : undefined}>
-        <ellipse {...forma} fill={`url(#${id}-${BRILLOS[color.brillo]})`} />
-      </g>
+      <ellipse {...forma} fill={`url(#${id}-${BRILLOS[color.brillo]})`} />
       {/* `fillOpacity`, no `opacity`: se ve igual (solo relleno) y no hace de cada sombra una capa que el navegador recompone en cada cuadro. */}
       {sombra > 0.02 && <ellipse {...forma} fill="#000" fillOpacity={sombra} />}
-    </g>
+    </>
   );
-  if (retraso === null) return contenido;
+  if (retraso === null) return <g>{contenido}</g>;
   return <g className="patron-globo-entra" style={{ animationDelay: `${retraso}s` }}>{contenido}</g>;
 }
 

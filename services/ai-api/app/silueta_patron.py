@@ -40,12 +40,6 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Literal, cast
 
-from app.arco_clasico import Arco, ArcoArmado, ArcoInvalido
-from app.arco_clasico import arco_de_densidad as arco_clasico_de_densidad
-from app.arco_clasico import armar as armar_arco_clasico
-from app.columna_clasica import Columna, ColumnaArmada, ColumnaInvalida
-from app.columna_clasica import armar as armar_columna_clasica
-from app.columna_clasica import columna_de_densidad as columna_clasica_de_densidad
 from app.generated_models import contract_schema
 from app.silueta import (
     ESTILO,
@@ -250,22 +244,6 @@ class PiezaSilueta:
     forma_guirnalda: str | None = None
     caida_m: float | None = None
     anclajes: int | None = None
-    #: Densidad comercial de un **arco clásico**, y solo de él: es lo que
-    #: traduce ``arco_clasico.ARMADO_POR_DENSIDAD`` a globos por anillo y
-    #: separación entre anillos. Va la densidad y no las dos perillas para que
-    #: el armado siga teniendo un solo dueño. ``None`` en todo lo demás, y
-    #: entonces el croquis sale del motor de silueta de siempre.
-    densidad_arco: str | None = None
-    #: Densidad comercial de una **columna clásica**, y solo de ella: es lo
-    #: que traduce ``columna_clasica.ARMADO_POR_DENSIDAD`` a globos por capa
-    #: y alto de capa. Va la densidad y no las dos perillas por lo mismo que
-    #: en el arco: para que el armado siga teniendo un solo dueño. ``None``
-    #: en todo lo demás, y entonces el croquis sale del motor orgánico.
-    densidad_columna: str | None = None
-    #: Cómo se monta un **arco clásico**: banda escalonada (el de siempre) o
-    #: anillos iguales. Lo decide el patrón —un arco de anillos se arma recto—,
-    #: y tiene que llegar aquí para que el croquis sea la pieza que se contó.
-    arco_escalonado: bool = True
 
 
 def _acotar(valor: float, minimo: float, maximo: float) -> float:
@@ -577,229 +555,6 @@ def _materiales(
     return salida
 
 
-#: Escalones de profundidad que admite ``capa`` en el contrato (0 … 15).
-_CAPAS_DE_PROFUNDIDAD = 15
-
-
-def _capa_de_profundidad(profundidad: float) -> int:
-    """La profundidad continua del motor (−1 … 1) en los escalones de ``capa``."""
-    return max(
-        0,
-        min(
-            _CAPAS_DE_PROFUNDIDAD,
-            round((max(-1.0, min(1.0, profundidad)) + 1) / 2 * _CAPAS_DE_PROFUNDIDAD),
-        ),
-    )
-
-
-def _arco_de_pieza(pieza: PiezaSilueta, pulgadas: int) -> Arco | None:
-    """El arco clásico de esta pieza, o ``None`` si no es uno."""
-    if pieza.densidad_arco is None or pieza.tipo != "arco":
-        return None
-    try:
-        return arco_clasico_de_densidad(
-            pieza.ancho_m, pieza.alto_m, pieza.densidad_arco, pulgadas, pieza.arco_escalonado
-        )
-    except ArcoInvalido:
-        return None
-
-
-def _lectura_arco(
-    armado: ArcoArmado, celdas: Sequence[Sequence[int]], pulgadas: int
-) -> tuple[list[GloboSilueta], Preferencia]:
-    """Un arco clásico se lee EXACTO: la fila es la fila y la columna, el carril.
-
-    Aquí no hay aproximación que negociar, y es la diferencia con las otras
-    lecturas. En una pared o en una banda orgánica la rejilla del patrón y las
-    posiciones del motor son dos mallas distintas, y el color de un sitio es una
-    PREFERENCIA que ``_materiales`` cumple cuando puede (la pared mide un 88 %).
-    En un arco la rejilla **es** el armado —``filas × globos a lo ancho``, la
-    impone ``plan._ancho_de_arco_clasico``— así que cada globo tiene su celda y
-    es de un solo tamaño: la primera pasada de ``_materiales`` las cumple todas.
-
-    Al revés no: las filas van escalonadas (las impares llevan un globo menos),
-    así que en esas filas un carril se queda sin globo. Es el hueco del
-    empaquetado, no un error, y por eso la rejilla tiene más celdas que globos:
-    ``_materiales`` reparte sobre los globos, nunca sobre las celdas.
-    """
-    globos = [
-        GloboSilueta(
-            # El motor centra el arco en su eje y el contrato pide ``x`` no
-            # negativa, así que se corre al borde izquierdo de la pieza.
-            x=globo.x + armado.ancho_m / 2,
-            y=globo.y,
-            r=globo.radio_m,
-            # La banda es un tubo, y su profundidad es continua: el centro de
-            # cara al espectador y los dos bordes hacia atrás. ``capa`` la lleva
-            # en los dieciséis escalones que admite el contrato, 0 el fondo,
-            # como en ``silueta._repartir_capas``. Con dos escalones —lo que
-            # había— todos los globos del fondo se oscurecían igual y la banda
-            # salía de color sucio en vez de leerse como un tubo; la profundidad
-            # sin escalonar viaja aparte, en ``prof``.
-            capa=_capa_de_profundidad(globo.profundidad),
-            nominal=pulgadas,
-            indice=indice,
-            racimo=globo.fila,
-        )
-        for indice, globo in enumerate(armado.globos)
-    ]
-    sitio = {indice: (globo.fila, globo.carril) for indice, globo in enumerate(armado.globos)}
-
-    def preferido(globo: GloboSilueta) -> int:
-        fila, carril = sitio[globo.indice]
-        return _celda(celdas, fila, carril)
-
-    # Del fondo al frente y, a igual profundidad, por su sitio en el arco: es el
-    # ``z = d·10 + i·1e-4`` del original (``motor.ts``), y es lo que decide quién
-    # tapa a quién. Ordenar por la capa escalonada no basta: dentro de una capa
-    # el carril central de una fila se pintaba antes que los carriles de la fila
-    # siguiente, y el relieve del tubo salía invertido a trozos.
-    profundidad = {indice: globo.profundidad for indice, globo in enumerate(armado.globos)}
-    orden = sorted(globos, key=lambda globo: (profundidad[globo.indice], globo.indice))
-    return orden, preferido
-
-
-def _croquis_de_arco(
-    arco: Arco,
-    celdas: Sequence[Sequence[int]],
-    matriz: Sequence[Sequence[int]],
-    pulgadas: Sequence[int],
-    total: int,
-    presupuesto: PresupuestoGrafica,
-) -> Croquis:
-    """Croquis de un arco clásico, con el motor porteado del clasificador."""
-    try:
-        armado = armar_arco_clasico(arco)
-    except ArcoInvalido:
-        return _sin_croquis("motor_rechazo")
-    if armado.total != total:
-        # La matriz del despiece y el armado hablarían de piezas distintas.
-        return _sin_croquis("despiece_incoherente")
-    if len(celdas) != armado.filas or any(
-        len(fila) != armado.globos_ancho for fila in celdas
-    ):
-        return _sin_croquis("despiece_incoherente")
-    presupuesto.gastar(total)
-    orden, preferido = _lectura_arco(armado, celdas, pulgadas[0])
-    materiales = _materiales(orden, preferido, matriz, pulgadas)
-    if materiales is None:
-        return _sin_croquis("despiece_incoherente")
-    return Croquis(
-        posiciones=[
-            {
-                "x": round(globo.x, 4),
-                "y": round(globo.y, 4),
-                "r": round(globo.r, 4),
-                "capa": globo.capa,
-                "material": materiales[globo.indice],
-                # Lo que el motor calcula por globo y hasta ahora se tiraba: con
-                # la profundidad sin escalonar el fondo se oscurece como un tono
-                # del mismo color, y con el giro el óvalo sigue la línea del arco
-                # en vez de quedarse vertical en la clave.
-                "prof": round(armado.globos[globo.indice].profundidad, 4),
-                "giro": armado.globos[globo.indice].giro_grados,
-            }
-            for globo in orden
-        ],
-        motivo=None,
-    )
-
-
-def _columna_de_pieza(pieza: PiezaSilueta, pulgadas: int) -> Columna | None:
-    """La columna clásica de esta pieza, o ``None`` si no lo es."""
-    if pieza.densidad_columna is None or pieza.tipo != "columna":
-        return None
-    try:
-        return columna_clasica_de_densidad(pieza.alto_m, pieza.densidad_columna, pulgadas)
-    except ColumnaInvalida:
-        return None
-
-
-def _lectura_columna(
-    armada: ColumnaArmada, celdas: Sequence[Sequence[int]], pulgadas: int
-) -> tuple[list[GloboSilueta], Preferencia]:
-    """Una columna clásica se lee EXACTO: la fila es la capa y la columna, el puesto.
-
-    Es el mismo trato que el arco clásico y por la misma razón: la rejilla **es**
-    el armado —``capas × globos por capa``, que impone
-    ``plan._capa_de_columna_clasica``—, así que cada globo tiene su celda y es de
-    un solo tamaño. Y aquí no hay ni siquiera el hueco del escalonado: una
-    columna gira sus capas medio paso en ÁNGULO, no quitando un globo, así que
-    todas las capas van llenas y la rejilla no tiene celdas de sobra.
-    """
-    medio = armada.diametro_m / 2
-    globos = [
-        GloboSilueta(
-            # El motor centra la columna en su eje y el contrato pide ``x`` no
-            # negativa, así que se corre al borde izquierdo de la pieza.
-            x=globo.x + medio,
-            y=globo.y,
-            r=globo.radio_m,
-            capa=_capa_de_profundidad(globo.profundidad),
-            nominal=pulgadas,
-            indice=indice,
-            racimo=globo.capa,
-        )
-        for indice, globo in enumerate(armada.globos)
-    ]
-    sitio = {indice: (globo.capa, globo.puesto) for indice, globo in enumerate(armada.globos)}
-
-    def preferido(globo: GloboSilueta) -> int:
-        capa, puesto = sitio[globo.indice]
-        return _celda(celdas, capa, puesto)
-
-    # ``armar`` ya los devolvió del fondo al frente y, a igual profundidad, de
-    # arriba abajo. No se reordena: ese es el orden del motor y el que decide
-    # quién tapa a quién.
-    return globos, preferido
-
-
-def _croquis_de_columna(
-    columna: Columna,
-    celdas: Sequence[Sequence[int]],
-    matriz: Sequence[Sequence[int]],
-    pulgadas: Sequence[int],
-    total: int,
-    presupuesto: PresupuestoGrafica,
-) -> Croquis:
-    """Croquis de una columna clásica, con el motor porteado del clasificador."""
-    try:
-        armada = armar_columna_clasica(columna)
-    except ColumnaInvalida:
-        return _sin_croquis("motor_rechazo")
-    if armada.total != total:
-        # La matriz del despiece y el armado hablarían de piezas distintas.
-        return _sin_croquis("despiece_incoherente")
-    if len(celdas) != armada.capas or any(
-        len(fila) != armada.globos_capa for fila in celdas
-    ):
-        return _sin_croquis("despiece_incoherente")
-    presupuesto.gastar(total)
-    orden, preferido = _lectura_columna(armada, celdas, pulgadas[0])
-    materiales = _materiales(orden, preferido, matriz, pulgadas)
-    if materiales is None:
-        return _sin_croquis("despiece_incoherente")
-    return Croquis(
-        posiciones=[
-            {
-                "x": round(globo.x, 4),
-                "y": round(globo.y, 4),
-                "r": round(globo.r, 4),
-                "capa": globo.capa,
-                "material": materiales[globo.indice],
-                # Una columna es un cilindro visto de frente: la profundidad es
-                # lo único que hace que se lea como tal. El giro va en cero
-                # porque sus globos no siguen ninguna línea: el óvalo se queda
-                # vertical, que es como se ven de verdad.
-                "prof": round(armada.globos[globo.indice].profundidad, 4),
-                "giro": 0,
-            }
-            for globo in orden
-        ],
-        motivo=None,
-    )
-
-
 def croquis_de_patron(
     pieza: PiezaSilueta,
     celdas: Sequence[Sequence[int]],
@@ -833,26 +588,6 @@ def croquis_de_patron(
     falta = presupuesto.motivo(total)
     if falta is not None:
         return _sin_croquis(falta)
-    arco = _arco_de_pieza(pieza, proporciones[0][0])
-    if arco is not None:
-        return _croquis_de_arco(
-            arco,
-            celdas,
-            matriz,
-            [pulgada for pulgada, _proporcion in proporciones],
-            total,
-            presupuesto,
-        )
-    columna = _columna_de_pieza(pieza, proporciones[0][0])
-    if columna is not None:
-        return _croquis_de_columna(
-            columna,
-            celdas,
-            matriz,
-            [pulgada for pulgada, _proporcion in proporciones],
-            total,
-            presupuesto,
-        )
     cupos = _cupos(matriz, [pulgadas for pulgadas, _proporcion in proporciones])
     peticion = _peticion(pieza, cupos, tipo)
     if peticion is None:
@@ -898,17 +633,8 @@ def pieza_desde_estructura(
     estructura_oficial: str | None,
     medidas: Mapping[str, object],
     armado: Mapping[str, object] | None = None,
-    densidad_arco: str | None = None,
-    densidad_columna: str | None = None,
-    arco_escalonado: bool = True,
 ) -> PiezaSilueta:
-    """``PiezaSilueta`` desde una estructura del plan ya completada.
-
-    ``densidad_arco`` y ``densidad_columna`` solo los manda quien ya sabe que la
-    pieza es un arco clásico o una columna clásica (``plan._ancho_de_arco_clasico``
-    y ``plan._capa_de_columna_clasica``), que son los mismos que deciden su
-    conteo: así el croquis y la cifra no pueden hablar de dos piezas.
-    """
+    """``PiezaSilueta`` desde una estructura del plan ya completada."""
 
     def metros(clave: str) -> float:
         valor = medidas.get(clave)
@@ -927,9 +653,6 @@ def pieza_desde_estructura(
         forma_guirnalda=forma if isinstance(forma, str) else None,
         caida_m=float(caida) if isinstance(caida, (int, float)) else None,
         anclajes=int(anclajes) if isinstance(anclajes, int) else None,
-        densidad_arco=densidad_arco,
-        densidad_columna=densidad_columna,
-        arco_escalonado=arco_escalonado,
     )
 
 

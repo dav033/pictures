@@ -1,4 +1,3 @@
-import { NOMBRE_DEL_RACIMO, densidadDeRacimoEnFoto } from "@/lib/plan/mezclas";
 import type { Brief } from "@/lib/types";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { ClaseTamanoNivel } from "@/lib/plan/armado-bouquet";
@@ -125,7 +124,7 @@ DISEÑO DE LA DECORACIÓN (activo)
 - La respuesta de confirmar_plan_decoracion incluye \`evento.event_label\`, \`evento.original_request\`, \`evento.match_levels\` y \`evento.relaxations\`; consérvalos en el resumen. Si aparece \`thematic\` o \`adaptable\`, dilo como propuesta temática/adaptable, nunca como coincidencia exacta.
 - PROPORCIONES DE LA FOTO: cuando un elemento trae "mezcla de color observada", esa mezcla es el punto de partida de materiales[].participacion (múltiplos de 0,05 que sumen 1) y el material de mayor participación va con rol_material "principal". Es una guía, no una orden: los colores que el cliente pidió explícitamente y lo que el catálogo de verdad cubre mandan sobre ella; si un color de la mezcla no se puede comprar, reparte su participación entre los que sí y cuéntaselo al cliente.
 - LO QUE CUESTA UN ACENTO CHIQUITO: cada color se compra por paquete cerrado en CADA tamaño de la mezcla, así que un acento con participación de 0,1 o menos puede salir en tres o cuatro paquetes para unos pocos globos. Con presupuesto ajustado, súbelo a 0,2 o más, o déjalo fuera y quédate con dos colores bien resueltos.
-- COLORES DE LA FOTO: usa en cada estructura los colores observados de SU elemento de referencia (con varias fotos, cada estructura sigue la paleta de su propia foto, no la de otra). Nunca armes una estructura con un color que la foto no tiene (por ejemplo, todo transparente para una foto rosa y plata) mientras el catálogo tenga los colores de la foto: si una búsqueda no te trae uno de esos colores, búscalo aparte con una consulta de un solo color ("globo latex redondo rosado") antes de confirmar. Si esa búsqueda devuelve "colores_en_catalogo", ahí están los globos del catálogo que SÍ tienen ese color: búscalos por su título y úsalos, en vez de armar la pieza sin ese color. Si una búsqueda de un color no lo trae, no la repitas: confirma con lo que tengas y el sistema le avisará al cliente que esa pieza no lleva ese color. Si confirmar_plan_decoracion devuelve "avisos_cliente", son colores dominantes de la foto que la propuesta no lleva, o ajustes de color y acabado que el sistema le hizo al plan (un acabado que ese producto no tiene, o el color real de un producto de un solo color): la tarjeta se los muestra al cliente uno por uno: menciónalos en una sola frase de tu resumen y ofrécele buscar esos colores.
+- COLORES DE LA FOTO: usa en cada estructura los colores observados de SU elemento de referencia (con varias fotos, cada estructura sigue la paleta de su propia foto, no la de otra). Nunca armes una estructura con un color que la foto no tiene (por ejemplo, todo transparente para una foto rosa y plata) mientras el catálogo tenga los colores de la foto: si una búsqueda no te trae uno de esos colores, búscalo aparte con una consulta de un solo color ("globo latex redondo rosado") antes de confirmar. Si esa búsqueda devuelve "colores_en_catalogo", ahí están los globos del catálogo que SÍ tienen ese color: búscalos por su título y úsalos, en vez de armar la pieza sin ese color. Si confirmar_plan_decoracion devuelve COLORES_REFERENCIA_OMITIDOS, arma esas estructuras con los colores de "colores_omitidos" y vuelve a confirmar; si una búsqueda de un color no lo trae, no la repitas: confirma con lo que tengas y el sistema avisará al cliente. Si devuelve "avisos_cliente", son colores dominantes de la foto que la propuesta no lleva, o ajustes de color y acabado que el sistema le hizo al plan (un acabado que ese producto no tiene, el color real de un producto de un solo color, o un globo de un color que la foto no tiene, que el sistema saca del plan antes de cotizar: no lo menciones como si estuviera incluido): la tarjeta se los muestra al cliente uno por uno: menciónalos en una sola frase de tu resumen y ofrécele buscar esos colores.
 - MEDIDAS DEL ESPACIO: no mides fotos. espacio.fuente "foto" solo dice que el TIPO de espacio (salón, jardín, terraza…) lo viste en la foto; no pongas ancho_m, alto_m ni largo_m del espacio salvo que el cliente te haya dado esas medidas (entonces fuente "cliente"). Si no las dio, omítelas: el sistema marca cualquier medida sin dato del cliente como estimada y le pide confirmarla.
 - "porque" de cada estructura: una frase corta para el cliente, en español y sin jerga, sobre para qué sirve la pieza en su evento ("Enmarca la mesa del pastel"). No menciones la imagen de referencia, la foto analizada, identificadores ni verbos como "materializa".
 - Después de confirmar_plan_decoracion el cliente verá el desglose completo antes de la imagen. Escribe solo 2 o 3 frases cálidas sobre el concepto. La tarjeta de la propuesta ya muestra uno por uno los supuestos, las sustituciones, los colores de la foto que no lleva y las piezas no disponibles, bajo "Ajustes que hice": no los enumeres. Si hay alguno, dilo en UNA sola frase breve en palabras del cliente ("te dejé en la tarjeta un par de ajustes que hice") y, si falta una pieza o un color que se pueda buscar, ofrécele buscarlo.
@@ -236,71 +235,13 @@ function conteoLeido(conteo: ConteoDelElemento): string {
       ? `unos ${conteo.estimado_total} globos (aproximado; ${conteo.globos_visibles} visibles)`
       : `${conteo.globos_visibles} globos visibles (aproximado, hay ocultos)`;
   const racimos = conteo.racimos !== null && conteo.globos_por_racimo !== null ? `, ${conteo.racimos} racimos de ${conteo.globos_por_racimo}` : "";
-  // El reparto por tamaño que leyó la foto decide si la pieza es clásica o
-  // orgánica, y hasta ahora se leía, se validaba y se tiraba antes de llegar
-  // aquí: el modelo elegía `organica_fina` por defecto y un arco de cuartetos
-  // —todos los globos del mismo tamaño— se cotizaba y se dibujaba como una
-  // guirnalda orgánica. Es evidencia de la foto, así que se le cuenta al
-  // modelo; decidir sigue siendo suyo (ADR-0037: la foto avisa, no impone).
-  const tamanos = tamanosLeidos(conteo.por_tamano);
-  // Y de cuántos globos son los racimos: en una pieza clásica eso dice la
-  // densidad, porque dice los globos por metro (ver `densidadDeRacimoEnFoto`).
-  // Sin esto el modelo la elige por el aspecto general y un arco de cuartetos
-  // sale declarado "lujosa": un 50 % más de globos de los que muestra la foto.
-  const densidad = densidadLeida(conteo.por_tamano, conteo.globos_por_racimo);
   const cantidad = cantidadDelConteo(conteo);
   const kit = cantidad === null
     ? ""
     : ` Si la pieza es un kit (bouquet, figura, racimo), declara unidades_declaradas ${cantidad} por pieza (sumando repeticiones): manda sobre el total de un armado leído.`;
   // Sin medidas del cliente, unas inventadas (0,5 m) centraban la ventana del
   // eje lejos de la foto (ADR-0031, enmienda 2026-09-28): que las deje vacías.
-  return `; conteo leído en la foto: ${cuenta}${racimos}.${tamanos}${densidad}${kit} Si es una estructura geométrica no calcules globos ni le pongas medidas que el cliente no dio (manda medidas vacío): al confirmar, Python ajusta densidad y medidas a esa cuenta`;
-}
-
-
-/**
- * La densidad que corresponde a los racimos que vio la foto, en una pieza de un
- * solo tamaño. Vacío si la pieza mezcla tamaños (entonces no es clásica) o si
- * el racimo no es uno de los del oficio.
- */
-function densidadLeida(
-  porTamano: NonNullable<ConteoDelElemento>["por_tamano"] | undefined,
-  globosPorRacimo: number | null,
-): string {
-  if (!globosPorRacimo || !esUnSoloTamano(porTamano)) return "";
-  const densidad = densidadDeRacimoEnFoto(globosPorRacimo);
-  const unidad = NOMBRE_DEL_RACIMO[globosPorRacimo];
-  if (!densidad || !unidad) return "";
-  return ` Sus racimos son de ${globosPorRacimo} globos, o sea ${unidad}s: en una pieza clásica eso es exactamente la densidad "${densidad}" — declárala así, no otra.`;
-}
-
-/** Desde qué parte del reparto una sola clase de tamaño es "todos del mismo". */
-const PARTE_UN_SOLO_TAMANO = 0.9;
-
-/**
- * Lo que el reparto por tamaño de la foto dice sobre la mezcla de la pieza.
- *
- * Una clase sola que se lleva casi todo es una pieza de un solo tamaño: un arco
- * o una columna de cuartetos, que se arma en anillos de globos iguales y se
- * cotiza con `clasica`. Varias clases son una pieza orgánica. Vacío cuando la
- * foto no permitió decirlo, que es un caso previsto de la lectura.
- */
-function esUnSoloTamano(porTamano: NonNullable<ConteoDelElemento>["por_tamano"] | undefined): boolean {
-  if (!porTamano?.length) return false;
-  const mayor = [...porTamano].sort((uno, otro) => otro.proporcion - uno.proporcion)[0]!;
-  return porTamano.length === 1 || mayor.proporcion >= PARTE_UN_SOLO_TAMANO;
-}
-
-function tamanosLeidos(porTamano: NonNullable<ConteoDelElemento>["por_tamano"] | undefined): string {
-  if (!porTamano?.length) return "";
-  const mayor = [...porTamano].sort((uno, otro) => otro.proporcion - uno.proporcion)[0]!;
-  if (esUnSoloTamano(porTamano)) {
-    return ` Todos los globos de la pieza son del mismo tamaño (${mayor.clase}): es una pieza CLÁSICA, de anillos de globos iguales, así que va con mezcla "clasica" — no con una orgánica.`;
-  }
-  const reparto = porTamano
-    .map((item) => `${item.clase} ${Math.round(item.proporcion * 100)} %`)
-    .join(", ");
-  return ` Tamaños vistos en la pieza: ${reparto} — mezcla orgánica.`;
+  return `; conteo leído en la foto: ${cuenta}${racimos}.${kit} Si es una estructura geométrica no calcules globos ni le pongas medidas que el cliente no dio (manda medidas vacío): al confirmar, Python ajusta densidad y medidas a esa cuenta`;
 }
 
 /**

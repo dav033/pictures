@@ -26,22 +26,6 @@ const ESQUEMAS: Readonly<Record<IdEstilo, readonly Punto[]>> = {
   espiral: filas([[A, B, B], [B, A, B], [B, B, A], [A, B, B]]),
   zigzag: filas([[A, B, B], [B, A, B], [A, B, B], [B, A, B]]),
   recto: filas([[A, B, A], [A, B, A], [A, B, A], [A, B, A]]),
-  // Alternado globo a globo y corrido una posición por fila: ningún globo
-  // queda junto a otro de su mismo tono, ni al lado ni arriba.
-  intercalado: filas([[A, B, A], [B, A, B], [A, B, A], [B, A, B]]),
-  franjas: filas([[A, A, B], [A, B, B], [B, B, A], [B, A, A]]),
-  chevron: filas([[B, A, B], [A, B, A], [A, B, A], [B, A, B]]),
-  // Un rombo: el globo del centro, su contorno y el fondo.
-  diamante: rejilla((fila, columna) => {
-    const distancia = Math.abs(fila - 1.5) + Math.abs(columna - 1.5);
-    return distancia < 1 ? A : distancia < 2.5 ? C : B;
-  }),
-  punteado: rejilla((fila, columna) => (fila % 2 === 0 && columna % 2 === 0 ? A : B)),
-  // Los tres que pintan por COLUMNA: capas del borde al centro, una banda por
-  // color, y el lado de afuera contra el de adentro.
-  apilado: filas([[A, C, A], [A, C, A], [A, C, A], [A, C, A]]),
-  arcoiris: filas([[A, C, B], [A, C, B], [A, C, B], [A, C, B]]),
-  doslados: filas([[A, A, B], [A, A, B], [A, A, B], [A, A, B]]),
   anillos: filas([[A, A, A], [B, B, B], [A, A, A], [B, B, B]]),
   bloques: filas([[A, A, A], [A, A, A], [B, B, B], [B, B, B]]),
   degradado: filas([[A, A, A], [A, C, A], [C, B, C], [B, B, B]]),
@@ -54,7 +38,7 @@ const ESQUEMAS: Readonly<Record<IdEstilo, readonly Punto[]>> = {
   zonas: rejilla((fila, columna) => (fila + (3 - columna) <= 1 || (3 - fila) + columna <= 1 ? A : B)),
 };
 
-const REJILLA: ReadonlySet<IdEstilo> = new Set<IdEstilo>(["diagonal", "damero", "zonas", "diamante", "punteado"]);
+const REJILLA: ReadonlySet<IdEstilo> = new Set<IdEstilo>(["diagonal", "damero", "zonas"]);
 
 export function IconoEstilo({ estilo, className }: { estilo: IdEstilo; className?: string }) {
   const radio = REJILLA.has(estilo) ? 2.3 : 2.6;

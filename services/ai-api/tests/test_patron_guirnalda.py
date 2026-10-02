@@ -115,15 +115,12 @@ def test_sin_armado_el_preset_es_el_de_antes() -> None:
     ]
     assert "globos_por_racimo" not in confeti
     # Un solo tamaño: espiral de cuartetos. Racimo de 4 con 0,6/0,4: una posición por
-    # color y las 2 que quedan por mayor resto de (1,4; 0,6) -> [1, 1] -> {A:2, B:2}.
-    # Van AGRUPADAS (A,A,B,B) desde el 2026-10-01: un color en puestos seguidos
-    # del racimo es lo que hace que el giro del armado dibuje una espiral y no
-    # un tejido de cuadros. El reparto no cambió, solo el orden.
+    # color y las 2 que quedan por mayor resto de (1,4; 0,6) -> [1, 1] -> A,B,A,B.
     espiral = sugerir_patron(_guirnalda(un_tamano=True))
     assert espiral == {
         "version": "patron-color.v1",
         "origen": "sugerido",
-        "base": {"modo": "espiral", "racimo": [0, 0, 1, 1], "trazo": "espiral"},
+        "base": {"modo": "espiral", "racimo": [0, 1, 0, 1], "trazo": "espiral"},
     }
 
 
@@ -141,16 +138,16 @@ def test_la_unidad_de_un_armado_solo_cuenta_en_una_guirnalda() -> None:
     ("partes", "racimo", "base"),
     [
         # Cuarteto con dos colores (0,6/0,4): A,B,A,B, igual que el preset de un tamaño.
-        ((0.6, 0.4), 4, {"modo": "espiral", "racimo": [0, 0, 1, 1], "trazo": "espiral"}),
+        ((0.6, 0.4), 4, {"modo": "espiral", "racimo": [0, 1, 0, 1], "trazo": "espiral"}),
         # Trío: una por color y la que queda por mayor resto de (0,8; 0,2) -> A,B,A.
-        ((0.6, 0.4), 3, {"modo": "espiral", "racimo": [0, 0, 1], "trazo": "espiral"}),
+        ((0.6, 0.4), 3, {"modo": "espiral", "racimo": [0, 1, 0], "trazo": "espiral"}),
         # Quinteto con tres colores (0,5/0,3/0,2): una por color y las 2 que quedan por
         # mayor resto de (1,5; 0,5; 0) -> 1,5 y 0,5 empatan en resto y gana A: A:3, B:1,
         # C:1, intercalados sin repetir el anterior -> A,B,A,C,A.
         (
             (0.5, 0.3, 0.2),
             5,
-            {"modo": "espiral", "racimo": [0, 0, 0, 1, 2], "trazo": "espiral"},
+            {"modo": "espiral", "racimo": [0, 1, 0, 2, 0], "trazo": "espiral"},
         ),
         # Cuatro colores no caben en un trío: anillos, un color por racimo, de mayor
         # a menor participación.
@@ -234,15 +231,6 @@ def test_modos_admitidos_ofrecen_espejo_solo_en_u_invertida() -> None:
     u = modos_admitidos(_guirnalda(racimo=4, forma="u_invertida"))
     assert [(item["modo"], item["espejo"]) for item in u] == [
         ("espiral", True),
-        ("intercalado", True),
-        ("franjas", True),
-        ("zigzag", True),
-        ("chevron", True),
-        ("diamante", True),
-        ("punteado", True),
-        ("apilado", True),
-        ("arcoiris", True),
-        ("doslados", True),
         ("anillos", True),
         ("bloques", True),
         ("degradado", True),
@@ -316,7 +304,7 @@ def test_filas_de_racimos_respeta_el_espejo_y_los_acentos() -> None:
 
 def test_filas_de_racimos_no_cambia_los_pintados_ni_la_pared() -> None:
     pintado = _patron(
-        {"modo": "espiral", "racimo": [0, 0, 1, 1], "trazo": "espiral"},
+        {"modo": "espiral", "racimo": [0, 1, 0, 1], "trazo": "espiral"},
         pintados=[{"fila": 0, "material": 1}],
     )
     assert filas_de_racimos(_guirnalda(racimo=4), pintado, 8) is None
@@ -355,11 +343,9 @@ async def test_una_guirnalda_armada_recibe_el_patron_por_racimo_y_lo_sigue() -> 
     )
     patron = cast(dict[str, object], estructura_del_plan(resuelto)["patron_color"])
     assert patron["globos_por_racimo"] == 3
-    assert patron["base"] == {"modo": "espiral", "racimo": [0, 0, 1], "trazo": "espiral"}
+    assert patron["base"] == {"modo": "espiral", "racimo": [0, 1, 0], "trazo": "espiral"}
     racimos = _materiales_por_racimo(resuelto)
-    # El racimo del patrón llega tal cual a cada trío de la guirnalda: el color
-    # va en puestos seguidos, que es lo que hace espiral al girar el armado.
-    assert racimos and all(racimo == [0, 0, 1] for racimo in racimos)
+    assert racimos and all(racimo == [0, 1, 0] for racimo in racimos)
 
 
 @pytest.mark.anyio

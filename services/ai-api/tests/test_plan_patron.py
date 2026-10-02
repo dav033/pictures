@@ -45,7 +45,7 @@ SECRET = "p" * 32
 ESPIRAL = {
     "version": "patron-color.v1",
     "origen": "decorador",
-    "base": {"modo": "espiral", "racimo": [0, 0, 1, 2], "trazo": "espiral"},
+    "base": {"modo": "espiral", "racimo": [0, 1, 0, 2], "trazo": "espiral"},
 }
 
 
@@ -397,7 +397,7 @@ async def test_completar_patrones_asigna_el_preset_y_queda_fijo() -> None:
     assert _patron_del_plan(resolved) == {
         "version": "patron-color.v1",
         "origen": "sugerido",
-        "base": {"modo": "espiral", "racimo": [0, 0, 1, 2], "trazo": "espiral"},
+        "base": {"modo": "espiral", "racimo": [0, 1, 0, 2], "trazo": "espiral"},
     }
     assert _por_color(resolved) == {"blanco": 20, "negro": 10, "azul": 10}
     # Sin volver a pedir completar, el plan que salió se resuelve igual.
@@ -645,7 +645,7 @@ async def test_reemplazar_un_color_con_patron_nombra_el_patron_con_lo_que_se_com
     assert _por_color(resuelto) == {"blanco": 20, "negro": 10, "rojo": 10}
     assert _conteo_por_color(resuelto) == _por_color(resuelto)
     patron = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
-    assert "(white, white, black, red around each cluster)" in str(patron["prompt_gemini"])
+    assert "(white, black, white, red around each cluster)" in str(patron["prompt_gemini"])
     assert (
         patron["prompt_lora"]
         == "wrapped in a spiral of white, black and red stripes winding from base to top"
@@ -1335,7 +1335,7 @@ def test_sugerir_para_una_estructura() -> None:
     assert sugerir_patron_para_estructura(plan, "EST_01_COLUMNA") == {
         "version": "patron-color.v1",
         "origen": "sugerido",
-        "base": {"modo": "espiral", "racimo": [0, 0, 1, 2], "trazo": "espiral"},
+        "base": {"modo": "espiral", "racimo": [0, 1, 0, 2], "trazo": "espiral"},
     }
     assert sugerir_patron_para_estructura(plan, "EST_02_KIT") is None
     with pytest.raises(PlanResolutionError) as raised:

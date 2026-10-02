@@ -734,28 +734,28 @@
       "balloons": [
         {
           "color": "violeta",
-          "design_quantity": 67,
+          "design_quantity": 71,
           "finish": null,
           "product_id": "P-25-VIOLETA",
-          "required_quantity": 67,
+          "required_quantity": 71,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-25-VIOLETA-12",
-          "waste_adjusted_quantity": 67,
+          "waste_adjusted_quantity": 71,
           "waste_reserve": 0
         },
         {
           "color": "burdeos",
-          "design_quantity": 45,
+          "design_quantity": 47,
           "finish": null,
           "product_id": "P-25-MERLOT",
-          "required_quantity": 45,
+          "required_quantity": 47,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-25-MERLOT-12",
-          "waste_adjusted_quantity": 45,
+          "waste_adjusted_quantity": 47,
           "waste_reserve": 0
         },
         {
@@ -789,20 +789,20 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 8550,
-          "design_quantity": 45,
-          "leftover_inventory": 5,
-          "operational_surplus": 5,
+          "consumption_cost": 8930,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
           "package_count": 1,
-          "potential_surplus": 5,
+          "potential_surplus": 3,
           "product_id": "P-25-MERLOT",
           "purchase_cost": 9500,
           "purchase_quantity": 50,
-          "required_quantity": 45,
+          "required_quantity": 47,
           "units_per_package": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-25-MERLOT-12",
-          "waste_adjusted_quantity": 45,
+          "waste_adjusted_quantity": 47,
           "waste_reserve": 0
         },
         {
@@ -825,39 +825,39 @@
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 13860,
-          "design_quantity": 67,
-          "leftover_inventory": 23,
-          "operational_surplus": 23,
+          "consumption_cost": 14760,
+          "design_quantity": 71,
+          "leftover_inventory": 18,
+          "operational_surplus": 18,
           "package_count": 2,
-          "potential_surplus": 33,
+          "potential_surplus": 29,
           "product_id": "P-25-VIOLETA",
           "purchase_cost": 18000,
           "purchase_quantity": 100,
-          "required_quantity": 77,
+          "required_quantity": 82,
           "units_per_package": 50,
-          "used": 67,
+          "used": 71,
           "variant_id": "V-25-VIOLETA-12",
-          "waste_adjusted_quantity": 77,
-          "waste_reserve": 10
+          "waste_adjusted_quantity": 82,
+          "waste_reserve": 11
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 25610,
-        "covered_waste_reserve": 10,
-        "design_quantity": 122,
-        "natural_package_surplus": 53,
-        "operational_surplus": 43,
-        "potential_surplus": 53,
+        "consumption_cost": 26890,
+        "covered_waste_reserve": 11,
+        "design_quantity": 128,
+        "natural_package_surplus": 47,
+        "operational_surplus": 36,
+        "potential_surplus": 47,
         "purchase_cost": 35500,
         "purchase_quantity": 175,
-        "required_quantity": 132,
-        "target_waste_reserve": 10,
+        "required_quantity": 139,
+        "target_waste_reserve": 11,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 132,
-        "waste_only_savings_cop": 0
+        "waste_adjusted_quantity": 139,
+        "waste_only_savings_cop": 9500
       },
       "version": "design-material-estimate-v1",
       "warnings": [
@@ -880,8 +880,8 @@
         {
           "additional_package_for_waste": false,
           "color": "burdeos",
-          "consumption_cost": 8550,
-          "design_quantity": 45,
+          "consumption_cost": 8930,
+          "design_quantity": 47,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -894,26 +894,26 @@
           ],
           "imagen": "https://cdn.example.test/v-25-merlot-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 5,
+          "leftover_inventory": 3,
           "paquetes": 1,
           "precio_paquete": 9500,
           "product_id": "P-25-MERLOT",
           "purchase_cost": 9500,
           "purchase_quantity": 50,
-          "required_quantity": 45,
+          "required_quantity": 47,
           "sku": "SKU-V-25-MERLOT-12",
           "sku_original": "SHOP-V-25-MERLOT-12",
-          "sobrante": 5,
+          "sobrante": 3,
           "source_snapshot_id": "SNAP-GOLDEN-25",
           "source_variant_id": "SOURCE-V-25-MERLOT-12",
           "subtotal": 9500,
           "tamano_codigo": "R-12",
           "titulo": "Globo Latex Redondo Fashion Merlot — R-12",
-          "unidades_con_merma": 45,
+          "unidades_con_merma": 47,
           "unidades_inferidas": false,
-          "unidades_necesarias": 45,
+          "unidades_necesarias": 47,
           "unidades_paquete": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-25-MERLOT-12",
           "waste_reserve": 0
         },
@@ -960,8 +960,8 @@
         {
           "additional_package_for_waste": false,
           "color": "violeta",
-          "consumption_cost": 13860,
-          "design_quantity": 67,
+          "consumption_cost": 14760,
+          "design_quantity": 71,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -974,33 +974,33 @@
           ],
           "imagen": "https://cdn.example.test/v-25-violeta-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 23,
+          "leftover_inventory": 18,
           "paquetes": 2,
           "precio_paquete": 9000,
           "product_id": "P-25-VIOLETA",
           "purchase_cost": 18000,
           "purchase_quantity": 100,
-          "required_quantity": 77,
+          "required_quantity": 82,
           "sku": "SKU-V-25-VIOLETA-12",
           "sku_original": "SHOP-V-25-VIOLETA-12",
-          "sobrante": 33,
+          "sobrante": 29,
           "source_snapshot_id": "SNAP-GOLDEN-25",
           "source_variant_id": "SOURCE-V-25-VIOLETA-12",
           "subtotal": 18000,
           "tamano_codigo": "R-12",
           "titulo": "Globo Latex Redondo Fashion Violeta — R-12",
-          "unidades_con_merma": 77,
+          "unidades_con_merma": 82,
           "unidades_inferidas": false,
-          "unidades_necesarias": 67,
+          "unidades_necesarias": 71,
           "unidades_paquete": 50,
-          "used": 67,
+          "used": 71,
           "variant_id": "V-25-VIOLETA-12",
-          "waste_reserve": 10
+          "waste_reserve": 11
         }
       ],
       "costes_por_estructura": [
         {
-          "consumo_cop": 20610,
+          "consumo_cop": 21710,
           "estructura_id": "EST_01_ARCO"
         },
         {
@@ -1034,7 +1034,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo Latex Redondo Fashion Violeta — R-12",
-              "unidades": 67,
+              "unidades": 71,
               "unidades_inferidas": false,
               "variant_id": "V-25-VIOLETA-12"
             },
@@ -1059,7 +1059,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo Latex Redondo Fashion Merlot — R-12",
-              "unidades": 45,
+              "unidades": 47,
               "unidades_inferidas": false,
               "variant_id": "V-25-MERLOT-12"
             }
@@ -1069,14 +1069,14 @@
               "diam_pulg": 12.0,
               "forma": "redondo",
               "pct": 100.0,
-              "unidades": 112
+              "unidades": 118
             }
           ],
           "nombre": "Arco focal",
           "repeticiones": 1,
           "supuestos": [],
           "tipo": "arco",
-          "total_unidades": 112,
+          "total_unidades": 118,
           "ubicacion": "arco_central"
         },
         {
@@ -1201,7 +1201,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "bf8a93c64b3258748ec8aca99846da29e11e15a8d3fb3612cd436a6820d02685",
+      "plan_hash": "b74857e01d43ae447321cc40f7a27c44dd2ff7db9da53416768d2a6cfb39ae39",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -1209,38 +1209,38 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 25610,
-        "covered_waste_reserve": 10,
-        "design_quantity": 122,
+        "consumption_cost": 26890,
+        "covered_waste_reserve": 11,
+        "design_quantity": 128,
         "globos_por_tamano": {
-          "R-12": 122
+          "R-12": 128
         },
         "incluye_iva": true,
         "merma_porcentaje": 8.0,
-        "natural_package_surplus": 53,
+        "natural_package_surplus": 47,
         "purchase_cost": 35500,
-        "target_waste_reserve": 10,
+        "target_waste_reserve": 11,
         "total_cop": 35500,
-        "total_unidades": 122,
+        "total_unidades": 128,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 0
+        "waste_only_savings_cop": 9500
       }
     },
     "quote": {
-      "consumption_cost_cop": 25610,
-      "covered_waste_reserve": 10,
+      "consumption_cost_cop": 26890,
+      "covered_waste_reserve": 11,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 43,
+      "leftover_inventory": 36,
       "lines": [
         {
           "available": true,
           "color": "burdeos",
-          "consumption_cost_cop": 8550,
-          "design_quantity": 45,
+          "consumption_cost_cop": 8930,
+          "design_quantity": 47,
           "diameter_inches": 12.0,
           "id": "V-25-MERLOT-12",
-          "leftover_inventory": 5,
+          "leftover_inventory": 3,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1252,17 +1252,17 @@
           "product_id": "P-25-MERLOT",
           "purchase_cost_cop": 9500,
           "purchase_quantity": 50,
-          "required_quantity": 45,
+          "required_quantity": 47,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_ARCO"
           ],
           "subtotal_cop": 9500,
-          "surplus": 5,
+          "surplus": 3,
           "title": "Globo Latex Redondo Fashion Merlot — R-12",
           "units_per_package": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-25-MERLOT-12",
           "waste_reserve": 0
         },
@@ -1302,11 +1302,11 @@
         {
           "available": true,
           "color": "violeta",
-          "consumption_cost_cop": 13860,
-          "design_quantity": 67,
+          "consumption_cost_cop": 14760,
+          "design_quantity": 71,
           "diameter_inches": 12.0,
           "id": "V-25-VIOLETA-12",
-          "leftover_inventory": 23,
+          "leftover_inventory": 18,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1318,26 +1318,26 @@
           "product_id": "P-25-VIOLETA",
           "purchase_cost_cop": 18000,
           "purchase_quantity": 100,
-          "required_quantity": 77,
+          "required_quantity": 82,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_ARCO"
           ],
           "subtotal_cop": 18000,
-          "surplus": 33,
+          "surplus": 29,
           "title": "Globo Latex Redondo Fashion Violeta — R-12",
           "units_per_package": 50,
-          "used": 67,
+          "used": 71,
           "variant_id": "V-25-VIOLETA-12",
-          "waste_reserve": 10
+          "waste_reserve": 11
         }
       ],
-      "plan_hash": "bf8a93c64b3258748ec8aca99846da29e11e15a8d3fb3612cd436a6820d02685",
+      "plan_hash": "b74857e01d43ae447321cc40f7a27c44dd2ff7db9da53416768d2a6cfb39ae39",
       "purchase_cost_cop": 35500,
       "schema_version": "quote.v1",
       "supported_complements": false,
-      "target_waste_reserve": 10,
+      "target_waste_reserve": 11,
       "total_cop": 35500,
       "waste_percentage": 8.0
     }

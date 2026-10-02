@@ -51,17 +51,6 @@ import { loadVectors } from "../lib/vectores-golden";
  * vectores dorados) y los patrones, salidas de Python fijadas a mano en
  * `scripts/fixtures/patron-color-prompt/patrones.json`: no son un oráculo de
  * conteo. Determinista y sin red.
- * Recaptura del 2026-09-30 (arco clasico): la estructura oficial `arco` paso a
- * ser el ARCO CLASICO, asi que su sustantivo en ingles dejo de ser «organic
- * balloon garland arch». Se comprobo entrada por entrada que el diff es SOLO
- * ese renombre: 6 de las 10 cambiaron y para cada una, aplicando al oraculo
- * viejo unicamente las sustituciones del nombre (incluido el articulo, «an
- * organic» -> «a classic»), sale exactamente lo que genera el codigo de ahora;
- * las otras 4 no cambiaron. Ningun numero, ninguna frase de patron y ninguna
- * agrupacion se movio. Las entradas `gemini/*` siguen diciendo «organic
- * balloon arch» a proposito: sus escenas sinteticas no declaran estructura
- * oficial, asi que el sustantivo sale de la tabla por tipo, que es el respaldo.
- *
  * Run: npx tsx --conditions=react-server scripts/test/test-patron-color-prompt.ts
  */
 

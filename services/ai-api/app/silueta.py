@@ -74,28 +74,12 @@ TIPOS: tuple[TipoSilueta, ...] = (
 _TIPOS_BANDA: frozenset[str] = frozenset({"arco", "semiarco", "guirnalda", "columna"})
 _TIPOS_PARED: frozenset[str] = frozenset({"pared_densa", "pared_organica"})
 
-#: Cuánto queda un globo por debajo de su diámetro nominal, **como factor
-#: lineal**. Ya no lo usa ``diametro_inflado_m``: la medida de verdad es la
-#: tabla ``_INFLADO_PULGADAS``, porque un globo no se infla proporcional a su
-#: etiqueta. Sigue aquí porque es el mismo 0,92 que ``plan.py`` escribe a mano
-#: cuatro veces dentro de la fórmula de densidad λ, que se **calibró** con él:
-#: cambiárselo movería el precio de paredes, guirnaldas y semiarcos. Son dos
-#: definiciones conviviendo, y esta es la que falta migrar.
+#: Cuánto queda un globo por debajo de su diámetro nominal al inflarlo al
+#: tamaño del oficio. ``plan.py`` multiplica hoy por este mismo 0,92 escrito a
+#: mano dentro de ``_total_globos``; al integrar el motor esa constante apunta
+#: aquí y queda un solo dueño (pendiente de la fase de integración).
 FACTOR_INFLADO = 0.92
 _PULGADA_M = 0.0254
-
-#: A cuántas pulgadas reales queda inflado cada tamaño nominal. Dueño:
-#: ``src/lib/plan/mezclas.ts`` (``INFLADO_PULGADAS``), que lo exporta al
-#: contrato igual que la tabla de mezclas y los armados.
-_INFLADO_PULGADAS: dict[float, float] = {
-    float(nominal): float(pulgadas)
-    for nominal, pulgadas in cast(
-        dict[str, float],
-        cast(dict[str, object], contract_schema("PlanDecoracion")["x-reglas-mezclas"])[
-            "inflado_pulgadas"
-        ],
-    ).items()
-}
 
 #: Cuánto se pueden meter dos globos uno en otro según su distancia en
 #: profundidad (fracción de la suma de radios). Dos globos de la misma capa casi
@@ -493,31 +477,8 @@ class Disposicion:
 
 
 def diametro_inflado_m(pulgadas: float) -> float:
-    """Diámetro (m) al que queda un globo de ese tamaño nominal al inflarlo.
-
-    Sale de la tabla del oficio (``x-reglas-mezclas.inflado_pulgadas``, dueño
-    ``src/lib/plan/mezclas.ts``), que es la ``INFLADO_PULG`` del clasificador. No
-    es ``nominal × un factor``: un R-5 queda en 4″ —un 80 % de su etiqueta— y un
-    R-12 en 10,5″, un 87,5 %. El factor lineal que había antes le daba a un R-18
-    un 15 % de más.
-
-    Un tamaño que no esté en la tabla se interpola entre los dos vecinos, y por
-    debajo o por encima se estira el extremo. Los cinco del catálogo están todos
-    en la tabla, así que eso no le pasa a nada que se cotice.
-    """
-    puntos = _INFLADO_PULGADAS
-    if pulgadas in puntos:
-        return puntos[pulgadas] * _PULGADA_M
-    nominales = sorted(puntos)
-    if pulgadas <= nominales[0]:
-        bajo, alto = nominales[0], nominales[1]
-    elif pulgadas >= nominales[-1]:
-        bajo, alto = nominales[-2], nominales[-1]
-    else:
-        alto = next(n for n in nominales if n > pulgadas)
-        bajo = nominales[nominales.index(alto) - 1]
-    avance = (pulgadas - bajo) / (alto - bajo)
-    return (puntos[bajo] + (puntos[alto] - puntos[bajo]) * avance) * _PULGADA_M
+    """Diámetro (m) al que queda un globo de ese tamaño nominal al inflarlo."""
+    return pulgadas * _PULGADA_M * FACTOR_INFLADO
 
 
 def _rango(pulgadas: float) -> float:

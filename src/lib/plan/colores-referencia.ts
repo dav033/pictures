@@ -302,14 +302,85 @@ export function coloresElementoReferencia(blueprint: Pick<ReferenceBlueprintV2, 
 }
 
 /**
+ * Todo lo que un elemento de la foto muestra, sin el tope de
+ * `MAX_COLORES_REFERENCIA` y sin filtrar al catálogo: los colores de sus
+ * etiquetas y los medidos en píxeles.
+ *
+ * Los dominantes son lo que una pieza DEBE llevar, y por eso van acotados a
+ * tres. Esto es lo contrario: la lista contra la que se decide si un color que
+ * el plan compra existe en la foto. Acotarla aquí acusaría de invención al
+ * cuarto color de una foto que sí lo tiene.
+ */
+export function coloresObservadosElemento(apariencia: AparienciaColor): string[] {
+  const colores = coloresObservados(apariencia);
+  for (const entrada of apariencia.measured_colors ?? []) {
+    if (!colores.includes(entrada.color)) colores.push(entrada.color);
+  }
+  return colores;
+}
+
+export type MaterialColorInventado = { estructura_id: string; product_id: string; color: string };
+
+/**
  * `transparente` es un acabado, no un tono, y `multicolor` no es un color: un
  * globo cristal o un confeti no prometen un tono que la foto no tenga, así que
- * ninguno exige acabado. La pérdida de un color de la foto se le reporta al
- * cliente como sustitución (`sustitucionesColorReferencia`); ya no se rechaza
- * un plan por ella.
+ * ninguno se juzga contra ella. Que una pieza se arme ENTERA en transparente
+ * para una foto rosa y plata lo sigue atendiendo `coloresReferenciaOmitidos`,
+ * que es la mitad de la auditoría que mira la pérdida.
  */
 const COLORES_SIN_TONO: ReadonlySet<string> = new Set([TRANSPARENTE, "multicolor"]);
 
+/**
+ * Materiales cuyo color la foto no tiene: el espejo que le faltaba a
+ * `coloresReferenciaOmitidos`.
+ *
+ * Toda la maquinaria de color miraba en una sola dirección —los colores de la
+ * foto que el plan NO compra— y nada vigilaba el caso inverso. El 2026-09-29,
+ * con una pared de globos leída bien (blush perlado, dorado cromado, blanco
+ * mate), el modelo compró además un "Reflex Fucsia" que la foto nunca tuvo, y
+ * de ahí en cadena la pista de patrón de la foto no encontró material para su
+ * rosado y el armado cayó al preset de confeti. El prompt ya lo prohibía con
+ * palabras; el modelo las ignoró.
+ *
+ * Una invención NO es una sustitución. La diferencia se mide con el mismo
+ * modelo cromático que ADR-0024 usa para resolver "gris" como "plateado" a
+ * ΔE 16: `colorCatalogoMasCercano` devuelve `undefined` por encima de
+ * `DELTA_E_MAXIMO`. "dorado rosa" está a 23 del "rosado" observado —es la
+ * sustitución que `sustitucionesColorReferencia` ya le reporta al cliente— y
+ * "fucsia" a 48 del rosado, 88 del blanco y 97 del dorado: no está en la foto.
+ *
+ * Solo juzga estructuras que materializan un elemento (`referencia_element_id`)
+ * y solo cuando se pudo leer TODA su paleta: una etiqueta que la taxonomía no
+ * alias a propósito ("copper", "taupe") es color de la foto que no vemos, y sin
+ * verlo no se puede afirmar que un material no le corresponda.
+ *
+ * Pura: sin proveedor, HTTP, base de datos ni entorno.
+ */
+export function materialesDeColorInventado<E extends {
+  estructura_id: string;
+  referencia_element_id?: string;
+  materiales: ReadonlyArray<{ product_id: string; color?: string }>;
+}>(estructuras: readonly E[], blueprint: Pick<ReferenceBlueprintV2, "elements"> | undefined): MaterialColorInventado[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const inventados: MaterialColorInventado[] = [];
+  for (const estructura of estructuras) {
+    const elemento = estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id) : undefined;
+    if (!elemento) continue;
+    if (elemento.appearance.observed_colors.some((etiqueta) => coloresDeEtiqueta(etiqueta).length === 0)) continue;
+    const observados = coloresObservadosElemento(elemento.appearance).map(normalizarColor).filter(Boolean);
+    if (observados.length === 0) continue;
+    for (const material of estructura.materiales) {
+      const color = normalizarColor(material.color ?? "");
+      if (!color || COLORES_SIN_TONO.has(color) || observados.includes(color)) continue;
+      // Sin tono medible no hay distancia que sostenga la acusación.
+      if (!LAB_COLORES[color]) continue;
+      if (colorCatalogoMasCercano(color, observados)) continue;
+      inventados.push({ estructura_id: estructura.estructura_id, product_id: material.product_id, color });
+    }
+  }
+  return inventados;
+}
 
 export type AcabadoObservadoMaterial = { estructura_id: string; product_id: string; color: string; acabado: string };
 
@@ -323,7 +394,8 @@ export type AcabadoObservadoMaterial = { estructura_id: string; product_id: stri
  * (2026-09-29). Esto devuelve lo que la foto exige, material por material, para
  * que `aplicarAcabadoReferencia` (cobertura-materiales.ts) lo respete o lo avise.
  *
- * A qué color de la foto sirve un material se decide por distancia cromática
+ * A qué color de la foto sirve un material se decide con el mismo criterio con
+ * que `materialesDeColorInventado` distingue una sustitución de una invención
  * (ADR-0024, ΔE): el "dorado rosa" que se compró está a 23 del "rosado"
  * observado, así que sirve al blush y debe llevar SU acabado, no el del dorado.
  * El vecino se busca entre TODOS los colores dominantes, no solo entre los que
@@ -467,3 +539,71 @@ export type ProductoColorDisponible = {
   /** Available round sizes (inches) inside the active catalog pool, when known. */
   diametros?: readonly number[];
 };
+
+export type ColorReferenciaOmitido = {
+  estructura_id: string;
+  nombre: string;
+  color: string;
+  productos: ProductoColorDisponible[];
+};
+
+/** Catalog categories whose products can build a balloon structure in a photo color. */
+const CATEGORIAS_GLOBO_COLOR = new Set(["globo_latex"]);
+
+/**
+ * Photo colors each candidate of this turn's search offers as a round latex
+ * balloon (the material a photo's balloon structure is built with). Pure.
+ */
+export function productosGloboPorColor(
+  candidatos: ReadonlyArray<{ productId: string; titulo: string; categoria: string | null; colores: readonly string[]; variantes: ReadonlyArray<{ forma: string | null; colores: readonly string[]; disponible: boolean; diamPulg?: number | null }> }>,
+  colores: readonly string[],
+): Map<string, ProductoColorDisponible[]> {
+  const buscados = new Set(colores.map(normalizarColor));
+  const resultado = new Map<string, ProductoColorDisponible[]>();
+  for (const candidato of candidatos) {
+    if (!candidato.categoria || !CATEGORIAS_GLOBO_COLOR.has(candidato.categoria)) continue;
+    const redondas = candidato.variantes.filter((variante) => variante.disponible && variante.forma === "redondo");
+    if (redondas.length === 0) continue;
+    const coloresProducto = new Set([...candidato.colores, ...redondas.flatMap((variante) => variante.colores)].map(normalizarColor));
+    for (const color of buscados) {
+      if (!coloresProducto.has(color)) continue;
+      const lista = resultado.get(color) ?? [];
+      if (!lista.some((item) => item.product_id === candidato.productId)) {
+        const diametros = [...new Set(redondas.map((variante) => variante.diamPulg).filter((diametro): diametro is number => typeof diametro === "number"))];
+        lista.push({ product_id: candidato.productId, titulo: candidato.titulo, en_busqueda: true, diametros });
+      }
+      resultado.set(color, lista);
+    }
+  }
+  return resultado;
+}
+
+/**
+ * Dominant photo colors a structure dropped although the catalog offers them
+ * (E2E 2026-09-14: "Semiarcos rosa y plata" was quoted 100 % transparent with
+ * three color notices while the active catalog had pink and silver balloons).
+ * `sustitucionesColorReferencia` only reports the loss; this lets
+ * `confirmar_plan_decoracion` refuse it while a real alternative exists. A color
+ * the catalog does not offer (`disponibles` has no entry) is not returned: the
+ * plan goes on and the resolver records the notice. Pure.
+ */
+export function coloresReferenciaOmitidos<E extends { estructura_id: string; nombre: string; colores_referencia?: readonly string[]; materiales: ReadonlyArray<{ color?: string }> }>(
+  estructuras: readonly E[],
+  disponibles: ReadonlyMap<string, readonly ProductoColorDisponible[]>,
+  /** Whether a product can actually build this structure (its sizes fit the structure's mix). Default: yes. */
+  sirveParaEstructura: (estructura: E, producto: ProductoColorDisponible) => boolean = () => true,
+): ColorReferenciaOmitido[] {
+  const omitidos: ColorReferenciaOmitido[] = [];
+  for (const estructura of estructuras) {
+    const usados = new Set(estructura.materiales.map((material) => normalizarColor(material.color ?? "")).filter(Boolean));
+    for (const color of new Set((estructura.colores_referencia ?? []).map(normalizarColor))) {
+      // A photo color no product can build in this structure's sizes is not
+      // mandatory: claiming it would only trade the refusal for SIN_COBERTURA.
+      const productos = (disponibles.get(color) ?? []).filter((producto) => sirveParaEstructura(estructura, producto)).map((producto) => ({ product_id: producto.product_id, titulo: producto.titulo, en_busqueda: producto.en_busqueda }));
+      // A color the catalog does not sell is used when its stand-in is ("gris" as "plateado").
+      if (!color || usados.has(color) || usados.has(colorDeCompraSinVenta(color) ?? "") || productos.length === 0) continue;
+      omitidos.push({ estructura_id: estructura.estructura_id, nombre: estructura.nombre, color, productos: [...productos] });
+    }
+  }
+  return omitidos;
+}

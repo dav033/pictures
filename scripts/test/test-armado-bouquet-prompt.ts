@@ -60,17 +60,6 @@ import {
  * Las frases son salidas reales de Python fijadas a mano
  * (`scripts/fixtures/armado-bouquet-prompt/armados.json`). Determinista y sin red.
  * Run: npx tsx --conditions=react-server scripts/test/test-armado-bouquet-prompt.ts
- * Recaptura del 2026-09-30 (arco clasico): dos causas, y se comprobo entrada
- * por entrada que no hay una tercera. (1) La estructura oficial `arco` paso a
- * ser el ARCO CLASICO, asi que su sustantivo en ingles cambio: eso mueve las 7
- * entradas de LoRA. (2) El arco del vector 15 pasa de 118 a 115 globos, porque
- * ahora se arma en anillos en vez de estimarse (SEGUIMIENTO-arco-clasico.md),
- * y esa cifra y las que derivan de ella (158->155 totales, 148->145 de R-12,
- * 92->90 lila, 47->46 blanco, 171->168 con merma) mueven `gemini/vector-15`,
- * que es la unica entrada que NO lleva el renombre. Cada entrada se explica por
- * el renombre, por el conteo o por nada: `gemini/bouquet-80` y su repetido no
- * cambiaron.
- *
  */
 
 const DIRECTORIO_FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "armado-bouquet-prompt");

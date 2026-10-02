@@ -29,7 +29,6 @@ import app.plan_edicion as plan_edicion
 from app.main import Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
 from app.plan import PlanResolutionError, patron_resuelto_de_estructura
-from app.plan import _ancho_de_arco_clasico, _structure_count
 from app.plan_edicion import (
     AVISO_PATRON_AGREGAR,
     AVISO_PATRON_QUITAR,
@@ -52,7 +51,7 @@ PARED = "EST_04_PARED"
 ESPIRAL = {
     "version": "patron-color.v1",
     "origen": "decorador",
-    "base": {"modo": "espiral", "racimo": [0, 0, 1, 2], "trazo": "espiral"},
+    "base": {"modo": "espiral", "racimo": [0, 1, 0, 2], "trazo": "espiral"},
 }
 _EDICION = TypeAdapter(Edicion)
 
@@ -1084,7 +1083,7 @@ def test_agregar_un_acento_que_borra_otro_color_rehace_el_preset() -> None:
     assert _estructura(resultado.plan, COLUMNA)["patron_color"] == {
         "version": "patron-color.v1",
         "origen": "sugerido",
-        "base": {"modo": "espiral", "racimo": [0, 0, 2, 1], "trazo": "espiral"},
+        "base": {"modo": "espiral", "racimo": [0, 2, 0, 1], "trazo": "espiral"},
     }
     assert _partes(resultado.plan, COLUMNA) == [0.5, 0.25, 0.25]
     assert resultado.avisos == (AVISO_PATRON_AGREGAR,)
@@ -1122,7 +1121,7 @@ def test_un_segundo_color_trae_el_preset_solo_con_la_bandera() -> None:
     assert _estructura(con.plan, COLUMNA)["patron_color"] == {
         "version": "patron-color.v1",
         "origen": "sugerido",
-        "base": {"modo": "espiral", "racimo": [0, 0, 0, 1], "trazo": "espiral"},
+        "base": {"modo": "espiral", "racimo": [0, 1, 0, 0], "trazo": "espiral"},
     }
     assert _partes(con.plan, COLUMNA) == [0.75, 0.25]
     assert con.avisos == (AVISO_PATRON_SUGERIDO,)
@@ -1155,7 +1154,7 @@ def test_quitar_un_color_rehace_el_preset() -> None:
     assert _estructura(resultado.plan, COLUMNA)["patron_color"] == {
         "version": "patron-color.v1",
         "origen": "sugerido",
-        "base": {"modo": "espiral", "racimo": [0, 0, 0, 1], "trazo": "espiral"},
+        "base": {"modo": "espiral", "racimo": [0, 1, 0, 0], "trazo": "espiral"},
     }
     assert _partes(resultado.plan, COLUMNA) == [0.75, 0.25]
     assert resultado.avisos == (AVISO_PATRON_QUITAR,)
@@ -1404,99 +1403,3 @@ def test_el_endpoint_edita_fuera_del_event_loop(monkeypatch: pytest.MonkeyPatch)
 
     assert status == 200
     assert len(hilos) == 1 and hilos[0].startswith("plan-cpu")
-
-
-# --- densidad y patron_modo: lo que el chat puede cambiar ---------------------
-#
-# Las dos ediciones que la conversación puede pedir además de un material. No
-# traen variante ni documento de patrón: nombran una densidad o un estilo, y
-# Python arma el resto. El arco de `_arco()` es clásico (3 × 2,5 m, mezcla
-# `clasica`), así que su densidad es cómo se arma: cuarteto, quinteto o sexteto.
-
-
-def test_densidad_solo_cambia_la_densidad_de_la_pieza() -> None:
-    plan = _plan(_arco(), _columna())
-
-    resultado = _editar(plan, {"accion": "densidad", "estructura_id": ARCO, "densidad": "lujosa"})
-
-    assert _estructura(resultado.plan, ARCO) == {**_arco(), "densidad": "lujosa"}
-    assert _estructura(resultado.plan, COLUMNA) == _columna()
-
-
-def test_la_densidad_de_un_arco_clasico_aprieta_las_filas_y_llega_al_conteo() -> None:
-    """Cada densidad es una separación entre filas, y cada una un total distinto.
-
-    Es lo que hace que la edición valga: el número que se cotiza sale de cómo se
-    arma la pieza —el motor coloca los globos y cuenta los que colocó—, no de un
-    multiplicador.
-
-    Lo que NO se exige es que el total sea múltiplo de los globos a lo ancho: las
-    filas van escalonadas y las impares llevan uno menos, así que el total cae
-    entre ``filas × ancho`` y ``filas × (ancho − 1)``.
-    """
-    plan = _plan(_arco())
-    totales = []
-    for densidad in ("sencilla", "media", "lujosa"):
-        editado = _editar(
-            plan, {"accion": "densidad", "estructura_id": ARCO, "densidad": densidad}
-        ).plan
-        _eje, total, _proporciones, _sin_ubicar = _structure_count(
-            editado, _estructura(editado, ARCO)
-        )
-        ancho = _ancho_de_arco_clasico(editado, _estructura(editado, ARCO))
-        assert ancho == 4, "la banda de un arco clásico va de cuatro a lo ancho"
-        filas = -(-total // ancho)
-        assert filas * (ancho - 1) <= total <= filas * ancho
-        totales.append(total)
-    assert totales == sorted(totales) and len(set(totales)) == 3
-
-
-def test_una_densidad_que_la_estructura_oficial_no_admite_se_rechaza() -> None:
-    """Se dice con una frase y con la lista, no con un error de esquema."""
-    ligero = {**_arco(), "estructura_oficial": "arco_no_denso", "densidad": "sencilla"}
-    codigo, estado, detalles = _rechazo(
-        _plan(ligero), {"accion": "densidad", "estructura_id": ARCO, "densidad": "lujosa"}
-    )
-    assert (codigo, estado) == ("densidad_no_admitida", 422)
-    assert detalles == {
-        "estructura_id": ARCO,
-        "densidad": "lujosa",
-        "admitidas": ["sencilla"],
-    }
-
-
-def test_patron_modo_arma_el_estilo_sobre_la_banda_real() -> None:
-    """El chat nombra el estilo; el patrón sale armado sobre la banda de la pieza.
-
-    `globos_por_racimo` no lo eligió el patrón: son los cuatro globos a lo ancho
-    con que el motor arma el arco, así que la rejilla del color y la pieza
-    cotizada son la misma.
-    """
-    # Dos colores: un patrón necesita al menos dos materiales que repartir.
-    plan = _plan(_arco(colores=("rojo", "dorado"), partes=(0.6, 0.4)))
-
-    resultado = _editar(plan, {"accion": "patron_modo", "estructura_id": ARCO, "modo": "anillos"})
-
-    patron = cast(dict[str, object], _estructura(resultado.plan, ARCO)["patron_color"])
-    assert cast(dict[str, object], patron["base"])["modo"] == "anillos"
-    assert patron["globos_por_racimo"] == 4
-    assert patron["origen"] == "sugerido"
-
-
-def test_un_estilo_que_la_pieza_no_admite_dice_cuales_si() -> None:
-    """El rechazo trae el motivo y la frase con las opciones, para corregirse."""
-    codigo, estado, detalles = _rechazo(
-        _plan(_arco(colores=("rojo", "dorado"), partes=(0.6, 0.4))),
-        {"accion": "patron_modo", "estructura_id": ARCO, "modo": "damero"},
-    )
-    assert (codigo, estado) == ("patron_invalido", 422)
-    assert detalles is not None
-    assert detalles["motivo"] == "modo_no_permitido"
-    assert "espiral" in str(detalles["mensaje"])
-
-
-def test_patron_modo_sobre_una_estructura_que_no_esta_se_rechaza() -> None:
-    codigo, estado, _detalles = _rechazo(
-        _plan(_arco()), {"accion": "patron_modo", "estructura_id": "EST_09_OTRA", "modo": "anillos"}
-    )
-    assert (codigo, estado) == ("estructura_no_encontrada", 404)

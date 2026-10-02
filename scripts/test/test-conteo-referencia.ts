@@ -314,42 +314,14 @@ async function main(): Promise<void> {
   process.env.CONTEO_REFERENCIA_V1 = "true";
   const conTexto = serializeReferenceBlueprint(conTodo).split("\n");
   const lineaDe = (id: string) => conTexto.find((linea) => linea.includes(id)) ?? "";
-  assert.match(lineaDe("REF_01_E01"), /conteo leído en la foto: 5 globos \(cuenta exacta\)\./);
-  // El reparto por tamaño de la foto decide si la pieza es clásica u orgánica, y
-  // el modelo tiene que verlo: con una sola clase de tamaño es un arco o una
-  // columna de cuartetos, que va con mezcla `clasica`. Antes se leía, se
-  // validaba y se tiraba, y un arco de cuartetos se cotizaba como orgánico.
-  assert.match(lineaDe("REF_01_E01"), /Todos los globos de la pieza son del mismo tamaño \(mediano\): es una pieza CLÁSICA[^.]*mezcla "clasica"/);
-  assert.match(lineaDe("REF_01_E01"), /Si la pieza es un kit/);
+  assert.match(lineaDe("REF_01_E01"), /conteo leído en la foto: 5 globos \(cuenta exacta\)\. Si la pieza es un kit/);
   assert.match(lineaDe("REF_01_E02"), /conteo leído en la foto: unos 96 globos \(aproximado; 58 visibles\), 24 racimos de 4\./);
-  assert.match(lineaDe("REF_01_E02"), /Tamaños vistos en la pieza: chico 33 %, mediano 56 %, grande 11 % — mezcla orgánica\./);
-  // Los racimos de una pieza de varios tamaños NO son su densidad: eso solo
-  // vale para una clásica, donde el anillo es el armado.
-  assert.doesNotMatch(lineaDe("REF_01_E02"), /es exactamente la densidad/);
-  assert.doesNotMatch(lineaDe("REF_01_E02"), /CLÁSICA/, "una pieza de varios tamaños no se anuncia como clásica");
   assert.match(lineaDe("REF_01_E02"), /Python ajusta densidad y medidas a esa cuenta/);
   // ADR-0031, enmienda 2026-09-28: unas medidas inventadas centraban la ventana del eje lejos de la foto.
   assert.match(lineaDe("REF_01_E02"), /no calcules globos ni le pongas medidas que el cliente no dio \(manda medidas vacío\)/);
   assert.equal(serializeReferenceBlueprint(sinConteo), serializeReferenceBlueprint(conConteosDe(sinConteo, sinConteo)), "sin conteo, la línea de siempre");
   const pocaConfianza = conConteosDe(sinConteo, blueprintDe([elemento("REF_01_E02", { tipo: "columna", conteo: { ...conteo, confianza: 0.3 } })]));
   assert.doesNotMatch(serializeReferenceBlueprint(pocaConfianza), /conteo leído/, "una lectura poco confiable no se le cuenta al modelo");
-  // Un arco de cuartetos: un solo tamaño y racimos de 4. El armado de una pieza
-  // clásica ES su densidad, así que la foto ya dice cuál, y antes el modelo la
-  // elegía por el aspecto general (un arco de cuartetos salía en sextetos: 31
-  // globos por metro en vez de 19).
-  const SALTO = String.fromCharCode(10);
-  const cuartetos = conConteosDe(sinConteo, blueprintDe([elemento("REF_01_E02", {
-    tipo: "arco",
-    conteo: { ...conteo, por_tamano: [{ clase: "mediano", proporcion: 1 }], racimos: 26, globos_por_racimo: 4 },
-  })]));
-  const lineaCuartetos = serializeReferenceBlueprint(cuartetos).split(SALTO).find((linea) => linea.includes("REF_01_E02")) ?? "";
-  assert.match(lineaCuartetos, /es una pieza CLÁSICA/);
-  assert.match(lineaCuartetos, /Sus racimos son de 4 globos, o sea cuartetos: en una pieza clásica eso es exactamente la densidad "sencilla"/);
-  const sextetos = conConteosDe(sinConteo, blueprintDe([elemento("REF_01_E02", {
-    tipo: "arco",
-    conteo: { ...conteo, por_tamano: [{ clase: "mediano", proporcion: 1 }], racimos: 26, globos_por_racimo: 6 },
-  })]));
-  assert.match(serializeReferenceBlueprint(sextetos), /o sea sextetos: en una pieza clásica eso es exactamente la densidad "lujosa"/);
   // Un bouquet con armado leído (total que publicó Python) y conteo: manda el conteo;
   // sin conteo que mande, el total de Python. Nunca una cuenta hecha aquí.
   const armadoConTotal = { variante: "base_aire", niveles: [{ unidad: "cuarteto", colores: ["blanco", "rosado", "blanco", "rosado"] }], remate: { clase: "metalizado", color: "dorado" }, numeros: [{ digito: "3", clase_tamano: "grande" }, { digito: "5", clase_tamano: "grande" }], confianza: 0.85, total_globos: 11 };

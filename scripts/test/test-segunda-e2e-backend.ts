@@ -126,7 +126,7 @@ async function main(): Promise<void> {
   assert.equal(relajacion.debeAplicarPaso({ filtros: { ...filtros, ocasiones: [] }, relajado: "colores" }, filtros, [{ colores: ["multicolor"] }], ["rosado"]), false, "context colors never relax the color step");
   ok("D1: los colores de la foto (y del brief) relajan la ocasión cuando esta los esconde");
 
-  // The photo colors a plan does not buy are a notice, never a refusal.
+  // The refusal for dropped photo colors cannot loop.
   const columna = (id: string, elementId: string, colores: Array<[string, string]>) => ({
     estructura_id: id, nombre: `Columna asimétrica ${id.endsWith("IZQ") ? "izquierda" : "derecha"}`, tipo: "columna", rol_escena: id.endsWith("IZQ") || id.endsWith("IZQ_B") ? "focal" : "soporte",
     ubicacion: id.endsWith("IZQ") ? "lateral_izquierdo" : "lateral_derecho", medidas: { alto_m: 2 }, repeticiones: 1, densidad: "media", mezcla: "clasica",
@@ -180,13 +180,19 @@ async function main(): Promise<void> {
   };
   const turno = confirmarTurno(pedidoCumple, semiarcos, impresos, filasCatalogo, lookupColores);
   const primera = await turno.confirmar(argsColumnas([["P-FELIZ", "multicolor"], ["P-HB", "dorado"]]));
-  // Columnas impresas para una foto rosa, plata y blanca: el plan sale igual y
-  // el cliente se entera color por color. Antes esto era un rechazo que le
-  // costaba al turno otra vuelta entera del modelo.
-  assert.equal(primera.ok, true, JSON.stringify(primera).slice(0, 400));
-  assert.ok((primera.avisos_cliente as string[]).length >= 3, "the customer is told about every dropped photo color");
-  assert.equal(turno.consultasColor.length, 0, "confirming never looks the photo colors up in the catalog any more");
-  ok("D1: los colores de la foto que la propuesta no lleva se avisan y no rechazan el plan");
+  assert.equal(primera.status, "COLORES_REFERENCIA_OMITIDOS", JSON.stringify(primera).slice(0, 400));
+  assert.match(String(primera.accion_requerida), /una sola vez/);
+  assert.match(String(primera.accion_requerida), /confirma igual/, "the model is told how to leave the loop");
+  const segunda = await turno.confirmar(argsColumnas([["P-FELIZ", "multicolor"], ["P-HB", "dorado"]], "_B"));
+  assert.equal(segunda.ok, true, `once per turn, even with other structure ids: ${JSON.stringify(segunda).slice(0, 300)}`);
+  assert.ok((segunda.avisos_cliente as string[]).length >= 3, "the customer is told about every dropped photo color");
+  // A turn whose hard filters the ladder never relaxes (a finish) cannot return
+  // what the lookup found: the plan goes on with the notices instead of looping.
+  const conAcabado = confirmarTurno("Quiero algo así en satin para un cumpleaños", semiarcos, impresos, filasCatalogo, lookupColores);
+  const acabado = await conAcabado.confirmar(argsColumnas([["P-FELIZ", "multicolor"], ["P-HB", "dorado"]]));
+  assert.notEqual(acabado.status, "COLORES_REFERENCIA_OMITIDOS", JSON.stringify(acabado).slice(0, 300));
+  assert.equal(conAcabado.consultasColor.length, 0, "no lookup the search could not honor");
+  ok("D1: el rechazo por colores omitidos no puede entrar en bucle");
 
   // ---------------------------------------------------------------------------
   // D2 + D3: the final text of a turn.
@@ -351,22 +357,27 @@ async function main(): Promise<void> {
   const argsVino = { concepto: { titulo: "Galáctico", descripcion: "Arco", paleta: ["plateado"] }, espacio: { tipo: "salón", fuente: "supuesto" }, estructuras: [arcoVino],
     referencia_omitida: [{ element_id: "REF_01_E05", motivo_tipo: "fuera_de_catalogo", motivo: "Sillas" }] };
   const turnoVino = confirmarTurno("Quiero algo así", marcoVino, candidatosVino, filasVino, [{ color: "burdeos", product_id: "P-VINO", titulo: "Globo Burdeos" }, { color: "rosado", product_id: "P-ROSADO", titulo: "Globo Rosado" }]);
+  const reclamoVino = await turnoVino.confirmar(argsVino);
+  assert.equal(reclamoVino.status, "COLORES_REFERENCIA_OMITIDOS", JSON.stringify(reclamoVino).slice(0, 400));
+  assert.deepEqual((reclamoVino.colores_omitidos as Array<{ color: string }>).map((item) => item.color), ["burdeos"]);
   const vinoConfirmado = await turnoVino.confirmar(argsVino);
   assert.equal(vinoConfirmado.ok, true, JSON.stringify(vinoConfirmado).slice(0, 400));
   const avisosVino = vinoConfirmado.avisos_cliente as string[];
-  // El violeta que el modelo le puso a un arco burdeos/blanco/plata no está en
-  // la foto y no sustituye a nada de ella (ΔE 72 del burdeos, 77 del gris, 79
-  // del plateado), pero ya nada lo saca del plan: se cotiza y se dibuja. Lo que
-  // el cliente recibe es el aviso de cada color de la foto que la pieza no
-  // lleva.
+  // 2026-09-29, simetría del color: el violeta que el modelo le puso a un arco
+  // burdeos/blanco/plata no está en la foto y no sustituye a nada de ella
+  // (ΔE 72 del burdeos, 77 del gris, 79 del plateado; el tope de sustitución es
+  // 45, y un rojo —a 41 del burdeos— sí se habría quedado). El servidor lo saca
+  // antes de cotizar y lo avisa: el arco queda en plateado y blanco, y los avisos
+  // pasan de tres a cuatro. Antes el violeta se cotizaba y se dibujaba.
   assert.deepEqual(
     turnoVino.estado.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.color),
-    ["plateado", "violeta", "blanco"],
-    "el plan se firma con lo que el modelo compró",
+    ["plateado", "blanco"],
+    "un color que la foto no tiene no llega a la cotización",
   );
-  assert.deepEqual(avisosVino.length, 3, avisosVino.join(" | "));
+  assert.ok(avisosVino.some((aviso) => /violeta/.test(aviso) && /tu foto no los tiene/.test(aviso)), avisosVino.join(" | "));
+  assert.equal(avisosVino.length, 4, avisosVino.join(" | "));
   for (const aviso of avisosVino) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
-  ok("D5: todo color de la foto que la propuesta no lleva se avisa (gris y rosado incluidos)");
+  ok("D5: todo color de la foto que la propuesta no lleva se avisa (gris y rosado incluidos) y un color que la foto no tiene no se compra");
 
   // ---------------------------------------------------------------------------
   // D6: character and brand names, and X-Request-ID on /api/generate.

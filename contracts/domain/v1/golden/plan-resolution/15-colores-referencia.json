@@ -1042,28 +1042,28 @@
       "balloons": [
         {
           "color": "lila",
-          "design_quantity": 67,
+          "design_quantity": 71,
           "finish": null,
           "product_id": "P-F15-LILA",
-          "required_quantity": 67,
+          "required_quantity": 71,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-F15-LILA-12",
-          "waste_adjusted_quantity": 67,
+          "waste_adjusted_quantity": 71,
           "waste_reserve": 0
         },
         {
           "color": "blanco",
-          "design_quantity": 45,
+          "design_quantity": 47,
           "finish": null,
           "product_id": "P-F15-BLANCO",
-          "required_quantity": 45,
+          "required_quantity": 47,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-F15-BLANCO-12",
-          "waste_adjusted_quantity": 45,
+          "waste_adjusted_quantity": 47,
           "waste_reserve": 0
         },
         {
@@ -1123,38 +1123,38 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 8100,
-          "design_quantity": 45,
-          "leftover_inventory": 5,
-          "operational_surplus": 5,
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
           "package_count": 1,
-          "potential_surplus": 5,
+          "potential_surplus": 3,
           "product_id": "P-F15-BLANCO",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 45,
+          "required_quantity": 47,
           "units_per_package": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-F15-BLANCO-12",
-          "waste_adjusted_quantity": 45,
+          "waste_adjusted_quantity": 47,
           "waste_reserve": 0
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 15840,
-          "design_quantity": 88,
-          "leftover_inventory": 12,
-          "operational_surplus": 12,
+          "consumption_cost": 16560,
+          "design_quantity": 92,
+          "leftover_inventory": 8,
+          "operational_surplus": 8,
           "package_count": 2,
-          "potential_surplus": 12,
+          "potential_surplus": 8,
           "product_id": "P-F15-LILA",
           "purchase_cost": 18000,
           "purchase_quantity": 100,
-          "required_quantity": 88,
+          "required_quantity": 92,
           "units_per_package": 50,
-          "used": 88,
+          "used": 92,
           "variant_id": "V-F15-LILA-12",
-          "waste_adjusted_quantity": 88,
+          "waste_adjusted_quantity": 92,
           "waste_reserve": 0
         },
         {
@@ -1197,19 +1197,19 @@
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 29700,
+        "consumption_cost": 30780,
         "covered_waste_reserve": 13,
-        "design_quantity": 152,
-        "natural_package_surplus": 98,
-        "operational_surplus": 85,
-        "potential_surplus": 98,
+        "design_quantity": 158,
+        "natural_package_surplus": 92,
+        "operational_surplus": 79,
+        "potential_surplus": 92,
         "purchase_cost": 45000,
         "purchase_quantity": 250,
-        "required_quantity": 165,
+        "required_quantity": 171,
         "target_waste_reserve": 13,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 165,
-        "waste_only_savings_cop": 0
+        "waste_adjusted_quantity": 171,
+        "waste_only_savings_cop": 9000
       },
       "version": "design-material-estimate-v1",
       "warnings": [
@@ -1232,8 +1232,8 @@
         {
           "additional_package_for_waste": false,
           "color": "blanco",
-          "consumption_cost": 8100,
-          "design_quantity": 45,
+          "consumption_cost": 8460,
+          "design_quantity": 47,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -1246,34 +1246,34 @@
           ],
           "imagen": "https://cdn.example.test/blanco-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 5,
+          "leftover_inventory": 3,
           "paquetes": 1,
           "precio_paquete": 9000,
           "product_id": "P-F15-BLANCO",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 45,
+          "required_quantity": 47,
           "sku": "SKU-F15-BLANCO-12",
           "sku_original": "SHOP-F15-BLANCO-12",
-          "sobrante": 5,
+          "sobrante": 3,
           "source_snapshot_id": "SNAP-GOLDEN-A5-009",
           "source_variant_id": "SOURCE-F15-BLANCO-12",
           "subtotal": 9000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex blanco — R-12",
-          "unidades_con_merma": 45,
+          "unidades_con_merma": 47,
           "unidades_inferidas": false,
-          "unidades_necesarias": 45,
+          "unidades_necesarias": 47,
           "unidades_paquete": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-F15-BLANCO-12",
           "waste_reserve": 0
         },
         {
           "additional_package_for_waste": false,
           "color": "lila",
-          "consumption_cost": 15840,
-          "design_quantity": 88,
+          "consumption_cost": 16560,
+          "design_quantity": 92,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -1291,26 +1291,26 @@
           ],
           "imagen": "https://cdn.example.test/lila-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 12,
+          "leftover_inventory": 8,
           "paquetes": 2,
           "precio_paquete": 9000,
           "product_id": "P-F15-LILA",
           "purchase_cost": 18000,
           "purchase_quantity": 100,
-          "required_quantity": 88,
+          "required_quantity": 92,
           "sku": "SKU-F15-LILA-12",
           "sku_original": "SHOP-F15-LILA-12",
-          "sobrante": 12,
+          "sobrante": 8,
           "source_snapshot_id": "SNAP-GOLDEN-A5-009",
           "source_variant_id": "SOURCE-F15-LILA-12",
           "subtotal": 18000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex lila — R-12",
-          "unidades_con_merma": 88,
+          "unidades_con_merma": 92,
           "unidades_inferidas": false,
-          "unidades_necesarias": 88,
+          "unidades_necesarias": 92,
           "unidades_paquete": 50,
-          "used": 88,
+          "used": 92,
           "variant_id": "V-F15-LILA-12",
           "waste_reserve": 0
         },
@@ -1397,7 +1397,7 @@
       ],
       "costes_por_estructura": [
         {
-          "consumo_cop": 20160,
+          "consumo_cop": 21240,
           "estructura_id": "EST_01_ARCO"
         },
         {
@@ -1435,7 +1435,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo latex lila — R-12",
-              "unidades": 67,
+              "unidades": 71,
               "unidades_inferidas": false,
               "variant_id": "V-F15-LILA-12"
             },
@@ -1460,7 +1460,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo latex blanco — R-12",
-              "unidades": 45,
+              "unidades": 47,
               "unidades_inferidas": false,
               "variant_id": "V-F15-BLANCO-12"
             }
@@ -1470,14 +1470,14 @@
               "diam_pulg": 12.0,
               "forma": "redondo",
               "pct": 100.0,
-              "unidades": 112
+              "unidades": 118
             }
           ],
           "nombre": "Arco lila",
           "repeticiones": 1,
           "supuestos": [],
           "tipo": "arco",
-          "total_unidades": 112,
+          "total_unidades": 118,
           "ubicacion": "arco_central"
         },
         {
@@ -1713,7 +1713,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "a6c7d139018838b90bc7438f5f23898381d2f3b9960a5cc87651d2a2ac884f35",
+      "plan_hash": "797f4a4fbc1547f673afa99e30fc7532da226fc51d9dbda4142eb93788d55cd7",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -1740,39 +1740,39 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 9000,
-        "consumption_cost": 29700,
+        "consumption_cost": 30780,
         "covered_waste_reserve": 13,
-        "design_quantity": 152,
+        "design_quantity": 158,
         "globos_por_tamano": {
-          "R-12": 142,
+          "R-12": 148,
           "R-9": 10
         },
         "incluye_iva": true,
         "merma_porcentaje": 8.0,
-        "natural_package_surplus": 98,
+        "natural_package_surplus": 92,
         "purchase_cost": 45000,
         "target_waste_reserve": 13,
         "total_cop": 45000,
-        "total_unidades": 152,
+        "total_unidades": 158,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 0
+        "waste_only_savings_cop": 9000
       }
     },
     "quote": {
-      "consumption_cost_cop": 29700,
+      "consumption_cost_cop": 30780,
       "covered_waste_reserve": 13,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 85,
+      "leftover_inventory": 79,
       "lines": [
         {
           "available": true,
           "color": "blanco",
-          "consumption_cost_cop": 8100,
-          "design_quantity": 45,
+          "consumption_cost_cop": 8460,
+          "design_quantity": 47,
           "diameter_inches": 12.0,
           "id": "V-F15-BLANCO-12",
-          "leftover_inventory": 5,
+          "leftover_inventory": 3,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1784,28 +1784,28 @@
           "product_id": "P-F15-BLANCO",
           "purchase_cost_cop": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 45,
+          "required_quantity": 47,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_ARCO"
           ],
           "subtotal_cop": 9000,
-          "surplus": 5,
+          "surplus": 3,
           "title": "Globo latex blanco — R-12",
           "units_per_package": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-F15-BLANCO-12",
           "waste_reserve": 0
         },
         {
           "available": true,
           "color": "lila",
-          "consumption_cost_cop": 15840,
-          "design_quantity": 88,
+          "consumption_cost_cop": 16560,
+          "design_quantity": 92,
           "diameter_inches": 12.0,
           "id": "V-F15-LILA-12",
-          "leftover_inventory": 12,
+          "leftover_inventory": 8,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1821,7 +1821,7 @@
           "product_id": "P-F15-LILA",
           "purchase_cost_cop": 18000,
           "purchase_quantity": 100,
-          "required_quantity": 88,
+          "required_quantity": 92,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1829,10 +1829,10 @@
             "EST_02_COLUMNA"
           ],
           "subtotal_cop": 18000,
-          "surplus": 12,
+          "surplus": 8,
           "title": "Globo latex lila — R-12",
           "units_per_package": 50,
-          "used": 88,
+          "used": 92,
           "variant_id": "V-F15-LILA-12",
           "waste_reserve": 0
         },
@@ -1903,7 +1903,7 @@
           "waste_reserve": 13
         }
       ],
-      "plan_hash": "a6c7d139018838b90bc7438f5f23898381d2f3b9960a5cc87651d2a2ac884f35",
+      "plan_hash": "797f4a4fbc1547f673afa99e30fc7532da226fc51d9dbda4142eb93788d55cd7",
       "purchase_cost_cop": 45000,
       "schema_version": "quote.v1",
       "supported_complements": false,

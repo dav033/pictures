@@ -278,14 +278,171 @@ async function main(): Promise<void> {
   ok("confirmar_plan_decoracion registra los colores perdidos y obliga a avisar");
 
   // ---------------------------------------------------------------------------
-  // La pared "Mr & Mrs" del 2026-09-29: leída bien (blush perlado, dorado
-  // cromado, blanco mate), el modelo compró además un "Reflex Fucsia" que la
-  // foto no tiene. El color que el plan compra de más ya no se poda —el color de
-  // la foto se le reporta al cliente como sustitución, no se le impone al
-  // modelo—; lo que sigue vigilándose es el ACABADO que la foto muestra.
-  const { aplicarAcabadoReferencia, avisosClienteAjustes } = await import("../../src/lib/plan/cobertura-materiales");
+  // E2E 2026-09-14 (D1): "Semiarcos rosa y plata" quoted 100 % transparent with
+  // three color notices while the catalog had pink and silver balloons.
+  const { coloresReferenciaOmitidos, productosGloboPorColor } = await import("../../src/lib/plan/colores-referencia");
+  const { ACCION_COLORES_REFERENCIA_OMITIDOS, MENSAJE_CLIENTE_COLORES_REFERENCIA } = await import("../../src/lib/ia/herramientas/registro-herramientas");
+  // Palette as the analyzer reported it for that photo (it does not list the clear accents).
+  const semiarcosFoto = ReferenceBlueprintV2Schema.parse({
+    ...blueprintDe(["REF_01"], [
+      elemento("REF_01_E03", "REF_01", "left balloon garland", "balloon_structure", ["light pink", "chrome silver", "light grey", "clear"]),
+    ]),
+    palette: { observed: ["light pink", "chrome silver", "light grey"], priority: ["light pink", "chrome silver", "light grey"] },
+  });
+  assert.deepEqual(restricciones.aplicarColoresReferencia(PlanDecoracionSchema.parse({
+    plan_version: "1.0", plan_id: "01010101-0101-4010-8010-010101010101", concepto: { titulo: "x", descripcion: "x", paleta: [] },
+    espacio: { tipo: "salón", fuente: "foto" }, supuestos: [],
+    estructuras: [{ ...arcoBlanco, referencia_element_id: "REF_01_E03" }],
+  }), semiarcosFoto).estructuras[0]!.colores_referencia, ["rosado", "plateado", "gris", "transparente"], "the clear accents are claimed on top of the three hues (2026-09-24)");
+
+  // 2026-09-29: a brick wall behind the piece ("terracotta red") reached
+  // `palette.observed`, and from there the colors the wall was asked to cover;
+  // the customer got a "cafe -> rosado, dorado" substitution for the venue.
+  const paredConLadrillo = ReferenceBlueprintV2Schema.parse({
+    ...blueprintDe(["REF_01"], [
+      elemento("REF_01_E01", "REF_01", "balloon wall", "balloon_structure", ["pearl blush pink", "chrome gold", "matte white"]),
+      elemento("REF_01_E02", "REF_01", "brick wall", "backdrop", ["terracotta red", "brown"]),
+    ]),
+    palette: { observed: ["pearl blush pink", "chrome gold", "matte white", "terracotta red"], priority: ["pearl blush pink", "chrome gold", "matte white", "terracotta red"] },
+  });
+  assert.deepEqual(restricciones.aplicarColoresReferencia(PlanDecoracionSchema.parse({
+    plan_version: "1.0", plan_id: "01010101-0101-4010-8010-010101010102", concepto: { titulo: "x", descripcion: "x", paleta: [] },
+    espacio: { tipo: "salón", fuente: "foto" }, supuestos: [],
+    estructuras: [{ ...arcoBlanco, referencia_element_id: "REF_01_E01" }],
+  }), paredConLadrillo).estructuras[0]!.colores_referencia, ["rosado", "dorado", "blanco"], "the venue's brick does not ask the piece for a color (2026-09-29)");
+  const filaGlobo = (productId: string, variantId: string, color: string) => ({
+    product_id: productId, variant_id: variantId, sku: null, sku_original: null, source_snapshot_id: null, source_variant_id: null, inventory_quantity: null, unidades_inferidas: null,
+    producto_titulo: `Globo ${color}`, variante_titulo: "R-12", precio: 4000, unidades_paq: 12, disponible: true, producto_disponible: true,
+    codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: [color], colores_variante: [color], acabados_producto: [], descripcion: null, imagen: null,
+  });
+  const filasSemiarco = [filaGlobo("P-TRANSP", "V-TRANSP-12", "transparente"), filaGlobo("P-ROSADO", "V-ROSADO-12", "rosado"), filaGlobo("P-PLATA", "V-PLATA-12", "plateado")];
+  const columnaFoto = (colores: string[]) => ({
+    ...arcoBlanco, estructura_id: "EST_01_COLUMNA_IZQ", nombre: "Columna asimétrica izquierda", tipo: "columna", ubicacion: "lateral_izquierdo", medidas: { alto_m: 2.2 },
+    referencia_element_id: "REF_01_E03",
+    materiales: colores.map((color, index) => ({ product_id: color === "transparente" ? "P-TRANSP" : color === "rosado" ? "P-ROSADO" : "P-PLATA", color, participacion: 1 / colores.length, rol_material: index === 0 ? "principal" : "secundario" })),
+  });
+  const argsSemiarco = (colores: string[]) => ({ concepto: { titulo: "Cumpleaños", descripcion: "Columna de la foto", paleta: colores }, espacio: { tipo: "salón", fuente: "foto" }, estructuras: [columnaFoto(colores)] });
+  const transparentes = [candidato("P-TRANSP", "globo_latex", "transparente", [{ variantId: "V-TRANSP-12", diamPulg: 12 }])];
+  const rosaYPlata = [candidato("P-ROSADO", "globo_latex", "rosado", [{ variantId: "V-ROSADO-12", diamPulg: 12 }]), candidato("P-PLATA", "globo_latex", "plateado", [{ variantId: "V-PLATA-12", diamPulg: 12 }])];
+  const confirmarSemiarco = (solicitud: string, candidatos: ProductoCandidato[], filasColor: Array<{ color: string; product_id: string; titulo: string }>, allowlistVariantes?: string[]) => {
+    // consultasPresencia: buscarGlobosPorColor's first query, "which colors does
+    // the pool truly have" (fixture: the distinct colors of filasColor).
+    // consultasColor: its second query, for products of the colors it resolved
+    // requested colors to -- the literal requested word only when it is itself
+    // present; the nearest present one otherwise (colorCatalogoMasCercano).
+    const consultasPresencia: unknown[][] = [];
+    const consultasColor: unknown[][] = [];
+    const poolColores = { query: async (sql: string, params: unknown[] = []) => {
+      if (/SELECT DISTINCT color/.test(sql)) {
+        consultasPresencia.push(params);
+        return { rows: [...new Set(filasColor.map((fila) => fila.color))].map((color) => ({ color })) };
+      }
+      if (/unnest\(\$1::text\[\]\) AS color/.test(sql)) {
+        consultasColor.push(params);
+        const resueltos = params[0] as string[];
+        return { rows: filasColor.filter((fila) => resueltos.includes(fila.color)) };
+      }
+      return { rows: filasSemiarco };
+    } } as unknown as Pool;
+    instalarResolutorPythonFalso({ veredicto: veredictoColoresReferencia });
+    const estado = crearEstadoConversacion({}, solicitud, semiarcosFoto);
+    estado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
+    estado.ragCandidatos = candidatos;
+    for (const c of candidatos) {
+      estado.ragIdsRecuperados.add(c.productId);
+      estado.ragVariantIdsRecuperados.set(c.productId, new Set(c.variantes.map((v) => v.variantId)));
+    }
+    const catalogAllowlist = allowlistVariantes ? { entries: [], productIds: [], variantIds: allowlistVariantes } : undefined;
+    const registro = crearRegistroHerramientas(estado, { pool: poolColores, creatividad: 0, ...(catalogAllowlist ? { catalogAllowlist } : {}) });
+    return { estado, consultasPresencia, consultasColor, confirmar: (colores: string[]) => registro.confirmar_plan_decoracion!(argsSemiarco(colores), llamada) as Promise<Record<string, unknown>> };
+  };
+
+  // Pure rule.
+  const disponiblesTurno = productosGloboPorColor([...transparentes, ...rosaYPlata], ["rosado", "plateado", "gris"]);
+  assert.deepEqual([...disponiblesTurno.keys()].sort(), ["plateado", "rosado"], "grey is not a catalog color");
+  assert.deepEqual(productosGloboPorColor([candidato("P-SERP", "complemento", "rosado", [{ variantId: "V-SERP", diamPulg: null }])], ["rosado"]).size, 0, "a streamer never covers a balloon color");
+  const omitidosPuros = coloresReferenciaOmitidos([{ ...columnaFoto(["transparente"]), colores_referencia: ["rosado", "plateado", "gris"] }], disponiblesTurno);
+  assert.deepEqual(omitidosPuros.map((item) => item.color), ["rosado", "plateado"]);
+  assert.deepEqual(coloresReferenciaOmitidos([{ ...columnaFoto(["rosado", "plateado"]), colores_referencia: ["rosado", "plateado", "gris"] }], disponiblesTurno), [], "the plan uses the photo colors");
+  assert.deepEqual(detectarJergaInterna(MENSAJE_CLIENTE_COLORES_REFERENCIA), [], MENSAJE_CLIENTE_COLORES_REFERENCIA);
+  ok("colores de la foto: regla pura de colores omitidos con catálogo disponible");
+
+  // The turn search returned pink and silver: an all-transparent plan is sent back once.
+  const turno = confirmarSemiarco("Quiero algo así para un cumpleaños", [...transparentes, ...rosaYPlata], []);
+  const rechazoTurno = await turno.confirmar(["transparente"]);
+  assert.equal(rechazoTurno.ok, false, JSON.stringify(rechazoTurno).slice(0, 400));
+  assert.equal(rechazoTurno.status, "COLORES_REFERENCIA_OMITIDOS");
+  const omitidosTurno = rechazoTurno.colores_omitidos as Array<{ color: string; productos: Array<{ product_id: string; en_busqueda: boolean }> }>;
+  assert.deepEqual(omitidosTurno.map((item) => item.color), ["rosado", "plateado"]);
+  assert.deepEqual(omitidosTurno[0]!.productos, [{ product_id: "P-ROSADO", titulo: "P-ROSADO", en_busqueda: true }]);
+  assert.equal(turno.consultasPresencia.length, 1, "the catalog is only asked for the colors the turn search did not return");
+  assert.deepEqual(turno.consultasColor, [], "grey has no exact or nearby stocked color in this catalog, so no product query runs");
+  assert.equal(rechazoTurno.accion_requerida, ACCION_COLORES_REFERENCIA_OMITIDOS);
+  assert.match(String(rechazoTurno.accion_requerida), /un solo color/);
+  assert.equal(rechazoTurno.mensaje_cliente, MENSAJE_CLIENTE_COLORES_REFERENCIA);
+  const conColoresFoto = await turno.confirmar(["rosado", "plateado"]);
+  assert.equal(conColoresFoto.ok, true, JSON.stringify(conColoresFoto).slice(0, 400));
+  // Grey is reported as the silver it is bought as; the clear accents, now
+  // claimed on top of the three hues, are a real loss of this plan (the refusal
+  // is sent once per turn, so the second plan goes on with the notice).
+  assert.deepEqual(
+    (conColoresFoto.avisos_cliente as string[]).map((aviso) => /muestra (\S+)/.exec(aviso)?.[1]?.replace(/,$/, "")),
+    ["gris", "transparente"],
+    (conColoresFoto.avisos_cliente as string[]).join(" | "),
+  );
+  const insiste = await turno.confirmar(["transparente"]);
+  assert.equal(insiste.ok, true, "each color is sent back once per turn: no loop");
+  assert.equal((insiste.avisos_cliente as string[]).length, 3);
+  ok("confirmar_plan_decoracion devuelve un plan que descarta colores de la foto que el catálogo del turno tiene");
+
+  // The turn search missed them (E2E: only the clear balloon came back) but the
+  // active LoRA pool has them: the lookup stays inside that pool and asks for a search.
+  const lora = confirmarSemiarco("Quiero algo así para un cumpleaños", transparentes, [
+    { color: "rosado", product_id: "P-ROSADO", titulo: "Globo Latex Redondo Fashion Rosado" },
+    { color: "plateado", product_id: "P-PLATA", titulo: "Globo Latex Redondo Reflex Plata" },
+  ], ["V-TRANSP-12", "V-ROSADO-12", "V-PLATA-12"]);
+  const rechazoLora = await lora.confirmar(["transparente"]);
+  assert.equal(rechazoLora.status, "COLORES_REFERENCIA_OMITIDOS", JSON.stringify(rechazoLora).slice(0, 400));
+  const omitidosLora = rechazoLora.colores_omitidos as Array<{ color: string; productos: Array<{ product_id: string; en_busqueda: boolean }> }>;
+  assert.deepEqual(omitidosLora[0]!.productos.map((item) => item.en_busqueda), [false]);
+  // Bug fix: grey ("gris") has no exact catalog product, but the pool has
+  // silver ("plateado") -- same neutral family in similitud-color.ts -- so it
+  // now borrows it by chromatic distance instead of disappearing.
+  assert.deepEqual(omitidosLora.map((item) => item.color), ["rosado", "plateado", "gris"], "grey resolves to the nearest stocked color instead of being dropped");
+  assert.deepEqual(omitidosLora.find((item) => item.color === "gris")?.productos.map((item) => item.product_id), ["P-PLATA"], "grey borrows silver's real products, not a synonym table");
+  assert.equal(lora.consultasPresencia.length, 1);
+  assert.equal(lora.consultasColor.length, 1);
+  // The literal word "gris" is never queried: it resolved to "plateado" before the product lookup.
+  assert.deepEqual(lora.consultasColor[0]![0], ["rosado", "plateado"]);
+  assert.deepEqual(lora.consultasColor[0]![1], ["V-TRANSP-12", "V-ROSADO-12", "V-PLATA-12"], "the lookup never leaves the LoRA pool");
+
+  // The catalog really lacks them: the plan goes on with the notices.
+  const sinColores = confirmarSemiarco("Quiero algo así para un cumpleaños", transparentes, []);
+  const aceptado = await sinColores.confirmar(["transparente"]);
+  assert.equal(aceptado.ok, true, JSON.stringify(aceptado).slice(0, 400));
+  assert.equal((aceptado.avisos_cliente as string[]).length, 3);
+  // An explicit customer color overrides the photo.
+  const explicito = await confirmarSemiarco("Quiero algo así para un cumpleaños pero en blanco", [...transparentes, ...rosaYPlata], []).confirmar(["transparente"]);
+  assert.notEqual(explicito.status, "COLORES_REFERENCIA_OMITIDOS", "the customer chose the palette");
+  ok("colores de la foto: búsqueda en el pool activo, catálogo sin el color y color explícito del cliente");
+
+  // ---------------------------------------------------------------------------
+  // 2026-09-29: la mitad que le faltaba a la auditoría de color. Toda la
+  // maquinaria miraba un solo sentido —los colores de la foto que el plan NO
+  // compra— y nada el inverso. La pared "Mr & Mrs" se leyó bien (blush perlado,
+  // dorado cromado, blanco mate) y el modelo compró además un "Reflex Fucsia"
+  // que la foto no tiene; en cadena, la pista de patrón de la foto no encontró
+  // material para su rosado y el armado cayó al preset de confeti.
+  const { materialesDeColorInventado, coloresObservadosElemento } = await import("../../src/lib/plan/colores-referencia");
+  const { aplicarAcabadoReferencia, avisosClienteAjustes, quitarMaterialesDeColorInventado } = await import("../../src/lib/plan/cobertura-materiales");
   const etiquetasPared = ["pearl blush pink", "chrome gold", "matte white"];
   const paredFoto = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Mr & Mrs organic balloon wall", "balloon_structure", etiquetasPared)]);
+  // Lo observado NO se acota a los tres dominantes: acotarlo acusaría de
+  // invención al cuarto color de una foto que sí lo tiene.
+  assert.deepEqual(coloresObservadosElemento({ observed_colors: etiquetasPared }), ["rosado", "dorado", "blanco"]);
+  assert.deepEqual(coloresObservadosElemento({ observed_colors: ["white, gold, silver, pink"] }), ["blanco", "dorado", "plateado", "rosado"], "los cuatro, aunque solo tres sean dominantes");
+  assert.deepEqual(coloresObservadosElemento({ observed_colors: ["chrome gold"], measured_colors: [{ color: "rosado", share: 0.4 }] }), ["dorado", "rosado"], "un tono medido en píxeles también está en la foto");
+
   const materialPared = (productId: string, color: string, participacion: number, rol: "principal" | "secundario") => ({ product_id: productId, color, participacion, rol_material: rol });
   const pared = (materiales: ReturnType<typeof materialPared>[], elementId: string | null = "REF_01_E01") => ({
     ...arcoBlanco, estructura_id: "EST_01_PARED", nombre: "Pared orgánica de globos", tipo: "pared", ubicacion: "fondo_pared",
@@ -303,11 +460,79 @@ async function main(): Promise<void> {
     materialPared("P-BLANCO-MATE", "blanco", 0.15, "secundario"),
     materialPared("P-FUCSIA", "fucsia", 0.15, "secundario"),
   ];
+  const inventados = materialesDeColorInventado([pared(materialesReales)], paredFoto);
+  assert.deepEqual(
+    inventados,
+    [{ estructura_id: "EST_01_PARED", product_id: "P-FUCSIA", color: "fucsia" }],
+    "el oro rosa es sustitución del blush (ΔE 23 del rosado observado) y el fucsia invención (48 del rosado, 88 del blanco, 97 del dorado)",
+  );
+  assert.deepEqual(materialesDeColorInventado([pared(materialesReales)], undefined), [], "sin foto no hay nada contra lo que medir");
+  assert.deepEqual(materialesDeColorInventado([pared(materialesReales, null)], paredFoto), [], "una pieza que no materializa un elemento no sigue su paleta");
+  // Una etiqueta que la taxonomía no alias a propósito es color de la foto que
+  // no vemos: sin verlo no se puede afirmar que un material no le corresponda.
+  const paredConCobre = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Copper and blush wall", "balloon_structure", ["copper", ...etiquetasPared])]);
+  assert.deepEqual(materialesDeColorInventado([pared(materialesReales)], paredConCobre), [], "paleta que no se supo leer completa: no se juzga");
+  // Transparente es acabado y multicolor no es un tono; un color que la tabla de
+  // tonos no conoce no tiene distancia que sostenga la acusación.
+  assert.deepEqual(materialesDeColorInventado([pared([
+    materialPared("P-CRISTAL", "transparente", 0.4, "principal"),
+    materialPared("P-CONFETI", "multicolor", 0.3, "secundario"),
+    materialPared("P-RARO", "frambuesa", 0.3, "secundario"),
+  ])], paredFoto), []);
+  ok("simetría del color: un material cuyo color la foto no tiene se distingue de una sustitución por ΔE");
+
+  const podado = quitarMaterialesDeColorInventado(planDe(pared(materialesReales)), inventados);
+  const materialesPodados = podado.plan.estructuras[0]!.materiales;
+  assert.deepEqual(materialesPodados.map((material) => material.color), ["dorado rosa", "dorado", "blanco"], "el color inventado no llega al plan que se cotiza");
+  assert.ok(Math.abs(materialesPodados.reduce((suma, material) => suma + material.participacion, 0) - 1) < 0.001, materialesPodados.map((material) => material.participacion).join(" "));
+  assert.deepEqual(materialesPodados.filter((material) => material.rol_material === "principal").map((material) => material.color), ["dorado rosa"], "el principal sigue siendo el de la foto");
+  const avisosPodado = podado.ajustes.flatMap((ajuste) => (ajuste.tipo === "material_quitado" ? [ajuste.aviso_cliente] : []));
+  assert.equal(avisosPodado.length, 1, podado.ajustes.map((ajuste) => ajuste.tipo).join(" "));
+  assert.match(avisosPodado[0]!, /globos fucsia/);
+  assert.match(avisosPodado[0]!, /tu foto no los tiene/);
+  assert.deepEqual(detectarJergaInterna(avisosPodado[0]!), [], avisosPodado[0]);
+  // Una pieza entera de colores ajenos no se puede podar sin borrarla: ese caso
+  // lo sigue atendiendo COLORES_REFERENCIA_OMITIDOS.
+  const soloFucsia = pared([materialPared("P-FUCSIA", "fucsia", 1, "principal")]);
+  const intacta = quitarMaterialesDeColorInventado(planDe(soloFucsia), materialesDeColorInventado([soloFucsia], paredFoto));
+  assert.deepEqual(intacta.plan.estructuras[0]!.materiales.map((material) => material.color), ["fucsia"], "podar la pieza entera la borraría");
+  assert.deepEqual(intacta.ajustes, []);
+  ok("simetría del color: se poda el material y se reescalan las participaciones, nunca la pieza completa");
+
+  // El turno completo: el fucsia no llega al plan firmado y el cliente se entera.
+  const globosPared = [
+    candidato("P-ORO-ROSA", "globo_latex", "dorado rosa", [{ variantId: "V-ORO-ROSA-12", diamPulg: 12 }]),
+    candidato("P-ORO", "globo_latex", "dorado", [{ variantId: "V-ORO-12", diamPulg: 12 }]),
+    candidato("P-BLANCO-MATE", "globo_latex", "blanco", [{ variantId: "V-BLANCO-MATE-12", diamPulg: 12 }]),
+    candidato("P-FUCSIA", "globo_latex", "fucsia", [{ variantId: "V-FUCSIA-12", diamPulg: 12 }]),
+  ];
   const argsPared = {
     concepto: { titulo: "Mr & Mrs", descripcion: "Pared orgánica de globos", paleta: ["rosado", "dorado", "blanco"] },
     espacio: { tipo: "salón", fuente: "foto" },
     estructuras: [pared(materialesReales)],
   };
+  const { estado: estadoPared, confirmar: confirmarPared } = herramienta("Quiero algo así para mi matrimonio", globosPared, paredFoto, 0);
+  const paredConfirmada = await confirmarPared(argsPared, llamada) as Record<string, unknown>;
+  assert.equal(paredConfirmada.ok, true, JSON.stringify(paredConfirmada).slice(0, 500));
+  assert.deepEqual(
+    estadoPared.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.color),
+    ["dorado rosa", "dorado", "blanco"],
+    "el plan firmado (y lo que se envía a Python) no compra el color que el modelo inventó",
+  );
+  const avisosPared = paredConfirmada.avisos_cliente as string[];
+  assert.ok(avisosPared.some((aviso) => /fucsia/.test(aviso) && /tu foto no los tiene/.test(aviso)), avisosPared.join(" | "));
+  for (const aviso of avisosPared) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  // El cliente manda sobre la foto: si él pidió el color, no es una invención.
+  const { estado: estadoPedido, confirmar: confirmarPedido } = herramienta("Quiero algo así para mi matrimonio pero con un toque fucsia", globosPared, paredFoto, 0);
+  const pedidoConfirmado = await confirmarPedido(argsPared, llamada) as Record<string, unknown>;
+  assert.equal(pedidoConfirmado.ok, true, JSON.stringify(pedidoConfirmado).slice(0, 500));
+  assert.deepEqual(
+    estadoPedido.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.color),
+    ["dorado rosa", "dorado", "blanco", "fucsia"],
+    "el color que pidió el cliente se queda",
+  );
+  ok("simetría del color: el turno firma el plan sin el color inventado y avisa, salvo que lo pida el cliente");
+
   // ---------------------------------------------------------------------------
   // 2026-09-29, la otra mitad del mismo día: el ACABADO. La misma pared se leyó
   // bien (blush PERLADO, dorado CROMADO, blanco MATE) y el modelo compró el
@@ -344,23 +569,21 @@ async function main(): Promise<void> {
   // Fashion es el mate del catálogo: un producto que solo dice "fashion" cumple.
   const blancoFashion = globoConAcabado("P-BLANCO-MATE", "blanco", ["fashion"]);
   const fucsiaReflex = globoConAcabado("P-FUCSIA", "fucsia", ["reflex"]);
-  // El plan tal como lo confirmó el modelo, fucsia incluido: ya nada lo saca.
-  // La foto no le exige acabado (su vecino observado más cercano, el rosado,
-  // está a ΔE 48), así que atraviesa esta regla intacto.
-  const planPared = planDe(pared(materialesReales));
+  // El plan ya podado (el fucsia fuera, participaciones reescaladas a 1).
+  const planPared = podado.plan;
   const nombresPared = new Map([["EST_01_PARED", "Pared orgánica de globos"]]);
 
   // El catálogo del turno tiene el MISMO color en el acabado de la foto: se compra ese.
   const respetado = aplicarAcabadoReferencia(planPared, esperadoPared, disponibilidadDelTurno([oroRosaReflex, oroRosaSatin, oroReflex, blancoFashion]));
   assert.deepEqual(
     respetado.plan.estructuras[0]!.materiales.map((material) => [material.product_id, material.acabado ?? null]),
-    [["P-ORO-ROSA-SATIN", "satin"], ["P-ORO", null], ["P-BLANCO-MATE", null], ["P-FUCSIA", null]],
-    "el blush se compra perlado; el cromado del dorado no se contagia, el mate no se degrada y el color que la foto no tiene no hereda acabado",
+    [["P-ORO-ROSA-SATIN", "satin"], ["P-ORO", null], ["P-BLANCO-MATE", null]],
+    "el blush se compra perlado; el cromado del dorado no se contagia y el mate no se degrada",
   );
   assert.deepEqual(respetado.ajustes.map((ajuste) => ajuste.tipo), ["acabado_referencia"], JSON.stringify(respetado.ajustes));
   assert.deepEqual(
     respetado.plan.estructuras[0]!.materiales.map((material) => material.color),
-    ["dorado rosa", "dorado", "blanco", "fucsia"],
+    ["dorado rosa", "dorado", "blanco"],
     "el acabado no decide el color: el material conserva el suyo",
   );
   assert.deepEqual(avisosClienteAjustes(respetado.ajustes, { nombres: nombresPared }), [], "el acabado se respetó: no hay nada que avisarle al cliente");
@@ -370,7 +593,7 @@ async function main(): Promise<void> {
   const avisado = aplicarAcabadoReferencia(planPared, esperadoPared, disponibilidadDelTurno([oroRosaReflex, oroReflex, blancoFashion]));
   assert.deepEqual(
     avisado.plan.estructuras[0]!.materiales.map((material) => [material.product_id, material.color]),
-    [["P-ORO-ROSA", "dorado rosa"], ["P-ORO", "dorado"], ["P-BLANCO-MATE", "blanco"], ["P-FUCSIA", "fucsia"]],
+    [["P-ORO-ROSA", "dorado rosa"], ["P-ORO", "dorado"], ["P-BLANCO-MATE", "blanco"]],
     "nunca se quita el color ni el material por un acabado que el catálogo no tiene",
   );
   const avisosAcabado = avisosClienteAjustes(avisado.ajustes, { nombres: nombresPared });
@@ -408,15 +631,15 @@ async function main(): Promise<void> {
   assert.equal(paredSatin.ok, true, JSON.stringify(paredSatin).slice(0, 500));
   assert.deepEqual(
     estadoSatin.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.product_id),
-    ["P-ORO-ROSA-SATIN", "P-ORO", "P-BLANCO-MATE", "P-FUCSIA"],
-    "el plan firmado compra el blush perlado, no el cromado (y conserva el color que la foto no tiene: ya no se poda)",
+    ["P-ORO-ROSA-SATIN", "P-ORO", "P-BLANCO-MATE"],
+    "el plan firmado compra el blush perlado, no el cromado",
   );
   const { estado: estadoCromado, confirmar: confirmarCromado } = herramienta("Quiero algo así para mi matrimonio", [oroRosaReflex, oroReflex, blancoFashion, fucsiaReflex], paredFoto, 0);
   const paredCromada = await confirmarCromado(argsPared, llamada) as Record<string, unknown>;
   assert.equal(paredCromada.ok, true, JSON.stringify(paredCromada).slice(0, 500));
   assert.deepEqual(
     estadoCromado.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.product_id),
-    ["P-ORO-ROSA", "P-ORO", "P-BLANCO-MATE", "P-FUCSIA"],
+    ["P-ORO-ROSA", "P-ORO", "P-BLANCO-MATE"],
     "sin el color en ese acabado el plan lo conserva: nunca se pierde el color",
   );
   const avisosCromada = paredCromada.avisos_cliente as string[];
@@ -432,7 +655,7 @@ async function main(): Promise<void> {
   assert.equal(pedidoAcabado.ok, true, JSON.stringify(pedidoAcabado).slice(0, 500));
   assert.deepEqual(
     estadoPedidoAcabado.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.product_id),
-    ["P-ORO-ROSA", "P-ORO", "P-BLANCO-MATE", "P-FUCSIA"],
+    ["P-ORO-ROSA", "P-ORO", "P-BLANCO-MATE"],
     "un acabado que pidió el cliente manda sobre el de la foto",
   );
   ok("acabado de la foto: el turno firma el acabado observado y avisa cuando el catálogo no lo tiene");

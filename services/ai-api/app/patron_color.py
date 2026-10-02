@@ -35,7 +35,7 @@ import copy
 import hashlib
 import math
 import unicodedata
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from fractions import Fraction
@@ -43,7 +43,6 @@ from typing import cast
 
 from jsonschema import Draft7Validator
 
-from app.banda_escalonada import columna_de as columna_de_arco
 from app.generated_models import contract_schema
 
 VERSION_PATRON = "patron-color.v1"
@@ -56,50 +55,14 @@ SEPARACION_FLOR_PISTA = 3
 
 TIPOS_RACIMOS = frozenset({"columna", "arco", "semiarco", "guirnalda", "centro_mesa"})
 TIPO_REJILLA = "pared"
-#: Los modos de una pieza con eje (columna, arco, guirnalda), en el orden en que
-#: los ofrece el editor: primero los que se arman sobre el racimo, después los
-#: que dibujan sobre la banda y al final los de toda la vida.
-_MODOS_LINEALES = (
-    "espiral",
-    "intercalado",
-    "franjas",
-    "zigzag",
-    "chevron",
-    "diamante",
-    "punteado",
-    "apilado",
-    "arcoiris",
-    "doslados",
-    "anillos",
-    "bloques",
-    "degradado",
-    "aleatorio",
-    "flor",
-)
+_MODOS_LINEALES = ("espiral", "anillos", "bloques", "degradado", "aleatorio", "flor")
 _MODOS_POR_TIPO: dict[str, tuple[str, ...]] = {
     "columna": _MODOS_LINEALES,
     "arco": _MODOS_LINEALES,
     "semiarco": _MODOS_LINEALES,
     "guirnalda": _MODOS_LINEALES,
-    "centro_mesa": ("espiral", "intercalado", "punteado", "anillos", "bloques", "aleatorio"),
-    # Una pared no tiene lado de afuera ni de adentro, así que `doslados` —que
-    # es justo eso— no se le ofrece; lo demás sí se lee sobre una rejilla plana.
-    "pared": (
-        "intercalado",
-        "franjas",
-        "zigzag",
-        "chevron",
-        "diamante",
-        "punteado",
-        "apilado",
-        "arcoiris",
-        "anillos",
-        "bloques",
-        "degradado",
-        "aleatorio",
-        "damero",
-        "zonas",
-    ),
+    "centro_mesa": ("espiral", "anillos", "bloques", "aleatorio"),
+    "pared": ("anillos", "bloques", "degradado", "aleatorio", "damero", "zonas"),
 }
 _TIPOS_ESPIRAL_SUGERIDA = frozenset({"columna", "arco", "semiarco", "guirnalda"})
 #: Participación del color principal desde la que el preset de una pared va en
@@ -208,15 +171,6 @@ _TIPO_ES = {
 }
 _MODO_ES = {
     "espiral": "espiral",
-    "intercalado": "intercalado",
-    "franjas": "franjas",
-    "zigzag": "zigzag",
-    "chevron": "flechas",
-    "diamante": "diamantes",
-    "punteado": "punteado",
-    "apilado": "apilado",
-    "arcoiris": "arcoíris",
-    "doslados": "dos lados",
     "anillos": "anillos",
     "bloques": "bloques",
     "degradado": "degradé",
@@ -312,14 +266,6 @@ class EstructuraPatron:
     diámetro. ``racimo_armado`` y ``forma_armado`` son los globos por racimo y
     la forma del armado de una guirnalda por partes (ADR-0032), o ``None`` sin
     armado: entonces todo es como antes.
-
-    En un **arco clásico** ``racimo_armado`` son los globos **a lo ancho de su
-    banda**, no los de un anillo: el motor (``app.arco_clasico``) coloca filas de
-    ``n`` globos con las impares a un globo menos y corridas medio puesto, y
-    cuenta lo que colocó. Ahí no es una preferencia: con ese ancho la rejilla del
-    patrón no aproxima el armado, **es** el armado —una fila por fila de la banda
-    y una posición por carril—, y por eso ``carril_sin_globo_impar`` dice qué
-    celda de la rejilla no lleva globo.
     """
 
     estructura_id: str
@@ -332,17 +278,6 @@ class EstructuraPatron:
     materiales: tuple[MaterialPatron, ...]
     racimo_armado: int | None = None
     forma_armado: str | None = None
-    #: En una banda escalonada (el arco clásico), el carril que se queda sin
-    #: globo en las filas impares. Lo calcula el motor que coloca
-    #: (``arco_clasico.carril_sin_globo``) y lo trae ``plan.py``: la rejilla
-    #: tiene esa celda, pero nadie la compra.
-    carril_sin_globo_impar: int | None = None
-    #: Cómo se montó la pieza. ``True`` (el de siempre) es la banda escalonada:
-    #: filas de ``n`` y ``n − 1`` alternas, corridas medio puesto. ``False`` son
-    #: anillos iguales, todas las filas llenas. Lo decide el motor que coloca
-    #: (``arco_clasico``), no el patrón; el patrón solo necesita saberlo para no
-    #: contar una celda que no existe ni perder el medio paso que no hay.
-    escalonado: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -520,20 +455,8 @@ def _indices_base(p: _Patron) -> list[int]:
     base = p.base
     if p.modo == "espiral":
         return _enteros(base["racimo"])
-    if p.modo in ("anillos", "damero", "intercalado", *_MODOS_DE_RAYAS):
+    if p.modo in ("anillos", "damero"):
         return _enteros(base["secuencia"])
-    if p.modo == "apilado":
-        return _enteros(base["capas"])
-    if p.modo == "arcoiris":
-        return _enteros(base["bandas"])
-    if p.modo == "doslados":
-        return [_entero(base["exterior"]), _entero(base["interior"])]
-    if p.modo == "punteado":
-        return [_entero(base["fondo"]), _entero(base["punto"])]
-    if p.modo == "diamante":
-        # El fondo primero, como en la flor y en las zonas: es el color que
-        # manda en la pieza y con el que abren los textos.
-        return [_entero(base["fondo"]), _entero(base["contorno"]), _entero(base["centro"])]
     if p.modo == "degradado":
         return _enteros(base["paradas"])
     if p.modo == "bloques":
@@ -569,48 +492,13 @@ def _mayor_resto(total: int, pesos: Sequence[int | Fraction]) -> list[int]:
     return pisos
 
 
-def _celda_viva(estructura: EstructuraPatron, fila: int, posicion: int) -> bool:
-    """Si esa celda de la rejilla lleva un globo de verdad.
-
-    Solo deja de llevarlo en una banda escalonada: las filas impares van
-    corridas y uno de sus carriles se queda vacío. Contar esa celda hinchaba el
-    conteo —y el precio— con globos que el motor nunca colocó.
-    """
-    return not (
-        estructura.carril_sin_globo_impar is not None
-        and fila % 2 == 1
-        and posicion == estructura.carril_sin_globo_impar
-    )
-
-
-def _globos_de_la_rejilla(estructura: EstructuraPatron, expansion: Expansion) -> int:
-    """Globos que de verdad lleva la rejilla, con sus huecos y sus extras."""
-    vivas = sum(
-        1
-        for fila in range(expansion.filas)
-        for posicion in range(expansion.columnas)
-        if _celda_viva(estructura, fila, posicion)
-    )
-    return vivas + len(expansion.extras)
-
-
 def _celdas_por_material(
-    celdas: Sequence[Sequence[int]],
-    extras: Sequence[tuple[int, int]],
-    cantidad: int,
-    estructura: EstructuraPatron | None = None,
+    celdas: Sequence[Sequence[int]], extras: Sequence[tuple[int, int]], cantidad: int
 ) -> list[int]:
-    """``c_m``: celdas más extras de cada material en una instancia.
-
-    Con ``estructura`` se saltan las celdas que no llevan globo (el carril que
-    queda vacío en las filas impares de una banda escalonada). Sin ella cuenta
-    todas, que es lo correcto en una rejilla llena.
-    """
+    """``c_m``: celdas más extras de cada material en una instancia."""
     conteo = [0] * cantidad
-    for indice, fila in enumerate(celdas):
-        for posicion, material in enumerate(fila):
-            if estructura is not None and not _celda_viva(estructura, indice, posicion):
-                continue
+    for fila in celdas:
+        for material in fila:
             conteo[material] += 1
     for _fila, material in extras:
         conteo[material] += 1
@@ -670,44 +558,9 @@ def _admite_espejo(estructura: EstructuraPatron) -> bool:
     )
 
 
-#: Piezas en las que un motor de armado impone la unidad del patrón: la
-#: guirnalda por partes (ADR-0032) y el arco clásico de anillos.
-_TIPOS_CON_ARMADO = frozenset({"guirnalda", "arco", "columna"})
-
-#: Las piezas que **rechazan** un patrón con otra unidad. Solo el arco: su banda
-#: es el conteo y una rejilla de otro ancho pintaría una pieza que no se cotizó.
-#:
-#: Una **columna** no está aquí a propósito, aunque su rejilla también sea su
-#: armado: hay planes ya firmados con un racimo de cuatro sobre columnas que hoy
-#: se arman en quintetos, y rechazarlos los dejaba sin resolver (un 422 que la
-#: app enseña como «el servicio no está disponible»). Ahí manda el armado y el
-#: racimo del patrón se usa solo como ciclo de color, que es lo que ya hacía
-#: antes de que la columna tuviera motor.
-_TIPOS_ARMADOS_EXACTOS = frozenset({"arco"})
-
-
-def _banda_de_armado(estructura: EstructuraPatron) -> int | None:
-    """Globos a lo ancho que colocó el motor, o ``None`` si la pieza no se arma.
-
-    Es la REJILLA: tantas celdas por fila. No confundir con
-    ``_racimo_de_armado``, que es el ciclo de color y puede ser más corto.
-    """
-    return estructura.racimo_armado if estructura.tipo in _TIPOS_CON_ARMADO else None
-
-
 def _racimo_de_armado(estructura: EstructuraPatron) -> int | None:
-    """Globos de la unidad que impone el armado de la pieza, o ``None``.
-
-    Son los del racimo en una guirnalda por partes (ADR-0032), los del anillo de
-    una columna clásica y los de la banda de un arco clásico. En todos los casos
-    la unidad no la elige el patrón: la trae la pieza ya armada.
-
-    **No confundir con el ciclo de color de una espiral**, que es otra cosa y
-    puede ser más corto: eso es ``ciclo_de_color_de_banda``, y mezclarlos dejó
-    sin patrón a los arcos leídos de una foto (su ``globos_por_racimo`` salía con
-    el ciclo y chocaba contra la banda).
-    """
-    return _banda_de_armado(estructura)
+    """Globos por racimo del armado de una guirnalda (ADR-0032), o ``None``."""
+    return estructura.racimo_armado if estructura.tipo == "guirnalda" else None
 
 
 def _globos_por_racimo(p: _Patron) -> int:
@@ -716,46 +569,6 @@ def _globos_por_racimo(p: _Patron) -> int:
     if p.modo == "espiral":
         return len(_enteros(p.base["racimo"]))
     return 4
-
-
-#: Modos que pintan A LO ANCHO de la fila (el resto deja la fila de un color).
-#: Son los únicos a los que el giro del anillo les cambia algo.
-_MODOS_A_LO_ANCHO = frozenset({"espiral", "intercalado"})
-
-#: La inclinación y el ancho de franja con que el motor de referencia dibuja una
-#: espiral (``patrones.ts``: ``inclinacion(2)`` y ``anchoFranja(2)``). No son
-#: perillas del contrato: son lo que define la espiral de ese motor, y con ellas
-#: cada medio paso de columna adelanta un puesto del racimo.
-_ESPIRAL_INCLINACION = 2.0
-_ESPIRAL_ANCHO = 2.0
-
-
-def _giro_por_armado(estructura: EstructuraPatron, p: _Patron) -> int:
-    """Cada cuántas filas se corre el patrón un puesto. 0 = no se corre.
-
-    En un **arco clásico** la rejilla es la banda estirada y cada carril es una
-    columna fija del dibujo, así que un patrón que repite la misma fila se
-    dibuja como rayas paralelas al arco. Correrlo **un puesto por fila** es lo
-    que hace que la espiral se trence, y es lo que hace el motor de referencia
-    con su inclinación.
-
-    En una **columna clásica** se corre **cada dos capas**, y no es un ajuste a
-    ojo: la geometría ya pone la otra mitad. Sus capas van giradas medio puesto
-    una sí y otra no (``columna_clasica``, el ``escalonado`` del original), así
-    que para que un color trace una hélice continua el patrón solo tiene que
-    aportar el otro medio puesto — un puesto entero cada dos capas. Es lo mismo
-    que dice el motor de referencia, donde la espiral de una columna se evalúa
-    en ``q − 0,5 · i`` con ``q`` ya corrida (``columna/patrones.ts``).
-
-    En una **guirnalda** no se corre: ahí el racimo se gira de verdad al armarlo
-    (``trazo``), el racimo repetido igual ya sale en espiral, y correrlo además
-    lo giraría dos veces.
-    """
-    if _racimo_de_armado(estructura) is None or p.modo not in _MODOS_A_LO_ANCHO:
-        return 0
-    if estructura.tipo == "arco":
-        return 1
-    return 2 if estructura.tipo == "columna" else 0
 
 
 def _columnas_de_rejilla(estructura: EstructuraPatron) -> int:
@@ -789,71 +602,12 @@ def _posiciones_de_acento(estructura: EstructuraPatron, orden: int) -> dict[str,
     return {"posiciones": list(range(orden % paso, _columnas_de_rejilla(estructura), paso))}
 
 
-def _es_banda_escalonada(estructura: EstructuraPatron) -> bool:
-    """Si las filas de la pieza van escalonadas (las impares, un globo menos).
-
-    Es el empaquetado del motor del arco clásico (``app.arco_clasico``, porteado
-    del diseñador de arcos). Una guirnalda por partes no: ahí cada racimo lleva
-    sus ``k`` globos completos.
-    """
-    return (
-        estructura.tipo == "arco"
-        and estructura.racimo_armado is not None
-        and estructura.escalonado
-    )
-
-
-def _columnas_de_arco(
-    estructura: EstructuraPatron, filas: int, columnas: int
-) -> list[list[float | None]] | None:
-    """La columna real de cada celda de un arco clásico, o ``None`` si no lo es.
-
-    En una banda escalonada el carril es un entero y la columna no: las filas
-    pares van en ``carril + 0,5`` y las impares en enteros. El motor de
-    referencia evalúa sus patrones con esa columna, y es de donde sale que una
-    franja mida un globo y avance en diagonal. Quien la calcula es
-    ``arco_clasico``, que es quien coloca: aquí solo se le pregunta.
-    """
-    if estructura.tipo != "arco" or _banda_de_armado(estructura) is None:
-        return None
-    return [
-        [
-            columna_de_arco(fila, carril, columnas, estructura.escalonado)
-            for carril in range(columnas)
-        ]
-        for fila in range(filas)
-    ]
-
-
-def _filas_escalonadas(total: int, ancho: int) -> int:
-    """Filas de una banda escalonada con ``total`` globos y ``ancho`` a lo ancho.
-
-    Con las impares a un globo menos, ``total = ceil(f/2)·a + floor(f/2)·(a−1)``,
-    o sea ``f·(2a−1)/2``. Se despeja y se redondea: es la inversa exacta de lo
-    que cuenta el motor, así que la rejilla sale con las filas que de verdad
-    tiene la pieza y no hace falta ajustar el total a racimos completos.
-    """
-    return max(1, _redondear(2 * total / max(2 * ancho - 1, 1)))
-
-
 def _rejilla(estructura: EstructuraPatron, p: _Patron) -> tuple[str, int, int]:
     total = max(0, estructura.total)
     if estructura.tipo == TIPO_REJILLA:
         columnas = _columnas_de_rejilla(estructura)
         return "rejilla", max(1, _redondear(total / columnas)), columnas
     k = _globos_por_racimo(p)
-    if _es_banda_escalonada(estructura):
-        # La rejilla de un arco clásico la fija el ARMADO, no el patrón: el motor
-        # colocó esa banda y la cotizó. El racimo de la espiral es otra cosa —el
-        # ciclo de color— y puede ser más corto (ver ``ciclo_de_color_de_banda``).
-        banda = _banda_de_armado(estructura) or k
-        return "racimos", _filas_escalonadas(total, banda), banda
-    armado = _banda_de_armado(estructura)
-    if armado is not None and estructura.tipo in ("arco", "columna"):
-        # El armado manda sobre el racimo que traiga el patrón: el motor colocó
-        # esa unidad y la cotizó. En un arco de anillos iguales y en una columna
-        # el total ES filas × unidad, así que la rejilla sale exacta.
-        return "racimos", max(1, _redondear(total / armado)), armado
     return "racimos", max(1, _redondear(total / k)), k
 
 
@@ -881,32 +635,6 @@ def _validar(estructura: EstructuraPatron, p: _Patron) -> tuple[str, int, int]:
             f"El patrón «{_MODO_ES[p.modo]}» no se arma en {_TIPO_ES[tipo]}; elige {opciones}.",
         )
     k = _globos_por_racimo(p)
-    # La BANDA, no el ciclo de color: lo que no puede discrepar es el ancho de la
-    # rejilla contra el de la pieza colocada. El ciclo (``_racimo_de_armado``) es
-    # otra cosa y puede ser más corto.
-    armado = _banda_de_armado(estructura)
-    if armado is not None and estructura.tipo in _TIPOS_ARMADOS_EXACTOS and p.modo == "flor":
-        # Una flor cuelga un globo de su fila SIN darle posición (``extras``), y
-        # en un arco clásico eso añadiría globos por encima del armado: el
-        # conteo volvería a salir de la rejilla en vez de la pieza, y la pieza es
-        # la que se cotiza. En la banda, además, no hay dónde colgarlo: todos
-        # sus globos tienen sitio.
-        raise PatronColorInvalido(
-            "modo_no_permitido",
-            "La flor no se arma en una pieza de armado exacto: cada globo tiene su sitio"
-            " y no queda dónde colgar el centro. Elige otro patrón.",
-        )
-    # Aquí había un guard que rechazaba un patrón cuyo racimo no midiera lo que
-    # la banda (``racimo_no_es_el_del_anillo``). Se retiró el 2026-10-01 porque
-    # **ya no protege nada y rompía el editor**: desde que ``_rejilla`` toma el
-    # ancho del armado (``_banda_de_armado``), el ``globos_por_racimo`` del
-    # patrón no decide ninguna celda. Lo único que conseguía era que cada toque
-    # en el panel devolviera un 422 —un arco de 2,4 m se arma en banda 3 y el
-    # patrón que el editor manda de vuelta trae el 4 que leyó la foto—, y con él
-    # la gráfica se quedaba congelada en el estado anterior.
-    #
-    # El ``motivo`` sigue existiendo en el contrato para quien ya lo lea; lo que
-    # no existe es el camino que lo lanzaba.
     if p.modo == "espiral" and len(_enteros(p.base["racimo"])) != k:
         raise PatronColorInvalido(
             "racimo_incompleto",
@@ -1116,277 +844,11 @@ def _degradado_diagonal(
     return [[celda(fila, posicion) for posicion in range(columnas)] for fila in range(filas)]
 
 
-#: Modos que pintan rayas: los tres son la misma regla —el color sale de
-#: ``(fila + desplazamiento(columna)) / ancho``— y solo cambian en cuánto
-#: desplaza cada columna. Porteados de ``src/lib/arco/patrones.ts`` del
-#: clasificador de decoraciones.
-#: Lo más chico que puede valer un divisor de los modos nuevos (``ancho``,
-#: ``periodo``): el contrato ya los acota por arriba de cero, esto solo evita
-#: una división por cero si alguna vez bajara el mínimo.
-_EPS_PATRON = 1e-6
-
-_MODOS_DE_RAYAS = frozenset({"franjas", "zigzag", "chevron"})
-
-#: Modos en que el color lo decide la COLUMNA (a lo ancho de la banda) y no la
-#: fila: la pieza sale con bandas paralelas a su eje.
-_MODOS_DE_COLUMNA = frozenset({"apilado", "arcoiris", "doslados"})
-
-
-def _numero(valor: object) -> float:
-    if isinstance(valor, bool) or not isinstance(valor, (int, float)):
-        raise PatronColorInvalido("patron_invalido", "El patrón trae un número que no lo es.")
-    return float(valor)
-
-
-def _booleano(valor: object) -> bool:
-    if not isinstance(valor, bool):
-        raise PatronColorInvalido("patron_invalido", "El patrón trae un sí/no que no lo es.")
-    return valor
-
-
-def _triangular(x: float) -> float:
-    """Onda triangular de periodo 2 en el rango [−1, 1]."""
-    return 2 * abs((x % 2) - 1) - 1
-
-
-def _desplazamiento(p: _Patron, columnas: int, *, centro_de_banda: bool) -> Callable[[float], float]:
-    """Cuánto sube la raya en cada columna: es lo único que separa a los tres modos.
-
-    ``centro_de_banda``: en una banda escalonada el centro es ``n / 2`` (como en
-    ``patrones.ts``), porque las columnas van en medios pasos y el centro cae
-    entre dos carriles. En una rejilla llena las columnas son enteras y el
-    centro es ``(columnas − 1) / 2``, el carril de en medio.
-    """
-    base = p.base
-    if p.modo == "franjas":
-        inclinacion = _numero(base["inclinacion"])
-
-        def recta(posicion: float) -> float:
-            return inclinacion * posicion
-
-        return recta
-    if p.modo == "zigzag":
-        amplitud = _numero(base["amplitud"])
-        periodo = max(_numero(base["periodo"]), _EPS_PATRON)
-
-        def quiebre(posicion: float) -> float:
-            return amplitud * _triangular(posicion / periodo)
-
-        return quiebre
-    # Chevron: la V se abre desde el centro de la banda hacia los dos bordes.
-    signo = -1.0 if _booleano(base["invertir"]) else 1.0
-    inclinacion = _numero(base["inclinacion"])
-    medio = columnas / 2 if centro_de_banda else (columnas - 1) / 2
-
-    def uve(posicion: float) -> float:
-        return signo * inclinacion * abs(posicion - medio)
-
-    return uve
-
-
-def _rayas(
-    p: _Patron,
-    filas: int,
-    columnas: int,
-    columnas_reales: Sequence[Sequence[float | None]] | None = None,
-) -> list[list[int]]:
-    """Las tres familias de rayas, con la columna real del globo cuando la hay.
-
-    Con ``columnas_reales`` (un arco clásico) la raya se evalúa en la columna
-    fraccionaria, igual que en ``patrones.ts``: el medio paso de las filas pares
-    entra en la cuenta y la diagonal sale continua en vez de escalonada.
-    """
-    secuencia = _enteros(p.base["secuencia"])
-    ancho = max(_numero(p.base["ancho"]), _EPS_PATRON)
-    desplazar = _desplazamiento(p, columnas, centro_de_banda=columnas_reales is not None)
-
-    def columna_de(fila: int, posicion: int) -> float:
-        if columnas_reales is None:
-            return posicion
-        real = columnas_reales[fila][posicion]
-        return posicion + 0.5 if real is None else real
-
-    return [
-        [
-            secuencia[
-                math.floor((fila + desplazar(columna_de(fila, posicion))) / ancho) % len(secuencia)
-            ]
-            for posicion in range(columnas)
-        ]
-        for fila in range(filas)
-    ]
-
-
-def _color_de_columna(p: _Patron, columnas: int) -> list[int]:
-    """El color de cada columna en los modos que pintan bandas a lo ancho."""
-    base = p.base
-    if p.modo == "apilado":
-        capas = _enteros(base["capas"])
-        invertir = _booleano(base["invertir"])
-        colores: list[int] = []
-        for posicion in range(columnas):
-            # 0 en los dos bordes de la banda, 1 en su centro.
-            centro = min(posicion + 0.5, columnas - posicion - 0.5) / (columnas / 2)
-            indice = min(len(capas) - 1, int(centro * len(capas)))
-            colores.append(capas[len(capas) - 1 - indice if invertir else indice])
-        return colores
-    if p.modo == "arcoiris":
-        bandas = _enteros(base["bandas"])
-        invertir = _booleano(base["invertir"])
-        # Una banda por color; si la pieza es tan angosta que no caben todas, se
-        # reparten las que quepan tomando los colores de punta a punta.
-        cuantas = max(1, min(len(bandas), columnas))
-        colores = []
-        for posicion in range(columnas):
-            banda = min(cuantas - 1, int(((posicion + 0.5) / columnas) * cuantas))
-            if invertir:
-                banda = cuantas - 1 - banda
-            indice = (
-                banda
-                if cuantas in (1, len(bandas))
-                else round(banda * (len(bandas) - 1) / (cuantas - 1))
-            )
-            colores.append(bandas[min(len(bandas) - 1, indice)])
-        return colores
-    exterior, interior = _entero(base["exterior"]), _entero(base["interior"])
-    corte = _numero(base["corte"])
-    return [
-        interior if (posicion + 0.5) / columnas >= corte else exterior
-        for posicion in range(columnas)
-    ]
-
-
-def _por_columna(p: _Patron, filas: int, columnas: int) -> list[list[int]]:
-    colores = _color_de_columna(p, columnas)
-    if p.modo == "doslados" and _booleano(p.base["alternar"]):
-        # Pasada la mitad de la pieza, los dos lados se intercambian.
-        volteado = list(reversed(colores))
-        return [list(colores if fila < filas / 2 else volteado) for fila in range(filas)]
-    return [list(colores) for _fila in range(filas)]
-
-
-def _diamantes(p: _Patron, filas: int, columnas: int) -> list[list[int]]:
-    """Rombos repetidos a lo largo de la pieza, con medios rombos en los bordes."""
-    base = p.base
-    centro_m, contorno_m, fondo_m = (
-        _entero(base["centro"]),
-        _entero(base["contorno"]),
-        _entero(base["fondo"]),
-    )
-    separacion = _entero(base["separacion"])
-    radio = _numero(base["radio"])
-    aspecto = _numero(base["aspecto"])
-    celdas: list[list[int]] = []
-    for fila in range(filas):
-        linea: list[int] = []
-        cercano = round((fila - separacion / 2) / separacion)
-        for posicion in range(columnas):
-            x = posicion + 0.5
-            menor = math.inf
-            for vuelta in (cercano - 1, cercano, cercano + 1):
-                eje = vuelta * separacion + separacion / 2
-                # 0,866 es el alto de una fila en diámetros (empaquetado hexagonal).
-                menor = min(menor, abs((fila - eje) * 0.866 * aspecto) + abs(x - columnas / 2))
-                borde = abs((fila - (eje + separacion / 2)) * 0.866 * aspecto)
-                menor = min(menor, borde + x, borde + (columnas - x))
-            linea.append(
-                centro_m if menor < radio * 0.45 else contorno_m if menor < radio else fondo_m
-            )
-        celdas.append(linea)
-    return celdas
-
-
-def _lunares(p: _Patron, filas: int, columnas: int) -> list[list[int]]:
-    """Un fondo con lunares repartidos con regularidad."""
-    base = p.base
-    fondo_m, punto_m = _entero(base["fondo"]), _entero(base["punto"])
-    separacion, cada = _entero(base["separacion"]), _entero(base["cada"])
-    escalonar = _booleano(base["escalonar"])
-    celdas: list[list[int]] = []
-    for fila in range(filas):
-        # La primera hilera de lunares cae a media separación del arranque, para
-        # que la pieza no empiece ni termine con una hilera pegada al borde.
-        if (fila + separacion // 2) % separacion:
-            celdas.append([fondo_m] * columnas)
-            continue
-        hilera = (fila + separacion // 2) // separacion
-        corrido = 1 if escalonar and hilera % 2 else 0
-        celdas.append(
-            [
-                punto_m if (posicion - corrido) % cada == 0 else fondo_m
-                for posicion in range(columnas)
-            ]
-        )
-    return celdas
-
-
-def _base(
-    p: _Patron,
-    filas: int,
-    columnas: int,
-    *,
-    gira_cada: int = 0,
-    columnas_reales: Sequence[Sequence[float | None]] | None = None,
-) -> tuple[list[list[int]], list[tuple[int, int]]]:
+def _base(p: _Patron, filas: int, columnas: int) -> tuple[list[list[int]], list[tuple[int, int]]]:
     base = p.base
     if p.modo == "espiral":
         racimo = _enteros(base["racimo"])
-        if columnas_reales is not None:
-            # El motor de referencia (``patrones.ts``, modo ``espiral``) decide
-            # el color con ``floor((fila + inclinación · c) / ancho)``, donde
-            # ``c`` es la columna REAL del globo. Con la inclinación y el ancho
-            # por defecto de allá —2 y 2— cada medio paso de ``c`` adelanta un
-            # puesto, así que la franja mide un globo y avanza en diagonal: la
-            # cuerda trenzada. Correr la fila entera un puesto, que es lo que se
-            # hacía, repite la misma fila en los dos carriles del medio paso y
-            # dibuja rayas quebradas en vez de una espiral.
-            #
-            # Qué color va en cada puesto lo sigue decidiendo el racimo, que es
-            # quien reparte la participación: esto cambia DÓNDE cae cada puesto,
-            # no cuántos puestos lleva cada color.
-            return [
-                [
-                    racimo[
-                        math.floor(
-                            (fila + _ESPIRAL_INCLINACION * (columna if columna is not None else carril + 0.5))
-                            / _ESPIRAL_ANCHO
-                        )
-                        % len(racimo)
-                    ]
-                    for carril, columna in enumerate(columnas_reales[fila])
-                ]
-                for fila in range(filas)
-            ], []
-        # ``gira_cada``: cada cuántas filas se corre el racimo un puesto, que es
-        # el medio paso con que se arma la pieza (``_giro_por_armado``: una fila
-        # en un arco, dos capas en una columna). Rotar una fila no cambia
-        # cuántos globos de cada color lleva, así que el conteo y el precio son
-        # los mismos con giro y sin él.
-        def corrida(fila: int) -> list[int]:
-            # El racimo es el CICLO de color y la fila mide lo que mide la
-            # rejilla, que la fija el armado: los dos coinciden en una pieza sin
-            # motor, pero no cuando la columna se arma en quintetos y el patrón
-            # viene con un racimo de cuatro (hay planes firmados así). El ciclo
-            # se repite hasta llenar la fila en vez de dejarla corta, que era lo
-            # que tiraba el despiece.
-            puestos = (fila // gira_cada) % len(racimo) if gira_cada else 0
-            return [racimo[(columna - puestos) % len(racimo)] for columna in range(columnas)]
-
-        return [corrida(fila) for fila in range(filas)], []
-    if p.modo == "intercalado":
-        secuencia, paso = _enteros(base["secuencia"]), _entero(base["paso"])
-        return [
-            [secuencia[(posicion + fila * paso) % len(secuencia)] for posicion in range(columnas)]
-            for fila in range(filas)
-        ], []
-    if p.modo in _MODOS_DE_RAYAS:
-        return _rayas(p, filas, columnas, columnas_reales), []
-    if p.modo in _MODOS_DE_COLUMNA:
-        return _por_columna(p, filas, columnas), []
-    if p.modo == "diamante":
-        return _diamantes(p, filas, columnas), []
-    if p.modo == "punteado":
-        return _lunares(p, filas, columnas), []
+        return [list(racimo) for _fila in range(filas)], []
     if p.modo == "aleatorio":
         return _aleatorio(_pesos(base["pesos"]), _entero(base["semilla"]), filas, columnas), []
     if p.modo == "zonas":
@@ -1447,13 +909,7 @@ def _aplicar_capas(p: _Patron, celdas: list[list[int]], unidad: str, avisos: lis
 
 def _expandir(estructura: EstructuraPatron, p: _Patron) -> Expansion:
     geometria, filas, columnas = _validar(estructura, p)
-    celdas, extras = _base(
-        p,
-        filas,
-        columnas,
-        gira_cada=_giro_por_armado(estructura, p),
-        columnas_reales=_columnas_de_arco(estructura, filas, columnas),
-    )
+    celdas, extras = _base(p, filas, columnas)
     avisos: list[str] = []
     unidad = _unidad(geometria, columnas, transversal=False).singular
     _aplicar_capas(p, celdas, unidad, avisos)
@@ -1537,13 +993,8 @@ def conteo_por_instancia(estructura: EstructuraPatron, expansion: Expansion) -> 
     varios se conserva ``T`` y se reparte en proporción a la rejilla, con al
     menos un globo por color de la gráfica.
     """
-    celdas = _celdas_por_material(
-        expansion.celdas,
-        expansion.extras,
-        len(estructura.materiales),
-        estructura=estructura,
-    )
-    globos = _globos_de_la_rejilla(estructura, expansion)
+    celdas = _celdas_por_material(expansion.celdas, expansion.extras, len(estructura.materiales))
+    globos = expansion.filas * expansion.columnas + len(expansion.extras)
     cuotas = tuple(cantidad / globos for cantidad in celdas)
     if estructura.un_tamano:
         return Conteo(total=globos, unidades=tuple(celdas), cuotas=cuotas)
@@ -1587,50 +1038,8 @@ def _pesos_por_participacion(
     ]
 
 
-def ciclo_de_color_de_banda(banda: int, materiales: int) -> int:
-    """Puestos del ciclo de color de una espiral sobre una banda escalonada.
-
-    **Es la lista de colores, y nada más**: un puesto por color. Así es como lo
-    hace el motor de referencia, donde la espiral cicla sobre ``cols`` —su lista
-    de 2 a 4 colores— y la banda es otra perilla que no interviene
-    (``patrones.ts``, modo ``espiral``).
-
-    Esto es lo que hace que una espiral de dos colores salga **alternando globo a
-    globo**: ``azul, dorado, azul, dorado`` a lo ancho de la banda, con una franja
-    de un globo de ancho cada una. Comprobado contra el motor de referencia sobre
-    el mismo arco: sus filas salen ``A o A o`` / ``o A o`` / ``o A o A``, y con
-    este ciclo las nuestras salen iguales.
-
-    Antes el ciclo medía lo que la banda y se rellenaba por participación, así que
-    con dos colores al 67/33 el racimo salía ``[azul, azul, dorado]`` y la banda
-    enseñaba **dos azules seguidos** donde la pieza real alterna. Una espiral de
-    dos colores reparte mitad y mitad por construcción: la participación no se le
-    puede imponer, porque cada color es una franja y todas las franjas miden lo
-    mismo.
-    """
-    return materiales
-
-
 def _racimo_sugerido(estructura: EstructuraPatron, k: int = 4) -> list[int]:
-    """``k`` posiciones: una por material y el resto por mayor resto, AGRUPADAS.
-
-    Agrupadas y no intercaladas, y esa es la diferencia entre una espiral y un
-    damero. Un racimo de cuarteto con dos colores alternados —``A, B, A, B``—
-    pone cada color en dos puestos opuestos del anillo; al girar el anillo medio
-    paso en cada capa, lo que sale es el tejido de cuadros (cada globo rodeado
-    de los del otro color), que es un patrón de verdad pero se llama
-    ``intercalado``. Para que haya espiral, un color tiene que ocupar un SECTOR
-    seguido del anillo —``A, A, B, B``— y entonces ese sector avanza capa a capa
-    y dibuja la banda continua que sube del pie izquierdo, por la clave, al pie
-    derecho.
-
-    Hasta el 2026-10-01 esto intercalaba, y el estilo «espiral» de un arco
-    clásico salía en cuadros. No se veía porque el dibujo anterior tampoco
-    mostraba el giro del anillo.
-
-    Cuántos puestos lleva cada color no cambia (los decide la participación por
-    mayor resto), así que el conteo y el precio son los mismos: lo único que
-    cambia es en qué orden van alrededor del anillo.
+    """``k`` posiciones: una por material y el resto por mayor resto, intercaladas.
 
     Exige ``k >= len(materiales)``; con ``k = 4`` es el racimo del preset (§6).
     """
@@ -1640,10 +1049,16 @@ def _racimo_sugerido(estructura: EstructuraPatron, k: int = 4) -> list[int]:
     if sum(sobrantes) == 0:
         sobrantes = [Fraction(1)] * cantidad
     posiciones = [1 + extra for extra in _mayor_resto(k - cantidad, sobrantes)]
-    orden = sorted(
-        range(cantidad), key=lambda indice: (-posiciones[indice], -partes[indice], indice)
-    )
-    return [indice for indice in orden for _puesto in range(posiciones[indice])]
+    racimo: list[int] = []
+    anterior: int | None = None
+    for _posicion in range(k):
+        disponibles = [indice for indice in range(cantidad) if posiciones[indice] > 0]
+        distintos = [indice for indice in disponibles if indice != anterior] or disponibles
+        elegido = min(distintos, key=lambda indice: (-posiciones[indice], -partes[indice], indice))
+        racimo.append(elegido)
+        posiciones[elegido] -= 1
+        anterior = elegido
+    return racimo
 
 
 def _preset_por_racimo(estructura: EstructuraPatron, k: int) -> dict[str, object]:
@@ -1656,28 +1071,13 @@ def _preset_por_racimo(estructura: EstructuraPatron, k: int) -> dict[str, object
     un racimo (``_racimo_sugerido``); si no, anillos: cada racimo de un color,
     en orden de participación. Si ninguno se puede armar, confeti con los
     racimos del armado, para que la unidad siga siendo la suya.
-
-    **Con DOS colores manda ``anillos``**, no la espiral. Un arco o una columna
-    de dos tonos con los racimos macizos alternando —uno morado, uno lila, uno
-    morado— es la pieza de dos colores más frecuente del oficio, y es la que un
-    decorador arma por defecto. La espiral de dos colores existe, pero es la
-    excepción, y hasta ahora era el punto de partida de todas. Con tres o más
-    colores se queda la espiral, que es donde una espiral se lee de verdad.
     """
     cantidad = len(estructura.materiales)
-    base: dict[str, object]
-    if cantidad == 2:
-        base = {"modo": "anillos", "secuencia": _por_participacion(estructura), "largo": 1}
-    elif cantidad <= k:
-        base = {
-            "modo": "espiral",
-            # El ciclo de color, que en una banda escalonada es más corto que
-            # la banda: ver ``ciclo_de_color_de_banda``.
-            "racimo": _racimo_sugerido(estructura, ciclo_de_color_de_banda(k, cantidad)),
-            "trazo": "espiral",
-        }
-    else:
-        base = {"modo": "anillos", "secuencia": _por_participacion(estructura), "largo": 1}
+    base: dict[str, object] = (
+        {"modo": "espiral", "racimo": _racimo_sugerido(estructura, k), "trazo": "espiral"}
+        if cantidad <= k
+        else {"modo": "anillos", "secuencia": _por_participacion(estructura), "largo": 1}
+    )
     confeti: dict[str, object] = {
         "modo": "aleatorio",
         "pesos": _pesos_por_participacion(estructura, range(cantidad)),
@@ -1844,71 +1244,6 @@ def _preset_de_estilo(estructura: EstructuraPatron, modo: str, k: int | None) ->
         else:
             racimo = orden[:k]
         patron["base"] = {"modo": "espiral", "racimo": racimo, "trazo": "espiral"}
-    elif modo == "intercalado":
-        patron["base"] = {"modo": "intercalado", "secuencia": orden[:4], "paso": 1}
-    elif modo in _MODOS_DE_RAYAS:
-        # Las perillas de forma arrancan donde el diseñador de arcos del
-        # clasificador las deja: son los valores con los que cada patrón se lee.
-        secuencia = orden[:5] if modo == "franjas" else orden[:4]
-        if modo == "franjas":
-            patron["base"] = {
-                "modo": "franjas",
-                "secuencia": secuencia,
-                "ancho": 4,
-                "inclinacion": 2,
-            }
-        elif modo == "zigzag":
-            patron["base"] = {
-                "modo": "zigzag",
-                "secuencia": secuencia,
-                "ancho": 1.5,
-                "amplitud": 2.5,
-                "periodo": 3,
-            }
-        else:
-            patron["base"] = {
-                "modo": "chevron",
-                "secuencia": secuencia,
-                "ancho": 2,
-                "inclinacion": 2,
-                "invertir": False,
-            }
-    elif modo == "diamante":
-        patron["base"] = {
-            "modo": "diamante",
-            "fondo": orden[0],
-            "contorno": orden[1],
-            "centro": orden[2] if cantidad >= 3 else orden[0],
-            "separacion": 8,
-            "radio": 1.8,
-            "aspecto": 0.9,
-        }
-    elif modo == "punteado":
-        patron["base"] = {
-            "modo": "punteado",
-            "fondo": orden[0],
-            "punto": orden[1],
-            "separacion": 4,
-            "cada": 2,
-            "escalonar": True,
-        }
-    elif modo == "apilado":
-        patron["base"] = {"modo": "apilado", "capas": orden[:5], "invertir": False}
-    elif modo == "arcoiris":
-        # El arcoíris pide tres bandas como mínimo. Con dos colores se repite el
-        # principal por fuera y por dentro, que es un arcoíris de tres bandas de
-        # verdad; fallar aquí dejaría al decorador sin el estilo que el editor
-        # sí le ofrece.
-        bandas = [orden[indice % cantidad] for indice in range(max(3, min(cantidad, 8)))]
-        patron["base"] = {"modo": "arcoiris", "bandas": bandas, "invertir": False}
-    elif modo == "doslados":
-        patron["base"] = {
-            "modo": "doslados",
-            "exterior": orden[0],
-            "interior": orden[1],
-            "corte": 0.5,
-            "alternar": False,
-        }
     elif modo == "anillos":
         patron["base"] = {"modo": "anillos", "secuencia": orden, "largo": 1}
     elif modo == "bloques":
@@ -2017,100 +1352,6 @@ class PuntoDePartida:
 
     patron: dict[str, object]
     avisos: tuple[str, ...]
-
-
-# --- Las perillas de un estilo, por su nombre común ----------------------------
-
-
-#: Cómo se llama en cada estilo la perilla que se pide por su nombre común. El
-#: chat no compone un ``patron-color.v1`` entero (por eso existe
-#: ``patron_modo``), pero sí puede decir «más ancho» o «más juntos», y esta
-#: tabla traduce eso al campo que lleva ese estilo. Un estilo que no está en la
-#: fila no tiene esa perilla, y pedirla devuelve un aviso en vez de un error.
-_PERILLAS: Mapping[str, Mapping[str, str]] = {
-    "ancho": {"franjas": "ancho", "zigzag": "ancho", "chevron": "ancho"},
-    "separacion": {
-        "anillos": "largo",
-        "bloques": "",  # el largo de un bloque sale de su peso, no de una perilla
-        "flor": "separacion",
-        "diamante": "separacion",
-        "punteado": "separacion",
-        "intercalado": "paso",
-        "damero": "tamano",
-    },
-    "inclinacion": {"franjas": "inclinacion", "chevron": "inclinacion"},
-    "invertir": {
-        "chevron": "invertir",
-        "apilado": "invertir",
-        "arcoiris": "invertir",
-        "doslados": "alternar",
-    },
-}
-
-#: Cómo se nombra cada perilla en un aviso para el decorador.
-_PERILLA_ES: Mapping[str, str] = {
-    "ancho": "el ancho",
-    "separacion": "la separación",
-    "inclinacion": "la inclinación",
-    "invertir": "el invertido",
-}
-
-#: Las perillas que el chat puede pedir, para que la herramienta y el esquema
-#: operacional tomen la lista de un solo sitio.
-PERILLAS: tuple[str, ...] = tuple(_PERILLAS)
-
-
-def _acotar(limites: Mapping[str, object], valor: float) -> float:
-    """El valor dentro de lo que el CONTRATO admite para ese campo.
-
-    Los topes se leen del esquema exportado y no se copian aquí: si mañana una
-    franja admite ocho globos de ancho, esto lo admite el mismo día.
-    """
-    minimo = float(cast(float, limites.get("minimum", valor)))
-    maximo = float(cast(float, limites.get("maximum", valor)))
-    acotado = min(maximo, max(minimo, valor))
-    return float(round(acotado)) if limites.get("type") == "integer" else acotado
-
-
-def ajustar_perillas(
-    patron: Mapping[str, object], ajustes: Mapping[str, object]
-) -> tuple[dict[str, object], list[str]]:
-    """Mueve las perillas de un patrón ya armado, sin cambiar su estilo.
-
-    Devuelve el patrón nuevo y los avisos: uno por cada perilla que el estilo no
-    tiene y uno por cada valor que hubo que acotar. Nunca lanza por una perilla
-    de más — el chat pide por nombre común y no todos los estilos los tienen—,
-    pero el patrón que sale vuelve a pasar por ``validar_y_expandir`` en quien
-    lo aplica, así que una combinación imposible sigue sin colarse.
-    """
-    nuevo = dict(patron)
-    base = dict(cast(Mapping[str, object], patron["base"]))
-    modo = str(base["modo"])
-    avisos: list[str] = []
-    for perilla, valor in ajustes.items():
-        if valor is None:
-            continue
-        campo = _PERILLAS.get(perilla, {}).get(modo)
-        if not campo:
-            avisos.append(
-                f"El estilo «{_MODO_ES.get(modo, modo)}» no lleva"
-                f" {_PERILLA_ES.get(perilla, perilla)}: se dejó como estaba."
-            )
-            continue
-        limites = _base_del_contrato(modo)[campo]
-        if limites.get("type") == "boolean":
-            base[campo] = bool(valor)
-            continue
-        acotado = _acotar(limites, _numero(valor))
-        if abs(acotado - _numero(valor)) > 1e-9:
-            avisos.append(
-                f"{_PERILLA_ES.get(perilla, perilla).capitalize()} de"
-                f" «{_MODO_ES.get(modo, modo)}» va de {limites.get('minimum')} a"
-                f" {limites.get('maximum')}: se dejó en {acotado:g}."
-            )
-        base[campo] = int(acotado) if limites.get("type") == "integer" else acotado
-    nuevo["base"] = base
-    return nuevo, avisos
 
 
 def sugerir_patron_modo(
@@ -2250,86 +1491,8 @@ def _base_de_pista(
 ) -> dict[str, object] | None:
     if modo == "espiral":
         k = _entero(pista["globos_por_racimo"]) if pista.get("globos_por_racimo") is not None else 4
-        # AGRUPADO, no alternado, por la misma razón que en `_racimo_sugerido`:
-        # un color tiene que ocupar puestos SEGUIDOS del racimo para que, al
-        # girar la capa, dibuje una espiral. Alternado (A, B, A) dibuja el
-        # tejido de cuadros, que desde el 2026-10-01 tiene su propio estilo
-        # (`intercalado`). Este camino —el patrón que sale de la FOTO— se quedó
-        # alternando cuando se arregló el del preset, y en la tarjeta salía una
-        # «espiral» de tríos A, B, A que no se parecía a ninguna espiral.
-        reparto = _mayor_resto(k, [1] * len(indices))
-        racimo = [indice for indice, cuantos in zip(indices, reparto) for _puesto in range(cuantos)]
+        racimo = [indices[posicion % len(indices)] for posicion in range(k)]
         return {"modo": "espiral", "racimo": racimo, "trazo": "espiral"}
-    if modo == "intercalado":
-        if len(indices) < 2:
-            return None
-        # ``paso`` 1: el tejido corriente, cada fila corrida un puesto. La foto
-        # no distingue un paso mayor, así que no se adivina.
-        return {"modo": "intercalado", "secuencia": indices[:4], "paso": 1}
-    # Los modos porteados del diseñador de arcos: la foto da los colores y el
-    # orden; las perillas de forma arrancan en el valor con el que se leen bien,
-    # que es el que trae ese diseñador (``src/lib/arco/patrones.ts``). Lo que la
-    # foto no puede decir no se adivina.
-    if modo == "franjas":
-        return {"modo": "franjas", "secuencia": indices[:5], "ancho": 4, "inclinacion": 2}
-    if modo == "zigzag":
-        return {
-            "modo": "zigzag",
-            "secuencia": indices[:4],
-            "ancho": 1.5,
-            "amplitud": 2.5,
-            "periodo": 3,
-        }
-    if modo == "chevron":
-        return {
-            "modo": "chevron",
-            "secuencia": indices[:4],
-            "ancho": 2,
-            "inclinacion": 2,
-            "invertir": False,
-        }
-    if modo == "diamante":
-        if len(indices) < 3:
-            return None
-        fondo_d, contorno_d, centro_d = indices[:3]
-        return {
-            "modo": "diamante",
-            "fondo": fondo_d,
-            "contorno": contorno_d,
-            "centro": centro_d,
-            "separacion": 8,
-            "radio": 1.8,
-            "aspecto": 0.9,
-        }
-    if modo == "punteado":
-        if len(indices) < 2:
-            return None
-        return {
-            "modo": "punteado",
-            "fondo": indices[0],
-            "punto": indices[1],
-            "separacion": 4,
-            "cada": 2,
-            "escalonar": True,
-        }
-    if modo == "apilado":
-        if len(indices) < 2:
-            return None
-        return {"modo": "apilado", "capas": indices[:5], "invertir": False}
-    if modo == "arcoiris":
-        if len(indices) < 3:
-            return None
-        return {"modo": "arcoiris", "bandas": indices[:8], "invertir": False}
-    if modo == "doslados":
-        if len(indices) < 2:
-            return None
-        return {
-            "modo": "doslados",
-            "exterior": indices[0],
-            "interior": indices[1],
-            "corte": 0.5,
-            "alternar": False,
-        }
     if modo == "anillos":
         return {"modo": "anillos", "secuencia": indices, "largo": 1}
     if modo == "bloques":
@@ -2469,67 +1632,6 @@ def _materiales_de_base(base: Mapping[str, object]) -> set[int]:
     return usados
 
 
-#: Modos que una foto de frente NO puede separar de unos anillos en un arco
-#: clásico: los dos dicen «el color va cambiando al avanzar» y se ven igual
-#: cuando los racimos son macizos. Un ``doslados``, unos ``bloques`` o un
-#: ``degradado`` sí se distinguen a simple vista, y esos se respetan tal cual.
-_MODOS_COMO_ANILLOS_EN_ARCO = frozenset({"espiral", "aleatorio"})
-#: Colores como mucho para que esa lectura se trate como anillos. Con cuatro o
-#: más, la cinta de cada color se ve avanzar y la lectura se respeta.
-_MAXIMO_COLORES_ANILLOS = 3
-
-
-def _lectura_de_arco_a_anillos(
-    estructura: EstructuraPatron, pista: Mapping[str, object]
-) -> Mapping[str, object]:
-    """Una espiral o un confeti leídos en un arco clásico de pocos tonos son anillos.
-
-    **Por qué se le enmienda la plana a la lectura.** Desde una foto de frente un
-    arco clásico de dos tonos se ve igual armado en anillos, en espiral o con los
-    racimos salteados: en los tres, la mitad que mira al espectador va cambiando
-    de color al avanzar. La diferencia está en lo que la foto no enseña —si un
-    racimo mezcla colores, y en qué orden van los macizos—, así que el modelo
-    acierta la pieza y falla el modo, y lo hace con confianza alta.
-
-    Medido sobre la MISMA foto: ``espiral`` con 0,95 dos veces (con el prompt de
-    producción y con uno reescrito a propósito para separarlos) y ``aleatorio``
-    con 0,95 después, nombrando además tres tonos en una pieza de dos. La
-    confianza no informa de nada aquí, y por eso no sirve de filtro.
-
-    Entre lecturas indistinguibles se elige la pieza común: un arco clásico de
-    dos tonos en anillos es lo que se arma casi siempre; una espiral de verdad es
-    la excepción, y un arco de racimos salteados al azar no se encarga. El
-    decorador recupera cualquiera de las dos en un clic desde «Editar patrón»;
-    al revés —ver una mezcla donde hay anillos— no hay quien lo note en la
-    tarjeta hasta que la pieza está armada.
-
-    La secuencia sale de los MATERIALES, no de los nombres que trajo la foto: en
-    la medición de arriba el mismo material venía nombrado dos veces (``morado``
-    y ``violeta``), y dejar las dos entradas daba dos anillos de uno por cada uno
-    del otro —84/42 en una pieza que pide 63/63—.
-
-    Solo arcos clásicos: una guirnalda o una columna no tienen este parecido.
-    """
-    if estructura.tipo != "arco" or _banda_de_armado(estructura) is None:
-        return pista
-    if str(pista.get("modo")) not in _MODOS_COMO_ANILLOS_EN_ARCO:
-        return pista
-    colores = pista.get("colores")
-    if not isinstance(colores, list):
-        return pista
-    primero_de_material: dict[int, str] = {}
-    for color in colores:
-        indice = material_de_color(estructura.materiales, str(color))
-        if indice is None:
-            # Un color que no es de la pieza: la pista no se entiende entera y
-            # ``patron_desde_pista`` la descarta. Que la descarte como vino.
-            return pista
-        primero_de_material.setdefault(indice, str(color))
-    if not 2 <= len(primero_de_material) <= _MAXIMO_COLORES_ANILLOS:
-        return pista
-    return {**pista, "modo": "anillos", "colores": list(primero_de_material.values())}
-
-
 def patron_desde_pista(
     estructura: EstructuraPatron, pista: Mapping[str, object]
 ) -> dict[str, object] | None:
@@ -2547,7 +1649,6 @@ def patron_desde_pista(
         # Guirnalda armada (E5): la foto da los colores y el estilo; la unidad
         # del racimo es la del armado.
         pista = {**pista, "globos_por_racimo": racimo_armado}
-    pista = _lectura_de_arco_a_anillos(estructura, pista)
     colores = pista.get("colores")
     if not isinstance(colores, list) or not colores:
         return None
@@ -2708,27 +1809,8 @@ def _unidad(geometria: str, k: int, *, transversal: bool) -> _Unidad:
     return _Unidad(singular, plural, femenina, "cluster")
 
 
-#: La unidad de un arco clásico: una **hilera** de su banda escalonada.
-#:
-#: No es un racimo, y por eso no sale de ``_UNIDADES``. El motor
-#: (``app.arco_clasico``, porteado de ``motor.ts``) arma el arco en filas de
-#: ``n`` globos con las impares a un globo menos y corridas medio puesto; no hay
-#: ningún anillo de ``k`` globos que se enhebre y se gire sobre el anterior.
-#:
-#: Llamarlas «tríos» y decir que «se encajan girando 1/6 de vuelta en cada capa»
-#: era la redacción del modelo de ANILLOS que se retiró el 2026-10-01: describía
-#: una pieza que no es la que se dibuja ni la que se cotiza, y la hoja de armado
-#: pedía montar algo distinto de lo que enseña la gráfica.
-_HILERA_DE_BANDA = _Unidad("hilera", "hileras", True, "row")
-
-
 def _plural(n: int, singular: str, plural: str) -> str:
     return singular if n == 1 else plural
-
-
-#: Cómo se dice en castellano cuánto corre el intercalado de una fila a la
-#: siguiente. El contrato acota ``paso`` a 1..3, así que la tabla es completa.
-_PUESTOS_ES: Mapping[int, str] = {1: "un", 2: "dos", 3: "tres"}
 
 
 def _lista_es(nombres: Sequence[str]) -> str:
@@ -2807,22 +1889,9 @@ class _Redactor:
         self.p = p
         self.expansion = expansion
         self.racimos = expansion.geometria == "racimos"
-        # Un arco clásico se arma en una banda escalonada, no en racimos: lo que
-        # se apila es una hilera de la banda (ver ``_HILERA_DE_BANDA``). La
-        # geometría de la expansión sigue siendo ``racimos`` —la rejilla es la
-        # misma— pero el nombre de la unidad no puede serlo.
-        self.banda_escalonada = _es_banda_escalonada(estructura)
-        self.unidad = (
-            _HILERA_DE_BANDA
-            if self.banda_escalonada
-            else _unidad(expansion.geometria, expansion.columnas, transversal=False)
-        )
-        self.linea = (
-            _HILERA_DE_BANDA
-            if self.banda_escalonada
-            else _unidad(
-                expansion.geometria, expansion.columnas, transversal=p.direccion == "transversal"
-            )
+        self.unidad = _unidad(expansion.geometria, expansion.columnas, transversal=False)
+        self.linea = _unidad(
+            expansion.geometria, expansion.columnas, transversal=p.direccion == "transversal"
         )
         if p.direccion == "transversal":
             self.eje_en, self.eje_es = "from left to right", "de izquierda a derecha"
@@ -2837,17 +1906,7 @@ class _Redactor:
         # Guirnalda por partes (ADR-0032): el patrón colorea los racimos de su
         # armado, así que se redacta como racimos de globos, nunca como franjas
         # o bandas que envuelven la pieza (el modelo las dibujaba como cintas).
-        #
-        # Un arco clásico también trae su unidad del armado, pero aquí NO entra:
-        # lo suyo es una banda que envuelve la pieza, y pedirle al modelo una
-        # banda —no racimos sueltos— es justo lo que hay que hacer. Su redacción
-        # va por ``banda_escalonada``; la razón de esta bandera es de la
-        # guirnalda, no del armado en general.
-        self.guirnalda_por_racimos = (
-            self.racimos
-            and estructura.tipo == "guirnalda"
-            and _racimo_de_armado(estructura) is not None
-        )
+        self.guirnalda_por_racimos = self.racimos and _racimo_de_armado(estructura) is not None
 
     def es(self, indice: int) -> str:
         return _nombre_color(self.estructura, indice)
@@ -2917,17 +1976,6 @@ class _Redactor:
 
     def armado(self) -> str:
         k = self.expansion.columnas
-        if self.banda_escalonada:
-            # Un arco clásico no se arma amarrando racimos: se arma la banda
-            # hilera por hilera, y las impares llevan un globo menos y van
-            # corridas medio puesto. Es el empaquetado de ``app.arco_clasico``,
-            # el mismo que dibuja el croquis y el que se cotiza.
-            menos = k - 1
-            return (
-                f"Arma la banda hilera por hilera, alternando una de {k} globos y la siguiente"
-                f" de {menos} {_plural(menos, 'globo', 'globos')} corrida medio puesto: así"
-                " encajan unas en otras y la banda queda llena."
-            )
         if k == 1:
             return "Cada posición de la gráfica es un globo suelto."
         if k == 2:
@@ -2969,8 +2017,6 @@ class _Redactor:
             f"{u.plural[0].upper()}{u.plural[1:]} iguales de"
             f" {_lista_es([self.es(i) for i in racimo])}"
         )
-        if self.banda_escalonada:
-            return self._espiral_de_banda(racimo, secuencia_es, secuencia_en, colores)
         if trazo == "zigzag":
             return _Texto(
                 "Zig-zag",
@@ -3014,271 +2060,6 @@ class _Redactor:
             f"wrapped in a spiral of {colores} stripes winding {self.eje_en}",
         )
 
-    def _espiral_de_banda(
-        self,
-        racimo: Sequence[int],
-        secuencia_es: str,
-        secuencia_en: str,
-        colores: str,
-    ) -> _Texto:
-        """La espiral de un arco clásico, dicha sobre la banda que de verdad se arma.
-
-        Un arco clásico no lleva anillos: ``app.arco_clasico`` lo arma en una
-        banda de ``n`` globos de ancho con las filas impares a un globo menos y
-        corridas medio puesto, y el color sale de la **columna fraccionaria** del
-        globo. Ese medio puesto es lo que inclina la diagonal; no hay ningún
-        racimo que se gire ``1/(2k)`` de vuelta sobre el anterior.
-
-        El ``trazo`` no entra aquí, y no es un olvido: en una banda escalonada la
-        expansión no lo lee —la rejilla sale siempre con la diagonal del motor de
-        referencia—, así que anunciar un zigzag o unas franjas rectas describiría
-        una gráfica distinta de la que se dibuja. El trazo sigue valiendo en una
-        columna o en una guirnalda, donde el racimo SÍ se gira al armarlo.
-        """
-        n = self.expansion.columnas
-        menos = n - 1
-        lista_es = _lista_es([self.es(indice) for indice in racimo])
-        return _Texto(
-            "Espiral",
-            f"Hileras de {n} y {menos} globos que se alternan corridas medio puesto, con"
-            f" {lista_es} a lo ancho de la banda: cada hilera corre medio globo sobre la"
-            f" anterior, así que los colores forman espirales continuas {self.eje_es}.",
-            [
-                f"Dentro de cada hilera respeta el orden de colores: {secuencia_es}.",
-                "Corre cada hilera medio puesto respecto de la de abajo, siempre hacia el"
-                " mismo lado: así los colores bajan en diagonal y aparece la espiral.",
-            ],
-            f"COLOR PATTERN — build it as a tight band {n} balloons across with the rows"
-            f" staggered half a step ({secuencia_en} repeating across the band), so the colors"
-            f" form continuous diagonal spiral stripes winding {self.eje_en}; keep the order"
-            " unbroken and do not randomize.",
-            f"wrapped in a spiral of {colores} stripes winding {self.eje_en}",
-        )
-
-    def intercalado(self) -> _Texto:
-        """Colores que se turnan globo a globo y corren de una fila a la siguiente.
-
-        Es el arco de cuartetos alternados de toda la vida: dos tonos del mismo
-        color, cada globo rodeado de los del otro tono. Lo que lo separa del
-        damero es dónde vive: el damero pinta cuadros sobre la rejilla de una
-        pared, y esto se arma sobre los racimos de la pieza.
-        """
-        secuencia = _enteros(self.p.base["secuencia"])
-        paso = _entero(self.p.base["paso"])
-        es = _lista_es([self.es(i) for i in secuencia])
-        en = _lista_en([self.en(i) for i in secuencia])
-        colores_lora = self.lista_lora(secuencia)
-        unidad_es, unidad_en = (
-            (self.unidad.singular, "cluster") if self.racimos else ("fila", "row")
-        )
-        # La concordancia sale de la unidad, no de si la geometría es de
-        # racimos: la hilera de un arco clásico es femenina y «el siguiente va
-        # corrido» quedaba en masculino sobre «cada hilera».
-        femenina = self.unidad.femenina if self.racimos else True
-        corrido_es = (
-            f" y {'la' if femenina else 'el'} siguiente va"
-            f" {'corrida' if femenina else 'corrido'}"
-            f" {_PUESTOS_ES[paso]} {'puesto' if paso == 1 else 'puestos'}"
-        )
-        corrido_en = (
-            f", and each {unidad_en} is offset by {paso} position"
-            f"{'' if paso == 1 else 's'} from the one before"
-        )
-        return _Texto(
-            "Intercalado",
-            f"{es.capitalize()} alternados globo a globo dentro de cada {unidad_es},{corrido_es}:"
-            " ningún globo queda junto a otro de su mismo color.",
-            [
-                f"Cada {unidad_es} lleva {es} turnándose globo a globo;"
-                f" {'la' if femenina else 'el'} siguiente arranca"
-                f" {_PUESTOS_ES[paso]} {'puesto' if paso == 1 else 'puestos'} más"
-                " allá, y así queda el tejido.",
-            ],
-            f"COLOR PATTERN — {en} balloons alternate one by one within each {unidad_en}"
-            f"{corrido_en}, so no two balloons of the same color sit side by side; keep it"
-            f" {self.eje_en}.",
-            f"with {colores_lora} balloons alternating one by one in a woven checker",
-        )
-
-    def _grosor_de_raya(self) -> tuple[str, str]:
-        """El ancho de una raya, dicho en globos de la pieza."""
-        ancho = _numero(self.p.base["ancho"])
-        if ancho <= 1:
-            return "de un globo de ancho", "one balloon wide"
-        entero = int(round(ancho))
-        if abs(ancho - entero) < 0.05:
-            return (
-                f"de {entero} globos de ancho",
-                f"{entero} balloons wide",
-            )
-        return (
-            f"de {ancho:.1f} globos de ancho".replace(".", ","),
-            f"{ancho:.1f} balloons wide",
-        )
-
-    def franjas(self) -> _Texto:
-        """Rayas diagonales gruesas, el bastón de caramelo."""
-        secuencia = _enteros(self.p.base["secuencia"])
-        inclinacion = _numero(self.p.base["inclinacion"])
-        grosor_es, grosor_en = self._grosor_de_raya()
-        es = _lista_es([self.es(i) for i in secuencia])
-        en = _lista_en([self.en(i) for i in secuencia])
-        if abs(inclinacion) < 0.25:
-            giro_es, giro_en = "rectas de través", "straight across the band"
-        elif inclinacion > 0:
-            giro_es, giro_en = "en diagonal hacia un lado", "slanted diagonally to one side"
-        else:
-            giro_es, giro_en = "en diagonal hacia el otro lado", "slanted diagonally to the other side"
-        return _Texto(
-            "Franjas",
-            f"Franjas {grosor_es} de {es}, {giro_es}, repitiéndose {self.eje_es}.",
-            [],
-            f"COLOR PATTERN — thick candy-cane stripes of {en}, each stripe {grosor_en} and"
-            f" {giro_en}, repeating {self.eje_en}.",
-            f"with thick diagonal candy stripes of {self.lista_lora(secuencia)}",
-        )
-
-    def zigzag(self) -> _Texto:
-        secuencia = _enteros(self.p.base["secuencia"])
-        amplitud = _numero(self.p.base["amplitud"])
-        grosor_es, grosor_en = self._grosor_de_raya()
-        es = _lista_es([self.es(i) for i in secuencia])
-        en = _lista_en([self.en(i) for i in secuencia])
-        if amplitud < 0.5:
-            # Sin altura, el quiebre no existe: son franjas rectas y así se dice.
-            return _Texto(
-                "Zigzag",
-                f"Franjas {grosor_es} de {es}, rectas de través, {self.eje_es}.",
-                [],
-                f"COLOR PATTERN — straight bands of {en}, each {grosor_en}, {self.eje_en}.",
-                f"with straight bands of {self.lista_lora(secuencia)}",
-            )
-        return _Texto(
-            "Zigzag",
-            f"Franjas {grosor_es} de {es} que quiebran de un lado a otro de la banda,"
-            f" como un rayo, {self.eje_es}.",
-            [],
-            f"COLOR PATTERN — zigzag bands of {en}, each {grosor_en}, breaking back and forth"
-            f" across the band like a lightning bolt, {self.eje_en}.",
-            f"with zigzag bands of {self.lista_lora(secuencia)}",
-        )
-
-    def chevron(self) -> _Texto:
-        secuencia = _enteros(self.p.base["secuencia"])
-        invertir = _booleano(self.p.base["invertir"])
-        grosor_es, grosor_en = self._grosor_de_raya()
-        es = _lista_es([self.es(i) for i in secuencia])
-        en = _lista_en([self.en(i) for i in secuencia])
-        punta_es = "hacia atrás" if invertir else "hacia adelante"
-        punta_en = "backwards" if invertir else "forwards"
-        return _Texto(
-            "Flechas",
-            f"Franjas en V de {es}, {grosor_es}, con la punta {punta_es} y repitiéndose"
-            f" {self.eje_es}.",
-            [],
-            f"COLOR PATTERN — chevron bands of {en}, each {grosor_en}, forming V shapes that"
-            f" point {punta_en}, repeating {self.eje_en}.",
-            f"with chevron V-shaped bands of {self.lista_lora(secuencia)}",
-        )
-
-    def diamante(self) -> _Texto:
-        base = self.p.base
-        fondo, contorno, centro = (
-            _entero(base["fondo"]),
-            _entero(base["contorno"]),
-            _entero(base["centro"]),
-        )
-        separacion = _entero(base["separacion"])
-        return _Texto(
-            "Diamantes",
-            f"Rombos de {self.es(contorno)} con un globo de {self.es(centro)} en el medio,"
-            f" sobre un fondo de {self.es(fondo)}, uno cada"
-            f" {self.linea.cantidad(separacion)} {self.eje_es}.",
-            [],
-            f"COLOR PATTERN — diamond shapes outlined in {self.en(contorno)} with a single"
-            f" {self.en(centro)} balloon at the center of each, on a {self.en(fondo)}"
-            f" background, one diamond every {separacion} {self.linea.en}s {self.eje_en}.",
-            f"with {self.lora(contorno)} diamond motifs centered on {self.lora(centro)} over a"
-            f" {self.lora(fondo)} background",
-        )
-
-    def punteado(self) -> _Texto:
-        base = self.p.base
-        fondo, punto = _entero(base["fondo"]), _entero(base["punto"])
-        separacion, cada = _entero(base["separacion"]), _entero(base["cada"])
-        cada_es = (
-            "en todos los globos de la hilera"
-            if cada == 1
-            else f"cada {cada} globos de la hilera"
-        )
-        cada_en = (
-            "at every balloon of the row" if cada == 1 else f"every {cada} balloons of the row"
-        )
-        return _Texto(
-            "Punteado",
-            f"Fondo de {self.es(fondo)} con lunares de {self.es(punto)}: una hilera cada"
-            f" {self.linea.cantidad(separacion)}, {cada_es}.",
-            [],
-            f"COLOR PATTERN — a {self.en(fondo)} background scattered with regular"
-            f" {self.en(punto)} polka dots: one row of dots every {separacion}"
-            f" {self.linea.en}s, {cada_en}.",
-            f"with {self.lora(punto)} polka dots over a {self.lora(fondo)} background",
-        )
-
-    def apilado(self) -> _Texto:
-        capas = _enteros(self.p.base["capas"])
-        if _booleano(self.p.base["invertir"]):
-            capas = list(reversed(capas))
-        es = _lista_es([self.es(i) for i in capas])
-        en = _lista_en([self.en(i) for i in capas])
-        return _Texto(
-            "Apilado",
-            f"Capas de color a lo ancho de la pieza, del borde al centro: {es}.",
-            [],
-            f"COLOR PATTERN — concentric color layers across the width of the piece, from the"
-            f" outer edge inwards: {en}. Each layer wraps the next one.",
-            f"with concentric layers of {self.lista_lora(capas)} from the edge inwards",
-        )
-
-    def arcoiris(self) -> _Texto:
-        bandas = _enteros(self.p.base["bandas"])
-        if _booleano(self.p.base["invertir"]):
-            bandas = list(reversed(bandas))
-        es = _lista_es([self.es(i) for i in bandas])
-        en = _lista_en([self.en(i) for i in bandas])
-        return _Texto(
-            "Arcoíris",
-            f"Bandas paralelas al eje de la pieza, una por color y del lado de afuera al de"
-            f" adentro: {es}.",
-            [],
-            f"COLOR PATTERN — bands running parallel to the length of the piece, one band per"
-            f" color, from the outside in: {en}, like a real rainbow.",
-            f"with parallel rainbow bands of {self.lista_lora(bandas)} from the outside in",
-        )
-
-    def doslados(self) -> _Texto:
-        base = self.p.base
-        exterior, interior = _entero(base["exterior"]), _entero(base["interior"])
-        alternar = _booleano(base["alternar"])
-        cambio_es = (
-            " Pasada la mitad de la pieza los dos lados se intercambian."
-            if alternar
-            else ""
-        )
-        cambio_en = (
-            " Past the middle of the piece the two sides swap colors." if alternar else ""
-        )
-        return _Texto(
-            "Dos lados",
-            f"El lado de afuera de la pieza en {self.es(exterior)} y el de adentro en"
-            f" {self.es(interior)}.{cambio_es}",
-            [],
-            f"COLOR PATTERN — the outer side of the piece is {self.en(exterior)} and the inner"
-            f" side is {self.en(interior)}, split lengthwise.{cambio_en}",
-            f"with the outer side in {self.lora(exterior)} and the inner side in"
-            f" {self.lora(interior)}",
-        )
-
     def anillos(self) -> _Texto:
         secuencia = _enteros(self.p.base["secuencia"])
         largo, u = _entero(self.p.base["largo"]), self.linea
@@ -3304,31 +2085,15 @@ class _Redactor:
         )
 
     def anillos_lora(self, secuencia: Sequence[int]) -> str:
-        """Fragmento LoRA de los anillos: cada unidad del armado, de un solo color.
+        """Fragmento LoRA de los anillos; en una guirnalda por partes, racimos de un color.
 
-        **«bands» no se usa en una pieza armada, y es por lo que se ve.** En una
-        guirnalda por racimos ya se evitaba porque el modelo dibujaba cintas; el
-        2026-10-01 se comprobó que en un **arco** pasa exactamente lo mismo: con
-        "stacked bands … repeating along the arch" la imagen salía con los
-        colores corriendo A LO LARGO del arco —una franja lila por dentro y
-        morada por fuera— en vez de anillos que lo atraviesan. Era justo el
-        patrón contrario al pedido.
-
-        Así que toda pieza cuya unidad la impone el armado —arco clásico,
-        columna clásica, guirnalda por racimos— se describe por esa unidad:
-        «cada anillo de un solo color, los colores por turno». Lo que no tiene
-        armado sí conserva las bandas apiladas, que ahí no se confunden con nada.
+        "stacked bands" describe los anillos de una columna; en una guirnalda
+        armada por racimos cada racimo es de un color, y "bands" invitaba a
+        dibujar cintas (ver ``espiral_guirnalda``).
         """
-        if _racimo_de_armado(self.estructura) is None:
+        if not self.guirnalda_por_racimos:
             return (
                 f"built with stacked bands of {self.lista_lora(secuencia)} repeating {self.eje_en}"
-            )
-        if not self.guirnalda_por_racimos:
-            colores = list(dict.fromkeys(self.lora(i) for i in secuencia))
-            turno = f"{_lista_en(colores)} in turn" if len(colores) <= 4 else "the colors in turn"
-            return (
-                f"each {self.linea.en} of balloons a single solid color across the piece,"
-                f" {turno} {self.eje_en}"
             )
         colores = list(dict.fromkeys(self.lora(i) for i in secuencia))
         turno = f"{_lista_en(colores)} in turn" if len(colores) <= 4 else "the colors in turn"
@@ -3695,15 +2460,6 @@ class _Redactor:
     def textos(self) -> _Texto:
         modo = {
             "espiral": self.espiral,
-            "intercalado": self.intercalado,
-            "franjas": self.franjas,
-            "zigzag": self.zigzag,
-            "chevron": self.chevron,
-            "diamante": self.diamante,
-            "punteado": self.punteado,
-            "apilado": self.apilado,
-            "arcoiris": self.arcoiris,
-            "doslados": self.doslados,
             "anillos": self.anillos,
             "bloques": self.bloques,
             "degradado": self.degradado,

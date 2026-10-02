@@ -115,7 +115,7 @@ def test_sin_patron_devuelve_la_sugerencia_sin_aplicar() -> None:
     assert patron["patron"] == {
         "version": "patron-color.v1",
         "origen": "sugerido",
-        "base": {"modo": "espiral", "racimo": [0, 0, 1, 2], "trazo": "espiral"},
+        "base": {"modo": "espiral", "racimo": [0, 1, 0, 2], "trazo": "espiral"},
     }
     # 20/10/10 por columna y el doble con dos repeticiones.
     assert _conteo(resultado) == [(20, 40), (10, 20), (10, 20)]
@@ -194,15 +194,6 @@ def test_la_vista_previa_dice_que_estilos_ofrece_el_editor() -> None:
     modos = cast(list[dict[str, object]], resultado["modos_admitidos"])
     assert [modo["modo"] for modo in modos] == [
         "espiral",
-        "intercalado",
-        "franjas",
-        "zigzag",
-        "chevron",
-        "diamante",
-        "punteado",
-        "apilado",
-        "arcoiris",
-        "doslados",
         "anillos",
         "bloques",
         "degradado",
@@ -446,7 +437,7 @@ def test_el_endpoint_acepta_las_lineas_y_rechaza_las_que_no_cumplen() -> None:
 
 # --- Cambiar de estilo con el borrador (``desde``) y rechazos con estilos ------------
 
-LINEALES = ["espiral", "intercalado", "franjas", "zigzag", "chevron", "diamante", "punteado", "apilado", "arcoiris", "doslados", "anillos", "bloques", "degradado", "aleatorio", "flor"]
+LINEALES = ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor"]
 MODOS_COLUMNA = [
     {"modo": modo, "direcciones": ["longitudinal"], "espejo": False} for modo in LINEALES
 ]

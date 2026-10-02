@@ -611,9 +611,7 @@ console.log("14. XV scene with three approved colors fits the LoRA budget");
   assert.match(result.prompt, /\bpink\b/, "the approved plan color (rosado -> pink) must still reach the model");
   assert.match(result.prompt, /\bgold\b/);
   assert.match(result.prompt, /\bsilver\b/);
-  // `arco` es el Arco clásico desde SEGUIMIENTO-arco-clasico.md: su sustantivo
-  // en inglés ya no dice «organic», que era falso para una pieza de anillos.
-  assert.match(result.prompt, /classic quartet balloon arch/);
+  assert.match(result.prompt, /organic balloon arch/);
   assert.match(result.prompt, /two balloon columns/);
   assert.match(result.prompt, /balloon centerpiece/);
   assert.match(result.prompt, /centered around the stage photo area/);

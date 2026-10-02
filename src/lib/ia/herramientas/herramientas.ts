@@ -1,7 +1,6 @@
 import type { Herramienta } from "../nucleo/tipos";
 import { DENSIDADES, MEZCLAS, ROLES_ESCENA, ROLES_MATERIAL, TIPOS_ESTRUCTURA, UBICACIONES } from "@/lib/plan/tipos";
 import { EJEMPLO_UNIDADES_DECLARADAS, ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
-import { MODOS_PATRON_COLOR } from "@/lib/plan/patron-color";
 
 const SELECCION_PROPIEDADES = {
   product_id: { type: "string" },
@@ -120,7 +119,7 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
               medidas: { type: "object", properties: { ancho_m: { type: "number" }, alto_m: { type: "number" }, largo_m: { type: "number" } } },
               repeticiones: { type: "integer", minimum: 1, maximum: 24, description: "Número de piezas iguales de esta estructura (el número de piezas que muestra la referencia, ej. 2 columnas). No es un número de globos." },
               densidad: { type: "string", enum: [...DENSIDADES] },
-              mezcla: { type: "string", enum: [...MEZCLAS], description: "organica_fina pide globos de 5, 9, 12, 18 y 24 pulgadas del mismo producto y color (organica_gruesa de 9 a 24, solo_grandes 18 y 24). Revisa diametro_pulgadas de las variantes: organica_fina necesita las 5 pulgadas exactas, al menos una de 9 o 12, y al menos una de 18 o 24 (si falta el 24 el backend lo sustituye por 18, si falta el 18 por 24 o 12 y si falta el 9 por 12, y lo avisa); un producto que solo tiene 5, 9 y 12 pulgadas (o solo 9 y 12) no cabe en organica_fina: usa clasica. Usa clasica si el cliente pidió un único tamaño Y TAMBIÉN cuando la foto de referencia muestre una pieza de globos todos del mismo tamaño (un arco o una columna de cuartetos): el conteo leído te lo dice con «todos los globos de la pieza son del mismo tamaño», y esa pieza se arma en anillos de globos iguales, no en racimos de varios tamaños. Una estructura orgánica toda de 12 pulgadas se ve plana." },
+              mezcla: { type: "string", enum: [...MEZCLAS], description: "organica_fina pide globos de 5, 9, 12, 18 y 24 pulgadas del mismo producto y color (organica_gruesa de 9 a 24, solo_grandes 18 y 24). Revisa diametro_pulgadas de las variantes: organica_fina necesita las 5 pulgadas exactas, al menos una de 9 o 12, y al menos una de 18 o 24 (si falta el 24 el backend lo sustituye por 18, si falta el 18 por 24 o 12 y si falta el 9 por 12, y lo avisa); un producto que solo tiene 5, 9 y 12 pulgadas (o solo 9 y 12) no cabe en organica_fina: usa clasica. Usa clasica también si el cliente pidió un único tamaño. Una estructura orgánica toda de 12 pulgadas se ve plana." },
               unidades_declaradas: { type: "integer", minimum: 1, description: `Solo para piezas sin geometría (bouquet, figura, kit, backdrop, accesorio). Son unidades de venta del catálogo para la pieza completa, sumando todas sus repeticiones: si la pieza se arma con globos sueltos, es el total de GLOBOS (no el número de figuras ni de bouquets); si el material es un kit empaquetado, un telón o un accesorio, es el número de piezas. Se reparte entre los materiales según participacion y cada material recibe al menos 1, así que nunca declares menos unidades que materiales. Mínimos: ${EJEMPLO_UNIDADES_DECLARADAS}.` },
               materiales: {
                 type: "array",
@@ -179,15 +178,15 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
 export const AJUSTAR_PLAN_DECORACION: Herramienta = {
   nombre: "ajustar_plan_decoracion",
   descripcion:
-    "Ajusta la propuesta YA vigente de este turno —un material, la densidad o el patrón de color de UNA estructura— en vez de diseñar una propuesta nueva. Solo existe cuando hay una propuesta vigente. Úsala cuando el cliente pide un cambio puntual sobre lo que ya vio (\"cambia el globo rosado por dorado\", \"quita la columna izquierda\", \"agrégale unos morados\", \"hazlo más lleno\", \"que el arco vaya en espiral\"); usa confirmar_plan_decoracion solo si el cliente pide diseñar algo distinto desde cero. No llames esta herramienta y confirmar_plan_decoracion en el mismo turno: es una u otra. El product_id y variant_id de `variante` deben haber aparecido en buscar_catalogo_rag de este mismo turno, igual que en confirmar_plan_decoracion. Nunca mandes precios ni cantidades de globos: el backend las recalcula desde la geometría. Devuelve el desglose actualizado que reemplaza al de la propuesta vigente.",
+    "Ajusta la propuesta YA vigente de este turno (agrega, reemplaza o quita un material de una sola estructura) en vez de diseñar una propuesta nueva. Solo existe cuando hay una propuesta vigente. Úsala cuando el cliente pide un cambio puntual sobre lo que ya vio (\"cambia el globo rosado por dorado\", \"quita la columna izquierda\", \"agrégale unos morados\"); usa confirmar_plan_decoracion solo si el cliente pide diseñar algo distinto desde cero. No llames esta herramienta y confirmar_plan_decoracion en el mismo turno: es una u otra. El product_id y variant_id de `variante` deben haber aparecido en buscar_catalogo_rag de este mismo turno, igual que en confirmar_plan_decoracion. Nunca mandes precios: el backend los recalcula. Devuelve el desglose actualizado que reemplaza al de la propuesta vigente.",
   esquema: {
     type: "object",
     required: ["accion", "estructura_id"],
     properties: {
       accion: {
         type: "string",
-        enum: ["agregar", "reemplazar", "quitar", "densidad", "patron_modo"],
-        description: "agregar: suma un material nuevo a la estructura con la participación indicada. reemplazar: cambia la variante objetivo (objetivo_variant_id) por la de `variante`. quitar: elimina la variante objetivo (no la uses si es el único material de la estructura). densidad: cambia qué tan llena va la pieza (pide `densidad`). patron_modo: cambia cómo se reparte el color (pide `modo`).",
+        enum: ["agregar", "reemplazar", "quitar"],
+        description: "agregar: suma un material nuevo a la estructura con la participación indicada. reemplazar: cambia la variante objetivo (objetivo_variant_id) por la de `variante`. quitar: elimina la variante objetivo (no la uses si es el único material de la estructura).",
       },
       estructura_id: { type: "string", description: "estructura_id de la propuesta vigente que se va a tocar." },
       objetivo_variant_id: { type: "string", description: "Obligatorio en reemplazar y quitar: variant_id actual de la propuesta vigente que se reemplaza o elimina." },
@@ -203,27 +202,6 @@ export const AJUSTAR_PLAN_DECORACION: Herramienta = {
         },
       },
       participacion: { type: "number", minimum: 0.01, maximum: 0.8, description: "Solo para agregar: fracción de la estructura que ocupa el material nuevo (0,01 a 0,8). Si no la mandas, el sistema usa 0,2." },
-      densidad: {
-        type: "string",
-        enum: [...DENSIDADES],
-        description: "Obligatoria en densidad: qué tan llena va la pieza. En un ARCO CLÁSICO no es un multiplicador, es cómo se arma: sencilla = cuarteto (cuatro globos por anillo), media = quinteto, lujosa = sexteto, y el conteo sale de los anillos que caben. En las demás piezas es la densidad de siempre. Cambia el precio, así que úsala solo si el cliente pide la pieza más llena o más ligera. Una estructura oficial puede admitir solo algunas (arco_no_denso solo sencilla): si no la admite, te lo dice y te lista las que sí.",
-      },
-      modo: {
-        type: "string",
-        enum: [...MODOS_PATRON_COLOR],
-        description: "Obligatorio en patron_modo: el estilo con que se reparte el color. En un arco, una columna o una guirnalda: espiral (los colores trenzados a lo largo, cada color siempre en el mismo puesto del racimo), intercalado (se alternan globo a globo y cada racimo va corrido un puesto, así que ningún globo queda junto a otro de su color: es el arco de cuartetos alternados de dos tonos, y NO es la espiral), franjas (rayas diagonales gruesas, de varios globos de ancho, como un bastón de caramelo), zigzag (franjas que quiebran de un lado a otro de la banda), chevron (franjas en V que apuntan a lo largo), diamante (rombos repetidos con un globo de otro color en el centro; pide ancho, así que en una banda angosta degenera en franjas), punteado (lunares regulares sobre un fondo), apilado (capas de color a lo ancho, del borde al centro, una envolviendo a la otra), arcoiris (una banda por color paralela al eje, el primero por fuera), doslados (el lado de afuera de un color y el de adentro de otro), anillos (un color por anillo, bandas que envuelven la pieza), bloques, degradado, aleatorio. En una pared sirven casi todos, y además damero y zonas (un color agrupado en manchas), pero no doslados (una pared no tiene lado de afuera ni de adentro). El backend arma el patrón concreto del estilo que pidas y conserva lo que ese estilo admita del patrón que la pieza ya tenía; si el estilo no se arma en esa pieza, te dice cuáles sí.",
-      },
-      ajustes: {
-        type: "object",
-        additionalProperties: false,
-        description: "Opcional en patron_modo: las perillas del estilo, por su nombre común. Mándalas cuando el cliente pide el mismo estilo pero distinto (\"las franjas más anchas\", \"los lunares más juntos\", \"al revés\"), junto con el `modo` que la pieza ya tiene. El backend traduce cada perilla al campo que lleva ese estilo, la acota a lo que admite y te avisa si el estilo no la tiene; no hace falta que sepas cuál lleva cuál.",
-        properties: {
-          ancho: { type: "number", minimum: 0.5, maximum: 6, description: "Grosor de la franja, en filas de globos: franjas, zigzag, chevron." },
-          separacion: { type: "number", minimum: 1, maximum: 24, description: "Cada cuántas filas se repite el motivo: anillos, flor, diamante, punteado, intercalado, damero. Más chico = más juntos." },
-          inclinacion: { type: "number", minimum: -3, maximum: 4, description: "Cuánto se inclina la franja: franjas (0 las deja rectas de través, el signo cambia el lado) y chevron (cuánto se abre la V)." },
-          invertir: { type: "boolean", description: "Da vuelta el orden o la dirección del estilo: chevron, apilado, arcoiris y doslados." },
-        },
-      },
     },
   },
 };

@@ -53,12 +53,13 @@ async function coloresPresentesEnElPool(
  * The catalog decides the substitute by chromatic distance
  * (`colorCatalogoMasCercano`, the same table `catalog.py` reads from the
  * `catalog-search.v1` contract), never by a hand-kept synonym table. It only
- * informs the model which catalog product carries a photo color; it never adds
- * a product to the turn whitelist, so prices and variants still come from
- * `buscar_catalogo_rag`. The model must declare the color the chosen product
- * really has, not the photo's word, so the reference-color notice
+ * informs the model that a photo color is covered (`coloresReferenciaOmitidos`);
+ * it never adds a product to the turn whitelist, so prices and variants still
+ * come from `buscar_catalogo_rag`. The model must declare the color the chosen
+ * product really has, not the photo's word, so the reference-color audit
  * (`_reference_color_substitutions` / `sustitucionesColorReferencia`) still
- * catches and reports the substitution instead of it being relabelled away.
+ * catches and reports the substitution instead of it being relabelled away
+ * (`ACCION_COLORES_REFERENCIA_OMITIDOS`).
  *
  * `variantIds` is the active LoRA dataset pool: when present the lookup stays
  * inside it. `catalogSnapshotId` pins the snapshot the turn searched.

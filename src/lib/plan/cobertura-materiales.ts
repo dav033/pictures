@@ -10,7 +10,8 @@ import type { PlanDecoracion } from "./tipos";
  * only has some sizes of each balloon (Fashion Transparente R-9/18/24, Fashion
  * Gris R-5/12, Pastel Mate Rosado R-5/9). The model chose `organica_fina`
  * (R-5…R-24) with those products, the resolver answered SIN_COBERTURA, the
- * model retried another mix or product, and the turn ran out of time.
+ * model retried another mix or product, COLORES_REFERENCIA_OMITIDOS asked it to
+ * add the clear balloon back, and the turn ran out of time.
  *
  * Rules, applied to the plan the model confirmed (only with this turn's search
  * data, never inventing availability):
@@ -32,6 +33,10 @@ import type { PlanDecoracion } from "./tipos";
  *    this turn's search did not return, is left as it is: the resolver reports
  *    it.
  *
+ * `quitarMaterialesDeColorInventado` applies the same removal (and the same
+ * notice) to a material whose color the reference photo does not have, which is
+ * a decision of the reference flow rather than of size coverage: the colors come
+ * from `colores-referencia.ts` and this module only takes them out of the plan.
  * `aplicarAcabadoReferencia` is the same split for the FINISH the photo shows:
  * the demand comes from `colores-referencia.ts` and here it is either bought or
  * reported through the notice rule 1 already had.
@@ -127,6 +132,50 @@ function partirMateriales(
 }
 
 /**
+ * Saca de cada estructura los materiales cuyo color la foto no tiene
+ * (`materialesDeColorInventado`, colores-referencia.ts) antes de validar y
+ * resolver el plan.
+ *
+ * Es acotar, no auditar: el color inventado no llega a cotizarse ni al prompt de
+ * la imagen, y el turno no gasta un rechazo ni una llamada más al modelo. Una
+ * pieza cuyos materiales serían TODOS de colores ajenos a la foto se deja como
+ * está: podarla la borraría, y ese caso ya lo atiende
+ * `COLORES_REFERENCIA_OMITIDOS`, que le pide al modelo armarla con los colores
+ * de la foto (registro-herramientas.ts).
+ *
+ * El aviso viaja por el mismo canal que un material sin cobertura de tamaños
+ * (`material_quitado`): el cliente ve en la tarjeta qué no lleva la pieza y por
+ * qué, y el modelo no promete en el resumen un color que la cotización no
+ * compra.
+ */
+export function quitarMaterialesDeColorInventado(
+  plan: PlanDecoracion,
+  inventados: ReadonlyArray<{ estructura_id: string; product_id: string }>,
+): { plan: PlanDecoracion; ajustes: AjusteCobertura[] } {
+  if (inventados.length === 0) return { plan, ajustes: [] };
+  const ajustes: AjusteCobertura[] = [];
+  const estructuras = plan.estructuras.map((estructura) => {
+    const fuera = new Set(inventados.filter((item) => item.estructura_id === estructura.estructura_id).map((item) => item.product_id));
+    if (fuera.size === 0) return estructura;
+    const partido = partirMateriales(estructura.materiales, (material) => fuera.has(material.product_id));
+    if (!partido) return estructura;
+    const coloresQuedan = [...new Set(partido.quedan.map((material) => material.color).filter((color): color is string => Boolean(color)))];
+    for (const material of partido.salen) {
+      const globos = material.color ? `globos ${material.color}` : "unos globos";
+      ajustes.push({
+        tipo: "material_quitado",
+        estructura_id: estructura.estructura_id,
+        product_id: material.product_id,
+        color: material.color ?? null,
+        aviso_cliente: `En ${estructura.nombre.toLowerCase()} no incluí ${globos} porque tu foto no los tiene${coloresQuedan.length ? `: la armé con ${unirColores(coloresQuedan)}` : ""}.`,
+      });
+    }
+    return { ...estructura, materiales: partido.quedan };
+  });
+  return { plan: { ...plan, estructuras }, ajustes };
+}
+
+/**
  * Acabados del catálogo que cumplen un acabado observado en la foto. No es una
  * tabla de gustos: son los nombres con que el catálogo vende la misma familia
  * del vocabulario LoRA. `Fashion` es su mate y `Satin` su perlado, así que un
@@ -159,9 +208,11 @@ function acabadoQueCumple(observado: string, acabados: readonly string[]): strin
  * Respeta el acabado que la foto muestra para el color de cada material
  * (`acabadosObservadosDeMateriales`, colores-referencia.ts), o lo avisa.
  *
- * El color de la foto se le reporta al cliente como sustitución cuando el plan
- * no lo compra; el ACABADO no lo vigilaba nadie. Con la pared "Mr & Mrs" el
- * blush perlado se compró cromado y nada lo detectó (2026-09-29).
+ * Es la mitad que le faltaba a la auditoría de color: el color ya lo vigilan
+ * `coloresReferenciaOmitidos` (lo que la foto tiene y el plan no compra) y
+ * `materialesDeColorInventado` (lo que el plan compra y la foto no tiene), pero
+ * el ACABADO no lo vigilaba nadie. Con la pared "Mr & Mrs" el blush perlado se
+ * compró cromado y nada lo detectó (2026-09-29).
  *
  * Reglas, sobre el plan que el modelo confirmó y solo con los datos de la
  * búsqueda de este turno:

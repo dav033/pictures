@@ -390,15 +390,15 @@
       "balloons": [
         {
           "color": "azul",
-          "design_quantity": 112,
+          "design_quantity": 118,
           "finish": "reflex",
           "product_id": "P-26-AZUL",
-          "required_quantity": 112,
+          "required_quantity": 118,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-26-AZUL-12",
-          "waste_adjusted_quantity": 112,
+          "waste_adjusted_quantity": 118,
           "waste_reserve": 0
         }
       ],
@@ -419,38 +419,38 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 26620,
-          "design_quantity": 112,
-          "leftover_inventory": 29,
-          "operational_surplus": 29,
+          "consumption_cost": 28160,
+          "design_quantity": 118,
+          "leftover_inventory": 22,
+          "operational_surplus": 22,
           "package_count": 3,
-          "potential_surplus": 38,
+          "potential_surplus": 32,
           "product_id": "P-26-AZUL",
           "purchase_cost": 33000,
           "purchase_quantity": 150,
-          "required_quantity": 121,
+          "required_quantity": 128,
           "units_per_package": 50,
-          "used": 112,
+          "used": 118,
           "variant_id": "V-26-AZUL-12",
-          "waste_adjusted_quantity": 121,
-          "waste_reserve": 9
+          "waste_adjusted_quantity": 128,
+          "waste_reserve": 10
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 26620,
-        "covered_waste_reserve": 9,
-        "design_quantity": 112,
-        "natural_package_surplus": 38,
-        "operational_surplus": 29,
-        "potential_surplus": 38,
+        "consumption_cost": 28160,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "natural_package_surplus": 32,
+        "operational_surplus": 22,
+        "potential_surplus": 32,
         "purchase_cost": 33000,
         "purchase_quantity": 150,
-        "required_quantity": 121,
-        "target_waste_reserve": 9,
+        "required_quantity": 128,
+        "target_waste_reserve": 10,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 121,
+        "waste_adjusted_quantity": 128,
         "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
@@ -476,8 +476,8 @@
         {
           "additional_package_for_waste": false,
           "color": "azul",
-          "consumption_cost": 26620,
-          "design_quantity": 112,
+          "consumption_cost": 28160,
+          "design_quantity": 118,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -490,33 +490,33 @@
           ],
           "imagen": "https://cdn.example.test/v-26-azul-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 29,
+          "leftover_inventory": 22,
           "paquetes": 3,
           "precio_paquete": 11000,
           "product_id": "P-26-AZUL",
           "purchase_cost": 33000,
           "purchase_quantity": 150,
-          "required_quantity": 121,
+          "required_quantity": 128,
           "sku": "SKU-V-26-AZUL-12",
           "sku_original": "SHOP-V-26-AZUL-12",
-          "sobrante": 38,
+          "sobrante": 32,
           "source_snapshot_id": "SNAP-GOLDEN-26",
           "source_variant_id": "SOURCE-V-26-AZUL-12",
           "subtotal": 33000,
           "tamano_codigo": "R-12",
           "titulo": "Globo Latex Redondo Reflex Azul — R-12",
-          "unidades_con_merma": 121,
+          "unidades_con_merma": 128,
           "unidades_inferidas": false,
-          "unidades_necesarias": 112,
+          "unidades_necesarias": 118,
           "unidades_paquete": 50,
-          "used": 112,
+          "used": 118,
           "variant_id": "V-26-AZUL-12",
-          "waste_reserve": 9
+          "waste_reserve": 10
         }
       ],
       "costes_por_estructura": [
         {
-          "consumo_cop": 24640,
+          "consumo_cop": 25960,
           "estructura_id": "EST_01_ARCO"
         }
       ],
@@ -546,7 +546,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo Latex Redondo Reflex Azul — R-12",
-              "unidades": 112,
+              "unidades": 118,
               "unidades_inferidas": false,
               "variant_id": "V-26-AZUL-12"
             }
@@ -556,14 +556,14 @@
               "diam_pulg": 12.0,
               "forma": "redondo",
               "pct": 100.0,
-              "unidades": 112
+              "unidades": 118
             }
           ],
           "nombre": "Arco focal",
           "repeticiones": 1,
           "supuestos": [],
           "tipo": "arco",
-          "total_unidades": 112,
+          "total_unidades": 118,
           "ubicacion": "arco_central"
         }
       ],
@@ -618,7 +618,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "b9d38bbf4b82a3d23ad6d5db0e3c0b276f8e8a5f35887710610f5e7e3d905c72",
+      "plan_hash": "5f55690b021b3270f3c5e1a68f9e9c1cd6359b2307bdcd78d1f989a9d3e3deaf",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -626,38 +626,38 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 26620,
-        "covered_waste_reserve": 9,
-        "design_quantity": 112,
+        "consumption_cost": 28160,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
         "globos_por_tamano": {
-          "R-12": 112
+          "R-12": 118
         },
         "incluye_iva": true,
         "merma_porcentaje": 8.0,
-        "natural_package_surplus": 38,
+        "natural_package_surplus": 32,
         "purchase_cost": 33000,
-        "target_waste_reserve": 9,
+        "target_waste_reserve": 10,
         "total_cop": 33000,
-        "total_unidades": 112,
+        "total_unidades": 118,
         "uncovered_waste_reserve": 0,
         "waste_only_savings_cop": 0
       }
     },
     "quote": {
-      "consumption_cost_cop": 26620,
-      "covered_waste_reserve": 9,
+      "consumption_cost_cop": 28160,
+      "covered_waste_reserve": 10,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 29,
+      "leftover_inventory": 22,
       "lines": [
         {
           "available": true,
           "color": "azul",
-          "consumption_cost_cop": 26620,
-          "design_quantity": 112,
+          "consumption_cost_cop": 28160,
+          "design_quantity": 118,
           "diameter_inches": 12.0,
           "id": "V-26-AZUL-12",
-          "leftover_inventory": 29,
+          "leftover_inventory": 22,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -669,26 +669,26 @@
           "product_id": "P-26-AZUL",
           "purchase_cost_cop": 33000,
           "purchase_quantity": 150,
-          "required_quantity": 121,
+          "required_quantity": 128,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_ARCO"
           ],
           "subtotal_cop": 33000,
-          "surplus": 38,
+          "surplus": 32,
           "title": "Globo Latex Redondo Reflex Azul — R-12",
           "units_per_package": 50,
-          "used": 112,
+          "used": 118,
           "variant_id": "V-26-AZUL-12",
-          "waste_reserve": 9
+          "waste_reserve": 10
         }
       ],
-      "plan_hash": "b9d38bbf4b82a3d23ad6d5db0e3c0b276f8e8a5f35887710610f5e7e3d905c72",
+      "plan_hash": "5f55690b021b3270f3c5e1a68f9e9c1cd6359b2307bdcd78d1f989a9d3e3deaf",
       "purchase_cost_cop": 33000,
       "schema_version": "quote.v1",
       "supported_complements": false,
-      "target_waste_reserve": 9,
+      "target_waste_reserve": 10,
       "total_cop": 33000,
       "waste_percentage": 8.0
     }

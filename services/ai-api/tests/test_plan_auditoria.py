@@ -177,9 +177,8 @@ def _rojo_unico_candidato() -> Candidate:
 
 
 def test_trap_declaring_the_photo_color_on_the_material_swallows_the_substitution() -> None:
-    """Documented trap (not fixed by this resolver -- by rule 1 of
-    ajustarCoberturaPlan, cobertura-materiales.ts, which relabels a material to
-    the single real color of its product before the plan is resolved):
+    """Documented trap (not fixed by this resolver -- by the
+    ACCION_COLORES_REFERENCIA_OMITIDOS tool instruction, registro-herramientas.ts):
     if a plan declares the PHOTO's color ("burdeos") on a material whose only
     real color is "rojo", `_line_color` relabels the line to "rojo" and
     `_relabelled_color` forgives the mismatch, feeding "burdeos" into
