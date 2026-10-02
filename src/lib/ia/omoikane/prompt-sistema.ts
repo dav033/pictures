@@ -309,6 +309,24 @@ export function bloqueCreatividad(nivel: NivelCreatividad | undefined, sugerenci
   return `\n\nCREATIVIDAD DEL DISEÑO: nivel ${perfil.nivel} de 5 (${perfil.nombre})\n- ${perfil.instruccionDiseno}${escena}`;
 }
 
+/**
+ * Las herramientas del motor del diseñador (ADR-0034 §5), detrás de
+ * `ARMADO_ARCO_COLUMNA_V1`. Deliberadamente **no** nombra ningún patrón ni
+ * ningún rango: esa lista la publica el motor en `consultar_opciones_armado`, y
+ * escribirla aquí sería una segunda copia que se queda vieja en silencio.
+ */
+export const BLOQUE_ARMADO_MOTOR = `
+
+ARMADO DEL ARCO, LA COLUMNA Y LA GUIRNALDA
+- Un arco, una columna y una guirnalda se pueden armar con el motor del diseñador: dónde va cada globo, de qué color, de qué tamaño y cómo se agrupa. Lo decide el motor, no tú.
+- Para usarlo: primero consultar_opciones_armado con el tipo de pieza, después armar_estructura una vez por pieza. Nunca inventes un id de patrón, un acabado, un reparto ni un mando: todos salen de esa consulta.
+- Un ARCO y una COLUMNA se arman con un patrón de color y los índices de material que usa. Elígelo por cómo quieres que se vea con los colores que ya tiene la pieza, y mira min_colores y max_colores antes de pedirlo.
+- Una GUIRNALDA no tiene patrón: lo que la define es su paleta —un color por material, cada uno con su acabado de látex y su papel—, cómo se reparten los colores a lo largo, la forma de la tira (largo, ondulación, cuánto cuelga, hacia qué lado carga), el grosor y la mezcla de tamaños. Mándale al menos la paleta; lo demás lo pone el motor.
+- El follaje y las flores de una guirnalda NO se cotizan: no están en el catálogo de globos. Puedes pedirlos para el montaje, pero nunca los presentes como parte del precio ni se los cobres al cliente.
+- Si armar_estructura te devuelve un motivo, corrígelo y vuelve a intentarlo una vez.
+- Armar es opcional: si no armas una pieza, el sistema le pone el armado por defecto del motor. Y no cambia lo que se cobra por tu cuenta: las cantidades y el precio siguen saliendo de confirmar_plan_decoracion.
+- Al cliente háblale de cómo se verá ("alternando el rosado y el blanco", "con el color subiendo de claro a oscuro", "una guirnalda suelta con follaje"), nunca del id del patrón, del acabado interno, de los mandos ni de los índices de material.`;
+
 export function construirSistema(opts: { ragEnabled: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2; catalogAllowlist?: CatalogAllowlist; catalogoLoraNoDisponible?: boolean; creatividad?: NivelCreatividad; sugerenciaEscena?: SugerenciaEscena }): string {
   const contexto =
     opts.brief && Object.keys(opts.brief).length ? `\n\nDatos del evento que ya conoces: ${JSON.stringify(opts.brief)}` : "";
@@ -322,6 +340,7 @@ export function construirSistema(opts: { ragEnabled: boolean; brief?: Brief; ref
     BLOQUE_SELECCION +
     (opts.ragEnabled ? BLOQUE_RAG : "") +
     (opts.ragEnabled ? BLOQUE_PLAN + GUIA_ESTRUCTURAS_OFICIALES : "") +
+    (opts.ragEnabled && featureEnabled("ARMADO_ARCO_COLUMNA_V1") ? BLOQUE_ARMADO_MOTOR : "") +
     // El bloque de referencia describe cómo confirmar_plan_decoracion lee
     // referencia_element_id / referencia_omitida, así que acompaña siempre al
     // catálogo RAG.

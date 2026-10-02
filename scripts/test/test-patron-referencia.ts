@@ -150,8 +150,17 @@ async function main(): Promise<void> {
   };
   const llamada = { nombre: "confirmar_plan_decoracion", args: {} };
   const pool = { query: async () => ({ rows: [] }) } as unknown as Pool;
+  /**
+   * Las peticiones de resolución del doble, en orden. El resto de las rutas que un turno llega a pedir —el
+   * armado del motor del ADR-0034, que una columna completa antes de resolver— no son el sujeto de esta
+   * prueba: lo que vigila es lo que viaja en `/plan/resolve`.
+   */
+  const resoluciones = (llamadas: readonly { path: string; body: Json }[]) =>
+    llamadas.filter((peticion) => peticion.path === "/internal/v1/plan/resolve");
   const confirmarCon = (blueprint: Blueprint, opciones: Parameters<typeof instalarResolutorPythonFalso>[0] = {}, rechazos = 0) => {
-    const llamadas = instalarResolutorPythonFalso(opciones);
+    // El armado del motor se pide antes de resolver y en esta prueba no hay quien lo responda: el doble
+    // lanza, la confirmación sigue por el camino de siempre sin armado y esto no la afecta.
+    const llamadas = instalarResolutorPythonFalso({ ...opciones, otrasRutas: () => new Response("sin armado", { status: 503 }) });
     const estado = crearEstadoConversacion({}, "Quiero una columna así para un cumpleaños", blueprint);
     estado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
     estado.ragCandidatos = candidatos;
@@ -170,28 +179,27 @@ async function main(): Promise<void> {
   const apagada = confirmarCon(conPatron);
   const confirmadoSinPatrones = await apagada.confirmar();
   assert.equal(confirmadoSinPatrones.ok, true, JSON.stringify(confirmadoSinPatrones).slice(0, 400));
-  assert.equal(apagada.llamadas.length, 1);
-  assert.equal("completar_patrones" in apagada.llamadas[0]!.body, false, "sin la bandera Python no completa patrones");
-  assert.equal("pistas_patron" in apagada.llamadas[0]!.body, false, "sin la bandera las pistas de la foto no viajan");
+  assert.equal(resoluciones(apagada.llamadas).length, 1, "una sola resolución");
+  assert.equal("completar_patrones" in resoluciones(apagada.llamadas)[0]!.body, false, "sin la bandera Python no completa patrones");
+  assert.equal("pistas_patron" in resoluciones(apagada.llamadas)[0]!.body, false, "sin la bandera las pistas de la foto no viajan");
   process.env.PATRONES_COLOR_V1 = "false";
   const apagadaExplicita = confirmarCon(conPatron);
   assert.equal((await apagadaExplicita.confirmar()).ok, true);
-  assert.equal("completar_patrones" in apagadaExplicita.llamadas[0]!.body, false);
+  assert.equal("completar_patrones" in resoluciones(apagadaExplicita.llamadas)[0]!.body, false);
   ok("con PATRONES_COLOR_V1 apagada confirmar no pide patrones");
 
   process.env.PATRONES_COLOR_V1 = "true";
   const conPista = confirmarCon(conPatron);
   const confirmado = await conPista.confirmar();
   assert.equal(confirmado.ok, true, JSON.stringify(confirmado).slice(0, 400));
-  assert.equal(conPista.llamadas.length, 1);
-  assert.equal(conPista.llamadas[0]!.path, "/internal/v1/plan/resolve");
-  assert.equal(conPista.llamadas[0]!.body.completar_patrones, true);
-  assert.deepEqual(conPista.llamadas[0]!.body.pistas_patron, [{ referencia_element_id: "REF_01_E01", ...espiral }]);
+  assert.equal(resoluciones(conPista.llamadas).length, 1);
+  assert.equal(resoluciones(conPista.llamadas)[0]!.body.completar_patrones, true);
+  assert.deepEqual(resoluciones(conPista.llamadas)[0]!.body.pistas_patron, [{ referencia_element_id: "REF_01_E01", ...espiral }]);
 
   const sinPista = confirmarCon(blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure")]));
   assert.equal((await sinPista.confirmar()).ok, true);
-  assert.equal(sinPista.llamadas[0]!.body.completar_patrones, true, "sin pista Python completa con el preset");
-  assert.equal("pistas_patron" in sinPista.llamadas[0]!.body, false, "sin pistas el campo no viaja");
+  assert.equal(resoluciones(sinPista.llamadas)[0]!.body.completar_patrones, true, "sin pista Python completa con el preset");
+  assert.equal("pistas_patron" in resoluciones(sinPista.llamadas)[0]!.body, false, "sin pistas el campo no viaja");
   ok("confirmar_plan_decoracion resuelve con completar_patrones y las pistas de la foto");
 
   // Convergencia: el reintento sin el material sin cobertura lleva las mismas opciones.
@@ -200,8 +208,8 @@ async function main(): Promise<void> {
   }, RECHAZOS_PARA_CONVERGER);
   const convergido = await convergencia.confirmar();
   assert.equal(convergido.ok, true, JSON.stringify(convergido).slice(0, 400));
-  assert.equal(convergencia.llamadas.length, 2, "resolvió, quitó el material sin cobertura y reintentó");
-  for (const reintento of convergencia.llamadas) {
+  assert.equal(resoluciones(convergencia.llamadas).length, 2, "resolvió, quitó el material sin cobertura y reintentó");
+  for (const reintento of resoluciones(convergencia.llamadas)) {
     assert.equal(reintento.body.completar_patrones, true);
     assert.deepEqual(reintento.body.pistas_patron, [{ referencia_element_id: "REF_01_E01", ...espiral }]);
   }

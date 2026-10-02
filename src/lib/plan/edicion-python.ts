@@ -3,18 +3,27 @@ import {
   isPythonAdapterError,
   llamarPythonCatalogRecommendations,
   llamarPythonCatalogSelection,
+  llamarPythonPlanArmadoArco,
   llamarPythonPlanArmadoBouquet,
   llamarPythonPlanArmadoGuirnalda,
+  llamarPythonPlanArmadoGuirnaldaOrganica,
   llamarPythonPlanEdit,
   llamarPythonPlanPatron,
+  type LimitesArco,
+  type LimitesGuirnaldaOrganica,
+  type OpcionesArmadoArco,
   type OpcionesArmadoGuirnalda,
+  type OpcionesArmadoGuirnaldaOrganica,
   type PythonPlanArmadoGlobo,
   type PythonPlanArmadoGuirnaldaLinea,
   type PythonPlanEditLineaBase,
   type PythonPlanPatronLinea,
 } from "@/lib/ia/nucleo/python-adapter";
+import type { ArmadoArcoV1, VistaArco } from "./armado-arco";
 import type { ArmadoBouquetResuelto, ArmadoBouquetV1, DisposicionNumero, VarianteBouquet } from "./armado-bouquet";
 import type { ArmadoGuirnaldaResuelto, ArmadoGuirnaldaV1 } from "./armado-guirnalda";
+import type { ArmadoGuirnaldaOrganicaV1 } from "./armado-guirnalda-organica";
+import type { VistaGuirnaldaOrganica } from "./opciones-armado-guirnalda-organica";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { candidatoDesdePython } from "@/lib/rag/chat/candidato-python";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
@@ -184,6 +193,18 @@ const RECHAZOS_VISTA_ARMADO: Readonly<Record<string, Rechazo>> = {
 
 /** Rejections of POST /internal/v1/plan/armado-guirnalda (ADR-0032). */
 const RECHAZOS_VISTA_ARMADO_GUIRNALDA: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
+  invalid_plan: { status: 422, mensaje: "El armado de la guirnalda no tiene un formato válido." },
+};
+
+/** Rejections of POST /internal/v1/plan/armado-arco (ADR-0034). */
+const RECHAZOS_VISTA_ARMADO_ARCO: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
+  invalid_plan: { status: 422, mensaje: "El armado del arco no tiene un formato válido." },
+};
+
+/** Rejections of POST /internal/v1/plan/armado-guirnalda-organica (ADR-0034). */
+const RECHAZOS_VISTA_ARMADO_GUIRNALDA_ORGANICA: Readonly<Record<string, Rechazo>> = {
   estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
   invalid_plan: { status: 422, mensaje: "El armado de la guirnalda no tiene un formato válido." },
 };
@@ -427,5 +448,116 @@ export async function vistaPreviaArmadoGuirnaldaPython(input: {
     return { armado: resultado.armado, opciones: resultado.opciones };
   } catch (error) {
     throw rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO_GUIRNALDA) ?? error;
+  }
+}
+
+/**
+ * What the arch editor gets back: `VistaArcoSchema` (the resolved arch and
+ * its drawing) plus the assembly it was resolved with, the designer's tools
+ * and the live ranges. Nothing here is recomputed in TypeScript.
+ */
+export type VistaPreviaArmadoArco = VistaArco & {
+  armado: ArmadoArcoV1;
+  opciones: OpcionesArmadoArco;
+  limites: LimitesArco;
+};
+
+/**
+ * Assembly preview for the arch editor (ADR-0034): the arch Python resolves
+ * (or the recipe it suggests, with `null`) **and the SVG its own engine
+ * emitted**, so the drawing never recomputes a geometry here. `colores` are
+ * the piece's tones as the browser holds them once the catalog resolved them;
+ * they only paint, since the count and the purchase go by material index.
+ * `opciones` are the designer's tools for the piece and `limites` the ranges
+ * the interface may move with this assembly in place, both decided by Python.
+ * An `armado_invalido` keeps Python's `motivo` and `mensaje`.
+ */
+export async function vistaPreviaArmadoArcoPython(input: {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  armadoArco: ArmadoArcoV1 | null;
+  colores?: readonly string[];
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<VistaPreviaArmadoArco> {
+  try {
+    const resultado = await llamarPythonPlanArmadoArco({
+      plan: input.plan,
+      estructuraId: input.estructuraId,
+      armadoArco: input.armadoArco,
+      ...(input.colores === undefined ? {} : { colores: input.colores }),
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return {
+      arco: resultado.arco,
+      grafica: resultado.grafica,
+      armado: resultado.armado,
+      opciones: resultado.opciones,
+      limites: resultado.limites,
+    };
+  } catch (error) {
+    throw rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO_ARCO) ?? error;
+  }
+}
+
+/**
+ * What the organic garland editor gets back: `VistaGuirnaldaOrganicaSchema`
+ * (the resolved garland and its drawing) plus the assembly it was resolved
+ * with, the designer's tools and the live ranges. Nothing here is recomputed
+ * in TypeScript.
+ */
+export type VistaPreviaArmadoGuirnaldaOrganica = VistaGuirnaldaOrganica & {
+  armado: ArmadoGuirnaldaOrganicaV1;
+  opciones: OpcionesArmadoGuirnaldaOrganica;
+  limites: LimitesGuirnaldaOrganica;
+};
+
+/**
+ * Assembly preview for the organic garland editor (ADR-0034): the garland
+ * Python resolves (or the recipe it suggests, with `null`) **and the SVG its
+ * own engine emitted**, so the drawing never recomputes a geometry here.
+ *
+ * This is not the garland preview of ADR-0032
+ * (`vistaPreviaArmadoGuirnaldaPython`, clusters and toppers): both describe
+ * the same piece from different angles and coexist.
+ *
+ * `colores` are the piece's tones as the browser holds them once the catalog
+ * resolved them; they only paint, since the count and the purchase go by
+ * material index. `opciones` are the designer's tools for the piece and
+ * `limites` the ranges the interface may move with this assembly in place,
+ * both decided by Python. An `armado_invalido` keeps Python's `motivo` and
+ * `mensaje`.
+ */
+export async function vistaPreviaArmadoGuirnaldaOrganicaPython(input: {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  armadoGuirnaldaOrganica: ArmadoGuirnaldaOrganicaV1 | null;
+  colores?: readonly string[];
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<VistaPreviaArmadoGuirnaldaOrganica> {
+  try {
+    const resultado = await llamarPythonPlanArmadoGuirnaldaOrganica({
+      plan: input.plan,
+      estructuraId: input.estructuraId,
+      armadoGuirnaldaOrganica: input.armadoGuirnaldaOrganica,
+      ...(input.colores === undefined ? {} : { colores: input.colores }),
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return {
+      guirnalda: resultado.guirnalda,
+      grafica: resultado.grafica,
+      armado: resultado.armado,
+      opciones: resultado.opciones,
+      limites: resultado.limites,
+    };
+  } catch (error) {
+    throw rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO_GUIRNALDA_ORGANICA) ?? error;
   }
 }

@@ -79,6 +79,11 @@ from app.inari.parse import (
     IntentParseRequest,
     interpretar_consulta_gemini,
 )
+from app.omoikane.armado_estructura import (
+    OMOIKANE_ARMADO_SCOPE,
+    ArmadoEstructuraRequest,
+    resolver_armado_estructura,
+)
 from app.omoikane.turno_stream import (
     CHAT_TURN_STREAM_SCOPE,
     ChatTurnError,
@@ -129,6 +134,16 @@ from app.cotizacion_profesional import (
     cotizar_profesional,
 )
 from app.armado_bouquet import VARIANTES as VARIANTES_BOUQUET
+from app.plan_armado_arco import (
+    PLAN_ARMADO_ARCO_SCOPE,
+    PlanArmadoArcoRequest,
+    vista_previa_armado_arco,
+)
+from app.plan_armado_guirnalda_organica import (
+    PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE,
+    PlanArmadoGuirnaldaOrganicaRequest,
+    vista_previa_armado_guirnalda_organica,
+)
 from app.plan_edicion import (
     PLAN_ARMADO_GUIRNALDA_SCOPE,
     PLAN_ARMADO_SCOPE,
@@ -1578,6 +1593,82 @@ def create_app(
             operation="plan.armado_guirnalda",
             model=PlanArmadoGuirnaldaRequest,
             scope=PLAN_ARMADO_GUIRNALDA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/omoikane/armado-estructura")
+    async def omoikane_armado_estructura(request: Request) -> Response:
+        # ADR-0034 §5: las herramientas del motor del diseñador para el agente
+        # de chat. Consulta el catálogo de patrones, arma un arco o una columna
+        # con la puerta del motor, o completa con la receta lo que el modelo no
+        # armó al confirmar el plan. Sin catálogo y sin efecto: globos
+        # colocados y aritmética del motor.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, ArmadoEstructuraRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await run_plan_cpu(resolver_armado_estructura, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="omoikane.armado_estructura",
+            model=ArmadoEstructuraRequest,
+            scope=OMOIKANE_ARMADO_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-arco")
+    async def plan_armado_arco(request: Request) -> Response:
+        # ADR-0034: resolves (or suggests) one arch's assembly for the editor
+        # with the designer's migrated engine, and answers with its SVG. No
+        # catalog: the plan says what the piece is and the browser hands over
+        # the resolved tones. The drawing is derived -- it never enters the
+        # plan, the snapshot or `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoArcoRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # CPU-bound (it places every balloon and emits the SVG): off the loop.
+                result = await run_plan_cpu(vista_previa_armado_arco, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_arco",
+            model=PlanArmadoArcoRequest,
+            scope=PLAN_ARMADO_ARCO_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-guirnalda-organica")
+    async def plan_armado_guirnalda_organica(request: Request) -> Response:
+        # ADR-0034: resolves (or suggests) one garland's assembly with the
+        # designer's migrated engine, and answers with its SVG. It does NOT
+        # replace /plan/armado-guirnalda (ADR-0032: clusters and toppers) --
+        # both describe the same piece from different angles and coexist. No
+        # catalog; the drawing is derived and never enters `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoGuirnaldaOrganicaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # The most expensive CPU work of the three engines (it relaxes
+                # collisions until no balloon overlaps another, then emits the
+                # SVG): it cannot run on the event loop.
+                result = await run_plan_cpu(vista_previa_armado_guirnalda_organica, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_guirnalda_organica",
+            model=PlanArmadoGuirnaldaOrganicaRequest,
+            scope=PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE,
             handler=handler,
         )
 

@@ -12,6 +12,7 @@ import { MuestrasColor } from "@/components/propuesta/MuestrasColor";
 import { EstadoError } from "@/components/propuesta/EstadoError";
 import { imagenDeReferencia, urlImagen } from "./recorte";
 import { vistaAnalisisFoto, type EstadoAnalisisFoto } from "./textos-analisis";
+import type { AnalisisColorSempertex } from "@/lib/plan/analisis-color";
 import { ubicarEtiquetas, type PosicionEtiqueta, type TamanoFoto } from "./etiquetas-analisis";
 import { EscanerFoto } from "./EscanerFoto";
 
@@ -23,6 +24,8 @@ type Props = {
   imagenes: ImagenReferencia[];
   estado: EstadoAnalisisFoto;
   blueprint: ReferenceBlueprintV2 | null;
+  /** Los colores medidos de la foto: con ellos los chips son referencias del catálogo y no palabras. */
+  analisisColor?: AnalisisColorSempertex | null;
   error?: string | null;
   onReintentar?: () => void;
   reintentando?: boolean;
@@ -163,7 +166,7 @@ function FraseAnalisis({ titulo }: { titulo: string }) {
  * ambience chips. Without balloon pieces it says so instead of "Listo"
  * (hallazgo #17), and a failure offers a real retry.
  */
-export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar, reintentando = false, onElegirEjemplo, className = "" }: Props) {
+export function AnalisisFoto({ imagenes, estado, blueprint, analisisColor, error, onReintentar, reintentando = false, onElegirEjemplo, className = "" }: Props) {
   const reducir = useReducedMotion();
   const [seleccion, setSeleccion] = useState(0);
   const fotoRef = useRef<HTMLImageElement>(null);
@@ -183,7 +186,7 @@ export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar,
   const imagen = imagenes[indice];
   if (!imagen) return null;
   const src = urlImagen(imagen);
-  const vista = vistaAnalisisFoto(estado, blueprint, error);
+  const vista = vistaAnalisisFoto(estado, blueprint, error, analisisColor ?? null);
   const piezasImagen = (vista.caso === "listo" ? vista.piezas : [])
     .map((pieza, orden) => ({ pieza, numero: orden + 1 }))
     .filter(({ pieza }) => imagenDeReferencia(imagenes, pieza.sourceImageId) === imagen);

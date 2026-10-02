@@ -1,6 +1,8 @@
 import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
 import { leerLecturasDeFoto } from "@/lib/ia/amaterasu/lecturas-foto";
+import { medirColoresSempertex } from "@/lib/ia/amaterasu/color-sempertex";
+import type { AnalisisColorSempertex } from "@/lib/plan/analisis-color";
 import { chatDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
 import {
@@ -10,6 +12,7 @@ import {
   PATRON_REFERENCIA_PYTHON_ENABLED,
   REFERENCE_ANALYSIS_PYTHON_ENABLED,
 } from "@/lib/ia/nucleo/feature-flags";
+import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
 import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
 
@@ -56,6 +59,20 @@ export async function POST(request: Request) {
       guirnalda: GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
     });
     const result = { ...analisis, blueprint };
+    /**
+     * Los colores de cada pieza, medidos sobre los píxeles de su croquis y cruzados con una referencia del
+     * catálogo Sempertex (su código y su Pantone). Va **fuera** del blueprint a propósito: no entra en ningún
+     * contrato, no viaja a Python y no toca el `plan_hash`, así que se puede mirar sin cambiar lo que un plan
+     * compra. Un fallo aquí no rompe el análisis: la foto ya está leída y esto es un añadido.
+     */
+    let analisisColor: AnalisisColorSempertex | null = null;
+    if (featureEnabled("ANALISIS_COLOR_SEMPERTEX_V1")) {
+      try {
+        analisisColor = await medirColoresSempertex(blueprint, references);
+      } catch (error) {
+        console.warn("[references/analyze] no se pudo medir el color", { request_id: requestId, error: error instanceof Error ? error.message : String(error) });
+      }
+    }
     // Qué vio el reconocedor y qué lecturas quedaron en cada elemento: solo
     // ids, tipos y conteos (nunca la foto), para diagnosticar un plan que no
     // sigue la foto (2026-09-25: un bouquet de 5 globos salía con 12 o 20).
@@ -78,7 +95,10 @@ export async function POST(request: Request) {
           : {}),
       })),
     }));
-    return Response.json(cuerpoExito(result, references, requestId, id), { headers: { "X-Request-ID": requestId } });
+    return Response.json(
+      { ...cuerpoExito(result, references, requestId, id), ...(analisisColor ? { analisis_color: analisisColor } : {}) },
+      { headers: { "X-Request-ID": requestId } },
+    );
   } catch (error) {
     const { status, body, uiError } = respuestaError(error, requestId);
     registrarFalloUi("/api/references/analyze", uiError);

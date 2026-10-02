@@ -41,7 +41,7 @@ import unicodedata
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-from functools import partial
+from functools import lru_cache, partial
 from math import isfinite
 from typing import Annotated, Literal, Protocol, cast
 from urllib.parse import urlparse
@@ -74,6 +74,15 @@ from app.armado_bouquet import (
     validar,
     variantes_admitidas,
 )
+from app.armado_arco import ArmadoInvalido as ArmadoArcoInvalido
+from app.armado_arco import EstructuraArco
+from app.armado_arco import armado_resuelto as armado_arco_resuelto
+from app.armado_columna import ArmadoInvalido as ArmadoColumnaInvalido
+from app.armado_columna import EstructuraColumna
+from app.armado_columna import armado_resuelto as armado_columna_resuelto
+from app.armado_guirnalda_organica import ArmadoInvalido as ArmadoGuirnaldaOrganicaInvalido
+from app.armado_guirnalda_organica import EstructuraGuirnalda as EstructuraGuirnaldaOrganica
+from app.armado_guirnalda_organica import armado_resuelto as armado_guirnalda_organica_resuelto
 from app.armado_guirnalda import ArmadoInvalido as ArmadoGuirnaldaInvalido
 from app.armado_guirnalda import (
     EstructuraGuirnalda,
@@ -1596,10 +1605,264 @@ def _physical_warnings(
     return warnings
 
 
+#: Las tres piezas que el motor del diseñador sabe armar (ADR-0034 §3): el campo
+#: del plan que trae su armado, el campo del resuelto que es su eje y la lista de
+#: ``plan-resuelto.v1`` donde se publica. El arco no tiene «alto» como eje —su
+#: línea guía es más larga que su alto—, la columna no tiene «largo» y la
+#: guirnalda lo mide sobre su tira ondulada: cada motor nombra el suyo, y por eso
+#: va en la tabla en vez de deducirse del tipo en cada sitio donde se usa.
+#:
+#: La guirnalda entra por ``armado_guirnalda_organica`` y **no** por el
+#: ``armado_guirnalda`` de ADR-0032, que sigue vivo con su editor: cuando una
+#: pieza trae los dos, manda el del motor, que es el que coloca los globos de
+#: verdad, y el de ADR-0032 se queda describiendo el armado por partes.
+_ARMADOS_DEL_MOTOR: dict[str, tuple[str, str, str]] = {
+    "arco": ("armado_arco", "largo_m", "armados_arco"),
+    "columna": ("armado_columna", "alto_total_m", "armados_columna"),
+    "guirnalda": ("armado_guirnalda_organica", "largo_m", "armados_guirnalda_organica"),
+}
+
+
+def _campos_publicados(lista: str) -> frozenset[str]:
+    """Qué campos de una pieza resuelta viajan en la resolución, según el contrato.
+
+    Se leen del esquema exportado y no se escriben a mano, igual que en
+    ``plan_armado_arco.py``: el dueño es el Zod de ``src/lib/plan/`` y una lista
+    a mano se desincronizaría en silencio. Lo que el motor devuelve de más —el
+    dibujo (decenas de kB por pieza, se pide aparte a
+    ``/api/plan-armado-arco``), el diseño saneado y el margen de compra, que el
+    plan ya publica en ``totales.merma_porcentaje``— se queda fuera por no
+    estar aquí, y no por una lista de exclusiones que haya que mantener.
+    """
+    esquema: Mapping[str, object] = contract_schema("PlanResuelto")
+    for clave in ("properties", lista, "items", "properties"):
+        esquema = cast(Mapping[str, object], esquema[clave])
+    return frozenset(esquema)
+
+
+_CAMPOS_DEL_MOTOR: dict[str, frozenset[str]] = {
+    tipo: _campos_publicados(lista) for tipo, (_campo, _eje, lista) in _ARMADOS_DEL_MOTOR.items()
+}
+
+#: Cuántas piezas armadas recuerda ``_pieza_del_motor``. Un plan trae hasta 24
+#: estructuras, así que con 32 entran todas las de una resolución y las de la
+#: anterior; cada entrada son los globos de una pieza, sin su dibujo.
+_MAX_PIEZAS_RECORDADAS = 32
+
+
+@dataclass(frozen=True, slots=True)
+class _ConteoDelMotor:
+    """Lo que el motor contó de una pieza, en lugar de lo que la fórmula estimaba.
+
+    El motor no estima un total y lo reparte: coloca cada globo y los cuenta,
+    así que aquí no quedan cuotas que cerrar ni redondeos que repartir. Por eso
+    ``celdas`` es su conteo tal cual —cuántos globos de cada tamaño lleva cada
+    material de la estructura, por instancia— y el total es su suma.
+    """
+
+    eje_m: float
+    celdas: tuple[tuple[int, int, int], ...]
+
+    @property
+    def total(self) -> int:
+        return sum(cantidad for _pulgadas, _material, cantidad in self.celdas)
+
+    @property
+    def proporciones(self) -> tuple[tuple[int, float], ...]:
+        """La mezcla que el armado acabó usando, por si alguien la necesita.
+
+        No decide nada —el reparto ya está hecho—: es la mezcla efectiva de la
+        pieza para quien hoy pregunta a ``_structure_count`` si lleva un solo
+        tamaño (``patron_color``), que con el motor es una respuesta observada
+        y no la tabla del plan.
+        """
+        total = self.total
+        if total <= 0:
+            return ()
+        por_tamano: dict[int, int] = {}
+        for pulgadas, _material, cantidad in self.celdas:
+            por_tamano[pulgadas] = por_tamano.get(pulgadas, 0) + cantidad
+        return tuple((pulgadas, cuenta / total) for pulgadas, cuenta in sorted(por_tamano.items()))
+
+    def sin_ubicar(self, obligatorios: Collection[int]) -> tuple[int, ...]:
+        """Los tamaños obligatorios del cliente que el armado no colocó.
+
+        La restricción de tamaños es del plan entero y el armado es de una
+        pieza, así que un tamaño que el armado no usa sigue siendo un aviso
+        visible, igual que cuando la mezcla no podía colocarlo.
+        """
+        colocados = {pulgadas for pulgadas, _material, _cantidad in self.celdas}
+        return tuple(sorted(size for size in obligatorios if size not in colocados))
+
+
+def _armado_del_motor(
+    structure: Mapping[str, object],
+) -> tuple[str, Mapping[str, object]] | None:
+    """El armado del motor de esta pieza, si lo trae y le corresponde por tipo.
+
+    ``armado_arco`` solo cuenta en un arco y ``armado_columna`` solo en una
+    columna: el contrato no impide el cruce, pero la puerta del motor lo
+    rechaza (``no_es_arco``, ``no_es_columna``), y una pieza que no es ninguna
+    de las dos se queda en el camino de siempre sin preguntar nada.
+    """
+    tipo = _text(structure.get("tipo")) or ""
+    entrada = _ARMADOS_DEL_MOTOR.get(tipo)
+    if entrada is None:
+        return None
+    armado = structure.get(entrada[0])
+    if not isinstance(armado, Mapping):
+        return None
+    return tipo, cast(Mapping[str, object], armado)
+
+
+def _armado_del_motor_error(
+    estructura_id: str,
+    error: ArmadoArcoInvalido | ArmadoColumnaInvalido | ArmadoGuirnaldaOrganicaInvalido,
+) -> PlanResolutionError:
+    """Un armado que no se sostiene es un error del cliente, no un plan callado.
+
+    Mismo código, estado y detalle que ``_garland_error``: el decorador tiene
+    que leer qué pieza falla y por qué, y no recibir un plan resuelto con un
+    conteo inventado porque alguien se tragó el fallo.
+    """
+    return PlanResolutionError(
+        "armado_invalido",
+        422,
+        {"estructura_id": estructura_id, "motivo": error.motivo, "mensaje": error.mensaje},
+    )
+
+
+@lru_cache(maxsize=_MAX_PIEZAS_RECORDADAS)
+def _pieza_del_motor(clave: str) -> dict[str, object]:
+    """La pieza que el motor arma, cada globo colocado, sin su dibujo.
+
+    ``clave`` es ``[tipo, colores, armado]`` en JSON canónico, y es todo lo que
+    el motor necesita: ni las medidas del plan ni la densidad entran en un
+    armado. Recordar el resultado es correcto porque el motor es determinista
+    —su azar va sembrado en el armado—, y hace falta porque a la misma pieza se
+    le pregunta varias veces por resolución: el despiece, lo que se publica y,
+    con ``completar_conteos``, cada medida y densidad que ``conteo_foto`` prueba
+    (ADR-0031). Medido sobre un arco de 84 globos: la resolución pedía 2
+    armados (111 ms) y, con una cuenta de foto que no se alcanza, 9 (339 ms);
+    recordándolos, 1 armado y 54 / 58 ms.
+
+    Lanza el ``ArmadoInvalido`` del motor tal cual; quien llama es el que sabe
+    de qué estructura es. ``lru_cache`` no recuerda excepciones, así que un
+    armado inválido vuelve a fallar igual la próxima vez.
+    """
+    tipo, colores, armado = cast(
+        tuple[str, list[str], Mapping[str, object]], tuple(json.loads(clave))
+    )
+    # El desperdicio es política del plan, no del armado (ADR-0034): el motor
+    # dice cómo se arma la pieza y el plan cuánto de más se compra. La columna
+    # no lo recibe porque su motor no calcula compra.
+    if tipo == "arco":
+        resuelto: dict[str, object] = armado_arco_resuelto(
+            EstructuraArco(es_arco=True, materiales=colores), armado, MERMA
+        )
+    elif tipo == "guirnalda":
+        resuelto = armado_guirnalda_organica_resuelto(
+            EstructuraGuirnaldaOrganica(es_guirnalda=True, materiales=colores), armado, MERMA
+        )
+    else:
+        resuelto = armado_columna_resuelto(
+            EstructuraColumna(es_columna=True, materiales=colores), armado
+        )
+    return {
+        campo: valor for campo, valor in resuelto.items() if campo in _CAMPOS_DEL_MOTOR[tipo]
+    }
+
+
+def _resolver_con_el_motor(
+    tipo: str, armado: Mapping[str, object], structure: Mapping[str, object]
+) -> dict[str, object]:
+    """La pieza resuelta por su motor: cada globo colocado, su conteo y sus avisos.
+
+    Es la **única** puerta por la que este resolutor habla con los motores de
+    arco y de columna: el eje, el conteo y lo que se publica en
+    ``armados_arco`` / ``armados_columna`` salen todos de aquí, así que no hay
+    dos sitios contando la misma pieza.
+
+    Los colores de la estructura viajan como vienen del plan. El motor solo los
+    usa para pintar, y el dibujo no entra en la resolución: lo que de aquí se
+    lee son índices de material, nunca tonos.
+    """
+    colores = [
+        _text(material.get("color")) or "" for material in _mappings(structure.get("materiales"))
+    ]
+    clave = json.dumps(
+        [tipo, colores, armado], ensure_ascii=False, separators=(",", ":"), sort_keys=True
+    )
+    try:
+        return _pieza_del_motor(clave)
+    except (
+        ArmadoArcoInvalido,
+        ArmadoColumnaInvalido,
+        ArmadoGuirnaldaOrganicaInvalido,
+    ) as error:
+        raise _armado_del_motor_error(_text(structure.get("estructura_id")) or "", error) from error
+
+
+def _conteo_del_motor(structure: Mapping[str, object]) -> _ConteoDelMotor | None:
+    """El eje y el conteo del motor de esta pieza, o ``None`` sin armado del motor.
+
+    La columna y la guirnalda cuentan ya por material **y por tamaño**, porque
+    una apila capas de distinto globo y la otra mezcla tamaños a lo largo de la
+    tira. El arco cuenta solo por material: toda su banda es del mismo globo, el
+    ``nominal`` que nombra el armado.
+
+    Lo que el motor lista aparte y aquí se suma es el acabado: la guirnalda
+    separa su conteo también por acabado, pero el acabado de lo que se compra lo
+    decide el material del plan, no el armado. El armado dice cómo se ve la
+    pieza; el plan, qué producto la paga.
+
+    Lo que **no** entra son los globos que el motor no cuenta: el remate de la
+    columna, que es un globo aparte descrito en su ``remate``, y el follaje y
+    las flores de la guirnalda, que no están en el catálogo de globos y viajan
+    en ``armados_guirnalda_organica[].adornos`` para que nadie los olvide.
+    """
+    entrada = _armado_del_motor(structure)
+    if entrada is None:
+        return None
+    tipo, armado = entrada
+    resuelto = _resolver_con_el_motor(tipo, armado, structure)
+    # El arco es el único cuyo conteo no dice el tamaño: es el mismo en toda la banda.
+    nominal = _integer(_mapping(armado.get("globo")).get("nominal")) if tipo == "arco" else None
+    por_celda: dict[tuple[int, int], int] = {}
+    for linea in _mappings(resuelto.get("conteo")):
+        celda = (
+            nominal if nominal is not None else _integer(linea.get("tamano")) or 0,
+            _integer(linea.get("material")) or 0,
+        )
+        por_celda[celda] = por_celda.get(celda, 0) + (_integer(linea.get("cantidad")) or 0)
+    return _ConteoDelMotor(
+        eje_m=_number(resuelto.get(_ARMADOS_DEL_MOTOR[tipo][1])) or 0.0,
+        # Por tamaño y, dentro de cada tamaño, por material: el mismo orden de
+        # fila y columna con el que el camino viejo recorre su matriz, para que
+        # las líneas de la estructura salgan en el orden de siempre.
+        celdas=tuple(
+            (pulgadas, material, cantidad)
+            for (pulgadas, material), cantidad in sorted(por_celda.items())
+        ),
+    )
+
+
 def _structure_count(
     plan: Mapping[str, object], structure: Mapping[str, object]
 ) -> tuple[float, int, tuple[tuple[int, float], ...], tuple[int, ...]]:
     """Axis, balloons per instance, effective mix and unplaced mandatory sizes."""
+    # ADR-0034 §3: con armado del motor cuenta el motor, que coloca cada globo.
+    # Sin armado se queda la estimación de siempre, que es la que necesitan la
+    # pared, el centro de mesa, el aro, el semiarco y la escultura, y la que
+    # mantiene quieto el ``plan_hash`` de los planes ya aprobados.
+    motor = _conteo_del_motor(structure)
+    if motor is not None:
+        return (
+            motor.eje_m,
+            motor.total,
+            motor.proporciones,
+            motor.sin_ubicar(_required_sizes(plan)),
+        )
     tipo = _text(structure.get("tipo")) or ""
     density = _text(structure.get("densidad")) or "media"
     mix = _text(structure.get("mezcla")) or "organica_fina"
@@ -1642,8 +1905,29 @@ def _pattern_matrix(
 def _despiece_with_plan_sizes(
     plan: Mapping[str, object], structure: Mapping[str, object]
 ) -> tuple[float, list[dict[str, object]], tuple[int, ...]]:
-    axis, base_total, proportions, unplaced = _structure_count(plan, structure)
     materials = _mappings(structure.get("materiales"))
+    repeats = max(1, _integer(structure.get("repeticiones")) or 1)
+    # ADR-0034 §3: con armado del motor no hay despiece que hacer. El motor ya
+    # colocó cada globo, así que su conteo *es* el reparto por tamaño y por
+    # material, sin cuotas, sin redondeos y sin la rejilla de ``patron_color``.
+    motor = _conteo_del_motor(structure)
+    if motor is not None:
+        return (
+            round(motor.eje_m, 2),
+            [
+                {
+                    "tamano": f"R-{pulgadas}",
+                    "pulgadas": pulgadas,
+                    "color": _text(materials[material].get("color")),
+                    "cantidad": cantidad * repeats,
+                    "material_index": material,
+                }
+                for pulgadas, material, cantidad in motor.celdas
+                if cantidad > 0
+            ],
+            motor.sin_ubicar(_required_sizes(plan)),
+        )
+    axis, base_total, proportions, unplaced = _structure_count(plan, structure)
     matrix = (
         _pattern_matrix(plan, structure, proportions)
         if structure.get("patron_color") is not None
@@ -1653,7 +1937,6 @@ def _despiece_with_plan_sizes(
             [_number(material.get("participacion")) or 0.0 for material in materials],
         )
     )
-    repeats = max(1, _integer(structure.get("repeticiones")) or 1)
     # Each cell keeps its material position: two materials of the same color
     # (reflex and pastel) are two products, not one (they used to merge by color).
     return (
@@ -3171,6 +3454,17 @@ def _build_resolved(
     garlands = _armados_guirnalda_resueltos(plan, structures)
     if garlands:
         result["armados_guirnalda"] = garlands
+    # ADR-0034: y para cada arco y cada columna que trae armado, resueltos por
+    # el mismo motor que los contó. Sin el dibujo (``_FUERA_DE_LA_RESOLUCION``).
+    arcos = _armados_del_motor_resueltos(plan, "arco")
+    if arcos:
+        result["armados_arco"] = arcos
+    columnas = _armados_del_motor_resueltos(plan, "columna")
+    if columnas:
+        result["armados_columna"] = columnas
+    organicas = _armados_del_motor_resueltos(plan, "guirnalda")
+    if organicas:
+        result["armados_guirnalda_organica"] = organicas
     PlanResuelto.model_validate(_compact_patterns(result))
     return result
 
@@ -3217,6 +3511,31 @@ def _resolved_patterns(
             item["avisos"] = [*cast(list[str], item["avisos"]), *notices]
         resolved.append(item)
     return resolved
+
+
+def _armados_del_motor_resueltos(
+    plan: Mapping[str, object], tipo: str
+) -> list[dict[str, object]]:
+    """``armados_arco`` / ``armados_columna``: una pieza por armado, en orden de plan.
+
+    Fuera del snapshot y del ``plan_hash``, como los demás resueltos: es la
+    hoja de armado del instalador y el dato con el que la gráfica muestra la
+    pieza sin recalcularla.
+
+    Sale de la misma puerta que la contó, así que publica exactamente los
+    globos que se cotizaron, ya recortada a lo que el contrato publica. Va
+    copiada porque ``_pieza_del_motor`` la recuerda: lo que se publica se
+    serializa y se manosea fuera de aquí, y una pieza compartida con la memoria
+    del motor acabaría contando otra cosa.
+    """
+    resueltos: list[dict[str, object]] = []
+    for structure in _mappings(plan.get("estructuras")):
+        entrada = _armado_del_motor(structure)
+        if entrada is None or entrada[0] != tipo:
+            continue
+        resuelto = _resolver_con_el_motor(entrada[0], entrada[1], structure)
+        resueltos.append(cast(dict[str, object], json.loads(json.dumps(resuelto))))
+    return resueltos
 
 
 def _plan_to_resolve(request: PlanResolutionRequest) -> dict[str, object]:
@@ -4186,12 +4505,22 @@ def _garland_context(
     rows: tuple[tuple[int, ...], ...] | None = None
     rows_by_cluster: Callable[[int], tuple[tuple[int, ...], ...] | None] | None = None
     if garland:
+        # ADR-0034: con el armado del motor, la cuerda es el largo real de la
+        # tira que el motor armó, no la curva que dedujo ``_garland_cord`` del
+        # armado por partes. Hay un solo largo para la pieza: el de quien
+        # colocó los globos. De él salen la tira y la cuerda que se piden en
+        # ``insumos``, que son metros de verdad.
+        motor = _conteo_del_motor(structure)
         armado = structure.get("armado_guirnalda")
-        cord = _eje(
-            "guirnalda",
-            measures,
-            _text(structure.get("estructura_oficial")),
-            armado if isinstance(armado, Mapping) else None,
+        cord = (
+            motor.eje_m
+            if motor is not None
+            else _eje(
+                "guirnalda",
+                measures,
+                _text(structure.get("estructura_oficial")),
+                armado if isinstance(armado, Mapping) else None,
+            )
         )
         _axis, demands, _unplaced = _despiece_with_plan_sizes(plan, structure)
         runs = _runs_by_demand(demands, lines) if lines else None

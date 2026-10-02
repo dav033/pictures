@@ -2,13 +2,15 @@
   "capturada_en": "27528f2",
   "recapturada_en": "feat/cotizacion-profesional",
   "motivo_recaptura": "La tarjeta perdió `max-w-190` en su clase raíz y ganó el hueco `precioCliente` (vacío en esta prueba). Comprobado a mano: con `max-w-190` reinsertado, la única diferencia con 27528f2 son los ids de useId desplazados por ese hueco (_R_1aa69a_ -> _R_1aa69e_). Sin armado, la tarjeta sigue sin cambios de contenido.",
+  "recapturada_otra_vez_en": "ADR-0034, colores reales en la leyenda",
+  "motivo_segunda_recaptura": "La leyenda pintaba con la paleta de la taxonomía, que tiene un solo color por palabra: Verde Lima y Verde Selva salían los dos `#2e9d57` y la gráfica contradecía a su propia leyenda, que sí los nombraba distintos. Ahora el color sale de la referencia del catálogo que se compra (`hexDelCatalogo`). Comprobado antes de recapturar: los bytes no cambian (380450 y 331776, idénticos), cambian 436 valores de color, y **quitando todos los hexadecimales del HTML los dos renders son iguales carácter por carácter**. No se movió nada más que el color.",
   "plan": "scripts/fixtures/patron-color-ui/plan-con-patrones.json",
   "editable": {
     "bytes": 380450,
-    "sha256": "da954a457a042f7ecb358a24f231f0c93758698d8fdf22e4568229fa93d52950"
+    "sha256": "34b2f1d1d649f72dc46074e7c607cb8c27b5f9d47617426f1b7ed5fa2b62ef72"
   },
   "lectura": {
     "bytes": 331776,
-    "sha256": "4f1843d32abad2a61e13d90ba0adc3aec5f4af3cb7ce24a1cb933a1c0f70b581"
+    "sha256": "2f6081dd9df79e810d0805d10e1f0ae23f41aa98dc9be37f587d18179fc6edd1"
   }
 }

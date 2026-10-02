@@ -31,9 +31,12 @@ import type { CajaNormalizada } from "@/components/referencia/recorte";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
 import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";
+import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
 import { BloquePatron } from "./patron/BloquePatron";
 import { BloqueBouquet } from "./bouquet/BloqueBouquet";
 import { BloqueGuirnalda } from "./guirnalda/BloqueGuirnalda";
+import { BloqueArco } from "./arco/BloqueArco";
+import type { PiezaVistaArco } from "./arco/vista-arco";
 import { curvaDeArmado } from "./guirnalda/geometria-guirnalda";
 import type { VistasEnVivo } from "./vistas-en-vivo";
 import type { ColorLeyenda } from "./patron/leyenda";
@@ -117,6 +120,20 @@ type Props = {
     onEditar?: () => void;
     onHojaArmado?: () => void;
     ocupado?: boolean;
+  };
+  /**
+   * Arch block drawn by the designer's engine (ADR-0034): the piece's
+   * `armado_arco` and what the drawing needs to be asked for
+   * (`/api/plan-armado-arco`). Only when the piece carries the assembly, and
+   * then it takes the pattern block's place: the engine's SVG replaces the
+   * graphic that recomputed the geometry in the browser. Without the
+   * assembly the card stays exactly as before, which is what makes the change
+   * reversible (ADR-0034, decision 3).
+   */
+  arco?: {
+    armado: ArmadoArcoV1;
+    pieza: PiezaVistaArco;
+    leyenda: readonly ColorLeyenda[];
   };
   /**
    * Live drawing of the colors slider on a confetti pattern (ADR-0028 §10):
@@ -268,7 +285,7 @@ function CantidadTexto({ texto }: { texto: string }) {
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
-  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, guirnalda, vistaReparto,
+  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, guirnalda, arco, vistaReparto,
 }: Props) {
   const reducir = useReducedMotion();
   const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -374,7 +391,23 @@ export function DetalleEstructura({
             </div>
           )}
 
-          {patron && (
+          {/*
+            Un arco con armado y el bloque del patrón comparten UN hueco: con `armado_arco` el
+            dibujo lo emite el motor que colocó y contó los globos, y el patrón deja de calcular
+            geometría en el navegador para esta pieza (ADR-0034, consecuencia 2). Comparten el
+            hueco —y no se añade otro— por lo mismo que el bouquet y la guirnalda: un hijo más
+            correría el `useId` de todos los controles que vienen después, y una tarjeta sin
+            armado dejaría de pintarse byte por byte como antes.
+          */}
+          {arco ? (
+            <BloqueArco
+              armado={arco.armado}
+              pieza={arco.pieza}
+              leyenda={arco.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+            />
+          ) : patron ? (
             <BloquePatron
               resuelto={patron.resuelto}
               enVivo={vistaReparto ? { vistas: vistaReparto.vistas, id: estructura.estructura_id } : undefined}
@@ -392,7 +425,7 @@ export function DetalleEstructura({
               ocupado={ocupado || Boolean(patron.ocupado)}
               modoDev={modoDev}
             />
-          )}
+          ) : null}
 
           {/*
             The bouquet's and the garland's assembly share ONE child slot (a piece is never
