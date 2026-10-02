@@ -224,7 +224,8 @@ def test_la_libm_no_sirve_para_exp() -> None:
     distintos = [c for c in EXP["exp"] if not igual(_libm_exp(float(c[0])), float(c[1]))]
     assert len(distintos) == 297, (
         "math.exp se desvía de Node en %d de los %d casos del motor, no en 297: o cambió la libm de este "
-        "equipo, o se regeneró el oráculo con otra versión de Node" % (len(distintos), len(EXP["exp"]))
+        "equipo, o se regeneró el oráculo con otra versión de Node"
+        % (len(distintos), len(EXP["exp"]))
     )
 
 

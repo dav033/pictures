@@ -94,7 +94,9 @@ def _como_json(valor: Any) -> str:
     if isinstance(valor, list):
         return "[" + ",".join(_como_json(v) for v in valor) + "]"
     if isinstance(valor, dict):
-        pares = ",".join(f"{json.dumps(str(k), ensure_ascii=False)}:{_como_json(v)}" for k, v in _orden_js(valor))
+        pares = ",".join(
+            f"{json.dumps(str(k), ensure_ascii=False)}:{_como_json(v)}" for k, v in _orden_js(valor)
+        )
         return "{" + pares + "}"
     if valor is None:
         return "null"
@@ -111,7 +113,9 @@ def _orden_js(crudo: Mapping[Any, Any]) -> list[tuple[Any, Any]]:
     """
     indices = [k for k in crudo if str(k).isdigit()]
     resto = [k for k in crudo if not str(k).isdigit()]
-    return [(k, crudo[k]) for k in sorted(indices, key=lambda k: int(str(k)))] + [(k, crudo[k]) for k in resto]
+    return [(k, crudo[k]) for k in sorted(indices, key=lambda k: int(str(k)))] + [
+        (k, crudo[k]) for k in resto
+    ]
 
 
 @dataclass
@@ -166,7 +170,9 @@ def test_lienzo_horizontal() -> None:
 
 
 def test_las_once_formas_listas() -> None:
-    assert [{"id": f.id, "nombre": f.nombre} for f in FORMAS_GUIRNALDA] == [dict(f) for f in _ORACULO["formas"]]
+    assert [{"id": f.id, "nombre": f.nombre} for f in FORMAS_GUIRNALDA] == [
+        dict(f) for f in _ORACULO["formas"]
+    ]
 
 
 def test_los_cuatro_estilos() -> None:
@@ -190,7 +196,10 @@ def test_normalizado_y_limites(vector: Mapping[str, Any]) -> None:
     """El diseño que el sistema usa, los rangos vivos de cada control y la estimación de globos."""
     hecho = _calcular(vector)
     esperado = dict(vector["config"])
-    esperado["tamanos"] = {**esperado["tamanos"], "mezcla": _claves_int(esperado["tamanos"]["mezcla"])}
+    esperado["tamanos"] = {
+        **esperado["tamanos"],
+        "mezcla": _claves_int(esperado["tamanos"]["mezcla"]),
+    }
     assert hecho.cfg == esperado
     assert limites(hecho.cfg) == dict(vector["limites"])
     assert estimar_globos(hecho.cfg) == vector["estimarGlobos"]
@@ -273,7 +282,10 @@ def test_resultado(vector: Mapping[str, Any]) -> None:
             "ang": r9(r.ang),
             "largo": r9(r.largo),
             "capa": r9(r.capa),
-            "hojas": [{"t": r9(h.t), "lado": h.lado, "largo": r9(h.largo), "tono": r9(h.tono)} for h in r.hojas],
+            "hojas": [
+                {"t": r9(h.t), "lado": h.lado, "largo": r9(h.largo), "tono": r9(h.tono)}
+                for h in r.hojas
+            ],
         }
         for r in res.ramas
     ]
@@ -291,7 +303,10 @@ def test_resultado(vector: Mapping[str, Any]) -> None:
     assert len(res.svg) == esperado["svgLargo"]
     assert sha(res.svg) == esperado["svgSha"]
     if "svg" in vector:
-        assert svg_documento(res.svg, "Guirnalda de globos", LIENZO_GUIR["w"], LIENZO_GUIR["h"]) == vector["svg"]
+        assert (
+            svg_documento(res.svg, "Guirnalda de globos", LIENZO_GUIR["w"], LIENZO_GUIR["h"])
+            == vector["svg"]
+        )
     assert sha(hecho.mini.svg) == vector["miniaturaSha"]
 
 
@@ -313,7 +328,9 @@ def test_medidas_densidad_y_compra(vector: Mapping[str, Any]) -> None:
     assert r9(medidas["globosPorMetro"]) == esperadas["globosPorMetro"]
     assert r9(medidas["globosPorPie"]) == esperadas["globosPorPie"]
     assert medidas["capas"] == esperadas["capas"]
-    assert {t: r9(v) for t, v in medidas["diametrosCm"].items()} == _claves_int(esperadas["diametrosCm"])
+    assert {t: r9(v) for t, v in medidas["diametrosCm"].items()} == _claves_int(
+        esperadas["diametrosCm"]
+    )
 
     assert etiqueta_densidad(medidas["globosPorPie"]) == vector["densidad"]
 

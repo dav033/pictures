@@ -130,7 +130,6 @@ def _mas_cercano(
     return mejor
 
 
-
 def _sanear_capas(cfg: Config) -> list[str]:
     """Reglas de la columna por capas. Devuelve lo que ajustó."""
     cambios: list[str] = []
@@ -356,7 +355,6 @@ def sanear(entrada: Config) -> tuple[Config, list[str]]:
     return cfg, cambios
 
 
-
 def config_inicial() -> Config:
     return Config(
         modo="altura",
@@ -369,6 +367,7 @@ def config_inicial() -> Config:
         colores=list(COLORES_INICIALES),
         opciones=opciones_iniciales(),
     )
+
 
 # ---------------------------------------------------------------------------
 # Entrada de fuera (``normalizarConfig``)
@@ -462,7 +461,9 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[Config, list[str]]:
         patron=cast(str, e.get("patron")) if e.get("patron") in PATRON_IDS else base.patron,
         columna=Columna(
             alto_m=_num(col.get("altoM", col.get("alto_m")), base.columna.alto_m),
-            globos_capa=_num(col.get("globosCapa", col.get("globos_capa")), base.columna.globos_capa),
+            globos_capa=_num(
+                col.get("globosCapa", col.get("globos_capa")), base.columna.globos_capa
+            ),
             abajo=_tamano(col.get("abajo"), base.columna.abajo),
             arriba=_tamano(col.get("arriba"), base.columna.arriba),
             escalonado=_bool(col.get("escalonado"), base.columna.escalonado),
@@ -487,7 +488,9 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[Config, list[str]]:
             semilla=_num(glo.get("semilla"), base.globo.semilla),
         ),
         remate=Remate(
-            tipo=cast(str, rem.get("tipo")) if rem.get("tipo") in TIPOS_REMATE else base.remate.tipo,
+            tipo=cast(str, rem.get("tipo"))
+            if rem.get("tipo") in TIPOS_REMATE
+            else base.remate.tipo,
             tamano=_tamano(rem.get("tamano"), base.remate.tamano),
             cantidad=_num(rem.get("cantidad"), base.remate.cantidad),
             foil_m=_num(rem.get("foilM", rem.get("foil_m")), base.remate.foil_m),

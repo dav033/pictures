@@ -185,7 +185,11 @@ def sanear(entrada: ConfigGuir) -> tuple[ConfigGuir, list[str]]:
     # La línea guía no depende del relleno, así que se construye una vez y no treinta y una.
     esp = _espina_media(cfg)
     pasos = 0
-    while estimar_globos_en(cast(dict[str, Any], cfg), esp) > MAX_GLOBOS and v["relleno"] > 0.4 and pasos < 30:
+    while (
+        estimar_globos_en(cast(dict[str, Any], cfg), esp) > MAX_GLOBOS
+        and v["relleno"] > 0.4
+        and pasos < 30
+    ):
         v["relleno"] = _redondear((v["relleno"] - 0.02) * 100) / 100
         pasos += 1
     if pasos > 0:
@@ -277,7 +281,9 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[ConfigGuir, list[str
                 {
                     "hex": normalizar_color(o.get("hex"), respaldo["hex"]),
                     "peso": _num(o.get("peso"), 20),
-                    "acabado": o["acabado"] if any(a["valor"] == o.get("acabado") for a in ACABADOS) else "mate",
+                    "acabado": o["acabado"]
+                    if any(a["valor"] == o.get("acabado") for a in ACABADOS)
+                    else "mate",
                     "rol": "acento" if o.get("rol") == "acento" else "base",
                 }
             )
@@ -307,7 +313,9 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[ConfigGuir, list[str
             "salientes": _num(vo.get("salientes"), base["volumen"]["salientes"]),
         },
         "tamanos": {
-            "mezcla": {t: _peso_mezcla(mezcla, t, base["tamanos"]["mezcla"][t]) for t in TAMANOS_GLOBO},
+            "mezcla": {
+                t: _peso_mezcla(mezcla, t, base["tamanos"]["mezcla"][t]) for t in TAMANOS_GLOBO
+            },
             "grandesAbajo": _num(ta.get("grandesAbajo"), base["tamanos"]["grandesAbajo"]),
             "inflado": _num(ta.get("inflado"), base["tamanos"]["inflado"]),
             "variacion": _num(ta.get("variacion"), base["tamanos"]["variacion"]),

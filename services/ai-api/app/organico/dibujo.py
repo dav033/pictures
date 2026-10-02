@@ -239,7 +239,7 @@ def dibujar(
         )
     for _z, svg in items:
         partes.append(svg)
-    return f'<defs>{"".join(grad.values())}</defs>{"".join(partes)}'
+    return f"<defs>{''.join(grad.values())}</defs>{''.join(partes)}"
 
 
 def referencias(m: Marco) -> str:
@@ -295,7 +295,9 @@ def referencias(m: Marco) -> str:
     return "".join(partes)
 
 
-def svg_documento(interior: str, titulo: str = "Arco orgánico de globos", w: float = LIENZO, h: float = LIENZO) -> str:
+def svg_documento(
+    interior: str, titulo: str = "Arco orgánico de globos", w: float = LIENZO, h: float = LIENZO
+) -> str:
     """Documento SVG completo, listo para descargar."""
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'

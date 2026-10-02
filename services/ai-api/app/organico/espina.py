@@ -14,7 +14,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from math import log  # `mate` no trae `log`: solo lo usa la espina del arco, que la guirnalda no recorre.
+from math import (
+    log,
+)  # `mate` no trae `log`: solo lo usa la espina del arco, que la guirnalda no recorre.
 
 from app.motores import mate
 from app.motores.js import _maximo, _minimo
@@ -166,9 +168,13 @@ def crear_espina(cfg: ConfigOrg, fase: list[float]) -> Espina:
         for q in puntos:
             u = q.s / largo
             env = mate.pow(mate.sin(mate.pi * u), 0.8)
-            d = amp * env * (
-                0.7 * mate.sin(2 * mate.pi * k1 * u + fase[2] * 6.283)
-                + 0.3 * mate.sin(2 * mate.pi * k2 * u + fase[3] * 6.283)
+            d = (
+                amp
+                * env
+                * (
+                    0.7 * mate.sin(2 * mate.pi * k1 * u + fase[2] * 6.283)
+                    + 0.3 * mate.sin(2 * mate.pi * k2 * u + fase[3] * 6.283)
+                )
             )
             movidos.append((q.x + q.nx * d, _maximo(0, q.y + q.ny * d)))
         puntos = medir(movidos)

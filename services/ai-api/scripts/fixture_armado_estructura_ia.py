@@ -128,7 +128,11 @@ ACCIONES: dict[str, dict[str, object]] = {
         },
         "paleta": [{"material": 0}, {"material": 1, "rol": "acento"}],
         "reparto": "racimos",
-        "tamanos": [{"tamano": 5, "peso": 30}, {"tamano": 12, "peso": 50}, {"tamano": 18, "peso": 20}],
+        "tamanos": [
+            {"tamano": 5, "peso": 30},
+            {"tamano": 12, "peso": 50},
+            {"tamano": 18, "peso": 20},
+        ],
     },
     "completar_receta": {"accion": "completar", "plan": PLAN},
 }
@@ -170,7 +174,9 @@ def main(argv: list[str] | None = None) -> int:
         print("\nVista previa; nada escrito. Usa --escribir para reemplazar la fixture.")
         return 0
     FIXTURE.parent.mkdir(parents=True, exist_ok=True)
-    FIXTURE.write_text(json.dumps(respuestas, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    FIXTURE.write_text(
+        json.dumps(respuestas, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     print(f"\nEscrito {FIXTURE}")
     return 0
 

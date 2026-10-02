@@ -409,9 +409,7 @@ def _lectura_pared(
     return orden, preferencia
 
 
-def _corazones(
-    grupo: Sequence[GloboSilueta], cuantos: int
-) -> list[GloboSilueta]:
+def _corazones(grupo: Sequence[GloboSilueta], cuantos: int) -> list[GloboSilueta]:
     """Los ``cuantos`` globos más cercanos al centro del racimo, de dentro afuera."""
     x = sum(globo.x for globo in grupo) / len(grupo)
     y = sum(globo.y for globo in grupo) / len(grupo)

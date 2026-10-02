@@ -235,7 +235,9 @@ def generar(entrada: Config, datos: bool = False) -> Resultado:
     forma: Forma = g["forma"]
     alto_m = ancho_m / 2 if forma == "semi" else g["altoM"]
     if forma == "herradura" and alto_m < radio_m + grosor_m / 2:
-        avisos.append("El alto pedido es menor que el de un semicírculo, así que se dibuja como semicírculo.")
+        avisos.append(
+            "El alto pedido es menor que el de un semicírculo, así que se dibuja como semicírculo."
+        )
         forma = "semi"
         alto_m = ancho_m / 2
     elif forma == "alto" and alto_m < grosor_m / 2 + 0.2:
@@ -292,7 +294,9 @@ def generar(entrada: Config, datos: bool = False) -> Resultado:
             v = (c - n / 2) * paso
             # Compensación de la curva: los globos de afuera crecen y los de adentro se achican, para que todos
             # se toquen parejo. Los de adentro se achican poco: el borde interior solo se apila más.
-            estiramiento = mate.pow(_minimo(1.35, _maximo(0.92, 1 - curvatura * v)), gl["compensacion"])
+            estiramiento = mate.pow(
+                _minimo(1.35, _maximo(0.92, 1 - curvatura * v)), gl["compensacion"]
+            )
             ctx = Ctx(
                 i=i,
                 iEsp=i_esp,
@@ -346,7 +350,9 @@ def generar(entrada: Config, datos: bool = False) -> Resultado:
                 * (1 + (rnd() - 0.5) * 2 * gl["variacionTam"])
                 * (res_escala if res_escala is not None else 1)
             )
-            rot = _redondear((rot_base + (rnd() - 0.5) * 400 * gl["desorden"]) / PASO_ROT) * PASO_ROT
+            rot = (
+                _redondear((rot_base + (rnd() - 0.5) * 400 * gl["desorden"]) / PASO_ROT) * PASO_ROT
+            )
 
             globos.append(
                 GloboPos(
@@ -364,7 +370,9 @@ def generar(entrada: Config, datos: bool = False) -> Resultado:
                     carril=carril,
                     banda=banda,
                     elemento=(
-                        int(elemento) if not propio_de_seccion and not propio_de_capa and _es_entero(elemento) else -1
+                        int(elemento)
+                        if not propio_de_seccion and not propio_de_capa and _es_entero(elemento)
+                        else -1
                     ),
                 )
             )
@@ -518,7 +526,9 @@ def _dibujar(
             )
         if datos:
             elemento = f' data-e="{b.elemento}"' if b.elemento >= 0 else ""
-            partes.append(f'<g data-b="{b.banda}" data-c="{b.carril}" data-f="{b.fila}" data-k="{b.base}"{elemento}>{s}</g>')
+            partes.append(
+                f'<g data-b="{b.banda}" data-c="{b.carril}" data-f="{b.fila}" data-k="{b.base}"{elemento}>{s}</g>'
+            )
         else:
             partes.append(s)
     return f"<defs>{''.join(grad.values())}</defs>{''.join(partes)}"

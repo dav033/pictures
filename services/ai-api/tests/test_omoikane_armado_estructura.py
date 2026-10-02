@@ -166,7 +166,10 @@ def test_el_catalogo_del_arco_trae_los_catorce_patrones_con_sus_mandos() -> None
     assert floral["min_colores"] == 4
     # Cada mando llega con su rango y su valor de partida, que es lo que el modelo no puede adivinar.
     espiral = next(patron for patron in patrones if patron["id"] == "espiral")
-    mandos = {cast(str, mando["clave"]): mando for mando in cast(list[dict[str, Any]], espiral["controles"])}
+    mandos = {
+        cast(str, mando["clave"]): mando
+        for mando in cast(list[dict[str, Any]], espiral["controles"])
+    }
     assert set(mandos) == {"ancho", "inclinacion", "inversion", "espejo"}
     assert all({"min", "max", "paso", "defecto"} <= set(mando) for mando in mandos.values())
     assert opciones["formas"] == ["alto", "semi", "herradura"]
@@ -175,7 +178,8 @@ def test_el_catalogo_del_arco_trae_los_catorce_patrones_con_sus_mandos() -> None
 
 def test_el_catalogo_de_la_columna_trae_los_nueve_patrones_y_sus_remates() -> None:
     opciones = cast(
-        dict[str, Any], resolver_armado_estructura(_peticion(accion="catalogo", tipo="columna"))["opciones"]
+        dict[str, Any],
+        resolver_armado_estructura(_peticion(accion="catalogo", tipo="columna"))["opciones"],
     )
     assert [patron["id"] for patron in cast(list[dict[str, Any]], opciones["patrones"])] == list(
         PATRON_IDS_COLUMNA
@@ -212,7 +216,10 @@ def test_un_armado_valido_pasa_y_devuelve_lo_que_lleva_de_verdad() -> None:
     }
     resumen = cast(dict[str, Any], salida["resumen"])
     assert resumen["total_globos"] > 0
-    assert sum(linea["cantidad"] for linea in cast(list[dict[str, Any]], resumen["conteo"])) == resumen["total_globos"]
+    assert (
+        sum(linea["cantidad"] for linea in cast(list[dict[str, Any]], resumen["conteo"]))
+        == resumen["total_globos"]
+    )
     assert {linea["material"] for linea in cast(list[dict[str, Any]], resumen["conteo"])} == {0, 1}
     assert resumen["largo_m"] > 0
     # El dibujo no sale por aquí: el modelo no mira píxeles y el SVG pesa decenas de kilobytes.
@@ -277,7 +284,9 @@ def test_un_mando_fuera_de_rango_se_acota_con_aviso_y_uno_ajeno_se_ignora() -> N
     assert cast(dict[str, Any], cast(dict[str, Any], salida["armado"])["opciones"])["ancho"] == 6.0
     avisos = cast(list[str], salida["avisos"])
     assert any("acoto" in aviso and "ancho" in aviso for aviso in avisos)
-    assert any("radio" in aviso for aviso in avisos), "un mando de otro patrón se dice, no se aplica"
+    assert any("radio" in aviso for aviso in avisos), (
+        "un mando de otro patrón se dice, no se aplica"
+    )
 
 
 def test_una_columna_se_arma_por_altura_con_su_remate() -> None:
@@ -309,7 +318,9 @@ def test_un_arco_mas_ancho_de_lo_que_el_motor_arma_se_acota() -> None:
             materiales=[0],
         )
     )
-    assert cast(dict[str, Any], cast(dict[str, Any], salida["armado"])["geometria"])["anchoM"] == 10.0
+    assert (
+        cast(dict[str, Any], cast(dict[str, Any], salida["armado"])["geometria"])["anchoM"] == 10.0
+    )
     assert any("acoto" in aviso for aviso in cast(list[str], salida["avisos"]))
 
 
@@ -338,12 +349,17 @@ def test_cada_pieza_con_motor_sin_armado_recibe_la_receta_del_motor() -> None:
         _estructura("EST_02_COLUMNA", "columna", 1),
         _estructura("EST_03_PARED", "pared", 2),
     )
-    armados = cast(list[dict[str, Any]], resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"])
+    armados = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"],
+    )
     # Una pared no tiene motor migrado: sigue por el camino de siempre.
     assert [armado["estructura_id"] for armado in armados] == ["EST_01_ARCO", "EST_02_COLUMNA"]
     arco = armados[0]
     assert (arco["origen"], arco["clave"]) == ("receta", "armado_arco")
-    assert cast(dict[str, Any], arco["armado"])["patron"] == "espiral", "el patrón con el que arranca el diseñador"
+    assert cast(dict[str, Any], arco["armado"])["patron"] == "espiral", (
+        "el patrón con el que arranca el diseñador"
+    )
     assert cast(dict[str, Any], cast(dict[str, Any], arco["armado"])["geometria"])["anchoM"] == 3.2
     assert cast(dict[str, Any], arco["armado"])["materiales"] == [0, 1]
     columna = armados[1]
@@ -355,7 +371,10 @@ def test_cada_pieza_con_motor_sin_armado_recibe_la_receta_del_motor() -> None:
 
 def test_la_receta_del_arco_usa_el_arcoiris_cuando_hay_mas_colores_que_bandas() -> None:
     plan = _plan(_estructura("EST_01_ARCO", "arco", 6))
-    armados = cast(list[dict[str, Any]], resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"])
+    armados = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"],
+    )
     armado = cast(dict[str, Any], armados[0]["armado"])
     assert armado["patron"] == "arcoiris", "es el único de los catorce que reparte seis bandas"
     assert armado["materiales"] == [0, 1, 2, 3, 4, 5], "ningún color de la pieza se queda fuera"
@@ -368,7 +387,9 @@ def test_el_armado_que_el_modelo_armo_llega_al_plan_cuando_se_sostiene() -> None
     propuesto = {"estructura_id": "EST_01_ARCO", "tipo": "arco", "armado": _armado_arco()}
     armados = cast(
         list[dict[str, Any]],
-        resolver_armado_estructura(_peticion(accion="completar", plan=plan, armados=[propuesto]))["armados"],
+        resolver_armado_estructura(_peticion(accion="completar", plan=plan, armados=[propuesto]))[
+            "armados"
+        ],
     )
     assert armados[0]["origen"] == "modelo"
     assert cast(dict[str, Any], armados[0]["armado"])["patron"] == "punteado"
@@ -378,10 +399,16 @@ def test_el_armado_que_el_modelo_armo_llega_al_plan_cuando_se_sostiene() -> None
 def test_un_armado_del_modelo_que_no_se_sostiene_cae_a_la_receta_con_su_motivo() -> None:
     plan = _plan(_estructura("EST_01_ARCO", "arco", 2))
     # `floral` pide cuatro colores y la pieza lleva dos: el modelo no podía saberlo al armarlo.
-    propuesto = {"estructura_id": "EST_01_ARCO", "tipo": "arco", "armado": _armado_arco(patron="floral")}
+    propuesto = {
+        "estructura_id": "EST_01_ARCO",
+        "tipo": "arco",
+        "armado": _armado_arco(patron="floral"),
+    }
     armados = cast(
         list[dict[str, Any]],
-        resolver_armado_estructura(_peticion(accion="completar", plan=plan, armados=[propuesto]))["armados"],
+        resolver_armado_estructura(_peticion(accion="completar", plan=plan, armados=[propuesto]))[
+            "armados"
+        ],
     )
     assert armados[0]["origen"] == "receta"
     assert "pocos_materiales" in cast(list[str], armados[0]["avisos"])[0]
@@ -390,9 +417,18 @@ def test_un_armado_del_modelo_que_no_se_sostiene_cae_a_la_receta_con_su_motivo()
 def test_un_armado_escrito_en_el_plan_se_vuelve_a_validar_contra_la_pieza() -> None:
     # El modelo puede escribirlo directamente en `confirmar_plan_decoracion`; su salida no autoriza nada.
     bueno = _plan(_estructura("EST_01_ARCO", "arco", 2, armado_arco=_armado_arco()))
-    assert cast(list[dict[str, Any]], resolver_armado_estructura(_peticion(accion="completar", plan=bueno))["armados"])[0]["origen"] == "modelo"
+    assert (
+        cast(
+            list[dict[str, Any]],
+            resolver_armado_estructura(_peticion(accion="completar", plan=bueno))["armados"],
+        )[0]["origen"]
+        == "modelo"
+    )
     malo = _plan(_estructura("EST_01_ARCO", "arco", 2, armado_arco=_armado_arco(materiales=[0, 4])))
-    caido = cast(list[dict[str, Any]], resolver_armado_estructura(_peticion(accion="completar", plan=malo))["armados"])[0]
+    caido = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=malo))["armados"],
+    )[0]
     assert caido["origen"] == "receta"
     assert "material_fuera_de_rango" in cast(list[str], caido["avisos"])[0]
 
@@ -413,10 +449,17 @@ def test_el_catalogo_de_la_guirnalda_trae_acabados_repartos_y_papeles_del_motor(
     )
     # Una guirnalda orgánica no tiene patrón: lo que se elige es el acabado, el reparto y el papel.
     assert "patrones" not in opciones
-    assert [a["valor"] for a in cast(list[dict[str, Any]], opciones["acabados"])] == list(ACABADOS_MOTOR)
-    assert [r["valor"] for r in cast(list[dict[str, Any]], opciones["repartos"])] == list(REPARTOS_MOTOR)
+    assert [a["valor"] for a in cast(list[dict[str, Any]], opciones["acabados"])] == list(
+        ACABADOS_MOTOR
+    )
+    assert [r["valor"] for r in cast(list[dict[str, Any]], opciones["repartos"])] == list(
+        REPARTOS_MOTOR
+    )
     # Cada reparto llega con su texto y su ayuda, que es lo que el modelo no puede adivinar.
-    assert all({"valor", "texto", "ayuda"} <= set(r) for r in cast(list[dict[str, Any]], opciones["repartos"]))
+    assert all(
+        {"valor", "texto", "ayuda"} <= set(r)
+        for r in cast(list[dict[str, Any]], opciones["repartos"])
+    )
     assert list(cast(list[str], opciones["roles"])) == ["normal", "acento"]
     assert cast(dict[str, Any], opciones["largo_m"])["min"] > 0
     assert "max_materiales" in opciones
@@ -436,7 +479,11 @@ def test_una_guirnalda_valida_pasa_con_su_paleta_y_dice_lo_que_lleva() -> None:
             },
             paleta=[{"material": 0}, {"material": 1}, {"material": 2, "rol": "acento"}],
             reparto="racimos",
-            tamanos=[{"tamano": 5, "peso": 30}, {"tamano": 12, "peso": 50}, {"tamano": 18, "peso": 20}],
+            tamanos=[
+                {"tamano": 5, "peso": 30},
+                {"tamano": 12, "peso": 50},
+                {"tamano": 18, "peso": 20},
+            ],
         )
     )
     armado = cast(dict[str, Any], salida["armado"])
@@ -451,13 +498,25 @@ def test_una_guirnalda_valida_pasa_con_su_paleta_y_dice_lo_que_lleva() -> None:
     assert colores["reparto"] == "racimos"
     # Los pesos salen de la participación de cada material y el acabado de lo que el plan declara.
     assert [c["peso"] for c in cast(list[dict[str, Any]], colores["paleta"])] == [50.0, 30.0, 20.0]
-    assert [c["acabado"] for c in cast(list[dict[str, Any]], colores["paleta"])] == ["mate", "mate", "cromado"]
-    assert [c["rol"] for c in cast(list[dict[str, Any]], colores["paleta"])] == ["normal", "normal", "acento"]
+    assert [c["acabado"] for c in cast(list[dict[str, Any]], colores["paleta"])] == [
+        "mate",
+        "mate",
+        "cromado",
+    ]
+    assert [c["rol"] for c in cast(list[dict[str, Any]], colores["paleta"])] == [
+        "normal",
+        "normal",
+        "acento",
+    ]
     assert cast(dict[str, Any], armado["tamanos"])["mezcla"] == {"5": 30.0, "12": 50.0, "18": 20.0}
     resumen = cast(dict[str, Any], salida["resumen"])
     assert resumen["total_globos"] > 0
     assert resumen["largo_m"] > 0 and resumen["sueltos"] == 0
-    assert {linea["material"] for linea in cast(list[dict[str, Any]], resumen["conteo"])} == {0, 1, 2}
+    assert {linea["material"] for linea in cast(list[dict[str, Any]], resumen["conteo"])} == {
+        0,
+        1,
+        2,
+    }
     # El follaje y las flores se listan, no se cotizan.
     assert set(cast(dict[str, Any], resumen["adornos"])) == {"ramas", "flores"}
     assert "grafica" not in salida
@@ -504,8 +563,13 @@ def test_un_acabado_del_plan_que_el_motor_no_conoce_va_mate_con_aviso() -> None:
             paleta=[{"material": 0}],
         )
     )
-    paleta = cast(list[dict[str, Any]], cast(dict[str, Any], cast(dict[str, Any], salida["armado"])["colores"])["paleta"])
-    assert paleta[0]["acabado"] == "mate", "no se inventa una equivalencia del vocabulario del catálogo"
+    paleta = cast(
+        list[dict[str, Any]],
+        cast(dict[str, Any], cast(dict[str, Any], salida["armado"])["colores"])["paleta"],
+    )
+    assert paleta[0]["acabado"] == "mate", (
+        "no se inventa una equivalencia del vocabulario del catálogo"
+    )
     assert any("perlado" in aviso for aviso in cast(list[str], salida["avisos"]))
 
 
@@ -528,7 +592,9 @@ def test_armar_una_guirnalda_pide_paleta_y_no_patron() -> None:
         _peticion(accion="armar", pieza={"tipo": "guirnalda", "colores": 2})
     # ...y el patrón no hace falta, porque una guirnalda orgánica no tiene.
     sin_patron = resolver_armado_estructura(
-        _peticion(accion="armar", pieza={"tipo": "guirnalda", "colores": 1}, paleta=[{"material": 0}])
+        _peticion(
+            accion="armar", pieza={"tipo": "guirnalda", "colores": 1}, paleta=[{"material": 0}]
+        )
     )
     assert sin_patron["accion"] == "armar"
     # Un arco sí lo necesita.
@@ -539,7 +605,8 @@ def test_armar_una_guirnalda_pide_paleta_y_no_patron() -> None:
 def test_la_receta_de_la_guirnalda_sale_del_largo_de_la_pieza_y_reparte_sus_colores() -> None:
     plan = _plan(_estructura("EST_01_GUIRNALDA", "guirnalda", 2, acabados=(None, "cromado")))
     armados = cast(
-        list[dict[str, Any]], resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"]
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"],
     )
     completado = armados[0]
     assert (completado["tipo"], completado["clave"], completado["origen"]) == (
@@ -551,14 +618,21 @@ def test_la_receta_de_la_guirnalda_sale_del_largo_de_la_pieza_y_reparte_sus_colo
     # Solo el largo se ajusta con las medidas de la pieza; lo demás es `config_inicial()` del motor.
     assert cast(dict[str, Any], armado["forma"])["largoM"] == 4.5
     inicial = config_inicial_guirnalda()
-    assert cast(dict[str, Any], armado["volumen"]) == dict(cast(Mapping[str, Any], inicial["volumen"]))
-    assert cast(dict[str, Any], armado["aspecto"]) == dict(cast(Mapping[str, Any], inicial["aspecto"]))
+    assert cast(dict[str, Any], armado["volumen"]) == dict(
+        cast(Mapping[str, Any], inicial["volumen"])
+    )
+    assert cast(dict[str, Any], armado["aspecto"]) == dict(
+        cast(Mapping[str, Any], inicial["aspecto"])
+    )
     colores = cast(dict[str, Any], armado["colores"])
     # Los dos colores de la pieza, repartidos por participación, al azar, que es el reparto del diseñador.
     assert colores["reparto"] == "azar"
     assert [c["material"] for c in cast(list[dict[str, Any]], colores["paleta"])] == [0, 1]
     assert [c["peso"] for c in cast(list[dict[str, Any]], colores["paleta"])] == [50.0, 50.0]
-    assert [c["acabado"] for c in cast(list[dict[str, Any]], colores["paleta"])] == ["mate", "cromado"]
+    assert [c["acabado"] for c in cast(list[dict[str, Any]], colores["paleta"])] == [
+        "mate",
+        "cromado",
+    ]
     assert [c["rol"] for c in cast(list[dict[str, Any]], colores["paleta"])] == ["normal", "normal"]
 
 
@@ -569,10 +643,13 @@ def test_una_guirnalda_puede_traer_los_dos_armados_y_el_del_motor_no_toca_al_vie
     devuelve y no lo borra: tiene su propio dueño (``completar_armados_guirnalda`` en la resolución).
     """
     plan = _plan(
-        _estructura("EST_01_GUIRNALDA", "guirnalda", 2, armado_guirnalda=dict(ARMADO_GUIRNALDA_ADR_0032))
+        _estructura(
+            "EST_01_GUIRNALDA", "guirnalda", 2, armado_guirnalda=dict(ARMADO_GUIRNALDA_ADR_0032)
+        )
     )
     armados = cast(
-        list[dict[str, Any]], resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"]
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"],
     )
     assert len(armados) == 1
     completado = armados[0]
@@ -583,7 +660,9 @@ def test_una_guirnalda_puede_traer_los_dos_armados_y_el_del_motor_no_toca_al_vie
     # ...y la estructura que entró sigue con el suyo intacto: la operación no muta el plan.
     estructura = cast(list[dict[str, Any]], plan["estructuras"])[0]
     assert estructura["armado_guirnalda"] == ARMADO_GUIRNALDA_ADR_0032
-    assert "armado_guirnalda_organica" not in estructura, "completar no escribe en el plan; eso es de Next"
+    assert "armado_guirnalda_organica" not in estructura, (
+        "completar no escribe en el plan; eso es de Next"
+    )
 
 
 def test_un_armado_de_guirnalda_del_modelo_que_no_se_sostiene_cae_a_la_receta() -> None:
@@ -599,14 +678,22 @@ def test_un_armado_de_guirnalda_del_modelo_que_no_se_sostiene_cae_a_la_receta() 
             )
         )["armado"],
     )
-    malo = {**bueno, "colores": {**cast(dict[str, Any], bueno["colores"]), "paleta": [{"material": 7, "peso": 50, "acabado": "mate", "rol": "normal"}]}}
+    malo = {
+        **bueno,
+        "colores": {
+            **cast(dict[str, Any], bueno["colores"]),
+            "paleta": [{"material": 7, "peso": 50, "acabado": "mate", "rol": "normal"}],
+        },
+    }
     armados = cast(
         list[dict[str, Any]],
         resolver_armado_estructura(
             _peticion(
                 accion="completar",
                 plan=plan,
-                armados=[{"estructura_id": "EST_01_GUIRNALDA", "tipo": "guirnalda", "armado": malo}],
+                armados=[
+                    {"estructura_id": "EST_01_GUIRNALDA", "tipo": "guirnalda", "armado": malo}
+                ],
             )
         )["armados"],
     )
@@ -619,7 +706,9 @@ def test_un_armado_de_guirnalda_del_modelo_que_no_se_sostiene_cae_a_la_receta() 
             _peticion(
                 accion="completar",
                 plan=plan,
-                armados=[{"estructura_id": "EST_01_GUIRNALDA", "tipo": "guirnalda", "armado": bueno}],
+                armados=[
+                    {"estructura_id": "EST_01_GUIRNALDA", "tipo": "guirnalda", "armado": bueno}
+                ],
             )
         )["armados"],
     )
@@ -629,14 +718,17 @@ def test_un_armado_de_guirnalda_del_modelo_que_no_se_sostiene_cae_a_la_receta() 
 
 def test_el_endpoint_devuelve_el_catalogo_de_la_guirnalda() -> None:
     status, body = _post(
-        {"schema_version": "omoikane-armado-estructura.v1", "accion": "catalogo", "tipo": "guirnalda"},
+        {
+            "schema_version": "omoikane-armado-estructura.v1",
+            "accion": "catalogo",
+            "tipo": "guirnalda",
+        },
         "00000000-0000-4000-8000-0000000000b4",
     )
     assert status == 200
     payload = cast(dict[str, Any], body["payload"])
     assert payload["tipo"] == "guirnalda"
     assert len(cast(list[object], cast(dict[str, Any], payload["opciones"])["acabados"])) == 4
-
 
 
 # --- El endpoint ---------------------------------------------------------------------------

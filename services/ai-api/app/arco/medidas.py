@@ -40,7 +40,9 @@ def grosor_por_tamano(cfg: Config) -> list[dict[str, float]]:
         prueba["globo"]["nominal"] = nominal
         n = sanear(prueba)[0]["geometria"]["globosAncho"]
         d = INFLADO_PULG[nominal] * cfg["globo"]["inflado"] * PULGADA_M
-        salida.append({"nominal": nominal, "diametroCm": d * 100, "grosorM": (n * d) / cfg["globo"]["tamano"]})
+        salida.append(
+            {"nominal": nominal, "diametroCm": d * 100, "grosorM": (n * d) / cfg["globo"]["tamano"]}
+        )
     return salida
 
 

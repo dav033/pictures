@@ -111,7 +111,9 @@ def limites(cfg: Config) -> dict[str, float]:
 
 def tamanos_que_caben(cfg: Config) -> dict[str, bool]:
     """Tamaños de globo que caben en el ancho actual (con el mínimo que pida el patrón)."""
-    return {str(t): ancho_minimo_de(cfg, t) <= cfg["geometria"]["anchoM"] + 1e-9 for t in TAMANOS_GLOBO}
+    return {
+        str(t): ancho_minimo_de(cfg, t) <= cfg["geometria"]["anchoM"] + 1e-9 for t in TAMANOS_GLOBO
+    }
 
 
 def sanear(entrada: Config) -> tuple[Config, list[str]]:
@@ -154,7 +156,9 @@ def sanear(entrada: Config) -> tuple[Config, list[str]]:
         )
         g["globosAncho"] = int(lim["nMax"])
     elif g["globosAncho"] < lim["nMin"]:
-        cambios.append(f"El arcoíris necesita una banda por color: se subieron a {_entero(lim['nMin'])} los globos a lo ancho.")
+        cambios.append(
+            f"El arcoíris necesita una banda por color: se subieron a {_entero(lim['nMin'])} los globos a lo ancho."
+        )
         g["globosAncho"] = int(lim["nMin"])
 
     # Arcoíris: todas las bandas del mismo ancho, así que los globos a lo ancho son un múltiplo de las bandas.
@@ -171,7 +175,9 @@ def sanear(entrada: Config) -> tuple[Config, list[str]]:
         lim2 = limites(cfg)
         alto = _acotar(g["altoM"], lim2["altoMin"], lim2["altoMax"])
         if abs(alto - g["altoM"]) > 1e-6:
-            cambios.append(f"El alto se ajustó a {_coma(alto, 1)} m: fuera de ese rango el arco deja de parecer un arco.")
+            cambios.append(
+                f"El alto se ajustó a {_coma(alto, 1)} m: fuera de ese rango el arco deja de parecer un arco."
+            )
             g["altoM"] = alto
 
     # Capas: una por globo a lo ancho. Las personalizadas conservan su lugar; las que sobran se quitan.
@@ -181,7 +187,13 @@ def sanear(entrada: Config) -> tuple[Config, list[str]]:
         if not k or not isinstance(k.get("colores"), list) or len(k["colores"]) == 0:
             capas.append(None)
         else:
-            capas.append({"colores": [normalizar_color(h, "#9ca3af") for h in k["colores"][:MAX_SECUENCIA_ARCO]]})
+            capas.append(
+                {
+                    "colores": [
+                        normalizar_color(h, "#9ca3af") for h in k["colores"][:MAX_SECUENCIA_ARCO]
+                    ]
+                }
+            )
     cfg["capas"] = capas
 
     # Secciones por altura: hasta 40, cada una sin personalizar o con un color por capa a lo ancho.
@@ -190,7 +202,9 @@ def sanear(entrada: Config) -> tuple[Config, list[str]]:
         if not k2 or not isinstance(k2.get("colores"), list) or len(k2["colores"]) == 0:
             secciones.append(None)
         else:
-            secciones.append({"colores": [normalizar_color(h, "#9ca3af") for h in k2["colores"][:16]]})
+            secciones.append(
+                {"colores": [normalizar_color(h, "#9ca3af") for h in k2["colores"][:16]]}
+            )
     cfg["secciones"] = secciones
 
     return cfg, cambios

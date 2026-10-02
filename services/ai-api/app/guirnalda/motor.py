@@ -11,7 +11,13 @@ from __future__ import annotations
 
 from app.guirnalda.espina import crear_espina_guirnalda
 from app.guirnalda.tipos import ConfigGuir
-from app.organico.motor import Disposicion, OpcionesPintado, ResultadoOrg, crear_disposicion_en, pintar
+from app.organico.motor import (
+    Disposicion,
+    OpcionesPintado,
+    ResultadoOrg,
+    crear_disposicion_en,
+    pintar,
+)
 
 #: Lienzo horizontal en el que se dibuja la guirnalda.
 LIENZO_GUIR = {"w": 760, "h": 440}
@@ -45,7 +51,11 @@ def pintar_guir(cfg: ConfigGuir, disp: Disposicion) -> ResultadoOrg:
 
 def pintar_miniatura(cfg: ConfigGuir, disp: Disposicion) -> ResultadoOrg:
     """Miniatura: solo la guirnalda, encuadrada sobre lo que ocupa, sin persona ni regla ni adornos."""
-    recortada = {**cfg, "forma": {**cfg["forma"], "suelo": False}, "adornos": {"follaje": 0, "flores": 0}}
+    recortada = {
+        **cfg,
+        "forma": {**cfg["forma"], "suelo": False},
+        "adornos": {"follaje": 0, "flores": 0},
+    }
     return pintar(recortada, disp, OpcionesPintado(lienzo=LIENZO_GUIR, ajustar=True))
 
 

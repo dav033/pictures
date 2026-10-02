@@ -263,7 +263,9 @@ class ArmadoEstructuraRequest(OperationalRequest):
     mezcla_colores: float | None = Field(default=None, ge=0, le=1)
     forma: FormaPedida | None = None
     volumen: VolumenPedido | None = None
-    tamanos: list[PesoTamano] | None = Field(default=None, min_length=1, max_length=len(TAMANOS_GLOBO))
+    tamanos: list[PesoTamano] | None = Field(
+        default=None, min_length=1, max_length=len(TAMANOS_GLOBO)
+    )
     adornos: AdornosPedidos | None = None
     # --- `completar` ---
     plan: dict[str, Any] | None = None
@@ -359,7 +361,9 @@ def _opciones_del_patron(
         minimo, maximo, _ = rango
         acotado = _acotar(float(valor), minimo, maximo)
         if acotado != float(valor):
-            avisos.append(f"«{clave}» se acoto a {acotado:g} (su rango es {minimo:g} a {maximo:g}).")
+            avisos.append(
+                f"«{clave}» se acoto a {acotado:g} (su rango es {minimo:g} a {maximo:g})."
+            )
         salida[clave] = acotado
     return salida
 
@@ -380,9 +384,13 @@ def _geometria_arco(
     acotado_ancho = _acotar(ancho, ARCO_ANCHO_MIN, ARCO_ANCHO_MAX)
     acotado_alto = _acotar(alto, ARCO_ALTO_MIN, ARCO_ALTO_MAX)
     if acotado_ancho != ancho:
-        avisos.append(f"El ancho se acoto a {acotado_ancho:g} m (el motor arma de {ARCO_ANCHO_MIN:g} a {ARCO_ANCHO_MAX:g} m).")
+        avisos.append(
+            f"El ancho se acoto a {acotado_ancho:g} m (el motor arma de {ARCO_ANCHO_MIN:g} a {ARCO_ANCHO_MAX:g} m)."
+        )
     if acotado_alto != alto:
-        avisos.append(f"El alto se acoto a {acotado_alto:g} m (el motor arma de {ARCO_ALTO_MIN:g} a {ARCO_ALTO_MAX:g} m).")
+        avisos.append(
+            f"El alto se acoto a {acotado_alto:g} m (el motor arma de {ARCO_ALTO_MIN:g} a {ARCO_ALTO_MAX:g} m)."
+        )
     # Los globos a lo ancho los decide el motor por patrón (el arcoíris quiere uno por banda de color); el
     # modelo puede subirlos o bajarlos, y el saneado de la puerta recorta lo que no cabe en la banda.
     # `globos_ancho_por_defecto` solo mira cuántos colores tiene el patrón, así que basta con una lista de ese
@@ -458,7 +466,9 @@ def _armado_columna(
     alto = (geometria.alto_m if geometria else None) or pieza.alto_m or float(cuerpo_motor.alto_m)
     acotado = _acotar(alto, COLUMNA_ALTO_MIN, COLUMNA_ALTO_MAX)
     if acotado != alto:
-        avisos.append(f"El alto se acoto a {acotado:g} m (el motor arma de {COLUMNA_ALTO_MIN:g} a {COLUMNA_ALTO_MAX:g} m).")
+        avisos.append(
+            f"El alto se acoto a {acotado:g} m (el motor arma de {COLUMNA_ALTO_MIN:g} a {COLUMNA_ALTO_MAX:g} m)."
+        )
     return {
         "version": VERSION_ARMADO_COLUMNA,
         "origen": "sugerido",
@@ -470,7 +480,9 @@ def _armado_columna(
         "cuerpo": {
             "alto_m": acotado,
             "globos_capa": int(
-                _acotar((geometria.globos_capa if geometria else None) or cuerpo_motor.globos_capa, 3, 6)
+                _acotar(
+                    (geometria.globos_capa if geometria else None) or cuerpo_motor.globos_capa, 3, 6
+                )
             ),
             "abajo": (geometria.abajo if geometria else None) or cuerpo_motor.abajo,
             "arriba": (geometria.arriba if geometria else None) or cuerpo_motor.arriba,
@@ -492,7 +504,9 @@ def _armado_columna(
             "cantidad": (remate.cantidad if remate else None) or remate_motor.cantidad,
             "foil_m": (remate.foil_m if remate else None) or remate_motor.foil_m,
             # El remate apunta a un material de la pieza; sin indicación, al principal.
-            "material": (remate.material if remate and remate.material is not None else materiales[0]),
+            "material": (
+                remate.material if remate and remate.material is not None else materiales[0]
+            ),
         },
         "capas": [],
         "materiales": list(materiales),
@@ -535,7 +549,8 @@ def _rol_de(pedido: str | None) -> str:
     limpio = pedido.strip().lower()
     if limpio not in ROLES_GUIRNALDA:
         raise ArmadoGuirnaldaInvalido(
-            "rol_desconocido", f"«{pedido}» no es un papel. Los que hay: {', '.join(ROLES_GUIRNALDA)}."
+            "rol_desconocido",
+            f"«{pedido}» no es un papel. Los que hay: {', '.join(ROLES_GUIRNALDA)}.",
         )
     return limpio
 
@@ -559,11 +574,15 @@ def _mezcla_tamanos(pedidos: Sequence[PesoTamano] | None) -> dict[str, float]:
     """La mezcla de tamaños con las claves del contrato (la pulgada como texto), solo los que se usan."""
     if not pedidos:
         inicial = cast(Mapping[str, Any], config_inicial_guirnalda()["tamanos"])["mezcla"]
-        return {str(t): float(p) for t, p in cast(Mapping[Any, Any], inicial).items() if float(p) > 0}
+        return {
+            str(t): float(p) for t, p in cast(Mapping[Any, Any], inicial).items() if float(p) > 0
+        }
     return {str(peso.tamano): float(peso.peso) for peso in pedidos if peso.peso > 0}
 
 
-def _forma_guirnalda(pieza: PiezaArmado, pedida: FormaPedida | None, avisos: list[str]) -> dict[str, Any]:
+def _forma_guirnalda(
+    pieza: PiezaArmado, pedida: FormaPedida | None, avisos: list[str]
+) -> dict[str, Any]:
     """La línea de la guirnalda: la del motor, con el largo de la pieza y lo que el modelo ajuste encima."""
     inicial = cast(Mapping[str, Any], config_inicial_guirnalda()["forma"])
     largo = (pedida.largo_m if pedida else None) or pieza.largo_m or float(inicial["largoM"])
@@ -614,7 +633,9 @@ def _armado_guirnalda(
     pedido_volumen = request.volumen
     pedido_adornos = request.adornos
     acabados = pieza.acabados or []
-    reparto = colores_motor["reparto"] if request.reparto is None else request.reparto.strip().lower()
+    reparto = (
+        colores_motor["reparto"] if request.reparto is None else request.reparto.strip().lower()
+    )
     if reparto not in VALORES_REPARTO:
         raise ArmadoGuirnaldaInvalido(
             "reparto_desconocido",
@@ -640,7 +661,9 @@ def _armado_guirnalda(
             ),
             "relleno": de_volumen("relleno", pedido_volumen.relleno if pedido_volumen else None),
             "racimo": de_volumen("racimo", pedido_volumen.racimo if pedido_volumen else None),
-            "salientes": de_volumen("salientes", pedido_volumen.salientes if pedido_volumen else None),
+            "salientes": de_volumen(
+                "salientes", pedido_volumen.salientes if pedido_volumen else None
+            ),
         },
         "tamanos": {
             "mezcla": _mezcla_tamanos(request.tamanos),
@@ -663,7 +686,9 @@ def _armado_guirnalda(
                 for color in paleta
             ],
             "reparto": reparto,
-            "mezcla": colores_motor["mezcla"] if request.mezcla_colores is None else request.mezcla_colores,
+            "mezcla": colores_motor["mezcla"]
+            if request.mezcla_colores is None
+            else request.mezcla_colores,
         },
         "adornos": {
             "follaje": adornos_motor["follaje"]
@@ -677,7 +702,6 @@ def _armado_guirnalda(
         # determinista: ninguno de los dos es una decisión del modelo, van tal cual los trae el motor.
         "aspecto": dict(cast(Mapping[str, Any], inicial["aspecto"])),
     }
-
 
 
 # ---------------------------------------------------------------------------
@@ -724,7 +748,12 @@ def _receta(pieza: PiezaArmado, avisos: list[str]) -> dict[str, Any]:
     """La receta del motor para la pieza: lo que mejor encaja con lo que ya dice, y el motor para lo demás."""
     if pieza.tipo == "arco":
         patron = _patron_arco_para(pieza.colores)
-        cuantos = min(pieza.colores, int(cast(int, PATRONES_ARCO[patron].lista["max"])) if PATRONES_ARCO[patron].lista else len(PATRONES_ARCO[patron].colores))
+        cuantos = min(
+            pieza.colores,
+            int(cast(int, PATRONES_ARCO[patron].lista["max"]))
+            if PATRONES_ARCO[patron].lista
+            else len(PATRONES_ARCO[patron].colores),
+        )
         return _armado_arco(pieza, patron, list(range(cuantos)), None, None, avisos)
     if pieza.tipo == "columna":
         patron = _patron_columna_para(pieza.colores)
@@ -860,14 +889,25 @@ def armar(request: ArmadoEstructuraRequest) -> dict[str, Any]:
     patron = cast(str, request.patron) if pieza.tipo != "guirnalda" else ""
     try:
         if pieza.tipo == "arco":
-            armado = _armado_arco(pieza, patron, materiales, request.opciones, request.geometria, avisos)
+            armado = _armado_arco(
+                pieza, patron, materiales, request.opciones, request.geometria, avisos
+            )
             resuelto = armado_arco_resuelto(_estructura_arco(pieza.colores), armado)
             resumen = _resumen_arco(resuelto)
         elif pieza.tipo == "columna":
             armado = _armado_columna(
-                pieza, patron, materiales, request.opciones, request.geometria, request.remate, avisos
+                pieza,
+                patron,
+                materiales,
+                request.opciones,
+                request.geometria,
+                request.remate,
+                avisos,
             )
-            resuelto = cast("dict[str, Any]", armado_columna_resuelto(_estructura_columna(pieza.colores), armado))
+            resuelto = cast(
+                "dict[str, Any]",
+                armado_columna_resuelto(_estructura_columna(pieza.colores), armado),
+            )
             resumen = _resumen_columna(resuelto)
         else:
             armado = _armado_guirnalda(pieza, paleta, request, avisos)
@@ -897,7 +937,11 @@ def _pieza_del_plan(estructura: Mapping[str, Any]) -> PiezaArmado | None:
     if tipo not in TIPOS_CON_MOTOR:
         return None
     materiales = estructura.get("materiales")
-    if not isinstance(materiales, Sequence) or isinstance(materiales, (str, bytes)) or not materiales:
+    if (
+        not isinstance(materiales, Sequence)
+        or isinstance(materiales, (str, bytes))
+        or not materiales
+    ):
         return None
     medidas = estructura.get("medidas")
     medidas = medidas if isinstance(medidas, Mapping) else {}
@@ -908,7 +952,9 @@ def _pieza_del_plan(estructura: Mapping[str, Any]) -> PiezaArmado | None:
     de_paleta: dict[str, Any] = (
         {
             "pesos": [_numero(m.get("participacion")) or 0.0 for m in crudos],
-            "acabados": [m.get("acabado") if isinstance(m.get("acabado"), str) else None for m in crudos],
+            "acabados": [
+                m.get("acabado") if isinstance(m.get("acabado"), str) else None for m in crudos
+            ],
         }
         if tipo == "guirnalda"
         else {}
@@ -979,14 +1025,18 @@ def completar(request: ArmadoEstructuraRequest) -> dict[str, Any]:
             if motivo is None:
                 elegido = dict(candidato)
                 break
-            avisos.append(f"El armado que venia de la {procedencia} no se sostiene ({motivo}); va la receta.")
+            avisos.append(
+                f"El armado que venia de la {procedencia} no se sostiene ({motivo}); va la receta."
+            )
         origen = "modelo"
         if elegido is None:
             origen = "receta"
             elegido = _receta(pieza, avisos)
             motivo = _valida(pieza, elegido)
             if motivo is not None:  # pragma: no cover - la receta del motor siempre se sostiene
-                raise PlanResolutionError("armado_invalido", 422, {"estructura_id": estructura_id, "motivo": motivo})
+                raise PlanResolutionError(
+                    "armado_invalido", 422, {"estructura_id": estructura_id, "motivo": motivo}
+                )
         salida.append(
             {
                 "estructura_id": estructura_id,

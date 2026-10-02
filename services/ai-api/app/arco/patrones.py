@@ -152,7 +152,11 @@ def _bloques(ctx: Ctx, cols: list[str], op: dict[str, float]) -> ResultadoColor:
     frac = pos - base
     idx = base
     dist_borde = _minimo(frac, 1 - frac) * largo
-    if op["mezcla"] > 0 and dist_borde < op["mezcla"] and ctx.rnd() < 0.5 * (1 - dist_borde / op["mezcla"]):
+    if (
+        op["mezcla"] > 0
+        and dist_borde < op["mezcla"]
+        and ctx.rnd() < 0.5 * (1 - dist_borde / op["mezcla"])
+    ):
         idx += -1 if frac < 0.5 else 1
     return ResultadoColor(_en(cols, _mod(idx, k)))
 
@@ -171,7 +175,9 @@ def _espiral(ctx: Ctx, cols: list[str], op: dict[str, float]) -> ResultadoColor:
     # Con inversión, la fila avanza y retrocede en triángulo: el giro cambia de sentido cada P filas.
     periodo = op["inversion"]
     fila = periodo - abs(_mod(ctx.iEsp, 2 * periodo) - periodo) if periodo > 0 else ctx.iEsp
-    return ResultadoColor(_en(cols, _mod(_piso((fila + op["inclinacion"] * ctx.c) / op["ancho"]), len(cols))))
+    return ResultadoColor(
+        _en(cols, _mod(_piso((fila + op["inclinacion"] * ctx.c) / op["ancho"]), len(cols)))
+    )
 
 
 def _espiral_punteada(ctx: Ctx, cols: list[str], op: dict[str, float]) -> ResultadoColor:
@@ -228,7 +234,9 @@ def _punteado(ctx: Ctx, cols: list[str], op: dict[str, float]) -> ResultadoColor
 
 
 def _franjas(ctx: Ctx, cols: list[str], op: dict[str, float]) -> ResultadoColor:
-    return ResultadoColor(_en(cols, _mod(_piso((ctx.iEsp + op["inclinacion"] * ctx.c) / op["ancho"]), len(cols))))
+    return ResultadoColor(
+        _en(cols, _mod(_piso((ctx.iEsp + op["inclinacion"] * ctx.c) / op["ancho"]), len(cols)))
+    )
 
 
 def _floral(ctx: Ctx, cols: list[str], op: dict[str, float]) -> ResultadoColor:
@@ -241,7 +249,9 @@ def _floral(ctx: Ctx, cols: list[str], op: dict[str, float]) -> ResultadoColor:
         desplazamiento = (0.8 if _mod(k, 2) == 1 else -0.8) if op["alternar"] else 0
         # El centro de la flor se ajusta a una columna real de esa fila (pares en .5, impares en enteros).
         if _resto_js(i0, 2) == 0:
-            c0 = _minimo(ctx.n - 0.5, _maximo(0.5, _redondear(ctx.n / 2 + desplazamiento - 0.5) + 0.5))
+            c0 = _minimo(
+                ctx.n - 0.5, _maximo(0.5, _redondear(ctx.n / 2 + desplazamiento - 0.5) + 0.5)
+            )
         else:
             c0 = _minimo(ctx.n - 1, _maximo(1, _redondear(ctx.n / 2 + desplazamiento)))
         dmin = _minimo(dmin, mate.hypot(ctx.x - c0, ctx.y - i0 * 0.866))
@@ -354,7 +364,15 @@ PATRONES: dict[str, Patron] = {
         colores=["#ffffff", "#8ec5ff", "#1d4ed8"],
         lista={"min": 2, "max": 5, "etiqueta": "Capa (borde → centro)"},
         controles=[
-            {"clave": "invertir", "etiqueta": "Invertir capas", "min": 0, "max": 1, "paso": 1, "def_": 0, "interruptor": True},
+            {
+                "clave": "invertir",
+                "etiqueta": "Invertir capas",
+                "min": 0,
+                "max": 1,
+                "paso": 1,
+                "def_": 0,
+                "interruptor": True,
+            },
         ],
         color=_apilado,
     ),
@@ -439,7 +457,15 @@ PATRONES: dict[str, Patron] = {
         controles=[
             _ancho_franja(2),
             _inclinacion(2, 0, 4),
-            {"clave": "invertir", "etiqueta": "Invertir dirección", "min": 0, "max": 1, "paso": 1, "def_": 0, "interruptor": True},
+            {
+                "clave": "invertir",
+                "etiqueta": "Invertir dirección",
+                "min": 0,
+                "max": 1,
+                "paso": 1,
+                "def_": 0,
+                "interruptor": True,
+            },
             _espejo(1),
         ],
         color=_chevron,
@@ -451,8 +477,23 @@ PATRONES: dict[str, Patron] = {
         colores=["#d4af37", "#ffffff", "#7c3aed"],
         roles=["Centro", "Anillo", "Fondo"],
         controles=[
-            {"clave": "periodo", "etiqueta": "Separación entre rombos", "min": 4, "max": 16, "paso": 1, "def_": 8, "ayuda": "En filas."},
-            {"clave": "radio", "etiqueta": "Tamaño del rombo", "min": 0.8, "max": 5, "paso": 0.1, "def_": 1.8},
+            {
+                "clave": "periodo",
+                "etiqueta": "Separación entre rombos",
+                "min": 4,
+                "max": 16,
+                "paso": 1,
+                "def_": 8,
+                "ayuda": "En filas.",
+            },
+            {
+                "clave": "radio",
+                "etiqueta": "Tamaño del rombo",
+                "min": 0.8,
+                "max": 5,
+                "paso": 0.1,
+                "def_": 1.8,
+            },
             {
                 "clave": "aspecto",
                 "etiqueta": "Alargado del rombo",
@@ -473,7 +514,15 @@ PATRONES: dict[str, Patron] = {
         colores=["#ec4899", "#ffffff"],
         roles=["Fondo", "Punto"],
         controles=[
-            {"clave": "sepFilas", "etiqueta": "Separación entre lunares", "min": 2, "max": 12, "paso": 2, "def_": 4, "ayuda": "En filas."},
+            {
+                "clave": "sepFilas",
+                "etiqueta": "Separación entre lunares",
+                "min": 2,
+                "max": 12,
+                "paso": 2,
+                "def_": 4,
+                "ayuda": "En filas.",
+            },
             {
                 "clave": "sepAncho",
                 "etiqueta": "Lunares a lo ancho",
@@ -492,7 +541,15 @@ PATRONES: dict[str, Patron] = {
                 "def_": 1.2,
                 "ayuda": "Respecto a los globos del fondo.",
             },
-            {"clave": "escalonar", "etiqueta": "Escalonar lunares", "min": 0, "max": 1, "paso": 1, "def_": 1, "interruptor": True},
+            {
+                "clave": "escalonar",
+                "etiqueta": "Escalonar lunares",
+                "min": 0,
+                "max": 1,
+                "paso": 1,
+                "def_": 1,
+                "interruptor": True,
+            },
             _espejo(1),
         ],
         color=_punteado,
@@ -513,7 +570,15 @@ PATRONES: dict[str, Patron] = {
         colores=["#4d7c0f", "#f472b6", "#fde047", "#65a30d"],
         roles=["Hojas", "Pétalos", "Centro", "Hojas 2"],
         controles=[
-            {"clave": "sepFilas", "etiqueta": "Separación entre flores", "min": 4, "max": 16, "paso": 1, "def_": 7, "ayuda": "En filas."},
+            {
+                "clave": "sepFilas",
+                "etiqueta": "Separación entre flores",
+                "min": 4,
+                "max": 16,
+                "paso": 1,
+                "def_": 7,
+                "ayuda": "En filas.",
+            },
             {
                 "clave": "radio",
                 "etiqueta": "Tamaño de la flor",
@@ -532,7 +597,15 @@ PATRONES: dict[str, Patron] = {
                 "def_": 1.25,
                 "ayuda": "Respecto a los globos de las hojas.",
             },
-            {"clave": "alternar", "etiqueta": "Alternar lados", "min": 0, "max": 1, "paso": 1, "def_": 1, "interruptor": True},
+            {
+                "clave": "alternar",
+                "etiqueta": "Alternar lados",
+                "min": 0,
+                "max": 1,
+                "paso": 1,
+                "def_": 1,
+                "interruptor": True,
+            },
             _espejo(1),
         ],
         color=_floral,
@@ -562,7 +635,15 @@ PATRONES: dict[str, Patron] = {
                 "def_": 0.6,
                 "ayuda": "Globos que se cuelan en la frontera entre dos tonos. 0 = bandas duras.",
             },
-            {"clave": "invertir", "etiqueta": "Invertir degradado", "min": 0, "max": 1, "paso": 1, "def_": 0, "interruptor": True},
+            {
+                "clave": "invertir",
+                "etiqueta": "Invertir degradado",
+                "min": 0,
+                "max": 1,
+                "paso": 1,
+                "def_": 0,
+                "interruptor": True,
+            },
         ],
         color=_ombre,
     ),
@@ -661,7 +742,11 @@ def cambiar_patron(cfg: Config, id_patron: str) -> Config:
         return cfg
     g = cfg["geometria"]
     recuerdo: dict[str, Distribucion] = dict(cfg.get("recuerdo") or {})
-    recuerdo[cfg["patron"]] = {"globosAncho": g["globosAncho"], "anchoM": g["anchoM"], "altoM": g["altoM"]}
+    recuerdo[cfg["patron"]] = {
+        "globosAncho": g["globosAncho"],
+        "anchoM": g["anchoM"],
+        "altoM": g["altoM"],
+    }
     visitado = recuerdo.get(id_patron)
     entra_arcoiris = id_patron == "arcoiris" and cfg["patron"] != "arcoiris"
     sale_arcoiris = cfg["patron"] == "arcoiris" and id_patron != "arcoiris"
@@ -673,11 +758,18 @@ def cambiar_patron(cfg: Config, id_patron: str) -> Config:
         # Un patrón que no se había usado: los globos a lo ancho que trae, y el tamaño del arco de antes (si se
         # sale del arcoíris, el de antes de entrar).
         anterior = cfg.get("ultimoNormal")
-        tamano = anterior if sale_arcoiris and anterior else {"anchoM": g["anchoM"], "altoM": g["altoM"]}
+        tamano = (
+            anterior if sale_arcoiris and anterior else {"anchoM": g["anchoM"], "altoM": g["altoM"]}
+        )
         geometria.update(tamano)
         geometria["globosAncho"] = globos_ancho_por_defecto(id_patron, cfg)
 
-    salida: Config = {**cfg, "patron": id_patron, "geometria": cast(Geometria, geometria), "recuerdo": recuerdo}
+    salida: Config = {
+        **cfg,
+        "patron": id_patron,
+        "geometria": cast(Geometria, geometria),
+        "recuerdo": recuerdo,
+    }
     if entra_arcoiris:
         salida["ultimoNormal"] = {"anchoM": g["anchoM"], "altoM": g["altoM"]}
     return salida
@@ -729,11 +821,17 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[Config, list[str]]:
     g: dict[str, object] = g_crudo if isinstance(g_crudo, dict) else {}
     forma = g.get("forma")
     base["geometria"] = {
-        "forma": cast(Forma, forma) if forma in ("alto", "semi", "herradura") else base["geometria"]["forma"],
+        "forma": cast(Forma, forma)
+        if forma in ("alto", "semi", "herradura")
+        else base["geometria"]["forma"],
         "anchoM": _acotar_crudo(g.get("anchoM"), 0.8, 12, base["geometria"]["anchoM"]),
         "altoM": _acotar_crudo(g.get("altoM"), 0.8, 8, base["geometria"]["altoM"]),
-        "globosAncho": int(_redondear(_acotar_crudo(g.get("globosAncho"), 2, 16, base["geometria"]["globosAncho"]))),
-        "suelo": cast(bool, g["suelo"]) if isinstance(g.get("suelo"), bool) else base["geometria"]["suelo"],
+        "globosAncho": int(
+            _redondear(_acotar_crudo(g.get("globosAncho"), 2, 16, base["geometria"]["globosAncho"]))
+        ),
+        "suelo": cast(bool, g["suelo"])
+        if isinstance(g.get("suelo"), bool)
+        else base["geometria"]["suelo"],
     }
 
     # Capas: `None` sigue el patrón; o una secuencia de colores propia. Un diseño guardado con el modo por
@@ -750,7 +848,9 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[Config, list[str]]:
             colores: list[str] = []
             for v in indices[:16]:
                 numero = float(cast(float, v)) if _es_finito(v) else 0.0
-                colores.append(paleta[int(_mod(_redondear(numero), len(paleta)))] if paleta else "#9ca3af")
+                colores.append(
+                    paleta[int(_mod(_redondear(numero), len(paleta)))] if paleta else "#9ca3af"
+                )
             capas.append({"colores": colores})
         base["capas"] = capas
         base["geometria"]["globosAncho"] = len(crudas)
@@ -796,7 +896,8 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[Config, list[str]]:
         p = PATRONES[id_patron]
         crudos = _lista_cruda(cols.get(id_patron))
         validos = [
-            normalizar_color(c, p.colores[i] if i < len(p.colores) else p.colores[0]) for i, c in enumerate(crudos)
+            normalizar_color(c, p.colores[i] if i < len(p.colores) else p.colores[0])
+            for i, c in enumerate(crudos)
         ]
         minimo = p.lista["min"] if p.lista else len(p.colores)
         maximo = p.lista["max"] if p.lista else len(p.colores)
@@ -833,8 +934,12 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[Config, list[str]]:
         guardado = rec.get(id_patron)
         if isinstance(guardado, dict):
             recuerdo[id_patron] = {
-                "globosAncho": int(_redondear(_acotar_crudo(guardado.get("globosAncho"), 2, 16, 4))),
-                "anchoM": _acotar_crudo(guardado.get("anchoM"), 0.8, 12, base["geometria"]["anchoM"]),
+                "globosAncho": int(
+                    _redondear(_acotar_crudo(guardado.get("globosAncho"), 2, 16, 4))
+                ),
+                "anchoM": _acotar_crudo(
+                    guardado.get("anchoM"), 0.8, 12, base["geometria"]["anchoM"]
+                ),
                 "altoM": _acotar_crudo(guardado.get("altoM"), 0.8, 8, base["geometria"]["altoM"]),
             }
     if recuerdo:

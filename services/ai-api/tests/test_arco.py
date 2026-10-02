@@ -43,6 +43,7 @@ _ORACULO: Mapping[str, Any] = json.loads(GOLDEN.read_text(encoding="utf-8"))
 VECTORES: list[Mapping[str, Any]] = _ORACULO["vectores"]
 POR_NOMBRE = {v["nombre"]: v for v in VECTORES}
 
+
 def r9(valor: float) -> float:
     """El mismo redondeo con el que se escribieron los vectores: dos lenguajes no dan el mismo último bit.
 
@@ -113,7 +114,10 @@ def test_permutar() -> None:
 
 def test_reordenar_secciones() -> None:
     for caso in _ORACULO["reordenes"]:
-        assert reordenar_secciones(caso["previas"], caso["contenidos"], caso["desde"], caso["hacia"]) == caso["salida"], caso
+        assert (
+            reordenar_secciones(caso["previas"], caso["contenidos"], caso["desde"], caso["hacia"])
+            == caso["salida"]
+        ), caso
 
 
 # ---------------------------------------------------------------------------
@@ -132,9 +136,10 @@ def test_saneado_y_limites(vector: Mapping[str, Any]) -> None:
     assert bandas(cfg) == vector["bandas"]
     assert r9(ancho_minimo_de(cfg)) == vector["anchoMinimo"]
     assert r9(paso_m(cfg["globo"])) == vector["paso"]
-    assert [{k: r9(v) if isinstance(v, float) else v for k, v in g.items()} for g in grosor_por_tamano(cfg)] == [
-        dict(g) for g in vector["grosorPorTamano"]
-    ]
+    assert [
+        {k: r9(v) if isinstance(v, float) else v for k, v in g.items()}
+        for g in grosor_por_tamano(cfg)
+    ] == [dict(g) for g in vector["grosorPorTamano"]]
 
 
 @pytest.mark.parametrize("vector", VECTORES, ids=lambda v: str(v["nombre"]))
@@ -215,7 +220,13 @@ def _como_json(valor: Any) -> str:
     if isinstance(valor, list):
         return "[" + ",".join(_como_json(v) for v in valor) + "]"
     if isinstance(valor, dict):
-        return "{" + ",".join(f"{json.dumps(k, ensure_ascii=False)}:{_como_json(v)}" for k, v in valor.items()) + "}"
+        return (
+            "{"
+            + ",".join(
+                f"{json.dumps(k, ensure_ascii=False)}:{_como_json(v)}" for k, v in valor.items()
+            )
+            + "}"
+        )
     if valor is None:
         return "null"
     raise TypeError(f"no se sabe escribir {type(valor)!r} como JSON de JavaScript")

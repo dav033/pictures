@@ -14,7 +14,14 @@ from dataclasses import dataclass
 from app.guirnalda.tipos import ConfigGuir, config_inicial
 from app.organico.tipos import Tamanos, Volumen
 
-__all__ = ["ESTILOS_GUIR", "FORMAS_GUIRNALDA", "EstiloGuir", "FormaListaGuir", "aplicar_forma_guir", "config_inicial"]
+__all__ = [
+    "ESTILOS_GUIR",
+    "FORMAS_GUIRNALDA",
+    "EstiloGuir",
+    "FormaListaGuir",
+    "aplicar_forma_guir",
+    "config_inicial",
+]
 
 
 @dataclass(frozen=True)
@@ -235,19 +242,25 @@ ESTILOS_GUIR: list[EstiloGuir] = [
         "ligero",
         "Ligero",
         "Delgado y aireado, con espacio entre racimos.",
-        lambda c: _con_volumen(c, grosorPatasM=0.32, grosorCimaM=0.44, relleno=0.5, racimo=3, irregularidad=0.5),
+        lambda c: _con_volumen(
+            c, grosorPatasM=0.32, grosorCimaM=0.44, relleno=0.5, racimo=3, irregularidad=0.5
+        ),
     ),
     EstiloGuir(
         "estandar",
         "Estándar",
         "El punto medio de una guirnalda de eventos.",
-        lambda c: _con_volumen(c, grosorPatasM=0.4, grosorCimaM=0.62, relleno=0.72, racimo=4, irregularidad=0.35),
+        lambda c: _con_volumen(
+            c, grosorPatasM=0.4, grosorCimaM=0.62, relleno=0.72, racimo=4, irregularidad=0.35
+        ),
     ),
     EstiloGuir(
         "lleno",
         "Lleno",
         "Denso y voluminoso, sin huecos.",
-        lambda c: _con_volumen(c, grosorPatasM=0.55, grosorCimaM=0.9, relleno=0.9, racimo=5, irregularidad=0.28),
+        lambda c: _con_volumen(
+            c, grosorPatasM=0.55, grosorCimaM=0.9, relleno=0.9, racimo=5, irregularidad=0.28
+        ),
     ),
     EstiloGuir(
         "gigantes",

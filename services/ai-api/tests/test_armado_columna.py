@@ -248,7 +248,13 @@ def test_los_vectores_estan_completos(_hay_vectores: None) -> None:
         assert f"remate-{tipo}" in POR_NOMBRE
     for nombre in ("capas-a-mano", "capas-desde-altura", "capas-salto-brusco"):
         assert nombre in POR_NOMBRE
-    for nombre in ("basura-vacia", "basura-nula", "basura-texto", "basura-mezclada", "basura-colores"):
+    for nombre in (
+        "basura-vacia",
+        "basura-nula",
+        "basura-texto",
+        "basura-mezclada",
+        "basura-colores",
+    ):
         assert nombre in POR_NOMBRE
     assert any(v["cfg"]["modo"] == "capas" for v in VECTORES)
     # Los casos al azar van solo por huella; los que tienen nombre llevan el detalle de cada globo.
@@ -357,9 +363,7 @@ def test_medidas_y_compra(nombre: str) -> None:
     assert not fallos, "\n".join(fallos[:12])
 
 
-@pytest.mark.parametrize(
-    "nombre", [v["nombre"] for v in VECTORES if v["globos"] is not None]
-)
+@pytest.mark.parametrize("nombre", [v["nombre"] for v in VECTORES if v["globos"] is not None])
 def test_el_detalle_de_cada_globo(nombre: str) -> None:
     """Globo por globo en los casos con nombre: es lo que dice *dónde* se desvió el puerto."""
     vector = POR_NOMBRE[nombre]
@@ -548,9 +552,7 @@ def test_los_avisos_del_motor_llegan_al_resuelto() -> None:
 
 def test_un_remate_que_no_cabe_se_cambia_y_se_dice() -> None:
     """Un globo de R5 sobre una columna de 60 cm no es un remate: el motor lo sube y avisa."""
-    resuelto = armado_resuelto(
-        COLUMNA, _armado(remate={**_armado()["remate"], "tamano": 5})
-    )
+    resuelto = armado_resuelto(COLUMNA, _armado(remate={**_armado()["remate"], "tamano": 5}))
     assert any("no queda bien sobre una columna" in a for a in resuelto["avisos"])
     assert resuelto["remate"]["globos"][0]["tamano"] > 5
 
@@ -565,15 +567,27 @@ def test_un_remate_que_no_cabe_se_cambia_y_se_dice() -> None:
         ({"materiales": [0, 1, 2, 3, 4, 5, 6, 7, 8]}, "demasiados_materiales"),
         ({"materiales": [0, 9]}, "material_fuera_de_rango"),
         ({"modo": "capas", "capas": []}, "capas_faltantes"),
-        ({"modo": "capas", "capas": [{"tamano": 12, "materiales": [5]}]}, "material_fuera_de_rango"),
+        (
+            {"modo": "capas", "capas": [{"tamano": 12, "materiales": [5]}]},
+            "material_fuera_de_rango",
+        ),
         ({"modo": "capas", "capas": [{"tamano": 12, "materiales": []}]}, "capa_sin_colores"),
-        ({"remate": {"tipo": "sombrero", "tamano": 24, "cantidad": 5, "foil_m": 0.7, "material": 0}}, "remate_invalido"),
+        (
+            {
+                "remate": {
+                    "tipo": "sombrero",
+                    "tamano": 24,
+                    "cantidad": 5,
+                    "foil_m": 0.7,
+                    "material": 0,
+                }
+            },
+            "remate_invalido",
+        ),
         ({"cuerpo": None}, "forma_invalida"),
     ],
 )
-def test_un_armado_imposible_se_rechaza_con_su_motivo(
-    cambios: dict[str, Any], motivo: str
-) -> None:
+def test_un_armado_imposible_se_rechaza_con_su_motivo(cambios: dict[str, Any], motivo: str) -> None:
     with pytest.raises(ArmadoInvalido) as fallo:
         validar(COLUMNA, _armado(**cambios))
     assert fallo.value.motivo == motivo

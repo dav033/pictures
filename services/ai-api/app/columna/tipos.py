@@ -107,8 +107,6 @@ class Config:
     opciones: dict[str, dict[str, float]] = field(default_factory=dict)
 
 
-
-
 def _copia(cfg: Config) -> Config:
     return Config(
         modo=cfg.modo,

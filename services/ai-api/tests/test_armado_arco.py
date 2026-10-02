@@ -39,7 +39,13 @@ GLOBO: dict[str, Any] = {
     "semilla": 7,
 }
 
-GEOMETRIA: dict[str, Any] = {"forma": "herradura", "anchoM": 4, "altoM": 2.5, "globosAncho": 4, "suelo": True}
+GEOMETRIA: dict[str, Any] = {
+    "forma": "herradura",
+    "anchoM": 4,
+    "altoM": 2.5,
+    "globosAncho": 4,
+    "suelo": True,
+}
 
 
 def armado(**cambios: Any) -> dict[str, Any]:
@@ -84,7 +90,15 @@ def test_una_pieza_que_no_es_arco() -> None:
         ({"materiales": []}, "forma_invalida"),
         ({"opciones": {"ancho": "dos"}}, "forma_invalida"),
     ],
-    ids=["version", "patron", "forma", "globos-ancho", "tamano", "sin-materiales", "opcion-no-numerica"],
+    ids=[
+        "version",
+        "patron",
+        "forma",
+        "globos-ancho",
+        "tamano",
+        "sin-materiales",
+        "opcion-no-numerica",
+    ],
 )
 def test_la_forma_la_valida_el_contrato(cambio: dict[str, Any], motivo: str) -> None:
     """Lo que el esquema publicado puede expresar lo rechaza el esquema, no una lista escrita a mano."""
@@ -102,7 +116,9 @@ def test_un_color_que_la_pieza_no_lleva() -> None:
 def test_un_patron_con_menos_colores_de_los_que_necesita() -> None:
     """El ombré pide tres tonos; con dos no hay degradado que hacer y el armado no se sostiene."""
     with pytest.raises(ArmadoInvalido) as caso:
-        armado_resuelto(arco("#dbeafe", "#1e40af"), armado(patron="ombre", materiales=[0, 1], opciones={}))
+        armado_resuelto(
+            arco("#dbeafe", "#1e40af"), armado(patron="ombre", materiales=[0, 1], opciones={})
+        )
     assert caso.value.motivo == "pocos_materiales"
 
 
@@ -184,7 +200,9 @@ def test_las_medidas_son_las_del_motor() -> None:
     assert resuelto["ancho_m"] == pytest.approx(4)
     assert resuelto["grosor_m"] > 0
     assert resuelto["largo_m"] > resuelto["ancho_m"]
-    assert resuelto["globos_por_metro"] == pytest.approx(len(resuelto["globos"]) / resuelto["largo_m"])
+    assert resuelto["globos_por_metro"] == pytest.approx(
+        len(resuelto["globos"]) / resuelto["largo_m"]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -199,7 +217,12 @@ def test_las_opciones_salen_del_motor() -> None:
     assert opciones["formas"] == ["alto", "semi", "herradura"]
     assert opciones["tamanos"] == [5, 9, 12, 18, 24, 36]
     espiral = next(p for p in opciones["patrones"] if p["id"] == "espiral")
-    assert {c["clave"] for c in espiral["controles"]} == {"ancho", "inclinacion", "inversion", "espejo"}
+    assert {c["clave"] for c in espiral["controles"]} == {
+        "ancho",
+        "inclinacion",
+        "inversion",
+        "espejo",
+    }
     assert all("min" in c and "max" in c and "defecto" in c for c in espiral["controles"])
 
 

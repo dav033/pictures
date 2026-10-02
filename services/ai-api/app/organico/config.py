@@ -14,7 +14,14 @@ from typing import Any, cast
 from app.arco.color import normalizar_color
 from app.motores.js import _es_finito, _maximo, _minimo, _redondear
 from app.organico.limites import sanear
-from app.organico.tipos import ACABADOS, REPARTOS, TAMANOS_GLOBO, ColorOrg, ConfigOrg, config_inicial
+from app.organico.tipos import (
+    ACABADOS,
+    REPARTOS,
+    TAMANOS_GLOBO,
+    ColorOrg,
+    ConfigOrg,
+    config_inicial,
+)
 
 
 def _num(valor: object, respaldo: float) -> float:
@@ -61,7 +68,9 @@ def normalizar_config(entrada: object) -> ConfigOrg:
                 {
                     "hex": normalizar_color(o.get("hex"), respaldo["hex"]),
                     "peso": _num(o.get("peso"), 20),
-                    "acabado": o["acabado"] if any(a["valor"] == o.get("acabado") for a in ACABADOS) else "mate",
+                    "acabado": o["acabado"]
+                    if any(a["valor"] == o.get("acabado") for a in ACABADOS)
+                    else "mate",
                     "rol": "acento" if o.get("rol") == "acento" else "base",
                 }
             )
@@ -77,8 +86,12 @@ def normalizar_config(entrada: object) -> ConfigOrg:
             "ondulacion": _num(forma.get("ondulacion"), base["forma"]["ondulacion"]),
             "carga": _num(forma.get("carga"), base["forma"]["carga"]),
             "corte": _num(forma.get("corte"), base["forma"]["corte"]),
-            "espejo": forma["espejo"] if isinstance(forma.get("espejo"), bool) else base["forma"]["espejo"],
-            "suelo": forma["suelo"] if isinstance(forma.get("suelo"), bool) else base["forma"]["suelo"],
+            "espejo": forma["espejo"]
+            if isinstance(forma.get("espejo"), bool)
+            else base["forma"]["espejo"],
+            "suelo": forma["suelo"]
+            if isinstance(forma.get("suelo"), bool)
+            else base["forma"]["suelo"],
         },
         "volumen": {
             "grosorPatasM": _num(volumen.get("grosorPatasM"), base["volumen"]["grosorPatasM"]),
@@ -89,7 +102,9 @@ def normalizar_config(entrada: object) -> ConfigOrg:
             "salientes": _num(volumen.get("salientes"), base["volumen"]["salientes"]),
         },
         "tamanos": {
-            "mezcla": {t: _peso_mezcla(mezcla, t, base["tamanos"]["mezcla"][t]) for t in TAMANOS_GLOBO},
+            "mezcla": {
+                t: _peso_mezcla(mezcla, t, base["tamanos"]["mezcla"][t]) for t in TAMANOS_GLOBO
+            },
             "grandesAbajo": _num(tamanos.get("grandesAbajo"), base["tamanos"]["grandesAbajo"]),
             "inflado": _num(tamanos.get("inflado"), base["tamanos"]["inflado"]),
             "variacion": _num(tamanos.get("variacion"), base["tamanos"]["variacion"]),
@@ -110,10 +125,15 @@ def normalizar_config(entrada: object) -> ConfigOrg:
             "sombra": _num(aspecto.get("sombra"), base["aspecto"]["sombra"]),
             "contorno": _num(aspecto.get("contorno"), base["aspecto"]["contorno"]),
             "profundidad": _num(aspecto.get("profundidad"), base["aspecto"]["profundidad"]),
-            "semilla": _minimo(99999, _maximo(1, _redondear(_num(aspecto.get("semilla"), base["aspecto"]["semilla"])))),
+            "semilla": _minimo(
+                99999,
+                _maximo(1, _redondear(_num(aspecto.get("semilla"), base["aspecto"]["semilla"]))),
+            ),
         },
         "real": {
-            "desperdicio": _minimo(0.3, _maximo(0, _num(real.get("desperdicio"), base["real"]["desperdicio"]))),
+            "desperdicio": _minimo(
+                0.3, _maximo(0, _num(real.get("desperdicio"), base["real"]["desperdicio"]))
+            ),
             "precio": _maximo(0, _num(real.get("precio"), base["real"]["precio"])),
         },
     }

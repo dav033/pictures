@@ -291,11 +291,7 @@ def _sin_croquis(result: Mapping[str, object]) -> dict[str, object]:
         "plan_resuelto": {
             **plan_resuelto,
             "patrones_color": [
-                {
-                    clave: valor
-                    for clave, valor in patron.items()
-                    if clave not in _CLAVES_CROQUIS
-                }
+                {clave: valor for clave, valor in patron.items() if clave not in _CLAVES_CROQUIS}
                 if isinstance(patron, dict)
                 else patron
                 for patron in patrones

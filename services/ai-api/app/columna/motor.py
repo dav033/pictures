@@ -350,9 +350,7 @@ def generar(entrada: Config, simple: bool = False) -> Resultado:
             if existente is not None:
                 existente["cantidad"] = cast(int, existente["cantidad"]) + 1
             else:
-                resumen.globos.append(
-                    {"color": color, "nominal": rem.tamano, "cantidad": 1}
-                )
+                resumen.globos.append({"color": color, "nominal": rem.tamano, "cantidad": 1})
     elif rem.tipo in ("estrella", "corazon"):
         remate_alto_m = rem.foil_m * 0.9
         pulg = int(_redondear(rem.foil_m / 0.0254))
@@ -652,8 +650,8 @@ def _dibujar(
             s = alto / 2
             partes.append(
                 f'<path d="M{_f(fx)} {_f(fy + s * 0.92)}C{_f(fx - s * 1.5)} {_f(fy + s * 0.05)}'
-                f' {_f(fx - s * 0.95)} {_f(fy - s * 0.95)} {_f(fx)} {_f(fy - s * 0.3)}'
-                f'C{_f(fx + s * 0.95)} {_f(fy - s * 0.95)} {_f(fx + s * 1.5)} {_f(fy + s * 0.05)}'
+                f" {_f(fx - s * 0.95)} {_f(fy - s * 0.95)} {_f(fx)} {_f(fy - s * 0.3)}"
+                f"C{_f(fx + s * 0.95)} {_f(fy - s * 0.95)} {_f(fx + s * 1.5)} {_f(fy + s * 0.05)}"
                 f' {_f(fx)} {_f(fy + s * 0.92)}Z" fill="url(#{id_foil})"'
                 f' stroke="{mezclar(rem.color, "#000000", 0.4)}" stroke-width="1"'
                 f' stroke-linejoin="round"/>'

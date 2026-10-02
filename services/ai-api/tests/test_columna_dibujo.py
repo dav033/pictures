@@ -156,7 +156,13 @@ def test_el_lienzo_es_el_del_motor() -> None:
 def test_hay_casos_con_el_svg_entero() -> None:
     """Los casos que traen el documento completo son con los que se depura una diferencia de sha."""
     con_svg = [v["nombre"] for v in VECTORES if "svg" in v]
-    assert con_svg == ["inicial", "remate-racimo-5", "remate-estrella", "remate-corazon", "canonico-cristal"]
+    assert con_svg == [
+        "inicial",
+        "remate-racimo-5",
+        "remate-estrella",
+        "remate-corazon",
+        "canonico-cristal",
+    ]
 
 
 # ---------------------------------------------------------------------------

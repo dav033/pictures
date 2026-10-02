@@ -132,6 +132,8 @@ MODOS: tuple[str, ...] = tuple(
 DIRECCIONES: tuple[str, ...] = tuple(
     str(direccion) for direccion in cast(list[object], _PROPIEDADES_PATRON["direccion"]["enum"])
 )
+
+
 #: Las propiedades de la base de un modo del contrato, por su nombre.
 def _base_del_contrato(modo: str) -> Mapping[str, Mapping[str, object]]:
     for base in cast(list[Mapping[str, object]], _PROPIEDADES_PATRON["base"]["oneOf"]):
@@ -791,9 +793,7 @@ def _celdas_de_zona(
     return sorted(libres, key=distancia)[:cupo]
 
 
-def _rejilla_de_zonas(
-    base: Mapping[str, object], filas: int, columnas: int
-) -> list[list[int]]:
+def _rejilla_de_zonas(base: Mapping[str, object], filas: int, columnas: int) -> list[list[int]]:
     """Fondo de un color con manchas agrupadas en sitios de la pieza (ADR-0036).
 
     El tamaño de cada mancha sale por mayor resto de las extensiones declaradas
@@ -1313,9 +1313,7 @@ def _base_de_zonas_sugerida(
         "fondo": fondo,
         "zonas": [
             {"material": indice, "ancla": ancla, "extension": extension}
-            for indice, ancla, extension in zip(
-                manchas, _ANCLAS_PRESET, extensiones, strict=False
-            )
+            for indice, ancla, extension in zip(manchas, _ANCLAS_PRESET, extensiones, strict=False)
         ],
     }
 
@@ -2399,9 +2397,7 @@ class _Redactor:
         )
         return f"{cabeza} {clausulas};{remate}"
 
-    def zonas_lora(
-        self, fondo: int, agrupadas: Mapping[int, Sequence[str]], nombrados: int
-    ) -> str:
+    def zonas_lora(self, fondo: int, agrupadas: Mapping[int, Sequence[str]], nombrados: int) -> str:
         """Fragmento LoRA de las zonas: ASCII, sin cifras y sin negaciones (ADR-0028 §8).
 
         "over a X base" le hacía pintar al LoRA un PANEL liso de ese color con

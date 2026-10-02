@@ -29,7 +29,14 @@ PREFIJO = "sx:"
 
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
-TABLA = Path(__file__).resolve().parents[4] / "contracts" / "domain" / "v1" / "sempertex" / "tabla-color.json"
+TABLA = (
+    Path(__file__).resolve().parents[4]
+    / "contracts"
+    / "domain"
+    / "v1"
+    / "sempertex"
+    / "tabla-color.json"
+)
 
 
 @lru_cache(maxsize=1)

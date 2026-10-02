@@ -982,13 +982,15 @@ def test_confeti_le_dice_al_generador_lo_que_promete_la_tarjeta() -> None:
         " no stripes, no bands, no blocks, no gradient, and no color gathered into a zone or a"
         " corner."
     )
-    assert resuelto["prompt_lora"] == "with pink, gold and white scattered evenly all over the piece"
+    assert (
+        resuelto["prompt_lora"] == "with pink, gold and white scattered evenly all over the piece"
+    )
     # Lo que la tarjeta promete y lo que recibe el generador dicen lo mismo.
     assert "repartidos salteados, sin formar líneas" in str(resuelto["descripcion"])
 
 
 def test_el_confeti_nunca_dice_confetti_al_generador() -> None:
-    """"confetti" en el inglés de este repo es un producto, no un reparto (ADR-0035).
+    """ "confetti" en el inglés de este repo es un producto, no un reparto (ADR-0035).
 
     ``balloon.round.foil.white.printed_confetti`` y "clear confetti-filled
     balloons" viven en el vocabulario de productos: la palabra en el prompt
@@ -1865,7 +1867,9 @@ def test_las_frases_de_zonas_agrupan_los_sitios_de_cada_color() -> None:
 
     assert resuelto["nombre"] == "Zonas"
     gemini = str(resuelto["prompt_gemini"])
-    assert gemini.startswith("COLOR PATTERN — most of the balloons are pearl pink, covering the whole piece")
+    assert gemini.startswith(
+        "COLOR PATTERN — most of the balloons are pearl pink, covering the whole piece"
+    )
     # Nada de la frase puede leerse como un fondo liso: el generador pintó un
     # panel cuando decía "a base of … filling the whole piece" (2026-09-29).
     assert "a base of" not in gemini
@@ -1876,8 +1880,7 @@ def test_las_frases_de_zonas_agrupan_los_sitios_de_cada_color() -> None:
         " and the bottom center" in gemini
     )
     assert (
-        "plus matte white gathered into one compact patch at the middle of the left side"
-        in gemini
+        "plus matte white gathered into one compact patch at the middle of the left side" in gemini
     )
     assert "no even scatter of the patch colors" in gemini
     assert "~30 % de la pieza" in str(resuelto["descripcion"])

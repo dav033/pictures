@@ -229,7 +229,9 @@ def estimar_globos_en(cfg: dict[str, Any], esp: Espina) -> float:
     resumen = resumen_mezcla(cfg)
     vol = cfg["volumen"]
     capas = _contar_capas((vol["grosorPatasM"] + vol["grosorCimaM"]) / 2, resumen["dMedio"])
-    return float(_redondear((DENSIDAD * capas * vol["relleno"] * area_banda(esp)) / resumen["areaMedia"]))
+    return float(
+        _redondear((DENSIDAD * capas * vol["relleno"] * area_banda(esp)) / resumen["areaMedia"])
+    )
 
 
 def crear_disposicion(cfg: ConfigOrg) -> Disposicion:
@@ -237,7 +239,9 @@ def crear_disposicion(cfg: ConfigOrg) -> Disposicion:
     return crear_disposicion_en(cfg, lambda fase: crear_espina(cfg, fase))
 
 
-def crear_disposicion_en(entrada: dict[str, Any], hacer_espina: Callable[[list[float]], Espina]) -> Disposicion:
+def crear_disposicion_en(
+    entrada: dict[str, Any], hacer_espina: Callable[[list[float]], Espina]
+) -> Disposicion:
     """Como ``crear_disposicion``, sobre la línea guía que devuelva ``hacer_espina``.
 
     Recibe las 8 fases ya sorteadas: así la forma de la línea no depende de ningún otro ajuste.
@@ -263,7 +267,9 @@ def crear_disposicion_en(entrada: dict[str, Any], hacer_espina: Callable[[list[f
 
     grosor_medio = area_banda(esp) / esp.largo
     capas = _contar_capas(grosor_medio, d_medio)
-    presupuesto = _minimo(MAX_GLOBOS, (DENSIDAD * capas * vol["relleno"] * area_banda(esp)) / area_media)
+    presupuesto = _minimo(
+        MAX_GLOBOS, (DENSIDAD * capas * vol["relleno"] * area_banda(esp)) / area_media
+    )
 
     # Medida acumulada del grosor: los racimos se siembran más donde la banda es más gruesa.
     acum = [0.0]
@@ -324,8 +330,12 @@ def crear_disposicion_en(entrada: dict[str, Any], hacer_espina: Callable[[list[f
             for t in usados:
                 # Donde la banda es delgada no caben globos mucho más grandes que el grosor.
                 cabe = 1 if (t == usados[0] or diametro_m(t, inflado) <= T * 1.2) else 0.06
-                p = mezcla[t] * cabe * mate.exp(
-                    grandes_abajo * 2.2 * RANGO[t] * (baseza - 0.4) + 0.6 * carga * RANGO[t]
+                p = (
+                    mezcla[t]
+                    * cabe
+                    * mate.exp(
+                        grandes_abajo * 2.2 * RANGO[t] * (baseza - 0.4) + 0.6 * carga * RANGO[t]
+                    )
                 )
                 suma += p
                 pesos.append(p)
@@ -368,7 +378,9 @@ def crear_disposicion_en(entrada: dict[str, Any], hacer_espina: Callable[[list[f
     grosores = [grosor(p.s / esp.largo) for p in P]
 
     def limite_banda(b: B) -> float:
-        return float(_maximo(0.04, grosores[b.si] / 2 - b.r * 0.85) + (b.r * 0.95 if b.salta else 0))
+        return float(
+            _maximo(0.04, grosores[b.si] / 2 - b.r * 0.85) + (b.r * 0.95 if b.salta else 0)
+        )
 
     # Rejilla de vecinos: listas enlazadas en arreglos (sin crear objetos en cada vuelta).
     min_gx = mate.inf
@@ -491,7 +503,9 @@ def crear_disposicion_en(entrada: dict[str, Any], hacer_espina: Callable[[list[f
                 dist = mate.hypot(b.x - a.x, b.y - a.y) or 1e-6
                 objetivo = (a.r + b.r) * 0.86
                 # `Infinity - r` sigue siendo infinito: los límites sin definir no recortan nada.
-                a.x = _minimo(tope_x - a.r, _maximo(suelo_x + a.r, b.x - ((b.x - a.x) / dist) * objetivo))
+                a.x = _minimo(
+                    tope_x - a.r, _maximo(suelo_x + a.r, b.x - ((b.x - a.x) / dist) * objetivo)
+                )
                 a.y = _minimo(tope_y - a.r, _maximo(a.r, b.y - ((b.y - a.y) / dist) * objetivo))
         return sueltos
 
@@ -563,9 +577,22 @@ def crear_disposicion_en(entrada: dict[str, Any], hacer_espina: Callable[[list[f
                 cercano = b
         dist = mate.hypot(cercano.x - o["x"], cercano.y - o["y"]) or 1e-6
         objetivo = (r + cercano.r) * 0.88
-        px = _minimo(tope_x - r, _maximo(suelo_x + r, cercano.x - ((cercano.x - o["x"]) / dist) * objetivo))
+        px = _minimo(
+            tope_x - r, _maximo(suelo_x + r, cercano.x - ((cercano.x - o["x"]) / dist) * objetivo)
+        )
         py = _minimo(tope_y - r, _maximo(r, cercano.y - ((cercano.y - o["y"]) / dist) * objetivo))
-        bs.append(B(x=px, y=py, r=r, capa=0, nominal=clase["t"], salta=False, si=o["si"], racimo=cercano.racimo))
+        bs.append(
+            B(
+                x=px,
+                y=py,
+                r=r,
+                capa=0,
+                nominal=clase["t"],
+                salta=False,
+                si=o["si"],
+                racimo=cercano.racimo,
+            )
+        )
         for otro in cand:
             d = mate.hypot(otro["x"] - px, otro["y"] - py) - r
             if d < otro["claro"]:
@@ -577,7 +604,9 @@ def crear_disposicion_en(entrada: dict[str, Any], hacer_espina: Callable[[list[f
     return Disposicion(bs=bs, esp=esp, capas=capas, sueltos=sueltos)
 
 
-def pintar(entrada: dict[str, Any], disp: Disposicion, op: OpcionesPintado | None = None) -> ResultadoOrg:
+def pintar(
+    entrada: dict[str, Any], disp: Disposicion, op: OpcionesPintado | None = None
+) -> ResultadoOrg:
     """Coloca colores, follaje y flores sobre una disposición y arma el dibujo."""
     opciones = OpcionesPintado() if op is None else op
     bs, esp, capas, sueltos = disp.bs, disp.esp, disp.capas, disp.sueltos
@@ -680,7 +709,9 @@ def pintar(entrada: dict[str, Any], disp: Disposicion, op: OpcionesPintado | Non
         alto_ref = _maximo(alto_m, PERSONA_M if persona else 0)
         centro = ref.get("centro", 392 if persona else 330)
         piso = lienzo["h"] - ref.get("margenAbajo", 52)
-        escala = _minimo((piso - 34) / alto_ref, ref.get("mitad", 165 if persona else 250) / (ancho_m / 2))
+        escala = _minimo(
+            (piso - 34) / alto_ref, ref.get("mitad", 165 if persona else 250) / (ancho_m / 2)
+        )
         referencia = {
             "persona": persona,
             "altoRef": alto_ref,
@@ -688,7 +719,10 @@ def pintar(entrada: dict[str, Any], disp: Disposicion, op: OpcionesPintado | Non
             "reglaX": ref.get("reglaX"),
         }
     else:
-        escala = _minimo((lienzo["w"] - 2 * MARGEN_LADO) / ancho_m, (lienzo["h"] - MARGEN_ARRIBA - MARGEN_ABAJO) / alto_m)
+        escala = _minimo(
+            (lienzo["w"] - 2 * MARGEN_LADO) / ancho_m,
+            (lienzo["h"] - MARGEN_ARRIBA - MARGEN_ABAJO) / alto_m,
+        )
         piso = (
             MARGEN_ARRIBA
             + (lienzo["h"] - MARGEN_ARRIBA - MARGEN_ABAJO - alto_m * escala) / 2
@@ -768,7 +802,9 @@ def colorear(cfg: dict[str, Any], bs: list[B], esp: Espina) -> list[int]:
             # Ninguna capa de este tamaño (no debería pasar): se usan las del tamaño más parecido.
             parecido = tamano_de[0]
             for u in tamano_de:
-                if abs(diametro_m(u, 1) - diametro_m(t, 1)) < abs(diametro_m(parecido, 1) - diametro_m(t, 1)):
+                if abs(diametro_m(u, 1) - diametro_m(t, 1)) < abs(
+                    diametro_m(parecido, 1) - diametro_m(t, 1)
+                ):
                     parecido = u
             capas_t = [i for i in range(len(lista)) if tamano_de[i] == parecido]
         local = _colorear_lista(
@@ -935,7 +971,12 @@ def _crear_flores(cfg: dict[str, Any], esp: Espina, semilla: float) -> list[Flor
         T = esp.grosor(f)
         v = (rnd() - 0.5) * T * 0.9
         flores.append(
-            FlorOrg(x=p.x + p.nx * v, y=_maximo(0.08, p.y + p.ny * v), r=0.032 + rnd() * 0.02, tono=rnd())
+            FlorOrg(
+                x=p.x + p.nx * v,
+                y=_maximo(0.08, p.y + p.ny * v),
+                r=0.032 + rnd() * 0.02,
+                tono=rnd(),
+            )
         )
         i += 1
     return flores

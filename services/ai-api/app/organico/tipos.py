@@ -231,9 +231,19 @@ def config_inicial() -> ConfigOrg:
             "inflado": 1,
             "variacion": 0.1,
         },
-        "colores": {"lista": [dict(c) for c in COLORES_INICIALES], "reparto": "azar", "mezcla": 0.5},  # type: ignore[misc]
+        "colores": {
+            "lista": [dict(c) for c in COLORES_INICIALES],  # type: ignore[misc]
+            "reparto": "azar",
+            "mezcla": 0.5,
+        },
         "adornos": {"follaje": 0.8, "flores": 0},
-        "aspecto": {"brillo": 0.6, "sombra": 0.2, "contorno": 0.8, "profundidad": 0.5, "semilla": 11},
+        "aspecto": {
+            "brillo": 0.6,
+            "sombra": 0.2,
+            "contorno": 0.8,
+            "profundidad": 0.5,
+            "semilla": 11,
+        },
         "real": {"desperdicio": 0.12, "precio": 0},
         "modo": "mezcla",
         "capas": [],
@@ -257,7 +267,9 @@ def _con_volumen(cfg: ConfigOrg, **campos: float) -> ConfigOrg:
 
 
 def _estilo_focales(cfg: ConfigOrg) -> ConfigOrg:
-    salida: dict[str, Any] = dict(_con_volumen(cfg, grosorPatasM=1.2, grosorCimaM=0.75, relleno=0.75))
+    salida: dict[str, Any] = dict(
+        _con_volumen(cfg, grosorPatasM=1.2, grosorCimaM=0.75, relleno=0.75)
+    )
     salida["tamanos"] = {
         **cfg["tamanos"],
         "mezcla": {5: 28, 9: 0, 12: 36, 18: 22, 24: 11, 36: 3},
@@ -271,24 +283,30 @@ ESTILOS: list[Estilo] = [
         "ligero",
         "Ligero",
         "Aireado y delgado, con espacio entre racimos. Cuesta menos globos.",
-        lambda c: _con_volumen(c, grosorPatasM=0.7, grosorCimaM=0.5, relleno=0.5, racimo=3, irregularidad=0.45),
+        lambda c: _con_volumen(
+            c, grosorPatasM=0.7, grosorCimaM=0.5, relleno=0.5, racimo=3, irregularidad=0.45
+        ),
     ),
     Estilo(
         "estandar",
         "Estándar",
         "El punto medio de una guirnalda profesional.",
-        lambda c: _con_volumen(c, grosorPatasM=0.9, grosorCimaM=0.62, relleno=0.72, racimo=4, irregularidad=0.35),
+        lambda c: _con_volumen(
+            c, grosorPatasM=0.9, grosorCimaM=0.62, relleno=0.72, racimo=4, irregularidad=0.35
+        ),
     ),
     Estilo(
         "lleno",
         "Lleno",
         "Denso y voluminoso, sin huecos.",
-        lambda c: _con_volumen(c, grosorPatasM=1.15, grosorCimaM=0.85, relleno=0.9, racimo=5, irregularidad=0.25),
+        lambda c: _con_volumen(
+            c, grosorPatasM=1.15, grosorCimaM=0.85, relleno=0.9, racimo=5, irregularidad=0.25
+        ),
     ),
     Estilo(
         "focales",
         "Con globos gigantes",
-        'Añade globos R24 y R36 como puntos focales en las patas.',
+        "Añade globos R24 y R36 como puntos focales en las patas.",
         _estilo_focales,
     ),
 ]

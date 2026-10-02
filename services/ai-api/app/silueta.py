@@ -60,9 +60,7 @@ from app.generated_models import contract_schema
 #: del plan (``tipoBase`` de ``estructuras-oficiales.ts``) más la distinción de
 #: pared que sí cambia la forma: la densa es un rectángulo limpio y la orgánica
 #: cubre lo mismo con el contorno irregular.
-TipoSilueta = Literal[
-    "arco", "semiarco", "guirnalda", "columna", "pared_densa", "pared_organica"
-]
+TipoSilueta = Literal["arco", "semiarco", "guirnalda", "columna", "pared_densa", "pared_organica"]
 TIPOS: tuple[TipoSilueta, ...] = (
     "arco",
     "semiarco",
@@ -325,12 +323,12 @@ class Borde:
         # rectas (medido 2026-09-30) — y en una pared de racimos la esquina es de
         # lo más irregular que hay. Con suelo, la esquina muerde una parte y el
         # centro sigue mordiendo entero.
-        envolvente: float = _SUELO_ENVOLVENTE + (1.0 - _SUELO_ENVOLVENTE) * math.sin(math.pi * t) ** 0.7
+        envolvente: float = (
+            _SUELO_ENVOLVENTE + (1.0 - _SUELO_ENVOLVENTE) * math.sin(math.pi * t) ** 0.7
+        )
         a = self.fases[lado * 2] * math.tau
         b = self.fases[lado * 2 + 1] * math.tau
-        onda = 0.65 * math.sin(2.3 * math.tau * t + a) + 0.35 * math.sin(
-            4.7 * math.tau * t + b
-        )
+        onda = 0.65 * math.sin(2.3 * math.tau * t + a) + 0.35 * math.sin(4.7 * math.tau * t + b)
         return self.amplitud * envolvente * (0.55 + 0.45 * onda)
 
     def x_izq(self, y: float) -> float:
@@ -498,23 +496,15 @@ def mezcla_del_contrato(nombre: str) -> tuple[tuple[int, float], ...]:
     que hace ``plan.py``. Es una comodidad para previsualizar y para las
     pruebas: quien reparte los globos de verdad es el despiece de ``plan.py``.
     """
-    reglas = cast(
-        Mapping[str, object], contract_schema("PlanDecoracion")["x-reglas-mezclas"]
-    )
+    reglas = cast(Mapping[str, object], contract_schema("PlanDecoracion")["x-reglas-mezclas"])
     mezclas = cast(Mapping[str, object], reglas["mezclas"])
     if nombre not in mezclas:
-        raise SiluetaInvalida(
-            "mezcla_desconocida", f"El contrato no define la mezcla «{nombre}»."
-        )
+        raise SiluetaInvalida("mezcla_desconocida", f"El contrato no define la mezcla «{nombre}».")
     tamanos = cast(Sequence[Mapping[str, float]], mezclas[nombre])
-    return tuple(
-        (int(tamano["pulgadas"]), float(tamano["proporcion"])) for tamano in tamanos
-    )
+    return tuple((int(tamano["pulgadas"]), float(tamano["proporcion"])) for tamano in tamanos)
 
 
-def cupos_desde_mezcla(
-    proporciones: Sequence[tuple[int, float]], total: int
-) -> tuple[Cupo, ...]:
+def cupos_desde_mezcla(proporciones: Sequence[tuple[int, float]], total: int) -> tuple[Cupo, ...]:
     """Reparte ``total`` globos entre los tamaños de una mezcla, por mayor resto.
 
     **No es el despiece.** El despiece comercial —con sus sustituciones, sus
@@ -559,9 +549,7 @@ def _medir(puntos: Sequence[tuple[float, float]]) -> tuple[PuntoEspina, ...]:
         dx, dy = bx - ax, by - ay
         largo = math.hypot(dx, dy) or 1.0
         medidos.append(
-            PuntoEspina(
-                x=x, y=y, tx=dx / largo, ty=dy / largo, nx=-dy / largo, ny=dx / largo, s=s
-            )
+            PuntoEspina(x=x, y=y, tx=dx / largo, ty=dy / largo, nx=-dy / largo, ny=dx / largo, s=s)
         )
     return tuple(medidos)
 
@@ -631,9 +619,7 @@ def _ondular(
                 + 0.3 * math.sin(math.tau * k2 * u + fases[3] * math.tau)
             )
         )
-        movidos.append(
-            (punto.x + punto.nx * desvio, max(y_minimo, punto.y + punto.ny * desvio))
-        )
+        movidos.append((punto.x + punto.nx * desvio, max(y_minimo, punto.y + punto.ny * desvio)))
     return tuple(movidos)
 
 
@@ -714,14 +700,9 @@ def _espina_columna(
     for i in range(_N_PUNTOS + 1):
         t = i / _N_PUNTOS
         arranque = min(1.0, t * 5)  # la base no se mueve
-        x = (
-            estilo.serpenteo_m * math.sin(math.pi * t) * arranque
-            + amplitud
-            * arranque
-            * (
-                0.7 * math.sin(math.tau * k1 * t + fases[2] * math.tau)
-                + 0.3 * math.sin(math.tau * k2 * t + fases[3] * math.tau)
-            )
+        x = estilo.serpenteo_m * math.sin(math.pi * t) * arranque + amplitud * arranque * (
+            0.7 * math.sin(math.tau * k1 * t + fases[2] * math.tau)
+            + 0.3 * math.sin(math.tau * k2 * t + fases[3] * math.tau)
         )
         crudos.append((centro + x, altura * t + base / 2))
     puntos = _medir(crudos)
@@ -838,8 +819,7 @@ def _validar(peticion: Peticion) -> None:
         if peticion.grosor_m is None or peticion.grosor_m <= 0:
             raise SiluetaInvalida(
                 "sin_grosor",
-                "El grosor de la banda lo mide quien la cotiza, no el motor:"
-                " pásalo en metros.",
+                "El grosor de la banda lo mide quien la cotiza, no el motor: pásalo en metros.",
             )
         if peticion.grosor_punta_m is not None and peticion.grosor_punta_m <= 0:
             raise SiluetaInvalida("grosor_punta_invalido", "El grosor de la punta no es positivo.")
@@ -1276,9 +1256,7 @@ def _vecinos(
     return salida
 
 
-def _relajar(
-    globos: list[_Globo], silueta: Silueta, vueltas: int, borde: float = 0.65
-) -> None:
+def _relajar(globos: list[_Globo], silueta: Silueta, vueltas: int, borde: float = 0.65) -> None:
     """Empuja los globos hasta que quedan apretados y dentro de la silueta."""
     if not globos:
         return

@@ -189,7 +189,12 @@ def test_cada_tipo_dibuja_una_silueta_distinta_con_las_mismas_medidas() -> None:
     medidas = Medidas(ancho_m=2.4, alto_m=2.4, largo_m=2.4)
     cupos = cupos_desde_mezcla(MEZCLA, 120)
     formas: list[list[tuple[float, float, float, int, int]]] = []
-    for tipo, grosor in (("arco", 0.8), ("guirnalda", 0.8), ("columna", 0.8), ("pared_densa", None)):
+    for tipo, grosor in (
+        ("arco", 0.8),
+        ("guirnalda", 0.8),
+        ("columna", 0.8),
+        ("pared_densa", None),
+    ):
         p = Peticion(tipo=tipo, medidas=medidas, cupos=cupos, grosor_m=grosor)  # type: ignore[arg-type]
         formas.append(_huella(disponer(p).globos))
     for i, una in enumerate(formas):
@@ -318,9 +323,7 @@ def test_la_ondulada_sube_y_baja_varias_veces() -> None:
 
 @pytest.mark.parametrize("tipo", TIPOS)
 @pytest.mark.parametrize("semilla", SEMILLAS)
-def test_dos_globos_de_la_misma_capa_no_quedan_uno_dentro_del_otro(
-    tipo: str, semilla: int
-) -> None:
+def test_dos_globos_de_la_misma_capa_no_quedan_uno_dentro_del_otro(tipo: str, semilla: int) -> None:
     """Solaparse da profundidad; compartir el centro en la misma capa es un borrón."""
     globos = disponer(peticion(tipo, semilla=semilla)).globos
     for i, a in enumerate(globos):
@@ -349,9 +352,7 @@ def test_ningun_globo_queda_flotando_solo(tipo: str) -> None:
     globos = disponer(peticion(tipo)).globos
     for i, a in enumerate(globos):
         hueco = min(
-            math.hypot(b.x - a.x, b.y - a.y) - (a.r + b.r)
-            for j, b in enumerate(globos)
-            if j != i
+            math.hypot(b.x - a.x, b.y - a.y) - (a.r + b.r) for j, b in enumerate(globos) if j != i
         )
         assert hueco <= 0.1 * a.r, (tipo, a, hueco)
 

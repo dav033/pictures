@@ -48,9 +48,7 @@ PARED_ORGANICA = PiezaSilueta(
 ARCO = PiezaSilueta(estructura_id="E3", tipo="arco", ancho_m=3.0, alto_m=2.4)
 SEMIARCO = PiezaSilueta(estructura_id="E4", tipo="semiarco", ancho_m=1.6, alto_m=2.4)
 COLUMNA = PiezaSilueta(estructura_id="E5", tipo="columna", ancho_m=0.45, alto_m=2.2)
-GUIRNALDA = PiezaSilueta(
-    estructura_id="E6", tipo="guirnalda", largo_m=5.0, forma_guirnalda="curva"
-)
+GUIRNALDA = PiezaSilueta(estructura_id="E6", tipo="guirnalda", largo_m=5.0, forma_guirnalda="curva")
 GUIRNALDA_COLGADA = PiezaSilueta(
     estructura_id="E7",
     tipo="guirnalda",
@@ -224,28 +222,48 @@ def test_los_extras_no_mueven_ni_un_globo_del_conteo() -> None:
 @pytest.mark.parametrize(
     ("pieza", "motivo"),
     [
-        (PiezaSilueta(estructura_id="X1", tipo="centro_mesa", ancho_m=0.4, alto_m=0.6),
-         "tipo_sin_silueta"),
-        (PiezaSilueta(estructura_id="X2", tipo="backdrop", ancho_m=2.0, alto_m=2.0),
-         "tipo_sin_silueta"),
-        (PiezaSilueta(estructura_id="X3", tipo="arco", estructura_oficial="aro_circular",
-                      ancho_m=1.2, alto_m=1.2), "tipo_sin_silueta"),
-        (PiezaSilueta(estructura_id="X4", tipo="arco", ancho_m=0.0, alto_m=0.0),
-         "medidas_incompletas"),
-        (PiezaSilueta(estructura_id="X5", tipo="pared", ancho_m=2.0, alto_m=0.0),
-         "medidas_incompletas"),
+        (
+            PiezaSilueta(estructura_id="X1", tipo="centro_mesa", ancho_m=0.4, alto_m=0.6),
+            "tipo_sin_silueta",
+        ),
+        (
+            PiezaSilueta(estructura_id="X2", tipo="backdrop", ancho_m=2.0, alto_m=2.0),
+            "tipo_sin_silueta",
+        ),
+        (
+            PiezaSilueta(
+                estructura_id="X3",
+                tipo="arco",
+                estructura_oficial="aro_circular",
+                ancho_m=1.2,
+                alto_m=1.2,
+            ),
+            "tipo_sin_silueta",
+        ),
+        (
+            PiezaSilueta(estructura_id="X4", tipo="arco", ancho_m=0.0, alto_m=0.0),
+            "medidas_incompletas",
+        ),
+        (
+            PiezaSilueta(estructura_id="X5", tipo="pared", ancho_m=2.0, alto_m=0.0),
+            "medidas_incompletas",
+        ),
         (PiezaSilueta(estructura_id="X6", tipo="guirnalda"), "medidas_incompletas"),
     ],
-    ids=["centro_mesa", "backdrop", "aro_circular", "arco_sin_medidas", "pared_sin_alto",
-         "guirnalda_sin_largo"],
+    ids=[
+        "centro_mesa",
+        "backdrop",
+        "aro_circular",
+        "arco_sin_medidas",
+        "pared_sin_alto",
+        "guirnalda_sin_largo",
+    ],
 )
 def test_sin_silueta_no_falla_y_la_grafica_sigue_con_su_rejilla(
     pieza: PiezaSilueta, motivo: MotivoSinSilueta
 ) -> None:
     """La degradación es correcta, pero dice por qué: nunca es silenciosa."""
-    croquis = croquis_de_patron(
-        pieza, CELDAS_DAMERO, MATRIZ_DOS_TAMANOS, PROPORCIONES_DOS_TAMANOS
-    )
+    croquis = croquis_de_patron(pieza, CELDAS_DAMERO, MATRIZ_DOS_TAMANOS, PROPORCIONES_DOS_TAMANOS)
     assert croquis.posiciones is None
     assert croquis.motivo == motivo
 
@@ -364,7 +382,12 @@ def test_pieza_desde_estructura_lee_el_armado_de_una_guirnalda() -> None:
 
 ROOT = Path(__file__).resolve().parents[3]
 VECTOR_PARED = (
-    ROOT / "contracts" / "domain" / "v1" / "golden" / "plan-resolution"
+    ROOT
+    / "contracts"
+    / "domain"
+    / "v1"
+    / "golden"
+    / "plan-resolution"
     / "31-pared-damero-dos-colores.json"
 )
 
@@ -393,8 +416,7 @@ class _StoreDeVector:
         variant_ids: Sequence[str],
     ) -> Sequence[Mapping[str, object]]:
         identidad: list[dict[str, object]] = [
-            {"product_id": row["product_id"], "variant_id": row["variant_id"]}
-            for row in self.rows
+            {"product_id": row["product_id"], "variant_id": row["variant_id"]} for row in self.rows
         ]
         identidad.extend(
             {"product_id": product_id, "variant_id": None}
@@ -435,10 +457,11 @@ async def test_el_croquis_no_cambia_plan_hash_ni_el_conteo_por_color() -> None:
 
     resuelto = cast(
         dict[str, Any],
-        (await resolve_plan(peticion, _StoreDeVector(vector["catalog_rows"],
-                                                     vector["catalog_snapshot_id"])))[
-            "plan_resuelto"
-        ],
+        (
+            await resolve_plan(
+                peticion, _StoreDeVector(vector["catalog_rows"], vector["catalog_snapshot_id"])
+            )
+        )["plan_resuelto"],
     )
     patron = resuelto["patrones_color"][0]
     assert resuelto["plan_hash"] == esperado["plan_hash"]

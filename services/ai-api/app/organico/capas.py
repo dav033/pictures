@@ -43,8 +43,14 @@ def efectiva(cfg: T) -> T:
     paleta = cfg["colores"]["lista"]
     lista = []
     for c in capas:
-        col = paleta[((c["color"] % len(paleta)) + len(paleta)) % len(paleta)] if paleta else paleta[0]
-        lista.append({"hex": col["hex"], "acabado": col["acabado"], "peso": c["peso"], "rol": c["rol"]})
+        col = (
+            paleta[((c["color"] % len(paleta)) + len(paleta)) % len(paleta)]
+            if paleta
+            else paleta[0]
+        )
+        lista.append(
+            {"hex": col["hex"], "acabado": col["acabado"], "peso": c["peso"], "rol": c["rol"]}
+        )
     salida = dict(cfg)
     salida["tamanos"] = {**cfg["tamanos"], "mezcla": mezcla}
     salida["colores"] = {**cfg["colores"], "lista": lista, "tamanoDe": [c["tamano"] for c in capas]}
@@ -61,7 +67,9 @@ def capas_desde_mezcla(cfg: dict[str, Any]) -> list[CapaOrg]:
     combos: list[dict[str, Any]] = []
     for t in sorted(tamanos, reverse=True):
         for i, c in enumerate(paleta):
-            combos.append({"tamano": t, "color": i, "w": (mezcla[t] / total_t) * (c["peso"] / total_c) * 100})
+            combos.append(
+                {"tamano": t, "color": i, "w": (mezcla[t] / total_t) * (c["peso"] / total_c) * 100}
+            )
     combos = [c for c in combos if c["w"] >= 1.5]
     if len(combos) > MAX_CAPAS_ORG:
         combos = sorted(combos, key=lambda c: -c["w"])[:MAX_CAPAS_ORG]
@@ -107,9 +115,13 @@ def sanear_capas_org(cfg: dict[str, Any], permitidos: dict[int, bool]) -> list[s
                 continue
             nuevo = validos[0]
             for t in validos:
-                if abs(diametro_m(t, 1) - diametro_m(c["tamano"], 1)) < abs(diametro_m(nuevo, 1) - diametro_m(c["tamano"], 1)):
+                if abs(diametro_m(t, 1) - diametro_m(c["tamano"], 1)) < abs(
+                    diametro_m(nuevo, 1) - diametro_m(c["tamano"], 1)
+                ):
                     nuevo = t
-            cambios.append(f"La capa {i + 1} (R{c['tamano']}) no cabe en ese grosor: pasó a R{nuevo}.")
+            cambios.append(
+                f"La capa {i + 1} (R{c['tamano']}) no cabe en ese grosor: pasó a R{nuevo}."
+            )
             ajustadas.append({**c, "tamano": nuevo})
         capas = ajustadas
     cfg["capas"] = capas

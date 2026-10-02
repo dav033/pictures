@@ -50,7 +50,9 @@ def limites(cfg: ConfigOrg) -> dict[str, float]:
     f = cfg["forma"]
     v = cfg["volumen"]
     grosor_max = _minimo(GROSOR_TOPE, _abajo(_RAZON_GROSOR_MAX * f["anchoM"]))
-    alto_min = _maximo(_maximo(1, _arriba(_RAZON_ALTO_MIN * f["anchoM"])), _arriba(v["grosorCimaM"] / 2 + 0.7))
+    alto_min = _maximo(
+        _maximo(1, _arriba(_RAZON_ALTO_MIN * f["anchoM"])), _arriba(v["grosorCimaM"] / 2 + 0.7)
+    )
     alto_max = _maximo(alto_min, _abajo(_minimo(ALTO_MAX, _RAZON_ALTO_MAX * f["anchoM"])))
     return {
         "anchoMin": ANCHO_MIN,
@@ -71,7 +73,10 @@ def tamanos_permitidos(cfg: dict[str, Any]) -> dict[int, bool]:
     los extremos. El ``1e-9`` deja pasar el tamaño que mide exactamente el grosor.
     """
     g = _maximo(cfg["volumen"]["grosorPatasM"], cfg["volumen"]["grosorCimaM"])
-    return {t: diametro_m(t, cfg["tamanos"]["inflado"]) <= _RAZON_TAMANO * g + 1e-9 for t in TAMANOS_GLOBO}
+    return {
+        t: diametro_m(t, cfg["tamanos"]["inflado"]) <= _RAZON_TAMANO * g + 1e-9
+        for t in TAMANOS_GLOBO
+    }
 
 
 def grosor_para_tamano(t: int, inflado: float) -> float:

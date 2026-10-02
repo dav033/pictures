@@ -80,8 +80,18 @@ def config_inicial() -> ConfigGuir:
             "inflado": 1,
             "variacion": 0.1,
         },
-        "colores": {"lista": [dict(c) for c in COLORES_INICIALES], "reparto": "azar", "mezcla": 0.5},
+        "colores": {
+            "lista": [dict(c) for c in COLORES_INICIALES],
+            "reparto": "azar",
+            "mezcla": 0.5,
+        },
         "adornos": {"follaje": 0.5, "flores": 0},
-        "aspecto": {"brillo": 0.6, "sombra": 0.2, "contorno": 0.8, "profundidad": 0.5, "semilla": 11},
+        "aspecto": {
+            "brillo": 0.6,
+            "sombra": 0.2,
+            "contorno": 0.8,
+            "profundidad": 0.5,
+            "semilla": 11,
+        },
         "real": {"desperdicio": 0.12, "precio": 0},
     }
