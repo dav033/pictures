@@ -15,6 +15,7 @@ import { TarjetaCotizacion } from "@/components/TarjetaCotizacion";
 import { CotizacionProfesional } from "@/components/cotizacion/CotizacionProfesional";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { ReferenceAnalysisController } from "@/components/references/ReferenceAnalysisController";
+import { SOLO_ANALISIS_FOTO } from "@/lib/ia/nucleo/feature-flags";
 import type { ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
 import { PasosAsistente } from "@/components/propuesta";
 import { useSeleccion } from "@/lib/estado/seleccion";
@@ -1642,7 +1643,9 @@ export default function Page() {
     try {
       const procesadas = await Promise.all(aProcesar.map((f) => redimensionarImagen(f, 1800, 0.9)));
       setEtiquetasAdjuntos((previas) => ({ ...previas, ...Object.fromEntries(procesadas.map((imagen, indice) => [claveImagen(imagen), aProcesar[indice]!.name])) }));
-      if (!mensajes.some((mensaje) => mensaje.id !== SALUDO.id)) envioAutomaticoRef.current = procesadas.map(claveImagen);
+      // En el modo «solo el análisis de la foto» no se programa el turno automático: la foto se analiza, se mide
+      // su color y ahí se para, sin búsqueda en el RAG, sin plan y sin cotización.
+      if (!SOLO_ANALISIS_FOTO && !mensajes.some((mensaje) => mensaje.id !== SALUDO.id)) envioAutomaticoRef.current = procesadas.map(claveImagen);
       setImagenesReferencia((previas) => [...previas, ...procesadas]);
     } catch (e) {
       setErrorAdjuntos(mensajeErrorCliente(e, "No se pudo procesar alguna imagen de referencia."));
@@ -1675,7 +1678,7 @@ export default function Page() {
         return [...sinEjemploAnterior, imagen].slice(-LIMITE_REFERENCIAS_CLIENTE);
       });
       setEjemploElegido({ id: foto.id, clave });
-      if (!mensajes.some((mensaje) => mensaje.id !== SALUDO.id)) envioAutomaticoRef.current = [clave];
+      if (!SOLO_ANALISIS_FOTO && !mensajes.some((mensaje) => mensaje.id !== SALUDO.id)) envioAutomaticoRef.current = [clave];
       setGaleriaAbierta(false);
       window.requestAnimationFrame(() => {
         const chips = document.querySelectorAll("[data-adjunto='referencia'] img");

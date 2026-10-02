@@ -14,7 +14,9 @@ export type FeatureFlag =
   | "PATRONES_COLOR_V1"
   | "BOUQUETS_ARMADO_V1"
   | "GUIRNALDAS_ARMADO_V1"
+  | "ARMADO_ARCO_COLUMNA_V1"
   | "CONTEO_REFERENCIA_V1"
+  | "ANALISIS_COLOR_SEMPERTEX_V1"
   | "GUIA_ESTRUCTURA_V1";
 
 export function featureEnabled(name: FeatureFlag): boolean {
@@ -61,6 +63,26 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // sugerir solo a esa pieza. Apagada, los planes nuevos salen sin armado; uno
     // que ya lo trae lo conserva.
     if (name === "GUIRNALDAS_ARMADO_V1") return false;
+    // Default: ENCENDIDA fuera de producción, APAGADA en producción (ADR-0034
+    // §5). Le da al chat las herramientas del motor del diseñador para las
+    // **tres** piezas con motor migrado: consultar lo que cada tipo admite
+    // (los catorce patrones del arco, los nueve de la columna, o los acabados
+    // y repartos de la guirnalda orgánica, que no tiene patrón), armar una
+    // pieza con ellos, y —al confirmar— completar con la receta del motor la
+    // que el modelo no armó. El nombre dice "arco y columna" porque es el de
+    // la primera entrega; la guirnalda orgánica llegó detrás de la misma
+    // bandera en vez de abrir una segunda, que habría dejado media capacidad
+    // encendida.
+    //
+    // Encendida cambia lo que un plan nuevo lleva dentro de `estructuras` y
+    // por tanto su `plan_hash`, así que en producción se enciende cuando el
+    // conteo con motor del ADR-0034 esté medido delante. Apagada, el modelo no
+    // ve las herramientas, un `armado_arco`, `armado_columna` o
+    // `armado_guirnalda_organica` que mande se descarta antes de resolver y
+    // los planes nuevos salen sin armado; uno que ya lo trae lo conserva.
+    // **No toca `armado_guirnalda`** (ADR-0032): ese campo tiene su propia
+    // bandera (`GUIRNALDAS_ARMADO_V1`) y una guirnalda puede traer los dos.
+    if (name === "ARMADO_ARCO_COLUMNA_V1") return process.env.NODE_ENV !== "production";
     // Default OFF (ADR-0031, E2). Al confirmar un plan, Next pide
     // `completar_conteos` con los conteos de la foto (`pistas_conteo`) y Python
     // ajusta la cantidad de los kits y las medidas, la densidad o la mezcla de
@@ -76,10 +98,38 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // (`scripts/ops/generar-guia-estructura.ts`). Apagada, la petición a fal es
     // byte a byte la de siempre.
     if (name === "GUIA_ESTRUCTURA_V1") return false;
+    // Default: ENCENDIDA fuera de producción, APAGADA en producción, y es a
+    // propósito. Mide los colores de cada pieza detectada sobre los píxeles de
+    // su croquis y los cruza con una referencia del catálogo Sempertex
+    // (`croquis-zona.ts`, `paleta-medida.ts`, `referencia-sempertex.ts`). Está
+    // así para poder probarla con fotos reales sin configurar nada: el
+    // resultado viaja **fuera** del blueprint, no entra en ningún contrato, no
+    // llega a Python y no toca el `plan_hash`, así que encendida solo añade un
+    // bloque que se mira. En producción se enciende cuando se haya decidido,
+    // con medidas delante, si el color medido reemplaza las etiquetas del
+    // analizador en lo que un plan compra.
+    if (name === "ANALISIS_COLOR_SEMPERTEX_V1") return process.env.NODE_ENV !== "production";
     return true;
   }
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";
 }
+
+/**
+ * **Corta el flujo después del análisis de la foto.** Con esto encendido, soltar una foto de referencia
+ * analiza y mide el color, y ahí se para: no sale el turno de chat automático, así que no se busca en el RAG,
+ * no se arma un plan y no se cotiza nada.
+ *
+ * Está para poder mirar el análisis de color con fotos reales sin arrastrar todo lo demás. Default:
+ * **apagada** — el flujo va entero hasta Omoikane, el plan y la cotización. Se enciende con
+ * `NEXT_PUBLIC_SOLO_ANALISIS_FOTO=true` cuando se quiera volver a mirar solo el análisis.
+ *
+ * Se lee en el navegador, así que va por `NEXT_PUBLIC_` y `NODE_ENV`, que Next sí incrusta en el cliente;
+ * `featureEnabled` no sirve para esto porque lee `process.env` con un nombre variable.
+ *
+ * Escribir a mano en el compositor sigue mandando el turno: lo que se corta es el automático. Para cortarlo
+ * todo, el botón de enviar se deshabilita con esta misma constante.
+ */
+export const SOLO_ANALISIS_FOTO = process.env.NEXT_PUBLIC_SOLO_ANALISIS_FOTO === "true";
 
 // --- RAG capability flags ---------------------------------------------
 // RAG flags use exact "false" parsing so an omitted variable enables the

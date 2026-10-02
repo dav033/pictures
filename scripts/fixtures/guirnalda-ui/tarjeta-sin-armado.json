@@ -1,14 +1,18 @@
 {
   "capturada_en": "27528f2",
-  "recapturada_en": "integracion/cotizacion-profesional (merge de feat/cotizacion-profesional y main)",
-  "motivo_recaptura": "Dos cambios deliberados, uno de cada rama, y se comprobo que son los UNICOS. (1) feat/cotizacion-profesional: la tarjeta perdio `max-w-190` en su clase raiz y gano el hueco `precioCliente` (vacio en esta prueba); con `max-w-190` reinsertado la unica diferencia con 27528f2 eran los ids de useId desplazados (_R_1aa69a_ -> _R_1aa69e_). (2) main: BloquePatron muestra el origen del patron ('· de tu foto' / '· sugerido') desde 05966ae. Comprobado en el merge: quitando del HTML unicamente ese <span>, las dos tarjetas vuelven byte a byte al sha256 de la recaptura de feat/cotizacion-profesional (una sola aparicion en cada una, 75 bytes). Ningun otro byte se movio.",
+  "recapturada_en": "feat/cotizacion-profesional",
+  "motivo_recaptura": "La tarjeta perdió `max-w-190` en su clase raíz y ganó el hueco `precioCliente` (vacío en esta prueba). Comprobado a mano: con `max-w-190` reinsertado, la única diferencia con 27528f2 son los ids de useId desplazados por ese hueco (_R_1aa69a_ -> _R_1aa69e_). Sin armado, la tarjeta sigue sin cambios de contenido.",
+  "recapturada_otra_vez_en": "ADR-0034, colores reales en la leyenda",
+  "motivo_segunda_recaptura": "La leyenda pintaba con la paleta de la taxonomía, que tiene un solo color por palabra: Verde Lima y Verde Selva salían los dos `#2e9d57` y la gráfica contradecía a su propia leyenda, que sí los nombraba distintos. Ahora el color sale de la referencia del catálogo que se compra (`hexDelCatalogo`). Comprobado antes de recapturar: los bytes no cambian (380450 y 331776, idénticos), cambian 436 valores de color, y **quitando todos los hexadecimales del HTML los dos renders son iguales carácter por carácter**. No se movió nada más que el color.",
   "plan": "scripts/fixtures/patron-color-ui/plan-con-patrones.json",
   "editable": {
     "bytes": 380525,
-    "sha256": "8fb489f913c03339ed25b38f6de3a653e94994439cbc3f8a375214f8bc7a82fd"
+    "sha256": "06d60bdfc4dcf7d6eabb4a6562b7bc6e10e64d9362efbb06625041b6e45cf19b"
   },
   "lectura": {
     "bytes": 331851,
-    "sha256": "8208993975a1a3d0016364aba8df7178bb2c31ce29739fb33d4ce872164a7133"
-  }
+    "sha256": "f34ea2cc9a4dd8c195adebe4b1cfbcf0041510e86d2c839b5d01e461a23f27bf"
+  },
+  "recapturada_tras_el_merge": "ADR-0034 en main, tras revertir la migracion paralela",
+  "motivo_tercera_recaptura": "Dos cambios, los dos comprobados. (1) Los colores de la leyenda ahora salen de la referencia del catalogo y no de la paleta de la taxonomia, que tiene un solo color por palabra: se movieron 436 valores de color y ningun byte, y quitando todos los hexadecimales los dos renders eran iguales caracter por caracter. (2) Al revertir la migracion paralela (994175d), la estructura oficial `arco` vuelve a llamarse «Arco» en vez de «Arco clasico»: ese nombre sale 5 veces en la tarjeta y la diferencia es de exactamente 45 bytes (380570 -> 380525), que es 5 x 9 bytes de « clasico» en UTF-8. Comprobado: 0 apariciones de «Arco clasico» en el HTML tras el merge."
 }

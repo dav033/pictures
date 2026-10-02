@@ -9,6 +9,7 @@ import { tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/refe
 import { esperarDuracionMinima, type EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import { ReferenceReviewPanel, type ReferenceDraft } from "./ReferenceReviewPanel";
+import { leerAnalisisColor, type AnalisisColorSempertex } from "@/lib/plan/analisis-color";
 
 type Props = {
   references: Imagen[];
@@ -47,6 +48,8 @@ class ErrorAnalisisNoReintentable extends Error {}
 
 export function ReferenceAnalysisController({ references, proveedor, onDraft, onReintentar, onElegirEjemplo, onEstado, className }: Props) {
   const [blueprint, setBlueprint] = useState<ReferenceBlueprintV2 | null>(null);
+  // Los colores medidos de la foto. Viajan fuera del blueprint y pueden no venir (bandera apagada).
+  const [analisisColor, setAnalisisColor] = useState<AnalisisColorSempertex | null>(null);
   const [status, setStatus] = useState<EstadoAnalisisReferencia>("idle");
   const [error, setError] = useState<string | null>(null);
   // "Reintentar" only while the last failure allows it (ui-error.v1 `retryable`).
@@ -64,6 +67,7 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
     if (!references.length) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the local analysis controller when attachments are removed.
       setBlueprint(null);
+      setAnalisisColor(null);
       setStatus("idle");
       onDraft(null);
       onEstado("idle");
@@ -75,6 +79,7 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
     // A new attachment must not reuse the previous turn's blueprint while the
     // server analyzes it.
     setBlueprint(null);
+    setAnalisisColor(null);
     setStatus("analyzing");
     onEstado("analyzing");
     setError(null);
@@ -104,7 +109,9 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
           tieneElementos: typeof respuesta.tieneElementos === "boolean" ? respuesta.tieneElementos : tieneElementosAprobados(blueprint.data),
           tieneEstructurasDeGlobos: typeof respuesta.tieneEstructurasDeGlobos === "boolean" ? respuesta.tieneEstructurasDeGlobos : tieneEstructurasDeGlobos(blueprint.data),
         };
-        return { next: blueprint.data, info };
+        // Un añadido fuera del blueprint: si no viene o no cuadra, el análisis sigue igual.
+        const color = leerAnalisisColor((data as { analisis_color?: unknown }).analisis_color);
+        return { next: blueprint.data, info, color };
       })
       // A cached analysis (gallery photos, photos seen before) arrives at once:
       // keep the scan on screen for the minimum time. Failures do not wait.
@@ -112,11 +119,12 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
         await esperarDuracionMinima(inicio, controller.signal);
         return resultado;
       })
-      .then(({ next, info }) => {
+      .then(({ next, info, color }) => {
         if (cancelled) return;
         setBlueprint(next);
+        setAnalisisColor(color);
         setStatus("ready");
-        onDraft({ blueprint: next });
+        onDraft({ blueprint: next, analisisColor: color });
         onEstado("ready", info);
       })
       .catch((reason) => {
@@ -148,6 +156,7 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
     <ReferenceReviewPanel
       references={references}
       blueprint={blueprint}
+      analisisColor={analisisColor}
       status={status}
       error={error}
       onReintentar={reintentable ? reintentar : undefined}

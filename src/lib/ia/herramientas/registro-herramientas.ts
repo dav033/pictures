@@ -14,6 +14,18 @@ import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarB
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PistaArmado } from "@/lib/plan/armado-bouquet";
 import type { PistaGuirnalda } from "@/lib/plan/armado-guirnalda";
+import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
+import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
+import type { ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
+import {
+  TIPOS_ARMADO_MOTOR,
+  aplicarArmadosCompletados,
+  piezaDelPlan,
+  sinArmadosDeMotor,
+  type PiezaArmado,
+  type TipoArmadoMotor,
+} from "@/lib/plan/armado-estructura-ia";
+import { llamarPythonOmoikaneArmarEstructura, llamarPythonOmoikaneCatalogoArmado, llamarPythonOmoikaneCompletarArmados } from "@/lib/ia/nucleo/python-adapter";
 import type { PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { PistaPatron } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
@@ -62,7 +74,8 @@ import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, m
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
-import { AJUSTAR_PLAN_DECORACION, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
+import { ArgsArmarEstructuraSchema, ArgsConsultarOpcionesArmadoSchema, erroresDeArgs, opcionesDePares } from "./armado-motor";
+import { AJUSTAR_PLAN_DECORACION, HERRAMIENTAS_ARMADO_MOTOR, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "../referencia/reference-blueprint";
 import type { Herramienta } from "../nucleo/tipos";
 import { z } from "zod";
@@ -83,6 +96,12 @@ import { z } from "zod";
  */
 export const HERRAMIENTAS_SOLO_LECTURA = new Set([
   "buscar_catalogo_rag",
+  // ADR-0034 §5: el catálogo de patrones del motor es una consulta pura. No
+  // toca `EstadoConversacion`, no decide catálogo ni precio y su respuesta no
+  // depende del orden, así que puede correr junto a una búsqueda en la misma
+  // vuelta. `armar_estructura` queda fuera a propósito: escribe en
+  // `armadosEstructura`.
+  "consultar_opciones_armado",
 ]);
 
 /**
@@ -96,11 +115,22 @@ export const HERRAMIENTAS_SOLO_LECTURA = new Set([
  * `estado.planVigente` ya existe, es decir cuando el token firmado del turno
  * verificó una propuesta editable (`planVigenteDelTurno`). El modelo no puede
  * convocar la herramienta con solo pedirla.
+ *
+ * `armadoMotor` expone las dos herramientas del motor del diseñador
+ * (ADR-0034 §5) detrás de `ARMADO_ARCO_COLUMNA_V1`, encendida fuera de
+ * producción. Con la bandera apagada el modelo no las ve y el turno es
+ * exactamente el de antes.
  */
-export function herramientasActivas(flags: { ragEnabled?: boolean; planVigente?: boolean } = {}): Herramienta[] {
+export function herramientasActivas(flags: { ragEnabled?: boolean; planVigente?: boolean; armadoMotor?: boolean } = {}): Herramienta[] {
   const ragEnabled = flags.ragEnabled ?? RAG_ENABLED;
   if (!ragEnabled) return [];
-  return [...HERRAMIENTAS_RAG, ...HERRAMIENTAS_PLAN, ...(flags.planVigente ? [AJUSTAR_PLAN_DECORACION] : [])];
+  const armadoMotor = flags.armadoMotor ?? featureEnabled("ARMADO_ARCO_COLUMNA_V1");
+  return [
+    ...HERRAMIENTAS_RAG,
+    ...HERRAMIENTAS_PLAN,
+    ...(armadoMotor ? HERRAMIENTAS_ARMADO_MOTOR : []),
+    ...(flags.planVigente ? [AJUSTAR_PLAN_DECORACION] : []),
+  ];
 }
 
 /**
@@ -219,6 +249,16 @@ export type EstadoConversacion = {
    * rechazo); lo que se bloquea es mezclar las dos.
    */
   herramientaComercialUsada?: "confirmar_plan_decoracion" | "ajustar_plan_decoracion";
+  /**
+   * Lo que `armar_estructura` dejó validado en este turno, por `estructura_id`
+   * (ADR-0034 §5). No es un armado que el modelo afirme tener: cada entrada
+   * pasó por la puerta del motor en Python, y al confirmar se vuelve a validar
+   * contra la pieza de verdad —que es el único momento en el que se sabe
+   * cuántos materiales lleva— antes de escribirse en el plan. Por eso el
+   * modelo no repite el armado en los argumentos de
+   * `confirmar_plan_decoracion`: lo que entra en la pieza es esto, no su eco.
+   */
+  armadosEstructura?: Map<string, { tipo: TipoArmadoMotor; armado: ArmadoArcoV1 | ArmadoColumnaV1 | ArmadoGuirnaldaOrganicaV1 }>;
 };
 
 const EVENT_MATCH_PRIORITY: Record<EventMatchLevel, number> = {
@@ -1050,6 +1090,66 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const completarConteos = featureEnabled("CONTEO_REFERENCIA_V1");
     // ADR-0031, revisión 33: las medidas que el cliente dio para una pieza no las mueve la foto.
     const medidasDelCliente = completarConteos && clienteDioMedidasEspacio(estado.solicitudOriginal);
+    // ADR-0034 §5: y el armado del arco y de la columna con el motor del
+    // diseñador, detrás de ARMADO_ARCO_COLUMNA_V1 (encendida fuera de
+    // producción). Apagada, un `armado_arco` o `armado_columna` que el modelo
+    // haya puesto en los argumentos se descarta antes de resolver: la salida
+    // del modelo no escribe en el plan un campo de una capacidad apagada.
+    const armadoMotor = featureEnabled("ARMADO_ARCO_COLUMNA_V1");
+    /**
+     * El armado de cada arco y cada columna del plan, decidido por Python: el
+     * que el modelo armó con `armar_estructura` si se sostiene contra la pieza
+     * de verdad, y si no la receta del motor. Se pide antes de resolver y se
+     * escribe en el plan, así que lo que Python cuenta y firma es el plan con
+     * su armado dentro.
+     *
+     * Su sitio natural es la resolución, al lado de
+     * `completar_armados_guirnalda`; está aquí mientras `plan.py` cambia por
+     * el conteo con motor del ADR-0034, y el dueño de la receta sigue siendo
+     * Python en los dos casos.
+     *
+     * **Un fallo de esta llamada no tumba la confirmación.** El armado
+     * enriquece una propuesta, no la autoriza: un plan válido se confirma
+     * igual, por el camino de siempre y sin armado, que es exactamente lo que
+     * pasa con la bandera apagada. Es el mismo criterio que `plan.py`, donde
+     * `_completar_armados_guirnalda` deja sin armado la pieza que no se puede
+     * arreglar y solo es duro resolver un armado que la pieza YA declara. El
+     * respaldo es deliberado, así que se anota con su propio estado
+     * (`ARMADO_MOTOR_NO_DISPONIBLE`) y está probado en
+     * `scripts/test/test-armado-estructura-ia.ts`.
+     *
+     * Lo que sí se cae con el motor es el armado que el modelo propuso: sin la
+     * puerta que lo valide contra la pieza, `sinArmadosDeMotor` lo quita antes
+     * de resolver. La salida del modelo no entra en el plan sin pasar por
+     * Python, ni cuando Python no está.
+     */
+    const conArmadosDeMotor = async (plan: PlanDecoracion): Promise<PlanDecoracion> => {
+      if (!armadoMotor) return sinArmadosDeMotor(plan);
+      if (!plan.estructuras.some((estructura) => (TIPOS_ARMADO_MOTOR as readonly string[]).includes(estructura.tipo))) return plan;
+      const armados = [...(estado.armadosEstructura ?? new Map())].map(([estructura_id, armado]) => ({ estructura_id, ...armado }));
+      try {
+        const respuesta = await llamarPythonOmoikaneCompletarArmados({
+          plan,
+          ...(armados.length > 0 ? { armados } : {}),
+          requestId: estado.ragRequestId,
+          correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
+          ...(options.signal ? { parentSignal: options.signal } : {}),
+        });
+        // Diagnóstico (ids y origen, nunca el armado entero): de dónde salió el armado de cada pieza.
+        console.info("[plan] armados de motor", JSON.stringify({ request_id: estado.ragRequestId, armados: respuesta.armados.map((completado) => ({ id: completado.estructura_id, tipo: completado.tipo, origen: completado.origen, avisos: completado.avisos.length })) }));
+        return aplicarArmadosCompletados(plan, respuesta.armados);
+      } catch (error) {
+        // No es `BACKEND_NO_DISPONIBLE`: la resolución sí está disponible y el
+        // plan se confirma igual, solo sin armado. Queda registrado aparte para
+        // poder medir cuántas veces pasa.
+        encolarEscrituraObservabilidad(auditarPlan({
+          requestId: estado.ragRequestId,
+          status: "ARMADO_MOTOR_NO_DISPONIBLE",
+          error: error instanceof Error ? error.message : String(error),
+        }));
+        return sinArmadosDeMotor(plan);
+      }
+    };
     const resolverPlanDelTurno = (plan: PlanDecoracion) => {
       const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];
@@ -1086,6 +1186,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     let resolucion: ResolucionPlan;
     const avisosConvergencia: string[] = [];
     try {
+      planCanonico = await conArmadosDeMotor(planCanonico);
       resolucion = await resolverPlanDelTurno(planCanonico);
       // Convergence: after repeated refusals the materials without size
       // coverage leave the structure (with a notice) instead of another
@@ -1093,9 +1194,13 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       if (estado.rechazosPlan >= RECHAZOS_PARA_CONVERGER && resolucion.resuelto.sin_cobertura.length > 0) {
         const reparado = quitarMaterialesSinCobertura(planCanonico, resolucion.resuelto.sin_cobertura);
         if (reparado.cambiado) {
-          const reintento = await resolverPlanDelTurno(reparado.plan);
+          // Quitar un material corre los índices de la pieza, así que su
+          // armado se vuelve a decidir sobre la pieza nueva: con un índice que
+          // ya no existe no se sostendría, y Python lo cambia por la receta.
+          const conArmado = await conArmadosDeMotor(reparado.plan);
+          const reintento = await resolverPlanDelTurno(conArmado);
           if (reintento.resuelto.sin_cobertura.length === 0 && reintento.resuelto.compras.length > 0) {
-            planCanonico = reparado.plan;
+            planCanonico = conArmado;
             resolucion = reintento;
             avisosConvergencia.push(...reparado.avisos);
           }
@@ -1505,6 +1610,171 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         rechazados: resultado.rechazados,
         fase: "propuesta_visual; la cotizacion llega despues de generar la imagen",
       };
+    },
+
+    /**
+     * El catálogo de armado del motor del diseñador (ADR-0034 §5): los catorce
+     * patrones del arco o los nueve de la columna, con sus mandos, rangos y
+     * mínimos de color. Es una consulta: no toca el plan, el catálogo de
+     * productos ni el estado del turno. La lista la publica Python desde el
+     * motor; aquí no hay ni un nombre de patrón escrito a mano.
+     */
+    consultar_opciones_armado: async (args) => {
+      const parseado = ArgsConsultarOpcionesArmadoSchema.safeParse(args);
+      if (!parseado.success) {
+        return {
+          ok: false,
+          status: "ARGUMENTOS_INVALIDOS",
+          errores: erroresDeArgs(parseado.error, "consulta"),
+          accion_requerida: `Llama consultar_opciones_armado con tipo igual a ${TIPOS_ARMADO_MOTOR.join(" o ")}.`,
+        };
+      }
+      try {
+        const { catalogo } = await llamarPythonOmoikaneCatalogoArmado({
+          tipo: parseado.data.tipo,
+          requestId: estado.ragRequestId,
+          correlationId: options.correlationId ?? estado.ragRequestId,
+          ...(options.signal ? { parentSignal: options.signal } : {}),
+        });
+        return {
+          ok: true,
+          tipo: catalogo.tipo,
+          opciones: catalogo.opciones,
+          accion_requerida: "En un arco o una columna, elige un patrón cuyo min_colores y max_colores quepan en los colores de la pieza y llama armar_estructura con su id y, si quieres, sus mandos. En una guirnalda no hay patrón: llama armar_estructura con su paleta (un color por material, con su acabado y su papel) y, si quieres, su reparto, su forma y su mezcla de tamaños. No le describas al cliente nombres de patrón, acabados internos ni mandos: háblale de cómo se verá.",
+        };
+      } catch (error) {
+        // El modelo no puede corregir que el motor no responda. No corta el
+        // turno: puede seguir sin armar y el servidor pondrá la receta.
+        if (isPythonAdapterError(error)) {
+          return {
+            ok: false,
+            status: "ARMADO_NO_DISPONIBLE",
+            accion_requerida: "No pude consultar las opciones de armado. Sigue con la propuesta sin armar las piezas: el sistema les pone el armado por defecto.",
+          };
+        }
+        throw error;
+      }
+    },
+
+    /**
+     * Arma un arco o una columna con el motor y devuelve lo que lleva de
+     * verdad, o el motivo por el que no se sostiene. Lo que valida es la
+     * puerta de Python; lo que hace este handler es acotar los argumentos,
+     * preferir lo que dice el plan vigente sobre lo que dice el modelo, y
+     * guardar el armado que quedó validado para la confirmación.
+     */
+    armar_estructura: async (args) => {
+      const parseado = ArgsArmarEstructuraSchema.safeParse(args);
+      if (!parseado.success) {
+        return {
+          ok: false,
+          status: "ARGUMENTOS_INVALIDOS",
+          errores: erroresDeArgs(parseado.error, "armado"),
+          accion_requerida: "Corrige los argumentos de armar_estructura (estructura_id, tipo y colores son siempre obligatorios; un arco o una columna necesitan además patron y materiales, y una guirnalda su paleta; los mandos del patrón van como lista de pares clave/valor) y vuelve a llamarla.",
+        };
+      }
+      const peticion = parseado.data;
+      // La pieza de la propuesta vigente manda sobre lo que diga el modelo: si
+      // el turno ya tiene una, el tipo, los colores y las medidas salen de
+      // ella. Sin propuesta vigente todavía no hay pieza, así que los da el
+      // modelo y Python los vuelve a comprobar al confirmar.
+      const delPlan = estado.planVigente ? piezaDelPlan(estado.planVigente.base.plan, peticion.estructura_id) : null;
+      if (delPlan && delPlan.tipo !== peticion.tipo) {
+        return {
+          ok: false,
+          status: "TIPO_NO_CORRESPONDE",
+          accion_requerida: `La pieza ${peticion.estructura_id} de la propuesta vigente es un ${delPlan.tipo}, no un ${peticion.tipo}. Usa el tipo que tiene la pieza o arma otra.`,
+        };
+      }
+      const pieza: PiezaArmado = delPlan ?? { tipo: peticion.tipo, colores: peticion.colores };
+      // Cada tipo manda lo suyo y nada del otro: una guirnalda no tiene patrón ni mandos de patrón, y un arco
+      // no tiene paleta ni festones. Lo que no corresponde al tipo se deja fuera en vez de viajar y ser
+      // ignorado al otro lado, que es donde se esconden los malentendidos.
+      const esGuirnalda = peticion.tipo === "guirnalda";
+      const dePatron = esGuirnalda
+        ? {}
+        : {
+            patron: peticion.patron,
+            materiales: peticion.materiales,
+            ...(opcionesDePares(peticion.opciones) === undefined ? {} : { opciones: opcionesDePares(peticion.opciones)! }),
+            ...(peticion.geometria === undefined ? {} : { geometria: peticion.geometria }),
+            ...(peticion.tipo === "columna" && peticion.remate !== undefined ? { remate: peticion.remate } : {}),
+          };
+      const deGuirnalda = esGuirnalda
+        ? {
+            paleta: peticion.paleta,
+            ...(peticion.reparto === undefined ? {} : { reparto: peticion.reparto }),
+            ...(peticion.mezcla_colores === undefined ? {} : { mezclaColores: peticion.mezcla_colores }),
+            ...(peticion.forma === undefined ? {} : { forma: peticion.forma }),
+            ...(peticion.volumen === undefined ? {} : { volumen: peticion.volumen }),
+            ...(peticion.tamanos === undefined ? {} : { tamanos: peticion.tamanos }),
+            ...(peticion.adornos === undefined ? {} : { adornos: peticion.adornos }),
+          }
+        : {};
+      try {
+        const { armado } = await llamarPythonOmoikaneArmarEstructura({
+          pieza,
+          ...dePatron,
+          ...deGuirnalda,
+          estructuraId: peticion.estructura_id,
+          requestId: estado.ragRequestId,
+          correlationId: options.correlationId ?? estado.ragRequestId,
+          ...(options.signal ? { parentSignal: options.signal } : {}),
+        });
+        // Evidencia del servidor, no del modelo: lo que entra en el plan al
+        // confirmar es esto, y Python lo vuelve a validar contra la pieza de
+        // verdad antes de escribirlo.
+        estado.armadosEstructura ??= new Map();
+        estado.armadosEstructura.set(peticion.estructura_id, { tipo: armado.tipo, armado: armado.armado });
+        // Qué colores de la pieza usó el armado: en un arco o una columna son los índices del patrón, y en
+        // una guirnalda los de su paleta. De ahí sale cuántos materiales tiene que llevar la pieza.
+        const coloresUsados = armado.tipo === "guirnalda"
+          ? armado.armado.colores.paleta.map((color) => color.material)
+          : armado.armado.materiales;
+        return {
+          ok: true,
+          status: "ARMADO_VALIDO",
+          estructura_id: peticion.estructura_id,
+          tipo: armado.tipo,
+          // Una guirnalda orgánica no tiene patrón: lo que la describe es su reparto de color.
+          ...(armado.tipo === "guirnalda"
+            ? { reparto: armado.armado.colores.reparto }
+            : { patron: armado.armado.patron }),
+          colores_usados: coloresUsados,
+          // Cuando la propuesta vigente contradice el `colores` del modelo,
+          // manda la pieza y hay que decírselo: con ese número eligió el patrón.
+          ...(pieza.colores === peticion.colores ? {} : { colores_de_la_pieza: pieza.colores }),
+          resumen: armado.resumen,
+          ...(armado.avisos.length > 0 ? { avisos: armado.avisos } : {}),
+          accion_requerida: `El armado quedó guardado para ${peticion.estructura_id}: NO lo repitas en confirmar_plan_decoracion, entra solo. Esa pieza tiene que llevar en confirmar_plan_decoracion el mismo estructura_id, el mismo tipo y al menos ${Math.max(...coloresUsados) + 1} materiales. Las cantidades que le digas al cliente siguen saliendo de confirmar_plan_decoracion, no de este resumen.`,
+        };
+      } catch (error) {
+        // `armado_invalido` es lo único que el modelo puede corregir, y llega
+        // con el motivo estable del motor y su frase en español.
+        if (isPythonAdapterError(error) && error.domainCode === "armado_invalido") {
+          const detalles = error.domainDetails;
+          encolarEscrituraObservabilidad(auditarPlan({
+            requestId: estado.ragRequestId,
+            status: "ARMADO_MOTOR_RECHAZADO",
+            error: `${peticion.estructura_id} ${peticion.tipo}/${peticion.patron ?? "sin_patron"}: ${detalles?.motivo ?? "sin_motivo"}`,
+          }));
+          return {
+            ok: false,
+            status: "ARMADO_INVALIDO",
+            ...(detalles?.motivo ? { motivo: detalles.motivo } : {}),
+            ...(detalles?.mensaje ? { detalle: detalles.mensaje } : {}),
+            accion_requerida: "El motor rechazó ese armado. Corrige lo que dice el motivo (usa consultar_opciones_armado para ver qué patrones, acabados o repartos hay y cuántos colores admite cada uno) y vuelve a llamar armar_estructura, o sigue sin armar esta pieza: el sistema le pondrá el armado por defecto.",
+          };
+        }
+        if (isPythonAdapterError(error)) {
+          return {
+            ok: false,
+            status: "ARMADO_NO_DISPONIBLE",
+            accion_requerida: "No pude armar la pieza con el motor. Sigue con la propuesta sin armarla: el sistema le pone el armado por defecto.",
+          };
+        }
+        throw error;
+      }
     },
 
     confirmar_plan_decoracion: async (args) => {

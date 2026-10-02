@@ -19,7 +19,10 @@ import {
   validarRelacionesDeElemento,
   type RelacionFisicaInput,
 } from "./composicion";
+import { ArmadoArcoV1Schema } from "./armado-arco";
 import { ArmadoBouquetV1Schema } from "./armado-bouquet";
+import { ArmadoColumnaV1Schema } from "./armado-columna";
+import { ArmadoGuirnaldaOrganicaV1Schema } from "./armado-guirnalda-organica";
 import { ArmadoGuirnaldaV1Schema } from "./armado-guirnalda";
 import { PatronColorV1Schema } from "./patron-color";
 
@@ -116,6 +119,19 @@ const EstructuraPlanSchema = z.object({
   armado_bouquet: ArmadoBouquetV1Schema.optional(),
   /** Armado de una guirnalda por partes (ADR-0032). Sus reglas cruzadas las valida solo Python. */
   armado_guirnalda: ArmadoGuirnaldaV1Schema.optional(),
+  /**
+   * Armado de un arco con el motor del diseñador (ADR-0034): patrón, geometría, globo, capas y secciones.
+   * Sus reglas cruzadas las valida solo Python (`app/armado_arco.py`), que es el puerto del motor dueño.
+   */
+  armado_arco: ArmadoArcoV1Schema.optional(),
+  /** Armado de una columna con el motor del diseñador (ADR-0033). Sus reglas cruzadas las valida solo Python. */
+  armado_columna: ArmadoColumnaV1Schema.optional(),
+  /**
+   * Armado de una guirnalda con el motor del diseñador (ADR-0034). Convive con `armado_guirnalda`
+   * (ADR-0032), que describe la misma pieza por racimos y remates; cuando están los dos, manda este,
+   * que es el que coloca cada globo. Sus reglas cruzadas las valida solo Python.
+   */
+  armado_guirnalda_organica: ArmadoGuirnaldaOrganicaV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   for (const problema of incoherenciasEstructuraOficial(value)) {
     ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
@@ -347,6 +363,19 @@ export const EstructuraPlan1_1Schema = z.object({
   armado_bouquet: ArmadoBouquetV1Schema.optional(),
   /** Armado de una guirnalda por partes (ADR-0032). Sus reglas cruzadas las valida solo Python. */
   armado_guirnalda: ArmadoGuirnaldaV1Schema.optional(),
+  /**
+   * Armado de un arco con el motor del diseñador (ADR-0034): patrón, geometría, globo, capas y secciones.
+   * Sus reglas cruzadas las valida solo Python (`app/armado_arco.py`), que es el puerto del motor dueño.
+   */
+  armado_arco: ArmadoArcoV1Schema.optional(),
+  /** Armado de una columna con el motor del diseñador (ADR-0033). Sus reglas cruzadas las valida solo Python. */
+  armado_columna: ArmadoColumnaV1Schema.optional(),
+  /**
+   * Armado de una guirnalda con el motor del diseñador (ADR-0034). Convive con `armado_guirnalda`
+   * (ADR-0032), que describe la misma pieza por racimos y remates; cuando están los dos, manda este,
+   * que es el que coloca cada globo. Sus reglas cruzadas las valida solo Python.
+   */
+  armado_guirnalda_organica: ArmadoGuirnaldaOrganicaV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   validarRelacionesFisicasSchema(value.relaciones_fisicas, ctx);
   for (const problema of incoherenciasEstructuraOficial(value)) {

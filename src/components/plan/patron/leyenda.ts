@@ -2,6 +2,7 @@ import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import type { LineaMaterial } from "@/lib/plan/resuelto";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import { acabadoCliente, muestraColor, nombreColorCliente, productoCliente, tonoCliente, type MuestraColor } from "@/lib/plan/presentacion-cliente";
+import { hexDelCatalogo } from "@/lib/plan/referencia-sempertex";
 import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 
 /**
@@ -33,6 +34,12 @@ type MaterialLeyenda = { product_id: string; color?: string; acabado?: string };
 /** Lo que Python dice de cada número: el color y el acabado que se compran. */
 type ConteoLeyenda = ReadonlyArray<Pick<PatronColorResuelto["conteo"][number], "material" | "color" | "acabado">>;
 
+/**
+ * Respaldo cuando el catálogo no conoce el nombre: la paleta de la taxonomía, que tiene **un** color por
+ * palabra porque su trabajo es agrupar, no pintar. Con ella sola, un arco de Verde Lima y Verde Selva salía
+ * con los dos verdes idénticos (`#2e9d57`) y la gráfica contradecía a su propia leyenda, que sí los nombraba
+ * distintos. El color de verdad lo da `hexDelCatalogo`, y esto solo cubre lo que no está en la lámina.
+ */
 const HEX_PALETA: Readonly<Record<string, string>> = HEX_COLORES_V2;
 const HEX_DESCONOCIDO = "#9ca3af";
 
@@ -91,7 +98,8 @@ export function leyendaPatron(materiales: readonly MaterialLeyenda[], lineas: re
     const acabado = acabadoCliente(nombrado.acabado ?? linea?.acabado, linea?.titulo);
     const tono = color && linea ? tonoCliente(color, linea.titulo) : color ? nombreColorCliente(color) : undefined;
     const muestra = muestraColor(color ?? "", acabado, tono);
-    const hex = HEX_PALETA[muestra.color] ?? HEX_DESCONOCIDO;
+    // El color de la referencia que se compra; si el catálogo no conoce ese nombre, el de la taxonomía.
+    const hex = (tono ? hexDelCatalogo(tono, acabado) : null) ?? HEX_PALETA[muestra.color] ?? HEX_DESCONOCIDO;
     const brillo = brilloDe(muestra.color, acabado);
     const etiqueta = color ? mayusculaInicial(muestra.etiqueta) : linea ? productoCliente(linea.titulo) : `Color ${indice + 1}`;
     return {

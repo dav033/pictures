@@ -1,0 +1,1339 @@
+{
+  "_comentario": "Salidas reales de app/omoikane/armado_estructura.py (sin red y sin catálogo): el catálogo que el motor publica para el arco y para la columna, un armado resuelto de cada tipo y lo que la acción `completar` decide para un plan con un arco de dos colores, una columna de uno y una guirnalda orgánica de dos (el segundo cromado). Generado con services/ai-api/scripts/fixture_armado_estructura_ia.py --escribir; regenerar solo a propósito cuando el motor cambie, nunca para que pase una prueba de TypeScript.",
+  "catalogo_arco": {
+    "operation_schema_version": "omoikane-armado-estructura-result.v1",
+    "accion": "catalogo",
+    "tipo": "arco",
+    "opciones": {
+      "formas": [
+        "alto",
+        "semi",
+        "herradura"
+      ],
+      "patrones": [
+        {
+          "id": "solido",
+          "nombre": "Sólido",
+          "descripcion": "Un solo color en todo el arco.",
+          "roles": [
+            "Color"
+          ],
+          "lista": null,
+          "min_colores": 1,
+          "max_colores": 1,
+          "controles": []
+        },
+        {
+          "id": "bloques",
+          "nombre": "Bloques de color",
+          "descripcion": "Tramos de un mismo color, uno detrás de otro a lo largo del arco.",
+          "roles": null,
+          "lista": {
+            "min": 2,
+            "max": 8,
+            "etiqueta": "Bloque"
+          },
+          "min_colores": 2,
+          "max_colores": 8,
+          "controles": [
+            {
+              "clave": "largo",
+              "etiqueta": "Largo del bloque",
+              "min": 0,
+              "max": 20,
+              "paso": 1,
+              "defecto": 0,
+              "ayuda": "En filas. 0 reparte el arco en partes iguales."
+            },
+            {
+              "clave": "mezcla",
+              "etiqueta": "Mezcla en los bordes",
+              "min": 0,
+              "max": 4,
+              "paso": 0.5,
+              "defecto": 0,
+              "ayuda": "Globos que se cuelan de un bloque al vecino."
+            },
+            {
+              "clave": "espejo",
+              "etiqueta": "Simetría (espejo)",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true,
+              "ayuda": "Las dos patas del arco quedan iguales, como reflejadas."
+            }
+          ]
+        },
+        {
+          "id": "apilado",
+          "nombre": "Apilado",
+          "descripcion": "Capas de color a lo ancho de la banda: del borde al centro.",
+          "roles": null,
+          "lista": {
+            "min": 2,
+            "max": 5,
+            "etiqueta": "Capa (borde → centro)"
+          },
+          "min_colores": 2,
+          "max_colores": 5,
+          "controles": [
+            {
+              "clave": "invertir",
+              "etiqueta": "Invertir capas",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true
+            }
+          ]
+        },
+        {
+          "id": "espiral",
+          "nombre": "Espiral",
+          "descripcion": "Franjas diagonales que dan la vuelta al arco como una cuerda trenzada.",
+          "roles": null,
+          "lista": {
+            "min": 2,
+            "max": 4,
+            "etiqueta": "Franja"
+          },
+          "min_colores": 2,
+          "max_colores": 4,
+          "controles": [
+            {
+              "clave": "ancho",
+              "etiqueta": "Ancho de franja",
+              "min": 0.5,
+              "max": 6,
+              "paso": 0.5,
+              "defecto": 2,
+              "ayuda": "En filas de globos."
+            },
+            {
+              "clave": "inclinacion",
+              "etiqueta": "Inclinación",
+              "min": -3,
+              "max": 3,
+              "paso": 0.5,
+              "defecto": 2,
+              "ayuda": "2 sigue exactamente la diagonal de los globos (franjas limpias). 0 = franjas rectas a lo ancho. Negativo las gira al otro lado; los valores intermedios quiebran las franjas."
+            },
+            {
+              "clave": "inversion",
+              "etiqueta": "Invertir el giro cada",
+              "min": 0,
+              "max": 20,
+              "paso": 1,
+              "defecto": 0,
+              "ayuda": "En filas; 0 = nunca. Con valores bajos se vuelve chevron, con altos, una espiral que cambia de sentido."
+            },
+            {
+              "clave": "espejo",
+              "etiqueta": "Simetría (espejo)",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true,
+              "ayuda": "Las dos patas del arco quedan iguales, como reflejadas."
+            }
+          ]
+        },
+        {
+          "id": "espiralPunteada",
+          "nombre": "Espiral punteada",
+          "descripcion": "Espiral de dos colores con globos de un tercer color como acento.",
+          "roles": [
+            "Color A",
+            "Color B",
+            "Punto"
+          ],
+          "lista": null,
+          "min_colores": 3,
+          "max_colores": 3,
+          "controles": [
+            {
+              "clave": "cadaN",
+              "etiqueta": "Un punto cada",
+              "min": 1,
+              "max": 6,
+              "paso": 1,
+              "defecto": 3,
+              "ayuda": "Cada cuántos globos del color B aparece el punto."
+            },
+            {
+              "clave": "espejo",
+              "etiqueta": "Simetría (espejo)",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true,
+              "ayuda": "Las dos patas del arco quedan iguales, como reflejadas."
+            }
+          ]
+        },
+        {
+          "id": "zigzag",
+          "nombre": "Zigzag",
+          "descripcion": "Franjas que quiebran de un lado a otro de la banda, como un rayo.",
+          "roles": null,
+          "lista": {
+            "min": 2,
+            "max": 4,
+            "etiqueta": "Franja"
+          },
+          "min_colores": 2,
+          "max_colores": 4,
+          "controles": [
+            {
+              "clave": "ancho",
+              "etiqueta": "Ancho de franja",
+              "min": 0.5,
+              "max": 6,
+              "paso": 0.5,
+              "defecto": 1.5,
+              "ayuda": "En filas de globos."
+            },
+            {
+              "clave": "amplitud",
+              "etiqueta": "Altura del zigzag",
+              "min": 0,
+              "max": 8,
+              "paso": 0.5,
+              "defecto": 2.5,
+              "ayuda": "Cuánto sube y baja cada quiebre (filas)."
+            },
+            {
+              "clave": "periodo",
+              "etiqueta": "Largo del zigzag",
+              "min": 1,
+              "max": 8,
+              "paso": 0.5,
+              "defecto": 3,
+              "ayuda": "Globos que tarda en cambiar de dirección."
+            },
+            {
+              "clave": "espejo",
+              "etiqueta": "Simetría (espejo)",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true,
+              "ayuda": "Las dos patas del arco quedan iguales, como reflejadas."
+            }
+          ]
+        },
+        {
+          "id": "chevron",
+          "nombre": "Flecha / Chevron",
+          "descripcion": "Franjas en V que apuntan a lo largo del arco.",
+          "roles": null,
+          "lista": {
+            "min": 2,
+            "max": 4,
+            "etiqueta": "Franja"
+          },
+          "min_colores": 2,
+          "max_colores": 4,
+          "controles": [
+            {
+              "clave": "ancho",
+              "etiqueta": "Ancho de franja",
+              "min": 0.5,
+              "max": 6,
+              "paso": 0.5,
+              "defecto": 2,
+              "ayuda": "En filas de globos."
+            },
+            {
+              "clave": "inclinacion",
+              "etiqueta": "Inclinación",
+              "min": 0,
+              "max": 4,
+              "paso": 0.5,
+              "defecto": 2,
+              "ayuda": "2 sigue exactamente la diagonal de los globos (franjas limpias). 0 = franjas rectas a lo ancho. Negativo las gira al otro lado; los valores intermedios quiebran las franjas."
+            },
+            {
+              "clave": "invertir",
+              "etiqueta": "Invertir dirección",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true
+            },
+            {
+              "clave": "espejo",
+              "etiqueta": "Simetría (espejo)",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 1,
+              "interruptor": true,
+              "ayuda": "Las dos patas del arco quedan iguales, como reflejadas."
+            }
+          ]
+        },
+        {
+          "id": "diamante",
+          "nombre": "Diamante",
+          "descripcion": "Rombos que se repiten a lo largo del arco, con anillos de color.",
+          "roles": [
+            "Centro",
+            "Anillo",
+            "Fondo"
+          ],
+          "lista": null,
+          "min_colores": 3,
+          "max_colores": 3,
+          "controles": [
+            {
+              "clave": "periodo",
+              "etiqueta": "Separación entre rombos",
+              "min": 4,
+              "max": 16,
+              "paso": 1,
+              "defecto": 8,
+              "ayuda": "En filas."
+            },
+            {
+              "clave": "radio",
+              "etiqueta": "Tamaño del rombo",
+              "min": 0.8,
+              "max": 5,
+              "paso": 0.1,
+              "defecto": 1.8
+            },
+            {
+              "clave": "aspecto",
+              "etiqueta": "Alargado del rombo",
+              "min": 0.5,
+              "max": 1.8,
+              "paso": 0.1,
+              "defecto": 0.9,
+              "ayuda": "Mayor = más aplastado a lo largo del arco."
+            },
+            {
+              "clave": "espejo",
+              "etiqueta": "Simetría (espejo)",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 1,
+              "interruptor": true,
+              "ayuda": "Las dos patas del arco quedan iguales, como reflejadas."
+            }
+          ]
+        },
+        {
+          "id": "punteado",
+          "nombre": "Punteado",
+          "descripcion": "Un color de fondo con globos de otro color repartidos como lunares.",
+          "roles": [
+            "Fondo",
+            "Punto"
+          ],
+          "lista": null,
+          "min_colores": 2,
+          "max_colores": 2,
+          "controles": [
+            {
+              "clave": "sepFilas",
+              "etiqueta": "Separación entre lunares",
+              "min": 2,
+              "max": 12,
+              "paso": 2,
+              "defecto": 4,
+              "ayuda": "En filas."
+            },
+            {
+              "clave": "sepAncho",
+              "etiqueta": "Lunares a lo ancho",
+              "min": 1,
+              "max": 4,
+              "paso": 1,
+              "defecto": 2,
+              "ayuda": "Cada cuántos globos hay un lunar en la fila."
+            },
+            {
+              "clave": "tamanoPunto",
+              "etiqueta": "Tamaño del lunar",
+              "min": 0.8,
+              "max": 1.8,
+              "paso": 0.05,
+              "defecto": 1.2,
+              "ayuda": "Respecto a los globos del fondo."
+            },
+            {
+              "clave": "escalonar",
+              "etiqueta": "Escalonar lunares",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 1,
+              "interruptor": true
+            },
+            {
+              "clave": "espejo",
+              "etiqueta": "Simetría (espejo)",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 1,
+              "interruptor": true,
+              "ayuda": "Las dos patas del arco quedan iguales, como reflejadas."
+            }
+          ]
+        },
+        {
+          "id": "franjas",
+          "nombre": "Franjas",
+          "descripcion": "Rayas diagonales gruesas de varios colores, como un bastón de caramelo.",
+          "roles": null,
+          "lista": {
+            "min": 2,
+            "max": 5,
+            "etiqueta": "Franja"
+          },
+          "min_colores": 2,
+          "max_colores": 5,
+          "controles": [
+            {
+              "clave": "ancho",
+              "etiqueta": "Ancho de franja",
+              "min": 0.5,
+              "max": 6,
+              "paso": 0.5,
+              "defecto": 4,
+              "ayuda": "En filas de globos."
+            },
+            {
+              "clave": "inclinacion",
+              "etiqueta": "Inclinación",
+              "min": -3,
+              "max": 3,
+              "paso": 0.5,
+              "defecto": 2,
+              "ayuda": "2 sigue exactamente la diagonal de los globos (franjas limpias). 0 = franjas rectas a lo ancho. Negativo las gira al otro lado; los valores intermedios quiebran las franjas."
+            },
+            {
+              "clave": "espejo",
+              "etiqueta": "Simetría (espejo)",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true,
+              "ayuda": "Las dos patas del arco quedan iguales, como reflejadas."
+            }
+          ]
+        },
+        {
+          "id": "floral",
+          "nombre": "Floral",
+          "descripcion": "Flores de globos (centro y pétalos) sobre un fondo de hojas.",
+          "roles": [
+            "Hojas",
+            "Pétalos",
+            "Centro",
+            "Hojas 2"
+          ],
+          "lista": null,
+          "min_colores": 4,
+          "max_colores": 4,
+          "controles": [
+            {
+              "clave": "sepFilas",
+              "etiqueta": "Separación entre flores",
+              "min": 4,
+              "max": 16,
+              "paso": 1,
+              "defecto": 7,
+              "ayuda": "En filas."
+            },
+            {
+              "clave": "radio",
+              "etiqueta": "Tamaño de la flor",
+              "min": 1.1,
+              "max": 2.1,
+              "paso": 0.1,
+              "defecto": 1.2,
+              "ayuda": "1.2 = seis pétalos; 1.8 o más = dos vueltas de pétalos."
+            },
+            {
+              "clave": "escalaPetalo",
+              "etiqueta": "Tamaño de los pétalos",
+              "min": 1,
+              "max": 1.8,
+              "paso": 0.05,
+              "defecto": 1.25,
+              "ayuda": "Respecto a los globos de las hojas."
+            },
+            {
+              "clave": "alternar",
+              "etiqueta": "Alternar lados",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 1,
+              "interruptor": true
+            },
+            {
+              "clave": "espejo",
+              "etiqueta": "Simetría (espejo)",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 1,
+              "interruptor": true,
+              "ayuda": "Las dos patas del arco quedan iguales, como reflejadas."
+            }
+          ]
+        },
+        {
+          "id": "ombre",
+          "nombre": "Ombré",
+          "descripcion": "Degradado ordenado de tonos: a lo largo del arco, simétrico o a lo ancho.",
+          "roles": null,
+          "lista": {
+            "min": 3,
+            "max": 7,
+            "etiqueta": "Tono"
+          },
+          "min_colores": 3,
+          "max_colores": 7,
+          "controles": [
+            {
+              "clave": "modo",
+              "etiqueta": "Dirección",
+              "min": 0,
+              "max": 2,
+              "paso": 1,
+              "defecto": 0,
+              "seleccion": [
+                "A lo largo",
+                "Simétrico",
+                "A lo ancho"
+              ]
+            },
+            {
+              "clave": "suavidad",
+              "etiqueta": "Mezcla entre tonos",
+              "min": 0,
+              "max": 1,
+              "paso": 0.05,
+              "defecto": 0.6,
+              "ayuda": "Globos que se cuelan en la frontera entre dos tonos. 0 = bandas duras."
+            },
+            {
+              "clave": "invertir",
+              "etiqueta": "Invertir degradado",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true
+            }
+          ]
+        },
+        {
+          "id": "arcoiris",
+          "nombre": "Arcoíris",
+          "descripcion": "Bandas de color paralelas al arco, como un arcoíris de verdad: el primer color queda por fuera.",
+          "roles": null,
+          "lista": {
+            "min": 3,
+            "max": 8,
+            "etiqueta": "Banda"
+          },
+          "min_colores": 3,
+          "max_colores": 8,
+          "controles": [
+            {
+              "clave": "invertir",
+              "etiqueta": "Invertir orden",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true,
+              "ayuda": "Por defecto el primer color va por fuera y el último por dentro."
+            }
+          ]
+        },
+        {
+          "id": "doslados",
+          "nombre": "Dos lados",
+          "descripcion": "El exterior y el interior del arco en colores distintos.",
+          "roles": [
+            "Exterior",
+            "Interior"
+          ],
+          "lista": null,
+          "min_colores": 2,
+          "max_colores": 2,
+          "controles": [
+            {
+              "clave": "corte",
+              "etiqueta": "Posición del corte",
+              "min": 0.2,
+              "max": 0.8,
+              "paso": 0.05,
+              "defecto": 0.5,
+              "ayuda": "Dónde cambia de color a lo ancho de la banda."
+            },
+            {
+              "clave": "alternar",
+              "etiqueta": "Intercambiar en la clave",
+              "min": 0,
+              "max": 1,
+              "paso": 1,
+              "defecto": 0,
+              "interruptor": true,
+              "ayuda": "Los colores cambian de lado al pasar la mitad del arco."
+            }
+          ]
+        }
+      ],
+      "tamanos": [
+        5,
+        9,
+        12,
+        18,
+        24,
+        36
+      ],
+      "ancho_m": {
+        "min": 0.8,
+        "max": 10.0
+      },
+      "alto_m": {
+        "min": 0.8,
+        "max": 6.0
+      },
+      "max_materiales": 8,
+      "max_secuencia": 16,
+      "seccion_m": 0.4
+    }
+  },
+  "catalogo_columna": {
+    "operation_schema_version": "omoikane-armado-estructura-result.v1",
+    "accion": "catalogo",
+    "tipo": "columna",
+    "opciones": {
+      "modos": [
+        "altura",
+        "capas"
+      ],
+      "patrones": [
+        {
+          "id": "solido",
+          "nombre": "Sólido",
+          "min_colores": 1,
+          "controles": []
+        },
+        {
+          "id": "apilado",
+          "nombre": "Apilado",
+          "min_colores": 2,
+          "controles": [
+            {
+              "clave": "grosor",
+              "min": 1,
+              "max": 8,
+              "defecto": 2
+            }
+          ]
+        },
+        {
+          "id": "espiral",
+          "nombre": "Espiral",
+          "min_colores": 2,
+          "controles": [
+            {
+              "clave": "vueltas",
+              "min": 1,
+              "max": 3,
+              "defecto": 2
+            },
+            {
+              "clave": "inclinacion",
+              "min": -2,
+              "max": 2,
+              "defecto": 1
+            }
+          ]
+        },
+        {
+          "id": "rayas",
+          "nombre": "Rayas",
+          "min_colores": 2,
+          "controles": [
+            {
+              "clave": "vueltas",
+              "min": 1,
+              "max": 3,
+              "defecto": 2
+            }
+          ]
+        },
+        {
+          "id": "zigzag",
+          "nombre": "Zigzag",
+          "min_colores": 2,
+          "controles": [
+            {
+              "clave": "vueltas",
+              "min": 1,
+              "max": 2,
+              "defecto": 2
+            },
+            {
+              "clave": "periodo",
+              "min": 2,
+              "max": 12,
+              "defecto": 4
+            },
+            {
+              "clave": "amplitud",
+              "min": 0.5,
+              "max": 2,
+              "defecto": 1
+            }
+          ]
+        },
+        {
+          "id": "diamante",
+          "nombre": "Diamante",
+          "min_colores": 2,
+          "controles": [
+            {
+              "clave": "repet",
+              "min": 1,
+              "max": 3,
+              "defecto": 1
+            },
+            {
+              "clave": "alto",
+              "min": 4,
+              "max": 16,
+              "defecto": 8
+            },
+            {
+              "clave": "grueso",
+              "min": 0.3,
+              "max": 0.9,
+              "defecto": 0.55
+            }
+          ]
+        },
+        {
+          "id": "punteado",
+          "nombre": "Punteado",
+          "min_colores": 2,
+          "controles": [
+            {
+              "clave": "sepCapas",
+              "min": 2,
+              "max": 8,
+              "defecto": 3
+            },
+            {
+              "clave": "puntos",
+              "min": 1,
+              "max": 3,
+              "defecto": 2
+            }
+          ]
+        },
+        {
+          "id": "ombre",
+          "nombre": "Ombré",
+          "min_colores": 3,
+          "controles": [
+            {
+              "clave": "suavidad",
+              "min": 0,
+              "max": 1,
+              "defecto": 0.6
+            },
+            {
+              "clave": "invertir",
+              "min": 0,
+              "max": 1,
+              "defecto": 0
+            }
+          ]
+        },
+        {
+          "id": "aleatorio",
+          "nombre": "Al azar",
+          "min_colores": 2,
+          "controles": []
+        }
+      ],
+      "remates": [
+        "ninguno",
+        "globo",
+        "racimo",
+        "estrella",
+        "corazon"
+      ],
+      "tamanos": [
+        5,
+        9,
+        12,
+        18,
+        24,
+        36
+      ],
+      "globos_capa": {
+        "min": 3,
+        "max": 6
+      },
+      "alto_m": {
+        "min": 0.5,
+        "max": 6.0
+      },
+      "max_capas": 60
+    }
+  },
+  "armar_arco": {
+    "operation_schema_version": "omoikane-armado-estructura-result.v1",
+    "accion": "armar",
+    "tipo": "arco",
+    "estructura_id": "EST_01_ARCO",
+    "armado": {
+      "version": "armado-arco.v1",
+      "origen": "sugerido",
+      "patron": "chevron",
+      "opciones": {
+        "ancho": 3.0,
+        "inclinacion": 2.0,
+        "invertir": 0.0,
+        "espejo": 1.0
+      },
+      "geometria": {
+        "forma": "herradura",
+        "anchoM": 3.2,
+        "altoM": 2.3,
+        "globosAncho": 4,
+        "suelo": true
+      },
+      "globo": {
+        "nominal": 12,
+        "inflado": 1,
+        "tamano": 1.14,
+        "ovalo": 1.06,
+        "separacion": 1,
+        "compensacion": 0.85,
+        "variacionTam": 0,
+        "variacionTono": 0.03,
+        "desorden": 0,
+        "brillo": 0.6,
+        "sombra": 0.17,
+        "contorno": 1,
+        "profundidad": 0.8,
+        "semilla": 7
+      },
+      "capas": [],
+      "secciones": [],
+      "materiales": [
+        0,
+        1
+      ]
+    },
+    "resumen": {
+      "total_globos": 88,
+      "filas": 25,
+      "columnas": 4,
+      "largo_m": 4.956611605920646,
+      "ancho_m": 3.2,
+      "alto_m": 2.3,
+      "grosor_m": 0.9357894736842106,
+      "globos_por_metro": 17.754064065638,
+      "conteo": [
+        {
+          "material": 1,
+          "cantidad": 58
+        },
+        {
+          "material": 0,
+          "cantidad": 30
+        }
+      ],
+      "compra": [
+        {
+          "material": 1,
+          "cantidad": 58,
+          "comprar": 63
+        },
+        {
+          "material": 0,
+          "cantidad": 30,
+          "comprar": 33
+        }
+      ],
+      "total_comprar": 96
+    },
+    "avisos": []
+  },
+  "armar_columna": {
+    "operation_schema_version": "omoikane-armado-estructura-result.v1",
+    "accion": "armar",
+    "tipo": "columna",
+    "estructura_id": "EST_02_COLUMNA",
+    "armado": {
+      "version": "armado-columna.v1",
+      "origen": "sugerido",
+      "modo": "altura",
+      "patron": "espiral",
+      "opciones": {
+        "vueltas": 2.0,
+        "inclinacion": 1.0
+      },
+      "cuerpo": {
+        "alto_m": 2.0,
+        "globos_capa": 4,
+        "abajo": 12,
+        "arriba": 12,
+        "escalonado": true,
+        "base": true
+      },
+      "inflado": {
+        "inflado": 1,
+        "tamano": 1.14,
+        "compresion": 0.8,
+        "variacion_tam": 0,
+        "variacion_tono": 0.03,
+        "desorden": 0,
+        "semilla": 7
+      },
+      "remate": {
+        "tipo": "estrella",
+        "tamano": 24,
+        "cantidad": 5,
+        "foil_m": 0.8,
+        "material": 0
+      },
+      "capas": [],
+      "materiales": [
+        0,
+        1
+      ]
+    },
+    "resumen": {
+      "total_globos": 36,
+      "capas": 9,
+      "alto_cuerpo_m": 1.97358,
+      "alto_total_m": 2.75358,
+      "diametro_m": 0.5975515413025478,
+      "conteo": [
+        {
+          "material": 0,
+          "tamano": 12,
+          "cantidad": 18
+        },
+        {
+          "material": 1,
+          "tamano": 12,
+          "cantidad": 18
+        }
+      ],
+      "remate": "Estrella de foil de unos 31 pulg (80 cm)"
+    },
+    "avisos": []
+  },
+  "catalogo_guirnalda": {
+    "operation_schema_version": "omoikane-armado-estructura-result.v1",
+    "accion": "catalogo",
+    "tipo": "guirnalda",
+    "opciones": {
+      "acabados": [
+        {
+          "valor": "mate",
+          "texto": "Mate"
+        },
+        {
+          "valor": "cromado",
+          "texto": "Cromado"
+        },
+        {
+          "valor": "confeti",
+          "texto": "Confeti"
+        },
+        {
+          "valor": "transparente",
+          "texto": "Transparente"
+        }
+      ],
+      "repartos": [
+        {
+          "valor": "azar",
+          "texto": "Al azar",
+          "ayuda": "Mezcla equilibrada: ningún color se repite junto a sí mismo si se puede evitar."
+        },
+        {
+          "valor": "tramos",
+          "texto": "Por tramos",
+          "ayuda": "Un color domina cada tramo del arco, en el orden de la lista."
+        },
+        {
+          "valor": "racimos",
+          "texto": "En racimos",
+          "ayuda": "Cada racimo es de un solo color, como en los arreglos profesionales."
+        }
+      ],
+      "roles": [
+        "normal",
+        "acento"
+      ],
+      "tamanos": [
+        5,
+        9,
+        12,
+        18,
+        24,
+        36
+      ],
+      "largo_m": {
+        "min": 0.8,
+        "max": 10
+      },
+      "grosor_m": {
+        "min": 0.3,
+        "max": 1.4
+      },
+      "altura_m": {
+        "min": 0.0,
+        "max": 4.5
+      },
+      "max_materiales": 8
+    }
+  },
+  "armar_guirnalda": {
+    "operation_schema_version": "omoikane-armado-estructura-result.v1",
+    "accion": "armar",
+    "tipo": "guirnalda",
+    "estructura_id": "EST_03_GUIRNALDA",
+    "armado": {
+      "version": "armado-guirnalda-organica.v1",
+      "origen": "sugerido",
+      "forma": {
+        "largoM": 4.5,
+        "alturaM": 2.2,
+        "pendienteM": 0,
+        "ondaM": 0.12,
+        "ondas": 1.5,
+        "colgadoM": 0,
+        "festones": 1,
+        "carga": 0,
+        "suelo": true,
+        "persona": true
+      },
+      "volumen": {
+        "grosorPatasM": 0.4,
+        "grosorCimaM": 0.62,
+        "irregularidad": 0.4,
+        "relleno": 0.72,
+        "racimo": 4,
+        "salientes": 0.35
+      },
+      "tamanos": {
+        "mezcla": {
+          "5": 30.0,
+          "12": 50.0,
+          "18": 20.0
+        },
+        "grandesAbajo": 0.3,
+        "inflado": 1,
+        "variacion": 0.1
+      },
+      "colores": {
+        "paleta": [
+          {
+            "material": 0,
+            "peso": 60.0,
+            "acabado": "mate",
+            "rol": "normal"
+          },
+          {
+            "material": 1,
+            "peso": 40.0,
+            "acabado": "cromado",
+            "rol": "acento"
+          }
+        ],
+        "reparto": "racimos",
+        "mezcla": 0.5
+      },
+      "adornos": {
+        "follaje": 0.5,
+        "flores": 0
+      },
+      "aspecto": {
+        "brillo": 0.6,
+        "sombra": 0.2,
+        "contorno": 0.8,
+        "profundidad": 0.5,
+        "semilla": 11
+      }
+    },
+    "resumen": {
+      "total_globos": 109,
+      "capas": 2,
+      "largo_m": 4.632615024794405,
+      "ancho_m": 4.5,
+      "alto_m": 2.717751019844505,
+      "grosor_extremos_m": 0.4179073849404803,
+      "grosor_centro_m": 0.6109887078115153,
+      "globos_por_metro": 23.5288275448352,
+      "sueltos": 0,
+      "conteo": [
+        {
+          "material": 0,
+          "tamano": 5,
+          "acabado": "mate",
+          "cantidad": 14
+        },
+        {
+          "material": 0,
+          "tamano": 12,
+          "acabado": "mate",
+          "cantidad": 44
+        },
+        {
+          "material": 0,
+          "tamano": 18,
+          "acabado": "mate",
+          "cantidad": 17
+        },
+        {
+          "material": 0,
+          "tamano": 24,
+          "acabado": "mate",
+          "cantidad": 4
+        },
+        {
+          "material": 1,
+          "tamano": 5,
+          "acabado": "cromado",
+          "cantidad": 20
+        },
+        {
+          "material": 1,
+          "tamano": 12,
+          "acabado": "cromado",
+          "cantidad": 8
+        },
+        {
+          "material": 1,
+          "tamano": 18,
+          "acabado": "cromado",
+          "cantidad": 2
+        }
+      ],
+      "compra": [
+        {
+          "material": 0,
+          "por_tamano": {
+            "5": 14,
+            "12": 44,
+            "18": 17,
+            "24": 4
+          },
+          "cantidad": 79,
+          "comprar": 91
+        },
+        {
+          "material": 1,
+          "por_tamano": {
+            "5": 20,
+            "12": 8,
+            "18": 2
+          },
+          "cantidad": 30,
+          "comprar": 35
+        }
+      ],
+      "total_comprar": 126,
+      "adornos": {
+        "ramas": 2,
+        "flores": 0
+      }
+    },
+    "avisos": []
+  },
+  "completar_receta": {
+    "operation_schema_version": "omoikane-armado-estructura-result.v1",
+    "accion": "completar",
+    "armados": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "tipo": "arco",
+        "clave": "armado_arco",
+        "origen": "receta",
+        "armado": {
+          "version": "armado-arco.v1",
+          "origen": "sugerido",
+          "patron": "espiral",
+          "opciones": {
+            "ancho": 2.0,
+            "inclinacion": 2.0,
+            "inversion": 0.0,
+            "espejo": 0.0
+          },
+          "geometria": {
+            "forma": "herradura",
+            "anchoM": 3.2,
+            "altoM": 2.3,
+            "globosAncho": 4,
+            "suelo": true
+          },
+          "globo": {
+            "nominal": 12,
+            "inflado": 1,
+            "tamano": 1.14,
+            "ovalo": 1.06,
+            "separacion": 1,
+            "compensacion": 0.85,
+            "variacionTam": 0,
+            "variacionTono": 0.03,
+            "desorden": 0,
+            "brillo": 0.6,
+            "sombra": 0.17,
+            "contorno": 1,
+            "profundidad": 0.8,
+            "semilla": 7
+          },
+          "capas": [],
+          "secciones": [],
+          "materiales": [
+            0,
+            1
+          ]
+        },
+        "avisos": []
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA",
+        "tipo": "columna",
+        "clave": "armado_columna",
+        "origen": "receta",
+        "armado": {
+          "version": "armado-columna.v1",
+          "origen": "sugerido",
+          "modo": "altura",
+          "patron": "solido",
+          "opciones": {},
+          "cuerpo": {
+            "alto_m": 2.3,
+            "globos_capa": 4,
+            "abajo": 12,
+            "arriba": 12,
+            "escalonado": true,
+            "base": true
+          },
+          "inflado": {
+            "inflado": 1,
+            "tamano": 1.14,
+            "compresion": 0.8,
+            "variacion_tam": 0,
+            "variacion_tono": 0.03,
+            "desorden": 0,
+            "semilla": 7
+          },
+          "remate": {
+            "tipo": "globo",
+            "tamano": 24,
+            "cantidad": 5,
+            "foil_m": 0.7,
+            "material": 0
+          },
+          "capas": [],
+          "materiales": [
+            0
+          ]
+        },
+        "avisos": []
+      },
+      {
+        "estructura_id": "EST_03_GUIRNALDA",
+        "tipo": "guirnalda",
+        "clave": "armado_guirnalda_organica",
+        "origen": "receta",
+        "armado": {
+          "version": "armado-guirnalda-organica.v1",
+          "origen": "sugerido",
+          "forma": {
+            "largoM": 4.5,
+            "alturaM": 2.2,
+            "pendienteM": 0,
+            "ondaM": 0.12,
+            "ondas": 1.5,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0,
+            "suelo": true,
+            "persona": true
+          },
+          "volumen": {
+            "grosorPatasM": 0.4,
+            "grosorCimaM": 0.62,
+            "irregularidad": 0.4,
+            "relleno": 0.72,
+            "racimo": 4,
+            "salientes": 0.35
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 32.0,
+              "12": 45.0,
+              "18": 18.0,
+              "24": 5.0
+            },
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "colores": {
+            "paleta": [
+              {
+                "material": 0,
+                "peso": 50.0,
+                "acabado": "mate",
+                "rol": "normal"
+              },
+              {
+                "material": 1,
+                "peso": 50.0,
+                "acabado": "cromado",
+                "rol": "normal"
+              }
+            ],
+            "reparto": "azar",
+            "mezcla": 0.5
+          },
+          "adornos": {
+            "follaje": 0.5,
+            "flores": 0
+          },
+          "aspecto": {
+            "brillo": 0.6,
+            "sombra": 0.2,
+            "contorno": 0.8,
+            "profundidad": 0.5,
+            "semilla": 11
+          }
+        },
+        "avisos": []
+      }
+    ]
+  }
+}

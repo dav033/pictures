@@ -360,6 +360,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     const patron = patronesAplicados.get(estructura.estructura_id);
     const armado = armadosPorEstructura.get(estructura.estructura_id);
     const armadoGuirnalda = armadosGuirnaldaPorEstructura.get(estructura.estructura_id);
+    // Numbered legend of the pattern: material index + 1, in `materiales` order,
+    // each number with the color Python gave it (what is bought after a replacement).
+    const leyenda = leyendaPatron(declarada?.materiales ?? [], estructura.lineas, patron?.conteo);
     return {
       estructura,
       declarada,
@@ -367,9 +370,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       paraDescribir,
       descripcion: describirEstructuraCliente(paraDescribir, "definido"),
       colores: coloresCliente(estructura.lineas),
-      // Numbered legend of the pattern: material index + 1, in `materiales` order,
-      // each number with the color Python gave it (what is bought after a replacement).
-      leyenda: leyendaPatron(declarada?.materiales ?? [], estructura.lineas, patron?.conteo),
+      leyenda,
       patron,
       admitePatron: Boolean(declarada && admitePatron(estructura.tipo, declarada.materiales.length)),
       // A bouquet (official structure) can carry an assembly; its numbered legend uses the codes Python gave.
@@ -381,6 +382,16 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       // What the pattern's drawings show: with a garland assembly, the clusters that are really built
       // (`armados_guirnalda[].racimos`), not the full pattern grid (E5 `filas_de_racimos`).
       patronDibujo: patron && armadoGuirnalda ? patronSobreArmado(patron, armadoGuirnalda) : patron,
+      /**
+       * El armado del arco que trae la pieza (ADR-0034). Con él, el bloque del arco toma el sitio del
+       * dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia.
+       */
+      armadoArco: declarada?.armado_arco,
+      /**
+       * Un tono `#rrggbb` por material, en el orden de `materiales`, ya resuelto por el catálogo: el
+       * motor pinta con ellos. Nunca cuenta con ellos — el conteo y la compra van por índice.
+       */
+      tonos: leyenda.map((color) => color.hex),
     };
   });
   const nombrePiezaPlan = (estructuraId: string): string => {
@@ -1263,7 +1274,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           {!editorAbierto && errorEdicion && !seleccionCatalogo && <p role="alert" className="rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
 
           <ol className="space-y-2.5" aria-label="Piezas de la decoración">
-            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado, armadoGuirnalda, leyendaGuirnalda: leyendaDeGuirnalda, patronDibujo }, indice) => (
+            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado, armadoGuirnalda, leyendaGuirnalda: leyendaDeGuirnalda, patronDibujo, armadoArco, tonos }, indice) => (
               <DetalleEstructura
                 key={estructura.estructura_id}
                 idBase={`${editorId}-pieza-${indice}`}
@@ -1308,6 +1319,13 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                   onEditar: editorDisponible && declarada ? () => abrirEditorGuirnalda(estructura.estructura_id) : undefined,
                   onHojaArmado: () => setHojaGuirnalda(estructura.estructura_id),
                   ocupado: guardandoAjustes,
+                } : undefined}
+                // El bloque pide su dibujo a /api/plan-armado-arco con el plan a la vista: el SVG es
+                // derivado y no viaja dentro del plan ni entra en `plan_hash` (ADR-0034, consecuencia 2).
+                arco={armadoArco ? {
+                  armado: armadoArco,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
                 } : undefined}
                 vistaReparto={editorDisponible ? {
                   pedir: (participaciones, signal) => pedirVistaPatron(peticionVistaPieza({ plan: plan.plan, estructuraId: estructura.estructura_id, lineas: estructura.lineas }, { patron_color: null, participaciones: [...participaciones] }), { signal }),

@@ -22,7 +22,10 @@ import {
   PlanDecoracionSchema,
   PropCatalogoSchema,
 } from "@/lib/plan/tipos";
+import { ArcoResueltoSchema } from "@/lib/plan/armado-arco";
 import { ArmadoBouquetResueltoSchema, PistaArmadoSchema } from "@/lib/plan/armado-bouquet";
+import { ColumnaResueltaSchema } from "@/lib/plan/armado-columna";
+import { GuirnaldaOrganicaResueltaSchema } from "@/lib/plan/armado-guirnalda-organica";
 import { ArmadoGuirnaldaResueltoSchema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
 import { ConteoAplicadoSchema, PistaConteoSchema } from "@/lib/plan/conteo-referencia";
 import { PatronColorResueltoSchema, PistaPatronSchema } from "@/lib/plan/patron-color";
@@ -415,6 +418,20 @@ export const PlanResueltoV1Schema = z.object({
    * cuando no hay ninguno.
    */
   armados_guirnalda: z.array(ArmadoGuirnaldaResueltoSchema).optional(),
+  /**
+   * Cada arco y cada columna resueltos por el motor migrado del diseñador
+   * (ADR-0034): cada globo colocado, el conteo, lo que se compra y los avisos,
+   * escritos por Python. Fuera del snapshot que firma `plan_hash`, como los
+   * demás resueltos; se omiten cuando el plan no lleva ninguno.
+   *
+   * El **dibujo no viaja aquí**: son decenas de kilobytes por pieza y se pide
+   * cuando hace falta a `/api/plan-armado-arco`, que devuelve el mismo SVG que
+   * emite el motor. Meterlo en cada resolución engordaría todas las respuestas
+   * para una imagen que la mayoría de las llamadas no mira.
+   */
+  armados_arco: z.array(ArcoResueltoSchema).optional(),
+  armados_columna: z.array(ColumnaResueltaSchema).optional(),
+  armados_guirnalda_organica: z.array(GuirnaldaOrganicaResueltaSchema).optional(),
   /**
    * Qué hizo Python con el conteo de la foto de cada estructura y por qué
    * (ADR-0031). Fuera del snapshot que firma `plan_hash`; se omite sin conteos.

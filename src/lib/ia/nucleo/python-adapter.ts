@@ -28,7 +28,53 @@ import {
   type ArmadoGuirnaldaV1,
   type PistaGuirnalda,
 } from "@/lib/plan/armado-guirnalda";
+import {
+  ArcoResueltoSchema,
+  ArmadoArcoV1Schema,
+  VistaArcoSchema,
+  type ArcoResuelto,
+  type ArmadoArcoV1,
+  type VistaArco,
+} from "@/lib/plan/armado-arco";
 import { OpcionesArmadoGuirnaldaSchema, type OpcionesArmadoGuirnalda } from "@/lib/plan/opciones-armado-guirnalda";
+import {
+  LimitesArcoSchema,
+  OpcionesArmadoArcoSchema,
+  type LimitesArco,
+  type OpcionesArmadoArco,
+} from "@/lib/plan/opciones-armado-arco";
+import {
+  ArmadoGuirnaldaOrganicaV1Schema,
+  GuirnaldaOrganicaResueltaSchema,
+  type ArmadoGuirnaldaOrganicaV1,
+  type GuirnaldaOrganicaResuelta,
+} from "@/lib/plan/armado-guirnalda-organica";
+import {
+  LimitesGuirnaldaOrganicaSchema,
+  OpcionesArmadoGuirnaldaOrganicaSchema,
+  VistaGuirnaldaOrganicaSchema,
+  type LimitesGuirnaldaOrganica,
+  type OpcionesArmadoGuirnaldaOrganica,
+  type VistaGuirnaldaOrganica,
+} from "@/lib/plan/opciones-armado-guirnalda-organica";
+import {
+  ArmadoCompletadoSchema,
+  ArmadoDeIaSchema,
+  CatalogoArmadoSchema,
+  type AdornosPedidos,
+  type ArmadoCompletado,
+  type ArmadoDeIa,
+  type CatalogoArmado,
+  type ColorPedido,
+  type FormaPedida,
+  type GeometriaPedida,
+  type PesoTamano,
+  type PiezaArmado,
+  type RematePedido,
+  type TipoArmadoMotor,
+  type VolumenPedido,
+} from "@/lib/plan/armado-estructura-ia";
+import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
 import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import { CotizacionProfesionalResultadoSchema, type CotizacionProfesionalResultado, type EntradaCotizacionProfesional } from "@/lib/cotizacion/profesional";
@@ -88,6 +134,13 @@ export const PYTHON_PLAN_ARMADO_PATH = "/internal/v1/plan/armado-bouquet";
 export const PYTHON_PLAN_ARMADO_SCOPE = "plan.armado_bouquet";
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_PATH = "/internal/v1/plan/armado-guirnalda";
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_SCOPE = "plan.armado_guirnalda";
+export const PYTHON_PLAN_ARMADO_ARCO_PATH = "/internal/v1/plan/armado-arco";
+export const PYTHON_PLAN_ARMADO_ARCO_SCOPE = "plan.armado_arco";
+/** The organic garland of the designer's engine. It does NOT replace PYTHON_PLAN_ARMADO_GUIRNALDA_PATH (ADR-0032, clusters and toppers): both coexist on the same piece. */
+export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_PATH = "/internal/v1/plan/armado-guirnalda-organica";
+export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE = "plan.armado_guirnalda_organica";
+export const PYTHON_OMOIKANE_ARMADO_PATH = "/internal/v1/omoikane/armado-estructura";
+export const PYTHON_OMOIKANE_ARMADO_SCOPE = "omoikane.armado_estructura";
 export const PYTHON_COTIZACION_PROFESIONAL_PATH = "/internal/v1/plan/cotizacion-profesional";
 export const PYTHON_COTIZACION_PROFESIONAL_SCOPE = "plan.cotizacion_profesional";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
@@ -166,6 +219,35 @@ export type PythonPlanArmadoDomainCode = (typeof PYTHON_PLAN_ARMADO_DOMAIN_CODES
  * editor asks for them with `armado_guirnalda: null`.
  */
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
+
+/**
+ * Stable domain error codes reported by POST /internal/v1/plan/armado-arco
+ * (ADR-0034). The same three as the garland's: its `armado_invalido` carries
+ * the structure, the stable `motivo` and Python's `mensaje`
+ * (`domainDetails`), and never the options -- the editor asks for them with
+ * `armado_arco: null`.
+ */
+export const PYTHON_PLAN_ARMADO_ARCO_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
+
+/**
+ * Stable domain error codes reported by POST
+ * /internal/v1/plan/armado-guirnalda-organica (ADR-0034). The same three as
+ * the arch's: its `armado_invalido` carries the structure, the stable
+ * `motivo` and Python's `mensaje` (`domainDetails`), and never the options --
+ * the editor asks for them with `armado_guirnalda_organica: null`.
+ */
+export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
+
+/**
+ * Stable domain error codes reported by POST /internal/v1/omoikane/armado-estructura
+ * (ADR-0034 §5, the chat agent's engine tools). `armado_invalido` is the only
+ * one the model can act on, and it carries the stable `motivo` and Python's
+ * `mensaje` (`domainDetails`) so the refusal that reaches the model says what
+ * did not hold -- an unknown pattern, a color the piece does not have, a
+ * pattern that needs more colors than the piece has.
+ */
+export const PYTHON_OMOIKANE_ARMADO_DOMAIN_CODES = ["armado_invalido", "invalid_plan"] as const;
+export type PythonOmoikaneArmadoDomainCode = (typeof PYTHON_OMOIKANE_ARMADO_DOMAIN_CODES)[number];
 
 /**
  * Stable domain error codes reported by POST /internal/v1/plan/patron (ADR-0028 §10).
@@ -1497,6 +1579,171 @@ export interface PythonPlanArmadoGuirnaldaResult {
   replayed?: boolean;
 }
 
+export { LimitesArcoSchema, OpcionesArmadoArcoSchema, type LimitesArco, type OpcionesArmadoArco };
+
+export interface PythonPlanArmadoArcoInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /** `null` asks for the recipe of the arch (ADR-0034). */
+  armadoArco: ArmadoArcoV1 | null;
+  /**
+   * The piece's tones as `#rrggbb`, one per material and in its order, as the
+   * browser holds them once the catalog resolved them. Optional: without them
+   * Python draws in its neutral grey and says so in the arch's `avisos`. They
+   * only paint -- the count and the purchase go by material index.
+   */
+  colores?: readonly string[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanArmadoArcoResult {
+  arco: ArcoResuelto;
+  /** The engine's own drawing: the canvas side and the `<svg>` interior. Derived, never part of `plan_hash`. */
+  grafica: VistaArco["grafica"];
+  /** The assembly it was resolved with, so the editor can keep the recipe it asked for. */
+  armado: ArmadoArcoV1;
+  opciones: OpcionesArmadoArco;
+  limites: LimitesArco;
+  replayed?: boolean;
+}
+
+export {
+  LimitesGuirnaldaOrganicaSchema,
+  OpcionesArmadoGuirnaldaOrganicaSchema,
+  type LimitesGuirnaldaOrganica,
+  type OpcionesArmadoGuirnaldaOrganica,
+  type VistaGuirnaldaOrganica,
+};
+
+export interface PythonPlanArmadoGuirnaldaOrganicaInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /** `null` asks for the recipe of the garland (ADR-0034). */
+  armadoGuirnaldaOrganica: ArmadoGuirnaldaOrganicaV1 | null;
+  /**
+   * The piece's tones as `#rrggbb`, one per material and in its order, as the
+   * browser holds them once the catalog resolved them. Optional: without them
+   * Python draws in its neutral grey and says so in the garland's `avisos`.
+   * They only paint -- the count and the purchase go by material index.
+   */
+  colores?: readonly string[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanArmadoGuirnaldaOrganicaResult {
+  guirnalda: GuirnaldaOrganicaResuelta;
+  /** The engine's own drawing. Its canvas is not square, so both sides travel. Derived, never part of `plan_hash`. */
+  grafica: VistaGuirnaldaOrganica["grafica"];
+  /** The assembly it was resolved with, so the editor can keep the recipe it asked for. */
+  armado: ArmadoGuirnaldaOrganicaV1;
+  opciones: OpcionesArmadoGuirnaldaOrganica;
+  limites: LimitesGuirnaldaOrganica;
+  replayed?: boolean;
+}
+
+/**
+ * The chat agent's engine tools (ADR-0034 §5). Three calls on one operation
+ * because they are the same work seen from three moments of the turn: what the
+ * model may use, one assembly it wants to try, and -- when the plan is
+ * confirmed -- the assembly of every arch and column that has none.
+ *
+ * Python decides all three. Next sends the facts (`pieza`) and writes the
+ * answer into the plan; it never picks a pattern nor fills a default.
+ */
+interface OmoikaneArmadoComun {
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonOmoikaneCatalogoArmadoInput extends OmoikaneArmadoComun {
+  tipo: TipoArmadoMotor;
+}
+
+export interface PythonOmoikaneArmarEstructuraInput extends OmoikaneArmadoComun {
+  /** What the piece says of itself; the geometry defaults come from here. */
+  pieza: PiezaArmado;
+  /**
+   * Arch and column only: an organic garland has no pattern. What defines it is its line, its volume, its
+   * size mix and its palette, which travel in the fields below.
+   */
+  patron?: string;
+  /** Arch and column: material indices of the structure, in order; the first is the main color. */
+  materiales?: readonly number[];
+  /** Arch and column: the pattern's own knobs. Out of range they are clamped by the engine, with a notice. */
+  opciones?: Readonly<Record<string, number>>;
+  geometria?: GeometriaPedida;
+  /** Column only. */
+  remate?: RematePedido;
+  /** Garland only: each color with its finish and its role. */
+  paleta?: readonly ColorPedido[];
+  reparto?: string;
+  mezclaColores?: number;
+  forma?: FormaPedida;
+  volumen?: VolumenPedido;
+  tamanos?: readonly PesoTamano[];
+  adornos?: AdornosPedidos;
+  /** The structure of the plan being assembled, when the turn already has one; travels for the refusal's text. */
+  estructuraId?: string;
+}
+
+export interface PythonOmoikaneCompletarArmadosInput extends OmoikaneArmadoComun {
+  plan: PlanDecoracion;
+  /** What the model assembled during the turn, to be revalidated against the real piece. */
+  armados?: readonly {
+    estructura_id: string;
+    tipo: TipoArmadoMotor;
+    armado: ArmadoArcoV1 | ArmadoColumnaV1 | ArmadoGuirnaldaOrganicaV1;
+  }[];
+}
+
+export interface PythonOmoikaneCatalogoArmadoResult {
+  catalogo: CatalogoArmado;
+  replayed?: boolean;
+}
+
+export interface PythonOmoikaneArmarEstructuraResult {
+  armado: ArmadoDeIa;
+  replayed?: boolean;
+}
+
+export interface PythonOmoikaneCompletarArmadosResult {
+  armados: ArmadoCompletado[];
+  replayed?: boolean;
+}
+
+const omoikaneArmadoCatalogoResultSchema = z.object({
+  operation_schema_version: z.literal("omoikane-armado-estructura-result.v1"),
+  accion: z.literal("catalogo"),
+}).and(CatalogoArmadoSchema);
+
+const omoikaneArmadoArmarResultSchema = z.object({
+  operation_schema_version: z.literal("omoikane-armado-estructura-result.v1"),
+  accion: z.literal("armar"),
+}).and(ArmadoDeIaSchema);
+
+const omoikaneArmadoCompletarResultSchema = z.object({
+  operation_schema_version: z.literal("omoikane-armado-estructura-result.v1"),
+  accion: z.literal("completar"),
+  armados: z.array(ArmadoCompletadoSchema).max(8),
+}).strict();
+
 const rerankPayloadResultSchema = z.object({
   order: z.array(z.string().min(1)),
   scores: z.record(z.string().min(1), z.number().finite()),
@@ -1692,6 +1939,36 @@ const planArmadoGuirnaldaPayloadResultSchema = z.object({
   operation_schema_version: z.literal("plan-armado-guirnalda-result.v1"),
   armado: ArmadoGuirnaldaResueltoSchema,
   opciones: OpcionesArmadoGuirnaldaSchema,
+}).strict();
+
+/**
+ * `plan-armado-arco-result.v1`: the resolved arch and its drawing exactly as
+ * `VistaArcoSchema` publishes them (its own `grafica` shape, so the published
+ * contract stays the single owner of that form), plus the assembly it was
+ * resolved with and what the editor may offer for the piece.
+ */
+const planArmadoArcoPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-armado-arco-result.v1"),
+  arco: ArcoResueltoSchema,
+  grafica: VistaArcoSchema.shape.grafica,
+  armado: ArmadoArcoV1Schema,
+  opciones: OpcionesArmadoArcoSchema,
+  limites: LimitesArcoSchema,
+}).strict();
+
+/**
+ * `plan-armado-guirnalda-organica-result.v1`: the resolved garland and its
+ * drawing exactly as `VistaGuirnaldaOrganicaSchema` publishes them (its own
+ * `grafica` shape, so that file stays the single owner of that form), plus
+ * the assembly it was resolved with and what the editor may offer.
+ */
+const planArmadoGuirnaldaOrganicaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-armado-guirnalda-organica-result.v1"),
+  guirnalda: GuirnaldaOrganicaResueltaSchema,
+  grafica: VistaGuirnaldaOrganicaSchema.shape.grafica,
+  armado: ArmadoGuirnaldaOrganicaV1Schema,
+  opciones: OpcionesArmadoGuirnaldaOrganicaSchema,
+  limites: LimitesGuirnaldaOrganicaSchema,
 }).strict();
 
 const imageGenerateUsageSchema = z.object({
@@ -2784,6 +3061,209 @@ export async function llamarPythonPlanArmadoGuirnalda(input: PythonPlanArmadoGui
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
   const resultado = { armado: parsed.data.armado, opciones: parsed.data.opciones };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/**
+ * Resolves one arch's assembly, or asks for its recipe with `null`
+ * (ADR-0034), for the arch editor, and brings back **the SVG the engine
+ * itself emitted**. No catalog and no side effect: the plan says what the
+ * piece is and `colores` only paint it. The drawing is derived -- it travels
+ * on this route alone and never enters the plan, the snapshot or `plan_hash`.
+ */
+export async function llamarPythonPlanArmadoArco(input: PythonPlanArmadoArcoInput): Promise<PythonPlanArmadoArcoResult> {
+  const { plan, estructuraId, armadoArco, colores, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-armado-arco.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    armado_arco: armadoArco,
+    ...(colores === undefined ? {} : { colores: [...colores] }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_ARMADO_ARCO_PATH, PYTHON_PLAN_ARMADO_ARCO_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_ARMADO_ARCO_SCOPE],
+  });
+  const parsed = planArmadoArcoPayloadResultSchema.safeParse(response.payload);
+  // A given assembly comes back as given: the engine corrects a draft in `avisos`, never behind the editor's back.
+  if (!parsed.success || (armadoArco !== null && jsonOrdenado(parsed.data.armado) !== jsonOrdenado(armadoArco))) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = {
+    arco: parsed.data.arco,
+    grafica: parsed.data.grafica,
+    armado: parsed.data.armado,
+    opciones: parsed.data.opciones,
+    limites: parsed.data.limites,
+  };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/**
+ * One call of the chat agent's engine operation (ADR-0034 §5). The three
+ * actions share the signing, the scope and the response envelope; what each
+ * one answers is validated by its own schema at the call site.
+ */
+async function llamarOmoikaneArmado(
+  operationBody: JsonObject,
+  comun: OmoikaneArmadoComun,
+): Promise<PythonOperationResponse> {
+  return llamarPythonOperacion(PYTHON_OMOIKANE_ARMADO_PATH, PYTHON_OMOIKANE_ARMADO_SCOPE, {
+    ...comun,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_OMOIKANE_ARMADO_SCOPE],
+  });
+}
+
+/**
+ * What the model may use for a piece: the fourteen arch patterns (or the nine
+ * of the column) with their knobs, ranges and color minimums, straight out of
+ * the engine. A read: no plan, no catalog and no side effect.
+ */
+export async function llamarPythonOmoikaneCatalogoArmado(
+  input: PythonOmoikaneCatalogoArmadoInput,
+): Promise<PythonOmoikaneCatalogoArmadoResult> {
+  const { tipo, ...rest } = input;
+  const response = await llamarOmoikaneArmado(
+    { schema_version: "omoikane-armado-estructura.v1" as const, accion: "catalogo" as const, tipo },
+    rest,
+  );
+  const parsed = omoikaneArmadoCatalogoResultSchema.safeParse(response.payload);
+  // The answer is about the type asked for.
+  if (!parsed.success || parsed.data.tipo !== tipo) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = { catalogo: { tipo: parsed.data.tipo, opciones: parsed.data.opciones } as CatalogoArmado };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/**
+ * One assembly for one piece, validated by the engine's gate and resolved so
+ * the answer says what it really carries (balloons, count per material,
+ * purchase and measures) with its notices. A refusal travels as
+ * `armado_invalido` with its stable `motivo`; nothing half-assembled comes
+ * back. The drawing does not travel: the model does not look at pixels.
+ */
+export async function llamarPythonOmoikaneArmarEstructura(
+  input: PythonOmoikaneArmarEstructuraInput,
+): Promise<PythonOmoikaneArmarEstructuraResult> {
+  const { pieza, patron, materiales, opciones, geometria, remate, paleta, reparto, mezclaColores, forma, volumen, tamanos, adornos, estructuraId, ...rest } = input;
+  const response = await llamarOmoikaneArmado(
+    {
+      schema_version: "omoikane-armado-estructura.v1" as const,
+      accion: "armar" as const,
+      pieza,
+      ...(patron === undefined ? {} : { patron }),
+      ...(materiales === undefined ? {} : { materiales: [...materiales] }),
+      ...(opciones === undefined ? {} : { opciones: { ...opciones } }),
+      ...(geometria === undefined ? {} : { geometria }),
+      ...(remate === undefined ? {} : { remate }),
+      ...(paleta === undefined ? {} : { paleta: paleta.map((color) => ({ ...color })) }),
+      ...(reparto === undefined ? {} : { reparto }),
+      ...(mezclaColores === undefined ? {} : { mezcla_colores: mezclaColores }),
+      ...(forma === undefined ? {} : { forma }),
+      ...(volumen === undefined ? {} : { volumen }),
+      ...(tamanos === undefined ? {} : { tamanos: tamanos.map((peso) => ({ ...peso })) }),
+      ...(adornos === undefined ? {} : { adornos }),
+      ...(estructuraId === undefined ? {} : { estructura_id: estructuraId }),
+    },
+    rest,
+  );
+  const parsed = omoikaneArmadoArmarResultSchema.safeParse(response.payload);
+  // The answer is about the piece asked for, and -- where there is one -- with the pattern asked for. A
+  // garland has none: what it was asked for is checked by its palette instead.
+  const coherente = parsed.success
+    && parsed.data.tipo === pieza.tipo
+    && (parsed.data.tipo === "guirnalda"
+      ? parsed.data.armado.colores.paleta.length === (paleta?.length ?? parsed.data.armado.colores.paleta.length)
+      : parsed.data.armado.patron === patron);
+  if (!parsed.success || !coherente) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  // Only the assembly travels on: the envelope's own fields (version, action) stay at the boundary. The
+  // branches are spelled out so each variant keeps its own type instead of collapsing to a union.
+  const comun = { avisos: parsed.data.avisos, ...(parsed.data.estructura_id === undefined ? {} : { estructura_id: parsed.data.estructura_id }) };
+  const armado: ArmadoDeIa = parsed.data.tipo === "arco"
+    ? { tipo: "arco", armado: parsed.data.armado, resumen: parsed.data.resumen, ...comun }
+    : parsed.data.tipo === "columna"
+      ? { tipo: "columna", armado: parsed.data.armado, resumen: parsed.data.resumen, ...comun }
+      : { tipo: "guirnalda", armado: parsed.data.armado, resumen: parsed.data.resumen, ...comun };
+  const resultado = { armado };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/**
+ * The assembly of every arch, column and organic garland of the plan: the one
+ * the model assembled when it holds against the real piece, and the engine's
+ * recipe when it does not. Python revalidates both what the model assembled
+ * during the turn and what it wrote straight into the plan -- only here is the
+ * piece's material count known, so only here can an index be checked.
+ *
+ * It never reads nor writes `armado_guirnalda` (ADR-0032): that field has its
+ * own owner in the resolution, and a garland may carry both.
+ */
+export async function llamarPythonOmoikaneCompletarArmados(
+  input: PythonOmoikaneCompletarArmadosInput,
+): Promise<PythonOmoikaneCompletarArmadosResult> {
+  const { plan, armados, ...rest } = input;
+  const response = await llamarOmoikaneArmado(
+    {
+      schema_version: "omoikane-armado-estructura.v1" as const,
+      accion: "completar" as const,
+      plan,
+      ...(armados === undefined || armados.length === 0
+        ? {}
+        : { armados: armados.map((propuesto) => ({ ...propuesto })) }),
+    },
+    rest,
+  );
+  const parsed = omoikaneArmadoCompletarResultSchema.safeParse(response.payload);
+  if (!parsed.success) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = { armados: parsed.data.armados as ArmadoCompletado[] };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/**
+ * Resolves one garland's assembly with the designer's engine, or asks for its
+ * recipe with `null` (ADR-0034), and brings back **the SVG the engine itself
+ * emitted**. It does NOT replace `llamarPythonPlanArmadoGuirnalda` (ADR-0032,
+ * clusters and toppers): both describe the same piece from different angles
+ * and coexist. No catalog and no side effect: the plan says what the piece is
+ * and `colores` only paint it. The drawing is derived -- it travels on this
+ * route alone and never enters the plan, the snapshot or `plan_hash`.
+ */
+export async function llamarPythonPlanArmadoGuirnaldaOrganica(input: PythonPlanArmadoGuirnaldaOrganicaInput): Promise<PythonPlanArmadoGuirnaldaOrganicaResult> {
+  const { plan, estructuraId, armadoGuirnaldaOrganica, colores, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-armado-guirnalda-organica.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    armado_guirnalda_organica: armadoGuirnaldaOrganica,
+    ...(colores === undefined ? {} : { colores: [...colores] }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_PATH, PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE],
+  });
+  const parsed = planArmadoGuirnaldaOrganicaPayloadResultSchema.safeParse(response.payload);
+  // A given assembly comes back as given: the engine corrects a draft in `avisos`, never behind the editor's back.
+  if (!parsed.success || (armadoGuirnaldaOrganica !== null && jsonOrdenado(parsed.data.armado) !== jsonOrdenado(armadoGuirnaldaOrganica))) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = {
+    guirnalda: parsed.data.guirnalda,
+    grafica: parsed.data.grafica,
+    armado: parsed.data.armado,
+    opciones: parsed.data.opciones,
+    limites: parsed.data.limites,
+  };
   return response.replayed ? { ...resultado, replayed: true } : resultado;
 }
 
