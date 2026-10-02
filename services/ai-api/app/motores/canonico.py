@@ -29,14 +29,11 @@ PREFIJO = "sx:"
 
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
-TABLA = (
-    Path(__file__).resolve().parents[4]
-    / "contracts"
-    / "domain"
-    / "v1"
-    / "sempertex"
-    / "tabla-color.json"
-)
+#: La copia de la tabla que viaja DENTRO de ``app/``: la imagen de producción solo lleva ``services/ai-api``, así
+#: que desde ahí no existe ``contracts/``. Antes la ruta subía cuatro directorios hasta la raíz del repo y la
+#: imagen no arrancaba (``IndexError`` al importar, 2026-10-02). ``tests/test_canonico_tabla.py`` exige que sea
+#: idéntica a la del contrato, así que no se puede quedar atrás sin que CI lo diga.
+TABLA = Path(__file__).resolve().with_name("tabla-color.json")
 
 
 @lru_cache(maxsize=1)
