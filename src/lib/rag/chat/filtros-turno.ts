@@ -19,7 +19,9 @@ import { extraerFiltrosDurosBusqueda, type FiltrosDurosBusqueda } from "@/lib/ra
  * classic R-12 structure (real run 70b491fc). The customer's mandatory sizes
  * are still enforced on the plan (`restricciones.tamanos`).
  *
- * Colors a later customer message withdrew are not filters either.
+ * Colors a later customer message withdrew are not filters either, and a
+ * color, finish, shape or category that only the brief says is not a filter:
+ * the model writes the brief too (2026-10-05).
  */
 export function filtrosDurosDeBusqueda(input: {
   mensaje: string;
@@ -39,10 +41,21 @@ export function filtrosDurosDeBusqueda(input: {
   const solicitud = input.solicitudOriginal.trim();
   const delTurno = extraerFiltrosDurosBusqueda(solicitud, input.brief);
   const deLaBusqueda = extraerFiltrosDurosBusqueda(input.mensaje, {});
+  // El brief también lo escribe el modelo (`guardar_brief`), y vuelve en cada turno. Con una foto y sin
+  // texto guardó «dorado reflex» en `estilo`: `reflex` quedó de filtro duro —que no se relaja— en todas las
+  // búsquedas del turno, el globo transparente Fashion que la foto pedía no salió nunca y la propuesta no
+  // cerró (pruebas del 2026-10-05). Un color, un acabado, una forma o una categoría del brief solo filtran
+  // si el cliente los escribió; el evento y el presupuesto siguen saliendo del brief.
+  const delCliente = extraerFiltrosDurosBusqueda(solicitud, {});
+  const dichos = <T>(valores: readonly T[], cliente: readonly T[]) => valores.filter((valor) => cliente.includes(valor));
   const fuera = new Set((input.coloresRetirados ?? []).map(colorDeCatalogo));
+  const colores = dichos(delTurno.colores, delCliente.colores);
   return {
     ...delTurno,
-    colores: fuera.size ? delTurno.colores.filter((color) => !fuera.has(colorDeCatalogo(color))) : delTurno.colores,
+    colores: fuera.size ? colores.filter((color) => !fuera.has(colorDeCatalogo(color))) : colores,
+    acabados: dichos(delTurno.acabados, delCliente.acabados),
+    formas: dichos(delTurno.formas, delCliente.formas),
+    categorias: dichos(delTurno.categorias, delCliente.categorias),
     diametros_pulgadas: deLaBusqueda.diametros_pulgadas.filter((diametro) => delTurno.diametros_pulgadas.includes(diametro)),
   };
 }

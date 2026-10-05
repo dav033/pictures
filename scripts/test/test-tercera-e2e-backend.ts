@@ -309,8 +309,14 @@ async function main(): Promise<void> {
   assert.deepEqual(soloFoto.acabados, [], "the model's own finish is not a customer constraint when the customer only sent a photo");
   assert.deepEqual(soloFoto.colores, [], "nor is the color it wrote: photo colors travel as context, never as a hard filter");
   assert.equal(avisoFiltrosBusqueda(soloFoto), null, "a search with no customer filter is not reported as limited");
-  // El brief sigue mandando lo que el cliente sí dijo, aunque no escribiera solicitud.
-  assert.ok(filtrosDurosDeBusqueda({ mensaje: "globo latex redondo reflex dorado", solicitudOriginal: "", brief: { colores: ["azul"] } as never }).colores.includes("azul"), "the brief still locks what the customer stated");
+  // El brief lo escribe el modelo (`guardar_brief`), así que manda solo lo que el cliente también escribió: la
+  // solicitud son todos sus mensajes (`estadoDelTurno`). Con una foto y sin texto guardó «dorado reflex» y
+  // `reflex` dejó fuera todo producto Fashion del turno, el transparente que pedía la foto incluido (2026-10-05).
+  assert.deepEqual(filtrosDurosDeBusqueda({ mensaje: "globo latex redondo reflex dorado", solicitudOriginal: "", brief: { colores: ["azul"] } as never }).colores, [], "a color only the brief says is the model's, not the customer's");
+  assert.ok(filtrosDurosDeBusqueda({ mensaje: "globo latex redondo reflex dorado", solicitudOriginal: "lo quiero en azul", brief: { colores: ["azul"] } as never }).colores.includes("azul"), "the brief still locks what the customer stated");
+  const briefDelModelo = filtrosDurosDeBusqueda({ mensaje: "globo latex redondo fashion transparente", solicitudOriginal: "Adjunto imágenes de referencia del estilo que busco.", brief: { estilo: "Elegante y lujoso con tonos azul navy, champagne y dorado reflex" } as never });
+  assert.deepEqual(briefDelModelo.acabados, [], "the model's 'dorado reflex' in the brief is not a finish filter");
+  assert.deepEqual(briefDelModelo.colores, [], "nor are the photo colors it copied into the brief");
   ok("D3: el filtro de tamaño sale de cada búsqueda, no de la solicitud original");
 
   // ---------------------------------------------------------------------------
