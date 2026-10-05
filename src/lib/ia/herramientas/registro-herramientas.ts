@@ -760,6 +760,21 @@ export function pistasConteoDelPlan(plan: Pick<PlanDecoracion, "estructuras">, b
   return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
 }
 
+/**
+ * Los avisos de Python que cuentan cómo quedó el reparto de color de una pieza (`plan._color_warnings` y
+ * `patron_color`, 2026-10-05). No son algo que el modelo pueda corregir volviendo a confirmar: un arco clásico
+ * reparte su espiral por igual pida lo que pida la participación, y un patrón sin material para un acento lo
+ * pierde igual. Si viajaran en `advertencias`, que el prompt trata como instrucciones para corregir el plan,
+ * cada uno costaría una vuelta entera del modelo y otra resolución. Viajan aparte, en `notas_reparto`, para que
+ * el modelo los explique al cliente.
+ */
+const PREFIJOS_NOTA_REPARTO = ["reparto_distinto:", "color_sin_globos:", "patron_sin_aplicar:", "pista_patron_incompleta:"] as const;
+
+export function separarNotasReparto(advertencias: readonly string[]): { advertencias: string[]; notasReparto: string[] } {
+  const esNota = (aviso: string) => PREFIJOS_NOTA_REPARTO.some((prefijo) => aviso.startsWith(prefijo));
+  return { advertencias: advertencias.filter((aviso) => !esNota(aviso)), notasReparto: advertencias.filter(esNota) };
+}
+
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
  * de @sempertex/agente-core despacha — cada cuerpo es el mismo que tenía el
  * if-chain de ejecutar.ts antes de esta extracción, sin cambios de lógica. */
@@ -1547,6 +1562,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     ])];
     auditarResuelto(estadoAuditoria);
     encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, resuelto.estructuras.length ? "plan_confirmado" : "NO_MATCH", Date.now() - planningStart));
+    const { advertencias, notasReparto } = separarNotasReparto(resuelto.advertencias);
     return {
       ok: true,
       status: resuelto.estructuras.length ? estadoAuditoria : "NO_MATCH",
@@ -1577,7 +1593,10 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye, y los ajustes de color o acabado que el sistema le hizo al plan que confirmaste. La tarjeta de la propuesta solo le muestra al cliente los colores de la foto que la propuesta no lleva; los ajustes (un globo que cambió de color o de acabado, o que se quitó) solo los sabrá por ti. No los enumeres uno por uno: menciónalos en una sola frase de tu resumen, con tus palabras (no afirmes que el catálogo no tiene un color), y ofrece buscar esos colores si quiere acercarse más a la foto." }
         : {}),
       sin_cobertura: resuelto.sin_cobertura,
-      advertencias: resuelto.advertencias,
+      advertencias,
+      // Cómo quedó el reparto de color que arma el motor o el patrón: para que el modelo lo explique, no
+      // para que rehaga el plan (prompt-sistema.ts, CÓMO HABLAS DE LO INTERNO).
+      ...(notasReparto.length ? { notas_reparto: notasReparto } : {}),
       comercial: resuelto.comercial,
       alternativas: resuelto.alternativas,
       fase: "desglose_previo; la imagen se genera despues de mostrarlo",
