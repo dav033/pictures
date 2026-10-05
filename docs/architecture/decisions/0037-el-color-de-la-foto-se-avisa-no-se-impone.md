@@ -1,7 +1,9 @@
 # ADR-0037 — The photo's colour is reported, never enforced
 
 Date: 2026-09-30
-Status: accepted
+Status: superseded by ADR-0041 (2026-10-05: the photo's colour is enforced, and every change is told). Its code
+was undone by the revert `ee5db0f` on 2026-10-02, which reverted `994175d` and with it this decision's
+uncommitted changes; this record was left saying the opposite of the code until ADR-0041.
 Supersedes ADR-0034 (Decision 1: a colour the photo does not have never reaches
 the quote). Extends ADR-0024 Decision 3 — "proportion is compared and reported,
 never enforced" — to the colour itself. ADR-0034's Decision on the FINISH
