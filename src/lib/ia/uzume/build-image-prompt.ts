@@ -559,7 +559,10 @@ function colorVarietyContract(sceneSpec: SceneSpec, colorPatterns?: readonly Fra
     // rama: su reparto lo dice la frase de Python, no el texto orgánico.
     const guirnalda = armadoGuirnaldaDeElemento(colorPatterns, element);
     const reparto = pattern && guirnalda && !guirnalda.conPatron ? `${ORGANIC_COLOR_DISTRIBUTION} ${pattern}` : pattern ?? ORGANIC_COLOR_DISTRIBUTION;
-    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}.${mezcla ? ` Approximate share of this structure's own balloons: ${mezcla}. Keep that balance visible; the dominant color must read as dominant.` : ""} ${reparto} Do not invent, recolor, or borrow any additional color.`;
+    // "La dominante se tiene que ver dominante" solo cuando hay una (`describirMezclaDeColor` dice "mostly X"
+    // por encima del 50 %): detrás de "a balanced split of X and Y" se contradecía (2026-10-05).
+    const balance = mezcla ? ` Approximate share of this structure's own balloons: ${mezcla}. Keep that balance visible${mezcla.startsWith("mostly ") ? "; the dominant color must read as dominant" : ""}.` : "";
+    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}.${balance} ${reparto} Do not invent, recolor, or borrow any additional color.`;
   });
 }
 

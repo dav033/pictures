@@ -69,11 +69,18 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
         rol: previo?.rol ?? declarada.materiales.find((material) => material.product_id === linea.product_id)?.rol_material ?? "principal",
       });
     }
-    // Dominancia primero; los empates se rompen por color plegado y luego por
-    // producto (comparación por punto de código, no por locale) para que el
-    // orden no dependa del idioma del servidor.
+    // Dominancia primero; un empate lo gana el material que el plan declara
+    // antes (el orden de Python, el mismo que `mezcla-color-escena.ts`), no el
+    // alfabeto: un 29/29 de un "Arco lila" salía "blanco, lila" (2026-10-05).
+    // Detrás, color plegado y producto por punto de código, para que el orden
+    // no dependa del idioma del servidor.
+    const ordenDeclarado = (productId: string) => {
+      const indice = declarada.materiales.findIndex((material) => material.product_id === productId);
+      return indice < 0 ? declarada.materiales.length : indice;
+    };
     const mezclaOrdenada = [...mezclaPorColor.values()].sort((a, b) =>
       b.unidades - a.unidades
+      || ordenDeclarado(a.productId) - ordenDeclarado(b.productId)
       || comparar(plegarColor(a.color), plegarColor(b.color))
       || comparar(a.productId, b.productId));
     const coloresPorDominancia = [...new Set(mezclaOrdenada.map((material) => material.color))].slice(0, 8);
