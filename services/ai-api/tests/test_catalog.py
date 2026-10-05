@@ -249,7 +249,8 @@ async def test_catalog_lexical_search_matches_any_meaningful_term(message: str) 
     assert "EXISTS (SELECT 1 FROM query_terms t WHERE p.search_tsv @@ t.term_query)" in normalized
     assert "similarity(LOWER(COALESCE(p.search_text, '')), $5) >= 0.3" in normalized
     assert (
-        "ORDER BY score DESC, p.product_id, v.diam_pulg ASC NULLS LAST, v.variant_id" in normalized
+        "ORDER BY score DESC, title_similarity DESC, p.product_id, v.diam_pulg ASC NULLS LAST,"
+        " v.variant_id" in normalized
     )
     assert normalized.endswith("LIMIT $6")
     # Commercial predicates are unchanged and still bind before the terms.

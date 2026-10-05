@@ -932,6 +932,14 @@ class CatalogStore:
         which drops stop words, removes accents and stems. The full-text score is
         the fraction of distinct meaningful terms a product matches, so a product
         covering more of the request ranks first.
+
+        Ties break by how close the TITLE is to the message, not by product id:
+        every printed "2 Caras ... Reflex Dorado" matches all the terms of
+        "globo latex redondo reflex dorado" as the plain balloon does, and the id
+        order left the plain one out of the first 15 (2026-10-05 photo tests).
+        The title and not ``search_text``: the plain balloon is the base of the
+        printed designs and carries their whole tag list, which sinks its
+        trigram similarity with any short message.
         """
         base, params = _base_query(operation, snapshot_id, resolved_colors)
         params.append(lexical_terms(operation.message))
@@ -958,7 +966,8 @@ class CatalogStore:
                        0
                      ),
                      similarity(LOWER(COALESCE(p.search_text, '')), ${similarity_position})
-                   )::float8 AS score
+                   )::float8 AS score,
+                   similarity(LOWER(p.title), ${similarity_position})::float8 AS title_similarity
               FROM catalog_products p
               JOIN catalog_variants v ON v.product_id = p.product_id
              {base}
@@ -967,7 +976,8 @@ class CatalogStore:
                  OR similarity(LOWER(COALESCE(p.search_text, '')), ${similarity_position})
                    >= {TRIGRAM_MIN_SIMILARITY}
                )
-             ORDER BY score DESC, p.product_id, v.diam_pulg ASC NULLS LAST, v.variant_id
+             ORDER BY score DESC, title_similarity DESC, p.product_id, v.diam_pulg ASC NULLS LAST,
+                      v.variant_id
              LIMIT ${limit_position}
             """,
             *params,
@@ -1425,8 +1435,14 @@ def _sku_result(rows: Sequence[Mapping[str, object]]) -> Literal["unique", "ambi
 
 def _group_candidates(rows: Sequence[Mapping[str, object]], limit: int) -> list[dict[str, object]]:
     grouped: dict[str, dict[str, object]] = {}
+    # The lexical tie-break (``_lexical_rows``): kept aside because a candidate's keys are the
+    # result contract. Rows of the other queries do not carry it and keep their order.
+    title_similarity: dict[str, float] = {}
     for row in rows:
         product_id = str(row["product_id"])
+        title_similarity[product_id] = max(
+            title_similarity.get(product_id, 0.0), _number_or_zero(row.get("title_similarity"))
+        )
         candidate = grouped.setdefault(
             product_id,
             {
@@ -1465,7 +1481,11 @@ def _group_candidates(rows: Sequence[Mapping[str, object]], limit: int) -> list[
     return list(
         sorted(
             grouped.values(),
-            key=lambda item: (-_number_or_zero(item.get("score")), str(item["product_id"])),
+            key=lambda item: (
+                -_number_or_zero(item.get("score")),
+                -title_similarity.get(str(item["product_id"]), 0.0),
+                str(item["product_id"]),
+            ),
         )
     )[:limit]
 
