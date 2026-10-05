@@ -105,8 +105,11 @@ export async function buscarGlobosPorColor(
             AND ($3::text IS NULL OR (p.source_snapshot_id = $3 AND v.source_snapshot_id = $3))
           GROUP BY color, p.product_id, p.title, p.derived
        ) AS globos
-      -- Plain one-color balloons first: a printed balloon with a pink accent is not a pink balloon.
-      ORDER BY color, total_colores, titulo, product_id
+      -- Plain one-color balloons first: a printed balloon with a pink accent is not a pink balloon. A printed
+      -- one-color balloon ("2 Caras Feliz Cumpleaños Radiante Reflex Dorado") also has one color, and in title
+      -- order it came before the plain "Reflex Dorado", which then missed the three that are listed
+      -- (2026-10-05 photo tests): the shortest title is the plainest balloon.
+      ORDER BY color, total_colores, length(titulo), titulo, product_id
       LIMIT 200`,
     [aConsultar, variantIds, catalogSnapshotId],
   );
