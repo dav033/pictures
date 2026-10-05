@@ -535,6 +535,30 @@ export function validarCoberturaReferencia(plan: PlanDecoracion, blueprint: Refe
 }
 
 /**
+ * How each uncovered element of `validarCoberturaReferencia` can be covered,
+ * one sentence per element for the model, from the same rules. The bare list
+ * of ids was not enough: in the 2026-10-05 tests the model declared a neon sign
+ * (signage, emulable) as `fuera_de_catalogo` five times, was told only that it
+ * was still uncovered, and the turn ended without a plan.
+ */
+export function comoCubrirElementosReferencia(ids: readonly string[], blueprint: ReferenceBlueprintV2 | undefined): string[] {
+  const elementos = new Map((blueprint?.elements ?? []).map((elemento) => [elemento.element_id, elemento]));
+  return ids.map((id) => {
+    const elemento = elementos.get(id);
+    if (!elemento) return `${id}: no es un elemento aprobado de la foto; quita ese referencia_element_id.`;
+    const quien = `${id} («${elemento.name}», ${elemento.category})`;
+    const alcance = ALCANCE_POR_CATEGORIA_REFERENCIA[elemento.category];
+    if (alcance.alcance === "emulable") {
+      return `${quien}: no se construye en esta propuesta; decláralo en referencia_omitida con motivo_tipo "emulacion_propuesta" y una "propuesta" (${alcance.emulacion ?? "cómo se haría con globos"}), o "emulacion_rechazada" si el cliente ya dijo que no. "fuera_de_catalogo" no vale para este elemento.`;
+    }
+    if (alcance.alcance === "fuera_de_catalogo") {
+      return `${quien}: no se construye con globos; decláralo en referencia_omitida con motivo_tipo "fuera_de_catalogo".`;
+    }
+    return `${quien}: materialízalo con una estructura cuyo referencia_element_id sea ${id}, o decláralo en referencia_omitida con motivo_tipo "decision_de_diseno" y el motivo.`;
+  });
+}
+
+/**
  * Copies into each structure the dominant colors of the reference element it
  * materializes (audit finding Alta #3, rule in colores-referencia.ts). With
  * several photos each structure takes the palette of its own element. Any value

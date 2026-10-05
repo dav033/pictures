@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { construirSistema, serializeReferenceBlueprint } from "@/lib/ia/omoikane/prompt-sistema";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { construirCoberturaReferencia } from "@/lib/plan/desglose";
-import { validarCoberturaReferencia } from "@/lib/plan/restricciones";
+import { comoCubrirElementosReferencia, validarCoberturaReferencia } from "@/lib/plan/restricciones";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
@@ -129,6 +129,15 @@ function run() {
   // --- R4: cobertura incompleta (nada cubre la cortina) ---
   const planIncompleto = planBase({});
   assert.deepEqual(validarCoberturaReferencia(planIncompleto, blueprint), ["REF_01_E01"], "debe reportar el elemento sin cubrir");
+  // El modelo recibe cómo cubrir cada elemento, no solo su id: en las pruebas del 2026-10-05 declaró cinco veces
+  // un letrero (emulable) como "fuera_de_catalogo" sin que nadie le dijera que ese motivo no vale ahí.
+  const planFueraDeCatalogo = planBase({ referencia_omitida: [{ element_id: "REF_01_E01", motivo: "no hay cortinas", motivo_tipo: "fuera_de_catalogo" }] });
+  assert.deepEqual(validarCoberturaReferencia(planFueraDeCatalogo, blueprint), ["REF_01_E01"], "una cortina es emulable: fuera_de_catalogo no la cubre");
+  const [como] = comoCubrirElementosReferencia(["REF_01_E01"], blueprint);
+  assert.match(como!, /REF_01_E01/);
+  assert.match(como!, /"emulacion_propuesta"/);
+  assert.match(como!, /"fuera_de_catalogo" no vale/);
+  assert.match(comoCubrirElementosReferencia(["REF_99_E99"], blueprint)[0]!, /no es un elemento aprobado/);
 
   // --- R4: sin blueprint, no hay nada que validar ---
   assert.deepEqual(validarCoberturaReferencia(planIncompleto, undefined), [], "sin blueprint, la validación es un no-op");

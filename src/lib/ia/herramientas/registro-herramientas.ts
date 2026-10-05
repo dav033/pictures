@@ -33,7 +33,7 @@ import { llamarPythonEstimarConteo, llamarPythonOmoikaneArmarEstructura, llamarP
 import type { PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { PistaPatron, PistaTamanos } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
+import { aplicarColoresReferencia, comoCubrirElementosReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
 import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import { parseEventIntent } from "@/lib/rag/query-parser/parse-event";
 import type { CatalogAllowlist, EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
@@ -1160,7 +1160,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         ok: false,
         status: "COBERTURA_REFERENCIA_INCOMPLETA",
         elementos_sin_cubrir: elementosSinCubrir,
-        accion_requerida: "Para cada elemento sin cubrir: asígnale una estructura con referencia_element_id, o decláralo en referencia_omitida con un motivo real. No anuncies ni generes esta imagen hasta cubrir todos.",
+        accion_requerida: `Para cada elemento sin cubrir: ${comoCubrirElementosReferencia(elementosSinCubrir, estado.referenceBlueprint).join(" ")} No anuncies ni generes esta imagen hasta cubrir todos.`,
         mensaje_cliente: MENSAJE_CLIENTE_REFERENCIA,
       };
     }
