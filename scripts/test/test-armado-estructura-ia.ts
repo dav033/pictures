@@ -140,6 +140,10 @@ function argsPlan(estructuras: Json[]): Json {
 }
 
 async function main(): Promise<void> {
+  // Esta prueba ejercita la capacidad del armado del motor, que desde el 2026-10-05 va apagada por defecto en
+  // todas partes (feature-flags.ts, decisión del dueño): se enciende aquí, y los tramos que prueban la bandera
+  // apagada la ponen a "false" y la devuelven a este valor.
+  process.env.ARMADO_ARCO_COLUMNA_V1 = "true";
   const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas, HERRAMIENTAS_SOLO_LECTURA } = await import("../../src/lib/ia/herramientas/registro-herramientas");
   const { ARMAR_ESTRUCTURA, CONSULTAR_OPCIONES_ARMADO } = await import("../../src/lib/ia/herramientas/herramientas");
   const { CLAVES_ARMADO_MOTOR, CLAVE_ARMADO, TIPOS_ARMADO_MOTOR, aplicarArmadosCompletados, piezaDeEstructura, sinArmadosDeMotor, sinColumnaOrganicaDelModelo, CLAVES_FUERA_DEL_MODELO } = await import("../../src/lib/plan/armado-estructura-ia");

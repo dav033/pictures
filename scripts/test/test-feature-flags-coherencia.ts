@@ -58,8 +58,10 @@ async function main(): Promise<void> {
   assert.deepEqual(porDefecto, [], "por defecto cada lectura tiene su consumidor encendido");
   const resumen = await conEntorno({ ...POR_DEFECTO, GEMINI_API_KEY: SECRETO, INTERNAL_HMAC_SECRET: SECRETO, DATABASE_URL: SECRETO, NODE_ENV: "production" }, (m) => m.resumenBanderas());
   assert.ok(!JSON.stringify(resumen).includes(SECRETO), "el resumen no lleva secretos");
-  // D2: el valor por defecto ya no depende de NODE_ENV.
-  assert.equal(resumen.ARMADO_ARCO_COLUMNA_V1, true, "en producción el motor está encendido por defecto");
+  // D2: el valor por defecto ya no depende de NODE_ENV. El armado del motor es la excepción decidida el
+  // 2026-10-05: apagado por defecto en todas partes (en producción cambiaba la cotización de los planes nuevos
+  // sin aprobar) y encendido en local de forma explícita, en `.env.local`.
+  assert.equal(resumen.ARMADO_ARCO_COLUMNA_V1, false, "en producción el motor está apagado por defecto hasta corregirlo");
   assert.equal(resumen.PATRONES_COLOR_V1, true);
   assert.equal(resumen.LECTURA_UNICA_REFERENCIA_ENABLED, true);
   assert.equal(resumen.GUIA_ESTRUCTURA_V1, false, "la guía por /edit sigue apagada hasta medirla con el modelo base");

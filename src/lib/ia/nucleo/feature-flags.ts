@@ -29,13 +29,21 @@ export type FeatureFlag =
  * local no era lo que generaba producción (auditoría 2026-10-04, K2). Decisión
  * del 2026-10-04 (D2): las capacidades que acercan la imagen al plan y a la foto
  * van **encendidas por defecto en todas partes**; una variable a `false` sigue
- * siendo el interruptor para apagarlas. Quedan apagadas solo tres, por motivo:
+ * siendo el interruptor para apagarlas. Quedan apagadas solo cuatro, por motivo:
  *
  * - `SCENE_PLAN_V2_SHADOW`: diagnóstico en sombra, no cambia la imagen.
  * - `REFERENCIA_EN_ETAPA1_V1`: manda la foto como píxeles a `/edit`, que conserva
  *   la imagen que recibe y puede copiar su fondo; sin medir con el modelo base.
  * - `GUIA_ESTRUCTURA_V1`: el mapa de color por `/edit` se diseñó para el LoRA
  *   entrenado y cuesta dos imágenes de entrada más; sin medir con el modelo base.
+ * - `ARMADO_ARCO_COLUMNA_V1` (decisión del dueño del 2026-10-05): con ella, la
+ *   confirmación escribe la receta del motor en cada arco, columna y guirnalda
+ *   nueva, y eso cambia la cotización de los planes nuevos de forma que nadie ha
+ *   aprobado (arco clásico de 2,5 m 118 → 58 por el límite del arco angosto, arco
+ *   orgánico de 3 × 2,4 m 119 → 263, columna orgánica de 1,8 m 35 → 80). Apagada
+ *   hasta que el clasificador corrija el arco angosto y la guirnalda lujosa. En
+ *   local se enciende con `ARMADO_ARCO_COLUMNA_V1=true` en `.env.local`, que es
+ *   explícito: el valor por defecto sigue siendo el mismo en todas partes.
  *
  * `GUIA_ESCENA_V1` (encendida, como manda D2): con un plan que salió de una foto de referencia, FLUX recibe por
  * `/edit` UNA imagen plana con los globos de todas las piezas del plan (dibujados por el motor) colocados donde
@@ -48,7 +56,7 @@ export type FeatureFlag =
  * CONTEO_REFERENCIA_V1 → ADR-0031). Varias cambian `plan_hash`, cantidades o
  * precio de los planes **nuevos**; los ya aprobados no cambian.
  */
-const DEFAULT_APAGADAS: ReadonlySet<FeatureFlag> = new Set<FeatureFlag>(["SCENE_PLAN_V2_SHADOW", "REFERENCIA_EN_ETAPA1_V1", "GUIA_ESTRUCTURA_V1"]);
+const DEFAULT_APAGADAS: ReadonlySet<FeatureFlag> = new Set<FeatureFlag>(["SCENE_PLAN_V2_SHADOW", "REFERENCIA_EN_ETAPA1_V1", "GUIA_ESTRUCTURA_V1", "ARMADO_ARCO_COLUMNA_V1"]);
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];

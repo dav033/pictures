@@ -150,9 +150,12 @@ async function main(): Promise<void> {
   delete process.env.ARMADO_ARCO_COLUMNA_V1;
   Object.assign(process.env, { NODE_ENV: "test" });
   assert.equal(featureEnabled("ESTIMAR_CONTEO_V1"), true);
+  assert.equal(featureEnabled("ARMADO_ARCO_COLUMNA_V1"), false, "el armado del motor va apagado por defecto (2026-10-05)");
   Object.assign(process.env, { NODE_ENV: "production" });
   assert.equal(featureEnabled("ESTIMAR_CONTEO_V1"), true, "encendida en producción por defecto");
-  assert.equal(featureEnabled("ARMADO_ARCO_COLUMNA_V1"), true, "la misma regla, sin depender de NODE_ENV");
+  // La misma regla, sin depender de NODE_ENV: el armado del motor, apagado por defecto desde la decisión del
+  // dueño del 2026-10-05 (cambiaba la cotización de los planes nuevos), lo está igual en producción.
+  assert.equal(featureEnabled("ARMADO_ARCO_COLUMNA_V1"), false, "la misma regla, sin depender de NODE_ENV");
   process.env.ESTIMAR_CONTEO_V1 = "true";
   assert.equal(featureEnabled("ESTIMAR_CONTEO_V1"), true);
   process.env.ESTIMAR_CONTEO_V1 = "false";
@@ -493,6 +496,8 @@ async function main(): Promise<void> {
   assert.match(accionEstimacionInconsistente(["EST_01_ARCO", "EST_02_COLUMNA"]), /EST_01_ARCO, EST_02_COLUMNA llevan armado del motor/);
 
   // De punta a punta: la puerta física señala un arco con armado y el rechazo ya no manda tocar sus medidas.
+  // El armado guardado solo se aplica con la capacidad encendida, apagada por defecto desde el 2026-10-05.
+  process.env.ARMADO_ARCO_COLUMNA_V1 = "true";
   const armadoDelModelo = ARMADOS.armar_arco!.armado as Json;
   const avisoPuerta = "puerta_fisica:EST_01_ARCO: estimated material quantity appears too low for medium density over 6.21 m (40 installed balloons)";
   const confirmarConPuerta = async (conArmadoGuardado: boolean): Promise<Json> => {
