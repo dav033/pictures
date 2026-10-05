@@ -429,7 +429,7 @@ async function main(): Promise<void> {
   assert.deepEqual(peticionQuitar.edicion, { accion: "quitar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12" });
   assert.deepEqual(peticionQuitar.lineas_base, [{ estructura_id: "EST_01_ARCO", lineas: [{ product_id: "prod-rojo", variant_id: "var-rojo-12", color: "rojo" }] }], "verified lines, never the echoed ones");
   assert.deepEqual(peticionQuitar.colores_variante, []);
-  assert.equal(peticionQuitar.completar_patrones, false, "PATRONES_COLOR_V1 is off by default");
+  assert.equal(peticionQuitar.completar_patrones, true, "PATRONES_COLOR_V1 is on by default since 2026-10-04 (D2)");
   llamadas = instalarFetch((llamada) => sobre(llamada, payloadBusqueda(SNAPSHOT)));
   r = await editar({ modo: "buscar", consulta: "globo rojo", approval_token: tokenPython });
   assert.match(r.requestId ?? "", /^[0-9a-f-]{36}$/, "a generated request id when the client sends none");
@@ -629,7 +629,7 @@ async function main(): Promise<void> {
     ? sobreEdicion(llamada, (plan) => conPrimeraEstructura(plan, (estructura) => ({ ...estructura, patron_color: ESPIRAL })), [AVISO])
     : sobre(llamada, payloadResolucion()));
   r = await editar({ modo: "aplicar", base, edicion: { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: ESPIRAL } });
-  delete process.env.PATRONES_COLOR_V1;
+  process.env.PATRONES_COLOR_V1 = "false";
   assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 400));
   assert.deepEqual(llamadas.map((l) => l.path), [RUTA_RESOLUCION, RUTA_EDICION, RUTA_RESOLUCION]);
   assert.deepEqual(edicionEnviada(llamadas).edicion, { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: ESPIRAL });
@@ -740,7 +740,7 @@ async function main(): Promise<void> {
   assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
   assert.equal("medidas_del_cliente" in resolucionEditada(llamadas), false, "sin la evidencia firmada, la petición es la de siempre");
   assert.equal(abrirContextoPlan(String((r.cuerpo.plan as Json).approval_token))?.medidasDelCliente, false);
-  delete process.env.CONTEO_REFERENCIA_V1;
+  process.env.CONTEO_REFERENCIA_V1 = "false";
   llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION ? sobreEdicion(llamada) : sobre(llamada, payloadResolucion()));
   r = await editar(mezclaConConteo(tokenMedidas));
   assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));

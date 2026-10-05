@@ -734,28 +734,28 @@
       "balloons": [
         {
           "color": "violeta",
-          "design_quantity": 71,
+          "design_quantity": 29,
           "finish": null,
           "product_id": "P-25-VIOLETA",
-          "required_quantity": 71,
+          "required_quantity": 29,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-25-VIOLETA-12",
-          "waste_adjusted_quantity": 71,
+          "waste_adjusted_quantity": 29,
           "waste_reserve": 0
         },
         {
           "color": "burdeos",
-          "design_quantity": 47,
+          "design_quantity": 29,
           "finish": null,
           "product_id": "P-25-MERLOT",
-          "required_quantity": 47,
+          "required_quantity": 29,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_01_ARCO",
           "variant_id": "V-25-MERLOT-12",
-          "waste_adjusted_quantity": 47,
+          "waste_adjusted_quantity": 29,
           "waste_reserve": 0
         },
         {
@@ -780,30 +780,30 @@
           "length": null,
           "width": 2.5
         },
-        "installation_length_m": 5.52,
+        "installation_length_m": 4.72,
         "shape": "coordinated structures",
         "type": "composite_installation",
         "visual_density": "medium",
-        "visual_scale": "very_large"
+        "visual_scale": "large"
       },
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 8930,
-          "design_quantity": 47,
-          "leftover_inventory": 3,
-          "operational_surplus": 3,
+          "consumption_cost": 6650,
+          "design_quantity": 29,
+          "leftover_inventory": 15,
+          "operational_surplus": 15,
           "package_count": 1,
-          "potential_surplus": 3,
+          "potential_surplus": 21,
           "product_id": "P-25-MERLOT",
           "purchase_cost": 9500,
           "purchase_quantity": 50,
-          "required_quantity": 47,
+          "required_quantity": 35,
           "units_per_package": 50,
-          "used": 47,
+          "used": 29,
           "variant_id": "V-25-MERLOT-12",
-          "waste_adjusted_quantity": 47,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 35,
+          "waste_reserve": 6
         },
         {
           "additional_package_for_waste": false,
@@ -825,42 +825,43 @@
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 14760,
-          "design_quantity": 71,
-          "leftover_inventory": 18,
-          "operational_surplus": 18,
-          "package_count": 2,
-          "potential_surplus": 29,
+          "consumption_cost": 5220,
+          "design_quantity": 29,
+          "leftover_inventory": 21,
+          "operational_surplus": 21,
+          "package_count": 1,
+          "potential_surplus": 21,
           "product_id": "P-25-VIOLETA",
-          "purchase_cost": 18000,
-          "purchase_quantity": 100,
-          "required_quantity": 82,
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 29,
           "units_per_package": 50,
-          "used": 71,
+          "used": 29,
           "variant_id": "V-25-VIOLETA-12",
-          "waste_adjusted_quantity": 82,
-          "waste_reserve": 11
+          "waste_adjusted_quantity": 29,
+          "waste_reserve": 0
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 26890,
-        "covered_waste_reserve": 11,
-        "design_quantity": 128,
-        "natural_package_surplus": 47,
-        "operational_surplus": 36,
-        "potential_surplus": 47,
-        "purchase_cost": 35500,
-        "purchase_quantity": 175,
-        "required_quantity": 139,
-        "target_waste_reserve": 11,
+        "consumption_cost": 15070,
+        "covered_waste_reserve": 6,
+        "design_quantity": 68,
+        "natural_package_surplus": 57,
+        "operational_surplus": 51,
+        "potential_surplus": 57,
+        "purchase_cost": 26500,
+        "purchase_quantity": 125,
+        "required_quantity": 74,
+        "target_waste_reserve": 6,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 139,
-        "waste_only_savings_cop": 9500
+        "waste_adjusted_quantity": 74,
+        "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
       "warnings": [
+        "sobrante_alto:V-25-MERLOT-12",
         "sobrante_alto:V-25-NUDE-12",
         "sobrante_alto:V-25-VIOLETA-12"
       ]
@@ -868,10 +869,753 @@
     "operation_schema_version": "plan-resolution-result.v1",
     "plan_resuelto": {
       "advertencias": [
+        "sobrante_alto:V-25-MERLOT-12",
         "sobrante_alto:V-25-NUDE-12",
         "sobrante_alto:V-25-VIOLETA-12"
       ],
       "alternativas": [],
+      "armados_arco": [
+        {
+          "alto_m": 2.2,
+          "ancho_m": 2.5,
+          "avisos": [
+            "Con globos R12 en 2,5 m caben como máximo 3 a lo ancho: se redujeron para que la banda no tape la abertura."
+          ],
+          "columnas": 3,
+          "compra": [
+            {
+              "cantidad": 29,
+              "comprar": 32,
+              "material": 0
+            },
+            {
+              "cantidad": 29,
+              "comprar": 32,
+              "material": 1
+            }
+          ],
+          "conteo": [
+            {
+              "cantidad": 29,
+              "material": 0
+            },
+            {
+              "cantidad": 29,
+              "material": 1
+            }
+          ],
+          "diametro_m": 0.2667,
+          "estructura_id": "EST_01_ARCO",
+          "filas": 23,
+          "formula_clasica": 85.03104719010591,
+          "globos": [
+            {
+              "carril": 0,
+              "fila": 0,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 180,
+              "rx": 27.853738503434517,
+              "ry": 29.524962813640588,
+              "seccion": 0,
+              "x": 55.2663157894737,
+              "y": 511.4152149379988
+            },
+            {
+              "carril": 2,
+              "fila": 0,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 180,
+              "rx": 27.853738503434517,
+              "ry": 29.524962813640588,
+              "seccion": 0,
+              "x": 156.33157894736843,
+              "y": 511.4152149379988
+            },
+            {
+              "carril": 0,
+              "fila": 2,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 180,
+              "rx": 27.853738503434517,
+              "ry": 29.524962813640588,
+              "seccion": 1,
+              "x": 55.2663157894737,
+              "y": 422.6760746899939
+            },
+            {
+              "carril": 2,
+              "fila": 2,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 180,
+              "rx": 27.853738503434517,
+              "ry": 29.524962813640588,
+              "seccion": 1,
+              "x": 156.33157894736843,
+              "y": 422.6760746899939
+            },
+            {
+              "carril": 0,
+              "fila": 4,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 180,
+              "rx": 30.471999645998316,
+              "ry": 32.30031962475822,
+              "seccion": 2,
+              "x": 55.2663157894737,
+              "y": 333.936934441989
+            },
+            {
+              "carril": 2,
+              "fila": 4,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 180,
+              "rx": 25.947955668462672,
+              "ry": 27.504833008570433,
+              "seccion": 2,
+              "x": 156.33157894736843,
+              "y": 333.936934441989
+            },
+            {
+              "carril": 0,
+              "fila": 6,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 210,
+              "rx": 33.941845744602794,
+              "ry": 35.978356489278966,
+              "seccion": 3,
+              "x": 77.37415286572266,
+              "y": 226.7525609648189
+            },
+            {
+              "carril": 2,
+              "fila": 6,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 210,
+              "rx": 25.947955668462672,
+              "ry": 27.504833008570433,
+              "seccion": 3,
+              "x": 169.32884549633087,
+              "y": 268.6872950212653
+            },
+            {
+              "carril": 0,
+              "fila": 8,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 225,
+              "rx": 33.884822276792455,
+              "ry": 35.9179116134,
+              "seccion": 4,
+              "x": 145.00291538431208,
+              "y": 139.0056772302089
+            },
+            {
+              "carril": 2,
+              "fila": 8,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 225,
+              "rx": 25.947955668462672,
+              "ry": 27.504833008570433,
+              "seccion": 4,
+              "x": 209.14056051733144,
+              "y": 217.11169424532363
+            },
+            {
+              "carril": 0,
+              "fila": 10,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 255,
+              "rx": 33.94184574460282,
+              "ry": 35.978356489278994,
+              "seccion": 4,
+              "x": 244.39235451333943,
+              "y": 90.0680747615475
+            },
+            {
+              "carril": 2,
+              "fila": 10,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 255,
+              "rx": 25.947955668462672,
+              "ry": 27.504833008570433,
+              "seccion": 4,
+              "x": 267.6385701887841,
+              "y": 188.42355693689564
+            },
+            {
+              "carril": 0,
+              "fila": 12,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 285,
+              "rx": 33.884822276792626,
+              "ry": 35.917911613400186,
+              "seccion": 4,
+              "x": 355.39218267968255,
+              "y": 90.01764820968654
+            },
+            {
+              "carril": 2,
+              "fila": 12,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 285,
+              "rx": 25.947955668462672,
+              "ry": 27.504833008570433,
+              "seccion": 4,
+              "x": 332.57689261819604,
+              "y": 188.4739834887571
+            },
+            {
+              "carril": 0,
+              "fila": 14,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 315,
+              "rx": 33.88482227679198,
+              "ry": 35.9179116133995,
+              "seccion": 4,
+              "x": 454.82576239732924,
+              "y": 138.865620970727
+            },
+            {
+              "carril": 2,
+              "fila": 14,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 315,
+              "rx": 25.947955668462672,
+              "ry": 27.504833008570433,
+              "seccion": 4,
+              "x": 391.03076170102787,
+              "y": 217.25175050480604
+            },
+            {
+              "carril": 0,
+              "fila": 16,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 330,
+              "rx": 33.94184574460303,
+              "ry": 35.978356489279214,
+              "seccion": 3,
+              "x": 522.5335893330691,
+              "y": 226.55142529806602
+            },
+            {
+              "carril": 2,
+              "fila": 16,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 330,
+              "rx": 25.947955668462672,
+              "ry": 27.504833008570433,
+              "seccion": 3,
+              "x": 430.76341230487736,
+              "y": 268.8884306880184
+            },
+            {
+              "carril": 0,
+              "fila": 18,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 0,
+              "rx": 30.530100310965683,
+              "ry": 32.36190632962362,
+              "seccion": 2,
+              "x": 544.7336842105263,
+              "y": 333.93693444198914
+            },
+            {
+              "carril": 2,
+              "fila": 18,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 0,
+              "rx": 25.947955668462672,
+              "ry": 27.504833008570433,
+              "seccion": 2,
+              "x": 443.6684210526316,
+              "y": 333.93693444198914
+            },
+            {
+              "carril": 0,
+              "fila": 20,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 0,
+              "rx": 27.853738503434517,
+              "ry": 29.524962813640588,
+              "seccion": 1,
+              "x": 544.7336842105263,
+              "y": 422.67607468999404
+            },
+            {
+              "carril": 2,
+              "fila": 20,
+              "material": 0,
+              "prof": -0.020357912845878255,
+              "rot": 0,
+              "rx": 27.853738503434517,
+              "ry": 29.524962813640588,
+              "seccion": 1,
+              "x": 443.6684210526316,
+              "y": 422.67607468999404
+            },
+            {
+              "carril": 0,
+              "fila": 22,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 0,
+              "rx": 27.853738503434517,
+              "ry": 29.524962813640588,
+              "seccion": 0,
+              "x": 544.7336842105263,
+              "y": 511.4152149379988
+            },
+            {
+              "carril": 2,
+              "fila": 22,
+              "material": 1,
+              "prof": -0.020357912845878255,
+              "rot": 0,
+              "rx": 27.853738503434517,
+              "ry": 29.524962813640588,
+              "seccion": 0,
+              "x": 443.6684210526316,
+              "y": 511.4152149379988
+            },
+            {
+              "carril": 0,
+              "fila": 1,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 180,
+              "rx": 28.55244764160896,
+              "ry": 30.2655945001055,
+              "seccion": 0,
+              "x": 80.53263157894739,
+              "y": 467.0456448139964
+            },
+            {
+              "carril": 2,
+              "fila": 1,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 180,
+              "rx": 28.55244764160896,
+              "ry": 30.2655945001055,
+              "seccion": 0,
+              "x": 131.06526315789475,
+              "y": 467.0456448139964
+            },
+            {
+              "carril": 0,
+              "fila": 3,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 180,
+              "rx": 28.55244764160896,
+              "ry": 30.2655945001055,
+              "seccion": 1,
+              "x": 80.53263157894739,
+              "y": 378.30650456599153
+            },
+            {
+              "carril": 2,
+              "fila": 3,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 180,
+              "rx": 28.55244764160896,
+              "ry": 30.2655945001055,
+              "seccion": 1,
+              "x": 131.06526315789475,
+              "y": 378.30650456599153
+            },
+            {
+              "carril": 0,
+              "fila": 5,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 195,
+              "rx": 31.483225380231527,
+              "ry": 33.37221890304542,
+              "seccion": 2,
+              "x": 84.88494771084507,
+              "y": 284.9106915969184
+            },
+            {
+              "carril": 2,
+              "fila": 5,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 195,
+              "rx": 26.598858373687133,
+              "ry": 28.194789876108363,
+              "seccion": 2,
+              "x": 134.45228514747313,
+              "y": 294.7405397003775
+            },
+            {
+              "carril": 0,
+              "fila": 7,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 225,
+              "rx": 31.670308566200262,
+              "ry": 33.570527080172276,
+              "seccion": 3,
+              "x": 126.18678752430755,
+              "y": 194.40480888751412
+            },
+            {
+              "carril": 2,
+              "fila": 7,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 225,
+              "rx": 26.598858373687133,
+              "ry": 28.194789876108363,
+              "seccion": 3,
+              "x": 166.243918302883,
+              "y": 225.2102163362354
+            },
+            {
+              "carril": 0,
+              "fila": 9,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 240,
+              "rx": 31.67030856620037,
+              "ry": 33.57052708017239,
+              "seccion": 4,
+              "x": 203.10457880462343,
+              "y": 131.48129157053137
+            },
+            {
+              "carril": 2,
+              "fila": 9,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 240,
+              "rx": 26.598858373687133,
+              "ry": 28.194789876108363,
+              "seccion": 4,
+              "x": 225.52942547225473,
+              "y": 176.765649865939
+            },
+            {
+              "carril": 0,
+              "fila": 11,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 270,
+              "rx": 31.700017749890822,
+              "ry": 33.602018814884275,
+              "seccion": 4,
+              "x": 300.00000000000045,
+              "y": 108.93263157894737
+            },
+            {
+              "carril": 2,
+              "fila": 11,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 270,
+              "rx": 26.598858373687133,
+              "ry": 28.194789876108363,
+              "seccion": 4,
+              "x": 300.00000000000045,
+              "y": 159.46526315789473
+            },
+            {
+              "carril": 0,
+              "fila": 13,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 300,
+              "rx": 31.670308566200482,
+              "ry": 33.57052708017251,
+              "seccion": 4,
+              "x": 396.7961626503065,
+              "y": 131.4324089988799
+            },
+            {
+              "carril": 2,
+              "fila": 13,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 300,
+              "rx": 26.598858373687133,
+              "ry": 28.194789876108363,
+              "seccion": 4,
+              "x": 374.5698330728166,
+              "y": 176.81453243759114
+            },
+            {
+              "carril": 0,
+              "fila": 15,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 315,
+              "rx": 31.67030856620015,
+              "ry": 33.57052708017216,
+              "seccion": 3,
+              "x": 473.74557136360653,
+              "y": 194.31725065239758
+            },
+            {
+              "carril": 2,
+              "fila": 15,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 315,
+              "rx": 26.598858373687133,
+              "ry": 28.194789876108363,
+              "seccion": 3,
+              "x": 433.8237228092036,
+              "y": 225.29777457135268
+            },
+            {
+              "carril": 0,
+              "fila": 17,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 345,
+              "rx": 31.51296562510291,
+              "ry": 33.40374356260909,
+              "seccion": 2,
+              "x": 515.0932920062671,
+              "y": 284.80221001014183
+            },
+            {
+              "carril": 2,
+              "fila": 17,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 345,
+              "rx": 26.598858373687133,
+              "ry": 28.194789876108363,
+              "seccion": 2,
+              "x": 465.56947513541473,
+              "y": 294.8490212871543
+            },
+            {
+              "carril": 0,
+              "fila": 19,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 0,
+              "rx": 28.55244764160896,
+              "ry": 30.2655945001055,
+              "seccion": 1,
+              "x": 519.4673684210526,
+              "y": 378.30650456599153
+            },
+            {
+              "carril": 2,
+              "fila": 19,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 0,
+              "rx": 28.55244764160896,
+              "ry": 30.2655945001055,
+              "seccion": 1,
+              "x": 468.9347368421052,
+              "y": 378.30650456599153
+            },
+            {
+              "carril": 0,
+              "fila": 21,
+              "material": 1,
+              "prof": 0.4850108736472799,
+              "rot": 0,
+              "rx": 28.55244764160896,
+              "ry": 30.2655945001055,
+              "seccion": 0,
+              "x": 519.4673684210526,
+              "y": 467.04564481399643
+            },
+            {
+              "carril": 2,
+              "fila": 21,
+              "material": 0,
+              "prof": 0.4850108736472799,
+              "rot": 0,
+              "rx": 28.55244764160896,
+              "ry": 30.2655945001055,
+              "seccion": 0,
+              "x": 468.9347368421052,
+              "y": 467.04564481399643
+            },
+            {
+              "carril": 1,
+              "fila": 0,
+              "material": 1,
+              "prof": 0.6666666666666667,
+              "rot": 180,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 0,
+              "x": 105.79894736842107,
+              "y": 511.4152149379988
+            },
+            {
+              "carril": 1,
+              "fila": 2,
+              "material": 0,
+              "prof": 0.6666666666666667,
+              "rot": 180,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 1,
+              "x": 105.79894736842107,
+              "y": 422.6760746899939
+            },
+            {
+              "carril": 1,
+              "fila": 4,
+              "material": 1,
+              "prof": 0.6666666666666667,
+              "rot": 180,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 2,
+              "x": 105.79894736842107,
+              "y": 333.936934441989
+            },
+            {
+              "carril": 1,
+              "fila": 6,
+              "material": 0,
+              "prof": 0.6666666666666667,
+              "rot": 210,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 3,
+              "x": 123.35149918102677,
+              "y": 247.71992799304212
+            },
+            {
+              "carril": 1,
+              "fila": 8,
+              "material": 1,
+              "prof": 0.6666666666666667,
+              "rot": 225,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 4,
+              "x": 177.07173795082176,
+              "y": 178.05868573776627
+            },
+            {
+              "carril": 1,
+              "fila": 10,
+              "material": 0,
+              "prof": 0.6666666666666667,
+              "rot": 255,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 4,
+              "x": 256.0154623510618,
+              "y": 139.24581584922157
+            },
+            {
+              "carril": 1,
+              "fila": 12,
+              "material": 1,
+              "prof": 0.6666666666666667,
+              "rot": 285,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 4,
+              "x": 343.9845376489393,
+              "y": 139.24581584922183
+            },
+            {
+              "carril": 1,
+              "fila": 14,
+              "material": 0,
+              "prof": 0.6666666666666667,
+              "rot": 315,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 4,
+              "x": 422.92826204917856,
+              "y": 178.05868573776652
+            },
+            {
+              "carril": 1,
+              "fila": 16,
+              "material": 1,
+              "prof": 0.6666666666666667,
+              "rot": 330,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 3,
+              "x": 476.6485008189733,
+              "y": 247.7199279930422
+            },
+            {
+              "carril": 1,
+              "fila": 18,
+              "material": 0,
+              "prof": 0.6666666666666667,
+              "rot": 0,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 2,
+              "x": 494.20105263157893,
+              "y": 333.93693444198914
+            },
+            {
+              "carril": 1,
+              "fila": 20,
+              "material": 1,
+              "prof": 0.6666666666666667,
+              "rot": 0,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 1,
+              "x": 494.20105263157893,
+              "y": 422.67607468999404
+            },
+            {
+              "carril": 1,
+              "fila": 22,
+              "material": 0,
+              "prof": 0.6666666666666667,
+              "rot": 0,
+              "rx": 28.803599999999996,
+              "ry": 30.531815999999996,
+              "seccion": 0,
+              "x": 494.20105263157893,
+              "y": 511.4152149379988
+            }
+          ],
+          "globos_por_metro": 12.27633377225918,
+          "grosor_m": 0.7018421052631579,
+          "largo_m": 4.724537559500259,
+          "prompt_gemini": "ARCH ASSEMBLY — a horseshoe arch with straight legs, about 2.5 m wide and 2.2 m tall, built as a band 3 balloons wide of round 12-inch latex balloons packed tightly in staggered rows, with diagonal stripes of purple and burgundy wrapping around the arch, each stripe made of the balloons' own colors. Keep that pattern readable on the band and make the whole arch only of round latex balloons: no ribbons, streamers or fabric.",
+          "prompt_lora": "a horseshoe balloon arch with straight legs made of round balloons with diagonal stripes of purple and burgundy wrapping around the arch, each stripe made of the balloons' own colors",
+          "secciones": 5,
+          "total_comprar": 64,
+          "version": "armado-arco.v1"
+        }
+      ],
       "comercial": {
         "delta_cop": 0,
         "estado": "APROBACION_REQUERIDA"
@@ -880,8 +1624,8 @@
         {
           "additional_package_for_waste": false,
           "color": "burdeos",
-          "consumption_cost": 8930,
-          "design_quantity": 47,
+          "consumption_cost": 6650,
+          "design_quantity": 29,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -894,28 +1638,28 @@
           ],
           "imagen": "https://cdn.example.test/v-25-merlot-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 3,
+          "leftover_inventory": 15,
           "paquetes": 1,
           "precio_paquete": 9500,
           "product_id": "P-25-MERLOT",
           "purchase_cost": 9500,
           "purchase_quantity": 50,
-          "required_quantity": 47,
+          "required_quantity": 35,
           "sku": "SKU-V-25-MERLOT-12",
           "sku_original": "SHOP-V-25-MERLOT-12",
-          "sobrante": 3,
+          "sobrante": 21,
           "source_snapshot_id": "SNAP-GOLDEN-25",
           "source_variant_id": "SOURCE-V-25-MERLOT-12",
           "subtotal": 9500,
           "tamano_codigo": "R-12",
           "titulo": "Globo Latex Redondo Fashion Merlot — R-12",
-          "unidades_con_merma": 47,
+          "unidades_con_merma": 35,
           "unidades_inferidas": false,
-          "unidades_necesarias": 47,
+          "unidades_necesarias": 29,
           "unidades_paquete": 50,
-          "used": 47,
+          "used": 29,
           "variant_id": "V-25-MERLOT-12",
-          "waste_reserve": 0
+          "waste_reserve": 6
         },
         {
           "additional_package_for_waste": false,
@@ -960,8 +1704,8 @@
         {
           "additional_package_for_waste": false,
           "color": "violeta",
-          "consumption_cost": 14760,
-          "design_quantity": 71,
+          "consumption_cost": 5220,
+          "design_quantity": 29,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -974,33 +1718,33 @@
           ],
           "imagen": "https://cdn.example.test/v-25-violeta-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 18,
-          "paquetes": 2,
+          "leftover_inventory": 21,
+          "paquetes": 1,
           "precio_paquete": 9000,
           "product_id": "P-25-VIOLETA",
-          "purchase_cost": 18000,
-          "purchase_quantity": 100,
-          "required_quantity": 82,
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 29,
           "sku": "SKU-V-25-VIOLETA-12",
           "sku_original": "SHOP-V-25-VIOLETA-12",
-          "sobrante": 29,
+          "sobrante": 21,
           "source_snapshot_id": "SNAP-GOLDEN-25",
           "source_variant_id": "SOURCE-V-25-VIOLETA-12",
-          "subtotal": 18000,
+          "subtotal": 9000,
           "tamano_codigo": "R-12",
           "titulo": "Globo Latex Redondo Fashion Violeta — R-12",
-          "unidades_con_merma": 82,
+          "unidades_con_merma": 29,
           "unidades_inferidas": false,
-          "unidades_necesarias": 71,
+          "unidades_necesarias": 29,
           "unidades_paquete": 50,
-          "used": 71,
+          "used": 29,
           "variant_id": "V-25-VIOLETA-12",
-          "waste_reserve": 11
+          "waste_reserve": 0
         }
       ],
       "costes_por_estructura": [
         {
-          "consumo_cop": 21710,
+          "consumo_cop": 10730,
           "estructura_id": "EST_01_ARCO"
         },
         {
@@ -1010,7 +1754,7 @@
       ],
       "estructuras": [
         {
-          "eje_m": 5.52,
+          "eje_m": 4.72,
           "estructura_id": "EST_01_ARCO",
           "lineas": [
             {
@@ -1034,7 +1778,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo Latex Redondo Fashion Violeta — R-12",
-              "unidades": 71,
+              "unidades": 29,
               "unidades_inferidas": false,
               "variant_id": "V-25-VIOLETA-12"
             },
@@ -1059,7 +1803,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo Latex Redondo Fashion Merlot — R-12",
-              "unidades": 47,
+              "unidades": 29,
               "unidades_inferidas": false,
               "variant_id": "V-25-MERLOT-12"
             }
@@ -1069,14 +1813,14 @@
               "diam_pulg": 12.0,
               "forma": "redondo",
               "pct": 100.0,
-              "unidades": 118
+              "unidades": 58
             }
           ],
           "nombre": "Arco focal",
           "repeticiones": 1,
           "supuestos": [],
           "tipo": "arco",
-          "total_unidades": 118,
+          "total_unidades": 58,
           "ubicacion": "arco_central"
         },
         {
@@ -1201,7 +1945,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "b74857e01d43ae447321cc40f7a27c44dd2ff7db9da53416768d2a6cfb39ae39",
+      "plan_hash": "df799ef0d74cb6579e7ea7284681e2f1e945f698095a333402f8628278cc4b2e",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -1209,38 +1953,38 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 26890,
-        "covered_waste_reserve": 11,
-        "design_quantity": 128,
+        "consumption_cost": 15070,
+        "covered_waste_reserve": 6,
+        "design_quantity": 68,
         "globos_por_tamano": {
-          "R-12": 128
+          "R-12": 68
         },
         "incluye_iva": true,
         "merma_porcentaje": 8.0,
-        "natural_package_surplus": 47,
-        "purchase_cost": 35500,
-        "target_waste_reserve": 11,
-        "total_cop": 35500,
-        "total_unidades": 128,
+        "natural_package_surplus": 57,
+        "purchase_cost": 26500,
+        "target_waste_reserve": 6,
+        "total_cop": 26500,
+        "total_unidades": 68,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 9500
+        "waste_only_savings_cop": 0
       }
     },
     "quote": {
-      "consumption_cost_cop": 26890,
-      "covered_waste_reserve": 11,
+      "consumption_cost_cop": 15070,
+      "covered_waste_reserve": 6,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 36,
+      "leftover_inventory": 51,
       "lines": [
         {
           "available": true,
           "color": "burdeos",
-          "consumption_cost_cop": 8930,
-          "design_quantity": 47,
+          "consumption_cost_cop": 6650,
+          "design_quantity": 29,
           "diameter_inches": 12.0,
           "id": "V-25-MERLOT-12",
-          "leftover_inventory": 3,
+          "leftover_inventory": 15,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1252,19 +1996,19 @@
           "product_id": "P-25-MERLOT",
           "purchase_cost_cop": 9500,
           "purchase_quantity": 50,
-          "required_quantity": 47,
+          "required_quantity": 35,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_ARCO"
           ],
           "subtotal_cop": 9500,
-          "surplus": 3,
+          "surplus": 21,
           "title": "Globo Latex Redondo Fashion Merlot — R-12",
           "units_per_package": 50,
-          "used": 47,
+          "used": 29,
           "variant_id": "V-25-MERLOT-12",
-          "waste_reserve": 0
+          "waste_reserve": 6
         },
         {
           "available": true,
@@ -1302,11 +2046,11 @@
         {
           "available": true,
           "color": "violeta",
-          "consumption_cost_cop": 14760,
-          "design_quantity": 71,
+          "consumption_cost_cop": 5220,
+          "design_quantity": 29,
           "diameter_inches": 12.0,
           "id": "V-25-VIOLETA-12",
-          "leftover_inventory": 18,
+          "leftover_inventory": 21,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1314,31 +2058,31 @@
             }
           ],
           "package_price_cop": 9000,
-          "packages": 2,
+          "packages": 1,
           "product_id": "P-25-VIOLETA",
-          "purchase_cost_cop": 18000,
-          "purchase_quantity": 100,
-          "required_quantity": 82,
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 29,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_ARCO"
           ],
-          "subtotal_cop": 18000,
-          "surplus": 29,
+          "subtotal_cop": 9000,
+          "surplus": 21,
           "title": "Globo Latex Redondo Fashion Violeta — R-12",
           "units_per_package": 50,
-          "used": 71,
+          "used": 29,
           "variant_id": "V-25-VIOLETA-12",
-          "waste_reserve": 11
+          "waste_reserve": 0
         }
       ],
-      "plan_hash": "b74857e01d43ae447321cc40f7a27c44dd2ff7db9da53416768d2a6cfb39ae39",
-      "purchase_cost_cop": 35500,
+      "plan_hash": "df799ef0d74cb6579e7ea7284681e2f1e945f698095a333402f8628278cc4b2e",
+      "purchase_cost_cop": 26500,
       "schema_version": "quote.v1",
       "supported_complements": false,
-      "target_waste_reserve": 11,
-      "total_cop": 35500,
+      "target_waste_reserve": 6,
+      "total_cop": 26500,
       "waste_percentage": 8.0
     }
   },

@@ -22,6 +22,12 @@ import type { Pool } from "pg";
 
 // Antes de cualquier import de la app: las banderas se leen al cargar el módulo.
 process.env.PATRON_REFERENCIA_PYTHON_ENABLED = "true";
+// Este archivo prueba la lectura de patrón por separado (v16): desde D2 (2026-10-04) la lectura única
+// y las otras lecturas van encendidas por defecto, así que el escenario se fija aquí.
+process.env.LECTURA_UNICA_REFERENCIA_ENABLED = "false";
+process.env.BOUQUET_REFERENCIA_PYTHON_ENABLED = "false";
+process.env.CONTEO_REFERENCIA_PYTHON_ENABLED = "false";
+process.env.GUIRNALDA_REFERENCIA_PYTHON_ENABLED = "false";
 // El análisis de la foto de galería no llama al proveedor; esto solo evita
 // construir el chat directo de Gemini, que no se usa.
 process.env.REFERENCE_ANALYSIS_PYTHON_ENABLED = "true";
@@ -69,19 +75,19 @@ function resultadoPatron(pistas: Json[]): Json {
 async function main(): Promise<void> {
   const { ReferenceBlueprintV2Schema } = await import("../../src/lib/ia/referencia/reference-blueprint");
   const { PlanDecoracionSchema } = await import("../../src/lib/plan/tipos");
-  const { crearEstadoConversacion, crearRegistroHerramientas, pistasPatronDelPlan } = await import("../../src/lib/ia/herramientas/registro-herramientas");
+  const { crearEstadoConversacion, crearRegistroHerramientas, pistasPatronDelPlan, pistasRemateDelPlan } = await import("../../src/lib/ia/herramientas/registro-herramientas");
   const { RECHAZOS_PARA_CONVERGER } = await import("../../src/lib/ia/herramientas/convergencia-plan");
   const { croquisDelPlan, resolverPlan } = await import("../../src/lib/plan/resolver-backend");
   const { PatronColorResueltoSchema } = await import("../../src/lib/plan/patron-color");
   type PatronColorResuelto = import("../../src/lib/plan/patron-color").PatronColorResuelto;
-  const { crearCacheDeteccionPatron, detectarPatronesReferencia } = await import("../../src/lib/ia/amaterasu/patron-referencia");
+  const { adjuntarPistasPatron, crearCacheDeteccionPatron, detectarPatronesReferencia } = await import("../../src/lib/ia/amaterasu/patron-referencia");
   const { ANALISIS_EJEMPLOS } = await import("../../src/lib/ia/amaterasu/analisis-ejemplos");
   const { instalarResolutorPythonFalso, SNAPSHOT_FALSO } = await import("../lib/resolutor-python-falso");
   type Blueprint = import("../../src/lib/ia/referencia/reference-blueprint").ReferenceBlueprintV2;
   type ProductoCandidato = import("../../src/lib/rag/chat/buscar").ProductoCandidato;
 
   const espiral = { modo: "espiral", colores: ["blanco", "negro", "blanco", "negro"], globos_por_racimo: 4, confianza: 0.8 };
-  const elemento = (id: string, imagen: string, category: string, extra: { approved?: boolean; patron?: Json; colores?: string[] } = {}) => ({
+  const elemento = (id: string, imagen: string, category: string, extra: { approved?: boolean; patron?: Json; colores?: string[]; remate?: Json } = {}) => ({
     element_id: id, source_image_id: imagen, name: `pieza ${id}`, category,
     scene_role: "midground", detection_confidence: 0.9, visible_evidence: "pieza",
     reference_bbox: { x: 0.1, y: 0.1, width: 0.3, height: 0.8 }, depth_layer: 1,
@@ -90,6 +96,7 @@ async function main(): Promise<void> {
     appearance: {
       observed_colors: extra.colores ?? ["white", "black"], resolved_colors: [], color_policy: "match_reference", material: "latex", shape: "columna", composition: "mixed",
       ...(extra.patron ? { patron_color: extra.patron } : {}),
+      ...(extra.remate ? { remate_columna: extra.remate } : {}),
     },
     relationships: [], uncertainties: [],
   });
@@ -129,6 +136,86 @@ async function main(): Promise<void> {
   );
   assert.deepEqual(pistasPatronDelPlan(planPistas as unknown as Parameters<typeof pistasPatronDelPlan>[0], undefined), []);
   ok("pistasPatronDelPlan lee la misma fuente que los colores de la foto");
+
+  // ---------------------------------------------------------------------------
+  // Los dos prompts que leen el patrón dicen lo mismo.
+  //
+  // Mientras exista la lectura única (v17) las reglas viven en DOS sitios: el prompt de Python
+  // (`app/amaterasu/patron_referencia.py`) y su copia dentro de `LECTURA_UNICA_RULES`. El 2026-10-03 se añadió
+  // el modo `monocromo` solo en el primero: con la bandera encendida el camino vivo es el segundo, así que el
+  // cambio no hizo nada y la foto siguió saliendo igual. Esto lo habría dicho en un segundo.
+  //
+  // Se compara el VOCABULARIO, no la prosa: los dos prompts no son el mismo texto y no tienen por qué serlo.
+  const { LECTURA_UNICA_RULES, LECTURA_UNICA_TOOL_SCHEMA } = await import("../../src/lib/ia/referencia/lectura-unica");
+  const { MODOS_PATRON_COLOR } = await import("../../src/lib/plan/patron-color");
+  const modosEsperados = [...MODOS_PATRON_COLOR, "monocromo", "ninguno"];
+  const esquema = LECTURA_UNICA_TOOL_SCHEMA as unknown as Record<string, Json>;
+  const patron = (esquema.properties as Record<string, Json>).patron_color as Record<string, Json>;
+  const enumModo = ((patron.properties as Record<string, Json>).modo as Record<string, Json>).enum as unknown as string[];
+  assert.deepEqual(enumModo, modosEsperados, "el esquema de la lectura única ofrece otros modos que el contrato");
+  for (const modo of modosEsperados) {
+    assert.ok(LECTURA_UNICA_RULES.includes(`"${modo}"`), `la lectura única no explica el modo «${modo}»`);
+  }
+  ok("la lectura única y el prompt de Python ofrecen los mismos modos de patrón");
+
+  // Lo mismo para los tamaños (`TAMANOS_LEIDOS`), por la misma razón y con el mismo fallo a la vista: una
+  // lectura que solo esté en el prompt de Python no hace nada mientras el camino vivo sea la lectura única.
+  const { TAMANOS_LEIDOS } = await import("../../src/lib/plan/patron-color");
+  const enumTamanos = ((patron.properties as Record<string, Json>).tamanos as Record<string, Json>).enum as unknown as string[];
+  assert.deepEqual(enumTamanos, [...TAMANOS_LEIDOS], "el esquema de la lectura única ofrece otros tamaños que el contrato");
+  for (const tamano of TAMANOS_LEIDOS) {
+    assert.ok(LECTURA_UNICA_RULES.includes(`"${tamano}"`), `la lectura única no explica el tamaño «${tamano}»`);
+  }
+  ok("la lectura única y el prompt de Python ofrecen los mismos tamaños");
+
+  // ---------------------------------------------------------------------------
+  // El remate de la columna (ADR-0039): su propio campo del blueprint, su propia pista.
+  const remateGlobo = { tipo: "globo", color: "dorado" };
+  const conRemate = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure", { patron: espiral, remate: remateGlobo })]);
+  assert.deepEqual(conRemate.elements[0]!.appearance.remate_columna, remateGlobo);
+  assert.equal(blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure")]).elements[0]!.appearance.remate_columna, undefined, "un blueprint sin lectura del remate sigue siendo válido");
+  assert.throws(() => blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure", { remate: { tipo: "molinete" } })]), "un remate que el motor no tiene no entra");
+  assert.throws(() => blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure", { remate: { tipo: "globo", tamano: 24 } })]), "el tamaño no lo lee la foto");
+  ok("appearance.remate_columna es opcional y solo admite los remates del motor");
+
+  // Lo que llega de Python se guarda en su elemento, y un patrón "ninguno" NO se lleva el remate por delante:
+  // una columna de un solo color puede llevar su globo grande igual.
+  const sinPatron = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure")]);
+  const adjuntado = adjuntarPistasPatron(sinPatron, [
+    { element_id: "REF_01_E01", modo: "ninguno", colores: [], confianza: 0.2, remate: { tipo: "ninguno" } },
+  ] as unknown as Parameters<typeof adjuntarPistasPatron>[1]);
+  assert.equal(adjuntado.elements[0]!.appearance.patron_color, undefined);
+  assert.deepEqual(adjuntado.elements[0]!.appearance.remate_columna, { tipo: "ninguno" });
+  ok("adjuntarPistasPatron guarda el remate aunque la foto no vea el patrón");
+
+  // El eje y la simetría también se copian campo a campo (ADR-0039): es justo donde se perdió `zonas`.
+  const conEje = adjuntarPistasPatron(blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure")]), [
+    { element_id: "REF_01_E01", modo: "degradado", colores: ["blanco", "negro"], confianza: 0.8, direccion: "transversal", simetria: "espejo" },
+  ] as unknown as Parameters<typeof adjuntarPistasPatron>[1]);
+  assert.deepEqual(conEje.elements[0]!.appearance.patron_color, {
+    modo: "degradado", colores: ["blanco", "negro"], direccion: "transversal", simetria: "espejo", confianza: 0.8,
+  }, "la dirección y la simetría llegan enteras hasta el elemento");
+  ok("adjuntarPistasPatron copia el eje y la simetría de la lectura");
+
+  // La pista solo sale de las columnas: el arco del motor no tiene remate y el bouquet tiene el suyo.
+  const conRemates = blueprintDe(["REF_01"], [
+    elemento("REF_01_E01", "REF_01", "balloon_structure", { remate: remateGlobo }),
+    elemento("REF_01_E02", "REF_01", "balloon_structure", { remate: remateGlobo }),
+    elemento("REF_01_E03", "REF_01", "balloon_structure", { remate: { tipo: "ninguno" }, approved: false }),
+  ]);
+  const planRemates = { estructuras: [
+    { estructura_id: "EST_01", tipo: "columna", referencia_element_id: "REF_01_E01" },
+    { estructura_id: "EST_02", tipo: "arco", referencia_element_id: "REF_01_E02" },
+    { estructura_id: "EST_03", tipo: "columna", referencia_element_id: "REF_01_E03" },
+    { estructura_id: "EST_04", tipo: "columna" },
+  ] };
+  assert.deepEqual(
+    pistasRemateDelPlan(planRemates as unknown as Parameters<typeof pistasRemateDelPlan>[0], conRemates),
+    [{ referencia_element_id: "REF_01_E01", ...remateGlobo }],
+    "una lectura por columna aprobada, y ninguna de un arco",
+  );
+  assert.deepEqual(pistasRemateDelPlan(planRemates as unknown as Parameters<typeof pistasRemateDelPlan>[0], undefined), []);
+  ok("pistasRemateDelPlan solo lee el remate de las columnas");
 
   // ---------------------------------------------------------------------------
   // confirmar_plan_decoracion: completar_patrones y pistas_patron.
@@ -177,7 +264,7 @@ async function main(): Promise<void> {
 
   // Bandera apagada (default): aunque la foto traiga pista, confirmar manda la
   // petición de antes del patrón, así agregar, quitar y repartir siguen como hoy.
-  delete process.env.PATRONES_COLOR_V1;
+  process.env.PATRONES_COLOR_V1 = "false";
   const apagada = confirmarCon(conPatron);
   const confirmadoSinPatrones = await apagada.confirmar();
   assert.equal(confirmadoSinPatrones.ok, true, JSON.stringify(confirmadoSinPatrones).slice(0, 400));

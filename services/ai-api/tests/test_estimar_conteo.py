@@ -36,7 +36,7 @@ from app.estimar_conteo import (
 )
 from app.generated_models import contract_schema
 from app.main import Settings, build_signature, create_app
-from app.omoikane.armado_estructura import (
+from app.armado_estructura import (
     ArmadoEstructuraRequest,
     ColorPedido,
     FormaPedida,
@@ -364,17 +364,31 @@ def test_las_medidas_del_plan_tampoco_mueven_el_total_de_una_pieza_con_armado() 
 
 
 @pytest.mark.anyio
-async def test_una_estructura_oficial_que_el_motor_no_distingue_lo_dice_en_la_nota() -> None:
-    """El aro circular entra al motor por ``tipo``: lo cuenta como un arco normal y la nota lo advierte."""
+async def test_una_estructura_oficial_que_ningun_motor_arma_se_cuenta_con_la_formula() -> None:
+    """El aro circular no entra al motor aunque su tipo sea ``arco``: su cifra es la de la fórmula.
+
+    Antes sí entraba —ningún motor mira ``estructura_oficial``— y esta prueba comprobaba que la nota lo
+    advirtiera. Desde el 2026-10-04 la puerta lo impide (``plan.OFICIALES_SIN_MOTOR``: una forma ``circular``
+    o ``libre`` no es una que un motor produzca), así que ya no hay nada que advertir: el total es el de la
+    fórmula, que es el que de verdad cuenta un aro (su eje es la circunferencia).
+    """
     medidas = {"ancho_m": 1.5, "alto_m": 1.5}
     sin_armado = await resolver_pieza(
         pieza_del_plan("arco", estructura_oficial="aro_circular", medidas=medidas)
     )
     estimado = uno("arco", estructura_oficial="aro_circular", medidas=medidas, **como_arco())
     assert estimado["total_formula"] == sin_armado["total"]
-    assert estimado["total_motor"] != estimado["total_formula"]
-    assert "aro_circular" in estimado["nota"]
-    assert "no distingue la forma" in estimado["nota"]
+    # El armado guardado en la pieza no la cuenta: ni total del motor, ni nota del motor.
+    assert (estimado["fuente"], estimado["total_motor"], estimado["nota"]) == (
+        "formula",
+        None,
+        None,
+    )
+    assert estimado["total_vigente"] == estimado["total_formula"]
+    # La advertencia sigue viva donde importa: un oficial que SÍ arma un motor y cuya forma el motor no
+    # distingue, como un arco asimétrico, que para el motor es un arco.
+    nota = uno("arco", estructura_oficial="arco_asimetrico", **como_arco())["nota"]
+    assert "arco_asimetrico" in nota and "no distingue la forma" in nota
     # Un arco normal con motor no lleva esa advertencia.
     assert "no distingue la forma" not in uno("arco", **como_arco())["nota"]
 

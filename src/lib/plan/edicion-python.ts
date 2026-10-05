@@ -6,16 +6,20 @@ import {
   llamarPythonPlanArmadoArco,
   llamarPythonPlanArmadoBouquet,
   llamarPythonPlanArmadoColumna,
+  llamarPythonPlanArmadoArcoOrganico,
   llamarPythonPlanArmadoColumnaOrganica,
   llamarPythonPlanArmadoGuirnalda,
   llamarPythonPlanArmadoGuirnaldaOrganica,
+  llamarPythonPlanDibujoEstructura,
   llamarPythonPlanEdit,
   llamarPythonPlanPatron,
   type LimitesArco,
+  type LimitesArcoOrganico,
   type LimitesColumna,
   type LimitesColumnaOrganica,
   type LimitesGuirnaldaOrganica,
   type OpcionesArmadoArco,
+  type OpcionesArmadoArcoOrganico,
   type OpcionesArmadoColumna,
   type OpcionesArmadoColumnaOrganica,
   type OpcionesArmadoGuirnalda,
@@ -28,11 +32,14 @@ import {
 import type { ArmadoArcoV1, VistaArco } from "./armado-arco";
 import type { ArmadoBouquetResuelto, ArmadoBouquetV1, DisposicionNumero, VarianteBouquet } from "./armado-bouquet";
 import type { ArmadoColumnaV1, VistaColumna } from "./armado-columna";
+import type { ArmadoArcoOrganicoV1 } from "./armado-arco-organico";
+import type { VistaArcoOrganico } from "./opciones-armado-arco-organico";
 import type { ArmadoColumnaOrganicaV1 } from "./armado-columna-organica";
 import type { VistaColumnaOrganica } from "./opciones-armado-columna-organica";
 import type { ArmadoGuirnaldaResuelto, ArmadoGuirnaldaV1 } from "./armado-guirnalda";
 import type { ArmadoGuirnaldaOrganicaV1 } from "./armado-guirnalda-organica";
 import type { VistaGuirnaldaOrganica } from "./opciones-armado-guirnalda-organica";
+import type { GraficaDibujoEstructura } from "./dibujo-estructura";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { candidatoDesdePython } from "@/lib/rag/chat/candidato-python";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
@@ -186,6 +193,16 @@ const RECHAZOS_EDICION: Readonly<Record<string, Rechazo>> = {
   armado_guirnalda_organica_activo: { status: 409, mensaje: "Esta guirnalda está armada con el motor: cambia sus colores y sus globos desde «Editar guirnalda»." },
   armado_columna_organica_activo: { status: 409, mensaje: "Esta columna está armada con el motor: cambia sus colores, su forma y su globo desde «Editar columna»." },
   armado_columna_activo: { status: 409, mensaje: "Esta columna está armada con el motor: cambia sus colores y su globo desde «Editar columna»." },
+  // El arco orgánico arma también el semiarco: la frase nombra los dos botones que puede tener la tarjeta.
+  armado_arco_organico_activo: { status: 409, mensaje: "Esta pieza está armada con el motor: cambia sus colores, su forma y sus globos desde «Editar arco» (o «Editar semiarco»)." },
+  // Un armado del motor orgánico encima del clásico de la misma pieza: con los dos, el plan contaría solo el clásico.
+  armado_arco_presente: { status: 409, mensaje: "Este arco ya tiene el armado de patrones: edítalo desde «Editar arco» o quítalo antes de armarlo como orgánico." },
+  armado_columna_presente: { status: 409, mensaje: "Esta columna ya tiene el armado de anillos: edítalo desde «Editar columna» o quítalo antes de armarla como orgánica." },
+  // La densidad no es de esa estructura (una pared densa es media o lujosa): el editor solo ofrece las suyas.
+  densidad_invalida: { status: 422, mensaje: "Esa densidad no es de esta pieza. Vuelve a abrir su editor y elige una de las que ofrece." },
+  // La forma elegida no es de esa pieza (`formas-pieza.ts`): el selector solo ofrece las suyas, así que esto
+  // es un cliente que no la respetó o un plan cuya oficial cambió por debajo.
+  forma_invalida: { status: 422, mensaje: "Esa forma no es de esta pieza. Vuelve a abrirla y elige una de las que ofrece." },
   invalid_plan: { status: 400, mensaje: "La edición del plan no tiene un formato válido." },
 };
 
@@ -223,6 +240,12 @@ const RECHAZOS_VISTA_ARMADO_COLUMNA: Readonly<Record<string, Rechazo>> = {
   invalid_plan: { status: 422, mensaje: "El armado de la columna no tiene un formato válido." },
 };
 
+/** Rejections of POST /internal/v1/plan/armado-arco-organico (ADR-0034). */
+const RECHAZOS_VISTA_ARMADO_ARCO_ORGANICO: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
+  invalid_plan: { status: 422, mensaje: "El armado del arco no tiene un formato válido." },
+};
+
 /** Rejections of POST /internal/v1/plan/armado-columna-organica (ADR-0034). */
 const RECHAZOS_VISTA_ARMADO_COLUMNA_ORGANICA: Readonly<Record<string, Rechazo>> = {
   estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
@@ -233,6 +256,17 @@ const RECHAZOS_VISTA_ARMADO_COLUMNA_ORGANICA: Readonly<Record<string, Rechazo>> 
 const RECHAZOS_VISTA_ARMADO_GUIRNALDA_ORGANICA: Readonly<Record<string, Rechazo>> = {
   estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
   invalid_plan: { status: 422, mensaje: "El armado de la guirnalda no tiene un formato válido." },
+};
+
+/**
+ * Rejections of POST /internal/v1/plan/dibujo-estructura. `estructura_sin_dibujo`
+ * is this route's own: the piece has no schematic drawing, because an engine
+ * builds it (and then its own block draws it) or it has no fixed shape.
+ */
+const RECHAZOS_VISTA_DIBUJO_ESTRUCTURA: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
+  invalid_plan: { status: 422, mensaje: "El plan de la pieza no tiene un formato válido." },
+  estructura_sin_dibujo: { status: 422, mensaje: "Esta pieza no tiene un dibujo de su forma." },
 };
 
 /** Only when Python rejects an assembly without its own sentence (an older service). */
@@ -582,6 +616,63 @@ export async function vistaPreviaArmadoColumnaPython(input: {
 }
 
 /**
+ * What the organic arch editor gets back: `VistaArcoOrganicoSchema` (the
+ * resolved arch and its drawing) plus the assembly it was resolved with, the
+ * designer's tools and the live ranges. Nothing here is recomputed in
+ * TypeScript.
+ */
+export type VistaPreviaArmadoArcoOrganico = VistaArcoOrganico & {
+  armado: ArmadoArcoOrganicoV1;
+  opciones: OpcionesArmadoArcoOrganico;
+  limites: LimitesArcoOrganico;
+};
+
+/**
+ * Assembly preview for the organic arch editor (ADR-0034): the arch Python
+ * resolves (or the recipe it suggests, with `null`) **and the SVG its own
+ * engine emitted**, so the drawing never recomputes a geometry here.
+ *
+ * This is not the pattern-grid preview (`vistaPreviaArmadoArcoPython`): both
+ * describe an arch and coexist, and a half arch is armed here with
+ * `forma.corte` below 1. `colores` are the piece's tones as the browser holds
+ * them once the catalog resolved them; they only paint, since the count and
+ * the purchase go by material index. `opciones` are the designer's tools for
+ * the piece and `limites` the ranges the interface may move with this assembly
+ * in place, both decided by Python. An `armado_invalido` keeps Python's
+ * `motivo` and `mensaje`.
+ */
+export async function vistaPreviaArmadoArcoOrganicoPython(input: {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  armadoArcoOrganico: ArmadoArcoOrganicoV1 | null;
+  colores?: readonly string[];
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<VistaPreviaArmadoArcoOrganico> {
+  try {
+    const resultado = await llamarPythonPlanArmadoArcoOrganico({
+      plan: input.plan,
+      estructuraId: input.estructuraId,
+      armadoArcoOrganico: input.armadoArcoOrganico,
+      ...(input.colores === undefined ? {} : { colores: input.colores }),
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return {
+      arco: resultado.arco,
+      grafica: resultado.grafica,
+      armado: resultado.armado,
+      opciones: resultado.opciones,
+      limites: resultado.limites,
+    };
+  } catch (error) {
+    throw rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO_ARCO_ORGANICO) ?? error;
+  }
+}
+
+/**
  * What the organic column editor gets back: `VistaColumnaOrganicaSchema` (the
  * resolved column and its drawing) plus the assembly it was resolved with, the
  * designer's tools and the live ranges. Nothing here is recomputed in
@@ -693,5 +784,38 @@ export async function vistaPreviaArmadoGuirnaldaOrganicaPython(input: {
     };
   } catch (error) {
     throw rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO_GUIRNALDA_ORGANICA) ?? error;
+  }
+}
+
+/**
+ * The schematic drawing of a piece no engine builds: the wall, the circular
+ * hoop, the balloon ceiling and the table centerpiece (ADR-0034).
+ *
+ * This is not one of the four assembly previews. There is no engine and no
+ * assembly, so the answer is only the drawing: nothing here counts, measures
+ * or buys, and the piece keeps the numbers `plan.py` resolved for it (the hoop,
+ * its `π × diameter`). `mezclaReal` is that resolved size mix, handed over so
+ * nobody recomputes it. The drawing is derived and never enters `plan_hash`.
+ */
+export async function vistaPreviaDibujoEstructuraPython(input: {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  mezclaReal?: readonly { diam_pulg: number; forma: string | null; unidades: number; pct: number }[];
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<{ grafica: GraficaDibujoEstructura }> {
+  try {
+    const resultado = await llamarPythonPlanDibujoEstructura({
+      plan: input.plan,
+      estructuraId: input.estructuraId,
+      ...(input.mezclaReal === undefined ? {} : { mezclaReal: input.mezclaReal }),
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return { grafica: resultado.grafica };
+  } catch (error) {
+    throw rechazoDesdePython(error, RECHAZOS_VISTA_DIBUJO_ESTRUCTURA) ?? error;
   }
 }

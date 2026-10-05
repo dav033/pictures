@@ -83,7 +83,12 @@ async function main(): Promise<void> {
   const parSimetrico = planParSimetrico.escena;
   assert.deepEqual(todosPresentes(parSimetrico).sort(), ["EST_01_ARCO", "EST_02_SEMIARCOS#1", "EST_02_SEMIARCOS#2"]);
 
-  // Dos columnas distintas en lados opuestos: nunca se leen como un arco (misma regla que el compilador).
+  // Dos columnas distintas en lados opuestos: SÍ se leen como un arco, y por eso ahora piden el hueco.
+  // Aquí decía «nunca se leen como un arco». El 2026-10-04 un plan de dos columnas salió con la de la
+  // derecha curvándose por encima del hueco y cerrándolo como la pata de un arco. Está medido además en
+  // `scripts/lora/recaption-v004.ts`: de los 154 captions del dataset **ninguno** expresa una relación
+  // bilateral, y sus autores anotaron esa falta como la que «explica que las columnas se fundan en las patas
+  // del arco».
   const planDosColumnas = planAprobado("piezas-dos-columnas");
 
   // Paridad LoRA/Gemini en todos los casos, incluidas las variantes declaradas
@@ -91,7 +96,7 @@ async function main(): Promise<void> {
   // y deciden qué laterales forman un par.
   paridadConPrompt("semiarco y columna", planSeparadas, true);
   paridadConPrompt("par simétrico", planParSimetrico, false);
-  paridadConPrompt("dos columnas", planDosColumnas, false);
+  paridadConPrompt("dos columnas", planDosColumnas, true);
 
   // Dos semiarcos de alturas distintas (lora-run-v004-1000): no son un par, son dos piezas.
   const dosSemiarcos = planAprobado("piezas-dos-semiarcos");

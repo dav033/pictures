@@ -3,39 +3,6 @@ import { DENSIDADES, MEZCLAS, ROLES_ESCENA, ROLES_MATERIAL, TIPOS_ESTRUCTURA, UB
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { EJEMPLO_UNIDADES_DECLARADAS, ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 
-const SELECCION_PROPIEDADES = {
-  product_id: { type: "string" },
-  variant_id: { type: "string" },
-  cantidad: { type: "integer" },
-  color: { type: "string" },
-  razon: { type: "string" },
-} as const;
-
-/**
- * DISEÑO DE DECORACIÓN es el único modo: las cantidades y los tamaños de una
- * estructura los calcula `confirmar_plan_decoracion`, así que esta herramienta
- * no tiene despiece propio.
- */
-const CONFIRMAR_SELECCION_RAG: Herramienta = {
-  nombre: "confirmar_seleccion_rag",
-  descripcion:
-    "Confirma la selección final usando únicamente product_id y variant_id recuperados por buscar_catalogo_rag en este mismo turno. Nunca incluyas precio: el backend lo calcula desde PostgreSQL. Usa una variante explícita cuando el cliente pidió tamaño; en el modo DISEÑO DE DECORACIÓN no hay despiece: las cantidades y los tamaños de una estructura los calcula confirmar_plan_decoracion.",
-  esquema: {
-    type: "object",
-    required: ["seleccion"],
-    properties: {
-      seleccion: {
-        type: "array",
-        items: {
-          type: "object",
-          required: ["product_id"],
-          properties: { ...SELECCION_PROPIEDADES },
-        },
-      },
-    },
-  },
-};
-
 /**
  * Registro único de herramientas expuestas al pipeline RAG y al planificador.
  * Los enums de estructuras provienen de los contratos del plan.
@@ -70,7 +37,6 @@ export const HERRAMIENTAS_RAG: Herramienta[] = [
       },
     },
   },
-  CONFIRMAR_SELECCION_RAG,
 ];
 
 export const HERRAMIENTAS_PLAN: Herramienta[] = [
@@ -203,7 +169,7 @@ const TAMANO_NOMINAL = { type: "integer", enum: [5, 9, 12, 18, 24, 36] } as cons
 export const CONSULTAR_OPCIONES_ARMADO: Herramienta = {
   nombre: "consultar_opciones_armado",
   descripcion:
-    "Devuelve el catálogo de armado del tipo de pieza que preguntes, tal como lo publica el motor del diseñador. En un arco o una columna: cada patrón con su id, su nombre, qué hace, cuántos colores admite (mínimo y máximo), qué papel juega cada color cuando lo tiene (Centro, Pétalos, Punto…) y cada mando con su clave, su rango, su paso, su valor por defecto y su ayuda; además las formas de la línea guía, los tamaños de globo y los anchos y altos admitidos. En una guirnalda no hay patrones: devuelve los acabados del látex (cada uno con su nombre), los repartos de color con su ayuda, los papeles que puede tener un color y los rangos de largo, grosor y altura. Consúltala ANTES de llamar armar_estructura: los ids de patrón, los acabados, los repartos y las claves de los mandos salen de aquí, nunca de tu memoria. No tiene efecto: no toca el plan ni el catálogo de productos.",
+    "Devuelve el catálogo de armado del tipo de pieza que preguntes, tal como lo publica el motor del diseñador. En un arco o una columna: cada patrón con su id, su nombre, qué hace, cuántos colores admite (mínimo y máximo), qué papel juega cada color cuando lo tiene (Centro, Pétalos, Punto…) y cada mando con su clave, su rango, su paso, su valor por defecto y su ayuda; además las formas de la línea guía, los tamaños de globo y los anchos y altos admitidos. En una guirnalda no hay patrones: devuelve las FORMAS LISTAS (cada una con su id, su nombre y una frase de qué tipo de guirnalda es y dónde se usa) y los ESTILOS (cuánto se llena), que son la vía corta para armarla, y además los acabados del látex (cada uno con su nombre), los repartos de color con su ayuda, los papeles que puede tener un color y los rangos de largo, grosor y altura. Consúltala ANTES de llamar armar_estructura: los ids de patrón, los acabados, los repartos y las claves de los mandos salen de aquí, nunca de tu memoria. No tiene efecto: no toca el plan ni el catálogo de productos.",
   esquema: {
     type: "object",
     required: ["tipo"],
@@ -275,6 +241,8 @@ export const ARMAR_ESTRUCTURA: Herramienta = {
         },
       },
       reparto: { type: "string", description: "Solo guirnalda: cómo se reparten los colores a lo largo de la tira, con el valor que dio consultar_opciones_armado (cada uno trae su ayuda). Sin esto, el del diseñador." },
+      forma_lista: { type: "string", description: "Solo guirnalda: el id de una FORMA LISTA de consultar_opciones_armado (la recta sobre la pared, los festones colgados, la nube, la diagonal, la del piso…). Es la vía corta y la preferida: pon el id y el motor copia sus cifras: la línea, el grosor y la mezcla de tamaños. Úsala para decir QUÉ TIPO de guirnalda es, y deja forma, volumen y tamanos solo para retocar un número suelto encima (lo que mandes explícito manda sobre la forma lista). No inventes ids: uno que no exista se rechaza con la lista de los que hay." },
+      estilo: { type: "string", description: "Solo guirnalda: el id de un ESTILO de consultar_opciones_armado, que es cuánto se llena la pieza (ligero, estandar, lleno, gigantes). Se aplica DESPUÉS de forma_lista, sobre el grosor que esa dejó. Sin esto, el del diseñador." },
       mezcla_colores: { type: "number", minimum: 0, maximum: 1, description: "Solo guirnalda: cuánto se difuminan los colores en la frontera entre tramos, o cuán puros son los racimos. 0 = corte seco." },
       forma: {
         type: "object",

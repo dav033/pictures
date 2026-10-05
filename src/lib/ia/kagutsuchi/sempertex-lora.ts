@@ -13,12 +13,18 @@ const MAX_FAL_IMAGE_BYTES = 16_000_000;
  * Trigger neutro usado SOLO para preflight/telemetría cuando todavía no hay
  * una aplicación LoRA resuelta (por ejemplo, al reportar qué trigger se
  * esperaría). Nunca se usa para armar un payload real: `lorasFor` exige
- * `ResolvedLoraApplication[]` explícito y falla si no lo recibe.
+ * `ResolvedLoraApplication[]` explícito y falla si no lo recibe. Tampoco en
+ * modo `base`, que no lleva trigger.
  */
 export const DEFAULT_SEMPERTEX_LORA_TRIGGER = "eventdecor_style_v3" as const;
 const MAX_EDIT_IMAGES = 4;
 /** `promptVersion` de la telemetría cuando el `/edit` lleva la guía de estructura (ADR-0033). */
 export const PROMPT_VERSION_GUIA = "guia-estructura.v1";
+/**
+ * `promptVersion` de la telemetría cuando el `/edit` lleva la guía de escena (`GUIA_ESCENA_V1`). v2: la nota dice
+ * que las líneas finas y las formas planas son estructura real (marco de aro, poste, cintas, pesa).
+ */
+export const PROMPT_VERSION_GUIA_ESCENA = "guia-escena.v2";
 
 export type SempertexLoraOptions = {
   seed?: number;
@@ -29,6 +35,8 @@ export type SempertexLoraOptions = {
    * (`@/lib/lora/mode-resolver`) — nunca de una URL o trigger escritos a
    * mano. No existe combinación por defecto: sin esto, la llamada falla
    * antes de tocar la red. Ver PLAN-COMPOSICION-RICA-V001.md §1.1 y §9.2.
+   * Una lista vacía es explícita y solo la produce el modo `base`: el modelo
+   * base FLUX.2 en fal, con `loras: []` y sin trigger. Más de uno se rechaza.
    */
   loras: LoraApplication[];
   /** Cancels provider I/O when the client disconnects or the route expires. */
@@ -50,12 +58,12 @@ export type SempertexLoraOptions = {
  * plano de la estructura aprobada y su carta de color. No son `ImageInput`
  * porque nunca pasan por Gemini, por `buildInputs` ni por el prompt de escena.
  */
-export type RolGuiaLora = "structure_guide" | "color_chart";
+export type RolGuiaLora = "structure_guide" | "color_chart" | "scene_guide";
 export type ImagenGuiaLora = Imagen & { id: string; role: RolGuiaLora };
 export type ImagenEditLora = ImageInput | ImagenGuiaLora;
 
 function esImagenGuia(imagen: ImagenEditLora): imagen is ImagenGuiaLora {
-  return imagen.role === "structure_guide" || imagen.role === "color_chart";
+  return imagen.role === "structure_guide" || imagen.role === "color_chart" || imagen.role === "scene_guide";
 }
 
 export type LoraApplication = {
@@ -298,8 +306,15 @@ export function loraEditApagado(interruptor = process.env.SEMPERTEX_LORA_EDIT): 
   return interruptor === "false";
 }
 
-function validarUnaAplicacion(loras: LoraApplication[]): void {
-  if (loras.length !== 1) throw new Error("LORA_MULTI_UNSUPPORTED: solo se permite un LoRA por generación.");
+/** Como mucho un LoRA por generación; cero es el modelo base (modo `base`). */
+function validarAplicaciones(loras: LoraApplication[]): void {
+  if (loras.length > 1) throw new Error("LORA_MULTI_UNSUPPORTED: solo se permite un LoRA por generación.");
+}
+
+/** Nombre del modelo para la telemetría: sin LoRA es el modelo base, aunque el endpoint de fal sea el mismo. */
+export function modeloFluxParaTelemetria(loras: readonly LoraApplication[], conReferencias: boolean): string {
+  const familia = loras.length ? "flux-2/lora" : "flux-2/base";
+  return conReferencias ? `${familia}/edit` : familia;
 }
 
 /**
@@ -341,6 +356,7 @@ export const LORA_EDIT_PROMPT_MAX_LENGTH = 2500;
  */
 export function buildLoraEditPrompt(prompt: string, references: readonly ImagenEditLora[]): string {
   if (!references.length) return prompt;
+  if (references.some((imagen) => imagen.role === "scene_guide")) return promptConGuiaEscena(prompt, references);
   if (references.some(esImagenGuia)) return promptConGuia(prompt, references);
   const frases = references.filter((image): image is ImageInput => !esImagenGuia(image)).map((image, index) => `Input image ${index + 1} (@image${index + 1}): ${FRASE_POR_ROL[image.role]}`);
   const baseIndex = references.findIndex((image) => image.role === "previous_generated_result" || image.role === "venue_base");
@@ -399,6 +415,38 @@ function promptConGuia(prompt: string, references: readonly ImagenEditLora[]): s
   const cuerpo = texto.slice(triggers.length).trim();
   const carta = resto.length ? `\n\n${notaCartaColor(references.length)}` : "";
   return `${triggers}${NOTA_GUIA_ESTRUCTURA}\n\n${cuerpo}${carta}`;
+}
+
+/**
+ * Lo que se le dice a `/edit` de la guía de escena (`GUIA_ESCENA_V1`): la imagen de entrada es el mapa plano de
+ * TODA la decoración, con cada pieza dibujada por el motor donde la foto de referencia tiene la suya. Las tres
+ * ideas de la nota de la guía de estructura siguen (no es una foto, se sigue su forma y su color, se rehace con
+ * globos y luz reales) y se añade lo que ahora importa: la posición y el tamaño relativo de cada pieza, que el
+ * borde fino de cada disco solo marca dónde acaba el globo, que las líneas finas y las formas planas que no son
+ * discos son estructura real (el marco metálico de un aro y su poste, las cintas y la pesa de un bouquet: los
+ * `trazos` y `rellenos` de `plan-guia-escena-result.v1`), y que nada del mapa (su fondo, sus círculos como dibujo,
+ * sus bordes, marcas) pase a la foto. En inglés plano y sin ids. Una frase más larga sobre la estructura no cupo:
+ * la nota se descuenta del presupuesto del caption y el caso de prueba se quedaba sin guía.
+ */
+export const NOTA_GUIA_ESCENA = "The first input image (@image1) is a flat layout map of this balloon decoration, not a photo: follow its shapes, positions, relative sizes and colors; thin darker rims only mark where each balloon ends; thin lines and flat shapes are the real metal hoop frame and stand, ribbons or weight. Produce a real photograph of real latex balloons with real light, shadows and depth; never reproduce the flat map, circles drawn as a diagram, outlines, its background color or any marks.";
+
+/** Caracteres que la nota de la guía de escena ocupa en el prompt: se descuentan del presupuesto del caption. */
+export function reservaNotaGuiaEscena(): number {
+  return NOTA_GUIA_ESCENA.length + 2;
+}
+
+/**
+ * `[trigger, ]<caption>\n\n<nota de la guía de escena>`. Aquí el caption va PRIMERO y la nota después, al revés
+ * que la guía de estructura: con varias piezas, lo que el modelo base lee primero tiene que ser la escena (qué
+ * piezas, de qué colores y tamaños, en qué sitio), que es lo que el preflight y la coherencia de color
+ * comprueban; la nota solo dice cómo leer el mapa. La guía de escena viaja SOLA: ninguna otra imagen (y nunca la
+ * foto de referencia) puede acompañarla, y cualquier otra mezcla falla cerrada antes de llegar al proveedor.
+ */
+function promptConGuiaEscena(prompt: string, references: readonly ImagenEditLora[]): string {
+  if (references.length !== 1 || references[0]!.role !== "scene_guide") {
+    throw new Error("LORA_GUIA_INVALIDA: la guía de escena viaja sola, como única imagen de /edit.");
+  }
+  return `${prompt.trim()}\n\n${NOTA_GUIA_ESCENA}`;
 }
 
 /** Bounded to the range the creativity levels use; anything else keeps the historical 3.5. */
@@ -477,10 +525,10 @@ export async function generarConSempertexLora(
   inputs: ImageInput[] = [],
   options: SempertexLoraOptions,
 ): Promise<Imagen> {
-  if (!options.loras?.length) {
-    throw new Error("LORA_APPLICATION_REQUIRED: generarConSempertexLora necesita al menos un ResolvedLoraApplication resuelto desde el registro; no existe combinación URL/trigger por defecto.");
+  if (!Array.isArray(options.loras)) {
+    throw new Error("LORA_APPLICATION_REQUIRED: generarConSempertexLora necesita las aplicaciones resueltas desde el registro (vacías solo en modo base); no existe combinación URL/trigger por defecto.");
   }
-  validarUnaAplicacion(options.loras);
+  validarAplicaciones(options.loras);
   const key = process.env.FAL_KEY;
   if (!key) throw new Error("LoRA Sempertex no está conectado todavía: falta FAL_KEY en .env.local.");
 
@@ -489,6 +537,7 @@ export async function generarConSempertexLora(
   const references: readonly ImagenEditLora[] = options.imagenesEdit ? imagenesEditExplicitas(options.imagenesEdit) : referenciasParaLoraEdit(inputs);
   const endpoint = references.length ? EDIT_ENDPOINT : TEXT_ENDPOINT;
   const conGuia = references.some((image) => image.role === "structure_guide");
+  const conGuiaEscena = references.some((image) => image.role === "scene_guide");
 
   const inicio = Date.now();
   const deadlineAt = inicio + 105_000;
@@ -503,7 +552,7 @@ export async function generarConSempertexLora(
     proveedor: "fal",
     flujo: "generador_imagen",
     capacidad: "imagen_generacion",
-    modelo: references.length ? "flux-2/lora/edit" : "flux-2/lora",
+    modelo: modeloFluxParaTelemetria(options.loras, references.length > 0),
     superficie: options.telemetria?.superficie ?? "/api/generate",
     requestId: ids.requestId,
     correlationId: ids.correlationId,
@@ -514,7 +563,7 @@ export async function generarConSempertexLora(
     bytesImagenEntrada: references.reduce((total, image) => total + bytesDeBase64(image.base64), 0),
     unidadesFacturadas: resultado === "ok" ? 1 : undefined,
     // Distingue en la telemetría las llamadas con guía de estructura (ADR-0033); sin ella, el evento de siempre.
-    ...(conGuia ? { promptVersion: PROMPT_VERSION_GUIA } : {}),
+    ...(conGuiaEscena ? { promptVersion: PROMPT_VERSION_GUIA_ESCENA } : conGuia ? { promptVersion: PROMPT_VERSION_GUIA } : {}),
   });
 
   try {
@@ -617,15 +666,17 @@ const LEADING_TRIGGER_RUN = /^(?:eventdecor_[a-z0-9]+_v\d+\s*,\s*)+/i;
  * Antepone los triggers de las aplicaciones LoRA resueltas y quita el
  * preámbulo de triggers que ya viniera en el texto (evita duplicarlo si el
  * compilador lo dejó suelto). `loras` es obligatorio: sin una aplicación
- * resuelta no hay trigger válido que anteponer.
+ * resuelta no hay trigger válido que anteponer. Con `[]` (modo `base`, el
+ * modelo base sin LoRA) no se antepone nada y se quita cualquier trigger
+ * suelto: el modelo base no conoce esas palabras.
  */
 export function ensureLoraTriggers(prompt: string, loras: LoraApplication[]): string {
-  if (!loras?.length) {
-    throw new Error("LORA_APPLICATION_REQUIRED: ensureLoraTriggers necesita al menos un ResolvedLoraApplication resuelto desde el registro.");
+  if (!Array.isArray(loras)) {
+    throw new Error("LORA_APPLICATION_REQUIRED: ensureLoraTriggers necesita las aplicaciones resueltas desde el registro (vacías solo en modo base).");
   }
-  validarUnaAplicacion(loras);
+  validarAplicaciones(loras);
   const trimmed = prompt.trim();
   const triggers = [...new Set(loras.map((lora) => lora.trigger.trim()).filter(Boolean))];
   const withoutTriggers = trimmed.replace(LEADING_TRIGGER_RUN, "").trim();
-  return `${triggers.join(", ")}, ${withoutTriggers}`;
+  return triggers.length ? `${triggers.join(", ")}, ${withoutTriggers}` : withoutTriggers;
 }

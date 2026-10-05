@@ -5,7 +5,9 @@ import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, Vis
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { SOPORTES_CON_CAIDA_GUIRNALDA, type SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
-import { armadoDeElemento, armadoGuirnaldaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
+import { armadoDeElemento, armadoGuirnaldaDeElemento, armadoGuirnaldaOrganicaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
+import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separate-side-pieces";
+import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "@/lib/lora/vocabulario-base";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
 
@@ -27,6 +29,15 @@ export const LORA_JSON_PROMPT_MAX_LENGTH = 1800;
  * preflight rejects anything that still does not.
  */
 export const LORA_PROMPT_MAX_LENGTH = 750;
+
+/**
+ * Budget of the `base` dialect (FLUX.2 without a LoRA). There is no training
+ * caption regime to stay inside: the bound only keeps the decoration first and
+ * stops the tail from diluting it. FLUX.2 reads far longer prompts; 1000
+ * characters fit the sweep's worst scene with every size and color spelled
+ * out, and the same compaction steps apply beyond it.
+ */
+export const BASE_PROMPT_MAX_LENGTH = 1000;
 
 /** Trigger written by the compiler; callers replace it via `ensureLoraTriggers`. */
 const CAPTION_TRIGGER = "eventdecor_style_v2";
@@ -59,6 +70,12 @@ export type ProductConceptClauseInput = {
    * other products keep their canonical label in every dialect.
    */
   sceneTerms?: { descriptor: string; noun: string };
+  /**
+   * Same product in the plain wording of the `base` dialect (see
+   * src/lib/lora/vocabulario-base.ts). Without it the base dialect renders the
+   * canonical label, cleaned of commercial names.
+   */
+  baseTerms?: TerminosBase;
 };
 
 /**
@@ -73,11 +90,17 @@ export type ProductConceptClauseInput = {
  *   contains "inch", "round latex balloon" or "stage photo area"; sending that
  *   wording to it produced incoherent compositions.
  */
-export type LoraCaptionDialect = "product_v007" | "scene_v004";
+export type LoraCaptionDialect = "product_v007" | "scene_v004" | "base";
 
-/** Dialect for the trigger of the resolved LoRA; unknown triggers keep the product wording. */
+/**
+ * Dialect for the trigger of the resolved LoRA. No trigger means no LoRA: the
+ * base FLUX.2 model reads the prompt and never saw either corpus, so it gets
+ * the plain `base` wording. Unknown triggers keep the product wording.
+ */
 export function captionDialectForTrigger(trigger: string | undefined): LoraCaptionDialect {
-  return trigger?.trim() === "eventdecor_style_v2" ? "scene_v004" : "product_v007";
+  const value = trigger?.trim();
+  if (!value) return "base";
+  return value === "eventdecor_style_v2" ? "scene_v004" : "product_v007";
 }
 
 export type LoraVisualClause = {
@@ -147,6 +170,8 @@ export type LoraVisualClause = {
    * stage-2 locks; the clause text is the phrase, verbatim. Absent otherwise.
    */
   armadoGuirnalda?: ArmadoGuirnaldaEnPrompt;
+  /** Set when that `prompt_lora` is the organic engine's garland assembly (ADR-0034). */
+  armadoGuirnaldaOrganica?: { enAlto: boolean };
 };
 
 export type LoraCaptionCompilation = {
@@ -183,6 +208,8 @@ type SemanticElement = {
   armadoBouquet?: ArmadoBouquetEnPrompt;
   /** Set when that `prompt_lora` is a garland assembly (ADR-0032). */
   armadoGuirnalda?: ArmadoGuirnaldaEnPrompt;
+  /** Set when that `prompt_lora` is the organic engine's garland assembly (ADR-0034). */
+  armadoGuirnaldaOrganica?: { enAlto: boolean };
 };
 
 const STRUCTURE_NOUNS: Record<CaptionStructureType, string> = {
@@ -260,7 +287,11 @@ const COLOR_ALIASES: Record<string, string> = {
   // `gris` is a real product color (colores-producto.ts) that the taxonomy v2
   // palette does not carry, so without this alias the Spanish word reached the
   // English-only LoRA caption untranslated.
-  gris: "gray",
+  //
+  // Con `grey` y no `gray`, que es la misma palabra y no la misma estadistica: en las 345 captions `grey`
+  // sale 15 veces y **las de globos son esas** («12-inch matte Fashion grey round latex balloons»), mientras
+  // `gray` sale 7 y describe paredes y pisos. La ortografia la eligio quien escribio el corpus, no nosotros.
+  gris: "grey",
   grafito: "charcoal gray",
   cafe: "brown",
   marron: "brown",
@@ -271,11 +302,21 @@ const COLOR_ALIASES: Record<string, string> = {
   crema: "cream",
   nude: "nude",
   burdeos: "burgundy",
-  "azul rey": "blue",
-  "azul caribe": "blue",
+  // Nombres del catalogo que el corpus sabe decir con mas precision que la paleta de 26 palabras.
+  // **Cada uno medido en las 345 captions de `data/staging/lora-v007`, y solo donde describe un GLOBO**: el
+  // numero es cuantas veces aparece. Antes `azul rey` y `azul caribe` se aplastaban los dos a `blue`, y
+  // `azul galaxy`, `blanco nacar` y `verde menta` no estaban y caian a la paleta (`blue`, `white`, `green`).
+  // Tres tonos del corpus se quedan FUERA a proposito, por la misma regla: `teal` (3 veces, y es un mantel),
+  // `dark green` (1, un piso) y `light pink` (1). Nombrar un globo con la palabra que el modelo aprendio
+  // mirando un piso es el fallo que `FINISH_WORDS` acaba de corregir con `glossy`.
+  "azul rey": "royal blue",
+  "azul caribe": "turquoise",
   "azul naval": "navy blue",
+  "azul galaxy": "navy blue",
+  "blanco nacar": "pearl white",
   "verde esmeralda": "green",
   "verde lima": "lime green",
+  "verde menta": "mint green",
 };
 
 /**
@@ -287,8 +328,29 @@ const COLOR_ALIASES: Record<string, string> = {
  */
 export const LORA_COLOR_NAMES_EN: Readonly<Record<string, string>> = { ...COLOR_ALIASES, ...PALETA_COLORES_EN_V2 };
 
+/**
+ * El acabado con las palabras de lo que se VE, no con las del catalogo.
+ *
+ * Aqui habia `reflex: "glossy"`, y `glossy` aparece **una vez en las 345 captions de
+ * `data/staging/lora-v007`, describiendo un piso de baldosa**, nunca un globo. Eso habia que cambiarlo. Lo
+ * que no servia era cambiarlo por la palabra del dataset (`Reflex high-shine`, 213 apariciones): esta tabla
+ * alimenta el camino de respaldo del caption, y `descriptor-perceptual.ts` declara `Reflex`, `Fashion`,
+ * `Silk`, `Pastel` y `Crystal` en `TERMINOS_COMERCIALES` como **terminos que nunca deben llegar al modelo de
+ * imagen**. Su razon pesa mas que la frecuencia: esta medida en imagenes, no en tokens
+ * (`reports/lora-debug/color-fidelidad`), y con el mismo LoRA y el mismo seed el nombre de la linea comercial
+ * daba el color equivocado mientras el descriptor perceptual daba el del producto. Contar cuantas veces sale
+ * una palabra dice con que la entreno el LoRA; mirar la imagen dice que pinta. Manda la imagen.
+ *
+ * Asi que estas son las mismas palabras que el camino principal (`aDescriptorPerceptual` sobre la etiqueta
+ * canonica del producto, exigidas por `test-lora-product-runtime.ts`): los dos caminos describen el mismo
+ * globo igual. `matte` (606 en el corpus), `satin` (106), `pearl` (46) y `metallic` (67) se quedan como
+ * estaban: ya eran palabras de lo que se ve y ademas del corpus.
+ *
+ * Varias entradas traen el adjetivo y el material juntos, asi que repetirian el adjetivo si el mismo material
+ * llega ademas con el acabado suelto; `sinAcabadoRepetido` es quien lo evita.
+ */
 const FINISH_WORDS: Record<string, string> = {
-  reflex: "glossy",
+  reflex: "high-gloss chrome",
   metalizado: "metallic",
   metal: "metallic",
   satin: "satin",
@@ -297,14 +359,20 @@ const FINISH_WORDS: Record<string, string> = {
   perlado: "pearl",
   perlados: "pearl",
   perla: "pearl",
-  reflectivo: "glossy",
-  reflectante: "glossy",
-  brillante: "glossy",
-  translucido: "clear",
-  transparentes: "clear",
-  transparente: "clear",
+  reflectivo: "high-gloss chrome",
+  reflectante: "high-gloss chrome",
+  brillante: "high-gloss chrome",
+  translucido: "translucent",
+  transparentes: "translucent",
+  transparente: "translucent",
   metalizados: "metallic",
-  fashion: "fashion",
+  fashion: "solid matte",
+  silk: "soft pearlescent",
+  seda: "soft pearlescent",
+  neon: "fluorescent",
+  cristal: "translucent",
+  "pastel mate": "soft matte",
+  "pastel dusk": "muted dusty matte",
 };
 
 const NUMBER_WORDS: Record<number, string> = {
@@ -428,6 +496,28 @@ function uniqueEnglish(values: string[], mapper: (value: string) => string): str
   return [...new Set(values.map(mapper).map((value) => value.trim()).filter(Boolean))];
 }
 
+/**
+ * Quita el acabado que ya esta dicho DENTRO de otro.
+ *
+ * Varias entradas de `FINISH_WORDS` traen el adjetivo y el material juntos (`solid matte`, `high-gloss
+ * chrome`, `soft pearlescent`). Un material que llega con el acabado suelto y con su familia —el catalogo
+ * da las dos cosas: `acabado: "mate"` y `acabado: "fashion"`— salia entonces con las dos, y la frase decia
+ * «with matte and matte Fashion finishes»: el mismo globo nombrado dos veces. `uniqueEnglish` no lo veia
+ * porque como cadenas no son iguales.
+ *
+ * Se compara por palabras y no por `includes` para no tragarse un acabado que solo comparte un trozo de
+ * palabra con otro.
+ */
+function sinAcabadoRepetido(acabados: string[]): string[] {
+  const palabras = acabados.map((acabado) => new Set(acabado.toLowerCase().split(/\s+/)));
+  return acabados.filter((_, indice) =>
+    !palabras.some((otras, otro) => {
+      if (otro === indice || otras.size <= palabras[indice]!.size) return false;
+      return [...palabras[indice]!].every((palabra) => otras.has(palabra));
+    }),
+  );
+}
+
 function joinNatural(values: string[]): string {
   if (values.length <= 1) return values[0] ?? "";
   if (values.length === 2) return `${values[0]} and ${values[1]}`;
@@ -475,7 +565,7 @@ const FIELD_SEP = "";
 function compatibleKey(item: SemanticElement): string {
   const semantics = item.semantics;
   const colors = uniqueEnglish(item.element.resolved_colors, translateLoraColor).join("|");
-  const finishes = uniqueEnglish(item.element.resolved_finishes ?? [], englishFinish).join("|");
+  const finishes = sinAcabadoRepetido(uniqueEnglish(item.element.resolved_finishes ?? [], englishFinish)).join("|");
   const relationKey = physicalRelationsFor(item.element).map((relation) => JSON.stringify(relation)).sort().join("|");
   const motifKey = item.element.catalog_visual?.pattern.motif ?? "";
   const subjectKey = item.element.physical_form?.sujeto ?? "";
@@ -629,7 +719,7 @@ function createClause(
     noun: STRUCTURE_NOUNS[first.semantics.structure_type],
     count: items.length,
     colors: uniqueEnglish(items.flatMap((item) => item.element.resolved_colors), translateLoraColor),
-    finishes: uniqueEnglish(items.flatMap((item) => item.element.resolved_finishes ?? []), englishFinish),
+    finishes: sinAcabadoRepetido(uniqueEnglish(items.flatMap((item) => item.element.resolved_finishes ?? []), englishFinish)),
     scale: scaleFor(items),
     density: first.semantics.density,
     placement,
@@ -651,6 +741,7 @@ function createClause(
     ...(first.colorPattern ? { colorPattern: first.colorPattern } : {}),
     ...(first.colorPattern && first.armadoBouquet ? { armadoBouquet: first.armadoBouquet } : {}),
     ...(first.colorPattern && first.armadoGuirnalda ? { armadoGuirnalda: first.armadoGuirnalda } : {}),
+    ...(first.colorPattern && first.armadoGuirnaldaOrganica ? { armadoGuirnaldaOrganica: first.armadoGuirnaldaOrganica } : {}),
   };
 }
 
@@ -704,7 +795,12 @@ function assignHeightQualifiers(clauses: LoraVisualClause[]): void {
   taller.heightQualifier = "taller";
 }
 
-/** Non-mirrored half-arches and columns standing on the left or right. */
+/**
+ * Non-mirrored half-arches and columns standing on the left or right.
+ *
+ * Solo para los calificadores de altura: **quién forma un par separado lo decide
+ * `findSeparateSidePieces`**, y este filtro ya no responde esa pregunta.
+ */
 function separateLateralPieces(clauses: LoraVisualClause[]): LoraVisualClause[] {
   return clauses.filter((clause) => (clause.structureType === "semiarco" || clause.structureType === "columna")
     && !clause.bilateral
@@ -712,20 +808,29 @@ function separateLateralPieces(clauses: LoraVisualClause[]): LoraVisualClause[] 
 }
 
 /**
- * Two half-arches on opposite sides that are not a mirrored pair are two
- * separate pieces. Without saying so the image model closed them into one
- * full arch (observed with lora-run-v004-1000).
+ * Cómo se dice en el caption cada agrupación que encuentra el dueño de la regla.
+ *
+ * Es un `Record` de la unión completa a propósito: el día que `findSeparateSidePieces` gane un `kind`, esto
+ * deja de compilar en vez de devolver `undefined` en silencio y perder la frase.
+ */
+const FRASE_PIEZAS_SEPARADAS: Record<SeparateSidePieces<LoraVisualClause>["kind"], string> = {
+  half_arches: "the two curved garlands stand apart with an open gap between them",
+  half_arch_and_column: "the garland and the column stand apart with an open gap between them",
+  columns: "the two columns stand apart with an open gap between them",
+};
+
+/**
+ * Piezas laterales que no son un par: el hueco que las separa se dice en voz alta.
+ *
+ * **La regla no se decide aquí.** Su dueño es `findSeparateSidePieces` (`separate-side-pieces.ts`), el mismo
+ * que lee el prompt de Gemini; aquí solo se traduce su `kind` a la frase del caption. Esta función tenía su
+ * propia copia del filtro, y eso es justo lo que se rompió: el 2026-10-04 se le añadió el caso de las dos
+ * columnas a la copia y no al dueño, así que el caption pedía el hueco y el prompt de imagen no.
+ * `test-image-qa-piezas-separadas.ts`, que compara los dos, es lo que lo detectó.
  */
 function separatePiecesPhrase(clauses: LoraVisualClause[]): string | undefined {
-  const pieces = separateLateralPieces(clauses);
-  const sides = new Set(pieces.map((clause) => clause.placement));
-  if (!sides.has("lateral_izquierdo") || !sides.has("lateral_derecho")) return undefined;
-  if (pieces.every((clause) => clause.structureType === "semiarco")) return "the two curved garlands stand apart with an open gap between them";
-  // A half-arch next to a column was closed into one full arch as well: the
-  // separation must be explicit for mixed pieces too. Two columns already read apart.
-  return pieces.some((clause) => clause.structureType === "semiarco")
-    ? "the garland and the column stand apart with an open gap between them"
-    : undefined;
+  const pieces = findSeparateSidePieces(clauses);
+  return pieces && FRASE_PIEZAS_SEPARADAS[pieces.kind];
 }
 
 function findFocalClause(clauses: LoraVisualClause[]): LoraVisualClause | undefined {
@@ -878,7 +983,7 @@ const SCENE_V004_NOUNS: Partial<Record<CaptionStructureType, string>> = {
   // dataset wording for a one-sided piece is a garland that rises and curves.
   semiarco: "one-sided curved organic balloon garland",
   guirnalda: "organic balloon garland",
-  columna: "organic balloon column",
+  columna: "balloon column",
   pared: "balloon wall installation",
   centro_mesa: "small balloon cluster centerpiece",
   bouquet: "balloon bouquet",
@@ -903,6 +1008,27 @@ const SCENE_V004_ONE_SIDED_PLACEMENTS: Partial<Record<LoraPlacement, string>> = 
   fondo_pared: "at one side of the rear wall",
   arco_central: "off to one side of center",
   entrada: "at one side of the doorway",
+};
+
+/**
+ * Lo mismo para la guirnalda, que es una TIRA y no un portal. En el vocabulario de v004 un arco de verdad
+ * es «organic balloon garland arch» (regla 4 de `scripts/lora/recaption-v004.ts`), así que «an organic
+ * balloon garland ... against the rear wall» es la frase del arco a una palabra, sin nada que diga que
+ * corre a lo largo: el LoRA la cerró en un arco de pie con dos patas en el piso (2026-10-03).
+ *
+ * No es una hipótesis. Es la misma observación que la decisión 28 de ADR-0032 ya había anotado en
+ * `services/ai-api/app/armado_guirnalda.py`: «"against the wall" a secas, con la cola "grounded supports",
+ * salió como un arco de pie con patas», y por eso allí el soporte `pared` dice «mounted flat high on the
+ * wall». Aquella frase solo viaja con el armado de ADR-0032, que está detrás de una bandera apagada; esta
+ * tabla le da la forma a la guirnalda que no lo lleva.
+ *
+ * Solo donde la ubicación por sí sola se puede leer como un portal. «resting on the floor in front» ya no
+ * puede, y «hanging from the ceiling» tampoco.
+ */
+const SCENE_V004_GARLAND_PLACEMENTS: Partial<Record<LoraPlacement, string>> = {
+  fondo_pared: "running along the rear wall",
+  arco_central: "running across the middle of the scene",
+  entrada: "running along the entrance doorway",
 };
 
 /**
@@ -985,6 +1111,17 @@ const SHADE_FAMILIES: Record<string, readonly string[]> = {
   white: ["pearl", "ivory", "cream"],
   brown: ["latte", "mocha"],
   purple: ["purple orchid", "lavender", "lilac", "violet"],
+  // El único tono beige del vocabulario es «sand». Sin esta línea, un plan de rosa, beige, dorado y oro rosa
+  // dejaba el beige suelto y la cláusula terminaba en «... balloons (beige tones) against the rear wall»: es
+  // exactamente el tinte global que el comentario de arriba describe, y la imagen salió con la pared, la
+  // cortina y el piso beige (2026-10-03). «cream» se queda en `white` a propósito: ya tiene dueño, y ponerlo
+  // en dos familias haría que el tono se pegara al color que viniera primero en la lista.
+  beige: ["sand"],
+};
+
+/** Base-dialect shades for plan colors that `SHADE_FAMILIES` leaves unmatched; kept apart so the trained dialects keep their bytes. */
+const BASE_SHADE_FAMILIES: Record<string, readonly string[]> = {
+  cream: ["ivory", "off-white"],
 };
 
 /**
@@ -995,7 +1132,7 @@ const SHADE_FAMILIES: Record<string, readonly string[]> = {
  * by "installed against the rear wall"), so the color is attached to the
  * matching shade; only an unmatched color is kept as a parenthetical.
  */
-function withApprovedColorTones(material: string, colors: string[]): string {
+function withApprovedColorTones(material: string, colors: string[], dialect?: LoraCaptionDialect): string {
   let result = material;
   const unmatched: string[] = [];
   for (const color of colors) {
@@ -1011,7 +1148,20 @@ function withApprovedColorTones(material: string, colors: string[]): string {
       unmatched.push(color);
     }
   }
-  return unmatched.length ? `${result} (${joinNatural(unmatched)} tones)` : result;
+  if (!unmatched.length) return result;
+  if (dialect === "base") {
+    // The base wording names a cream product by what it looks like ("warm
+    // ivory off-white"); the approved color is attached to that shade first.
+    const remaining = unmatched.filter((color) => {
+      const shade = (BASE_SHADE_FAMILIES[color.toLowerCase()] ?? []).find((candidate) => new RegExp(`\\b${candidate}\\b`, "i").test(result));
+      if (shade) result = result.replace(new RegExp(`\\b${shade}\\b`, "i"), (match) => `${match} ${color}`);
+      return !shade;
+    });
+    // The base model reads a parenthetical as an aside detached from its noun;
+    // the color stays inside the clause it belongs to.
+    return remaining.length ? `${result}, accented in ${joinNatural(remaining)}` : result;
+  }
+  return `${result} (${joinNatural(unmatched)} tones)`;
 }
 
 /**
@@ -1056,23 +1206,158 @@ function colorFinishPhrase(clause: LoraVisualClause, render?: CaptionRenderState
     return withApprovedColorTones(conRelacion, clause.colors);
   }
   const color = clause.colors.length ? `in ${joinNatural(clause.colors)}` : "";
-  const finish = clause.finishes.length ? `with ${joinNatural(clause.finishes)} finishes` : "";
+  // En singular, que es como lo escribe el corpus: **`finishes` en plural aparece CERO veces en las 345
+  // captions**, y `finish` 42 («with a Pastel Matte finish», «solid Fashion finish»). Era una construccion
+  // entera fuera de su distribucion en el camino de respaldo, el que corre cuando la pieza no trae la
+  // etiqueta canonica del producto.
+  //
+  // Con dos acabados o mas el corpus no dice nada en esta posicion: los nombra dentro de cada material
+  // («matte Fashion white ... and high-shine Reflex gold ...»), que es el otro camino de esta funcion. Asi
+  // que aqui se listan y se deja el singular: inventar una forma plural que el corpus no tiene seria repetir
+  // el fallo, y la cura de verdad es que la pieza llegue con su etiqueta canonica.
+  const finish = clause.finishes.length ? `with a ${joinNatural(clause.finishes)} finish` : "";
   return [color, finish].filter(Boolean).join(" ");
 }
 
-/** Product-wording noun with the official variant (asymmetrical, airy, dense) and pieces that have no plan type. */
+/**
+ * Sustantivo del dialecto de producto con el adjetivo de la variante oficial.
+ *
+ * **Cada adjetivo solo se usa donde el corpus lo usa**, medido sobre sus 345 captions
+ * (`data/staging/lora-v007`): `asymmetrical` aparece 14 veces y **las 14 en un medio arco**
+ * (`an asymmetrical balloon half-arch`); `dense`, una vez y en una pared (`dense balloon wall`); `airy`, cero.
+ *
+ * Ponerlo donde el corpus no lo pone no es un matiz que se pierde: es una instrucción que el modelo sí
+ * entiende, y la entiende como la pieza con la que la aprendió. Una columna orgánica pedida como
+ * «asymmetrical balloon column» salía dibujada doblándose como un medio arco (2026-10-03). Lo que esos
+ * adjetivos querían decir —que la pieza mezcla diámetros— ya lo dice `fraseRelacionTamanos` con la frase del
+ * propio corpus, `mixed organically rather than graded`, que aparece 218 veces.
+ */
 function productDialectNoun(clause: LoraVisualClause): string {
   const official = clause.officialStructure;
   if (!official) return clause.noun;
   if (official.id === "bouquet" || official.id === "figura" || official.id === "aro_circular" || official.id === "techo_globos") return official.sustantivoEn;
-  const variant = official.forma === "asimetrica" ? "asymmetrical"
-    : official.id.endsWith("_no_denso") || official.id.endsWith("_no_densa") ? "airy"
-      : official.id === "pared_densa" ? "dense"
-        : "";
+  const variant = official.forma === "asimetrica" && official.tipoBase === "semiarco" ? "asymmetrical"
+    : official.id === "pared_densa" ? "dense"
+      : "";
   return variant && !clause.noun.includes(variant) ? `${variant} ${clause.noun}` : clause.noun;
 }
 
+/**
+ * Material phrase of the `base` dialect, from each product's `baseTerms`
+ * (src/lib/lora/vocabulario-base.ts): "made of mixed small 5-inch and large
+ * 18-inch mirror-like chrome gold and matte white latex balloons". Balloons
+ * sharing a noun share one size list; a non-balloon product is named by its
+ * cleaned label ("with a gold metallic foil backdrop mural ..."). Follows the
+ * same render steps as the other dialects: a concept already described is
+ * referred to by its color, `shortLabels` drops the finish.
+ */
+function baseMaterialParts(entries: ProductConceptClauseInput[], render: CaptionRenderState): { balloons: string[]; pieces: string[]; references: string[] } {
+  const byConcept = new Map<string, { terms: TerminosBase; colorName?: string; sizes: string[] }>();
+  for (const entry of entries) {
+    const existing = byConcept.get(entry.conceptId);
+    const terms = entry.baseTerms ?? { kind: "piece" as const, label: limpiarEtiqueta(entry.canonicalLabel) };
+    byConcept.set(entry.conceptId, { terms, colorName: existing?.colorName ?? entry.colorName, sizes: [...(existing?.sizes ?? []), ...(entry.sizeCodes ?? [])] });
+  }
+  const byNoun = new Map<string, { descriptors: string[]; sizes: string[] }>();
+  const pieces: string[] = [];
+  const references: string[] = [];
+  for (const conceptId of [...byConcept.keys()].sort()) {
+    const { terms, colorName, sizes } = byConcept.get(conceptId)!;
+    const reference = terms.kind === "balloon" ? terms.color : colorName;
+    if (render.step.referenceRepeatedConcepts && reference && render.describedConceptIds.has(conceptId)) {
+      if (!references.includes(reference)) references.push(reference);
+      continue;
+    }
+    render.describedConceptIds.add(conceptId);
+    if (terms.kind === "piece") {
+      if (!pieces.includes(terms.label)) pieces.push(render.step.shortLabels ? shortProductLabel(terms.label) : terms.label);
+      continue;
+    }
+    const descriptor = render.step.shortLabels ? terms.color : [terms.finish, terms.color].filter(Boolean).join(" ");
+    const group = byNoun.get(terms.noun) ?? { descriptors: [], sizes: [] };
+    if (!group.descriptors.includes(descriptor)) group.descriptors.push(descriptor);
+    group.sizes.push(...sizes);
+    byNoun.set(terms.noun, group);
+  }
+  const balloons = [...byNoun.entries()].map(([noun, group]) =>
+    [fraseTallasBase(group.sizes, render.step.sizes), joinNatural(group.descriptors), noun].filter(Boolean).join(" "));
+  return { balloons, pieces, references };
+}
+
+/** Structure types that are made of balloons; the others (a backdrop, an accent) are not "made of" them. */
+const BASE_NON_BALLOON_TYPES = new Set<CaptionStructureType>(["backdrop", "accesorio"]);
+
+/** Legacy path of the base dialect: the clause has no product terms, only plan colors and finishes. */
+function baseLegacyMaterial(clause: LoraVisualClause): string {
+  const finishes = [...new Set(clause.finishes.map(acabadoVisible).filter(Boolean))];
+  const colors = clause.colors.length ? `in ${joinNatural(clause.colors)}` : "";
+  if (BASE_NON_BALLOON_TYPES.has(clause.structureType)) {
+    return [colors, finishes.length ? `with a ${joinNatural(finishes)} finish` : ""].filter(Boolean).join(" ");
+  }
+  if (!finishes.length && !colors) return "";
+  return ["made of", joinNatural(finishes), "latex balloons", colors].filter(Boolean).join(" ");
+}
+
+/**
+ * Clause of the `base` dialect: the same clause facts (count, structure,
+ * height, placement, relations, mirrored pairs, Python's pattern phrase
+ * verbatim) in plain English for a general text-to-image model. It never
+ * emits a trigger, a commercial line name, a parenthetical list or a `;`.
+ */
+function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderState): string {
+  const entries = clause.canonicalEntries ?? [];
+  const parts = clause.canonicalPhrase && entries.length ? baseMaterialParts(entries, render) : undefined;
+  const official = clause.officialStructure?.sustantivoEn;
+  const baseNoun = official ?? SUSTANTIVOS_ESTRUCTURA_BASE[clause.structureType as keyof typeof SUSTANTIVOS_ESTRUCTURA_BASE] ?? clause.noun;
+  // A product that is itself the piece (a foil banner, a printed mural) names the clause.
+  const productIsThePiece = Boolean(parts && !parts.balloons.length && parts.pieces.length && !clause.officialStructure && ["kit", "accesorio"].includes(clause.structureType));
+  const sizedNoun = clause.heightQualifier ? `${clause.heightQualifier} ${baseNoun}` : baseNoun;
+  const noun = productIsThePiece ? joinNatural(parts!.pieces) : clause.scale ? `${clause.scale} ${sizedNoun}` : sizedNoun;
+  let material = "";
+  if (parts && !productIsThePiece) {
+    const matching = parts.references.length ? `matching ${joinNatural(parts.references)}` : "";
+    const segments = [
+      parts.balloons.length ? `made of ${joinNatural(parts.balloons)}` : "",
+      parts.pieces.length ? `with ${joinNatural(parts.pieces)}` : "",
+    ].filter(Boolean);
+    material = segments.length ? [segments.join(" "), matching].filter(Boolean).join(", with ") : matching ? `in ${matching}` : "";
+  } else if (!parts && !clause.productDescriptors.length) {
+    material = baseLegacyMaterial(clause);
+  }
+  material = material ? withApprovedColorTones(material, clause.colors, "base") : material;
+  const descriptorText = clause.physicalForm?.descripcion_perceptual_en ?? (!parts ? clause.productDescriptors[0] : undefined);
+  const descriptor = descriptorText ? limpiarEtiqueta(descriptorText) : undefined;
+  const renderedCount = clause.visibleCount ?? clause.count;
+  const article = /^[aeiou]/i.test(noun) && !/^one\b/i.test(noun) ? "an" : "a";
+  const core = descriptor
+    ? renderedCount === 1 ? descriptor : `${numberWord(renderedCount)} ${descriptor}`
+    : renderedCount === 1 ? `${article} ${noun}` : `${numberWord(renderedCount)} ${pluralize(noun)}`;
+  // Python's pattern phrase follows the material, verbatim (ADR-0028 §12).
+  const colored = [core, material, clause.colorPattern].filter(Boolean).join(" ");
+  // The same shape fixes the scene dialect learned: a lone side piece stands
+  // apart from the focal arch, a half-arch elsewhere keeps its one-sided
+  // shape, a garland without an assembly runs along its surface instead of
+  // standing on legs. Those phrases are already plain English.
+  const conArmado = Boolean(clause.armadoGuirnalda ?? clause.armadoGuirnaldaOrganica);
+  const placementPhrase = clause.placement === "lateral_izquierdo" ? "standing apart on the left"
+    : clause.placement === "lateral_derecho" ? "standing apart on the right"
+      : (clause.structureType === "semiarco" ? SCENE_V004_ONE_SIDED_PLACEMENTS[clause.placement] : undefined)
+        ?? (clause.structureType === "guirnalda" && !conArmado ? SCENE_V004_GARLAND_PLACEMENTS[clause.placement] : undefined)
+        ?? UBICACIONES_BASE[clause.placement];
+  if (clause.structureType === "backdrop") return `${colored} ${clause.relation ? `${placementPhrase}, ${clause.relation}` : placementPhrase}`;
+  if (renderedCount > 1 && clause.placement === "lateral_izquierdo" && (clause.bilateral || clause.relation?.startsWith("flanking"))) {
+    const reparto = renderedCount > 2 && renderedCount % 2 === 0
+      ? `${numberWord(renderedCount / 2)} standing on each side`
+      : "one standing on the left and one on the right";
+    return `${colored}, matching one another, ${reparto}${clause.relation ? `, ${clause.relation}` : ""}`;
+  }
+  if (clause.relation && clause.structureType === "centro_mesa") return `${colored} ${placementPhrase} ${clause.relation}`;
+  if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}`;
+  return `${colored} ${placementPhrase}`;
+}
+
 function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState): string {
+  if (render?.dialect === "base") return renderBaseClauseText(clause, render);
   const hasCanonicalProduct = Boolean(clause.canonicalPhrase);
   const renderedCount = clause.visibleCount ?? clause.count;
   const qualifier = hasCanonicalProduct
@@ -1113,9 +1398,18 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
   // A half-arch elsewhere ("against the rear wall") was drawn as a full arch or
   // frame: its one-sided shape must be part of the placement.
   const oneSidedPlacement = clause.structureType === "semiarco" ? SCENE_V004_ONE_SIDED_PLACEMENTS[clause.placement] : undefined;
+  // La forma de la guirnalda viaja en su ubicación **solo cuando nadie más la dice**. Si la pieza trae el
+  // armado de ADR-0032 o el del motor orgánico (ADR-0034), esa frase manda y ya la posiciona: la escribió
+  // Python mirando la línea real y dice mucho más ("mounted flat high on the wall, curving gently upward
+  // along the top, both ends free"). Repetirla aquí dejaba la cola «in clusters of four running along the
+  // rear wall», que cuelga el participio del racimo.
+  const conArmado = Boolean(clause.armadoGuirnalda ?? clause.armadoGuirnaldaOrganica);
+  const garlandPlacement = clause.structureType === "guirnalda" && !conArmado
+    ? SCENE_V004_GARLAND_PLACEMENTS[clause.placement]
+    : undefined;
   const scenePlacement = clause.placement === "lateral_izquierdo" ? "standing apart on the left"
     : clause.placement === "lateral_derecho" ? "standing apart on the right"
-      : oneSidedPlacement ?? SCENE_V004_PLACEMENTS[clause.placement];
+      : oneSidedPlacement ?? garlandPlacement ?? SCENE_V004_PLACEMENTS[clause.placement];
   const placementPhrase = sceneDialect ? scenePlacement ?? PLACEMENT_PHRASES[clause.placement] : PLACEMENT_PHRASES[clause.placement];
 
   if (clause.structureType === "backdrop") {
@@ -1171,6 +1465,7 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
     colorPattern: frasePatronColor(colorPatterns, element, "prompt_lora"),
     armadoBouquet: armadoDeElemento(colorPatterns, element),
     armadoGuirnalda: armadoGuirnaldaDeElemento(colorPatterns, element),
+    armadoGuirnaldaOrganica: armadoGuirnaldaOrganicaDeElemento(colorPatterns, element),
   }));
   const used = new Set<string>();
   const clauses: LoraVisualClause[] = [];
@@ -1261,14 +1556,40 @@ type CaptionParts = {
  * metal stands (2026-09-28, decision 28). A scene with any other piece, or a
  * garland without an assembly, keeps its caption byte for byte.
  */
+/** Ubicaciones en las que una guirnalda va sujeta a una superficie, no apoyada en el piso. */
+const GUIRNALDAS_SIN_PISO = new Set<LoraPlacement>(["fondo_pared", "pared_lateral", "techo", "techo_multipunto", "fachada"]);
+
+/**
+ * Toda la escena son guirnaldas que no se apoyan en el piso, así que la cola no debe prometer apoyos en el
+ * suelo. La decisión 28 de ADR-0032 anotó que «"against the wall" a secas, con la cola "grounded supports"»
+ * sacaba un arco de pie con patas, y es el mismo fallo que arregla `SCENE_V004_GARLAND_PLACEMENTS`.
+ *
+ * Hasta el 2026-10-03 esto **no podía ser verdad nunca**: pedía un `armadoGuirnalda` de ADR-0032, que viaja
+ * detrás de una bandera apagada por defecto, y además `createClause` solo lo pone en la cláusula cuando la
+ * pieza trae también patrón de color. Las guirnaldas del motor orgánico (ADR-0034), que son las que se arman
+ * hoy, no llevan ninguna de las dos cosas: todas salían con «grounded supports». La ubicación del plan dice
+ * lo mismo y siempre está.
+ */
 function soloGuirnaldasEnAlto(clauses: readonly LoraVisualClause[]): boolean {
-  const enAlto: readonly SoporteGuirnalda[] = SOPORTES_CON_CAIDA_GUIRNALDA;
-  return clauses.length > 0 && clauses.every((clause) => clause.armadoGuirnalda !== undefined && enAlto.includes(clause.armadoGuirnalda.soporte));
+  const conCaida: readonly SoporteGuirnalda[] = SOPORTES_CON_CAIDA_GUIRNALDA;
+  return clauses.length > 0 && clauses.every((clause) => {
+    // Quien armó la pieza lo sabe mejor que su ubicación: el motor conoce a qué altura va su línea.
+    if (clause.armadoGuirnalda) return conCaida.includes(clause.armadoGuirnalda.soporte);
+    if (clause.armadoGuirnaldaOrganica) return clause.armadoGuirnaldaOrganica.enAlto;
+    return clause.structureType === "guirnalda" && GUIRNALDAS_SIN_PISO.has(clause.placement);
+  });
 }
 
 function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, dialect: LoraCaptionDialect = "product_v007", ambientDecor: readonly string[] = [], creativeCues: readonly string[] = []): string {
   const parts = buildCaptionParts(sceneSpec, context, clauses, step, dialect, ambientDecor, creativeCues);
+  // No trigger: nothing replaces it, and a base model would read it as a word.
+  // Two plain sentences: the decoration, then the setting and the photograph.
+  if (dialect === "base") return `${capitalized(parts.structureSentence)}. ${capitalized(parts.tail.join(", "))}.`;
   return `${CAPTION_TRIGGER}, ${parts.structureSentence}. ${parts.tail.join(", ")}.`;
+}
+
+function capitalized(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
 
 function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[], step: CaptionRenderStep, dialect: LoraCaptionDialect, ambientDecor: readonly string[], creativeCues: readonly string[] = []): CaptionParts {
@@ -1314,7 +1635,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
     ...(dialect === "scene_v004"
       ? sceneSettingCues(context, eventPhrase, step)
       : step.dropEnvironment ? [] : dedupeEnvironment(context, eventPhrase).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue)),
-    "wide photorealistic event photograph",
+    dialect === "base" ? CIERRE_FOTOGRAFICO_BASE : "wide photorealistic event photograph",
     step.minimalTail ? undefined : enAlto ? "natural depth" : hasCanonicalProducts ? "natural depth, grounded supports" : "natural depth, believable floor contact and supports",
   ].filter((part): part is string => Boolean(part));
   return {
@@ -1404,7 +1725,10 @@ export function compileLoraCaption(input: {
     : undefined;
   const clauses = groupClauses(input.sceneSpec, productConceptsByElementId, input.officialStructures, input.colorPatterns);
   const triggerLengthDelta = (input.trigger?.trim().length ?? CAPTION_TRIGGER.length) - CAPTION_TRIGGER.length;
-  const budget = (input.maxLength ?? LORA_PROMPT_MAX_LENGTH) - Math.max(0, triggerLengthDelta);
+  // The base dialect carries no trigger and has its own budget.
+  const budget = input.dialect === "base"
+    ? input.maxLength ?? BASE_PROMPT_MAX_LENGTH
+    : (input.maxLength ?? LORA_PROMPT_MAX_LENGTH) - Math.max(0, triggerLengthDelta);
   let prompt = "";
   let compactionStep = 0;
   // If no step fits, the most compact rendering is returned unchanged and the

@@ -101,7 +101,7 @@ function MandoDelPatron({ control, borrador, onCambiar }: { control: ControlPatr
     <DeslizadorArco
       etiqueta={control.etiqueta}
       ayuda={control.ayuda}
-      valor={valorEnRango(valor, control)}
+      valor={valorEnRango(valor, control)} valorReal={valor}
       min={control.min}
       max={control.max}
       paso={control.paso}
@@ -200,7 +200,7 @@ export function ControlesArco({ borrador, opciones, limites, leyenda, onCambiar 
           <DeslizadorArco
             etiqueta="Ancho"
             ayuda="Medido por fuera. El mínimo sube con el tamaño del globo."
-            valor={valorEnRango(borrador.geometria.anchoM, ancho)}
+            valor={valorEnRango(borrador.geometria.anchoM, ancho)} valorReal={borrador.geometria.anchoM}
             min={ancho.min}
             max={ancho.max}
             paso={ancho.paso}
@@ -214,7 +214,7 @@ export function ControlesArco({ borrador, opciones, limites, leyenda, onCambiar 
             <DeslizadorArco
               etiqueta="Alto"
               ayuda="Medido por fuera. Depende de la forma."
-              valor={valorEnRango(borrador.geometria.altoM, alto)}
+              valor={valorEnRango(borrador.geometria.altoM, alto)} valorReal={borrador.geometria.altoM}
               min={alto.min}
               max={alto.max}
               paso={alto.paso}
@@ -226,7 +226,7 @@ export function ControlesArco({ borrador, opciones, limites, leyenda, onCambiar 
           <DeslizadorArco
             etiqueta="Globos a lo ancho"
             ayuda="Cuántos globos hay de lado a lado de la banda: más globos, banda más gruesa."
-            valor={valorEnRango(borrador.geometria.globosAncho, globosAncho)}
+            valor={valorEnRango(borrador.geometria.globosAncho, globosAncho)} valorReal={borrador.geometria.globosAncho}
             min={globosAncho.min}
             max={globosAncho.max}
             paso={globosAncho.paso}
@@ -248,9 +248,9 @@ export function ControlesArco({ borrador, opciones, limites, leyenda, onCambiar 
           testid="mando-tamano-globo"
         />
         <DeslizadorArco
-          etiqueta="Inflado"
+          etiqueta="Qué tan inflados"
           ayuda="Cuánto se infla cada globo respecto a lo normal: menos, quedan más chicos; más, más grandes."
-          valor={valorEnRango(borrador.globo.inflado, inflado)}
+          valor={valorEnRango(borrador.globo.inflado, inflado)} valorReal={borrador.globo.inflado}
           min={inflado.min}
           max={inflado.max}
           paso={inflado.paso}

@@ -1,4 +1,5 @@
 import type { ModoVista } from "./modo-vista";
+import { LORA_BASE_MODE, LoraTrainedModeSlugSchema, type LoraModeSlug } from "@/lib/lora/schema";
 
 /**
  * Reglas de comportamiento que dependen del modo de vista (B2,
@@ -40,4 +41,22 @@ export function usarLoraEfectivo(entrada: EntradaEstiloImagen): boolean {
 /** El modal con el prompt técnico solo se abre solo en modo dev. */
 export function abrirPromptAutomaticamente(modo: ModoVista, hayPrompts: boolean): boolean {
   return modo === "dev" && hayPrompts;
+}
+
+/**
+ * Modo con el que el selector "lora" genera. Decisión del usuario
+ * (2026-10-04): el modelo base FLUX.2 sin pesos LoRA (`base`) en vez de los
+ * LoRA entrenados v004/v007. Solo en desarrollo, `NEXT_PUBLIC_LORA_MODE` puede
+ * elegir explícitamente un modo entrenado para compararlo; cualquier otro
+ * valor, o producción, deja `base`.
+ */
+export function modoLoraPorDefecto(entorno: { nodeEnv?: string; modoPedido?: string }): LoraModeSlug {
+  if (entorno.nodeEnv !== "development") return LORA_BASE_MODE;
+  const pedido = LoraTrainedModeSlugSchema.safeParse(entorno.modoPedido);
+  return pedido.success ? pedido.data : LORA_BASE_MODE;
+}
+
+/** Nombre visible de la ruta FLUX.2 en fal según el modo: sin LoRA no se presenta como estilo entrenado. */
+export function nombreRutaFlux(modo: LoraModeSlug): string {
+  return modo === LORA_BASE_MODE ? "FLUX.2 base (fal)" : "LoRA Sempertex";
 }

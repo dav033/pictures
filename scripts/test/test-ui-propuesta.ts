@@ -327,15 +327,22 @@ const leyendaDe = (id: string) => leyendaPatron(declaradaDe(id).materiales, estr
 {
   const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planPatrones, onPlanActualizado: () => undefined, onAprobar: () => undefined }));
   const texto = textoVisible(html);
-  assert.equal((html.match(/data-testid="bloque-patron"/g) ?? []).length, 3, "las tres piezas con patrón aplicado muestran su bloque");
+  // Dos, no tres: la pared muestra ahora su dibujo esquemático, que ocupa el mismo hueco que el bloque del
+  // patrón porque ningún motor la arma. La columna y el arco siguen con el suyo, y el «Degradé» —que era el de
+  // la pared— ya no sale en la tarjeta.
+  assert.equal((html.match(/data-testid="bloque-patron"/g) ?? []).length, 2, "la columna y el arco muestran su bloque del patrón");
+  assert.equal((html.match(/data-testid="bloque-dibujo-estructura"/g) ?? []).length, 1, "y la pared, su dibujo esquemático");
   assert.match(texto, /Patrón de color Espiral · de tu foto Cuartetos iguales de blanco \(1\), negro \(2\)/, "nombre, origen y descripción de Python");
-  assert.match(texto, /Patrón de color Degradé Degradé en diagonal/, "un patrón sin origen declarado no inventa etiqueta");
-  assert.match(texto, /Patrón de color Flores/);
-  assert.match(texto, /Patrón de color Degradé Degradé en diagonal/);
+  assert.match(texto, /Patrón de color Flores/, "un patrón sin origen declarado no inventa etiqueta");
   assert.match(texto, /1 Blanco mate 48 · 50 % 2 Negro mate 24 · 25 % 3 Azul cromado 24 · 25 %/, "conteo de Python con la leyenda numerada");
   assert.match(texto, /Total de las 2 piezas iguales/);
   assert.match(texto, /Con cuartetos completos cada pieza lleva 48 globos; las medidas daban 47\./, "el bloque muestra los avisos de Python");
+  // Tres, no dos: la pared recupera su «Editar patrón». El bloque del dibujo ocupa el hueco de `BloquePatron`
+  // en las piezas que ningún motor arma, y al principio se llevaba por delante sus dos acciones — justo en la
+  // pieza que más las necesita, porque un mural, unas franjas o un ajedrez son suyos. Ahora el dibujo les da
+  // sitio en su propio encabezado y no cambia nada de lo que hacen.
   assert.equal((html.match(/data-testid="editar-patron"/g) ?? []).length, 3);
+  // Y tres «Hoja de armado», por lo mismo: las dos acciones del patrón van juntas.
   assert.equal((html.match(/data-testid="abrir-hoja-armado"/g) ?? []).length, 3);
   assert.equal((html.match(/data-testid="crear-patron"/g) ?? []).length, 1, "la guirnalda sin patrón ofrece crearlo");
   assert.equal((html.match(/Arrastra para cambiar cuánto lleva de cada color/g) ?? []).length, 1, "el reparto por deslizador solo queda donde no manda un patrón");
@@ -624,7 +631,7 @@ function planConBouquet(conArmado: boolean): PlanResuelto {
   assert.equal((html.match(/data-testid="editar-armado"/g) ?? []).length, 1);
   assert.equal((html.match(/data-testid="abrir-hoja-armado-bouquet"/g) ?? []).length, 1);
   assert.equal((html.match(/data-testid="crear-armado"/g) ?? []).length, 0, "con armado no se ofrece crearlo");
-  assert.equal((html.match(/data-testid="bloque-patron"/g) ?? []).length, 3, "las piezas con patrón siguen con su bloque; el bouquet no lleva patrón");
+  assert.equal((html.match(/data-testid="bloque-patron"/g) ?? []).length, 2, "las piezas con patrón siguen con su bloque; el bouquet no lleva patrón y la pared lleva su dibujo");
   assert.doesNotMatch(html, /data-testid="editor-armado"|data-testid="dialogo-hoja-armado-bouquet"/, "editor y hoja cerrados no se montan");
   // Un bouquet es un kit hecho de globos: cuenta globos, nunca "unos 7 piezas".
   assert.match(texto, /Globos unos 7/, "el mosaico del bouquet cuenta globos");

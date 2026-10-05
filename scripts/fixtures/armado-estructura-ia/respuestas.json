@@ -982,7 +982,7 @@
         {
           "valor": "tramos",
           "texto": "Por tramos",
-          "ayuda": "Un color domina cada tramo del arco, en el orden de la lista."
+          "ayuda": "Un color domina cada tramo de la pieza, en el orden de la lista."
         },
         {
           "valor": "racimos",
@@ -1014,7 +1014,483 @@
         "min": 0.0,
         "max": 4.5
       },
-      "max_materiales": 8
+      "max_materiales": 8,
+      "formas": [
+        {
+          "id": "recta",
+          "nombre": "Recta en la pared",
+          "descripcion": "Una tira horizontal con una ondulación suave, como la que enmarca un fondo o una mesa.",
+          "forma": {
+            "largoM": 3,
+            "alturaM": 2.2,
+            "pendienteM": 0,
+            "ondaM": 0.06,
+            "ondas": 1,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.4,
+            "grosorCimaM": 0.62,
+            "irregularidad": 0.35,
+            "relleno": 0.72,
+            "racimo": 4,
+            "salientes": 0.35
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 32,
+              "9": 0,
+              "12": 45,
+              "18": 18,
+              "24": 5,
+              "36": 0
+            },
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "semilla": 11
+        },
+        {
+          "id": "ondulada",
+          "nombre": "Ondulada",
+          "descripcion": "Sube y baja a lo largo de la pared, como una ola.",
+          "forma": {
+            "largoM": 3.6,
+            "alturaM": 2.1,
+            "pendienteM": 0,
+            "ondaM": 0.25,
+            "ondas": 2.5,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.4,
+            "grosorCimaM": 0.58,
+            "irregularidad": 0.4,
+            "relleno": 0.7,
+            "racimo": 4,
+            "salientes": 0.4
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 30,
+              "9": 0,
+              "12": 46,
+              "18": 20,
+              "24": 4,
+              "36": 0
+            },
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "semilla": 7
+        },
+        {
+          "id": "feston",
+          "nombre": "Festón colgante",
+          "descripcion": "Delgada y colgada entre dos puntos, formando una U; para sobre una mesa o una puerta.",
+          "forma": {
+            "largoM": 2.4,
+            "alturaM": 2.4,
+            "pendienteM": 0,
+            "ondaM": 0.03,
+            "ondas": 1,
+            "colgadoM": 0.45,
+            "festones": 1,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.3,
+            "grosorCimaM": 0.42,
+            "irregularidad": 0.3,
+            "relleno": 0.7,
+            "racimo": 3,
+            "salientes": 0.3
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 30,
+              "9": 0,
+              "12": 56,
+              "18": 14,
+              "24": 0,
+              "36": 0
+            },
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "semilla": 5
+        },
+        {
+          "id": "doble-feston",
+          "nombre": "Doble festón",
+          "descripcion": "Dos U seguidas colgadas de tres puntos; para paredes largas.",
+          "forma": {
+            "largoM": 4,
+            "alturaM": 2.5,
+            "pendienteM": 0,
+            "ondaM": 0.03,
+            "ondas": 1,
+            "colgadoM": 0.4,
+            "festones": 2,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.32,
+            "grosorCimaM": 0.46,
+            "irregularidad": 0.35,
+            "relleno": 0.7,
+            "racimo": 4,
+            "salientes": 0.3
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 28,
+              "9": 0,
+              "12": 52,
+              "18": 20,
+              "24": 0,
+              "36": 0
+            },
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "semilla": 9
+        },
+        {
+          "id": "diagonal",
+          "nombre": "Diagonal",
+          "descripcion": "Sube en pendiente, como sobre una baranda o una escalera.",
+          "forma": {
+            "largoM": 3.2,
+            "alturaM": 1.1,
+            "pendienteM": 0.8,
+            "ondaM": 0.08,
+            "ondas": 1.5,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.4,
+            "grosorCimaM": 0.58,
+            "irregularidad": 0.35,
+            "relleno": 0.7,
+            "racimo": 4,
+            "salientes": 0.35
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 30,
+              "9": 0,
+              "12": 46,
+              "18": 20,
+              "24": 4,
+              "36": 0
+            },
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "semilla": 3
+        },
+        {
+          "id": "larga",
+          "nombre": "Larga y delgada",
+          "descripcion": "Cinco o seis metros de una tira angosta, para recorrer toda una pared.",
+          "forma": {
+            "largoM": 6,
+            "alturaM": 2.3,
+            "pendienteM": 0,
+            "ondaM": 0.14,
+            "ondas": 3,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.32,
+            "grosorCimaM": 0.44,
+            "irregularidad": 0.4,
+            "relleno": 0.7,
+            "racimo": 4,
+            "salientes": 0.3
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 26,
+              "9": 0,
+              "12": 60,
+              "18": 14,
+              "24": 0,
+              "36": 0
+            },
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "semilla": 14
+        },
+        {
+          "id": "gruesa",
+          "nombre": "Gruesa y llena",
+          "descripcion": "Ancha y voluminosa, sin huecos, con muchos globos chicos entre los grandes.",
+          "forma": {
+            "largoM": 3,
+            "alturaM": 2.2,
+            "pendienteM": 0,
+            "ondaM": 0.1,
+            "ondas": 1.5,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.6,
+            "grosorCimaM": 0.95,
+            "irregularidad": 0.3,
+            "relleno": 0.85,
+            "racimo": 5,
+            "salientes": 0.45
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 44,
+              "9": 0,
+              "12": 32,
+              "18": 18,
+              "24": 6,
+              "36": 0
+            },
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.12
+          },
+          "semilla": 8
+        },
+        {
+          "id": "nube",
+          "nombre": "Nube",
+          "descripcion": "Un montón corto y grueso que se afina en las puntas, pegado a la pared.",
+          "forma": {
+            "largoM": 2.2,
+            "alturaM": 2,
+            "pendienteM": 0,
+            "ondaM": 0,
+            "ondas": 1,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.35,
+            "grosorCimaM": 0.9,
+            "irregularidad": 0.35,
+            "relleno": 0.8,
+            "racimo": 5,
+            "salientes": 0.4
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 24,
+              "9": 0,
+              "12": 40,
+              "18": 28,
+              "24": 8,
+              "36": 0
+            },
+            "grandesAbajo": 0.4,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "semilla": 6
+        },
+        {
+          "id": "cargada",
+          "nombre": "Cargada a un lado",
+          "descripcion": "Más gruesa y con los globos más grandes en un extremo, y ligera en el otro.",
+          "forma": {
+            "largoM": 3.4,
+            "alturaM": 2.2,
+            "pendienteM": 0,
+            "ondaM": 0.1,
+            "ondas": 1.5,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0.85
+          },
+          "volumen": {
+            "grosorPatasM": 0.4,
+            "grosorCimaM": 0.8,
+            "irregularidad": 0.4,
+            "relleno": 0.7,
+            "racimo": 4,
+            "salientes": 0.4
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 26,
+              "9": 0,
+              "12": 36,
+              "18": 24,
+              "24": 12,
+              "36": 2
+            },
+            "grandesAbajo": 0.7,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "semilla": 12
+        },
+        {
+          "id": "aireada",
+          "nombre": "Aireada",
+          "descripcion": "Poco relleno y racimos separados: se ve el aire entre los globos.",
+          "forma": {
+            "largoM": 3.6,
+            "alturaM": 2.2,
+            "pendienteM": 0,
+            "ondaM": 0.14,
+            "ondas": 2,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.35,
+            "grosorCimaM": 0.52,
+            "irregularidad": 0.6,
+            "relleno": 0.42,
+            "racimo": 3,
+            "salientes": 0.6
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 15,
+              "9": 0,
+              "12": 50,
+              "18": 30,
+              "24": 5,
+              "36": 0
+            },
+            "grandesAbajo": 0.3,
+            "inflado": 1,
+            "variacion": 0.14
+          },
+          "semilla": 4
+        },
+        {
+          "id": "piso",
+          "nombre": "A lo largo del piso",
+          "descripcion": "Tendida sobre el suelo, con globos grandes en los extremos; para el frente de una mesa.",
+          "forma": {
+            "largoM": 3.2,
+            "alturaM": 0.45,
+            "pendienteM": 0,
+            "ondaM": 0.05,
+            "ondas": 1,
+            "colgadoM": 0,
+            "festones": 1,
+            "carga": 0
+          },
+          "volumen": {
+            "grosorPatasM": 0.55,
+            "grosorCimaM": 0.78,
+            "irregularidad": 0.4,
+            "relleno": 0.72,
+            "racimo": 4,
+            "salientes": 0.4
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 26,
+              "9": 0,
+              "12": 34,
+              "18": 26,
+              "24": 12,
+              "36": 2
+            },
+            "grandesAbajo": 0.8,
+            "inflado": 1,
+            "variacion": 0.1
+          },
+          "semilla": 21
+        }
+      ],
+      "estilos": [
+        {
+          "id": "ligero",
+          "nombre": "Ligero",
+          "ayuda": "Delgado y aireado, con espacio entre racimos.",
+          "volumen": {
+            "grosorPatasM": 0.32,
+            "grosorCimaM": 0.44,
+            "irregularidad": 0.5,
+            "relleno": 0.5,
+            "racimo": 3,
+            "salientes": 0.35
+          }
+        },
+        {
+          "id": "estandar",
+          "nombre": "Estándar",
+          "ayuda": "El punto medio de una guirnalda de eventos.",
+          "volumen": {
+            "grosorPatasM": 0.4,
+            "grosorCimaM": 0.62,
+            "irregularidad": 0.35,
+            "relleno": 0.72,
+            "racimo": 4,
+            "salientes": 0.35
+          }
+        },
+        {
+          "id": "lleno",
+          "nombre": "Lleno",
+          "ayuda": "Denso y voluminoso, sin huecos.",
+          "volumen": {
+            "grosorPatasM": 0.55,
+            "grosorCimaM": 0.9,
+            "irregularidad": 0.28,
+            "relleno": 0.9,
+            "racimo": 5,
+            "salientes": 0.35
+          }
+        },
+        {
+          "id": "gigantes",
+          "nombre": "Con globos gigantes",
+          "ayuda": "Añade globos de 24\" y 36\" como puntos focales.",
+          "volumen": {
+            "grosorPatasM": 0.55,
+            "grosorCimaM": 0.85,
+            "irregularidad": 0.4,
+            "relleno": 0.72,
+            "racimo": 4,
+            "salientes": 0.35
+          },
+          "tamanos": {
+            "mezcla": {
+              "5": 26,
+              "9": 0,
+              "12": 34,
+              "18": 26,
+              "24": 12,
+              "36": 2
+            },
+            "grandesAbajo": 0.7,
+            "inflado": 1,
+            "variacion": 0.1
+          }
+        }
+      ]
     }
   },
   "armar_guirnalda": {

@@ -3,6 +3,7 @@ import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { compileLoraCaption, translateLoraColor } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
+import { TERMINOS_COMERCIALES } from "../../src/lib/lora/descriptor-perceptual";
 
 type ElementOptions = {
   id: string;
@@ -67,11 +68,24 @@ function check(input: { spec: SceneSpec; request?: string }) {
   return { compilation, report };
 }
 
-assert.equal(translateLoraColor("azul rey"), "blue");
+// `azul rey` decia `blue`, que es la paleta de 26 palabras aplastando un nombre del catalogo que el dataset
+// SI sabe decir: `royal blue` sale 20 veces en las 345 captions de `data/staging/lora-v007`, y describiendo
+// globos («matte Fashion round latex balloons in royal blue and white»). `azul caribe` se aplastaba al mismo
+// `blue` y ahora es `turquoise`. La regla no cambia —solo se usa la palabra donde el corpus la usa—; lo que
+// cambia es que se midio, y tres tonos candidatos (`teal`, `dark green`, `light pink`) quedaron fuera porque
+// en el corpus describen un mantel, un piso y nada.
+assert.equal(translateLoraColor("azul rey"), "royal blue");
+assert.equal(translateLoraColor("azul caribe"), "turquoise");
+assert.equal(translateLoraColor("blanco nacar"), "pearl white");
+assert.equal(translateLoraColor("verde menta"), "mint green");
 assert.equal(translateLoraColor("verde esmeralda"), "green");
 // `gris` es un color real de producto (colores-producto.ts) fuera de la paleta
 // v2: sin alias llegaba en español al caption y el preflight no lo detectaba.
-assert.equal(translateLoraColor("gris"), "gray");
+//
+// Con `grey` y no `gray`: es la misma palabra y no la misma estadistica. En las 345 captions `grey` sale 15
+// veces y son las de globos («12-inch matte Fashion grey round latex balloons»); `gray` sale 7 y son paredes
+// y pisos. La ortografia la eligio quien escribio el corpus.
+assert.equal(translateLoraColor("gris"), "grey");
 assert.equal(translateLoraColor("grafito"), "charcoal gray");
 assert.equal(translateLoraColor("plateado"), "silver", "plateado sigue siendo silver, no gris");
 assert.ok(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gris balloons").includes("gris"), "el preflight detecta 'gris' sin traducir");
@@ -119,7 +133,10 @@ const languageContext = buildVisualContext({
 });
 const languageV2 = compileLoraCaption({ sceneSpec: languageScene, visualContext: languageContext }).prompt;
 assert.match(languageV2, /fifteenth-birthday celebration atmosphere/i);
-assert.match(languageV2, /in blue/i);
+// «azul rey» del brief llega traducido, y ahora con el tono que el dataset sabe decir: `royal blue`, no el
+// `blue` de la paleta de 26 palabras. Lo que prueba esta linea sigue siendo lo mismo —que el color del brief
+// cruza al ingles— y la de abajo sigue exigiendo que no quede ni una palabra en español.
+assert.match(languageV2, /in royal blue/i);
 assert.match(languageV2, /recognizable event venue environment/i);
 assert.doesNotMatch(languageV2, /quince|azul|club social|evento|corporativo|años|[áéíóúüñ¿¡]/i);
 assert.deepEqual(findLoraPromptLanguageLeaks(languageV2), []);
@@ -227,5 +244,85 @@ const leakCompilation = compileLoraCaption({ sceneSpec: leakScene, visualContext
 const leakReport = preflightLoraPrompt({ sceneSpec: leakScene, clauses: leakCompilation.clauses, prompt: `${leakCompilation.prompt} Quinceañera.` });
 assert.equal(leakReport.ok, false);
 assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin traducir") && error.includes("quinceañera")), leakReport.errors.join("; "));
+
+// ---------------------------------------------------------------------------
+// Una guirnalda es una TIRA, no un portal (decisión 28 de ADR-0032, revisada el 2026-10-03).
+// ---------------------------------------------------------------------------
+{
+  // En el vocabulario de v004 un arco es "organic balloon garland arch". "an organic balloon garland ...
+  // against the rear wall" es esa frase a una palabra y sin forma: el LoRA la cerró en un arco de pie con
+  // dos patas. La ubicación tiene que decir que corre a lo largo, y la cola no puede prometer apoyos en el
+  // suelo cuando la única pieza de la escena va colgada de la pared.
+  const contexto = buildVisualContext({ userRequest: "cumpleanos en salon" });
+  const muro = scene([element({ id: "GAR", name: "Guirnalda", type: "guirnalda", placement: "fondo_pared", role: "focal" })]);
+  const v004 = compileLoraCaption({ sceneSpec: muro, visualContext: contexto, trigger: "eventdecor_style_v2", dialect: "scene_v004" });
+  assert.ok(v004.prompt.includes("running along the rear wall"), v004.prompt);
+  assert.doesNotMatch(v004.prompt, /against the rear wall/, v004.prompt);
+  assert.doesNotMatch(v004.prompt, /grounded supports|floor contact/, v004.prompt);
+  assert.doesNotMatch(v004.jsonPrompt, /grounded supports/, v004.jsonPrompt);
+
+  // Con un arco en la escena los apoyos vuelven: los necesita el arco, no la guirnalda.
+  const conArco = scene([
+    element({ id: "GAR", name: "Guirnalda", type: "guirnalda", placement: "fondo_pared", role: "focal" }),
+    element({ id: "ARCH", name: "Arco", type: "arco", placement: "arco_central", role: "focal" }),
+  ]);
+  assert.match(compileLoraCaption({ sceneSpec: conArco, visualContext: contexto, trigger: "eventdecor_style_v2", dialect: "scene_v004" }).prompt, /grounded supports|floor contact/);
+
+  // En el piso la ubicación ya no se puede leer como un portal y no se toca.
+  const piso = scene([element({ id: "GAR", name: "Guirnalda", type: "guirnalda", placement: "piso_frontal", role: "focal" })]);
+  const enPiso = compileLoraCaption({ sceneSpec: piso, visualContext: contexto, trigger: "eventdecor_style_v2", dialect: "scene_v004" });
+  assert.ok(enPiso.prompt.includes("resting on the floor in front"), enPiso.prompt);
+  assert.match(enPiso.prompt, /grounded supports|floor contact/, enPiso.prompt);
+
+  // El dialecto de producto (v007) tiene su propio corpus y no se toca.
+  const v007 = compileLoraCaption({ sceneSpec: muro, visualContext: contexto, dialect: "product_v007" });
+  assert.ok(v007.prompt.includes("installed against the rear wall"), v007.prompt);
+
+  // Y cuando el motor orgánico armó la pieza, su frase manda sobre la ubicación genérica: dice además la
+  // curva, el desnivel y el racimo, que la ubicación no sabe. La escribe Python y entra tal cual.
+  const delMotor = "mounted flat high on the wall, curving gently upward along the top, higher on the left and lower at the right end, both ends free, in clusters of four";
+  const armada = compileLoraCaption({
+    sceneSpec: muro,
+    visualContext: contexto,
+    trigger: "eventdecor_style_v2",
+    dialect: "scene_v004",
+    colorPatterns: [{ estructura_id: "GAR", aplicado: true, prompt_gemini: "", prompt_lora: delMotor, guirnaldaOrganica: { enAlto: true } }],
+  });
+  assert.ok(armada.prompt.includes(delMotor), armada.prompt);
+  assert.doesNotMatch(armada.prompt, /\barch(es)?\b|\blegs?\b|grounded supports/, armada.prompt);
+  // Y la ubicación no repite el soporte: lo dijo la frase del motor, que sabe más.
+  assert.doesNotMatch(armada.prompt, /running along the rear wall/, armada.prompt);
+}
+
+// ---------------------------------------------------------------------------
+// El camino de respaldo del acabado no filtra nombres comerciales.
+//
+// `descriptor-perceptual.ts` declara `Reflex`, `Fashion`, `Silk`, `Pastel` y `Crystal` en
+// `TERMINOS_COMERCIALES` como términos que nunca deben llegar al modelo de imagen, y su gate
+// (`assertDescriptorPerceptualSeguro`) protege el camino principal: la etiqueta canónica del producto. Este
+// compilador tiene OTRO camino, el de `FINISH_WORDS`, que corre cuando la pieza no trae etiqueta canónica, y
+// por ahí no pasa ningún gate: el 2026-10-04 se le metieron `Reflex high-shine`, `matte Fashion` y `Silk
+// satin` —las palabras del corpus de entrenamiento— y toda la suite siguió verde, porque nadie miraba.
+// Esta es la mirada que faltaba.
+{
+  const todosLosAcabados = ["reflex", "fashion", "silk", "seda", "cristal", "transparente", "translucido", "neon", "pastel mate", "pastel dusk", "satin", "satinado", "mate", "perlado", "metalizado", "metal", "brillante", "reflectante", "reflectivo"];
+  const conAcabados = scene([element({
+    id: "ARCO_ACAB",
+    name: "Arco de prueba",
+    type: "arco",
+    placement: "arco_central",
+    role: "focal",
+    colors: ["dorado"],
+    finishes: todosLosAcabados,
+  })]);
+  const prompt = compileLoraCaption({ sceneSpec: conAcabados, visualContext: buildVisualContext({ userRequest: "cumpleaños" }) }).prompt;
+  for (const termino of TERMINOS_COMERCIALES) {
+    // `TERMINOS_COMERCIALES` lleva patrones ya escapados por su dueño; aquí solo se buscan como palabra.
+    const palabra = new RegExp(`\\b${termino.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    assert.doesNotMatch(prompt, palabra, `el respaldo del acabado filtró el término comercial «${termino}»: ${prompt}`);
+  }
+  // Y lo que sí dice es lo mismo que dice el camino principal para ese acabado.
+  assert.match(prompt, /high-gloss chrome/i, prompt);
+}
 
 console.log("LoRA caption compiler: OK");

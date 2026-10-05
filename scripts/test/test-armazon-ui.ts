@@ -31,7 +31,7 @@ assert.equal(pasos[2]!.texto, "Armando la propuesta con medidas y cantidades");
 const cerrados = cerrarPasos(pasos);
 assert.ok(cerrados.every((paso) => paso.estado === "listo"), "al terminar el turno ningún paso sigue en curso");
 assert.equal(textoPaso("herramienta_nueva_x", "en_curso"), "Trabajando en tu propuesta", "herramienta desconocida: frase genérica, nunca el nombre técnico");
-for (const nombre of ["guardar_brief", "buscar_catalogo_rag", "confirmar_seleccion_rag", "confirmar_plan_decoracion"]) {
+for (const nombre of ["guardar_brief", "buscar_catalogo_rag", "confirmar_plan_decoracion"]) {
   for (const estado of ["en_curso", "listo", "fallido"] as const) {
     assert.ok(!/_/.test(textoPaso(nombre, estado)), `${nombre}: frase sin jerga en ${estado}`);
   }

@@ -19,7 +19,7 @@ import {
   aplicarEdicionPlan,
   correlationDesde,
 } from "@/lib/plan/aplicar-edicion";
-import { BasePlanSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
+import { BasePlanSchema, EdicionArmadoArcoOrganicoSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionFormaSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionPropiedadesSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
 
 /** Candidates a search returns when the caller does not say (what the inline editor always got). */
 const LIMITE_BUSQUEDA_PREDETERMINADO = 8;
@@ -73,7 +73,7 @@ const BodySchema = z.discriminatedUnion("modo", [
     loraMode: LoraModeSlugSchema.optional(),
   }).strict(),
   z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1), loraMode: LoraModeSlugSchema.optional() }).strict(),
-  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema]), loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoArcoOrganicoSchema, EdicionFormaSchema, EdicionPropiedadesSchema]), loraMode: LoraModeSlugSchema.optional() }).strict(),
 ]);
 
 const MENSAJE_JSON_INVALIDO = "El cuerpo de la solicitud no es JSON válido.";

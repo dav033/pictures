@@ -372,21 +372,59 @@ function plegarNombre(texto: string): string {
  * devuelve `null` y quien llame se queda con su respaldo.
  */
 export function hexDelCatalogo(tono: string, acabado: string | null): string | null {
+  return referenciaDelCatalogo(tono, acabado)?.hexTinta ?? null;
+}
+
+/**
+ * De la palabra de acabado **del catálogo** (la que escribe el plan: «reflex», «fashion», «perlado») a las
+ * familias que puede ser, en orden de preferencia. `acabadoObservado` entiende las palabras de un analizador
+ * mirando una foto («chrome», «matte»), no estas: sin esta tabla un dorado Reflex del plan caía en el dorado
+ * Fashion, el primero de la lámina. Es el mismo emparejamiento que `_FAMILIAS_POR_ACABADO` de
+ * `services/ai-api/app/color_catalogo.py` (`referencia_de`), con la misma prioridad.
+ */
+const FAMILIAS_POR_PALABRA_CATALOGO: Readonly<Record<string, readonly FamiliaSempertex[]>> = {
+  reflex: ["reflex", "metal"],
+  cromado: ["reflex", "metal"],
+  metal: ["metal", "reflex"],
+  metalizado: ["metal", "reflex"],
+  satin: ["satin", "silk"],
+  satinado: ["satin", "silk"],
+  perlado: ["silk", "satin"],
+  perla: ["silk", "satin"],
+  silk: ["silk", "satin"],
+  fashion: ["fashion", "pastelMate", "neon"],
+  mate: ["fashion", "pastelMate", "neon"],
+  pastel: ["pastelMate", "pastelDusk"],
+  "pastel mate": ["pastelMate", "pastelDusk"],
+  "pastel dusk": ["pastelDusk", "pastelMate"],
+  neon: ["neon"],
+  transparente: ["cristal"],
+  cristal: ["cristal"],
+  translucido: ["cristal"],
+};
+
+/**
+ * La referencia del catálogo Sempertex que se compra para un color y un acabado del plan, o `null` si el
+ * color no es un nombre de la lámina (no se inventa una). Es la referencia de la que salen el Pantone, el
+ * color del globo inflado y el nombre visible en inglés que llegan a los prompts de imagen.
+ */
+export function referenciaDelCatalogo(tono: string, acabado: string | null): ReferenciaSempertex | null {
   const codigos = CODIGOS_POR_NOMBRE_ES.get(plegarNombre(tono));
   if (!codigos || codigos.length === 0) return null;
   const referencias = codigos.map(referenciaPorCodigo).filter((r): r is ReferenciaSempertex => r !== null);
   if (referencias.length === 0) return null;
-  const familias = acabado ? acabadoObservado([acabado]).familias : [];
+  const delCatalogo = acabado ? FAMILIAS_POR_PALABRA_CATALOGO[plegarNombre(acabado)] : undefined;
+  const familias = delCatalogo ?? (acabado ? acabadoObservado([acabado]).familias : []);
   // El orden de `familias` es una prioridad, no un conjunto: «cromado» devuelve `["reflex", "metal"]` porque
   // un cromado es antes un Reflex que un Metal, y los dos se leen cromados en una foto. Filtrar y quedarse
   // con la primera de la **tabla** daba el Metal Dorado (`#8c6b30`) donde se compra el Reflex (`#c5a253`).
   for (const familia of familias) {
     const encontrada = referencias.find((r) => r.familia === (familia as string));
-    if (encontrada) return encontrada.hexTinta;
+    if (encontrada) return encontrada;
   }
   // Sin acabado que restrinja, o con uno que ninguna de estas referencias tiene, la primera de la tabla: su
   // orden es el de la lámina del fabricante, que empieza por la familia Fashion, la que se vende por defecto.
-  return referencias[0]!.hexTinta;
+  return referencias[0]!;
 }
 
 /**

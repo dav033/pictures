@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { ArmadoArcoV1Schema } from "./armado-arco";
+import { ArmadoArcoOrganicoV1Schema } from "./armado-arco-organico";
 import { ArmadoBouquetV1Schema } from "./armado-bouquet";
 import { ArmadoColumnaV1Schema } from "./armado-columna";
 import { ArmadoColumnaOrganicaV1Schema } from "./armado-columna-organica";
 import { ArmadoGuirnaldaV1Schema } from "./armado-guirnalda";
 import { ArmadoGuirnaldaOrganicaV1Schema } from "./armado-guirnalda-organica";
+import { MAX_LARGO_FORMA_PIEZA } from "./formas-pieza";
 import { PatronColorV1Schema } from "./patron-color";
-import { PlanDecoracionSchema } from "./tipos";
+import { DENSIDADES, PlanDecoracionSchema } from "./tipos";
 
 /**
  * Wire shapes for editing an already-resolved plan: the base plan the client
@@ -196,5 +198,68 @@ export const EdicionArmadoGuirnaldaOrganicaSchema = z.object({
 
 export type EdicionArmadoGuirnaldaOrganica = z.infer<typeof EdicionArmadoGuirnaldaOrganicaSchema>;
 
+/**
+ * Assembly of one arch built by the designer's organic engine — the organic or asymmetric arch AND every
+ * half arch (`semiarco`), which is this same assembly with `forma.corte < 1` — from its editor: `null` removes
+ * it. Only the shape is checked here (`armado-arco-organico.v1`); Python validates it against the piece
+ * (`armado_invalido`, `services/ai-api/app/plan_edicion_arco_organico.py`) and the resolver that follows counts
+ * it. It is NOT `armado_arco` (the pattern grid): on an `arco` carrying both, the classic one rules.
+ */
+export const EdicionArmadoArcoOrganicoSchema = z.object({
+  accion: z.literal("armado_arco_organico"),
+  estructura_id: z.string().trim().min(1).max(160),
+  armado_arco_organico: ArmadoArcoOrganicoV1Schema.nullable(),
+}).strict();
+
+export type EdicionArmadoArcoOrganico = z.infer<typeof EdicionArmadoArcoOrganicoSchema>;
+
+/** The measures an edit may change: the plan's `medidas` fields, each one optional and positive. */
+const MedidasEdicionSchema = z.object({
+  ancho_m: z.number().positive().max(100).optional(),
+  alto_m: z.number().positive().max(100).optional(),
+  largo_m: z.number().positive().max(100).optional(),
+}).strict();
+
+/**
+ * Lo que el editor de una pieza **sin motor** («Editar pared», «Editar aro», «Editar techo», «Editar centro de
+ * mesa») cambia en una sola edición: la forma elegida (`formas-pieza.ts`; `null` la quita, ausente no la toca),
+ * la densidad y las medidas, que son lo que la fórmula de `plan.py` lee para contar la pieza. Una edición, una
+ * firma nueva y un solo «Deshacer». Python valida la densidad contra la estructura oficial
+ * (`densidad_invalida`), la forma contra la suya (`forma_invalida`) y rechaza el cambio en una pieza que un
+ * motor cuenta con su armado (`armado_*_activo`): `services/ai-api/app/plan_edicion_pieza.py`.
+ */
+export const EdicionPropiedadesSchema = z.object({
+  accion: z.literal("propiedades"),
+  estructura_id: z.string().trim().min(1).max(160),
+  forma: z.string().trim().min(1).max(MAX_LARGO_FORMA_PIEZA).nullable().optional(),
+  densidad: z.enum(DENSIDADES).optional(),
+  medidas: MedidasEdicionSchema.optional(),
+}).strict().superRefine((valor, ctx) => {
+  const conMedidas = valor.medidas !== undefined && Object.values(valor.medidas).some((medida) => medida !== undefined);
+  if (valor.forma === undefined && valor.densidad === undefined && !conMedidas) {
+    ctx.addIssue({ code: "custom", path: ["accion"], message: "La edición necesita una forma, una densidad o una medida." });
+  }
+});
+
+export type EdicionPropiedades = z.infer<typeof EdicionPropiedadesSchema>;
+
+/**
+ * Forma elegida de una pieza que ningún motor arma, desde el selector del bloque del dibujo
+ * (`formas-pieza.ts`): `null` la quita y la pieza vuelve a dibujarse con la forma que su estructura oficial
+ * implica. Aquí solo se comprueba la forma del mensaje; que ESA forma sea de ESA pieza lo valida el par
+ * (oficial, forma) en `PlanDecoracionSchema` —la misma tabla que el JSON Schema exportado—, así que Python
+ * rechaza exactamente lo mismo (`forma_invalida`).
+ *
+ * No trae armado ni cifras: el dibujo es esquemático y no cuenta nada, así que lo único que cambia en el plan
+ * es este campo. Cambia `estructuras`, eso sí, y por tanto **mueve `plan_hash`**, como cualquier otra edición.
+ */
+export const EdicionFormaSchema = z.object({
+  accion: z.literal("forma"),
+  estructura_id: z.string().trim().min(1).max(160),
+  forma: z.string().trim().min(1).max(MAX_LARGO_FORMA_PIEZA).nullable(),
+}).strict();
+
+export type EdicionForma = z.infer<typeof EdicionFormaSchema>;
+
 /** Every edit the plan editor applies (Python applies it: services/ai-api/app/plan_edicion.py). */
-export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado | EdicionArmadoGuirnalda | EdicionArmadoArco | EdicionArmadoColumna | EdicionArmadoColumnaOrganica | EdicionArmadoGuirnaldaOrganica;
+export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado | EdicionArmadoGuirnalda | EdicionArmadoArco | EdicionArmadoColumna | EdicionArmadoColumnaOrganica | EdicionArmadoGuirnaldaOrganica | EdicionArmadoArcoOrganico | EdicionForma | EdicionPropiedades;

@@ -29,16 +29,18 @@ import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
 
-const DEFAULT_LORA_MODE: LoraModeSlug = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_LORA_MODE === "training_2" ? "training_2" : "training_1";
+// FLUX.2 base sin LoRA por defecto (2026-10-04); en desarrollo
+// NEXT_PUBLIC_LORA_MODE puede elegir un modo entrenado para comparar.
+const DEFAULT_LORA_MODE: LoraModeSlug = modoLoraPorDefecto({ nodeEnv: process.env.NODE_ENV, modoPedido: process.env.NEXT_PUBLIC_LORA_MODE });
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1, leerUiErrorV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { AvisoError } from "@/components/errores/AvisoError";
 import { useModoVista } from "@/lib/estado/modo-vista";
-import { abrirPromptAutomaticamente, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
+import { abrirPromptAutomaticamente, modoLoraPorDefecto, nombreRutaFlux, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
 import { aplicarEventoHerramienta, cerrarPasos, type PasoAsistente } from "@/lib/estado/pasos-asistente";
 import { contextoEventoConversacion } from "@/lib/estado/contexto-evento";
 import { crearEsperaAnalisis, type EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
-import { adjuntosParaGeneracion } from "@/lib/estado/generacion-adjuntos";
+import { adjuntosParaGeneracion, contextoDeGeneracion } from "@/lib/estado/generacion-adjuntos";
 import { aligerarAdjuntos, claveImagen, imagenesSinMiniatura, type AdjuntosTurno } from "@/lib/estado/persistencia-adjuntos";
 import { respetarReintentable, uiErrorDesdeEventoChat, type OrigenError } from "@/lib/estado/estado-error";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
@@ -74,7 +76,7 @@ const NOMBRE_PROVEEDOR: Record<ProveedorId, string> = {
 
 const NOMBRE_SELECTOR: Record<SelectorIA, string> = {
   ...NOMBRE_PROVEEDOR,
-  lora: "LoRA Sempertex",
+  lora: nombreRutaFlux(DEFAULT_LORA_MODE),
 };
 
 type GeneracionVisible = {
@@ -619,6 +621,10 @@ export default function Page() {
   // Propuesta editada después de generar su imagen: la imagen ya no la refleja.
   // Se ofrece "Regenerar visual" junto a ella; nunca se regenera sola (ADR-0028).
   const [visualDesactualizada, setVisualDesactualizada] = useState<{ mensajeId: string; planHash: string } | null>(null);
+  // Aviso del servidor cuando la imagen muestra elementos que no se cotizan (ambiente de fiesta,
+  // escenografía de la foto). AMBIENTE_FIESTA_V1 va encendida por defecto desde D2 y su
+  // condición era que este aviso se viera junto a la imagen.
+  const [avisoNoCotizado, setAvisoNoCotizado] = useState<string | null>(null);
   // Propuesta aprobada restaurada al recargar cuya imagen no cupo en sessionStorage (D5):
   // se avisa «Ya generaste esta imagen» en vez de volver a ofrecer «Aprobar».
   const [imagenNoGuardadaHash, setImagenNoGuardadaHash] = useState<string | null>(null);
@@ -807,7 +813,7 @@ export default function Page() {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-            content: "Listo: las imágenes se crearán con el estilo Sempertex. Seguimos conversando igual.",
+            content: `Listo: las imágenes se crearán con ${NOMBRE_SELECTOR.lora}. Seguimos conversando igual.`,
         },
       ]);
       return;
@@ -854,8 +860,15 @@ export default function Page() {
       setSeleccionPendiente(false);
     }
 
+    // Un plan nuevo del chat sobre una propuesta ya aprobada y con imagen deja
+    // esa imagen desactualizada, igual que una edición en el modal
+    // (`actualizarPlanEnMensaje`); antes la imagen vieja seguía sin aviso
+    // (auditoría 2026-10-04, C7). El id es el de la burbuja que recibe el plan,
+    // que solo se conoce dentro del actualizador; marcarlo ahí es idempotente.
+    const hashAprobadoConImagen = datos.plan && planAprobadoHash && imagenes.length > 0 && datos.plan.plan_hash !== planAprobadoHash ? planAprobadoHash : null;
     setMensajes((previos) => {
       const copia = [...previos];
+      if (hashAprobadoConImagen) setVisualDesactualizada({ mensajeId: copia[copia.length - 1].id, planHash: hashAprobadoConImagen });
       const pasosTurno = copia[copia.length - 1].pasos;
       copia[copia.length - 1] = {
         id: copia[copia.length - 1].id,
@@ -1324,8 +1337,14 @@ export default function Page() {
             imagenesReferencia: imagenesReferenciaParaGenerar.length
               ? imagenesReferenciaParaGenerar
               : undefined,
-            aspecto: fotoEspacioRef.current?.aspecto ?? aspectoActivoRef.current,
-            blueprint: referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint,
+            ...contextoDeGeneracion({
+              anclado: Boolean(adjuntosAnclados),
+              blueprintDelMensaje: mensajes.find((mensaje) => mensaje.id === override.anchorMessageId)?.referenceBlueprint,
+              blueprintActual: referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint,
+              fotoEspacioAnclada: fotoEspacioParaGenerar,
+              fotoEspacioActual: fotoEspacioRef.current,
+              aspectoActivo: aspectoActivoRef.current,
+            }),
             // Escenografía que el cliente apagó. Solo cambia lo que dibuja la
             // imagen: el servidor no la cotiza ni la mete en el plan.
             escenografia: escenografiaApagadaRef.current.length
@@ -1339,7 +1358,8 @@ export default function Page() {
               (override?.instruccion ?? ajuste.trim()) && ultimaImagenGenerada
                 ? ultimaInteraccionIdRef.current
                 : undefined,
-            revisionInstruction: (override?.instruccion ?? ajuste.trim()) || undefined,
+            // Sin imagen previa no hay nada que ajustar: el servidor también lo ignora.
+            revisionInstruction: ultimaImagenGenerada ? (override?.instruccion ?? ajuste.trim()) || undefined : undefined,
           }),
         });
         const data = await res.json();
@@ -1373,7 +1393,7 @@ export default function Page() {
         }
 
          const modoGeneracion: GeneracionVisible["modo"] = data.modoImagen === "lora" ? "lora" : "gemini";
-         const etiquetaGeneracion = modoGeneracion === "lora" ? "LoRA Sempertex" : "Nano Banana 2 (Gemini)";
+         const etiquetaGeneracion = modoGeneracion === "lora" ? NOMBRE_SELECTOR.lora : "Nano Banana 2 (Gemini)";
         const prompts = typeof data.prompts === "object" && data.prompts !== null
           ? Object.entries(data.prompts as Record<string, unknown>)
               .filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim().length > 0)
@@ -1387,6 +1407,7 @@ export default function Page() {
         // Con formato "ambos" llega una segunda imagen (prompt JSON) con la misma semilla.
         const imagenJson = typeof data.imagenAlternativa?.imagen === "string" && data.imagenAlternativa.imagen.startsWith("data:") ? data.imagenAlternativa.imagen : undefined;
         setImagenes((previas) => [data.imagen, ...(imagenJson ? [imagenJson] : []), ...previas]);
+        setAvisoNoCotizado(typeof data.avisoNoCotizado === "string" && data.avisoNoCotizado.trim() ? data.avisoNoCotizado : null);
         setImagenAmpliada(null);
         // La imagen que se acaba de generar ya refleja la selección actual.
         seleccionGeneradaRef.current = seleccionRef.current;
@@ -2113,6 +2134,9 @@ export default function Page() {
                     )}
                   </div>
 
+                  {avisoNoCotizado && imagenes.length > 0 && !generando && (
+                    <p data-testid="aviso-no-cotizado" role="note" className="rounded-xl bg-acento-suave px-3 py-2 text-xs text-acento">{avisoNoCotizado}</p>
+                  )}
                   {visualDesactualizada && planActual && planActualEntry?.id === visualDesactualizada.mensajeId && planActual.plan_hash !== visualDesactualizada.planHash && !planActualAprobado && !generando && imagenes.length > 0 && (
                     <div data-testid="visual-desactualizada" role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-acento-suave px-3 py-2 text-xs text-acento">
                       <span className="font-medium">Cambiaste la propuesta: esta imagen es de la versión anterior.</span>

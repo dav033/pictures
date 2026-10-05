@@ -118,7 +118,7 @@ function cierreDelTurno(estado: EstadoConversacion): string | null {
 
 /** Never an empty turn, never a claimed change without a plan (texto-final-turno.ts). */
 function textoDelTurno(estado: EstadoConversacion, texto: string, historial: Mensaje[]): string {
-  return textoFinalTurno(texto, { planConfirmado: Boolean(estado.planResuelto), seleccionConfirmada: Boolean(estado.seleccionFinalIA?.length) }, historial);
+  return textoFinalTurno(texto, { planConfirmado: Boolean(estado.planResuelto) }, historial);
 }
 
 function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPort["id"], modelo: string): ResultadoConversacion {

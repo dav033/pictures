@@ -37,10 +37,17 @@ function Mando({ id, etiqueta, valor, ayuda, children }: { id: string; etiqueta:
  * Deslizador que **aplica al soltar** (puntero o tecla), no en cada paso: un arrastre es un solo borrador y una
  * sola petición al motor, que es lo que cuesta cientos de milisegundos. Mientras se mueve, solo cambia su número.
  */
-export function DeslizadorColumna({ etiqueta, ayuda, valor, min, max, paso, formato, textoValor = formato, onConfirmar, testid }: {
+export function DeslizadorColumna({ etiqueta, ayuda, valor, valorReal = valor, min, max, paso, formato, textoValor = formato, onConfirmar, testid }: {
   etiqueta: string;
   ayuda?: string;
   valor: number;
+  /**
+   * Lo que el borrador tiene de verdad, cuando `valor` viene **recortado** a los límites del motor para
+   * poder enseñarlo. Soltar el deslizador justo en el límite no emitía nada —`local === valor`— y el
+   * borrador se quedaba con el valor viejo fuera de rango: se veía 4,2 m y la pieza seguía en 3 m, sin
+   * que nada avisara (2026-10-04). Comparar contra el valor real cierra ese hueco.
+   */
+  valorReal?: number;
   min: number;
   max: number;
   paso: number;
@@ -54,7 +61,7 @@ export function DeslizadorColumna({ etiqueta, ayuda, valor, min, max, paso, form
   const [local, setLocal] = useState<number | null>(null);
   const mostrado = local ?? valor;
   const confirmar = () => {
-    if (local !== null && local !== valor) onConfirmar(local);
+    if (local !== null && local !== valorReal) onConfirmar(local);
     setLocal(null);
   };
   // Un rango sin recorrido (por ejemplo el alto de un semicírculo) no se puede mover.

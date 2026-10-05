@@ -117,9 +117,12 @@ export type ArmadoBouquetResuelto = z.infer<typeof ArmadoBouquetResueltoSchema>;
 /** Clase de tamaño que la lectura da a un nivel: 5"–9", 11"–12", 16"–18" o 24"–36" (dueño de los rangos: `armado_bouquet.py`). */
 export const CLASES_TAMANO_NIVEL = ["chico", "mediano", "grande", "gigante"] as const;
 export type ClaseTamanoNivel = (typeof CLASES_TAMANO_NIVEL)[number];
-const MAX_NIVELES_LEIDOS = 8;
-const MAX_SUELTOS_LEIDOS = 6;
-const MAX_CANTIDAD_NIVEL = 24;
+/** Niveles que se leen de un bouquet en la foto; el prompt de la lectura los nombra. */
+export const MAX_NIVELES_LEIDOS = 8;
+/** Globos sueltos de un grupo que se repite en un nivel. */
+export const MAX_SUELTOS_LEIDOS = 6;
+/** Unidades iguales que pueden formar un nivel alrededor de la pieza. */
+export const MAX_CANTIDAD_NIVEL = 24;
 /** Techo de `total_globos`: todos los niveles de sueltos al tope, remate y dos grupos (números a los lados), más tres dígitos. */
 const MAX_TOTAL_LEIDO = (MAX_NIVELES_LEIDOS * MAX_SUELTOS_LEIDOS * MAX_CANTIDAD_NIVEL + 1) * 2 + 3;
 

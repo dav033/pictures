@@ -78,7 +78,11 @@ export async function POST(request: Request) {
   if (dibujosEnVuelo >= MAX_DIBUJOS_EN_VUELO) {
     const requestId = requestIdDe(request);
     const mensaje = "Hay demasiados dibujos de la columna en curso. Espera un momento y vuelve a intentarlo.";
-    const uiError = construirUiErrorV1("SOLICITUD_INVALIDA", { mensaje, codigoOrigen: "DEMASIADAS_SOLICITUDES", requestId });
+    // `SERVICIO_OCUPADO` y no `SOLICITUD_INVALIDA`: el tope es temporal y reintentar es lo correcto. Con el
+    // código de solicitud inválida el cliente leía su frase de catálogo —«Recarga la página e inténtalo de
+    // nuevo»— y daba el error por no reintentable, justo al revés de lo que dice el `Retry-After` de abajo
+    // (2026-10-04). `mensajeUsuario` hace que se lea la frase de esta ruta y no la genérica.
+    const uiError = construirUiErrorV1("SERVICIO_OCUPADO", { mensaje, mensajeUsuario: mensaje, codigoOrigen: "DEMASIADAS_SOLICITUDES", requestId });
     registrarFalloUi(SUPERFICIE, uiError);
     return Response.json({ error: mensaje, ui_error: uiError }, { status: 429, headers: { "X-Request-ID": requestId, "Retry-After": "1" } });
   }

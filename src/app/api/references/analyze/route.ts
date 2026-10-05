@@ -1,5 +1,6 @@
 import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
+import { leerLecturaUnica } from "@/lib/ia/amaterasu/lectura-unica";
 import { leerLecturasDeFoto } from "@/lib/ia/amaterasu/lecturas-foto";
 import { medirColoresSempertex } from "@/lib/ia/amaterasu/color-sempertex";
 import type { AnalisisColorSempertex } from "@/lib/plan/analisis-color";
@@ -9,12 +10,16 @@ import {
   BOUQUET_REFERENCIA_PYTHON_ENABLED,
   CONTEO_REFERENCIA_PYTHON_ENABLED,
   GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
+  LECTURA_UNICA_REFERENCIA_ENABLED,
   PATRON_REFERENCIA_PYTHON_ENABLED,
   REFERENCE_ANALYSIS_PYTHON_ENABLED,
 } from "@/lib/ia/nucleo/feature-flags";
+import { VARIANTE_LECTURA_UNICA } from "@/lib/ia/referencia/reference-structure";
 import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
 import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
+import { conReferenciasMedidas } from "@/lib/plan/referencias-medidas";
+import { unificarPiezasEspejo } from "@/lib/ia/referencia/piezas-espejo";
 
 export const maxDuration = 120;
 
@@ -39,7 +44,13 @@ export async function POST(request: Request) {
     // La descripción visual no decide productos. El chat resuelve después
     // cada elemento mediante buscar_catalogo_rag contra PostgreSQL validado.
     // `sin_cache` es el "Reintentar" de la UI: pide un análisis nuevo.
-    const analisis = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal, { forzarNuevoAnalisis: body.sinCache });
+    // Una sola IA mira la foto: con la bandera encendida, el análisis devuelve
+    // también las cuatro lecturas (variante `v17-lectura-unica`) y no hay
+    // ninguna llamada de visión más. Apagada, v16 y las cuatro de siempre.
+    const analisis = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal, {
+      forzarNuevoAnalisis: body.sinCache,
+      ...(LECTURA_UNICA_REFERENCIA_ENABLED ? { variante: VARIANTE_LECTURA_UNICA } : {}),
+    });
     // ADR-0028 §11: el patrón de color de cada estructura lo lee Python en una
     // llamada aparte (el prompt del análisis sigue congelado). Un fallo deja el
     // blueprint sin pistas; nunca rompe el análisis. La misma foto con los
@@ -52,13 +63,16 @@ export async function POST(request: Request) {
     // ADR-0032 (E4): el armado de cada guirnalda es la cuarta, y con ella la
     // ubicación de las guirnaldas se refina con su lectura y los muebles.
     const lectura = { requestId, correlationId, signal: request.signal, vencimiento, sinCache: body.sinCache };
-    const blueprint = await leerLecturasDeFoto(analisis.blueprint, references, lectura, {
-      patron: PATRON_REFERENCIA_PYTHON_ENABLED,
-      bouquet: BOUQUET_REFERENCIA_PYTHON_ENABLED,
-      conteo: CONTEO_REFERENCIA_PYTHON_ENABLED,
-      guirnalda: GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
-    });
-    const result = { ...analisis, blueprint };
+    const blueprint = LECTURA_UNICA_REFERENCIA_ENABLED
+      // Lo que ya leyó el análisis: solo se valida en Python y se reparte por
+      // elemento. Las cuatro banderas de arriba no se leen en este camino.
+      ? await leerLecturaUnica(analisis.blueprint, analisis.lecturasCrudas, references, lectura)
+      : await leerLecturasDeFoto(analisis.blueprint, references, lectura, {
+        patron: PATRON_REFERENCIA_PYTHON_ENABLED,
+        bouquet: BOUQUET_REFERENCIA_PYTHON_ENABLED,
+        conteo: CONTEO_REFERENCIA_PYTHON_ENABLED,
+        guirnalda: GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
+      });
     /**
      * Los colores de cada pieza, medidos sobre los píxeles de su croquis y cruzados con una referencia del
      * catálogo Sempertex (su código y su Pantone). Va **fuera** del blueprint a propósito: no entra en ningún
@@ -73,6 +87,11 @@ export async function POST(request: Request) {
         console.warn("[references/analyze] no se pudo medir el color", { request_id: requestId, error: error instanceof Error ? error.message : String(error) });
       }
     }
+    // Las referencias medidas entran AL blueprint (2026-10-04): son lo que decide qué globo se compra
+    // (`referencias-medidas.ts`). El bloque `analisis_color` de abajo sigue igual para la pantalla.
+    // Dos piezas en espejo son UNA pieza repetida (`piezas-espejo.ts`, 2026-10-04): el reconocedor llamó
+    // columna a una y semiarco a la otra y el plan armó dos estructuras distintas. Determinista, sin proveedor.
+    const result = { ...analisis, blueprint: unificarPiezasEspejo(conReferenciasMedidas(blueprint, analisisColor)) };
     // Qué vio el reconocedor y qué lecturas quedaron en cada elemento: solo
     // ids, tipos y conteos (nunca la foto), para diagnosticar un plan que no
     // sigue la foto (2026-09-25: un bouquet de 5 globos salía con 12 o 20).
@@ -82,6 +101,8 @@ export async function POST(request: Request) {
       elementos: result.blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => ({
         id: elemento.element_id,
         tipo: elemento.visual_semantics?.structure_type ?? null,
+        // Dos piezas con el mismo grupo son la misma pieza repetida (`piezas-espejo.ts`).
+        grupo: elemento.visual_semantics?.repetition_group ?? null,
         // Con la confianza y los colores, no solo el modo: una pista por debajo de 0,5
         // la descarta `patron_desde_pista` y la pieza cae al preset, que en una pared es
         // confeti igual que la pista `aleatorio`. Sin la confianza aquí, el modo leído
@@ -92,6 +113,10 @@ export async function POST(request: Request) {
         patron: elemento.appearance.patron_color
           ? { modo: elemento.appearance.patron_color.modo, confianza: elemento.appearance.patron_color.confianza, colores: elemento.appearance.patron_color.colores, zonas: elemento.appearance.patron_color.zonas?.map((zona) => `${zona.color}@${zona.ancla}:${zona.extension}`) ?? null }
           : null,
+        // De qué tamaños es la pieza. Sin esto, que la foto no los dijera y que los dijera y no
+        // llegaran al motor se veían igual desde fuera: nada. Es lo que dejó una columna de globos
+        // gigantes armada con globos pequeños durante toda una sesión (2026-10-03).
+        tamanos: elemento.appearance.tamanos_leidos ?? null,
         armado: elemento.appearance.armado_bouquet
           ? { confianza: elemento.appearance.armado_bouquet.confianza, niveles: elemento.appearance.armado_bouquet.niveles.length, numeros: elemento.appearance.armado_bouquet.numeros?.map((numero) => numero.digito).join("") ?? null }
           : null,

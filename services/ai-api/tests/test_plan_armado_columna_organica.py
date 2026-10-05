@@ -165,7 +165,7 @@ def test_devuelve_las_herramientas_del_motor_y_los_rangos_vivos() -> None:
 
     opciones = resultado["opciones"]
     limites = resultado["limites"]
-    assert len(opciones["formas"]) == 8 and len(opciones["estilos"]) == 4
+    assert len(opciones["formas"]) == 10 and len(opciones["estilos"]) == 4
     assert {"acabados", "repartos", "tamanos", "alto_m", "grosor_m", "max_materiales"} <= set(
         opciones
     )

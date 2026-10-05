@@ -171,9 +171,11 @@ function geminiConArmadoDelPlan(): void {
   // Coherencia (la puerta antes de la llamada pagada), con las mismas frases que el constructor.
   const coherencia = verificarCoherenciaPrompt(prompt, fijado.plan, escenaParaCoherencia(escenaDePlan(fijado), frases));
   assert.equal(coherencia.ok, true, coherencia.errores.join("; "));
-  // Y nada más cambia: sin esas cuatro inserciones es el prompt de antes.
+  // Y nada más cambia: sin esas cuatro inserciones es el prompt de antes. Desde
+  // la auditoría G3 el bouquet lleva su línea de color también sin armado
+  // (tiene globos en el estimado), así que el armado solo le añade su frase.
   const deshecho = prompt
-    .replace(`\n${linea}`, "")
+    .replace(linea, linea.replace(` ${frase}`, ""))
     .replace(`,"color_pattern":${JSON.stringify(frase)}`, "")
     .replace(fraseInstanciaConArmado(1), "")
     .replace(EXCEPCION_CONTEO_CON_ARMADO, "");

@@ -60,6 +60,14 @@ export const ArgsArmarEstructuraSchema = z
     paleta: z.array(ColorPedidoSchema).min(1).max(8).optional(),
     reparto: z.string().trim().min(1).max(40).optional(),
     mezcla_colores: z.number().min(0).max(1).optional(),
+    /**
+     * La forma lista y el estilo del catálogo, por su id. Son un atajo sobre los bloques de abajo: aplicarlos
+     * copia las cifras del diseñador, y cualquier campo explícito manda sobre ellos. Aquí solo se comprueba
+     * que sean texto corto; **qué ids existen lo decide la puerta de Python**, que publica el catálogo, y
+     * repetir la lista aquí sería un segundo dueño que se desincroniza en silencio.
+     */
+    forma_lista: z.string().trim().min(1).max(40).optional(),
+    estilo: z.string().trim().min(1).max(40).optional(),
     forma: FormaPedidaSchema.optional(),
     volumen: VolumenPedidoSchema.optional(),
     tamanos: z.array(PesoTamanoSchema).min(1).max(6).optional(),

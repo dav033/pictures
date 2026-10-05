@@ -53,6 +53,35 @@ export type PatronColumna = (typeof PATRONES_COLUMNA)[number];
 export const REMATES_COLUMNA = ["ninguno", "globo", "racimo", "estrella", "corazon"] as const;
 export type RemateColumna = (typeof REMATES_COLUMNA)[number];
 
+/**
+ * Lo que la foto leyó del remate de una columna (ADR-0039). Es una **lectura**, no un armado: dice qué corona
+ * la pieza y de qué color, y el motor pone el resto (el tamaño, los globos del racimo, el alto del foil).
+ *
+ * Que el campo esté o no es la mitad del dato, y por eso es opcional en el blueprint en vez de tener un valor
+ * para «no se sabe»: **ausente** es «no se ve la punta» —la frena el borde de la foto, la tapa algo, está
+ * borrosa— y entonces el motor pone su remate; `{ tipo: "ninguno" }` es «la punta no lleva nada», que es una
+ * lectura y deja la columna a ras de su último anillo. Confundir las dos es coronar una columna que en la
+ * foto no está coronada, o al contrario.
+ *
+ * `color` va por NOMBRE de catálogo, como el resto de la lectura de la foto: quien la lee no conoce los
+ * índices de `materiales` de la pieza, y los resuelve Python con la misma tabla de tonos.
+ */
+export const RemateLeidoSchema = z
+  .object({
+    tipo: z.enum(REMATES_COLUMNA),
+    color: z.string().trim().min(1).max(80).optional(),
+  })
+  .strict();
+
+export type RemateLeido = z.infer<typeof RemateLeidoSchema>;
+
+/** La lectura del remate, dirigida al elemento de la referencia que materializa la columna. */
+export const PistaRemateSchema = RemateLeidoSchema.extend({
+  referencia_element_id: z.string().trim().min(1).max(80),
+}).strict();
+
+export type PistaRemate = z.infer<typeof PistaRemateSchema>;
+
 /** Tamaños nominales de látex redondo del catálogo Sempertex que usa la columna. */
 export const TAMANOS_COLUMNA = [5, 9, 12, 18, 24, 36] as const;
 export type TamanoColumna = (typeof TAMANOS_COLUMNA)[number];
@@ -268,6 +297,19 @@ export const ColumnaResueltaSchema = z
       .strict(),
     /** Lo que `sanear` ajustó del armado pedido, en español y para mostrar. */
     avisos: z.array(z.string().min(1).max(240)).max(12),
+    /**
+     * Derivados para la imagen, igual que en el arco y en la guirnalda orgánica (ADR-0035): a qué estructura
+     * pertenece y cómo le cuenta Python este armado a los modelos de imagen, en inglés (el del LoRA en ASCII
+     * y sin cifras). Opcionales: los escribe la resolución, no el motor, y viajan **fuera** del snapshot, así
+     * que no entran en `plan_hash`. TypeScript solo los inserta, tal cual.
+     *
+     * Sin ellos el caption solo sabe nombrar la pieza y sus colores, y lo que no dice lo inventa el LoRA con
+     * lo que aprendió del corpus: el 2026-10-04, dos columnas orgánicas salieron coronadas por un globo
+     * gigante que el plan apaga a propósito y que nadie estaba cobrando.
+     */
+    estructura_id: z.string().min(1).max(160).optional(),
+    prompt_gemini: z.string().max(1500).optional(),
+    prompt_lora: z.string().max(600).optional(),
   })
   .strict();
 

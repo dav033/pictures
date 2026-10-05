@@ -145,15 +145,16 @@ async function main(): Promise<void> {
   ok("estimar_conteo_globos entra detrás de ESTIMAR_CONTEO_V1, aparte de la del armado, y es de solo lectura");
 
   // ---------------------------------------------------------------------------
-  // 1b. Mismo default que ARMADO_ARCO_COLUMNA_V1: encendida fuera de producción, apagada en producción.
+  // 1b. D2 (2026-10-04): encendida por defecto en todas partes, también en producción.
   delete process.env.ESTIMAR_CONTEO_V1;
+  delete process.env.ARMADO_ARCO_COLUMNA_V1;
   Object.assign(process.env, { NODE_ENV: "test" });
   assert.equal(featureEnabled("ESTIMAR_CONTEO_V1"), true);
   Object.assign(process.env, { NODE_ENV: "production" });
-  assert.equal(featureEnabled("ESTIMAR_CONTEO_V1"), false, "apagada en producción por defecto");
-  assert.equal(featureEnabled("ARMADO_ARCO_COLUMNA_V1"), false, "la convención que sigue");
+  assert.equal(featureEnabled("ESTIMAR_CONTEO_V1"), true, "encendida en producción por defecto");
+  assert.equal(featureEnabled("ARMADO_ARCO_COLUMNA_V1"), true, "la misma regla, sin depender de NODE_ENV");
   process.env.ESTIMAR_CONTEO_V1 = "true";
-  assert.equal(featureEnabled("ESTIMAR_CONTEO_V1"), true, "se enciende en producción solo a propósito");
+  assert.equal(featureEnabled("ESTIMAR_CONTEO_V1"), true);
   process.env.ESTIMAR_CONTEO_V1 = "false";
   Object.assign(process.env, { NODE_ENV: "test" });
   assert.equal(featureEnabled("ESTIMAR_CONTEO_V1"), false, "false es un kill-switch");

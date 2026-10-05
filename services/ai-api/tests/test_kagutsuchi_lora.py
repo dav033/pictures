@@ -35,9 +35,11 @@ def _request_dict(**overrides: object) -> dict[str, object]:
     return body
 
 
-def test_lora_generate_request_requires_at_least_one_lora() -> None:
-    with pytest.raises(ValueError):
-        LoraGenerateRequest.model_validate(_request_dict(loras=[]))
+def test_lora_generate_request_accepts_no_lora_for_the_base_model() -> None:
+    payload = LoraGenerateRequest.model_validate(
+        _request_dict(loras=[], prompt="organic balloon arch at the entrance")
+    )
+    assert payload.loras == []
 
 
 def test_lora_generate_request_rejects_more_than_one_lora() -> None:
@@ -169,6 +171,24 @@ def test_generar_lora_fal_happy_path_text_mode(monkeypatch: pytest.MonkeyPatch) 
     assert isinstance(submit_body, dict)
     assert submit_body["prompt"] == payload.prompt
     assert "image_urls" not in submit_body
+
+
+def test_generar_lora_fal_base_model_sends_empty_loras(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FAL_KEY", "test-key")
+    client = _FakeAsyncClient(
+        responses=[_submission(), _completed_status(), _result()],
+        stream_responses=[_image_stream()],
+    )
+    payload = LoraGenerateRequest.model_validate(
+        _request_dict(loras=[], prompt="organic balloon arch at the entrance")
+    )
+
+    asyncio.run(generar_lora_fal(payload, client_factory=lambda: client))
+
+    submit_body = client.requests[0]["json"]
+    assert isinstance(submit_body, dict)
+    assert submit_body["loras"] == []
+    assert submit_body["prompt"] == "organic balloon arch at the entrance"
 
 
 def test_generar_lora_fal_edit_mode_forwards_image_urls(monkeypatch: pytest.MonkeyPatch) -> None:

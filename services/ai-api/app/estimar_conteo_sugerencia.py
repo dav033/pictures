@@ -41,7 +41,7 @@ from app.estimar_conteo_mandos import (
     mandos_de_columna,
     marcadores,
 )
-from app.omoikane.armado_estructura import CLAVE_ARMADO
+from app.armado_estructura import CLAVE_ARMADO
 from app.plan import PiezaContada, PlanResolutionError, contar_pieza, puerto_de_conteo
 
 Fuente = Literal["formula", "motor"]

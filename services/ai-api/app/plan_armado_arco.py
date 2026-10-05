@@ -47,7 +47,7 @@ from app.armado_arco import (
 from app.armado_arco_prompt import frases_arco
 from app.generated_models import contract_schema
 from app.operational_models import OperationalRequest
-from app.plan import MERMA, PlanResolutionError
+from app.plan import MERMA, PlanResolutionError, armado_arco_de_patron
 
 # La frontera comparte con la del otro motor la lectura del plan y la política del gris neutro
 # (``app/plan_armado_comun.py``). Los tres ``X as X`` son re-exportaciones deliberadas: el aviso, el tono y el
@@ -200,7 +200,10 @@ def vista_previa_armado_arco(request: PlanArmadoArcoRequest) -> dict[str, object
     armado = (
         dict(request.armado_arco)
         if request.armado_arco is not None
-        else _receta(estructura, opciones, len(tonos))
+        # Un arco clásico con patrón de color tiene ya su receta: la que la resolución cuenta y cotiza cuando no
+        # trae armado (``plan.armado_arco_de_patron``). El editor arranca de ese arco y no de otro.
+        else armado_arco_de_patron({k: v for k, v in estructura.items() if k != "armado_arco"})
+        or _receta(estructura, opciones, len(tonos))
     )
     try:
         # El desperdicio es política del plan, no del armado: el mismo `MERMA` con el que la resolución compra,

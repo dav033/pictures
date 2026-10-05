@@ -34,7 +34,7 @@ if str(SERVICE_DIR) not in sys.path:  # pragma: no cover - entrada de CLI
     sys.path.insert(0, str(SERVICE_DIR))
 
 from app.estimar_conteo import EstimarConteoRequest, estimar_conteo  # noqa: E402
-from app.omoikane.armado_estructura import (  # noqa: E402
+from app.armado_estructura import (  # noqa: E402
     ArmadoEstructuraRequest,
     resolver_armado_estructura,
 )

@@ -41,5 +41,19 @@ export function descripcionProductoParaImagen(product: ProductoParaImagen, unida
   const unidades = unidadesInstaladas !== undefined && unidadesInstaladas > 0
     ? ` Installed design quantity in this scene: ${unidadesInstaladas} unit(s).`
     : "";
-  return `${nombreProductoParaImagen(product)}. ${product.descripcion}.${unidades}`;
+  // Sin el código de tamaño (R-12) ni la descripción cuando solo repite el nombre,
+  // y sin dobles puntos: salía "Globo latex blanco. Globo latex blanco R-12.."
+  // (auditoría 2026-10-04, G14).
+  const nombre = sinPuntoFinal(nombreProductoParaImagen(product));
+  const descripcion = sinPuntoFinal(product.descripcion.replace(/\bR-\d+\b/gi, " ").replace(/\s+/g, " "));
+  const extra = descripcion && plegar(descripcion) !== plegar(nombre) ? ` ${descripcion}.` : "";
+  return `${nombre}.${extra}${unidades}`;
+}
+
+function sinPuntoFinal(texto: string): string {
+  return texto.trim().replace(/[.\s]+$/, "");
+}
+
+function plegar(texto: string): string {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }

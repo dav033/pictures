@@ -356,7 +356,7 @@ async function main(): Promise<void> {
     pool: poolSinConsultas(),
     catalogoLoraNoDisponible: "LORA_VOCABULARY_ALLOWLIST_EMPTY",
   });
-  for (const herramienta of ["buscar_catalogo_rag", "confirmar_seleccion_rag", "confirmar_plan_decoracion"] as const) {
+  for (const herramienta of ["buscar_catalogo_rag", "confirmar_plan_decoracion"] as const) {
     const args = { mensaje: "globos", seleccion: [] };
     const salida: unknown = await registro[herramienta]!(args, { nombre: herramienta, args });
     assert.ok(typeof salida === "object" && salida !== null);
@@ -372,6 +372,13 @@ async function main(): Promise<void> {
   assert.match(construirSistema({ ragEnabled: true, catalogoLoraNoDisponible: true }), /CATÁLOGO NO DISPONIBLE EN ESTE MODO/);
   assert.doesNotMatch(construirSistema({ ragEnabled: true }), /CATÁLOGO NO DISPONIBLE EN ESTE MODO/);
   console.log("[PASS] con el pool LoRA no disponible, las herramientas de catálogo fallan cerrado sin tocar base ni Python y el chat sigue");
+
+  // Base mode (FLUX.2 without LoRA): the chat, the editor and /api/generate get
+  // `null`, which every caller treats as the whole catalog, without a query.
+  const { resolveLoraModeDatasetAllowlist } = await import("../../src/lib/lora/mode-resolver");
+  assert.equal(await resolveLoraModeDatasetAllowlist("base", poolSinConsultas()), null);
+  assert.doesNotMatch(construirSistema({ ragEnabled: true, catalogAllowlist: undefined }), /CATÁLOGO NO DISPONIBLE EN ESTE MODO/);
+  console.log("[PASS] modo base: sin restricción de dataset LoRA en el catálogo del chat");
 }
 
 main().then(

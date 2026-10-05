@@ -7,6 +7,7 @@ import { mensajeFalloPlanArmado } from "@/lib/plan/peticion-armado";
 import { pedirVistaArmadoGuirnaldaOrganica, type VistaArmadoGuirnaldaOrganica } from "@/lib/plan/peticion-armado-guirnalda-organica";
 import { metrosCliente } from "@/lib/plan/presentacion-cliente";
 import { RecetaArco } from "../arco/RecetaArco";
+import { MarcoEdicion } from "../motor/MarcoEdicion";
 import { VistaMotor } from "../motor/VistaMotor";
 import { colorDe, type ColorLeyenda } from "../patron/leyenda";
 import { MuestraNumero } from "../patron/LeyendaPatron";
@@ -299,7 +300,7 @@ function GuirnaldaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReint
   ];
   const { ramas, flores } = guirnalda.adornos;
   return (
-    <>
+    <MarcoEdicion editor={pie}>
       <div aria-busy={actualizando} className="space-y-3">
         <div
           className={`relative w-full overflow-hidden rounded-xl bg-superficie ring-1 ring-borde-suave ring-inset ${tenue}`}
@@ -369,7 +370,6 @@ function GuirnaldaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReint
           )}
         </div>
       </div>
-      {pie}
-    </>
+    </MarcoEdicion>
   );
 }

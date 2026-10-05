@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Pool } from "pg";
 import { getRagPool } from "@/lib/rag/db";
-import { LoraModeSlugSchema, type LoraModeSlug } from "./schema";
+import { LORA_BASE_MODE, LoraModeSlugSchema, type LoraModeSlug } from "./schema";
 import { listLoraModeOptions } from "./mode-resolver";
 import { linkDatasetToCurrentCatalog } from "./dataset-catalog-link";
 import { PRODUCT_VOCABULARY } from "./product-vocabulary-data";
@@ -246,6 +246,8 @@ export async function readActiveLoraTrainingReferenceCounts(
   pool: Pool = getRagPool(),
 ): Promise<LoraActiveTrainingReferenceCounts> {
   const parsedMode = LoraModeSlugSchema.parse(mode);
+  // The base model was trained on no Sempertex dataset: nothing to count.
+  if (parsedMode === LORA_BASE_MODE) return { mode: parsedMode, datasetId: null, datasetLabel: null, countsByCatalogId: {} };
   const option = (await listLoraModeOptions(pool)).find((candidate) => candidate.slug === parsedMode);
   if (!option?.dataset_id) return { mode: parsedMode, datasetId: null, datasetLabel: null, countsByCatalogId: {} };
 

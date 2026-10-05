@@ -2,7 +2,9 @@
 
 Dueño único de la mutación declarativa de un plan: ``agregar``, ``reemplazar``,
 ``quitar``, ``repartir``, ``mezcla``, ``patron``, ``armado`` (bouquet, ADR-0030)
-``armado_guirnalda`` (ADR-0032) y ``armado_arco`` (ADR-0035). Las cinco primeras son el
+``armado_guirnalda`` (ADR-0032), ``armado_arco`` (ADR-0035), los armados de los motores
+orgánicos, ``forma`` (la forma elegida de una pieza sin motor) y ``propiedades`` (forma,
+densidad y medidas de una pieza, en una sola edición). Las cinco primeras son el
 port uno a uno de ``aplicarEdicion`` (antes en ``src/lib/plan/aplicar-edicion.ts``,
 con su redondeo de ``participacion`` a seis decimales); encima van las reglas
 de patrón del §9. Next conserva lo que no es del dominio: el token firmado, la
@@ -26,6 +28,10 @@ con ``details``):
 | ``unico_material`` | 400 |
 | ``sin_participacion`` | 400 |
 | ``patron_invalido`` (``estructura_id``, ``motivo``, ``mensaje``; en la vista previa, además ``modos_admitidos``) | 422 |
+| ``forma_invalida`` (``estructura_id``, ``forma``, ``formas_admitidas``) | 422 |
+| ``densidad_invalida`` (``estructura_id``, ``densidad``, ``densidades_admitidas``) | 422 |
+| ``armado_arco_presente`` (un arco orgánico encima del clásico) | 409 |
+| ``armado_arco_organico_activo`` (reparto, mezcla o propiedades de un arco armado) | 409 |
 | ``invalid_plan`` (el plan recibido o el editado incumple plan-decoracion.v1) | 422 |
 """
 
@@ -46,6 +52,7 @@ from pydantic import ConfigDict, Field, ValidationError, field_validator, model_
 from app.armado_arco import ArmadoInvalido as ArmadoArcoInvalido
 from app.armado_arco import EstructuraArco, armado_resuelto, avisos_colores_sin_uso
 from app.armado_arco import validar as validar_armado_arco
+from app.dibujo_estructura import FORMAS_POR_OFICIAL
 from app.generated_models import PlanDecoracion, contract_schema
 from app.plan_edicion_columna import (
     fijar_armado_columna,
@@ -62,6 +69,12 @@ from app.plan_edicion_guirnalda_organica import (
     revisar_armado_guirnalda_organica,
     sin_armado_guirnalda_organica,
 )
+from app.plan_edicion_arco_organico import (
+    fijar_armado_arco_organico,
+    revisar_armado_arco_organico,
+    sin_armado_arco_organico,
+)
+from app.plan_edicion_pieza import fijar_propiedades
 from app.operational_models import ContractModel, OperationalRequest
 from app.patron_color import TIPO_REJILLA, forma_valida, para_validar
 from app.patron_color import AVISO_ESPEJO_GUIRNALDA as AVISO_ESPEJO_GUIRNALDA
@@ -113,6 +126,16 @@ _MAX_AVISO = 400
 MAX_LINEAS_PIEZA = 256
 #: El deslizador de colores es una decisión del decorador (§9).
 ORIGEN_DECORADOR = "decorador"
+#: Largo máximo del id de una forma elegida. Es el del contrato (``estructuras[].forma``), que lo fija
+#: ``src/lib/plan/formas-pieza.ts``: no es un número escrito a mano aquí.
+MAX_LARGO_FORMA: int = int(
+    cast(
+        int,
+        contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
+            "forma"
+        ]["maxLength"],
+    )
+)
 
 AVISO_PATRON_QUITAR = "El patrón se rehízo porque quitaste un color."
 AVISO_PATRON_AGREGAR = "El patrón se rehízo para incluir el color nuevo."
@@ -191,6 +214,12 @@ _ARMADO_COLUMNA_ORGANICA_FORMA = Draft7Validator(
 _ARMADO_GUIRNALDA_ORGANICA_FORMA = Draft7Validator(
     contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
         "armado_guirnalda_organica"
+    ]
+)
+# Arcos y semiarcos del motor orgánico: la forma de `armado_arco_organico` la valida el contrato exportado.
+_ARMADO_ARCO_ORGANICO_FORMA = Draft7Validator(
+    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
+        "armado_arco_organico"
     ]
 )
 
@@ -384,6 +413,70 @@ class EdicionArmadoGuirnaldaOrganica(_Estricto):
         return valor
 
 
+class EdicionArmadoArcoOrganico(_Estricto):
+    """Fija (o, con ``None``, quita) el armado del arco orgánico del motor: el arco y el semiarco."""
+
+    accion: Literal["armado_arco_organico"]
+    estructura_id: Identificador
+    armado_arco_organico: dict[str, object] | None
+
+    @field_validator("armado_arco_organico")
+    @classmethod
+    def validar_forma(cls, valor: dict[str, object] | None) -> dict[str, object] | None:
+        if (
+            valor is not None
+            and next(_ARMADO_ARCO_ORGANICO_FORMA.iter_errors(valor), None) is not None
+        ):
+            raise ValueError("armado_arco_organico no cumple armado-arco-organico.v1")
+        return valor
+
+
+class MedidasEdicion(_Estricto):
+    """Las medidas que el editor cambió (``MedidasSchema`` del plan); las que no vienen se conservan."""
+
+    ancho_m: float | None = Field(default=None, gt=0, le=100)
+    alto_m: float | None = Field(default=None, gt=0, le=100)
+    largo_m: float | None = Field(default=None, gt=0, le=100)
+
+
+class EdicionPropiedades(_Estricto):
+    """Forma, densidad y medidas de una pieza en **una** edición (el editor de las piezas sin motor).
+
+    ``forma`` ausente no la toca; ``None`` la quita (como ``EdicionForma``). ``densidad`` y ``medidas`` ausentes
+    no se tocan. Al menos una de las tres tiene que venir.
+    """
+
+    accion: Literal["propiedades"]
+    estructura_id: Identificador
+    forma: str | None = Field(default=None, min_length=1, max_length=MAX_LARGO_FORMA)
+    densidad: Literal["sencilla", "media", "lujosa"] | None = None
+    medidas: MedidasEdicion | None = None
+
+    @model_validator(mode="after")
+    def exigir_algo(self) -> "EdicionPropiedades":
+        medidas = self.medidas.model_dump(exclude_none=True) if self.medidas else {}
+        if "forma" not in self.model_fields_set and self.densidad is None and not medidas:
+            raise ValueError("la edición de propiedades necesita forma, densidad o medidas")
+        return self
+
+
+class EdicionForma(_Estricto):
+    """Fija (o, con ``None``, quita) la forma elegida de una pieza que ningún motor arma.
+
+    Es la elección del decorador entre las formas que su estructura oficial ofrece
+    (``src/lib/plan/formas-pieza.ts``, puerto de las ``formas`` del repo dueño). No toca globos: el dibujo es
+    esquemático y no cuenta nada, así que lo único que cambia en el plan es este campo —y con él ``plan_hash``,
+    porque ``estructuras`` entra en el snapshot—.
+
+    Aquí solo se valida la forma del mensaje; que ESA forma sea de ESA pieza se comprueba al aplicarla, con la
+    oficial delante (``_fijar_forma``).
+    """
+
+    accion: Literal["forma"]
+    estructura_id: Identificador
+    forma: str | None = Field(min_length=1, max_length=MAX_LARGO_FORMA)
+
+
 EdicionPlan = (
     EdicionMaterial
     | EdicionReparto
@@ -395,6 +488,9 @@ EdicionPlan = (
     | EdicionArmadoColumna
     | EdicionArmadoColumnaOrganica
     | EdicionArmadoGuirnaldaOrganica
+    | EdicionArmadoArcoOrganico
+    | EdicionForma
+    | EdicionPropiedades
 )
 Edicion = Annotated[EdicionPlan, Field(discriminator="accion")]
 
@@ -1032,6 +1128,36 @@ def _fijar_armado_guirnalda(
     return avisos
 
 
+def _fijar_forma(estructura: dict[str, object], edicion: EdicionForma) -> None:
+    """Fija o quita la forma elegida de la pieza, comprobándola **contra su estructura oficial**.
+
+    ``forma_invalida`` (422) cuando esa oficial no ofrece esa forma: una ``media-luna`` no es una pared, y una
+    pieza que arma un motor no elige forma aquí porque la elige su motor. Es la misma tabla que valida el
+    contrato (``x-formas-pieza``, dueño ``src/lib/plan/formas-pieza.ts``) y que valida Zod en Next, así que los
+    dos lados rechazan lo mismo; el rechazo explícito existe para decirle al decorador **qué formas sí**, en vez
+    de devolverle el ``invalid_plan`` del esquema.
+
+    No toca nada más: ni materiales, ni mezcla, ni medidas, ni armado. El dibujo que esta forma cambia es
+    esquemático y no cuenta cantidades, así que la pieza sigue valiendo lo que ``plan.py`` resolvió para ella.
+    """
+    if edicion.forma is None:
+        estructura.pop("forma", None)
+        return
+    oficial = estructura.get("estructura_oficial")
+    admitidas = FORMAS_POR_OFICIAL.get(oficial, ()) if isinstance(oficial, str) else ()
+    if edicion.forma not in admitidas:
+        raise PlanResolutionError(
+            "forma_invalida",
+            422,
+            {
+                "estructura_id": edicion.estructura_id,
+                "forma": edicion.forma,
+                "formas_admitidas": list(admitidas),
+            },
+        )
+    estructura["forma"] = edicion.forma
+
+
 def _fijar_armado_arco(estructura: dict[str, object], edicion: EdicionArmadoArco) -> list[str]:
     """Fija o quita el armado de un arco; lo comprueba contra la pieza sin catálogo (``armado_invalido``).
 
@@ -1228,6 +1354,21 @@ def _revisar_armado_guirnalda(
     return [AVISO_ARMADO_GUIRNALDA_COLOR if quitar_siempre else AVISO_ARMADO_GUIRNALDA_QUITADO]
 
 
+def _sin_armado_de_motor(estructura: Mapping[str, object]) -> None:
+    """Lo que impide editar el reparto, la mezcla, la densidad o las medidas: que un motor cuente la pieza.
+
+    Cada motor rechaza con su ``armado_*_activo``, en el orden de siempre (el arco clásico primero).
+    """
+    _sin_armado_arco(estructura)
+    sin_armado_columna(estructura)
+    sin_armado_columna_organica(estructura)
+    sin_armado_guirnalda_organica(estructura)
+    sin_armado_arco_organico(estructura)
+
+
+_GUARDIAS_ARMADO = (_sin_armado_de_motor,)
+
+
 def editar_plan(
     plan: Mapping[str, object],
     edicion: EdicionPlan,
@@ -1281,18 +1422,35 @@ def editar_plan(
         avisos = fijar_armado_guirnalda_organica(
             estructura, edicion.armado_guirnalda_organica, edicion.estructura_id
         )
+    elif isinstance(edicion, EdicionArmadoArcoOrganico):
+        avisos = fijar_armado_arco_organico(
+            estructura, edicion.armado_arco_organico, edicion.estructura_id
+        )
+    elif isinstance(edicion, EdicionForma):
+        _fijar_forma(estructura, edicion)
+    elif isinstance(edicion, EdicionPropiedades):
+        if "forma" in edicion.model_fields_set:
+            _fijar_forma(
+                estructura,
+                EdicionForma(
+                    accion="forma", estructura_id=edicion.estructura_id, forma=edicion.forma
+                ),
+            )
+        fijar_propiedades(
+            estructura,
+            densidad=edicion.densidad,
+            medidas=edicion.medidas.model_dump(exclude_none=True) if edicion.medidas else None,
+            estructura_id=edicion.estructura_id,
+            guardias=_GUARDIAS_ARMADO,
+        )
     elif isinstance(edicion, EdicionReparto):
-        _sin_armado_arco(estructura)
-        sin_armado_columna(estructura)
-        sin_armado_columna_organica(estructura)
-        sin_armado_guirnalda_organica(estructura)
+        for guardia in _GUARDIAS_ARMADO:
+            guardia(estructura)
         avisos = _repartir(estructura, edicion.participaciones)
         avisos += _quitar_armado(estructura, rehacer=completar_armados)
     elif isinstance(edicion, EdicionMezcla):
-        _sin_armado_arco(estructura)
-        sin_armado_columna(estructura)
-        sin_armado_columna_organica(estructura)
-        sin_armado_guirnalda_organica(estructura)
+        for guardia in _GUARDIAS_ARMADO:
+            guardia(estructura)
         estructura["mezcla"] = edicion.mezcla
     else:
         materiales_antes = len(_materiales(estructura))
@@ -1304,6 +1462,7 @@ def editar_plan(
         avisos += revisar_armado_columna(estructura, identidades_antes)
         avisos += revisar_armado_columna_organica(estructura, identidades_antes)
         avisos += revisar_armado_guirnalda_organica(estructura, identidades_antes)
+        avisos += revisar_armado_arco_organico(estructura, identidades_antes)
     if _estructura(editado, indice).get("patron_color") is not None:
         # Valida el patrón (forma y reglas del §4) y reescribe participacion,
         # solo en la pieza editada: las demás no cambiaron.
@@ -1317,6 +1476,9 @@ def editar_plan(
             EdicionArmadoColumna,
             EdicionArmadoColumnaOrganica,
             EdicionArmadoGuirnaldaOrganica,
+            EdicionArmadoArcoOrganico,
+            # La forma elegida no es un armado y no toca globos: una guirnalda armada la conserva igual.
+            EdicionForma,
         ),
     ):
         avisos += _revisar_armado_guirnalda(
@@ -1546,12 +1708,15 @@ __all__ = [
     "AVISO_ARMADO_REHACER",
     "EdicionArmado",
     "EdicionArmadoColumna",
+    "EdicionArmadoArcoOrganico",
     "EdicionArmadoColumnaOrganica",
     "EdicionArmadoGuirnalda",
+    "EdicionForma",
     "EdicionPlan",
     "EdicionMaterial",
     "EdicionMezcla",
     "EdicionPatron",
+    "EdicionPropiedades",
     "EdicionReparto",
     "GloboNavegador",
     "LineaBase",

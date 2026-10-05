@@ -115,7 +115,7 @@ export function escenaParaCoherencia(escena: SceneSpec, frases?: readonly FraseD
       nombre_en_prompt: promptElementName(element.name),
       estructura_id: element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!,
       resolved_colors: element.resolved_colors,
-      espera_linea_de_color: tieneContratoDeColor(element, frases),
+      espera_linea_de_color: tieneContratoDeColor(element, frases, escena),
     })),
   };
 }
@@ -240,8 +240,8 @@ export function tallasDe(escena: SceneSpec): ElementSizeConfirmation[] {
   return [...porEstructura].flatMap(([elementId, productos]) => [...productos].map((productId) => ({ elementId, productId, ...TALLA_DE[productId]! })));
 }
 
-/** Caption canónico con el vocabulario v007, como en route.ts. */
-export function captionCanonico(escena: SceneSpec, frases?: readonly FraseDeEstructura[], trigger?: string) {
+/** Caption canónico con el vocabulario v007, como en route.ts. Sin trigger el runtime compila el dialecto `base` (modelo sin LoRA); estos casos fijan el v007, que es el que el trigger v3 selecciona con la misma longitud que el v2. */
+export function captionCanonico(escena: SceneSpec, frases?: readonly FraseDeEstructura[], trigger = "eventdecor_style_v3") {
   return compileProductPrompt({
     sceneSpec: escena,
     visualContext: CONTEXTO_CUMPLE,

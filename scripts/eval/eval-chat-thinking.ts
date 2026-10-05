@@ -45,8 +45,8 @@ const CASOS: Caso[] = [
     verificar: (r, trazas) => {
       const fallos: string[] = [];
       if (!trazas.some((t) => t.nombre === "buscar_catalogo_rag")) fallos.push("nunca llamó buscar_catalogo_rag");
-      if (!trazas.some((t) => t.nombre === "confirmar_seleccion_rag")) fallos.push("nunca llamó confirmar_seleccion_rag");
-      if (!r.seleccionFinalIA?.length) fallos.push("no quedó una selección final (seleccionFinalIA vacío)");
+      if (!trazas.some((t) => t.nombre === "confirmar_plan_decoracion")) fallos.push("nunca llamó confirmar_plan_decoracion");
+      if (!r.plan) fallos.push("no quedó un plan confirmado");
       if (r.ragRechazados?.length) fallos.push(`hubo rechazos inesperados: ${JSON.stringify(r.ragRechazados)}`);
       return fallos;
     },

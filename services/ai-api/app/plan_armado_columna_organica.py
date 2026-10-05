@@ -36,6 +36,7 @@ from typing import Literal, cast
 from jsonschema import Draft7Validator
 from pydantic import Field, field_validator
 
+from app.armado_columna_organica_prompt import frases_columna_organica
 from app.armado_columna_organica import (
     MAX_MATERIALES,
     VERSION,
@@ -48,6 +49,7 @@ from app.armado_columna_organica import (
     opciones_admitidas,
 )
 from app.columnaorg.tipos import config_inicial
+from app.color_catalogo import acabado_del_motor
 from app.generated_models import contract_schema
 from app.operational_models import OperationalRequest
 from app.plan import MERMA, PlanResolutionError
@@ -161,9 +163,19 @@ def _peso_de(material: Mapping[str, object]) -> int:
 
 
 def _acabado_de(material: Mapping[str, object], admitidos: Sequence[str]) -> str:
-    """El acabado del plan cuando el motor lo conoce con ese mismo nombre; si no, el de por defecto."""
+    """El acabado del material en el motor: el del plan si el motor lo llama igual; si no, el de su familia.
+
+    La palabra del catálogo («reflex», «cristal») pasa por ``acabado_del_motor``, la tabla del repo dueño, y no
+    cae a mate (auditoría 2026-10-04, M3). Un acabado que el motor no admita aquí es el de por defecto.
+    """
     acabado = material.get("acabado")
-    return acabado if isinstance(acabado, str) and acabado in admitidos else ACABADO_POR_DEFECTO
+    if isinstance(acabado, str) and acabado in admitidos:
+        return acabado
+    color = material.get("color")
+    traducido = acabado_del_motor(
+        color if isinstance(color, str) else None, acabado if isinstance(acabado, str) else None
+    )
+    return traducido if traducido in admitidos else ACABADO_POR_DEFECTO
 
 
 def _mezcla_de_tamanos(mezcla: Mapping[object, object]) -> dict[str, float]:
@@ -280,13 +292,27 @@ def vista_previa_armado_columna_organica(
             },
         ) from error
 
-    columna: dict[str, object] = {campo: resuelto[campo] for campo in _CAMPOS_COLUMNA}
+    # `if campo in resuelto` como en el arco y en la guirnalda: desde el 2026-10-04 el contrato publica
+    # ademas `estructura_id` y las dos frases para la imagen, que el motor no escribe — las pone esta ruta.
+    columna: dict[str, object] = {
+        campo: resuelto[campo] for campo in _CAMPOS_COLUMNA if campo in resuelto
+    }
     avisos = cast(Sequence[str], columna["avisos"])
     if not resueltos:
         avisos = avisos_con_tono_neutro(avisos, MAX_AVISOS)
     # Los colores de la pieza que el armado no toma no se comprarían: se dice antes de guardar.
     sin_uso = avisos_colores_sin_uso(
         [str(material.get("color") or "") for material in materiales_de(estructura)], usados
+    )
+    # Lo que la imagen lee de este armado: la misma frase que publicara la resolucion (ADR-0035).
+    columna["estructura_id"] = request.estructura_id
+    columna["prompt_gemini"], columna["prompt_lora"] = frases_columna_organica(
+        armado,
+        resuelto,
+        [
+            (str(material.get("color") or ""), str(material.get("acabado") or ""))
+            for material in materiales_de(estructura)
+        ],
     )
     columna["avisos"] = [*avisos, *sin_uso][:MAX_AVISOS]
     if next(_COLUMNA_RESUELTA.iter_errors(columna), None) is not None:

@@ -23,6 +23,28 @@ export const ORIGENES_PATRON_COLOR = ["decorador", "referencia", "sugerido"] as 
 export const DIRECCIONES_PATRON_COLOR = ["longitudinal", "transversal", "diagonal"] as const;
 
 /**
+ * Qué tamaños de globo se ven en la pieza de la foto, en las cuatro formas en que un ojo lo distingue sin
+ * medir nada: casi todos gigantes, grandes con algún chico metido, chicos con pocos grandes de acento, o
+ * todos del mismo tamaño.
+ *
+ * No son mezclas: son observaciones. La mezcla —qué proporción de 5", 9", 12", 18" y 24" se compra— la
+ * decide `mezclas.ts`, que es su dueño, y el puente entre las dos tablas vive en un solo sitio
+ * (`patron_de_la_foto.mezcla_del_motor`). Por eso aquí no dice «solo_grandes»: quien mira la foto no sabe
+ * qué diámetros existen en el catálogo, igual que no sabe qué modos admite la pieza.
+ *
+ * Hacía falta porque nadie se lo preguntaba a la foto: la IA que arma el plan elegía la mezcla a ojo desde
+ * la descripción, y una columna dorada de globos casi todos gigantes salía armada `organica_gruesa`
+ * —45 % de 12"— contra una foto en la que no había casi ningún 12" (2026-10-03).
+ */
+export const TAMANOS_LEIDOS = [
+  "casi_todos_gigantes",
+  "grandes_con_pocos_chicos",
+  "chicos_con_pocos_grandes",
+  "un_solo_tamano",
+] as const;
+export type TamanoLeido = (typeof TAMANOS_LEIDOS)[number];
+
+/**
  * Dónde se agrupa una mancha de color sobre la pieza (modo `zonas`, ADR-0036).
  * Los nueve sitios en que un decorador —y el modelo que lee la foto— parte una
  * pared al describirla: tercio de arriba, del medio y de abajo por izquierda,
@@ -321,7 +343,51 @@ export const PistaPatronSchema = z.object({
     ancla: z.enum(ANCLAS_ZONA),
     extension: z.number().int().min(1).max(EXTENSION_ZONA_MAXIMA),
   }).strict()).max(ZONAS_MAXIMAS).optional(),
+  /**
+   * Colores que aparecen **salpicados sobre las secciones** en vez de ocupar una: las burbujas cristal de un
+   * arco orgánico, los cromados sueltos, un dorado que asoma cada tantos globos. Por NOMBRE de catálogo, como
+   * `colores`.
+   *
+   * Un color así no es una sección y no cabe en `colores`: nombrarlo allí lo convierte en un tramo que la
+   * foto no tiene, y dejarlo fuera lo borra del dibujo. El motor orgánico ya sabe armarlos —son sus
+   * **acentos**, «globos sueltos que no se tocan entre sí» (`organico/motor.py`)—, así que lo único que
+   * faltaba era que la lectura pudiera decir cuáles son.
+   */
+  motas: z.array(z.string().trim().min(1).max(80)).max(4).optional(),
+  /**
+   * Por qué eje recorre el patrón la pieza, cuando se ve (ADR-0039). Sin esto,
+   * un degradé leído en una pared salía siempre `longitudinal` aunque en la foto
+   * baje de lado a lado o en diagonal, y el ombré del motor arrancaba siempre a
+   * lo largo del arco.
+   *
+   * Quien la lee no sabe qué direcciones admite la pieza: eso lo decide
+   * `patron_color` con la misma tabla que publica `modos_admitidos`, y una que
+   * no admita se descarta sin tumbar la lectura.
+   */
+  direccion: z.enum(DIRECCIONES_PATRON_COLOR).optional(),
+  /**
+   * Que las dos mitades de la pieza sean iguales, reflejadas (ADR-0039): las dos
+   * patas de un arco desde la clave, los dos extremos de una guirnalda en U
+   * desde el centro. Solo se conserva donde la pieza lo admite (`_admite_espejo`).
+   */
+  simetria: z.literal("espejo").optional(),
   confianza: z.number().min(0).max(1),
 }).strict();
 
 export type PistaPatron = z.infer<typeof PistaPatronSchema>;
+
+/**
+ * Los tamaños que la foto leyó en una pieza, con su propia pista y **no dentro de `PistaPatronSchema`**.
+ *
+ * Por lo mismo que el remate de la columna tiene la suya: un tamaño no es una disposición de color. Puesto
+ * dentro de la pista de patrón no habría llegado nunca al caso que lo motivó —una columna dorada de un solo
+ * color no deja patrón (`patronDePista` devuelve `undefined` en `monocromo`), así que no deja pista—, y los
+ * tamaños de esa columna son justo los que había que leer.
+ */
+export const PistaTamanosSchema = z.object({
+  referencia_element_id: z.string().trim().min(1).max(80),
+  tamanos: z.enum(TAMANOS_LEIDOS),
+  confianza: z.number().min(0).max(1),
+}).strict();
+
+export type PistaTamanos = z.infer<typeof PistaTamanosSchema>;

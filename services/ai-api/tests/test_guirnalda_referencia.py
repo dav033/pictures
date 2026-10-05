@@ -118,8 +118,11 @@ def test_la_definicion_del_registro_no_cambia() -> None:
     assert registrado is not None
     assert registrado.inicio_de_pieza == "the left end of a garland"
     # La lectura de la guirnalda no toca las versiones de las otras lecturas.
-    # El valor lo movió ADR-0036 (el modo `zonas` en el prompt del patrón), no esta lectura.
-    assert patron_referencia.PROMPT_VERSION == "patron-referencia.v1:5cbba9bd04d02884"
+    # El valor lo movieron ADR-0036 (el modo `zonas`) y ADR-0039 (el remate de la
+    # columna, el eje y la simetría), las dos en el prompt del patrón; esta
+    # lectura, nunca. Su dueño es `test_estructuras_registro.py`: las dos copias
+    # se editan juntas.
+    assert patron_referencia.PROMPT_VERSION == "patron-referencia.v1:f93e18057c18a1c2"
     assert conteo_referencia.PROMPT_VERSION.startswith("conteo-referencia.v1:")
 
 

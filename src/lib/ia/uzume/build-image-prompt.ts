@@ -1,9 +1,10 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { armadoDeElemento, armadoGuirnaldaDeElemento, describirMezclaDeColor, frasePatronColor, idDeEstructura, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
+import { referenciaDelCatalogo } from "@/lib/plan/referencia-sempertex";
+import { acabadoEnIngles, armadoDeElemento, armadoGuirnaldaDeElemento, describirMezclaDeColor, frasePatronColor, idDeEstructura, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
 import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, fraseInstanciaConArmadoGuirnalda, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado, type AnfitrionaEnPrompt } from "./armado-en-prompt";
 import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
-import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
+import { compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
 import { findSeparateSidePieces } from "./separate-side-pieces";
 import {
   buildPositiveEnvironmentCues,
@@ -221,7 +222,7 @@ function compactSceneSpec(scene: SceneSpec, colorPatterns?: readonly FraseDeEstr
       editable_areas: "use only the approved placement descriptions below",
     },
     elements: scene.elements.map((element) => {
-      const colorPattern = colorPatternSentence(element, colorPatterns);
+      const colorPattern = colorPatternSentence(element, colorPatterns, scene);
       return {
         name: promptElementName(element.name),
         category: element.category,
@@ -278,9 +279,13 @@ function materialEstimateContract(sceneSpec: SceneSpec, colorPatterns?: readonly
     sizes ? `Installed size distribution: ${sizes}.` : "No round balloon sizes are approved.",
     colors ? `Installed color distribution: ${colors}.` : "Use only the approved catalog colors.",
     specials ? `Also render ${specials} installed special element(s) from the approved list.` : "No special elements are approved.",
-    `Physical design: ${estimate.design.type}; ${estimate.design.visual_density} density; ${estimate.design.visual_scale} visual scale; ${estimate.design.installation_length_m == null ? "length not specified" : `${estimate.design.installation_length_m} m installation extent`}.`,
+    // Sin el tipo interno ("composite_installation") ni el largo en metros sin redondear
+    // ("4.199999999999999 m"), que además sumaba las piezas como si fueran una (auditoría G6).
+    `Overall scale: ${estimate.design.visual_scale.replace(/_/g, " ")} visual scale, ${estimate.design.visual_density} density.`,
     `Purchase capacity (${estimate.totals.purchase_quantity}) includes waste and closed-package surplus. Waste-adjusted quantity is ${estimate.totals.waste_adjusted_quantity}. Neither surplus nor unused package units may appear in the decoration.`,
-    `Perceptual count rule: stay within the same physical scale as the installed estimate; exact object-by-object counting is not required, but do not turn a small/medium estimate into a very large dense installation.${conArmado ? EXCEPCION_CONTEO_CON_ARMADO : ""}`,
+    // Una sola regla de conteo: antes este texto decía "exact object-by-object counting is not
+    // required" y la sección creativa "respect INSTALLED DESIGN quantities exactly" (auditoría G7).
+    `Count rule: the number of structures is exact. Balloon counts per structure are targets: stay within about ±10% of each structure's stated count and keep its size and color proportions; do not turn a small/medium estimate into a very large dense installation.${conArmado ? EXCEPCION_CONTEO_CON_ARMADO : ""}`,
   ].join("\n");
 }
 
@@ -487,10 +492,24 @@ function cardinalityContract(sceneSpec: SceneSpec, officialStructures?: Readonly
  * (ni a la línea de color ni a su `color_pattern`). Sin frases la regla es la
  * de siempre.
  */
-export function tieneContratoDeColor(element: SceneSpec["elements"][number], colorPatterns?: readonly FraseDeEstructura[]): boolean {
+export function tieneContratoDeColor(element: SceneSpec["elements"][number], colorPatterns?: readonly FraseDeEstructura[], sceneSpec?: Pick<SceneSpec, "material_estimate">): boolean {
   return element.category === "balloon_structure"
     || /\b(?:arco|columna|guirnalda|balloon)\b/i.test(element.name)
-    || Boolean(frasePatronColor(colorPatterns, element, "prompt_gemini"));
+    || Boolean(frasePatronColor(colorPatterns, element, "prompt_gemini"))
+    || llevaGlobosDelPlan(element, sceneSpec);
+}
+
+/**
+ * Un kit, una figura o un bouquet sin armado también se arma con globos del
+ * plan: el estimado tiene líneas de globo suyas. Sin esta regla quedaban sin
+ * línea de color y el prompt decía a la vez "render 2 balloon figures" y "No
+ * balloon color mix is approved" (auditoría 2026-10-04, G3). Solo cuenta con el
+ * estimado a mano: sin él la regla es la de siempre.
+ */
+function llevaGlobosDelPlan(element: SceneSpec["elements"][number], sceneSpec?: Pick<SceneSpec, "material_estimate">): boolean {
+  if (!sceneSpec?.material_estimate || element.resolved_colors.length === 0) return false;
+  const estructura = idDeEstructura(element);
+  return sceneSpec.material_estimate.balloons.some((linea) => linea.structure_id === estructura && linea.design_quantity > 0);
 }
 
 /** Reparto de color de siempre; una estructura con patrón lo cambia por la frase de Python. */
@@ -504,22 +523,27 @@ const ORGANIC_COLOR_DISTRIBUTION = "Distribute them through intentional organic 
  * conteo sale de él. La misma condición decide la línea de color y el
  * `color_pattern` del JSON de escena, para que nunca se contradigan.
  */
-function colorPatternSentence(element: SceneSpec["elements"][number], colorPatterns?: readonly FraseDeEstructura[]): string | undefined {
-  return tieneContratoDeColor(element, colorPatterns) ? frasePatronColor(colorPatterns, element, "prompt_gemini") : undefined;
+function colorPatternSentence(element: SceneSpec["elements"][number], colorPatterns?: readonly FraseDeEstructura[], sceneSpec?: Pick<SceneSpec, "material_estimate">): string | undefined {
+  return tieneContratoDeColor(element, colorPatterns, sceneSpec) ? frasePatronColor(colorPatterns, element, "prompt_gemini") : undefined;
 }
 
 function colorVarietyContract(sceneSpec: SceneSpec, colorPatterns?: readonly FraseDeEstructura[]): string[] {
-  const balloonStructures = sceneSpec.elements.filter((element) => tieneContratoDeColor(element, colorPatterns));
+  const balloonStructures = sceneSpec.elements.filter((element) => tieneContratoDeColor(element, colorPatterns, sceneSpec));
   if (balloonStructures.length === 0) {
-    return ["No balloon color mix is approved; do not add balloon structures or colors as atmosphere."];
+    return ["No balloon colors are approved for this scene; do not add balloons as atmosphere."];
   }
   return balloonStructures.map((element) => {
     const colors = [...new Set(element.resolved_colors.map((color) => color.trim()).filter(Boolean))];
-    const pattern = colorPatternSentence(element, colorPatterns);
+    const pattern = colorPatternSentence(element, colorPatterns, sceneSpec);
     if (colors.length < 2) {
       // El candado queda igual (`verificarCoherenciaPrompt` lee "use only X;");
       // un patrón de acabados del mismo color va detrás, tal cual.
-      return `${promptElementName(element.name)}: MONOCHROME LOCK — use only ${colors[0] ?? "the supplied catalog color"}; do not introduce color variety.${pattern ? ` ${pattern}` : ""}`;
+      // El acabado va detrás del candado (que `verificarCoherenciaPrompt` lee hasta
+      // el ";"): un dorado Reflex llegaba como "dorado" a secas y salía mate
+      // (auditoría 2026-10-04, G4). Solo cuando el estimado lo dice, y uno solo.
+      const acabados = [...new Set(mezclaDeColorDeEstructura(sceneSpec, element).map((entrada) => entrada.acabado).filter((acabado): acabado is string => Boolean(acabado)))];
+      const acabado = acabados.length === 1 ? ` Finish: ${acabados[0]}.` : "";
+      return `${promptElementName(element.name)}: MONOCHROME LOCK — use only ${colors[0] ?? "the supplied catalog color"}; do not introduce color variety.${acabado}${pattern ? ` ${pattern}` : ""}`;
     }
     // La proporción sale del estimado de esta estructura. Sin líneas suyas
     // (camino de catálogo sin plan) se conserva el texto sin porcentajes: el
@@ -553,17 +577,42 @@ function armadoClause(element: SceneSpec["elements"][number], colorPatterns?: re
   return guirnalda ? fraseInstanciaConArmadoGuirnalda(guirnalda) : "";
 }
 
+/**
+ * Los colores de látex que el plan compra, con su referencia real de Sempertex: código, nombre, acabado de
+ * la lámina, Pantone y el color del globo INFLADO (`hexGlobo`, medido; el Pantone es tinta plana y se separa
+ * del globo ΔE 17 de mediana). Antes solo lo llevaban las piezas del motor, pegado a su frase desde Python, y
+ * paredes, bouquets, kits y figuras se quedaban con «dorado» a secas (auditoría 2026-10-04, G4).
+ *
+ * Un bloque al final y no un paréntesis detrás de cada color: el nombre del color es un adjetivo en medio de
+ * la frase. La clave es la misma palabra que escriben las líneas de color («dorado, high-shine chrome»). Un
+ * color que no es un nombre de la lámina no sale (no se inventa una referencia); los neutros no tienen
+ * Pantone en la tabla y salen sin él. Gemini lee cifras; el caption de FLUX no lleva ninguna.
+ */
+export function bloqueColoresExactos(sceneSpec: Pick<SceneSpec, "material_estimate">): string {
+  const vistos = new Set<string>();
+  const lineas: string[] = [];
+  for (const linea of sceneSpec.material_estimate?.balloons ?? []) {
+    if (!linea.color || linea.design_quantity <= 0) continue;
+    const acabado = acabadoEnIngles(linea.finish);
+    const clave = `${linea.color.trim()}${acabado ? `, ${acabado}` : ""}`;
+    if (vistos.has(clave.toLowerCase())) continue;
+    const referencia = referenciaDelCatalogo(linea.color, linea.finish);
+    if (!referencia) continue;
+    vistos.add(clave.toLowerCase());
+    lineas.push(`- ${clave}: Sempertex ${referencia.codigo} ${referencia.nombreCompleto}, ${referencia.acabado} finish${referencia.pms ? `, PANTONE ${referencia.pms}` : ""}, inflated balloon color ${referencia.hexGlobo}.`);
+  }
+  if (!lineas.length) return "";
+  return ["EXACT BALLOON COLORS — real Sempertex latex references for the colors above; the hex is the inflated balloon, not ink. Match these colors; never write any of these codes in the image.", ...lineas].join("\n");
+}
+
 function eventAuthorityContract(context?: VisualContext, styling: readonly AmbientacionImagen[] = []): string[] {
   if (!context) return [];
   const lines: string[] = [];
+  // The verbatim request, the plan structures and the materials no longer travel
+  // here: the request is the last chat message (often "sí"), and structures and
+  // materials already have their own sections, in English, from the plan.
   if (context.eventLabel) lines.push(`OPEN EVENT LABEL: ${context.eventLabel}. Convey it only through approved composition, palette, motifs, and lighting.`);
-  if (context.userRequest) lines.push(`ORIGINAL CUSTOMER REQUEST (TRACEABILITY): ${context.userRequest}`);
   if (context.confirmedMotifs?.length) lines.push(`CONFIRMED MOTIFS ONLY: ${context.confirmedMotifs.join(", ")}. Do not add unconfirmed symbols or accessories.`);
-  if (context.pieceMatchLevels?.length) {
-    lines.push(`PIECE MATCH LEVELS (CATALOG FACT): ${context.pieceMatchLevels.map((item) => `${item.piece}=${item.match_level}`).join("; ")}. Never render adaptable as exact.`);
-  }
-  if (context.approvedPlan?.length) lines.push(`APPROVED PLAN / STRUCTURES: ${context.approvedPlan.join("; ")}. Render only these planned structures.`);
-  if (context.approvedMaterials?.length) lines.push(`APPROVED PLAN MATERIALS: ${context.approvedMaterials.join("; ")}. These are the complete material allowlist.`);
   lines.push(`OPEN-EVENT HONESTY: express an unclassified event through spatial composition and approved color/style; invent no signage, readable text, props, flowers, furniture, or accessories without an approved catalog line or preserved venue element${styling.length ? ", except the non-catalog styling allowed in CREATIVITY LEVEL" : ""}.`);
   return lines;
 }
@@ -602,9 +651,10 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
     : "- No physical decoration instances are approved.";
   const physicalCardinality = cardinalityContract(sceneSpec, officialStructures, colorPatterns);
   const colorVariety = colorVarietyContract(sceneSpec, colorPatterns);
+  const coloresExactos = bloqueColoresExactos(sceneSpec);
   const eventAuthority = eventAuthorityContract(visualContext, styling);
   const referenceCapacityNotice = droppedCatalogReferenceCount > 0
-    ? `CATALOG REFERENCE CAPACITY: ${droppedCatalogReferenceCount} catalog photo(s) could not be attached because the provider input limit was reached. Use the complete catalog metadata and quantities in AUTOMATIC_SCENE_SPEC for those lines; do not invent a substitute product, omit the line, or treat the missing photo as permission to change its color/material.`
+    ? `CATALOG REFERENCE CAPACITY: ${droppedCatalogReferenceCount} catalog photo(s) could not be attached (provider input limit reached or photo unavailable). Use the complete catalog metadata and quantities in AUTOMATIC_SCENE_SPEC for those lines; do not invent a substitute product, omit the line, or treat the missing photo as permission to change its color/material.`
     : "CATALOG REFERENCE CAPACITY: all selected catalog product photos fit within the provider limit.";
   const compositionReferenceCapacityNotice = droppedCompositionReferenceCount > 0
     ? `COMPOSITION REFERENCE CAPACITY: ${droppedCompositionReferenceCount} client composition-reference photo(s) could not be attached because the provider input limit was reached. Composition (framing, proportion between structures, density, backdrop geometry, lighting placement) travels only through this text prompt for this generation — do not treat the missing photo as permission to invent a different composition.`
@@ -621,7 +671,7 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
     ? "Revise the supplied previous generated result."
     : sceneSpec.generation_mode === "edit_venue"
       ? "Edit the supplied venue photo."
-      : "Create a new photorealistic, creative, event-ready party installation following AUTOMATIC_SCENE_SPEC and using the supplied composition reference only as spatial inspiration.";
+      : `Create a new photorealistic, creative, event-ready party installation following AUTOMATIC_SCENE_SPEC${inputs.some((input) => input.role === "composition_reference") ? " and using the supplied composition reference only as spatial inspiration" : ""}.`;
 
   return `ROLE
 You are a photorealistic event-design image editor.
@@ -638,11 +688,11 @@ ${materialContract}
 VISUAL TEXT BAN — ABSOLUTE AND NON-NEGOTIABLE
 This output is a photograph, not an infographic, presentation board, floor plan, catalog page, or annotated design brief. Render ZERO visible typography unless a selected catalog product is explicitly a signage product with approved printed text. Treat every word, number, unit, dimension, quotation, JSON token, identifier, code, and instruction in this prompt as invisible control metadata. Never transcribe, paraphrase, stylize, or place any of it in the scene. In particular, ignore and never render internal project IDs, source-image IDs, catalog codes, venue codes, edit-region codes, plan hashes, element names, quantities, measurements, coordinate values, captions, or headings. Do not invent lettering, logos, brand marks, watermarks, or phrases on balloons, fabric, walls, arches, or props. If any supplied image contains text, use only its physical material/color identity; do not copy the text.
 
-SCENE LOCK — HIGHEST PRIORITY
+SCENE CONTEXT
 ${sceneLock}
-The final image must visibly prove every populated SCENE LOCK field. Mentioning it in reasoning is not enough.
+The event, venue, and time of day above must be visible in the photograph. They set the surroundings only: they never add, remove, recolor, or resize an approved structure.
 
-DECORATION COMPOSITION CONTRACT — HIGHEST PRIORITY AFTER SCENE LOCK
+DECORATION COMPOSITION CONTRACT — HIGHEST PRIORITY
 ${list(compositionContract)}
 
 VISIBLE ENVIRONMENT REQUIREMENTS
@@ -653,10 +703,10 @@ ${list(failureConditions)}
 If any failure condition appears, correct the scene before returning the image.
 
 SOURCE-OF-TRUTH PRIORITY
-1. SCENE LOCK controls requested event, venue, and time of day. If a venue photo exists, it controls the real venue architecture while SCENE LOCK still controls compatible event atmosphere and explicit revision requests.
-2. AUTOMATIC_SCENE_SPEC controls which elements exist, their colors, quantity, placement, and layers.
-3. The supplied venue photo controls camera position, crop, architecture, perspective, and ambient light when supplied.
-4. Supplied catalog product images control product identity only.
+1. The approved plan (AUTOMATIC_SCENE_SPEC, the instance and color contracts, and the design material estimate) controls which elements exist, their colors, quantity, balloon sizes, and placement. Nothing below may add, remove, recolor, or resize them.
+2. The supplied venue photo controls camera position, crop, architecture, perspective, and ambient light when supplied.
+3. SCENE CONTEXT controls event atmosphere, venue type, and time of day where no venue photo decides them.
+4. Supplied catalog product images control product identity (material, sheen, texture) only.
 5. The analyzed reference blueprint controls composition only: framing, backdrop geometry, lighting placement, density, and spatial relationships. The raw reference image is not a product source and must not add objects.
 6. PREVIOUS_RESULT controls the current revision base when present.
 If sources conflict, follow this order. Do not resolve conflicts by inventing content.
@@ -668,7 +718,7 @@ ${referenceCapacityNotice}
 ${compositionReferenceCapacityNotice}
 
 ENVIRONMENT AND LIGHTING CONSTRAINTS — NON-NEGOTIABLE
-- Translate SCENE LOCK into visible reality, not just decoration: requested space and time are part of scene identity.
+- Translate SCENE CONTEXT into visible reality, not just decoration: requested space and time are part of scene identity.
 - Named space is a hard venue constraint. Render that exact environment faithfully. Do not substitute every request with a generic room or studio backdrop.
 - If a venue photo is supplied, preserve its real architecture, camera, crop, and perspective. If no venue photo is supplied, construct the named environment with recognizable physical cues instead of inventing an unrelated venue.
 - If the context requests night, nocturnal, evening, or atardecer, use the corresponding ambient exposure and artificial event lighting. If it requests day or morning, use daylight. Match the requested time instead of defaulting to bright daylight.
@@ -678,7 +728,7 @@ MUST INCLUDE
 ${list(sceneSpec.positive_prompt.required_elements)}
 COLOR VARIETY / MATERIAL MIX — ONLY WHEN APPROVED
 ${list(colorVariety)}
-INSTANCE CONTRACT — NON-NEGOTIABLE
+${coloresExactos ? `${coloresExactos}\n` : ""}INSTANCE CONTRACT — NON-NEGOTIABLE
 ${instanceContract}
 ${sizeMixBlock ? `\n${sizeMixBlock}\n` : ""}
 COMPOSITION AND LAYERS
@@ -689,10 +739,10 @@ ${sceneSpec.elements.length ? sceneSpec.elements.map((element) => `- Place the a
 CREATIVE EVENT DESIGN
 - Design one finished party setup, not a row of product objects, a generic arch, or a furniture vignette.
 - Treat selected products as ingredients. Group compatible balloons into a cohesive arch, garland, columns, or organic clusters around the main focal point.
-- Respect INSTALLED DESIGN quantities exactly as described in DESIGN MATERIAL ESTIMATE. Package contents, merma, and purchase surplus are procurement data only and must never be rendered as extra decorative units.
+- Follow the count rule of DESIGN MATERIAL ESTIMATE. Package contents, merma, and purchase surplus are procurement data only and must never be rendered as extra decorative units.
 - Use backdrop and curtain products as the rear stage; use balloon structures and themed accents to frame it; use lighting behind or around the installation to create atmosphere.
 - Integrate every mandatory product physically. A kit or package image describes its contents; never render the box or package as the decoration.
-- Balance left and right without forcing perfect symmetry. ${scaleInstruction} Use overlap, depth, and height to create a convincing installation. Ground floor pieces and give hanging pieces real strings, hooks, frames, or supports.
+- Balance the composition; when the plan approves a pair of matching structures, mirror them left and right around the focal center. ${scaleInstruction} Use overlap, depth, and height to create a convincing installation. Ground floor pieces and give hanging pieces real strings, hooks, frames, or supports.
 - Do not make one isolated floating object per catalog line. Make the result look like a professional decorator made creative choices for a real celebration, with a focal zone, rear support, floor contact, lighting, hierarchy, scale, and visible relationships between elements.
 - ${noVenueInstruction}
 
@@ -701,12 +751,12 @@ ${list(sceneSpec.positive_prompt.venue_preservation)}
 - Keep areas outside automatic editable regions unchanged and empty when no element is specified.
 
 REFERENCE AND PRODUCT IDENTITY
-- Reference images were analyzed upstream. Use only the resulting AUTOMATIC_SCENE_SPEC for framing, backdrop position, asymmetry, density, ambient/background palette, and lighting placement; do not recreate any object from the reference unless it is represented by a mandatory catalog item.
+- Do not recreate any object from a reference image unless it is represented by a mandatory catalog item.
 - Use each supplied catalog product image as the only visual source for product identity. Re-render that exact catalog product as a physical three-dimensional object from the venue camera angle.
 - Every catalog-backed element in AUTOMATIC_SCENE_SPEC is a mandatory quoted line item. Make every one visibly recognizable in the result; never summarize the list into a generic decoration or omit a product.
 - Catalog line items are raw materials for the installation, not a literal placement diagram. Preserve product identity and installed design quantity while adapting grouping, scale, orientation, and support to make a coherent party scene.
 - If a catalog image shows packaging, use the product description and category to render the physical contents in the scene; never place the package, card, or catalog photo on the wall.
-- The analyzed reference may describe function, approximate placement, density, palette, backdrop geometry, and lighting placement through AUTOMATIC_SCENE_SPEC. Never use it as a product catalog or copy its object designs.
+- Never use a reference image as a product catalog or copy its object designs.
 - Catalog color lock: render every catalog product in its supplied catalog color/material. A black product must remain black, a silver product must remain silver, and a blue product must remain blue. Never recolor, blend, or borrow a product color from the composition reference.
 - If a reference color differs from a catalog product, keep the catalog product color exactly; adapt only lighting and integration, never the product identity.
 - Never copy a source-image border, crop frame, halo, rectangular pasted image, studio shadow, or collage artifact.
@@ -716,8 +766,7 @@ OUTPUT FORMAT
 - Render no visible text at all unless an explicitly selected signage product has approved physical lettering. Never render catalog IDs, product names, prices, arrows, callouts, captions, legends, watermarks, UI, labels, annotations, dimensions, measurements, or explanatory text.
 - Never draw placement guides: no colored rectangles, bounding boxes, green or yellow outlines, layer labels, coordinate text, measurement arrows, or callout lines.
 - Never add free-floating headings, giant letters, logos, brand marks, or event wording. Do not add printed wording to balloons or decorative surfaces unless that exact printed product and wording are explicitly approved.
-- Product color verification: before output, check each mandatory catalog item against its catalog image and correct any color drift.
-
+${inputs.some((input) => input.role === "catalog_product_reference") ? "- Product color verification: before output, check each catalog item that has a supplied catalog image against it and correct any color drift.\n" : ""}
 PHOTOREALISTIC INTEGRATION
 ${list(sceneSpec.positive_prompt.photorealistic_integration)}
 
@@ -732,20 +781,11 @@ FORBIDDEN COMPOSITING ARTIFACTS
 ${list(sceneSpec.negative_prompt.forbidden_compositing_artifacts)}
 
 FINAL CHECK BEFORE OUTPUT
-First verify venue and time of day visibly match SCENE LOCK. Then verify every required element is present exactly once or within its automatic quantity range, every item belongs to one cohesive installation, no object floats without support, forbidden elements are absent, target placement is respected, rear layers remain behind foreground layers, protected venue regions are unchanged, there are zero unapproved visible characters/logos/labels, and the result looks photographed in the requested venue rather than composited.
+First verify venue and time of day visibly match SCENE CONTEXT. Then verify every required element is present exactly once or within its automatic quantity range, every item belongs to one cohesive installation, no object floats without support, forbidden elements are absent, target placement is respected, rear layers remain behind foreground layers, protected venue regions are unchanged, there are zero unapproved visible characters/logos/labels, and the result looks photographed in the requested venue rather than composited.
 
 <AUTOMATIC_SCENE_SPEC>
 ${compactSceneSpec(sceneSpec, colorPatterns)}
 </AUTOMATIC_SCENE_SPEC>
 ${correctiveInstruction?.trim() ? `\nCORRECTIVE RETRY — HIGHEST PRIORITY\n${correctiveInstruction.trim()}\n` : ""}
 ${FINAL_OUTPUT_REMINDER}`;
-}
-
-/** Caption LoRA V2. */
-export function buildLoraImagePrompt(input: {
-  sceneSpec: SceneSpec;
-  visualContext: VisualContext;
-  revisionInstruction?: string;
-}): string {
-  return buildLoraImagePromptV2(input);
 }

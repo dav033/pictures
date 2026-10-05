@@ -1630,6 +1630,31 @@ def _materiales_de_base(base: Mapping[str, object]) -> set[int]:
     return usados
 
 
+def _eje_y_simetria_de_pista(
+    estructura: EstructuraPatron,
+    modo: str,
+    pista: Mapping[str, object],
+    patron: dict[str, object],
+) -> None:
+    """Pone en el patrón el eje y la simetría que la foto leyó, **si la estructura los admite** (ADR-0039).
+
+    Lo que admite cada estructura ya lo publica ``modos_admitidos``, que es la misma tabla que ``_validar``
+    aplica: de ahí salen las direcciones del modo y si lleva espejo. Lo que no admite se **descarta en
+    silencio** en vez de viajar: una dirección prohibida haría que ``validar_y_expandir`` rechazara el patrón
+    entero y la pieza perdería una lectura que sí servía, cayendo al preset. Antes de esto ninguna de las dos
+    viajaba, así que un degradé que en la foto baja de lado a lado salía siempre a lo largo.
+    """
+    admitido = next((m for m in modos_admitidos(estructura) if m["modo"] == modo), None)
+    if admitido is None:
+        return
+    direccion = pista.get("direccion")
+    direcciones = cast(list[str], admitido["direcciones"])
+    if isinstance(direccion, str) and direccion in direcciones and direccion != "longitudinal":
+        patron["direccion"] = direccion
+    if pista.get("simetria") == "espejo" and admitido["espejo"]:
+        patron["simetria"] = "espejo"
+
+
 def patron_desde_pista(
     estructura: EstructuraPatron, pista: Mapping[str, object]
 ) -> dict[str, object] | None:
@@ -1662,6 +1687,7 @@ def patron_desde_pista(
     patron: dict[str, object] = {"version": VERSION_PATRON, "origen": "referencia", "base": base}
     if pista.get("globos_por_racimo") is not None and estructura.tipo != TIPO_REJILLA:
         patron["globos_por_racimo"] = _entero(pista["globos_por_racimo"])
+    _eje_y_simetria_de_pista(estructura, str(pista.get("modo")), pista, patron)
     # Sin uso respecto del patrón que de verdad se armó: la espiral recorta la
     # lista a k, la flor usa tres colores y el confeti ya reparte todos.
     usados = _materiales_de_base(base)
@@ -1861,7 +1887,13 @@ def nombre_color_en(color: str | None) -> str:
 
 
 def color_con_acabado_en(color: str | None, acabado: str | None) -> str:
-    """Color con su acabado en inglés (frase Gemini); ``_color_en`` para otros módulos."""
+    """Color con su acabado en inglés (frase Gemini); ``_color_en`` para otros módulos.
+
+    Las cifras de la referencia —código, Pantone y RGB del globo inflado— **no van aquí**: este nombre se usa
+    como adjetivo en medio de una frase («two four-balloon clusters of white 12-inch latex balloons») y meterle
+    un paréntesis dentro partía el sustantivo en dos. Van juntas al final del prompt, en un solo bloque que las
+    ata a la palabra que ya está escrita: ``especificacion_de_colores`` en ``color_catalogo``.
+    """
     return _color_en(MaterialPatron(color, acabado, 1.0))
 
 

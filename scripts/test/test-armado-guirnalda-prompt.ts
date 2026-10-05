@@ -504,7 +504,7 @@ function piezasQueElArmadoTiene(): void {
  * el plan real de Python del mismo caso (tres colores, uno repetido) y fija que
  * ninguna palabra que el modelo dibuje como cinta llega al texto.
  */
-const CINTAS = /spiral|stripe|bands?|ribbon|streamer|wrapped|winding|twist/i;
+const CINTAS = /spiral|stripe|\bbands?\b|ribbon|streamer|wrapped|winding|twist/i;
 
 function sinCintasEnLaImagen(): void {
   const fijado = planGuirnalda("pared-espiral-tres-colores");
@@ -573,10 +573,19 @@ function enAltoNuncaUnArcoDePie(): void {
     const reporte = preflight(escena, resultado, resultado.prompt, undefined, trigger ?? "eventdecor_style_v2");
     assert.equal(reporte.ok, true, `${dialecto}: ${reporte.errors.join("; ")}`);
     assert.doesNotMatch(resultado.jsonPrompt, /grounded supports/, `${dialecto} JSON`);
-    // La misma escena sin armado: el caption de siempre, con sus soportes.
+    // La misma escena SIN el armado de ADR-0032 tampoco pide apoyos en el piso desde el 2026-10-03, y es
+    // un cambio buscado: la regla que esta prueba defiende es «cuando todas las piezas van en alto, no se
+    // piden soportes en el suelo», y hasta hoy lo único que sabía decir «en alto» era este armado, que vive
+    // detrás de `GUIRNALDAS_ARMADO_V1`, apagada por defecto. Las guirnaldas que se arman de verdad hoy son
+    // las del motor orgánico (ADR-0034) y no lo llevan: TODAS salían con «grounded supports», y el usuario
+    // volvió a ver el arco de pie con patas que la decisión 28 ya había anotado. La ubicación del plan
+    // (`fondo_pared`, `techo`) dice lo mismo y siempre está, así que ahora también cuenta.
     const sinArmado = captionCanonicoGuirnalda(escena, undefined, trigger);
-    assert.match(sinArmado.prompt, /natural depth, grounded supports\.$/, `${dialecto}: ${sinArmado.prompt}`);
-    assert.match(sinArmado.jsonPrompt, /grounded supports/);
+    assert.match(sinArmado.prompt, /natural depth\.$/, `${dialecto}: ${sinArmado.prompt}`);
+    assert.doesNotMatch(sinArmado.jsonPrompt, /grounded supports/);
+    // Lo que sí sigue necesitando el armado es la FORMA: sin él la guirnalda no sabe que se arquea ni que
+    // cae a la derecha; lo que la ubicación aporta es que corre a lo largo de la pared y no es un portal.
+    if (trigger) assert.ok(sinArmado.prompt.includes("running along the rear wall"), sinArmado.prompt);
     // Híbrido: el candado descarta patas y soportes de la imagen LoRA.
     const piezas = piezasDeLosArmados(resultado.clauses);
     assert.equal(piezas.guirnalda.enAlto, true);
@@ -592,7 +601,7 @@ function enAltoNuncaUnArcoDePie(): void {
   const gemini = promptGeminiGuirnalda(escena, frases);
   assert.ok(gemini.includes("bowing gently upward along the top, its middle about 0.25 m above the straight line between its ends"), gemini);
   assert.ok(gemini.includes("Its right end hangs about 0.63 m lower than its left end, so the garland slopes down toward the right. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor."), gemini);
-  console.log("[PASS] decisión 28: una guirnalda en la pared se describe arqueada y con los extremos libres, sin \"grounded supports\" ni arco de pie, en v007, v004, JSON e híbrido; sin armado, lo de siempre");
+  console.log("[PASS] decisión 28: una guirnalda en la pared se describe arqueada y con los extremos libres, sin \"grounded supports\" ni arco de pie, en v007, v004, JSON e híbrido; sin armado conserva al menos que corre a lo largo de la pared");
 }
 
 function main(): void {

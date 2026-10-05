@@ -1,0 +1,259 @@
+{
+  "$id": "plan-guia-escena.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "plan-guia-escena.v1"
+    },
+    "plan": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "mezclas": {
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "mezcla_real": {
+            "maxItems": 72,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "diam_pulg": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "forma": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "unidades": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "pct": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "diam_pulg",
+                "forma",
+                "unidades",
+                "pct"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "lineas": {
+            "maxItems": 72,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "variant_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "titulo": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "color": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 160
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "tamano_codigo": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "diam_pulg": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 200
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "forma": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "acabado": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "product_id",
+                "variant_id",
+                "titulo",
+                "color",
+                "tamano_codigo",
+                "diam_pulg",
+                "forma",
+                "acabado"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "leyenda": {
+            "maxItems": 24,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "material": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 23
+                },
+                "tipo_globo": {
+                  "type": "string",
+                  "enum": [
+                    "latex",
+                    "metalizado",
+                    "burbuja",
+                    "numero"
+                  ]
+                },
+                "tamano_pulg": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 200
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "digito": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\d$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "material",
+                "tipo_globo",
+                "tamano_pulg",
+                "digito"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "aspecto_caja": {
+            "type": "number",
+            "minimum": 0.05,
+            "maximum": 20
+          }
+        },
+        "required": [
+          "estructura_id",
+          "mezcla_real"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "plan"
+  ],
+  "additionalProperties": false,
+  "x-hex-colores": {
+    "dorado": "#c9a227",
+    "dorado rosa": "#d4a59a",
+    "plateado": "#b8bcc4",
+    "rojo": "#d32f2f",
+    "azul": "#1f4fbf",
+    "rosado": "#f2a7c3",
+    "verde": "#2e9d57",
+    "blanco": "#ffffff",
+    "negro": "#1b1b1b",
+    "morado": "#7b3fa0",
+    "naranja": "#f28c28",
+    "amarillo": "#f5d33a",
+    "fucsia": "#d6247a",
+    "transparente": "#ffffff",
+    "multicolor": "#ffffff",
+    "lila": "#c7a4e0",
+    "turquesa": "#1fb5b0",
+    "beige": "#e6d3b3",
+    "cafe": "#7a4b2a",
+    "champagne": "#e8d3a2",
+    "violeta": "#8a4fd1",
+    "coral": "#f6765e",
+    "menta": "#a6e3c8",
+    "crema": "#f6ecd2",
+    "nude": "#e0b89c",
+    "burdeos": "#7d1d34"
+  }
+}

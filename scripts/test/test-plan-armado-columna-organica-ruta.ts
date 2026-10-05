@@ -252,6 +252,14 @@ async function main(): Promise<void> {
     assert.equal(quinta.headers.get("Retry-After"), "1");
     const datos = (await quinta.json()) as Json;
     assert.match(String(datos.error), /demasiados dibujos de la columna en curso/);
+    // Lo que el cliente de verdad LEE es `ui_error.mensaje_usuario`, no `error`. Con el código de
+    // solicitud inválida leía la frase de catálogo («Recarga la página e inténtalo de nuevo») y daba el
+    // error por no reintentable, justo al revés del `Retry-After` de esta misma respuesta (2026-10-04).
+    const uiError = UiErrorV1Schema.parse(datos.ui_error);
+    assert.equal(uiError.code, "SERVICIO_OCUPADO");
+    assert.match(uiError.mensaje_usuario, /demasiados dibujos de la columna en curso/);
+    assert.doesNotMatch(uiError.mensaje_usuario, /Recarga la p[áa]gina/i);
+    assert.equal(uiError.retryable, true, "esperar y reintentar es exactamente lo que hay que hacer");
     assert.equal(llamadas, 4, "la quinta ni siquiera llega a Python");
     liberar.forEach((soltar) => soltar());
     const terminadas = await Promise.all(enVuelo);

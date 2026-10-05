@@ -26,6 +26,12 @@ import path from "node:path";
 
 // Antes de cualquier import de la app: las banderas se leen al cargar el módulo.
 process.env.CONTEO_REFERENCIA_PYTHON_ENABLED = "true";
+// Este archivo prueba la lectura de conteo por separado (v16): desde D2 (2026-10-04) la lectura única y
+// las otras lecturas van encendidas por defecto, así que el escenario se fija aquí.
+process.env.LECTURA_UNICA_REFERENCIA_ENABLED = "false";
+process.env.PATRON_REFERENCIA_PYTHON_ENABLED = "false";
+process.env.BOUQUET_REFERENCIA_PYTHON_ENABLED = "false";
+process.env.GUIRNALDA_REFERENCIA_PYTHON_ENABLED = "false";
 // El análisis de la foto de galería no llama al proveedor; esto solo evita
 // construir el chat directo de Gemini, que no se usa.
 process.env.REFERENCE_ANALYSIS_PYTHON_ENABLED = "true";
@@ -309,7 +315,7 @@ async function main(): Promise<void> {
 
   // ---------------------------------------------------------------------------
   // El chat ve el conteo solo con CONTEO_REFERENCIA_V1 (E2); apagada, byte a byte igual.
-  delete process.env.CONTEO_REFERENCIA_V1;
+  process.env.CONTEO_REFERENCIA_V1 = "false";
   assert.equal(serializeReferenceBlueprint(conTodo), serializeReferenceBlueprint(sinConteo));
   process.env.CONTEO_REFERENCIA_V1 = "true";
   const conTexto = serializeReferenceBlueprint(conTodo).split("\n");
@@ -333,7 +339,7 @@ async function main(): Promise<void> {
   const soloRacimos = serializeReferenceBlueprint(bouquetOnce({ conteo: { ...conteo, estimado_total: null } }));
   assert.match(soloRacimos, /total 11 globos\. Declara unidades_declaradas 11 por pieza/, "sin cifra leída el conteo no manda: el total de Python");
   assert.doesNotMatch(soloRacimos, /declara unidades_declaradas unos/);
-  delete process.env.CONTEO_REFERENCIA_V1;
+  process.env.CONTEO_REFERENCIA_V1 = "false";
   assert.match(serializeReferenceBlueprint(bouquetOnce({ conteo: { ...conteo, estimado_total: 35 } })), /total 11 globos/, "sin la bandera, el armado como siempre");
   ok("el prompt del chat cuenta el conteo leído solo con CONTEO_REFERENCIA_V1 y lectura confiable, y ahí manda sobre el total del armado");
 
@@ -377,7 +383,7 @@ async function main(): Promise<void> {
   assert.deepEqual(deMezcla?.pistas.map((pista) => pista.referencia_element_id), ["REF_01_E02", "REF_01_E03"], "todas viajan para no perderse");
   assert.deepEqual(conteosDeLaEdicion(baseConConteos, { accion: "repartir", estructura_id: "EST_01", participaciones: [1] } as never)?.ajustar, [], "otra edición no ajusta nada");
   assert.equal(conteosDeLaEdicion(fixture as never, mezclaDe("EST_01")), undefined, "sin conteos en el plan base, nada");
-  delete process.env.CONTEO_REFERENCIA_V1;
+  process.env.CONTEO_REFERENCIA_V1 = "false";
   ok("E2: pistas_conteo al confirmar, transporte, conteos_referencia y la edición de la mezcla");
 
   // ---------------------------------------------------------------------------

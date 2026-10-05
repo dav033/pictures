@@ -38,6 +38,7 @@ from app.guirnalda.limites import (
     normalizar_config_con_cambios,
 )
 from app.guirnalda.motor import LIENZO_GUIR, disposicion_guir, pintar_guir
+from app.guirnalda.formas import ESTILOS_GUIR, FORMAS_GUIRNALDA
 from app.guirnalda.tipos import ConfigGuir, config_inicial
 from app.organico.dibujo import svg_documento
 from app.organico.medidas import calcular_compra, calcular_medidas
@@ -209,6 +210,13 @@ def _config_desde_armado(
     return cfg, list(cambios)
 
 
+def globos_estimados(armado: Mapping[str, object]) -> float:
+    """Los globos que el motor estima para el armado **sin colocarlos**: la cifra que ``armado_resuelto``
+    compara con ``MAX_GLOBOS_ESTIMADOS``. Para que una receta no proponga una guirnalda que la resolución
+    rechazaría con ``demasiado_grande``. No valida el armado: quien llama ya lo hizo."""
+    return float(estimar_globos(_config_desde_armado(armado, ())[0]))
+
+
 def armado_resuelto(
     estructura: EstructuraGuirnalda,
     armado: Mapping[str, object],
@@ -311,8 +319,39 @@ def armado_resuelto(
     }
 
 
+def _por_tamano_texto(mezcla: Mapping[int, float]) -> dict[str, float]:
+    return {str(t): mezcla[t] for t in TAMANOS_GLOBO}
+
+
 def opciones_admitidas() -> dict[str, Any]:
-    """Lo que el editor y la IA pueden ofrecer, sacado del motor y no de una lista escrita a mano."""
+    """Lo que el editor y la IA pueden ofrecer, sacado del motor y no de una lista escrita a mano.
+
+    Las formas listas y los estilos llevan sus valores: aplicar una es copiar esos campos al armado, así que
+    la interfaz no repite ninguna cifra del diseñador. Misma forma que la puerta de la columna orgánica.
+
+    Las once formas y los cuatro estilos estaban portados en ``app/guirnalda/formas.py`` desde la migración y
+    esta puerta **no publicaba ninguno**: la lista llegaba vacía, así que ni el editor ni la IA podían pedir
+    una guirnalda de festones o una de nube, y todas salían con la forma inicial del motor. Portar no es
+    cablear: el puerto estaba bien y el camino no existía.
+    """
+    inicial = config_inicial()
+    estilos: list[dict[str, Any]] = []
+    for estilo in ESTILOS_GUIR:
+        aplicado = estilo.aplicar(inicial)
+        item: dict[str, Any] = {
+            "id": estilo.id,
+            "nombre": estilo.nombre,
+            "ayuda": estilo.ayuda,
+            "volumen": dict(aplicado["volumen"]),
+        }
+        if aplicado["tamanos"] != inicial["tamanos"]:
+            item["tamanos"] = {
+                "mezcla": _por_tamano_texto(aplicado["tamanos"]["mezcla"]),
+                "grandesAbajo": aplicado["tamanos"]["grandesAbajo"],
+                "inflado": aplicado["tamanos"]["inflado"],
+                "variacion": aplicado["tamanos"]["variacion"],
+            }
+        estilos.append(item)
     return {
         "acabados": [dict(a) for a in ACABADOS],
         "repartos": [dict(r) for r in REPARTOS],
@@ -322,6 +361,24 @@ def opciones_admitidas() -> dict[str, Any]:
         "grosor_m": {"min": GROSOR_MIN, "max": GROSOR_TOPE},
         "altura_m": {"min": 0.0, "max": ALTURA_TOPE},
         "max_materiales": MAX_MATERIALES,
+        "formas": [
+            {
+                "id": f.id,
+                "nombre": f.nombre,
+                "descripcion": f.descripcion,
+                "forma": dict(f.forma),
+                "volumen": dict(f.volumen),
+                "tamanos": {
+                    "mezcla": _por_tamano_texto(f.tamanos["mezcla"]),
+                    "grandesAbajo": f.tamanos["grandesAbajo"],
+                    "inflado": f.tamanos["inflado"],
+                    "variacion": f.tamanos["variacion"],
+                },
+                "semilla": f.semilla,
+            }
+            for f in FORMAS_GUIRNALDA
+        ],
+        "estilos": estilos,
     }
 
 

@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.amaterasu.patron_referencia import (
+    DIRECCIONES,
     ANCLAS,
     EXTENSION_MAXIMA,
     MODOS,
@@ -147,7 +148,9 @@ def test_prompt_names_every_palette_color_and_every_mode() -> None:
 def test_response_schema_restricts_colors_and_modes() -> None:
     item = RESPONSE_SCHEMA["properties"]["pistas"]["items"]  # type: ignore[index]
     assert item["properties"]["colores"]["items"]["enum"] == list(PALETA)
-    assert item["properties"]["modo"]["enum"] == [*MODOS, "ninguno"]
+    # "monocromo" y "ninguno" no son modos del contrato: los manda el lector. El primero es «toda la pieza
+    # de un color» y trae su color; el segundo, «no se distingue», y no trae ninguno.
+    assert item["properties"]["modo"]["enum"] == [*MODOS, "monocromo", "ninguno"]
     assert PROMPT_VERSION.startswith("patron-referencia.v1:")
 
 
@@ -616,3 +619,217 @@ def test_patches_do_not_reach_a_hint_of_another_mode_without_them() -> None:
     )
 
     assert "zonas" not in pistas[0]
+
+
+# --- El remate de la columna (ADR-0039) -----------------------------------
+
+
+def test_reads_the_column_topper_and_only_for_columns() -> None:
+    """Una columna lleva su remate leído; un arco no tiene remate en el motor y se descarta."""
+    pistas = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "anillos",
+                    "colores": ["blanco", "negro"],
+                    "confianza": 0.9,
+                    "remate": {"tipo": "globo", "color": "dorado"},
+                },
+                {
+                    "element_id": "REF_01_E02",
+                    "modo": "espiral",
+                    "colores": ["dorado"],
+                    "confianza": 0.9,
+                    "remate": {"tipo": "globo"},
+                },
+            ]
+        },
+        _payload().elementos,
+    )
+    columna, arco = pistas
+    assert columna["remate"] == {"tipo": "globo", "color": "dorado"}
+    assert "remate" not in arco
+
+
+def test_a_column_with_nothing_on_top_is_a_reading_not_a_missing_field() -> None:
+    """`ninguno` y ausente no son lo mismo: el primero deja la columna a ras, el segundo la corona el motor."""
+    [sin_nada] = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "anillos",
+                    "colores": ["blanco", "negro"],
+                    "confianza": 0.9,
+                    "remate": {"tipo": "ninguno"},
+                }
+            ]
+        },
+        _payload().elementos,
+    )
+    assert sin_nada["remate"] == {"tipo": "ninguno"}
+    [sin_leer] = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "anillos",
+                    "colores": ["blanco", "negro"],
+                    "confianza": 0.9,
+                }
+            ]
+        },
+        _payload().elementos,
+    )
+    assert "remate" not in sin_leer
+
+
+def test_the_topper_survives_a_pattern_the_photo_cannot_tell() -> None:
+    """Una columna de un solo color, o cuya disposición no se ve, lleva su globo grande igual."""
+    [pista] = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "ninguno",
+                    "colores": [],
+                    "confianza": 0.2,
+                    "remate": {"tipo": "racimo", "color": "blanco"},
+                }
+            ]
+        },
+        _payload().elementos,
+    )
+    assert pista["modo"] == "ninguno"
+    assert pista["remate"] == {"tipo": "racimo", "color": "blanco"}
+
+
+def test_drops_a_topper_the_engine_does_not_have_and_a_color_without_one() -> None:
+    pistas = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "anillos",
+                    "colores": ["blanco", "negro"],
+                    "confianza": 0.9,
+                    "remate": {"tipo": "molinete", "color": "dorado"},
+                },
+            ]
+        },
+        _payload().elementos,
+    )
+    assert "remate" not in pistas[0]
+    [sin_color] = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "anillos",
+                    "colores": ["blanco", "negro"],
+                    "confianza": 0.9,
+                    # Un "ninguno" con color es una contradicción: el color no viaja.
+                    "remate": {"tipo": "ninguno", "color": "dorado"},
+                }
+            ]
+        },
+        _payload().elementos,
+    )
+    assert sin_color["remate"] == {"tipo": "ninguno"}
+
+
+def test_the_prompt_and_the_schema_name_every_topper_of_the_engine() -> None:
+    """Si el motor gana un remate, el prompt y el esquema de salida lo tienen sin tocar nada aquí."""
+    from app.armado_columna import TIPOS_REMATE
+
+    remate = RESPONSE_SCHEMA["properties"]["pistas"]["items"]["properties"]["remate"]  # type: ignore[index]
+    assert remate["properties"]["tipo"]["enum"] == list(TIPOS_REMATE)
+    for tipo in TIPOS_REMATE:
+        assert f'"{tipo}"' in SYSTEM_INSTRUCTION
+
+
+# --- El eje y la simetría (ADR-0039) --------------------------------------
+
+
+def test_reads_the_axis_and_the_mirror() -> None:
+    [pista] = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "degradado",
+                    "colores": ["blanco", "negro"],
+                    "confianza": 0.9,
+                    "direccion": "transversal",
+                    "simetria": "espejo",
+                }
+            ]
+        },
+        _payload().elementos,
+    )
+    assert pista["direccion"] == "transversal"
+    assert pista["simetria"] == "espejo"
+
+
+def test_the_default_axis_does_not_travel() -> None:
+    """La longitudinal es el valor de partida del patrón y del motor: mandarla solo engorda la pista."""
+    [pista] = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "anillos",
+                    "colores": ["blanco", "negro"],
+                    "confianza": 0.9,
+                    "direccion": "longitudinal",
+                }
+            ]
+        },
+        _payload().elementos,
+    )
+    assert "direccion" not in pista
+    assert "simetria" not in pista
+
+
+def test_drops_an_axis_and_a_symmetry_that_are_not_of_the_contract() -> None:
+    [pista] = validar_pistas(
+        {
+            "pistas": [
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "anillos",
+                    "colores": ["blanco", "negro"],
+                    "confianza": 0.9,
+                    "direccion": "vertical",
+                    "simetria": "radial",
+                }
+            ]
+        },
+        _payload().elementos,
+    )
+    assert "direccion" not in pista and "simetria" not in pista
+
+
+def test_the_prompt_and_the_schema_name_every_direction_of_the_contract() -> None:
+    direcciones = RESPONSE_SCHEMA["properties"]["pistas"]["items"]["properties"]["direccion"]  # type: ignore[index]
+    assert direcciones["enum"] == list(DIRECCIONES)
+    for direccion in DIRECCIONES:
+        assert f'"{direccion}"' in SYSTEM_INSTRUCTION
+    assert '"espejo"' in SYSTEM_INSTRUCTION
+
+
+def test_the_prompt_separates_the_layout_from_the_technique() -> None:
+    """Una guirnalda orgánica POR TRAMOS se leía como confeti (2026-10-02, foto del baby shower rosa).
+
+    La frase vieja describía el `aleatorio` «as in an organic garland», que nombra la técnica y no la
+    disposición, que es lo que los ocho modos clasifican. El motor armaba entonces con su reparto de partida
+    (`azar`) una pieza que en la foto tiene el rosa a la izquierda, el dorado al centro y el arena a la
+    derecha. Esto vigila que la regla no se caiga en un refactor del prompt.
+    """
+    assert "as in an organic garland" not in SYSTEM_INSTRUCTION
+    assert (
+        "What you are naming is HOW THE COLORS ARE LAID OUT on that piece, never how it was built"
+        in SYSTEM_INSTRUCTION
+    )
+    assert 'that is "bloques", not "aleatorio"' in SYSTEM_INSTRUCTION

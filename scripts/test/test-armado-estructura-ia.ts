@@ -152,24 +152,32 @@ async function main(): Promise<void> {
   const sinBandera = herramientasActivas({ armadoMotor: false, estimarConteo: false }).map((herramienta) => herramienta.nombre);
   assert.ok(conBandera.includes("consultar_opciones_armado") && conBandera.includes("armar_estructura"), conBandera.join(","));
   assert.ok(!sinBandera.includes("consultar_opciones_armado") && !sinBandera.includes("armar_estructura"), sinBandera.join(","));
-  assert.deepEqual(sinBandera, ["guardar_brief", "buscar_catalogo_rag", "confirmar_seleccion_rag", "confirmar_plan_decoracion"]);
+  assert.deepEqual(sinBandera, ["guardar_brief", "buscar_catalogo_rag", "confirmar_plan_decoracion"]);
   // La consulta es de solo lectura (no toca el estado del turno); armar no, porque lo guarda.
   assert.ok(HERRAMIENTAS_SOLO_LECTURA.has("consultar_opciones_armado"));
   assert.ok(!HERRAMIENTAS_SOLO_LECTURA.has("armar_estructura"));
   ok("las dos herramientas entran detrás de ARMADO_ARCO_COLUMNA_V1 y solo la consulta es de lectura");
 
   // ---------------------------------------------------------------------------
-  // 1b. Los tres tipos con motor, y qué campo del plan lleva cada uno. `armado_guirnalda` (ADR-0032) no es
+  // 1b. Los cuatro tipos con motor, y qué campo del plan lleva cada uno. `armado_guirnalda` (ADR-0032) no es
   //     de esta capacidad y por eso no está entre las claves que decide.
-  assert.deepEqual([...TIPOS_ARMADO_MOTOR], ["arco", "columna", "guirnalda"]);
-  assert.deepEqual(CLAVE_ARMADO, { arco: "armado_arco", columna: "armado_columna", guirnalda: "armado_guirnalda_organica" });
+  //
+  //     `semiarco` apunta directo a `armado_arco_organico`: un medio arco **es** ese armado con
+  //     `forma.corte` menor que 1 y no tiene la puerta clásica de patrones, al contrario que `arco` y
+  //     `columna`, que apuntan al clásico y sólo caen al orgánico cuando el plan declara la mezcla.
+  assert.deepEqual([...TIPOS_ARMADO_MOTOR], ["arco", "semiarco", "columna", "guirnalda"]);
+  assert.deepEqual(CLAVE_ARMADO, { arco: "armado_arco", semiarco: "armado_arco_organico", columna: "armado_columna", guirnalda: "armado_guirnalda_organica" });
   assert.ok(!(CLAVES_ARMADO_MOTOR as readonly string[]).includes("armado_guirnalda"));
-  ok("los tres tipos con motor y su campo del plan; el armado de ADR-0032 no es de esta capacidad");
+  ok("los cuatro tipos con motor y su campo del plan; el armado de ADR-0032 no es de esta capacidad");
 
   // ---------------------------------------------------------------------------
   // 2. Los esquemas que ve el modelo: ningún id de patrón escrito a mano aquí.
   const esquemaArmar = JSON.stringify(ARMAR_ESTRUCTURA.esquema);
   assert.deepEqual((CONSULTAR_OPCIONES_ARMADO.esquema.required as string[]), ["tipo"]);
+  // `semiarco` NO está en el enum que ve el modelo, y no es un olvido: un medio arco no se arma a mano (no
+  // tiene patrón que elegir, como ninguna pieza orgánica), su armado lo pone `completar` al confirmar el
+  // plan, y la puerta de Python rechaza `armar` con ese tipo. El enum del modelo es el de lo que sí puede
+  // pedir; `TIPOS_ARMADO_MOTOR` es el de las piezas que tienen motor.
   assert.deepEqual(((CONSULTAR_OPCIONES_ARMADO.esquema.properties as Json).tipo as Json).enum, ["arco", "columna", "guirnalda"]);
   // `patron` y `materiales` dejan de ser obligatorios: una guirnalda no tiene patrón. La condición por tipo
   // la exige el Zod del handler y la cuenta la descripción, porque el proveedor no respeta un `oneOf`.
@@ -401,6 +409,31 @@ async function main(): Promise<void> {
   ok("un plan confirmado sin armado sale con el del servidor, y ese armado llega al plan resuelto");
 
   // ---------------------------------------------------------------------------
+  // 7b. Sin foto, el patrón que el plan declara es la pista de la receta (la misma que usa la resolución).
+  //     Next no lo traduce a una pista —esa traducción es de Python (`armado_arco_de_patron`)—: lo que tiene
+  //     que hacer es no perderlo por el camino, así que el `patron_color` llega intacto dentro del plan y no
+  //     viaja ninguna pista de foto que le gane.
+  const patronDeclarado: Json = { version: "patron-color.v1", origen: "decorador", base: { modo: "anillos", secuencia: [1, 0, 0], largo: 1 } };
+  const estadoPatron = crearEstadoConversacion({}, "un arco rosado y blanco en anillos");
+  estadoPatron.ragCatalogSnapshotId = SNAPSHOT_FALSO;
+  estadoPatron.ragIdsRecuperados.add("P-GLOBOS");
+  estadoPatron.ragVariantIdsRecuperados.set("P-GLOBOS", new Set(FILAS.map((fila) => fila.variant_id)));
+  const llamadasPatron = instalarResolutorPythonFalso({
+    otrasRutas: (llamada) => respuestaPython(llamada, {
+      operation_schema_version: "omoikane-armado-estructura-result.v1",
+      accion: "completar",
+      armados: recetaArco.filter((completado) => completado.tipo === "arco"),
+    }),
+  });
+  const confirmadoPatron = await crearRegistroHerramientas(estadoPatron, { pool: POOL })
+    .confirmar_plan_decoracion!(argsPlan([{ ...ARCO, patron_color: patronDeclarado }]), LLAMADA);
+  assert.equal(confirmadoPatron.ok, true, JSON.stringify(confirmadoPatron).slice(0, 400));
+  const completarPatron = llamadasPatron.find((llamada) => llamada.path === RUTA_ARMADO)!;
+  assert.deepEqual(((completarPatron.body.plan as Json).estructuras as Json[])[0]!.patron_color, patronDeclarado);
+  assert.equal(completarPatron.body.pistas as unknown, undefined, "sin foto no viaja ninguna pista que le gane al patrón del plan");
+  ok("al confirmar, el patron_color del plan llega a la receta como su pista, sin una de foto que le gane");
+
+  // ---------------------------------------------------------------------------
   // 8. El armado que el modelo armó en el turno viaja a Python para revalidarse.
   const estadoConArmado = crearEstadoConversacion({}, "un arco rosado y blanco");
   estadoConArmado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
@@ -589,7 +622,8 @@ async function main(): Promise<void> {
   // ---------------------------------------------------------------------------
   // 9. La columna orgánica (ADR-0034) la escribe el decorador, no el modelo: ninguna herramienta la completa.
   const columnaOrganica = JSON.parse(readFileSync(path.join(process.cwd(), "scripts/fixtures/columna-organica-ui/vista-columna-organica.json"), "utf8")) as { peticion: { armado_columna_organica: never } };
-  assert.deepEqual([...CLAVES_FUERA_DEL_MODELO], [...CLAVES_ARMADO_MOTOR, "armado_columna_organica"]);
+  // El arco orgánico (ADR-0035) está en la misma lista y por lo mismo: ninguna herramienta lo completa.
+  assert.deepEqual([...CLAVES_FUERA_DEL_MODELO], [...CLAVES_ARMADO_MOTOR, "armado_columna_organica", "armado_arco_organico"]);
   assert.ok(!(CLAVES_ARMADO_MOTOR as readonly string[]).includes("armado_columna_organica"), "no es una de las que la capacidad decide");
   const conColumnaOrganica: typeof plan = {
     ...plan,

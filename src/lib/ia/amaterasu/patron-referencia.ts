@@ -7,6 +7,7 @@ import {
   type PythonPatronReferenciaInput,
   type PythonPatronReferenciaPista,
 } from "@/lib/ia/nucleo/python-adapter";
+import type { RemateLeido } from "@/lib/plan/armado-columna";
 import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
 import { crearCacheLectura, leerCompartido, type CacheLectura } from "./deteccion-compartida";
 import { ReferenceBlueprintV2Schema, type PatronColorReferencia, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
@@ -93,7 +94,9 @@ export function elementosParaDeteccion(blueprint: ReferenceBlueprintV2): Map<str
  * una pista con manchas llegue entera hasta `pistas_patron`.
  */
 function patronDePista(pista: PythonPatronReferenciaPista): PatronColorReferencia | undefined {
-  if (pista.modo === "ninguno" || pista.colores.length === 0) return undefined;
+  // Ni "ninguno" (no se distingue) ni "monocromo" (un solo color) son disposiciones: no hay patrón que
+  // guardar. El color de la monocroma viaja aparte, en `color_unico`.
+  if (pista.modo === "ninguno" || pista.modo === "monocromo" || pista.colores.length === 0) return undefined;
   return {
     modo: pista.modo,
     colores: pista.colores,
@@ -106,27 +109,58 @@ function patronDePista(pista: PythonPatronReferenciaPista): PatronColorReferenci
     // de `plan.py`, un modelo a mano que se quedó sin `zonas` y sin ese literal
     // cuando nació el modo. Se arregló allí; esta guarda se queda por higiene.)
     ...(pista.modo === "zonas" && pista.zonas !== undefined ? { zonas: pista.zonas } : {}),
+    // El eje y la simetría que la foto leyó (ADR-0039). Viajan para cualquier modo: qué direcciones admite la
+    // pieza y si lleva espejo lo decide `patron_color` con la tabla de `modos_admitidos`, y lo que no admite
+    // lo descarta sin tumbar la lectura. El lector no manda la longitudinal, que es el valor de partida.
+    ...(pista.motas === undefined || pista.motas.length === 0 ? {} : { motas: pista.motas }),
+    ...(pista.direccion === undefined ? {} : { direccion: pista.direccion }),
+    ...(pista.simetria === undefined ? {} : { simetria: pista.simetria }),
     confianza: pista.confianza,
   };
 }
 
 /**
- * Copia del blueprint con cada pista en su elemento. Una pista "ninguno" o de un
- * elemento que no existe no deja nada. Nunca modifica el blueprint recibido:
- * puede ser el resultado cacheado del análisis.
+ * Copia del blueprint con cada pista en su elemento: el patrón de color en
+ * `appearance.patron_color` y, en una columna, lo que la corona en
+ * `appearance.remate_columna` (ADR-0039). Una pista "ninguno" no deja patrón,
+ * **pero sí puede dejar remate**: una columna de un solo color lleva su globo
+ * igual. Una pista de un elemento que no existe no deja nada. Nunca modifica el
+ * blueprint recibido: puede ser el resultado cacheado del análisis.
  */
 export function adjuntarPistasPatron(blueprint: ReferenceBlueprintV2, pistas: readonly PythonPatronReferenciaPista[]): ReferenceBlueprintV2 {
   const patrones = new Map<string, PatronColorReferencia>();
+  const remates = new Map<string, RemateLeido>();
+  const unicos = new Map<string, string>();
+  const tamanos = new Map<string, NonNullable<PythonPatronReferenciaPista["tamanos"]>>();
   for (const pista of pistas) {
     const patron = patronDePista(pista);
     if (patron) patrones.set(pista.element_id, patron);
+    if (pista.remate) remates.set(pista.element_id, { ...pista.remate });
+    // Los tamaños, como el remate, se guardan aunque el modo sea "ninguno" o "monocromo": no son una
+    // disposición de color. Es el caso que los motivó.
+    if (pista.tamanos) tamanos.set(pista.element_id, pista.tamanos);
+    // Un color no tiene disposición, así que no hay patrón que guardar: lo que vale es el color.
+    if (pista.modo === "monocromo" && pista.colores[0]) unicos.set(pista.element_id, pista.colores[0]);
   }
-  if (patrones.size === 0) return blueprint;
+  if (patrones.size === 0 && remates.size === 0 && unicos.size === 0 && tamanos.size === 0) return blueprint;
   return {
     ...blueprint,
     elements: blueprint.elements.map((elemento) => {
       const patron = patrones.get(elemento.element_id);
-      return patron ? { ...elemento, appearance: { ...elemento.appearance, patron_color: patron } } : elemento;
+      const remate = remates.get(elemento.element_id);
+      const unico = unicos.get(elemento.element_id);
+      const tamano = tamanos.get(elemento.element_id);
+      if (!patron && !remate && !unico && !tamano) return elemento;
+      return {
+        ...elemento,
+        appearance: {
+          ...elemento.appearance,
+          ...(patron ? { patron_color: patron } : {}),
+          ...(remate ? { remate_columna: remate } : {}),
+          ...(unico ? { color_unico: unico } : {}),
+          ...(tamano ? { tamanos_leidos: tamano } : {}),
+        },
+      };
     }),
   };
 }

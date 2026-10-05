@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Pool } from "pg";
 import { getRagPool } from "@/lib/rag/db";
-import { LoraModeSlugSchema, LoraSelectionSchema, type LoraModeSlug, type LoraSelection, type LoraSpecialization } from "./schema";
+import { LORA_BASE_MODE, LoraModeSlugSchema, LoraSelectionSchema, type LoraModeSlug, type LoraSelection, type LoraSpecialization, type LoraTrainedModeSlug } from "./schema";
 import { assertLoraCompatibility, type LoraCompatibilityArtifact } from "./compatibility";
 import { LORA_V007_CATALOG_SOURCE_IDS, LORA_V007_DATASET_ID } from "./v007-catalog-allowlist";
 import { buildLookupIndexes, resolveProductConcept } from "./product-vocabulary";
@@ -36,7 +36,7 @@ type ArtifactRow = {
 };
 
 type ModeOptionRow = {
-  slug: LoraModeSlug;
+  slug: LoraTrainedModeSlug;
   display_name: string;
   training_run_id: string | null;
   dataset_id: string | null;
@@ -54,7 +54,7 @@ type ModeOptionRow = {
 };
 
 export type LoraModeOption = {
-  slug: LoraModeSlug;
+  slug: LoraTrainedModeSlug;
   display_name: string;
   training_run_id: string | null;
   dataset_id: string | null;
@@ -146,8 +146,14 @@ export async function listLoraModeOptions(pool: Pool = getRagPool()): Promise<Lo
   });
 }
 
+/**
+ * `base` resolves to no application at all: the base FLUX.2 model with
+ * `loras: []` and no trigger. It never reads the registry, so it works with no
+ * slot row and does not depend on the state of any trained LoRA.
+ */
 export async function resolveLoraMode(mode: LoraModeSlug, pool: Pool = getRagPool()): Promise<ResolvedLoraApplication[]> {
   const parsedMode = LoraModeSlugSchema.parse(mode);
+  if (parsedMode === LORA_BASE_MODE) return [];
   const option = (await listLoraModeOptions(pool)).find((candidate) => candidate.slug === parsedMode);
   if (!option) throw new Error(`LORA_MODE_NOT_FOUND: ${parsedMode}`);
   if (!option.enabled) throw new Error(`LORA_MODE_DISABLED: ${parsedMode}`);
@@ -222,6 +228,9 @@ export async function resolveLoraModeDatasetAllowlist(
   pool: Pool = getRagPool(),
 ): Promise<CatalogAllowlist | null> {
   const parsedMode = LoraModeSlugSchema.parse(mode);
+  // The base model saw no Sempertex dataset, so nothing restricts the catalog:
+  // `null` is what every caller already treats as "the whole catalog".
+  if (parsedMode === LORA_BASE_MODE) return null;
   const option = (await listLoraModeOptions(pool)).find((candidate) => candidate.slug === parsedMode);
   if (!option) throw new Error(`LORA_MODE_NOT_FOUND: ${parsedMode}`);
   if (!option.enabled) throw new Error(`LORA_MODE_DISABLED: ${parsedMode}`);

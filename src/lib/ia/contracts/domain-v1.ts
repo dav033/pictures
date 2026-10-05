@@ -30,10 +30,12 @@ import { ArcoResueltoSchema, ArmadoArcoV1Schema } from "@/lib/plan/armado-arco";
 import { ArmadoBouquetResueltoSchema, PistaArmadoSchema } from "@/lib/plan/armado-bouquet";
 import { ArmadoColumnaV1Schema, ColumnaResueltaSchema } from "@/lib/plan/armado-columna";
 import { ColumnaOrganicaResueltaSchema } from "@/lib/plan/armado-columna-organica";
+import { ArcoOrganicoResueltoSchema } from "@/lib/plan/armado-arco-organico";
 import { ArmadoGuirnaldaOrganicaV1Schema, GuirnaldaOrganicaResueltaSchema } from "@/lib/plan/armado-guirnalda-organica";
 import { ArmadoGuirnaldaResueltoSchema, ArmadoGuirnaldaV1Schema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
 import { ConteoAplicadoSchema, MAX_GLOBOS_CONTEO, PistaConteoSchema } from "@/lib/plan/conteo-referencia";
-import { PatronColorResueltoSchema, PistaPatronSchema } from "@/lib/plan/patron-color";
+import { PatronColorResueltoSchema, PistaPatronSchema, PistaTamanosSchema } from "@/lib/plan/patron-color";
+import { PlanGuiaEscenaRequestV1Schema, PlanGuiaEscenaResultV1Schema } from "@/lib/plan/guia-escena";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
 import { LoraSelectionSchema } from "@/lib/lora/schema";
 import { productVocabularySchema } from "@/lib/lora/product-vocabulary";
@@ -465,6 +467,7 @@ export const PlanResueltoV1Schema = z.object({
    */
   armados_arco: z.array(ArcoResueltoSchema).optional(),
   armados_columna: z.array(ColumnaResueltaSchema).optional(),
+  armados_arco_organico: z.array(ArcoOrganicoResueltoSchema).optional(),
   armados_columna_organica: z.array(ColumnaOrganicaResueltaSchema).optional(),
   armados_guirnalda_organica: z.array(GuirnaldaOrganicaResueltaSchema).optional(),
   /**
@@ -538,6 +541,8 @@ export const PlanResolutionRequestV1Schema = z.object({
   /** Solo al confirmar un plan: Python asigna patrón de color a las estructuras que no lo tienen (ADR-0028 §7). */
   completar_patrones: z.boolean().optional(),
   pistas_patron: z.array(PistaPatronSchema).max(16).optional(),
+  /** Los tamaños leídos en la foto, aparte de la pista de patrón: un tamaño no es una disposición de color. */
+  pistas_tamanos: z.array(PistaTamanosSchema).max(16).optional(),
   /** Solo al confirmar un plan: Python arma por niveles los bouquets que no tienen armado (ADR-0030). */
   completar_armados: z.boolean().optional(),
   pistas_armado: z.array(PistaArmadoSchema).max(16).optional(),
@@ -771,6 +776,8 @@ export const DomainContractSchemas = {
   "plan-resolution-result.v1": PlanResolutionResultV1Schema,
   "estimar-conteo.v1": EstimarConteoRequestV1Schema,
   "estimar-conteo-result.v1": EstimarConteoResultV1Schema,
+  "plan-guia-escena.v1": PlanGuiaEscenaRequestV1Schema,
+  "plan-guia-escena-result.v1": PlanGuiaEscenaResultV1Schema,
   "reference-blueprint.v2": ReferenceBlueprintV2Schema,
   "scene-spec.v1": SceneSpecSchema,
   "lora-selection.v1": LoraSelectionSchema,

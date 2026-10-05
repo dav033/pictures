@@ -197,6 +197,51 @@
                   "maxLength": 80
                 }
               },
+              "referencias_medidas": {
+                "maxItems": 5,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "codigo": {
+                      "type": "string",
+                      "pattern": "^[0-9]{3}$"
+                    },
+                    "familia": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 20
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60
+                    },
+                    "nombre_completo": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "parte": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "familia_fiable": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "codigo",
+                    "familia",
+                    "nombre",
+                    "nombre_completo",
+                    "parte",
+                    "familia_fiable"
+                  ],
+                  "additionalProperties": false
+                }
+              },
               "measured_colors": {
                 "maxItems": 12,
                 "type": "array",
@@ -333,6 +378,27 @@
                       "additionalProperties": false
                     }
                   },
+                  "motas": {
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    }
+                  },
+                  "direccion": {
+                    "type": "string",
+                    "enum": [
+                      "longitudinal",
+                      "transversal",
+                      "diagonal"
+                    ]
+                  },
+                  "simetria": {
+                    "type": "string",
+                    "const": "espejo"
+                  },
                   "confianza": {
                     "type": "number",
                     "minimum": 0,
@@ -345,6 +411,49 @@
                   "confianza"
                 ],
                 "additionalProperties": false
+              },
+              "remate_columna": {
+                "type": "object",
+                "properties": {
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "ninguno",
+                      "globo",
+                      "racimo",
+                      "estrella",
+                      "corazon"
+                    ]
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "tipo"
+                ],
+                "additionalProperties": false
+              },
+              "tamanos_leidos": {
+                "type": "string",
+                "enum": [
+                  "casi_todos_gigantes",
+                  "grandes_con_pocos_chicos",
+                  "chicos_con_pocos_grandes",
+                  "un_solo_tamano"
+                ]
+              },
+              "inclinacion": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1
+              },
+              "color_unico": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
               },
               "armado_bouquet": {
                 "type": "object",

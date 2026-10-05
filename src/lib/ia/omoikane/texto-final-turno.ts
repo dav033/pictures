@@ -22,12 +22,14 @@ import type { Mensaje } from "@/lib/ia/nucleo/tipos";
 export type EstadoTextoFinal = {
   /** A plan was verified and signed in this turn. */
   planConfirmado: boolean;
-  /** A visual selection was confirmed in this turn (legacy selection mode). */
-  seleccionConfirmada: boolean;
 };
 
-export const TEXTO_PLAN_LISTO = "Ya te armé la propuesta: revisa el desglose en pantalla y dime si la apruebas o qué quieres ajustar.";
-export const TEXTO_SELECCION_LISTA = "¡Ya elegí las piezas y se está generando tu visualización! Dame un momento.";
+/**
+ * Only the card button approves a proposal ("Aprobar y ver cómo queda"): a
+ * written "sí" never generates the image, so the closing text names the button
+ * instead of asking "dime si la apruebas" (2026-10-04 audit, C1).
+ */
+export const TEXTO_PLAN_LISTO = "Ya te armé la propuesta: revisa el desglose en pantalla. Si te gusta, toca «Aprobar y ver cómo queda» para crear la imagen; si no, dime qué quieres ajustar.";
 export const TEXTO_SIN_RESPUESTA = "No logré terminar la propuesta en este intento. ¿Me cuentas otra vez qué piezas y colores quieres para intentarlo de nuevo?";
 export const PREGUNTA_CONTINUAR = "¿Quieres que lo intente con otras piezas o colores, o prefieres ajustar algo de tu pedido?";
 export const TEXTO_CAMBIO_NO_APLICADO = "Todavía no pude aplicar ese cambio a la propuesta.";
@@ -95,10 +97,9 @@ export function textoFinalTurno(texto: string, estado: EstadoTextoFinal, histori
   const limpio = texto.trim();
   if (!limpio) {
     if (estado.planConfirmado) return TEXTO_PLAN_LISTO;
-    if (estado.seleccionConfirmada) return TEXTO_SELECCION_LISTA;
     return respaldoConMensaje(historial);
   }
-  if (!estado.planConfirmado && !estado.seleccionConfirmada && afirmaCambioAplicado(limpio)) {
+  if (!estado.planConfirmado && afirmaCambioAplicado(limpio)) {
     return respaldoConMensaje(historial, TEXTO_CAMBIO_NO_APLICADO);
   }
   return texto;

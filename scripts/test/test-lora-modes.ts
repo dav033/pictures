@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import type { Pool } from "pg";
 import { listLoraModeOptions, resolveLoraMode, resolveLoraModeDatasetAllowlist } from "../../src/lib/lora/mode-resolver";
 import { linkDatasetElementsToCatalog } from "../../src/lib/lora/dataset-catalog-link";
+import { readActiveLoraTrainingReferenceCounts } from "../../src/lib/lora/training-reference-counts";
 
 const modeRow = {
   slug: "training_1" as const,
@@ -210,6 +211,18 @@ async function testDatasetLinkedAfterCatalogReimport(): Promise<void> {
   } finally {
     console.warn = warn;
   }
+
+  // `base` is the FLUX.2 base model without LoRA weights: it has no slot row,
+  // applies nothing and restricts nothing, so it must never read the registry.
+  const noQueryPool = {
+    query: async () => { throw new Error("base mode must not query the LoRA registry"); },
+  } as unknown as Pool;
+  assert.deepEqual(await resolveLoraMode("base", noQueryPool), []);
+  assert.equal(await resolveLoraModeDatasetAllowlist("base", noQueryPool), null, "base mode: whole catalog (null = unrestricted)");
+  assert.deepEqual(await readActiveLoraTrainingReferenceCounts("base", noQueryPool), { mode: "base", datasetId: null, datasetLabel: null, countsByCatalogId: {} });
+  // Trained modes keep resolving from the registry and keep their dataset restriction.
+  assert.equal((await resolveLoraMode("training_1", pool)).length, 1);
+  console.log("[PASS] test-lora-modes: base mode resolves to no LoRA and no catalog restriction; trained modes unchanged");
 }
 
 main().catch((error) => {

@@ -12,6 +12,7 @@ import {
   stableElementId,
   type ReferenceBlueprintV2,
 } from "@/lib/ia/referencia/reference-blueprint";
+import { LECTURA_UNICA_RULES, LECTURA_UNICA_TOOL_SCHEMA } from "@/lib/ia/referencia/lectura-unica";
 import {
   attachedStructureContainers,
   DETECTED_STRUCTURE_TOOL_SCHEMA,
@@ -21,6 +22,7 @@ import {
   STRUCTURE_RULES_V14_CANDIDATE,
   STRUCTURE_RULES_V15_CANDIDATE,
   STRUCTURE_RULES_V16,
+  VARIANTE_LECTURA_UNICA,
   VARIANTE_PRODUCCION,
   type VarianteReconocedor,
   tieneElementosAprobados,
@@ -33,6 +35,14 @@ export { inferReferenceLayer } from "@/lib/ia/referencia/candidatos-referencia";
 
 export type AnalisisV2Resultado = {
   blueprint: ReferenceBlueprintV2;
+  /**
+   * Solo la variante `v17-lectura-unica`: por `element_id`, el bloque
+   * `lecturas` que el modelo escribio para ese elemento, **sin validar**. Lo
+   * valida `app/amaterasu/lectura_unica.py` con los validadores de las cuatro
+   * lecturas de produccion. Ausente en cualquier otra variante, y nunca entra
+   * en el blueprint ni en ningun contrato.
+   */
+  lecturasCrudas?: Readonly<Record<string, Record<string, unknown>>>;
   /** UI/chat contract: at least one approved balloon structure (see `tieneEstructurasDeGlobos`). */
   tieneEstructurasDeGlobos: boolean;
   /** UI contract: at least one approved element. False = nothing usable was seen (never "Listo"). */
@@ -192,6 +202,47 @@ const TOOL: Herramienta = {
   },
 };
 
+/**
+ * `TOOL` con el bloque `lecturas` anadido a cada elemento. La variante de
+ * lectura unica es la UNICA que cambia el esquema de la herramienta; se arma
+ * por copia para que el de produccion siga siendo exactamente el de siempre
+ * (ADR-0029). El recorrido es largo porque `Herramienta.esquema` es JSON Schema
+ * suelto (`Record<string, unknown>`), no un tipo; `object()` acota cada nivel
+ * sin un solo cast.
+ */
+const TOOL_LECTURA_UNICA: Herramienta = (() => {
+  const esquema = object(TOOL.esquema);
+  const images = object(object(esquema.properties).images);
+  const imageItems = object(images.items);
+  const elements = object(object(imageItems.properties).elements);
+  const elementItems = object(elements.items);
+  const conLecturas = {
+    ...elementItems,
+    properties: { ...object(elementItems.properties), lecturas: LECTURA_UNICA_TOOL_SCHEMA },
+  };
+  return {
+    ...TOOL,
+    esquema: {
+      ...esquema,
+      properties: {
+        ...object(esquema.properties),
+        images: {
+          ...images,
+          items: {
+            ...imageItems,
+            properties: { ...object(imageItems.properties), elements: { ...elements, items: conLecturas } },
+          },
+        },
+      },
+    },
+  };
+})();
+
+/** La herramienta del inventario para una variante. */
+function toolDeVariante(variante: VarianteReconocedor): Herramienta {
+  return variante === VARIANTE_LECTURA_UNICA ? TOOL_LECTURA_UNICA : TOOL;
+}
+
 const cache = new Map<string, AnalisisV2Resultado>();
 const MAX_CACHE = 40;
 
@@ -218,7 +269,12 @@ export type OpcionesAnalisisReferencias = {
    * do not analyze the same photos concurrently). Errors it throws propagate.
    */
   observarPase?: (pase: PaseObservado) => void;
-  /** Evaluation only: prompt variant. Omitted means `VARIANTE_PRODUCCION`. */
+  /**
+   * Prompt variant. Omitted means `VARIANTE_PRODUCCION`, which is what every
+   * route sends. Evaluation runners pick `v13`/`v14`/`v15`; the only variant a
+   * route may select is `v17-lectura-unica`, behind
+   * `LECTURA_UNICA_REFERENCIA_ENABLED` (default off).
+   */
   variante?: VarianteReconocedor;
 };
 
@@ -273,6 +329,18 @@ function esperarAnalisisCompartido(key: string, entry: AnalisisEnVuelo, signal: 
 /** Attempts per analysis pass when the model answers with malformed tool output. */
 const MAX_INTENTOS_FORMATO_ANALISIS = 2;
 const PARAMETROS_INVENTARIO = { temperatura: 0, maxTokens: 6000 } as const;
+/**
+ * La lectura unica escribe cuatro bloques mas por elemento (patron, conteo,
+ * armado del bouquet y armado de la guirnalda), asi que con el tope de
+ * produccion una foto de varias piezas se queda sin presupuesto y la llamada a
+ * la herramienta vuelve cortada -- que aqui no es "una lectura menos" sino un
+ * analisis malformado y un reintento pagado. El tope de produccion no se toca.
+ */
+const PARAMETROS_INVENTARIO_LECTURA_UNICA = { temperatura: 0, maxTokens: 14000 } as const;
+
+function parametrosInventario(variante: VarianteReconocedor): { temperatura: number; maxTokens: number } {
+  return variante === VARIANTE_LECTURA_UNICA ? PARAMETROS_INVENTARIO_LECTURA_UNICA : PARAMETROS_INVENTARIO;
+}
 
 /**
  * Hash of the effective analysis configuration, recorded per pass in telemetry
@@ -281,15 +349,18 @@ const PARAMETROS_INVENTARIO = { temperatura: 0, maxTokens: 6000 } as const;
  * schemas, model, thinking level and per-pass temperature/maxOutputTokens.
  * Not used by the cache key yet (that is A1.3).
  */
-export function analysisConfigHash(input: { model: string; thinkingLevel: string | undefined; mode: AnalysisMode; systemPromptHash: string }): string {
+export function analysisConfigHash(input: { model: string; thinkingLevel: string | undefined; mode: AnalysisMode; systemPromptHash: string; variante?: VarianteReconocedor }): string {
+  // `variante` omitida = produccion, asi que el hash de un llamador que no la
+  // pasa es byte a byte el de antes de que existiera la lectura unica.
+  const variante = input.variante ?? VARIANTE_PRODUCCION;
   return createHash("sha256").update(JSON.stringify({
     parser_version: ANALYSIS_PARSER_VERSION,
     mode: input.mode,
     system_prompt_hash: input.systemPromptHash,
-    tools: [TOOL],
+    tools: [toolDeVariante(variante)],
     model: input.model,
     thinking_level: input.thinkingLevel ?? "desconocido",
-    inventory: PARAMETROS_INVENTARIO,
+    inventory: parametrosInventario(variante),
   })).digest("hex");
 }
 
@@ -346,7 +417,13 @@ function resolveBillOfMaterials(
     : lines.map((line, index) => ({ ...line, share: index === 0 ? 1 : 0 }));
 }
 
-function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string, unknown>, catalogo: ReferenceCatalogItem[], mode: AnalysisMode): ReferenceBlueprintV2 {
+/**
+ * El blueprint y, con la variante de lectura unica, el bloque `lecturas` crudo
+ * de cada elemento por su `element_id` (vacio en cualquier otra variante). Va
+ * aparte del blueprint a proposito: todavia no esta validado y no cabe en
+ * `reference-blueprint.v2` hasta que Python lo valide.
+ */
+function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string, unknown>, catalogo: ReferenceCatalogItem[], mode: AnalysisMode): { blueprint: ReferenceBlueprintV2; lecturasCrudas: Record<string, Record<string, unknown>> } {
   const inventoryImages = Array.isArray(inventoryRaw.images) ? inventoryRaw.images : [];
   const knownImageIds = new Set(images.map((image) => image.id));
   const safeImageId = (value: unknown) => {
@@ -416,6 +493,9 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
         material: candidate.material,
         shape: candidate.shape,
         composition: candidate.composition,
+        // Lo que el análisis ya sabe de la forma y nadie usaba: hacia dónde se va
+        // la pieza y cuánto. Recta (0) no viaja: es el valor de partida del motor.
+        ...(candidate.structure && candidate.structure.inclina !== 0 ? { inclinacion: candidate.structure.inclina } : {}),
       },
       relationships: candidate.relationships.filter((relation) => relation.target_element_id !== "unknown"),
       uncertainties: candidate.uncertainties,
@@ -485,7 +565,14 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
   const focal = compositions.map((value) => stringValue(value.focal_point ?? value.focal, "focal point not determinable", 240)).filter(Boolean)[0] ?? "focal point not determinable";
   const density = compositions.map((value) => value.density).find((value) => ["sparse", "moderate", "dense"].includes(String(value))) as "sparse" | "moderate" | "dense" | undefined;
   const symmetry = compositions.map((value) => value.symmetry).find((value) => ["symmetric", "asymmetric"].includes(String(value))) as "symmetric" | "asymmetric" | undefined;
-  return ReferenceBlueprintV2Schema.parse({
+  // `elements[i]` sigue siendo `allCandidates[i]` (la misma invariante que usan
+  // `attachments` y `semanticsById` arriba), y el id de cada uno ya no cambia.
+  const lecturasCrudas: Record<string, Record<string, unknown>> = {};
+  elements.forEach((element, index) => {
+    const lecturas = allCandidates[index]?.lecturas;
+    if (lecturas) lecturasCrudas[element.element_id] = lecturas;
+  });
+  const blueprint = ReferenceBlueprintV2Schema.parse({
     schema_version: "2.0",
     source_images: sourceImages,
     elements,
@@ -493,12 +580,15 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
     palette: { observed: [...new Set(palette)].slice(0, 12), priority: [...new Set(palette)].slice(0, 8) },
     unresolved_decisions: [],
   });
+  return { blueprint, lecturasCrudas };
 }
 
 /** Prompts and their hash for a mode and catalog; the evaluation runner records the same hash. */
 export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: AnalysisMode, variante: VarianteReconocedor = VARIANTE_PRODUCCION) {
   // Each variant appends its rules to the base text, so every variant's prompt and hash stay byte-identical.
-  const extra = variante === "v14-candidato" ? `\n${STRUCTURE_RULES_V14_CANDIDATE}` : variante === "v15-candidato" ? `\n${STRUCTURE_RULES_V15_CANDIDATE}` : variante === "v16" ? `\n${STRUCTURE_RULES_V16}` : "";
+  // `v17-lectura-unica` lleva el texto de v16 delante del suyo: la frontera
+  // bouquet/centro de mesa que midio ADR-0029 no cambia al anadir las lecturas.
+  const extra = variante === "v14-candidato" ? `\n${STRUCTURE_RULES_V14_CANDIDATE}` : variante === "v15-candidato" ? `\n${STRUCTURE_RULES_V15_CANDIDATE}` : variante === "v16" ? `\n${STRUCTURE_RULES_V16}` : variante === VARIANTE_LECTURA_UNICA ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}` : "";
   const inventorySystem = (mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM) + extra;
   // En modo perceptual nunca se manda el catálogo al modelo: no hay nada
   // válido que pueda elegir, y mandarlo solo lo tentaría a inventar un id.
@@ -531,7 +621,7 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
     const nueva: AnalisisEnVuelo = {
       controller,
       waiters: 0,
-      promise: ejecutarAnalisis({ chat, referencias, catalogo, mode, telemetria, signal: controller.signal, key, systemPromptHash, inventorySystem, catalogText, observarPase: opciones.observarPase })
+      promise: ejecutarAnalisis({ chat, referencias, catalogo, mode, variante, telemetria, signal: controller.signal, key, systemPromptHash, inventorySystem, catalogText, observarPase: opciones.observarPase })
         .then((result) => {
           if (cache.has(key)) cache.delete(key);
           if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value!);
@@ -553,6 +643,7 @@ async function ejecutarAnalisis(input: {
   referencias: ImagenEtiquetada[];
   catalogo: ReferenceCatalogItem[];
   mode: AnalysisMode;
+  variante: VarianteReconocedor;
   telemetria?: ContextoTelemetriaIA;
   signal: AbortSignal;
   key: string;
@@ -561,10 +652,11 @@ async function ejecutarAnalisis(input: {
   catalogText: string;
   observarPase?: OpcionesAnalisisReferencias["observarPase"];
 }): Promise<AnalisisV2Resultado> {
-  const { chat, referencias, catalogo, mode, telemetria, signal, key, systemPromptHash, inventorySystem, catalogText, observarPase } = input;
+  const { chat, referencias, catalogo, mode, variante, telemetria, signal, key, systemPromptHash, inventorySystem, catalogText, observarPase } = input;
   const ids = referencias.map((reference) => reference.id);
+  const tool = toolDeVariante(variante);
   const bytesImagenEntrada = referencias.reduce((total, image) => total + bytesDeBase64(image.base64), 0);
-  const configHash = analysisConfigHash({ model: chat.modelo, thinkingLevel: chat.thinkingLevel, mode, systemPromptHash });
+  const configHash = analysisConfigHash({ model: chat.modelo, thinkingLevel: chat.thinkingLevel, mode, systemPromptHash, variante });
   const promptVersion = systemPromptHash.slice(0, 16);
   const ejecutarPaso = async (
     capacidad: PaseObservado["capacidad"],
@@ -630,17 +722,18 @@ async function ejecutarAnalisis(input: {
   const inventoryRaw = await pasoConHerramienta("analisis_referencia_inventario", {
     sistema: mode === "perceptual" ? `${inventorySystem}\n${REAR_LAYER_RULE}` : `${inventorySystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
       historial: [{ rol: "usuario", texto: `Inventory these references and resolve every element automatically. Preserve exact image IDs in this order: ${ids.join(", ")}. Return one model_decision per element.`, imagenes: referencias }],
-      herramientas: [TOOL],
-      ...PARAMETROS_INVENTARIO,
+      herramientas: [tool],
+      ...parametrosInventario(variante),
       signal,
-  }, TOOL.nombre);
-  const armado = buildBlueprint(referencias, inventoryRaw, mode === "perceptual" ? [] : catalogo, mode);
+  }, tool.nombre);
+  const { blueprint: armado, lecturasCrudas } = buildBlueprint(referencias, inventoryRaw, mode === "perceptual" ? [] : catalogo, mode);
   // La dominancia se mide sobre los píxeles, no sobre el orden en que el modelo
   // escribió los nombres (fase 2.1). Detrás de bandera hasta que el benchmark
   // muestre la mejora.
   const blueprint = featureEnabled("MEASURED_COLOR_DOMINANCE_V1") ? await enriquecerConDominancia(armado, referencias) : armado;
   return {
     blueprint,
+    ...(Object.keys(lecturasCrudas).length ? { lecturasCrudas } : {}),
     tieneEstructurasDeGlobos: tieneEstructurasDeGlobos(blueprint),
     tieneElementos: tieneElementosAprobados(blueprint),
     metadata: {

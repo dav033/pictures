@@ -43,12 +43,28 @@ import {
   type VistaArco,
 } from "@/lib/plan/armado-arco";
 import { OpcionesArmadoGuirnaldaSchema, type OpcionesArmadoGuirnalda } from "@/lib/plan/opciones-armado-guirnalda";
+import { GraficaDibujoEstructuraSchema, type GraficaDibujoEstructura } from "@/lib/plan/dibujo-estructura";
+import { PLAN_GUIA_ESCENA_CONTRACT_VERSION, PlanGuiaEscenaRequestV1Schema, PlanGuiaEscenaResultV1Schema, type PlanGuiaEscenaRequestV1, type PlanGuiaEscenaResultV1 } from "@/lib/plan/guia-escena";
 import {
   LimitesArcoSchema,
   OpcionesArmadoArcoSchema,
   type LimitesArco,
   type OpcionesArmadoArco,
 } from "@/lib/plan/opciones-armado-arco";
+import {
+  ArcoOrganicoResueltoSchema,
+  ArmadoArcoOrganicoV1Schema,
+  type ArcoOrganicoResuelto,
+  type ArmadoArcoOrganicoV1,
+} from "@/lib/plan/armado-arco-organico";
+import {
+  LimitesArcoOrganicoSchema,
+  OpcionesArmadoArcoOrganicoSchema,
+  VistaArcoOrganicoSchema,
+  type LimitesArcoOrganico,
+  type OpcionesArmadoArcoOrganico,
+  type VistaArcoOrganico,
+} from "@/lib/plan/opciones-armado-arco-organico";
 import {
   ArmadoColumnaOrganicaV1Schema,
   ColumnaOrganicaResueltaSchema,
@@ -94,7 +110,7 @@ import {
   type TipoArmadoMotor,
   type VolumenPedido,
 } from "@/lib/plan/armado-estructura-ia";
-import { ArmadoColumnaV1Schema, ColumnaResueltaSchema, VistaColumnaSchema, type ArmadoColumnaV1, type ColumnaResuelta, type VistaColumna } from "@/lib/plan/armado-columna";
+import { ArmadoColumnaV1Schema, ColumnaResueltaSchema, RemateLeidoSchema, VistaColumnaSchema, type ArmadoColumnaV1, type ColumnaResuelta, type PistaRemate, type VistaColumna } from "@/lib/plan/armado-columna";
 import { LimitesColumnaSchema, OpcionesArmadoColumnaSchema, type LimitesColumna, type OpcionesArmadoColumna } from "@/lib/plan/opciones-armado-columna";
 import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
@@ -104,13 +120,16 @@ import {
   ModoAdmitidoSchema,
   PatronColorResueltoSchema,
   PistaPatronSchema,
+  TAMANOS_LEIDOS,
   type ModoAdmitido,
   type ModoPatronColor,
   type PatronColor,
   type PatronColorResuelto,
   type PistaPatron,
+  type PistaTamanos,
 } from "@/lib/plan/patron-color";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
+import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { z } from "zod";
 
 export const PYTHON_ECHO_PATH = "/internal/v1/echo";
@@ -149,6 +168,8 @@ export const PYTHON_CONTEO_REFERENCIA_PATH = "/internal/v1/ia/conteo-referencia"
 export const PYTHON_CONTEO_REFERENCIA_SCOPE = "ia.conteo_referencia";
 export const PYTHON_GUIRNALDA_REFERENCIA_PATH = "/internal/v1/ia/guirnalda-referencia";
 export const PYTHON_GUIRNALDA_REFERENCIA_SCOPE = "ia.guirnalda_referencia";
+export const PYTHON_LECTURA_UNICA_PATH = "/internal/v1/ia/lectura-unica";
+export const PYTHON_LECTURA_UNICA_SCOPE = "ia.lectura_unica";
 export const PYTHON_PLAN_EDIT_PATH = "/internal/v1/plan/edit";
 export const PYTHON_PLAN_EDIT_SCOPE = "plan.edit";
 export const PYTHON_PLAN_PATRON_PATH = "/internal/v1/plan/patron";
@@ -162,11 +183,20 @@ export const PYTHON_PLAN_ARMADO_ARCO_SCOPE = "plan.armado_arco";
 export const PYTHON_PLAN_ARMADO_COLUMNA_PATH = "/internal/v1/plan/armado-columna";
 export const PYTHON_PLAN_ARMADO_COLUMNA_SCOPE = "plan.armado_columna";
 /** The organic garland of the designer's engine. It does NOT replace PYTHON_PLAN_ARMADO_GUIRNALDA_PATH (ADR-0032, clusters and toppers): both coexist on the same piece. */
+/** The organic arch of the designer's engine. It does NOT replace PYTHON_PLAN_ARMADO_ARCO_PATH (the pattern grid): both coexist on the same kind of piece, and a half arch is armed here with `forma.corte` below 1. */
+export const PYTHON_PLAN_ARMADO_ARCO_ORGANICO_PATH = "/internal/v1/plan/armado-arco-organico";
+export const PYTHON_PLAN_ARMADO_ARCO_ORGANICO_SCOPE = "plan.armado_arco_organico";
 /** The organic column of the designer's engine. It does NOT replace PYTHON_PLAN_ARMADO_COLUMNA_PATH (the ring tower with patterns): both coexist on the same kind of piece. */
 export const PYTHON_PLAN_ARMADO_COLUMNA_ORGANICA_PATH = "/internal/v1/plan/armado-columna-organica";
 export const PYTHON_PLAN_ARMADO_COLUMNA_ORGANICA_SCOPE = "plan.armado_columna_organica";
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_PATH = "/internal/v1/plan/armado-guirnalda-organica";
 export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE = "plan.armado_guirnalda_organica";
+/** The schematic drawing of a piece no engine builds (the wall, the circular hoop, the balloon ceiling, the table centerpiece). It resolves no assembly and counts nothing. */
+export const PYTHON_PLAN_DIBUJO_ESTRUCTURA_PATH = "/internal/v1/plan/dibujo-estructura";
+export const PYTHON_PLAN_DIBUJO_ESTRUCTURA_SCOPE = "plan.dibujo_estructura";
+/** The balloons of every structure of the plan as flat discs in meters, for the scene guide the image model receives instead of the reference photo. It places and counts nothing: it reads what the engines and the schematic drawings already placed. */
+export const PYTHON_PLAN_GUIA_ESCENA_PATH = "/internal/v1/plan/guia-escena";
+export const PYTHON_PLAN_GUIA_ESCENA_SCOPE = "plan.guia_escena";
 export const PYTHON_OMOIKANE_ARMADO_PATH = "/internal/v1/omoikane/armado-estructura";
 export const PYTHON_OMOIKANE_ARMADO_SCOPE = "omoikane.armado_estructura";
 export const PYTHON_COTIZACION_PROFESIONAL_PATH = "/internal/v1/plan/cotizacion-profesional";
@@ -287,6 +317,15 @@ export const PYTHON_PLAN_ARMADO_GUIRNALDA_ORGANICA_DOMAIN_CODES = PYTHON_PLAN_AR
 export const PYTHON_PLAN_ARMADO_COLUMNA_ORGANICA_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
 
 /**
+ * Stable domain error codes reported by POST
+ * /internal/v1/plan/armado-arco-organico (ADR-0034). The same three as the
+ * classic arch's: its `armado_invalido` carries the structure, the stable
+ * `motivo` and Python's `mensaje` (`domainDetails`), and never the options --
+ * the editor asks for them with `armado_arco_organico: null`.
+ */
+export const PYTHON_PLAN_ARMADO_ARCO_ORGANICO_DOMAIN_CODES = PYTHON_PLAN_ARMADO_DOMAIN_CODES;
+
+/**
  * Stable domain error codes reported by POST /internal/v1/omoikane/armado-estructura
  * (ADR-0034 §5, the chat agent's engine tools). `armado_invalido` is the only
  * one the model can act on, and it carries the stable `motivo` and Python's
@@ -346,6 +385,7 @@ export type PythonAdapterErrorCode =
   | "PYTHON_INVALID_REQUEST"
   | "PYTHON_PAYLOAD_TOO_LARGE"
   | "PYTHON_INVALID_RESPONSE"
+  | "PYTHON_BUSY"
   | "PYTHON_UNAVAILABLE";
 
 const ERROR_MESSAGES: Record<PythonAdapterErrorCode, string> = {
@@ -363,6 +403,7 @@ const ERROR_MESSAGES: Record<PythonAdapterErrorCode, string> = {
   PYTHON_INVALID_REQUEST: "El backend Python rechazó la solicitud.",
   PYTHON_PAYLOAD_TOO_LARGE: "La solicitud supera el tamaño máximo permitido.",
   PYTHON_INVALID_RESPONSE: "El backend Python devolvió una respuesta inválida.",
+  PYTHON_BUSY: "El backend Python está ocupado y no aceptó el trabajo.",
   PYTHON_UNAVAILABLE: "No se pudo contactar al backend Python.",
 };
 
@@ -370,8 +411,25 @@ const RETRYABLE_CODES = new Set<PythonAdapterErrorCode>([
   "PYTHON_BACKEND_TIMEOUT",
   "PYTHON_AUTH_UNAVAILABLE",
   "PYTHON_IDEMPOTENCY_IN_FLIGHT",
+  "PYTHON_BUSY",
   "PYTHON_UNAVAILABLE",
 ]);
+
+/**
+ * El cupo global de los motores (`app/exclusion_motores.py`): un solo trabajo de motor a la vez en todo
+ * `ai-api`. Quien no lo consigue recibe `motor_ocupado` (429) **al instante**, antes de que el trabajo se
+ * encole, y su propio diseño dice que el cliente reintente. Sin estos reintentos el 429 llegaba hasta el
+ * cliente como "el servicio no respondió" cada vez que dos dibujos coincidían (visto el 2026-10-02 moviendo
+ * el editor de la guirnalda).
+ *
+ * Reintentar es seguro: la reserva se toma ANTES de encolar, así que un 429 garantiza que el trabajo no
+ * corrió, y un dibujo no tiene efecto que duplicar. La espera es corta a propósito —un trabajo del motor
+ * tarda unos cientos de milisegundos, no el segundo del `Retry-After`— y el presupuesto total lo acota el
+ * `deadline_ms` de la llamada, que no se reinicia entre intentos.
+ */
+const REINTENTOS_MOTOR_OCUPADO = 3;
+const ESPERA_MOTOR_OCUPADO_MS = 120;
+const CODIGO_MOTOR_OCUPADO = "motor_ocupado";
 
 const responseSchema = z.object({
   schema_version: z.literal("operational.v1"),
@@ -658,6 +716,9 @@ function mapUpstreamError(
   if (status === 403) return upstream("PYTHON_SCOPE_DENIED", 403);
   if (status === 413) return upstream("PYTHON_PAYLOAD_TOO_LARGE", 413);
   if (status === 422) return upstream("PYTHON_INVALID_REQUEST", 422);
+  // El servicio SÍ respondió: dijo que está ocupado. Mezclarlo con "no se pudo contactar" le enseña al
+  // cliente una causa que no es (`traducir-error-servidor.ts` lo lleva a SERVICIO_OCUPADO).
+  if (status === 429) return upstream("PYTHON_BUSY", 429);
   if (status === 503 && code === "auth_unavailable") {
     return upstream("PYTHON_AUTH_UNAVAILABLE", 503);
   }
@@ -803,7 +864,39 @@ async function abrirPeticionPython(
   }
 }
 
+/** `true` si el fallo es el cupo global de los motores, que se reintenta (ver `REINTENTOS_MOTOR_OCUPADO`). */
+function esMotorOcupado(error: unknown): boolean {
+  return isPythonAdapterError(error) && error.code === "PYTHON_BUSY" && error.domainCode === CODIGO_MOTOR_OCUPADO;
+}
+
+function esperar(ms: number, signal: AbortSignal | undefined): Promise<void> {
+  return new Promise((resolve) => {
+    const id = setTimeout(resolve, ms);
+    // Un corte del llamante no deja el reintento esperando: se resuelve y el intento siguiente falla rápido
+    // contra la señal ya abortada, que es donde el error correcto se forma.
+    signal?.addEventListener("abort", () => { clearTimeout(id); resolve(); }, { once: true });
+  });
+}
+
 async function llamarPythonOperacion(
+  path: string,
+  defaultScope: string,
+  input: PythonOperationInput,
+): Promise<PythonOperationResponse> {
+  // El presupuesto es el de la llamada entera, no el de cada intento: `abrirPeticionPython` crea un deadline
+  // nuevo por intento, así que sin esto tres reintentos triplicarían el plazo que pidió el llamante.
+  const limite = Date.now() + normalizeDeadlineMs(input.deadlineMs);
+  for (let intento = 0; ; intento += 1) {
+    try {
+      return await unaOperacionPython(path, defaultScope, input);
+    } catch (error) {
+      if (!esMotorOcupado(error) || intento >= REINTENTOS_MOTOR_OCUPADO || Date.now() >= limite) throw error;
+      await esperar(ESPERA_MOTOR_OCUPADO_MS * (intento + 1), input.parentSignal);
+    }
+  }
+}
+
+async function unaOperacionPython(
   path: string,
   defaultScope: string,
   input: PythonOperationInput,
@@ -1177,6 +1270,51 @@ export interface PythonConteoReferenciaResult {
   replayed?: boolean;
 }
 
+/**
+ * One element of the reference analysis with the four raw readings the SAME
+ * vision call wrote for it (variant `v17-lectura-unica`). The blocks travel
+ * unvalidated on purpose: Python validates each one with the validator of the
+ * production reading that owns it.
+ */
+export interface PythonLecturaUnicaElemento {
+  elementId: string;
+  /**
+   * Plan structure type (`visual_semantics.structure_type`) or "desconocido".
+   * The only element field any of the four validations reads (it decides
+   * whether a column's `remate` is kept); the rest were the prompts' context,
+   * and the prompt already saw them in the same call.
+   */
+  tipo: string;
+  /** This piece may host a garland (`sobre_estructura`). */
+  anfitrionaPosible?: boolean;
+  patron?: Record<string, unknown>;
+  conteo?: Record<string, unknown>;
+  armadoBouquet?: Record<string, unknown>;
+  armadoGuirnalda?: Record<string, unknown>;
+}
+
+export interface PythonLecturaUnicaInput {
+  imagen: { mimeType: "image/png" | "image/jpeg" | "image/webp"; dataBase64: string };
+  /** 1..12, unique ids, all from the same photo as `imagen`. */
+  elementos: PythonLecturaUnicaElemento[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonLecturaUnicaResult {
+  pistas: PythonPatronReferenciaPista[];
+  conteos: PythonConteoReferenciaLectura[];
+  armadosBouquet: PythonBouquetReferenciaLectura[];
+  armadosGuirnalda: PythonGuirnaldaReferenciaLectura[];
+  validadorVersion: string;
+  replayed?: boolean;
+}
+
 /** One hint as Python validated it; "ninguno" carries no colors. */
 export type PythonPatronReferenciaPista = z.infer<typeof patronReferenciaPistaSchema>;
 
@@ -1432,6 +1570,7 @@ export interface PythonPlanResolutionInput {
   /** Absent unless the caller passes it: every other request stays byte-identical (ADR-0028 §7). */
   completarPatrones?: boolean;
   pistasPatron?: PistaPatron[];
+  pistasTamanos?: PistaTamanos[];
   /** Absent unless the caller passes it (ADR-0030): same byte-identical rule. */
   completarArmados?: boolean;
   pistasArmado?: PistaArmado[];
@@ -1729,6 +1868,46 @@ export interface PythonPlanArmadoArcoResult {
 }
 
 export {
+  LimitesArcoOrganicoSchema,
+  OpcionesArmadoArcoOrganicoSchema,
+  type LimitesArcoOrganico,
+  type OpcionesArmadoArcoOrganico,
+  type VistaArcoOrganico,
+};
+
+export interface PythonPlanArmadoArcoOrganicoInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /** `null` asks for the recipe of the arch (ADR-0034). */
+  armadoArcoOrganico: ArmadoArcoOrganicoV1 | null;
+  /**
+   * The piece's tones as `#rrggbb`, one per material and in its order, as the
+   * browser holds them once the catalog resolved them. Optional: without them
+   * Python draws in its neutral grey and says so in the arch's `avisos`. They
+   * only paint -- the count and the purchase go by material index.
+   */
+  colores?: readonly string[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanArmadoArcoOrganicoResult {
+  arco: ArcoOrganicoResuelto;
+  /** The engine's own drawing. Its canvas is square, and both sides travel because both are what Python publishes. Derived, never part of `plan_hash`. */
+  grafica: VistaArcoOrganico["grafica"];
+  /** The assembly it was resolved with, so the editor can keep the recipe it asked for. */
+  armado: ArmadoArcoOrganicoV1;
+  opciones: OpcionesArmadoArcoOrganico;
+  limites: LimitesArcoOrganico;
+  replayed?: boolean;
+}
+
+export {
   LimitesColumnaOrganicaSchema,
   OpcionesArmadoColumnaOrganicaSchema,
   type LimitesColumnaOrganica,
@@ -1808,6 +1987,53 @@ export interface PythonPlanArmadoGuirnaldaOrganicaResult {
   replayed?: boolean;
 }
 
+export interface PythonPlanDibujoEstructuraInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /**
+   * The piece's real size mix, copied from
+   * `plan_resuelto.estructuras[].mezcla_real`. The drawing spreads the balloon
+   * sizes in that proportion; it is NOT recomputed here nor in Python, because
+   * the piece has one count and it is `plan.py`'s.
+   */
+  mezclaReal?: readonly { diam_pulg: number; forma: string | null; unidades: number; pct: number }[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanGuiaEscenaInput {
+  /** The approved plan as resolved (`plan_resuelto.plan`), with the assemblies the engines resolve. */
+  plan: PlanResuelto["plan"];
+  /**
+   * What the resolution already knows of each piece (`mezclas[]` of `plan-guia-escena.v1`): its `mezcla_real`,
+   * the catalog of its lines, its bouquet legend and the photo box aspect. Derived; Python never recomputes it.
+   */
+  mezclas?: ReadonlyArray<NonNullable<PlanGuiaEscenaRequestV1["mezclas"]>[number]>;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanGuiaEscenaResult {
+  resultado: PlanGuiaEscenaResultV1;
+  replayed?: boolean;
+}
+
+export interface PythonPlanDibujoEstructuraResult {
+  /** The schematic drawing: both canvas sides and the `<svg>` interior. Derived, never part of `plan_hash`. */
+  grafica: GraficaDibujoEstructura;
+  replayed?: boolean;
+}
+
 /**
  * The chat agent's engine tools (ADR-0034 §5). Three calls on one operation
  * because they are the same work seen from three moments of the turn: what the
@@ -1850,6 +2076,9 @@ export interface PythonOmoikaneArmarEstructuraInput extends OmoikaneArmadoComun 
   paleta?: readonly ColorPedido[];
   reparto?: string;
   mezclaColores?: number;
+  /** Id de la forma lista del catálogo del motor; la puerta de Python valida que exista. */
+  formaLista?: string;
+  estilo?: string;
   forma?: FormaPedida;
   volumen?: VolumenPedido;
   tamanos?: readonly PesoTamano[];
@@ -1866,6 +2095,28 @@ export interface PythonOmoikaneCompletarArmadosInput extends OmoikaneArmadoComun
     tipo: TipoArmadoMotor;
     armado: ArmadoArcoV1 | ArmadoColumnaV1 | ArmadoGuirnaldaOrganicaV1;
   }[];
+  /**
+   * What the photo read about each reference element's colour pattern (ADR-0028 s7), with which the recipe
+   * picks the engine's pattern instead of counting colours (ADR-0039). Same readings as `pistas_patron` in
+   * the resolution: one per element, applied by Python to every structure that materialises it.
+   */
+  pistas?: readonly PistaPatron[];
+  /**
+   * What the photo read about each column's topper (ADR-0039). A column that is not here keeps the engine's
+   * topper: absent means "the top is not visible", and `{ tipo: "ninguno" }` means "it carries nothing".
+   */
+  remates?: readonly PistaRemate[];
+  /** How far each piece leans and to which side, as a signed fraction of its height (ADR-0039). */
+  inclinaciones?: readonly { referencia_element_id: string; inclinacion: number }[];
+  /** How each garland's line curves away from the straight line between its ends (ADR-0032, decision 28). */
+  curvas?: readonly { referencia_element_id: string; sentido: "arriba" | "abajo"; flecha: number }[];
+  /**
+   * What sizes of balloon the photo read in each piece. It travels here as well as to the resolution
+   * because the engine assembles BEFORE the plan is resolved: with the reading reaching only `plan.py`,
+   * the piece was drawn with the declared mix and charged with the read one. Both branches translate it
+   * with the same function, so they cannot disagree.
+   */
+  tamanosLeidos?: readonly PistaTamanos[];
 }
 
 export interface PythonOmoikaneCatalogoArmadoResult {
@@ -1957,8 +2208,20 @@ const patronReferenciaPistaSchema = PistaPatronSchema
     element_id: z.string().min(1).max(80),
     // "ninguno" is not a contract mode: the reader sends it when the photo shows
     // no pattern, and only then may the hint come without colors.
-    modo: z.enum([...MODOS_PATRON_COLOR, "ninguno"]),
+    // "ninguno" y "monocromo" no son modos del contrato: los manda el lector. El primero es «no se
+    // distingue» y el segundo «toda la pieza de un color», y solo el segundo trae su color.
+    modo: z.enum([...MODOS_PATRON_COLOR, "ninguno", "monocromo"]),
     colores: z.array(z.string().trim().min(1).max(80)).max(12),
+    // What crowns a column, read by the same call and only for columns (ADR-0039). It is NOT part of
+    // `PistaPatronSchema`: that one travels inside `pistas_patron` to the resolution, and a reading of the
+    // topper has no business there. It may come with `modo: "ninguno"` -- a single-colour column can still
+    // have its big balloon on top.
+    remate: RemateLeidoSchema.optional(),
+    // Qué tamaños de globo tiene la pieza. Tampoco es parte de `PistaPatronSchema`, por lo mismo que el
+    // remate: viaja a la resolución en su propia pista (`PistaTamanosSchema`). Puede venir con
+    // `modo: "ninguno"` o `"monocromo"` —una pieza de un color tiene tamaños que se ven igual—, que es
+    // exactamente el caso por el que se leen.
+    tamanos: z.enum(TAMANOS_LEIDOS).optional(),
   });
 
 const patronReferenciaPayloadResultSchema = z.object({
@@ -1973,7 +2236,7 @@ const patronReferenciaPayloadResultSchema = z.object({
 
 /** Hints only for elements that were asked about, once each; only "ninguno" may come without colors. */
 function patronReferenciaPayloadIsConsistent(
-  payload: z.infer<typeof patronReferenciaPayloadResultSchema>,
+  payload: { pistas: readonly z.infer<typeof patronReferenciaPistaSchema>[] },
   elementIds: readonly string[],
 ): boolean {
   const pedidos = new Set(elementIds);
@@ -2039,6 +2302,20 @@ const guirnaldaReferenciaPayloadResultSchema = z.object({
   usage: intentParseUsageSchema.extend({
     tool_use_prompt_token_count: z.number().int().nonnegative().optional(),
   }).strict().nullable(),
+}).strict();
+
+// Local contract (ADR-0026 section 3): the Pydantic side is
+// services/ai-api/app/amaterasu/lectura_unica.py. There is no provider call
+// behind it and therefore no model, prompt version or usage: those belong to
+// the analysis turn that wrote the readings, and its telemetry already has
+// them. Every list reuses the schema of the production reading that owns it.
+const lecturaUnicaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("lectura-unica-result.v1"),
+  pistas: z.array(patronReferenciaPistaSchema).max(12),
+  conteos: z.array(conteoReferenciaLecturaSchema).max(12),
+  armados_bouquet: z.array(bouquetReferenciaLecturaSchema).max(12),
+  armados_guirnalda: z.array(guirnaldaReferenciaLecturaSchema).max(12),
+  validador_version: z.string().min(1),
 }).strict();
 
 /** Readings only for elements that were asked about, once each (bouquet, count and garland readings). */
@@ -2142,6 +2419,21 @@ const planArmadoGuirnaldaOrganicaPayloadResultSchema = z.object({
 }).strict();
 
 /**
+ * `plan-armado-arco-organico-result.v1`: the resolved arch and its drawing
+ * exactly as `VistaArcoOrganicoSchema` publishes them (its own `grafica`
+ * shape, so that file stays the single owner of that form), plus the assembly
+ * it was resolved with and what the editor may offer.
+ */
+const planArmadoArcoOrganicoPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-armado-arco-organico-result.v1"),
+  arco: ArcoOrganicoResueltoSchema,
+  grafica: VistaArcoOrganicoSchema.shape.grafica,
+  armado: ArmadoArcoOrganicoV1Schema,
+  opciones: OpcionesArmadoArcoOrganicoSchema,
+  limites: LimitesArcoOrganicoSchema,
+}).strict();
+
+/**
  * `plan-armado-columna-organica-result.v1`: the resolved column and its drawing
  * exactly as `VistaColumnaOrganicaSchema` publishes them (its own `grafica`
  * shape, so that file stays the single owner of that form), plus the assembly
@@ -2154,6 +2446,17 @@ const planArmadoColumnaOrganicaPayloadResultSchema = z.object({
   armado: ArmadoColumnaOrganicaV1Schema,
   opciones: OpcionesArmadoColumnaOrganicaSchema,
   limites: LimitesColumnaOrganicaSchema,
+}).strict();
+
+/**
+ * `plan-dibujo-estructura-result.v1`: the drawing and nothing else, exactly as
+ * `GraficaDibujoEstructuraSchema` publishes it (that file stays the single owner
+ * of that shape). No resolved piece, no assembly, no options and no limits:
+ * these four structures have no engine and the drawing is schematic.
+ */
+const planDibujoEstructuraPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-dibujo-estructura-result.v1"),
+  grafica: GraficaDibujoEstructuraSchema,
 }).strict();
 
 const imageGenerateUsageSchema = z.object({
@@ -2764,6 +3067,65 @@ export async function llamarPythonGuirnaldaReferencia(
 }
 
 /**
+ * Validates the four readings the reference analysis itself returned (variant
+ * `v17-lectura-unica`). **No provider call happens behind this**: the only call
+ * that looked at the photo is the analysis turn. Python owns every validator
+ * (the same ones the four separate readings use), so this only transports the
+ * raw blocks and checks the answer is about the elements asked for. The photo
+ * travels because `tamano_imagen` needs its header to turn the garland's three
+ * centre-line points into curvature and slope (ADR-0032, decision 29). No
+ * idempotency key and no retry: the call has no side effect and the caller
+ * continues without readings on any failure.
+ */
+export async function llamarPythonLecturaUnica(
+  input: PythonLecturaUnicaInput,
+): Promise<PythonLecturaUnicaResult> {
+  const { imagen, elementos, ...rest } = input;
+  const operationPayload = {
+    schema_version: "lectura-unica.v1" as const,
+    imagen: { mime_type: imagen.mimeType, data_base64: imagen.dataBase64 },
+    elementos: elementos.map((elemento) => ({
+      element_id: elemento.elementId,
+      tipo: elemento.tipo,
+      ...(elemento.anfitrionaPosible === undefined ? {} : { anfitriona_posible: elemento.anfitrionaPosible }),
+      ...(elemento.patron === undefined ? {} : { patron: elemento.patron }),
+      ...(elemento.conteo === undefined ? {} : { conteo: elemento.conteo }),
+      ...(elemento.armadoBouquet === undefined ? {} : { armado_bouquet: elemento.armadoBouquet }),
+      ...(elemento.armadoGuirnalda === undefined ? {} : { armado_guirnalda: elemento.armadoGuirnalda }),
+    })),
+  };
+  const response = await llamarPythonOperacion(PYTHON_LECTURA_UNICA_PATH, PYTHON_LECTURA_UNICA_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+  });
+  const parsed = lecturaUnicaPayloadResultSchema.safeParse(response.payload);
+  // Each list is checked against the elements that carried that block, with the
+  // same rules the four separate readings apply.
+  const pedidos = (campo: keyof PythonLecturaUnicaElemento) => elementos.filter((elemento) => elemento[campo] !== undefined).map((elemento) => elemento.elementId);
+  const anfitrionasValidas = new Set(elementos.map((elemento) => elemento.elementId));
+  if (
+    !parsed.success
+    || !patronReferenciaPayloadIsConsistent(parsed.data, pedidos("patron"))
+    || !lecturasPorElementoPedido(parsed.data.conteos, pedidos("conteo"))
+    || !lecturasPorElementoPedido(parsed.data.armados_bouquet, pedidos("armadoBouquet"))
+    || !lecturasPorElementoPedido(parsed.data.armados_guirnalda, pedidos("armadoGuirnalda"))
+    || parsed.data.armados_guirnalda.some((lectura) => lectura.anfitriona_element_id !== undefined && (!anfitrionasValidas.has(lectura.anfitriona_element_id) || lectura.anfitriona_element_id === lectura.element_id))
+  ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonLecturaUnicaResult = {
+    pistas: parsed.data.pistas,
+    conteos: parsed.data.conteos,
+    armadosBouquet: parsed.data.armados_bouquet,
+    armadosGuirnalda: parsed.data.armados_guirnalda,
+    validadorVersion: parsed.data.validador_version,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
  * The one Gemini Interactions call `crearImagenGemini`'s `generar()` makes
  * (src/lib/ia/uzume/imagen.ts, via the ImagenPort
  * src/lib/ia/uzume/imagen-python.ts wraps around this). `input` travels
@@ -2993,6 +3355,7 @@ export async function llamarPythonPlanResolution(
     loraVariantIds,
     completarPatrones,
     pistasPatron,
+    pistasTamanos,
     completarArmados,
     pistasArmado,
     completarArmadosDe,
@@ -3012,6 +3375,7 @@ export async function llamarPythonPlanResolution(
     ...(loraVariantIds === undefined ? {} : { lora_variant_ids: loraVariantIds }),
     ...(completarPatrones === undefined ? {} : { completar_patrones: completarPatrones }),
     ...(pistasPatron === undefined ? {} : { pistas_patron: pistasPatron }),
+    ...(pistasTamanos === undefined ? {} : { pistas_tamanos: pistasTamanos }),
     ...(completarArmados === undefined ? {} : { completar_armados: completarArmados }),
     ...(pistasArmado === undefined ? {} : { pistas_armado: pistasArmado }),
     ...(completarArmadosDe === undefined ? {} : { completar_armados_de: completarArmadosDe }),
@@ -3407,7 +3771,7 @@ export async function llamarPythonOmoikaneCatalogoArmado(
 export async function llamarPythonOmoikaneArmarEstructura(
   input: PythonOmoikaneArmarEstructuraInput,
 ): Promise<PythonOmoikaneArmarEstructuraResult> {
-  const { pieza, patron, materiales, opciones, geometria, remate, paleta, reparto, mezclaColores, forma, volumen, tamanos, adornos, estructuraId, ...rest } = input;
+  const { pieza, patron, materiales, opciones, geometria, remate, paleta, reparto, mezclaColores, formaLista, estilo, forma, volumen, tamanos, adornos, estructuraId, ...rest } = input;
   const response = await llamarOmoikaneArmado(
     {
       schema_version: "omoikane-armado-estructura.v1" as const,
@@ -3421,6 +3785,8 @@ export async function llamarPythonOmoikaneArmarEstructura(
       ...(paleta === undefined ? {} : { paleta: paleta.map((color) => ({ ...color })) }),
       ...(reparto === undefined ? {} : { reparto }),
       ...(mezclaColores === undefined ? {} : { mezcla_colores: mezclaColores }),
+      ...(formaLista === undefined ? {} : { forma_lista: formaLista }),
+      ...(estilo === undefined ? {} : { estilo }),
       ...(forma === undefined ? {} : { forma }),
       ...(volumen === undefined ? {} : { volumen }),
       ...(tamanos === undefined ? {} : { tamanos: tamanos.map((peso) => ({ ...peso })) }),
@@ -3465,7 +3831,7 @@ export async function llamarPythonOmoikaneArmarEstructura(
 export async function llamarPythonOmoikaneCompletarArmados(
   input: PythonOmoikaneCompletarArmadosInput,
 ): Promise<PythonOmoikaneCompletarArmadosResult> {
-  const { plan, armados, ...rest } = input;
+  const { plan, armados, pistas, remates, inclinaciones, curvas, tamanosLeidos, ...rest } = input;
   const response = await llamarOmoikaneArmado(
     {
       schema_version: "omoikane-armado-estructura.v1" as const,
@@ -3474,6 +3840,21 @@ export async function llamarPythonOmoikaneCompletarArmados(
       ...(armados === undefined || armados.length === 0
         ? {}
         : { armados: armados.map((propuesto) => ({ ...propuesto })) }),
+      ...(pistas === undefined || pistas.length === 0
+        ? {}
+        : { pistas: pistas.map((pista) => ({ ...pista })) }),
+      ...(remates === undefined || remates.length === 0
+        ? {}
+        : { remates: remates.map((lectura) => ({ ...lectura })) }),
+      ...(inclinaciones === undefined || inclinaciones.length === 0
+        ? {}
+        : { inclinaciones: inclinaciones.map((lectura) => ({ ...lectura })) }),
+      ...(curvas === undefined || curvas.length === 0
+        ? {}
+        : { curvas: curvas.map((lectura) => ({ ...lectura })) }),
+      ...(tamanosLeidos === undefined || tamanosLeidos.length === 0
+        ? {}
+        : { tamanos_leidos: tamanosLeidos.map((lectura) => ({ ...lectura })) }),
     },
     rest,
   );
@@ -3522,6 +3903,110 @@ export async function llamarPythonPlanArmadoGuirnaldaOrganica(input: PythonPlanA
     limites: parsed.data.limites,
   };
   return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/**
+ * Resolves one arch's assembly with the designer's organic engine, or asks for
+ * its recipe with `null` (ADR-0034), and brings back **the SVG the engine
+ * itself emitted**. It does NOT replace `llamarPythonPlanArmadoArco` (the
+ * pattern grid of the classic arch): both describe the same kind of piece and
+ * coexist, and a half arch is armed here with `forma.corte` below 1. No
+ * catalog and no side effect: the plan says what the piece is and `colores`
+ * only paint it. The drawing is derived -- it travels on this route alone and
+ * never enters the plan, the snapshot or `plan_hash`.
+ */
+export async function llamarPythonPlanArmadoArcoOrganico(input: PythonPlanArmadoArcoOrganicoInput): Promise<PythonPlanArmadoArcoOrganicoResult> {
+  const { plan, estructuraId, armadoArcoOrganico, colores, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-armado-arco-organico.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    armado_arco_organico: armadoArcoOrganico,
+    ...(colores === undefined ? {} : { colores: [...colores] }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_ARMADO_ARCO_ORGANICO_PATH, PYTHON_PLAN_ARMADO_ARCO_ORGANICO_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_ARMADO_ARCO_ORGANICO_SCOPE],
+  });
+  const parsed = planArmadoArcoOrganicoPayloadResultSchema.safeParse(response.payload);
+  // A given assembly comes back as given: the engine corrects a draft in `avisos`, never behind the editor's back.
+  if (!parsed.success || (armadoArcoOrganico !== null && jsonOrdenado(parsed.data.armado) !== jsonOrdenado(armadoArcoOrganico))) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = {
+    arco: parsed.data.arco,
+    grafica: parsed.data.grafica,
+    armado: parsed.data.armado,
+    opciones: parsed.data.opciones,
+    limites: parsed.data.limites,
+  };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/**
+ * Brings back the schematic drawing of a piece no engine builds: the wall, the
+ * circular hoop, the balloon ceiling and the table centerpiece (ADR-0034).
+ *
+ * It is NOT one of the four assembly previews. There is no engine and no
+ * assembly here, so there is nothing to echo back and nothing to count: the
+ * drawings are schematic (`referencias/dibujos.ts` of the classifier, ported
+ * 1:1) and the piece's count, measures and purchase stay exactly what
+ * `plan.py` resolved. `mezclaReal` is that resolved size mix, handed over so
+ * nobody recomputes it. The drawing is derived -- it travels on this route
+ * alone and never enters the plan, the snapshot or `plan_hash`.
+ */
+export async function llamarPythonPlanDibujoEstructura(input: PythonPlanDibujoEstructuraInput): Promise<PythonPlanDibujoEstructuraResult> {
+  const { plan, estructuraId, mezclaReal, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-dibujo-estructura.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    ...(mezclaReal === undefined ? {} : { mezcla_real: mezclaReal.map((linea) => ({ ...linea })) }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_DIBUJO_ESTRUCTURA_PATH, PYTHON_PLAN_DIBUJO_ESTRUCTURA_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_DIBUJO_ESTRUCTURA_SCOPE],
+  });
+  const parsed = planDibujoEstructuraPayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = { grafica: parsed.data.grafica };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/**
+ * The balloons of every balloon structure of the approved plan as flat discs
+ * (`plan-guia-escena.v1`): meters, local frame, the inflated-balloon color of
+ * the Sempertex reference bought. Python owns every coordinate -- it reads the
+ * balloons the engines already placed (the same door as the resolution) and
+ * those of the schematic drawings -- and TypeScript only composes them into the
+ * scene guide (`src/lib/ia/kagutsuchi/guia-escena.ts`). Derived: it never enters
+ * the plan, the snapshot or `plan_hash`, and the response is validated against
+ * the Zod owner of the contract (`src/lib/plan/guia-escena.ts`).
+ */
+export async function llamarPythonPlanGuiaEscena(input: PythonPlanGuiaEscenaInput): Promise<PythonPlanGuiaEscenaResult> {
+  const { plan, mezclas, ...rest } = input;
+  const operationBody = {
+    schema_version: PLAN_GUIA_ESCENA_CONTRACT_VERSION,
+    plan,
+    ...(mezclas === undefined ? {} : { mezclas: PlanGuiaEscenaRequestV1Schema.shape.mezclas.unwrap().parse(mezclas) }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_GUIA_ESCENA_PATH, PYTHON_PLAN_GUIA_ESCENA_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_GUIA_ESCENA_SCOPE],
+  });
+  const parsed = PlanGuiaEscenaResultV1Schema.safeParse(response.payload);
+  if (!parsed.success) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return response.replayed ? { resultado: parsed.data, replayed: true } : { resultado: parsed.data };
 }
 
 /**

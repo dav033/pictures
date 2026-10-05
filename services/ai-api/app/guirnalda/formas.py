@@ -144,7 +144,7 @@ FORMAS_GUIRNALDA: list[FormaListaGuir] = [
         "diagonal",
         "Diagonal",
         "Sube en pendiente, como sobre una baranda o una escalera.",
-        {"largoM": 3.2, "alturaM": 1.1, "pendienteM": 1.1, "ondaM": 0.08, "ondas": 1.5},
+        {"largoM": 3.2, "alturaM": 1.1, "pendienteM": 0.8, "ondaM": 0.08, "ondas": 1.5},
         _v(0.4, 0.58, 0.35, 0.7, 4, 0.35),
         {5: 30, 12: 46, 18: 20, 24: 4},
         3,

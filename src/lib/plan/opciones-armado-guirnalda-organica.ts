@@ -1,10 +1,13 @@
 import { z } from "zod";
 import {
   ACABADOS_GUIRNALDA,
+  FormaGuirnaldaOrganicaSchema,
   GuirnaldaOrganicaResueltaSchema,
   REPARTOS_GUIRNALDA,
   ROLES_GUIRNALDA,
   TAMANOS_GUIRNALDA,
+  TamanosGuirnaldaSchema,
+  VolumenGuirnaldaSchema,
 } from "./armado-guirnalda-organica";
 
 /**
@@ -39,6 +42,42 @@ const OpcionSchema = z
 
 const RangoSchema = z.object({ min: z.number().nonnegative(), max: z.number().positive() }).strict();
 
+/**
+ * Una forma lista: la línea de la tira, el volumen y la mezcla de tamaños, sin colores ni adornos. `suelo` y
+ * `persona` no viajan: son interruptores de cómo se dibuja, no parte del diseño.
+ */
+const FormaListaSchema = z
+  .object({
+    id: z.string().min(1).max(40),
+    nombre: z.string().min(1).max(80),
+    descripcion: z.string().min(1).max(300),
+    forma: FormaGuirnaldaOrganicaSchema.pick({
+      largoM: true,
+      alturaM: true,
+      pendienteM: true,
+      ondaM: true,
+      ondas: true,
+      colgadoM: true,
+      festones: true,
+      carga: true,
+    }),
+    volumen: VolumenGuirnaldaSchema,
+    tamanos: TamanosGuirnaldaSchema,
+    semilla: z.number().int().min(1).max(99999),
+  })
+  .strict();
+
+/** Un estilo listo: cuánto se llena la guirnalda. Solo el de gigantes cambia además los tamaños. */
+const EstiloListoSchema = z
+  .object({
+    id: z.string().min(1).max(40),
+    nombre: z.string().min(1).max(80),
+    ayuda: z.string().min(1).max(300),
+    volumen: VolumenGuirnaldaSchema,
+    tamanos: TamanosGuirnaldaSchema.optional(),
+  })
+  .strict();
+
 export const OpcionesArmadoGuirnaldaOrganicaSchema = z
   .object({
     acabados: z
@@ -56,10 +95,19 @@ export const OpcionesArmadoGuirnaldaOrganicaSchema = z
     grosor_m: RangoSchema,
     altura_m: RangoSchema,
     max_materiales: z.number().int().positive(),
+    /**
+     * Las once formas listas y los cuatro estilos del motor. Estaban portados y la puerta de Python no los
+     * publicaba; al empezar a publicarlos (2026-10-03) este esquema seguía siendo `.strict()` sin ellos, así
+     * que **toda** respuesta del editor de guirnaldas se caía con `PYTHON_INVALID_RESPONSE`.
+     */
+    formas: z.array(FormaListaSchema).max(16),
+    estilos: z.array(EstiloListoSchema).max(16),
   })
   .strict();
 
 export type OpcionesArmadoGuirnaldaOrganica = z.infer<typeof OpcionesArmadoGuirnaldaOrganicaSchema>;
+export type FormaListaGuirnaldaOrganica = z.infer<typeof FormaListaSchema>;
+export type EstiloListoGuirnaldaOrganica = z.infer<typeof EstiloListoSchema>;
 
 /**
  * Los rangos que la interfaz puede mover **con este armado puesto**: el largo mínimo sube con el grosor, la

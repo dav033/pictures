@@ -175,6 +175,39 @@ guirnalda:
 - **No se midió** cómo responden Gemini ni el LoRA a estas frases: no hay generación de imagen sin pagar. La redacción
   sigue la de las otras piezas y no se ha evaluado; queda para una medición con tope de gasto.
 
+### La imagen lee también el armado de la guirnalda orgánica (2026-10-04)
+
+Lo mismo para la pieza del paso 3, por la misma puerta y con el mismo contrato. Lo motivó un fallo visible: una
+guirnalda contra la pared del fondo salía de la LoRA como **un arco de pie con dos patas en el piso**, una y otra
+vez.
+
+La causa no era el motor, que la dibujaba bien: era que el caption no tenía nada que decir de ella. Sin frase, la
+cláusula quedaba en «an organic balloon garland ... against the rear wall», y en el vocabulario de v004 un arco de
+verdad es «organic balloon garland arch» (regla 4 de `scripts/lora/recaption-v004.ts`): la frase del arco **a una
+palabra**, sin nada que dijera que es una tira. La decisión 28 de ADR-0032 ya había anotado exactamente este fallo y
+su cura, pero su frase solo viaja con el armado de ADR-0032, detrás de `GUIRNALDAS_ARMADO_V1`, apagada por defecto.
+La guirnalda que se arma de verdad hoy es la del motor orgánico, y no producía ninguna.
+
+- `app/armado_guirnalda_organica_prompt.frases_guirnalda_organica` escribe las dos frases desde la **línea** del
+  motor: `alturaM` dice si va montada en alto (y entonces «both ends free», que es lo que impide las patas) o
+  apoyada en el piso; `colgadoM` si cuelga en festones, arquea hacia arriba o va tensa; `ondaM`/`ondas` la
+  ondulación; `pendienteM` qué extremo va más alto. El vocabulario es el de ADR-0032 a propósito: se midió contra
+  este corpus y ya está probado. Ninguna frase nombra un arco, patas, bases ni soportes.
+- Viajan en `plan_resuelto.armados_guirnalda_organica[]` con `estructura_id`, igual que el arco: derivados,
+  opcionales, fuera del snapshot y de `plan_hash`. Un plan resuelto antes de esto no los trae y da las frases de
+  siempre.
+- `frasesDeEstructuras` las añade y **reemplaza** la del patrón de esa pieza. La entrada lleva además
+  `guirnaldaOrganica: { enAlto }`, el único dato que el prompt decide por su cuenta: con la pieza en alto la cola
+  deja de pedir «grounded supports», que era la otra mitad de lo que la decisión 28 había diagnosticado.
+- Cuando no hay armado, la **ubicación** dice al menos la forma: `fondo_pared` pasa de «against the rear wall» a
+  «running along the rear wall» en el dialecto de v004 (`SCENE_V004_GARLAND_PLACEMENTS`), el mismo recurso que el
+  semiarco ya usaba. Con armado no se aplica: la frase del motor ya la posiciona y mejor.
+- Pruebas: `test_plan_armado_motor.py` (la frase llega, dice la línea, es ASCII y sin cifras, no nombra arcos ni
+  patas, y vive fuera de la estructura), `test-lora-caption-compiler.ts` (la ubicación da la forma sin armado, la
+  frase del motor manda con armado, y la cola no promete apoyos) y `test-armado-guirnalda-prompt.ts`.
+- **Tampoco se midió** con el LoRA, por lo mismo. Lo que respalda la redacción es la observación anotada en la
+  decisión 28, no una medición nueva.
+
 **Latencia medida** (navegador a Next a Python y vuelta, servidor de desarrollo, Windows; varias pasadas): mínimo 211 ms,
 mediana ~290 ms, p90 ~900 ms, máximo 2.806 ms. Solo el motor en proceso: 40 a 154 ms. Pasa de ~250 ms: los deslizadores
 **aplican al soltar** y los demás mandos esperan 300 ms.
@@ -337,6 +370,56 @@ solo los que el motor admite, y su color), formas listas y estilos copiados de `
 - El armado no entra a los prompts de imagen y el SVG de la columna no marca cada globo (no hay pintado por capas).
 - No se probó el guardado de punta a punta (token firmado y re-resolución con el catálogo real): requiere pagar al chat.
   Cubierto por pytest, por la ruta de Next y por Playwright con `/api/plan-editar` simulado.
+
+## Estado del paso 3, el arco orgánico (2026-10-02): contrato y puerta
+
+El motor orgánico (`app/organico/`) **es** el del arco orgánico —su diseñador en el repo dueño es
+`/arcos-organicos`, sobre `src/lib/organico/`, y el encabezado de `formas.ts` dice «Formas listas: la disposición
+de un arco orgánico»—, pero en `pictures` solo estaba expuesto como guirnalda y como columna orgánica: las
+`FORMAS_LISTAS` del arco (`puerta`, `medio-pila`, `medio-corto`, `medio-aireado` y las demás) no estaban
+disponibles para ningún arco. **Un medio arco es este armado con `forma.corte < 1`**, que es lo que queda de
+`semiarco` desde que la taxonomía lo retiró.
+
+**Hecho: la puerta y el contrato, nada más.**
+
+- **Contrato** `armado-arco-organico.v1` (`src/lib/plan/armado-arco-organico.ts`), con el molde de la columna
+  orgánica: reutiliza los esquemas de tamaños, paleta, adornos y aspecto de `armado-guirnalda-organica.ts` —es
+  el mismo motor compartido— y añade los suyos (`FormaArcoOrganicoSchema`, `VolumenArcoOrganicoSchema`,
+  `ArcoOrganicoResueltoSchema`) y la lista de ids de las once formas listas que publica el original.
+  `armado_arco_organico` entra en las dos estructuras del plan (`EstructuraPlanSchema` y
+  `EstructuraPlan1_1Schema`, en `src/lib/plan/tipos.ts`), exportado y con los modelos regenerados.
+- **Puerta** `app/armado_arco_organico.py`: valida contra el contrato (el esquema exportado, no una lista a
+  mano) y contra la pieza, resuelve con `app.organico.generar`, une el conteo y la compra por material
+  (`app.organico.unir`), publica `opciones_admitidas()` —acabados, repartos, papeles, tamaños, rangos
+  absolutos, las **once formas listas** y los cuatro estilos, con sus valores— y `limites_de()` con los rangos
+  vivos y los tamaños que caben en el grosor de ahora.
+- `app/organico/config.py` gana `normalizar_config_con_cambios`, la gemela de las de
+  `app.guirnalda.limites` y `app.columnaorg.limites`: sin ella los avisos del saneado se perdían dentro de
+  `normalizar_config` y el cliente no se enteraba de que se le quitó un tamaño de la mezcla.
+
+**Tope de globos.** 500 estimados, no 300 como en la columna y la guirnalda: «Arco de entrada lleno» estima
+485, y una forma lista que la puerta rechaza no sería una forma lista. Medido en esta máquina (una hebra,
+Python 3.11): 113 globos reales en 0,3 s, 273 en 1,0 s, 589 en 3,4 s, 900 en 7,0–9,7 s. Por encima del tope se
+responde `demasiado_grande` con su frase en español en vez de ocupar el hilo ~10 s detrás de una petición que
+ya venció.
+
+**Barrido.** 60 armados al azar dentro del contrato, resueltos por la puerta y validados contra el Zod del
+armado y del resuelto: los 60 pasan (8 más se rechazaron por `demasiado_grande`, que es la respuesta correcta).
+No apareció ningún límite del contrato que el motor incumpla, a diferencia de lo que pasó con la columna.
+
+**Quedó fuera, a propósito.** El conteo en `plan.py` (la clase `arco_organico` en `_ARMADOS_DEL_MOTOR` y
+`_TIPO_DE_CLASE`), `armados_arco_organico[]` en `plan-resuelto.v1` (vive en `src/lib/ia/contracts/domain-v1.ts`),
+la ruta de vista previa, la acción de edición, la pantalla, los prompts de imagen y las pruebas. **Sin eso un
+arco orgánico todavía no se cuenta ni se cobra**: hoy solo se puede validar y resolver por la puerta.
+
+**Quién manda cuando hay dos armados.** Con `armado_arco` (el clásico) y `armado_arco_organico` en la misma
+pieza debe mandar el clásico, como la columna clásica sobre la orgánica: es el que ya existía y el que ya
+cuenta. Lo decide la tabla de `plan.py`, así que la regla no está escrita todavía en ningún sitio ejecutable
+—solo en los dos contratos—. Y nada impide que una pieza traiga a la vez `armado_guirnalda_organica` y
+`armado_arco_organico`: cada puerta rechaza la pieza que no es suya (`es_arco`, `es_guirnalda`) y la tabla de
+`plan.py` lee solo el armado del tipo de la pieza, así que el otro queda dentro del plan firmado sin que nadie
+lo use. Conviene decidir si el contrato debe rechazar esa pareja (un `superRefine` cruzado en `tipos.ts`) antes
+de que la IA o el editor puedan escribir los dos.
 
 ## Consecuencias
 

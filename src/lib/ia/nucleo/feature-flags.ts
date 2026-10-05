@@ -18,111 +18,41 @@ export type FeatureFlag =
   | "ESTIMAR_CONTEO_V1"
   | "CONTEO_REFERENCIA_V1"
   | "ANALISIS_COLOR_SEMPERTEX_V1"
-  | "GUIA_ESTRUCTURA_V1";
+  | "GUIA_ESTRUCTURA_V1"
+  | "GUIA_ESCENA_V1";
+
+/**
+ * Valor por defecto de cada bandera: **el mismo en local y en producción**.
+ *
+ * Antes tres banderas se encendían solas fuera de producción (`NODE_ENV`) y el
+ * resto de las capacidades de imagen quedaban apagadas: lo que se validaba en
+ * local no era lo que generaba producción (auditoría 2026-10-04, K2). Decisión
+ * del 2026-10-04 (D2): las capacidades que acercan la imagen al plan y a la foto
+ * van **encendidas por defecto en todas partes**; una variable a `false` sigue
+ * siendo el interruptor para apagarlas. Quedan apagadas solo tres, por motivo:
+ *
+ * - `SCENE_PLAN_V2_SHADOW`: diagnóstico en sombra, no cambia la imagen.
+ * - `REFERENCIA_EN_ETAPA1_V1`: manda la foto como píxeles a `/edit`, que conserva
+ *   la imagen que recibe y puede copiar su fondo; sin medir con el modelo base.
+ * - `GUIA_ESTRUCTURA_V1`: el mapa de color por `/edit` se diseñó para el LoRA
+ *   entrenado y cuesta dos imágenes de entrada más; sin medir con el modelo base.
+ *
+ * `GUIA_ESCENA_V1` (encendida, como manda D2): con un plan que salió de una foto de referencia, FLUX recibe por
+ * `/edit` UNA imagen plana con los globos de todas las piezas del plan (dibujados por el motor) colocados donde
+ * la foto tiene cada pieza, en lugar de la foto, que nunca sale hacia fal. Una imagen de entrada más
+ * (~US$ 0,021 estimados por generación). `false` vuelve a la generación solo con texto.
+ *
+ * Lo que hace cada una está en su ADR (ARMADO_ARCO_COLUMNA_V1 → ADR-0034,
+ * ESTIMAR_CONTEO_V1 → ADR-0038, PATRONES_COLOR_V1 → ADR-0028,
+ * BOUQUETS_ARMADO_V1 → ADR-0030, GUIRNALDAS_ARMADO_V1 → ADR-0032,
+ * CONTEO_REFERENCIA_V1 → ADR-0031). Varias cambian `plan_hash`, cantidades o
+ * precio de los planes **nuevos**; los ya aprobados no cambian.
+ */
+const DEFAULT_APAGADAS: ReadonlySet<FeatureFlag> = new Set<FeatureFlag>(["SCENE_PLAN_V2_SHADOW", "REFERENCIA_EN_ETAPA1_V1", "GUIA_ESTRUCTURA_V1"]);
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
-  if (raw === undefined) {
-    // Scene diagnostics default OFF. The production capabilities below default
-    // ON; their explicit false values remain available as kill-switches.
-    if (name.startsWith("SCENE_PLAN_V2_")) return false;
-    // Default OFF: preserve the existing placement until the Phase 6.A
-    // benchmark validates the venue-aware geometry in production.
-    if (name === "VENUE_AWARE_PLACEMENT_V1") return false;
-    // Default OFF: la paleta medida sobre píxeles reemplaza el orden de
-    // redacción del analizador (fase 2.1) y cambia qué colores compra un plan,
-    // así que espera a que el benchmark lo muestre.
-    if (name === "MEASURED_COLOR_DOMINANCE_V1") return false;
-    // Default OFF: el ambiente añade objetos a una imagen que se muestra junto a
-    // un precio, así que se enciende cuando el aviso de "no cotizado" esté
-    // visible en la UI y no antes (fase 6.B).
-    if (name === "AMBIENTE_FIESTA_V1") return false;
-    // Default OFF: mandar la referencia como píxeles a la etapa 1 cambia lo que
-    // dibuja el LoRA, y elegir entre eso y editar el venue directamente exige la
-    // evaluación de 10 planes de la fase 4.
-    if (name === "REFERENCIA_EN_ETAPA1_V1") return false;
-    // Default OFF (ADR-0028). Solo decide cuándo Python pone un patrón por su
-    // cuenta: al confirmar un plan, Next pide `completar_patrones` con las
-    // pistas de la foto (`pistas_patron`) y cada estructura geométrica de dos
-    // colores o más recibe el patrón de su pista o su preset (§7); al editar,
-    // una pieza que pasa de un color a dos recibe su preset (§9). Apagada, los
-    // planes nuevos salen sin patrón y nada más cambia: un plan que ya trae
-    // `patron_color` lo conserva, y la edición, la vista previa, el editor
-    // ("Crear patrón" incluido) y la resolución lo tratan igual, porque
-    // ninguno lee la bandera. Apagarla no quita patrones.
-    if (name === "PATRONES_COLOR_V1") return false;
-    // Default OFF (ADR-0030). Al confirmar un plan, Next pide
-    // `completar_armados` con las lecturas de la foto (`pistas_armado`) y cada
-    // bouquet sin armado recibe el de su lectura o su receta, sin cambiar lo
-    // que se compra. Apagada, los planes nuevos salen sin armado; uno que ya lo
-    // trae lo conserva.
-    if (name === "BOUQUETS_ARMADO_V1") return false;
-    // Default OFF (ADR-0032). Al confirmar un plan, Next pide
-    // `completar_armados_guirnalda` y cada guirnalda sin armado recibe su
-    // receta (soporte, racimos, relleno y remates), sin cambiar lo que se
-    // compra; tras una edición que se lo quita, la re-resolución se lo vuelve a
-    // sugerir solo a esa pieza. Apagada, los planes nuevos salen sin armado; uno
-    // que ya lo trae lo conserva.
-    if (name === "GUIRNALDAS_ARMADO_V1") return false;
-    // Default: ENCENDIDA fuera de producción, APAGADA en producción (ADR-0034
-    // §5). Le da al chat las herramientas del motor del diseñador para las
-    // **tres** piezas con motor migrado: consultar lo que cada tipo admite
-    // (los catorce patrones del arco, los nueve de la columna, o los acabados
-    // y repartos de la guirnalda orgánica, que no tiene patrón), armar una
-    // pieza con ellos, y —al confirmar— completar con la receta del motor la
-    // que el modelo no armó. El nombre dice "arco y columna" porque es el de
-    // la primera entrega; la guirnalda orgánica llegó detrás de la misma
-    // bandera en vez de abrir una segunda, que habría dejado media capacidad
-    // encendida.
-    //
-    // Encendida cambia lo que un plan nuevo lleva dentro de `estructuras` y
-    // por tanto su `plan_hash`, así que en producción se enciende cuando el
-    // conteo con motor del ADR-0034 esté medido delante. Apagada, el modelo no
-    // ve las herramientas, un `armado_arco`, `armado_columna` o
-    // `armado_guirnalda_organica` que mande se descarta antes de resolver y
-    // los planes nuevos salen sin armado; uno que ya lo trae lo conserva.
-    // **No toca `armado_guirnalda`** (ADR-0032): ese campo tiene su propia
-    // bandera (`GUIRNALDAS_ARMADO_V1`) y una guirnalda puede traer los dos.
-    if (name === "ARMADO_ARCO_COLUMNA_V1") return process.env.NODE_ENV !== "production";
-    // Default: ENCENDIDA fuera de producción, APAGADA en producción (ADR-0038).
-    // Le da al chat `estimar_conteo_globos`, una consulta de SOLO LECTURA: para
-    // unos candidatos (medidas, densidad, mezcla y, si la pieza lo trae, su
-    // armado del motor) pregunta a Python cuántos globos cobraría el plan, de
-    // dónde sale ese número y qué variación de mandos lo acerca al conteo de la
-    // foto. No escribe estado, no toca `planResuelto`, el token ni `plan_hash`:
-    // el número que se le dice al cliente sigue saliendo de
-    // `confirmar_plan_decoracion`. Apagada, el modelo no ve la herramienta ni la
-    // línea del prompt y el turno es el de siempre. Va aparte de
-    // `ARMADO_ARCO_COLUMNA_V1` porque estimar sirve también sin armado.
-    if (name === "ESTIMAR_CONTEO_V1") return process.env.NODE_ENV !== "production";
-    // Default OFF (ADR-0031, E2). Al confirmar un plan, Next pide
-    // `completar_conteos` con los conteos de la foto (`pistas_conteo`) y Python
-    // ajusta la cantidad de los kits y las medidas, la densidad o la mezcla de
-    // las geométricas a lo que la foto muestra, con un supuesto por cambio; al
-    // cambiar la mezcla de una pieza en el chat, la re-resolución lo repite solo
-    // para ella. Apagada, la petición es la de siempre y nada cambia.
-    if (name === "CONTEO_REFERENCIA_V1") return false;
-    // Default OFF (ADR-0033). Sin foto del espacio y con UNA estructura con
-    // armado de guirnalda o patrón, el LoRA pasa de texto a `/edit` con el mapa
-    // de color plano de esa estructura como primera imagen y su carta de color
-    // después. Cuesta dos imágenes de entrada más (estimado) y `v007` nunca se
-    // midió con `/edit`: se enciende tras la corrida comparativa
-    // (`scripts/ops/generar-guia-estructura.ts`). Apagada, la petición a fal es
-    // byte a byte la de siempre.
-    if (name === "GUIA_ESTRUCTURA_V1") return false;
-    // Default: ENCENDIDA fuera de producción, APAGADA en producción, y es a
-    // propósito. Mide los colores de cada pieza detectada sobre los píxeles de
-    // su croquis y los cruza con una referencia del catálogo Sempertex
-    // (`croquis-zona.ts`, `paleta-medida.ts`, `referencia-sempertex.ts`). Está
-    // así para poder probarla con fotos reales sin configurar nada: el
-    // resultado viaja **fuera** del blueprint, no entra en ningún contrato, no
-    // llega a Python y no toca el `plan_hash`, así que encendida solo añade un
-    // bloque que se mira. En producción se enciende cuando se haya decidido,
-    // con medidas delante, si el color medido reemplaza las etiquetas del
-    // analizador en lo que un plan compra.
-    if (name === "ANALISIS_COLOR_SEMPERTEX_V1") return process.env.NODE_ENV !== "production";
-    return true;
-  }
+  if (raw === undefined) return !DEFAULT_APAGADAS.has(name);
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";
 }
 
@@ -193,14 +123,14 @@ export const CHAT_PYTHON_ENABLED = process.env.CHAT_PYTHON_ENABLED === "true";
 export const HAPPIE_PYTHON_ENABLED = process.env.HAPPIE_PYTHON_ENABLED === "true";
 
 /**
- * Default: OFF (docs/architecture/decisions/0028 §11). After the reference
+ * Default: ON since 2026-10-04 (D2; was OFF) (docs/architecture/decisions/0028 §11). After the reference
  * analysis, asks Python to read each balloon structure's color pattern in the
  * photo and stores it on its blueprint element (`appearance.patron_color`).
  * It adds one Gemini call per analyzed photo; a failure never breaks the
  * analysis. Off: no hints, and confirmed plans take the preset pattern. The
  * hints only reach a plan while `PATRONES_COLOR_V1` is on.
  */
-export const PATRON_REFERENCIA_PYTHON_ENABLED = process.env.PATRON_REFERENCIA_PYTHON_ENABLED === "true";
+export const PATRON_REFERENCIA_PYTHON_ENABLED = process.env.PATRON_REFERENCIA_PYTHON_ENABLED !== "false"; // Encendida por defecto (D2, 2026-10-04).
 
 /**
  * Default: OFF (2026-09-25). The in-process cache of the reference analysis
@@ -216,16 +146,16 @@ export function referenceAnalysisCacheEnabled(): boolean {
 }
 
 /**
- * Default: OFF (ADR-0030). After the reference analysis, asks Python to read
+ * Default: ON since 2026-10-04 (D2; was OFF) (ADR-0030). After the reference analysis, asks Python to read
  * how each bouquet in the photo is assembled and stores it on its blueprint
  * element (`appearance.armado_bouquet`). One Gemini call per photo with
  * bouquets, in parallel with the pattern reading; a failure never breaks the
  * analysis. The readings only reach a plan while `BOUQUETS_ARMADO_V1` is on.
  */
-export const BOUQUET_REFERENCIA_PYTHON_ENABLED = process.env.BOUQUET_REFERENCIA_PYTHON_ENABLED === "true";
+export const BOUQUET_REFERENCIA_PYTHON_ENABLED = process.env.BOUQUET_REFERENCIA_PYTHON_ENABLED !== "false"; // Encendida por defecto (D2, 2026-10-04).
 
 /**
- * Default: OFF (ADR-0031, E1). After the reference analysis, asks Python to
+ * Default: ON since 2026-10-04 (D2; was OFF) (ADR-0031, E1). After the reference analysis, asks Python to
  * count the balloons of each balloon structure in the photo and stores the
  * reading on its blueprint element (`appearance.conteo`). One Gemini call per
  * photo with balloon structures, in parallel with the pattern and bouquet
@@ -233,10 +163,10 @@ export const BOUQUET_REFERENCIA_PYTHON_ENABLED = process.env.BOUQUET_REFERENCIA_
  * A plan only uses the reading when `CONTEO_REFERENCIA_V1` is also on (E2);
  * off, the blueprint is exactly what it was before.
  */
-export const CONTEO_REFERENCIA_PYTHON_ENABLED = process.env.CONTEO_REFERENCIA_PYTHON_ENABLED === "true";
+export const CONTEO_REFERENCIA_PYTHON_ENABLED = process.env.CONTEO_REFERENCIA_PYTHON_ENABLED !== "false"; // Encendida por defecto (D2, 2026-10-04).
 
 /**
- * Default: OFF (ADR-0032, E4). After the reference analysis, asks Python to
+ * Default: ON since 2026-10-04 (D2; was OFF) (ADR-0032, E4). After the reference analysis, asks Python to
  * read how each garland in the photo is built (support, shape, clusters,
  * filler, toppers) and stores it on its blueprint element
  * (`appearance.armado_guirnalda`); with it on, the placement of each garland
@@ -246,7 +176,28 @@ export const CONTEO_REFERENCIA_PYTHON_ENABLED = process.env.CONTEO_REFERENCIA_PY
  * breaks the analysis. The readings only reach a plan while
  * `GUIRNALDAS_ARMADO_V1` is on, and never change what is bought.
  */
-export const GUIRNALDA_REFERENCIA_PYTHON_ENABLED = process.env.GUIRNALDA_REFERENCIA_PYTHON_ENABLED === "true";
+export const GUIRNALDA_REFERENCIA_PYTHON_ENABLED = process.env.GUIRNALDA_REFERENCIA_PYTHON_ENABLED !== "false"; // Encendida por defecto (D2, 2026-10-04).
+
+/**
+ * Default: ON since 2026-10-04 (D2; was OFF) (variante `v17-lectura-unica`). **Una sola IA mira la foto.** El
+ * análisis de Amaterasu devuelve, en la misma llamada de visión y por elemento,
+ * las cuatro lecturas que hoy se piden en cuatro llamadas más sobre la misma
+ * imagen (patrón de color, conteo, armado del bouquet y armado de la
+ * guirnalda); `app/lecturas_foto.py` las valida con los validadores de siempre
+ * y el blueprint sale con la misma forma.
+ *
+ * Encendida cambia el prompt del análisis (a la variante `v17-lectura-unica`:
+ * v16 tal cual más las reglas de las lecturas), su esquema de herramienta y su
+ * tope de salida, así que el `system_prompt_hash`, el `config_hash` y la clave
+ * de caché del análisis son otros: **la línea base de evaluación de ADR-0029 no
+ * aplica a lo que salga de aquí**. Encendida por decisión del 2026-10-04 (D2); falta la corrida
+ * que la compare contra v16 (reconocimiento y las cuatro lecturas a la vez).
+ *
+ * Apagada, la petición es byte a byte la de siempre: v16, `leerLecturasDeFoto`
+ * y las cuatro banderas `*_REFERENCIA_PYTHON_ENABLED` de cada lectura. Las dos
+ * no se mezclan: encendida, esas cuatro no se leen.
+ */
+export const LECTURA_UNICA_REFERENCIA_ENABLED = process.env.LECTURA_UNICA_REFERENCIA_ENABLED !== "false"; // Encendida por defecto (D2, 2026-10-04).
 
 // --- LoRA capability flags -------------------------------------------------
 
@@ -255,3 +206,88 @@ export const GUIRNALDA_REFERENCIA_PYTHON_ENABLED = process.env.GUIRNALDA_REFEREN
 /** Default: ON in local development, OFF everywhere else unless explicit. */
 export const IMAGE_DEBUG = process.env.IMAGE_DEBUG === "true" ||
   (process.env.NODE_ENV === "development" && process.env.IMAGE_DEBUG !== "false");
+
+/** Las banderas de `featureEnabled`, en el orden de su tipo: la lista para el resumen de arranque. */
+const BANDERAS: readonly FeatureFlag[] = [
+  "SCENE_PLAN_V2_SHADOW",
+  "PLAN_COST_OPTIMIZER_V2",
+  "PLAN_BUDGET_GATE_V2",
+  "VENUE_AWARE_PLACEMENT_V1",
+  "MEASURED_COLOR_DOMINANCE_V1",
+  "AMBIENTE_FIESTA_V1",
+  "REFERENCIA_EN_ETAPA1_V1",
+  "PATRONES_COLOR_V1",
+  "BOUQUETS_ARMADO_V1",
+  "GUIRNALDAS_ARMADO_V1",
+  "ARMADO_ARCO_COLUMNA_V1",
+  "ESTIMAR_CONTEO_V1",
+  "CONTEO_REFERENCIA_V1",
+  "ANALISIS_COLOR_SEMPERTEX_V1",
+  "GUIA_ESTRUCTURA_V1",
+  "GUIA_ESCENA_V1",
+] as const satisfies readonly FeatureFlag[];
+
+/**
+ * El valor EFECTIVO de cada bandera que cambia lo que se analiza, se arma o se
+ * dibuja, para registrarlo una vez al arrancar. Solo nombres y booleanos: la
+ * lista es explícita y nunca recorre `process.env`, así que no puede arrastrar
+ * una clave, un secreto ni una URL de base de datos.
+ *
+ * Existe porque el `.env.production` del repositorio no es el entorno real (vive
+ * en el servidor) y lo que se valida en local no era lo que generaba producción
+ * (auditoría 2026-10-04, K2/S9): esta línea en el log del servidor es la verdad.
+ */
+export function resumenBanderas(): Record<string, boolean | string> {
+  return {
+    node_env: process.env.NODE_ENV ?? "unset",
+    ...Object.fromEntries(BANDERAS.map((bandera) => [bandera, featureEnabled(bandera)])),
+    LECTURA_UNICA_REFERENCIA_ENABLED,
+    PATRON_REFERENCIA_PYTHON_ENABLED,
+    BOUQUET_REFERENCIA_PYTHON_ENABLED,
+    CONTEO_REFERENCIA_PYTHON_ENABLED,
+    GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
+    REFERENCE_ANALYSIS_PYTHON_ENABLED,
+    GEMINI_IMAGE_PYTHON_ENABLED,
+    LORA_GENERATION_PYTHON_ENABLED,
+    CHAT_PYTHON_ENABLED,
+    SEMPERTEX_LORA_EDIT: process.env.SEMPERTEX_LORA_EDIT !== "false",
+    IMAGE_DEBUG,
+  };
+}
+
+type LecturaDeFoto = "patron" | "bouquet" | "guirnalda" | "conteo";
+
+/** Cada lectura de la foto y la bandera que la consume al confirmar un plan. */
+export const CONSUMIDOR_DE_LECTURA: ReadonlyArray<{ lectura: LecturaDeFoto; consumidor: FeatureFlag }> = [
+  // Las piezas con motor (arco, columna) también la usan vía ARMADO_ARCO_COLUMNA_V1; paredes y centros de mesa, solo así.
+  { lectura: "patron", consumidor: "PATRONES_COLOR_V1" },
+  { lectura: "bouquet", consumidor: "BOUQUETS_ARMADO_V1" },
+  { lectura: "guirnalda", consumidor: "GUIRNALDAS_ARMADO_V1" },
+  { lectura: "conteo", consumidor: "CONTEO_REFERENCIA_V1" },
+];
+
+/** Las lecturas que el análisis de la foto pide hoy: con la lectura única, las cuatro. */
+export function lecturasEncendidas(): ReadonlySet<LecturaDeFoto> {
+  if (LECTURA_UNICA_REFERENCIA_ENABLED) return new Set<LecturaDeFoto>(["patron", "bouquet", "guirnalda", "conteo"]);
+  return new Set<LecturaDeFoto>([
+    ...(PATRON_REFERENCIA_PYTHON_ENABLED ? (["patron"] as const) : []),
+    ...(BOUQUET_REFERENCIA_PYTHON_ENABLED ? (["bouquet"] as const) : []),
+    ...(GUIRNALDA_REFERENCIA_PYTHON_ENABLED ? (["guirnalda"] as const) : []),
+    ...(CONTEO_REFERENCIA_PYTHON_ENABLED ? (["conteo"] as const) : []),
+  ]);
+}
+
+/**
+ * Lecturas que se pagan (una llamada de visión) y que nada consume al confirmar
+ * el plan. Con `LECTURA_UNICA_REFERENCIA_ENABLED` encendida y los consumidores
+ * apagados, en local se pagaban las cuatro y se tiraban tres (auditoría
+ * 2026-10-04, M2). La lectura de patrón la consume también el motor, así que con
+ * `ARMADO_ARCO_COLUMNA_V1` no se cuenta como perdida.
+ */
+export function lecturasSinConsumidor(): LecturaDeFoto[] {
+  const encendidas = lecturasEncendidas();
+  return CONSUMIDOR_DE_LECTURA
+    .filter(({ lectura, consumidor }) => encendidas.has(lectura) && !featureEnabled(consumidor))
+    .filter(({ lectura }) => !(lectura === "patron" && featureEnabled("ARMADO_ARCO_COLUMNA_V1")))
+    .map(({ lectura }) => lectura);
+}

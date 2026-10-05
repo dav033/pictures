@@ -29,7 +29,7 @@ from pydantic import Field, model_validator
 
 from app.amaterasu.estructuras import guirnalda
 from app.amaterasu.patron_referencia import PALETA, CajaElemento, ImagenReferencia, TextoCorto
-from app.amaterasu.tamano_imagen import tamano_imagen
+from app.tamano_imagen import tamano_imagen
 from app.amaterasu.vision_estructurada import DEFAULT_MODEL, LecturaFotoError, leer_foto
 from app.generated_models import contract_schema
 from app.operational_models import ContractModel, OperationalRequest

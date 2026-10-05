@@ -149,10 +149,14 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
     source_images: [{ image_id: "PLAN_SOURCE", approved_roles: ["composition_reference"] }],
     elements,
     composition: {
-      focal_point: plan.plan.estructuras.find((estructura) => estructura.rol_escena === "focal")?.nombre ?? "instalación central",
+      focal_point: plan.plan.estructuras.find((estructura) => estructura.rol_escena === "focal")?.nombre ?? "central installation",
       density: densidad,
-      symmetry: "asymmetric",
-      negative_space: ["circulación libre", "contacto físico con piso o mobiliario"],
+      // Antes siempre "asymmetric", y el prompt pedía asimetría natural a un par de
+      // columnas en espejo (auditoría G8). Con un par aprobado es simétrico; sin él
+      // el plan no lo decide.
+      symmetry: plan.plan.estructuras.some((estructura) => estructura.repeticiones >= 2 && estructura.repeticiones % 2 === 0) ? "symmetric" : "unknown",
+      // En inglés: este texto entra al prompt de imagen (auditoría G6).
+      negative_space: ["clear walking space in front of the installation", "visible contact with the floor or furniture"],
     },
     palette: { observed: plan.plan.concepto.paleta.slice(0, 12), priority: plan.plan.concepto.paleta.slice(0, 8) },
     unresolved_decisions: [],

@@ -1,10 +1,24 @@
 # Seguimiento · estado y pendientes
 
-Escrito el 2026-09-16 al final de una sesión larga. Está pensado para que quien
-lo lea mañana —o una sesión nueva sin memoria— pueda continuar sin volver a
-descubrir nada. Cada afirmación lleva de dónde sale.
+Escrito el 2026-09-16 al final de una sesión larga y ampliado al cierre de cada
+pasada. Está pensado para que quien lo lea mañana —o una sesión nueva sin
+memoria— pueda continuar sin volver a descubrir nada. Cada afirmación lleva de
+dónde sale.
 
-Rama: `fase-a/a0-linea-base`. **Nada de esto está desplegado.**
+> **Al día 2026-10-02.** Se trabaja en `main`, y `main` dispara *Quality checks*
+> y, si pasan, el despliegue a EC2 (`.github/workflows/deploy.yml`): **lo que
+> entra aquí se despliega**. El `ai-api` **no** se despliega solo — va a mano al
+> EC2 de `n8n-maros`, así que la app nueva hablaría con un `ai-api` viejo hasta
+> que se suba; desplegar los dos juntos. Las secciones 1 a 7 son de la pasada
+> del 2026-09-16 y su cabecera original decía `fase-a/a0-linea-base` y «nada
+> desplegado»: eso ya no es cierto. Lo que sigue vigente de ellas es el
+> **pendiente**, no el estado.
+>
+> Las pasadas del 2026-10-01 y 2026-10-02 están en §8 y §9 y en sus ADR (0034 a
+> 0039). El port 1 a 1 del arco y la columna que se hizo el 2026-10-01 **se
+> revirtió** el 2026-10-02 (`ee5db0f`): había dos migraciones del mismo motor en
+> marcha y se quedó la que tiene 531 vectores de oro. Sus tres documentos de
+> seguimiento se borraron por eso.
 
 ---
 
@@ -411,3 +425,114 @@ La imagen ya lee el armado del arco (frases de Python en `armados_arco[]`, deriv
 generación real). Pendiente: capas y secciones (paso 2); un arco sin armado no se edita; a 360 px el dibujo se pierde de vista al bajar
 a los mandos. Preexistente que vio la revisión: `/api/plan-editar` sin `isAuthenticatedRequest` propio y «Deshacer» que no
 limpia `editadoTrasAprobar`.
+
+---
+
+## 9. El patrón de la foto llega al motor (2026-10-02, ADR-0039)
+
+Había dos lecturas del mismo hecho que no se cruzaban: la foto se leía en los ocho modos de `patron-color.v1`
+(ADR-0028 §11) y el motor arma con los suyos (catorce en el arco, nueve en la columna, tres repartos en la
+guirnalda). La receta que completa el armado al confirmar elegía el patrón por el **número de colores de la
+pieza** —uno sólido, dos a cuatro la espiral del diseñador, cinco o más arcoíris u ombré—, así que **una
+columna que en la foto es un apilado de anillos salía en espiral**, con su precio y su croquis. Y como la
+receta no pasaba remate, **toda columna salía coronada con un globo de 24"**, lo hubiera en la foto o no, sin
+forma de decir que la punta va a ras.
+
+**Hecho.** Un solo módulo cruza los dos vocabularios (`app/patron_de_la_foto.py`) con la tabla de
+equivalencias y su motivo fila por fila; viaja también el **orden** de los colores (el dominante manda) y los
+**globos de un racimo**, que es la banda del arco y la capa de la columna. Los mismos cortes que
+`patron_desde_pista`: confianza bajo 0,5 no se usa, un color que no es de la pieza tumba la lectura entera, y
+un patrón que pide más colores de los que hay cae a la siguiente preferencia — todo con su aviso. La misma
+llamada de visión lee ahora el **remate** de las columnas, donde **ausente** («no se ve la punta», y la corona
+el motor) y **`ninguno`** («no lleva nada») son datos distintos y no se confunden; va en su propio campo del
+blueprint (`appearance.remate_columna`) porque mezclarlo con `patron_color` habría roto `pistas_patron` como
+el 2026-09-30. La guirnalda orgánica no tiene patrón: lo que la foto decide allí es su **reparto** (`azar`,
+`racimos`, `tramos`), y los pesos siguen siendo la participación que declara el plan.
+
+**Dentro de `ARMADO_ARCO_COLUMNA_V1`** (apagada en producción); no se añadió ninguna bandera y no lo gobierna
+`PATRONES_COLOR_V1`. La lectura alimenta la **receta**: un armado que el modelo propuso y se sostiene sigue
+ganando. El armado que describe la foto se marca `origen: "referencia"`, y la respuesta de la operación lo
+refleja con un tercer valor de `origen` para poder medir las tres ramas.
+
+**El eje y la simetría, en la misma pasada.** La lectura tampoco decía por **qué eje** recorre el patrón la
+pieza ni si sus **dos mitades** son iguales, y las dos existían ya en el patrón resuelto y en el motor (el
+ombré del arco tiene el mando «Dirección» con a lo largo, simétrico y a lo ancho). Un degradé que en la foto
+baja de lado a lado salía siempre a lo largo. Ahora la pista lleva `direccion` y `simetria`, y **cada
+consumidor aplica sus propias reglas**: `patron_desde_pista` las pone solo si `modos_admitidos` las admite (y
+descarta en silencio lo que no, porque dejarlo viajar tumbaría el patrón entero y la pieza perdería una
+lectura que sí servía), y el motor las pone donde el mando existe — una columna no se arma en espejo. Eso es lo
+que deja que el motor admita un ombré a lo ancho de la banda del arco, que `patron_color` solo admite en una
+pared. Las dos van también en el modelo `PistaPatron` de `plan.py`, que se mantiene a mano: sin eso, la
+petición de plan entera habría devuelto 422 como el 2026-09-30 con `zonas`.
+
+**Comprobado:** 40 casos en `tests/test_patron_de_la_foto.py` (traducción, receta, remate, guirnalda, eje y
+espejo), 8 nuevos en `tests/test_patron_referencia.py` (la lectura), 2 en `tests/test_patron_color.py` (que la
+dirección y el espejo entren donde la pieza los admite y se descarten donde no), 4 en
+`scripts/test/test-patron-referencia.ts`, `plan:test-armado-estructura-ia`, `tsc`, `lint` (0 errores, 25
+avisos preexistentes), `contracts:check` y `ruff`/`mypy` sobre los 108 archivos.
+
+**No comprobado:** que el modelo lea bien el remate, el modo, el eje y la simetría (no se llamó a ningún
+proveedor; el eje y la simetría son lo más fácil de confundir en una foto de frente y es lo primero que
+debería mirar la evaluación), el efecto en la imagen generada, y cuánto se parece el conteo resultante al de
+la foto. Tres filas de la tabla conviene mirarlas con fotos delante: `damero → diamante`, `aleatorio →
+punteado` en el arco y `degradado → tramos` en la guirnalda. Detalle y rollback: ADR-0039.
+
+**Dos defectos que salieron al probarlo con una foto real (2026-10-02, baby shower rosa):**
+
+1. **La lectura estaba apagada.** `PATRON_REFERENCIA_PYTHON_ENABLED` no estaba en `.env.local`, así que el
+   blueprint salía sin `appearance.patron_color`, la confirmación mandaba cero pistas y el motor armaba con su
+   reparto de partida (`azar`): los tres colores salpicados de punta a punta en una pieza que en la foto va por
+   tramos. Encendida en desarrollo.
+2. **El prompt nombraba la técnica, no la disposición.** Decía que `aleatorio` es «the colors are mixed with no
+   regular order, **as in an organic garland**», y la pieza *es* una guirnalda orgánica: la frase empujaba al
+   modo equivocado. Ahora `aleatorio` exige que cada color recorra la pieza entera, `bloques` admite
+   transiciones que se funden mientras cada color sea dueño de un tramo, y una regla antes de la lista dice que
+   lo que se nombra es **cómo están repartidos los colores, nunca cómo se armó la pieza**. Con eso la foto se
+   leyó `bloques` con 0,9 de confianza y el armado salió con `origen: referencia`.
+
+**Y uno más, que tapaba el resultado:** el cupo global de los motores (`app/exclusion_motores.py`) contesta
+`motor_ocupado` (429) al instante cuando otro dibujo está en curso, y **su propio diseño dice que el cliente
+reintente** — el reintento no existía en Next. Peor: el adaptador no tenía rama para 429, así que caía en
+`PYTHON_UNAVAILABLE` y el cliente leía «El servicio no respondió», cuando el servicio sí respondió y dijo que
+estaba ocupado. Ahora el adaptador reintenta hasta 3 veces con espera corta (el trabajo del motor dura cientos
+de milisegundos, no el segundo del `Retry-After`) dentro del presupuesto de la llamada, y si se agota sale como
+`SERVICIO_OCUPADO`. Reintentar es seguro: la reserva se toma **antes** de encolar, así que un 429 garantiza que
+el trabajo no corrió. Pendiente menor: el texto de `SERVICIO_OCUPADO` dice «intenta de nuevo en unos minutos»,
+que para una cola de milisegundos sigue siendo falso; no lo toqué porque esa frase la comparten otras causas.
+
+**Ojo al desplegar:** la versión del prompt de la lectura cambió dos veces en esta pasada (acabó en
+`patron-referencia.v1:d937c2c632bc37a1`), así que **la caché de detección por foto se invalida** y la primera
+lectura de cada foto se vuelve a pagar. El valor está congelado en dos pruebas —`test_estructuras_registro.py`
+(su dueña) y `test_guirnalda_referencia.py`— y las dos se editan juntas.
+
+**Preexistente que apareció al correr la suite:** 4 fallos en `tests/test_columnaorg.py` por 1 ulp
+(`0.908799997` contra `0.908799998` del vector de oro generado en Node). Es la libm de V8, no esta pasada;
+quedan pendientes de decidir en el repo dueño.
+
+---
+
+## 10. Una IA, una cosa (2026-10-03)
+
+Principio que fijó el usuario: **cada IA se encarga de una cosa y debe ser la mejor en eso**. Medido sobre el
+árbol, lo que vivía en una carpeta de IA **sin hablar con ningún proveedor** eran 1.921 líneas:
+`omoikane/armado_estructura.py` (1.406), `omoikane/patron_de_la_foto.py` (430) y `amaterasu/tamano_imagen.py`
+(85). Estaban ahí por **quién las llama**, no por lo que hacen.
+
+(La primera medición acusó también a `uzume/interaction.py` (200) y era **falso**: hace
+`client.aio.interactions.create(...)`, que el patrón de búsqueda no cubría. Es la llamada al proveedor de
+Uzume y está donde debe. Corregido el mismo día; el patrón bueno busca también `.create(` y `client.`)
+
+**Hecho:** los dos de Omoikane salieron a `app/armado_estructura.py` y `app/patron_de_la_foto.py`, junto a las
+puertas de los motores que usan. `app/omoikane/` se queda sólo con `turno_stream.py`, que es lo único que
+conversa con el cliente. La prueba siguió al módulo (`tests/test_armado_estructura.py`).
+
+**El nombre de la operación NO cambió** —`omoikane.armado_estructura` y `omoikane-armado-estructura.v1`— porque
+es un identificador publicado: viaja firmado en cada petición y lo nombran el contrato, la ruta y la caché.
+Mover el módulo ordena el código; renombrar la operación rompería la frontera.
+
+**Pendiente del mismo principio:** Amaterasu lee la foto cuatro veces con cuatro prompts (el plegado está en
+marcha, con v16 intacto detrás de una bandera nueva). `amaterasu/tamano_imagen.py` —leer el ancho y el alto de
+la cabecera de un PNG o un JPEG no es una IA— es el último que queda fuera de sitio, y **no se movió a
+propósito**: sus consumidores los está reescribiendo ahora mismo el plegado de las lecturas. Se mueve cuando
+eso entregue. Y Uzume y Kagutsuchi hacen la misma cosa —generar la imagen— separadas por proveedor y no por
+trabajo, que es una decisión de producto sin tomar.

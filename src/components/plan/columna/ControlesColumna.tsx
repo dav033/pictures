@@ -65,7 +65,7 @@ const TEXTO_MANDO: Readonly<Record<string, { etiqueta: string; ayuda: string }>>
   inclinacion: { etiqueta: "Inclinación", ayuda: "Qué tan en diagonal sube cada franja; en 0 quedan rectas." },
   grosor: { etiqueta: "Capas por franja", ayuda: "Cuántas capas seguidas llevan el mismo color." },
   periodo: { etiqueta: "Capas por zigzag", ayuda: "Cada cuántas capas cambia de sentido." },
-  amplitud: { etiqueta: "Qué tan marcado", ayuda: "Cuánto se inclina el zigzag." },
+  amplitud: { etiqueta: "Qué tan marcado el zigzag", ayuda: "Cuánto se inclina cada quiebre: abajo del todo casi no se nota." },
   repet: { etiqueta: "Rombos alrededor", ayuda: "Cuántos rombos caben dando la vuelta." },
   alto: { etiqueta: "Alto del rombo", ayuda: "Capas que mide cada rombo." },
   grueso: { etiqueta: "Grosor del rombo", ayuda: "Qué parte del rombo ocupa el color." },
@@ -74,6 +74,16 @@ const TEXTO_MANDO: Readonly<Record<string, { etiqueta: string; ayuda: string }>>
   suavidad: { etiqueta: "Suavidad", ayuda: "Cuántos globos se cuelan entre un tono y el siguiente." },
   invertir: { etiqueta: "Invertir el sentido", ayuda: "Cambia qué tono va abajo y cuál arriba." },
 };
+
+/**
+ * Un mando que el motor publica y que esta pantalla todavía no sabe nombrar. Antes se enseñaba su clave cruda
+ * (`sepCapas`, `variacion_tam`): una palabra del motor que al decorador no le dice nada. Mientras falte su nombre
+ * aquí, el mando se ofrece con una frase de oficio en vez de la clave.
+ */
+const MANDO_SIN_NOMBRE = {
+  etiqueta: "Otro ajuste de este patrón",
+  ayuda: "Este patrón trae un ajuste que todavía no tiene nombre aquí: muévelo y mira cómo cambia el dibujo.",
+} as const;
 
 const TEXTO_REMATE: Readonly<Record<RemateColumna, { nombre: string; ayuda: string }>> = {
   ninguno: { nombre: "Ninguno", ayuda: "La columna termina en el último anillo de globos." },
@@ -111,7 +121,7 @@ function Apartado({ titulo, resumen, abierto, children, testid }: { titulo: stri
 function MandoDelPatron({ control, borrador, onCambiar }: { control: ControlPatronColumna; borrador: ArmadoColumnaV1; onCambiar: (siguiente: ArmadoColumnaV1) => void }) {
   const valor = valorDeControl(borrador, control);
   const testid = `mando-patron-${control.clave}`;
-  const texto = TEXTO_MANDO[control.clave] ?? { etiqueta: control.clave, ayuda: undefined };
+  const texto: { etiqueta: string; ayuda?: string } = TEXTO_MANDO[control.clave] ?? MANDO_SIN_NOMBRE;
   if (control.min === 0 && control.max === 1 && Number.isInteger(control.defecto)) {
     return <InterruptorColumna etiqueta={texto.etiqueta} ayuda={texto.ayuda} activo={valor >= 1} onCambiar={(activo) => onCambiar(conControl(borrador, control.clave, activo ? 1 : 0))} testid={testid} />;
   }
@@ -119,7 +129,7 @@ function MandoDelPatron({ control, borrador, onCambiar }: { control: ControlPatr
     <DeslizadorColumna
       etiqueta={texto.etiqueta}
       ayuda={texto.ayuda}
-      valor={valorEnRango(valor, control)}
+      valor={valorEnRango(valor, control)} valorReal={valor}
       min={control.min}
       max={control.max}
       paso={pasoDeMando(control)}
@@ -231,7 +241,7 @@ export function ControlesColumna({ borrador, opciones, limites, leyenda, onCambi
           <DeslizadorColumna
             etiqueta="Alto"
             ayuda="Medido sin el remate. El mínimo y el máximo cambian con el tamaño del globo."
-            valor={valorEnRango(borrador.cuerpo.alto_m, alto)}
+            valor={valorEnRango(borrador.cuerpo.alto_m, alto)} valorReal={borrador.cuerpo.alto_m}
             min={alto.min}
             max={alto.max}
             paso={alto.paso}
@@ -290,6 +300,7 @@ export function ControlesColumna({ borrador, opciones, limites, leyenda, onCambi
         {borrador.remate.tipo === "racimo" && (
           <GrupoOpcionesColumna<number>
             etiqueta="Globos del racimo"
+            ayuda="Cuántos globos chicos se atan juntos en la punta."
             opciones={[3, 4, 5].map((cuantos) => ({ valor: cuantos, etiqueta: String(cuantos) }))}
             valor={borrador.remate.cantidad}
             onCambiar={(cuantos) => onCambiar(conRemateCantidad(borrador, cuantos))}
@@ -300,7 +311,7 @@ export function ControlesColumna({ borrador, opciones, limites, leyenda, onCambi
           <DeslizadorColumna
             etiqueta="Alto del foil"
             ayuda="Lo que mide la figura de foil. El máximo sale del ancho de la columna."
-            valor={valorEnRango(borrador.remate.foil_m, foil)}
+            valor={valorEnRango(borrador.remate.foil_m, foil)} valorReal={borrador.remate.foil_m}
             min={foil.min}
             max={foil.max}
             paso={foil.paso}
@@ -312,6 +323,7 @@ export function ControlesColumna({ borrador, opciones, limites, leyenda, onCambi
         {borrador.remate.tipo !== "ninguno" && (
           <SeleccionColumna
             etiqueta="Color del remate"
+            ayuda="Qué color de la pieza lleva el globo, el racimo o la figura de la punta."
             opciones={colorDelRemate.some((color) => color.valor === String(borrador.remate.material)) ? colorDelRemate : [...colorDelRemate, { valor: String(borrador.remate.material), etiqueta: "Un color que la pieza ya no tiene" }]}
             valor={String(borrador.remate.material)}
             onCambiar={(elegido) => onCambiar(conRemateColor(borrador, Number(elegido)))}
@@ -322,7 +334,7 @@ export function ControlesColumna({ borrador, opciones, limites, leyenda, onCambi
 
       <Apartado titulo="Globos" resumen={porcentaje.format(borrador.inflado.inflado)} testid="apartado-globos">
         <DeslizadorColumna
-          etiqueta="Inflado"
+          etiqueta="Qué tan inflados"
           ayuda="Cuánto se infla cada globo respecto a lo normal: menos, quedan más chicos; más, más grandes."
           valor={valorEnRango(borrador.inflado.inflado, infladoDe("inflado", 0.05))}
           min={infladoDe("inflado", 0.05).min}
@@ -334,7 +346,7 @@ export function ControlesColumna({ borrador, opciones, limites, leyenda, onCambi
           testid="mando-inflado"
         />
         <DeslizadorColumna
-          etiqueta="Qué tan apretados"
+          etiqueta="Qué tan apretados van en la capa"
           ayuda="En 1 los globos de una capa se tocan; más arriba, se aprietan entre sí."
           valor={valorEnRango(borrador.inflado.tamano, infladoDe("tamano", 0.02))}
           min={infladoDe("tamano", 0.02).min}
@@ -378,7 +390,7 @@ export function ControlesColumna({ borrador, opciones, limites, leyenda, onCambi
           testid="mando-variacion-tono"
         />
         <DeslizadorColumna
-          etiqueta="Desorden"
+          etiqueta="Globos fuera de su lugar"
           ayuda="Cuánto se sale cada globo de su lugar."
           valor={valorEnRango(borrador.inflado.desorden, infladoDe("desorden", 0.01))}
           min={infladoDe("desorden", 0.01).min}

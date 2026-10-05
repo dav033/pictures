@@ -66,8 +66,14 @@ export const FormaGuirnaldaOrganicaSchema = z
     /** Amplitud de la ondulación y cuántas ondas hay a lo largo. */
     ondaM: z.number().min(0).max(0.8),
     ondas: z.number().min(0).max(6),
-    /** Cuánto cuelga la línea entre los puntos de sujeción: 0 = tensa. */
-    colgadoM: z.number().min(0).max(1.5),
+    /**
+     * Cuánto se separa la línea de la recta que une sus extremos: 0 = tensa,
+     * **positivo cuelga** en U entre los puntos de sujeción y **negativo arquea
+     * hacia arriba** — la guirnalda tendida sobre un fondo que cae por los dos
+     * lados hasta el piso, que es la más común sobre un backdrop y que hasta
+     * 2026-10-03 no se podía dibujar: salía una tira plana.
+     */
+    colgadoM: z.number().min(-1.5).max(1.5),
     /** Cuántos festones (tramos colgados) forman la guirnalda. */
     festones: z.number().int().min(1).max(6),
     /** Lado más cargado: −1 izquierda, +1 derecha. Ese lado es más grueso y lleva los globos más grandes. */
@@ -234,6 +240,19 @@ export const GuirnaldaOrganicaResueltaSchema = z
     adornos: z.object({ ramas: z.number().int().nonnegative(), flores: z.number().int().nonnegative() }).strict(),
     /** Lo que el motor corrigió del armado pedido, en español, para mostrarlo. */
     avisos: z.array(z.string().min(1).max(300)).max(32),
+    /**
+     * Derivados para la imagen, igual que en el arco (ADR-0035): a qué estructura pertenece y cómo le cuenta
+     * Python este armado a los modelos de imagen, en inglés (el del LoRA en ASCII y sin cifras). Opcionales:
+     * los escribe la resolución, no el motor, y viajan **fuera** del snapshot, así que no entran en
+     * `plan_hash`. TypeScript solo los inserta, tal cual.
+     *
+     * Sin ellos el caption solo sabía decir «an organic balloon garland ... against the rear wall», que en el
+     * vocabulario del LoRA v004 es la frase del arco a una palabra: la imagen salía como un arco de pie con
+     * patas (2026-10-03, y ya anotado en la decisión 28 de ADR-0032 para la otra guirnalda).
+     */
+    estructura_id: z.string().min(1).max(160).optional(),
+    prompt_gemini: z.string().max(1500).optional(),
+    prompt_lora: z.string().max(600).optional(),
   })
   .strict();
 

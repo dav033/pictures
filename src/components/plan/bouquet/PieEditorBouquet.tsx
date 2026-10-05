@@ -55,7 +55,7 @@ export function PieEditorBouquet({ estado, avisoRegenerar, puedeQuitar, puedeRes
         </div>
         <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:gap-2">
           {puedeQuitar && !confirmando && (
-            <button type="button" onClick={() => setConfirmando(true)} data-testid="quitar-armado" className="h-10 rounded-[0.8rem] px-2.5 text-[13px] font-medium text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento sm:px-3">
+            <button type="button" onClick={() => setConfirmando(true)} data-testid="quitar-armado" className="min-h-11 rounded-[0.8rem] px-2.5 text-[13px] font-medium text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento sm:px-3">
               Quitar armado
             </button>
           )}
@@ -72,11 +72,11 @@ export function PieEditorBouquet({ estado, avisoRegenerar, puedeQuitar, puedeRes
             disabled={!puedeRestablecer}
             title={tituloRestablecer}
             data-testid="restablecer-armado"
-            className="ml-auto inline-flex h-10 items-center gap-1.5 rounded-[0.8rem] px-2 text-[13px] font-medium text-texto-suave hover:bg-superficie-2 hover:text-texto focus-visible:outline-2 focus-visible:outline-acento disabled:opacity-40 sm:px-3"
+            className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-[0.8rem] px-2 text-[13px] font-medium text-texto-suave hover:bg-superficie-2 hover:text-texto focus-visible:outline-2 focus-visible:outline-acento disabled:opacity-40 sm:px-3"
           >
             <RotateCcw className="size-3.5" aria-hidden="true" />Restablecer
           </button>
-          <button type="button" onClick={onListo} data-testid="listo-armado" className="ui-button-primary ui-pressable h-10 px-5">
+          <button type="button" onClick={onListo} data-testid="listo-armado" className="ui-button-primary ui-pressable min-h-11 px-5">
             Listo
           </button>
         </div>

@@ -27,7 +27,7 @@ import {
   sinImagenes,
 } from "../../src/lib/estado/persistencia-generacion";
 import { creatividadGuardada } from "../../src/lib/estado/persistencia-creatividad";
-import { adjuntosParaGeneracion } from "../../src/lib/estado/generacion-adjuntos";
+import { adjuntosParaGeneracion, contextoDeGeneracion } from "../../src/lib/estado/generacion-adjuntos";
 
 type Mensaje = { id: string; adjuntos?: AdjuntosTurno };
 
@@ -152,4 +152,18 @@ console.log("[PASS] persistencia de adjuntos: miniaturas livianas, ids estables 
   assert.equal(creatividadGuardada({ creatividad: 2.5 }), null);
   assert.equal(creatividadGuardada(null), null);
   console.log("[PASS] creatividad: el nivel de la conversación se guarda y se restaura validado");
+}
+
+// Auditoría 2026-10-04, C8: una propuesta anclada usa el blueprint de SU mensaje y
+// solo reutiliza el aspecto de la foto del espacio si es la misma foto.
+{
+  const vieja = { base64: "A".repeat(80) };
+  const nueva = { base64: "B".repeat(80), aspecto: "16:9" as const };
+  const anclado = contextoDeGeneracion({ anclado: true, blueprintDelMensaje: "bp-viejo", blueprintActual: "bp-nuevo", fotoEspacioAnclada: vieja, fotoEspacioActual: nueva, aspectoActivo: "3:2" as const });
+  if (anclado.blueprint !== "bp-viejo" || anclado.aspecto !== "3:2") throw new Error(`anclado: ${JSON.stringify(anclado)}`);
+  const misma = contextoDeGeneracion({ anclado: true, blueprintDelMensaje: undefined, blueprintActual: "bp-nuevo", fotoEspacioAnclada: { base64: nueva.base64 }, fotoEspacioActual: nueva, aspectoActivo: "3:2" as const });
+  if (misma.blueprint !== undefined || misma.aspecto !== "16:9") throw new Error(`misma foto: ${JSON.stringify(misma)}`);
+  const libre = contextoDeGeneracion({ anclado: false, blueprintActual: "bp-nuevo", fotoEspacioAnclada: null, fotoEspacioActual: nueva, aspectoActivo: "3:2" as const });
+  if (libre.blueprint !== "bp-nuevo" || libre.aspecto !== "16:9") throw new Error(`sin ancla: ${JSON.stringify(libre)}`);
+  console.log("[PASS] propuesta anclada: blueprint de su mensaje y aspecto solo si es la misma foto");
 }

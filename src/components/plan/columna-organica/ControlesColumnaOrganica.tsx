@@ -84,15 +84,15 @@ function Apartado({ titulo, resumen, abierto = false, testid, children }: { titu
 type Medida = { etiqueta: string; ayuda?: string; valor: number; rango: RangoControl; onConfirmar: (valor: number) => void; testid: string };
 
 function EnMetros({ etiqueta, ayuda, valor, rango, onConfirmar, testid }: Medida) {
-  return <DeslizadorColumna etiqueta={etiqueta} ayuda={ayuda} valor={valorEnRango(valor, rango)} min={rango.min} max={rango.max} paso={rango.paso} formato={metrosCliente} onConfirmar={onConfirmar} testid={testid} />;
+  return <DeslizadorColumna etiqueta={etiqueta} ayuda={ayuda} valor={valorEnRango(valor, rango)} valorReal={valor} min={rango.min} max={rango.max} paso={rango.paso} formato={metrosCliente} onConfirmar={onConfirmar} testid={testid} />;
 }
 
 function EnPorcentaje({ etiqueta, ayuda, valor, rango, onConfirmar, testid }: Medida) {
-  return <DeslizadorColumna etiqueta={etiqueta} ayuda={ayuda} valor={valorEnRango(valor, rango)} min={rango.min} max={rango.max} paso={rango.paso} formato={(v) => porcentaje.format(v)} onConfirmar={onConfirmar} testid={testid} />;
+  return <DeslizadorColumna etiqueta={etiqueta} ayuda={ayuda} valor={valorEnRango(valor, rango)} valorReal={valor} min={rango.min} max={rango.max} paso={rango.paso} formato={(v) => porcentaje.format(v)} onConfirmar={onConfirmar} testid={testid} />;
 }
 
 function EnCantidad({ etiqueta, ayuda, valor, rango, onConfirmar, testid, formato = (v) => entero.format(v) }: Medida & { formato?: (valor: number) => string }) {
-  return <DeslizadorColumna etiqueta={etiqueta} ayuda={ayuda} valor={valorEnRango(valor, rango)} min={rango.min} max={rango.max} paso={rango.paso} formato={formato} onConfirmar={onConfirmar} testid={testid} />;
+  return <DeslizadorColumna etiqueta={etiqueta} ayuda={ayuda} valor={valorEnRango(valor, rango)} valorReal={valor} min={rango.min} max={rango.max} paso={rango.paso} formato={formato} onConfirmar={onConfirmar} testid={testid} />;
 }
 
 /** Hacia dónde se corre la punta, con palabras y no con el número del motor. */
@@ -138,6 +138,7 @@ export function ControlesColumnaOrganica({ borrador, opciones, limites, leyenda,
           <div className="grid gap-2 pb-2 @sm:grid-cols-2">
             <SeleccionColumna
               etiqueta="Tamaño del globo grande"
+              ayuda="Solo se ofrecen los tamaños que guardan proporción con la punta de esta columna."
               opciones={limites.coronaTamanos.map((pulgadas) => ({ valor: String(pulgadas), etiqueta: `${pulgadas}″` }))}
               valor={String(corona.tamano)}
               onCambiar={(v) => onCambiar(conTamanoDeGloboGrande(borrador, Number(v)))}
@@ -145,6 +146,7 @@ export function ControlesColumnaOrganica({ borrador, opciones, limites, leyenda,
             />
             <SeleccionColumna
               etiqueta="Color del globo grande"
+              ayuda="Qué color de la pieza lleva el globo de arriba."
               opciones={opcionesDeColor}
               valor={String(corona.material)}
               onCambiar={(v) => onCambiar(conMaterialDeGloboGrande(borrador, Number(v)))}
@@ -165,7 +167,7 @@ export function ControlesColumnaOrganica({ borrador, opciones, limites, leyenda,
         />
         <EnMetros etiqueta="Alto" ayuda="De la base a la punta. Con un cuerpo más grueso hace falta más alto." valor={borrador.forma.altoM} rango={rangoDeAlto(limites)} onConfirmar={(v) => onCambiar(conForma(borrador, "altoM", v))} testid="alto-columna-organica" />
         <EnCantidad etiqueta="Inclinación" ayuda="Hacia dónde se corre la punta respecto a la base." valor={borrador.forma.inclinacionM} rango={rangoDeInclinacion(limites)} formato={ladoInclinado} onConfirmar={(v) => onCambiar(conForma(borrador, "inclinacionM", v))} testid="inclinacion-columna-organica" />
-        <EnMetros etiqueta="Serpenteo" ayuda="Amplitud de la S con que se curva la línea de la columna." valor={borrador.forma.serpenteoM} rango={rangoDeSerpenteo(limites)} onConfirmar={(v) => onCambiar(conForma(borrador, "serpenteoM", v))} testid="serpenteo-columna-organica" />
+        <EnMetros etiqueta="Curva en S" ayuda="Cuánto se va la columna a un lado y al otro, como una S." valor={borrador.forma.serpenteoM} rango={rangoDeSerpenteo(limites)} onConfirmar={(v) => onCambiar(conForma(borrador, "serpenteoM", v))} testid="serpenteo-columna-organica" />
         <EnPorcentaje etiqueta="Ondulación" ayuda="Cuánto tiembla la línea: 0 es recta." valor={borrador.forma.ondulacion} rango={rangoDe.ondulacion} onConfirmar={(v) => onCambiar(conForma(borrador, "ondulacion", v))} testid="ondulacion-columna-organica" />
         <InterruptorColumna etiqueta="Persona de escala" ayuda="Dibuja una persona de 1,70 m al lado para ver el tamaño. No cambia los globos." activo={borrador.forma.persona} onCambiar={(activo) => onCambiar(conInterruptorDeForma(borrador, "persona", activo))} testid="persona-columna-organica" />
         <InterruptorColumna etiqueta="Suelo" ayuda="Dibuja la línea del piso. No cambia los globos." activo={borrador.forma.suelo} onCambiar={(activo) => onCambiar(conInterruptorDeForma(borrador, "suelo", activo))} testid="suelo-columna-organica" />
@@ -180,12 +182,12 @@ export function ControlesColumnaOrganica({ borrador, opciones, limites, leyenda,
           onCambiar={(v) => { const hallado = opciones.estilos.find((estilo) => estilo.id === v); if (hallado) onCambiar(conEstilo(borrador, hallado)); }}
           testid="estilo-columna-organica"
         />
-        <EnMetros etiqueta="Grosor en la base" valor={borrador.volumen.grosorPatasM} rango={rangoDeGrosorBase(limites)} onConfirmar={(v) => onCambiar(conVolumen(borrador, "grosorPatasM", v))} testid="grosor-base-columna-organica" />
-        <EnMetros etiqueta="Grosor en la punta" valor={borrador.volumen.grosorCimaM} rango={rangoDeGrosorPunta(limites)} onConfirmar={(v) => onCambiar(conVolumen(borrador, "grosorCimaM", v))} testid="grosor-punta-columna-organica" />
+        <EnMetros etiqueta="Grosor en la base" ayuda="Qué tan ancha queda la columna al pie, donde se apoya." valor={borrador.volumen.grosorPatasM} rango={rangoDeGrosorBase(limites)} onConfirmar={(v) => onCambiar(conVolumen(borrador, "grosorPatasM", v))} testid="grosor-base-columna-organica" />
+        <EnMetros etiqueta="Grosor en la punta" ayuda="Qué tan ancha queda arriba: más delgada, más se afina hacia el final." valor={borrador.volumen.grosorCimaM} rango={rangoDeGrosorPunta(limites)} onConfirmar={(v) => onCambiar(conVolumen(borrador, "grosorCimaM", v))} testid="grosor-punta-columna-organica" />
         <EnPorcentaje etiqueta="Relleno" ayuda="Qué tan llena va la columna de globos." valor={borrador.volumen.relleno} rango={rangoDe.relleno} onConfirmar={(v) => onCambiar(conVolumen(borrador, "relleno", v))} testid="relleno-columna-organica" />
-        <EnPorcentaje etiqueta="Irregularidad" ayuda="Qué tan despareja queda la columna: 0 es lisa." valor={borrador.volumen.irregularidad} rango={rangoDe.irregularidad} onConfirmar={(v) => onCambiar(conVolumen(borrador, "irregularidad", v))} testid="irregularidad-columna-organica" />
-        <EnCantidad etiqueta="Globos por racimo" valor={borrador.volumen.racimo} rango={rangoDe.racimo} onConfirmar={(v) => onCambiar(conVolumen(borrador, "racimo", v))} testid="racimo-columna-organica" />
-        <EnPorcentaje etiqueta="Globos que se salen de la columna" valor={borrador.volumen.salientes} rango={rangoDe.salientes} onConfirmar={(v) => onCambiar(conVolumen(borrador, "salientes", v))} testid="salientes-columna-organica" />
+        <EnPorcentaje etiqueta="Qué tan desparejo queda el borde" ayuda="En 0 el borde queda liso; subiéndolo, los globos entran y salen como en una pieza hecha a mano." valor={borrador.volumen.irregularidad} rango={rangoDe.irregularidad} onConfirmar={(v) => onCambiar(conVolumen(borrador, "irregularidad", v))} testid="irregularidad-columna-organica" />
+        <EnCantidad etiqueta="Globos por racimo" ayuda="Cuántos globos se atan juntos en cada racimo; con más, el bulto se ve más tupido." valor={borrador.volumen.racimo} rango={rangoDe.racimo} onConfirmar={(v) => onCambiar(conVolumen(borrador, "racimo", v))} testid="racimo-columna-organica" />
+        <EnPorcentaje etiqueta="Globos que asoman del borde" ayuda="Cuántos globos sobresalen del bulto para que el borde no quede recto." valor={borrador.volumen.salientes} rango={rangoDe.salientes} onConfirmar={(v) => onCambiar(conVolumen(borrador, "salientes", v))} testid="salientes-columna-organica" />
       </Apartado>
 
       <Apartado titulo="Tamaños de globo" testid="apartado-tamanos-columna-organica">
@@ -193,9 +195,9 @@ export function ControlesColumnaOrganica({ borrador, opciones, limites, leyenda,
         {opciones.tamanos.map((pulgadas) => (
           <EnCantidad key={pulgadas} etiqueta={`Globos de ${pulgadas}″`} valor={pesoDeTamano(borrador, pulgadas)} rango={rangoDe.peso} formato={(v) => (v === 0 ? "no lleva" : entero.format(v))} onConfirmar={(v) => onCambiar(conPesoDeTamano(borrador, pulgadas, v))} testid={`peso-tamano-${pulgadas}-columna-organica`} />
         ))}
-        <EnPorcentaje etiqueta="Grandes abajo" ayuda="Cuánto se acomodan los globos grandes hacia la base." valor={borrador.tamanos.grandesAbajo} rango={rangoDe.grandesAbajo} onConfirmar={(v) => onCambiar(conTamanos(borrador, "grandesAbajo", v))} testid="grandes-abajo-columna-organica" />
-        <EnPorcentaje etiqueta="Inflado" ayuda="Qué tan inflado va cada globo respecto a su tamaño." valor={borrador.tamanos.inflado} rango={rangoDe.inflado} onConfirmar={(v) => onCambiar(conTamanos(borrador, "inflado", v))} testid="inflado-columna-organica" />
-        <EnPorcentaje etiqueta="Variación de tamaño" valor={borrador.tamanos.variacion} rango={rangoDe.variacion} onConfirmar={(v) => onCambiar(conTamanos(borrador, "variacion", v))} testid="variacion-columna-organica" />
+        <EnPorcentaje etiqueta="Dónde van los globos grandes" ayuda="En 0 van repartidos por toda la columna; subiéndolo, se bajan a la base." valor={borrador.tamanos.grandesAbajo} rango={rangoDe.grandesAbajo} onConfirmar={(v) => onCambiar(conTamanos(borrador, "grandesAbajo", v))} testid="grandes-abajo-columna-organica" />
+        <EnPorcentaje etiqueta="Qué tan inflados" ayuda="Qué tan inflado va cada globo respecto a su tamaño." valor={borrador.tamanos.inflado} rango={rangoDe.inflado} onConfirmar={(v) => onCambiar(conTamanos(borrador, "inflado", v))} testid="inflado-columna-organica" />
+        <EnPorcentaje etiqueta="Globos de distinto tamaño" ayuda="Cuánto cambia el tamaño de un globo al de al lado, como cuando se infla a mano." valor={borrador.tamanos.variacion} rango={rangoDe.variacion} onConfirmar={(v) => onCambiar(conTamanos(borrador, "variacion", v))} testid="variacion-columna-organica" />
       </Apartado>
 
       <Apartado titulo="Colores" resumen={`${paleta.length} ${paleta.length === 1 ? "color" : "colores"}`} abierto testid="apartado-colores-columna-organica">
@@ -208,11 +210,11 @@ export function ControlesColumnaOrganica({ borrador, opciones, limites, leyenda,
                 <span aria-hidden="true" className="inline-block size-3.5 rounded-full ring-1 ring-borde" style={{ background: color.hex }} />
                 {`Color ${numero}`}
               </legend>
-              <SeleccionColumna etiqueta={`Color ${numero}`} opciones={opcionesDeColor} valor={String(entrada.material)} onCambiar={(v) => onCambiar(conMaterial(borrador, posicion, Number(v)))} testid={`material-columna-organica-${numero}`} />
-              <EnCantidad etiqueta={`Cuánto pesa el color ${numero}`} valor={entrada.peso} rango={rangoDe.pesoDeColor} onConfirmar={(v) => onCambiar(conPesoDeColor(borrador, posicion, v))} testid={`peso-columna-organica-${numero}`} />
+              <SeleccionColumna etiqueta={`Color ${numero}`} ayuda="Qué color de la pieza va en este lugar de la mezcla." opciones={opcionesDeColor} valor={String(entrada.material)} onCambiar={(v) => onCambiar(conMaterial(borrador, posicion, Number(v)))} testid={`material-columna-organica-${numero}`} />
+              <EnCantidad etiqueta={`Cuánto pesa el color ${numero}`} ayuda="Cuántos globos de este color hay frente a los demás: más peso, más se ve." valor={entrada.peso} rango={rangoDe.pesoDeColor} onConfirmar={(v) => onCambiar(conPesoDeColor(borrador, posicion, v))} testid={`peso-columna-organica-${numero}`} />
               <div className="grid gap-2 @sm:grid-cols-2">
-                <SeleccionColumna etiqueta={`Acabado del color ${numero}`} opciones={opciones.acabados.map((acabado) => ({ valor: acabado.valor, etiqueta: acabado.texto }))} valor={entrada.acabado} onCambiar={(v) => { const hallado = opciones.acabados.find((acabado) => acabado.valor === v); if (hallado) onCambiar(conAcabado(borrador, posicion, hallado.valor)); }} testid={`acabado-columna-organica-${numero}`} />
-                <SeleccionColumna etiqueta={`Papel del color ${numero}`} opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-columna-organica-${numero}`} />
+                <SeleccionColumna etiqueta={`Acabado del color ${numero}`} ayuda="Cambia el aspecto del globo (brillo, confeti, transparencia), no su color." opciones={opciones.acabados.map((acabado) => ({ valor: acabado.valor, etiqueta: acabado.texto }))} valor={entrada.acabado} onCambiar={(v) => { const hallado = opciones.acabados.find((acabado) => acabado.valor === v); if (hallado) onCambiar(conAcabado(borrador, posicion, hallado.valor)); }} testid={`acabado-columna-organica-${numero}`} />
+                <SeleccionColumna etiqueta={`Papel del color ${numero}`} ayuda="Normal va dentro de los racimos; acento son globos sueltos que asoman por fuera." opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-columna-organica-${numero}`} />
               </div>
               <button
                 type="button"
@@ -249,8 +251,8 @@ export function ControlesColumnaOrganica({ borrador, opciones, limites, leyenda,
 
       <Apartado titulo="Adornos y disposición" testid="apartado-adornos-columna-organica">
         <p className="text-xs leading-relaxed text-texto-suave">Ramas de follaje y flores por metro de columna. No son globos: se listan, no se compran en esta cotización.</p>
-        <EnCantidad etiqueta="Follaje" valor={borrador.adornos.follaje} rango={rangoDe.adorno} formato={(v) => `${decimal.format(v)} por metro`} onConfirmar={(v) => onCambiar(conAdorno(borrador, "follaje", v))} testid="follaje-columna-organica" />
-        <EnCantidad etiqueta="Flores" valor={borrador.adornos.flores} rango={rangoDe.adorno} formato={(v) => `${decimal.format(v)} por metro`} onConfirmar={(v) => onCambiar(conAdorno(borrador, "flores", v))} testid="flores-columna-organica" />
+        <EnCantidad etiqueta="Follaje" ayuda="Cuántas ramas verdes se meten entre los globos por cada metro de columna." valor={borrador.adornos.follaje} rango={rangoDe.adorno} formato={(v) => `${decimal.format(v)} por metro`} onConfirmar={(v) => onCambiar(conAdorno(borrador, "follaje", v))} testid="follaje-columna-organica" />
+        <EnCantidad etiqueta="Flores" ayuda="Cuántas flores se meten entre los globos por cada metro de columna." valor={borrador.adornos.flores} rango={rangoDe.adorno} formato={(v) => `${decimal.format(v)} por metro`} onConfirmar={(v) => onCambiar(conAdorno(borrador, "flores", v))} testid="flores-columna-organica" />
         <button
           type="button"
           onClick={() => onCambiar(conSemilla(borrador, 1 + Math.floor(Math.random() * 99999)))}

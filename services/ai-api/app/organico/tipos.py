@@ -76,7 +76,7 @@ REPARTOS: list[OpcionReparto] = [
     {
         "valor": "tramos",
         "texto": "Por tramos",
-        "ayuda": "Un color domina cada tramo del arco, en el orden de la lista.",
+        "ayuda": "Un color domina cada tramo de la pieza, en el orden de la lista.",
     },
     {
         "valor": "racimos",

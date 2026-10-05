@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { ArmadoArcoV1Schema, type ArmadoArcoV1 } from "./armado-arco";
 import { ArmadoColumnaV1Schema, TAMANOS_COLUMNA, type ArmadoColumnaV1 } from "./armado-columna";
+import { ARMADO_ARCO_ORGANICO_VERSION, ArmadoArcoOrganicoV1Schema, type ArmadoArcoOrganicoV1 } from "./armado-arco-organico";
+import { ARMADO_COLUMNA_ORGANICA_VERSION, ArmadoColumnaOrganicaV1Schema, type ArmadoColumnaOrganicaV1 } from "./armado-columna-organica";
 import { ArmadoGuirnaldaOrganicaV1Schema, type ArmadoGuirnaldaOrganicaV1 } from "./armado-guirnalda-organica";
 import { OpcionesArmadoArcoSchema } from "./opciones-armado-arco";
 import { OpcionesArmadoColumnaSchema } from "./opciones-armado-columna";
@@ -22,20 +24,34 @@ import type { EstructuraPlan, PlanDecoracion } from "./tipos";
  */
 
 /**
- * Los tres tipos de pieza con motor migrado y puerta en Python. Las demás no tienen motor y siguen por el
+ * Los cuatro tipos de pieza con motor migrado y puerta en Python. Las demás no tienen motor y siguen por el
  * camino de siempre.
  *
  * `guirnalda` es la **orgánica** del motor (`armado-guirnalda-organica.v1`). No tiene nada que ver con
  * `armado-guirnalda.v1` de ADR-0032 —racimos, relleno y remates—, que sigue vivo con su editor y su
  * `completar_armados_guirnalda`: una pieza puede traer los dos, y cuando eso pasa manda el del motor, que es
  * el que coloca los globos. Nada de este archivo lee ni escribe el viejo.
+ *
+ * `semiarco` es un medio arco, y lo arma **siempre** el motor del arco orgánico: «un medio arco es este
+ * armado con `forma.corte` menor que 1» (`services/ai-api/app/armado_arco_organico.py`), y la taxonomía
+ * retiró `semiarco` de las formas del motor porque todo medio arco es orgánico. No tiene la puerta clásica
+ * de patrones, así que su armado **no** depende de la `mezcla` que el plan declare, al contrario que `arco`
+ * y `columna`, que tienen dos motores cada uno.
  */
-export const TIPOS_ARMADO_MOTOR = ["arco", "columna", "guirnalda"] as const;
+export const TIPOS_ARMADO_MOTOR = ["arco", "semiarco", "columna", "guirnalda"] as const;
 export type TipoArmadoMotor = (typeof TIPOS_ARMADO_MOTOR)[number];
 
-/** En qué campo del plan vive el armado de cada tipo. */
+/**
+ * En qué campo del plan vive el armado de cada tipo.
+ *
+ * `arco` y `columna` apuntan al armado **clásico**, que es el que les toca cuando el plan no los declara
+ * orgánicos; cuando sí, el campo lo dice la `clave` que vuelve de Python, que mira la versión del armado que
+ * de verdad se eligió. Un `semiarco` no tiene esa doble puerta —su único motor es el orgánico—, así que aquí
+ * ya apunta a `armado_arco_organico`.
+ */
 export const CLAVE_ARMADO = {
   arco: "armado_arco",
+  semiarco: "armado_arco_organico",
   columna: "armado_columna",
   guirnalda: "armado_guirnalda_organica",
 } as const satisfies Record<TipoArmadoMotor, keyof EstructuraPlan>;
@@ -44,13 +60,19 @@ export const CLAVE_ARMADO = {
 export const CLAVES_ARMADO_MOTOR = ["armado_arco", "armado_columna", "armado_guirnalda_organica"] as const;
 
 /**
- * Los campos del plan que la salida del modelo no escribe: los tres que esta capacidad decide y el
- * `armado_columna_organica` (la columna del diseñador, ADR-0034), que **no** completa ninguna herramienta del
- * modelo: lo escribe el decorador desde su editor, por la edición del plan. Con la bandera apagada se descartan los
- * cuatro (los planes nuevos salen sin armado) y con ella encendida se descarta el último, porque ninguna
- * herramienta lo decide y un plan del modelo no puede traer un armado que nadie validó contra la pieza.
+ * Los armados que **solo** escribe el decorador, desde su editor y por la edición del plan: la columna
+ * orgánica (ADR-0034) y el arco orgánico (ADR-0035). Ninguna herramienta del modelo los completa, así que uno
+ * que llegue en un plan del modelo no pasó por ninguna puerta y no entra, con la bandera encendida o apagada.
  */
-export const CLAVES_FUERA_DEL_MODELO = [...CLAVES_ARMADO_MOTOR, "armado_columna_organica"] as const;
+export const CLAVES_SOLO_DEL_DECORADOR = ["armado_columna_organica", "armado_arco_organico"] as const;
+
+/**
+ * Los campos del plan que la salida del modelo no escribe: los tres que esta capacidad decide y los de
+ * `CLAVES_SOLO_DEL_DECORADOR`. Con la bandera apagada se descartan todos (los planes nuevos salen sin armado) y
+ * con ella encendida solo los del decorador, porque ninguna herramienta los decide y un plan del modelo no
+ * puede traer un armado que nadie validó contra la pieza.
+ */
+export const CLAVES_FUERA_DEL_MODELO = [...CLAVES_ARMADO_MOTOR, ...CLAVES_SOLO_DEL_DECORADOR] as const;
 
 /**
  * Lo que la pieza dice de sí misma, que es de dónde sale la geometría por defecto: el modelo no tiene que
@@ -311,30 +333,59 @@ export type CatalogoArmado = z.infer<typeof CatalogoArmadoSchema>;
 /** La versión del contrato que le corresponde a cada tipo de pieza. */
 const VERSION_POR_TIPO = {
   arco: "armado-arco.v1",
+  // Un medio arco no tiene versión clásica que elegir: su único motor es el orgánico. La tabla de abajo
+  // (`VERSION_POR_CLAVE`) le da la misma, porque su clave del plan es `armado_arco_organico`.
+  semiarco: ARMADO_ARCO_ORGANICO_VERSION,
   columna: "armado-columna.v1",
   guirnalda: "armado-guirnalda-organica.v1",
 } as const satisfies Record<TipoArmadoMotor, string>;
 
 /**
+ * La versión que le corresponde a cada clave **orgánica**, que son las que no se deducen del tipo: una
+ * columna y un arco tienen dos motores cada uno (el clásico de patrones y el orgánico de racimos) y el campo
+ * del plan es el que dice cuál armó la pieza.
+ */
+const VERSION_POR_CLAVE: Partial<Record<string, string>> = {
+  armado_columna_organica: ARMADO_COLUMNA_ORGANICA_VERSION,
+  armado_arco_organico: ARMADO_ARCO_ORGANICO_VERSION,
+};
+
+/**
  * Un armado ya decidido para una estructura del plan: el que el modelo armó si se sostiene contra la pieza de
  * verdad, y si no la receta del motor. `avisos` dice por qué cayó a la receta cuando pasó.
+ *
+ * `origen` distingue las tres ramas, y sirve para medir cuántas piezas salen de cada una: `modelo` es el
+ * armado que el modelo propuso y se sostuvo, `referencia` es la receta que describe lo que la foto leyó del
+ * patrón de la pieza (ADR-0039) y `receta` es la receta que eligió por el número de colores, porque no había
+ * lectura o no se podía honrar.
  */
 export const ArmadoCompletadoSchema = z
   .object({
     estructura_id: z.string().min(1).max(160),
     tipo: z.enum(TIPOS_ARMADO_MOTOR),
-    clave: z.enum(CLAVES_ARMADO_MOTOR),
-    origen: z.enum(["modelo", "receta"]),
-    armado: z.union([ArmadoArcoV1Schema, ArmadoColumnaV1Schema, ArmadoGuirnaldaOrganicaV1Schema]),
+    clave: z.enum([...CLAVES_ARMADO_MOTOR, "armado_columna_organica", "armado_arco_organico"]),
+    origen: z.enum(["modelo", "referencia", "receta"]),
+    armado: z.union([ArmadoArcoV1Schema, ArmadoColumnaV1Schema, ArmadoColumnaOrganicaV1Schema, ArmadoArcoOrganicoV1Schema, ArmadoGuirnaldaOrganicaV1Schema]),
     avisos: AvisosSchema,
   })
   .strict()
-  .refine((completado) => completado.clave === CLAVE_ARMADO[completado.tipo], {
-    message: "la clave del plan no corresponde al tipo de la pieza",
-  })
-  .refine((completado) => completado.armado.version === VERSION_POR_TIPO[completado.tipo], {
-    message: "el armado no es el del tipo de la pieza",
-  });
+  // Una columna puede volver con el armado clásico (anillos) o con el orgánico (racimos), y un arco con el
+  // de bandas o con el orgánico, según lo que el plan declare en `mezcla`: son dos motores y dos campos del
+  // plan para el mismo tipo de pieza. El resto de los tipos sigue teniendo un solo campo posible: un
+  // `semiarco` lo tiene ya en `CLAVE_ARMADO` (`armado_arco_organico`), que es el único motor que tiene.
+  .refine(
+    (completado) =>
+      completado.clave === CLAVE_ARMADO[completado.tipo] ||
+      (completado.tipo === "columna" && completado.clave === "armado_columna_organica") ||
+      (completado.tipo === "arco" && completado.clave === "armado_arco_organico"),
+    { message: "la clave del plan no corresponde al tipo de la pieza" },
+  )
+  .refine(
+    (completado) =>
+      completado.armado.version ===
+      (VERSION_POR_CLAVE[completado.clave] ?? VERSION_POR_TIPO[completado.tipo]),
+    { message: "el armado no es el del campo del plan" },
+  );
 
 export type ArmadoCompletado = z.infer<typeof ArmadoCompletadoSchema>;
 
@@ -391,9 +442,25 @@ export function aplicarArmadosCompletados(plan: PlanDecoracion, armados: readonl
       if (!completado || piezaDeEstructura(estructura)?.tipo !== completado.tipo) return estructura;
       // Se escribe UN campo y se conserva todo lo demás. En una guirnalda eso incluye su
       // `armado_guirnalda` de ADR-0032, que tiene otro dueño: aquí no se pisa ni se borra.
-      if (completado.tipo === "arco") return { ...estructura, armado_arco: completado.armado as ArmadoArcoV1 };
-      if (completado.tipo === "columna") return { ...estructura, armado_columna: completado.armado as ArmadoColumnaV1 };
-      return { ...estructura, armado_guirnalda_organica: completado.armado as ArmadoGuirnaldaOrganicaV1 };
+      //
+      // El campo es el que la respuesta nombra en `clave`, **no el que se deduzca del tipo**: una columna
+      // puede volver con el armado clásico o con el orgánico, y escribirlo por el tipo metía el orgánico
+      // dentro de `armado_columna`. El `as` se lo tragaba, el plan dejaba de cumplir `plan-decoracion.v1` y
+      // la resolución lo rechazaba entero con 422 (visto el 2026-10-03 con dos columnas orgánicas).
+      // Lo que hace seguro cada `as` es el `refine` del esquema de arriba, que ya exigió que la versión del
+      // armado corresponda a su clave.
+      switch (completado.clave) {
+        case "armado_arco":
+          return { ...estructura, armado_arco: completado.armado as ArmadoArcoV1 };
+        case "armado_columna":
+          return { ...estructura, armado_columna: completado.armado as ArmadoColumnaV1 };
+        case "armado_columna_organica":
+          return { ...estructura, armado_columna_organica: completado.armado as ArmadoColumnaOrganicaV1 };
+        case "armado_arco_organico":
+          return { ...estructura, armado_arco_organico: completado.armado as ArmadoArcoOrganicoV1 };
+        default:
+          return { ...estructura, armado_guirnalda_organica: completado.armado as ArmadoGuirnaldaOrganicaV1 };
+      }
     }),
   };
 }
@@ -421,24 +488,32 @@ export function sinArmadosDeMotor(plan: PlanDecoracion): PlanDecoracion {
       delete limpia.armado_columna;
       delete limpia.armado_guirnalda_organica;
       delete limpia.armado_columna_organica;
+      delete limpia.armado_arco_organico;
       return limpia;
     }),
   };
 }
 
 /**
- * Quita solo el `armado_columna_organica` que trajera el plan del modelo. Es lo que corre con la bandera encendida,
- * donde los otros tres armados sí los decide la capacidad: ninguna herramienta completa la columna orgánica, así que
- * la que llega en un plan del modelo no pasó por ninguna puerta y no entra.
+ * Quita los armados de `CLAVES_SOLO_DEL_DECORADOR` que trajera el plan del modelo: la columna orgánica y el arco
+ * orgánico. Es lo que corre con la bandera encendida, donde los otros tres armados sí los decide la capacidad;
+ * ninguna herramienta completa estos dos, así que el que llega en un plan del modelo no pasó por ninguna puerta
+ * y no entra.
+ *
+ * **Se sigue llamando como la columna** porque quien la llama vive en `src/lib/ia/herramientas/`; renómbrala a
+ * `sinArmadosOrganicosDelModelo` cuando se toque ese archivo.
  */
 export function sinColumnaOrganicaDelModelo(plan: PlanDecoracion): PlanDecoracion {
-  if (!plan.estructuras.some((estructura) => estructura.armado_columna_organica !== undefined)) return plan;
+  const trae = (estructura: EstructuraPlan): boolean =>
+    CLAVES_SOLO_DEL_DECORADOR.some((clave) => estructura[clave] !== undefined);
+  if (!plan.estructuras.some(trae)) return plan;
   return {
     ...plan,
     estructuras: plan.estructuras.map((estructura) => {
-      if (estructura.armado_columna_organica === undefined) return estructura;
+      if (!trae(estructura)) return estructura;
       const limpia: EstructuraPlan = { ...estructura };
       delete limpia.armado_columna_organica;
+      delete limpia.armado_arco_organico;
       return limpia;
     }),
   };

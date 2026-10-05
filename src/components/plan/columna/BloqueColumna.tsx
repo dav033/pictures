@@ -6,6 +6,7 @@ import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
 import { mensajeFalloPlanArmado } from "@/lib/plan/peticion-armado";
 import { pedirVistaArmadoColumna, type VistaArmadoColumna } from "@/lib/plan/peticion-armado-columna";
 import { metrosCliente } from "@/lib/plan/presentacion-cliente";
+import { MarcoEdicion } from "../motor/MarcoEdicion";
 import { VistaMotor } from "../motor/VistaMotor";
 import { colorDe, type ColorLeyenda } from "../patron/leyenda";
 import { MuestraNumero } from "../patron/LeyendaPatron";
@@ -278,7 +279,7 @@ function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReinten
     { termino: "Capas", valor: entero.format(columna.capas) },
   ];
   return (
-    <>
+    <MarcoEdicion editor={pie}>
     <div aria-busy={actualizando} className="flex flex-col gap-3 @md:flex-row">
       <div className={`${MARCO} ${tenue}`}>
         <VistaMotor
@@ -344,7 +345,6 @@ function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReinten
         )}
       </div>
     </div>
-    {pie}
-    </>
+    </MarcoEdicion>
   );
 }

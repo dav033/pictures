@@ -292,3 +292,47 @@ def test_los_limites_dependen_del_largo() -> None:
     larga = limites_de(armado(forma={**armado()["forma"], "largoM": 8}), guirnalda())
     assert larga["grosorCentroMax"] > corta["grosorCentroMax"]
     assert larga["grosorExtremosMax"] > corta["grosorExtremosMax"]
+
+
+def test_la_mezcla_de_la_guirnalda_tiene_tres_duenos_y_en_este_orden() -> None:
+    """Lo que el modelo pide, lo que trae la forma lista, y si no, la mezcla que el plan declara.
+
+    Las dos últimas faltaban: la guirnalda se armaba siempre con la mezcla del diseño de partida del motor.
+    Elegir «la de festones» no traía sus tamaños, y una guirnalda que el plan declara `solo_grandes` salía de
+    globos chicos mientras se compraban globos de 18" y 24" (2026-10-03). Misma rotura que la de la columna
+    y el arco orgánicos, en el único sitio donde el tamaño vive en el plan: `mezcla`.
+    """
+    from app.armado_estructura import PiezaArmado, _mezcla_tamanos
+    from app.plan import proporciones_de_mezcla
+
+    del_motor = {5: 32.0, 9: 0.0, 12: 45.0, 18: 18.0, 24: 5.0, 36: 0.0}
+    del_preset = {5: 26.0, 9: 0.0, 12: 34.0, 18: 26.0, 24: 12.0, 36: 2.0}
+
+    def pieza(mezcla: str | None) -> PiezaArmado:
+        return PiezaArmado(
+            tipo="guirnalda", colores=1, largo_m=5.0, mezcla=mezcla, tonos=["rosado"]
+        )
+
+    for nombre in ("organica_fina", "organica_gruesa", "solo_grandes", "clasica"):
+        puesta = _mezcla_tamanos(None, pieza(nombre), del_motor)
+        assert puesta == {
+            str(pulgadas): round(proporcion * 100, 4)
+            for pulgadas, proporcion in proporciones_de_mezcla(nombre) or ()
+        }, nombre
+
+    # Una forma lista o un estilo traen la suya y ganan: son una elección explícita, como los pesos.
+    assert _mezcla_tamanos(None, pieza("solo_grandes"), del_preset, del_preset=True) == {
+        "5": 26.0,
+        "12": 34.0,
+        "18": 26.0,
+        "24": 12.0,
+        "36": 2.0,
+    }
+
+    # Y sin mezcla declarada queda la del motor, como siempre.
+    assert _mezcla_tamanos(None, pieza(None), del_motor) == {
+        "5": 32.0,
+        "12": 45.0,
+        "18": 18.0,
+        "24": 5.0,
+    }

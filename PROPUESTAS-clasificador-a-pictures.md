@@ -232,8 +232,7 @@ dos funciones de `silueta.py` (`_elegir_tamano` y el ángulo de los miembros en
 
 ## Lo que se empezó primero, y por qué no está en esta tabla
 
-El arco clásico editable (ver `SEGUIMIENTO-arco-clasico.md`, **terminado**) no es
-una de estas seis: es la otra mitad del problema. Las seis de arriba mejoran **cómo se ve** lo
-que ya se cuenta; el arco clásico cambia **de dónde sale el número** — de la
-fórmula de densidad a una estructura armada de verdad, de la que el conteo se lee
-en vez de estimarse.
+El arco armado por el motor (ADR-0034 y ADR-0035) no es una de estas seis: es la
+otra mitad del problema. Las seis de arriba mejoran **cómo se ve** lo que ya se
+cuenta; el motor cambia **de dónde sale el número** — de la fórmula de densidad a
+una estructura armada de verdad, de la que el conteo se lee en vez de estimarse.

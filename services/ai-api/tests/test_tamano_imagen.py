@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.amaterasu.tamano_imagen import tamano_imagen
+from app.tamano_imagen import tamano_imagen
 
 
 def _png(ancho: int, alto: int) -> bytes:

@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import { interpretarModoVista, modoVistaDesdeQuery } from "../../src/lib/estado/modo-vista";
-import { abrirPromptAutomaticamente, usarLoraEfectivo } from "../../src/lib/estado/modo-vista-reglas";
+import { abrirPromptAutomaticamente, modoLoraPorDefecto, nombreRutaFlux, usarLoraEfectivo } from "../../src/lib/estado/modo-vista-reglas";
 
 assert.equal(interpretarModoVista(null), "usuario", "sin preferencia guardada: modo usuario");
 assert.equal(interpretarModoVista(undefined), "usuario");
@@ -35,3 +35,15 @@ assert.equal(abrirPromptAutomaticamente("usuario", true), false);
 assert.equal(abrirPromptAutomaticamente("dev", true), true);
 assert.equal(abrirPromptAutomaticamente("dev", false), false);
 console.log("[PASS] reglas por modo: estilo por capacidad en modo usuario; prompt solo en dev");
+
+// FLUX.2 base without LoRA is the default image path (2026-10-04); only an
+// explicit trained mode in development overrides it.
+assert.equal(modoLoraPorDefecto({ nodeEnv: "production" }), "base");
+assert.equal(modoLoraPorDefecto({ nodeEnv: "production", modoPedido: "training_1" }), "base", "production ignores the dev override");
+assert.equal(modoLoraPorDefecto({ nodeEnv: "development" }), "base");
+assert.equal(modoLoraPorDefecto({ nodeEnv: "development", modoPedido: "training_2" }), "training_2");
+assert.equal(modoLoraPorDefecto({ nodeEnv: "development", modoPedido: "training_1" }), "training_1");
+assert.equal(modoLoraPorDefecto({ nodeEnv: "development", modoPedido: "otro" }), "base");
+assert.equal(nombreRutaFlux("base"), "FLUX.2 base (fal)");
+assert.equal(nombreRutaFlux("training_1"), "LoRA Sempertex");
+console.log("[PASS] modo de imagen por defecto: FLUX.2 base; override solo en desarrollo");

@@ -19,6 +19,7 @@ import { MENSAJE_PATRON_ACTIVO, VistaPatronSinDibujoError } from "../../src/lib/
 import { PlanBackendNoDisponibleError } from "../../src/lib/plan/resolver-backend";
 import { AllowlistProductoVarianteError } from "../../src/lib/plan/allowlist-producto-variante";
 import { NonCommercialSourceRejectedError } from "../../src/lib/generacion/provenance";
+import { PythonAdapterError, type PythonAdapterErrorCode } from "../../src/lib/ia/nucleo/python-adapter";
 
 let casos = 0;
 function caso(nombre: string, fn: () => void): void {
@@ -155,6 +156,28 @@ caso("todos los LORA_* de estilo dan ESTILO_NO_PREPARADO y los de producto ESTIL
   for (const codigo of ["LORA_PRODUCT_VOCABULARY_FAILED", "LORA_DATASET_ALLOWLIST_REJECTED"]) {
     assert.equal(clasificarErrorServidor(new Error(`${codigo}: 123`)).code, "ESTILO_SIN_PRODUCTOS", codigo);
   }
+});
+
+function errorPythonDePrueba(code: PythonAdapterErrorCode, status: number, domainCode?: string): PythonAdapterError {
+  return new PythonAdapterError({
+    code,
+    status,
+    requestId: "00000000-0000-4000-8000-0000000000cc",
+    correlationId: "00000000-0000-4000-8000-0000000000dd",
+    ...(domainCode ? { domainCode } : {}),
+  });
+}
+
+caso("el motor ocupado no se presenta como un servicio caído", () => {
+  // 2026-10-02, editor de la guirnalda: el cupo global de los motores (`app/exclusion_motores.py`) devuelve
+  // `motor_ocupado` (429) al instante, y el cliente leía "El servicio no respondió. Intenta de nuevo en un
+  // momento." El servicio sí respondió: dijo que estaba ocupado.
+  const ocupado = errorPythonDePrueba("PYTHON_BUSY", 429, "motor_ocupado");
+  assert.equal(clasificarErrorServidor(ocupado).code, "SERVICIO_OCUPADO");
+  assert.equal(clasificarErrorServidor(ocupado).codigoOrigen, "PYTHON_BUSY:motor_ocupado");
+  // El resto de fallos reintentables del backend siguen donde estaban.
+  assert.equal(clasificarErrorServidor(errorPythonDePrueba("PYTHON_UNAVAILABLE", 502)).code, "SERVICIO_NO_DISPONIBLE");
+  assert.equal(clasificarErrorServidor(errorPythonDePrueba("PYTHON_INVALID_RESPONSE", 502)).code, "ERROR_INTERNO");
 });
 
 caso("errores tipados se clasifican por clase, no por texto", () => {

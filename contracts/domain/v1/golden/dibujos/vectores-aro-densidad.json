@@ -1,0 +1,1118 @@
+{
+  "origen": "clasificador-decoraciones/scripts/migracion/vectores-aro-densidad.ts",
+  "vectores": [
+    {
+      "nombre": "circulo-nulo-sin-densidad",
+      "forma": null,
+      "densidad": null,
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "de71074a8a89428dfd44f474f8b6e2d6353e1f9977218f9b667b84d886b5b3c2",
+      "largo": 89508,
+      "elipses": 600
+    },
+    {
+      "nombre": "circulo-nulo-sencilla",
+      "forma": null,
+      "densidad": "sencilla",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "sencilla"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "5c65fc7d2d8c0590adf0b44b80cbd706c996ede52593fe3c517ab27bde1ac890",
+      "largo": 73637,
+      "elipses": 493
+    },
+    {
+      "nombre": "circulo-nulo-media",
+      "forma": null,
+      "densidad": "media",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "media"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "de71074a8a89428dfd44f474f8b6e2d6353e1f9977218f9b667b84d886b5b3c2",
+      "largo": 89508,
+      "elipses": 600
+    },
+    {
+      "nombre": "circulo-nulo-lujosa",
+      "forma": null,
+      "densidad": "lujosa",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "lujosa"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "d3ef3d74be126573306e535a50b23b4d585486c305acbd2d1fa0206afb3a954b",
+      "largo": 110127,
+      "elipses": 740
+    },
+    {
+      "nombre": "circulo-organico-sin-densidad",
+      "forma": "organico",
+      "densidad": null,
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "de71074a8a89428dfd44f474f8b6e2d6353e1f9977218f9b667b84d886b5b3c2",
+      "largo": 89508,
+      "elipses": 600
+    },
+    {
+      "nombre": "circulo-organico-sencilla",
+      "forma": "organico",
+      "densidad": "sencilla",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "sencilla"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "5c65fc7d2d8c0590adf0b44b80cbd706c996ede52593fe3c517ab27bde1ac890",
+      "largo": 73637,
+      "elipses": 493
+    },
+    {
+      "nombre": "circulo-organico-media",
+      "forma": "organico",
+      "densidad": "media",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "media"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "de71074a8a89428dfd44f474f8b6e2d6353e1f9977218f9b667b84d886b5b3c2",
+      "largo": 89508,
+      "elipses": 600
+    },
+    {
+      "nombre": "circulo-organico-lujosa",
+      "forma": "organico",
+      "densidad": "lujosa",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "lujosa"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "d3ef3d74be126573306e535a50b23b4d585486c305acbd2d1fa0206afb3a954b",
+      "largo": 110127,
+      "elipses": 740
+    },
+    {
+      "nombre": "circulo-parcial-sin-densidad",
+      "forma": "parcial",
+      "densidad": null,
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "edd5eba545b28c438f5f925d664797d28a43de390c1af8070e7fd62bc5c64ce2",
+      "largo": 42781,
+      "elipses": 281
+    },
+    {
+      "nombre": "circulo-parcial-sencilla",
+      "forma": "parcial",
+      "densidad": "sencilla",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "sencilla"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "3e1884168194a15daa15ad03031cc1cf533d7b8ad008c759d0b1ffa48af0a168",
+      "largo": 32221,
+      "elipses": 211
+    },
+    {
+      "nombre": "circulo-parcial-media",
+      "forma": "parcial",
+      "densidad": "media",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "media"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "edd5eba545b28c438f5f925d664797d28a43de390c1af8070e7fd62bc5c64ce2",
+      "largo": 42781,
+      "elipses": 281
+    },
+    {
+      "nombre": "circulo-parcial-lujosa",
+      "forma": "parcial",
+      "densidad": "lujosa",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "lujosa"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "086593b25f210adbe3c052d98a6f657cd85daf3f322c3fad61e6c417240213b2",
+      "largo": 53140,
+      "elipses": 352
+    },
+    {
+      "nombre": "circulo-con-fondo-sin-densidad",
+      "forma": "con-fondo",
+      "densidad": null,
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "8f0026a18fac29247bba58cfefdc0f65a0e067763c99128a96a1c1257c913f1e",
+      "largo": 42853,
+      "elipses": 281
+    },
+    {
+      "nombre": "circulo-con-fondo-sencilla",
+      "forma": "con-fondo",
+      "densidad": "sencilla",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "sencilla"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "333ffbf8e7531789cab30247ad19126579da78be82a848b76657bd88fd838374",
+      "largo": 32293,
+      "elipses": 211
+    },
+    {
+      "nombre": "circulo-con-fondo-media",
+      "forma": "con-fondo",
+      "densidad": "media",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "media"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "8f0026a18fac29247bba58cfefdc0f65a0e067763c99128a96a1c1257c913f1e",
+      "largo": 42853,
+      "elipses": 281
+    },
+    {
+      "nombre": "circulo-con-fondo-lujosa",
+      "forma": "con-fondo",
+      "densidad": "lujosa",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "lujosa"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "990205e5133fc81e7a7bfecca43c1c2739f6be9c18fce3e99247ab957786442b",
+      "largo": 53212,
+      "elipses": 352
+    },
+    {
+      "nombre": "circulo-clasico-sin-densidad",
+      "forma": "clasico",
+      "densidad": null,
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "d36d000c1ea3c2b8cb8e5a4e2438926011b6bb296dac233a16276b406535ed74",
+      "largo": 44490,
+      "elipses": 294
+    },
+    {
+      "nombre": "circulo-clasico-sencilla",
+      "forma": "clasico",
+      "densidad": "sencilla",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "sencilla"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "9ec05d77d3732f6e8754d514ab1e8b26515f152098e3c03fe64a65cba691a653",
+      "largo": 34826,
+      "elipses": 229
+    },
+    {
+      "nombre": "circulo-clasico-media",
+      "forma": "clasico",
+      "densidad": "media",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "media"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "d36d000c1ea3c2b8cb8e5a4e2438926011b6bb296dac233a16276b406535ed74",
+      "largo": 44490,
+      "elipses": 294
+    },
+    {
+      "nombre": "circulo-clasico-lujosa",
+      "forma": "clasico",
+      "densidad": "lujosa",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "lujosa"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "b87e34b746aa9450a2eee75c945906457b9fa86611bcc89c106be8648e9c6199",
+      "largo": 55735,
+      "elipses": 370
+    },
+    {
+      "nombre": "circulo-doble-sin-densidad",
+      "forma": "doble",
+      "densidad": null,
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "37a26fbf173bdfe9beeb4a4eccc6a4a8dd976a6c2bb5445a0b31c75a9dff2687",
+      "largo": 65025,
+      "elipses": 432
+    },
+    {
+      "nombre": "circulo-doble-sencilla",
+      "forma": "doble",
+      "densidad": "sencilla",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "sencilla"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "efd8100f8a61f753d0797fad0578bd8d6ee1633a444d06204f1ef3a8a045e098",
+      "largo": 52005,
+      "elipses": 345
+    },
+    {
+      "nombre": "circulo-doble-media",
+      "forma": "doble",
+      "densidad": "media",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "media"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "37a26fbf173bdfe9beeb4a4eccc6a4a8dd976a6c2bb5445a0b31c75a9dff2687",
+      "largo": 65025,
+      "elipses": 432
+    },
+    {
+      "nombre": "circulo-doble-lujosa",
+      "forma": "doble",
+      "densidad": "lujosa",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "lujosa"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "34b513df22391cc1e8ff1c4328eab3ac62bc9afd1ad7f1de6428dffe18640bb9",
+      "largo": 76588,
+      "elipses": 511
+    },
+    {
+      "nombre": "circulo-media-luna-sin-densidad",
+      "forma": "media-luna",
+      "densidad": null,
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "e1b62b036d93a3405f1dcba7e9a960ef30b3246af10071c8aa5b57b2e2107c7f",
+      "largo": 51883,
+      "elipses": 343
+    },
+    {
+      "nombre": "circulo-media-luna-sencilla",
+      "forma": "media-luna",
+      "densidad": "sencilla",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "sencilla"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "efb39ddc0da184a0a5acf009333cc155b006ab5b8fb418a12cac619fb76dc138",
+      "largo": 41146,
+      "elipses": 270
+    },
+    {
+      "nombre": "circulo-media-luna-media",
+      "forma": "media-luna",
+      "densidad": "media",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "media"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "e1b62b036d93a3405f1dcba7e9a960ef30b3246af10071c8aa5b57b2e2107c7f",
+      "largo": 51883,
+      "elipses": 343
+    },
+    {
+      "nombre": "circulo-media-luna-lujosa",
+      "forma": "media-luna",
+      "densidad": "lujosa",
+      "datos": {
+        "colores": [
+          {
+            "hex": "#1d4ed8",
+            "acabado": "mate",
+            "peso": 40
+          },
+          {
+            "hex": "#ffffff",
+            "acabado": "mate",
+            "peso": 25
+          },
+          {
+            "hex": "#f59e0b",
+            "acabado": "mate",
+            "peso": 12
+          }
+        ],
+        "mezcla": {
+          "5": 12,
+          "9": 0,
+          "12": 48,
+          "18": 17,
+          "24": 0,
+          "36": 0
+        },
+        "dominante": 12,
+        "redondos": 77,
+        "densidad": "lujosa"
+      },
+      "ancho": 600,
+      "alto": 600,
+      "sha256": "1fc75f581b02747d9721f00881833834196ace50c60c7592517d1119464545e4",
+      "largo": 67942,
+      "elipses": 452
+    }
+  ]
+}

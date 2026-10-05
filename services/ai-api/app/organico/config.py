@@ -47,6 +47,21 @@ def _peso_mezcla(crudo: dict[Any, Any], t: int, respaldo: float) -> float:
 
 def normalizar_config(entrada: object) -> ConfigOrg:
     """Convierte cualquier cosa en un diseño de arco orgánico válido."""
+    return normalizar_config_con_cambios(entrada)[0]
+
+
+def normalizar_config_con_cambios(entrada: object) -> tuple[ConfigOrg, list[str]]:
+    """Lo mismo, **y lo que hubo que corregir** para que el arco fuera posible.
+
+    Existe por lo mismo que sus gemelas de ``app.guirnalda.limites`` y ``app.columnaorg.limites``: el saneado
+    es la última línea de ``normalizar_config`` y sus avisos se perdían ahí dentro, así que quien llamaba
+    después a ``sanear`` sobre el resultado ya normalizado recibía una lista vacía —el diseño ya estaba
+    corregido— y le decía al cliente que no se había tocado nada. Un arco al que se le quitó el R24 de la
+    mezcla porque no cabe en ese grosor, o cuyo alto se ajustó, tiene que decirlo.
+
+    No cambia el comportamiento de ``normalizar_config``: el original (``src/lib/organico/config.ts``) no
+    tiene esta función porque allá el diseñador sanea en la interfaz.
+    """
     base = config_inicial()
     e = _obj(entrada)
     forma = _obj(e.get("forma"))
@@ -137,4 +152,5 @@ def normalizar_config(entrada: object) -> ConfigOrg:
             "precio": _maximo(0, _num(real.get("precio"), base["real"]["precio"])),
         },
     }
-    return sanear(cfg)[0]
+    saneado, cambios = sanear(cfg)
+    return saneado, list(cambios)

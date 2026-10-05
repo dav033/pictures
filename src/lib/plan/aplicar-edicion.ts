@@ -101,6 +101,12 @@ function geometriaAuditada(edicion: EdicionPlan): Record<string, unknown> {
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, reparto: edicion.armado_columna_organica?.colores.reparto ?? null, alto_m: edicion.armado_columna_organica?.forma.altoM ?? null };
     case "armado_guirnalda_organica":
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, reparto: edicion.armado_guirnalda_organica?.colores.reparto ?? null, largo_m: edicion.armado_guirnalda_organica?.forma.largoM ?? null };
+    case "armado_arco_organico":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, reparto: edicion.armado_arco_organico?.colores.reparto ?? null, corte: edicion.armado_arco_organico?.forma.corte ?? null };
+    case "forma":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, forma: edicion.forma };
+    case "propiedades":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, forma: edicion.forma, densidad: edicion.densidad ?? null, medidas: edicion.medidas ?? null };
     default:
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id };
   }
@@ -161,7 +167,7 @@ export function resugerirArmadoGuirnalda(edicion: Pick<EdicionPlan, "accion" | "
  * Devuelve la frase para el decorador, o `null` si no falta nada.
  */
 export function faltaCoberturaPorElArmado(edicion: EdicionPlan, antes: PlanResuelto, despues: PlanResuelto): string | null {
-  const armadoNuevo = edicion.accion === "armado_arco" ? edicion.armado_arco : edicion.accion === "armado_columna" ? edicion.armado_columna : edicion.accion === "armado_columna_organica" ? edicion.armado_columna_organica : edicion.accion === "armado_guirnalda_organica" ? edicion.armado_guirnalda_organica : null;
+  const armadoNuevo = edicion.accion === "armado_arco" ? edicion.armado_arco : edicion.accion === "armado_columna" ? edicion.armado_columna : edicion.accion === "armado_columna_organica" ? edicion.armado_columna_organica : edicion.accion === "armado_guirnalda_organica" ? edicion.armado_guirnalda_organica : edicion.accion === "armado_arco_organico" ? edicion.armado_arco_organico : null;
   if (armadoNuevo === null) return null;
   const clave = (item: PlanResuelto["sin_cobertura"][number]) => `${item.estructura_id}|${item.product_id}|${item.tamano}`;
   const yaFaltaba = new Set(antes.sin_cobertura.map(clave));

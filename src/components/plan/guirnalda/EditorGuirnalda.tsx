@@ -271,13 +271,13 @@ export function EditorGuirnalda({ onCerrar, plan, estructura, declarada, oficial
                 <Dialog.Description className="mt-0.5 text-xs text-texto-suave">Elige el soporte, la forma y el racimo, y lleva los remates a un racimo. Cada cambio se guarda solo.</Dialog.Description>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <button type="button" onClick={() => deshacer()} disabled={!historia.pasado.length} aria-label="Deshacer" title="Deshacer (Ctrl+Z)" className="ui-icon-button">
+                <button type="button" onClick={() => deshacer()} disabled={!historia.pasado.length} aria-label="Deshacer" title="Deshacer (Ctrl+Z)" className="ui-icon-button size-11">
                   <Undo2 className="size-4" aria-hidden="true" />
                 </button>
-                <button type="button" onClick={rehacer} disabled={!historia.futuro.length} aria-label="Rehacer" title="Rehacer (Ctrl+Shift+Z)" className="ui-icon-button">
+                <button type="button" onClick={rehacer} disabled={!historia.futuro.length} aria-label="Rehacer" title="Rehacer (Ctrl+Shift+Z)" className="ui-icon-button size-11">
                   <Redo2 className="size-4" aria-hidden="true" />
                 </button>
-                <Dialog.Close aria-label="Cerrar editor de armado" className="ml-1 grid size-10 place-items-center rounded-xl bg-acento-suave text-texto hover:text-acento focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+                <Dialog.Close aria-label="Cerrar editor de armado" className="ml-1 grid size-11 place-items-center rounded-xl bg-acento-suave text-texto hover:text-acento focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
                   <X className="size-4" aria-hidden="true" />
                 </Dialog.Close>
               </div>

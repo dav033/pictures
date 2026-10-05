@@ -9,7 +9,7 @@ import type { EntradaAllowlistPlan } from "./aprobacion";
 import type { PistaArmado } from "./armado-bouquet";
 import type { PistaGuirnalda } from "./armado-guirnalda";
 import type { PistaConteo } from "./conteo-referencia";
-import type { MotivoSinSilueta, PatronColorResuelto, PistaPatron } from "./patron-color";
+import type { MotivoSinSilueta, PatronColorResuelto, PistaPatron, PistaTamanos } from "./patron-color";
 import { cotizacionDesdePython, planResueltoDesdePython } from "./python-mapper";
 import type { PlanResuelto } from "./resuelto";
 import type { PlanDecoracion } from "./tipos";
@@ -50,6 +50,8 @@ export type EntradaResolucionPlan = {
   completarPatrones?: boolean;
   /** Pistas de patrón leídas en la foto, por elemento de referencia. */
   pistasPatron?: readonly PistaPatron[];
+  /** Los tamaños que la foto leyó, en su propia pista: no son una disposición de color. */
+  pistasTamanos?: readonly PistaTamanos[];
   /**
    * Solo al confirmar un plan (ADR-0030): Python arma por niveles cada bouquet
    * que no tiene armado, desde la lectura de la foto o su receta, sin cambiar
@@ -113,6 +115,7 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       ...(entrada.loraAllowlist ? { loraVariantIds: [...entrada.loraAllowlist.variantIds] } : {}),
       ...(entrada.completarPatrones === undefined ? {} : { completarPatrones: entrada.completarPatrones }),
       ...(entrada.pistasPatron === undefined ? {} : { pistasPatron: [...entrada.pistasPatron] }),
+      ...(entrada.pistasTamanos === undefined ? {} : { pistasTamanos: [...entrada.pistasTamanos] }),
       ...(entrada.completarArmados === undefined ? {} : { completarArmados: entrada.completarArmados }),
       ...(entrada.pistasArmado === undefined ? {} : { pistasArmado: [...entrada.pistasArmado] }),
       ...(entrada.completarArmadosDe === undefined ? {} : { completarArmadosDe: [...entrada.completarArmadosDe] }),

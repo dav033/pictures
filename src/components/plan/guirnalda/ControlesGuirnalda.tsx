@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type PointerEvent } from "react";
+import { useId, useState, type PointerEvent, type ReactNode } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import {
   FORMAS_GUIRNALDA,
@@ -83,6 +83,49 @@ function mayuscula(texto: string): string {
   return texto ? `${texto.charAt(0).toUpperCase()}${texto.slice(1)}` : texto;
 }
 
+/** Lo que se toca mide 44 px y el foco se ve: el mínimo de los cinco editores de armado. */
+const FOCO = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento";
+
+/**
+ * Etiqueta a la vista de un mando con un campo nativo (deslizador, lista) y su valor al lado.
+ * Mismo patrón que `Mando` en `arco/controles-arco.tsx`: lo que se ve es lo que nombra al
+ * campo, no un `sr-only` aparte. La ayuda de cada grupo la pone su `Apartado`.
+ */
+function MandoCampo({ id, etiqueta, valor, children }: { id: string; etiqueta: string; valor?: string; children: ReactNode }) {
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className="min-w-0 text-[13px] font-medium text-texto">{etiqueta}</label>
+        {valor !== undefined && <output htmlFor={id} className="shrink-0 text-[13px] font-semibold tabular-nums text-texto">{valor}</output>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Lo mismo para un grupo de botones (`Segmentado`, `SelectorColor`, `Contador`): no hay un campo
+ * al que apuntar con `htmlFor`, así que el grupo se nombra con la etiqueta a la vista
+ * (`aria-labelledby`) en lugar de con un `aria-label` que nadie ve.
+ */
+function MandoGrupo({ etiqueta, valor, children }: {
+  etiqueta: string;
+  valor?: string;
+  /** Recibe el id de la etiqueta a la vista, para que el grupo se nombre con ella. */
+  children: (ids: { etiquetaId: string }) => ReactNode;
+}) {
+  const id = useId();
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between gap-3">
+        <p id={id} className="min-w-0 text-[13px] font-medium text-texto">{etiqueta}</p>
+        {valor !== undefined && <span className="shrink-0 text-[13px] font-semibold tabular-nums text-texto">{valor}</span>}
+      </div>
+      {children({ etiquetaId: id })}
+    </div>
+  );
+}
+
 /**
  * Deslizador que confirma al soltar (puntero o tecla), no en cada paso: un
  * arrastre es un solo borrador, una sola vista previa y una sola entrada de
@@ -100,6 +143,7 @@ function Deslizador({ etiqueta, valor, min, max, paso, formato, textoValor = for
   onConfirmar: (valor: number) => void;
   testid: string;
 }) {
+  const id = useId();
   const [local, setLocal] = useState<number | null>(null);
   const mostrado = local ?? valor;
   const confirmar = () => {
@@ -107,9 +151,9 @@ function Deslizador({ etiqueta, valor, min, max, paso, formato, textoValor = for
     setLocal(null);
   };
   return (
-    <label className="flex items-center gap-3 text-[13px] text-texto">
-      <span className="sr-only">{etiqueta}</span>
+    <MandoCampo id={id} etiqueta={etiqueta} valor={formato(mostrado)}>
       <input
+        id={id}
         type="range"
         min={min}
         max={max}
@@ -119,12 +163,12 @@ function Deslizador({ etiqueta, valor, min, max, paso, formato, textoValor = for
         data-testid={testid}
         onChange={(evento) => setLocal(Number(evento.currentTarget.value))}
         onPointerUp={confirmar}
+        onPointerCancel={() => setLocal(null)}
         onKeyUp={confirmar}
         onBlur={confirmar}
-        className="h-2 min-w-0 flex-1 cursor-pointer accent-[var(--acento)]"
+        className={`block h-11 w-full cursor-pointer accent-[var(--acento)] ${FOCO}`}
       />
-      <output className="w-16 shrink-0 text-right font-medium tabular-nums">{formato(mostrado)}</output>
-    </label>
+    </MandoCampo>
   );
 }
 
@@ -138,6 +182,7 @@ function Deslizador({ etiqueta, valor, min, max, paso, formato, textoValor = for
  * Python dibuja; aquí no se cuenta nada.
  */
 export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, onCambiar, moviendo, onMover, onArrastrar, registrarMover, aviso = null }: Props) {
+  const idAnfitriona = useId();
   if (!borrador && aviso) {
     return (
       <p data-testid="controles-guirnalda-sin-armado" className="rounded-xl bg-superficie-suave px-3 py-2.5 text-[13px] text-texto-suave">
@@ -148,7 +193,7 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
   if (!borrador) {
     return (
       <div className="space-y-5" aria-hidden="true">
-        {[64, 56, 48, 56].map((ancho, indice) => <div key={indice} className="brillo-carga h-9 max-w-full rounded-xl" style={{ width: `${ancho * 4}px` }} />)}
+        {[64, 56, 48, 56].map((ancho, indice) => <div key={indice} className="brillo-carga h-11 max-w-full rounded-xl" style={{ width: `${ancho * 4}px` }} />)}
       </div>
     );
   }
@@ -169,41 +214,54 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
   return (
     <div className="space-y-5">
       <Apartado titulo="Soporte" ayuda={NOMBRE_SOPORTE[borrador.soporte].ayuda}>
-        <Segmentado<SoporteGuirnalda>
-          etiqueta="Soporte de la guirnalda"
-          opciones={soportes.map((soporte) => ({ valor: soporte, etiqueta: NOMBRE_SOPORTE[soporte].nombre }))}
-          valor={borrador.soporte}
-          onCambiar={(soporte) => {
-            if (soporte !== borrador.soporte) onCambiar(conSoporte(borrador, soporte, anfitrionas[0]));
-          }}
-        />
+        <MandoGrupo etiqueta="Soporte de la guirnalda" valor={NOMBRE_SOPORTE[borrador.soporte].nombre}>
+          {({ etiquetaId }) => (
+            <Segmentado<SoporteGuirnalda>
+              etiqueta="Soporte de la guirnalda"
+              etiquetaId={etiquetaId}
+              tamano="comodo"
+              opciones={soportes.map((soporte) => ({ valor: soporte, etiqueta: NOMBRE_SOPORTE[soporte].nombre }))}
+              valor={borrador.soporte}
+              onCambiar={(soporte) => {
+                if (soporte !== borrador.soporte) onCambiar(conSoporte(borrador, soporte, anfitrionas[0]));
+              }}
+            />
+          )}
+        </MandoGrupo>
         {borrador.soporte === "sobre_estructura" && anfitrionas.length > 0 && (
-          <label className="flex flex-wrap items-center gap-2 text-[13px] text-texto">
-            <span className="font-medium">Sobre la pieza</span>
+          <MandoCampo id={idAnfitriona} etiqueta="Sobre la pieza">
             <select
+              id={idAnfitriona}
               value={borrador.estructura_id ?? ""}
               onChange={(evento) => onCambiar(conAnfitriona(borrador, evento.currentTarget.value))}
               data-testid="anfitriona-guirnalda"
-              className="h-9 min-w-0 rounded-xl border border-borde bg-superficie px-2 text-[13px] focus-visible:outline-2 focus-visible:outline-acento"
+              className={`block min-h-11 w-full rounded-xl border border-borde bg-superficie px-3 text-[13px] text-texto ${FOCO}`}
             >
               {anfitrionas.map((id) => <option key={id} value={id}>{nombrePieza(id)}</option>)}
             </select>
-          </label>
+          </MandoCampo>
         )}
       </Apartado>
 
       <Apartado titulo="Forma" ayuda="Cómo corre de un extremo al otro. En pared o colgada, la curva se arquea hacia arriba, sobre la recta entre sus extremos; el arco caído cuelga hacia abajo, bajo esa recta, y la U invertida baja por los lados. Ahí un extremo también puede ir más alto que el otro.">
-        <Segmentado<FormaGuirnalda>
-          etiqueta="Forma de la guirnalda"
-          opciones={FORMAS_GUIRNALDA.map((forma) => ({ valor: forma, etiqueta: NOMBRE_FORMA[forma] }))}
-          valor={borrador.forma}
-          onCambiar={(forma) => {
-            if (forma !== borrador.forma) onCambiar(conForma(borrador, forma));
-          }}
-        />
+        <MandoGrupo etiqueta="Forma de la guirnalda" valor={NOMBRE_FORMA[borrador.forma]}>
+          {({ etiquetaId }) => (
+            <Segmentado<FormaGuirnalda>
+              etiqueta="Forma de la guirnalda"
+              etiquetaId={etiquetaId}
+              tamano="comodo"
+              opciones={FORMAS_GUIRNALDA.map((forma) => ({ valor: forma, etiqueta: NOMBRE_FORMA[forma] }))}
+              valor={borrador.forma}
+              onCambiar={(forma) => {
+                if (forma !== borrador.forma) onCambiar(conForma(borrador, forma));
+              }}
+            />
+          )}
+        </MandoGrupo>
         {conCaidaForma && (
           <div className="space-y-1.5 pt-1">
             <Interruptor
+              tamano="comodo"
               etiqueta="Caída declarada"
               descripcion={borrador.caida_m !== undefined ? "Cuánto baja el centro respecto de los extremos: alarga la cuerda y cambia los globos." : "Sin caída, se cotiza con el largo recto."}
               activo={borrador.caida_m !== undefined}
@@ -217,6 +275,7 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
         {conArqueoVisible && (
           <div className="space-y-1.5 pt-1">
             <Interruptor
+              tamano="comodo"
               etiqueta="Arqueo declarado"
               descripcion={borrador.arqueo_m !== undefined ? "Cuánto sube el centro sobre la recta entre los extremos: alarga la cuerda y cambia los globos." : "Sin arqueo, se dibuja una curva de muestra y se cotiza con el largo recto."}
               activo={borrador.arqueo_m !== undefined}
@@ -230,6 +289,7 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
         {conDesnivelVisible && (
           <div className="space-y-1.5 pt-1">
             <Interruptor
+              tamano="comodo"
               etiqueta="Un extremo más alto que el otro"
               descripcion={borrador.desnivel_m !== undefined ? `La guirnalda ${desnivelTexto(borrador)}: la cuerda es más larga y cambia los globos.` : "Los dos extremos a la misma altura."}
               activo={borrador.desnivel_m !== undefined}
@@ -241,44 +301,62 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
           </div>
         )}
         {conAnclajesVisibles && (
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-[13px] font-medium text-texto">Puntos de anclaje</span>
-            <Contador
-              etiqueta="Puntos de anclaje"
-              valor={borrador.puntos_de_anclaje ?? ANCLAJES.min}
-              min={ANCLAJES.min}
-              max={ANCLAJES.max}
-              formato={(valor) => `${valor} puntos`}
-              onCambiar={(puntos) => onCambiar(conAnclajes(borrador, puntos))}
-            />
+          <div className="pt-1">
+            <MandoGrupo etiqueta="Puntos de anclaje">
+              {({ etiquetaId }) => (
+                <Contador
+                  etiqueta="Puntos de anclaje"
+                  etiquetaId={etiquetaId}
+                  tamano="comodo"
+                  valor={borrador.puntos_de_anclaje ?? ANCLAJES.min}
+                  min={ANCLAJES.min}
+                  max={ANCLAJES.max}
+                  formato={(valor) => `${valor} puntos`}
+                  onCambiar={(puntos) => onCambiar(conAnclajes(borrador, puntos))}
+                />
+              )}
+            </MandoGrupo>
           </div>
         )}
       </Apartado>
 
       <Apartado titulo="Racimo" ayuda="La unidad que se encadena de izquierda a derecha y el tamaño de sus globos.">
-        <div className="flex flex-wrap gap-2">
-          <Segmentado<UnidadRacimoGuirnalda>
-            etiqueta="Unidad del racimo"
-            opciones={unidades.map((unidad) => ({ valor: unidad, etiqueta: mayuscula(NOMBRE_UNIDAD[unidad].singular) }))}
-            valor={borrador.racimo.unidad}
-            onCambiar={(unidad) => {
-              if (unidad !== borrador.racimo.unidad) onCambiar(conRacimo(borrador, { unidad }));
-            }}
-          />
-          <Segmentado<`${ArmadoGuirnaldaV1["racimo"]["tamano_pulg_base"]}`>
-            etiqueta="Tamaño de los globos del racimo"
-            opciones={tamanos.map((tamano) => ({ valor: `${tamano}` as const, etiqueta: `${tamano}″` }))}
-            valor={`${borrador.racimo.tamano_pulg_base}`}
-            onCambiar={(texto) => {
-              const tamano = Number(texto) as ArmadoGuirnaldaV1["racimo"]["tamano_pulg_base"];
-              if (tamano !== borrador.racimo.tamano_pulg_base) onCambiar(conRacimo(borrador, { tamano_pulg_base: tamano }));
-            }}
-          />
+        <div className="space-y-3">
+          <MandoGrupo etiqueta="Unidad del racimo" valor={mayuscula(NOMBRE_UNIDAD[borrador.racimo.unidad].singular)}>
+            {({ etiquetaId }) => (
+              <Segmentado<UnidadRacimoGuirnalda>
+                etiqueta="Unidad del racimo"
+                etiquetaId={etiquetaId}
+                tamano="comodo"
+                opciones={unidades.map((unidad) => ({ valor: unidad, etiqueta: mayuscula(NOMBRE_UNIDAD[unidad].singular) }))}
+                valor={borrador.racimo.unidad}
+                onCambiar={(unidad) => {
+                  if (unidad !== borrador.racimo.unidad) onCambiar(conRacimo(borrador, { unidad }));
+                }}
+              />
+            )}
+          </MandoGrupo>
+          <MandoGrupo etiqueta="Tamaño de los globos del racimo" valor={`${borrador.racimo.tamano_pulg_base}″`}>
+            {({ etiquetaId }) => (
+              <Segmentado<`${ArmadoGuirnaldaV1["racimo"]["tamano_pulg_base"]}`>
+                etiqueta="Tamaño de los globos del racimo"
+                etiquetaId={etiquetaId}
+                tamano="comodo"
+                opciones={tamanos.map((tamano) => ({ valor: `${tamano}` as const, etiqueta: `${tamano}″` }))}
+                valor={`${borrador.racimo.tamano_pulg_base}`}
+                onCambiar={(texto) => {
+                  const tamano = Number(texto) as ArmadoGuirnaldaV1["racimo"]["tamano_pulg_base"];
+                  if (tamano !== borrador.racimo.tamano_pulg_base) onCambiar(conRacimo(borrador, { tamano_pulg_base: tamano }));
+                }}
+              />
+            )}
+          </MandoGrupo>
         </div>
       </Apartado>
 
       <Apartado titulo="Relleno" ayuda="Globos chicos entre los racimos; salen de la mezcla, no se compran aparte.">
         <Interruptor
+          tamano="comodo"
           etiqueta="Relleno entre racimos"
           activo={borrador.relleno !== null}
           deshabilitado={borrador.relleno === null && materialesRelleno.length === 0}
@@ -287,12 +365,18 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
         />
         {borrador.relleno && (
           <div className="space-y-2">
-            <SelectorColor
-              etiqueta="Color del relleno"
-              leyenda={coloresDe(materialesRelleno, borrador.relleno.material)}
-              valor={borrador.relleno.material}
-              onCambiar={(material) => onCambiar(conRelleno(borrador, { ...borrador.relleno!, material }))}
-            />
+            <MandoGrupo etiqueta="Color del relleno" valor={nombreColor(borrador.relleno.material)}>
+              {({ etiquetaId }) => (
+                <SelectorColor
+                  etiqueta="Color del relleno"
+                  etiquetaId={etiquetaId}
+                  tamano="comodo"
+                  leyenda={coloresDe(materialesRelleno, borrador.relleno!.material)}
+                  valor={borrador.relleno!.material}
+                  onCambiar={(material) => onCambiar(conRelleno(borrador, { ...borrador.relleno!, material }))}
+                />
+              )}
+            </MandoGrupo>
             <Deslizador etiqueta="Parte de los globos que va de relleno" valor={borrador.relleno.proporcion} min={0.01} max={MAX_PROPORCION_RELLENO} paso={0.01} formato={(valor) => porcentaje.format(valor)} onConfirmar={(proporcion) => onCambiar(conRelleno(borrador, { ...borrador.relleno!, proporcion }))} testid="proporcion-relleno-guirnalda" />
           </div>
         )}
@@ -310,7 +394,7 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
               if (siguiente) onCambiar(siguiente);
             }}
             data-testid="agregar-remate-guirnalda"
-            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-acento disabled:opacity-40"
+            className={`inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-3 text-xs font-semibold text-acento hover:bg-acento-suave disabled:opacity-40 ${FOCO}`}
           >
             <Plus className="size-3.5" aria-hidden="true" />Agregar
           </button>
@@ -336,29 +420,40 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
                       onPointerDown={(evento) => onArrastrar(indice, evento)}
                       data-testid="mover-remate-guirnalda"
                       style={{ touchAction: "none" }}
-                      className="inline-flex h-8 cursor-grab items-center gap-1 rounded-lg px-2 text-xs font-semibold text-texto ring-1 ring-borde ring-inset hover:bg-superficie-2 focus-visible:outline-2 focus-visible:outline-acento active:cursor-grabbing"
+                      className={`inline-flex min-h-11 cursor-grab items-center gap-1 rounded-lg px-3 text-xs font-semibold text-texto ring-1 ring-borde ring-inset hover:bg-superficie-2 active:cursor-grabbing ${FOCO}`}
                     >
                       <GripVertical className="size-3.5" aria-hidden="true" />{elegido ? "Elige el racimo…" : `Remate ${indice + 1}`}
                     </button>
-                    <span className="min-w-0 flex-1 text-xs text-texto-suave">{NOMBRE_POSICION[remate.posicion]}</span>
-                    <button type="button" aria-label={`Quitar ${nombre}`} onClick={() => onCambiar(quitarRemate(borrador, indice))} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento">
+                    <button type="button" aria-label={`Quitar ${nombre}`} onClick={() => onCambiar(quitarRemate(borrador, indice))} className={`ml-auto grid size-11 place-items-center rounded-lg text-texto-suave hover:bg-error-suave hover:text-error ${FOCO}`}>
                       <Trash2 className="size-3.5" aria-hidden="true" />
                     </button>
                   </div>
-                  <SelectorColor
-                    etiqueta={`Color del remate ${indice + 1}`}
-                    leyenda={coloresDe(materialesRemate, remate.material)}
-                    valor={remate.material}
-                    onCambiar={(material) => onCambiar(conRemate(borrador, indice, { material }))}
-                  />
-                  <Segmentado<PosicionRemateGuirnalda>
-                    etiqueta={`Dónde va el remate ${indice + 1}`}
-                    opciones={POSICIONES_REMATE_GUIRNALDA.map((posicion) => ({ valor: posicion, etiqueta: NOMBRE_POSICION[posicion] }))}
-                    valor={remate.posicion}
-                    onCambiar={(posicion) => {
-                      if (posicion !== remate.posicion) onCambiar(conRemate(borrador, indice, { posicion }));
-                    }}
-                  />
+                  <MandoGrupo etiqueta={`Color del remate ${indice + 1}`} valor={nombreColor(remate.material)}>
+                    {({ etiquetaId }) => (
+                      <SelectorColor
+                        etiqueta={`Color del remate ${indice + 1}`}
+                        etiquetaId={etiquetaId}
+                        tamano="comodo"
+                        leyenda={coloresDe(materialesRemate, remate.material)}
+                        valor={remate.material}
+                        onCambiar={(material) => onCambiar(conRemate(borrador, indice, { material }))}
+                      />
+                    )}
+                  </MandoGrupo>
+                  <MandoGrupo etiqueta={`Dónde va el remate ${indice + 1}`} valor={NOMBRE_POSICION[remate.posicion]}>
+                    {({ etiquetaId }) => (
+                      <Segmentado<PosicionRemateGuirnalda>
+                        etiqueta={`Dónde va el remate ${indice + 1}`}
+                        etiquetaId={etiquetaId}
+                        tamano="comodo"
+                        opciones={POSICIONES_REMATE_GUIRNALDA.map((posicion) => ({ valor: posicion, etiqueta: NOMBRE_POSICION[posicion] }))}
+                        valor={remate.posicion}
+                        onCambiar={(posicion) => {
+                          if (posicion !== remate.posicion) onCambiar(conRemate(borrador, indice, { posicion }));
+                        }}
+                      />
+                    )}
+                  </MandoGrupo>
                 </li>
               );
             })}

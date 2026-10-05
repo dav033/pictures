@@ -76,8 +76,15 @@ from app.armado_bouquet import (
 )
 from app.armado_arco import ArmadoInvalido as ArmadoArcoInvalido
 from app.armado_arco_prompt import frases_arco
+from app.armado_arco_organico_prompt import frases_arco_organico
+from app.armado_columna_prompt import frases_columna
+from app.armado_columna_organica_prompt import frases_columna_organica
+from app.armado_guirnalda_organica_prompt import frases_guirnalda_organica
 from app.armado_arco import EstructuraArco
 from app.armado_arco import armado_resuelto as armado_arco_resuelto
+from app.armado_arco_organico import ArmadoInvalido as ArmadoArcoOrganicoInvalido
+from app.armado_arco_organico import EstructuraArcoOrganico
+from app.armado_arco_organico import armado_resuelto as armado_arco_organico_resuelto
 from app.armado_columna import ArmadoInvalido as ArmadoColumnaInvalido
 from app.armado_columna import EstructuraColumna
 from app.armado_columna import armado_resuelto as armado_columna_resuelto
@@ -102,6 +109,7 @@ from app.armado_guirnalda import sugerir_armado as sugerir_armado_guirnalda
 from app.armado_guirnalda import validar as validar_armado_guirnalda
 from app.catalog import purchase_color_for_unsold
 from app import conteo_foto
+from app.patron_de_la_foto import mezcla_del_motor
 from app.supuestos import agregar_supuesto, supuesto
 from app.merma import MERMA as _MERMA_COMPARTIDA
 from app.operational_models import ContractModel, OperationalRequest
@@ -179,20 +187,90 @@ _OFFICIAL_GEOMETRY: dict[str, dict[str, object]] = cast(
     dict[str, dict[str, object]],
     contract_schema("PlanDecoracion").get("x-geometria-estructuras-oficiales", {}),
 )
+# La ``forma`` de cada estructura oficial. Mismo dueño y misma vía que la
+# geometría: ``src/lib/plan/estructuras-oficiales.ts``, exportada en
+# ``x-formas-estructuras-oficiales``.
+_OFFICIAL_SHAPES: dict[str, str] = cast(
+    dict[str, str],
+    contract_schema("PlanDecoracion").get("x-formas-estructuras-oficiales", {}),
+)
+#: Las formas que **ningún motor de globos produce**. Un motor arma una banda, una
+#: torre o una tira: sabe hacer una curva simétrica, una asimétrica y un contorno
+#: orgánico. Un aro cerrado y una pieza de forma libre (un techo, un centro de
+#: mesa, un bouquet, una figura) no son ninguna de esas tres cosas. Mismo dueño que
+#: la tabla de formas (``FORMAS_SIN_MOTOR`` de ``estructuras-oficiales.ts``),
+#: exportado en ``x-formas-sin-motor``: la regla no se repite aquí.
+FORMAS_SIN_MOTOR = frozenset(
+    cast(list[str], contract_schema("PlanDecoracion").get("x-formas-sin-motor", []))
+)
+#: Las estructuras oficiales que no arma ningún motor, **derivadas de la tabla** y
+#: no escritas a mano: hoy son ``aro_circular``, ``techo_globos``, ``centro_mesa``,
+#: ``bouquet`` y ``figura``. Su conteo es el de la fórmula, que es el que necesitan
+#: (ADR-0034 §3 y el comentario de ``_structure_count``): el aro se cuenta con su
+#: ``π × diámetro`` y no con la banda de un arco.
+#:
+#: Hace falta porque ningún motor mira ``estructura_oficial``: la puerta pregunta
+#: por el ``tipo``, y el ``tipoBase`` de un aro es ``arco`` y el de un techo
+#: ``guirnalda``. Sin esto, la receta les ponía el armado de un arco o de una
+#: guirnalda y la pieza se contaba **y se dibujaba** con la forma equivocada. Su
+#: dibujo es el esquemático de ``app/dibujo_estructura.py``, que no cuenta nada.
+OFICIALES_SIN_MOTOR = frozenset(
+    oficial for oficial, forma in _OFFICIAL_SHAPES.items() if forma in FORMAS_SIN_MOTOR
+)
+#: Las estructuras oficiales de forma ``asimetrica`` (hoy ``arco_asimetrico``,
+#: ``semiarco_asimetrico``, ``columna_asimetrica`` y ``pared_organica``), **derivadas
+#: de la misma tabla**. La receta del motor las lee para no armar simétrica una
+#: pieza que el plan declara asimétrica: en el diseñador la asimetría es una forma
+#: lista del arco orgánico (``asimetrico``), no una forma del arco de patrones.
+OFICIALES_ASIMETRICAS = frozenset(
+    oficial for oficial, forma in _OFFICIAL_SHAPES.items() if forma == "asimetrica"
+)
+
+
 # Densities each official structure admits (arco_no_denso only sencilla,
 # pared_densa only media/lujosa...). Same owner, estructuras-oficiales.ts, which
 # exports them as the ``allOf`` coherence rules of the structure item; read from
 # there so the photo count never picks one the plan would reject (review 2).
-_OFFICIAL_DENSITIES: dict[str, tuple[str, ...]] = {
-    cast(str, rule["if"]["properties"]["estructura_oficial"]["const"]): tuple(
-        cast(list[str], rule["then"]["properties"]["densidad"]["enum"])
-    )
-    for rule in cast(
-        list[dict[str, dict[str, dict[str, dict[str, object]]]]],
-        contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"].get("allOf", []),
-    )
-    if "densidad" in rule["then"]["properties"]
-}
+def _official_densities() -> dict[str, tuple[str, ...]]:
+    """Densities per official variant, read from the rules that name one.
+
+    The list holds more than densities: ``formas-pieza.ts`` adds its own rules
+    (the chosen ``forma`` against the same official), and those name no density
+    and do not always carry a ``const`` official. Each access is guarded so a new
+    family of rules cannot break this read.
+    """
+    reglas = [
+        regla
+        for regla in cast(
+            list[object],
+            contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"].get(
+                "allOf", []
+            ),
+        )
+        if isinstance(regla, Mapping)
+    ]
+    densidades: dict[str, tuple[str, ...]] = {}
+    for regla in reglas:
+        condicion = regla.get("if")
+        consecuencia = regla.get("then")
+        if not isinstance(condicion, Mapping) or not isinstance(consecuencia, Mapping):
+            continue
+        propiedades_si = condicion.get("properties")
+        propiedades_entonces = consecuencia.get("properties")
+        if not isinstance(propiedades_si, Mapping) or not isinstance(propiedades_entonces, Mapping):
+            continue
+        oficial = propiedades_si.get("estructura_oficial")
+        densidad = propiedades_entonces.get("densidad")
+        if not isinstance(oficial, Mapping) or not isinstance(densidad, Mapping):
+            continue
+        nombre = oficial.get("const")
+        admitidas = densidad.get("enum")
+        if isinstance(nombre, str) and isinstance(admitidas, list):
+            densidades[nombre] = tuple(cast(list[str], admitidas))
+    return densidades
+
+
+_OFFICIAL_DENSITIES: dict[str, tuple[str, ...]] = _official_densities()
 
 
 def _admitted_densities(structure: Mapping[str, object]) -> tuple[str, ...]:
@@ -353,6 +431,20 @@ class PistaPatron(ContractModel):
     #: armarla desde el 29: era código inalcanzable porque la puerta de entrada
     #: no la dejaba pasar.
     zonas: list[ZonaLeida] | None = Field(default=None, max_length=8)
+    #: Colores salpicados sobre las secciones en vez de ocupar una (las burbujas cristal, los cromados
+    #: sueltos). Van aquí por la misma razón que `direccion` y `simetria`: este modelo se mantiene A MANO y
+    #: sin el campo `extra="forbid"` rechazaría con 422 la petición de plan entera en cuanto el lector lo
+    #: mande.
+    motas: list[str] | None = Field(default=None, max_length=4)
+    #: Por qué eje recorre el patrón la pieza y si sus dos mitades son iguales
+    #: (ADR-0039). Los dos los lee la foto y los dos son opcionales: quien mira
+    #: la foto no sabe qué admite la pieza, y ``patron_desde_pista`` descarta lo
+    #: que no cabe sin tumbar la lectura. Van aquí, en este modelo que se
+    #: mantiene A MANO, porque sin ellos ``extra="forbid"`` rechazaría con 422 la
+    #: petición de plan entera en cuanto el lector los mande: es exactamente lo
+    #: que pasó el 2026-09-30 con ``zonas``.
+    direccion: Literal["longitudinal", "transversal", "diagonal"] | None = None
+    simetria: Literal["espejo"] | None = None
     confianza: float = Field(ge=0, le=1)
 
     @field_validator("referencia_element_id")
@@ -424,6 +516,30 @@ class PistaArmado(ContractModel):
     )
 
 
+class PistaTamanos(ContractModel):
+    """Los tamaños de globo que la foto leyó en una pieza (``PistaTamanosSchema``).
+
+    Su propia pista y **no un campo de** ``PistaPatron``, por lo mismo que el remate de la columna tiene la
+    suya: un tamaño no es una disposición de color. Dentro de la pista de patrón no habría llegado nunca al
+    caso que lo motivó —una pieza de un solo color no deja ``patron_color``, así que no deja pista— y los
+    tamaños de esa columna dorada eran justo los que había que leer (2026-10-03).
+
+    Este modelo también se mantiene A MANO, con lo que eso implica: un campo que el lector mande y que aquí
+    no esté hace que ``extra="forbid"`` rechace la petición de plan ENTERA con 422.
+    """
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    referencia_element_id: str = Field(min_length=1, max_length=80)
+    tamanos: Literal[
+        "casi_todos_gigantes",
+        "grandes_con_pocos_chicos",
+        "chicos_con_pocos_grandes",
+        "un_solo_tamano",
+    ]
+    confianza: float = Field(ge=0, le=1)
+
+
 class PlanResolutionRequest(OperationalRequest):
     """Strict request carried inside the operational envelope."""
 
@@ -436,6 +552,11 @@ class PlanResolutionRequest(OperationalRequest):
     # Later re-resolutions keep what the plan already declares.
     completar_patrones: bool = Field(default=False, strict=True)
     pistas_patron: list[PistaPatron] = Field(default_factory=list, max_length=16)
+    #: Los tamaños leídos. **No** van con ``completar_patrones``: un tamaño no es una disposición de
+    #: color, es una propiedad de la pieza, y una columna de un solo color —el caso que los motivó— no
+    #: deja patrón ninguno. Misma regla que el remate y la inclinación (ADR-0039): la lectura está o no
+    #: está, y sin ella la mezcla es la que el plan declaró.
+    pistas_tamanos: list[PistaTamanos] = Field(default_factory=list, max_length=16)
     # ADR-0030: the same one-time completion for bouquet assemblies. After an
     # edit, Next limits it to the edited piece (``completar_armados_de``): a
     # bouquet whose assembly the decorator removed does not get it back.
@@ -749,11 +870,23 @@ def _complete_measures(raw_plan: Mapping[str, object]) -> dict[str, object]:
     return plan
 
 
+def proporciones_de_mezcla(mezcla: str) -> tuple[tuple[int, float], ...] | None:
+    """Qué proporción de cada diámetro pide una mezcla del plan, o ``None`` si no es una de ellas.
+
+    Es la misma tabla con la que este resolutor cuenta y compra (``x-reglas-mezclas``, dueño
+    ``src/lib/plan/mezclas.ts``), publicada para que el armado del motor pueda dibujar **los mismos globos
+    que se cobran**: hasta hoy las piezas orgánicas se armaban siempre con la mezcla del diseño de partida
+    del diseñador, dijera lo que dijera el plan.
+    """
+    return _MIXES.get(mezcla)
+
+
 def _complete_plan(
     raw_plan: Mapping[str, object],
     *,
     completar_patrones: bool = False,
     pistas: Sequence[Mapping[str, object]] = (),
+    tamanos: Sequence[Mapping[str, object]] = (),
 ) -> dict[str, object]:
     """Fill default measures and make every color pattern authoritative.
 
@@ -765,6 +898,10 @@ def _complete_plan(
     before, which keeps its ``plan_hash``.
     """
     plan = _complete_measures(raw_plan)
+    # Los tamaños no esperan a ``completar_patrones``: no son una disposición de color (ver
+    # ``pistas_tamanos``). Siguen yendo ANTES de ``_assign_patterns`` porque la rejilla de un patrón se
+    # dimensiona desde la mezcla.
+    _assign_mixes(plan, tamanos)
     if completar_patrones:
         _assign_patterns(plan, pistas)
     return _sync_participations(plan, plan)
@@ -1057,6 +1194,53 @@ def _suggested_pattern(
         except PatronColorInvalido:
             return None
     return cast(dict[str, object], pattern)
+
+
+def _assign_mixes(plan: dict[str, object], tamanos: Sequence[Mapping[str, object]]) -> None:
+    """La mezcla que leyó la foto, cuando la leyó; en sitio, sobre un plan completado.
+
+    Va **antes** de ``_assign_patterns`` porque la rejilla de un patrón se dimensiona desde la mezcla
+    (``_pattern_context`` cuenta la pieza, y contarla usa sus proporciones): asignarla después dejaría el
+    patrón armado sobre los tamaños viejos.
+
+    Al contrario que ``_assign_patterns``, esta sí **pisa** lo que venía declarado, y queda dicho en un
+    supuesto. La mezcla la elige la IA que arma el plan desde la descripción de la pieza, sin mirar la foto:
+    no es una decisión del decorador, es una suposición sobre una foto que otro sí vio. Cuando la foto lo
+    dice, manda la foto; cuando no dice nada (``tamanos`` es opcional), no se toca nada.
+    """
+    assumptions = list(_strings(plan.get("supuestos")))
+    # Cuántos había al entrar: sin esto, un plan que no cambia ninguna mezcla salía igualmente con sus
+    # supuestos reescritos (normalizados y sin repetidos) y su `plan_hash` se movía, así que volver a
+    # resolver un plan ya firmado dejaba de ser punto fijo. Antes no se notaba porque esta función solo
+    # corría detrás de `completar_patrones`, que es la primera resolución y nunca la segunda.
+    traia = len(assumptions)
+    for structure in cast(list[dict[str, object]], plan["estructuras"]):
+        if _text(structure.get("tipo")) not in _GEOMETRIC_TYPES:
+            continue
+        element_id = _text(structure.get("referencia_element_id"))
+        hint = next(
+            (
+                pista
+                for pista in tamanos
+                if element_id is not None and pista.get("referencia_element_id") == element_id
+            ),
+            None,
+        )
+        avisos: list[str] = []
+        leida = mezcla_del_motor(hint, avisos)
+        declarada = _text(structure.get("mezcla"))
+        if leida is None or leida not in _MIXES or leida == declarada:
+            continue
+        structure["mezcla"] = leida
+        agregar_supuesto(
+            assumptions,
+            supuesto(
+                _text(structure.get("nombre")) or "Estructura",
+                f"los tamaños de la foto piden la mezcla {leida}, no {declarada or 'la de por defecto'}.",
+            ),
+        )
+    if len(assumptions) > traia:
+        plan["supuestos"] = list(dict.fromkeys(assumptions))
 
 
 def _assign_patterns(plan: dict[str, object], pistas: Sequence[Mapping[str, object]]) -> None:
@@ -1711,6 +1895,8 @@ def _physical_warnings(
 #: verdad, y el de ADR-0032 se queda describiendo el armado por partes.
 _ARMADOS_DEL_MOTOR: dict[str, tuple[str, str, str]] = {
     "arco": ("armado_arco", "largo_m", "armados_arco"),
+    # El eje es el largo de la banda recorrida de punta a punta, no el ancho: con eso se cuenta.
+    "arco_organico": ("armado_arco_organico", "largo_m", "armados_arco_organico"),
     "columna": ("armado_columna", "alto_total_m", "armados_columna"),
     "columna_organica": ("armado_columna_organica", "alto_m", "armados_columna_organica"),
     "guirnalda": ("armado_guirnalda_organica", "largo_m", "armados_guirnalda_organica"),
@@ -1719,7 +1905,32 @@ _ARMADOS_DEL_MOTOR: dict[str, tuple[str, str, str]] = {
 
 #: Las clases de armado que no se llaman como el tipo de la pieza que arman: la columna orgánica es una columna.
 #: Cuando una pieza trae el armado clásico y el orgánico, manda el primero de la tabla (el clásico, que ya existía).
-_TIPO_DE_CLASE: dict[str, str] = {"columna_organica": "columna"}
+#: Quién le cuenta cada armado a los modelos de imagen (ADR-0035). Las cinco piezas del motor tienen la suya:
+#: sin frase, el caption solo sabe nombrar la pieza y sus colores, y lo que calla lo inventa el LoRA con lo que
+#: aprendió de su corpus — el 2026-10-04, un globo gigante coronando dos columnas que el plan no corona.
+_FRASES_DE_LA_IMAGEN: dict[
+    str,
+    Callable[
+        [Mapping[str, object], Mapping[str, object], Sequence[tuple[str, str]]], tuple[str, str]
+    ],
+] = {
+    "arco": frases_arco,
+    "arco_organico": frases_arco_organico,
+    "columna": frases_columna,
+    "columna_organica": frases_columna_organica,
+    "guirnalda": frases_guirnalda_organica,
+}
+
+
+#: Qué tipos de pieza admite cada clase de armado que no se llama como el tipo que arma. Es una **tupla** por
+#: clase y no un tipo suelto porque ``arco_organico`` arma dos piezas distintas: el ``arco`` que el plan
+#: declara orgánico y el ``semiarco``, que lo es **siempre** —«un medio arco es este armado con
+#: ``forma.corte`` menor que 1», encabezado de ``app/armado_arco_organico.py``— y no tiene ningún otro motor.
+#: La columna orgánica sigue siendo solo una columna.
+_TIPO_DE_CLASE: dict[str, tuple[str, ...]] = {
+    "columna_organica": ("columna",),
+    "arco_organico": ("arco", "semiarco"),
+}
 
 
 def _campos_publicados(lista: str) -> frozenset[str]:
@@ -1810,20 +2021,193 @@ def _armado_del_motor(
     columna: el contrato no impide el cruce, pero la puerta del motor lo
     rechaza (``no_es_arco``, ``no_es_columna``), y una pieza que no es ninguna
     de las dos se queda en el camino de siempre sin preguntar nada.
+
+    ``armado_arco_organico`` cuenta en las **dos** piezas que ese motor arma:
+    el arco declarado orgánico y el ``semiarco``, que es ese mismo armado con
+    ``forma.corte`` menor que 1. Un ``semiarco`` que trajera el ``armado_arco``
+    clásico no cuenta: el de patrones no sabe cortar la banda por la mitad.
+
+    Y **el tipo no basta**: un aro circular y un techo de globos se construyen
+    con ``tipo`` ``arco`` y ``guirnalda``, pero ningún motor hace un aro ni un
+    techo (``OFICIALES_SIN_MOTOR``). Un armado guardado en una de esas piezas no
+    la cuenta: se queda con su fórmula, que es la cifra correcta de la pieza.
     """
+    if (_text(structure.get("estructura_oficial")) or "") in OFICIALES_SIN_MOTOR:
+        return None
     tipo = _text(structure.get("tipo")) or ""
     for clase, (campo, _eje, _lista) in _ARMADOS_DEL_MOTOR.items():
-        if _TIPO_DE_CLASE.get(clase, clase) != tipo:
+        if tipo not in _TIPO_DE_CLASE.get(clase, (clase,)):
             continue
         armado = structure.get(campo)
         if isinstance(armado, Mapping):
             return clase, cast(Mapping[str, object], armado)
-    return None
+    # Un arco clásico sin armado también es del motor: lo arma la receta, con su patrón de color como pista si
+    # lo trae (``armado_estructura.armado_arco_de_patron``) y, si no, por número de colores, que es lo mismo que
+    # le escribe la confirmación (``armado_estructura.armado_arco_de_receta``). Se contaba con la fórmula y el
+    # plan cobraba un arco que nadie arma —132 globos donde el motor coloca 88— mientras la guía lo dibujaba con
+    # el motor (con patrón) o no lo dibujaba (sin él, ``sin_dibujo``).
+    del_arco = armado_arco_de_receta(structure)
+    if del_arco is not None:
+        return "arco", del_arco
+    # Y una columna o un semiarco sin armado, con el de la receta que le escribe la confirmación
+    # (``armado_columna_o_semiarco_de_receta``): así cuenta, compra y guía salen del mismo armado.
+    de_la_receta = armado_columna_o_semiarco_de_receta(structure)
+    if de_la_receta is not None:
+        return de_la_receta
+    # Y una guirnalda orgánica sin armado, con la receta que le escribe la confirmación
+    # (``armado_guirnalda_de_receta``). La clásica no: es del armado por partes, que cuenta la fórmula y
+    # dibuja ``vista_previa_de_armado_guirnalda``.
+    de_la_guirnalda = armado_guirnalda_de_receta(structure)
+    return None if de_la_guirnalda is None else ("guirnalda", de_la_guirnalda)
+
+
+def armado_arco_de_patron(structure: Mapping[str, object]) -> dict[str, object] | None:
+    """El armado del motor de un arco clásico que trae ``patron_color`` y ningún armado; ``None`` si no lo es.
+
+    Derivado del plan, determinista y **fuera del plan**: no se escribe en ``estructuras`` (el plan sigue sin
+    ``armado_arco``), pero lo que cuenta sí entra en ``compras`` y por eso en ``plan_hash``. Recordado por
+    pieza, porque a la misma pieza se le pregunta varias veces por resolución.
+    """
+    if structure.get("tipo") != "arco" or not isinstance(structure.get("patron_color"), Mapping):
+        return None
+    recordado = _armado_arco_de_patron(
+        json.dumps(structure, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    )
+    return None if recordado is None else cast(dict[str, object], json.loads(recordado))
+
+
+@lru_cache(maxsize=_MAX_PIEZAS_RECORDADAS)
+def _armado_arco_de_patron(estructura: str) -> str | None:
+    """``armado_arco_de_patron`` sobre la pieza en JSON canónico, con el armado en JSON (inmutable en caché)."""
+    # Importación diferida a propósito: ``app.armado_estructura`` importa de este módulo (``PistaPatron``,
+    # ``OFICIALES_SIN_MOTOR``, ``PlanResolutionError``), así que traerla arriba sería un ciclo. Se va cuando
+    # ``completar`` se mude a la resolución, como su propio encabezado ya prevé.
+    from app.armado_estructura import armado_arco_de_patron as receta_del_patron
+
+    armado = receta_del_patron(cast(Mapping[str, object], json.loads(estructura)))
+    return None if armado is None else json.dumps(armado, ensure_ascii=False, sort_keys=True)
+
+
+def armado_arco_de_receta(structure: Mapping[str, object]) -> dict[str, object] | None:
+    """El armado del motor de un arco clásico sin armado, con o sin ``patron_color``; ``None`` si no lo es.
+
+    Con patrón es ``armado_arco_de_patron``; sin él, la receta por número de colores
+    (``armado_estructura.armado_arco_de_receta``). Derivado del plan, determinista y fuera de ``estructuras``,
+    pero lo que cuenta entra en ``compras`` y por eso en ``plan_hash``. Recordado por pieza.
+    """
+    if structure.get("tipo") != "arco":
+        return None
+    if isinstance(structure.get("patron_color"), Mapping):
+        return armado_arco_de_patron(structure)
+    recordado = _armado_arco_de_receta(
+        json.dumps(structure, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    )
+    return None if recordado is None else cast(dict[str, object], json.loads(recordado))
+
+
+@lru_cache(maxsize=_MAX_PIEZAS_RECORDADAS)
+def _armado_arco_de_receta(estructura: str) -> str | None:
+    """``armado_arco_de_receta`` sobre la pieza en JSON canónico (inmutable en caché)."""
+    # Importación diferida por el mismo ciclo que ``_armado_arco_de_patron``.
+    from app.armado_estructura import armado_arco_de_receta as receta_del_arco
+
+    armado = receta_del_arco(cast(Mapping[str, object], json.loads(estructura)))
+    return None if armado is None else json.dumps(armado, ensure_ascii=False, sort_keys=True)
+
+
+#: La clase del motor por el campo del plan en el que la receta de una columna o un semiarco escribe su armado.
+_CLASE_POR_CAMPO: dict[str, str] = {
+    campo: clase for clase, (campo, _eje, _lista) in _ARMADOS_DEL_MOTOR.items()
+}
+
+
+def armado_columna_o_semiarco_de_receta(
+    structure: Mapping[str, object],
+) -> tuple[str, dict[str, object]] | None:
+    """La clase y el armado de la receta de una columna o un semiarco que no trae ninguno; ``None`` si no lo es.
+
+    Es lo que la confirmación les escribe (``armado_estructura.armado_columna_de_receta`` y
+    ``armado_semiarco_de_receta``): sin él, una confirmación que cayó en ``sinArmadosDeMotor`` dejaba la pieza
+    cobrada con la fórmula y la guía en ``sin_dibujo``. Derivado del plan, determinista y fuera de
+    ``estructuras``, como ``armado_arco_de_receta``; lo que cuenta entra en ``compras``. Recordado por pieza.
+    """
+    if structure.get("tipo") not in ("columna", "semiarco"):
+        return None
+    recordado = _armado_columna_o_semiarco_de_receta(
+        json.dumps(structure, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    )
+    if recordado is None:
+        return None
+    clase, armado = cast(tuple[str, dict[str, object]], tuple(json.loads(recordado)))
+    return clase, armado
+
+
+@lru_cache(maxsize=_MAX_PIEZAS_RECORDADAS)
+def _armado_columna_o_semiarco_de_receta(estructura: str) -> str | None:
+    """``armado_columna_o_semiarco_de_receta`` sobre la pieza en JSON canónico (inmutable en caché)."""
+    # Importación diferida por el mismo ciclo que ``_armado_arco_de_patron``.
+    from app.armado_estructura import armado_columna_de_receta, armado_semiarco_de_receta
+
+    pieza = cast(Mapping[str, object], json.loads(estructura))
+    de_columna = armado_columna_de_receta(pieza)
+    if de_columna is not None:
+        clase = _CLASE_POR_CAMPO[de_columna[0]]
+        return json.dumps([clase, de_columna[1]], ensure_ascii=False, sort_keys=True)
+    del_semiarco = armado_semiarco_de_receta(pieza)
+    if del_semiarco is None:
+        return None
+    return json.dumps(["arco_organico", del_semiarco], ensure_ascii=False, sort_keys=True)
+
+
+def armado_guirnalda_de_receta(structure: Mapping[str, object]) -> dict[str, object] | None:
+    """El armado del motor de una guirnalda orgánica que no trae ninguno; ``None`` si no lo es.
+
+    Es lo que la confirmación le escribe (``armado_estructura.armado_guirnalda_de_receta``): sin él, una
+    confirmación que cayó en ``sinArmadosDeMotor`` dejaba la guirnalda cobrada con la fórmula y la guía en
+    ``sin_dibujo``. Derivado del plan, determinista y fuera de ``estructuras``, como ``armado_arco_de_receta``;
+    lo que cuenta entra en ``compras``. Recordado por pieza.
+    """
+    if structure.get("tipo") != "guirnalda" or isinstance(
+        structure.get("armado_guirnalda_organica"), Mapping
+    ):
+        return None
+    recordado = _armado_guirnalda_de_receta(
+        json.dumps(structure, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    )
+    return None if recordado is None else cast(dict[str, object], json.loads(recordado))
+
+
+@lru_cache(maxsize=_MAX_PIEZAS_RECORDADAS)
+def _armado_guirnalda_de_receta(estructura: str) -> str | None:
+    """``armado_guirnalda_de_receta`` sobre la pieza en JSON canónico (inmutable en caché)."""
+    # Importación diferida por el mismo ciclo que ``_armado_arco_de_patron``.
+    from app.armado_estructura import armado_guirnalda_de_receta as receta_de_la_guirnalda
+
+    armado = receta_de_la_guirnalda(cast(Mapping[str, object], json.loads(estructura)))
+    return None if armado is None else json.dumps(armado, ensure_ascii=False, sort_keys=True)
+
+
+def pieza_del_motor_resuelta(
+    structure: Mapping[str, object],
+) -> tuple[str, dict[str, object]] | None:
+    """La pieza que su motor arma, con cada globo colocado, o ``None`` si ningún motor la arma.
+
+    Es la misma puerta que usa la resolución (``_armado_del_motor`` y ``_resolver_con_el_motor``, con su caché),
+    así que los globos son exactamente los que se contaron y se cotizaron. Devuelve la clase del motor
+    (``arco``, ``columna``, ``arco_organico``, ``columna_organica`` o ``guirnalda``) y la pieza tal como la
+    publica ``armados_*`` antes de recortarla. La lee la guía de escena de la imagen (``app/guia_escena.py``):
+    derivado, fuera del snapshot y de ``plan_hash``.
+    """
+    entrada = _armado_del_motor(structure)
+    if entrada is None:
+        return None
+    return entrada[0], _resolver_con_el_motor(entrada[0], entrada[1], structure)
 
 
 def _armado_del_motor_error(
     estructura_id: str,
     error: ArmadoArcoInvalido
+    | ArmadoArcoOrganicoInvalido
     | ArmadoColumnaInvalido
     | ArmadoColumnaOrganicaInvalido
     | ArmadoGuirnaldaOrganicaInvalido,
@@ -1877,6 +2261,13 @@ def _pieza_del_motor(clave: str) -> dict[str, object]:
         resuelto = armado_columna_organica_resuelto(
             EstructuraColumnaOrganica(es_columna=True, materiales=colores), armado, MERMA
         )
+    elif tipo == "arco_organico":
+        # ``es_arco`` es True también para un ``semiarco``: la puerta pregunta si la pieza se arma con este
+        # motor, y un medio arco **es** este arco con ``forma.corte`` menor que 1. Quien dice que es medio es
+        # el armado, no la pieza.
+        resuelto = armado_arco_organico_resuelto(
+            EstructuraArcoOrganico(es_arco=True, materiales=colores), armado, MERMA
+        )
     else:
         resuelto = armado_columna_resuelto(
             EstructuraColumna(es_columna=True, materiales=colores), armado
@@ -1908,6 +2299,7 @@ def _resolver_con_el_motor(
         return _pieza_del_motor(clave)
     except (
         ArmadoArcoInvalido,
+        ArmadoArcoOrganicoInvalido,
         ArmadoColumnaInvalido,
         ArmadoColumnaOrganicaInvalido,
         ArmadoGuirnaldaOrganicaInvalido,
@@ -1971,8 +2363,12 @@ def _structure_count(
     """Axis, balloons per instance, effective mix and unplaced mandatory sizes."""
     # ADR-0034 §3: con armado del motor cuenta el motor, que coloca cada globo.
     # Sin armado se queda la estimación de siempre, que es la que necesitan la
-    # pared, el centro de mesa, el aro, el semiarco y la escultura, y la que
-    # mantiene quieto el ``plan_hash`` de los planes ya aprobados.
+    # pared, el centro de mesa, el aro y la escultura, y la que mantiene quieto
+    # el ``plan_hash`` de los planes ya aprobados. El semiarco salió de esa
+    # lista el 2026-10-04: su armado es el del arco orgánico con ``forma.corte``
+    # menor que 1 y, cuando lo trae, lo cuenta el motor como a las demás. El aro y
+    # el techo se quedan: su forma no es una que un motor produzca, así que un
+    # armado guardado en ellos no cuenta (``OFICIALES_SIN_MOTOR``).
     motor = _conteo_del_motor(structure)
     if motor is not None:
         return (
@@ -3592,6 +3988,13 @@ def _build_resolved(
     columnas = _armados_del_motor_resueltos(plan, "columna")
     if columnas:
         result["armados_columna"] = columnas
+    # El arco orgánico estaba en `_ARMADOS_DEL_MOTOR` y en el contrato (`armados_arco_organico`) desde que se
+    # cableó su receta, y **nadie lo publicaba**: la resolución pedía las otras cuatro listas y esta no. El
+    # motor lo contaba, pero su hoja —cada globo colocado, la compra, los avisos— no llegaba a ningún sitio
+    # (2026-10-04). Portar no es cablear.
+    arcos_organicos = _armados_del_motor_resueltos(plan, "arco_organico")
+    if arcos_organicos:
+        result["armados_arco_organico"] = arcos_organicos
     columnas_organicas = _armados_del_motor_resueltos(plan, "columna_organica")
     if columnas_organicas:
         result["armados_columna_organica"] = columnas_organicas
@@ -3741,16 +4144,22 @@ def _armados_del_motor_resueltos(plan: Mapping[str, object], tipo: str) -> list[
             continue
         resuelto = _resolver_con_el_motor(entrada[0], entrada[1], structure)
         publicado = cast(dict[str, object], json.loads(json.dumps(resuelto)))
-        if tipo == "arco":
+        frases = _FRASES_DE_LA_IMAGEN.get(tipo)
+        if frases is not None:
             # ADR-0035: Python cuenta el armado a los modelos de imagen. Derivado, fuera del snapshot y del hash.
+            # Vacío y no `None` cuando el plan no lo dice: las cinco frases tratan la cadena vacía como «no
+            # consta», y así la tabla tiene una sola firma en vez de dos.
             materiales = [
-                (_text(material.get("color")), _text(material.get("acabado")))
+                (_text(material.get("color")) or "", _text(material.get("acabado")) or "")
                 for material in _mappings(structure.get("materiales"))
             ]
             publicado["estructura_id"] = _text(structure.get("estructura_id")) or ""
-            publicado["prompt_gemini"], publicado["prompt_lora"] = frases_arco(
+            publicado["prompt_gemini"], publicado["prompt_lora"] = frases(
                 entrada[1], resuelto, materiales
             )
+            # Las cifras de cada color (referencia Sempertex, Pantone, color del globo inflado) ya no se pegan
+            # aquí, solo a las piezas del motor: el prompt de Gemini las lleva en UN bloque para todas las
+            # piezas con globos (`bloqueColoresExactos` en build-image-prompt.ts, 2026-10-04, G4).
         resueltos.append(publicado)
     return resueltos
 
@@ -3761,6 +4170,7 @@ def _plan_to_resolve(request: PlanResolutionRequest) -> dict[str, object]:
         request.plan,
         completar_patrones=request.completar_patrones,
         pistas=[pista.model_dump(exclude_none=True) for pista in request.pistas_patron],
+        tamanos=[pista.model_dump(exclude_none=True) for pista in request.pistas_tamanos],
     )
     try:
         PlanDecoracion.model_validate(raw_plan)
@@ -5345,11 +5755,15 @@ def validar_armado_guirnalda_sin_catalogo(
 
 
 __all__ = [
+    "armado_arco_de_patron",
+    "armado_arco_de_receta",
+    "pieza_del_motor_resuelta",
     "CatalogPlanStore",
     "ComprasPorMaterial",
     "MERMA",
     "PLAN_RESOLUTION_SCOPE",
     "PistaPatron",
+    "PistaTamanos",
     "PlanAllowlistEntry",
     "PlanResolutionError",
     "PlanResolutionRequest",

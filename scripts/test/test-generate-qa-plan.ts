@@ -101,8 +101,14 @@ async function main(): Promise<void> {
   const frontal = cajasDeEstructuras([estructura("piso_frontal", 2)]);
   assert.ok(centro(frontal["EST_01#1"]!.bbox) < 0.34 && centro(frontal["EST_01#2"]!.bbox) > 0.66, JSON.stringify(frontal));
 
+  // D3 (2026-10-04): dos piezas en la entrada la flanquean, una a cada lado.
+  const entrada = cajasDeEstructuras([estructura("entrada", 2)]);
+  assert.ok(centro(entrada["EST_01#1"]!.bbox) < 0.34 && centro(entrada["EST_01#2"]!.bbox) > 0.66, JSON.stringify(entrada));
+  const entradaCuatro = cajasDeEstructuras([estructura("entrada", 4)]);
+  assert.ok([1, 3].every((n) => centro(entradaCuatro[`EST_01#${n}`]!.bbox) < 0.5) && [2, 4].every((n) => centro(entradaCuatro[`EST_01#${n}`]!.bbox) > 0.5), JSON.stringify(entradaCuatro));
+
   // Cajas de un solo lado por definición: no se tocan.
-  for (const ubicacion of ["entrada", "esquina", "vegetacion", "pared_lateral"]) {
+  for (const ubicacion of ["esquina", "vegetacion", "pared_lateral"]) {
     const cajas = cajasDeEstructuras([estructura(ubicacion, 2)]);
     const base = cajas.EST_01!.bbox;
     assert.equal(cajas["EST_01#1"]!.bbox.x, base.x, `${ubicacion} conserva el reparto actual`);

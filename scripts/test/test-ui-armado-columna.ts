@@ -53,6 +53,7 @@ import { leyendaPatron } from "@/components/plan/patron/leyenda";
 import { ArmadoColumnaV1Schema, type ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
 import { FalloPlanArmado } from "@/lib/plan/peticion-armado";
 import { pedirVistaArmadoColumna, RESPALDO_VISTA_ARMADO_COLUMNA, type VistaArmadoColumna } from "@/lib/plan/peticion-armado-columna";
+import type { OpcionesArmadoColumna } from "@/lib/plan/opciones-armado-columna";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 
 let casos = 0;
@@ -336,7 +337,7 @@ async function main(): Promise<void> {
     for (const apartado of ["Diseño de color", "Forma y tamaño", "Remate", "Globos"]) assert.ok(html.includes(apartado), `falta el apartado ${apartado}`);
     for (const patron of vista.opciones.patrones) assert.ok(html.includes(patron.nombre), `falta el patrón ${patron.nombre}`);
     assert.ok(html.includes('data-testid="mando-globo-grande"') && html.includes("Globo grande arriba"), "el interruptor del globo grande está a la vista, sin abrir nada");
-    for (const mando of ["Vueltas", "Inclinación", "Alto", "Globos por capa", "Capas escalonadas", "Base con peso", "Inflado", "Desorden", "Otra variación"]) {
+    for (const mando of ["Vueltas", "Inclinación", "Alto", "Globos por capa", "Capas escalonadas", "Base con peso", "Qué tan inflados", "Globos fuera de su lugar", "Otra variación"]) {
       assert.ok(html.includes(mando), `falta el mando ${mando}`);
     }
     // Una columna por capas dice que el patrón no decide nada y ofrece pasar a un patrón.
@@ -354,6 +355,44 @@ async function main(): Promise<void> {
     assert.ok(!/null|undefined|armado_columna|alto_m|globos_capa|variacion_tam/.test(html.replace(/data-testid="[^"]*"/g, "").replace(/ id="[^"]*"/g, "")), "sin claves técnicas a la vista");
     // Cada control mide al menos 44 px de alto en lo que se toca.
     assert.ok(html.includes("min-h-11"), "los botones y selectores miden 44 px");
+  });
+
+  await caso("cada mando del patrón se nombra en palabras de oficio; la clave cruda del motor no se enseña nunca", async () => {
+    const vista = await vistaDeLaFixture();
+    const leer = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+    const pintarControles = (opciones: OpcionesArmadoColumna, borrador: ArmadoColumnaV1) =>
+      renderToStaticMarkup(React.createElement(ControlesColumna, { borrador, opciones, limites: vista.limites, leyenda: LEYENDA, onCambiar: () => {} }));
+    // Patrón por patrón: ninguno cae en el nombre de reserva, así que todos los mandos que el motor publica hoy
+    // tienen su nombre aquí; y ninguna clave del motor (`sepCapas`, `variacion_tam`) llega a la pantalla.
+    const leidos: string[] = [];
+    for (const patron of vista.opciones.patrones) {
+      const leido = leer(pintarControles(vista.opciones, conPatron(ARMADO, patron, LEYENDA.length)));
+      leidos.push(leido);
+      assert.ok(!leido.includes("Otro ajuste de este patrón"), `el patrón ${patron.id} trae un mando que esta pantalla no sabe nombrar`);
+      for (const control of patron.controles) {
+        if (/[A-Z_]/.test(control.clave)) assert.ok(!leido.includes(control.clave), `clave cruda del motor a la vista: ${patron.id}.${control.clave}`);
+      }
+    }
+    const todo = leidos.join(" ");
+    // La jerga del motor que esta pantalla ya no enseña, y el nombre de oficio que se lee en su lugar.
+    for (const jerga of [/\bDesorden\b/, /\bInflado\b/, /Qué tan marcado(?! el zigzag)/, /Qué tan apretados(?! van en la capa)/]) {
+      assert.ok(!jerga.test(todo), `jerga del motor a la vista: ${jerga.source}`);
+    }
+    for (const oficio of ["Qué tan marcado el zigzag", "Qué tan apretados van en la capa", "Globos fuera de su lugar", "Qué tan inflados"]) {
+      assert.ok(todo.includes(oficio), `falta el mando en palabras de oficio: ${oficio}`);
+    }
+    // Un mando que el motor añada y que aquí todavía no tenga nombre se sigue ofreciendo, pero con una frase: antes
+    // esta pantalla enseñaba la clave tal cual (`?? { etiqueta: control.clave }`).
+    const conMandoNuevo: OpcionesArmadoColumna = {
+      ...vista.opciones,
+      patrones: vista.opciones.patrones.map((patron) =>
+        patron.id === ARMADO.patron ? { ...patron, controles: [...patron.controles, { clave: "turbulenciaFase", min: 0, max: 3, defecto: 1 }] } : patron,
+      ),
+    };
+    const html = pintarControles(conMandoNuevo, ARMADO);
+    assert.ok(html.includes('data-testid="mando-patron-turbulenciaFase"'), "el mando se sigue ofreciendo: solo cambia cómo se llama");
+    assert.ok(!leer(html).includes("turbulenciaFase"), "la clave del motor no se lee en la pantalla");
+    assert.ok(leer(html).includes("Otro ajuste de este patrón"), "se nombra con una frase de oficio mientras falte su nombre");
   });
 
   await caso("guardar: solo con un borrador que el motor ya dibujó y con cambios", () => {

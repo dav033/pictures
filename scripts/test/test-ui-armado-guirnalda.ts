@@ -132,7 +132,10 @@ function planConArmado(resuelto: ArmadoGuirnaldaResuelto | null): PlanResuelto {
   assert.match(texto, /Sobra 1 globo que no completa un cuarteto: va suelto entre los racimos\./, "los avisos de Python");
   assert.equal((html.match(/data-testid="editar-armado-guirnalda"/g) ?? []).length, 1);
   assert.equal((html.match(/data-testid="abrir-hoja-armado-guirnalda"/g) ?? []).length, 1);
-  assert.equal((html.match(/data-testid="bloque-patron"/g) ?? []).length, 3, "las piezas con patrón siguen con su bloque");
+  // Dos, no tres: la pared del plan de prueba muestra ahora su dibujo esquemático, que ocupa el mismo hueco
+  // que el bloque del patrón (`BloqueDibujoEstructura`). La columna y el arco siguen con el suyo.
+  assert.equal((html.match(/data-testid="bloque-patron"/g) ?? []).length, 2, "las piezas con patrón y con motor siguen con su bloque");
+  assert.equal((html.match(/data-testid="bloque-dibujo-estructura"/g) ?? []).length, 1, "y la pared, que ningún motor arma, con su dibujo");
   assert.doesNotMatch(html, /data-testid="editor-armado-guirnalda"|data-testid="dialogo-hoja-armado-guirnalda"/, "editor y hoja cerrados no se montan");
   const lectura = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planConArmado(RECETA.armado) }));
   assert.doesNotMatch(lectura, /editar-armado-guirnalda/, "sin edición no se ofrece el editor");
@@ -268,7 +271,7 @@ function planConArmado(resuelto: ArmadoGuirnaldaResuelto | null): PlanResuelto {
   }));
   const receta = controles(RECETA.armado.armado, RECETA.opciones);
   const texto = textoVisible(receta);
-  assert.match(receta, /role="radiogroup" aria-label="Soporte de la guirnalda"/);
+  assert.match(receta, /<p id="([^"]+)" class="[^"]*">Soporte de la guirnalda<\/p>.*?<div role="radiogroup" aria-labelledby="\1"/, "el grupo se nombra con la etiqueta que se ve");
   assert.match(texto, /En pared Colgada En el piso Sobre la mesa Sobre otra pieza/, "los soportes que admite Python");
   assert.match(texto, /Recta Curva Ondulada U invertida Arco caído/, "las cinco formas del contrato");
   assert.doesNotMatch(texto, /Caída declarada|Puntos de anclaje/, "recta sobre la mesa: sin caída ni anclajes");
@@ -288,7 +291,50 @@ function planConArmado(resuelto: ArmadoGuirnaldaResuelto | null): PlanResuelto {
   assert.match(sinOpciones, /Soporte .*Sobre la mesa Forma/, "sin opciones de Python: solo lo que el borrador ya tiene");
   assert.doesNotMatch(sinOpciones, /En pared Colgada/);
   assert.match(controles(null, null), /aria-hidden="true"/, "sin borrador: esqueleto de carga");
-  ok("controles: soportes, formas, caída y anclajes, racimo, relleno y remates movibles, con lo que Python admite");
+
+  // Accesibilidad táctil y etiquetas, lo mismo que piden las pruebas de los otros cuatro editores
+  // (`test-ui-armado-columna.ts`, `test-ui-editor-arco.ts` y las dos orgánicas).
+  const DE_44_PX = /class="[^"]*\b(?:min-h-11|h-11|size-11)\b/g;
+  const BAJO_DE_44_PX = /class="[^"]*\b(?:h-2|h-8|h-9|size-8|size-9)\b/;
+  /** Lo que nombra a cada mando y se ve: `<p id>` de un grupo de botones, `<label for>` de un campo. */
+  const etiquetasALaVista = (html: string) => {
+    const porGrupo = new Map<string, string>();
+    for (const marca of html.matchAll(/<p id="([^"]+)" class="([^"]*)">([^<]*)<\/p>/g)) {
+      if (!marca[2]!.includes("sr-only") && marca[3]!.trim()) porGrupo.set(marca[1]!, marca[3]!);
+    }
+    const porCampo = new Map<string, string>();
+    for (const marca of html.matchAll(/<label for="([^"]+)" class="([^"]*)">([^<]*)<\/label>/g)) {
+      if (!marca[2]!.includes("sr-only") && marca[3]!.trim()) porCampo.set(marca[1]!, marca[3]!);
+    }
+    return { porGrupo, porCampo };
+  };
+  const colgadaHtml = controles(COLGADA.armado.armado, COLGADA.opciones, 1);
+  for (const [cual, html] of [["la receta", receta], ["colgada", colgadaHtml], ["sobre otra pieza", sobre]] as const) {
+    // 1. Nada de lo que se toca mide menos de 44 px.
+    assert.ok((html.match(DE_44_PX) ?? []).length >= 8, `${cual}: los botones, los deslizadores y las listas miden 44 px`);
+    assert.doesNotMatch(html, BAJO_DE_44_PX, `${cual}: un mando del armado se queda por debajo de 44 px`);
+    // 2. Cada mando tiene su etiqueta a la vista, no solo un `aria-label` que nadie ve.
+    const { porGrupo, porCampo } = etiquetasALaVista(html);
+    const grupos = [...html.matchAll(/<div role="(?:radiogroup|group)"[^>]*>/g)].map((marca) => marca[0]);
+    assert.ok(grupos.length >= 4, `${cual}: los grupos de botones del armado`);
+    for (const grupo of grupos) {
+      const id = /aria-labelledby="([^"]+)"/.exec(grupo)?.[1];
+      assert.ok(id !== undefined && porGrupo.has(id), `${cual}: un grupo de botones sin etiqueta a la vista (${grupo.slice(0, 70)})`);
+      assert.doesNotMatch(grupo, / aria-label="/, `${cual}: la etiqueta de un grupo es solo para el lector de pantalla`);
+    }
+    const campos = [...html.matchAll(/<(?:input|select) id="([^"]+)"/g)].map((marca) => marca[1]!);
+    assert.ok(campos.length >= 1, `${cual}: los deslizadores y las listas del armado`);
+    for (const campo of campos) assert.ok(porCampo.has(campo), `${cual}: un deslizador o una lista sin <label> a la vista (${campo})`);
+    assert.doesNotMatch(html, /class="sr-only"/, `${cual}: una etiqueta del armado escondida en un sr-only`);
+  }
+  // La etiqueta y, al lado, el valor de ahora (como `Mando` en `arco/controles-arco.tsx`).
+  for (const mando of [/Soporte de la guirnalda Sobre la mesa/, /Forma de la guirnalda Recta/, /Unidad del racimo Cuarteto/, /Tamaño de los globos del racimo 12″/, /Color del relleno Blanco mate/]) {
+    assert.match(texto, mando, `falta la etiqueta con su valor al lado: ${mando.source}`);
+  }
+  assert.match(textoVisible(colgadaHtml), /Puntos de anclaje 3 puntos/, "el contador de anclajes, con su etiqueta a la vista");
+  assert.match(textoVisible(colgadaHtml), /Dónde va el remate 1 .*Color del remate 2/, "cada remate dice de qué color es y dónde va");
+  assert.match(textoVisible(sobre), /Sobre la pieza EST_01_COLUMNA/, "la lista de piezas anfitrionas, con su etiqueta a la vista");
+  ok("controles: soportes, formas, caída y anclajes, racimo, relleno y remates movibles, con lo que Python admite, a 44 px y con etiqueta a la vista");
 }
 
 // ---------------------------------------------------------------------------
@@ -408,8 +454,8 @@ function planConArmado(resuelto: ArmadoGuirnaldaResuelto | null): PlanResuelto {
   const conControl = controles(DESNIVEL.armado.armado);
   assert.match(conControl, /role="switch" aria-checked="true"[^>]*>.*Un extremo más alto que el otro/);
   assert.match(conControl, /aria-valuetext="La guirnalda cae hacia la derecha \(el extremo derecho, 0,9 m más bajo\)" data-testid="desnivel-guirnalda"/, "el deslizador se anuncia en palabras");
-  assert.match(conControl, /<span class="sr-only">Altura del extremo derecho respecto del izquierdo, en metros<\/span>/, "con su etiqueta");
-  assert.match(textoVisible(conControl), /−0,9 m/, "y su valor corto a la vista");
+  assert.match(conControl, /<label for="[^"]+" class="[^"]*">Altura del extremo derecho respecto del izquierdo, en metros<\/label>/, "con su etiqueta a la vista");
+  assert.match(textoVisible(conControl), /Altura del extremo derecho respecto del izquierdo, en metros −0,9 m/, "y su valor corto al lado");
   const nivelada = controles({ ...DESNIVEL.armado.armado, desnivel_m: undefined });
   assert.match(nivelada, /role="switch" aria-checked="false"[^>]*>.*Un extremo más alto que el otro/);
   assert.doesNotMatch(nivelada, /desnivel-guirnalda/, "apagado, sin deslizador");
@@ -488,7 +534,8 @@ function planConArmado(resuelto: ArmadoGuirnaldaResuelto | null): PlanResuelto {
   const conArqueoHtml = controles(ARQUEADA.armado.armado);
   assert.match(conArqueoHtml, /role="switch" aria-checked="true"[^>]*>.*Arqueo declarado/);
   assert.match(conArqueoHtml, /data-testid="arqueo-guirnalda"/);
-  assert.match(conArqueoHtml, /<span class="sr-only">Arqueo hacia arriba, en metros<\/span>/, "con su etiqueta");
+  assert.match(conArqueoHtml, /<label for="[^"]+" class="[^"]*">Arqueo hacia arriba, en metros<\/label>/, "con su etiqueta a la vista");
+  assert.match(textoVisible(conArqueoHtml), /Arqueo hacia arriba, en metros 0,35 m/, "y su valor al lado");
   assert.match(textoVisible(conArqueoHtml), /la curva se arquea hacia arriba, sobre la recta entre sus extremos; el arco caído cuelga hacia abajo/, "la ayuda dice los dos sentidos");
   assert.doesNotMatch(conArqueoHtml, /Caída declarada/, "la curva no cuelga");
   const caidoHtml = controles(conForma(ARQUEADA.armado.armado, "arco_caido"));

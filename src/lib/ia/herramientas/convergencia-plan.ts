@@ -1,3 +1,4 @@
+import { TEXTO_PLAN_LISTO } from "@/lib/ia/omoikane/texto-final-turno";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import type { DisponibilidadProducto } from "@/lib/plan/cobertura-materiales";
 import { coloresRealesProducto, coloresRealesVariante } from "@/lib/plan/colores-producto";
@@ -136,7 +137,7 @@ export function cierreAnticipado(input: {
 }): string | null {
   if (input.hayPlan) {
     return input.transcurridoMs >= LIMITE_TURNO_CON_PLAN_MS
-      ? "Ya te armé la propuesta: revisa el desglose en pantalla y dime si la apruebas o qué quieres ajustar."
+      ? TEXTO_PLAN_LISTO
       : null;
   }
   if (input.transcurridoMs < LIMITE_TURNO_SIN_PLAN_MS) return null;

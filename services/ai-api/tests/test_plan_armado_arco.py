@@ -26,7 +26,7 @@ from pydantic import ValidationError
 
 from app.main import Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
-from app.plan import PlanResolutionError
+from app.plan import PlanResolutionError, armado_arco_de_patron, pieza_del_motor_resuelta
 from app.plan_armado_arco import (
     AVISO_SIN_COLORES,
     PATRON_UN_COLOR,
@@ -101,6 +101,26 @@ def test_sin_armado_devuelve_la_receta_con_la_geometria_de_la_pieza() -> None:
     assert (geometria["anchoM"], geometria["altoM"]) == (3.0, 2.4)
     # Los dos colores de la pieza, en su orden.
     assert armado["materiales"] == [0, 1]
+
+
+def test_un_arco_de_patron_arranca_del_arco_que_se_cotiza() -> None:
+    """Con patrón de color y sin armado, la receta del editor es la que la resolución cuenta y cotiza."""
+    patron = {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {"modo": "anillos", "secuencia": [1, 0], "largo": 1},
+    }
+    pieza = _arco_dos_colores(mezcla="clasica", patron_color=patron)
+    cotizado = pieza_del_motor_resuelta(pieza)
+    assert cotizado is not None
+
+    for guardado in (None, armado_arco_de_patron(pieza)):
+        # También al pedir la receta de un arco que ya trae su armado guardado.
+        con_armado = pieza if guardado is None else {**pieza, "armado_arco": guardado}
+        resultado = vista_previa_armado_arco(_peticion(None, estructuras=(con_armado,)))
+        assert resultado["armado"] == armado_arco_de_patron(pieza)
+        globos = cast(list[object], cast(dict[str, object], resultado["arco"])["globos"])
+        assert len(globos) == len(cast(list[object], cotizado[1]["globos"]))
 
 
 def test_la_receta_resuelve_un_arco_con_globos_y_con_svg() -> None:

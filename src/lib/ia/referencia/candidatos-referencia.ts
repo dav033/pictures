@@ -44,6 +44,15 @@ export type Candidate = {
   uncertainties: string[];
   structure?: DetectedStructure;
   relevance?: CompositionRelevance;
+  /**
+   * Variante `v17-lectura-unica`: el bloque `lecturas` tal cual lo escribio el
+   * modelo (patron de color, conteo, armado del bouquet y armado de la
+   * guirnalda de esa pieza). Pasa SIN validar a proposito: lo valida
+   * `app/amaterasu/lectura_unica.py` con los validadores de las cuatro
+   * lecturas de produccion, que son sus unicos duenos. Ausente en cualquier
+   * otra variante, porque el esquema de la herramienta no lo pide.
+   */
+  lecturas?: Record<string, unknown>;
   model_decision: {
     action: "include" | "omit";
     catalog_product_id?: string;
@@ -278,6 +287,9 @@ export function parseCandidates(imageId: string, raw: unknown): Candidate[] {
     if (declaredCount && quantity.max <= 1) {
       quantity = { mode: declaredCount.exact ? "exact" : "approximate", min: declaredCount.count, max: declaredCount.count };
     }
+    const lecturas = value.lecturas && typeof value.lecturas === "object" && !Array.isArray(value.lecturas)
+      ? object(value.lecturas)
+      : undefined;
     const base: Candidate = {
       source_image_id: imageId,
       name: detectedName,
@@ -298,6 +310,7 @@ export function parseCandidates(imageId: string, raw: unknown): Candidate[] {
       uncertainties: [...review.notes, ...stringList(value.uncertainties, 8)].slice(0, 8),
       structure,
       relevance,
+      ...(lecturas ? { lecturas } : {}),
       model_decision: {
         action,
         catalog_product_id: catalogProductId,
@@ -309,8 +322,12 @@ export function parseCandidates(imageId: string, raw: unknown): Candidate[] {
     };
     if (!structure || !shouldSplitSidePieces(structure, referenceBox, detectedName, visibleEvidence)) return [base];
     // #9: one full-width detection with explicit left/right evidence is two pieces.
+    // Las lecturas describian la deteccion entera, no cada mitad: un conteo o
+    // un armado de las dos piezas juntas atribuido a una sola seria peor que no
+    // tener lectura, asi que la pieza partida sale sin ninguna.
     return splitSidePieces(structure, referenceBox).map((piece) => ({
       ...base,
+      lecturas: undefined,
       name: `${detectedName.slice(0, 150)} (${piece.side})`,
       reference_bbox: piece.bbox,
       structure: piece.structure,

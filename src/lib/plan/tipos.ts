@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ESTRUCTURAS_OFICIALES_IDS, incoherenciasEstructuraOficial } from "./estructuras-oficiales";
+import { incoherenciasFormaPieza, MAX_LARGO_FORMA_PIEZA } from "./formas-pieza";
 import {
   anclaSatisfaceRelacion,
   CATEGORIAS_SUJETO_ESCULTURA,
@@ -20,6 +21,7 @@ import {
   type RelacionFisicaInput,
 } from "./composicion";
 import { ArmadoArcoV1Schema } from "./armado-arco";
+import { ArmadoArcoOrganicoV1Schema } from "./armado-arco-organico";
 import { ArmadoBouquetV1Schema } from "./armado-bouquet";
 import { ArmadoColumnaV1Schema } from "./armado-columna";
 import { ArmadoColumnaOrganicaV1Schema } from "./armado-columna-organica";
@@ -110,6 +112,19 @@ const EstructuraPlanSchema = z.object({
   referencia_element_id: z.string().trim().min(1).max(80).optional(),
   /** Estructura oficial que materializa (`estructuras-oficiales.ts`); coherente con tipo, densidad y ubicación. */
   estructura_oficial: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
+  /**
+   * Forma elegida de la pieza por el decorador (`formas-pieza.ts`, puerto de las `formas` del clasificador):
+   * una pared en rombos, un aro en media luna, un techo de nube, un centro de mesa en topiario. Opcional, y
+   * **válida solo contra su estructura oficial** (`incoherenciasFormaPieza`, la misma tabla que las reglas
+   * `allOf` del esquema exportado): una `media-luna` en una pared no existe, y una pieza que arma un motor no
+   * elige forma aquí porque la elige su motor. Sin ella, el dibujo esquemático usa la forma que la oficial
+   * implica (`FORMA_POR_OFICIAL` en `app/dibujo_estructura.py`), que es como se dibuja hoy.
+   *
+   * No es un id de un enum global a propósito: el dueño repite ids entre piezas con significados distintos
+   * (`helio` es «Helio con cintas» en un techo y «Bouquet de helio» en un centro de mesa), así que el valor
+   * es el par (oficial, forma) y es el par lo que se valida.
+   */
+  forma: z.string().trim().min(1).max(MAX_LARGO_FORMA_PIEZA).optional(),
   /** Dominant colors of the reference element this structure materializes
    * (`colores-referencia.ts`). Written by the server from the turn blueprint,
    * never by the model; both resolvers report the missing ones in `sustituciones`. */
@@ -139,8 +154,18 @@ const EstructuraPlanSchema = z.object({
    * manda la clásica. Sus reglas cruzadas las valida solo Python (`app/armado_columna_organica.py`).
    */
   armado_columna_organica: ArmadoColumnaOrganicaV1Schema.optional(),
+  /**
+   * Armado de un arco orgánico con el motor del diseñador (ADR-0034/0035): una banda irregular de globos de
+   * varios tamaños sobre la línea del arco, y el medio arco (`forma.corte < 1`). Convive con `armado_arco`
+   * (el clásico, de patrones); cuando están los dos, manda el clásico. Sus reglas cruzadas las valida solo
+   * Python (`app/armado_arco_organico.py`).
+   */
+  armado_arco_organico: ArmadoArcoOrganicoV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   for (const problema of incoherenciasEstructuraOficial(value)) {
+    ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
+  }
+  for (const problema of incoherenciasFormaPieza(value)) {
     ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
   }
   const participacion = value.materiales.reduce((sum, material) => sum + material.participacion, 0);
@@ -360,6 +385,8 @@ export const EstructuraPlan1_1Schema = z.object({
   variant_overrides: z.array(VariantOverrideSchema).max(24).optional(),
   referencia_element_id: z.string().trim().min(1).max(80).optional(),
   estructura_oficial: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
+  /** Forma elegida de la pieza (`formas-pieza.ts`), válida solo contra su estructura oficial; ver Plan 1.0. */
+  forma: z.string().trim().min(1).max(MAX_LARGO_FORMA_PIEZA).optional(),
   /** Dominant colors of the reference element this structure materializes
    * (`colores-referencia.ts`). Written by the server from the turn blueprint,
    * never by the model; both resolvers report the missing ones in `sustituciones`. */
@@ -389,9 +416,19 @@ export const EstructuraPlan1_1Schema = z.object({
    * manda la clásica. Sus reglas cruzadas las valida solo Python (`app/armado_columna_organica.py`).
    */
   armado_columna_organica: ArmadoColumnaOrganicaV1Schema.optional(),
+  /**
+   * Armado de un arco orgánico con el motor del diseñador (ADR-0034/0035): una banda irregular de globos de
+   * varios tamaños sobre la línea del arco, y el medio arco (`forma.corte < 1`). Convive con `armado_arco`
+   * (el clásico, de patrones); cuando están los dos, manda el clásico. Sus reglas cruzadas las valida solo
+   * Python (`app/armado_arco_organico.py`).
+   */
+  armado_arco_organico: ArmadoArcoOrganicoV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   validarRelacionesFisicasSchema(value.relaciones_fisicas, ctx);
   for (const problema of incoherenciasEstructuraOficial(value)) {
+    ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
+  }
+  for (const problema of incoherenciasFormaPieza(value)) {
     ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
   }
 

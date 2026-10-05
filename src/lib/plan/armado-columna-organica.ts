@@ -162,6 +162,19 @@ export const ColumnaOrganicaResueltaSchema = z
     adornos: z.object({ ramas: z.number().int().nonnegative(), flores: z.number().int().nonnegative() }).strict(),
     /** Lo que el motor corrigió del armado pedido, en español, para mostrarlo. */
     avisos: z.array(z.string().min(1).max(300)).max(32),
+    /**
+     * Derivados para la imagen, igual que en el arco y en la guirnalda orgánica (ADR-0035): a qué estructura
+     * pertenece y cómo le cuenta Python este armado a los modelos de imagen, en inglés (el del LoRA en ASCII
+     * y sin cifras). Opcionales: los escribe la resolución, no el motor, y viajan **fuera** del snapshot, así
+     * que no entran en `plan_hash`. TypeScript solo los inserta, tal cual.
+     *
+     * Sin ellos el caption solo sabe nombrar la pieza y sus colores, y lo que no dice lo inventa el LoRA con
+     * lo que aprendió del corpus: el 2026-10-04, dos columnas orgánicas salieron coronadas por un globo
+     * gigante que el plan apaga a propósito y que nadie estaba cobrando.
+     */
+    estructura_id: z.string().min(1).max(160).optional(),
+    prompt_gemini: z.string().max(1500).optional(),
+    prompt_lora: z.string().max(600).optional(),
   })
   .strict();
 

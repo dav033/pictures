@@ -735,6 +735,36 @@ def test_pista_por_tono_cercano_y_material_sobrante_como_acento() -> None:
     }
 
 
+def test_la_pista_pone_el_eje_y_el_espejo_donde_la_pieza_los_admite() -> None:
+    """ADR-0039: antes ninguno de los dos viajaba y un degradé transversal salía siempre a lo largo."""
+    pared = _estructura(tipo="pared", colores=("blanco", "negro", "azul"), ancho=4, alto=2.4)
+    patron = patron_desde_pista(
+        pared, _pista("degradado", ["blanco", "negro", "azul"], direccion="transversal")
+    )
+    assert patron is not None and patron["direccion"] == "transversal"
+
+    arco = _estructura(tipo="arco", colores=("blanco", "negro"), ancho=3, alto=2.4)
+    espejo = patron_desde_pista(arco, _pista("anillos", ["blanco", "negro"], simetria="espejo"))
+    assert espejo is not None and espejo["simetria"] == "espejo"
+
+
+def test_un_eje_o_un_espejo_que_la_pieza_no_admite_se_descarta_sin_tumbar_la_pista() -> None:
+    """Descartarlos en silencio, no rechazar: la pieza perdería una lectura que sí servía."""
+    # Solo una pared se arma de lado a lado, y solo un arco (o una guirnalda en U) en espejo.
+    columna = patron_desde_pista(
+        _estructura(),
+        _pista("anillos", ["blanco", "negro"], direccion="transversal", simetria="espejo"),
+    )
+    assert columna is not None
+    assert "direccion" not in columna and "simetria" not in columna
+    # Y la diagonal solo con un degradé, aunque sea una pared.
+    pared = _estructura(tipo="pared", colores=("blanco", "negro"), ancho=4, alto=2.4)
+    anillos = patron_desde_pista(
+        pared, _pista("anillos", ["blanco", "negro"], direccion="diagonal")
+    )
+    assert anillos is not None and "direccion" not in anillos
+
+
 def test_delta_e_de_la_pista_corta_en_25() -> None:
     # rosado -> lila: ΔE = sqrt(4.07² + 7.67² + 22.42²) = 24.04, entra.
     assert material_de_color(_estructura(colores=("lila", "blanco")).materiales, "rosado") == 0
@@ -1164,11 +1194,14 @@ def test_instrucciones_siguen_el_curso_para_racimos_y_para_pared() -> None:
 
 
 def test_color_desconocido_por_prefijo_y_sin_color() -> None:
-    estructura = _estructura(colores=("azul rey", None, "terracota"))
+    # "azul hortensia" y no "azul rey": desde que la tabla nombra «azul rey» por su cuenta
+    # (`royal blue`, medido en el corpus del LoRA) ya no cae por el prefijo, y con ella esta
+    # prueba dejaba de cubrir el camino que le da nombre. Hortensia sigue sin entrada propia.
+    estructura = _estructura(colores=("azul hortensia", None, "terracota"))
 
     textos = _textos(estructura, _patron(ESPIRAL))
 
-    # "azul rey" se nombra por su color base; lo que la tabla no conoce, y la
+    # El color se nombra por su color base; lo que la tabla no conoce, y la
     # falta de color, son "catalog color": nunca la palabra en español.
     assert textos["prompt_lora"] == (
         "wrapped in a spiral of blue and catalog color stripes winding from base to top"
@@ -1176,6 +1209,22 @@ def test_color_desconocido_por_prefijo_y_sin_color() -> None:
     assert "(blue, catalog color, blue, catalog color around each cluster)" in str(
         textos["prompt_gemini"]
     )
+
+
+def test_un_nombre_del_catalogo_con_tono_propio_se_dice_con_su_tono() -> None:
+    """«Azul Rey» es `royal blue`, no el `blue` de la paleta de 26 palabras.
+
+    Medido sobre las 345 captions de ``data/staging/lora-v007``: `royal blue` sale 20 veces y describiendo
+    globos. El prefijo sigue ahí para los nombres sin tono propio (la prueba de arriba); lo que cambia es que
+    los que el corpus sabe decir mejor ya no se aplastan al color base.
+    """
+    estructura = _estructura(colores=("azul rey", "blanco nacar", "verde menta"))
+
+    textos = _textos(estructura, _patron(ESPIRAL))
+
+    assert "royal blue" in str(textos["prompt_lora"])
+    assert "pearl white" in str(textos["prompt_lora"])
+    assert "mint green" in str(textos["prompt_lora"])
 
 
 def test_el_lora_nombra_el_color_sin_el_acabado_y_gemini_con_el() -> None:

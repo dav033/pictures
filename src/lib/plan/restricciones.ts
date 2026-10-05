@@ -503,6 +503,15 @@ export function validarCoberturaReferencia(plan: PlanDecoracion, blueprint: Refe
       continue;
     }
     cubiertos.add(elementId);
+    // La misma pieza repetida en la foto (mismo `repetition_group`, p. ej. una pareja en espejo de
+    // `piezas-espejo.ts`): una estructura con N repeticiones cubre su elemento y hasta N-1 compañeros.
+    const grupo = elemento.visual_semantics?.repetition_group;
+    if (grupo && estructura.repeticiones >= 2) {
+      aprobados
+        .filter((otro) => otro.element_id !== elementId && otro.visual_semantics?.repetition_group === grupo)
+        .slice(0, estructura.repeticiones - 1)
+        .forEach((otro) => cubiertos.add(otro.element_id));
+    }
   }
 
   for (const item of plan.referencia_omitida) {

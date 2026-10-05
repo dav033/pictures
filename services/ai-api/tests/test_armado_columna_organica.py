@@ -331,6 +331,10 @@ def test_las_opciones_salen_del_motor() -> None:
         "cono",
         "monticulo",
         "gruesa",
+        # `pilar` (recta de arriba abajo) y `copa` (se abre hacia el remate) son las dos formas
+        # nuevas del motor del disenador, que es su dueno, replicadas aqui.
+        "pilar",
+        "copa",
         "inclinada",
         "serpenteante",
         "aireada",

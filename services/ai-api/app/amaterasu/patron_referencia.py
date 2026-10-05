@@ -24,16 +24,19 @@ import hashlib
 import json
 import math
 import unicodedata
+from collections.abc import Mapping
 from typing import Annotated, Callable, Literal, cast
 
 from pydantic import Field, StringConstraints, model_validator
 
 from app.amaterasu.estructuras import frase_inicio_de_pieza
 from app.amaterasu.vision_estructurada import DEFAULT_MODEL, LecturaFotoError, leer_foto
+from app.armado_columna import TIPOS_REMATE
 from app.generated_models import contract_schema
 from app.operational_models import ContractModel, OperationalRequest
 from app.patron_color import ANCLAS as ANCLAS_PATRON
 from app.patron_color import EXTENSION_ZONA_MAXIMA, ZONAS_MAXIMAS
+from app.patron_color import DIRECCIONES as DIRECCIONES_PATRON
 from app.patron_color import MODOS as MODOS_PATRON
 
 
@@ -50,11 +53,51 @@ MAX_OUTPUT_TOKENS = 2_048
 # Los modos los define el contrato (`patron-color.v1`); un solo dueño.
 MODOS: tuple[str, ...] = MODOS_PATRON
 MODO_NINGUNO = "ninguno"
+#: La pieza entera de un solo color. No es un modo de `patron-color.v1` —un color no tiene disposición— pero
+#: tampoco es «no se distingue»: es una lectura, y la que decide que el plan compre UN material en vez de
+#: tres. Antes caía en `ninguno` junto con «está tapada» y el color se perdía: una columna de dorado cromado
+#: acababa comprando dorado, café y oro rosa, que son sus reflejos (2026-10-03).
+MODO_MONOCROMO = "monocromo"
 # Los sitios de una mancha, también del contrato (modo `zonas`, ADR-0036).
 ANCLAS: tuple[str, ...] = ANCLAS_PATRON
 #: Topes de una mancha, del contrato; se reexportan para el prompt y la validación.
 EXTENSION_MAXIMA = EXTENSION_ZONA_MAXIMA
 MAX_ZONAS = ZONAS_MAXIMAS
+
+#: El eje por el que recorre el patrón y la simetría de la pieza (ADR-0039). Las direcciones las define el
+#: contrato (``patron-color.v1``, reexportadas por ``patron_color.DIRECCIONES``); la longitudinal es el valor
+#: de partida y no viaja en la pista.
+#: Colores salpicados que se admiten por pieza; el mismo tope que el contrato (`PistaPatronSchema.motas`).
+MAX_MOTAS = 4
+
+DIRECCIONES: tuple[str, ...] = DIRECCIONES_PATRON
+DIRECCION_POR_DEFECTO = "longitudinal"
+SIMETRIA_ESPEJO = "espejo"
+
+
+#: Los cuatro tamaños que la foto sabe distinguir (`TAMANOS_LEIDOS` de `patron-color.v1`). Se leen del
+#: contrato exportado, igual que `PALETA`, para que el vocabulario tenga un solo dueño: añadir uno en el Zod
+#: lo pone en el prompt y en el esquema de salida sin tocar este archivo.
+def _tamanos_del_contrato() -> tuple[str, ...]:
+    """Los cuatro tamaños que la foto sabe distinguir, leídos del contrato exportado.
+
+    Igual que ``PALETA``, para que el vocabulario tenga un solo dueño: añadir uno en el Zod lo pone en el
+    prompt y en el esquema de salida sin tocar este archivo.
+    """
+    peticion = contract_schema("PlanResolutionRequest")
+    propiedades = cast(Mapping[str, Mapping[str, object]], peticion["properties"])
+    items = cast(Mapping[str, object], propiedades["pistas_tamanos"]["items"])
+    campos = cast(Mapping[str, Mapping[str, object]], items["properties"])
+    return tuple(str(tamano) for tamano in cast(list[object], campos["tamanos"]["enum"]))
+
+
+TAMANOS: tuple[str, ...] = _tamanos_del_contrato()
+
+#: Lo que corona una columna (``armado-columna.v1``, ADR-0039). El dueño del vocabulario es la puerta del
+#: motor (``app/armado_columna.py``, reexportado de ``columna/tipos.py``): añadir un remate allá se ve aquí.
+#: Solo se lee de las columnas; el arco del motor no tiene remate y el bouquet tiene el suyo (ADR-0030).
+REMATES = TIPOS_REMATE
+TIPO_COLUMNA = "columna"
 
 # Vocabulario de color del catálogo: `x-paleta-colores` del contrato
 # `plan-decoracion.v1` (exportada desde PALETA_COLORES_V2 en TypeScript).
@@ -116,17 +159,20 @@ class PatronReferenciaRequest(OperationalRequest):
 
 SYSTEM_INSTRUCTION = f"""You are an expert balloon decorator trained in the Sempertex method. You read how the colors are ARRANGED in the balloon structures of a customer's reference photo, the way a decorator reads a numbered color chart to rebuild a piece cluster by cluster. You do not count balloons, price anything or judge quality.
 
-For each element listed in the message (element_id, its structure type and, when given, its bounding box as fractions of the image with the origin at the top-left corner), look only at that piece and name the color pattern a decorator would use to build it:
+For each element listed in the message (element_id, its structure type and, when given, its bounding box as fractions of the image with the origin at the top-left corner), look only at that piece and name the color pattern a decorator would use to build it.
+
+What you are naming is HOW THE COLORS ARE LAID OUT on that piece, never how it was built. An organic garland or an organic column -- balloons of several sizes, packed in clusters, no visible grid -- can be laid out in any of these ways: if its colors sit in stretches, one color owning the left, another the middle and another the right, that is "bloques", not "aleatorio". Reach for "aleatorio" only when every color really is spread over the whole piece from one end to the other.
 
 - "espiral" (spiral, zigzag or straight stripes): the piece is made of identical clusters, usually quartets of 4 balloons, with the same colors in the same positions in every cluster. Rotated one eighth of a turn per layer the colors form continuous diagonal spiral stripes; turned left for two layers and right for the next two they form zigzag chevrons; stacked without rotation each color runs as a straight vertical stripe. All three are "espiral". colores = the colors of ONE cluster in position order, repeating a color when it takes two positions (for example blanco, negro, blanco, azul). globos_por_racimo = balloons per cluster.
 - "anillos" (rings, "salvavidas"): every cluster is a single color and the colors follow each other along the piece (for example a blanco ring, a dorado ring, a blanco ring...). colores = the ring colors in order from the start of the piece, one per ring of the repeating sequence.
-- "bloques" (color-blocked sections): long solid sections of one color each with clean transitions. colores = the sections in order from the start of the piece. pesos = the relative length of each section as integers from 1 to 100, one per color.
+- "bloques" (color-blocked sections): long sections of mostly one color each, following each other along the piece. The transitions can be clean or they can blend, and a section may carry a few balloons of the neighbouring colors: what makes it "bloques" is that each color OWNS a stretch of the piece instead of running along the whole of it. colores = the sections in order from the start of the piece. pesos = the relative length of each section as integers from 1 to 100, one per color.
 - "degradado" (degradé, ombré): the colors blend gradually from one into the next along the piece. colores = the stops in order from the start of the piece, 2 to 6 colors.
-- "aleatorio" (confetti, organic mix): the colors are mixed with no regular order, as in an organic garland. colores = the colors present, the most used first. pesos = the approximate share of each color as integers from 1 to 100, one per color.
+- "aleatorio" (confetti, organic mix): the colors are mixed with no regular order, every color appearing all over the piece from one end to the other. colores = the colors present, the most used first. pesos = the approximate share of each color as integers from 1 to 100, one per color.
 - "flor" (daisy motif): runs of background clusters, then a flower made of petal clusters around one center balloon, repeating. colores = exactly three colors: background, petal, center.
 - "damero" (checkerboard, only on flat balloon walls): a checkerboard of 2 colors, or diagonal rainbow bands of 3 or 4 colors. colores = the colors in order.
 - "zonas" (color gathered in patches, only on flat balloon walls): one color covers most of the wall as a base and one or more OTHER colors sit GATHERED in compact patches at particular places on it, touching each other, instead of being spread over the whole wall. This is the usual organic wall: a pearl base with a metallic color clustered in a few spots. colores = the base color FIRST, then the patch colors in the order you list the patches. zonas = one entry per patch you can see, with the patch's color, where on the wall its middle sits (ancla) and roughly what percentage of the whole wall it covers (extension). Use several entries with the SAME color when one color is gathered in several separate spots — four patches of dorado is four entries. Do not use "zonas" when a color is sprinkled all over the piece: that is "aleatorio".
-- "ninguno": the piece is a single color, is hidden, or you cannot tell the arrangement. colores = [].
+- "monocromo": the WHOLE piece is one single color, with no second color anywhere on it. colores = that one color, alone. A chrome or metallic piece is still monocromo: a mirror balloon reflects the wall, the floor and the furniture around it, so you will see browns, pinks and greens ON it that are not balloon colors. Name only the color the balloons ARE.
+- "ninguno": you cannot tell the arrangement -- the piece is hidden, cut off or too blurry. colores = []. Do NOT use "ninguno" for a one-color piece: that is "monocromo".
 
 The nine places a patch can sit (ancla), reading the piece as thirds: {", ".join(ANCLAS)}.
 
@@ -134,7 +180,25 @@ The nine places a patch can sit (ancla), reading the piece as thirds: {", ".join
 
 Colors: use ONLY these catalog color names, spelled exactly as written: {", ".join(PALETA)}. Map what you see to the closest of these names (light pink is rosado, chrome or metallic gold is dorado, clear is transparente). Never write any other color name, and never write "multicolor". The colors the first analysis observed are given as a hint; trust the photo when they disagree.
 
-confianza: a number from 0 to 1 for how sure you are of the pattern (not of the exact colors). Below 0.5 means a decorator would not rely on it; prefer "ninguno" to a guess.
+motas: the colors that are SPRINKLED over the piece instead of owning a stretch of it -- clear bubble balloons scattered along an organic arch, a few loose chrome or metallic balloons, a gold that shows up every so often. Name a color here, not in colores, when it never forms a section of its own and you would describe it as "here and there". A color belongs either in colores or in motas, never in both, and leave motas out when every color sits in a run of its own.
+
+tamanos: what SIZES of balloon the piece is made of, which decides how it is built and bought. Read it from the balloons themselves, comparing them to each other -- never from the size of the piece:
+
+- "casi_todos_gigantes": nearly every balloon is one of the big ones, and the small ones are rare or absent. A piece of a dozen large balloons with two little ones tucked between them is this.
+- "grandes_con_pocos_chicos": big balloons carry the piece and smaller ones fill the gaps between them, roughly one small for every two big.
+- "chicos_con_pocos_grandes": small and medium balloons make up most of the piece and a few big ones stand out as accents. This is the usual organic look.
+- "un_solo_tamano": every balloon is the same size, with no mix at all.
+
+Leave tamanos out when the balloons are too far, too blurry or too cut off to compare their sizes. Do not guess it from the kind of piece.
+
+For every element, also read two things about the whole arrangement:
+
+- direccion: the axis the pattern runs along. "longitudinal" is along the piece, which is the usual one: up a column, from one foot of an arch over the top to the other, along a garland, down a wall from the top. "transversal" is the pattern running ACROSS the piece instead: on a wall, bands that go from the left edge to the right one; on an arch or a column, colors that change across the width of the band rather than along it. "diagonal" is only for a degradado that runs corner to corner. Say "longitudinal" when in doubt.
+- simetria: "espejo" when the two halves of the piece are the same, mirrored: an arch whose left leg repeats the right one reading from each foot up to the top, or an upside-down-U garland that repeats from each end to the middle. Leave it out when the piece runs straight through from one end to the other, which is the usual one, and whenever you cannot see both halves.
+
+For an element whose structure type is "columna" (and ONLY for those), also read what crowns it, which a decorator builds separately from the body: remate.tipo is "globo" for one single big balloon sitting on the top, "racimo" for a small cluster of 3 to 5 balloons on the top, "estrella" or "corazon" for a foil star or heart, and "ninguno" when the column ends flush with its last ring, which is just as common. Say "ninguno" when you can see the top of the column and there is nothing on it; leave remate out entirely when the top is cut off by the frame, hidden behind something or too blurry to tell. remate.color is the catalog color of that topper when you can see it. Never read a remate for any other structure type.
+
+confianza: a number from 0 to 1 for how sure you are of the pattern (not of the exact colors). Below 0.5 means a decorator would not rely on it; prefer "ninguno" to a guess. It does not judge the remate: a column whose arrangement you cannot tell can still have a plain big balloon on top.
 
 Return exactly one entry per listed element_id and never an element that is not listed."""
 
@@ -151,7 +215,7 @@ RESPONSE_SCHEMA: dict[str, object] = {
                 "type": "object",
                 "properties": {
                     "element_id": {"type": "string"},
-                    "modo": {"type": "string", "enum": [*MODOS, MODO_NINGUNO]},
+                    "modo": {"type": "string", "enum": [*MODOS, MODO_MONOCROMO, MODO_NINGUNO]},
                     "colores": {
                         "type": "array",
                         "items": {"type": "string", "enum": list(PALETA)},
@@ -176,6 +240,21 @@ RESPONSE_SCHEMA: dict[str, object] = {
                             },
                             "required": ["color", "ancla", "extension"],
                         },
+                    },
+                    "motas": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(PALETA)},
+                    },
+                    "tamanos": {"type": "string", "enum": list(TAMANOS)},
+                    "direccion": {"type": "string", "enum": list(DIRECCIONES)},
+                    "simetria": {"type": "string", "enum": ["espejo"]},
+                    "remate": {
+                        "type": "object",
+                        "properties": {
+                            "tipo": {"type": "string", "enum": list(REMATES)},
+                            "color": {"type": "string", "enum": list(PALETA)},
+                        },
+                        "required": ["tipo"],
                     },
                     "confianza": {"type": "number", "minimum": 0, "maximum": 1},
                 },
@@ -229,7 +308,31 @@ def _entero(valor: object, minimo: int, maximo: int) -> int | None:
     return min(maximo, max(minimo, int(round(valor))))
 
 
-def _pista(item: object, pendientes: set[str]) -> dict[str, object] | None:
+def _remate(valor: object) -> dict[str, object] | None:
+    """Lo que corona una columna, validado; `None` si el proveedor no lo dijo o dijo algo que no existe.
+
+    `None` y `{"tipo": "ninguno"}` **no** son lo mismo y no se confunden: el primero es «no se ve la punta»
+    y deja que el motor ponga su remate, y el segundo es «la punta no lleva nada», que es una lectura. Esa
+    diferencia es el motivo de este campo (ADR-0039).
+    """
+    if not isinstance(valor, dict):
+        return None
+    tipo = valor.get("tipo")
+    tipo = tipo.strip().lower() if isinstance(tipo, str) else None
+    if tipo not in REMATES:
+        return None
+    leido: dict[str, object] = {"tipo": tipo}
+    color = valor.get("color")
+    nombre = _PALETA_NORMALIZADA.get(_normalizar(color)) if isinstance(color, str) else None
+    # Sin remate no hay color que leer: un «ninguno» con color sería una contradicción que viajaría al plan.
+    if nombre is not None and tipo != "ninguno":
+        leido["color"] = nombre
+    return leido
+
+
+def _pista(
+    item: object, pendientes: set[str], tipos: Mapping[str, str]
+) -> dict[str, object] | None:
     """Una pista del proveedor, validada; `None` si no se puede usar."""
     if not isinstance(item, dict):
         return None
@@ -239,7 +342,7 @@ def _pista(item: object, pendientes: set[str]) -> dict[str, object] | None:
     element_id = element_id.strip()
     modo = item.get("modo")
     modo = modo.strip().lower() if isinstance(modo, str) else None
-    if modo not in (*MODOS, MODO_NINGUNO):
+    if modo not in (*MODOS, MODO_MONOCROMO, MODO_NINGUNO):
         return None
     confianza = item.get("confianza")
     if isinstance(confianza, bool) or not isinstance(confianza, (int, float)):
@@ -253,7 +356,36 @@ def _pista(item: object, pendientes: set[str]) -> dict[str, object] | None:
         "colores": [],
         "confianza": min(1.0, max(0.0, float(confianza))),
     }
+    # El remate es de la pieza, no de su disposicion de color: se lee aunque el modo sea "ninguno", y solo
+    # en una columna (el arco del motor no tiene remate y el bouquet tiene el suyo, ADR-0030).
+    if tipos.get(element_id) == TIPO_COLUMNA:
+        remate = _remate(item.get("remate"))
+        if remate is not None:
+            pista["remate"] = remate
+    # Los tamaños tampoco son de la disposición de color: son de la pieza, como el remate. Van ANTES de los
+    # dos retornos de abajo a propósito — una pieza de un solo color sale por `monocromo` y una tapada por
+    # `ninguno`, y las dos tienen tamaños que se ven. Puesto después, la columna dorada cromada del
+    # 2026-10-03 —monocroma— nunca habría llegado a decirlos, que es justo el caso que lo motivó.
+    tamanos = item.get("tamanos")
+    if isinstance(tamanos, str) and tamanos.strip().lower() in TAMANOS:
+        pista["tamanos"] = tamanos.strip().lower()
     if modo == MODO_NINGUNO:
+        return pista
+    if modo == MODO_MONOCROMO:
+        # Un solo color, y tiene que ser uno: con cero no se sabe cuál y con dos no es monocroma. En los dos
+        # casos la lectura vale menos que admitir que no se distingue, así que cae a "ninguno".
+        crudos = item.get("colores")
+        nombres = [
+            nombre
+            for nombre in (
+                _PALETA_NORMALIZADA.get(_normalizar(c)) if isinstance(c, str) else None
+                for c in (crudos if isinstance(crudos, list) else [])
+            )
+            if nombre is not None
+        ]
+        if len(set(nombres)) == 1:
+            pista["modo"] = MODO_MONOCROMO
+            pista["colores"] = nombres[:1]
         return pista
 
     colores_crudos = item.get("colores")
@@ -283,6 +415,30 @@ def _pista(item: object, pendientes: set[str]) -> dict[str, object] | None:
     globos = _entero(item.get("globos_por_racimo"), 1, 8)
     if globos is not None:
         pista["globos_por_racimo"] = globos
+    # Las motas: colores salpicados sobre las secciones. Se validan igual que `colores` —solo los de la
+    # paleta, sin repetir— y se quita cualquiera que ya sea una sección: un color es un tramo o es una mota,
+    # no las dos cosas, y si viniera en las dos el motor lo pintaría dos veces.
+    motas: list[str] = []
+    crudas = item.get("motas")
+    if isinstance(crudas, list):
+        for color in cast(list[object], crudas):
+            nombre = _PALETA_NORMALIZADA.get(_normalizar(color)) if isinstance(color, str) else None
+            if nombre is not None and nombre not in colores and nombre not in motas:
+                motas.append(nombre)
+    if motas:
+        pista["motas"] = motas[:MAX_MOTAS]
+    # El eje y la simetría del patrón (ADR-0039). Aquí la validación es de forma: qué direcciones admite la
+    # pieza y si lleva espejo lo decide `patron_color` con la tabla de `modos_admitidos`, que es su dueña, y
+    # el motor con los mandos que publica. Una dirección longitudinal no viaja: es el valor de partida de
+    # los dos, y mandarla solo engordaría la pista.
+    direccion = item.get("direccion")
+    if isinstance(direccion, str) and direccion.strip().lower() in DIRECCIONES:
+        direccion = direccion.strip().lower()
+        if direccion != DIRECCION_POR_DEFECTO:
+            pista["direccion"] = direccion
+    simetria = item.get("simetria")
+    if isinstance(simetria, str) and simetria.strip().lower() == SIMETRIA_ESPEJO:
+        pista["simetria"] = SIMETRIA_ESPEJO
     if pesos_alineados and pesos:
         pista["pesos"] = pesos[:MAX_COLORES]
     manchas = _zonas(item.get("zonas"))
@@ -330,15 +486,17 @@ def validar_pistas(raw: object, elementos: list[ElementoReferencia]) -> list[dic
     leer). Cada pista se valida por separado: una que nombra un elemento que no
     se pidió, repite uno o trae un modo desconocido se descarta; los colores
     fuera de la paleta se quitan y los números se acotan a su rango. Una pista
-    que se queda sin colores pasa a "ninguno".
+    que se queda sin colores pasa a "ninguno". El remate solo se conserva en una columna, y solo si su tipo
+    existe en el motor.
     """
 
     if not isinstance(raw, dict) or not isinstance(raw.get("pistas"), list):
         raise PatronReferenciaError("patron_referencia_invalid_output", 502)
     pendientes = {elemento.element_id for elemento in elementos}
+    tipos = {elemento.element_id: elemento.tipo.strip().lower() for elemento in elementos}
     pistas: list[dict[str, object]] = []
     for item in cast(list[object], raw["pistas"]):
-        pista = _pista(item, pendientes)
+        pista = _pista(item, pendientes, tipos)
         if pista is not None:
             pistas.append(pista)
     return pistas

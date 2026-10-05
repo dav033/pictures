@@ -121,7 +121,7 @@ export function escenaDeVector(
         nombre_en_prompt: promptElementName(element.name),
         estructura_id: element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!,
         resolved_colors: element.resolved_colors,
-        espera_linea_de_color: tieneContratoDeColor(element),
+        espera_linea_de_color: tieneContratoDeColor(element, undefined, escena),
       })),
     },
   };

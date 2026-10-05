@@ -3,6 +3,8 @@ import type { VisualContext } from "../escena/visual-context";
 import {
   captionDialectForTrigger,
   compileLoraCaption,
+  translateLoraColor,
+  type LoraCaptionDialect,
   type LoraVisualClause,
   type ProductConceptClauseInput,
 } from "./lora-caption-compiler";
@@ -14,6 +16,7 @@ import {
   type ProductVocabulary,
 } from "@/lib/lora/product-vocabulary";
 import { aDescriptorPerceptual } from "@/lib/lora/descriptor-perceptual";
+import { colorVisibleDelCatalogo, leerTituloCatalogo, terminosBaseDeConcepto, terminosBaseDeTitulo, type TerminosBase } from "@/lib/lora/vocabulario-base";
 import type { FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
 /**
@@ -155,7 +158,19 @@ function resolveElement(
   sizesByProductId: Map<string, ElementSizeConfirmation[]>,
   productIdAliases: ReadonlyMap<string, string | readonly string[]>,
   productCatalogTitles: ReadonlyMap<string, string | readonly string[]>,
+  dialect: LoraCaptionDialect,
+  lineasEstimado: ReadonlyArray<{ structure_id?: string; product_id?: string; color: string | null; finish: string | null }> = [],
 ): ElementResolution {
+  // Modo base: el color de cada globo sale de su referencia Sempertex (la que se compra, por el color y el
+  // acabado de su línea del estimado), no de la palabra del vocabulario. Ver `colorDeReferencia`.
+  const estructura = element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!;
+  const conColorDelCatalogo = (productId: string, terminos: TerminosBase | undefined): TerminosBase | undefined => {
+    if (dialect !== "base" || !terminos || terminos.kind !== "balloon") return terminos;
+    const linea = lineasEstimado.find((candidata) => candidata.product_id === productId && candidata.structure_id === estructura)
+      ?? lineasEstimado.find((candidata) => candidata.product_id === productId);
+    const color = colorVisibleDelCatalogo(linea?.color, linea?.finish);
+    return color ? { ...terminos, color } : terminos;
+  };
   const productIds = elementProductIds(element);
   const entries: ProductConceptClauseInput[] = [];
   const unresolved: UnresolvedProduct[] = [];
@@ -219,11 +234,21 @@ function resolveElement(
         sizeCodes: confirmedSizes.length ? confirmedSizes : undefined,
         colorName: referenceColorName(result.concept.visual.color),
         sceneTerms: sceneTermsFor(result.concept),
+        ...(dialect === "base" ? { baseTerms: conColorDelCatalogo(productId, terminosBaseDeConcepto(result.concept)) } : {}),
       });
     } else if (result.status === "ambiguous") {
       unresolved.push({ product_id: productId, reason: "ambiguous" });
     } else {
-      unresolved.push({ product_id: productId, reason: "unknown" });
+      // The base model needs no training dataset, only a description: a
+      // product outside the vocabulary is described from its own catalog
+      // title. Never in the trained dialects, whose LoRA only knows its corpus.
+      const fromCatalog = dialect === "base" ? baseEntryFromCatalog(element, productId, catalogTitles, sizesByProductId) : undefined;
+      if (fromCatalog) {
+        entries.push({ ...fromCatalog, baseTerms: conColorDelCatalogo(productId, fromCatalog.baseTerms) });
+        diagnostics.push(`element ${element.element_id}: product ${productId} has no vocabulary concept; described from its catalog title for the base model`);
+      } else {
+        unresolved.push({ product_id: productId, reason: "unknown" });
+      }
     }
   }
 
@@ -243,6 +268,44 @@ function resolveElement(
   }
 
   return { entries, unresolved, resolvedConceptIds, droppedSizes, diagnostics };
+}
+
+/**
+ * Base-dialect entry for a product without a vocabulary concept, built only
+ * from catalog facts: its exact catalog title (shape, material, finish
+ * family, color words), the element's own catalog color when the element has
+ * this single product, and its confirmed sizes. Undefined when the title is
+ * not a balloon or names no color the catalog can confirm.
+ */
+function baseEntryFromCatalog(
+  element: SceneElement,
+  productId: string,
+  catalogTitles: readonly string[],
+  sizesByProductId: Map<string, ElementSizeConfirmation[]>,
+): ProductConceptClauseInput | undefined {
+  const singleProduct = elementProductIds(element).length === 1;
+  for (const title of catalogTitles) {
+    const read = leerTituloCatalogo(title);
+    if (!read) continue;
+    const titleColor = read.restoColor ? translateLoraColor(read.restoColor) : "";
+    const color = titleColor && titleColor !== read.restoColor ? titleColor
+      : singleProduct ? element.resolved_colors.map(translateLoraColor).join(" and ") : "";
+    const terms = terminosBaseDeTitulo(read, color);
+    if (!terms || terms.kind !== "balloon") continue;
+    const sizes = (sizesByProductId.get(productId) ?? [])
+      .filter(({ elementId }) => elementId === element.element_id || element.element_id.startsWith(`${elementId}#`))
+      .map(({ sizeCode, diameterInches }) => renderSize(diameterInches ?? diameterFromSizeCode(sizeCode), sizeCode));
+    return {
+      elementId: element.element_id,
+      // Grouping key only; never rendered (the caption only reads `baseTerms`).
+      conceptId: `catalog:${productId}`,
+      canonicalLabel: `${terms.finish} ${terms.color} ${terms.noun}`.trim(),
+      sizeCodes: sizes.length ? [...new Set(sizes)] : undefined,
+      colorName: terms.color,
+      baseTerms: terms,
+    };
+  }
+  return undefined;
 }
 
 /**
@@ -358,6 +421,9 @@ export function compileProductPrompt(input: {
   }
 
   const indexes = buildLookupIndexes(vocabulary);
+  // The resolved LoRA decides the wording: each LoRA follows its own captions.
+  // No trigger is the base model (`base`).
+  const dialect = captionDialectForTrigger(input.trigger);
   const sizesByProductId = new Map<string, ElementSizeConfirmation[]>();
   for (const confirmation of input.sizeConfirmations ?? []) {
     const list = sizesByProductId.get(confirmation.productId) ?? [];
@@ -379,6 +445,8 @@ export function compileProductPrompt(input: {
       sizesByProductId,
       input.productIdAliases ?? new Map<string, string>(),
       input.productCatalogTitles ?? new Map<string, string>(),
+      dialect,
+      input.sceneSpec.material_estimate?.balloons ?? [],
     );
     unresolved.push(...resolution.unresolved);
     droppedSizes.push(...resolution.droppedSizes);
@@ -393,8 +461,7 @@ export function compileProductPrompt(input: {
     productConcepts,
     trigger: input.trigger,
     maxLength: input.maxLength,
-    // The resolved LoRA decides the wording: each LoRA follows its own captions.
-    dialect: captionDialectForTrigger(input.trigger),
+    dialect,
     ambientDecor: input.ambientDecor,
     officialStructures: input.officialStructures,
     creativeCues: input.creativeCues,
@@ -404,7 +471,9 @@ export function compileProductPrompt(input: {
     diagnostics.push(`prompt compacted to render step ${compilation.compactionStep} to fit the LoRA prompt budget; every structure, placement, relation and color is kept`);
   }
 
-  const legacy = !compilation.usedProductVocabulary;
+  // A base-dialect entry described from a catalog title is not a vocabulary
+  // concept: without at least one real concept the result stays legacy.
+  const legacy = !compilation.usedProductVocabulary || resolvedConceptIds.size === 0;
   if (legacy) {
     diagnostics.push(
       "legacy fallback: no catalog-backed element in this scene resolved a canonical concept; colors/finishes rendered generically, no product identity claimed",

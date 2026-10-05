@@ -5,6 +5,13 @@ import { Minus, Plus } from "lucide-react";
 import type { ColorLeyenda } from "./leyenda";
 import { MuestraNumero } from "./LeyendaPatron";
 
+/**
+ * Alto de lo que se toca. `compacto` (32-36 px) es el de siempre: el editor de patrón y el
+ * de bouquet lo dan por hecho en su maquetación. `comodo` lleva el mando a 44 px, el mínimo
+ * táctil que cumplen los editores de armado (arco, columna, guirnalda y sus orgánicas).
+ */
+export type TamanoControl = "compacto" | "comodo";
+
 /** Flechas de un grupo de radio: mueve y elige el vecino, dando la vuelta. */
 function flechas(evento: KeyboardEvent<HTMLElement>, posicion: number, total: number): number | null {
   const delta = evento.key === "ArrowRight" || evento.key === "ArrowDown" ? 1 : evento.key === "ArrowLeft" || evento.key === "ArrowUp" ? -1 : 0;
@@ -14,17 +21,20 @@ function flechas(evento: KeyboardEvent<HTMLElement>, posicion: number, total: nu
 }
 
 /** Elige un color de la leyenda: una fila de muestras numeradas (grupo de radio). */
-export function SelectorColor({ leyenda, valor, onCambiar, etiqueta, deshabilitado = false }: {
+export function SelectorColor({ leyenda, valor, onCambiar, etiqueta, etiquetaId, deshabilitado = false, tamano = "compacto" }: {
   leyenda: readonly ColorLeyenda[];
   valor: number;
   onCambiar: (indice: number) => void;
   etiqueta: string;
+  /** Id de una etiqueta visible: con él el grupo se nombra con ella y `etiqueta` deja de ser el único nombre. */
+  etiquetaId?: string;
   deshabilitado?: boolean;
+  tamano?: TamanoControl;
 }) {
   const botones = useRef<Array<HTMLButtonElement | null>>([]);
   const activo = leyenda.some((color) => color.indice === valor) ? valor : leyenda[0]?.indice;
   return (
-    <div role="radiogroup" aria-label={etiqueta} className="flex flex-wrap gap-1">
+    <div role="radiogroup" aria-label={etiquetaId ? undefined : etiqueta} aria-labelledby={etiquetaId} className="flex flex-wrap gap-1">
       {leyenda.map((color, posicion) => {
         const elegido = color.indice === activo;
         return (
@@ -45,7 +55,7 @@ export function SelectorColor({ leyenda, valor, onCambiar, etiqueta, deshabilita
               onCambiar(leyenda[siguiente]!.indice);
               botones.current[siguiente]?.focus();
             }}
-            className={`grid size-9 place-items-center rounded-full transition-[box-shadow,transform] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento disabled:opacity-50 ${elegido ? "ring-2 ring-acento ring-offset-2 ring-offset-superficie" : "hover:scale-105"}`}
+            className={`grid ${tamano === "comodo" ? "size-11" : "size-9"} place-items-center rounded-full transition-[box-shadow,transform] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento disabled:opacity-50 ${elegido ? "ring-2 ring-acento ring-offset-2 ring-offset-superficie" : "hover:scale-105"}`}
           >
             <MuestraNumero color={color} />
           </button>
@@ -56,18 +66,21 @@ export function SelectorColor({ leyenda, valor, onCambiar, etiqueta, deshabilita
 }
 
 /** Número con − y + ("3 racimos"), para cantidades pequeñas y acotadas. */
-export function Contador({ valor, min, max, onCambiar, etiqueta, formato, deshabilitado = false }: {
+export function Contador({ valor, min, max, onCambiar, etiqueta, etiquetaId, formato, deshabilitado = false, tamano = "compacto" }: {
   valor: number;
   min: number;
   max: number;
   onCambiar: (valor: number) => void;
   etiqueta: string;
+  /** Id de una etiqueta visible: con él el grupo se nombra con ella. */
+  etiquetaId?: string;
   formato: (valor: number) => string;
   deshabilitado?: boolean;
+  tamano?: TamanoControl;
 }) {
-  const boton = "grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-superficie-2 hover:text-texto focus-visible:outline-2 focus-visible:outline-acento disabled:opacity-40 disabled:hover:bg-transparent";
+  const boton = `grid ${tamano === "comodo" ? "size-11" : "size-8"} place-items-center rounded-lg text-texto-suave hover:bg-superficie-2 hover:text-texto focus-visible:outline-2 focus-visible:outline-acento disabled:opacity-40 disabled:hover:bg-transparent`;
   return (
-    <div role="group" aria-label={etiqueta} className="inline-flex items-center gap-1 rounded-xl bg-superficie p-0.5 ring-1 ring-borde-suave ring-inset">
+    <div role="group" aria-label={etiquetaId ? undefined : etiqueta} aria-labelledby={etiquetaId} className="inline-flex items-center gap-1 rounded-xl bg-superficie p-0.5 ring-1 ring-borde-suave ring-inset">
       <button type="button" aria-label={`Menos: ${etiqueta}`} disabled={deshabilitado || valor <= min} onClick={() => onCambiar(Math.max(min, valor - 1))} className={boton}>
         <Minus className="size-3.5" aria-hidden="true" />
       </button>
@@ -80,16 +93,19 @@ export function Contador({ valor, min, max, onCambiar, etiqueta, formato, deshab
 }
 
 /** Opciones excluyentes como botones pegados (trazo, transición, dirección, alcance del pincel). */
-export function Segmentado<T extends string>({ opciones, valor, onCambiar, etiqueta, deshabilitado = false }: {
+export function Segmentado<T extends string>({ opciones, valor, onCambiar, etiqueta, etiquetaId, deshabilitado = false, tamano = "compacto" }: {
   opciones: ReadonlyArray<{ valor: T; etiqueta: string; icono?: ReactNode }>;
   valor: T;
   onCambiar: (valor: T) => void;
   etiqueta: string;
+  /** Id de una etiqueta visible: con él el grupo se nombra con ella. */
+  etiquetaId?: string;
   deshabilitado?: boolean;
+  tamano?: TamanoControl;
 }) {
   const botones = useRef<Array<HTMLButtonElement | null>>([]);
   return (
-    <div role="radiogroup" aria-label={etiqueta} className="inline-flex max-w-full flex-wrap gap-0.5 rounded-xl bg-superficie-2 p-0.5">
+    <div role="radiogroup" aria-label={etiquetaId ? undefined : etiqueta} aria-labelledby={etiquetaId} className="inline-flex max-w-full flex-wrap gap-0.5 rounded-xl bg-superficie-2 p-0.5">
       {opciones.map((opcion, posicion) => {
         const elegido = opcion.valor === valor;
         return (
@@ -108,7 +124,7 @@ export function Segmentado<T extends string>({ opciones, valor, onCambiar, etiqu
               onCambiar(opciones[siguiente]!.valor);
               botones.current[siguiente]?.focus();
             }}
-            className={`inline-flex h-8 items-center gap-1.5 rounded-[0.6rem] px-3 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-acento disabled:opacity-50 ${elegido ? "bg-superficie text-texto shadow-[0_1px_2px_var(--sombra)]" : "text-texto-suave hover:text-texto"}`}
+            className={`inline-flex ${tamano === "comodo" ? "min-h-11 min-w-11 justify-center" : "h-8"} items-center gap-1.5 rounded-[0.6rem] px-3 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-acento disabled:opacity-50 ${elegido ? "bg-superficie text-texto shadow-[0_1px_2px_var(--sombra)]" : "text-texto-suave hover:text-texto"}`}
           >
             {opcion.icono}
             {opcion.etiqueta}
@@ -120,12 +136,13 @@ export function Segmentado<T extends string>({ opciones, valor, onCambiar, etiqu
 }
 
 /** Interruptor accesible (`role="switch"`). */
-export function Interruptor({ activo, onCambiar, etiqueta, descripcion, deshabilitado = false }: {
+export function Interruptor({ activo, onCambiar, etiqueta, descripcion, deshabilitado = false, tamano = "compacto" }: {
   activo: boolean;
   onCambiar: (activo: boolean) => void;
   etiqueta: string;
   descripcion?: string;
   deshabilitado?: boolean;
+  tamano?: TamanoControl;
 }) {
   return (
     <button
@@ -134,7 +151,7 @@ export function Interruptor({ activo, onCambiar, etiqueta, descripcion, deshabil
       aria-checked={activo}
       disabled={deshabilitado}
       onClick={() => onCambiar(!activo)}
-      className="flex w-full items-center justify-between gap-3 rounded-xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento disabled:opacity-50"
+      className={`flex ${tamano === "comodo" ? "min-h-11 " : ""}w-full items-center justify-between gap-3 rounded-xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento disabled:opacity-50`}
     >
       <span className="min-w-0">
         <span className="block text-[13px] font-medium text-texto">{etiqueta}</span>

@@ -70,9 +70,9 @@ const sceneSpec = {
 } as unknown as SceneSpec;
 const prompt = buildImagePrompt({ sceneSpec, visualContext });
 assert.match(prompt, /OPEN EVENT LABEL: evento carnaval de las luciérnagas/i);
-assert.match(prompt, /ORIGINAL CUSTOMER REQUEST \(TRACEABILITY\)/i);
-assert.match(prompt, /arco azul=adaptable/i);
-assert.match(prompt, /Never render adaptable as exact/i);
+// The verbatim request, the Spanish plan lines and the piece match levels no
+// longer reach the image prompt: the plan sections own them (audit G1).
+assert.doesNotMatch(prompt, /ORIGINAL CUSTOMER REQUEST|USER REQUEST VERBATIM|APPROVED PLAN \/ STRUCTURES|PIECE MATCH LEVELS/i);
 assert.match(prompt, /invent no signage, readable text, props, flowers, furniture, or accessories/i);
 
 // C7: cardinality contract remains explicit for open-event proposals with

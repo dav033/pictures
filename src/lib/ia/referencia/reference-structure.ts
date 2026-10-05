@@ -34,6 +34,20 @@ export type DetectedStructure = {
   grounded: boolean;
   /** Irregular outline or one side heavier (official "asimétrico" variants). */
   outline: (typeof DETECTED_OUTLINES)[number];
+  /**
+   * Hacia dónde se va la pieza y cuánto, como **fracción de su altura**: negativo
+   * a la izquierda, positivo a la derecha, 0 derecha y recta.
+   *
+   * Sale de lo que el modelo ya contesta —`curves_toward` da el lado y
+   * `top_overhang` la cantidad— con las cifras del propio prompt: *slight* es
+   * «10-35 %» y *strong* «over 35 %», así que se toma el medio de la banda y el
+   * borde de la abierta. No se inventa ninguna escala nueva.
+   *
+   * Se calcula aparte de `curvesToward` a propósito: ese se anula en una columna
+   * porque allí es evidencia de semiarco, y aquí hace falta justamente el lado
+   * que allí se descarta.
+   */
+  inclina: number;
   /** Balloon packing: dense (no gaps) or airy (visible gaps). */
   density: (typeof DETECTED_DENSITIES)[number];
   /** Name of the element this one mirrors symmetrically, when there is one. */
@@ -69,7 +83,15 @@ For every element return composition_relevance: essential (defines the compositi
  * uses; the others stay selectable for evaluation only. "v13" is the base text
  * alone (production until ADR-0029); the rest append their rules to it.
  */
-export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "v16"] as const;
+export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "v16", "v17-lectura-unica"] as const;
+/**
+ * `v17-lectura-unica` (candidata): v16 tal cual **más** las cuatro lecturas de
+ * la foto dentro del mismo análisis (`lectura-unica.ts`). Es la única variante
+ * que cambia también el esquema de la herramienta, así que `analysisConfigHash`
+ * lo recibe; su texto incluye el de v16 sin tocarlo, de modo que la frontera
+ * bouquet/centro de mesa que midió ADR-0029 es la misma.
+ */
+export const VARIANTE_LECTURA_UNICA: VarianteReconocedor = "v17-lectura-unica";
 export type VarianteReconocedor = (typeof VARIANTES_RECONOCEDOR)[number];
 /** ADR-0029: v16 separates bouquet from centerpiece (89 % vs 80 % on 105 photos). */
 export const VARIANTE_PRODUCCION: VarianteReconocedor = "v16";
@@ -121,6 +143,23 @@ function oneOf<T extends readonly string[]>(values: T, value: unknown): T[number
   return (values as readonly string[]).includes(text) ? text as T[number] : undefined;
 }
 
+/**
+ * Cuánto se va la pieza hacia un lado, en fracción de su altura y con signo.
+ *
+ * Las dos cifras son las del prompt (`top_overhang`): *slight* = 10-35 % → se
+ * toma 22 %, el medio de la banda; *strong* = más del 35 % → se toma 45 %, un
+ * poco dentro de la banda abierta. Sin lado o sin cantidad, 0: una pieza recta.
+ */
+const INCLINACION_POR_VUELO: Record<(typeof DETECTED_OVERHANGS)[number], number> = { none: 0, slight: 0.22, strong: 0.45 };
+
+function inclinacionDe(
+  hacia: (typeof DETECTED_CURVES)[number],
+  vuelo: (typeof DETECTED_OVERHANGS)[number] | undefined,
+): number {
+  if (hacia === "none" || !vuelo) return 0;
+  return (hacia === "left" ? -1 : 1) * INCLINACION_POR_VUELO[vuelo];
+}
+
 /** Validates the model's `structure` object; anything malformed is discarded, never guessed. */
 export function parseDetectedStructure(raw: unknown): DetectedStructure | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
@@ -142,6 +181,7 @@ export function parseDetectedStructure(raw: unknown): DetectedStructure | undefi
     curvesToward: resolvedType === "column" && overhang ? "none" : oneOf(DETECTED_CURVES, value.curves_toward) ?? "none",
     grounded: value.grounded !== false,
     outline: leaningColumn ? "asymmetric" : oneOf(DETECTED_OUTLINES, value.outline) ?? "symmetric",
+    inclina: inclinacionDe(oneOf(DETECTED_CURVES, value.curves_toward) ?? "none", overhang),
     density: oneOf(DETECTED_DENSITIES, value.density) ?? "medium",
     mirrors: mirrors && !/^(?:none|null|n\/a|no)$/i.test(mirrors) ? mirrors : undefined,
     ...(vertical && overhang ? { topOverhang: overhang } : {}),
@@ -552,6 +592,9 @@ export function inferStructureFromName(name: string, bbox: ReferenceBBox): Detec
     curvesToward: "none",
     grounded: type !== "ceiling_installation",
     outline: "symmetric",
+    // Una pieza que el modelo nombró sin describir no se inclina: el nombre no
+    // dice hacia dónde, y suponerlo inventaría una forma que nadie vio.
+    inclina: 0,
     density: "medium",
   };
 }

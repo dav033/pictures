@@ -51,6 +51,7 @@ from typing import cast
 from jsonschema import Draft7Validator
 
 from app.generated_models import contract_schema
+from app.guirnalda.formas import FORMAS_GUIRNALDA
 from app.patron_color import (
     MaterialPatron,
     color_con_acabado_en,
@@ -619,6 +620,53 @@ def racimo_y_forma(armado: object) -> tuple[int | None, str | None]:
         GLOBOS_POR_UNIDAD.get(unidad) if isinstance(unidad, str) else None,
         forma if isinstance(forma, str) else None,
     )
+
+
+def _metros(valor: object) -> float:
+    if isinstance(valor, bool) or not isinstance(valor, (int, float)) or not math.isfinite(valor):
+        return 0.0
+    return float(valor)
+
+
+def linea_del_motor(armado: Mapping[str, object]) -> dict[str, float]:
+    """La línea de la guirnalda del motor (``app/guirnalda``) para la forma de un armado por partes.
+
+    Es la **única** traducción de las cinco formas de este armado a la espina del motor
+    (``guirnalda.espina.altura_guirnalda``): la usan la guía de la guirnalda clásica
+    (``guia_piezas/clasica.py``) y la receta de la orgánica (``armado_estructura``), así que las dos
+    dibujan y cuentan la misma línea. Devuelve solo los campos que la forma decide; el resto es de
+    quien llama:
+
+    - ``pendienteM``: el ``desnivel_m`` (decisión 27), en cualquier forma.
+    - ``arco_caido``: la ``caida_m`` cuelga en cada festón entre sus ``puntos_de_anclaje``
+      (``n`` puntos, ``n - 1`` festones), que es la forma lista ``feston`` / ``doble-feston`` del
+      motor (``guirnalda/formas``) con la caída que dice el armado.
+    - ``u_invertida``: la ``caida_m`` hacia el otro lado, colgado negativo, que el motor arquea hacia
+      arriba (la guirnalda tendida y caída por los dos lados).
+    - ``curva``: el ``arqueo_m`` (decisión 28), también hacia arriba.
+    - ``ondulada``: la onda de la forma lista ``ondulada`` del motor, que es su dueña.
+    - ``recta``: nada más que el desnivel.
+
+    Lee cada campo como ``plan._garland_cord``, que cuenta la cuerda. No valida: lo que no se reconoce
+    no mueve la línea.
+    """
+    forma = armado.get("forma")
+    caida = _metros(armado.get("caida_m"))
+    linea: dict[str, float] = {"pendienteM": _metros(armado.get("desnivel_m"))}
+    if forma == "ondulada":
+        ondulada = next(f for f in FORMAS_GUIRNALDA if f.id == "ondulada")
+        linea["ondaM"] = float(ondulada.forma["ondaM"])
+        linea["ondas"] = float(ondulada.forma["ondas"])
+    elif forma == "arco_caido":
+        anclajes = armado.get("puntos_de_anclaje")
+        tramos = anclajes - 1 if isinstance(anclajes, int) and not isinstance(anclajes, bool) else 1
+        linea["colgadoM"] = caida
+        linea["festones"] = float(max(1, tramos))
+    elif forma == "u_invertida":
+        linea["colgadoM"] = -caida
+    elif forma == "curva":
+        linea["colgadoM"] = -_metros(armado.get("arqueo_m"))
+    return linea
 
 
 # --- Sugerencia (receta o lectura de la foto) ----------------------------------------------
@@ -1605,6 +1653,7 @@ __all__ = [
     "VERSION_ARMADO",
     "armado_resuelto",
     "geometria_de_lectura",
+    "linea_del_motor",
     "opciones_admitidas",
     "racimo_y_forma",
     "sugerir_armado",

@@ -1,0 +1,344 @@
+{
+  "$id": "plan-guia-escena-result.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "operation_schema_version": {
+      "type": "string",
+      "const": "plan-guia-escena-result.v1"
+    },
+    "piezas": {
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "fuente": {
+            "type": "string",
+            "enum": [
+              "motor",
+              "dibujo"
+            ]
+          },
+          "ancho_m": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "alto_m": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "anclaje": {
+            "type": "string",
+            "enum": [
+              "piso",
+              "techo",
+              "flotante",
+              "pared"
+            ]
+          },
+          "elevacion_m": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "discos": {
+            "minItems": 1,
+            "maxItems": 3000,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x_m": {
+                  "type": "number",
+                  "minimum": -100,
+                  "maximum": 100
+                },
+                "y_m": {
+                  "type": "number",
+                  "minimum": -1,
+                  "maximum": 100
+                },
+                "r_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 5
+                },
+                "hex": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-f]{6}$"
+                }
+              },
+              "required": [
+                "x_m",
+                "y_m",
+                "r_m",
+                "hex"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "trazos": {
+            "minItems": 1,
+            "maxItems": 128,
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "forma": {
+                      "type": "string",
+                      "const": "linea"
+                    },
+                    "x1_m": {
+                      "type": "number",
+                      "minimum": -100,
+                      "maximum": 100
+                    },
+                    "y1_m": {
+                      "type": "number",
+                      "minimum": -10,
+                      "maximum": 100
+                    },
+                    "x2_m": {
+                      "type": "number",
+                      "minimum": -100,
+                      "maximum": 100
+                    },
+                    "y2_m": {
+                      "type": "number",
+                      "minimum": -10,
+                      "maximum": 100
+                    },
+                    "grosor_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    },
+                    "hex": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-f]{6}$"
+                    }
+                  },
+                  "required": [
+                    "forma",
+                    "x1_m",
+                    "y1_m",
+                    "x2_m",
+                    "y2_m",
+                    "grosor_m",
+                    "hex"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "forma": {
+                      "type": "string",
+                      "const": "arco"
+                    },
+                    "cx_m": {
+                      "type": "number",
+                      "minimum": -100,
+                      "maximum": 100
+                    },
+                    "cy_m": {
+                      "type": "number",
+                      "minimum": -10,
+                      "maximum": 100
+                    },
+                    "r_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 50
+                    },
+                    "desde_grados": {
+                      "type": "number",
+                      "minimum": -720,
+                      "maximum": 720
+                    },
+                    "hasta_grados": {
+                      "type": "number",
+                      "minimum": -720,
+                      "maximum": 720
+                    },
+                    "grosor_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    },
+                    "hex": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-f]{6}$"
+                    }
+                  },
+                  "required": [
+                    "forma",
+                    "cx_m",
+                    "cy_m",
+                    "r_m",
+                    "desde_grados",
+                    "hasta_grados",
+                    "grosor_m",
+                    "hex"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "rellenos": {
+            "minItems": 1,
+            "maxItems": 16,
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "forma": {
+                      "type": "string",
+                      "const": "elipse"
+                    },
+                    "cx_m": {
+                      "type": "number",
+                      "minimum": -100,
+                      "maximum": 100
+                    },
+                    "cy_m": {
+                      "type": "number",
+                      "minimum": -10,
+                      "maximum": 100
+                    },
+                    "rx_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 50
+                    },
+                    "ry_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 50
+                    },
+                    "hex": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-f]{6}$"
+                    }
+                  },
+                  "required": [
+                    "forma",
+                    "cx_m",
+                    "cy_m",
+                    "rx_m",
+                    "ry_m",
+                    "hex"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "forma": {
+                      "type": "string",
+                      "const": "poligono"
+                    },
+                    "puntos": {
+                      "minItems": 3,
+                      "maxItems": 64,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "x_m": {
+                            "type": "number",
+                            "minimum": -100,
+                            "maximum": 100
+                          },
+                          "y_m": {
+                            "type": "number",
+                            "minimum": -10,
+                            "maximum": 100
+                          }
+                        },
+                        "required": [
+                          "x_m",
+                          "y_m"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "hex": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-f]{6}$"
+                    }
+                  },
+                  "required": [
+                    "forma",
+                    "puntos",
+                    "hex"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "estructura_id",
+          "fuente",
+          "ancho_m",
+          "alto_m",
+          "discos"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "omitidas": {
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "motivo": {
+            "type": "string",
+            "enum": [
+              "sin_dibujo",
+              "sin_materiales"
+            ]
+          }
+        },
+        "required": [
+          "estructura_id",
+          "motivo"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "total_discos": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3000
+    }
+  },
+  "required": [
+    "operation_schema_version",
+    "piezas",
+    "omitidas",
+    "total_discos"
+  ],
+  "additionalProperties": false
+}

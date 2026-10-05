@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { LecturaArmadoSchema } from "../../plan/armado-bouquet";
+import { RemateLeidoSchema } from "../../plan/armado-columna";
 import { LecturaGuirnaldaSchema } from "../../plan/armado-guirnalda";
 import { LecturaConteoSchema } from "../../plan/conteo-referencia";
-import { PistaPatronSchema } from "../../plan/patron-color";
+import { PistaPatronSchema, TAMANOS_LEIDOS } from "../../plan/patron-color";
 import { VisualSemanticsSchema } from "../escena/lora-semantics";
 import {
   CatalogVisualDescriptorSchema,
@@ -64,9 +65,33 @@ const MeasuredColorSchema = z
  */
 export const PatronColorReferenciaSchema = PistaPatronSchema.omit({ referencia_element_id: true });
 
+/**
+ * Una referencia real del catálogo Sempertex medida en los píxeles de la pieza (`color-sempertex.ts`): el
+ * código de la lámina, su familia y el color con el que se pide («Satín Rosado»). Es lo que decide **qué
+ * globo se compra**: la paleta de 26 palabras funde «Satín Rosado» y «Pastel Mate Rosado» en un solo
+ * «rosado», y el plan acababa comprando un Reflex Fucsia para una columna pastel (2026-10-04).
+ * `familia_fiable` es falso cuando la foto no permitió decidir la familia (dos referencias casi iguales, o
+ * el analizador no dijo el acabado): entonces solo cuenta el color.
+ */
+export const ReferenciaMedidaSchema = z
+  .object({
+    codigo: z.string().regex(/^[0-9]{3}$/),
+    familia: texto(20),
+    /** El color de la lámina en español, sin la familia («Rosado», «Plata»). */
+    nombre: texto(60),
+    /** Familia y color, como se pide el globo («Satín Rosado»). */
+    nombre_completo: texto(80),
+    /** Parte de la pieza que ocupa, de 0 a 1. */
+    parte: z.number().min(0).max(1),
+    familia_fiable: z.boolean(),
+  })
+  .strict();
+
 const AppearanceSchema = z
   .object({
     observed_colors: z.array(texto(80)).max(8),
+    /** Opcional: las referencias Sempertex medidas en la pieza, de mayor a menor parte (`ReferenciaMedidaSchema`). */
+    referencias_medidas: z.array(ReferenciaMedidaSchema).max(5).optional(),
     /**
      * Opcional: los blueprints anteriores a la fase 2.1 y las referencias que
      * no traen píxeles (una descripción sin foto) no la tienen. Ordenada de
@@ -84,6 +109,44 @@ const AppearanceSchema = z
     composition: texto(240).default("single uniform material"),
     /** Opcional: solo con la detección encendida y en estructuras de globos donde leyó un patrón. */
     patron_color: PatronColorReferenciaSchema.optional(),
+    /**
+     * Opcional: qué corona una columna de la foto (ADR-0039). Lo lee la misma
+     * llamada que el patrón de color y solo en columnas. Va **aparte** de
+     * `patron_color` a propósito: el remate no es una disposición de color (una
+     * columna de un solo color puede llevar su globo igual) y `patron_color`
+     * viaja dentro del plan firmado, donde una lectura no tiene sitio. Al
+     * confirmar el plan viaja a la receta del motor, que decide si la usa.
+     */
+    remate_columna: RemateLeidoSchema.optional(),
+    /**
+     * Opcional: qué tamaños de globo tiene la pieza en la foto (`TAMANOS_LEIDOS`).
+     * Aquí y no dentro de `patron_color` por la misma razón que el remate: no es
+     * una disposición de color, y una pieza de un solo color —que no deja
+     * `patron_color`— tiene tamaños que se ven igual de bien. Al confirmar el
+     * plan viaja en su propia pista y elige la mezcla, que es lo que se compra.
+     */
+    tamanos_leidos: z.enum(TAMANOS_LEIDOS).optional(),
+    /**
+     * Hacia dónde se va la pieza y cuánto, en **fracción de su altura**: negativo
+     * a la izquierda. Sale de `curves_toward` y `top_overhang` del análisis, que
+     * el modelo ya contesta para cada estructura, con las cifras del propio
+     * prompt (`inclinacionDe`). Se guarda aquí porque el motor orgánico sí sabe
+     * inclinar una pieza (`forma.inclinacionM` de la columna, `pendienteM` y
+     * `carga` de la guirnalda) y hasta ahora nadie se lo decía: todas salían
+     * rectas (2026-10-03).
+     */
+    inclinacion: z.number().min(-1).max(1).optional(),
+    /**
+     * La pieza entera es de este color, dicho por quien miró la foto. Es lo que
+     * decide que el plan compre **un** material en vez de tres.
+     *
+     * Hace falta porque `observed_colors` no distingue el color de un globo de
+     * su reflejo: un cromado es un espejo y devuelve los marrones y los rosas de
+     * la pared y del piso. Una columna de dorado cromado acababa comprando
+     * dorado, café y oro rosa a tercios (2026-10-03). La lectura sí sabe
+     * separarlos, y esto es lo que dice.
+     */
+    color_unico: z.string().trim().min(1).max(80).optional(),
     /**
      * Opcional: cómo está armado un bouquet de la foto (ADR-0030). Solo con la
      * lectura encendida y en bouquets. Es una pista: al confirmar el plan viaja
@@ -303,12 +366,6 @@ function bboxIntersection(a: ReferenceBBox, b: ReferenceBBox): number {
 export function unidadesMaterialDeElemento(element: Pick<ReferenceBlueprintV2["elements"][number], "quantity" | "quantity_semantics">): number | undefined {
   if (element.quantity_semantics === "physical_instances") return undefined;
   return element.quantity.max || element.quantity.min || undefined;
-}
-
-export function bboxOverlap(a: ReferenceBBox, b: ReferenceBBox): number {
-  const intersection = bboxIntersection(a, b);
-  const union = a.width * a.height + b.width * b.height - intersection;
-  return union ? intersection / union : 0;
 }
 
 /** Fraction of `inner`'s area that lies inside `outer` (1 = fully contained). */

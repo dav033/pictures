@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { buildImagePrompt, buildLoraImagePrompt } from "../../src/lib/ia/uzume/build-image-prompt";
+import { buildImagePrompt } from "../../src/lib/ia/uzume/build-image-prompt";
+// The production LoRA path calls the compiler directly; the old wrapper had no other consumer.
+import { buildLoraImagePromptV2 as buildLoraImagePrompt } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { bloqueMezclaTamanos } from "../../src/lib/ia/escena/tamano-fisico";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import {
@@ -18,7 +20,12 @@ assert.equal(christmasNight.venue, "jardín");
 assert.equal(christmasNight.venueKind, "outdoor");
 assert.equal(christmasNight.timeOfDay, "noche");
 assert.equal(christmasNight.lightingKind, "night");
-assert.match(buildVisualSceneLock(christmasNight), /fiesta de navidad en un jardin de noche/i);
+// The scene context names event, venue and time; it no longer copies the request
+// verbatim nor the brief palette, which outranked the approved plan (audit G1).
+assert.match(buildVisualSceneLock(christmasNight), /MANDATORY VENUE: jardín/);
+assert.match(buildVisualSceneLock(christmasNight), /MANDATORY TIME OF DAY: noche/);
+assert.doesNotMatch(buildVisualSceneLock(christmasNight), /USER REQUEST VERBATIM|fiesta de navidad en un jardin de noche/i);
+assert.doesNotMatch(buildVisualSceneLock({ ...christmasNight, palette: ["rosado", "dorado"] }), /PALETTE|rosado/);
 assert.match(buildPositiveEnvironmentCues(christmasNight).join(" "), /outdoor garden/i);
 assert.match(buildPositiveEnvironmentCues(christmasNight).join(" "), /dark sky/i);
 

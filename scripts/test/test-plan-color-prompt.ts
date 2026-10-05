@@ -94,7 +94,7 @@ function escenaParaCoherencia(escena: SceneSpec): EscenaParaCoherencia {
       nombre_en_prompt: promptElementName(element.name),
       estructura_id: element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!,
       resolved_colors: element.resolved_colors,
-      espera_linea_de_color: tieneContratoDeColor(element),
+      espera_linea_de_color: tieneContratoDeColor(element, undefined, escena),
     })),
   };
 }
@@ -246,7 +246,9 @@ function main(): void {
   const coherenciaHomonimas = verificarCoherenciaPrompt(promptHomonimas, homonimas, escenaCoherenciaHomonimas);
   assert.equal(coherenciaHomonimas.ok, true, JSON.stringify(coherenciaHomonimas.errores));
   // Perder una de las dos líneas homónimas sigue fallando: el conteo por nombre no cuadra.
-  const sinUnaLinea = promptHomonimas.replace("- Columna: MONOCHROME LOCK — use only dorado; do not introduce color variety.\n", "");
+  // La línea puede llevar el acabado detrás del candado ("Finish: ..."): se quita entera.
+  const lineaDorada = lineasColumna.find((linea) => linea.startsWith("- Columna: MONOCHROME LOCK — use only dorado;"))!;
+  const sinUnaLinea = promptHomonimas.replace(`${lineaDorada}\n`, "");
   assert.notEqual(sinUnaLinea, promptHomonimas);
   const faltaLinea = verificarCoherenciaPrompt(sinUnaLinea, homonimas, escenaCoherenciaHomonimas);
   assert.equal(faltaLinea.ok, false);

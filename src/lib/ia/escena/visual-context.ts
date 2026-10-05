@@ -298,23 +298,24 @@ export function buildVisualFailureConditions(context: VisualContext): string[] {
   return failures;
 }
 
+/**
+ * The scene around the decoration: event, venue and time of day. It never
+ * carries what the decoration is. The palette (brief.colores) and the verbatim
+ * request used to sit here, at the top priority of the image prompt, so a
+ * stale brief or a last message like "sí, apruébalo así" outranked the colors
+ * and structures of the approved plan (2026-10-04 audit, finding G1). What is
+ * built, and in which colors, comes only from the plan.
+ */
 export function buildVisualSceneLock(context: VisualContext): string {
   const lines = [
-    context.userRequest ? `USER REQUEST VERBATIM: ${context.userRequest}` : undefined,
     context.eventLabel ? `EVENT LABEL (FREE TEXT): ${context.eventLabel}` : undefined,
     context.eventType ? `MANDATORY EVENT: ${context.eventType}` : undefined,
     context.venue ? `MANDATORY VENUE: ${context.venue}` : undefined,
     context.timeOfDay ? `MANDATORY TIME OF DAY: ${context.timeOfDay}` : undefined,
     context.style ? `STYLE: ${context.style}` : undefined,
-    context.palette.length ? `PALETTE: ${context.palette.join(", ")}` : undefined,
     context.dateOrSeason ? `DATE OR SEASON: ${context.dateOrSeason}` : undefined,
     context.guestCount ? `GUEST COUNT: ${context.guestCount}` : undefined,
     context.confirmedMotifs?.length ? `CONFIRMED MOTIFS: ${context.confirmedMotifs.join(", ")}` : undefined,
-    context.pieceMatchLevels?.length
-      ? `PIECE MATCH LEVELS: ${context.pieceMatchLevels.map((item) => `${item.piece}=${item.match_level}`).join("; ")}`
-      : undefined,
-    context.approvedPlan?.length ? `APPROVED PLAN: ${context.approvedPlan.join("; ")}` : undefined,
-    context.approvedMaterials?.length ? `APPROVED MATERIALS: ${context.approvedMaterials.join("; ")}` : undefined,
   ].filter(Boolean);
   return lines.length ? lines.join("\n") : "No explicit scene context supplied.";
 }

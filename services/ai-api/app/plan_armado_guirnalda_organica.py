@@ -40,6 +40,7 @@ from typing import Literal, cast
 from jsonschema import Draft7Validator
 from pydantic import Field, field_validator
 
+from app.armado_guirnalda_organica_prompt import frases_guirnalda_organica
 from app.armado_guirnalda_organica import (
     MAX_MATERIALES,
     VERSION,
@@ -50,6 +51,7 @@ from app.armado_guirnalda_organica import (
     limites_de,
     opciones_admitidas,
 )
+from app.color_catalogo import acabado_del_motor
 from app.generated_models import contract_schema
 from app.guirnalda.tipos import config_inicial
 from app.operational_models import OperationalRequest
@@ -184,9 +186,19 @@ def _peso_de(material: Mapping[str, object]) -> int:
 
 
 def _acabado_de(material: Mapping[str, object], admitidos: Sequence[str]) -> str:
-    """El acabado del plan cuando el motor lo conoce con ese mismo nombre; si no, el de por defecto."""
+    """El acabado del material en el motor: el del plan si el motor lo llama igual; si no, el de su familia.
+
+    La palabra del catálogo («reflex», «cristal») pasa por ``acabado_del_motor``, la tabla del repo dueño, y no
+    cae a mate (auditoría 2026-10-04, M3). Un acabado que el motor no admita aquí es el de por defecto.
+    """
     acabado = material.get("acabado")
-    return acabado if isinstance(acabado, str) and acabado in admitidos else ACABADO_POR_DEFECTO
+    if isinstance(acabado, str) and acabado in admitidos:
+        return acabado
+    color = material.get("color")
+    traducido = acabado_del_motor(
+        color if isinstance(color, str) else None, acabado if isinstance(acabado, str) else None
+    )
+    return traducido if traducido in admitidos else ACABADO_POR_DEFECTO
 
 
 def _mezcla_de_tamanos(mezcla: Mapping[object, object]) -> dict[str, float]:
@@ -301,7 +313,21 @@ def vista_previa_armado_guirnalda_organica(
             },
         ) from error
 
-    guirnalda: dict[str, object] = {campo: resuelto[campo] for campo in _CAMPOS_GUIRNALDA}
+    # `if campo in resuelto` como en el arco: desde el 2026-10-04 el contrato publica además `estructura_id`
+    # y las dos frases para la imagen, que el motor no escribe — las pone esta ruta, aquí debajo.
+    guirnalda: dict[str, object] = {
+        campo: resuelto[campo] for campo in _CAMPOS_GUIRNALDA if campo in resuelto
+    }
+    # Lo que la imagen lee de este armado: la misma frase que publicará la resolución (ADR-0035).
+    guirnalda["estructura_id"] = request.estructura_id
+    guirnalda["prompt_gemini"], guirnalda["prompt_lora"] = frases_guirnalda_organica(
+        armado,
+        resuelto,
+        [
+            (str(material.get("color") or ""), str(material.get("acabado") or ""))
+            for material in materiales_de(estructura)
+        ],
+    )
     if not resueltos:
         guirnalda["avisos"] = avisos_con_tono_neutro(
             cast(Sequence[str], guirnalda["avisos"]), MAX_AVISOS

@@ -158,8 +158,8 @@ export function tallasGuirnalda(escena: SceneSpec): ElementSizeConfirmation[] {
     (TALLAS[productId] ?? []).map((diametro) => ({ elementId, productId, sizeCode: `R-${diametro}`, diameterInches: diametro }))));
 }
 
-/** Caption canónico con el vocabulario v007, como en route.ts. */
-export function captionCanonicoGuirnalda(escena: SceneSpec, frases?: readonly FraseDeEstructura[], trigger?: string, maxLength?: number) {
+/** Caption canónico con el vocabulario v007, como en route.ts. Sin trigger el runtime compila el dialecto `base` (modelo sin LoRA); estos casos fijan el v007, que es el que el trigger v3 selecciona con la misma longitud que el v2. */
+export function captionCanonicoGuirnalda(escena: SceneSpec, frases?: readonly FraseDeEstructura[], trigger = "eventdecor_style_v3", maxLength?: number) {
   return compileProductPrompt({
     sceneSpec: escena,
     visualContext: CONTEXTO_CUMPLE,

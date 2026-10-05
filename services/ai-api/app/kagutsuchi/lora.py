@@ -85,13 +85,15 @@ class LoraGenerateRequest(OperationalRequest):
     already carries the trigger words and the /edit image guide -- this
     module never decides what the prompt says, only submits it. `mode`
     mirrors which endpoint TypeScript already chose (whether
-    `referenciasParaLoraEdit`'s result was empty).
+    `referenciasParaLoraEdit`'s result was empty). `loras` holds at most one
+    application; an empty list is the base FLUX.2 model (loraMode "base"),
+    which fal accepts on the same endpoints, and its prompt carries no trigger.
     """
 
     schema_version: Literal["lora-generate.v1"]
     mode: Literal["text", "edit"]
     prompt: str = Field(min_length=1, max_length=4000)
-    loras: list[LoraSpec] = Field(min_length=1, max_length=1)
+    loras: list[LoraSpec] = Field(min_length=0, max_length=1)
     guidance_scale: float = Field(ge=1.5, le=5)
     num_inference_steps: int = Field(ge=1, le=100)
     image_width: int = Field(ge=1, le=4096)

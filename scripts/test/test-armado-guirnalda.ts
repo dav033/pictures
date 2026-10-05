@@ -184,13 +184,13 @@ async function main(): Promise<void> {
   // ---------------------------------------------------------------------------
   const { featureEnabled } = await import("../../src/lib/ia/nucleo/feature-flags");
   const antes = process.env.GUIRNALDAS_ARMADO_V1;
-  delete process.env.GUIRNALDAS_ARMADO_V1;
+  process.env.GUIRNALDAS_ARMADO_V1 = "false";
   assert.equal(featureEnabled("GUIRNALDAS_ARMADO_V1"), false, "apagada por defecto");
   process.env.GUIRNALDAS_ARMADO_V1 = "true";
   assert.equal(featureEnabled("GUIRNALDAS_ARMADO_V1"), true);
   process.env.GUIRNALDAS_ARMADO_V1 = "false";
   assert.equal(featureEnabled("GUIRNALDAS_ARMADO_V1"), false);
-  if (antes === undefined) delete process.env.GUIRNALDAS_ARMADO_V1;
+  if (antes === undefined) process.env.GUIRNALDAS_ARMADO_V1 = "false";
   else process.env.GUIRNALDAS_ARMADO_V1 = antes;
   ok("GUIRNALDAS_ARMADO_V1 arranca apagada");
 

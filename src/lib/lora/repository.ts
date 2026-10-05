@@ -2,11 +2,13 @@ import "server-only";
 
 import type { Pool } from "pg";
 import { getRagPool } from "@/lib/rag/db";
+import type { LoraTrainedModeSlug } from "./schema";
 
 export type LoraPool = Pool;
 
 export type LoraModeSlotRow = {
-  slug: "unlimited" | "training_1" | "training_2";
+  /** Only trained modes have a slot row; `base` never does (see `LoraModeSlugSchema`). */
+  slug: LoraTrainedModeSlug;
   display_name: string;
   training_run_id: string | null;
   enforce_dataset_allowlist: boolean;

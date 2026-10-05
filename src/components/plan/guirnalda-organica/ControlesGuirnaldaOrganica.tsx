@@ -83,7 +83,7 @@ function EnMetros({ etiqueta, ayuda, valor, rango, onConfirmar, testid }: { etiq
     <DeslizadorArco
       etiqueta={etiqueta}
       ayuda={ayuda}
-      valor={valorEnRango(valor, rango)}
+      valor={valorEnRango(valor, rango)} valorReal={valor}
       min={rango.min}
       max={rango.max}
       paso={rango.paso}
@@ -99,7 +99,7 @@ function EnPorcentaje({ etiqueta, ayuda, valor, rango, onConfirmar, testid }: { 
     <DeslizadorArco
       etiqueta={etiqueta}
       ayuda={ayuda}
-      valor={valorEnRango(valor, rango)}
+      valor={valorEnRango(valor, rango)} valorReal={valor}
       min={rango.min}
       max={rango.max}
       paso={rango.paso}
@@ -115,7 +115,7 @@ function EnCantidad({ etiqueta, ayuda, valor, rango, onConfirmar, testid, format
     <DeslizadorArco
       etiqueta={etiqueta}
       ayuda={ayuda}
-      valor={valorEnRango(valor, rango)}
+      valor={valorEnRango(valor, rango)} valorReal={valor}
       min={rango.min}
       max={rango.max}
       paso={rango.paso}
@@ -126,7 +126,7 @@ function EnCantidad({ etiqueta, ayuda, valor, rango, onConfirmar, testid, format
   );
 }
 
-/** Lado más cargado: −1 izquierda, +1 derecha. Se dice con palabras, no con el número del motor. */
+/** Qué lado va más grueso: −1 izquierda, +1 derecha. Se dice con palabras, no con el número del motor. */
 function ladoCargado(valor: number): string {
   if (Math.abs(valor) < 0.05) return "parejo";
   return `${valor < 0 ? "izquierda" : "derecha"} ${porcentaje.format(Math.abs(valor))}`;
@@ -162,17 +162,17 @@ export function ControlesGuirnaldaOrganica({ borrador, opciones, limites, leyend
         <EnMetros etiqueta="Ondulación" ayuda="Qué tanto sube y baja la tira a lo largo." valor={borrador.forma.ondaM} rango={rangoDe.onda} onConfirmar={(v) => onCambiar(conForma(borrador, "ondaM", v))} testid="onda-guirnalda" />
         <EnCantidad etiqueta="Ondas" ayuda="Cuántas ondas hay a lo largo de la tira." valor={borrador.forma.ondas} rango={rangoDe.ondas} onConfirmar={(v) => onCambiar(conForma(borrador, "ondas", v))} testid="ondas-guirnalda" />
         <EnMetros etiqueta="Colgado" ayuda="Cuánto cuelga la tira entre los puntos de sujeción; 0 es tensa." valor={borrador.forma.colgadoM} rango={rangoDeColgado(limites)} onConfirmar={(v) => onCambiar(conForma(borrador, "colgadoM", v))} testid="colgado-guirnalda" />
-        <EnCantidad etiqueta="Festones" ayuda="Cuántos tramos colgados forman la guirnalda." valor={borrador.forma.festones} rango={rangoDeFestones(limites)} onConfirmar={(v) => onCambiar(conForma(borrador, "festones", v))} testid="festones-guirnalda" />
-        <EnCantidad etiqueta="Lado más cargado" ayuda="Ese lado es más grueso y lleva los globos más grandes." valor={borrador.forma.carga} rango={rangoDe.carga} formato={ladoCargado} onConfirmar={(v) => onCambiar(conForma(borrador, "carga", v))} testid="carga-guirnalda" />
+        <EnCantidad etiqueta="Cuántas caídas" ayuda="Cada caída es una U que cuelga entre dos puntos de sujeción." valor={borrador.forma.festones} rango={rangoDeFestones(limites)} onConfirmar={(v) => onCambiar(conForma(borrador, "festones", v))} testid="festones-guirnalda" />
+        <EnCantidad etiqueta="Qué lado va más grueso" ayuda="Ese lado queda más grueso y lleva los globos más grandes." valor={borrador.forma.carga} rango={rangoDe.carga} formato={ladoCargado} onConfirmar={(v) => onCambiar(conForma(borrador, "carga", v))} testid="carga-guirnalda" />
       </Apartado>
 
       <Apartado titulo="Volumen" resumen={`${metrosCliente(borrador.volumen.grosorPatasM)} a ${metrosCliente(borrador.volumen.grosorCimaM)}`} testid="apartado-volumen-guirnalda">
-        <EnMetros etiqueta="Grosor en los extremos" valor={borrador.volumen.grosorPatasM} rango={rangoDeGrosorExtremos(limites)} onConfirmar={(v) => onCambiar(conVolumen(borrador, "grosorPatasM", v))} testid="grosor-extremos-guirnalda" />
-        <EnMetros etiqueta="Grosor en el centro" valor={borrador.volumen.grosorCimaM} rango={rangoDeGrosorCentro(limites)} onConfirmar={(v) => onCambiar(conVolumen(borrador, "grosorCimaM", v))} testid="grosor-centro-guirnalda" />
+        <EnMetros etiqueta="Grosor en los extremos" ayuda="Qué tan ancha queda la tira en las puntas, donde arranca y termina." valor={borrador.volumen.grosorPatasM} rango={rangoDeGrosorExtremos(limites)} onConfirmar={(v) => onCambiar(conVolumen(borrador, "grosorPatasM", v))} testid="grosor-extremos-guirnalda" />
+        <EnMetros etiqueta="Grosor en el centro" ayuda="Qué tan ancha queda la tira en el medio: ahí es donde más se nota el volumen." valor={borrador.volumen.grosorCimaM} rango={rangoDeGrosorCentro(limites)} onConfirmar={(v) => onCambiar(conVolumen(borrador, "grosorCimaM", v))} testid="grosor-centro-guirnalda" />
         <EnPorcentaje etiqueta="Relleno" ayuda="Qué tan llena va la banda de globos." valor={borrador.volumen.relleno} rango={rangoDe.relleno} onConfirmar={(v) => onCambiar(conVolumen(borrador, "relleno", v))} testid="relleno-guirnalda" />
-        <EnPorcentaje etiqueta="Irregularidad" ayuda="Qué tan despareja queda la banda: 0 es lisa." valor={borrador.volumen.irregularidad} rango={rangoDe.irregularidad} onConfirmar={(v) => onCambiar(conVolumen(borrador, "irregularidad", v))} testid="irregularidad-guirnalda" />
-        <EnCantidad etiqueta="Globos por racimo" valor={borrador.volumen.racimo} rango={rangoDe.racimo} onConfirmar={(v) => onCambiar(conVolumen(borrador, "racimo", v))} testid="racimo-guirnalda" />
-        <EnPorcentaje etiqueta="Globos que se salen de la banda" valor={borrador.volumen.salientes} rango={rangoDe.salientes} onConfirmar={(v) => onCambiar(conVolumen(borrador, "salientes", v))} testid="salientes-guirnalda" />
+        <EnPorcentaje etiqueta="Qué tan desparejo queda el borde" ayuda="En 0 el borde queda liso; subiéndolo, los globos entran y salen como en una pieza hecha a mano." valor={borrador.volumen.irregularidad} rango={rangoDe.irregularidad} onConfirmar={(v) => onCambiar(conVolumen(borrador, "irregularidad", v))} testid="irregularidad-guirnalda" />
+        <EnCantidad etiqueta="Globos por racimo" ayuda="Cuántos globos se atan juntos en cada racimo; con más, la tira se ve más tupida." valor={borrador.volumen.racimo} rango={rangoDe.racimo} onConfirmar={(v) => onCambiar(conVolumen(borrador, "racimo", v))} testid="racimo-guirnalda" />
+        <EnPorcentaje etiqueta="Globos que asoman del borde" ayuda="Cuántos globos sobresalen del bulto para que el borde no quede recto." valor={borrador.volumen.salientes} rango={rangoDe.salientes} onConfirmar={(v) => onCambiar(conVolumen(borrador, "salientes", v))} testid="salientes-guirnalda" />
       </Apartado>
 
       <Apartado titulo="Tamaños de globo" testid="apartado-tamanos-guirnalda">
@@ -180,9 +180,9 @@ export function ControlesGuirnaldaOrganica({ borrador, opciones, limites, leyend
         {opciones.tamanos.map((pulgadas) => (
           <EnCantidad key={pulgadas} etiqueta={`Globos de ${pulgadas}″`} valor={pesoDeTamano(borrador, pulgadas)} rango={rangoDe.peso} formato={(v) => (v === 0 ? "no lleva" : entero.format(v))} onConfirmar={(v) => onCambiar(conPesoDeTamano(borrador, pulgadas, v))} testid={`peso-tamano-${pulgadas}-guirnalda`} />
         ))}
-        <EnPorcentaje etiqueta="Grandes abajo" ayuda="Cuánto se acomodan los globos grandes hacia abajo." valor={borrador.tamanos.grandesAbajo} rango={rangoDe.grandesAbajo} onConfirmar={(v) => onCambiar(conTamanos(borrador, "grandesAbajo", v))} testid="grandes-abajo-guirnalda" />
-        <EnPorcentaje etiqueta="Inflado" ayuda="Qué tan inflado va cada globo respecto a su tamaño." valor={borrador.tamanos.inflado} rango={rangoDe.inflado} onConfirmar={(v) => onCambiar(conTamanos(borrador, "inflado", v))} testid="inflado-guirnalda" />
-        <EnPorcentaje etiqueta="Variación de tamaño" valor={borrador.tamanos.variacion} rango={rangoDe.variacion} onConfirmar={(v) => onCambiar(conTamanos(borrador, "variacion", v))} testid="variacion-guirnalda" />
+        <EnPorcentaje etiqueta="Dónde van los globos grandes" ayuda="En 0 van repartidos por toda la tira; subiéndolo, se bajan al borde de abajo." valor={borrador.tamanos.grandesAbajo} rango={rangoDe.grandesAbajo} onConfirmar={(v) => onCambiar(conTamanos(borrador, "grandesAbajo", v))} testid="grandes-abajo-guirnalda" />
+        <EnPorcentaje etiqueta="Qué tan inflados" ayuda="Qué tan inflado va cada globo respecto a su tamaño." valor={borrador.tamanos.inflado} rango={rangoDe.inflado} onConfirmar={(v) => onCambiar(conTamanos(borrador, "inflado", v))} testid="inflado-guirnalda" />
+        <EnPorcentaje etiqueta="Globos de distinto tamaño" ayuda="Cuánto cambia el tamaño de un globo al de al lado, como cuando se infla a mano." valor={borrador.tamanos.variacion} rango={rangoDe.variacion} onConfirmar={(v) => onCambiar(conTamanos(borrador, "variacion", v))} testid="variacion-guirnalda" />
       </Apartado>
 
       <Apartado titulo="Colores" resumen={`${paleta.length} ${paleta.length === 1 ? "color" : "colores"}`} abierto testid="apartado-colores-guirnalda">
@@ -195,11 +195,11 @@ export function ControlesGuirnaldaOrganica({ borrador, opciones, limites, leyend
                 <span aria-hidden="true" className="inline-block size-3.5 rounded-full ring-1 ring-borde" style={{ background: color.hex }} />
                 {`Color ${numero}`}
               </legend>
-              <SeleccionArco etiqueta={`Color ${numero}`} opciones={opcionesDeColor} valor={String(entrada.material)} onCambiar={(v) => onCambiar(conMaterial(borrador, posicion, Number(v)))} testid={`material-guirnalda-${numero}`} />
-              <EnCantidad etiqueta={`Cuánto pesa el color ${numero}`} valor={entrada.peso} rango={rangoDe.pesoDeColor} onConfirmar={(v) => onCambiar(conPesoDeColor(borrador, posicion, v))} testid={`peso-guirnalda-${numero}`} />
+              <SeleccionArco etiqueta={`Color ${numero}`} ayuda="Qué color de la pieza va en este lugar de la mezcla." opciones={opcionesDeColor} valor={String(entrada.material)} onCambiar={(v) => onCambiar(conMaterial(borrador, posicion, Number(v)))} testid={`material-guirnalda-${numero}`} />
+              <EnCantidad etiqueta={`Cuánto pesa el color ${numero}`} ayuda="Cuántos globos de este color hay frente a los demás: más peso, más se ve." valor={entrada.peso} rango={rangoDe.pesoDeColor} onConfirmar={(v) => onCambiar(conPesoDeColor(borrador, posicion, v))} testid={`peso-guirnalda-${numero}`} />
               <div className="grid gap-2 @sm:grid-cols-2">
-                <SeleccionArco etiqueta={`Acabado del color ${numero}`} opciones={opciones.acabados.map((acabado) => ({ valor: acabado.valor, etiqueta: acabado.texto }))} valor={entrada.acabado} onCambiar={(v) => { const hallado = opciones.acabados.find((acabado) => acabado.valor === v); if (hallado) onCambiar(conAcabado(borrador, posicion, hallado.valor)); }} testid={`acabado-guirnalda-${numero}`} />
-                <SeleccionArco etiqueta={`Papel del color ${numero}`} opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-guirnalda-${numero}`} />
+                <SeleccionArco etiqueta={`Acabado del color ${numero}`} ayuda="Cambia el aspecto del globo (brillo, confeti, transparencia), no su color." opciones={opciones.acabados.map((acabado) => ({ valor: acabado.valor, etiqueta: acabado.texto }))} valor={entrada.acabado} onCambiar={(v) => { const hallado = opciones.acabados.find((acabado) => acabado.valor === v); if (hallado) onCambiar(conAcabado(borrador, posicion, hallado.valor)); }} testid={`acabado-guirnalda-${numero}`} />
+                <SeleccionArco etiqueta={`Papel del color ${numero}`} ayuda="Normal va dentro de los racimos; acento son globos sueltos que asoman por fuera." opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-guirnalda-${numero}`} />
               </div>
               <button
                 type="button"
@@ -236,8 +236,8 @@ export function ControlesGuirnaldaOrganica({ borrador, opciones, limites, leyend
 
       <Apartado titulo="Adornos" testid="apartado-adornos-guirnalda">
         <p className="text-xs leading-relaxed text-texto-suave">Ramas de follaje y flores por metro de tira. No son globos: se listan, no se compran en esta cotización.</p>
-        <EnCantidad etiqueta="Follaje" valor={borrador.adornos.follaje} rango={rangoDe.adorno} formato={(v) => `${decimal.format(v)} por metro`} onConfirmar={(v) => onCambiar(conAdorno(borrador, "follaje", v))} testid="follaje-guirnalda" />
-        <EnCantidad etiqueta="Flores" valor={borrador.adornos.flores} rango={rangoDe.adorno} formato={(v) => `${decimal.format(v)} por metro`} onConfirmar={(v) => onCambiar(conAdorno(borrador, "flores", v))} testid="flores-guirnalda" />
+        <EnCantidad etiqueta="Follaje" ayuda="Cuántas ramas verdes se meten entre los globos por cada metro de tira." valor={borrador.adornos.follaje} rango={rangoDe.adorno} formato={(v) => `${decimal.format(v)} por metro`} onConfirmar={(v) => onCambiar(conAdorno(borrador, "follaje", v))} testid="follaje-guirnalda" />
+        <EnCantidad etiqueta="Flores" ayuda="Cuántas flores se meten entre los globos por cada metro de tira." valor={borrador.adornos.flores} rango={rangoDe.adorno} formato={(v) => `${decimal.format(v)} por metro`} onConfirmar={(v) => onCambiar(conAdorno(borrador, "flores", v))} testid="flores-guirnalda" />
       </Apartado>
     </div>
   );

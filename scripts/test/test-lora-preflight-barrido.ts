@@ -11,7 +11,7 @@
  */
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
-import { LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { BASE_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
@@ -160,7 +160,10 @@ type Fallo = { escena: string; errores: string[]; longitud: number; prompt: stri
 const detalle = process.argv.includes("--detalle");
 // El trigger real lo antepone ensureLoraTriggers después de compilar (igual
 // que /api/generate). Se prueban el trigger de estilo y uno de estructura largo.
-const TRIGGERS = ["eventdecor_style_v2", "eventdecor_structure_v12"];
+// Sin trigger es el modelo base (dialecto `base`): no se antepone nada y el
+// preflight lo revisa con su propio presupuesto.
+const TRIGGERS: ReadonlyArray<string | undefined> = ["eventdecor_style_v2", "eventdecor_structure_v12", undefined];
+let maxLongitudBase = 0;
 let total = 0;
 let compactadas = 0;
 let maxLongitud = 0;
@@ -168,7 +171,7 @@ const fallos: Fallo[] = [];
 const conteoErrores = new Map<string, number>();
 
 /** Compila una escena igual que /api/generate y devuelve el prompt efectivo y sus errores de preflight. */
-function evaluarEscena(elementos: Elemento[], paleta: string[], evento: (typeof EVENTOS)[number], trigger: string) {
+function evaluarEscena(elementos: Elemento[], paleta: string[], evento: (typeof EVENTOS)[number], trigger: string | undefined) {
   const spec = escena(elementos);
   const contexto = buildVisualContext({
     brief: { tipo_evento: evento.tipo_evento, estilo: evento.estilo, colores: paleta, espacio: evento.espacio },
@@ -181,8 +184,10 @@ function evaluarEscena(elementos: Elemento[], paleta: string[], evento: (typeof 
     return (el.catalog_product_ids ?? []).flatMap((productId) => tamanos.map((sizeCode) => ({ elementId: el.element_id, productId, sizeCode })));
   });
   const resultado = compileProductPrompt({ sceneSpec: spec, visualContext: contexto, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations, trigger });
-  const prompt = ensureLoraTriggers(resultado.prompt, [{ path: "barrido", trigger, scale: 1 }]);
-  const reporte = preflightLoraPrompt({ sceneSpec: spec, clauses: resultado.clauses, prompt, triggers: [trigger], vocabulary: PRODUCT_VOCABULARY });
+  const prompt = trigger ? ensureLoraTriggers(resultado.prompt, [{ path: "barrido", trigger, scale: 1 }]) : resultado.prompt;
+  const reporte = trigger
+    ? preflightLoraPrompt({ sceneSpec: spec, clauses: resultado.clauses, prompt, triggers: [trigger], vocabulary: PRODUCT_VOCABULARY })
+    : preflightLoraPrompt({ sceneSpec: spec, clauses: resultado.clauses, prompt, vocabulary: PRODUCT_VOCABULARY, dialect: "base" });
   const errores = [
     ...reporte.errors,
     ...(resultado.unresolved_products.length ? [`productos sin resolver: ${resultado.unresolved_products.length}`] : []),
@@ -196,7 +201,7 @@ const combinaciones = FOCALES.flatMap((focal, iFocal) =>
       PALETAS.flatMap((paleta, iPaleta) =>
         EVENTOS.flatMap((evento) =>
           TRIGGERS.map((trigger) => ({
-            nombre: `focal${iFocal}-soporte${iSoporte}-acento${iAcento}-paleta${iPaleta}-${evento.tipo_evento}-${trigger}`,
+            nombre: `focal${iFocal}-soporte${iSoporte}-acento${iAcento}-paleta${iPaleta}-${evento.tipo_evento}-${trigger ?? "base"}`,
             elementos: [...focal(paleta), ...soporte(paleta), ...acento(paleta)],
             paleta,
             evento,
@@ -206,7 +211,8 @@ const combinaciones = FOCALES.flatMap((focal, iFocal) =>
 for (const combinacion of combinaciones) {
   const { prompt, errores, compactada } = evaluarEscena(combinacion.elementos, combinacion.paleta, combinacion.evento, combinacion.trigger);
   total += 1;
-  maxLongitud = Math.max(maxLongitud, prompt.length);
+  if (combinacion.trigger) maxLongitud = Math.max(maxLongitud, prompt.length);
+  else maxLongitudBase = Math.max(maxLongitudBase, prompt.length);
   if (compactada) compactadas += 1;
   if (!errores.length) continue;
   fallos.push({ escena: combinacion.nombre, errores, longitud: prompt.length, prompt });
@@ -216,7 +222,7 @@ for (const combinacion of combinaciones) {
   }
 }
 
-console.log(`Escenas: ${total}; compactadas: ${compactadas}; longitud máxima: ${maxLongitud}/${LORA_PROMPT_MAX_LENGTH}; fallos: ${fallos.length}`);
+console.log(`Escenas: ${total}; compactadas: ${compactadas}; longitud máxima: ${maxLongitud}/${LORA_PROMPT_MAX_LENGTH} (base ${maxLongitudBase}/${BASE_PROMPT_MAX_LENGTH}); fallos: ${fallos.length}`);
 for (const [error, veces] of [...conteoErrores.entries()].sort((a, b) => b[1] - a[1])) console.log(`  ${veces}× ${error}`);
 if (detalle) {
   for (const fallo of fallos.slice(0, 5)) console.log(`\n[${fallo.escena}] (${fallo.longitud})\n  ${fallo.errores.join("\n  ")}\n  ${fallo.prompt}`);

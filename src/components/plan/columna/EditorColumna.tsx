@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from "react";
 import { Check, LoaderCircle, RotateCcw, TriangleAlert } from "lucide-react";
 import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
+import { RESPALDO_VISTA_ARMADO_COLUMNA } from "@/lib/plan/peticion-armado-columna";
 import type { ColorLeyenda } from "../patron/leyenda";
 import { ControlesColumna } from "./ControlesColumna";
 import type { PuedeGuardarColumna } from "./guardar-columna";
@@ -59,7 +60,15 @@ export function EditorColumna({
   }, []);
   const dibujo = vista.vista;
   // El rechazo del motor y su silencio son errores del borrador; el resto, un estado que se anuncia con cortesía.
-  const errorBorrador = guardar.puede ? null : guardar.tipo === "error" ? guardar.motivo : null;
+  // El fallo del motor sale del ESTADO DEL DIBUJO, no de si se puede guardar. Salía de `guardar.*`, y esa
+  // función contesta por orden de prioridad: con la tarjeta ocupada, sin cambios o con los colores recién
+  // cambiados devuelve otro `tipo` y el `error` del motor no llegaba nunca a pintarse — ni el botón de
+  // reintentar, que vive dentro de este bloque. El resultado era el peor posible: el dibujo se quedaba
+  // viejo, sin decir por qué y sin forma de pedirlo otra vez (2026-10-04). Y `ocupado` se enciende justo
+  // cuando el motor rechaza por estar ocupado, así que las dos cosas coincidían casi siempre.
+  const errorBorrador = vista.borrador === "rechazado" || vista.borrador === "fallido"
+    ? vista.error?.mensaje ?? RESPALDO_VISTA_ARMADO_COLUMNA
+    : null;
   const estado = guardar.puede
     ? "Listo para guardar. Al guardar se recalcula la compra con el catálogo; si falta algún globo, te lo digo y no se guarda."
     : guardar.tipo === "error" || guardar.tipo === "colores" ? null : guardar.motivo;

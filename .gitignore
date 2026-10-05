@@ -105,3 +105,6 @@ packages/*/dist
 /.ai-api.log
 /.ai-api.err
 /.next-*.log
+
+# Salida de los servicios de desarrollo (supervisar-ai-api.py y next dev)
+.logs/

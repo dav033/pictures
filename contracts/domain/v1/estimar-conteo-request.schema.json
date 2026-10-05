@@ -1026,7 +1026,7 @@
                   },
                   "colgadoM": {
                     "type": "number",
-                    "minimum": 0,
+                    "minimum": -1.5,
                     "maximum": 1.5
                   },
                   "festones": {

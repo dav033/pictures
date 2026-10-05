@@ -205,16 +205,16 @@ async function main(): Promise<void> {
     { rol: "asistente", llamadas: [{ id: "1", nombre: "confirmar_plan_decoracion", args: {} }] },
     { rol: "herramienta", nombre: "confirmar_plan_decoracion", llamadaId: "1", resultado: { ok: false, status: "SIN_COBERTURA", mensaje_cliente: sinCobertura } },
   ];
-  const vacio = texto.textoFinalTurno("", { planConfirmado: false, seleccionConfirmada: false }, historialSinCobertura);
+  const vacio = texto.textoFinalTurno("", { planConfirmado: false }, historialSinCobertura);
   assert.ok(vacio.trim().length > 0, "never an empty turn");
   assert.match(vacio, /No encontré en el catálogo globos de 24 pulgadas para arco asimétrico/, vacio);
   assert.doesNotMatch(vacio, /Estoy buscando/, "no promise of work that will not happen");
   assert.match(vacio, /\?/, "asks how to go on");
   assert.deepEqual(detectarJergaInterna(vacio), [], vacio);
-  assert.equal(texto.textoFinalTurno("  ", { planConfirmado: false, seleccionConfirmada: false }, [{ rol: "usuario", texto: "hola" }]), texto.TEXTO_SIN_RESPUESTA);
-  assert.equal(texto.textoFinalTurno("", { planConfirmado: true, seleccionConfirmada: false }, historialSinCobertura), texto.TEXTO_PLAN_LISTO);
+  assert.equal(texto.textoFinalTurno("  ", { planConfirmado: false }, [{ rol: "usuario", texto: "hola" }]), texto.TEXTO_SIN_RESPUESTA);
+  assert.equal(texto.textoFinalTurno("", { planConfirmado: true }, historialSinCobertura), texto.TEXTO_PLAN_LISTO);
   // Only this turn's tool results: an old refusal before the last customer message does not count.
-  assert.equal(texto.textoFinalTurno("", { planConfirmado: false, seleccionConfirmada: false }, [...historialSinCobertura, { rol: "asistente", texto: "Listo" }, { rol: "usuario", texto: "otra cosa" }]), texto.TEXTO_SIN_RESPUESTA);
+  assert.equal(texto.textoFinalTurno("", { planConfirmado: false }, [...historialSinCobertura, { rol: "asistente", texto: "Listo" }, { rol: "usuario", texto: "otra cosa" }]), texto.TEXTO_SIN_RESPUESTA);
 
   for (const afirmacion of ["¡Claro que sí! Cambié todos los detalles plateados por blanco puro.", "Ya actualicé la propuesta.", "He reemplazado el plateado por blanco.", "Quité las columnas.", "Sustituí el azul por blanco."]) {
     assert.equal(texto.afirmaCambioAplicado(afirmacion), true, afirmacion);
@@ -228,11 +228,11 @@ async function main(): Promise<void> {
     { rol: "herramienta", nombre: "confirmar_plan_decoracion", resultado: { ok: false, status: "RESTRICCIONES_INCONSISTENTES", mensaje_cliente: rechazoPlateado } },
   ];
   const mentira = "¡Claro que sí! Cambié todos los detalles plateados por blanco puro para lograr un contraste súper limpio.";
-  const honesto = texto.textoFinalTurno(mentira, { planConfirmado: false, seleccionConfirmada: false }, historialCambio);
+  const honesto = texto.textoFinalTurno(mentira, { planConfirmado: false }, historialCambio);
   assert.notEqual(honesto, mentira);
   assert.match(honesto, /^Todavía no pude aplicar ese cambio/);
   assert.match(honesto, /Pediste el color plateado/);
-  assert.equal(texto.textoFinalTurno(mentira, { planConfirmado: true, seleccionConfirmada: false }, historialCambio), mentira, "with a confirmed plan the change is real");
+  assert.equal(texto.textoFinalTurno(mentira, { planConfirmado: true }, historialCambio), mentira, "with a confirmed plan the change is real");
   assert.match(construirSistema({ ragEnabled: true }), /CAMBIOS DEL CLIENTE[\s\S]*Nunca digas que cambiaste/);
 
   // Through the chat wrapper: a model that ends with "" or with a false claim.

@@ -6,6 +6,8 @@ import { colorCatalogoMasCercano, colorDeCompraSinVenta, LAB_COLORES } from "@/l
 type AparienciaColor = {
   observed_colors: readonly string[];
   measured_colors?: ReadonlyArray<{ color: string; share: number }>;
+  /** La pieza entera es de este color, dicho por quien miró la foto (`color_unico`). */
+  color_unico?: string;
 };
 
 /**
@@ -157,8 +159,12 @@ export function coloresConAcabadoReferencia(apariencia: AparienciaColor | readon
       resultado.push({ color, etiqueta, ...(acabado ? { acabado } : {}) });
     }
   }
-  // Un color medido en píxeles no tiene etiqueta que leer: viaja sin acabado.
-  for (const color of dominantes) if (pendientes.has(color)) resultado.push({ color, etiqueta: color });
+  // Un color medido en píxeles no tiene etiqueta que leer: viaja sin acabado. Pero solo si es un neutro: un
+  // TONO que solo ven los píxeles es la luz del salón o un reflejo, no un globo. En la foto de ejemplo 01 (luz
+  // morada desde el piso) la medición encontraba lila en los globos blancos, el analizador no lo nombró, y el
+  // plan compraba Fashion Lila para una decoración rosa y plata (2026-10-04). El analizador visual descuenta
+  // la luz; los píxeles no. Ver `referencias-medidas.ts`, que aplica la misma regla a las referencias Sempertex.
+  for (const color of dominantes) if (pendientes.has(color) && COLORES_SIN_TONO_MEDIDO.has(color)) resultado.push({ color, etiqueta: color });
   return resultado;
 }
 
@@ -181,13 +187,32 @@ function coloresDeEtiqueta(etiqueta: string): string[] {
  * píxeles que medir (un blueprint viejo, o una referencia descrita sin foto).
  *
  * `observed_colors` es el orden en que el analizador escribió los nombres;
- * `measured_colors` es la fracción de píxeles de la caja del elemento. Cuando
- * las dos existen manda la medida, porque el problema que la fase 2.1 arregla es
- * exactamente que el orden de redacción se estaba tomando por dominancia.
+ * `measured_colors` es la fracción de píxeles de la caja del elemento.
+ *
+ * **La medida ORDENA; el analizador NOMBRA.** La medida es más fiel que el orden
+ * de redacción —ese era el problema que arregla la fase 2.1— pero no sabe si
+ * está mirando globos o lo que hay detrás de ellos: su única guía es la caja del
+ * elemento. Medido sobre una foto real el 2026-10-03: dentro de una caja ajustada
+ * a la guirnalda dio `plateado 49 % · blanco 33 % · rosado 18 %`, que es exacto;
+ * una caja que respiraba sobre la pared dio **`lila 93 %`**, que es una luz LED y
+ * no un globo. Tomar eso por dominancia haría que el plan comprara lila.
+ *
+ * La medida **sí puede aportar** colores que el analizador se saltó —ese es medio
+ * valor de la fase 2.1: la prosa del modelo omite tonos que los píxeles sí ven—,
+ * así que no se filtra por lo que él nombró. Lo que se exige es que las dos
+ * coincidan **en algo**: si ni uno solo de los colores medidos está entre los que
+ * el analizador nombró, la caja no estaba mirando la pieza y la medida entera se
+ * desecha (`undefined`, y manda el orden del analizador). Con la caja ajustada a
+ * los globos coinciden siempre; con la caja sobre la pared no coincide nada, que
+ * es exactamente cómo se distinguen los dos casos sin tener que adivinar.
  */
 function coloresMedidos(apariencia: AparienciaColor | undefined, soloCatalogo: boolean): string[] | undefined {
   const medidos = apariencia?.measured_colors;
-  if (!medidos?.length) return undefined;
+  if (!medidos?.length || !apariencia) return undefined;
+  // El acuerdo se busca ANTES de filtrar por catálogo: un `gris` que el catálogo
+  // no vende sigue siendo prueba de que la caja miró la pieza correcta.
+  const nombrados = new Set(coloresObservados(apariencia));
+  if (!medidos.some((entrada) => nombrados.has(entrada.color))) return undefined;
   const colores: string[] = [];
   for (const entrada of [...medidos].sort((uno, otro) => otro.share - uno.share)) {
     if (soloCatalogo && !COLORES_CATALOGO.has(entrada.color)) continue;
@@ -261,11 +286,25 @@ function seleccionarDominantes(colores: readonly string[], conTransparente: bool
 
 export function coloresDominantesReferencia(apariencia: AparienciaColor | readonly string[]): string[] {
   const entrada: AparienciaColor = Array.isArray(apariencia) ? { observed_colors: apariencia } : (apariencia as AparienciaColor);
+  // Una pieza de un solo color compra UN material. Manda sobre las etiquetas y sobre la medida porque las dos
+  // confunden el color de un globo con su reflejo: un cromado es un espejo y devuelve los marrones y los
+  // rosas de lo que tiene alrededor. Quien miró la foto sí los separa (2026-10-03).
+  if (entrada.color_unico && COLORES_CATALOGO.has(entrada.color_unico)) return [entrada.color_unico];
   const observados = coloresObservados(entrada);
   // Pixels cannot see a clear balloon, so transparency always comes from the
   // analyzer's labels, also when the hues come from the measurement.
   const conTransparente = observados.includes(TRANSPARENTE);
-  return seleccionarDominantes(coloresMedidos(entrada, true) ?? observados, conTransparente);
+  const medidos = coloresMedidos(entrada, true);
+  if (!medidos) return seleccionarDominantes(observados, conTransparente);
+  // La medida ordena y pesa, pero NO decide qué tonos hay (2026-10-04). Sola, reemplazaba a las etiquetas y
+  // fallaba por los dos lados en la foto de ejemplo 01 (luz morada desde el piso): metía un «lila» que es la
+  // luz sobre los globos blancos, y perdía la plata cromada, que refleja lo de alrededor y los píxeles leen
+  // como blanco. Ahora: lo medido que el analizador también nombró, o que es neutro (la luz no lo inventa),
+  // en el orden de la medida; detrás, lo que el analizador nombró y los píxeles no vieron.
+  const confirmados = medidos.filter((color) => observados.includes(color) || COLORES_SIN_TONO_MEDIDO.has(color));
+  // Con medida, solo lo que el catálogo vende (como la medida misma, `coloresMedidos(…, true)`).
+  const soloNombrados = observados.filter((color) => !confirmados.includes(color) && COLORES_CATALOGO.has(color));
+  return seleccionarDominantes([...confirmados, ...soloNombrados], conTransparente);
 }
 
 /**
@@ -329,6 +368,8 @@ export type MaterialColorInventado = { estructura_id: string; product_id: string
  * que es la mitad de la auditoría que mira la pérdida.
  */
 const COLORES_SIN_TONO: ReadonlySet<string> = new Set([TRANSPARENTE, "multicolor"]);
+/** Colores que la luz del salón no inventa: la medición en píxeles puede proponerlos aunque el analizador no los nombre. */
+const COLORES_SIN_TONO_MEDIDO: ReadonlySet<string> = new Set([TRANSPARENTE, "blanco", "plateado", "gris", "negro", "crema"]);
 
 /**
  * Materiales cuyo color la foto no tiene: el espejo que le faltaba a

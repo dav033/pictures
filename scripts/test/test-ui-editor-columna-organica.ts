@@ -557,6 +557,32 @@ async function main(): Promise<void> {
     assert.ok(!/<details open=""[^>]*data-testid="apartado-forma-columna-organica"/.test(html), "los demás van plegados para no agrandar la tarjeta");
   });
 
+  await caso("los mandos hablan en palabras de oficio, y ninguno se queda sin decir qué cambia en la pieza", () => {
+    const html = pintarControles(BASE);
+    const visible = texto(html);
+    // La jerga del motor que esta pantalla ya no enseña, con lo que el decorador lee en su lugar.
+    for (const [antes, ahora] of [
+      ["Serpenteo", "Curva en S"],
+      ["Irregularidad", "Qué tan desparejo queda el borde"],
+      ["Grandes abajo", "Dónde van los globos grandes"],
+      ["Variación de tamaño", "Globos de distinto tamaño"],
+      ["Globos que se salen de la columna", "Globos que asoman del borde"],
+      ["Inflado", "Qué tan inflados"],
+    ] as const) {
+      assert.ok(!visible.includes(antes), `jerga del motor a la vista: ${antes}`);
+      assert.ok(visible.includes(ahora), `falta el mando en palabras de oficio: ${ahora}`);
+    }
+    // Cada mando lleva su frase de ayuda (`aria-describedby`), menos los pesos de cada tamaño, que la llevan juntos
+    // en el párrafo del apartado.
+    const mandos = [...html.matchAll(/<(?:input|select|button)\b[^>]*data-testid="[^"]*"[^>]*>/g)].map((hallado) => hallado[0]);
+    assert.ok(mandos.length >= 25, `se esperaban todos los mandos de la pantalla, no ${mandos.length}`);
+    // Los botones de la paleta y el de otra disposición no son mandos con rango: su propio texto dice lo que hacen.
+    const sinAyuda = mandos.filter(
+      (mando) => !/data-testid="(?:peso-tamano-|quitar-color|agregar-color|otra-disposicion)/.test(mando) && !mando.includes("aria-describedby"),
+    );
+    assert.deepEqual(sinAyuda, [], "cada mando dice en una frase qué cambia en la pieza");
+  });
+
   await caso("el globo grande de arriba es lo primero que se ve: un interruptor, y con él puesto su tamaño y su color", () => {
     const con = pintarControles(BASE);
     const sinGlobo = pintarControles(conGloboGrande(BASE, false, VISTA.limites.coronaTamanos));
@@ -624,6 +650,33 @@ async function main(): Promise<void> {
     assert.ok(vencido.includes("opacity-60") && vencido.includes("Es el último dibujo que llegó."));
     assert.ok(!pintar({ fase: "listo", vista: VISTA, actualizando: false, fallo: null }).includes("opacity-60"));
     assert.ok(pintar({ fase: "listo", vista: VISTA, actualizando: false, fallo: null }).includes('data-testid="avisos-vivos-armado-columna-organica"'), "la región de avisos siempre está montada");
+  });
+
+  await caso("al editar, el dibujo y los mandos se ven A LA VEZ: dos columnas y el scroll en los mandos", () => {
+    // Las cuatro piezas del motor ya dejaban el dibujo montado al abrir el editor, asi que desde el codigo
+    // parecia correcto; en pantalla no lo era, porque el editor se apilaba DEBAJO y empujaba el dibujo fuera
+    // de la vista. Ninguna prueba miraba la maquetacion, asi que nadie lo vio hasta que lo reporto el usuario
+    // (2026-10-04).
+    const conMarco = (conEditor: boolean) =>
+      renderToStaticMarkup(React.createElement(PanelColumnaOrganica, {
+        estado: { fase: "listo", vista: VISTA, actualizando: false, fallo: null },
+        leyenda: LEYENDA, nombrePieza: "Columna", repeticiones: 1, onReintentar: () => {},
+        ...(conEditor ? { pie: React.createElement("div", { "data-testid": "editor-de-prueba" }, "mandos") } : {}),
+      } as React.ComponentProps<typeof PanelColumnaOrganica>));
+
+    const editando = conMarco(true);
+    assert.ok(editando.includes('data-testid="editor-de-prueba"'), "el editor se monta");
+    assert.ok(editando.includes("Armado de la columna"), "y el dibujo sigue ahi, en el mismo render");
+    assert.ok(editando.includes('data-testid="mandos-edicion"'), "los mandos van en su propia columna");
+    assert.ok(editando.includes("@3xl:grid-cols-"), "dos columnas cuando la tarjeta da el ancho");
+    const bloqueMandos = /data-testid="mandos-edicion"[^>]*>/.exec(editando)?.[0] ?? "";
+    assert.ok(bloqueMandos.includes("overflow-y-auto"), "el scroll es de los mandos: es lo que impide que el dibujo se vaya");
+    assert.ok(bloqueMandos.includes("max-h-"), "y tienen altura tope, o volverian a empujar el dibujo fuera");
+    assert.ok(editando.indexOf("Armado de la columna") < editando.indexOf('data-testid="mandos-edicion"'), "el dibujo va primero");
+
+    const soloLectura = conMarco(false);
+    assert.ok(!soloLectura.includes('data-testid="mandos-edicion"'));
+    assert.ok(!soloLectura.includes("@3xl:grid-cols-"), "la rejilla de edicion no aparece fuera de la edicion");
   });
 
   console.log(`\n${casos} casos en verde`);

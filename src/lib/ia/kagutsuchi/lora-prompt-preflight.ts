@@ -1,6 +1,6 @@
 import type { SceneSpec } from "../escena/scene-spec";
-import type { LoraVisualClause } from "./lora-caption-compiler";
-import { LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "./lora-caption-compiler";
+import type { LoraCaptionDialect, LoraVisualClause } from "./lora-caption-compiler";
+import { BASE_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "./lora-caption-compiler";
 import type { ProductVocabulary } from "@/lib/lora/product-vocabulary";
 
 export type LoraPromptPreflightReport = {
@@ -159,9 +159,17 @@ export function preflightLoraPrompt(input: {
   vocabulary?: ProductVocabulary;
   /** Defaults to the text caption budget; the JSON variant passes `LORA_JSON_PROMPT_MAX_LENGTH`. */
   maxLength?: number;
+  /**
+   * Wording the prompt was compiled in. `base` (FLUX.2 without a LoRA) carries
+   * no trigger, has its own budget (`BASE_PROMPT_MAX_LENGTH`) and must not name
+   * a commercial product line. Absent: a trained dialect, checked as before.
+   */
+  dialect?: LoraCaptionDialect;
 }): LoraPromptPreflightReport {
   const { sceneSpec, clauses, prompt } = input;
-  const triggers = [...new Set((input.triggers ?? [DEFAULT_LORA_TRIGGER]).map((trigger) => trigger.trim()).filter(Boolean))];
+  const base = input.dialect === "base";
+  // The base model has no trigger to require: any trigger in its prompt is an error below.
+  const triggers = base ? [] : [...new Set((input.triggers ?? [DEFAULT_LORA_TRIGGER]).map((trigger) => trigger.trim()).filter(Boolean))];
   const errors: string[] = [];
   const warnings: string[] = [];
   const ambiguities: string[] = [];
@@ -211,6 +219,7 @@ export function preflightLoraPrompt(input: {
   const triggerCount = triggerCounts.reduce((total, item) => total + item.count, 0);
   const invalidTriggers = triggerCounts.filter((item) => item.count !== 1);
   if (invalidTriggers.length) errors.push(`trigger duplicado o ausente (${invalidTriggers.map((item) => `${item.trigger}:${item.count}`).join(", ")})`);
+  if (base) errors.push(...basePromptErrors(prompt, clauses, warnings));
   if (/(?:EST_\d{2}|CATALOG_|EDIT_|SKU|package|paquete|precio|price|\b\d+\s*(?:COP|USD))/.test(prompt)) errors.push("aparecen IDs, precios o datos de compra");
   const untranslated = findLoraPromptLanguageLeaks(prompt);
   if (untranslated.length) errors.push(`texto español sin traducir: ${untranslated.join(", ")}`);
@@ -228,7 +237,7 @@ export function preflightLoraPrompt(input: {
 
   const missingAnchors = requiredAnchorMissing(sceneSpec, prompt);
   if (missingAnchors.length) errors.push(`sin anclaje físico: ${missingAnchors.join(", ")}`);
-  const maxLength = input.maxLength ?? LORA_PROMPT_MAX_LENGTH;
+  const maxLength = input.maxLength ?? (base ? BASE_PROMPT_MAX_LENGTH : LORA_PROMPT_MAX_LENGTH);
   if (prompt.length > maxLength) errors.push(`longitud ${prompt.length} supera límite ${maxLength}`);
   if (prompt.length < 350) warnings.push(`caption corta (${prompt.length} caracteres)`);
 
@@ -253,6 +262,27 @@ export function preflightLoraPrompt(input: {
     // a mapping defect, and telling that client to "request a plan" is wrong.
     requiresPlanSemantics: !sceneSpec.metadata.plan_hash && fallbacks > 0 && (knownTypeFallbacks > 0 || requiresCanonicalSemantics),
   };
+}
+
+/**
+ * Words only a trained LoRA understands. A base model reads a product-line
+ * name ("Reflex", "Fashion") as a brand or a word to write, and a trigger as
+ * plain text. Case-sensitive on purpose: these are capitalized line names, not
+ * the ordinary adjectives the base vocabulary may use.
+ */
+const BASE_FORBIDDEN: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\beventdecor_\w+/i, "trigger de LoRA"],
+  [/\b(?:Reflex|Fashion|Silk|Crystal|Pastel)\b/, "nombre de línea comercial"],
+  [/®|™|Link-O-Loon/i, "marca registrada"],
+];
+
+function basePromptErrors(prompt: string, clauses: readonly LoraVisualClause[], warnings: string[]): string[] {
+  const errors = BASE_FORBIDDEN.filter(([pattern]) => pattern.test(prompt)).map(([, label]) => `prompt base con ${label}`);
+  // Python's pattern phrases travel verbatim (ADR-0028 §12); only the
+  // compiler's own wording is held to the plain-sentence shape.
+  const ownWording = clauses.reduce((text, clause) => clause.colorPattern ? text.split(clause.colorPattern).join(" ") : text, prompt);
+  if (/[();]/.test(ownWording)) warnings.push("prompt base con paréntesis o punto y coma");
+  return errors;
 }
 
 function escapeRegExp(value: string): string {

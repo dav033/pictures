@@ -17,6 +17,7 @@ import {
   identificarEstructuraOficial,
   incoherenciasEstructuraOficial,
   resumenEstructuraParaCliente,
+  sellarEstructurasOficiales,
 } from "../../src/lib/plan/estructuras-oficiales";
 import { parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../../src/lib/ia/referencia/reference-structure";
 import { compileLoraCaption } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
@@ -133,12 +134,20 @@ const columnas = scene([
   element("COL_R", "Columna derecha", "columna", "lateral_derecho", "soporte", "media"),
 ]);
 const producto = compileLoraCaption({ sceneSpec: columnas, visualContext: context, dialect: "product_v007" });
-assert.match(producto.prompt, /airy .*arch/);
-assert.match(producto.prompt, /asymmetrical balloon column/);
+// `airy` no está ni una vez en las 345 captions del corpus; el sustantivo que queda, `organic balloon
+// arch`, aparece 107 veces. Ver `productDialectNoun`.
+assert.match(producto.prompt, /organic balloon arch/);
+assert.doesNotMatch(producto.prompt, /airy/);
+// 2026-10-03: el sustantivo de la columna pasó al del corpus (`balloon column`, 69 veces en sus 345
+// captions). «asymmetrical» solo lo usa el corpus para un medio arco, y el LoRA dibujaba la columna
+// doblada; ver `estructuras-oficiales.ts`.
+assert.match(producto.prompt, /balloon column/);
+assert.doesNotMatch(producto.prompt, /asymmetrical[a-z ]*balloon column/);
 assert.equal(producto.clauses.length, 3, "an asymmetrical column never pairs with a plain one");
 const escena = compileLoraCaption({ sceneSpec: columnas, visualContext: context, dialect: "scene_v004" });
+// El sustantivo del arco no se tocó en esta pasada: sigue llevando «airy» dentro (`arco_no_denso`).
 assert.match(escena.prompt, /an airy organic balloon garland arch/);
-assert.match(escena.prompt, /an asymmetrical organic balloon column/);
+assert.match(escena.prompt, /a balloon column/);
 assert.doesNotMatch(escena.prompt, /matching one another|one standing on the left and one on the right/);
 const pared = compileLoraCaption({ sceneSpec: scene([element("PARED", "Pared de globos densa", "pared", "fondo_pared", "focal", "lujosa")]), visualContext: context, dialect: "scene_v004" });
 assert.match(pared.prompt, /dense balloon wall installation in blue against the rear wall/);
@@ -171,8 +180,35 @@ pass("official variants reach both LoRA wordings and keep separate pieces separa
     dialect: "scene_v004",
     officialStructures: new Map([["EST_01_COLUMNA", "columna_asimetrica"]]),
   });
-  assert.match(declarada.prompt, /asymmetrical organic balloon column/, "repeated instances inherit the declared official structure");
+  assert.match(declarada.prompt, /balloon column/, "repeated instances inherit the declared official structure");
   pass("estructura_oficial is validated in Next, exported for Python and read by the compiler");
+}
+
+// 6b. Sealing: the official the piece already is gets written into the plan before it is confirmed, because
+// Python only reads `estructura_oficial`. Without it a hoop was assembled as an arch and a ceiling as a garland.
+{
+  const fixture = JSON.parse(readFileSync(new URL("../../contracts/domain/v1/fixtures/plan-resuelto-ok.json", import.meta.url), "utf8")) as { plan: { estructuras: Array<Record<string, unknown>> } };
+  const sinOficial = Object.fromEntries(Object.entries(fixture.plan.estructuras[0]!).filter(([clave]) => clave !== "estructura_oficial"));
+  const pieza = (cambios: Record<string, unknown>) => ({ ...sinOficial, ...cambios });
+  const plan = PlanDecoracionSchema.parse({
+    ...fixture.plan,
+    estructuras: [
+      pieza({ estructura_id: "EST_01_ARO", tipo: "arco", nombre: "Aro circular de entrada", ubicacion: "entrada", densidad: "media" }),
+      pieza({ estructura_id: "EST_02_TECHO", tipo: "guirnalda", nombre: "Techo de globos", ubicacion: "techo", densidad: "media", medidas: { largo_m: 4 } }),
+      pieza({ estructura_id: "EST_03_DECLARADA", tipo: "arco", nombre: "Aro circular", ubicacion: "lateral_derecho", densidad: "media", estructura_oficial: "arco" }),
+      // Inferred `techo_globos` would be incoherent here (a wall is not a ceiling type): left as it came.
+      pieza({ estructura_id: "EST_04_INCOHERENTE", tipo: "guirnalda", nombre: "Techo de globos", ubicacion: "lateral_izquierdo", densidad: "media", medidas: { largo_m: 3 } }),
+      pieza({ estructura_id: "EST_05_CENTRO", tipo: "centro_mesa", nombre: "Centro", ubicacion: "mesas_invitados", densidad: "media", medidas: { ancho_m: 0.4, alto_m: 0.4 } }),
+    ],
+  });
+  const sellado = sellarEstructurasOficiales(plan);
+  assert.deepEqual(
+    sellado.estructuras.map((estructura) => estructura.estructura_oficial),
+    ["aro_circular", "techo_globos", "arco", undefined, "centro_mesa"],
+  );
+  assert.equal(PlanDecoracionSchema.safeParse(sellado).success, true, "a sealed plan still satisfies the contract");
+  assert.equal(sellarEstructurasOficiales(sellado), sellado, "a plan that needs nothing is returned as is");
+  pass("pieces without estructura_oficial get the one identificarEstructuraOficial gives them, never an incoherent one");
 }
 
 // 7. Balloon count per official variant: se fue con `calcularMedidas` (ADR-0023,

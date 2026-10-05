@@ -51,9 +51,10 @@ async function main(): Promise<void> {
     assert.doesNotMatch(herramienta.descripcion, /calcular_medidas/, herramienta.nombre);
     assert.doesNotMatch(JSON.stringify(herramienta.esquema), /usar_despiece|calcular_medidas/, herramienta.nombre);
   }
-  const seleccionPlan = herramientasPlanActivas.find((herramienta) => herramienta.nombre === "confirmar_seleccion_rag")!;
-  assert.doesNotMatch(seleccionPlan.descripcion, /usar_despiece/);
-  assert.match(seleccionPlan.descripcion, /los calcula confirmar_plan_decoracion/);
+  // confirmar_seleccion_rag se retiró (auditoría 2026-10-04, C2): nunca generaba
+  // imagen y su texto prometía una. Ni la lista ni el prompt la nombran.
+  assert.ok(!herramientasPlanActivas.some((herramienta) => herramienta.nombre === "confirmar_seleccion_rag"));
+  assert.doesNotMatch(construirSistema({ ragEnabled: true }), /confirmar_seleccion_rag/);
   ok("ninguna descripción ni esquema activo menciona calcular_medidas ni usar_despiece");
 
   // 3. Regla acotada de variant_id/unidades_declaradas: las estructuras con

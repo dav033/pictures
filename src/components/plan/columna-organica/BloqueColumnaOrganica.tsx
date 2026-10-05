@@ -7,6 +7,7 @@ import { mensajeFalloPlanArmado } from "@/lib/plan/peticion-armado";
 import { pedirVistaArmadoColumnaOrganica, type VistaArmadoColumnaOrganica } from "@/lib/plan/peticion-armado-columna-organica";
 import { metrosCliente } from "@/lib/plan/presentacion-cliente";
 import { RecetaColumna } from "../columna/RecetaColumna";
+import { MarcoEdicion } from "../motor/MarcoEdicion";
 import { VistaMotor } from "../motor/VistaMotor";
 import { colorDe, type ColorLeyenda } from "../patron/leyenda";
 import { MuestraNumero } from "../patron/LeyendaPatron";
@@ -302,7 +303,7 @@ function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReinten
   ];
   const { ramas, flores } = columna.adornos;
   return (
-    <>
+    <MarcoEdicion editor={pie}>
       <div aria-busy={actualizando} className="flex flex-col gap-3 @md:flex-row">
         <div className={`${MARCO} ${tenue}`}>
           <VistaMotor
@@ -368,7 +369,6 @@ function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReinten
           )}
         </div>
       </div>
-      {pie}
-    </>
+    </MarcoEdicion>
   );
 }

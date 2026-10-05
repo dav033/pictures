@@ -34,17 +34,22 @@ import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";
 import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
 import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
 import type { ArmadoColumnaOrganicaV1 } from "@/lib/plan/armado-columna-organica";
+import type { ArmadoArcoOrganicoV1 } from "@/lib/plan/armado-arco-organico";
 import type { ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
+import type { PiezaDibujoEstructura } from "./dibujo/vista-dibujo-estructura";
 import { BloquePatron } from "./patron/BloquePatron";
 import { BloqueBouquet } from "./bouquet/BloqueBouquet";
 import { BloqueGuirnalda } from "./guirnalda/BloqueGuirnalda";
 import { BloqueArco } from "./arco/BloqueArco";
 import type { PiezaVistaArco } from "./arco/vista-arco";
+import { BloqueArcoOrganico } from "./arco-organico/BloqueArcoOrganico";
+import type { PiezaVistaArcoOrganico } from "./arco-organico/vista-arco-organico";
 import { BloqueColumna } from "./columna/BloqueColumna";
 import type { PiezaVistaColumna } from "./columna/vista-columna";
 import { BloqueColumnaOrganica } from "./columna-organica/BloqueColumnaOrganica";
 import type { PiezaVistaColumnaOrganica } from "./columna-organica/vista-columna-organica";
 import { BloqueGuirnaldaOrganica } from "./guirnalda-organica/BloqueGuirnaldaOrganica";
+import { BloqueDibujoEstructura } from "./dibujo/BloqueDibujoEstructura";
 import type { PiezaVistaGuirnaldaOrganica } from "./guirnalda-organica/vista-guirnalda-organica";
 import { curvaDeArmado } from "./guirnalda/geometria-guirnalda";
 import type { VistasEnVivo } from "./vistas-en-vivo";
@@ -151,6 +156,26 @@ type Props = {
     ocupado?: boolean;
   };
   /**
+   * Organic arch block drawn by the designer's engine (ADR-0034, ADR-0035): the piece's
+   * `armado_arco_organico` and what the drawing needs to be asked for
+   * (`/api/plan-armado-arco-organico`). Same rules as `arco`: only when the piece carries the assembly, and then
+   * it takes the pattern block's place and the engine is the one that draws, counts and measures. It is NOT the
+   * pattern grid (`arco`: solid, spiral, chevron…); when a piece carries both assemblies the classic one wins and
+   * this block is not drawn. **A half arch is drawn here**, with `forma.corte` below 1.
+   */
+  arcoOrganico?: {
+    armado: ArmadoArcoOrganicoV1;
+    pieza: PiezaVistaArcoOrganico;
+    leyenda: readonly ColorLeyenda[];
+    /**
+     * Writes the arch assembly into the proposal (`armado_arco_organico` edit; ADR-0035) and resolves the reason
+     * when it did not get in, or `null`. Without it the block is read-only, which is how the card shows it while
+     * that edit does not exist yet on either side of the Python boundary.
+     */
+    onGuardar?: (armado: ArmadoArcoOrganicoV1) => Promise<string | null>;
+    ocupado?: boolean;
+  };
+  /**
    * Column block drawn by the designer's engine (ADR-0034, ADR-0035 step 3): the piece's
    * `armado_columna` and what the drawing needs to be asked for
    * (`/api/plan-armado-columna`). Same rules as `arco`: only when the piece carries
@@ -207,6 +232,24 @@ type Props = {
      */
     onGuardar?: (armado: ArmadoGuirnaldaOrganicaV1) => Promise<string | null>;
     ocupado?: boolean;
+  };
+  /**
+   * Schematic drawing of a piece **no engine builds**: the wall, the circular
+   * hoop, the balloon ceiling and the table centerpiece. It takes the pattern
+   * block's place and comes **after** every `armado*` block, so a piece an
+   * engine really draws always wins.
+   *
+   * There are still no numbers to save -- these drawings are schematic and
+   * compute no quantities, «No calculan cantidades: la medida es la típica de
+   * cada estructura» (`dibujos.py`) -- but there is one decision: the shape of
+   * the piece (`onCambiarForma`, a `forma` plan edit; `formas-pieza.ts`). It
+   * changes the silhouette, never the count or the price, which stay the ones
+   * `plan.py` resolved and show up in the card's own lines and total.
+   */
+  dibujo?: {
+    pieza: PiezaDibujoEstructura;
+    /** Saves the chosen shape (`null` removes it); without it the block only draws. */
+    onCambiarForma?: (forma: string | null) => Promise<string | null>;
   };
   /**
    * Live drawing of the colors slider on a confetti pattern (ADR-0028 §10):
@@ -358,7 +401,7 @@ function CantidadTexto({ texto }: { texto: string }) {
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
-  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, guirnalda, arco, columna, columnaOrganica, guirnaldaOrganica, vistaReparto,
+  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, guirnalda, arco, arcoOrganico, columna, columnaOrganica, guirnaldaOrganica, dibujo, vistaReparto,
 }: Props) {
   const reducir = useReducedMotion();
   const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -388,8 +431,8 @@ export function DetalleEstructura({
   const idCuerpo = `${idBase}-cuerpo`;
   // Un arco armado con el motor compra lo que su armado coloca: ni el reparto de colores ni la mezcla de tamaños lo
   // cambian (solo moverían el `plan_hash` con el mismo total), así que esos controles no se ofrecen (ADR-0035).
-  const ajustable = editable && declarada && TIPOS_GEOMETRICOS.has(estructura.tipo) && !arco && !columna && !columnaOrganica && !guirnaldaOrganica;
-  const armadoSinReparto = Boolean(editable && (arco || columna || columnaOrganica || guirnaldaOrganica) && (onRepartir || onCambiarMezcla));
+  const ajustable = editable && declarada && TIPOS_GEOMETRICOS.has(estructura.tipo) && !arco && !arcoOrganico && !columna && !columnaOrganica && !guirnaldaOrganica;
+  const armadoSinReparto = Boolean(editable && (arco || arcoOrganico || columna || columnaOrganica || guirnaldaOrganica) && (onRepartir || onCambiarMezcla));
   // On a confetti the slider changes the drawing: it goes inside the pattern block, next to (on a phone, right under) it.
   const repartoEnBloque = confeti && Boolean(patron?.resuelto);
   const reparto = ajustable && onRepartir && repartoLibre && declarada.materiales.length >= 2 && declarada.materiales.every((material) => typeof material.participacion === "number") ? (
@@ -485,6 +528,17 @@ export function DetalleEstructura({
               onGuardar={arco.onGuardar}
               ocupado={ocupado || Boolean(arco.ocupado)}
             />
+          ) : arcoOrganico ? (
+            <BloqueArcoOrganico
+              armado={arcoOrganico.armado}
+              pieza={arcoOrganico.pieza}
+              leyenda={arcoOrganico.leyenda}
+              nombrePieza={nombreVisible}
+              repeticiones={estructura.repeticiones}
+              onGuardar={arcoOrganico.onGuardar}
+              ocupado={ocupado || Boolean(arcoOrganico.ocupado)}
+              sustantivo={estructura.tipo === "semiarco" ? "semiarco" : "arco"}
+            />
           ) : columna ? (
             <BloqueColumna
               armado={columna.armado}
@@ -514,6 +568,23 @@ export function DetalleEstructura({
               repeticiones={estructura.repeticiones}
               onGuardar={guirnaldaOrganica.onGuardar}
               ocupado={ocupado || Boolean(guirnaldaOrganica.ocupado)}
+            />
+          ) : dibujo ? (
+            // Después de todos los `armado*` y antes del patrón: una pieza que un motor dibuja de verdad
+            // siempre gana, y una que ningún motor arma se ve mejor con este esquema que con el dibujo del
+            // patrón, que calculaba su geometría en el navegador. Comparte el mismo hueco, así que ningún
+            // `useId` se desplaza. Lo único que guarda es la forma elegida de la pieza (`formas-pieza.ts`):
+            // no hay armado ni cifra que escribir, porque el dibujo no calcula cantidades.
+            <BloqueDibujoEstructura
+              pieza={dibujo.pieza}
+              nombrePieza={nombreVisible}
+              onCambiarForma={dibujo.onCambiarForma}
+              pendientes={pendientes}
+              // Las dos acciones del patrón viajan con el dibujo: este bloque ocupa el hueco de `BloquePatron`
+              // en estas piezas, y sin ellas una pared se quedaba sin poder editar su patrón de color.
+              onEditarPatron={patron?.onEditar}
+              onHojaArmado={patron?.onHojaArmado}
+              ocupado={ocupado}
             />
           ) : patron ? (
             <BloquePatron
@@ -570,7 +641,7 @@ export function DetalleEstructura({
           */}
           {armadoSinReparto ? (
             <p data-testid="arco-sin-reparto" className="rounded-xl bg-superficie-suave px-3 py-2 text-xs text-texto-suave">
-              {arco ? "Los colores y los globos de este arco los define su armado: cámbialos con «Editar arco»." : columna || columnaOrganica ? "Los colores y los globos de esta columna los define su armado: cámbialos con «Editar columna»." : "Los colores y los globos de esta guirnalda los define su armado: el motor los coloca y los cuenta, por eso aquí no se reparten. Cámbialos con «Editar guirnalda»."}
+              {arcoOrganico && estructura.tipo === "semiarco" ? "Los colores y los globos de este semiarco los define su armado: cámbialos con «Editar semiarco»." : arco || arcoOrganico ? "Los colores y los globos de este arco los define su armado: cámbialos con «Editar arco»." : columna || columnaOrganica ? "Los colores y los globos de esta columna los define su armado: cámbialos con «Editar columna»." : "Los colores y los globos de esta guirnalda los define su armado: el motor los coloca y los cuenta, por eso aquí no se reparten. Cámbialos con «Editar guirnalda»."}
             </p>
           ) : ajustable && ((reparto && !repartoEnBloque) || onCambiarMezcla) && (
             <div className="space-y-2.5">

@@ -23,7 +23,7 @@ from app.arco.tipos import PATRON_IDS as PATRON_IDS_ARCO
 from app.armado_columna import PATRON_IDS as PATRON_IDS_COLUMNA
 from app.guirnalda.tipos import config_inicial as config_inicial_guirnalda
 from app.main import Settings, build_signature, create_app
-from app.omoikane.armado_estructura import (
+from app.armado_estructura import (
     OMOIKANE_ARMADO_RESULT_VERSION,
     OMOIKANE_ARMADO_SCOPE,
     ArmadoEstructuraRequest,
@@ -439,6 +439,29 @@ def test_completar_sin_estructuras_es_un_plan_invalido() -> None:
     assert rechazo.value.code == "invalid_plan"
 
 
+def test_una_pieza_que_ningun_motor_arma_no_recibe_armado_aunque_su_tipo_tenga_motor() -> None:
+    """El aro circular y el techo de globos se quedan con su fórmula, que es su cifra correcta.
+
+    Los dos se construyen con un tipo que sí tiene motor (``arco`` y ``guirnalda``) y ningún motor mira
+    ``estructura_oficial``, así que la receta les ponía el armado de un arco o de una guirnalda: la pieza
+    quedaba contada **y dibujada** con otra forma. La regla sale de la tabla de oficiales
+    (``plan.OFICIALES_SIN_MOTOR``: forma ``circular`` o ``libre``), no de una lista escrita a mano.
+    """
+    plan = _plan(
+        _estructura("EST_01_ARO", "arco", 2, estructura_oficial="aro_circular"),
+        _estructura(
+            "EST_02_TECHO", "guirnalda", 2, estructura_oficial="techo_globos", ubicacion="techo"
+        ),
+        _estructura("EST_03_ARCO", "arco", 2, estructura_oficial="arco"),
+    )
+    armados = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"],
+    )
+    # Solo el arco de verdad: el aro y el techo no son una forma que ningún motor produzca.
+    assert [armado["estructura_id"] for armado in armados] == ["EST_03_ARCO"]
+
+
 # --- La guirnalda orgánica: el tercer tipo, y el único sin patrón ---------------------------
 
 
@@ -567,10 +590,37 @@ def test_un_acabado_del_plan_que_el_motor_no_conoce_va_mate_con_aviso() -> None:
         list[dict[str, Any]],
         cast(dict[str, Any], cast(dict[str, Any], salida["armado"])["colores"])["paleta"],
     )
-    assert paleta[0]["acabado"] == "mate", (
-        "no se inventa una equivalencia del vocabulario del catálogo"
-    )
+    assert paleta[0]["acabado"] == "mate", "el motor no tiene perlado: se aproxima a mate"
     assert any("perlado" in aviso for aviso in cast(list[str], salida["avisos"]))
+
+
+@pytest.mark.parametrize(
+    ("acabado", "esperado"),
+    [
+        ("reflex", "cromado"),
+        ("metalizado", "cromado"),
+        ("cristal", "transparente"),
+        ("fashion", "mate"),
+    ],
+)
+def test_la_palabra_del_catalogo_se_pinta_con_el_acabado_de_su_familia(
+    acabado: str, esperado: str
+) -> None:
+    """Auditoría 2026-10-04, M3: un dorado Reflex se dibujaba mate porque «reflex» no se llama igual que
+    ningún acabado del motor. La equivalencia es la del repo dueño (familia Sempertex → acabado)."""
+    salida = resolver_armado_estructura(
+        _peticion(
+            accion="armar",
+            pieza={"tipo": "guirnalda", "colores": 1, "acabados": [acabado]},
+            paleta=[{"material": 0}],
+        )
+    )
+    paleta = cast(
+        list[dict[str, Any]],
+        cast(dict[str, Any], cast(dict[str, Any], salida["armado"])["colores"])["paleta"],
+    )
+    assert paleta[0]["acabado"] == esperado
+    assert not any(acabado in aviso for aviso in cast(list[str], salida["avisos"]))
 
 
 def test_una_guirnalda_mas_larga_de_lo_que_el_motor_arma_se_acota() -> None:
@@ -603,7 +653,9 @@ def test_armar_una_guirnalda_pide_paleta_y_no_patron() -> None:
 
 
 def test_la_receta_de_la_guirnalda_sale_del_largo_de_la_pieza_y_reparte_sus_colores() -> None:
-    plan = _plan(_estructura("EST_01_GUIRNALDA", "guirnalda", 2, acabados=(None, "cromado")))
+    plan = _plan(_estructura(
+            "EST_01_GUIRNALDA", "guirnalda", 2, acabados=(None, "cromado"), mezcla="organica_fina"
+        ))
     armados = cast(
         list[dict[str, Any]],
         resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"],
@@ -644,7 +696,11 @@ def test_una_guirnalda_puede_traer_los_dos_armados_y_el_del_motor_no_toca_al_vie
     """
     plan = _plan(
         _estructura(
-            "EST_01_GUIRNALDA", "guirnalda", 2, armado_guirnalda=dict(ARMADO_GUIRNALDA_ADR_0032)
+            "EST_01_GUIRNALDA",
+            "guirnalda",
+            2,
+            mezcla="organica_fina",
+            armado_guirnalda=dict(ARMADO_GUIRNALDA_ADR_0032),
         )
     )
     armados = cast(
@@ -666,7 +722,7 @@ def test_una_guirnalda_puede_traer_los_dos_armados_y_el_del_motor_no_toca_al_vie
 
 
 def test_un_armado_de_guirnalda_del_modelo_que_no_se_sostiene_cae_a_la_receta() -> None:
-    plan = _plan(_estructura("EST_01_GUIRNALDA", "guirnalda", 2))
+    plan = _plan(_estructura("EST_01_GUIRNALDA", "guirnalda", 2, mezcla="organica_fina"))
     # Una paleta que nombra un color que la pieza no lleva: el modelo no podía saberlo al armarla.
     bueno = cast(
         dict[str, Any],
@@ -714,6 +770,133 @@ def test_un_armado_de_guirnalda_del_modelo_que_no_se_sostiene_cae_a_la_receta() 
     )
     assert conserva[0]["origen"] == "modelo"
     assert conserva[0]["armado"] == bueno
+
+
+def test_la_forma_lista_arma_la_guirnalda_que_el_catalogo_promete() -> None:
+    """``forma_lista`` y ``estilo``: la vía corta de la herramienta, con las cifras del diseñador.
+
+    Sin ellos, pedir «la de festones» obligaba al modelo a copiar a mano ocho números del catálogo, y
+    copiarlos mal no se distinguía de haber elegido otra cosa. Ahora manda el id y el motor pone sus cifras.
+    """
+    sin_forma = cast(
+        dict[str, Any],
+        resolver_armado_estructura(
+            _peticion(
+                accion="armar",
+                pieza={"tipo": "guirnalda", "colores": 2},
+                paleta=[{"material": 0}, {"material": 1}],
+            )
+        )["armado"],
+    )
+    con_feston = cast(
+        dict[str, Any],
+        resolver_armado_estructura(
+            _peticion(
+                accion="armar",
+                pieza={"tipo": "guirnalda", "colores": 2},
+                paleta=[{"material": 0}, {"material": 1}],
+                forma_lista="feston",
+            )
+        )["armado"],
+    )
+    forma_motor = cast(dict[str, Any], sin_forma["forma"])
+    forma_feston = cast(dict[str, Any], con_feston["forma"])
+    # El festón es lo que cuelga: el motor arranca con la tira tensa.
+    assert forma_motor["colgadoM"] == 0
+    assert forma_feston["colgadoM"] > 0, con_feston
+
+    # El estilo se aplica DESPUÉS de la forma, y solo cambia cuánto se llena: la línea no se mueve.
+    lleno = cast(
+        dict[str, Any],
+        resolver_armado_estructura(
+            _peticion(
+                accion="armar",
+                pieza={"tipo": "guirnalda", "colores": 2},
+                paleta=[{"material": 0}, {"material": 1}],
+                forma_lista="feston",
+                estilo="lleno",
+            )
+        )["armado"],
+    )
+    assert cast(dict[str, Any], lleno["forma"])["colgadoM"] == forma_feston["colgadoM"]
+    assert (
+        cast(dict[str, Any], lleno["volumen"])["grosorCimaM"]
+        > cast(dict[str, Any], con_feston["volumen"])["grosorCimaM"]
+    )
+
+    # Lo que el modelo mande explícito manda sobre la forma lista: es un atajo, no un candado.
+    encima = cast(
+        dict[str, Any],
+        resolver_armado_estructura(
+            _peticion(
+                accion="armar",
+                pieza={"tipo": "guirnalda", "colores": 2},
+                paleta=[{"material": 0}, {"material": 1}],
+                forma_lista="feston",
+                forma={"colgado_m": 0.1},
+            )
+        )["armado"],
+    )
+    assert cast(dict[str, Any], encima["forma"])["colgadoM"] == pytest.approx(0.1)
+
+
+def test_una_forma_lista_que_no_existe_se_rechaza_con_la_lista_de_las_que_hay() -> None:
+    """Ignorar un id desconocido armaría otra guirnalda y nadie lo sabría."""
+    for campo, valor, motivo in (
+        ("forma_lista", "festones", "forma_lista_desconocida"),
+        ("estilo", "superlleno", "estilo_desconocido"),
+    ):
+        with pytest.raises(PlanResolutionError) as fallo:
+            resolver_armado_estructura(
+                _peticion(
+                    accion="armar",
+                    pieza={"tipo": "guirnalda", "colores": 2},
+                    paleta=[{"material": 0}, {"material": 1}],
+                    **{campo: valor},
+                )
+            )
+        detalle = cast(dict[str, Any], fallo.value.details or {})
+        assert detalle.get("motivo") == motivo, detalle
+        # El mensaje trae los ids reales del motor, para que el modelo pueda corregir sin consultar otra vez.
+        assert "feston" in str(detalle.get("mensaje", "")) or "ligero" in str(
+            detalle.get("mensaje", "")
+        ), detalle
+
+
+def test_el_catalogo_de_la_guirnalda_publica_sus_formas_y_estilos() -> None:
+    """Las once formas y los cuatro estilos estaban portados y la puerta no publicaba ninguno."""
+    status, body = _post(
+        {
+            "schema_version": "omoikane-armado-estructura.v1",
+            "accion": "catalogo",
+            "tipo": "guirnalda",
+        },
+        "00000000-0000-4000-8000-0000000000c7",
+    )
+    assert status == 200
+    opciones = cast(dict[str, Any], cast(dict[str, Any], body["payload"])["opciones"])
+    formas = cast(list[dict[str, Any]], opciones["formas"])
+    assert [f["id"] for f in formas] == [
+        "recta",
+        "ondulada",
+        "feston",
+        "doble-feston",
+        "diagonal",
+        "larga",
+        "gruesa",
+        "nube",
+        "cargada",
+        "aireada",
+        "piso",
+    ]
+    assert [e["id"] for e in cast(list[dict[str, Any]], opciones["estilos"])] == [
+        "ligero",
+        "estandar",
+        "lleno",
+        "gigantes",
+    ]
+    # Cada forma se explica sola: el modelo elige por la frase, no por el id.
+    assert all(f["descripcion"] and f["nombre"] for f in formas)
 
 
 def test_el_endpoint_devuelve_el_catalogo_de_la_guirnalda() -> None:
@@ -809,3 +992,117 @@ def test_el_endpoint_exige_su_scope() -> None:
         scope="plan.armado_guirnalda",
     )
     assert (status, cast(dict[str, object], body["detail"])["code"]) == (403, "insufficient_scope")
+
+
+def test_los_tamanos_de_la_foto_arman_la_pieza_y_no_solo_la_cobran() -> None:
+    """El caso del 2026-10-03: una columna orgánica dorada con una foto de globos casi todos gigantes.
+
+    El motor arma **antes** de que el plan se resuelva, así que una lectura que solo llegara a `plan.py`
+    dejaba la pieza dibujada con la mezcla declarada y cobrada con la leída. Aquí viaja con el armado, y las
+    dos ramas la traducen con la misma función (``mezcla_del_motor``).
+
+    Tiene que cambiar las dos cosas: **qué motor** arma la pieza —``solo_grandes`` es orgánica, o leer
+    «gigantes» terminaba armando anillos— y **de qué tamaños** son sus globos.
+    """
+    from app.plan import proporciones_de_mezcla
+
+    plan = _plan(
+        _estructura(
+            "EST_01_COLUMNA",
+            "columna",
+            1,
+            mezcla="organica_fina",
+            referencia_element_id="REF_01_E01",
+        )
+    )
+    leida = [
+        {
+            "referencia_element_id": "REF_01_E01",
+            "tamanos": "casi_todos_gigantes",
+            "confianza": 0.9,
+        }
+    ]
+    armados = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=plan, tamanos_leidos=leida))[
+            "armados"
+        ],
+    )
+    armado = cast(dict[str, Any], armados[0]["armado"])
+    assert armados[0]["clave"] == "armado_columna_organica"
+    puesta = cast(dict[str, Any], armado["tamanos"])["mezcla"]
+    assert {t: p for t, p in puesta.items() if p} == {
+        str(pulgadas): round(proporcion * 100, 4)
+        for pulgadas, proporcion in proporciones_de_mezcla("solo_grandes") or ()
+    }
+
+    # Sin lectura manda la mezcla del plan, no el diseño de partida del diseñador.
+    sin_foto = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"],
+    )
+    fina = cast(dict[str, Any], cast(dict[str, Any], sin_foto[0]["armado"])["tamanos"])["mezcla"]
+    assert {t: p for t, p in fina.items() if p} == {
+        str(pulgadas): round(proporcion * 100, 4)
+        for pulgadas, proporcion in proporciones_de_mezcla("organica_fina") or ()
+    }
+
+
+def test_el_arco_clasico_pone_primero_el_color_que_el_plan_declara_dominante() -> None:
+    """Auditoría 2026-10-04, M4: un arco declarado 10/70/20 se armaba en el orden del plan y el dominante caía
+    donde caía. El patrón reparte más su primer color, así que el dominante va primero."""
+    estructura = _estructura("EST_01_ARCO", "arco", 3)
+    materiales = cast(list[dict[str, object]], estructura["materiales"])
+    for material, parte in zip(materiales, (0.1, 0.7, 0.2), strict=True):
+        material["participacion"] = parte
+    armados = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=_plan(estructura)))[
+            "armados"
+        ],
+    )
+    assert cast(dict[str, Any], armados[0]["armado"])["materiales"] == [1, 2, 0]
+
+
+def test_sin_participacion_declarada_el_orden_es_el_del_plan() -> None:
+    estructura = _estructura("EST_01_ARCO", "arco", 2)
+    for material in cast(list[dict[str, object]], estructura["materiales"]):
+        material.pop("participacion")
+    armados = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(_peticion(accion="completar", plan=_plan(estructura)))[
+            "armados"
+        ],
+    )
+    assert cast(dict[str, Any], armados[0]["armado"])["materiales"] == [0, 1]
+
+
+def _columna_organica_con_remate(
+    lectura: dict[str, object] | None,
+) -> tuple[dict[str, Any], list[str]]:
+    from app.armado_estructura import PiezaArmado, _receta
+
+    avisos: list[str] = []
+    pieza = PiezaArmado(
+        tipo="columna", colores=2, alto_m=2.2, mezcla="organica_fina", tonos=["blanco", "dorado"]
+    )
+    return _receta(pieza, avisos, lectura_remate=lectura), avisos
+
+
+def test_la_columna_organica_lleva_corona_si_la_foto_ve_un_globo() -> None:
+    """Auditoría 2026-10-04, M6.a: la rama orgánica retornaba antes de leer el remate de la foto."""
+    armado, _ = _columna_organica_con_remate({"tipo": "globo", "color": "dorado"})
+    assert armado["corona"]["activa"] is True
+    assert armado["corona"]["material"] == 1
+    assert armado["origen"] == "referencia"
+
+
+def test_la_columna_organica_sin_lectura_de_remate_no_se_corona() -> None:
+    armado, _ = _columna_organica_con_remate(None)
+    assert armado["corona"]["activa"] is False
+
+
+def test_un_remate_estrella_en_columna_organica_avisa_y_no_corona() -> None:
+    armado, avisos = _columna_organica_con_remate({"tipo": "estrella"})
+    assert armado["corona"]["activa"] is False
+    assert any("estrella" in aviso for aviso in avisos)

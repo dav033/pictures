@@ -22,6 +22,8 @@ en vez de duplicarse; de guirnaldas solo tiene el nombre.
 
 from __future__ import annotations
 
+import hashlib
+import re
 from collections.abc import Mapping
 from typing import Any, cast
 
@@ -33,11 +35,36 @@ from app.armado_columna import EstructuraColumna
 from app.armado_columna import armado_resuelto as armado_columna_resuelto
 from app.armado_guirnalda_organica import EstructuraGuirnalda
 from app.armado_guirnalda_organica import armado_resuelto as armado_organico_resuelto
-from app.plan import MERMA, PlanResolutionError
-from tests.guirnalda_datos import GUIRNALDA, guirnalda, material, plan, resolver
+from app.plan import (
+    MERMA,
+    PlanResolutionError,
+    armado_arco_de_patron,
+    armado_arco_de_receta,
+    contar_pieza,
+    pieza_del_motor_resuelta,
+)
+from tests.guirnalda_datos import (
+    GUIRNALDA,
+    estructura_del_plan,
+    guirnalda,
+    material,
+    plan,
+    resolver,
+)
 
 
 ARCO = "EST_01_ARCO"
+
+#: Contexto operacional minimo para pedirle una receta a la puerta del motor (`armado-estructura.v1`).
+CONTEXTO: dict[str, object] = {
+    "schema_version": "operational.v1",
+    "request_id": "00000000-0000-4000-8000-0000000000f7",
+    "correlation_id": "ffffffff-ffff-4fff-8fff-fffffffffff7",
+    "deadline_at": "2030-01-01T00:00:00Z",
+    "deadline_ms": 5000,
+    "scopes": ["omoikane.armado_estructura"],
+    "body_sha256": hashlib.sha256(b"arco-organico-hoja").hexdigest(),
+}
 COLUMNA = "EST_02_COLUMNA"
 
 #: Los colores de cada pieza, en el orden en que el armado los nombra por índice:
@@ -359,6 +386,305 @@ async def test_un_arco_con_armado_cuenta_los_globos_que_el_motor_coloco() -> Non
     assert pieza["eje_m"] != 6.21 and pieza["total_unidades"] != 119
 
 
+# --- Un arco clásico que solo trae su patrón: también cuenta el motor -----------------------------
+
+
+def patron_anillos(*secuencia: int) -> dict[str, object]:
+    return {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {"modo": "anillos", "secuencia": list(secuencia), "largo": 1},
+    }
+
+
+@pytest.mark.anyio
+async def test_un_arco_clasico_con_patron_y_sin_armado_cuenta_los_globos_del_motor() -> None:
+    """Lo que se cotiza es lo que el motor coloca, no la fórmula (2026-10-04).
+
+    El arco no trae ``armado_arco``: lo arma la receta del motor con su patrón como pista
+    (``armado_arco_de_patron``), la misma puerta por la que la guía de escena lo dibuja. Antes se contaba con
+    la fórmula y el plan cobraba un arco que nadie arma mientras la guía dibujaba otro.
+    """
+    pieza_plan = arco(mezcla="clasica", patron_color=patron_anillos(0, 1))
+    armado = armado_arco_de_patron(pieza_plan)
+    assert armado is not None and armado["materiales"] == [0, 1]
+    del_motor = armado_arco_resuelto(
+        EstructuraArco(es_arco=True, materiales=COLORES_ARCO), armado, MERMA
+    )
+
+    resuelto = await resolver(plan(pieza_plan))
+    pieza = estructura(resuelto, ARCO)
+
+    assert pieza["total_unidades"] == len(cast(list[object], del_motor["globos"]))
+    assert unidades_por_tamano_y_color(pieza) == conteo_del_motor(del_motor, COLORES_ARCO)
+    assert pieza["eje_m"] == round(cast(float, del_motor["largo_m"]), 2)
+    # La guía de escena lee la misma pieza: los mismos globos que se cotizaron.
+    de_la_guia = pieza_del_motor_resuelta(pieza_plan)
+    assert de_la_guia is not None and de_la_guia[0] == "arco"
+    assert len(cast(list[object], de_la_guia[1]["globos"])) == pieza["total_unidades"]
+    # El armado es derivado: el plan sigue sin él y la hoja del instalador sí se publica.
+    assert "armado_arco" not in estructura_del_plan(resuelto)
+    publicados = cast(list[dict[str, Any]], resuelto["armados_arco"])
+    assert [item["estructura_id"] for item in publicados] == [ARCO]
+    assert sum(int(item["cantidad"]) for item in publicados[0]["conteo"]) == pieza["total_unidades"]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("densidad", ["sencilla", "media", "lujosa"])
+@pytest.mark.parametrize("colores", [1, 2, 3])
+async def test_un_arco_clasico_sin_patron_ni_armado_lo_arma_la_receta(
+    densidad: str, colores: int
+) -> None:
+    """Sin patrón y sin armado, el arco lo arma la receta por número de colores (2026-10-04).
+
+    Es el mismo armado que le escribe la confirmación (``completar`` sin pistas), así que la cotización, la hoja
+    del instalador y la guía de escena salen de un solo arco. Antes se cobraba con la fórmula —118 globos en el
+    arco de 2,5 × 2,2 m de los vectores dorados, donde el motor coloca 58— y la guía lo omitía (``sin_dibujo``).
+    """
+    tres = [material("dorado", 0.5, principal=True), material("blanco", 0.3)]
+    tres.append(material("rosado", 0.2))
+    pieza_plan = arco(mezcla="clasica", densidad=densidad, materiales=tres[:colores])
+    assert "patron_color" not in pieza_plan and "armado_arco" not in pieza_plan
+
+    (confirmado,) = completados(pieza_plan)
+    armado = armado_arco_de_receta(pieza_plan)
+    assert confirmado["clave"] == "armado_arco" and confirmado["armado"] == armado
+
+    resuelto = await resolver(plan(pieza_plan))
+    pieza = estructura(resuelto, ARCO)
+    de_la_guia = pieza_del_motor_resuelta(pieza_plan)
+    assert de_la_guia is not None and de_la_guia[0] == "arco"
+    assert len(cast(list[object], de_la_guia[1]["globos"])) == pieza["total_unidades"]
+    publicados = cast(list[dict[str, Any]], resuelto["armados_arco"])
+    assert sum(int(item["cantidad"]) for item in publicados[0]["conteo"]) == pieza["total_unidades"]
+    assert "armado_arco" not in estructura_del_plan(resuelto)
+
+
+def test_el_arco_sin_patron_que_no_es_clasico_sigue_sin_receta() -> None:
+    """La receta sin patrón es solo del arco clásico: el orgánico, el asimétrico y el aro siguen como estaban."""
+    assert armado_arco_de_receta(arco()) is None  # mezcla orgánica: la fórmula, como antes
+    assert (
+        armado_arco_de_receta(arco(mezcla="clasica", estructura_oficial="arco_asimetrico")) is None
+    )
+    assert armado_arco_de_receta(arco(mezcla="clasica", estructura_oficial="aro_circular")) is None
+    assert armado_arco_de_receta(arco(mezcla="clasica", armado_arco=armado_arco())) is None
+
+
+@pytest.mark.anyio
+async def test_el_arco_de_patron_reparte_los_colores_en_el_orden_del_patron() -> None:
+    tres = ("dorado", "blanco", "rosado")
+    materiales = [material(tres[0], 0.34, principal=True), material(tres[1], 0.33)]
+    materiales.append(material(tres[2], 0.33))
+    cuentas: dict[tuple[int, ...], dict[tuple[float, str], int]] = {}
+    for secuencia in ((0, 1, 2), (2, 0, 1)):
+        pieza_plan = arco(
+            mezcla="clasica", materiales=materiales, patron_color=patron_anillos(*secuencia)
+        )
+        armado = armado_arco_de_patron(pieza_plan)
+        assert armado is not None and armado["materiales"] == list(secuencia)
+        del_motor = armado_arco_resuelto(
+            EstructuraArco(es_arco=True, materiales=tres), armado, MERMA
+        )
+        cuentas[secuencia] = unidades_por_tamano_y_color(
+            estructura(await resolver(plan(pieza_plan)), ARCO)
+        )
+        assert cuentas[secuencia] == conteo_del_motor(del_motor, tres)
+    # El color que abre el patrón es el que más globos lleva: el primer anillo y cada tercero.
+    assert max(cuentas[(0, 1, 2)], key=cuentas[(0, 1, 2)].__getitem__) == (12.0, "dorado")
+    assert max(cuentas[(2, 0, 1)], key=cuentas[(2, 0, 1)].__getitem__) == (12.0, "rosado")
+
+
+#: Globos a lo ancho de la banda del arco de patrones por densidad, y los globos que coloca el motor, en tres
+#: arcos con globo R-12. Escritos a mano: ``media`` es el arco de siempre (4 a lo ancho, que en 2 m el motor
+#: recorta a 3), y las otras dos mueven una capa dentro de lo que la banda admite (``RAZON_GROSOR_MAX``): en
+#: 3 m y en 2 m no cabe una quinta / cuarta capa sin tapar la abertura, así que ``lujosa`` queda como ``media``.
+DENSIDAD_DEL_ARCO = {
+    (3.0, 2.4): {"sencilla": (3, 68), "media": (4, 88), "lujosa": (4, 88)},
+    (2.0, 2.0): {"sencilla": (2, 33), "media": (4, 50), "lujosa": (3, 50)},
+    (4.0, 3.0): {"sencilla": (3, 88), "media": (4, 119), "lujosa": (5, 144)},
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("medidas", list(DENSIDAD_DEL_ARCO))
+async def test_la_densidad_del_arco_de_patron_mueve_sus_globos_a_lo_ancho(
+    medidas: tuple[float, float],
+) -> None:
+    """Sencilla ≤ media ≤ lujosa, contados por el motor y nunca por la fórmula; la guía dibuja lo que se cobra.
+
+    La densidad del arco clásico es «globos por capa» (``investigacion-arcos.md`` del clasificador): una capa
+    menos o una más que ``media``, que es el arco de siempre.
+    """
+    ancho, alto = medidas
+    totales: list[int] = []
+    for densidad, (globos_ancho, globos) in DENSIDAD_DEL_ARCO[medidas].items():
+        pieza_plan = arco(
+            mezcla="clasica",
+            densidad=densidad,
+            medidas={"ancho_m": ancho, "alto_m": alto},
+            patron_color=patron_anillos(0, 1),
+        )
+        armado = armado_arco_de_patron(pieza_plan)
+        assert armado is not None
+        assert cast(Mapping[str, object], armado["geometria"])["globosAncho"] == globos_ancho
+        contada = contar_pieza(pieza_plan)
+        assert contada.fuente == "motor"
+        assert contada.total_vigente == globos != contada.total_formula
+        pieza = estructura(await resolver(plan(pieza_plan)), ARCO)
+        assert pieza["total_unidades"] == globos
+        de_la_guia = pieza_del_motor_resuelta(pieza_plan)
+        assert de_la_guia is not None
+        assert len(cast(list[object], de_la_guia[1]["globos"])) == globos
+        totales.append(globos)
+    assert totales == sorted(totales)
+
+
+@pytest.mark.anyio
+async def test_los_globos_por_racimo_del_patron_mandan_sobre_la_densidad() -> None:
+    """Un patrón que dice cuántos globos lleva cada racimo ya dijo el ancho de la banda: la densidad no lo mueve."""
+    patron = {**patron_anillos(0, 1), "globos_por_racimo": 3}
+    for densidad in ("sencilla", "lujosa"):
+        armado = armado_arco_de_patron(
+            arco(
+                mezcla="clasica",
+                densidad=densidad,
+                medidas={"ancho_m": 4, "alto_m": 3},
+                patron_color=patron,
+            )
+        )
+        assert armado is not None
+        assert cast(Mapping[str, object], armado["geometria"])["globosAncho"] == 3
+
+
+def completados(*estructuras: dict[str, object]) -> list[dict[str, Any]]:
+    """Lo que la confirmación pide a la puerta del motor (``completar``), sin pistas de la foto."""
+    from app.armado_estructura import ArmadoEstructuraRequest, resolver_armado_estructura
+
+    return cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(
+            ArmadoEstructuraRequest.model_validate(
+                {
+                    "context": CONTEXTO,
+                    "schema_version": "omoikane-armado-estructura.v1",
+                    "accion": "completar",
+                    "plan": plan(*estructuras),
+                }
+            )
+        )["armados"],
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("densidad", ["sencilla", "media", "lujosa"])
+async def test_la_confirmacion_arma_el_arco_de_patron_igual_que_la_resolucion(
+    densidad: str,
+) -> None:
+    """Sin foto, la confirmación usa el ``patron_color`` del plan como pista, como la resolución.
+
+    Armaba por el número de colores (la espiral del diseñador) y escribía en el plan un arco distinto del que
+    la resolución contaba con ese patrón y del que la rejilla de patrón enseñaba.
+    """
+    secuencia = (1, 0, 0)
+    pieza_plan = arco(
+        mezcla="clasica",
+        densidad=densidad,
+        medidas={"ancho_m": 4, "alto_m": 3},
+        patron_color=patron_anillos(*secuencia),
+    )
+    del_patron = armado_arco_de_patron(pieza_plan)
+    assert del_patron is not None and del_patron["patron"] != "espiral"
+    (completado,) = completados(pieza_plan)
+    assert completado["clave"] == "armado_arco"
+    assert completado["armado"] == del_patron
+    # Y lo que se cobra con el armado ya escrito en el plan es lo mismo que sin él.
+    sin_armado = estructura(await resolver(plan(pieza_plan)), ARCO)
+    con_armado = estructura(
+        await resolver(plan({**pieza_plan, "armado_arco": completado["armado"]})), ARCO
+    )
+    assert unidades_por_tamano_y_color(con_armado) == unidades_por_tamano_y_color(sin_armado)
+
+
+def test_un_arco_asimetrico_lo_arma_el_organico_con_las_patas_distintas() -> None:
+    """``arco_asimetrico`` es la forma lista ``asimetrico`` del orgánico: el arco de patrones solo es simétrico.
+
+    Con mezcla clásica también: el de patrones no tiene una pata distinta de la otra, y antes lo armaba
+    simétrico. Las medidas siguen siendo las del plan.
+    """
+    from app.armado_arco_organico import EstructuraArcoOrganico
+    from app.armado_arco_organico import armado_resuelto as armado_arco_organico_resuelto
+
+    lados: dict[str, tuple[int, int]] = {}
+    for oficial in ("arco", "arco_asimetrico"):
+        (completado,) = completados(arco(estructura_oficial=oficial))
+        assert completado["clave"] == "armado_arco_organico"
+        forma = cast(Mapping[str, float], completado["armado"]["forma"])
+        assert (forma["anchoM"], forma["altoM"]) == (3, 2.4)
+        globos = cast(
+            list[Mapping[str, float]],
+            armado_arco_organico_resuelto(
+                EstructuraArcoOrganico(es_arco=True, materiales=list(COLORES_ARCO)),
+                completado["armado"],
+                MERMA,
+            )["globos"],
+        )
+        centro = sum(g["x"] for g in globos) / len(globos)
+        lados[oficial] = (
+            sum(1 for g in globos if g["x"] < centro),
+            sum(1 for g in globos if g["x"] >= centro),
+        )
+        if oficial == "arco_asimetrico":
+            assert forma["corte"] < 1, "una pata termina antes del suelo"
+    izquierda, derecha = lados["arco_asimetrico"]
+    assert abs(izquierda - derecha) > abs(lados["arco"][0] - lados["arco"][1])
+
+    clasico = arco(
+        mezcla="clasica", estructura_oficial="arco_asimetrico", patron_color=patron_anillos(0, 1)
+    )
+    assert armado_arco_de_patron(clasico) is None
+    (completado,) = completados(clasico)
+    assert completado["clave"] == "armado_arco_organico"
+    assert cast(Mapping[str, float], completado["armado"]["forma"])["corte"] < 1
+
+
+def test_la_densidad_del_arco_organico_es_el_estilo_del_disenador() -> None:
+    """Sencilla y lujosa son los estilos «ligero» y «lleno» del diseñador; media, el volumen de siempre."""
+    from app.organico.tipos import config_inicial as config_inicial_organico
+
+    relleno = {}
+    for densidad in ("sencilla", "media", "lujosa"):
+        (completado,) = completados(arco(densidad=densidad))
+        relleno[densidad] = cast(Mapping[str, float], completado["armado"]["volumen"])["relleno"]
+    assert relleno == {
+        "sencilla": 0.5,
+        "media": config_inicial_organico()["volumen"]["relleno"],
+        "lujosa": 0.9,
+    }
+
+
+@pytest.mark.anyio
+async def test_lo_que_no_es_un_arco_clasico_de_patron_sigue_en_su_camino() -> None:
+    patron = patron_anillos(0, 1)
+    # Mezcla orgánica: la arma el otro motor solo cuando trae su armado; sin él, la fórmula.
+    organico = arco(patron_color=patron)
+    # Un aro se construye con tipo arco, pero ningún motor hace un aro.
+    aro = arco(mezcla="clasica", estructura_oficial="aro_circular", patron_color=patron)
+    # Con su propio armado manda ese armado, no la receta.
+    propio = arco(mezcla="clasica", patron_color=patron, armado_arco=armado_arco())
+    assert armado_arco_de_patron(organico) is None
+    assert armado_arco_de_patron(propio) is None
+    assert pieza_del_motor_resuelta(aro) is None
+    for pieza_plan in (organico, aro):
+        assert "armados_arco" not in await resolver(plan(pieza_plan))
+    con_su_armado = await resolver(plan(propio))
+    del_motor = armado_arco_resuelto(
+        EstructuraArco(es_arco=True, materiales=COLORES_ARCO), armado_arco(), MERMA
+    )
+    assert estructura(con_su_armado, ARCO)["total_unidades"] == len(
+        cast(list[object], del_motor["globos"])
+    )
+
+
 @pytest.mark.anyio
 async def test_una_columna_con_armado_cuenta_los_globos_que_el_motor_coloco() -> None:
     """El eje es la altura total del motor, remate incluido; el conteo, sin remate.
@@ -532,6 +858,27 @@ async def test_un_armado_de_arco_en_una_columna_no_la_cuenta_con_el_motor() -> N
     assert "armados_arco" not in resuelto
 
 
+@pytest.mark.anyio
+async def test_un_aro_circular_con_armado_de_arco_sigue_contando_con_su_formula() -> None:
+    """Una oficial que ningún motor arma se queda en la fórmula, aunque traiga un armado guardado.
+
+    El aro circular se construye con ``tipo`` ``arco`` y ningún motor mira ``estructura_oficial``, así que un
+    ``armado_arco`` guardado antes de la puerta del 2026-10-04 lo contaba y lo publicaba como un arco: la
+    banda de un arco donde la pieza es un aro cerrado. Su cifra es la de la fórmula —el eje es la
+    circunferencia, ``x-geometria-estructuras-oficiales``—, y es la que se queda.
+    """
+    aro = arco(estructura_oficial="aro_circular", nombre="Aro circular")
+
+    sin_armado = await resolver(plan(aro))
+    con_armado = await resolver(plan({**aro, "armado_arco": armado_arco()}))
+
+    pieza = estructura(con_armado, ARCO)
+    # 7,54 m es el perímetro del círculo inscrito en 3 × 2,4 m, no los 6,21 m de la banda de un arco.
+    assert (pieza["eje_m"], pieza["total_unidades"]) == (7.54, 145)
+    assert pieza["total_unidades"] == estructura(sin_armado, ARCO)["total_unidades"]
+    assert "armados_arco" not in con_armado, "no hay arco que publicar: la pieza es un aro"
+
+
 # --- Lo que se publica -------------------------------------------------------------------------
 
 
@@ -563,22 +910,36 @@ async def test_los_armados_resueltos_se_publican_sin_el_dibujo() -> None:
         armado_de_guirnalda,
         MERMA,
     )
-    # El arco publica además lo que la imagen lee de su armado (ADR-0035): derivado, escrito por la resolución y
-    # no por el motor. El resto es exactamente lo que el motor contó.
-    publicado = cast(dict[str, object], cast(list[object], resuelto["armados_arco"])[0])
-    derivados = {
-        clave: publicado.pop(clave) for clave in ("estructura_id", "prompt_gemini", "prompt_lora")
-    }
-    assert [publicado] == [
-        {clave: valor for clave, valor in del_arco.items() if clave not in SOLO_DEL_MOTOR}
-    ]
-    assert derivados["estructura_id"] == ARCO
-    assert str(derivados["prompt_gemini"]).startswith("ARCH ASSEMBLY")
-    assert str(derivados["prompt_lora"]).isascii() and str(derivados["prompt_lora"]).strip()
-    assert resuelto["armados_columna"] == [del_columna]
-    assert resuelto["armados_guirnalda_organica"] == [
-        {clave: valor for clave, valor in del_guirnalda.items() if clave not in SOLO_DEL_MOTOR}
-    ]
+    # Las CINCO piezas del motor publican lo que la imagen lee de su armado (ADR-0035, completado el
+    # 2026-10-04): derivado, lo escribe la resolucion y no el motor. El resto es exactamente lo que el motor
+    # conto. Sin esto el caption solo sabia nombrar la pieza y sus colores, y lo que callaba lo inventaba el
+    # LoRA: dos columnas salieron coronadas por un globo gigante que el plan apaga a proposito.
+    for lista, suya, cabecera, del_motor in (
+        ("armados_arco", ARCO, "ARCH ASSEMBLY", del_arco),
+        ("armados_columna", COLUMNA, "COLUMN ASSEMBLY", del_columna),
+        ("armados_guirnalda_organica", GUIRNALDA, "GARLAND ASSEMBLY", del_guirnalda),
+    ):
+        publicado = cast(dict[str, object], cast(list[object], resuelto[lista])[0])
+        derivados = {
+            clave: publicado.pop(clave)
+            for clave in ("estructura_id", "prompt_gemini", "prompt_lora")
+        }
+        assert [publicado] == [
+            {clave: valor for clave, valor in del_motor.items() if clave not in SOLO_DEL_MOTOR}
+        ], lista
+        assert derivados["estructura_id"] == suya
+        assert str(derivados["prompt_gemini"]).startswith(cabecera)
+        assert str(derivados["prompt_lora"]).isascii() and str(derivados["prompt_lora"]).strip()
+        # Las cifras de cada color (referencia, Pantone, globo inflado) ya no van pegadas a la frase de la
+        # pieza: el prompt de Gemini las lleva en un bloque para todas las piezas (2026-10-04, G4).
+        gemini = str(derivados["prompt_gemini"])
+        assert "Exact colors" not in gemini and "PANTONE" not in gemini, lista
+        # Al caption LoRA no llega NADA de eso, y no es un olvido: medido sobre las 345 captions de
+        # `data/staging/lora-v007`, su corpus no tiene ni un hexadecimal, ni un «pantone», ni un «pms». Un
+        # codigo ahi es una secuencia que el modelo no vio nunca.
+        lora = str(derivados["prompt_lora"])
+        assert "Sempertex" not in lora and "PANTONE" not in lora, lista
+        assert "#" not in lora and "Exact colors" not in lora, lista
     # Fuera del snapshot que firma ``plan_hash``: ni las estructuras ni las
     # compras los llevan dentro.
     listas = {"armados_arco", "armados_columna", "armados_guirnalda_organica"}
@@ -668,3 +1029,176 @@ async def test_un_remate_de_columna_de_un_color_que_no_lleva_rompe_el_plan() -> 
         await resolver(plan(columna(armado_columna=malo)))
     assert error.value.code == "armado_invalido"
     assert cast(dict[str, object], error.value.details)["motivo"] == "material_fuera_de_rango"
+
+
+@pytest.mark.anyio
+async def test_la_guirnalda_armada_le_cuenta_su_linea_a_los_modelos_de_imagen() -> None:
+    """ADR-0035, extendido a la guirnalda del motor orgánico (2026-10-03).
+
+    Sin esto el caption del LoRA solo sabía decir «an organic balloon garland ... against the rear wall», y
+    en el vocabulario de v004 esa es la frase del arco («organic balloon garland arch») a una palabra: la
+    imagen salía como un arco de pie con dos patas en el piso. La decisión 28 de ADR-0032 ya había anotado el
+    mismo fallo y su cura, pero su frase solo viaja con el armado de ADR-0032, detrás de una bandera apagada.
+
+    La frase es **derivada**: viaja fuera del snapshot, así que no mueve `plan_hash`. Lo que se prueba aquí
+    es que llega, que dice la línea que el motor armó y que no nombra un arco ni patas, nunca su redacción
+    exacta palabra por palabra.
+    """
+    armado = armado_organico()
+    forma = cast(dict[str, Any], armado["forma"])
+    # Alta en la pared, arqueada hacia arriba y con el extremo derecho más bajo: la pieza de la foto.
+    armado = {
+        **armado,
+        "forma": {**forma, "alturaM": 2.2, "colgadoM": -0.25, "pendienteM": -0.6},
+    }
+    resuelto = await resolver(plan(guirnalda(armado_guirnalda_organica=armado)))
+    hoja = cast(list[dict[str, Any]], resuelto["armados_guirnalda_organica"])[0]
+
+    assert hoja["estructura_id"] == GUIRNALDA
+    lora = cast(str, hoja["prompt_lora"])
+    gemini = cast(str, hoja["prompt_gemini"])
+
+    # El soporte, la curva, el desnivel y el racimo, en el vocabulario de la decisión 28.
+    assert "mounted flat high on the wall" in lora
+    assert "curving gently upward along the top" in lora
+    assert "higher on the left and lower at the right end" in lora
+    assert "both ends free" in lora
+    # Lo que el LoRA no puede leer: un arco, patas o soportes, y cifras.
+    assert not re.search(r"\barch(es)?\b|\bstands?\b|\blegs?\b|\bframe\b", lora), lora
+    assert lora.isascii() and not any(c.isdigit() for c in lora), lora
+    # No empieza por el sustantivo: es un modificador de la guirnalda que el caption ya nombró.
+    assert not lora.lower().startswith(("a ", "an ")), lora
+
+    # Gemini sí lee cifras, y le toca además el cierre contra las patas.
+    assert "GARLAND ASSEMBLY" in gemini
+    assert "0.6 m lower" in gemini, gemini
+    assert "no stands, no legs, no poles and no frame reaching the floor" in gemini
+
+    # En el piso no hay extremos en alto ni cierre contra las patas.
+    en_piso = await resolver(
+        plan(
+            guirnalda(
+                armado_guirnalda_organica={
+                    **armado,
+                    "forma": {**cast(dict[str, Any], armado["forma"]), "alturaM": 0.0},
+                }
+            )
+        )
+    )
+    piso = cast(list[dict[str, Any]], en_piso["armados_guirnalda_organica"])[0]
+    assert "resting on the floor along the front" in cast(str, piso["prompt_lora"])
+    assert "both ends free" not in cast(str, piso["prompt_lora"])
+    assert "no stands, no legs" not in cast(str, piso["prompt_gemini"])
+
+    # Derivada: vive en la hoja publicada y **no** dentro de la estructura, que es lo que firma `plan_hash`.
+    del_plan = cast(list[dict[str, Any]], resuelto["estructuras"])[0]
+    assert "prompt_lora" not in cast(
+        dict[str, Any], del_plan.get("armado_guirnalda_organica") or {}
+    )
+    assert "armados_guirnalda_organica" not in del_plan
+
+
+@pytest.mark.anyio
+async def test_el_arco_organico_tambien_publica_su_hoja() -> None:
+    """Estaba en `_ARMADOS_DEL_MOTOR` y en el contrato, y la resolucion no lo pedia (2026-10-04).
+
+    El motor lo contaba —las medidas y los globos del plan salian de el— pero su hoja resuelta no llegaba a
+    `plan_resuelto`: ni cada globo colocado, ni la compra, ni los avisos, ni el dibujo del editor. Las otras
+    cuatro piezas con motor si se publicaban. Portar no es cablear.
+    """
+    # La receta del motor para un arco organico, pedida a su propia puerta: este archivo no tiene fixture
+    # suya y copiarla a mano seria inventar un armado que el motor no firma.
+    from app.armado_estructura import ArmadoEstructuraRequest, resolver_armado_estructura
+
+    base = plan(arco())
+    recetado = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(
+            ArmadoEstructuraRequest.model_validate(
+                {
+                    "context": CONTEXTO,
+                    "schema_version": "omoikane-armado-estructura.v1",
+                    "accion": "completar",
+                    "plan": {
+                        **base,
+                        "estructuras": [
+                            {**e, "mezcla": "organica_gruesa"}
+                            for e in cast(list[dict[str, Any]], base["estructuras"])
+                        ],
+                    },
+                }
+            )
+        )["armados"],
+    )
+    assert recetado[0]["clave"] == "armado_arco_organico"
+    armado = cast(dict[str, Any], recetado[0]["armado"])
+    resuelto = await resolver(plan(arco(mezcla="organica_gruesa", armado_arco_organico=armado)))
+    hoja = cast(list[dict[str, Any]], resuelto["armados_arco_organico"])[0]
+    assert len(cast(list[object], hoja["globos"])) > 0, (
+        "la hoja trae los globos que el motor coloco"
+    )
+    # Fuera del snapshot que firma `plan_hash`, como las otras cuatro.
+    for pieza in cast(list[dict[str, object]], resuelto["estructuras"]):
+        assert "armados_arco_organico" not in pieza
+
+
+@pytest.mark.anyio
+async def test_un_semiarco_cuenta_y_publica_como_arco_organico() -> None:
+    """Un medio arco es el arco orgánico con `forma.corte` menor que 1, y nada más (2026-10-04).
+
+    El tipo `semiarco` del plan no tenía motor: `_structure_count` lo nombraba entre las piezas que cuenta
+    la fórmula y `_armado_del_motor` solo aceptaba `arco_organico` sobre un `arco`, así que un medio arco se
+    cobraba a ojo y se dibujaba con la rejilla de patrones del arco completo. Aquí se comprueban las dos
+    puntas del cableado: que el motor lo cuenta (la hoja trae sus globos colocados) y que la frase derivada
+    que lee la imagen dice que **no** apoya las dos patas en el suelo.
+
+    Como el armado vive dentro de `estructuras`, esto **mueve el `plan_hash`** de un plan con medio arco. Es
+    inherente a la capacidad nueva, igual que cuando se cableó el arco orgánico: antes la pieza no tenía
+    armado ninguno.
+    """
+    from app.armado_estructura import ArmadoEstructuraRequest, resolver_armado_estructura
+
+    def medio(**extra: object) -> dict[str, object]:
+        return arco(
+            estructura_id="EST_01_SEMIARCO",
+            nombre="Semiarco",
+            tipo="semiarco",
+            estructura_oficial="semiarco",
+            **extra,
+        )
+
+    # La receta se la pide su propia puerta: el armado de un medio arco lo firma el motor, no este archivo.
+    # Y se pide con la mezcla `clasica` a propósito: un semiarco es orgánico pase lo que pase.
+    recetado = cast(
+        list[dict[str, Any]],
+        resolver_armado_estructura(
+            ArmadoEstructuraRequest.model_validate(
+                {
+                    "context": CONTEXTO,
+                    "schema_version": "omoikane-armado-estructura.v1",
+                    "accion": "completar",
+                    "plan": plan(medio(mezcla="clasica")),
+                }
+            )
+        )["armados"],
+    )
+    assert recetado[0]["tipo"] == "semiarco"
+    assert recetado[0]["clave"] == "armado_arco_organico"
+    armado = cast(dict[str, Any], recetado[0]["armado"])
+    assert cast(dict[str, Any], armado["forma"])["corte"] < 1
+
+    resuelto = await resolver(plan(medio(mezcla="clasica", armado_arco_organico=armado)))
+    hoja = cast(list[dict[str, Any]], resuelto["armados_arco_organico"])[0]
+    assert hoja["estructura_id"] == "EST_01_SEMIARCO"
+    assert len(cast(list[object], hoja["globos"])) > 0, (
+        "la hoja del medio arco trae los globos que el motor coloco"
+    )
+    # Las dos frases derivadas (ADR-0035) salen con la pieza y dicen que es medio arco.
+    assert "on both legs" not in cast(str, hoja["prompt_gemini"])
+    assert "free in the air" in cast(str, hoja["prompt_gemini"])
+    assert "free in the air" in cast(str, hoja["prompt_lora"])
+    # El conteo de la pieza es el del motor y no el de la fórmula: coincide con los globos colocados.
+    pieza = cast(list[dict[str, Any]], resuelto["estructuras"])[0]
+    assert pieza["total_unidades"] == len(cast(list[object], hoja["globos"]))
+    # Y la hoja vive fuera del snapshot que firma `plan_hash`, como las otras cinco.
+    assert "armados_arco_organico" not in pieza

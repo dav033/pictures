@@ -15,7 +15,8 @@ import { ReferenciasEntrenamientoModal, type ReferenciasEvidenciaData } from "@/
 import type { LoraModeSlug } from "@/lib/lora/schema";
 import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
-import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { identificarEstructuraOficial, OFICIALES_SIN_MOTOR } from "@/lib/plan/estructuras-oficiales";
+import { OFICIALES_CON_DIBUJO_ESQUEMATICO } from "@/lib/plan/dibujo-estructura";
 import { esSustitucionDeColor } from "@/lib/plan/colores-referencia";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import {
@@ -74,6 +75,7 @@ import type { ArmadoGuirnaldaV1 } from "@/lib/plan/armado-guirnalda";
 import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
 import type { ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
 import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
+import type { ArmadoArcoOrganicoV1 } from "@/lib/plan/armado-arco-organico";
 import type { ArmadoColumnaOrganicaV1 } from "@/lib/plan/armado-columna-organica";
 import { avisosDeEdicion } from "@/components/plan/avisos-edicion";
 import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
@@ -360,6 +362,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     // Numbered legend of the pattern: material index + 1, in `materiales` order,
     // each number with the color Python gave it (what is bought after a replacement).
     const leyenda = leyendaPatron(declarada?.materiales ?? [], estructura.lineas, patron?.conteo);
+    // Una pieza que ningún motor arma no lleva armado de motor, aunque el plan traiga uno viejo: su
+    // `tipoBase` es `arco` o `guirnalda` y los motores miran el tipo, no la estructura oficial. Desde el
+    // 2026-10-04 la receta ya no se lo pone (`plan.OFICIALES_SIN_MOTOR`), y aquí se ignora el que quedara
+    // guardado para que la tarjeta no monte el bloque de un arco sobre un aro circular.
+    const sinMotor = oficial !== undefined && OFICIALES_SIN_MOTOR.has(oficial.id);
     return {
       estructura,
       declarada,
@@ -383,23 +390,39 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
        * El armado del arco que trae la pieza (ADR-0034). Con él, el bloque del arco toma el sitio del
        * dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia.
        */
-      armadoArco: declarada?.armado_arco,
+      armadoArco: sinMotor ? undefined : declarada?.armado_arco,
+      /**
+       * El armado del arco orgánico del motor (ADR-0034, `armado_arco_organico`; no el de patrones). Con él, su
+       * bloque toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia.
+       * Si la pieza trae también el clásico, manda el clásico (es el que ya existía) y este no se dibuja. **Un
+       * medio arco entra por aquí**, con `forma.corte` menor que 1.
+       */
+      armadoArcoOrganico: sinMotor || declarada?.armado_arco ? undefined : declarada?.armado_arco_organico,
       /**
        * El armado de la columna que trae la pieza (ADR-0034, ADR-0035 paso 3). Igual que el del arco: con él, el
        * bloque de la columna toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide.
        */
-      armadoColumna: declarada?.armado_columna,
+      armadoColumna: sinMotor ? undefined : declarada?.armado_columna,
       /**
        * El armado de la columna orgánica del motor (ADR-0034, `armado_columna_organica`; no el de anillos). Con él, su
        * bloque toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia. Si la
        * pieza trae también el clásico, manda el clásico (es el que ya existía) y este no se dibuja.
        */
-      armadoColumnaOrganica: declarada?.armado_columna ? undefined : declarada?.armado_columna_organica,
+      armadoColumnaOrganica: sinMotor || declarada?.armado_columna ? undefined : declarada?.armado_columna_organica,
       /**
        * El armado de la guirnalda del motor (ADR-0034, `armado_guirnalda_organica`; no el de ADR-0032). Con él, su
        * bloque toma el sitio del dibujo del patrón y el motor es quien dibuja, cuenta y mide; sin él nada cambia.
        */
-      armadoGuirnaldaOrganica: declarada?.armado_guirnalda_organica,
+      armadoGuirnaldaOrganica: sinMotor ? undefined : declarada?.armado_guirnalda_organica,
+      /**
+       * El dibujo esquemático de una pieza que ningún motor arma: la pared, el aro circular, el techo de
+       * globos y el centro de mesa. Es de solo lectura —no calcula cantidades, así que no hay nada que
+       * guardar— y el dibujo lo hace Python, que decide cuál de los cuatro le toca
+       * (`app/dibujo_estructura.py`). La mezcla de tamaños es la que ya resolvió el plan.
+       */
+      dibujoEsquematico: declarada !== undefined && oficial !== undefined && OFICIALES_CON_DIBUJO_ESQUEMATICO.has(oficial.id)
+        ? { plan: plan.plan, estructuraId: estructura.estructura_id, declarada, mezclaReal: estructura.mezcla_real }
+        : undefined,
       /**
        * Un tono `#rrggbb` por material, en el orden de `materiales`, ya resuelto por el catálogo: el
        * motor pinta con ellos. Nunca cuenta con ellos — el conteo y la compra van por índice.
@@ -877,6 +900,19 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
    * cualquier otra edición, así que el plan se resuelve y se firma otra vez (nuevo `plan_hash`, nuevo total) y el
    * aviso ofrece «Deshacer». El editor sigue abierto si falla, con la frase de Python cuando rechazó el armado.
    */
+  /**
+   * «Guardar arco» / «Guardar semiarco» del editor del arco orgánico: escribe el armado con la edición
+   * `armado_arco_organico`, por la misma cola y la misma firma que cualquier otra edición (nuevo `plan_hash`, nuevo
+   * total, «Deshacer»). El editor sigue abierto si falla, con la frase de Python cuando rechazó el armado.
+   */
+  function guardarArcoOrganico(estructuraId: string, armado: ArmadoArcoOrganicoV1, pieza: "Arco" | "Semiarco"): Promise<string | null> {
+    return aplicarAjusteDirecto(
+      { accion: "armado_arco_organico", estructura_id: estructuraId, armado_arco_organico: armado },
+      `${pieza} guardado: la propuesta cambió de firma, así que es otra decoración.`,
+      { enDialogo: true, pedir: pedirPlanEditarArmado },
+    );
+  }
+
   function guardarGuirnaldaOrganica(estructuraId: string, armado: ArmadoGuirnaldaOrganicaV1): Promise<string | null> {
     return aplicarAjusteDirecto(
       { accion: "armado_guirnalda_organica", estructura_id: estructuraId, armado_guirnalda_organica: armado },
@@ -1224,7 +1260,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           {errorEdicion && !seleccionCatalogo && <p role="alert" className="rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
 
           <ol className="space-y-2.5" aria-label="Piezas de la decoración">
-            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado, armadoGuirnalda, leyendaGuirnalda: leyendaDeGuirnalda, patronDibujo, armadoArco, armadoColumna, armadoColumnaOrganica, armadoGuirnaldaOrganica, tonos }, indice) => (
+            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado, armadoGuirnalda, leyendaGuirnalda: leyendaDeGuirnalda, patronDibujo, armadoArco, armadoArcoOrganico, armadoColumna, armadoColumnaOrganica, armadoGuirnaldaOrganica, dibujoEsquematico, tonos }, indice) => (
               <DetalleEstructura
                 key={estructura.estructura_id}
                 idBase={`${editorId}-pieza-${indice}`}
@@ -1279,6 +1315,17 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                   onGuardar: editorDisponible ? (armado) => guardarArco(estructura.estructura_id, armado) : undefined,
                   ocupado: guardandoAjustes,
                 } : undefined}
+                // Igual que el arco clásico: el dibujo es derivado, se pide a /api/plan-armado-arco-organico y no entra en `plan_hash`.
+                // Con `onGuardar` desde que existe la edición `armado_arco_organico` en los dos lados de la frontera
+                // (`edicion-esquemas.ts`, `app/plan_edicion_arco_organico.py`): el arco orgánico, el asimétrico y
+                // todo semiarco (el mismo armado con `forma.corte` < 1) ofrecen su «Editar arco» / «Editar semiarco».
+                arcoOrganico={armadoArcoOrganico ? {
+                  armado: armadoArcoOrganico,
+                  pieza: { plan: plan.plan, estructuraId: estructura.estructura_id, colores: tonos },
+                  leyenda,
+                  onGuardar: editorDisponible ? (armado) => guardarArcoOrganico(estructura.estructura_id, armado, estructura.tipo === "semiarco" ? "Semiarco" : "Arco") : undefined,
+                  ocupado: guardandoAjustes,
+                } : undefined}
                 // Igual que el arco: el dibujo de la columna es derivado, se pide a /api/plan-armado-columna y no entra en `plan_hash`.
                 columna={armadoColumna ? {
                   armado: armadoColumna,
@@ -1302,6 +1349,16 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                   leyenda,
                   onGuardar: editorDisponible ? (armado) => guardarGuirnaldaOrganica(estructura.estructura_id, armado) : undefined,
                   ocupado: guardandoAjustes,
+                } : undefined}
+                // El dibujo esquemático va después de todos los bloques de armado y antes del patrón: una
+                // pieza que un motor dibuja de verdad siempre gana. Lo único que guarda es la forma elegida
+                // de la pieza (`formas-pieza.ts`), que cambia el dibujo y nada más: no hay armado que
+                // escribir y el dibujo no calcula ninguna cantidad.
+                dibujo={dibujoEsquematico ? {
+                  pieza: dibujoEsquematico,
+                  onCambiarForma: editorDisponible
+                    ? (forma) => aplicarAjusteDirecto({ accion: "forma", estructura_id: estructura.estructura_id, forma }, forma === null ? "Listo, la pieza vuelve a su forma por defecto." : "Listo, cambié la forma de la pieza.", { enDialogo: true })
+                    : undefined,
                 } : undefined}
                 vistaReparto={editorDisponible ? {
                   pedir: (participaciones, signal) => pedirVistaPatron(peticionVistaPieza({ plan: plan.plan, estructuraId: estructura.estructura_id, lineas: estructura.lineas }, { patron_color: null, participaciones: [...participaciones] }), { signal }),

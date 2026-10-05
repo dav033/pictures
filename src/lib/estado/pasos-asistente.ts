@@ -9,7 +9,6 @@ export type PasoAsistente = { id: string; texto: string; estado: EstadoPaso };
 const FRASES: Readonly<Record<string, Record<EstadoPaso, string>>> = {
   guardar_brief: { en_curso: "Entendiendo tu idea", listo: "Entendí tu idea", fallido: "No pude guardar tu idea" },
   buscar_catalogo_rag: { en_curso: "Buscando globos en el catálogo", listo: "Busqué globos disponibles en el catálogo", fallido: "No pude buscar en el catálogo" },
-  confirmar_seleccion_rag: { en_curso: "Confirmando los globos elegidos", listo: "Confirmé los globos elegidos", fallido: "No pude confirmar los globos elegidos" },
   confirmar_plan_decoracion: { en_curso: "Armando la propuesta con medidas y cantidades", listo: "Armé la propuesta con medidas y cantidades", fallido: "No pude armar la propuesta" },
 };
 

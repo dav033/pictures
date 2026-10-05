@@ -2,6 +2,7 @@ import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
 import type { Pool } from "pg";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
+import { TEXTO_PLAN_LISTO } from "@/lib/ia/omoikane/texto-final-turno";
 import { FalloTecnicoTurnoError } from "@/lib/ia/herramientas/fallo-tecnico-turno";
 import { advertenciasPuertaFisica, mezclasCompatiblesConDiametros, tamanosObligatorios } from "@/lib/plan/mezclas";
 import { getRagPool } from "@/lib/rag/db";
@@ -9,10 +10,11 @@ import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar
 import { avisoFiltrosBusqueda, filtrosDurosDeBusqueda } from "@/lib/rag/chat/filtros-turno";
 import type { FiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
-import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
-import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion, type HechosPeticionPlan } from "@/lib/rag/observability/log";
+import { type ItemRechazado, type ItemValidado } from "@/lib/rag/chat/validar";
+import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, type HechosPeticionPlan } from "@/lib/rag/observability/log";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PistaArmado } from "@/lib/plan/armado-bouquet";
+import type { PistaRemate } from "@/lib/plan/armado-columna";
 import type { PistaGuirnalda } from "@/lib/plan/armado-guirnalda";
 import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
 import type { ArmadoColumnaV1 } from "@/lib/plan/armado-columna";
@@ -29,7 +31,7 @@ import {
 } from "@/lib/plan/armado-estructura-ia";
 import { llamarPythonEstimarConteo, llamarPythonOmoikaneArmarEstructura, llamarPythonOmoikaneCatalogoArmado, llamarPythonOmoikaneCompletarArmados } from "@/lib/ia/nucleo/python-adapter";
 import type { PistaConteo } from "@/lib/plan/conteo-referencia";
-import type { PistaPatron } from "@/lib/plan/patron-color";
+import type { PistaPatron, PistaTamanos } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
 import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
@@ -61,6 +63,7 @@ import { coloresVigentes, extraerRestriccionesConversacion } from "@/lib/plan/re
 import { digitoDeFiguraNumero, numerosDeLaFoto, numerosPedidos, validarNumerosDeLaFoto, validarNumerosPedidos } from "@/lib/plan/numeros-pedidos";
 import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
 import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
+import { sellarEstructurasOficiales } from "@/lib/plan/estructuras-oficiales";
 import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
 import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/plan/medidas-defecto";
 import { acabadosObservadosDeMateriales, coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, materialesDeColorInventado, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
@@ -75,6 +78,7 @@ import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, mezclasAdmisiblesEstructura, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
+import { aplicarReferenciasMedidas, busquedasDeReferencias } from "@/lib/plan/referencias-medidas";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, accionEstimacionInconsistente, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
@@ -93,7 +97,7 @@ import { z } from "zod";
  * de todas formas se sobrescriben por completo en cada llamada nueva. Se
  * excluye deliberadamente cualquier herramienta que toque
  * `seleccionFinalIA`/`planResuelto`/`cotizacion` o que dependa del orden de
- * ejecución (`guardar_brief`, `confirmar_seleccion_rag`,
+ * ejecución (`guardar_brief`,
  * `confirmar_plan_decoracion`). `ejecutarConversacion`/`ejecutarConversacionStream`
  * solo paralelizan una vuelta si CADA llamada de esa vuelta está en este
  * set Y ningún nombre se repite (ver `puedeParalelizarse` en agente-core) —
@@ -206,9 +210,9 @@ export type EstadoConversacion = {
   // tipo puntual sin pasarle otro turno al modelo (§ page.tsx navegarCategoria).
   filtrosCategorias?: FiltrosCatalogo;
   cotizacion?: Cotizacion;
-  // Piezas que la IA decidió proponer por su cuenta — solo se llenan si
-  // `confirmar_seleccion_rag` resolvió al menos un id real; el frontend usa
-  // esto para disparar /api/generate sin que el cliente haga clic.
+  // Restos de la selección visual retirada (auditoría 2026-10-04, C2): ya no
+  // hay herramienta que lo escriba. Se conserva hasta retirar `seleccionIA`
+  // del evento `fin` del contrato chat.sse.v1 (primero el consumidor).
   seleccionFinalIA?: Producto[];
   instruccionIA?: string;
   // Whitelist de productos realmente recuperados en ESTE request/turno (plan
@@ -391,22 +395,14 @@ export function coberturaPorProducto(
 }
 
 /**
- * Al agotar VUELTAS_MAX no siempre "se enredó" de verdad: si el modelo
- * llamó confirmar_seleccion_rag justo en la última vuelta permitida, la
- * selección ya quedó guardada y la imagen ya se está generando — decirle al
- * cliente "me enredé" ahí sería mentirle sobre algo que en realidad sí
- * funcionó, solo que no alcanzó a mandar el texto de cierre.
+ * Al agotar VUELTAS_MAX no siempre "se enredó" de verdad: si el plan ya quedó
+ * verificado, la tarjeta se muestra con el evento `fin`, y decir "me enredé"
+ * contradice lo que el cliente ve en pantalla (caso "cardinalidad" de
+ * eval/chat/jerga-v001.json, 2026-09-14). El texto es el mismo del cierre
+ * normal: un solo dueño, `TEXTO_PLAN_LISTO`.
  */
 export function textoAlAgotarVueltas(estado: EstadoConversacion): string {
-  // Modo diseño: el plan ya quedó verificado y la tarjeta se muestra con el
-  // evento `fin`; decir "me enredé" contradice lo que el cliente ve en pantalla
-  // (caso "cardinalidad" de eval/chat/jerga-v001.json, 2026-09-14).
-  if (estado.planResuelto) {
-    return "Ya te armé la propuesta: revisa el desglose en pantalla y dime si la apruebas o qué quieres ajustar.";
-  }
-  if (estado.seleccionFinalIA?.length) {
-    return "¡Ya elegí las piezas y se está generando tu visualización! Dame un momento.";
-  }
+  if (estado.planResuelto) return TEXTO_PLAN_LISTO;
   return "Perdón, me enredé un poco. ¿Me lo repites de otra forma?";
 }
 
@@ -635,6 +631,89 @@ export function pistasGuirnaldaDelPlan(plan: Pick<PlanDecoracion, "estructuras">
 }
 
 /**
+ * Los tamaños de globo que la foto leyó en las piezas que materializan un elemento de la referencia. Misma
+ * fuente y misma regla que `pistasRemateDelPlan`, y por la misma razón que esa existe aparte de
+ * `pistasPatronDelPlan`: un tamaño no es una disposición de color, así que **no** depende de que la pieza
+ * haya dejado `patron_color`. Una columna de un solo color no deja ninguno y es justo la que había que leer.
+ */
+export function pistasTamanosDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): PistaTamanos[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const pistas = new Map<string, PistaTamanos>();
+  for (const estructura of plan.estructuras) {
+    const elementId = estructura.referencia_element_id;
+    const elemento = elementId ? elementos.get(elementId) : undefined;
+    const leido = elemento?.appearance.tamanos_leidos;
+    if (!elementId || !leido || pistas.has(elementId)) continue;
+    // La confianza del patrón no juzga los tamaños —como no juzga el remate—, pero cuando la hay es la
+    // única medida de cuánto se vio la pieza, así que se reaprovecha; sin patrón, la lectura se da por buena.
+    pistas.set(elementId, { referencia_element_id: elementId, tamanos: leido, confianza: elemento?.appearance.patron_color?.confianza ?? 1 });
+  }
+  return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
+}
+
+/**
+ * Lo que la foto leyó del remate de las columnas que materializan un elemento de
+ * la referencia (ADR-0039). Misma fuente y misma regla que `pistasArmadoDelPlan`.
+ *
+ * Solo de las columnas: el arco del motor no tiene remate y el bouquet tiene el
+ * suyo (ADR-0030). Una columna que no sale en la lista deja el remate del motor.
+ */
+export function pistasRemateDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): PistaRemate[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const pistas = new Map<string, PistaRemate>();
+  for (const estructura of plan.estructuras) {
+    if (estructura.tipo !== "columna") continue;
+    const elementId = estructura.referencia_element_id;
+    const lectura = elementId ? elementos.get(elementId)?.appearance.remate_columna : undefined;
+    if (!elementId || !lectura || pistas.has(elementId)) continue;
+    pistas.set(elementId, { referencia_element_id: elementId, ...lectura });
+  }
+  return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
+}
+
+/**
+ * Hacia dónde se va cada pieza y cuánto, leído de la foto (fracción de su alto,
+ * negativo a la izquierda). Misma fuente y misma regla que `pistasArmadoDelPlan`.
+ * Una pieza recta no viaja: su `inclinacion` es 0 y el motor ya arranca recto.
+ */
+export function pistasInclinacionDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): { referencia_element_id: string; inclinacion: number }[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const pistas = new Map<string, { referencia_element_id: string; inclinacion: number }>();
+  for (const estructura of plan.estructuras) {
+    const elementId = estructura.referencia_element_id;
+    const inclinacion = elementId ? elementos.get(elementId)?.appearance.inclinacion : undefined;
+    if (!elementId || inclinacion === undefined || inclinacion === 0 || pistas.has(elementId)) continue;
+    pistas.set(elementId, { referencia_element_id: elementId, inclinacion });
+  }
+  return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
+}
+
+/**
+ * Cómo se curva la línea de cada guirnalda, leído de la foto (ADR-0032, decisión
+ * 28): `arriba` es la tendida sobre un fondo que cae por los dos lados y `abajo`
+ * el festón que cuelga, con su flecha en fracción del largo. Misma fuente y misma
+ * regla que `pistasArmadoDelPlan`. Sin sentido o sin flecha no viaja: el motor
+ * deja la línea como la trae.
+ */
+export function pistasCurvaDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): { referencia_element_id: string; sentido: "arriba" | "abajo"; flecha: number }[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const pistas = new Map<string, { referencia_element_id: string; sentido: "arriba" | "abajo"; flecha: number }>();
+  for (const estructura of plan.estructuras) {
+    const elementId = estructura.referencia_element_id;
+    const lectura = elementId ? elementos.get(elementId)?.appearance.armado_guirnalda : undefined;
+    const sentido = lectura?.sentido_curva;
+    const flecha = lectura?.flecha_relativa;
+    if (!elementId || !sentido || flecha === null || flecha === undefined || pistas.has(elementId)) continue;
+    pistas.set(elementId, { referencia_element_id: elementId, sentido, flecha });
+  }
+  return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
+}
+
+/**
  * Conteos de globos de la foto para las estructuras que materializan un
  * elemento de la referencia (ADR-0031). Misma fuente y misma regla que
  * `pistasArmadoDelPlan`: una lectura por elemento aprobado.
@@ -776,8 +855,45 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // Materials follow the sizes and colors this turn's search really has: a
     // one-color product keeps its color and a structure gets a close mix every
     // material can build (cobertura-materiales.ts, E2E 2026-09-15).
+    // Los globos REALES medidos en la foto (`referencias_medidas` del blueprint): si el turno no trae el
+    // producto exacto de alguno, lo busca el servidor con la frase con que se pide («globo latex redondo
+    // Satin Rosado»). La búsqueda del modelo por color devuelve primero la línea Fashion, y sin el producto
+    // en el turno nadie podía comprarlo (2026-10-04: columnas de rosa pastel compradas en Reflex Fucsia). Un
+    // color que el cliente pidió manda sobre la foto, como en el resto de la auditoría de color.
+    const fotoManda = estado.restriccionesUsuario.colores.length === 0;
+    const busquedasReferencia = fotoManda ? busquedasDeReferencias(parseado.data, estado.referenceBlueprint, disponibilidadDelTurno(estado.ragCandidatos ?? [])) : [];
+    if (busquedasReferencia.length > 0) {
+      const respuestas = await Promise.all(busquedasReferencia.map((frase) => buscarCatalogoRag(ragPool, frase, {
+        focusedQueries: [frase],
+        allowlist: options.catalogAllowlist,
+        catalogSnapshotId: estado.ragCatalogSnapshotId,
+        rerankRequestId: estado.ragRequestId,
+        rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
+        rerankSignal: options.signal,
+      }).catch((error: unknown) => {
+        console.warn("[confirmar] búsqueda de referencia medida fallida", { frase, error: error instanceof Error ? error.message : String(error) });
+        return null;
+      })));
+      for (const respuesta of respuestas) {
+        if (!respuesta) continue;
+        estado.ragCandidatos = unirCandidatosTurno(estado.ragCandidatos ?? [], respuesta.candidatos);
+        for (const candidato of respuesta.candidatos) {
+          estado.ragIdsRecuperados.add(candidato.productId);
+          const variantes = estado.ragVariantIdsRecuperados.get(candidato.productId) ?? new Set<string>();
+          for (const variante of candidato.variantes) variantes.add(variante.variantId);
+          estado.ragVariantIdsRecuperados.set(candidato.productId, variantes);
+        }
+      }
+    }
     const disponibilidadTurno = disponibilidadDelTurno(estado.ragCandidatos ?? []);
-    const cobertura = ajustarCoberturaPlan(canonizarColoresPlan(parseado.data).plan, disponibilidadTurno);
+    const coberturaBase = ajustarCoberturaPlan(canonizarColoresPlan(parseado.data).plan, disponibilidadTurno);
+    // Cada globo de una pieza con referencias medidas tiene que SER una de ellas (referencias-medidas.ts).
+    // Va antes de la poda de colores inventados: un Reflex Fucsia que la foto no tiene se cambia por la
+    // referencia rosada más cercana en vez de quitarse.
+    const medidas = fotoManda
+      ? aplicarReferenciasMedidas(coberturaBase.plan, estado.referenceBlueprint, disponibilidadTurno)
+      : { plan: coberturaBase.plan, ajustes: [] as AjusteCobertura[] };
+    const cobertura = { plan: medidas.plan, ajustes: [...coberturaBase.ajustes, ...medidas.ajustes] };
     // Un color que la foto no tiene no entra al plan (2026-09-29): se poda aquí,
     // con el color REAL del producto ya resuelto por la regla 1 y antes de que
     // `aplicarColoresReferencia` cuente qué colores compra el plan. Es la mitad
@@ -806,10 +922,13 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       ? { plan: podado.plan, ajustes: [] as AjusteCobertura[] }
       : aplicarAcabadoReferencia(podado.plan, acabadosObservadosDeMateriales(podado.plan.estructuras, estado.referenceBlueprint), disponibilidadTurno);
     estado.ajustesCobertura = [...cobertura.ajustes, ...podado.ajustes, ...acabadoReferencia.ajustes];
-    let planCanonico = sanearMarcasPlan(sanearPorquesPlan(aplicarFuenteMedidasEspacio(
+    // La oficial de cada pieza que no la declaró se sella aquí, antes de armar y de resolver: Python solo lee
+    // `estructura_oficial`, y sin ella un aro circular se armaba como arco y un techo como guirnalda
+    // (`sellarEstructurasOficiales`). Va dentro del plan, así que `plan_hash` la cubre.
+    let planCanonico = sellarEstructurasOficiales(sanearMarcasPlan(sanearPorquesPlan(aplicarFuenteMedidasEspacio(
       aplicarColoresReferencia(acabadoReferencia.plan, estado.referenceBlueprint),
       clienteDioMedidasEspacio(estado.solicitudOriginal),
-    )));
+    ))));
     const erroresDeIntencion = validarRestriccionesPlan(
       planCanonico,
       estado.restriccionesUsuario,
@@ -1146,16 +1265,35 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       if (!plan.estructuras.some((estructura) => (TIPOS_ARMADO_MOTOR as readonly string[]).includes(estructura.tipo))) return sinColumnaOrganicaDelModelo(plan);
       const armados = [...(estado.armadosEstructura ?? new Map())].map(([estructura_id, armado]) => ({ estructura_id, ...armado }));
       try {
+        // Lo que la foto leyó del patrón de cada pieza (ADR-0039). No lo gobierna `PATRONES_COLOR_V1`,
+        // que decide si Python escribe `patron_color` al confirmar: aquí la lectura o está en el blueprint
+        // del turno o no está, y sin ella la receta es la de siempre.
+        const pistas = pistasPatronDelPlan(plan, estado.referenceBlueprint);
+        const remates = pistasRemateDelPlan(plan, estado.referenceBlueprint);
+        const inclinaciones = pistasInclinacionDelPlan(plan, estado.referenceBlueprint);
+        const curvas = pistasCurvaDelPlan(plan, estado.referenceBlueprint);
+        // Los tamaños viajan aquí además de a la resolución: el motor arma ANTES de que el plan se
+        // resuelva, así que con la lectura llegando solo a `plan.py` la pieza salía dibujada con la mezcla
+        // declarada y cobrada con la leída. Las dos ramas la traducen con la misma función de Python.
+        const tamanosLeidos = pistasTamanosDelPlan(plan, estado.referenceBlueprint);
         const respuesta = await llamarPythonOmoikaneCompletarArmados({
           plan,
           ...(armados.length > 0 ? { armados } : {}),
+          ...(pistas.length > 0 ? { pistas } : {}),
+          ...(remates.length > 0 ? { remates } : {}),
+          ...(inclinaciones.length > 0 ? { inclinaciones } : {}),
+          ...(curvas.length > 0 ? { curvas } : {}),
+          ...(tamanosLeidos.length > 0 ? { tamanosLeidos } : {}),
           requestId: estado.ragRequestId,
           correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
           ...(options.signal ? { parentSignal: options.signal } : {}),
         });
         // Diagnóstico (ids y origen, nunca el armado entero): de dónde salió el armado de cada pieza.
         console.info("[plan] armados de motor", JSON.stringify({ request_id: estado.ragRequestId, armados: respuesta.armados.map((completado) => ({ id: completado.estructura_id, tipo: completado.tipo, origen: completado.origen, avisos: completado.avisos.length })) }));
-        return sinColumnaOrganicaDelModelo(aplicarArmadosCompletados(plan, respuesta.armados));
+        // Primero se quita lo que el modelo haya escrito (ninguna herramienta compone una columna orgánica),
+        // y DESPUÉS se aplica lo que Python decidió: al revés se borraba la columna orgánica que la propia
+        // receta acababa de armar, y la pieza volvía a salir con anillos.
+        return aplicarArmadosCompletados(sinColumnaOrganicaDelModelo(plan), respuesta.armados);
       } catch (error) {
         // No es `BACKEND_NO_DISPONIBLE`: la resolución sí está disponible y el
         // plan se confirma igual, solo sin armado. Queda registrado aparte para
@@ -1173,6 +1311,13 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasGuirnalda = completarArmadosGuirnalda ? pistasGuirnaldaDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasConteo = completarConteos ? pistasConteoDelPlan(plan, estado.referenceBlueprint) : [];
+      // Los tamaños **no** van con `completarPatrones`, que decide si Python escribe `patron_color`:
+      // un tamaño no es una disposición de color y la pieza que los motivó —una columna de un solo
+      // color— no deja patrón ninguno. Misma regla que el remate, la inclinación y la curva en
+      // `conArmadosDeMotor` (ADR-0039): la lectura está en el blueprint del turno o no está, y sin ella
+      // la mezcla es la que el plan declaró. Atarlos a esa bandera, que está apagada por defecto, dejó
+      // la lectura entera sin llegar nunca al motor (2026-10-03).
+      const pistasTamanos = pistasTamanosDelPlan(plan, estado.referenceBlueprint);
       // Diagnóstico (ids y conteos, nunca la foto): qué lecturas de la foto viajan con la confirmación.
       // El del patrón dice por qué una pieza salió con el preset en vez de con la foto: el
       // preset de una pared es confeti y el de la pista también, así que el patrón resuelto no
@@ -1190,6 +1335,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         loraAllowlist: options.catalogAllowlist,
         ...(completarPatrones ? { completarPatrones } : {}),
         ...(pistasPatron.length > 0 ? { pistasPatron } : {}),
+        ...(pistasTamanos.length > 0 ? { pistasTamanos } : {}),
         ...(completarArmados ? { completarArmados } : {}),
         ...(pistasArmado.length > 0 ? { pistasArmado } : {}),
         ...(completarArmadosGuirnalda ? { completarArmadosGuirnalda } : {}),
@@ -1560,83 +1706,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       };
     },
 
-    confirmar_seleccion_rag: async (args) => {
-      if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
-      const seleccionCruda = Array.isArray(args.seleccion) ? args.seleccion : [];
-      const pool = ragPool;
-
-      // Cada ítem trae su variante explícita: las cantidades y los tamaños de
-      // una estructura los calcula confirmar_plan_decoracion (ADR-0023).
-      const seleccion: SeleccionSolicitada[] = (seleccionCruda as Record<string, unknown>[]).map((cruda) => ({
-        productId: String(cruda.product_id ?? ""),
-        variantId: String(cruda.variant_id ?? ""),
-        cantidad: Number(cruda.cantidad ?? 0),
-        razon: typeof cruda.razon === "string" ? cruda.razon : undefined,
-      }));
-
-      const t0 = Date.now();
-      const resultado = await validarSeleccion(
-        pool,
-        seleccion,
-        estado.ragVariantIdsRecuperados,
-        estado.ragCatalogSnapshotId,
-        { signal: options.signal, correlationId: options.correlationId ?? estado.ragRequestId },
-      );
-      estado.ragValidados = resultado.validados;
-      estado.ragRechazados = resultado.rechazados;
-      estado.ragTotal = resultado.total;
-
-      const statusSeleccion = resultado.validados.length > 0 ? "OK" : "NO_MATCH";
-
-      // El frontend dispara /api/generate cuando `seleccionFinalIA` llega
-      // poblado. La proyección sale de los mismos rows PG que acabamos de
-      // validar: no se vuelve a consultar SQLite para evitar mezclar snapshots,
-      // precios o metadata de otra fuente.
-      if (resultado.validados.length > 0) {
-        const productos = resultado.validados.map((validado) => aProductoValidado(validado, validado.cantidad));
-        if (productos.length > 0) estado.seleccionFinalIA = productos;
-      }
-
-      // Fase 3.8: la fila que crea `registrarBusqueda` (tool `buscar_catalogo_rag`,
-      // ya awaiteada en una vuelta anterior) es durable para cuando el modelo
-      // puede llegar a llamar a esta herramienta — la selección/actualización
-      // de esa fila puede salir de la ruta crítica sin arriesgar el orden.
-      encolarEscrituraObservabilidad(registrarSeleccion(pool, {
-        requestId: estado.ragRequestId,
-        selectedProductIds: resultado.validados.map((v) => v.productId),
-        rejected: resultado.rechazados,
-        status: statusSeleccion,
-        latencyTotalMs: Date.now() - t0,
-      }));
-      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(
-        pool,
-        estado.ragRequestId,
-        statusSeleccion === "NO_MATCH" ? "NO_MATCH" : "plan_confirmado",
-        undefined,
-        resultado.validados.map((validado) => {
-          const candidato = estado.ragCandidatos?.find((item) => item.productId === validado.productId);
-          return {
-            productId: validado.productId,
-            variantId: validado.variantId,
-            matchLevel: candidato?.eventEvidence?.match_level ?? "adaptable",
-          };
-        }),
-      ));
-
-      return {
-        status: statusSeleccion,
-        validados: resultado.validados.map((v) => ({
-          product_id: v.productId,
-          variant_id: v.variantId,
-          sku: v.sku,
-          titulo: v.titulo,
-          cantidad: v.cantidad,
-        })),
-        rechazados: resultado.rechazados,
-        fase: "propuesta_visual; la cotizacion llega despues de generar la imagen",
-      };
-    },
-
     /**
      * El catálogo de armado del motor del diseñador (ADR-0034 §5): los catorce
      * patrones del arco o los nueve de la columna, con sus mandos, rangos y
@@ -1729,6 +1798,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         ? {
             paleta: peticion.paleta,
             ...(peticion.reparto === undefined ? {} : { reparto: peticion.reparto }),
+            ...(peticion.forma_lista === undefined ? {} : { formaLista: peticion.forma_lista }),
+            ...(peticion.estilo === undefined ? {} : { estilo: peticion.estilo }),
             ...(peticion.mezcla_colores === undefined ? {} : { mezclaColores: peticion.mezcla_colores }),
             ...(peticion.forma === undefined ? {} : { forma: peticion.forma }),
             ...(peticion.volumen === undefined ? {} : { volumen: peticion.volumen }),

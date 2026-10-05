@@ -49,8 +49,9 @@ export function esParLateral(estructura: EstructuraConUbicacion): boolean {
 /**
  * Ubicaciones centradas horizontalmente: su caja cruza x = 0,5, así que dos
  * instancias se leen como un par en espejo y no como "una a la izquierda y
- * otra al centro". `entrada`, `esquina`, `vegetacion` y `pared_lateral` son
- * cajas de un solo lado por definición y no entran aquí.
+ * otra al centro". `esquina`, `vegetacion` y `pared_lateral` son cajas de un
+ * solo lado por definición y no entran aquí. `entrada` tampoco, pero un número
+ * PAR de piezas en la entrada la flanquea (ver `ENTRADA_FLANQUEADA`).
  */
 const UBICACIONES_CENTRADAS = new Set<Ubicacion>(["fondo_pared", "arco_central", "piso_frontal", "mesas_invitados", "zona_central", "recorrido_suelo"]);
 
@@ -60,7 +61,7 @@ export function ubicacionDeInstancia(estructura: EstructuraConUbicacion, indice:
   return indice % 2 === 0 ? "lateral_izquierdo" : "lateral_derecho";
 }
 
-/** Redondeado a 6 decimales: la geometría entra en el plan_hash y debe ser igual declarando cualquier lateral. */
+/** Redondeado a 6 decimales: la geometría entra en el `sceneSpecHash` (no en el `plan_hash`) y debe ser igual declarando cualquier lateral. */
 function espejoHorizontal(layout: UbicacionLayout): UbicacionLayout {
   return { depthLayer: layout.depthLayer, bbox: { ...layout.bbox, x: Number((1 - layout.bbox.x - layout.bbox.width).toFixed(6)) } };
 }
@@ -129,6 +130,19 @@ export function cajasDeEstructuras(estructuras: Array<EstructuraPlan | Estructur
         const izquierda = estructura.ubicacion === "lateral_izquierdo" ? estructuraBox : espejoHorizontal(estructuraBox);
         const porLado = estructura.repeticiones / 2;
         const izquierdas = instanciasDeUnLado(izquierda, porLado);
+        const derechas = izquierdas.map(espejoHorizontal);
+        for (let instancia = 0; instancia < estructura.repeticiones; instancia += 1) {
+          const lado = instancia % 2 === 0 ? izquierdas : derechas;
+          resultado[`${estructura.estructura_id}#${instancia + 1}`] = lado[Math.floor(instancia / 2)]!;
+        }
+        continue;
+      }
+      // Un número par de piezas en la entrada la flanquea: la mitad a cada lado,
+      // como un par de laterales. Antes las dos columnas de una entrada salían
+      // juntas en la caja izquierda ("middle left area" dos veces) y no se veían
+      // enmarcando la puerta (auditoría 2026-10-04, G5; decisión D3).
+      if (ubicacion === "entrada" && ordenadas.length === 1 && estructura.repeticiones % 2 === 0) {
+        const izquierdas = instanciasDeUnLado(estructuraBox, estructura.repeticiones / 2);
         const derechas = izquierdas.map(espejoHorizontal);
         for (let instancia = 0; instancia < estructura.repeticiones; instancia += 1) {
           const lado = instancia % 2 === 0 ? izquierdas : derechas;

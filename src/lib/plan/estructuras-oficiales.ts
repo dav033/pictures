@@ -1,5 +1,6 @@
 import type { FormaGuirnalda } from "./armado-guirnalda";
 import type { TipoEstructura } from "./composicion";
+import type { PlanDecoracion } from "./tipos";
 
 /**
  * Catálogo interno de estructuras oficiales.
@@ -17,6 +18,31 @@ import type { TipoEstructura } from "./composicion";
  * Puro: sin proveedor, HTTP, base de datos ni variables de entorno.
  */
 
+/**
+ * Cómo nombra el corpus del LoRA una columna, medido sobre sus 345 captions (`data/staging/lora-v007`):
+ * **`balloon column`, 91 veces** (74 como «a balloon column», 9 en plural). Ni una sola dice «organic
+ * balloon column»: «organic» solo acompaña a `organic balloon garland` (128) y `organic balloon arch`
+ * (107), que sí son suyos y por eso se conservan. «airy» aparece 0 veces; «installation», 0.
+ *
+ * Y «asymmetrical» aparece 14 veces, **las 14 en `asymmetrical balloon half-arch`**. Nunca en una columna.
+ * Por eso una columna orgánica pedida como «asymmetrical organic balloon column» salía dibujada doblándose
+ * como un medio arco (2026-10-03): el modelo hacía exactamente lo que se le pedía, con la única pieza que
+ * aprendió que ese adjetivo nombra.
+ *
+ * Lo que esas palabras querían decir —que mezcla diámetros— ya lo dice el corpus a su manera y 218 veces:
+ * `mixed organically rather than graded`, que `fraseRelacionTamanos` emite sola cuando la pieza mezcla
+ * tallas. Lo que se pierde al quitarlas es la distinción «no densa»: el corpus no tiene cómo decirla, y
+ * escribir una palabra que el modelo no vio es justo el fallo que este comentario documenta.
+ *
+ * **Por qué solo cambió la columna.** `sustantivoEn` lo lee el dialecto de escena (`eventdecor_style_v2`,
+ * el LoRA v004); el de producto (v007) nombra por `STRUCTURE_NOUNS` en `lora-caption-compiler.ts`, que ya
+ * coincide con este corpus pieza por pieza. Del dataset de v004 no queda copia, así que sus sustantivos no
+ * se pueden medir: los que siguen fuera de corpus («airy organic balloon garland arch», «asymmetrical
+ * organic balloon wall installation») se dejan como están, porque nadie ha visto fallar la imagen que
+ * producen y hay hallazgos observados que dependen de esa redacción —«arch» cerraba dos medios arcos en
+ * uno, de ahí `one-sided curved organic balloon garland`—. La columna se cambió porque sí se vio fallar.
+ * Cambiar los demás sin una imagen que lo justifique sería adivinar.
+ */
 export const FORMAS_ESTRUCTURA = ["simetrica", "asimetrica", "organica", "circular", "libre"] as const;
 export type FormaEstructura = (typeof FORMAS_ESTRUCTURA)[number];
 
@@ -101,9 +127,9 @@ export const ESTRUCTURAS_OFICIALES: Readonly<Record<EstructuraOficialId, Estruct
   arco_no_denso: { id: "arco_no_denso", nombre: "Arco no denso", descripcion: "Arco ligero, con espacios entre los globos.", tipoBase: "arco", tiposAdmitidos: ["arco"], forma: "simetrica", densidades: ["sencilla"], sustantivoEn: "airy organic balloon garland arch" },
   semiarco: { id: "semiarco", nombre: "Semiarco", descripcion: "Un solo lado que sube y se curva, abierto arriba.", tipoBase: "semiarco", tiposAdmitidos: ["semiarco"], forma: "simetrica", sustantivoEn: "one-sided curved organic balloon garland" },
   semiarco_asimetrico: { id: "semiarco_asimetrico", nombre: "Semiarco orgánico", descripcion: "Semiarco de contorno irregular, más grueso en una parte.", tipoBase: "semiarco", tiposAdmitidos: ["semiarco"], forma: "asimetrica", sustantivoEn: "asymmetrical one-sided curved organic balloon garland", geometria: { anchoFinalBanda: 0.4 } },
-  columna: { id: "columna", nombre: "Columna", descripcion: "Torre recta de globos.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "simetrica", sustantivoEn: "organic balloon column" },
-  columna_asimetrica: { id: "columna_asimetrica", nombre: "Columna orgánica", descripcion: "Columna de contorno irregular, con racimos a un lado.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "asimetrica", sustantivoEn: "asymmetrical organic balloon column" },
-  columna_no_densa: { id: "columna_no_densa", nombre: "Columna no densa", descripcion: "Columna ligera, con espacios entre los globos.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "simetrica", densidades: ["sencilla"], sustantivoEn: "airy organic balloon column" },
+  columna: { id: "columna", nombre: "Columna", descripcion: "Torre recta de globos.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "simetrica", sustantivoEn: "balloon column" },
+  columna_asimetrica: { id: "columna_asimetrica", nombre: "Columna orgánica", descripcion: "Columna de contorno irregular, con racimos a un lado.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "asimetrica", sustantivoEn: "balloon column" },
+  columna_no_densa: { id: "columna_no_densa", nombre: "Columna no densa", descripcion: "Columna ligera, con espacios entre los globos.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "simetrica", densidades: ["sencilla"], sustantivoEn: "balloon column" },
   pared_densa: { id: "pared_densa", nombre: "Pared de globos densa", descripcion: "Fondo completo de globos, sin huecos.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "simetrica", densidades: ["media", "lujosa"], sustantivoEn: "dense balloon wall installation" },
   pared_no_densa: { id: "pared_no_densa", nombre: "Pared de globos no densa", descripcion: "Fondo de globos ligero, deja ver la pared.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "organica", densidades: ["sencilla"], sustantivoEn: "airy balloon wall installation" },
   pared_organica: { id: "pared_organica", nombre: "Pared orgánica", descripcion: "Fondo completo de globos con racimos irregulares y borde vivo.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "asimetrica", densidades: ["media", "lujosa"], sustantivoEn: "asymmetrical organic balloon wall installation" },
@@ -209,6 +235,37 @@ export function identificarEstructuraOficial(estructura: EstructuraPlanLigera): 
   }
 }
 
+/**
+ * Sella en el plan la estructura oficial que cada pieza ya es, para la pieza que no la declaró.
+ *
+ * **Por qué aquí y no en Python.** La inferencia por tipo, densidad y nombre tiene un dueño, esta función de
+ * arriba (`identificarEstructuraOficial`), y Python no la tiene: solo lee `estructura_oficial`. Sin el campo,
+ * la confirmación armaba un aro circular como un arco y un techo de globos como una guirnalda —el `tipo` de los
+ * dos es el de su primitiva—, mientras la tarjeta los llamaba «Aro circular» y «Techo de globos». Portarla
+ * habría sido mantener la misma regla en dos lenguajes; sellarla antes de confirmar la deja en el plan, que
+ * es lo que Python lee (`_pieza_del_plan`, `_armado_del_motor`, el dibujo esquemático) y lo que `plan_hash`
+ * cubre: lo que se aprueba es exactamente la pieza que se arma.
+ *
+ * Solo completa: una oficial declarada manda siempre, y una inferida que el contrato rechazaría
+ * (`incoherenciasEstructuraOficial`: un «techo de globos» de tipo `pared`, una «pared no densa» de densidad
+ * media) no se sella; la pieza sigue como venía. Un plan que no cambia se devuelve tal cual.
+ *
+ * Solo para planes nuevos, al confirmar (`registro-herramientas.ts`): sellar uno ya aprobado cambiaría su
+ * `plan_hash` y rompería su aprobación.
+ */
+export function sellarEstructurasOficiales<T extends PlanDecoracion>(plan: T): T {
+  let cambiado = false;
+  const estructuras = plan.estructuras.map((estructura) => {
+    if (estructura.estructura_oficial !== undefined) return estructura;
+    const oficial = identificarEstructuraOficial(estructura);
+    if (oficial === undefined) return estructura;
+    if (incoherenciasEstructuraOficial({ ...estructura, estructura_oficial: oficial.id }).length > 0) return estructura;
+    cambiado = true;
+    return { ...estructura, estructura_oficial: oficial.id };
+  });
+  return cambiado ? { ...plan, estructuras } : plan;
+}
+
 /** Ubicaciones del plan en palabras del cliente. */
 export const UBICACION_PARA_CLIENTE: Readonly<Record<string, string>> = {
   arco_central: "al centro",
@@ -294,4 +351,52 @@ export function geometriaEstructurasOficiales(): GeometriaEstructurasOficialesCo
       .filter((estructura) => estructura.geometria)
       .map((estructura) => [estructura.id, estructura.geometria]),
   );
+}
+
+export type FormasEstructurasOficialesContrato = Readonly<Record<EstructuraOficialId, FormaEstructura>>;
+
+/**
+ * Las formas que **ningún motor de globos produce**. Un motor arma una banda,
+ * una torre o una tira: sabe hacer una curva simétrica, una asimétrica y un
+ * contorno orgánico. Un aro cerrado y una pieza de forma libre (un techo, un
+ * centro de mesa, un bouquet, una figura) no son ninguna de esas tres cosas, y
+ * se cuentan con la fórmula (el aro, con su `π × diámetro`).
+ *
+ * Único dueño de la regla: se exporta al contrato (`x-formas-sin-motor`) para
+ * que `services/ai-api/app/plan.py` la lea de aquí en vez de repetirla.
+ */
+export const FORMAS_SIN_MOTOR: readonly FormaEstructura[] = ["circular", "libre"];
+
+/**
+ * Las estructuras oficiales que no arma ningún motor, derivadas de la tabla.
+ * Hoy: `aro_circular`, `techo_globos`, `centro_mesa`, `bouquet` y `figura`.
+ *
+ * Importa porque ningún motor mira `estructura_oficial`: la puerta pregunta por
+ * el `tipo`, y el `tipoBase` de un aro es `arco` y el de un techo `guirnalda`.
+ * Una pieza de esta lista no lleva armado de motor, así que su tarjeta no monta
+ * el bloque de un arco ni el de una guirnalda aunque el plan traiga uno viejo.
+ */
+export const OFICIALES_SIN_MOTOR: ReadonlySet<EstructuraOficialId> = new Set(
+  Object.values(ESTRUCTURAS_OFICIALES)
+    .filter((estructura) => FORMAS_SIN_MOTOR.includes(estructura.forma))
+    .map((estructura) => estructura.id),
+);
+
+/**
+ * Tabla de `forma` por variante, en la forma que se exporta al contrato para
+ * Python. Esta tabla sigue siendo la única fuente: Python la lee de
+ * `x-formas-estructuras-oficiales`, igual que lee la geometría.
+ *
+ * La necesita el resolutor para saber **qué piezas no arma ningún motor**: un
+ * oficial de forma `circular` o `libre` no es una forma que un motor de globos
+ * produzca (son `aro_circular`, `techo_globos`, `centro_mesa`, `bouquet` y
+ * `figura`), y su conteo es el de la fórmula —el aro, por ejemplo, se cuenta
+ * con `π × diámetro`—. Sin esto, el armado se elegía solo por `tipo` y un aro
+ * circular (tipo base `arco`) recibía el armado de un arco: se contaba y se
+ * dibujaba como otra pieza.
+ */
+export function formasEstructurasOficiales(): FormasEstructurasOficialesContrato {
+  return Object.fromEntries(
+    Object.values(ESTRUCTURAS_OFICIALES).map((estructura) => [estructura.id, estructura.forma]),
+  ) as FormasEstructurasOficialesContrato;
 }

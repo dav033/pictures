@@ -85,7 +85,13 @@ from app.inari.parse import (
     IntentParseRequest,
     interpretar_consulta_gemini,
 )
-from app.omoikane.armado_estructura import (
+from app.lecturas_foto import (
+    LECTURA_UNICA_SCOPE,
+    LecturaUnicaError,
+    LecturaUnicaRequest,
+    validar_lectura_unica,
+)
+from app.armado_estructura import (
     OMOIKANE_ARMADO_SCOPE,
     ArmadoEstructuraRequest,
     resolver_armado_estructura,
@@ -127,6 +133,7 @@ from app.exclusion_motores import ACCIONES_DE_MOTOR, correr_motor
 from app.plan_worker import run_plan_cpu
 from app.patron_color import DIRECCIONES as _PATTERN_DIRECTIONS, MODOS as _PATTERN_MODES
 from app.operational_models import ContractModel, OperationalRequest
+from app.plan import _plan_cost_optimizer_enabled
 from app.plan import (
     CatalogPlanStore,
     PLAN_RESOLUTION_SCOPE,
@@ -151,6 +158,11 @@ from app.plan_armado_arco import (
     PlanArmadoArcoRequest,
     vista_previa_armado_arco,
 )
+from app.plan_armado_arco_organico import (
+    PLAN_ARMADO_ARCO_ORGANICO_SCOPE,
+    PlanArmadoArcoOrganicoRequest,
+    vista_previa_armado_arco_organico,
+)
 from app.plan_armado_columna import (
     PLAN_ARMADO_COLUMNA_SCOPE,
     PlanArmadoColumnaRequest,
@@ -165,6 +177,16 @@ from app.plan_armado_guirnalda_organica import (
     PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE,
     PlanArmadoGuirnaldaOrganicaRequest,
     vista_previa_armado_guirnalda_organica,
+)
+from app.guia_escena import (
+    PLAN_GUIA_ESCENA_SCOPE,
+    PlanGuiaEscenaRequest,
+    guia_escena,
+)
+from app.plan_dibujo_estructura import (
+    PLAN_DIBUJO_ESTRUCTURA_SCOPE,
+    PlanDibujoEstructuraRequest,
+    vista_previa_dibujo_estructura,
 )
 from app.plan_edicion import (
     PLAN_ARMADO_GUIRNALDA_SCOPE,
@@ -321,6 +343,7 @@ PatronReferenciaHandler = Callable[[PatronReferenciaRequest], Awaitable[dict[str
 BouquetReferenciaHandler = Callable[[BouquetReferenciaRequest], Awaitable[dict[str, object]]]
 ConteoReferenciaHandler = Callable[[ConteoReferenciaRequest], Awaitable[dict[str, object]]]
 GuirnaldaReferenciaHandler = Callable[[GuirnaldaReferenciaRequest], Awaitable[dict[str, object]]]
+LecturaUnicaHandler = Callable[[LecturaUnicaRequest], Awaitable[dict[str, object]]]
 ImageGenerateHandler = Callable[[ImageGenerateRequest], Awaitable[dict[str, object]]]
 LoraGenerateHandler = Callable[[LoraGenerateRequest], Awaitable[dict[str, object]]]
 # Not awaited: it validates what can fail before the stream opens (raising an
@@ -510,6 +533,16 @@ async def _default_guirnalda_referencia_handler(
         if error.provider_detail is not None:
             details["provider_detail"] = error.provider_detail
         raise _error(error.code, error.status_code, details or None) from None
+    return {"payload": result}
+
+
+async def _default_lectura_unica_handler(payload: LecturaUnicaRequest) -> dict[str, object]:
+    # No llama a ningún proveedor: valida las cuatro lecturas que el análisis
+    # (variante `v17-lectura-unica`) escribió en la misma llamada de visión.
+    try:
+        result = validar_lectura_unica(payload)
+    except LecturaUnicaError as error:
+        raise _error(error.code, error.status_code) from None
     return {"payload": result}
 
 
@@ -1282,6 +1315,7 @@ def create_app(
     bouquet_referencia_handler: BouquetReferenciaHandler | None = None,
     conteo_referencia_handler: ConteoReferenciaHandler | None = None,
     guirnalda_referencia_handler: GuirnaldaReferenciaHandler | None = None,
+    lectura_unica_handler: LecturaUnicaHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
     default_store: object | None = None
@@ -1300,6 +1334,21 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
+        # Una línea con el valor efectivo de lo que cambia el armado y el conteo, y si hay configuración, nunca su
+        # valor: el `.env.production` del repositorio no es el entorno real (auditoría 2026-10-04, S9).
+        logger.info(
+            "banderas_efectivas %s",
+            json.dumps(
+                {
+                    "servicio": "ai-api",
+                    "environment": current_settings.environment,
+                    "PLAN_COST_OPTIMIZER_V2": _plan_cost_optimizer_enabled(),
+                    "hmac_configurado": bool(current_settings.hmac_secret),
+                    "database_configurada": bool(current_settings.database_url),
+                    "catalogo_configurado": bool(current_settings.catalog_database_url),
+                }
+            ),
+        )
         store = application.state.operational_store
         catalog = application.state.catalog_store
         start = getattr(store, "start", None)
@@ -1362,6 +1411,7 @@ def create_app(
     guirnalda_referencia_handler_fn = (
         guirnalda_referencia_handler or _default_guirnalda_referencia_handler
     )
+    lectura_unica_handler_fn = lectura_unica_handler or _default_lectura_unica_handler
     image_generate_handler_fn = image_generate_handler or _default_image_generate_handler
     lora_generate_handler_fn = lora_generate_handler or _default_lora_generate_handler
     chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
@@ -1733,6 +1783,31 @@ def create_app(
             handler=handler,
         )
 
+    @application.post("/internal/v1/plan/armado-arco-organico")
+    async def plan_armado_arco_organico(request: Request) -> Response:
+        # ADR-0034: resuelve (o sugiere) el armado de un arco orgánico con el motor migrado del diseñador y
+        # responde con su SVG. No reemplaza a /plan/armado-arco (la rejilla de patrones): conviven, y un medio
+        # arco se arma por aquí con `forma.corte` menor que 1. Sin catálogo; el dibujo es derivado y nunca
+        # entra en `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoArcoOrganicoRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # Relaja colisiones hasta que ningún globo pisa a otro y luego emite el SVG: CPU pesada que no
+                # puede correr en el bucle de eventos.
+                result = await correr_motor(vista_previa_armado_arco_organico, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_arco_organico",
+            model=PlanArmadoArcoOrganicoRequest,
+            scope=PLAN_ARMADO_ARCO_ORGANICO_SCOPE,
+            handler=handler,
+        )
+
     @application.post("/internal/v1/plan/armado-columna-organica")
     async def plan_armado_columna_organica(request: Request) -> Response:
         # ADR-0034: resuelve (o sugiere) el armado de una columna orgánica con el motor migrado del diseñador y
@@ -1781,6 +1856,60 @@ def create_app(
             operation="plan.armado_guirnalda_organica",
             model=PlanArmadoGuirnaldaOrganicaRequest,
             scope=PLAN_ARMADO_GUIRNALDA_ORGANICA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/dibujo-estructura")
+    async def plan_dibujo_estructura(request: Request) -> Response:
+        # El dibujo esquemático de una pieza que ningún motor arma (la pared, el aro circular, el techo de
+        # globos, el centro de mesa). No es una vista previa de armado: aquí no hay motor, no se coloca ningún
+        # globo y no se cuenta nada -- la cuenta de la pieza es la de `plan.py` y llega hecha en `mezcla_real`.
+        # El dibujo es derivado y nunca entra en el plan, el snapshot ni `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanDibujoEstructuraRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # CPU pura (coloca los globos del esquema y escribe el SVG): fuera del bucle de eventos. Va por
+                # `run_plan_cpu` y **no** por `correr_motor`: el cupo global de motores existe porque una vista
+                # previa de motor tarda cientos de milisegundos o segundos en el único hilo del plan, y estos
+                # dibujos no relajan colisiones -- medidos en este repo, 12,6 ms la pared (el más caro), 9,0 ms
+                # el aro, 2,4 ms el techo y 0,5 ms el centro de mesa. Con el cupo, un dibujo de 12 ms recibiría
+                # 429 solo porque otra pestaña está armando un arco.
+                result = await run_plan_cpu(vista_previa_dibujo_estructura, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.dibujo_estructura",
+            model=PlanDibujoEstructuraRequest,
+            scope=PLAN_DIBUJO_ESTRUCTURA_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/guia-escena")
+    async def plan_guia_escena(request: Request) -> Response:
+        # Los globos de cada pieza del plan como discos en metros, para la guía de escena que la imagen recibe
+        # por /edit en lugar de la foto de referencia. No coloca ni cuenta nada: lee los globos que ya colocaron
+        # los motores (la misma puerta que la resolución) y los dibujos esquemáticos. Derivado: nunca entra en el
+        # plan, el snapshot ni `plan_hash`.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanGuiaEscenaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                # Con la caché de la resolución caliente es casi gratis, pero una pieza de motor que no esté en
+                # ella se vuelve a armar (cientos de ms a segundos): comparte el cupo global de los motores.
+                result = await correr_motor(guia_escena, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.guia_escena",
+            model=PlanGuiaEscenaRequest,
+            scope=PLAN_GUIA_ESCENA_SCOPE,
             handler=handler,
         )
 
@@ -1914,6 +2043,20 @@ def create_app(
             model=GuirnaldaReferenciaRequest,
             scope=GUIRNALDA_REFERENCIA_SCOPE,
             handler=cast(OperationalHandler, guirnalda_referencia_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/lectura-unica")
+    async def ia_lectura_unica(request: Request) -> Response:
+        # One reference photo per call, like the four readings it replaces. No
+        # provider call: it only validates what the analysis already returned,
+        # and the photo travels so `tamano_imagen` can read its header.
+        return await _handle_operational_request(
+            request,
+            operation="ia.lectura_unica",
+            model=LecturaUnicaRequest,
+            scope=LECTURA_UNICA_SCOPE,
+            handler=cast(OperationalHandler, lectura_unica_handler_fn),
             max_body_bytes=current_settings.max_body_bytes_imagenes,
         )
 

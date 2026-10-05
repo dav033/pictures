@@ -3,6 +3,10 @@ import type { SceneSpec } from "../escena/scene-spec";
 import type { ArcoResuelto } from "@/lib/plan/armado-arco";
 import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
 import type { ArmadoGuirnaldaResuelto, FormaGuirnalda, SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
+import type { ArcoOrganicoResuelto } from "@/lib/plan/armado-arco-organico";
+import type { ColumnaResuelta } from "@/lib/plan/armado-columna";
+import type { ColumnaOrganicaResuelta } from "@/lib/plan/armado-columna-organica";
+import type { GuirnaldaOrganicaResuelta } from "@/lib/plan/armado-guirnalda-organica";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 
 /**
@@ -52,7 +56,7 @@ function plegar(texto: string): string {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
 }
 
-function acabadoEnIngles(acabado: string | null | undefined): string | null {
+export function acabadoEnIngles(acabado: string | null | undefined): string | null {
   if (!acabado) return null;
   return ACABADO_EN[plegar(acabado)] ?? null;
 }
@@ -131,6 +135,12 @@ export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "apl
   armado?: ArmadoBouquetEnPrompt;
   /** Solo en la frase de una guirnalda con armado (ADR-0032, E5). */
   guirnalda?: ArmadoGuirnaldaEnPrompt;
+  /**
+   * Solo en la frase de una guirnalda armada con el motor orgánico (ADR-0034). No lleva el armado entero:
+   * el prompt no redacta nada de él —lo redactó Python— y lo único que necesita saber por su cuenta es si la
+   * pieza va en alto, para no prometer apoyos en el suelo que la convertían en un arco de pie.
+   */
+  guirnaldaOrganica?: { enAlto: boolean };
 };
 
 /**
@@ -138,6 +148,29 @@ export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "apl
  * tiene: el armado dice cómo se arma y el patrón de qué color va cada globo
  * (los dos de Python, tal cual). Primero el armado, luego el patrón.
  */
+/**
+ * Lo que ``armado_guirnalda_organica_prompt`` escribe cuando la pieza va montada en alto. Es un dato suyo, no
+ * una lectura del texto: viaja en la frase porque el contrato de la pieza resuelta publica la frase y no sus
+ * mandos, y duplicar `forma.alturaM` aquí crearía un segundo dueño del umbral.
+ */
+const FRASE_EXTREMOS_LIBRES = "both ends free";
+
+/**
+ * Una pieza resuelta por el motor del diseñador con las dos frases que Python le escribió para los modelos
+ * de imagen (ADR-0035). Los tres campos son **opcionales en el contrato** a propósito: los escribe la
+ * resolución y no el motor, así que un plan resuelto antes de que esa pieza tuviera frase llega sin ellos.
+ */
+type PiezaDelMotorConFrase = {
+  estructura_id?: string;
+  prompt_gemini?: string;
+  prompt_lora?: string;
+};
+
+/** Las piezas que de verdad traen frase. Sin ella no cuentan: el prompt sigue siendo el de siempre. */
+function conFrase<T extends PiezaDelMotorConFrase>(piezas: readonly T[] | undefined): T[] {
+  return (piezas ?? []).filter((pieza) => pieza.estructura_id && (pieza.prompt_gemini?.trim() || pieza.prompt_lora?.trim()));
+}
+
 function unirFrases(armado: string, patron: string | undefined, separador: string): string {
   const conPatron = patron?.trim();
   return conPatron ? `${armado.trim()}${separador}${conPatron}` : armado.trim();
@@ -160,12 +193,24 @@ export function frasesDeEstructuras(
     armados_bouquet?: readonly ArmadoBouquetResuelto[];
     armados_guirnalda?: readonly ArmadoGuirnaldaResuelto[];
     armados_arco?: readonly ArcoResuelto[];
+    armados_columna?: readonly ColumnaResuelta[];
+    armados_arco_organico?: readonly ArcoOrganicoResuelto[];
+    armados_columna_organica?: readonly ColumnaOrganicaResuelta[];
+    armados_guirnalda_organica?: readonly GuirnaldaOrganicaResuelta[];
   } | null | undefined,
 ): FraseDeEstructura[] | undefined {
-  // Un arco armado cuenta solo si trae su frase: un plan resuelto antes de ADR-0035 no la trae, y sin ella la
-  // petición tiene que seguir siendo la de siempre.
-  const arcos = (plan?.armados_arco ?? []).filter((arco) => arco.estructura_id && (arco.prompt_gemini?.trim() || arco.prompt_lora?.trim()));
-  if (!plan || (plan.patrones_color === undefined && plan.armados_bouquet === undefined && plan.armados_guirnalda === undefined && arcos.length === 0)) return undefined;
+  // Las cinco piezas que arma el motor del diseñador, cada una con la frase que escribió Python (ADR-0035).
+  // Una cuenta **solo si trae su frase**: un plan resuelto antes de que su pieza la tuviera no la trae, y sin
+  // ella la petición tiene que seguir siendo byte a byte la de siempre. La guirnalda orgánica se marca aparte
+  // porque de ella el prompt decide una cosa por su cuenta: si va en alto, para no pedir apoyos en el suelo.
+  const delMotor: Array<{ pieza: PiezaDelMotorConFrase; esGuirnaldaOrganica: boolean }> = [
+    ...conFrase(plan?.armados_arco).map((pieza) => ({ pieza, esGuirnaldaOrganica: false })),
+    ...conFrase(plan?.armados_columna).map((pieza) => ({ pieza, esGuirnaldaOrganica: false })),
+    ...conFrase(plan?.armados_arco_organico).map((pieza) => ({ pieza, esGuirnaldaOrganica: false })),
+    ...conFrase(plan?.armados_columna_organica).map((pieza) => ({ pieza, esGuirnaldaOrganica: false })),
+    ...conFrase(plan?.armados_guirnalda_organica).map((pieza) => ({ pieza, esGuirnaldaOrganica: true })),
+  ];
+  if (!plan || (plan.patrones_color === undefined && plan.armados_bouquet === undefined && plan.armados_guirnalda === undefined && delMotor.length === 0)) return undefined;
   const frases: FraseDeEstructura[] = [
     ...(plan.patrones_color ?? []),
     ...(plan.armados_bouquet ?? []).map((armado) => ({
@@ -197,12 +242,16 @@ export function frasesDeEstructuras(
     if (indice >= 0) frases[indice] = entrada;
     else frases.push(entrada);
   }
-  for (const arco of arcos) {
+  // La frase del motor **reemplaza** la del patrón de esa pieza: el armado ya dice qué patrón lleva y con qué
+  // colores, y dos frases seguidas nombraban la pieza dos veces.
+  for (const { pieza, esGuirnaldaOrganica } of delMotor) {
     const entrada: FraseDeEstructura = {
-      estructura_id: arco.estructura_id!,
+      estructura_id: pieza.estructura_id!,
       aplicado: true,
-      prompt_gemini: arco.prompt_gemini ?? "",
-      prompt_lora: arco.prompt_lora ?? "",
+      prompt_gemini: pieza.prompt_gemini ?? "",
+      prompt_lora: pieza.prompt_lora ?? "",
+      // Python lo dice en su propia frase; aquí basta el hecho, que es lo único que el prompt decide solo.
+      ...(esGuirnaldaOrganica ? { guirnaldaOrganica: { enAlto: (pieza.prompt_lora ?? "").includes(FRASE_EXTREMOS_LIBRES) } } : {}),
     };
     const indice = frases.findIndex((frase) => frase.aplicado && frase.estructura_id === entrada.estructura_id && !frase.armado && !frase.guirnalda);
     if (indice >= 0) frases[indice] = entrada;
@@ -223,6 +272,16 @@ export function armadoGuirnaldaDeElemento(
   if (!frases?.length) return undefined;
   const estructura = idDeEstructura(element);
   return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura && frase.guirnalda)?.guirnalda;
+}
+
+/** Lo mismo para la guirnalda armada con el motor orgánico (ADR-0034): solo si va en alto. */
+export function armadoGuirnaldaOrganicaDeElemento(
+  frases: readonly FraseDeEstructura[] | undefined,
+  element: SceneSpec["elements"][number],
+): { enAlto: boolean } | undefined {
+  if (!frases?.length) return undefined;
+  const estructura = idDeEstructura(element);
+  return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura && frase.guirnaldaOrganica)?.guirnaldaOrganica;
 }
 
 /**

@@ -83,7 +83,17 @@ export const LoraSelectionSchema = z.object({
 });
 export type LoraSelection = z.infer<typeof LoraSelectionSchema>;
 
-export const LoraModeSlugSchema = z.enum(["unlimited", "training_1", "training_2"]);
+/** Slots backed by a trained LoRA: each one is a row in `lora_mode_slots`. */
+export const LoraTrainedModeSlugSchema = z.enum(["unlimited", "training_1", "training_2"]);
+export type LoraTrainedModeSlug = z.infer<typeof LoraTrainedModeSlugSchema>;
+
+/**
+ * `base` is the FLUX.2 base model on fal with no LoRA weights (`loras: []`, no
+ * trigger word). It has no registry row: it applies no artifact and imposes no
+ * dataset restriction on the catalog.
+ */
+export const LORA_BASE_MODE = "base" as const;
+export const LoraModeSlugSchema = z.enum([LORA_BASE_MODE, ...LoraTrainedModeSlugSchema.options]);
 export type LoraModeSlug = z.infer<typeof LoraModeSlugSchema>;
 
 export const LoraDatasetStatusSchema = z.enum(["building", "ready", "failed", "archived"]);

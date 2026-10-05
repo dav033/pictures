@@ -30,6 +30,7 @@ from typing import Literal, cast
 from jsonschema import Draft7Validator
 from pydantic import Field, field_validator
 
+from app.armado_columna_prompt import frases_columna
 from app.armado_columna import (
     ArmadoInvalido,
     EstructuraColumna,
@@ -222,13 +223,27 @@ def vista_previa_armado_columna(request: PlanArmadoColumnaRequest) -> dict[str, 
             },
         ) from error
 
-    columna: dict[str, object] = {campo: resuelto[campo] for campo in _CAMPOS_COLUMNA}
+    # `if campo in resuelto` como en el arco y en la guirnalda: desde el 2026-10-04 el contrato publica
+    # ademas `estructura_id` y las dos frases para la imagen, que el motor no escribe — las pone esta ruta.
+    columna: dict[str, object] = {
+        campo: resuelto[campo] for campo in _CAMPOS_COLUMNA if campo in resuelto
+    }
     avisos = cast(Sequence[str], columna["avisos"])
     if not resueltos:
         avisos = avisos_con_tono_neutro(avisos, MAX_AVISOS)
     # Los colores de la pieza que el armado no toma no se comprarían: se dice antes de guardar.
     sin_uso = avisos_colores_sin_uso(
         [str(material.get("color") or "") for material in materiales_de(estructura)], usados
+    )
+    # Lo que la imagen lee de este armado: la misma frase que publicara la resolucion (ADR-0035).
+    columna["estructura_id"] = request.estructura_id
+    columna["prompt_gemini"], columna["prompt_lora"] = frases_columna(
+        armado,
+        resuelto,
+        [
+            (str(material.get("color") or ""), str(material.get("acabado") or ""))
+            for material in materiales_de(estructura)
+        ],
     )
     columna["avisos"] = [*avisos, *sin_uso][:MAX_AVISOS]
     if next(_COLUMNA_RESUELTA.iter_errors(columna), None) is not None:

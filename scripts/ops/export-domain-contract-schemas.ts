@@ -2,12 +2,14 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { DomainContractSchemas } from "../../src/lib/ia/contracts/domain-v1";
-import { geometriaEstructurasOficiales, reglasJsonSchemaEstructuraOficial } from "../../src/lib/plan/estructuras-oficiales";
+import { FORMAS_SIN_MOTOR, formasEstructurasOficiales, geometriaEstructurasOficiales, reglasJsonSchemaEstructuraOficial } from "../../src/lib/plan/estructuras-oficiales";
+import { formasPiezaPorOficial, reglasJsonSchemaFormaPieza } from "../../src/lib/plan/formas-pieza";
 import { tonosColoresCatalogo } from "../../src/lib/rag/catalog/similitud-color";
 import { reglasMezclas } from "../../src/lib/plan/mezclas";
 import { reglasGuirnalda } from "../../src/lib/plan/armado-guirnalda";
+import { FORMAS_LISTAS_ARCO_ORGANICO } from "../../src/lib/plan/armado-arco-organico";
 import { LORA_COLOR_NAMES_EN } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { PALETA_COLORES_V2 } from "../../src/lib/rag/taxonomy/v2";
+import { HEX_COLORES_V2, PALETA_COLORES_V2 } from "../../src/lib/rag/taxonomy/v2";
 import { ACABADO_EN } from "../../src/lib/ia/uzume/mezcla-color-escena";
 
 const outputDirectory = path.join(process.cwd(), "contracts", "domain", "v1");
@@ -42,6 +44,8 @@ const filenames: Record<string, string> = {
   "plan-resolution-result.v1": "plan-resolution-result.schema.json",
   "estimar-conteo.v1": "estimar-conteo-request.schema.json",
   "estimar-conteo-result.v1": "estimar-conteo-result.schema.json",
+  "plan-guia-escena.v1": "plan-guia-escena-request.schema.json",
+  "plan-guia-escena-result.v1": "plan-guia-escena-result.schema.json",
   "reference-blueprint.v2": "reference-blueprint.schema.json",
   "scene-spec.v1": "scene-spec.schema.json",
   "lora-selection.v1": "lora-selection.schema.json",
@@ -75,6 +79,9 @@ async function main(): Promise<void> {
         const properties = (jsonSchema as { properties?: Record<string, unknown> }).properties;
         if (jsonSchema.type !== "object" || !properties?.estructura_oficial) return;
         jsonSchema.allOf = [...(jsonSchema.allOf ?? []), ...reglasJsonSchemaEstructuraOficial()];
+        // Y la forma elegida contra esa misma oficial (`formas-pieza.ts`), que tampoco se puede expresar en
+        // Zod: solo en el objeto que la lleva, que es la estructura del plan y no el candidato de un conteo.
+        if (properties.forma) jsonSchema.allOf = [...jsonSchema.allOf, ...reglasJsonSchemaFormaPieza()];
       },
     });
     // Plan resolvers in both languages read the balloon geometry of official
@@ -89,6 +96,17 @@ async function main(): Promise<void> {
           $id: entry.id,
           ...generated,
           "x-geometria-estructuras-oficiales": geometriaEstructurasOficiales(),
+          // La `forma` de cada estructura oficial, de la misma tabla. plan.py la usa
+          // para saber qué piezas no arma ningún motor: una forma `circular` o
+          // `libre` no es una forma que un motor de globos produzca, y esas piezas
+          // se cuentan con la fórmula (el aro, con su `pi * diametro`).
+          "x-formas-estructuras-oficiales": formasEstructurasOficiales(),
+          "x-formas-sin-motor": [...FORMAS_SIN_MOTOR],
+          // Las formas que el decorador puede elegir para cada oficial (`formas-pieza.ts`, puerto de las
+          // `formas` del clasificador). `app/dibujo_estructura.py` las lee para preferir la elegida sobre
+          // `FORMA_POR_OFICIAL` sin creerle a una que no es de esa pieza, y `app/plan_edicion.py` para
+          // rechazar la edición que la pondría. La tabla de TypeScript sigue siendo la única copia.
+          "x-formas-pieza": formasPiezaPorOficial(),
           "x-reglas-mezclas": reglasMezclas(),
           // armado_guirnalda.py reads where a garland may hang or tilt
           // (ADR-0032, decision 27) from armado-guirnalda.ts, the contract's owner.
@@ -102,7 +120,17 @@ async function main(): Promise<void> {
           // pattern detection may only answer with these names.
           "x-paleta-colores": [...PALETA_COLORES_V2],
           "x-acabados-en": { ...ACABADO_EN },
+          // Las formas listas del arco orgánico (armado-arco-organico.ts). Son los ids que el motor del
+          // diseñador publica y que la interfaz y el chat nombran sin copiar ninguna cifra. Viajan por el
+          // contrato para que `tests/test_armado_arco_organico.py` pueda comprobar desde Python que la lista
+          // de TypeScript no se quedó atrás cuando el motor gana una forma: son las dos únicas copias del
+          // vocabulario y no comparten ningún otro artefacto.
+          "x-formas-arco-organico": [...FORMAS_LISTAS_ARCO_ORGANICO],
         }
+      : entry.id === "plan-guia-escena.v1"
+      // app/guia_escena.py pinta un material cuyo color no está en la lámina Sempertex con el tono de la paleta
+      // del plan (taxonomy/v2.ts), la misma tabla que ve el cliente: una sola copia, leída por los dos lados.
+      ? { $id: entry.id, ...generated, "x-hex-colores": { ...HEX_COLORES_V2 } }
       : entry.id === "catalog-search.v1"
       ? { $id: entry.id, ...generated, "x-tonos-colores-catalogo": tonosColoresCatalogo() }
       : { $id: entry.id, ...generated };

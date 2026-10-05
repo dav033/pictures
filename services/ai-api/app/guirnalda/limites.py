@@ -152,9 +152,32 @@ def sanear(entrada: ConfigGuir) -> tuple[ConfigGuir, list[str]]:
     lim = limites(cfg)
     f["festones"] = _minimo(f["festones"], lim["festonesMax"])
     lim = limites(cfg)
-    f["colgadoM"] = _acotar(f["colgadoM"], 0, lim["colgadoMax"])
-    f["ondaM"] = _acotar(f["ondaM"], 0, lim["ondaMax"])
-    f["pendienteM"] = _acotar(f["pendienteM"], -lim["pendienteMax"], lim["pendienteMax"])
+    # El colgado admite signo: positivo cuelga en U y **negativo arquea hacia arriba**, que es la
+    # guirnalda tendida sobre un fondo y caída por los dos lados. Porte 1 a 1 de `guirnalda/limites.ts`.
+    # Los tres acotados de abajo cambiaban la línea **en silencio**, al revés que la altura y los grosores,
+    # que sí lo dicen. El preset `diagonal` prometía 1,1 m de caída en 3,2 m de largo y llevaba desde siempre
+    # armándose con 0,8 —el tope del 25 % del largo— sin que nada lo contara (2026-10-03).
+    colgado = _acotar(f["colgadoM"], -lim["colgadoMax"], lim["colgadoMax"])
+    if abs(colgado - f["colgadoM"]) > 1e-6:
+        cambios.append(
+            f"El colgado se ajustó a {_coma(colgado)} m: en {_coma(f['largoM'])} m con"
+            f" {_numero(f['festones'])} tramo(s) no puede pasar de {_coma(lim['colgadoMax'])} m."
+        )
+    f["colgadoM"] = colgado
+    onda = _acotar(f["ondaM"], 0, lim["ondaMax"])
+    if abs(onda - f["ondaM"]) > 1e-6:
+        cambios.append(
+            f"La ondulación se ajustó a {_coma(onda)} m: con {_coma(f['ondas'], 1)} ondas en"
+            f" {_coma(f['largoM'])} m no puede pasar de {_coma(lim['ondaMax'])} m."
+        )
+    f["ondaM"] = onda
+    pendiente = _acotar(f["pendienteM"], -lim["pendienteMax"], lim["pendienteMax"])
+    if abs(pendiente - f["pendienteM"]) > 1e-6:
+        cambios.append(
+            f"La pendiente se ajustó a {_coma(pendiente)} m: en {_coma(f['largoM'])} m de largo no puede"
+            f" pasar de {_coma(lim['pendienteMax'])} m, o deja de ser una guirnalda y es una caída."
+        )
+    f["pendienteM"] = pendiente
     lim = limites(cfg)
     altura = _acotar(f["alturaM"], lim["alturaMin"], _maximo(lim["alturaMin"], lim["alturaMax"]))
     if abs(altura - f["alturaM"]) > 1e-6:

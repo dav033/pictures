@@ -146,8 +146,14 @@ export function clasificarErrorServidor(error: unknown): ClasificacionError {
   if (error instanceof PlanBackendNoDisponibleError) return { code: "PROPUESTA_DESACTUALIZADA", codigoOrigen: error.motivo, causa: error.motivo };
   if (error instanceof PythonPlanMappingError) return { code: "ERROR_INTERNO", codigoOrigen: error.code };
   if (isPythonAdapterError(error)) {
+    // «Ocupado» y «no respondió» son causas distintas y el cliente las vive distinto: con el cupo de los
+    // motores lleno el servicio contestó al instante, y lo que toca es esperar, no sospechar que está caído.
+    // Antes los dos salían como SERVICIO_NO_DISPONIBLE (2026-10-02, el editor de la guirnalda).
+    const code: UiErrorCodeV1 = error.code === "PYTHON_BUSY"
+      ? "SERVICIO_OCUPADO"
+      : error.retryable ? "SERVICIO_NO_DISPONIBLE" : "ERROR_INTERNO";
     return {
-      code: error.retryable ? "SERVICIO_NO_DISPONIBLE" : "ERROR_INTERNO",
+      code,
       codigoOrigen: error.domainCode ? `${error.code}:${error.domainCode}` : error.code,
     };
   }

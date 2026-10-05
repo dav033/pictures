@@ -6,6 +6,7 @@ import type { ArmadoArcoV1 } from "@/lib/plan/armado-arco";
 import { mensajeFalloPlanArmado } from "@/lib/plan/peticion-armado";
 import { pedirVistaArmadoArco, type VistaArmadoArco } from "@/lib/plan/peticion-armado-arco";
 import { metrosCliente } from "@/lib/plan/presentacion-cliente";
+import { MarcoEdicion } from "../motor/MarcoEdicion";
 import { VistaMotor } from "../motor/VistaMotor";
 import { colorDe, type ColorLeyenda } from "../patron/leyenda";
 import { MuestraNumero } from "../patron/LeyendaPatron";
@@ -290,7 +291,7 @@ function ArcoDibujado({ estado, leyenda, nombrePieza, repeticiones, onReintentar
     { termino: "Globos por metro", valor: conDecimal.format(arco.globos_por_metro) },
   ];
   return (
-    <>
+    <MarcoEdicion editor={pie}>
     <div aria-busy={actualizando} className="flex flex-col gap-3 @md:flex-row">
       <div className={`${MARCO} ${tenue}`}>
         <VistaMotor
@@ -346,7 +347,6 @@ function ArcoDibujado({ estado, leyenda, nombrePieza, repeticiones, onReintentar
         )}
       </div>
     </div>
-    {pie}
-    </>
+    </MarcoEdicion>
   );
 }

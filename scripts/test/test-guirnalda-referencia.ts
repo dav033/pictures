@@ -23,6 +23,8 @@ import path from "node:path";
 
 process.env.PYTHON_BACKEND_URL ??= "http://python.test";
 process.env.INTERNAL_HMAC_SECRET ??= "local-only-secret-0123456789abcdef";
+// Las banderas de consumo van encendidas por defecto desde D2 (2026-10-04): el caso "sin" se fija aquí.
+process.env.GUIRNALDAS_ARMADO_V1 = "false";
 
 type Json = Record<string, unknown>;
 type Llamada = { path: string; body: Json };
@@ -305,7 +307,7 @@ async function main(): Promise<void> {
     assert.equal(lecturasGuirnaldaDeLaEdicion(fixtureResuelto as never), undefined, "sin lecturas en el plan base, nada");
     assert.equal(lecturasGuirnaldaDeLaEdicion({ ...fixtureResuelto, lecturas_guirnalda: [{ referencia_element_id: "REF_01_E01", soporte: "techo" }] } as never), undefined, "una lectura que no cumple el contrato no viaja");
   } finally {
-    delete process.env.GUIRNALDAS_ARMADO_V1;
+    process.env.GUIRNALDAS_ARMADO_V1 = "false";
   }
   ok("lecturas_guirnalda: Python las devuelve y la re-resolución de una edición las vuelve a mandar");
 

@@ -138,7 +138,7 @@ function escenaParaCoherencia(escena: SceneSpec): EscenaParaCoherencia {
       nombre_en_prompt: promptElementName(element.name),
       estructura_id: element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!,
       resolved_colors: element.resolved_colors,
-      espera_linea_de_color: tieneContratoDeColor(element),
+      espera_linea_de_color: tieneContratoDeColor(element, undefined, escena),
     })),
   };
 }
@@ -239,7 +239,8 @@ const ESCENA_CARGADA = escenaSintetica([
 const TALLAS_CARGADA: ElementSizeConfirmation[] = ESCENA_CARGADA.elements.flatMap((el, indice) => (el.catalog_product_ids ?? []).flatMap((productId) =>
   (indice === 0 ? ["R-5", "R-9", "R-12", "R-18"] : ["R-12"]).map((sizeCode) => ({ elementId: el.element_id, productId, sizeCode }))));
 
-function captionCanonico(sceneSpec: SceneSpec, sizeConfirmations: ElementSizeConfirmation[], visualContext: ReturnType<typeof buildVisualContext>, colorPatterns: readonly PatronColorResuelto[] | undefined, trigger?: string, maxLength?: number) {
+// Sin trigger el runtime compila el dialecto `base` (modelo sin LoRA); estos casos fijan el v007, que es el que el trigger v3 selecciona con la misma longitud que el v2.
+function captionCanonico(sceneSpec: SceneSpec, sizeConfirmations: ElementSizeConfirmation[], visualContext: ReturnType<typeof buildVisualContext>, colorPatterns: readonly PatronColorResuelto[] | undefined, trigger = "eventdecor_style_v3", maxLength?: number) {
   return compileProductPrompt({ sceneSpec, visualContext, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations, trigger, maxLength, colorPatterns });
 }
 

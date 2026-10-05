@@ -10,6 +10,7 @@ import {
   PYTHON_CATALOG_RECOMMENDATIONS_PATH,
   PYTHON_CATALOG_RECOMMENDATIONS_SCOPE,
   PythonAdapterError,
+  isPythonAdapterError,
   llamarPythonCatalogRecommendations,
   llamarPythonCatalogSearch,
   llamarPythonCatalogSelection,
@@ -1300,7 +1301,55 @@ async function main(): Promise<void> {
   await testPlanResolutionDomainError();
   await testCatalogRecommendationsEnvelope();
   await testRouteAndMissingConfig();
+  await testMotorOcupadoSeReintenta();
   console.log("Python adapter: OK");
+}
+
+/**
+ * El cupo global de los motores (`app/exclusion_motores.py`) contesta `motor_ocupado` (429) al instante
+ * cuando otro dibujo está en curso, y su diseño dice que el cliente reintente. Sin el reintento ese 429
+ * llegaba hasta el cliente como "El servicio no respondió" cada vez que dos vistas previas coincidían
+ * (2026-10-02, moviendo el editor de la guirnalda).
+ */
+async function testMotorOcupadoSeReintenta(): Promise<void> {
+  let intentos = 0;
+  const ocupadoDosVeces: typeof fetch = async () => {
+    intentos += 1;
+    if (intentos <= 2) {
+      return Response.json({ detail: { code: "motor_ocupado" } }, { status: 429, headers: { "Retry-After": "1" } });
+    }
+    return successResponse();
+  };
+  const ok = await llamarPythonEcho(adapterInput(ocupadoDosVeces));
+  assert.equal(intentos, 3, "reintenta hasta que el motor queda libre");
+  assert.equal(ok.payload.message, "python");
+
+  // Reintentos acotados: el que sigue ocupado sale con su propio código, no como "no se pudo contactar".
+  let siempre = 0;
+  const siempreOcupado: typeof fetch = async () => {
+    siempre += 1;
+    return Response.json({ detail: { code: "motor_ocupado" } }, { status: 429 });
+  };
+  const fallo = await llamarPythonEcho(adapterInput(siempreOcupado)).then(
+    () => null,
+    (error: unknown) => error,
+  );
+  assert.ok(isPythonAdapterError(fallo));
+  assert.equal(fallo.code, "PYTHON_BUSY");
+  assert.equal(fallo.domainCode, "motor_ocupado");
+  assert.ok(siempre <= 4, `no reintenta sin límite (fueron ${siempre})`);
+
+  // Un 429 que NO es del cupo de los motores no se reintenta: puede ser otra cosa.
+  let otros = 0;
+  const otroLimite: typeof fetch = async () => {
+    otros += 1;
+    return Response.json({ detail: { code: "rate_limited" } }, { status: 429 });
+  };
+  const otro = await llamarPythonEcho(adapterInput(otroLimite)).then(() => null, (error: unknown) => error);
+  assert.ok(isPythonAdapterError(otro));
+  assert.equal(otro.code, "PYTHON_BUSY");
+  assert.equal(otros, 1, "solo el cupo de los motores se reintenta");
+  console.log("ok - el motor ocupado se reintenta, acotado, y sale con su propio código");
 }
 
 void main().catch((error: unknown) => {

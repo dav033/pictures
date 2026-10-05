@@ -44,7 +44,7 @@ from app.estimar_conteo_sugerencia import (
     sugerir,
 )
 from app.generated_models import contract_schema
-from app.omoikane.armado_estructura import CLAVE_ARMADO
+from app.armado_estructura import CLAVE_ARMADO
 from app.operational_models import OperationalRequest
 from app.plan import PiezaContada, PlanResolutionError, con_medidas_por_defecto, contar_pieza
 

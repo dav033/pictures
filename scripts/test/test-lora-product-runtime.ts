@@ -15,12 +15,22 @@ import { compileLoraCaption, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH
 import { resolveLoraPromptFormat } from "../../src/lib/ia/kagutsuchi/lora-prompt-format";
 import { ReferenceBlueprintV2Schema } from "../../src/lib/ia/referencia/reference-blueprint";
 import { ambientDecorFromReference, ambientDecorName, parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../../src/lib/ia/referencia/reference-structure";
-import { compileProductPrompt, sizeConfirmationsFromMaterialLines, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
+import { compileProductPrompt as compileProductPromptRuntime, sizeConfirmationsFromMaterialLines, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
 import { aDescriptorPerceptual } from "../../src/lib/lora/descriptor-perceptual";
 import { resolveProductConcept, VOCABULARY_VERSION, type ProductVocabulary } from "../../src/lib/lora/product-vocabulary";
+
+/**
+ * Without a trigger the runtime now compiles the `base` dialect (no LoRA; see
+ * scripts/test/test-lora-vocabulario-base.ts). This suite is about the trained
+ * product wording, so a call without a trigger gets the v007 one, which has
+ * the same length as the compiler's own and keeps every byte.
+ */
+function compileProductPrompt(input: Parameters<typeof compileProductPromptRuntime>[0]) {
+  return compileProductPromptRuntime({ ...input, trigger: input.trigger ?? "eventdecor_style_v3" });
+}
 
 let passCount = 0;
 function pass(name: string) {
@@ -98,6 +108,7 @@ const FOIL_FUCHSIA_ID = "7105908572353";
 const SILK_CREAM_PEARL_ID = "10467043344577";
 const METALLIZED_PINK_CURTAIN_ID = "7107494215873";
 const DUSTY_ROSE_FASHION_ID = "20010671";
+const SAND_FASHION_ID = "20014535";
 
 // ===========================================================================
 // 1. ProductPromptCompilation contract shape.
@@ -751,7 +762,7 @@ console.log("17. Caption wording follows the resolved LoRA");
   assert.equal(v004Report.ok, true, `${v004Report.errors.join("; ")}\n${v004.prompt}`);
   assert.doesNotMatch(v004.prompt, /inch|round latex balloon|stage/i, "v004 captions never use inch sizes, catalog object labels or a stage");
   assert.match(v004.prompt, /a one-sided curved organic balloon garland of large and small muted matte blue balloons/);
-  assert.match(v004.prompt, /organic balloon column of large and small muted matte blue balloons standing apart on the left/);
+  assert.match(v004.prompt, /a balloon column of large and small muted matte blue balloons standing apart on the left/);
   // R-24 no es un tamaño permitido del blanco, así que quedan R-5 y R-12: dos
   // diámetros distintos son "large and small" en la redacción relativa de v004
   // (antes la mezcla se describía entera como "small").
@@ -772,6 +783,16 @@ console.log("17. Caption wording follows the resolved LoRA");
   assert.match(pink.prompt, /matte dusty rose pink and matte white balloons against the rear wall/);
   assert.doesNotMatch(pink.prompt, /tones/);
   pass("the approved color stays attached to the product shade in the v004 wording");
+
+  // El beige no tenía familia de tonos y su único tono del vocabulario es «sand», así que caía al
+  // paréntesis: «... balloons (beige tones) against the rear wall». Es justo el tinte global que el
+  // paréntesis existe para evitar, y pegado a «against the rear wall» tiñó la pared, la cortina y el piso
+  // de la imagen (2026-10-03).
+  const beigeShade = scene([element({ id: "GARLAND", name: "Guirnalda", type: "guirnalda", placement: "fondo_pared", role: "focal", colors: ["beige", "rosado"], productIds: [SAND_FASHION_ID, DUSTY_ROSE_FASHION_ID] })]);
+  const beige = compileProductPrompt({ sceneSpec: beigeShade, visualContext: context, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2" });
+  assert.match(beige.prompt, /matte sand beige/, beige.prompt);
+  assert.doesNotMatch(beige.prompt, /\(beige tones\)/, "a global beige tint painted the wall and the floor beige");
+  pass("beige travels attached to its sand shade, never as a global tint");
 }
 
 // ===========================================================================
@@ -828,12 +849,42 @@ console.log("18. Reference structures, relative heights, styling and JSON prompt
     officialStructures: new Map([["EST_01_SEMIARCO", "semiarco_asimetrico"], ["EST_02_COLUMNA", "columna_asimetrica"]]),
   });
   assert.match(mixed.prompt, /taller asymmetrical one-sided curved organic balloon garland .* on the right/);
-  assert.match(mixed.prompt, /shorter asymmetrical organic balloon column .* on the left/);
+    // 2026-10-03: el sustantivo de la columna pasó al del corpus (`balloon column`, 69 veces en sus 345
+  // captions). «asymmetrical» solo lo usa el corpus para un medio arco, y el LoRA dibujaba la columna
+  // doblada; ver `estructuras-oficiales.ts`.
+  assert.match(mixed.prompt, /shorter balloon column .* on the left/);
   assert.match(mixed.prompt, /the garland and the column stand apart with an open gap between them/);
   assert.doesNotMatch(mixed.prompt, /matching one another|flanking/);
   assert.ok(mixed.prompt.length <= 750, `${mixed.prompt.length} chars`);
   const mixedReport = preflightLoraPrompt({ sceneSpec: mixedSpec, clauses: mixed.clauses, prompt: mixed.prompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY });
   assert.equal(mixedReport.ok, true, mixedReport.errors.join("; "));
+
+  // Regresion (2026-10-04): dos columnas, una a cada lado, con armados distintos del motor. La de la derecha
+  // salio curvandose por arriba hacia la izquierda y cerrando el hueco, como la pata de un arco. El codigo
+  // daba por hecho que «two columns already read apart» y no decia nada; no lo hacen. Esta medido en
+  // scripts/lora/recaption-v004.ts: de los 154 captions del dataset NINGUNO expresa una relacion bilateral, y
+  // sus autores anotaron esa falta como la que explica que las columnas se fundan en las patas del arco.
+  const dosColumnasSpec = scene([
+    { ...element({ id: "EST_01_COL_IZQ", name: "Columna izquierda", type: "columna", placement: "lateral_izquierdo", role: "focal", colors: ["azul"], productId: GOLD_REFLEX_ID }), visual_semantics: { structure_type: "columna", placement: "lateral_izquierdo", design_role: "focal", repetition_group: "EST_01_COL_IZQ", density: "media", dimensions_m: { height: 2.2 } } },
+    { ...element({ id: "EST_02_COL_DER", name: "Columna derecha", type: "columna", placement: "lateral_derecho", role: "focal", colors: ["azul"], productId: GOLD_REFLEX_ID }), visual_semantics: { structure_type: "columna", placement: "lateral_derecho", design_role: "focal", repetition_group: "EST_02_COL_DER", density: "media", dimensions_m: { height: 2.2 } } },
+  ] as SceneSpec["elements"]);
+  // Con armados distintos no se funden en una pareja: cada una lleva la frase que le escribio Python.
+  const dosColumnas = compileProductPrompt({
+    sceneSpec: dosColumnasSpec,
+    visualContext: context,
+    vocabulary: PRODUCT_VOCABULARY,
+    trigger: "eventdecor_style_v2",
+    colorPatterns: [
+      { estructura_id: "EST_01_COL_IZQ", aplicado: true, prompt_gemini: "", prompt_lora: "widest at the base and tapering toward the top, in clusters of four" },
+      { estructura_id: "EST_02_COL_DER", aplicado: true, prompt_gemini: "", prompt_lora: "even in width from bottom to top, in clusters of five" },
+    ],
+  });
+  assert.equal(dosColumnas.clauses.length, 2, "dos armados distintos no se funden en una pareja");
+  assert.match(dosColumnas.prompt, /the two columns stand apart with an open gap between them/);
+  assert.doesNotMatch(dosColumnas.prompt, /\barch\b/, "nada en el caption invita a cerrarlas en un arco");
+  const dosReport = preflightLoraPrompt({ sceneSpec: dosColumnasSpec, clauses: dosColumnas.clauses, prompt: dosColumnas.prompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY });
+  assert.equal(dosReport.ok, true, dosReport.errors.join("; "));
+  pass("dos columnas a los lados dicen el hueco que las separa, como ya hacian los medios arcos");
   pass("a half-arch and a column on opposite sides stay two separate pieces with relative heights");
 
   // Regression (tropical plan, 2026-09-14): a non-balloon product label was

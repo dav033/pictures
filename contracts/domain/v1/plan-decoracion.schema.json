@@ -311,6 +311,11 @@
               "techo_globos"
             ]
           },
+          "forma": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
           "colores_referencia": {
             "maxItems": 8,
             "type": "array",
@@ -1789,7 +1794,7 @@
                   },
                   "colgadoM": {
                     "type": "number",
-                    "minimum": 0,
+                    "minimum": -1.5,
                     "maximum": 1.5
                   },
                   "festones": {
@@ -2415,6 +2420,324 @@
               "corona"
             ],
             "additionalProperties": false
+          },
+          "armado_arco_organico": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "armado-arco-organico.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "forma": {
+                "type": "object",
+                "properties": {
+                  "anchoM": {
+                    "type": "number",
+                    "minimum": 1.5,
+                    "maximum": 10
+                  },
+                  "altoM": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 6
+                  },
+                  "cima": {
+                    "type": "number",
+                    "minimum": 0.3,
+                    "maximum": 0.7
+                  },
+                  "curva": {
+                    "type": "number",
+                    "minimum": 1.7,
+                    "maximum": 3.4
+                  },
+                  "ondulacion": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "carga": {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1
+                  },
+                  "corte": {
+                    "type": "number",
+                    "minimum": 0.55,
+                    "maximum": 1
+                  },
+                  "espejo": {
+                    "type": "boolean"
+                  },
+                  "suelo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "anchoM",
+                  "altoM",
+                  "cima",
+                  "curva",
+                  "ondulacion",
+                  "carga",
+                  "corte",
+                  "espejo",
+                  "suelo"
+                ],
+                "additionalProperties": false
+              },
+              "volumen": {
+                "type": "object",
+                "properties": {
+                  "grosorPatasM": {
+                    "type": "number",
+                    "minimum": 0.35,
+                    "maximum": 1.6
+                  },
+                  "grosorCimaM": {
+                    "type": "number",
+                    "minimum": 0.35,
+                    "maximum": 1.6
+                  },
+                  "irregularidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "relleno": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "racimo": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "salientes": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "grosorPatasM",
+                  "grosorCimaM",
+                  "irregularidad",
+                  "relleno",
+                  "racimo",
+                  "salientes"
+                ],
+                "additionalProperties": false
+              },
+              "tamanos": {
+                "type": "object",
+                "properties": {
+                  "mezcla": {
+                    "type": "object",
+                    "properties": {
+                      "5": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "9": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "12": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "18": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "24": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "36": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "grandesAbajo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "inflado": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 1.1
+                  },
+                  "variacion": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.3
+                  }
+                },
+                "required": [
+                  "mezcla",
+                  "grandesAbajo",
+                  "inflado",
+                  "variacion"
+                ],
+                "additionalProperties": false
+              },
+              "colores": {
+                "type": "object",
+                "properties": {
+                  "paleta": {
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "material": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        },
+                        "peso": {
+                          "type": "number",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "acabado": {
+                          "type": "string",
+                          "enum": [
+                            "mate",
+                            "cromado",
+                            "confeti",
+                            "transparente"
+                          ]
+                        },
+                        "rol": {
+                          "type": "string",
+                          "enum": [
+                            "normal",
+                            "acento"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "material",
+                        "peso",
+                        "acabado",
+                        "rol"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "reparto": {
+                    "type": "string",
+                    "enum": [
+                      "azar",
+                      "tramos",
+                      "racimos"
+                    ]
+                  },
+                  "mezcla": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "paleta",
+                  "reparto",
+                  "mezcla"
+                ],
+                "additionalProperties": false
+              },
+              "adornos": {
+                "type": "object",
+                "properties": {
+                  "follaje": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "flores": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  }
+                },
+                "required": [
+                  "follaje",
+                  "flores"
+                ],
+                "additionalProperties": false
+              },
+              "aspecto": {
+                "type": "object",
+                "properties": {
+                  "brillo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "sombra": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.5
+                  },
+                  "contorno": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2
+                  },
+                  "profundidad": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "semilla": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999
+                  }
+                },
+                "required": [
+                  "brillo",
+                  "sombra",
+                  "contorno",
+                  "profundidad",
+                  "semilla"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "forma",
+              "volumen",
+              "tamanos",
+              "colores",
+              "adornos",
+              "aspecto"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -2825,6 +3148,224 @@
           },
           {
             "if": {
+              "required": [
+                "forma"
+              ]
+            },
+            "then": {
+              "required": [
+                "estructura_oficial"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_no_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_organica"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "centro_mesa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "base",
+                    "burbuja",
+                    "figura",
+                    "topiario",
+                    "varillas",
+                    "mini-aro"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "bouquet"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "piso",
+                    "burbuja",
+                    "con-numero",
+                    "caja",
+                    "relleno"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "aro_circular"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organico",
+                    "parcial",
+                    "con-fondo",
+                    "clasico",
+                    "doble",
+                    "media-luna"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "techo_globos"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "colgantes",
+                    "nube",
+                    "malla",
+                    "candelabro",
+                    "cortina"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "not": {
+                    "enum": [
+                      "pared_densa",
+                      "pared_no_densa",
+                      "pared_organica",
+                      "centro_mesa",
+                      "bouquet",
+                      "aro_circular",
+                      "techo_globos"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "forma"
+                ]
+              }
+            }
+          },
+          {
+            "if": {
               "properties": {
                 "estructura_oficial": {
                   "const": "arco"
@@ -3213,6 +3754,224 @@
                 }
               }
             }
+          },
+          {
+            "if": {
+              "required": [
+                "forma"
+              ]
+            },
+            "then": {
+              "required": [
+                "estructura_oficial"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_no_densa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "pared_organica"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organica",
+                    "cuadriculada",
+                    "rombos",
+                    "malla-links"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "centro_mesa"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "base",
+                    "burbuja",
+                    "figura",
+                    "topiario",
+                    "varillas",
+                    "mini-aro"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "bouquet"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "piso",
+                    "burbuja",
+                    "con-numero",
+                    "caja",
+                    "relleno"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "aro_circular"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "organico",
+                    "parcial",
+                    "con-fondo",
+                    "clasico",
+                    "doble",
+                    "media-luna"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "techo_globos"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "forma": {
+                  "enum": [
+                    "helio",
+                    "colgantes",
+                    "nube",
+                    "malla",
+                    "candelabro",
+                    "cortina"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "not": {
+                    "enum": [
+                      "pared_densa",
+                      "pared_no_densa",
+                      "pared_organica",
+                      "centro_mesa",
+                      "bouquet",
+                      "aro_circular",
+                      "techo_globos"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "forma"
+                ]
+              }
+            }
           }
         ]
       }
@@ -3545,6 +4304,82 @@
       "eje": "circunferencia"
     }
   },
+  "x-formas-estructuras-oficiales": {
+    "arco": "simetrica",
+    "arco_asimetrico": "asimetrica",
+    "arco_no_denso": "simetrica",
+    "semiarco": "simetrica",
+    "semiarco_asimetrico": "asimetrica",
+    "columna": "simetrica",
+    "columna_asimetrica": "asimetrica",
+    "columna_no_densa": "simetrica",
+    "pared_densa": "simetrica",
+    "pared_no_densa": "organica",
+    "pared_organica": "asimetrica",
+    "guirnalda": "organica",
+    "centro_mesa": "libre",
+    "bouquet": "libre",
+    "figura": "libre",
+    "aro_circular": "circular",
+    "techo_globos": "libre"
+  },
+  "x-formas-sin-motor": [
+    "circular",
+    "libre"
+  ],
+  "x-formas-pieza": {
+    "pared_densa": [
+      "organica",
+      "cuadriculada",
+      "rombos",
+      "malla-links"
+    ],
+    "pared_no_densa": [
+      "organica",
+      "cuadriculada",
+      "rombos",
+      "malla-links"
+    ],
+    "pared_organica": [
+      "organica",
+      "cuadriculada",
+      "rombos",
+      "malla-links"
+    ],
+    "centro_mesa": [
+      "helio",
+      "base",
+      "burbuja",
+      "figura",
+      "topiario",
+      "varillas",
+      "mini-aro"
+    ],
+    "bouquet": [
+      "helio",
+      "piso",
+      "burbuja",
+      "con-numero",
+      "caja",
+      "relleno"
+    ],
+    "aro_circular": [
+      "organico",
+      "parcial",
+      "con-fondo",
+      "clasico",
+      "doble",
+      "media-luna"
+    ],
+    "techo_globos": [
+      "helio",
+      "colgantes",
+      "nube",
+      "malla",
+      "candelabro",
+      "cortina"
+    ]
+  },
   "x-reglas-mezclas": {
     "mezclas": {
       "clasica": [
@@ -3651,7 +4486,7 @@
     "dorado rosa": "rose gold",
     "rosagold": "rose gold",
     "plateado": "silver",
-    "gris": "gray",
+    "gris": "grey",
     "grafito": "charcoal gray",
     "cafe": "brown",
     "marron": "brown",
@@ -3662,11 +4497,14 @@
     "crema": "cream",
     "nude": "nude",
     "burdeos": "burgundy",
-    "azul rey": "blue",
-    "azul caribe": "blue",
+    "azul rey": "royal blue",
+    "azul caribe": "turquoise",
     "azul naval": "navy blue",
+    "azul galaxy": "navy blue",
+    "blanco nacar": "pearl white",
     "verde esmeralda": "green",
     "verde lima": "lime green",
+    "verde menta": "mint green",
     "rojo": "red",
     "azul": "blue",
     "verde": "green",
@@ -3719,5 +4557,22 @@
     "mate": "matte",
     "perlado": "pearl",
     "transparente": "translucent"
-  }
+  },
+  "x-formas-arco-organico": [
+    "estandar",
+    "simetrico",
+    "entrada",
+    "puerta",
+    "fondo-fotos",
+    "asimetrico",
+    "medio-pila",
+    "medio-corto",
+    "medio-aireado",
+    "focales",
+    "mesa",
+    "herradura",
+    "gigantes",
+    "cascada",
+    "racimos-sueltos"
+  ]
 }
