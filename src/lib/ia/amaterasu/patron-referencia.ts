@@ -149,8 +149,11 @@ export function adjuntarPistasPatron(blueprint: ReferenceBlueprintV2, pistas: re
     // una lectura confiable: `color_unico` manda sobre las etiquetas y sobre la medida
     // (`coloresDominantesReferencia`), así que una monocroma dicha con 0,2 de confianza dejaba una columna
     // dorada, blanca y negra comprada solo en dorado (2026-10-05). Python ya la degrada a "ninguno"
-    // (`validar_pistas`); esto la para también si llega de una detección guardada de antes.
-    if (pista.modo === "monocromo" && pista.colores[0] && pista.confianza >= CONFIANZA_MINIMA_COLOR_UNICO) unicos.set(pista.element_id, pista.colores[0]);
+    // (`validar_pistas`); esto la para también si llega de una detección guardada de antes. Lo mismo con una
+    // monocroma con motas de otro color: es un color de base con otro salpicado, no un solo color (la foto de
+    // ejemplo 08, rosa con dorado suelto, perdía el dorado entero).
+    const motasDeOtroColor = (pista.motas ?? []).some((mota) => mota !== pista.colores[0]);
+    if (pista.modo === "monocromo" && pista.colores[0] && pista.confianza >= CONFIANZA_MINIMA_COLOR_UNICO && !motasDeOtroColor) unicos.set(pista.element_id, pista.colores[0]);
   }
   if (patrones.size === 0 && remates.size === 0 && unicos.size === 0 && tamanos.size === 0) return blueprint;
   return {

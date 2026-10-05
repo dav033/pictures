@@ -330,6 +330,23 @@ def _remate(valor: object) -> dict[str, object] | None:
     return leido
 
 
+def _motas_validas(crudas: object, excluir: list[str]) -> list[str]:
+    """Las motas (colores salpicados sobre la pieza) que valen, como mucho ``MAX_MOTAS``.
+
+    Se validan igual que ``colores`` —solo los de la paleta, sin repetir— y se quita cualquiera de
+    ``excluir``: un color es un tramo o es una mota, no las dos cosas, y si viniera en las dos el motor lo
+    pintaría dos veces. En una monocroma, ``excluir`` es su color: «rosado con motas rosado» sigue siendo
+    rosado.
+    """
+    motas: list[str] = []
+    if isinstance(crudas, list):
+        for color in cast(list[object], crudas):
+            nombre = _PALETA_NORMALIZADA.get(_normalizar(color)) if isinstance(color, str) else None
+            if nombre is not None and nombre not in excluir and nombre not in motas:
+                motas.append(nombre)
+    return motas[:MAX_MOTAS]
+
+
 def _pista(
     item: object, pendientes: set[str], tipos: Mapping[str, str]
 ) -> dict[str, object] | None:
@@ -391,7 +408,11 @@ def _pista(
             )
             if nombre is not None
         ]
-        if len(set(nombres)) == 1:
+        # Una monocroma con motas de OTRO color no es de un solo color: es un color de base con otro
+        # salpicado. Con la foto de ejemplo 08 (columnas rosa perlado con globos dorados sueltos) la lectura
+        # dijo «monocromo rosado, motas dorado» y, como el ``color_unico`` manda sobre las etiquetas, el dorado
+        # se perdía entero (2026-10-05). Cae a "ninguno" y deciden las etiquetas («pearl pink, chrome gold»).
+        if len(set(nombres)) == 1 and not _motas_validas(item.get("motas"), excluir=nombres):
             pista["modo"] = MODO_MONOCROMO
             pista["colores"] = nombres[:1]
         return pista
@@ -423,18 +444,9 @@ def _pista(
     globos = _entero(item.get("globos_por_racimo"), 1, 8)
     if globos is not None:
         pista["globos_por_racimo"] = globos
-    # Las motas: colores salpicados sobre las secciones. Se validan igual que `colores` —solo los de la
-    # paleta, sin repetir— y se quita cualquiera que ya sea una sección: un color es un tramo o es una mota,
-    # no las dos cosas, y si viniera en las dos el motor lo pintaría dos veces.
-    motas: list[str] = []
-    crudas = item.get("motas")
-    if isinstance(crudas, list):
-        for color in cast(list[object], crudas):
-            nombre = _PALETA_NORMALIZADA.get(_normalizar(color)) if isinstance(color, str) else None
-            if nombre is not None and nombre not in colores and nombre not in motas:
-                motas.append(nombre)
+    motas = _motas_validas(item.get("motas"), excluir=colores)
     if motas:
-        pista["motas"] = motas[:MAX_MOTAS]
+        pista["motas"] = motas
     # El eje y la simetría del patrón (ADR-0039). Aquí la validación es de forma: qué direcciones admite la
     # pieza y si lleva espejo lo decide `patron_color` con la tabla de `modos_admitidos`, que es su dueña, y
     # el motor con los mandos que publica. Una dirección longitudinal no viaja: es el valor de partida de

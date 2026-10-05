@@ -126,6 +126,18 @@ async function main(): Promise<void> {
     }
   });
 
+  await caso("B7 · una monocroma con motas de otro color no es color_unico (foto de ejemplo 08)", () => {
+    // La lectura real del 2026-10-05: «monocromo rosado, motas dorado» para columnas rosas con dorado suelto.
+    // Guardada como color_unico, el dorado se perdía entero; ahora deciden las etiquetas.
+    const pieza = blueprintDe([elemento("REF_01_E01", "balloon_structure", apariencia(["pearl pink", "chrome gold"]))]);
+    const con = (motas: string[]) => adjuntarPistasPatron(pieza, [{ element_id: "REF_01_E01", modo: "monocromo", colores: ["rosado"], motas, confianza: 0.9 } as PythonPatronReferenciaPista]).elements[0]!.appearance;
+    const salpicada = con(["dorado"]);
+    assert.equal(salpicada.color_unico, undefined, "el dorado salpicado no se pierde");
+    assert.deepEqual(colores.coloresDominantesReferencia(salpicada), ["rosado", "dorado"]);
+    // Motas del mismo color no cambian nada: sigue siendo una pieza de un solo color.
+    assert.equal(con(["rosado"]).color_unico, "rosado");
+  });
+
   await caso("B4 · el color que ninguna pieza compra se avisa en la pieza que lo muestra", () => {
     const arco = elemento("REF_01_E01", "balloon_structure", apariencia(["pink", "white"]));
     const columnas = elemento("REF_01_E02", "balloon_structure", apariencia(["gold", "black", "white", "silver"]));
