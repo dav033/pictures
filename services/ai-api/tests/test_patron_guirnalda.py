@@ -329,9 +329,13 @@ def _materiales_por_racimo(resuelto: Mapping[str, object]) -> list[list[int]]:
 
 @pytest.mark.anyio
 async def test_sin_armado_la_confirmacion_da_el_patron_de_antes() -> None:
-    resuelto = await resolver(plan(), completar_patrones=True)
+    # La orgánica la cuenta la receta de su motor: no recibe patrón sugerido (decisión 3, 2026-10-05).
+    organica = await resolver(plan(), completar_patrones=True)
+    assert "patron_color" not in estructura_del_plan(organica)
+    # La clásica (por partes) sí, el de antes: un solo tamaño, la espiral de cuartetos.
+    resuelto = await resolver(plan(guirnalda(mezcla="clasica")), completar_patrones=True)
     patron = cast(dict[str, object], estructura_del_plan(resuelto)["patron_color"])
-    assert cast(Mapping[str, object], patron["base"])["modo"] == "aleatorio"
+    assert cast(Mapping[str, object], patron["base"])["modo"] == "espiral"
     assert "globos_por_racimo" not in patron
 
 

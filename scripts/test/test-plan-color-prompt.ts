@@ -7,6 +7,7 @@ import { buildImagePrompt, placementDescription, promptElementName, tieneContrat
 import { compileLoraCaption, GROUPING_ONLY_CONTEXT, translateLoraColor } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
+import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import { planFijado, type PlanFijadoDeFixture } from "../lib/planes-fijados";
 
 /**
@@ -275,6 +276,50 @@ function main(): void {
   assert.doesNotMatch(lineaSinEstimado, /~\d+%/, lineaSinEstimado);
   assert.match(lineaSinEstimado, /use exactly these catalog colors: blanco, dorado\./, lineaSinEstimado);
   console.log("[PASS] sin líneas del estimado para la estructura, el prompt no inventa proporciones");
+
+  // 6. Un empate no lo decide el alfabeto y la mitad no es mayoría. El motor arma un arco «lila» de dos
+  //    colores 29/29, y el prompt decía "mostly blanco (~50%)" porque «blanco» va antes que «lila». Las
+  //    líneas del estimado van en el orden en que Python las escribe (por tamaño y, dentro de cada tamaño,
+  //    por material en el orden declarado): el primero de los empatados es el que el plan declaró antes.
+  //    El arco es el de la escena de las columnas, con sus líneas cambiadas.
+  const arcoDeLaEscena = escenaColumnas.elements.find((element) => element.element_id === "EST_01_ARCO")!;
+  const lineaDelArco = escenaColumnas.material_estimate!.balloons.find((linea) => linea.structure_id === "EST_01_ARCO")!;
+  const escenaDelArco = (lineas: ReadonlyArray<readonly [string, number, number]>, colores: readonly string[]): { escena: SceneSpec; arco: SceneSpec["elements"][number] } => {
+    const arco = { ...arcoDeLaEscena, resolved_colors: [...colores] };
+    const delArco = lineas.map(([color, pulgadas, unidades]) => ({ ...lineaDelArco, color, finish: null, size_inches: pulgadas, design_quantity: unidades, required_quantity: unidades, waste_adjusted_quantity: unidades }));
+    const escena: SceneSpec = {
+      ...escenaColumnas,
+      elements: escenaColumnas.elements.map((element) => element.element_id === arco.element_id ? arco : element),
+      material_estimate: { ...escenaColumnas.material_estimate!, balloons: [...delArco, ...escenaColumnas.material_estimate!.balloons.filter((linea) => linea.structure_id !== "EST_01_ARCO")] },
+    };
+    return { escena, arco };
+  };
+  const mezclaDelArco = (lineas: ReadonlyArray<readonly [string, number, number]>, colores: readonly string[]) => {
+    const { escena, arco } = escenaDelArco(lineas, colores);
+    return mezclaDeColorDeEstructura(escena, arco);
+  };
+  // `resolved_colors` va en orden alfabético a propósito: no es lo que decide.
+  const lilaPrimero: Array<readonly [string, number, number]> = [["lila", 12, 15], ["blanco", 12, 14], ["lila", 18, 14], ["blanco", 18, 15]];
+  const empate = mezclaDelArco(lilaPrimero, ["blanco", "lila"]);
+  assert.deepEqual(empate.map((entrada) => [entrada.color, entrada.unidades, entrada.pct]), [["lila", 29, 50], ["blanco", 29, 50]]);
+  assert.equal(describirMezclaDeColor(empate), "a balanced split of lila (~50%) and blanco (~50%)");
+  // Con el blanco declarado primero encabeza el blanco: manda el orden de Python, no el nombre.
+  const blancoPrimero = mezclaDelArco([["blanco", 12, 14], ["lila", 12, 15], ["blanco", 18, 15], ["lila", 18, 14]], ["blanco", "lila"]);
+  assert.deepEqual(blancoPrimero.map((entrada) => entrada.color), ["blanco", "lila"]);
+  // Tres colores casi parejos (el arco clásico de tres colores: 30/29/29): ninguno es acento de los otros.
+  const tercios = mezclaDelArco([["dorado", 12, 30], ["rosado", 12, 29], ["blanco", 12, 29]], ["blanco", "dorado", "rosado"]);
+  assert.equal(describirMezclaDeColor(tercios), "a balanced split of dorado (~34%), rosado (~33%) and blanco (~33%)");
+  // Exactamente la mitad tampoco es mayoría; un globo más, sí.
+  const mitad = mezclaDelArco([["blanco", 12, 50], ["dorado", 12, 30], ["rosado", 12, 20]], ["blanco", "dorado", "rosado"]);
+  assert.equal(describirMezclaDeColor(mitad), "a balanced split of blanco (~50%), dorado (~30%) and rosado (~20%)");
+  const mayoria = mezclaDelArco([["blanco", 12, 51], ["dorado", 12, 49]], ["blanco", "dorado"]);
+  assert.equal(describirMezclaDeColor(mayoria), "mostly blanco (~51%) with dorado (~49%) as accents");
+  // Y así llega al prompt: la línea del arco empatado no pide ningún color "mostly".
+  const promptEmpate = buildImagePrompt({ sceneSpec: escenaDelArco(lilaPrimero, ["blanco", "lila"]).escena });
+  const lineaEmpate = promptEmpate.split("\n").find((linea) => linea.includes("APPROVED COLOR VARIETY"))!;
+  assert.match(lineaEmpate, /Approximate share of this structure's own balloons: a balanced split of lila \(~50%\) and blanco \(~50%\)\./, lineaEmpate);
+  assert.doesNotMatch(lineaEmpate, /mostly/, lineaEmpate);
+  console.log("[PASS] mezcla de color: un empate sigue el orden de Python y sin mayoría (ni con la mitad justa) no hay \"mostly\"");
 }
 
 try {

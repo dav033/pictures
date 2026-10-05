@@ -447,10 +447,28 @@ def test_los_dos_margenes_cierran_exactos_en_cada_figura(
                         por_tamano.get(pulgadas, 0)
                         == referencia_por_tamano.get(pulgadas, 0) * repeticiones
                     ), f"{etiqueta}: R-{pulgadas} depende del número de colores"
+                # Un color declarado no se queda sin globo mientras la pieza tenga uno por color
+                # (``plan._material_totals``, 2026-10-05): cuando el mayor resto dejaba alguno en 0, cada
+                # color lleva uno reservado y el resto va por su cuota, así que cada uno puede alejarse de
+                # ella hasta un globo por color. Sin reserva, a menos de un globo, como siempre.
+                suma = sum(participaciones)
+                simple = _hamilton(
+                    total_referencia,
+                    [total_referencia * p / suma for p in participaciones],
+                    [0.0 for _p in participaciones],
+                )
+                declarados = sum(1 for p in participaciones if p > 0)
+                reservado = total_referencia >= declarados and any(
+                    p > 0 and n == 0 for p, n in zip(participaciones, simple, strict=True)
+                )
                 for indice, participacion in enumerate(participaciones):
                     cantidad = por_material.get(indice, 0)
                     esperado = total_referencia * participacion
-                    assert abs(cantidad / repeticiones - esperado) < 1, (
+                    if reservado:
+                        assert cantidad >= repeticiones, f"{etiqueta}: material {indice} sin globo"
+                    assert abs(cantidad / repeticiones - esperado) < (
+                        len(participaciones) if reservado else 1
+                    ), (
                         f"{etiqueta}: material {indice} con {cantidad / repeticiones}"
                         f" frente a {esperado}"
                     )

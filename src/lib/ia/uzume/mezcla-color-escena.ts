@@ -307,12 +307,20 @@ export function armadoDeElemento(
  * Solo se describen colores que el elemento ya declara en `resolved_colors`:
  * el estimado etiqueta cada línea con el primer color del producto, así que un
  * color suyo que la estructura no aprobó no puede entrar al prompt.
+ *
+ * Un empate en unidades conserva el orden de Python, nunca el alfabético: el
+ * estimado lista las líneas de cada estructura en el orden de su despiece (por
+ * tamaño y, dentro de cada tamaño, por material en el orden en que el plan los
+ * declara), así que el primero de los empatados en aparecer es el que el plan
+ * declaró antes. Desempatar por nombre hacía que un arco «lila» que el motor
+ * arma 29/29 con blanco saliera "mostly blanco".
  */
 export function mezclaDeColorDeEstructura(sceneSpec: SceneSpec, element: SceneSpec["elements"][number]): ColorDeEstructura[] {
   const lineas = sceneSpec.material_estimate?.balloons ?? [];
   if (!lineas.length) return [];
   const estructura = idDeEstructura(element);
   const aprobados = new Set(element.resolved_colors.map(plegar));
+  // Un `Map` recorre sus claves en orden de inserción: el de la primera línea de cada color en el estimado.
   const grupos = new Map<string, { color: string; acabado: string | null; unidades: number }>();
   for (const linea of lineas) {
     if (linea.structure_id !== estructura || !linea.color) continue;
@@ -322,10 +330,8 @@ export function mezclaDeColorDeEstructura(sceneSpec: SceneSpec, element: SceneSp
     const previo = grupos.get(clave);
     grupos.set(clave, { color: previo?.color ?? linea.color, acabado, unidades: (previo?.unidades ?? 0) + linea.design_quantity });
   }
-  const ordenados = [...grupos.values()].sort((a, b) =>
-    b.unidades - a.unidades
-    || (plegar(a.color) < plegar(b.color) ? -1 : plegar(a.color) > plegar(b.color) ? 1 : 0)
-    || (a.acabado ?? "").localeCompare(b.acabado ?? ""));
+  // `sort` es estable: a igualdad de unidades cada color se queda en el puesto en que Python lo listó.
+  const ordenados = [...grupos.values()].sort((a, b) => b.unidades - a.unidades);
   const porcentajes = porcentajesMayorResto(ordenados.map((grupo) => grupo.unidades));
   return ordenados.map((grupo, indice) => ({ ...grupo, pct: porcentajes[indice]! }));
 }
@@ -334,14 +340,25 @@ function conAcabado(entrada: ColorDeEstructura): string {
   return `${entrada.color} (~${entrada.pct}%${entrada.acabado ? `, ${entrada.acabado}` : ""})`;
 }
 
+/** "a", "a and b", "a, b and c": la enumeración del resto del prompt, en inglés. */
+function enumerar(partes: readonly string[]): string {
+  return partes.length <= 1 ? (partes[0] ?? "") : `${partes.slice(0, -1).join(", ")} and ${partes[partes.length - 1]}`;
+}
+
 /**
- * "mostly blanco (~85%, matte) with dorado accents (~15%, high-shine chrome)".
+ * "mostly blanco (~85%, matte) with dorado (~15%, high-shine chrome) as accents"
+ * solo cuando un color pasa de la mitad. Sin mayoría —también con exactamente
+ * la mitad, que es un empate— ningún color manda y la frase dice el reparto tal
+ * cual: "a balanced split of lila (~50%) and blanco (~50%)", en el orden de
+ * `mezclaDeColorDeEstructura`. Con `>= 50` un arco 50/50 se pedía como "mostly"
+ * un color, y uno 34/33/33 como un color con dos acentos del 33 %.
+ *
  * Cadena vacía cuando no hay mezcla que describir o cuando es de un solo
  * color (ese caso lo cubre el MONOCHROME LOCK del prompt).
  */
 export function describirMezclaDeColor(mezcla: readonly ColorDeEstructura[]): string {
   if (mezcla.length < 2) return "";
   const [dominante, ...resto] = mezcla;
-  const encabezado = dominante!.pct >= 50 ? `mostly ${conAcabado(dominante!)}` : `${conAcabado(dominante!)} as the largest share`;
-  return `${encabezado} with ${resto.map((entrada) => `${conAcabado(entrada)} as accents`).join(" and ")}`;
+  if (dominante!.pct > 50) return `mostly ${conAcabado(dominante!)} with ${resto.map((entrada) => `${conAcabado(entrada)} as accents`).join(" and ")}`;
+  return `a balanced split of ${enumerar(mezcla.map(conAcabado))}`;
 }

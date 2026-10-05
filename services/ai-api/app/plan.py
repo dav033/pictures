@@ -391,8 +391,8 @@ class ZonaLeida(ContractModel):
     """Una mancha de color leída en la foto (``PistaPatronSchema.zonas``, ADR-0036).
 
     El color va por NOMBRE de catálogo, no por índice: quien mira la foto no
-    conoce los materiales de la pieza. ``patron_color.material_de_color`` los
-    resuelve con la misma tabla de tonos.
+    conoce los materiales de la pieza. ``patron_color.materiales_de_colores`` los
+    resuelve con la misma tabla de tonos, junto con los ``colores`` de la pista.
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)
@@ -887,15 +887,22 @@ def _complete_plan(
     completar_patrones: bool = False,
     pistas: Sequence[Mapping[str, object]] = (),
     tamanos: Sequence[Mapping[str, object]] = (),
+    avisos: list[str] | None = None,
 ) -> dict[str, object]:
     """Fill default measures and make every color pattern authoritative.
 
     With ``completar_patrones`` a geometric structure without ``patron_color``
-    gets the pattern of its photo hint, or else its preset (ADR-0028 §7).
-    Then every structure with a pattern gets ``participacion`` rewritten from
-    its grid, so the echoed plan says what is built and resolving the result
-    again is a fixed point. A plan without patterns is returned exactly as
-    before, which keeps its ``plan_hash``.
+    gets the pattern of its photo hint, or else its preset (ADR-0028 §7),
+    unless its motor counts it (``_suggested_pattern``). Then every structure
+    with a pattern whose count is the grid's gets ``participacion`` rewritten
+    from its grid, so the echoed plan says what is built and resolving the
+    result again is a fixed point. A plan without patterns is returned exactly
+    as before, which keeps its ``plan_hash``.
+
+    ``avisos`` collects what completing the patterns could not do as asked (a
+    preset that fell back to no pattern, a photo color left out of its
+    pattern), as ``advertencias`` entries: they describe this resolution, not
+    the plan, so they never enter it nor its hash.
     """
     plan = _complete_measures(raw_plan)
     # Los tamaños no esperan a ``completar_patrones``: no son una disposición de color (ver
@@ -903,7 +910,7 @@ def _complete_plan(
     # dimensiona desde la mezcla.
     _assign_mixes(plan, tamanos)
     if completar_patrones:
-        _assign_patterns(plan, pistas)
+        _assign_patterns(plan, pistas, avisos)
     return _sync_participations(plan, plan)
 
 
@@ -1164,17 +1171,35 @@ def _expand_pattern(
         raise _pattern_error(context.estructura_id, error) from error
 
 
+#: ``sugerir_patron`` rejections that mean the structure takes no pattern at all,
+#: not that its pattern did not fit: nothing fell back, so nothing is reported.
+_NO_PATTERN_REASONS = frozenset({"tipo_sin_patron", "un_solo_material"})
+
+
 def _suggested_pattern(
     plan: Mapping[str, object],
     structure: Mapping[str, object],
     pistas: Sequence[Mapping[str, object]],
+    avisos: list[str] | None = None,
 ) -> dict[str, object] | None:
     """Photo hint first, preset otherwise (ADR-0028 §7), for one structure of a completed plan.
 
     ``None`` when the structure admits no pattern: not geometric, a single
     color, or a grid too small for the preset (it keeps today's organic
-    distribution).
+    distribution), and when its motor counts it (``_armado_del_motor``, the
+    recipe-counted classic arch and organic garland included). A motor piece
+    is bought as its motor places it, so a grid on it was a second count that
+    nobody builds: a classic arch declared 70/20/10 bought 30/29/29, echoed
+    0.5/0.25/0.25 and charted 44/22/22. Its photo hint reaches the motor
+    through its assembly (``patron_de_la_foto``), not through ``patron_color``.
+
+    ``avisos`` gets the ``advertencias`` entries of what did not go as asked: a
+    photo color its pattern was built without (``pista_patron_incompleta``), or
+    a preset that did not fit, so the piece goes without a pattern
+    (``patron_sin_aplicar``); that fallback used to be silent.
     """
+    if _armado_del_motor(structure) is not None:
+        return None
     context = _pattern_context(plan, structure)
     element_id = _text(structure.get("referencia_element_id"))
     hint = next(
@@ -1187,13 +1212,25 @@ def _suggested_pattern(
         ),
         None,
     )
-    pattern = patron_desde_pista(context, hint) if hint is not None else None
-    if pattern is None:
-        try:
-            pattern = sugerir_patron(context)
-        except PatronColorInvalido:
-            return None
-    return cast(dict[str, object], pattern)
+    name = _text(structure.get("nombre")) or context.estructura_id
+    notes: list[str] = []
+    pattern = patron_desde_pista(context, hint, notes) if hint is not None else None
+    if pattern is not None:
+        if avisos is not None:
+            avisos.extend(
+                f"pista_patron_incompleta:{context.estructura_id}: {name}: {note}" for note in notes
+            )
+        return cast(dict[str, object], pattern)
+    try:
+        return cast(dict[str, object], sugerir_patron(context))
+    except PatronColorInvalido as error:
+        if avisos is not None and error.motivo not in _NO_PATTERN_REASONS:
+            avisos.append(
+                f"patron_sin_aplicar:{context.estructura_id}: {name}: el patrón de color sugerido"
+                " no cabe en la pieza, así que va sin patrón y sus colores se reparten como los"
+                f" declara el plan. {error.mensaje}"
+            )
+        return None
 
 
 def _assign_mixes(plan: dict[str, object], tamanos: Sequence[Mapping[str, object]]) -> None:
@@ -1243,12 +1280,20 @@ def _assign_mixes(plan: dict[str, object], tamanos: Sequence[Mapping[str, object
         plan["supuestos"] = list(dict.fromkeys(assumptions))
 
 
-def _assign_patterns(plan: dict[str, object], pistas: Sequence[Mapping[str, object]]) -> None:
-    """Photo hint first, preset otherwise (ADR-0028 §7); in place on a completed plan."""
+def _assign_patterns(
+    plan: dict[str, object],
+    pistas: Sequence[Mapping[str, object]],
+    avisos: list[str] | None = None,
+) -> None:
+    """Photo hint first, preset otherwise (ADR-0028 §7); in place on a completed plan.
+
+    A piece its motor counts gets none (``_suggested_pattern``); ``avisos``
+    collects what fell back.
+    """
     for structure in cast(list[dict[str, object]], plan["estructuras"]):
         if structure.get("patron_color") is not None:
             continue
-        pattern = _suggested_pattern(plan, structure, pistas)
+        pattern = _suggested_pattern(plan, structure, pistas, avisos)
         if pattern is not None:
             structure["patron_color"] = pattern
 
@@ -1263,6 +1308,12 @@ def _sync_participations(
     With ``only``, just the structure at that position: a grid depends on its
     own structure and the plan's mandatory sizes, never on another structure,
     so an edit or a preview of one piece does not expand the other patterns.
+
+    A piece its motor counts (``_armado_del_motor``) keeps the ``participacion``
+    it declares: what it buys is the motor's count, not the grid's, so writing
+    the grid's shares made the echoed plan state a third split that neither
+    the purchase nor the chart had. Its pattern is still expanded, so one that
+    breaks a rule is rejected here as before.
     """
     result = dict(target)
     structures: list[object] = []
@@ -1277,6 +1328,9 @@ def _sync_participations(
             structures.append(structure)
             continue
         context, expansion = _expand_pattern(measured, measured_structure)
+        if _armado_del_motor(measured_structure) is not None:
+            structures.append(structure)
+            continue
         shares = participaciones(conteo_por_instancia(context, expansion))
         synced = dict(structure)
         synced["materiales"] = [
@@ -1586,7 +1640,11 @@ def _apportion_margins(
     on small repeated pieces.
 
     The margins are computed here and the matrix is filled by ``_fill_margins``;
-    a color pattern brings its own material margin to that same fill.
+    a color pattern brings its own material margin to that same fill. The
+    material margin never drops a declared color while the instance has a
+    balloon for each one (``_material_totals``); when it had to reserve them,
+    the fill is seeded with the reserved margin itself, since the shares would
+    seed more floors than a color that gave up a balloon still has.
     """
     if not proportions or not shares:
         return []
@@ -1598,12 +1656,47 @@ def _apportion_margins(
         if share_sum > 0
         else [1 / len(shares) for _share in shares]
     )
-    material_totals = _hamilton(
-        total, [total * quota for quota in material_quotas], [0.0 for _quota in material_quotas]
-    )
+    material_totals, reserved = _material_totals(total, material_quotas)
+    seed = [units / total for units in material_totals] if reserved else material_quotas
     return _fill_margins(
-        total, proportions, _size_totals(total, proportions), material_totals, material_quotas
+        total, proportions, _size_totals(total, proportions), material_totals, seed
     )
+
+
+def _material_totals(total: int, quotas: Sequence[float]) -> tuple[list[int], bool]:
+    """Material margin of one instance, and whether a declared color had to be reserved.
+
+    Largest remainder over ``participacion``, as always, unless it leaves a
+    color with a positive share at zero balloons while the instance has at
+    least one balloon per such color: a 0.4 m centerpiece at 75/20/5 split its
+    8 balloons 6/2/0, and the dorado the plan declares was neither bought nor
+    mentioned. Then every color with a positive share gets one balloon reserved
+    and the rest of the instance goes by largest remainder over the same
+    shares (5/2/1 there). A split that already gives each of them a balloon is
+    returned exactly as before, so only the plans that used to drop a color
+    change their count and their ``plan_hash``. With fewer balloons than such
+    colors nothing can be reserved and some color stays at zero: resolution
+    reports it (``color_sin_globos``) instead of making up a balloon.
+
+    The kit split (``_distribute_units``) keeps its own older rule, a unit taken
+    from the material with the most; it is not touched here because changing
+    it would move kit counts that never dropped a color.
+    """
+    totals = _hamilton(total, [total * quota for quota in quotas], [0.0 for _quota in quotas])
+    positive = [index for index, quota in enumerate(quotas) if quota > 0]
+    if all(totals[index] > 0 for index in positive) or total < len(positive):
+        return totals, False
+    rest = total - len(positive)
+    positive_sum = sum(quotas[index] for index in positive)
+    rest_totals = _hamilton(
+        rest,
+        [rest * quotas[index] / positive_sum for index in positive],
+        [0.0 for _index in positive],
+    )
+    reserved = [0 for _quota in quotas]
+    for index, units in zip(positive, rest_totals, strict=True):
+        reserved[index] = 1 + units
+    return reserved, True
 
 
 def _size_totals(total: int, proportions: Sequence[tuple[int, float]]) -> list[int]:
@@ -2946,6 +3039,121 @@ def _alternatives(
     return alternatives
 
 
+#: How far a color's share of what a structure buys may land from the share
+#: its ``participacion`` declares before resolution says so: more than 10
+#: percentage points (decision of 2026-10-05). Exactly 10 is not reported, and
+#: the tolerance only absorbs float error (0.6 - 0.5 is 0.09999999999999998).
+_SPLIT_DEVIATION = 0.10
+_SPLIT_TOLERANCE = 1e-9
+
+
+def _whole_percents(units: Sequence[float]) -> list[int]:
+    """Whole percents of ``units`` adding up to 100 (largest remainder, ties to the first)."""
+    total = sum(units)
+    if total <= 0:
+        return [0 for _unit in units]
+    return _hamilton(100, [100 * unit / total for unit in units], [0.0 for _unit in units])
+
+
+def _color_warnings(
+    structure: Mapping[str, object],
+    designed: Sequence[int],
+    delivered: Sequence[int],
+    *,
+    covered: bool,
+    balloons: bool,
+) -> list[str]:
+    """``color_sin_globos`` and ``reparto_distinto`` of one resolved structure.
+
+    ``designed`` is what its count gives each material index and ``delivered``
+    what its lines buy of each (the same, minus what had no coverage). Both
+    went unsaid: a color the plan declares could end up without a single
+    balloon (a 0.4 m centerpiece at 75/20/5 bought 6/2/0), and a piece its
+    motor counts bought a split nobody declared (a classic arch at 70/20/10
+    bought 30/29/29). Now:
+
+    - ``color_sin_globos:{estructura_id}:{color}`` for each material with a
+      positive share that the count leaves at zero; after
+      ``_material_totals`` that only happens with fewer balloons than colors or
+      when the motor places none of it.
+    - ``reparto_distinto:{estructura_id}`` once, when some material's share of
+      what is bought is more than ``_SPLIT_DEVIATION`` away from its declared
+      share. Only for a fully covered structure: an uncovered one already says
+      ``estructura_sin_cobertura`` and its split is not what will be bought.
+      And only with at least ``1 / _SPLIT_DEVIATION`` (10) balloons per piece:
+      below that one balloon moves the split by more than the tolerance.
+
+    Each entry is the code, then a sentence in Spanish naming the piece, like
+    the ``puerta_fisica`` ones; the declared and the bought split go in the
+    order of ``materiales``. They live in ``advertencias``, which is outside the
+    snapshot and ``plan_hash``: saying it changes no purchase and no signature.
+    """
+    materials = _mappings(structure.get("materiales"))
+    if len(materials) < 2:
+        return []
+    structure_id = _text(structure.get("estructura_id")) or ""
+    name = _text(structure.get("nombre")) or structure_id
+    plain = [
+        _text(material.get("color")) or f"n.º {index + 1}"
+        for index, material in enumerate(materials)
+    ]
+    # Two materials of one color (reflex and pastel) are two purchases: the legend number tells them apart.
+    colors = [
+        f"{color} ({index + 1})" if plain.count(color) > 1 else color
+        for index, color in enumerate(plain)
+    ]
+    shares = [max(0.0, _number(material.get("participacion")) or 0.0) for material in materials]
+    warnings: list[str] = []
+    wanted = sum(1 for share in shares if share > 0)
+    per_piece = sum(designed) // max(1, _integer(structure.get("repeticiones")) or 1)
+    for color, share, units in zip(colors, shares, designed, strict=True):
+        if share <= 0 or units > 0:
+            continue
+        why = (
+            f"la pieza lleva {per_piece} {'globos' if balloons else 'unidades'} y no alcanza uno"
+            f" para cada uno de sus {wanted} colores"
+            if per_piece < wanted
+            else "su armado no le pone ninguno"
+        )
+        warnings.append(
+            f"color_sin_globos:{structure_id}:{color}: {name}: el {color} que declara el plan se"
+            f" queda sin globos y no se compra: {why}."
+        )
+    bought = sum(delivered)
+    share_sum = sum(shares)
+    if not covered or bought <= 0 or share_sum <= 0:
+        return warnings
+    # With fewer than 1 / _SPLIT_DEVIATION balloons per piece one balloon is worth more than the tolerance
+    # itself, so the deviation is rounding, not a different split: a 4-balloon figure at 40/30/20/10 can only
+    # be bought 1/1/1/1 and a 6-balloon bouquet at 70/10/10/10 only 3/1/1/1 (golden vector 14).
+    repetitions = max(1, _integer(structure.get("repeticiones")) or 1)
+    if (bought / repetitions) * _SPLIT_DEVIATION < 1 - _SPLIT_TOLERANCE:
+        return warnings
+    if all(
+        abs(units / bought - share / share_sum) <= _SPLIT_DEVIATION + _SPLIT_TOLERANCE
+        for units, share in zip(delivered, shares, strict=True)
+    ):
+        return warnings
+    declared_text = _join_colors(
+        [
+            f"{color} {percent} %"
+            for color, percent in zip(colors, _whole_percents(shares), strict=True)
+        ]
+    )
+    bought_text = _join_colors(
+        [
+            f"{color} {percent} %"
+            for color, percent in zip(colors, _whole_percents(delivered), strict=True)
+        ]
+    )
+    units_text = _join_colors([str(units) for units in delivered])
+    warnings.append(
+        f"reparto_distinto:{structure_id}: {name}: el plan declara {declared_text}; lo que se"
+        f" compra es {bought_text} ({units_text} {'globos' if balloons else 'unidades'})."
+    )
+    return warnings
+
+
 def _resolve_structures(
     plan: Mapping[str, object],
     candidates_by_product: Mapping[str, Sequence[Candidate]],
@@ -2984,6 +3192,10 @@ def _resolve_structures(
         axis: float | None = None
         before_missing = len(uncovered)
         materials = _mappings(raw_structure.get("materiales"))
+        # Units per material index: what the count gives each one and what its
+        # lines buy (``_color_warnings``).
+        designed = [0 for _material in materials]
+        delivered = [0 for _material in materials]
         if structure_type in _GEOMETRIC_TYPES:
             axis, demands, unplaced_sizes = _despiece_with_plan_sizes(plan, raw_structure)
             # The customer's size restriction belongs to the whole plan, not to
@@ -2996,6 +3208,8 @@ def _resolve_structures(
             for demand in demands:
                 requested_color = _text(demand.get("color"))
                 material_index = _integer(demand.get("material_index")) or 0
+                if 0 <= material_index < len(materials):
+                    designed[material_index] += _integer(demand.get("cantidad")) or 0
                 matching_material = (
                     materials[material_index]
                     if 0 <= material_index < len(materials)
@@ -3074,6 +3288,8 @@ def _resolve_structures(
                     float(cast(float, demand["pulgadas"])),
                 )
                 lines.append(resolved_line)
+                if 0 <= material_index < len(materials):
+                    delivered[material_index] += int(cast(int, demand["cantidad"]))
                 if patterned:
                     bought.setdefault(material_index, []).append(
                         _BoughtLine(
@@ -3091,7 +3307,8 @@ def _resolve_structures(
         else:
             declared = _integer(raw_structure.get("unidades_declaradas")) or 0
             quantities = _distribute_units(declared, materials)
-            for material, quantity in zip(materials, quantities, strict=True):
+            designed = list(quantities)
+            for index, (material, quantity) in enumerate(zip(materials, quantities, strict=True)):
                 if quantity <= 0:
                     continue
                 product_id = _text(material.get("product_id")) or ""
@@ -3113,6 +3330,7 @@ def _resolve_structures(
                 material_color = _text(material.get("color"))
                 material_line = _line(structure_id, candidate, quantity, material_color)
                 lines.append(material_line)
+                delivered[index] = quantity
                 relabelled = _relabelled_color(material_line, material_color)
                 if relabelled:
                     equivalent_colors.append(relabelled)
@@ -3127,6 +3345,15 @@ def _resolve_structures(
         total_units = sum(_integer(line.get("unidades")) or 0 for line in lines)
         if len(uncovered) > before_missing:
             warnings.append(f"estructura_sin_cobertura:{structure_id}")
+        warnings.extend(
+            _color_warnings(
+                raw_structure,
+                designed,
+                delivered,
+                covered=len(uncovered) == before_missing,
+                balloons=structure_type in _GEOMETRIC_TYPES,
+            )
+        )
         raw_assumptions = plan.get("supuestos", [])
         assumptions = (
             [
@@ -3765,10 +3992,18 @@ def _build_resolved(
     candidates_by_product: Mapping[str, Sequence[Candidate]],
     candidate_by_variant: Mapping[str, Candidate],
     allowlist: Mapping[str, set[str]],
+    completion_warnings: Sequence[str] = (),
 ) -> dict[str, object]:
-    structures, substitutions, uncovered, warnings, bought = _resolve_structures(
+    """The resolved plan (``plan-resuelto.v1``), signed and validated.
+
+    ``completion_warnings`` are what completing the plan's patterns reported
+    (``_complete_plan``); they go first in ``advertencias``, which, like every
+    notice here, is outside the snapshot and ``plan_hash``.
+    """
+    structures, substitutions, uncovered, structure_warnings, bought = _resolve_structures(
         plan, candidates_by_product, candidate_by_variant, allowlist
     )
+    warnings = [*completion_warnings, *structure_warnings]
     # Consolidating one product+size+color across structures is not gated by
     # PLAN_COST_OPTIMIZER_V2: "each package is bought once" is the quote the
     # customer sees. The flag only gates the commercial alternatives.
@@ -3974,13 +4209,55 @@ def _compact_patterns(resolved: Mapping[str, object]) -> Mapping[str, object]:
     }
 
 
+def _motor_units(structure: Mapping[str, object]) -> list[int] | None:
+    """Balloons per instance of each material when the motor counts the piece; ``None`` otherwise.
+
+    It is the motor's own count (``_conteo_del_motor``), the one the
+    structure's lines buy: a pattern on such a piece (one the decorator chose,
+    or one an older confirmation completed) publishes it instead of its grid's
+    (``patron_resuelto``'s ``unidades``), so the chart, the assembly sheet and
+    the color bar say what is bought.
+    """
+    motor = _conteo_del_motor(structure)
+    if motor is None or motor.total <= 0:
+        return None
+    units = [0 for _material in _mappings(structure.get("materiales"))]
+    for _inches, material, count in motor.celdas:
+        if 0 <= material < len(units):
+            units[material] += count
+    return units
+
+
+def _bought_matrix(
+    plan: Mapping[str, object],
+    structure: Mapping[str, object],
+    proportions: Sequence[tuple[int, float]],
+) -> list[list[int]]:
+    """Size x material matrix of what one instance buys, rows in ``proportions`` order.
+
+    The motor's count when it counts the piece (its sizes are ``proportions``,
+    from ``_structure_count``), the pattern's split otherwise
+    (``_pattern_matrix``, the one ``_despiece_with_plan_sizes`` buys).
+    """
+    motor = _conteo_del_motor(structure)
+    if motor is None:
+        return _pattern_matrix(plan, structure, proportions)
+    rows = {inches: row for row, (inches, _proportion) in enumerate(proportions)}
+    matrix = [[0 for _material in _mappings(structure.get("materiales"))] for _row in proportions]
+    for inches, material, count in motor.celdas:
+        if inches in rows and 0 <= material < len(matrix[rows[inches]]):
+            matrix[rows[inches]][material] += count
+    return matrix
+
+
 def _resolved_patterns(
     plan: Mapping[str, object], bought: Sequence[ComprasPorMaterial]
 ) -> list[dict[str, object]]:
     """``patrones_color``: each pattern named by what its structure buys (§9).
 
     ``bought`` comes from ``_resolve_structures``, one entry per structure in
-    plan order.
+    plan order. A piece its motor counts publishes the motor's count with its
+    pattern (``_motor_units``), never the grid's.
     """
     resolved: list[dict[str, object]] = []
     presupuesto = PresupuestoGrafica()
@@ -3992,7 +4269,9 @@ def _resolved_patterns(
             _pattern_context(plan, structure), bought[position] if position < len(bought) else {}
         )
         try:
-            item = patron_resuelto(context, _mapping(pattern), aplicado=True)
+            item = patron_resuelto(
+                context, _mapping(pattern), aplicado=True, unidades=_motor_units(structure)
+            )
         except PatronColorInvalido as error:
             raise _pattern_error(context.estructura_id, error) from error
         if notices:
@@ -4020,10 +4299,12 @@ def _add_silhouette(
 
     Drawing only, and outside the snapshot: it rides in ``patrones_color[]``,
     which is added after ``plan_hash`` is signed. The quantities are not
-    recomputed here -- the size x material matrix is this resolver's own split
-    (``_pattern_matrix``, the same one ``_despiece_with_plan_sizes`` buys), so
-    the silhouette gets one position per quoted balloon and the color count per
-    material is the matrix's own columns.
+    recomputed here -- the size x material matrix is what the piece buys
+    (``_bought_matrix``: the pattern's split, the same one
+    ``_despiece_with_plan_sizes`` buys, or the motor's own count when its motor
+    counts it), so the silhouette gets one position per quoted balloon and the
+    color count per material is the matrix's own columns. It used to take the
+    grid's split for a motor piece too, which is not what that piece buys.
 
     Falling back to the grid is correct, but it may not be silent: without a
     sketch the pattern carries ``sin_silueta`` with the reason, which is what
@@ -4057,7 +4338,7 @@ def _add_silhouette(
     croquis: Croquis
     try:
         _axis, _total, proportions, _unplaced = _structure_count(plan, structure)
-        matrix = _pattern_matrix(plan, structure, proportions)
+        matrix = _bought_matrix(plan, structure, proportions)
     except PlanResolutionError:
         croquis = Croquis(posiciones=None, motivo="despiece_incoherente")
     else:
@@ -4115,19 +4396,25 @@ def _armados_del_motor_resueltos(plan: Mapping[str, object], tipo: str) -> list[
     return resueltos
 
 
-def _plan_to_resolve(request: PlanResolutionRequest) -> dict[str, object]:
-    """The completed plan a resolution works on, validated (patterns expanded)."""
+def _plan_to_resolve(request: PlanResolutionRequest) -> tuple[dict[str, object], list[str]]:
+    """The completed plan a resolution works on, validated (patterns expanded).
+
+    With the ``advertencias`` entries that completing its patterns produced
+    (``_complete_plan``), which the resolved plan reports.
+    """
+    warnings: list[str] = []
     raw_plan = _complete_plan(
         request.plan,
         completar_patrones=request.completar_patrones,
         pistas=[pista.model_dump(exclude_none=True) for pista in request.pistas_patron],
         tamanos=[pista.model_dump(exclude_none=True) for pista in request.pistas_tamanos],
+        avisos=warnings,
     )
     try:
         PlanDecoracion.model_validate(raw_plan)
     except ValidationError as error:
         raise PlanResolutionError("invalid_plan", 422) from error
-    return raw_plan
+    return raw_plan, warnings
 
 
 async def resolve_plan(
@@ -4140,7 +4427,7 @@ async def resolve_plan(
     results) run in the plan's worker (``run_plan_cpu``), off the event loop;
     only the catalog round trips stay on it.
     """
-    raw_plan = await run_plan_cpu(_plan_to_resolve, request)
+    raw_plan, completion_warnings = await run_plan_cpu(_plan_to_resolve, request)
     allowlist_pairs = _allowlist_pairs(request.allowlist)
     declared_pairs = _declared_pairs(raw_plan)
     pairs = allowlist_pairs | declared_pairs
@@ -4182,7 +4469,7 @@ async def resolve_plan(
         request.lora_variant_ids,
     )
     result: dict[str, object] = await run_plan_cpu(
-        _resolution_result, request, raw_plan, snapshot_id, rows
+        _resolution_result, request, raw_plan, snapshot_id, rows, completion_warnings
     )
     return result
 
@@ -4550,8 +4837,12 @@ def _resolution_result(
     raw_plan: Mapping[str, object],
     snapshot_id: str,
     rows: Sequence[Mapping[str, object]],
+    completion_warnings: Sequence[str] = (),
 ) -> dict[str, object]:
-    """``plan-resolution-result.v1`` from the catalog rows, validated (CPU only)."""
+    """``plan-resolution-result.v1`` from the catalog rows, validated (CPU only).
+
+    ``completion_warnings`` come from ``_plan_to_resolve`` and end up in ``advertencias``.
+    """
     allowlist = {entry.product_id: set(entry.variant_ids) for entry in request.allowlist}
     candidates_by_product: dict[str, list[Candidate]] = {}
     candidate_by_variant: dict[str, Candidate] = {}
@@ -4612,6 +4903,7 @@ def _resolution_result(
         candidates_by_product,
         candidate_by_variant,
         allowlist,
+        completion_warnings,
     )
     if photo_counts:
         # Derived, outside the snapshot and the hash (ADR-0031), like armados_bouquet.
@@ -5151,24 +5443,24 @@ def vista_previa_de_estructura(
             chosen, notices = start.patron, start.avisos
         else:
             chosen = sugerir_patron(context)
-        resolved: dict[str, object] = patron_resuelto(context, chosen, aplicado=patron is not None)
+        # The structure carries the pattern that is actually expanded -- the
+        # decorator's or the suggested one: a piece its motor counts with the
+        # pattern as its hint (the classic arch) counts what this one places.
+        patterned = {**_mappings(completed.get("estructuras"))[index], "patron_color": chosen}
+        resolved: dict[str, object] = patron_resuelto(
+            context, chosen, aplicado=patron is not None, unidades=_motor_units(patterned)
+        )
     except PatronColorInvalido as error:
         raise _pattern_error(estructura_id, error) from error
     if notices or purchase_notices:
         resolved["avisos"] = [*notices, *cast(list[str], resolved["avisos"]), *purchase_notices]
-    # The editor draws the same piece the proposal draws (ADR-0028 decision 5).
-    # The structure carries the pattern that was actually expanded -- the
-    # decorator's or the suggested one -- so the split the sketch is laid on is
-    # the one this preview counted. One budget per preview: a preview is one
-    # piece, so only the per-piece limit applies. The silhouette itself is
-    # remembered per request (``silueta_patron._disponer_recordado``): a touch
-    # changes the colors, not the piece, so it is not built again.
-    _add_silhouette(
-        completed,
-        {**_mappings(completed.get("estructuras"))[index], "patron_color": chosen},
-        resolved,
-        PresupuestoGrafica(),
-    )
+    # The editor draws the same piece the proposal draws (ADR-0028 decision 5),
+    # so the split the sketch is laid on is the one this preview counted. One
+    # budget per preview: a preview is one piece, so only the per-piece limit
+    # applies. The silhouette itself is remembered per request
+    # (``silueta_patron._disponer_recordado``): a touch changes the colors, not
+    # the piece, so it is not built again.
+    _add_silhouette(completed, patterned, resolved, PresupuestoGrafica())
     return VistaPreviaPatron(patron=resolved, modos_admitidos=admitted)
 
 
@@ -5227,13 +5519,18 @@ def sugerir_patron_para_estructura(
     """Preset ``patron_color`` for one structure (ADR-0028 §6), or ``None``.
 
     ``None`` when the structure admits no pattern: not geometric, a single
-    material, or a grid too small for every color of the preset. Raises
+    material, a grid too small for every color of the preset, or a piece its
+    motor counts (the same rule as ``_suggested_pattern``: an edit does not
+    put on it the grid a confirmation no longer does). Raises
     ``PlanResolutionError`` (``estructura_no_encontrada`` or ``invalid_plan``).
     """
     _validate_plan(plan)
     index = _structure_index(plan, estructura_id)
     measured = _complete_measures(plan)
-    context = _pattern_context(measured, _mappings(measured.get("estructuras"))[index])
+    structure = _mappings(measured.get("estructuras"))[index]
+    if _armado_del_motor(structure) is not None:
+        return None
+    context = _pattern_context(measured, structure)
     try:
         return cast(dict[str, object], sugerir_patron(context))
     except PatronColorInvalido:

@@ -382,7 +382,7 @@ async def test_la_foto_arqueada_hacia_arriba_llega_como_curva_y_a_la_compra() ->
 @pytest.mark.anyio
 async def test_con_patron_la_cuerda_de_la_foto_es_punto_fijo() -> None:
     # El patrón por racimos (decisión 20) se completa sobre la compra de la cuerda.
-    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01", mezcla="clasica"))
     pista = _pista_geometria(caida_relativa=0.2, desnivel_relativo=-0.3)
     resuelto = await resolver(plan_, **AMBAS, pistas_guirnalda=[pista])
     armado = cast(dict[str, object], estructura_del_plan(resuelto)["armado_guirnalda"])
@@ -582,7 +582,7 @@ def _patron(resuelto: Mapping[str, object]) -> dict[str, object]:
 async def test_una_guirnalda_nueva_con_las_dos_banderas_va_por_racimos(
     densidad: str, unidad: str
 ) -> None:
-    resuelto = await resolver(plan(guirnalda(densidad=densidad)), **AMBAS)
+    resuelto = await resolver(plan(guirnalda(densidad=densidad, mezcla="clasica")), **AMBAS)
     armado = cast(dict[str, object], estructura_del_plan(resuelto)["armado_guirnalda"])
     patron = _patron(resuelto)
     assert cast(dict[str, object], armado["racimo"])["unidad"] == unidad, (
@@ -619,7 +619,7 @@ def _sin_armado_guirnalda(estructura: Mapping[str, object]) -> dict[str, object]
 
 @pytest.mark.anyio
 async def test_el_patron_por_racimos_es_punto_fijo() -> None:
-    primera = await resolver(plan(guirnalda(densidad="sencilla")), **AMBAS)
+    primera = await resolver(plan(guirnalda(densidad="sencilla", mezcla="clasica")), **AMBAS)
     segunda = await resolver(cast(dict[str, object], primera["plan"]))
     assert segunda["plan_hash"] == primera["plan_hash"]
     assert segunda["patrones_color"] == primera["patrones_color"]
@@ -628,20 +628,22 @@ async def test_el_patron_por_racimos_es_punto_fijo() -> None:
 
 @pytest.mark.anyio
 async def test_sin_las_dos_banderas_todo_es_como_antes() -> None:
-    base = await resolver(plan(guirnalda(densidad="sencilla")))
+    base = await resolver(plan(guirnalda(densidad="sencilla", mezcla="clasica")))
     explicito = await resolver(
-        plan(guirnalda(densidad="sencilla")),
+        plan(guirnalda(densidad="sencilla", mezcla="clasica")),
         completar_patrones=False,
         completar_armados_guirnalda=False,
     )
     assert base == {**explicito, "request_id": base["request_id"]}
-    solo_patron = await resolver(plan(guirnalda(densidad="sencilla")), completar_patrones=True)
-    assert cast(dict[str, object], _patron(solo_patron)["base"])["modo"] == "aleatorio"
+    solo_patron = await resolver(
+        plan(guirnalda(densidad="sencilla", mezcla="clasica")), completar_patrones=True
+    )
+    assert cast(dict[str, object], _patron(solo_patron)["base"])["modo"] == "espiral"
     assert (
         "globos_por_racimo" not in _patron(solo_patron) and "armados_guirnalda" not in solo_patron
     )
     solo_armado = await resolver(
-        plan(guirnalda(densidad="sencilla")), completar_armados_guirnalda=True
+        plan(guirnalda(densidad="sencilla", mezcla="clasica")), completar_armados_guirnalda=True
     )
     estructura = estructura_del_plan(solo_armado)
     assert "patron_color" not in estructura
@@ -684,8 +686,8 @@ async def test_si_el_patron_por_racimos_no_cabe_se_degrada_con_aviso(
         return cast(dict[str, object], original(estructura))
 
     monkeypatch.setattr(plan_module, "sugerir_patron", sin_racimos)
-    resuelto = await resolver(plan(guirnalda(densidad="sencilla")), **AMBAS)
-    assert cast(dict[str, object], _patron(resuelto)["base"])["modo"] == "aleatorio"
+    resuelto = await resolver(plan(guirnalda(densidad="sencilla", mezcla="clasica")), **AMBAS)
+    assert cast(dict[str, object], _patron(resuelto)["base"])["modo"] == "espiral"
     armado = cast(dict[str, object], estructura_del_plan(resuelto)["armado_guirnalda"])
     assert cast(dict[str, object], armado["racimo"])["unidad"] == "cuarteto"
     supuestos = cast(list[str], cast(dict[str, object], resuelto["plan"])["supuestos"])

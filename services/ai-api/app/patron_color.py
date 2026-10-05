@@ -47,8 +47,6 @@ from app.generated_models import contract_schema
 
 VERSION_PATRON = "patron-color.v1"
 MAX_CELDAS = 4000
-#: Distancia CIE76 máxima para leer un color de la foto como el de un material.
-DELTA_E_PISTA = 25.0
 CONFIANZA_MINIMA_PISTA = 0.5
 #: Racimos de fondo entre flores cuando la pista de la foto dice "flor".
 SEPARACION_FLOR_PISTA = 3
@@ -112,10 +110,17 @@ _COLORES_EN: Mapping[str, str] = cast(Mapping[str, str], _PLAN_SCHEMA["x-colores
 _ACABADOS_EN: Mapping[str, str] = cast(Mapping[str, str], _PLAN_SCHEMA["x-acabados-en"])
 # La misma tabla CIELAB que lee catalog.py (similitud-color.ts, exportada en
 # catalog-search.v1 como x-tonos-colores-catalogo): una sola tabla de tonos.
-_LAB: Mapping[str, Sequence[float]] = cast(
-    Mapping[str, Sequence[float]],
-    contract_schema("CatalogSearch").get("x-tonos-colores-catalogo", {}).get("lab", {}),
+_TONOS: Mapping[str, object] = cast(
+    Mapping[str, object], contract_schema("CatalogSearch").get("x-tonos-colores-catalogo", {})
 )
+_LAB: Mapping[str, Sequence[float]] = cast(Mapping[str, Sequence[float]], _TONOS.get("lab", {}))
+#: Radio de sustitución del catálogo: la distancia CIE76 desde la que ``catalog.py`` ya no compra un
+#: color en lugar de otro (``delta_e_maximo`` de la misma tabla, que viaja con ella para que los dos
+#: lenguajes corten igual). Un color leído en la foto casa con un material a menos de esa distancia
+#: porque es justo lo que el plan pudo comprar en su lugar: una foto burdeos que el catálogo resolvió en
+#: rojo (ΔE 40,9). Reemplaza a ``DELTA_E_PISTA`` (25, escrito a mano aquí), que no coincidía con el
+#: catálogo y tumbaba esa pista entera. Se lee sin valor por defecto: sin la tabla no hay a qué casar.
+DELTA_E_SUSTITUCION: float = float(cast(float, _TONOS["delta_e_maximo"]))
 # La forma de patron-color.v1 la valida el contrato; aquí solo se reutiliza
 # para descartar un patrón armado aquí (una pista de la foto, un punto de
 # partida) que no cabe en él, y para leer el borrador `desde`.
@@ -1459,33 +1464,102 @@ def _delta_e(uno: Sequence[float], otro: Sequence[float]) -> float:
     return math.sqrt(sum((a - b) ** 2 for a, b in zip(uno, otro, strict=True)))
 
 
-def material_de_color(materiales: Sequence[MaterialPatron], color: str) -> int | None:
-    """Material que corresponde a un color leído en la foto.
+def _distancia_de_tono(leido: str, propio: str) -> float | None:
+    """ΔE CIE76 entre un color leído y el de un material, ya normalizados; 0 si se llaman igual.
 
-    Primero la igualdad normalizada con ``materiales[].color``; si no, el
-    material de tono más cercano (ΔE CIE76 ≤ 25 en la tabla LAB del contrato,
-    empate al primero). ``None`` si nada está lo bastante cerca.
+    ``None`` cuando no se llaman igual y a alguno de los dos le falta su tono en la tabla LAB: sin
+    tono no hay distancia que medir, y ese color solo puede casar por su nombre.
     """
-    buscado = _normalizar(color)
-    for indice, material in enumerate(materiales):
-        if material.color and _normalizar(material.color) == buscado:
-            return indice
-    tono = _LAB.get(buscado)
-    if tono is None:
+    if leido and leido == propio:
+        return 0.0
+    uno, otro = _LAB.get(leido), _LAB.get(propio)
+    if uno is None or otro is None:
         return None
-    mejor: tuple[float, int] | None = None
-    for indice, material in enumerate(materiales):
-        otro = _LAB.get(_normalizar(material.color or ""))
-        if otro is None:
+    return _delta_e(uno, otro)
+
+
+def materiales_de_colores(
+    materiales: Sequence[MaterialPatron], colores: Sequence[str]
+) -> list[int | None]:
+    """El material de cada color de UNA lectura de la foto, en su orden; ``None`` el que no tiene.
+
+    (a) El color exacto: la igualdad normalizada con ``materiales[].color`` (el primero que lo lleve).
+    (b) Si no, el material de tono más cercano (ΔE CIE76 en la tabla LAB del contrato, empate al
+        primero) a menos del radio de sustitución del catálogo (``DELTA_E_SUSTITUCION``), y solo si la
+        cercanía es **recíproca**: de todos los colores de la lectura, el más cercano a ese material es
+        este (empate al primero leído).
+
+    Así un burdeos leído casa con el rojo que el plan compró en su lugar (ΔE 40,9 < 45), que es
+    exactamente lo que el catálogo hace al comprar, y dos colores distintos de la foto nunca caen en el
+    mismo material: leídos rosado y lila sobre una pieza lila y blanca, el material lila es del lila
+    (ΔE 0) y el rosado se queda sin material en vez de pintarse de lila; con un material lila en la
+    pieza, un lila leído nunca cae en el rosado. Antes cada color se casaba solo, con un radio de 25
+    escrito aquí, y una lectura podía repartir dos colores en el mismo material o perder un color que
+    el plan sí compró.
+
+    Un color repetido en la lectura (una espiral ``blanco, negro, blanco, azul``) es el mismo color y
+    casa con el mismo material. La lectura entera es la que decide la reciprocidad, así que quien case
+    los colores de una pista los pasa todos juntos, no uno por uno.
+    """
+    leidos = [_normalizar(color) for color in colores]
+    propios = [_normalizar(material.color or "") for material in materiales]
+    distintos = list(dict.fromkeys(leidos))
+
+    def mas_cercano(leido: str) -> int | None:
+        mejor: tuple[float, int] | None = None
+        for indice, propio in enumerate(propios):
+            distancia = _distancia_de_tono(leido, propio)
+            if (
+                distancia is not None
+                and distancia < DELTA_E_SUSTITUCION
+                and (mejor is None or distancia < mejor[0])
+            ):
+                mejor = (distancia, indice)
+        return None if mejor is None else mejor[1]
+
+    def lectura_mas_cercana(indice: int) -> str | None:
+        mejor: tuple[float, str] | None = None
+        for leido in distintos:
+            distancia = _distancia_de_tono(leido, propios[indice])
+            if distancia is not None and (mejor is None or distancia < mejor[0]):
+                mejor = (distancia, leido)
+        return None if mejor is None else mejor[1]
+
+    casados: dict[str, int | None] = {}
+    for leido in distintos:
+        exacto = next(
+            (indice for indice, propio in enumerate(propios) if propio and propio == leido), None
+        )
+        if exacto is not None:
+            casados[leido] = exacto
             continue
-        distancia = _delta_e(tono, otro)
-        if distancia <= DELTA_E_PISTA and (mejor is None or distancia < mejor[0]):
-            mejor = (distancia, indice)
-    return mejor[1] if mejor is not None else None
+        cercano = mas_cercano(leido)
+        reciproco = cercano is not None and lectura_mas_cercana(cercano) == leido
+        casados[leido] = cercano if reciproco else None
+    return [casados[leido] for leido in leidos]
+
+
+def material_de_color(materiales: Sequence[MaterialPatron], color: str) -> int | None:
+    """Material que corresponde a un color leído en la foto, solo: ``materiales_de_colores`` con él.
+
+    Primero la igualdad normalizada con ``materiales[].color``; si no, el material de tono más
+    cercano a menos del radio de sustitución del catálogo (``DELTA_E_SUSTITUCION``, empate al
+    primero). ``None`` si nada está lo bastante cerca.
+
+    Un color leído solo no compite con ningún otro, así que su reciprocidad se cumple siempre: es la
+    regla para un color suelto (un remate, el relleno, un nivel de un bouquet). Los colores de una
+    lectura de varios —un patrón, un reparto— se casan juntos con ``materiales_de_colores``, o dos
+    colores distintos de la foto pueden caer en el mismo material.
+    """
+    return materiales_de_colores(materiales, [color])[0]
 
 
 def _base_de_pista(
-    estructura: EstructuraPatron, modo: str, indices: list[int], pista: Mapping[str, object]
+    estructura: EstructuraPatron,
+    modo: str,
+    indices: list[int],
+    pista: Mapping[str, object],
+    materiales_de_manchas: Sequence[int | None] = (),
 ) -> dict[str, object] | None:
     if modo == "espiral":
         k = _entero(pista["globos_por_racimo"]) if pista.get("globos_por_racimo") is not None else 4
@@ -1517,7 +1591,7 @@ def _base_de_pista(
             "semilla": _semilla(estructura.estructura_id),
         }
     if modo == "zonas":
-        return _base_de_zonas_de_pista(estructura, indices, pista)
+        return _base_de_zonas_de_pista(estructura, indices, pista, materiales_de_manchas)
     if modo == "flor":
         if len(indices) < 3:
             return None
@@ -1566,35 +1640,44 @@ def _extensiones_por_participacion(
 
 
 def _base_de_zonas_de_pista(
-    estructura: EstructuraPatron, indices: Sequence[int], pista: Mapping[str, object]
+    estructura: EstructuraPatron,
+    indices: Sequence[int],
+    pista: Mapping[str, object],
+    materiales_de_manchas: Sequence[int | None],
 ) -> dict[str, object] | None:
     """Las manchas que la foto leyó, con el material de cada color (ADR-0036).
 
     ``colores[0]`` es el fondo (lo dice el prompt) y cada mancha trae su color
-    por nombre, porque quien lee la foto no conoce los índices de la pieza: se
-    resuelven con la misma tabla de tonos que ``colores`` (``material_de_color``).
+    por nombre, porque quien lee la foto no conoce los índices de la pieza:
+    ``materiales_de_manchas`` es el material de cada mancha, en el orden de
+    ``zonas``, casado junto con ``colores`` (``materiales_de_colores``).
 
-    ``None`` —y quien llama cae al preset— cuando la pista no trae manchas, una
-    mancha nombra un color que la pieza no lleva, o el fondo se queda sin sitio.
-    Preferir el preset a inventar una mancha: una zona en el sitio equivocado
-    sale en la gráfica, en la hoja de armado y en el prompt de imagen.
+    Una mancha de un color que la pieza no lleva se queda fuera ella sola (quien
+    llama lo avisa) y las demás siguen en su sitio. ``None`` —y quien llama cae
+    al preset— cuando la pista no trae manchas o no le queda ninguna, un ancla
+    no es del contrato, o el fondo se queda sin sitio. Preferir el preset a
+    inventar una mancha: una zona en el sitio equivocado sale en la gráfica, en
+    la hoja de armado y en el prompt de imagen.
     """
     manchas = pista.get("zonas")
-    if not isinstance(manchas, list) or not manchas:
+    if not isinstance(manchas, list) or not manchas or len(manchas) != len(materiales_de_manchas):
         return None
     materiales: list[int] = []
     anclas: list[str] = []
     extensiones: list[int] = []
-    for item in manchas:
+    for item, material in zip(manchas, materiales_de_manchas, strict=True):
         if not isinstance(item, Mapping):
             return None
         ancla = str(item.get("ancla"))
-        material = material_de_color(estructura.materiales, str(item.get("color")))
-        if ancla not in _ANCLAS or material is None:
+        if ancla not in _ANCLAS:
             return None
+        if material is None:
+            continue
         materiales.append(material)
         anclas.append(ancla)
         extensiones.append(_entero(item.get("extension")))
+    if not materiales:
+        return None
     return {
         "modo": "zonas",
         "fondo": indices[0],
@@ -1655,14 +1738,86 @@ def _eje_y_simetria_de_pista(
         patron["simetria"] = "espejo"
 
 
-def patron_desde_pista(
+#: Colores de una pista que son puestos de la pieza y no acentos: el dominante (el primero; en
+#: ``zonas``, el fondo) y, en una flor, también el pétalo y el centro. Si uno de ellos no tiene
+#: material, lo que se armaría ya no es lo que se leyó y la pista cae al preset.
+_PUESTOS_DE_LA_PISTA = {"flor": 3}
+
+
+@dataclass(frozen=True, slots=True)
+class _ColoresDeLaPista:
+    """Los colores de una pista casados con la pieza, sin los acentos que no tienen material."""
+
+    #: El material de cada color de ``colores`` que casó, en su orden.
+    indices: list[int]
+    #: La pista con ``pesos`` recortados a esos colores (``bloques``), si los traía alineados.
+    pista: Mapping[str, object]
+    #: El material de cada mancha de ``zonas``, en su orden; ``None`` la que no casó.
+    manchas: list[int | None]
+    #: Los colores leídos que no casaron con ningún material, sin repetir, como se leyeron.
+    sin_material: list[str]
+
+
+def _colores_de_la_pista(
     estructura: EstructuraPatron, pista: Mapping[str, object]
+) -> _ColoresDeLaPista | None:
+    """Casa los colores de la pista (los de ``colores`` y los de sus manchas) de una sola vez.
+
+    Juntos y no uno por uno: ``materiales_de_colores`` decide con la lectura entera si un tono
+    cercano es de verdad el de un material. Un acento sin material se descarta solo; ``None`` si no
+    hay colores o si uno de los puestos (``_PUESTOS_DE_LA_PISTA``) se queda sin material.
+    """
+    colores = pista.get("colores")
+    if not isinstance(colores, list) or not colores:
+        return None
+    modo = str(pista.get("modo"))
+    zonas = pista.get("zonas")
+    de_manchas = (
+        [str(item.get("color")) if isinstance(item, Mapping) else "" for item in zonas]
+        if modo == "zonas" and isinstance(zonas, list)
+        else []
+    )
+    nombres = [str(color) for color in colores]
+    casados = materiales_de_colores(estructura.materiales, [*nombres, *de_manchas])
+    de_colores = casados[: len(nombres)]
+    if any(indice is None for indice in de_colores[: _PUESTOS_DE_LA_PISTA.get(modo, 1)]):
+        return None
+    conservados = [orden for orden, indice in enumerate(de_colores) if indice is not None]
+    pesos = pista.get("pesos")
+    if isinstance(pesos, list) and len(pesos) == len(nombres) and len(conservados) < len(nombres):
+        # Los bloques reparten por peso relativo (``_mayor_resto``): los que quedan conservan su
+        # proporción entre ellos, que es el reparto renormalizado sin el color descartado.
+        pista = {**pista, "pesos": [pesos[orden] for orden in conservados]}
+    sin_material: dict[str, str] = {}
+    for nombre, indice in zip([*nombres, *de_manchas], casados, strict=True):
+        if indice is None and nombre.strip():
+            sin_material.setdefault(_normalizar(nombre), nombre.strip())
+    return _ColoresDeLaPista(
+        indices=[cast(int, de_colores[orden]) for orden in conservados],
+        pista=pista,
+        manchas=casados[len(nombres) :],
+        sin_material=list(sin_material.values()),
+    )
+
+
+def patron_desde_pista(
+    estructura: EstructuraPatron,
+    pista: Mapping[str, object],
+    avisos: list[str] | None = None,
 ) -> dict[str, object] | None:
     """Patrón que describe la pista leída en la foto (``origen: "referencia"``), §7.
 
-    ``None`` si la confianza no llega a 0,5, si un color de la pista no
-    corresponde a ningún material, o si el patrón no vale para la estructura;
-    quien llama cae entonces al preset.
+    Cada color de la pista se casa con un material junto con los demás (``materiales_de_colores``:
+    el color exacto o, si no, el tono más cercano y recíproco dentro del radio de sustitución del
+    catálogo). Un color de **acento** que no casa con ninguno se descarta él solo y el patrón se arma
+    con el resto: sus pesos (``bloques``) y sus manchas (``zonas``) conservan la proporción entre
+    ellos. Cada color descartado deja una frase en ``avisos`` —solo si el patrón sale—, para que
+    quien llama la diga. Antes un acento que el plan no compró tumbaba la pista entera y la pieza caía
+    al preset sin decirlo.
+
+    ``None`` —y quien llama cae al preset— si la confianza no llega a 0,5, si el color dominante (el
+    primero de la pista; en ``zonas`` el fondo) no corresponde a ningún material, si a una flor le
+    falta uno de sus tres puestos, o si el patrón no vale para la estructura.
     """
     confianza = pista.get("confianza")
     if not isinstance(confianza, (int, float)) or confianza < CONFIANZA_MINIMA_PISTA:
@@ -1672,16 +1827,11 @@ def patron_desde_pista(
         # Guirnalda armada (E5): la foto da los colores y el estilo; la unidad
         # del racimo es la del armado.
         pista = {**pista, "globos_por_racimo": racimo_armado}
-    colores = pista.get("colores")
-    if not isinstance(colores, list) or not colores:
+    leidos = _colores_de_la_pista(estructura, pista)
+    if leidos is None:
         return None
-    indices: list[int] = []
-    for color in colores:
-        indice = material_de_color(estructura.materiales, str(color))
-        if indice is None:
-            return None
-        indices.append(indice)
-    base = _base_de_pista(estructura, str(pista.get("modo")), indices, pista)
+    indices, pista = leidos.indices, leidos.pista
+    base = _base_de_pista(estructura, str(pista.get("modo")), indices, pista, leidos.manchas)
     if base is None:
         return None
     patron: dict[str, object] = {"version": VERSION_PATRON, "origen": "referencia", "base": base}
@@ -1710,6 +1860,12 @@ def patron_desde_pista(
         validar_y_expandir(estructura, patron)
     except PatronColorInvalido:
         return None
+    if avisos is not None:
+        avisos.extend(
+            f"La foto muestra {nombre}, que no es de ningún color de esta pieza: el patrón de la"
+            " foto se armó sin él."
+            for nombre in leidos.sin_material
+        )
     return patron
 
 
@@ -2591,39 +2747,70 @@ def _pasos(expansion: Expansion) -> list[dict[str, object]]:
     ]
 
 
-def patron_resuelto(
-    estructura: EstructuraPatron, patron: Mapping[str, object], *, aplicado: bool
-) -> dict[str, object]:
-    """``PatronColorResuelto`` (plan-resuelto.v1 §8): rejilla, conteo, pasos y textos.
-
-    ``aplicado`` distingue el patrón del plan de una sugerencia; con una
-    sugerencia los conteos son los de la sugerencia, no los del plan.
-    """
-    p = _leer(patron)
-    expansion = _expandir(estructura, p)
-    conteo = conteo_por_instancia(estructura, expansion)
-    texto = _Redactor(estructura, p, expansion).textos()
-    avisos = list(expansion.avisos)
-    if estructura.un_tamano and conteo.total != estructura.total:
+def _avisos_de_conteo(estructura: EstructuraPatron, expansion: Expansion, total: int) -> list[str]:
+    """Lo que la rejilla cambia del conteo de las medidas: sus globos por pieza, dichos."""
+    avisos: list[str] = []
+    if estructura.un_tamano and total != estructura.total:
         if expansion.geometria == "racimos":
             unidad = _unidad("racimos", expansion.columnas, transversal=False)
             centros = " y los centros de las flores" if expansion.extras else ""
             avisos.append(
-                f"Con {unidad.plural} completos{centros} cada pieza lleva {conteo.total} globos;"
+                f"Con {unidad.plural} completos{centros} cada pieza lleva {total} globos;"
                 f" las medidas daban {estructura.total}."
             )
         else:
             avisos.append(
                 f"Con la rejilla completa ({expansion.filas} × {expansion.columnas}) la pared lleva"
-                f" {conteo.total} globos; las medidas daban {estructura.total}."
+                f" {total} globos; las medidas daban {estructura.total}."
             )
     posiciones = expansion.filas * expansion.columnas + len(expansion.extras)
-    if not estructura.un_tamano and conteo.total != posiciones:
+    if not estructura.un_tamano and total != posiciones:
         avisos.append(
             f"La gráfica tiene {posiciones} posiciones y la mezcla de varios tamaños da"
-            f" {conteo.total} globos por pieza: el conteo por color reparte esos"
-            f" {conteo.total} en la proporción de la gráfica, con al menos uno por color."
+            f" {total} globos por pieza: el conteo por color reparte esos"
+            f" {total} en la proporción de la gráfica, con al menos uno por color."
         )
+    return avisos
+
+
+#: Lo que dice el patrón de una pieza que cuenta su motor (``patron_resuelto`` con ``unidades``).
+AVISO_CONTEO_DEL_ARMADO = (
+    "Los globos de esta pieza los coloca y los cuenta su armado: el conteo por color es el de lo"
+    " que se compra, y la gráfica del patrón solo guía el orden de los colores."
+)
+
+
+def patron_resuelto(
+    estructura: EstructuraPatron,
+    patron: Mapping[str, object],
+    *,
+    aplicado: bool,
+    unidades: Sequence[int] | None = None,
+) -> dict[str, object]:
+    """``PatronColorResuelto`` (plan-resuelto.v1 §8): rejilla, conteo, pasos y textos.
+
+    ``aplicado`` distingue el patrón del plan de una sugerencia; con una
+    sugerencia los conteos son los de la sugerencia, no los del plan.
+
+    ``unidades`` son los globos de cada material por instancia cuando no los
+    cuenta la rejilla sino el motor que arma la pieza (``plan._conteo_del_motor``):
+    lo que se compra es lo que el motor coloca, así que el conteo publica eso,
+    sin los avisos que comparan la rejilla con las medidas y con
+    ``AVISO_CONTEO_DEL_ARMADO``. Antes la hoja de armado de un arco declarado
+    70/20/10 decía 44/22/22 mientras se compraban 30/29/29. ``None``: el conteo
+    es el de la rejilla, como siempre.
+    """
+    p = _leer(patron)
+    expansion = _expandir(estructura, p)
+    texto = _Redactor(estructura, p, expansion).textos()
+    avisos = list(expansion.avisos)
+    if unidades is not None and len(unidades) == len(estructura.materiales) and sum(unidades) > 0:
+        por_material, total = tuple(unidades), sum(unidades)
+        avisos.append(AVISO_CONTEO_DEL_ARMADO)
+    else:
+        conteo = conteo_por_instancia(estructura, expansion)
+        por_material, total = conteo.unidades, conteo.total
+        avisos.extend(_avisos_de_conteo(estructura, expansion, total))
     return {
         "estructura_id": estructura.estructura_id,
         "aplicado": aplicado,
@@ -2632,7 +2819,7 @@ def patron_resuelto(
         "filas": expansion.filas,
         "columnas": expansion.columnas,
         "repeticiones": estructura.repeticiones,
-        "globos_por_instancia": conteo.total,
+        "globos_por_instancia": total,
         "celdas": [list(fila) for fila in expansion.celdas],
         "extras": [{"fila": fila, "material": material} for fila, material in expansion.extras],
         "conteo": [
@@ -2640,11 +2827,11 @@ def patron_resuelto(
                 "material": indice,
                 "color": material.color,
                 "acabado": material.acabado,
-                "unidades_por_instancia": unidades,
-                "unidades_total": unidades * estructura.repeticiones,
+                "unidades_por_instancia": cantidad,
+                "unidades_total": cantidad * estructura.repeticiones,
             }
-            for indice, (material, unidades) in enumerate(
-                zip(estructura.materiales, conteo.unidades, strict=True)
+            for indice, (material, cantidad) in enumerate(
+                zip(estructura.materiales, por_material, strict=True)
             )
         ],
         "pasos": _pasos(expansion),
@@ -2659,9 +2846,11 @@ def patron_resuelto(
 
 __all__ = [
     "ANCLAS",
+    "AVISO_CONTEO_DEL_ARMADO",
     "AVISO_ESPEJO_GUIRNALDA",
     "quitar_espejo_sin_u",
     "Conteo",
+    "DELTA_E_SUSTITUCION",
     "DIRECCIONES",
     "EXTENSION_ZONA_MAXIMA",
     "MAX_EXTENSION_ZONAS",
@@ -2685,6 +2874,7 @@ __all__ = [
     "forma_valida",
     "lista_en",
     "material_de_color",
+    "materiales_de_colores",
     "nombre_color_en",
     "participaciones",
     "patron_desde_pista",
