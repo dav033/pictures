@@ -29,7 +29,10 @@ Qué dice cada mando:
   delgada que la base, se afina al subir; parecidas, recta de abajo arriba; punta más ancha, se abre arriba.
 - ``forma.inclinacionM``  hacia qué lado se va la punta, con su lado nombrado (negativo, a la izquierda).
 - ``forma.serpenteoM``  si la línea serpentea en S.
-- ``volumen.racimo``  de cuántos globos es cada racimo (en palabras para el LoRA, que no lleva cifras).
+- ``volumen.racimo``  de cuántos globos es cada racimo (en palabras para el LoRA, que no lleva cifras), y para
+  Gemini el rango que de verdad arma el motor.
+- ``colores``  dónde va cada color: los tramos de la base a la punta, racimos de un solo color o los acentos
+  sueltos (``frases_del_reparto``, la misma de la guirnalda).
 - ``corona.activa`` (con ``tamano`` y ``material``)  cómo acaba la punta.
 
 El vocabulario es el del corpus v004, el mismo de las piezas hermanas: «tapering», «widest at the base», «leaning»,
@@ -45,6 +48,7 @@ import unicodedata
 from collections.abc import Mapping, Sequence
 from typing import cast
 
+from app.armado_guirnalda_organica_prompt import frases_del_reparto, texto_del_racimo
 from app.patron_color import color_con_acabado_en, lista_en, nombre_color_en
 
 #: Por debajo de esto una inclinación o un serpenteo no se ven y no se nombran: el motor acota en metros y un par de
@@ -102,10 +106,6 @@ def _ascii_sin_cifras(texto: str) -> str:
     """El fragmento LoRA: ASCII, sin cifras y sin espacios dobles (ADR-0028 §8)."""
     plano = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
     return " ".join("".join(c for c in plano if not c.isdigit()).split())
-
-
-def _plural(cantidad: int, singular: str, plural: str) -> str:
-    return f"{cantidad} {singular if cantidad == 1 else plural}"
 
 
 def _lado(inclinacion: float) -> str:
@@ -257,11 +257,20 @@ def frases_columna_organica(
         f" and {punta} m at the top, {_SILUETA_GEMINI[silueta]}",
         *_linea_gemini(forma),
     ]
+    # Dónde va cada color, solo para Gemini: el fragmento LoRA no repite la paleta (``_colores_gemini``).
+    reparto_gemini, _reparto_lora = frases_del_reparto(
+        colores,
+        materiales,
+        eje_gemini="from the base to the top",
+        eje_lora="from base to top",
+        pieza_en="column",
+    )
     frases = [
         "COLUMN ASSEMBLY - " + ", ".join(cabeza) + ".",
-        f"Build it from {_plural(racimo, 'balloon', 'balloons')} per cluster in "
+        f"Build it from {texto_del_racimo(racimo)} in "
         + (lista_en(gemini_colores) if gemini_colores else "the approved colors")
         + ", in mixed sizes, chained from the floor up to the tip.",
+        *reparto_gemini,
         corona_gemini,
         "Keep the clusters packed tightly against each other so the column reads as one continuous"
         " organic piece with no gaps, made only of round latex balloons: no ribbons, streamers,"

@@ -692,23 +692,52 @@ export function pistasInclinacionDelPlan(plan: Pick<PlanDecoracion, "estructuras
 }
 
 /**
- * Cómo se curva la línea de cada guirnalda, leído de la foto (ADR-0032, decisión
- * 28): `arriba` es la tendida sobre un fondo que cae por los dos lados y `abajo`
- * el festón que cuelga, con su flecha en fracción del largo. Misma fuente y misma
- * regla que `pistasArmadoDelPlan`. Sin sentido o sin flecha no viaja: el motor
- * deja la línea como la trae.
+ * La línea de cada guirnalda leída en la foto (ADR-0032, decisiones 27 a 29), para
+ * el motor: su forma, su soporte, sus puntos de anclaje, hacia dónde se curva y
+ * cuánto (`arriba` es la tendida sobre un fondo que cae por los dos lados y `abajo`
+ * el festón que cuelga), el desnivel de sus extremos, la caída de una lectura v2 y
+ * la confianza, todo relativo al largo como lo lee la foto. Misma fuente y misma
+ * regla que `pistasArmadoDelPlan`.
+ *
+ * Viaja la lectura y Python la traduce con la misma función que el armado por
+ * partes (`armado_guirnalda.linea_de_lectura`). Antes solo viajaban el sentido y la
+ * flecha, y el desnivel se perdía: la foto del 2026-09-28 (curva hacia arriba
+ * 0,107 y el extremo derecho 0,335 del largo más bajo) salía nivelada. Lo que la
+ * lectura no distingue (`null`) no viaja; el sentido y la flecha de una lectura v3
+ * o v4 y la caída de una v2 no viajan juntos, que es como Python las distingue.
  */
-export function pistasCurvaDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): { referencia_element_id: string; sentido: "arriba" | "abajo"; flecha: number }[] {
+export function pistasCurvaDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): {
+  referencia_element_id: string;
+  soporte: PistaGuirnalda["soporte"];
+  forma: PistaGuirnalda["forma"];
+  confianza: number;
+  puntos_de_anclaje?: number;
+  sentido?: "arriba" | "abajo";
+  flecha?: number;
+  desnivel?: number;
+  caida?: number;
+}[] {
   if (!blueprint) return [];
+  type PistaCurva = ReturnType<typeof pistasCurvaDelPlan>[number];
   const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
-  const pistas = new Map<string, { referencia_element_id: string; sentido: "arriba" | "abajo"; flecha: number }>();
+  const pistas = new Map<string, PistaCurva>();
   for (const estructura of plan.estructuras) {
     const elementId = estructura.referencia_element_id;
     const lectura = elementId ? elementos.get(elementId)?.appearance.armado_guirnalda : undefined;
-    const sentido = lectura?.sentido_curva;
-    const flecha = lectura?.flecha_relativa;
-    if (!elementId || !sentido || flecha === null || flecha === undefined || pistas.has(elementId)) continue;
-    pistas.set(elementId, { referencia_element_id: elementId, sentido, flecha });
+    if (!elementId || !lectura || pistas.has(elementId)) continue;
+    // Una lectura v2 no trae las claves del sentido ni de la flecha: su caída es la de entonces.
+    const v2 = lectura.sentido_curva === undefined && lectura.flecha_relativa === undefined;
+    pistas.set(elementId, {
+      referencia_element_id: elementId,
+      soporte: lectura.soporte,
+      forma: lectura.forma,
+      confianza: lectura.confianza,
+      ...(lectura.puntos_de_anclaje === undefined ? {} : { puntos_de_anclaje: lectura.puntos_de_anclaje }),
+      ...(lectura.sentido_curva ? { sentido: lectura.sentido_curva } : {}),
+      ...(typeof lectura.flecha_relativa === "number" ? { flecha: lectura.flecha_relativa } : {}),
+      ...(typeof lectura.desnivel_relativo === "number" ? { desnivel: lectura.desnivel_relativo } : {}),
+      ...(v2 && typeof lectura.caida_relativa === "number" ? { caida: lectura.caida_relativa } : {}),
+    });
   }
   return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
 }

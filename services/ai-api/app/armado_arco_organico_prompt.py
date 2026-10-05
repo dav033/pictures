@@ -31,7 +31,9 @@ Qué dice cada mando (los mismos que lee ``_armado_arco_organico`` en ``app/arma
   dice que apoya por sus dos patas, porque no es verdad.
 - ``volumen.grosorPatasM`` frente a ``volumen.grosorCimaM``  si la banda engorda hacia arriba o hacia abajo
   (también de ``resuelto``, ``grosor_patas_m`` y ``grosor_cima_m``, por lo mismo).
-- ``volumen.racimo``  en racimos de N, en palabras.
+- ``volumen.racimo``  en racimos de N, en palabras, y para Gemini el rango que de verdad arma el motor.
+- ``colores``  dónde va cada color: los tramos en su orden de una pata a la otra (en un medio arco, de su pata a
+  su punta), racimos de un solo color o los acentos sueltos (``frases_del_reparto``, la misma de la guirnalda).
 
 **Ojo con ``forma.suelo``**: es la línea del piso del dibujo (``app/organico/dibujo.py``), no si la pieza se
 apoya. Un arco orgánico apoya siempre en el suelo por sus patas, y eso es justo lo que lo distingue de una
@@ -51,6 +53,7 @@ import unicodedata
 from collections.abc import Mapping, Sequence
 from typing import cast
 
+from app.armado_guirnalda_organica_prompt import frases_del_reparto, texto_del_racimo
 from app.patron_color import color_con_acabado_en, lista_en
 
 #: Un arco completo. Por debajo es un medio arco: la banda se corta antes de bajar por la otra pata.
@@ -105,10 +108,6 @@ def _ascii_sin_cifras(texto: str) -> str:
     """El fragmento LoRA: ASCII, sin cifras y sin espacios dobles (ADR-0028 §8)."""
     plano = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
     return " ".join("".join(c for c in plano if not c.isdigit()).split())
-
-
-def _plural(cantidad: int, singular: str, plural: str) -> str:
-    return f"{cantidad} {singular if cantidad == 1 else plural}"
 
 
 def _lado(derecha: bool) -> str:
@@ -280,25 +279,42 @@ def frases_arco_organico(
     carga_gemini, carga_lora = _carga(forma)
     engorde_gemini, engorde_lora = _engorde(patas, cima_m)
     apoyo_gemini, apoyo_lora = _apoyo(forma)
+    # Dónde va cada color. El motor recorre el arco de izquierda a derecha; un medio arco se cuenta desde su
+    # pata, que es como lo lee la foto, así que el volteado (pata a la derecha) se nombra al revés.
+    medio = _flotante(forma, "corte", ARCO_COMPLETO) < ARCO_COMPLETO
+    reparto_gemini, reparto_lora = frases_del_reparto(
+        colores,
+        materiales,
+        eje_gemini="from its foot up to its free end"
+        if medio
+        else "from the left foot over the top to the right foot",
+        eje_lora="from the base to the open tip"
+        if medio
+        else "from the left base over the top to the right base",
+        pieza_en="arch",
+        invertir=medio and bool(forma.get("espejo")),
+    )
 
     frases = [
         f"ARCH ASSEMBLY - {proporcion_gemini}, about {_numero(ancho)} m wide and"
         f" {_numero(alto)} m tall, {apoyo_gemini}, {curva_gemini}, {cima_gemini}.",
         f"The band of balloons is about {_numero(patas)} m thick at the legs and"
         f" {_numero(cima_m)} m at the crown, {engorde_gemini}, and {carga_gemini}.",
-        f"Build it from {_plural(racimo, 'balloon', 'balloons')} per cluster in "
+        f"Build it from {texto_del_racimo(racimo)} in "
         + (lista_en(nombres) if nombres else "the approved colors")
         + ", in balloons of several sizes mixed together, the clusters overlapping and packed tightly"
         " against each other so the whole arch reads as one continuous organic band with no gaps,"
         " made only of round latex balloons: no ribbons, streamers, twisted bands or fabric.",
+        *reparto_gemini,
     ]
     sueltos = resuelto.get("sueltos")
     if isinstance(sueltos, int) and not isinstance(sueltos, bool) and sueltos > 0:
         frases.append("Leave no balloon floating on its own: every balloon touches another.")
 
     # El orden del fragmento: primero lo que lo sostiene (las patas en el suelo, lo que lo separa de una
-    # guirnalda), luego la silueta, luego el lado que pesa y el grosor, y al final el racimo, como en la
-    # guirnalda orgánica. Nada de esto nombra el arco otra vez: el caption ya lo nombró.
+    # guirnalda), luego la silueta, luego el lado que pesa y el grosor, después el racimo, como en la
+    # guirnalda orgánica, y al final dónde va cada color. Nada de esto nombra el arco otra vez: el caption ya
+    # lo nombró.
     lora = ", ".join(
         [
             apoyo_lora,
@@ -308,6 +324,7 @@ def frases_arco_organico(
             carga_lora,
             engorde_lora,
             f"in clusters of {_DIGITOS_EN.get(racimo, 'several')}",
+            *([reparto_lora] if reparto_lora else []),
         ]
     )
     return " ".join(frases), _ascii_sin_cifras(lora)

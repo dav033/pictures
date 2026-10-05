@@ -811,6 +811,48 @@ def geometria_de_lectura(lectura: Mapping[str, object], largo_m: float) -> dict[
     return {"forma": forma, **geometria} if geometria else {}
 
 
+def linea_de_lectura(lectura: Mapping[str, object], largo_m: float) -> dict[str, float]:
+    """La línea del motor (``app/guirnalda``) que dice la lectura de una guirnalda en la foto, o ``{}``.
+
+    Es la traducción del armado por partes, en el mismo orden y reducida a la línea: la forma leída si su
+    soporte la admite y sus puntos de anclaje (como ``_forma_desde_lectura``), la flecha y el desnivel en metros
+    sobre ``largo_m`` (``geometria_de_lectura``) y, al final, ``linea_del_motor``, la única traducción de esa
+    forma a la espina del motor. La usa la receta de la guirnalda orgánica (``armado_estructura``), así que las
+    dos guirnaldas leen la misma foto con la misma línea. Antes la orgánica recibía solo el sentido y la flecha,
+    con una cuenta propia, y el desnivel de los extremos se perdía por el camino (2026-10-05; la foto del
+    2026-09-28, curva hacia arriba 0,107 y el extremo derecho 0,335 del largo más bajo, salía nivelada).
+
+    Solo lo que la foto dice: sin desnivel leído no hay ``pendienteM``, porque un cero pisaría la caída que otra
+    lectura sí trae (la inclinación de la pieza). ``{}`` con una lectura dudosa (``CONFIANZA_MINIMA_LECTURA``)
+    o sin una forma del contrato. No acota a los rangos del motor: eso es de quien arma, que lo avisa.
+    """
+    confianza = lectura.get("confianza")
+    forma = lectura.get("forma")
+    if (
+        isinstance(confianza, bool)
+        or not isinstance(confianza, (int, float))
+        or confianza < CONFIANZA_MINIMA_LECTURA
+        or forma not in FORMAS
+    ):
+        return {}
+    soporte = lectura.get("soporte")
+    armado: dict[str, object] = {
+        # Una forma que cuelga sin un soporte de donde colgar se queda recta, como en ``_forma_desde_lectura``.
+        "forma": forma
+        if forma not in FORMAS_CON_CAIDA or soporte in SOPORTES_CON_CAIDA
+        else "recta"
+    }
+    puntos = lectura.get("puntos_de_anclaje")
+    if isinstance(puntos, int) and not isinstance(puntos, bool):
+        armado["puntos_de_anclaje"] = puntos
+    armado.update(geometria_de_lectura(lectura, largo_m))
+    linea = linea_del_motor(armado)
+    if "desnivel_m" not in armado:
+        linea.pop("pendienteM", None)
+    # `+ 0.0` deja un cero sin signo: `-0.0` viajaría así en el JSON del plan.
+    return {clave: valor + 0.0 for clave, valor in linea.items()}
+
+
 def _forma_desde_lectura(
     estructura: EstructuraGuirnalda, lectura: Mapping[str, object], receta: Mapping[str, object]
 ) -> dict[str, object]:
@@ -1653,6 +1695,7 @@ __all__ = [
     "VERSION_ARMADO",
     "armado_resuelto",
     "geometria_de_lectura",
+    "linea_de_lectura",
     "linea_del_motor",
     "opciones_admitidas",
     "racimo_y_forma",

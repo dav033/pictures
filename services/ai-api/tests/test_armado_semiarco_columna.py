@@ -112,7 +112,9 @@ def test_el_semiarco_organico_derecho_del_caso_real_es_medio_arco_de_un_lado_con
     # De un solo lado: el corte del medio arco corto, volteado a la derecha, con la pata gruesa de «medio-pila».
     assert forma["corte"] == _FORMA[FORMA_SEMIARCO].forma["corte"] < 1
     assert forma["espejo"] is True
-    assert forma["carga"] == _FORMA[FORMA_SEMIARCO_ASIMETRICO].forma["carga"]
+    # El lado pesado se voltea con la pieza (2026-10-05): sin voltear, el de la izquierda caía en la punta libre
+    # de un semiarco derecho y el texto de la imagen decía «más grueso a la izquierda», donde no hay pie.
+    assert forma["carga"] == -_FORMA[FORMA_SEMIARCO_ASIMETRICO].forma["carga"]
     # Las medidas son las del plan: el alto tal cual y el ancho del arco completo, el mínimo del motor (1,5 m),
     # que es el que más se acerca a los 1,2 m que se ven; no los 3,68 × 2,61 m de un arco entero.
     assert forma["altoM"] == 2.2

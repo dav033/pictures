@@ -2087,6 +2087,30 @@ export interface PythonOmoikaneArmarEstructuraInput extends OmoikaneArmadoComun 
   estructuraId?: string;
 }
 
+/**
+ * The line of one garland as the photo read it (`LecturaGuirnaldaSchema`, ADR-0032 decisions 27-29), in the
+ * reading's own relative units, addressed to the reference element it belongs to. Python translates it with the
+ * same function as the by-parts assembly (`armado_guirnalda.linea_de_lectura`), so both garlands read the same
+ * photo the same way. Until 2026-10-05 only `sentido` and `flecha` travelled and the height difference between
+ * the ends was lost. The Python model (`CurvaPistaFoto`) keeps every field but the element optional, so a body
+ * with only `sentido` and `flecha` is still read as before.
+ */
+export type PistaCurvaGuirnalda = {
+  referencia_element_id: string;
+  soporte: PistaGuirnalda["soporte"];
+  forma: PistaGuirnalda["forma"];
+  confianza: number;
+  puntos_de_anclaje?: number;
+  /** Which way the centre line leaves the straight line between the ends; travels with `flecha`. */
+  sentido?: "arriba" | "abajo";
+  /** How far, as a fraction of the horizontal length. */
+  flecha?: number;
+  /** Right end minus left end, as a fraction of the horizontal length (negative: lower on the right). */
+  desnivel?: number;
+  /** A v2 reading's drop (it only knew how to hang); never together with `sentido`/`flecha`. */
+  caida?: number;
+};
+
 export interface PythonOmoikaneCompletarArmadosInput extends OmoikaneArmadoComun {
   plan: PlanDecoracion;
   /** What the model assembled during the turn, to be revalidated against the real piece. */
@@ -2108,8 +2132,11 @@ export interface PythonOmoikaneCompletarArmadosInput extends OmoikaneArmadoComun
   remates?: readonly PistaRemate[];
   /** How far each piece leans and to which side, as a signed fraction of its height (ADR-0039). */
   inclinaciones?: readonly { referencia_element_id: string; inclinacion: number }[];
-  /** How each garland's line curves away from the straight line between its ends (ADR-0032, decision 28). */
-  curvas?: readonly { referencia_element_id: string; sentido: "arriba" | "abajo"; flecha: number }[];
+  /**
+   * The line of each garland as the photo read it: its shape, support and anchor points, how it curves away
+   * from the straight line between its ends and how much lower or higher one end is (ADR-0032, decisions 27-29).
+   */
+  curvas?: readonly PistaCurvaGuirnalda[];
   /**
    * What sizes of balloon the photo read in each piece. It travels here as well as to the resolution
    * because the engine assembles BEFORE the plan is resolved: with the reading reaching only `plan.py`,

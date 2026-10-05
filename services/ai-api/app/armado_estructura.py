@@ -50,7 +50,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal, Mapping, Sequence, cast
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from app.arco.limites import ALTO_MAX as ARCO_ALTO_MAX
 from app.arco.limites import ALTO_MIN as ARCO_ALTO_MIN
@@ -98,6 +98,12 @@ from app.armado_guirnalda_organica import opciones_admitidas as opciones_guirnal
 from app.armado_guirnalda_organica import validar as validar_guirnalda
 from app.armado_guirnalda_organica import MAX_GLOBOS_ESTIMADOS as GUIRNALDA_MAX_GLOBOS
 from app.armado_guirnalda_organica import globos_estimados as globos_estimados_guirnalda
+from app.armado_guirnalda_organica import limites_de as limites_guirnalda
+from app.armado_guirnalda import CONFIANZA_MINIMA_LECTURA as CONFIANZA_MINIMA_LECTURA_GUIRNALDA
+from app.armado_guirnalda import FORMAS as FORMAS_LECTURA_GUIRNALDA
+from app.armado_guirnalda import SOPORTE_POR_UBICACION
+from app.armado_guirnalda import SOPORTES as SOPORTES_LECTURA_GUIRNALDA
+from app.armado_guirnalda import linea_de_lectura as linea_guirnalda_de_lectura
 from app.armado_guirnalda import linea_del_motor as linea_guirnalda_del_motor
 from app.guirnalda.limites import LARGO_MAX as GUIRNALDA_LARGO_MAX
 from app.guirnalda.limites import LARGO_MIN as GUIRNALDA_LARGO_MIN
@@ -108,6 +114,8 @@ from app.guirnalda.formas import (
 )
 from app.guirnalda.tipos import config_inicial as config_inicial_guirnalda
 from app.patron_de_la_foto import (
+    RACIMO_MAX_MOTOR,
+    RACIMO_MIN_MOTOR,
     PatronLeido,
     RemateLeido as RemateDeLaFoto,
     RepartoLeido,
@@ -422,16 +430,49 @@ class InclinacionPistaFoto(ContractModel):
 
 
 class CurvaPistaFoto(ContractModel):
-    """Hacia dónde se aparta la línea de la guirnalda de la recta que une sus extremos, y cuánto.
+    """La línea de una guirnalda leída en la foto (``LecturaGuirnaldaSchema``, ADR-0032, decisiones 27 a 29).
 
-    Lo lee ``guirnalda-referencia`` desde ADR-0032 (decisión 28) y hasta ahora no llegaba al motor: toda
-    guirnalda salía plana. ``arriba`` es la tendida sobre un fondo que cae por los dos lados; ``abajo``, el
-    festón que cuelga. ``flecha`` es cuánto, en fracción del largo horizontal.
+    Lo lee ``guirnalda-referencia``; antes de que llegara al motor toda guirnalda salía plana. ``arriba`` es la
+    tendida sobre un fondo que cae por los dos lados; ``abajo``, el festón que cuelga. ``flecha`` es cuánto, en
+    fracción del largo horizontal.
+
+    Solo viajaban el sentido y la flecha, y el desnivel de los extremos se perdía: la foto del 2026-09-28 (curva
+    hacia arriba 0,107 y el extremo derecho 0,335 del largo más bajo) salía nivelada, que es la regresión que
+    corrige el resto de los campos. ``desnivel`` es el extremo derecho menos el izquierdo y ``caida`` la de las
+    lecturas v2, los dos en fracción del largo; ``forma``, ``soporte`` y ``puntos_de_anclaje`` son los de la
+    lectura y ``confianza`` la suya. La receta los traduce con las mismas funciones que el armado por partes
+    (``armado_guirnalda.linea_de_lectura``), así que las dos guirnaldas leen igual la misma foto.
+
+    Todos opcionales: una pista de antes de estos campos (solo sentido y flecha) se sigue leyendo como entonces.
+    Los rangos son holgados frente a los de la lectura (``MAX_*_LECTURA_GUIRNALDA``, 0,6): el tope de verdad lo
+    pone quien arma, con su aviso.
     """
 
     referencia_element_id: Identificador
-    sentido: Literal["arriba", "abajo"]
-    flecha: float = Field(ge=0, le=1)
+    sentido: Literal["arriba", "abajo"] | None = None
+    flecha: float | None = Field(default=None, ge=0, le=1)
+    desnivel: float | None = Field(default=None, ge=-1, le=1)
+    caida: float | None = Field(default=None, ge=0, le=1)
+    forma: str | None = None
+    soporte: str | None = None
+    puntos_de_anclaje: int | None = Field(default=None, ge=2, le=6)
+    confianza: float | None = Field(default=None, ge=0, le=1)
+
+    @field_validator("forma")
+    @classmethod
+    def forma_del_contrato(cls, valor: str | None) -> str | None:
+        """Una de las formas de ``armado-guirnalda.v1``; la lista es de ``armado_guirnalda``, no de aquí."""
+        if valor is not None and valor not in FORMAS_LECTURA_GUIRNALDA:
+            raise ValueError("forma de guirnalda desconocida")
+        return valor
+
+    @field_validator("soporte")
+    @classmethod
+    def soporte_del_contrato(cls, valor: str | None) -> str | None:
+        """Uno de los soportes de ``armado-guirnalda.v1``, con la misma lista que la forma."""
+        if valor is not None and valor not in SOPORTES_LECTURA_GUIRNALDA:
+            raise ValueError("soporte de guirnalda desconocido")
+        return valor
 
 
 class TamanosPistaFoto(ContractModel):
@@ -970,12 +1011,24 @@ def _base_guirnalda(forma_lista: str | None, estilo: str | None) -> dict[str, An
     return dict(config)
 
 
+def _largo_guirnalda(pieza: PiezaArmado) -> float:
+    """El largo con el que el motor arma la guirnalda de la receta: el del plan, dentro del rango del motor.
+
+    Es el mismo que ``_forma_guirnalda`` pone en ``largoM`` cuando el modelo no pide otro, y es sobre el que se
+    pasan a metros las medidas relativas de la foto (la flecha, el desnivel).
+    """
+    inicial = cast(Mapping[str, Any], config_inicial_guirnalda()["forma"])
+    return _acotar(
+        pieza.largo_m or float(inicial["largoM"]), GUIRNALDA_LARGO_MIN, GUIRNALDA_LARGO_MAX
+    )
+
+
 def _forma_guirnalda(
     pieza: PiezaArmado,
     pedida: FormaPedida | None,
     avisos: list[str],
     inclinacion: float | None = None,
-    curva: float | None = None,
+    linea_leida: Mapping[str, float] | None = None,
     base: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """La línea de la guirnalda: la del motor, con el largo de la pieza y lo que el modelo ajuste encima.
@@ -984,6 +1037,11 @@ def _forma_guirnalda(
     una guirnalda eso son **dos** cosas del contrato y no cabe en un solo mando: ``pendienteM`` es cuánto baja
     un extremo respecto al otro (la caída) y ``carga`` es qué lado pesa más y lleva los globos más grandes. Lo
     que pida el modelo manda sobre las dos.
+
+    ``linea_leida`` es la línea que la foto midió de esta guirnalda, ya en los campos del motor y en el contrato
+    (``armado_guirnalda.linea_de_lectura`` y ``_linea_en_contrato``): la curva, los festones, la onda y el
+    desnivel de los extremos. Va por debajo de lo que pida el modelo y por encima de la inclinación: el
+    desnivel medido entre los dos extremos dice la caída mejor que hacia dónde se inclina la pieza.
     """
     # ``base`` es la config con la forma lista y el estilo ya puestos (``_base_guirnalda``); sin ella, la del
     # motor, que es lo que pasaba antes de que hubiera formas listas.
@@ -998,40 +1056,45 @@ def _forma_guirnalda(
             f"El largo se acoto a {acotado:g} m "
             f"(el motor arma de {GUIRNALDA_LARGO_MIN:g} a {GUIRNALDA_LARGO_MAX:g} m)."
         )
+    leida = linea_leida or {}
 
     def elegir(clave: str, valor: object) -> Any:
         """El valor del motor cuando el modelo no dice nada."""
         return inicial[clave] if valor is None else valor
 
+    def de_la_foto(clave: str, pedido: object) -> Any:
+        """Lo que pida el modelo; si no, lo que midió la foto; si no, el valor del motor."""
+        return elegir(clave, leida.get(clave) if pedido is None else pedido)
+
+    pendiente_pedida = pedida.pendiente_m if pedida else None
     # Solo las claves del contrato: `config_inicial` trae además `espejo`, que
     # `armado-guirnalda-organica.v1` no publica y la puerta rellena desde el motor.
     return {
         "largoM": acotado,
         "alturaM": elegir("alturaM", pedida.altura_m if pedida else None),
         # La caída: el extremo hacia el que se va la pieza queda más bajo. La altura de la línea da la
-        # escala y el contrato lo acota a ±2 m.
+        # escala y el contrato lo acota a ±2 m. El desnivel que la foto midió manda sobre la inclinación.
         "pendienteM": elegir(
             "pendienteM",
-            (pedida.pendiente_m if pedida else None)
-            if (pedida and pedida.pendiente_m is not None) or inclinacion is None
+            pendiente_pedida
+            if pendiente_pedida is not None
+            else leida["pendienteM"]
+            if "pendienteM" in leida
+            else None
+            if inclinacion is None
             else _acotar(
                 -abs(float(elegir("alturaM", pedida.altura_m if pedida else None))) * inclinacion,
                 -2.0,
                 2.0,
             ),
         ),
-        "ondaM": elegir("ondaM", pedida.onda_m if pedida else None),
-        "ondas": elegir("ondas", pedida.ondas if pedida else None),
-        # La curva que vio la foto: `flecha` es fracción del largo y el motor la quiere en metros. Negativo
-        # arquea hacia arriba —la guirnalda tendida sobre un fondo que cae por los dos lados— y positivo
-        # cuelga en U. El saneado del motor lo acota a su tope, que ahora vale en los dos sentidos.
-        "colgadoM": elegir(
-            "colgadoM",
-            (pedida.colgado_m if pedida else None)
-            if (pedida and pedida.colgado_m is not None) or curva is None
-            else _acotar(acotado * curva, -1.5, 1.5),
-        ),
-        "festones": elegir("festones", pedida.festones if pedida else None),
+        "ondaM": de_la_foto("ondaM", pedida.onda_m if pedida else None),
+        "ondas": de_la_foto("ondas", pedida.ondas if pedida else None),
+        # La curva que vio la foto, ya en metros: negativo arquea hacia arriba —la guirnalda tendida sobre un
+        # fondo que cae por los dos lados— y positivo cuelga en U. El saneado del motor lo acota a su tope, que
+        # vale en los dos sentidos.
+        "colgadoM": de_la_foto("colgadoM", pedida.colgado_m if pedida else None),
+        "festones": de_la_foto("festones", pedida.festones if pedida else None),
         # El lado cargado es aquel hacia el que se va la pieza: ahí es más gruesa y lleva los globos
         # grandes. La lectura ya viene en −1..1, así que entra tal cual.
         "carga": elegir(
@@ -1068,6 +1131,65 @@ def _linea_en_contrato(linea: Mapping[str, float]) -> dict[str, Any]:
     return salida
 
 
+#: Los mandos de la línea que el motor acota con el largo y los festones de cada guirnalda
+#: (``guirnalda.limites.limites``), con el límite que publica para cada uno: ``(mínimo, máximo)``.
+_LIMITES_DE_LA_LINEA: Mapping[str, tuple[str | None, str]] = {
+    "pendienteM": ("pendienteMax", "pendienteMax"),
+    "colgadoM": ("colgadoMax", "colgadoMax"),
+    "ondaM": (None, "ondaMax"),
+    "festones": (None, "festonesMax"),
+}
+
+
+def _acotar_linea_leida(
+    armado: dict[str, Any],
+    pieza: PiezaArmado,
+    leida: Mapping[str, float],
+    avisos: list[str],
+) -> None:
+    """La línea que midió la foto, recortada a lo que el motor arma con esta guirnalda, y dicho.
+
+    El contrato admite ±2 m de desnivel, pero el motor no arma una pendiente de más del 25 % del largo —«o deja
+    de ser una guirnalda y es una caída»— ni un colgado de más del 30 % del largo por festón, y lo recorta al
+    armar. Sin esto el plan guardaba una línea que no se arma y la frase de la imagen la contaba: la foto del
+    2026-09-28 mide 1,01 m de desnivel en 3 m y el motor arma 0,75 m. Se acota con los límites vivos del propio
+    motor (``armado_guirnalda_organica.limites_de``), y solo lo que vino de la foto: ``leida`` es la línea en
+    metros, antes de acotar nada, con la que se compara para decir cuánto se recortó.
+    """
+    limites = limites_guirnalda(armado, _estructura_guirnalda(pieza.colores))
+    forma = cast(dict[str, Any], armado["forma"])
+    for clave, (desde, hasta) in _LIMITES_DE_LA_LINEA.items():
+        if clave not in leida:
+            continue
+        minimo = -limites[desde] if desde is not None else (1.0 if clave == "festones" else 0.0)
+        maximo = limites[hasta]
+        acotado = _acotar(float(forma[clave]), minimo, maximo)
+        if clave == "festones":
+            acotado = float(int(acotado))
+        if abs(acotado - float(leida[clave])) > 1e-6:
+            avisos.append(
+                f"La foto midio «{clave}» {float(leida[clave]):g}; con {forma['largoM']:g} m de largo el "
+                f"motor arma de {minimo:g} a {maximo:g}, asi que va {acotado:g}."
+            )
+        forma[clave] = int(acotado) if clave == "festones" else acotado
+
+
+def _acabados_de(
+    pieza: PiezaArmado, entradas: Sequence[tuple[int, str | None]], avisos: list[str]
+) -> dict[tuple[int, str | None], str]:
+    """El acabado de cada material de la paleta (con el acabado pedido, si lo hay), una sola vez por material.
+
+    Una paleta puede nombrar el mismo material en varias entradas —los tramos blanco | dorado | blanco que leyó
+    la foto—, y el aviso de un acabado que el motor no tiene se decía una vez por entrada. En el orden de la
+    paleta, así que una paleta sin repetidos avisa igual que siempre.
+    """
+    acabados: dict[tuple[int, str | None], str] = {}
+    for material, pedido in entradas:
+        if (material, pedido) not in acabados:
+            acabados[(material, pedido)] = _acabado_del_material(pieza, material, pedido, avisos)
+    return acabados
+
+
 def _armado_guirnalda(
     pieza: PiezaArmado,
     paleta: Sequence[ColorPedido],
@@ -1075,9 +1197,10 @@ def _armado_guirnalda(
     avisos: list[str],
     leido_reparto: RepartoLeido | None = None,
     inclinacion: float | None = None,
-    curva: float | None = None,
+    linea_leida: Mapping[str, float] | None = None,
     linea: Mapping[str, float] | None = None,
     densidad: str | None = None,
+    linea_soporte: Mapping[str, float] | None = None,
 ) -> dict[str, Any]:
     """Un ``armado-guirnalda-organica.v1`` con la receta del motor debajo y lo que el modelo pidió encima.
 
@@ -1085,20 +1208,25 @@ def _armado_guirnalda(
     —con el acabado y el papel de cada color—, así que cada bloque se compone igual que los mandos de un
     patrón de arco: el valor del motor, y el pedido cuando viene.
 
-    ``linea`` y ``densidad`` son de la receta (``_receta``), no del modelo: la línea que la pieza ya declara
-    por su armado por partes (``PiezaArmado.linea``) y el estilo del motor para la densidad del plan
-    (``_ESTILO_GUIR_POR_DENSIDAD``). Se ponen **debajo** de lo pedido, como una forma lista, pero sin cambiar
-    de dónde sale la mezcla de tamaños: la del plan, que es la que se cobra.
+    ``linea``, ``densidad`` y ``linea_soporte`` son de la receta (``_receta``), no del modelo: la línea que la
+    pieza ya declara por su armado por partes (``PiezaArmado.linea``), el estilo del motor para la densidad del
+    plan (``_ESTILO_GUIR_POR_DENSIDAD``) y la altura de la línea según dónde se apoya la guirnalda
+    (``_linea_del_soporte``). Se ponen **debajo** de lo pedido, como una forma lista, pero sin cambiar de dónde
+    sale la mezcla de tamaños: la del plan, que es la que se cobra. ``linea_leida`` es la línea que midió la
+    foto (``_forma_guirnalda``).
     """
     inicial = _base_guirnalda(request.forma_lista, request.estilo)
     estilo = _ESTILO_GUIR_POR_DENSIDAD.get(densidad or "")
     if estilo is not None:
         # Solo el volumen: el estilo del diseñador no toca la línea ni, en ligero y lleno, los tamaños.
         inicial["volumen"] = dict(estilo.aplicar(cast(Any, inicial))["volumen"])
-    if linea:
+    if linea_soporte or linea:
+        # Primero el soporte (a qué altura corre la línea) y encima la forma que la pieza declara, que es más
+        # concreta: una ondulada en el piso ondula como dice su forma, no como la forma lista del piso.
         inicial["forma"] = {
             **cast(Mapping[str, Any], inicial["forma"]),
-            **_linea_en_contrato(linea),
+            **(linea_soporte or {}),
+            **_linea_en_contrato(linea or {}),
         }
     volumen_motor = cast(Mapping[str, Any], inicial["volumen"])
     tamanos_motor = cast(Mapping[str, Any], inicial["tamanos"])
@@ -1118,10 +1246,12 @@ def _armado_guirnalda(
     def de_volumen(clave: str, valor: object) -> Any:
         return volumen_motor[clave] if valor is None else valor
 
+    forma = _forma_guirnalda(pieza, request.forma, avisos, inclinacion, linea_leida, base=inicial)
+    acabados = _acabados_de(pieza, [(color.material, color.acabado) for color in paleta], avisos)
     return {
         "version": VERSION_ARMADO_GUIRNALDA_ORGANICA,
         "origen": "sugerido",
-        "forma": _forma_guirnalda(pieza, request.forma, avisos, inclinacion, curva, base=inicial),
+        "forma": forma,
         "volumen": {
             "grosorPatasM": de_volumen(
                 "grosorPatasM", pedido_volumen.grosor_extremos_m if pedido_volumen else None
@@ -1154,7 +1284,7 @@ def _armado_guirnalda(
                 {
                     "material": color.material,
                     "peso": _peso_de(pieza, color.material, color.peso),
-                    "acabado": _acabado_del_material(pieza, color.material, color.acabado, avisos),
+                    "acabado": acabados[(color.material, color.acabado)],
                     "rol": _rol_del_material(color.material, leido_reparto, color.rol),
                 }
                 for color in paleta
@@ -1218,8 +1348,14 @@ _PETICION_RECETA = ArmadoEstructuraRequest.model_construct(
 )
 
 
-def _peticion_con_reparto(leido: RepartoLeido | None) -> ArmadoEstructuraRequest:
-    """La petición con la que la receta compone la guirnalda, con el reparto que la foto leyó si lo hay.
+def _peticion_con_reparto(
+    leido: RepartoLeido | None, racimo: int | None = None
+) -> ArmadoEstructuraRequest:
+    """La petición con la que la receta compone la guirnalda, con lo que la foto leyó si lo hay.
+
+    El reparto, el difuminado que dice el modo leído (``RepartoLeido.mezcla``) y los globos por racimo ya
+    acotados (``_racimo_leido``) entran como si los hubiera pedido el modelo: por encima de la densidad y del
+    motor, que es donde manda lo que se vio en la foto.
 
     La conversión explícita es por ``follow_imports = "skip"``: lo que devuelve ``model_construct`` llega
     como ``Any`` y el proyecto no admite devolver ``Any`` donde se declara un tipo.
@@ -1229,7 +1365,11 @@ def _peticion_con_reparto(leido: RepartoLeido | None) -> ArmadoEstructuraRequest
     return cast(
         ArmadoEstructuraRequest,
         ArmadoEstructuraRequest.model_construct(
-            accion="armar", schema_version=OMOIKANE_ARMADO_SCHEMA_VERSION, reparto=leido.reparto
+            accion="armar",
+            schema_version=OMOIKANE_ARMADO_SCHEMA_VERSION,
+            reparto=leido.reparto,
+            mezcla_colores=leido.mezcla,
+            volumen=None if racimo is None else VolumenPedido(racimo=racimo),
         ),
     )
 
@@ -1313,6 +1453,258 @@ def _orden_de_paleta(leido: RepartoLeido | None, cuantos: int) -> tuple[int, ...
     return (*nombrados, *(i for i in range(cuantos) if i not in nombrados))
 
 
+def _racimo_leido(leido: RepartoLeido | None, avisos: list[str]) -> int | None:
+    """Los globos por racimo que leyó la foto, dentro de lo que arma el motor; ``None`` si no los leyó.
+
+    Antes la lectura no llegaba: el racimo era siempre el de la densidad del plan, se viera lo que se viera.
+    Lo que se sale del rango del motor (``RACIMO_MIN_MOTOR`` a ``RACIMO_MAX_MOTOR``) se acota aquí, con su
+    aviso, para que el plan no diga un racimo que el motor no arma.
+    """
+    if leido is None or leido.globos_por_racimo is None:
+        return None
+    leidos = leido.globos_por_racimo
+    racimo = int(_acotar(leidos, RACIMO_MIN_MOTOR, RACIMO_MAX_MOTOR))
+    if racimo != leidos:
+        avisos.append(
+            f"La foto leyo racimos de {leidos} globos; el motor organico arma de {RACIMO_MIN_MOTOR} a "
+            f"{RACIMO_MAX_MOTOR} por racimo, asi que van de {racimo}."
+        )
+    return racimo
+
+
+#: Lo más corto que puede quedar el tramo de fondo entre dos manchas para contarse como un tramo.
+_TRAMO_VACIO = 1e-9
+
+#: Una entrada de la paleta orgánica: el material, su peso (``None``: el de su participación, ``_peso_de``) y su
+#: papel (``None``: el que diga la lectura, ``_rol_del_material``).
+Entrada = tuple[int, float | None, str | None]
+
+
+def _unir_seguidos(tramos: Sequence[tuple[int, float]]) -> list[tuple[int, float]]:
+    """Los tramos con los vecinos del mismo material unidos en uno, sumando su largo."""
+    unidos: list[tuple[int, float]] = []
+    for material, largo in tramos:
+        if unidos and unidos[-1][0] == material:
+            unidos[-1] = (material, unidos[-1][1] + largo)
+        else:
+            unidos.append((material, largo))
+    return unidos
+
+
+def _tramos_de_manchas(
+    fondo: int, manchas: Sequence[tuple[int, float, float]], peso: Mapping[int, float]
+) -> list[tuple[int, float]]:
+    """Las manchas de unas zonas como tramos a lo largo de la pieza: el fondo entre ellas y cada una en su sitio.
+
+    El motor reparte sus tramos en el orden de la paleta y cada uno ocupa la parte del largo que pesa, así que
+    una mancha se pone en su sitio con el tramo de fondo que la precede. Cada mancha mide lo que su color pesa
+    en el plan, repartido entre sus manchas por la extensión que leyó la foto —lo mismo que ``patron_color``
+    hace en una pared: la foto dice dónde y cuántas, la participación cuánto—; se centra en su ancla y, si pisa
+    a otra o se sale de la pieza, se corre lo justo. El fondo se queda con lo que sobra, en uno o varios tramos.
+
+    Devuelve ``(material, largo relativo dentro de su material)``: la extensión en las manchas y el largo del
+    hueco en el fondo. ``peso`` es lo que pesa cada material en el motor.
+    """
+    por_material: dict[int, float] = {}
+    for material, _centro, extension in manchas:
+        por_material[material] = por_material.get(material, 0.0) + extension
+    total = peso[fondo] + sum(peso[material] for material in por_material)
+    anchos = [
+        peso[material] * extension / por_material[material] / total
+        for material, _centro, extension in manchas
+    ]
+    orden = sorted(range(len(manchas)), key=lambda k: (manchas[k][1], k))
+    inicio = [0.0] * len(manchas)
+    fin_previo = 0.0
+    for k in orden:
+        inicio[k] = max(manchas[k][1] - anchos[k] / 2, fin_previo, 0.0)
+        fin_previo = inicio[k] + anchos[k]
+    limite = 1.0
+    for k in reversed(orden):
+        inicio[k] = min(inicio[k], limite - anchos[k])
+        limite = inicio[k]
+    tramos: list[tuple[int, float]] = []
+    cursor = 0.0
+    for k in orden:
+        hueco = inicio[k] - cursor
+        if hueco > _TRAMO_VACIO:
+            tramos.append((fondo, hueco))
+        tramos.append((manchas[k][0], manchas[k][2]))
+        cursor = inicio[k] + anchos[k]
+    if 1.0 - cursor > _TRAMO_VACIO:
+        tramos.append((fondo, 1.0 - cursor))
+    return _unir_seguidos(tramos)
+
+
+def _entradas_de_paleta(
+    pieza: PiezaArmado,
+    leido: RepartoLeido | None,
+    cuantos: int,
+    avisos: list[str],
+    *,
+    invertida: bool = False,
+) -> list[Entrada]:
+    """Las entradas de la paleta de una pieza orgánica, en el orden en que el motor las recorre.
+
+    Sin tramos leídos, las de siempre: un material por entrada en el orden de ``_orden_de_paleta``, con su peso
+    y su papel por defecto. Una pieza sin lectura sale así igual que antes, globo por globo.
+
+    Con tramos leídos (bloques, degradé o zonas a lo largo de la pieza), una entrada **por tramo**, con el
+    material repetido cuando la foto lo ve en dos sitios. Es lo que el motor y el contrato ya sabían armar —dos
+    entradas de la paleta pueden ser el mismo material, y la puerta une su conteo y su compra—, y lo que la
+    lectura perdía al quedarse con cada color una sola vez: blanco | dorado | blanco salía de blanco a dorado, y
+    un dorado en el centro acababa en un extremo (2026-10-05). El peso de cada material es el de su
+    participación en el plan **repartido** entre sus tramos por el largo que leyó la foto: lo que se compra de
+    cada color no cambia, cambia dónde va.
+
+    Los materiales que la foto no pone en ningún tramo van de **acento**, globos sueltos por toda la pieza, como
+    los que ``patron_color`` deja sin uso al leer un patrón: ponerlos de tramo al final pintaría en un extremo
+    un color que la foto no tiene ahí.
+
+    ``invertida`` recorre los tramos al revés: un medio arco volteado empieza por su punta y la foto se lee
+    desde su pata. Más entradas de las que caben en la paleta (``MAX_MATERIALES``) vuelven a las de siempre,
+    con su aviso.
+    """
+    de_siempre: list[Entrada] = [
+        (indice, None, None) for indice in _orden_de_paleta(leido, cuantos)
+    ]
+    if leido is None or leido.reparto != "tramos" or not (leido.tramos or leido.manchas):
+        return de_siempre
+    peso = {indice: _peso_de(pieza, indice, None) for indice in range(cuantos)}
+    if leido.manchas:
+        fondo = leido.materiales[0]
+        # Una mancha del color del fondo ya es fondo.
+        manchas = [mancha for mancha in leido.manchas if mancha[0] != fondo and mancha[0] < cuantos]
+        if fondo >= cuantos or not manchas:
+            return de_siempre
+        tramos = _tramos_de_manchas(fondo, manchas, peso)
+    else:
+        tramos = _unir_seguidos(
+            [(material, largo) for material, largo in leido.tramos if material < cuantos]
+        )
+    if not tramos:
+        return de_siempre
+    if invertida:
+        tramos.reverse()
+    largo_de: dict[int, float] = {}
+    for material, largo in tramos:
+        largo_de[material] = largo_de.get(material, 0.0) + largo
+    base: list[Entrada] = [
+        (material, _acotar(round(peso[material] * largo / largo_de[material], 2), 1, 100), "normal")
+        for material, largo in tramos
+    ]
+    # Primero las motas que leyó la foto y después los materiales que no nombró, en su orden.
+    sueltos = dict.fromkeys(
+        indice
+        for indice in (*leido.acentos, *range(cuantos))
+        if indice < cuantos and indice not in largo_de
+    )
+    acentos: list[Entrada] = [(indice, peso[indice], "acento") for indice in sueltos]
+    if len(base) + len(acentos) > MAX_MATERIALES:
+        avisos.append(
+            f"La foto leyo {len(base)} tramos de color y la paleta del motor admite {MAX_MATERIALES} "
+            "entradas; los colores van en el orden de la foto, sin sus tramos."
+        )
+        return de_siempre
+    return [*base, *acentos]
+
+
+def _paleta_organica(
+    pieza: PiezaArmado, entradas: Sequence[Entrada], leido: RepartoLeido | None, avisos: list[str]
+) -> list[dict[str, Any]]:
+    """La paleta de un ``armado-arco-organico.v1`` o ``armado-columna-organica.v1`` con estas entradas."""
+    acabados = _acabados_de(pieza, [(material, None) for material, _peso, _rol in entradas], avisos)
+    return [
+        {
+            "material": material,
+            "peso": _peso_de(pieza, material, peso),
+            "acabado": acabados[(material, None)],
+            "rol": _rol_del_material(material, leido, rol),
+        }
+        for material, peso, rol in entradas
+    ]
+
+
+#: La altura de la línea guía de una guirnalda que va sobre la mesa principal: la de una mesa de eventos
+#: (0,75 m), con la tira corriendo por su borde. **Provisional y pendiente de una decisión del negocio**: el
+#: motor no tiene forma lista de mesa y el diseñador no publica una cifra. Solo se usa con lectura de la foto.
+ALTURA_MESA_M = 0.75
+
+#: La forma lista «A lo largo del piso» del diseñador (``guirnalda/formas.py``): de ahí sale la línea de una
+#: guirnalda de piso, en vez de escribir sus cifras aquí.
+_FORMA_GUIRNALDA_PISO = next(forma for forma in FORMAS_GUIRNALDA if forma.id == "piso")
+
+
+def _linea_del_soporte(soporte: str | None) -> dict[str, float]:
+    """A qué altura corre la línea de una guirnalda según dónde se apoya; ``{}`` para la de siempre.
+
+    - ``piso``: la línea de la forma lista «A lo largo del piso» del diseñador, su altura y su onda. No su
+      largo, su volumen, sus tamaños ni su semilla, que son del plan y de su densidad: lo que se cobra.
+    - ``mesa``: ``ALTURA_MESA_M`` (provisional).
+    - pared, colgada o sobre otra pieza: la de siempre (2,2 m), la de una guirnalda en alto.
+
+    La receta no miraba dónde va la guirnalda: una de piso o de mesa salía a 2,2 m como la de la pared, y la
+    frase de la imagen la contaba «montada en la pared, en alto» (2026-10-05).
+    """
+    if soporte == "piso":
+        return {
+            clave: float(_FORMA_GUIRNALDA_PISO.forma[clave])
+            for clave in ("alturaM", "ondaM", "ondas")
+        }
+    if soporte == "mesa":
+        return {"alturaM": ALTURA_MESA_M}
+    return {}
+
+
+def _soporte_de_la_lectura(lectura: Mapping[str, object] | None) -> str | None:
+    """El soporte de la guirnalda que vio la foto, si la lectura lo trae con confianza; si no, ``None``."""
+    if lectura is None:
+        return None
+    soporte = lectura.get("soporte")
+    confianza = lectura.get("confianza")
+    if (
+        isinstance(soporte, str)
+        and soporte in SOPORTES_LECTURA_GUIRNALDA
+        and isinstance(confianza, (int, float))
+        and not isinstance(confianza, bool)
+        and confianza >= CONFIANZA_MINIMA_LECTURA_GUIRNALDA
+    ):
+        return soporte
+    return None
+
+
+#: Lo que una pista de la línea de antes del 2026-10-05 no traía (solo sentido y flecha): se lee como entonces,
+#: la guirnalda de pared que la foto vio con esa curva, sin filtro de confianza. Solo completa la traducción de
+#: la línea: un soporte que la pista no trae no cuenta como leído (``_soporte_de_la_lectura``).
+_LECTURA_DE_ANTES: Mapping[str, object] = {"soporte": "pared", "forma": "recta", "confianza": 1.0}
+
+
+def _lectura_de_la_curva(curva: CurvaPistaFoto) -> dict[str, object]:
+    """La pista de la línea con los nombres de ``LecturaGuirnaldaSchema``, solo con lo que trae.
+
+    Así la traduce ``armado_guirnalda.linea_de_lectura``, la misma función que la del armado por partes. El
+    sentido y la flecha viajan juntos o la caída de una lectura v2, nunca las dos: es como esa función distingue
+    una lectura de la otra.
+    """
+    lectura: dict[str, object] = {}
+    for campo, clave in (
+        ("soporte", "soporte"),
+        ("forma", "forma"),
+        ("puntos_de_anclaje", "puntos_de_anclaje"),
+        ("confianza", "confianza"),
+        ("desnivel", "desnivel_relativo"),
+    ):
+        valor = getattr(curva, campo)
+        if valor is not None:
+            lectura[clave] = valor
+    if curva.sentido is not None or curva.flecha is not None:
+        lectura["sentido_curva"] = curva.sentido
+        lectura["flecha_relativa"] = curva.flecha
+    elif curva.caida is not None:
+        lectura["caida_relativa"] = curva.caida
+    return lectura
+
+
 def _armado_columna_organica(
     pieza: PiezaArmado,
     avisos: list[str],
@@ -1350,6 +1742,10 @@ def _armado_columna_organica(
     if estilo is not None:
         # La densidad del plan es el estilo del diseñador (ligero / lleno), que solo mueve el volumen.
         volumen = dict(estilo.aplicar(cast(Any, {"volumen": volumen}))["volumen"])
+    racimo = _racimo_leido(leido, avisos)
+    if racimo is not None:
+        # Los globos por racimo que vio la foto mandan sobre los de la densidad.
+        volumen["racimo"] = racimo
     alto = pieza.alto_m or float(forma["altoM"])
     forma["altoM"] = alto
     if inclinacion is None and lista is not None:
@@ -1371,9 +1767,6 @@ def _armado_columna_organica(
     # El serpenteo no lo lee nadie todavía: sin dato, la columna sube derecha.
     forma["serpenteoM"] = 0.0
     cuantos = min(pieza.colores, MAX_MATERIALES)
-    # El orden de la paleta es el de la foto cuando la hay (el dominante primero), que es lo que recorre el
-    # reparto por tramos; sin lectura, el orden del plan.
-    orden = _orden_de_paleta(leido, cuantos)
     # La corona (el globo grande de la punta) solo se enciende si la foto la vio: coronar una columna que nadie
     # vio coronada es inventar globos que se cobran. Con lectura sí se sabe, y antes se ignoraba porque esta
     # rama retornaba antes de leer el remate (auditoría 2026-10-04, M6.a). El motor orgánico solo corona con un
@@ -1384,6 +1777,11 @@ def _armado_columna_organica(
             f"La foto corona la columna con «{remate.tipo}»; el motor orgánico solo corona con un globo "
             "y la deja sin corona."
         )
+    # El orden de la paleta es el de la foto cuando la hay (el dominante primero), con sus tramos de la base a
+    # la punta si los leyó (``_entradas_de_paleta``); sin lectura, el orden del plan.
+    paleta = _paleta_organica(
+        pieza, _entradas_de_paleta(pieza, leido, cuantos, avisos), leido, avisos
+    )
     return {
         "version": VERSION_ARMADO_COLUMNA_ORGANICA,
         "origen": "sugerido",
@@ -1394,17 +1792,12 @@ def _armado_columna_organica(
             "mezcla": _mezcla_de_tamanos(pieza, tamanos),
         },
         "colores": {
-            "paleta": [
-                {
-                    "material": indice,
-                    "peso": _peso_de(pieza, indice, None),
-                    "acabado": _acabado_del_material(pieza, indice, None, avisos),
-                    "rol": _rol_del_material(indice, leido, None),
-                }
-                for indice in orden
-            ],
+            "paleta": paleta,
             "reparto": leido.reparto if leido is not None else colores_motor["reparto"],
-            "mezcla": colores_motor["mezcla"],
+            # El difuminado que dice el modo leído (bloques limpios, degradé fundido, racimos puros).
+            "mezcla": colores_motor["mezcla"]
+            if leido is None or leido.mezcla is None
+            else leido.mezcla,
         },
         "adornos": dict(cast(Mapping[str, Any], inicial["adornos"])),
         "aspecto": aspecto,
@@ -1504,6 +1897,14 @@ def _armado_arco_organico(
         # El lado: el que la tarjeta ya dibuja (`IconoEstructura`, `ubicacion === "lateral_derecho"`). Sin
         # espejo la pata queda a la izquierda y la punta se va a la derecha.
         forma["espejo"] = pieza.espejo
+        if pieza.espejo:
+            # La carga se voltea con la pieza. El motor la mide de izquierda a derecha **después** de voltear
+            # (``organico/espina.py``, el grosor; ``organico/motor.py``, el sesgo de los tamaños), y las formas
+            # listas de medio arco la traen negativa porque su pata está a la izquierda: un medio arco derecho
+            # que se quedaba con la carga sin voltear engordaba la punta libre y le ponía los globos grandes,
+            # mientras la pata, en el suelo, quedaba flaca (2026-10-05). Su frase de imagen lo decía igual:
+            # «heavier on the left, with the largest balloons massed there», que es la punta.
+            forma["carga"] = -float(forma["carga"])
         volumen = dict(lista.volumen)
         tamanos = dict(lista.tamanos)
         aspecto["semilla"] = int(lista.semilla)
@@ -1523,6 +1924,10 @@ def _armado_arco_organico(
         # mueve el volumen. `media` no aplica `estandar`: es el volumen que la pieza ya trae (el inicial, que
         # coincide con `estandar`, o el de su forma lista), y así el arco de siempre no cambia.
         volumen = dict(estilo.aplicar(cast(Any, {"volumen": volumen}))["volumen"])
+    racimo = _racimo_leido(leido, avisos)
+    if racimo is not None:
+        # Los globos por racimo que vio la foto mandan sobre los de la densidad y la forma lista.
+        volumen["racimo"] = racimo
     if pieza.alto_m:
         forma["altoM"] = pieza.alto_m
     if pieza.ancho_m and medio:
@@ -1535,7 +1940,15 @@ def _armado_arco_organico(
         )
     elif pieza.ancho_m:
         forma["anchoM"] = pieza.ancho_m
-    if inclinacion is not None:
+    if inclinacion is not None and medio:
+        # Un medio arco ya se va hacia su punta: es lo que lo hace medio. Su lado cargado es su pata —la forma
+        # lista la trae así y arriba se voltea con la pieza—, así que la lectura no se lo lleva a la punta libre
+        # (antes `carga` tomaba la inclinación y la punta salía con los globos grandes de los dos lados). Lo que
+        # sí dice es cuánto se corre la cima hacia donde va la pieza; `cima` se mide en el medio arco sin
+        # voltear, así que la lectura, que es de la foto, se voltea con él.
+        hacia_la_punta = -inclinacion if pieza.espejo else inclinacion
+        forma["cima"] = _acotar(0.5 + hacia_la_punta * 0.2, 0.3, 0.7)
+    elif inclinacion is not None:
         # En un arco la inclinación de la foto no es una medida, es un reparto: el lado hacia el que se va la
         # pieza es el que pesa más y lleva los globos más grandes (`carga`, de −1 a +1), y la cima se corre
         # hacia allá. No hay un `inclinacionM` que mover como en la columna: un arco con una pata desplazada
@@ -1543,7 +1956,9 @@ def _armado_arco_organico(
         forma["carga"] = _acotar(inclinacion, -1.0, 1.0)
         forma["cima"] = _acotar(0.5 + inclinacion * 0.2, 0.3, 0.7)
     cuantos = min(pieza.colores, MAX_MATERIALES)
-    orden = _orden_de_paleta(leido, cuantos)
+    # Un medio arco volteado empieza por su punta (el motor lo recorre de izquierda a derecha), y los tramos que
+    # leyó la foto van desde su pata: se recorren al revés.
+    entradas = _entradas_de_paleta(pieza, leido, cuantos, avisos, invertida=medio and pieza.espejo)
     return {
         "version": VERSION_ARMADO_ARCO_ORGANICO,
         "origen": "sugerido",
@@ -1554,17 +1969,12 @@ def _armado_arco_organico(
             "mezcla": _mezcla_de_tamanos(pieza, tamanos),
         },
         "colores": {
-            "paleta": [
-                {
-                    "material": indice,
-                    "peso": _peso_de(pieza, indice, None),
-                    "acabado": _acabado_del_material(pieza, indice, None, avisos),
-                    "rol": _rol_del_material(indice, leido, None),
-                }
-                for indice in orden
-            ],
+            "paleta": _paleta_organica(pieza, entradas, leido, avisos),
             "reparto": leido.reparto if leido is not None else colores_motor["reparto"],
-            "mezcla": colores_motor["mezcla"],
+            # El difuminado que dice el modo leído (bloques limpios, degradé fundido, racimos puros).
+            "mezcla": colores_motor["mezcla"]
+            if leido is None or leido.mezcla is None
+            else leido.mezcla,
         },
         "adornos": dict(cast(Mapping[str, Any], inicial["adornos"])),
         "aspecto": aspecto,
@@ -1589,13 +1999,20 @@ def _receta(
     pista: Mapping[str, object] | None = None,
     lectura_remate: Mapping[str, object] | None = None,
     inclinacion: float | None = None,
-    curva: float | None = None,
+    lectura_linea: Mapping[str, object] | None = None,
+    soporte: str | None = None,
 ) -> dict[str, Any]:
     """La receta del motor para la pieza: lo que la foto leyó si se puede armar, y si no lo que la pieza dice.
 
     El patrón de la foto manda sobre el conteo de colores (ADR-0039): una columna que en la foto es un
     apilado de anillos sale apilada, no en la espiral con la que arranca el diseñador. Cuando no hay lectura
     —o no se puede honrar, y entonces ya lo dijo en ``avisos``— vuelve el criterio de siempre.
+
+    De una guirnalda llegan además ``lectura_linea``, la línea que leyó la foto en el vocabulario de la lectura
+    (``LecturaGuirnaldaSchema``: forma, soporte, flecha, desnivel...), y ``soporte``, dónde la pone el plan
+    (``SOPORTE_POR_UBICACION``). El soporte solo se usa con alguna lectura de la foto: una pieza sin lectura se
+    cuenta, se dibuja y se firma igual que siempre, porque los planes sin armado guardado se vuelven a contar
+    con esta misma receta (``armado_guirnalda_de_receta``) y un cambio ahí movería su ``plan_hash``.
     """
     de_la_pieza = _materiales_patron(pieza)
     # **Qué motor arma la pieza lo decide la mezcla que el plan declara**, y se decide antes que nada: una
@@ -1610,7 +2027,7 @@ def _receta(
     # así que declararlo `clasica` no lo convierte en una rejilla de patrones, que además no sabe cortarse.
     # Sin esto, un medio arco del plan caía al patrón del arco clásico por el número de colores.
     if pieza.tipo == "semiarco":
-        del_reparto = reparto_del_motor("arco_organico", pista, de_la_pieza, avisos)
+        del_reparto = reparto_del_motor("arco_organico", pista, de_la_pieza, avisos, medio=True)
         armado = _armado_arco_organico(pieza, avisos, del_reparto, inclinacion, medio=True)
         if del_reparto is not None:
             armado["origen"] = "referencia"
@@ -1685,10 +2102,34 @@ def _receta(
     # Su línea es la que la pieza ya declara por su armado por partes (``PiezaArmado.linea``: recta, curva,
     # ondulada, U invertida o arco caído), y su volumen el estilo del motor para la densidad del plan
     # (``_ESTILO_GUIR_POR_DENSIDAD``). Sin forma declarada y en densidad media, la guirnalda de siempre.
+    #
+    # Con lectura de la foto, además: los tramos que leyó (``_entradas_de_paleta``), el difuminado de su modo y
+    # sus globos por racimo, la línea que midió —curva, festones, onda y el desnivel de los extremos, con la
+    # misma traducción que el armado por partes (``linea_guirnalda_de_lectura``)— y la altura de la línea según
+    # dónde se apoya: la que vio la foto o, si no la dice, la del plan.
     del_reparto = reparto_del_motor(pieza.tipo, pista, de_la_pieza, avisos)
     cuantos = min(pieza.colores, MAX_MATERIALES)
-    paleta = [ColorPedido(material=indice) for indice in _orden_de_paleta(del_reparto, cuantos)]
-    peticion = _peticion_con_reparto(del_reparto)
+    paleta = [
+        ColorPedido(material=material, peso=peso, rol=rol)
+        for material, peso, rol in _entradas_de_paleta(pieza, del_reparto, cuantos, avisos)
+    ]
+    peticion = _peticion_con_reparto(del_reparto, _racimo_leido(del_reparto, avisos))
+    # La línea que midió la foto, en metros sobre el largo que arma el motor. Entra en el contrato aquí y en lo
+    # que arma el motor al final (``_acotar_linea_leida``), que es donde se dice lo que se recortó.
+    linea_medida = (
+        linea_guirnalda_de_lectura({**_LECTURA_DE_ANTES, **lectura_linea}, _largo_guirnalda(pieza))
+        if lectura_linea is not None
+        else {}
+    )
+    linea_leida = _linea_en_contrato(linea_medida)
+    soporte_leido = _soporte_de_la_lectura(lectura_linea)
+    con_lectura = (
+        del_reparto is not None
+        or bool(linea_leida)
+        or soporte_leido is not None
+        or inclinacion is not None
+    )
+    linea_soporte = _linea_del_soporte(soporte_leido or soporte) if con_lectura else {}
     propios: list[str] = []
     armado = _armado_guirnalda(
         pieza,
@@ -1697,9 +2138,10 @@ def _receta(
         propios,
         del_reparto,
         inclinacion,
-        curva,
+        linea_leida,
         pieza.linea,
         pieza.densidad,
+        linea_soporte,
     )
     if pieza.densidad == "lujosa" and globos_estimados_guirnalda(armado) > GUIRNALDA_MAX_GLOBOS:
         # El estilo lleno no puede dejar una guirnalda que la resolución rechace por grande
@@ -1710,9 +2152,19 @@ def _receta(
             "va con el volumen estandar."
         ]
         armado = _armado_guirnalda(
-            pieza, paleta, peticion, propios, del_reparto, inclinacion, curva, pieza.linea
+            pieza,
+            paleta,
+            peticion,
+            propios,
+            del_reparto,
+            inclinacion,
+            linea_leida,
+            pieza.linea,
+            linea_soporte=linea_soporte,
         )
     avisos.extend(propios)
+    if linea_medida:
+        _acotar_linea_leida(armado, pieza, linea_medida, avisos)
     if del_reparto is not None:
         armado["origen"] = "referencia"
     return armado
@@ -2134,11 +2586,9 @@ def completar(request: ArmadoEstructuraRequest) -> dict[str, Any]:
     inclinaciones = {
         lectura.referencia_element_id: lectura.inclinacion for lectura in request.inclinaciones
     }
-    # El signo es el del motor: su espina resta el colgado, así que arquear hacia ARRIBA es negativo.
-    curvas = {
-        lectura.referencia_element_id: (-1.0 if lectura.sentido == "arriba" else 1.0)
-        * lectura.flecha
-        for lectura in request.curvas
+    # La línea de cada guirnalda en el vocabulario de la lectura: la traduce la receta, con el largo de la pieza.
+    lineas = {
+        lectura.referencia_element_id: _lectura_de_la_curva(lectura) for lectura in request.curvas
     }
     tamanos_leidos = {
         lectura.referencia_element_id: lectura.model_dump(exclude_none=True)
@@ -2197,13 +2647,17 @@ def completar(request: ArmadoEstructuraRequest) -> dict[str, Any]:
                 origen = "referencia"
         if elegido is None:
             origen = "receta"
+            ubicacion = estructura.get("ubicacion")
             elegido = _receta(
                 pieza,
                 avisos,
                 pista,
                 remates.get(del_elemento) if del_elemento else None,
                 inclinaciones.get(del_elemento) if del_elemento else None,
-                curvas.get(del_elemento) if del_elemento else None,
+                lineas.get(del_elemento) if del_elemento else None,
+                # Dónde apoya la pieza según el plan, con la tabla del armado por partes. Solo cuenta si la
+                # pieza trae alguna lectura de la foto (``_receta``).
+                SOPORTE_POR_UBICACION.get(ubicacion) if isinstance(ubicacion, str) else None,
             )
             # La receta dice en el propio armado si describe la foto; el origen de la respuesta lo refleja
             # para que el registro de la confirmación distinga las dos ramas (ADR-0039).

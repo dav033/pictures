@@ -56,10 +56,18 @@ export type InstanciaGuia = {
 
 const UBICACIONES_TECHO: ReadonlySet<string> = new Set(["techo", "techo_multipunto"]);
 
+/**
+ * Las ubicaciones en las que una guirnalda va tendida en el piso: las mismas que el armado de la guirnalda lee
+ * como soporte `piso` (`SOPORTE_POR_UBICACION` en `services/ai-api/app/armado_guirnalda.py`).
+ */
+const UBICACIONES_PISO_GUIRNALDA: ReadonlySet<string> = new Set(["piso_frontal", "recorrido_suelo"]);
+
 function apoyoDe(estructura: EstructuraPlan): ApoyoGuia {
   const oficial = "estructura_oficial" in estructura ? estructura.estructura_oficial : undefined;
   if (UBICACIONES_TECHO.has(estructura.ubicacion) || oficial === "techo_globos") return "techo";
-  if (estructura.tipo === "guirnalda") return "pared";
+  // Una guirnalda va en la pared (centrada en su caja), salvo la que el plan tiende en el piso: esa se apoya abajo
+  // en su caja, como cualquier pieza de piso. Antes toda guirnalda se centraba y la de piso quedaba flotando.
+  if (estructura.tipo === "guirnalda") return UBICACIONES_PISO_GUIRNALDA.has(estructura.ubicacion) ? "piso" : "pared";
   return "piso";
 }
 

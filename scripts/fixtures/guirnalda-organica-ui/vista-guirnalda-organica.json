@@ -961,7 +961,7 @@
    "total_comprar": 99,
    "version": "armado-guirnalda-organica.v1",
    "estructura_id": "EST_04_GUIRNALDA",
-   "prompt_gemini": "GARLAND ASSEMBLY - mounted flat against the wall, high up, with both ends hanging free in the air, rising and falling in a soft wave about 0.1 m deep along its length. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor. Build it from 4 balloons per cluster in matte white and high-shine chrome gold, chained from the left end to the right end. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric.",
+   "prompt_gemini": "GARLAND ASSEMBLY - mounted flat against the wall, high up, with both ends hanging free in the air, rising and falling in a soft wave about 0.1 m deep along its length. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor. Build it from 4 balloons per cluster (3 to 5 in each) in matte white and high-shine chrome gold, chained from the left end to the right end. The large balloons (18 inches and up) are spread along its whole length. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric.",
    "prompt_lora": "mounted flat high on the wall, rising and falling in a soft wave along its length, both ends free, in clusters of four"
   },
   "grafica": {
