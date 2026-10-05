@@ -988,6 +988,30 @@ async def test_la_mezcla_cambia_cuando_la_foto_la_contradice_y_el_catalogo_la_cu
 
 
 @pytest.mark.anyio
+async def test_la_mezcla_que_dijo_la_lectura_de_tamanos_no_la_mueve_el_conteo() -> None:
+    """Dos lecturas de tamaños, un dueño: la de ``pistas_tamanos`` (la que arma el motor).
+
+    El reparto del conteo también cuenta el globo que corona una columna; en las pruebas del 2026-10-05
+    unas columnas que la lectura de tamaños dejó en ``clasica`` salían ``organica_fina`` con un armado
+    de anillos.
+    """
+    solo_doce = [{"clase": "mediano", "proporcion": 1.0}]
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(_guirnalda()),
+        completar_conteos=True,
+        pistas_conteo=[_conteo(estimado_total=50, por_tamano=solo_doce)],
+        pistas_tamanos=[
+            {
+                "referencia_element_id": "REF_01_E01",
+                "tamanos": "chicos_con_pocos_grandes",
+                "confianza": 0.9,
+            }
+        ],
+    )
+    assert _estructura(resolved)["mezcla"] == "organica_fina"
+
+
+@pytest.mark.anyio
 async def test_solo_la_pieza_pedida_tras_una_edicion() -> None:
     otra = _guirnalda(estructura_id="EST_02_GUIRNALDA", nombre="Otra guirnalda")
     resolved = await _resolver_geometrico(

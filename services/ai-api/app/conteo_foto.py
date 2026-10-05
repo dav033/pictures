@@ -1068,6 +1068,7 @@ def aplicar(
     usar_armados: bool,
     solo: Collection[str] | None,
     puerto: PuertoPlan,
+    mezclas_leidas: Collection[str] = (),
 ) -> tuple[dict[str, object], list[dict[str, object]], list[dict[str, object]]]:
     """El plan con cada pieza ajustada a la cuenta de su foto.
 
@@ -1079,6 +1080,11 @@ def aplicar(
     edición, solo esas estructuras se ajustan (con la mezcla que eligió el
     decorador); las demás con pista quedan ``sin_aplicar`` y conservan su
     lectura en ``conteos_referencia``.
+
+    ``mezclas_leidas``: los elementos cuya mezcla ya la dijo la lectura de tamaños de la foto
+    (``pistas_tamanos``, la misma que arma el motor). Su reparto por tamaño no la vuelve a mover: el
+    del conteo cuenta también el globo que corona una columna, y unas columnas clásicas que la lectura
+    de tamaños dejó en ``clasica`` salían ``organica_fina`` con un armado de anillos (2026-10-05).
     """
     por_elemento = {str(p["referencia_element_id"]): p for p in pistas}
     armados = {str(p.get("referencia_element_id")): dict(p) for p in pistas_armado}
@@ -1125,7 +1131,10 @@ def aplicar(
             # Sin cuenta usable no se puede ajustar la cantidad, pero el reparto
             # por TAMAÑO es otro dato y puede venir perfectamente legible.
             por_mezcla = _solo_mezcla(
-                dict(estructura), lectura, mezcla_fija=solo is not None, puerto=puerto
+                dict(estructura),
+                lectura,
+                mezcla_fija=solo is not None or elemento in mezclas_leidas,
+                puerto=puerto,
             )
             if por_mezcla is not None:
                 resultado = por_mezcla
@@ -1167,7 +1176,7 @@ def aplicar(
                 medidas_fijas=medidas_fijas
                 or puerto.medidas_del_cliente(estructura)
                 or solo is not None,
-                mezcla_fija=solo is not None,
+                mezcla_fija=solo is not None or elemento in mezclas_leidas,
                 puerto=puerto,
             )
         else:

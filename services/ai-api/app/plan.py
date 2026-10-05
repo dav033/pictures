@@ -5180,6 +5180,13 @@ def _aplicar_conteos(
         medidas_del_cliente=lambda structure: (_text(structure.get("estructura_id")) or "")
         in customer_measures,
     )
+    # The size reading owns the mix (``_assign_mixes``, and the motor arms with it): the count's
+    # per-size split, which also sees a column's crown, does not move it again.
+    read_mixes = {
+        pista.referencia_element_id
+        for pista in request.pistas_tamanos
+        if mezcla_del_motor(pista.model_dump(exclude_none=True), []) is not None
+    }
     adjusted, hints, counts = conteo_foto.aplicar(
         plan,
         request.pistas_conteo,
@@ -5187,6 +5194,7 @@ def _aplicar_conteos(
         usar_armados=request.completar_armados,
         solo=None if request.completar_conteos_de is None else set(request.completar_conteos_de),
         puerto=port,
+        mezclas_leidas=read_mixes,
     )
     if any(count["decision"] == "ajustado" for count in counts):
         adjusted = _garland_assemblies_after_count(adjusted, counts, request.pistas_guirnalda)
