@@ -7,11 +7,12 @@
  */
 import assert from "node:assert/strict";
 import type { AnalisisColorSempertex } from "../../src/lib/plan/analisis-color";
-import type { DisponibilidadProducto } from "../../src/lib/plan/cobertura-materiales";
+import { avisosClienteAjustes, type DisponibilidadProducto } from "../../src/lib/plan/cobertura-materiales";
 import type { PlanDecoracion } from "../../src/lib/plan/tipos";
 import type { ReferenceBlueprintV2 } from "../../src/lib/ia/referencia/reference-blueprint";
 import { aplicarReferenciasMedidas, busquedasDeReferencias, colorDeReferencia, conReferenciasMedidas, familiaDeTitulo, referenciasDePieza } from "../../src/lib/plan/referencias-medidas";
 import { serializeReferenceBlueprint } from "../../src/lib/ia/omoikane/prompt-sistema";
+import { detectarJergaInterna } from "../../src/lib/ia/omoikane/jerga-interna";
 import { coloresDominantesReferencia } from "../../src/lib/plan/colores-referencia";
 
 // 1. La familia de un producto, leída de su título; los impresos y surtidos no son una referencia.
@@ -67,14 +68,24 @@ const blueprint = {
   palette: { observed: [], priority: [] }, unresolved_decisions: [],
 } as unknown as ReferenceBlueprintV2;
 const conMedidas = conReferenciasMedidas(blueprint, analisis);
-assert.equal(conMedidas.elements[0]!.appearance.referencias_medidas?.length, 5);
+// Cambio deliberado (2026-10-05): eran 5. El Cristal Transparente 390 entraba porque el transparente era
+// «neutro» y pasaba siempre; ahora sigue a su etiqueta como cualquier color, y estas no dicen «clear».
+assert.deepEqual(conMedidas.elements[0]!.appearance.referencias_medidas?.map((r) => r.codigo), ["409", "981", "609", "450"]);
+const conClear = structuredClone(blueprint);
+conClear.elements[0]!.appearance.observed_colors = ["pastel pink", "chrome silver", "pearl lilac", "clear"];
+assert.ok(conReferenciasMedidas(conClear, analisis).elements[0]!.appearance.referencias_medidas?.some((r) => r.codigo === "390"), "con «clear» nombrado, su referencia sí entra");
 assert.equal(conReferenciasMedidas(blueprint, null), blueprint, "sin análisis, el mismo blueprint");
+// Cambio deliberado del prompt (2026-10-05): ya no hay un bloque «GLOBOS REALES MEDIDOS (compra exactamente
+// estos)» con sus propios porcentajes al lado de la lista de colores. Cada referencia va pegada a SU color
+// dentro de la única lista de la pieza, sin porcentaje propio (la proporción sale de una sola fuente), y sin
+// la orden de «comprar exactamente estos», que contradecía lo que hace el servidor.
 const prompt = serializeReferenceBlueprint(conMedidas);
-assert.match(prompt, /GLOBOS REALES MEDIDOS EN LA FOTO/);
-assert.match(prompt, /Satín Rosado \(~30%\) → busca "globo latex redondo Satín Rosado"/);
-assert.match(prompt, /Pastel Mate Rosado \(~20%, familia aproximada\)/);
-assert.doesNotMatch(prompt, /Cristal Transparente/, "por debajo del 8 % es ruido y no se pide");
-console.log("[PASS] el blueprint y el prompt del chat llevan los globos reales medidos, con su búsqueda exacta");
+assert.doesNotMatch(prompt, /GLOBOS REALES MEDIDOS|compra exactamente estos/);
+assert.match(prompt, /colores de la pieza: rosado \(visto como "pastel pink"; globos Sempertex medidos: Satín Rosado → busca "globo latex redondo Satín Rosado" y Pastel Mate Rosado \(familia aproximada\) → busca "globo latex redondo Pastel Mate Rosado"\)/);
+assert.match(prompt, /plateado reflex \(visto como "chrome silver"; globo Sempertex medido: Reflex Plata → busca "globo latex redondo Reflex Plata"\)/);
+assert.match(prompt, /lila satin \(visto como "pearl lilac"; globo Sempertex medido: Satín Lila → busca "globo latex redondo Satín Lila"\)/);
+assert.doesNotMatch(prompt, /Cristal Transparente/, "ni nombrado ni por encima del 8 %: no se pide");
+console.log("[PASS] el blueprint y el prompt del chat llevan los globos reales medidos, cada uno con su color y su búsqueda exacta");
 
 // 3. Al confirmar: el plan del caso real se corrige con los productos exactos del turno.
 const producto = (titulo: string, colores: string[], acabados: string[]): DisponibilidadProducto => ({ titulo, categoria: "globo_latex", colores, coloresVariante: colores, mezclas: ["organica_fina", "clasica"], acabados });
@@ -101,7 +112,13 @@ assert.equal(comprados[2], "p-satin-lila:lila:satin", "el mismo color en la fami
 assert.match(comprados[0]!, /^p-(satin|pastel)-rosado:rosado:/, `el fucsia que la foto no tiene pasa al rosado medido: ${comprados[0]}`);
 assert.equal(ajustes.length, 2);
 assert.ok(!comprados.some((c) => c.startsWith("p-coquette")), "un globo impreso nunca reemplaza a una referencia");
-console.log("[PASS] confirmar: Reflex Fucsia → rosado medido, Fashion Lila → Satin Lila, la plata se queda");
+// 2026-10-05: el cambio que cambia el COLOR se distingue del que solo cambia de línea, y se le avisa al cliente.
+assert.deepEqual(ajustes.map((ajuste) => ajuste.tipo), ["color_referencia", "acabado_referencia"], JSON.stringify(ajustes));
+const avisos = avisosClienteAjustes(ajustes, { nombres: new Map([["EST_01", "Columna orgánica"]]) });
+assert.equal(avisos.length, 1, avisos.join(" | "));
+assert.match(avisos[0]!, /^En columna orgánica los globos de color fucsia van en rosado \((Satín|Pastel Mate) Rosado\), que es el color que tiene tu foto\.$/);
+assert.deepEqual(detectarJergaInterna(avisos[0]!), [], avisos[0]);
+console.log("[PASS] confirmar: Reflex Fucsia → rosado medido (con aviso), Fashion Lila → Satin Lila (sin aviso), la plata se queda");
 
 // 4. Sin el producto en el turno, el servidor sabe qué buscar; sin referencias, no hace nada.
 const sinExactos = new Map([...disponibilidad].filter(([id]) => !["p-satin-rosado", "p-pastel-rosado", "p-satin-lila"].includes(id)));
@@ -110,6 +127,50 @@ assert.deepEqual(busquedas, ["globo latex redondo satin rosado", "globo latex re
 assert.deepEqual(aplicarReferenciasMedidas(plan, conMedidas, sinExactos).ajustes, [], "sin el producto exacto, el material se queda (nunca se quita)");
 assert.deepEqual(busquedasDeReferencias(plan, blueprint, disponibilidad), [], "sin referencias medidas no se busca nada");
 console.log("[PASS] el servidor busca el producto exacto que le falta al turno, y no toca lo que no puede reemplazar");
+
+// 4b. La pared no es un globo (2026-10-05): un neutro medido que el analizador no nombró no entra, y la regla 3
+// ya no puede cambiar por él un color que la foto sí tiene.
+{
+  const guirnalda = {
+    version: "analisis-color-sempertex.v1",
+    piezas: [{
+      ...analisis.piezas[0]!,
+      colores: [
+        { hex: "#ffffff", parte: 0.4, pixeles: 400, cruce: cruce("005", "Fashion Blanco", { familias: [] }) },
+        { hex: "#eea5be", parte: 0.3, pixeles: 300, cruce: cruce("409", "Satín Rosado") },
+        { hex: "#a08344", parte: 0.18, pixeles: 180, cruce: cruce("970", "Reflex Dorado", { familias: ["reflex"] }) },
+        { hex: "#b595ca", parte: 0.12, pixeles: 120, cruce: cruce("450", "Satín Lila") },
+      ],
+    }],
+  } as AnalisisColorSempertex;
+  const lila = structuredClone(blueprint);
+  lila.elements[0]!.appearance.observed_colors = ["pearl pink", "chrome gold", "pearl lilac"];
+  const medido = conReferenciasMedidas(lila, guirnalda);
+  assert.deepEqual(medido.elements[0]!.appearance.referencias_medidas?.map((r) => r.codigo), ["409", "970", "450"], "el Fashion Blanco de la pared no entra");
+  const disponibles = new Map<string, DisponibilidadProducto>([
+    ["p-satin-rosado", producto("B2b Globo Latex Redondo Satin Rosado", ["rosado"], ["satin"])],
+    ["p-reflex-dorado", producto("B2b Globo Latex Redondo Reflex Dorado", ["dorado"], ["reflex"])],
+    ["p-satin-lila", producto("B2b Globo Latex Redondo Satin Lila", ["lila"], ["satin"])],
+    ["p-fashion-blanco", producto("B2b Globo Latex Redondo Fashion Blanco", ["blanco"], ["fashion"])],
+  ]);
+  const planLila = { estructuras: [{ ...plan.estructuras[0]!, materiales: [material("p-satin-rosado", "rosado", "satin", 0.6), material("p-reflex-dorado", "dorado", "reflex", 0.25), material("p-satin-lila", "lila", "satin", 0.15)] }] } as unknown as PlanDecoracion;
+  const aplicado = aplicarReferenciasMedidas(planLila, medido, disponibles);
+  assert.deepEqual(aplicado.plan.estructuras[0]!.materiales.map((m) => m.product_id), ["p-satin-rosado", "p-reflex-dorado", "p-satin-lila"], "el lila se queda");
+  assert.deepEqual(aplicado.ajustes, []);
+  // Un blueprint analizado antes de este cambio viaja con el navegador y todavía trae la referencia de la
+  // pared: la compra vuelve a exigir que su color esté nombrado.
+  const viejo = structuredClone(lila);
+  viejo.elements[0]!.appearance.referencias_medidas = [
+    { codigo: "005", familia: "fashion", nombre: "Blanco", nombre_completo: "Fashion Blanco", parte: 0.4, familia_fiable: false },
+    { codigo: "409", familia: "satin", nombre: "Rosado", nombre_completo: "Satín Rosado", parte: 0.3, familia_fiable: true },
+    { codigo: "970", familia: "reflex", nombre: "Dorado", nombre_completo: "Reflex Dorado", parte: 0.18, familia_fiable: true },
+  ];
+  const conViejo = aplicarReferenciasMedidas(planLila, viejo, disponibles);
+  assert.equal(conViejo.plan.estructuras[0]!.materiales[2]!.product_id, "p-satin-lila", "la referencia vieja de la pared no se usa");
+  assert.deepEqual(busquedasDeReferencias(planLila, viejo, new Map()), ["globo latex redondo satin rosado", "globo latex redondo reflex dorado"], "ni se busca");
+  assert.doesNotMatch(serializeReferenceBlueprint(viejo), /Fashion Blanco/, "ni se le pide al modelo");
+  console.log("[PASS] la pared blanca no entra como globo medido ni desplaza al lila, tampoco desde un blueprint viejo");
+}
 
 // 5. Un color que el analizador nombró no lo quita la medición (un vino que los píxeles leen como negro).
 {

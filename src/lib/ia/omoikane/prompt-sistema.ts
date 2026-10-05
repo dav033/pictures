@@ -7,7 +7,7 @@ import { EJEMPLO_UNIDADES_DECLARADAS, GUIA_ESTRUCTURAS_OFICIALES, identificarEst
 import { coloresConAcabadoReferencia } from "@/lib/plan/colores-referencia";
 import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/escena/creatividad";
 import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
-import { PARTE_MINIMA_REFERENCIA } from "@/lib/plan/referencias-medidas";
+import { colorDeReferencia, referenciasUsables } from "@/lib/plan/referencias-medidas";
 import { companerasDeGrupo } from "@/lib/ia/referencia/piezas-espejo";
 
 /**
@@ -125,9 +125,9 @@ DISEÑO DE LA DECORACIÓN (activo)
 - FOTO SIN GLOBOS: si ANALISIS_REFERENCIA_VISUAL no trae ninguna estructura de globos (balloon_structure) y el cliente no nombró piezas (arco, columnas, centros de mesa, bouquet…), PREGUNTA antes de armar: dile en una frase que su foto no tiene decoración con globos y pregúntale qué piezas quiere, o sugiérele elegir una de las fotos de ejemplo. No inventes estructuras ni llames confirmar_plan_decoracion hasta que responda; con un nivel de CREATIVIDAD DEL DISEÑO que permita acentos extra sobre la foto sí puedes proponerlos. Si confirmar_plan_decoracion devuelve REFERENCIA_SIN_GLOBOS, haz esa pregunta.
 - Respeta alcance comercial de cada elemento: un elemento fuera_de_catalogo no dispara buscar_catalogo_rag ni una propuesta de emulación; decláralo con motivo_tipo "fuera_de_catalogo". Un elemento emulable solo puede quedar como propuesta pendiente con motivo_tipo "emulacion_propuesta" y propuesta explícita; no lo asignes a una estructura en el primer plan.
 - La respuesta de confirmar_plan_decoracion incluye \`evento.event_label\`, \`evento.original_request\`, \`evento.match_levels\` y \`evento.relaxations\`; consérvalos en el resumen. Si aparece \`thematic\` o \`adaptable\`, dilo como propuesta temática/adaptable, nunca como coincidencia exacta.
-- PROPORCIONES DE LA FOTO: cuando un elemento trae "mezcla de color observada", esa mezcla es el punto de partida de materiales[].participacion (múltiplos de 0,05 que sumen 1) y el material de mayor participación va con rol_material "principal". Es una guía, no una orden: los colores que el cliente pidió explícitamente y lo que el catálogo de verdad cubre mandan sobre ella; si un color de la mezcla no se puede comprar, reparte su participación entre los que sí y cuéntaselo al cliente.
+- PROPORCIONES DE LA FOTO: cada pieza trae una sola fuente de proporciones. Si sus "colores de la pieza" traen "~N % medido, aproximado", esa es: la parte de lo medido en la foto dentro de la caja de la pieza, que también cuenta fondo y sombras, así que no suma 100 %; reparte materiales[].participacion (múltiplos de 0,05 que sumen 1) en esa misma proporción entre los colores de la lista, y a un color sin parte medida (un transparente, que la foto no deja medir, o un cromado que refleja lo de alrededor) dale la participación que se ve en la foto. Si no trae partes medidas pero sí "mezcla de color observada", esa mezcla es el punto de partida. El material de mayor participación va con rol_material "principal". Es una guía, no una orden: los colores que el cliente pidió explícitamente y lo que el catálogo de verdad cubre mandan sobre ella; si un color no se puede comprar, reparte su participación entre los que sí y cuéntaselo al cliente.
 - LO QUE CUESTA UN ACENTO CHIQUITO: cada color se compra por paquete cerrado en CADA tamaño de la mezcla, así que un acento con participación de 0,1 o menos puede salir en tres o cuatro paquetes para unos pocos globos. Con presupuesto ajustado, súbelo a 0,2 o más, o déjalo fuera y quédate con dos colores bien resueltos.
-- COLORES DE LA FOTO: usa en cada estructura los colores observados de SU elemento de referencia (con varias fotos, cada estructura sigue la paleta de su propia foto, no la de otra). Nunca armes una estructura con un color que la foto no tiene (por ejemplo, todo transparente para una foto rosa y plata) mientras el catálogo tenga los colores de la foto: si una búsqueda no te trae uno de esos colores, búscalo aparte con una consulta de un solo color ("globo latex redondo rosado") antes de confirmar. Si esa búsqueda devuelve "colores_en_catalogo", ahí están los globos del catálogo que SÍ tienen ese color: búscalos por su título y úsalos, en vez de armar la pieza sin ese color. Si confirmar_plan_decoracion devuelve COLORES_REFERENCIA_OMITIDOS, arma esas estructuras con los colores de "colores_omitidos" y vuelve a confirmar; si una búsqueda de un color no lo trae, no la repitas: confirma con lo que tengas y el sistema avisará al cliente. Si devuelve "avisos_cliente", son colores dominantes de la foto que la propuesta no lleva, o ajustes de color y acabado que el sistema le hizo al plan (un acabado que ese producto no tiene, el color real de un producto de un solo color, o un globo de un color que la foto no tiene, que el sistema saca del plan antes de cotizar: no lo menciones como si estuviera incluido): la tarjeta se los muestra al cliente uno por uno: menciónalos en una sola frase de tu resumen y ofrécele buscar esos colores.
+- COLORES DE LA FOTO: arma cada estructura con los "colores de la pieza" de SU elemento de referencia (con varias fotos, cada estructura sigue la paleta de su propia foto, no la de otra). Esa lista son los colores que el análisis nombró en esa pieza, en el vocabulario del catálogo y de más a menos presentes: cada color aparece una vez, con su acabado ya resuelto, su parte medida si la hay y, cuando la foto midió el globo real, el "globo Sempertex medido" de ese color con la frase para buscarlo. Ese globo medido es el que tiene la foto: búscalo con esa frase y úsalo para ese color. Al confirmar, si la búsqueda del turno trae su producto, el sistema cambia por él el globo de ese color que elegiste de otra línea y el globo de un color que el análisis no nombró (si no lo trae, deja el que elegiste; si el cliente pidió colores, mandan los suyos y no cambia nada). La "paleta observada en toda la foto" incluye el local (paredes, piso, muebles): no es la lista de colores de ninguna pieza. Nunca armes una estructura con un color que la foto no tiene (por ejemplo, todo transparente para una foto rosa y plata) mientras el catálogo tenga los colores de la foto: si una búsqueda no te trae uno de esos colores, búscalo aparte con una consulta de un solo color ("globo latex redondo rosado") antes de confirmar. Si esa búsqueda devuelve "colores_en_catalogo", ahí están los globos del catálogo que SÍ tienen ese color: búscalos por su título y úsalos, en vez de armar la pieza sin ese color. Si confirmar_plan_decoracion devuelve COLORES_REFERENCIA_OMITIDOS, arma esas estructuras con los colores de "colores_omitidos" y vuelve a confirmar; si una búsqueda de un color no lo trae, no la repitas: confirma con lo que tengas y el sistema avisará al cliente. Si devuelve "avisos_cliente", son colores de la foto que la propuesta no lleva (esos la tarjeta se los muestra al cliente) o ajustes que el sistema le hizo al plan antes de cotizar y que el cliente solo sabrá por ti: un acabado que ese producto no tiene, el color real de un producto de un solo color, un globo cambiado por el globo medido en la foto (cambió de color: nómbralo con el color nuevo) o un globo de un color que la foto no tiene, que el sistema saca del plan (no lo menciones como si estuviera incluido). Menciónalos en una sola frase de tu resumen y ofrécele buscar los colores que faltan.
 - MEDIDAS DEL ESPACIO: no mides fotos. espacio.fuente "foto" solo dice que el TIPO de espacio (salón, jardín, terraza…) lo viste en la foto; no pongas ancho_m, alto_m ni largo_m del espacio salvo que el cliente te haya dado esas medidas (entonces fuente "cliente"). Si no las dio, omítelas: el sistema marca cualquier medida sin dato del cliente como estimada y le pide confirmarla.
 - "porque" de cada estructura: una frase corta para el cliente, en español y sin jerga, sobre para qué sirve la pieza en su evento ("Enmarca la mesa del pastel"). No menciones la imagen de referencia, la foto analizada, identificadores ni verbos como "materializa".
 - Después de confirmar_plan_decoracion el cliente verá el desglose completo antes de la imagen. Escribe solo 2 o 3 frases cálidas sobre el concepto. La tarjeta de la propuesta ya muestra uno por uno los supuestos, las sustituciones, los colores de la foto que no lleva y las piezas no disponibles, bajo "Ajustes que hice": no los enumeres. Si hay alguno, dilo en UNA sola frase breve en palabras del cliente ("te dejé en la tarjeta un par de ajustes que hice") y, si falta una pieza o un color que se pueda buscar, ofrécele buscarlo.
@@ -154,6 +154,53 @@ const COMPOSICION_UNIFORME = "single uniform material";
  */
 function sanearTextoObservado(texto: string): string {
   return texto.replace(/\s+/g, " ").replace(/"/g, "").trim().slice(0, 240);
+}
+
+/** Una parte medida, para el modelo: en múltiplos de 5 como las participaciones que tiene que escribir, nunca 0. */
+function porcentajeAproximado(parte: number): number {
+  return Math.max(5, Math.round(parte * 20) * 5);
+}
+
+/**
+ * La ÚNICA lista de colores que el modelo recibe de una pieza (2026-10-05): cada color una vez, con el acabado
+ * de su etiqueta, su parte medida en la foto cuando la hay (redondeada y dicha como aproximada) y el globo
+ * Sempertex medido de ese color cuando lo hay, con la frase para buscarlo.
+ *
+ * Antes recibía tres fuentes de proporción y dos listas que se contradecían: "colores observados", una
+ * "mezcla de color observada" en texto libre del analizador ("60% pearl pink…") y un bloque "GLOBOS REALES
+ * MEDIDOS (compra exactamente estos)" con sus propios porcentajes, que además traía la referencia de la pared
+ * cuando caía dentro de la caja. El servidor no compra "exactamente estos": cambia un material por la
+ * referencia medida solo cuando la búsqueda del turno trae el producto (`aplicarReferenciasMedidas`).
+ *
+ * Los colores son los dominantes (`coloresConAcabadoReferencia`), los mismos que el servidor exige al confirmar,
+ * y las referencias, las que la compra usa (`referenciasUsables`); una referencia de un color que no está en la
+ * lista no se enseña. La parte es la de `measured_colors`, la misma medida que ordena la lista; las partes de
+ * las referencias no se repiten para no volver a tener dos números por color. Con un solo color no hay
+ * proporción que dar. `conPartes` dice si la lista ya trae proporciones: si no, la mezcla en texto libre del
+ * analizador sigue siendo la única fuente y se manda aparte.
+ */
+function coloresDeLaPieza(apariencia: ReferenceBlueprintV2["elements"][number]["appearance"]): { texto: string; conPartes: boolean } {
+  const colores = coloresConAcabadoReferencia(apariencia);
+  if (colores.length === 0) return { texto: apariencia.observed_colors.map(sanearTextoObservado).join(", ") || "no determinable", conPartes: false };
+  const partes = new Map<string, number>();
+  if (colores.length > 1) for (const entrada of apariencia.measured_colors ?? []) if (!partes.has(entrada.color) && entrada.share > 0) partes.set(entrada.color, entrada.share);
+  const referencias = referenciasUsables(apariencia);
+  let conPartes = false;
+  const texto = colores.map((item) => {
+    const detalles = [`visto como "${sanearTextoObservado(item.etiqueta)}"`];
+    const parte = partes.get(item.color);
+    if (parte !== undefined) {
+      conPartes = true;
+      detalles.push(`~${porcentajeAproximado(parte)} % medido, aproximado`);
+    }
+    const suyas = referencias.filter((referencia) => colorDeReferencia(referencia.nombre) === item.color);
+    if (suyas.length) {
+      const globos = suyas.map((referencia) => `${referencia.nombre_completo}${referencia.familia_fiable ? "" : " (familia aproximada)"} → busca "globo latex redondo ${referencia.nombre_completo}"`);
+      detalles.push(`${suyas.length > 1 ? "globos Sempertex medidos" : "globo Sempertex medido"}: ${globos.join(" y ")}`);
+    }
+    return `${item.color}${item.acabado ? ` ${item.acabado}` : ""} (${detalles.join("; ")})`;
+  }).join(", ");
+  return { texto, conPartes };
 }
 
 /** La clase de tamaño que la lectura dio a un nivel, en palabras para el modelo (rangos de `armado_bouquet.py`). */
@@ -282,24 +329,18 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       // (`coloresConAcabadoReferencia`). Antes era una regla que el modelo
       // aplicaba a ojo, y el cromado de un color se contagiaba al resto de la
       // pieza: una foto de blush perlado + dorado cromado se compró entera en
-      // Reflex, con un fucsia cromado que la foto no tenía (2026-09-29).
-      const observados = coloresConAcabadoReferencia(element.appearance);
-      const colores = observados.length
-        ? observados.map((item) => `${item.color}${item.acabado ? ` ${item.acabado}` : ""} (visto como "${item.etiqueta}")`).join(", ")
-        : element.appearance.observed_colors.join(", ") || "no determinable";
+      // Reflex, con un fucsia cromado que la foto no tenía (2026-09-29). Con él
+      // van la parte medida y el globo Sempertex medido de cada color, en una
+      // sola lista (`coloresDeLaPieza`, 2026-10-05).
+      const { texto: colores, conPartes } = coloresDeLaPieza(element.appearance);
       // La proporción de cada color ya la extrajo el análisis de la foto: sin
       // ella el plan inventa las participaciones (BLOQUE_PLAN, PROPORCIONES DE
-      // LA FOTO). El valor por defecto no dice nada, así que no se manda.
+      // LA FOTO). El valor por defecto no dice nada, así que no se manda; y si la
+      // lista ya trae partes medidas tampoco, para que la pieza tenga una sola
+      // fuente de proporciones y no dos que se contradicen.
       const composicion = sanearTextoObservado(element.appearance.composition);
-      const mezclaObservada = composicion && composicion.toLowerCase() !== COMPOSICION_UNIFORME
+      const mezclaObservada = !conPartes && composicion && composicion.toLowerCase() !== COMPOSICION_UNIFORME
         ? `; mezcla de color observada: "${composicion}"`
-        : "";
-      // Las referencias Sempertex medidas en los píxeles mandan sobre las palabras de arriba: son los globos
-      // reales que se compran, con su familia. El servidor cambia al confirmar cualquier material que no sea
-      // una de ellas (`aplicarReferenciasMedidas`), así que pedirlas desde el principio ahorra el cambio.
-      const medidas = (element.appearance.referencias_medidas ?? []).filter((referencia) => referencia.parte >= PARTE_MINIMA_REFERENCIA);
-      const referenciasMedidas = medidas.length
-        ? `; GLOBOS REALES MEDIDOS EN LA FOTO (compra exactamente estos, son productos del catálogo): ${medidas.map((referencia) => `${referencia.nombre_completo} (~${Math.round(referencia.parte * 100)}%${referencia.familia_fiable ? "" : ", familia aproximada"}) → busca "globo latex redondo ${referencia.nombre_completo}"`).join("; ")}`
         : "";
       const relaciones = element.relationships
         .map((relation) => `${REFERENCE_ROLE_LABELS[relation.type] ?? relation.type} ${relation.target_element_id}`)
@@ -313,7 +354,7 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
         ? identificarEstructuraOficial({ tipo: semantica.structure_type, densidad: semantica.density, ubicacion: semantica.placement, nombre: element.appearance.shape })
         : undefined;
       const estructura = semantica
-        ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados: cada color de "colores observados" trae YA RESUELTO su acabado (reflex, satin o mate) y ese es el que compras para ESE color, nunca el de otro color de la pieza; un color sin acabado indicado no obliga a ninguno (chrome/metallic = reflex, pearl = satin; "clear" junto a un color, como "clear pink", es la línea Cristal de ese color —un acabado translúcido, no un globo transparente—, y "clear" solo sí es transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
+        ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados: cada color de "colores de la pieza" trae YA RESUELTO su acabado (reflex, satin o mate) y ese es el que compras para ESE color, nunca el de otro color de la pieza; un color sin acabado indicado no obliga a ninguno (chrome/metallic = reflex, pearl = satin; "clear" junto a un color, como "clear pink", es la línea Cristal de ese color —un acabado translúcido, no un globo transparente—, y "clear" solo sí es transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
         : "";
       // La misma pieza repetida en la foto (`piezas-espejo.ts`): una sola estructura con repeticiones, que
       // materializa el primer elemento del grupo y cubre los demás (`validarCoberturaReferencia`).
@@ -322,7 +363,7 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       const espejo = companeras.length
         ? `; MISMA PIEZA EN ESPEJO que ${companeras.map((otra) => otra.element_id).join(", ")}: materialízalas con UNA sola estructura de repeticiones ${companeras.length + 1}, ubicación ${cabeza.visual_semantics?.placement ?? "lateral_izquierdo"} y referencia_element_id ${cabeza.element_id} (esa repetición cubre ${element.element_id === cabeza.element_id ? companeras.map((otra) => otra.element_id).join(", ") : element.element_id}; no la pongas en referencia_omitida ni la armes como otra estructura)`
         : "";
-      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}${referenciasMedidas}${armadoLeido(element.appearance.armado_bouquet, cantidadDelConteo(element.appearance.conteo) !== null)}${conteoLeido(element.appearance.conteo)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}${espejo}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
+      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores de la pieza: ${colores}${mezclaObservada}${armadoLeido(element.appearance.armado_bouquet, cantidadDelConteo(element.appearance.conteo) !== null)}${conteoLeido(element.appearance.conteo)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}${espejo}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
     })
     .join("\n");
   return elementos || "- Ningún elemento relevante detectado.";
@@ -334,7 +375,7 @@ function bloqueReferencia(blueprint: ReferenceBlueprintV2): string {
 ANALISIS_REFERENCIA_VISUAL (presente en este turno)
 El cliente adjuntó una imagen de referencia. Esto es lo que un análisis visual automático detectó — NO son productos de catálogo, son geometría y composición observadas; los ids (ej. REF_01_E01) son identificadores internos para confirmar_plan_decoracion (referencia_element_id / referencia_omitida) y para interpretar ajustes ("quítale la cortina" corresponde a REF_01_E02). Con el cliente nombra cada elemento por lo que es ("la cortina", "el arco"), nunca por su id.
 Composición general: foco visual "${blueprint.composition.focal_point}"; densidad ${blueprint.composition.density}; simetría ${blueprint.composition.symmetry}.
-Paleta observada: ${blueprint.palette.observed.join(", ") || "no determinable"}.
+Paleta observada en toda la foto (incluye el local: paredes, piso y muebles; no es la lista de colores de ninguna pieza): ${blueprint.palette.observed.join(", ") || "no determinable"}.
 Elementos detectados:
 ${serializeReferenceBlueprint(blueprint)}
 Las posiciones (x/y/w/h) son proporciones DENTRO de la imagen de referencia, no coordenadas del render final — úsalas para entender proporción y relación entre estructuras, no como coordenadas literales a copiar.`;

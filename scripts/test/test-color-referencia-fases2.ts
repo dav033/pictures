@@ -43,10 +43,15 @@ const casos: Caso[] = [
     },
   },
   {
-    nombre: "2.1 · un color medido que el catálogo no vende no llega a lo que se compra",
+    nombre: "2.1 · el gris medido pasa como por las etiquetas: se sustituye por plateado y se avisa",
     correr: () => {
-      // `gris` se mide en los píxeles pero no se puede comprar: no entra en
-      // `colores_referencia`, que es la lista contra la que se resuelven líneas.
+      // Cambio deliberado (2026-10-05, SEGUIMIENTO-color-referencia.md §4.1 b):
+      // antes esta prueba congelaba `["blanco"]`. La medida se filtraba al
+      // catálogo y el gris desaparecía sin sustitución ni aviso, mientras que las
+      // mismas etiquetas sin medida daban `["gris", ...]` y el resolutor decía
+      // "se usó plateado". Ahora un color que el catálogo no vende pero tiene con
+      // qué comprarse (`colorDeCompraSinVenta`) pasa igual por los dos caminos. Y
+      // el blanco medido ya no entra: el analizador no lo nombró (es la pared).
       const colores = coloresDominantesReferencia({
         observed_colors: ["grey"],
         measured_colors: [
@@ -54,7 +59,28 @@ const casos: Caso[] = [
           { color: "blanco", share: 0.3 },
         ],
       });
-      assert.deepEqual(colores, ["blanco"]);
+      assert.deepEqual(colores, ["gris"]);
+      // El caso de §4.1 b tal cual: las etiquetas y la medida dicen lo mismo.
+      const etiquetas = ["matte grey", "white"];
+      assert.deepEqual(coloresDominantesReferencia({ observed_colors: etiquetas }), ["gris", "blanco"]);
+      const medido = coloresDominantesReferencia({ observed_colors: etiquetas, measured_colors: [{ color: "gris", share: 0.7 }, { color: "blanco", share: 0.2 }] });
+      assert.deepEqual(medido, ["gris", "blanco"]);
+      assert.deepEqual(sustitucionesColorReferencia("E1", medido, ["plateado", "blanco"]).map((item) => item.entregado), ["plateado"], "y el resolutor avisa que se usó plateado");
+    },
+  },
+  {
+    nombre: "2.1 · un color medido que el analizador no nombró no ocupa cupo, tampoco un neutro",
+    correr: () => {
+      // La pared blanca o el fondo negro que caen en la caja de la pieza se
+      // llevaban uno de los tres cupos y echaban el lila (2026-10-05).
+      const etiquetas = ["pearl pink", "chrome gold", "lilac"];
+      for (const fondo of ["blanco", "negro"]) {
+        const colores = coloresDominantesReferencia({
+          observed_colors: etiquetas,
+          measured_colors: [{ color: fondo, share: 0.45 }, { color: "rosado", share: 0.3 }, { color: "dorado", share: 0.2 }, { color: "lila", share: 0.05 }],
+        });
+        assert.deepEqual(colores, ["rosado", "dorado", "lila"], `fondo ${fondo}`);
+      }
     },
   },
   {
@@ -79,14 +105,14 @@ const casos: Caso[] = [
     nombre: "2.5 · el gris sigue visible en la paleta que se le muestra al cliente",
     correr: () => {
       // Filtrarlo aquí lo haría indistinguible de un color que la foto no tenía.
-      const colores = coloresFotoCliente({
+      const foto = (observed_colors: string[]) => ({
         palette: { observed: [], priority: [] },
         elements: [
           {
             approved: true,
             reference_bbox: { x: 0, y: 0, width: 1, height: 1 },
             appearance: {
-              observed_colors: ["grey"],
+              observed_colors,
               measured_colors: [
                 { color: "gris", share: 0.6 },
                 { color: "blanco", share: 0.3 },
@@ -96,7 +122,13 @@ const casos: Caso[] = [
         ],
         // El resto del elemento no participa en esta función.
       } as unknown as Parameters<typeof coloresFotoCliente>[0]);
-      assert.deepEqual(colores, ["gris", "blanco"]);
+      // Cambio deliberado (2026-10-05): antes esperaba `["gris", "blanco"]`
+      // aunque el analizador solo nombró "grey". La paleta del cliente sigue la
+      // misma regla que cada pieza (las etiquetas nombran, la medida ordena), así
+      // que el cliente, el plan y los avisos hablan de los mismos colores: el
+      // blanco medido sin nombre no se le enseña como color de su foto.
+      assert.deepEqual(coloresFotoCliente(foto(["grey"])), ["gris"]);
+      assert.deepEqual(coloresFotoCliente(foto(["grey", "white"])), ["gris", "blanco"], "nombrado, el blanco sí sale, en el orden de la medida");
     },
   },
   {
@@ -135,9 +167,17 @@ const casos: Caso[] = [
       // transparente quedaba cuarto y nunca se exigía.
       assert.deepEqual(coloresDominantesReferencia(["pink", "silver", "white", "clear"]), ["rosado", "plateado", "blanco", "transparente"]);
       // Los píxeles no ven un globo transparente: sale de las etiquetas aunque la medida mande en los tonos.
+      // Cambio deliberado (2026-10-05): las etiquetas eran ["pink", "clear"] y se esperaba un plateado que
+      // solo traía la medida (un neutro sin nombre entraba siempre). Ahora la plata tiene que estar nombrada
+      // para ocupar cupo; nombrada, la medida la pone primero.
+      assert.deepEqual(
+        coloresDominantesReferencia({ observed_colors: ["pink", "silver", "clear"], measured_colors: [{ color: "plateado", share: 0.6 }, { color: "rosado", share: 0.4 }] }),
+        ["plateado", "rosado", "transparente"],
+      );
       assert.deepEqual(
         coloresDominantesReferencia({ observed_colors: ["pink", "clear"], measured_colors: [{ color: "plateado", share: 0.6 }, { color: "rosado", share: 0.4 }] }),
-        ["plateado", "rosado", "transparente"],
+        ["rosado", "transparente"],
+        "sin nombre, la plata medida no entra",
       );
       // "clear pink" es la línea Cristal teñida: rosado, no el transparente incoloro.
       assert.deepEqual(coloresDominantesReferencia(["clear pink", "silver"]), ["rosado", "plateado"]);

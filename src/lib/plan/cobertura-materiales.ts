@@ -63,8 +63,26 @@ export type AjusteCobertura =
   | { tipo: "acabado_material"; estructura_id: string; product_id: string; antes: string; color: string | null }
   /** El producto cambió para comprar el acabado de la foto en el MISMO color (`aplicarAcabadoReferencia`). */
   | { tipo: "acabado_referencia"; estructura_id: string; product_id: string; despues: string; color: string | null; acabado: string }
+  /**
+   * El producto cambió por el globo Sempertex que la foto midió y con él cambió el COLOR (regla 3 de
+   * `aplicarReferenciasMedidas`): `antes` es el color que eligió el modelo, `color` el de la referencia y
+   * `referencia` su nombre comercial («Satín Rosado»). A diferencia de `acabado_referencia`, se avisa.
+   */
+  | { tipo: "color_referencia"; estructura_id: string; product_id: string; despues: string; antes: string | null; color: string; referencia: string }
   | { tipo: "mezcla"; estructura_id: string; antes: Mezcla; despues: Mezcla }
   | { tipo: "material_quitado"; estructura_id: string; product_id: string; color: string | null; aviso_cliente: string };
+
+/**
+ * Los productos que nombra un ajuste: el que tenía el material y, si el ajuste lo cambió por otro, también el
+ * nuevo. Sirve para saber qué avisos hablan de un material que ya no está en el plan cotizado
+ * (`avisosClienteAjustes`, `materialesFuera`): un cambio de producto deja fuera el viejo, y el nuevo puede
+ * salir después por la convergencia.
+ */
+export function productosDelAjuste(ajuste: AjusteCobertura): string[] {
+  if (ajuste.tipo === "mezcla") return [];
+  if (ajuste.tipo === "acabado_referencia" || ajuste.tipo === "color_referencia") return [ajuste.product_id, ajuste.despues];
+  return [ajuste.product_id];
+}
 
 /** Mixes that keep the look of the chosen one, in order of preference. */
 export const MEZCLAS_CERCANAS: Readonly<Record<Mezcla, readonly Mezcla[]>> = {
@@ -304,6 +322,12 @@ function buscarProductoConAcabado(
  * "los dorados van en su acabado normal" without a single gold balloon in it.
  * The `material_quitado` notice already tells that story.
  *
+ * A measured Sempertex reference that replaced a material of ANOTHER color
+ * (`color_referencia`) is reported like the other color rewrites: the model
+ * described one color and the quote buys another (2026-10-05). Its material is
+ * the replacement (followed through a later finish swap), so that is the one
+ * checked against `materialesFuera`; the replaced product is out by design.
+ *
  * Pure: customer wording only, no ids, codes or internal field names.
  */
 export function avisosClienteAjustes(
@@ -326,11 +350,33 @@ export function avisosClienteAjustes(
     ...ajustes.flatMap((ajuste) => (ajuste.tipo === "material_quitado" ? [`${ajuste.estructura_id}|${ajuste.product_id}`] : [])),
     ...(contexto.materialesFuera ?? []).map((item) => `${item.estructura_id}|${item.product_id}`),
   ]);
+  // El producto que quedó en el plan después de un cambio de producto: el `despues` del ajuste o, si
+  // `aplicarAcabadoReferencia` lo volvió a cambiar por el acabado de la foto, el de ese segundo cambio.
+  const siguiente = new Map(ajustes.flatMap((ajuste) => (
+    ajuste.tipo === "acabado_referencia" || ajuste.tipo === "color_referencia" ? [[`${ajuste.estructura_id}|${ajuste.product_id}`, ajuste.despues] as const] : []
+  )));
+  const productoQueQueda = (estructuraId: string, productId: string): string => {
+    const vistos = new Set<string>();
+    let actual = productId;
+    while (!vistos.has(actual)) {
+      vistos.add(actual);
+      const proximo = siguiente.get(`${estructuraId}|${actual}`);
+      if (!proximo) break;
+      actual = proximo;
+    }
+    return actual;
+  };
   return [...new Set(ajustes.flatMap((ajuste) => {
     // `acabado_referencia` no lleva aviso: el acabado de la foto SÍ se respetó,
     // y contarle al cliente que se cambió de producto para lograrlo sería
     // hablarle de catálogo en vez de de su decoración.
     if (ajuste.tipo === "mezcla" || ajuste.tipo === "material_quitado" || ajuste.tipo === "acabado_referencia") return [];
+    if (ajuste.tipo === "color_referencia") {
+      // El producto viejo salió del plan a propósito: lo que importa es que el nuevo siga en él.
+      if (fuera.has(`${ajuste.estructura_id}|${productoQueQueda(ajuste.estructura_id, ajuste.product_id)}`)) return [];
+      const globos = ajuste.antes ? `los globos de color ${ajuste.antes}` : "unos globos";
+      return [`En ${nombreDe(ajuste.estructura_id)} ${globos} van en ${ajuste.color} (${ajuste.referencia}), que es el color que tiene tu foto.`];
+    }
     if (fuera.has(`${ajuste.estructura_id}|${ajuste.product_id}`)) return [];
     const nombre = nombreDe(ajuste.estructura_id);
     if (ajuste.tipo === "acabado_material") {

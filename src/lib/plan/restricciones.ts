@@ -4,7 +4,7 @@ import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-ref
 import { ALIAS_COLORES_V2, type ACABADOS_CATALOGO_V2 } from "@/lib/rag/taxonomy/v2";
 import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import { tieneEstructurasDeGlobos } from "@/lib/ia/referencia/reference-structure";
-import { coloresDominantesReferencia, coloresFotoCliente } from "./colores-referencia";
+import { coloresDominantesReferencia, coloresFotoCliente, coloresNombradosReferencia } from "./colores-referencia";
 import { identificarEstructuraOficial } from "./estructuras-oficiales";
 import type { PlanDecoracion, RestriccionesUsuario, TipoEstructura } from "./tipos";
 
@@ -544,18 +544,28 @@ export function validarCoberturaReferencia(plan: PlanDecoracion, blueprint: Refe
  * plata": the analysis showed "Rosado" from the chairs and the 4th arch color
  * "gris", and the plan dropped both without a notice): every color the analysis
  * shows the customer (`coloresFotoCliente`) that no structure buys and no
- * structure already lists is appended to the first structure that materializes
- * a photo element, so the resolvers record it as a notice. A color that only the
- * venue contributes (the `backdrop` element: a brick wall, a curtain wall behind
- * the piece) is not decoration and is left out. Those extras are
- * notices only: `confirmar_plan_decoracion` claims just the element colors
+ * structure already lists is appended, so the resolvers record it as a notice.
+ * It goes to every structure whose element NAMES it (all its named colors, not
+ * only the three dominant ones: `coloresNombradosReferencia`), and only a color
+ * no materialized element names goes to the first structure that materializes
+ * a photo element. Until 2026-10-05 every extra went to that first structure,
+ * so the silver beyond the cap of a gold/black/white/silver column was reported
+ * as missing from the arch. A color that only the venue contributes (the
+ * `backdrop` element: a brick wall, a curtain wall behind the piece) is not
+ * decoration and is left out. Those extras are notices only:
+ * `confirmar_plan_decoracion` claims just the element colors
  * (`coloresElementoReferencia`).
  */
 export function aplicarColoresReferencia<T extends PlanDecoracion>(plan: T, blueprint: ReferenceBlueprintV2 | undefined): T {
   const elementos = new Map((blueprint?.elements ?? []).filter((element) => element.approved).map((element) => [element.element_id, element]));
+  const elementoDe = (estructura: PlanDecoracion["estructuras"][number]) => (estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id) : undefined);
   const porEstructura = plan.estructuras.map((estructura) => {
-    const elemento = estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id) : undefined;
+    const elemento = elementoDe(estructura);
     return elemento ? coloresDominantesReferencia(elemento.appearance) : [];
+  });
+  const nombradosPorEstructura = plan.estructuras.map((estructura) => {
+    const elemento = elementoDe(estructura);
+    return new Set(elemento ? coloresNombradosReferencia(elemento.appearance).map((item) => item.color) : []);
   });
   const listados = new Set(porEstructura.flat());
   const comprados = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => normalizar(material.color ?? "").trim())).filter(Boolean));
@@ -569,10 +579,18 @@ export function aplicarColoresReferencia<T extends PlanDecoracion>(plan: T, blue
     !aprobados.some((elemento) => elemento.category !== "backdrop" && coloresDominantesReferencia(elemento.appearance).includes(color));
   const extras = coloresFotoCliente(blueprint).filter((color) => !listados.has(color) && !comprados.has(normalizar(color)) && !soloDelLocal(color));
   const primera = porEstructura.findIndex((colores) => colores.length > 0);
+  // Cada color extra a la pieza que lo muestra en la foto: el aviso dice "esta pieza no lo lleva", y tiene
+  // que decirlo de la pieza correcta. Solo un color que ningún elemento materializado nombra (las sillas del
+  // E2E de 2026-09-15) sigue yendo a la primera.
+  const extrasPorEstructura = plan.estructuras.map(() => [] as string[]);
+  for (const color of extras) {
+    const duenas = nombradosPorEstructura.flatMap((nombrados, indice) => (nombrados.has(color) ? [indice] : []));
+    for (const indice of duenas.length ? duenas : primera >= 0 ? [primera] : []) extrasPorEstructura[indice]!.push(color);
+  }
   return {
     ...plan,
     estructuras: plan.estructuras.map((estructura, indice) => {
-      const colores = indice === primera ? [...porEstructura[indice]!, ...extras].slice(0, MAX_COLORES_REFERENCIA_PLAN) : porEstructura[indice]!;
+      const colores = [...porEstructura[indice]!, ...extrasPorEstructura[indice]!].slice(0, MAX_COLORES_REFERENCIA_PLAN);
       const resto = { ...estructura };
       delete resto.colores_referencia;
       return colores.length ? { ...resto, colores_referencia: colores } : resto;

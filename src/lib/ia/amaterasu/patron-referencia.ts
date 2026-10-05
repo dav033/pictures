@@ -29,6 +29,12 @@ import { ReferenceBlueprintV2Schema, type PatronColorReferencia, type ReferenceB
 
 /** Elementos por foto que admite `patron-referencia.v1`. */
 const MAX_ELEMENTOS_POR_FOTO = 12;
+/**
+ * Por debajo de esta confianza la lectura de que la pieza es de un solo color no se guarda: la misma barra que
+ * cualquier otra lectura de la foto (`CONFIANZA_MINIMA_PISTA` de `patron_color.py`, que también aplica
+ * `validar_pistas` a la monocroma).
+ */
+const CONFIANZA_MINIMA_COLOR_UNICO = 0.5;
 /** Techo propio de la detección: va después del análisis, dentro del mismo `maxDuration` de la ruta. */
 export const DEADLINE_PATRON_REFERENCIA_MS = 25_000;
 
@@ -139,8 +145,12 @@ export function adjuntarPistasPatron(blueprint: ReferenceBlueprintV2, pistas: re
     // Los tamaños, como el remate, se guardan aunque el modo sea "ninguno" o "monocromo": no son una
     // disposición de color. Es el caso que los motivó.
     if (pista.tamanos) tamanos.set(pista.element_id, pista.tamanos);
-    // Un color no tiene disposición, así que no hay patrón que guardar: lo que vale es el color.
-    if (pista.modo === "monocromo" && pista.colores[0]) unicos.set(pista.element_id, pista.colores[0]);
+    // Un color no tiene disposición, así que no hay patrón que guardar: lo que vale es el color. Y solo con
+    // una lectura confiable: `color_unico` manda sobre las etiquetas y sobre la medida
+    // (`coloresDominantesReferencia`), así que una monocroma dicha con 0,2 de confianza dejaba una columna
+    // dorada, blanca y negra comprada solo en dorado (2026-10-05). Python ya la degrada a "ninguno"
+    // (`validar_pistas`); esto la para también si llega de una detección guardada de antes.
+    if (pista.modo === "monocromo" && pista.colores[0] && pista.confianza >= CONFIANZA_MINIMA_COLOR_UNICO) unicos.set(pista.element_id, pista.colores[0]);
   }
   if (patrones.size === 0 && remates.size === 0 && unicos.size === 0 && tamanos.size === 0) return blueprint;
   return {

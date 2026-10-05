@@ -1,6 +1,6 @@
 import type { AnalisisColorSempertex } from "./analisis-color";
 import type { AjusteCobertura, DisponibilidadProducto } from "./cobertura-materiales";
-import { coloresConAcabadoReferencia } from "./colores-referencia";
+import { coloresNombradosReferencia } from "./colores-referencia";
 import { referenciaDelCatalogo, referenciaPorCodigo } from "./referencia-sempertex";
 import type { PlanDecoracion } from "./tipos";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
@@ -73,11 +73,8 @@ export function referenciasDePieza(pieza: AnalisisColorSempertex["piezas"][numbe
   return [...porCodigo.values()].sort((a, b) => b.parte - a.parte).slice(0, MAX_REFERENCIAS);
 }
 
-/** Colores que no tienen tono: la luz del salón no los inventa, así que la medición puede proponerlos siempre. */
-const COLORES_NEUTROS = new Set(["blanco", "plateado", "gris", "negro", "transparente", "crema", "perla"]);
-
 /**
- * **El analizador decide QUÉ tonos tiene la pieza; los píxeles solo afinan cuál referencia de ese tono.**
+ * **El analizador decide QUÉ colores tiene la pieza; los píxeles solo afinan cuál referencia de ese color.**
  *
  * Los píxeles no distinguen el color de un globo del color de la luz que le pega. Medido el 2026-10-04 en
  * la foto de ejemplo 01 («Columnas rosa y plata», un salón con luz morada desde el piso): los globos blancos
@@ -85,15 +82,20 @@ const COLORES_NEUTROS = new Set(["blanco", "plateado", "gris", "negro", "transpa
  * compraba lila, un color que la foto no tiene. Un balance de blancos con la cortina y la mesa de la misma
  * foto no lo arregla: la luz pega en la cara de los globos, no en el fondo, y corregirla borraba el rosa.
  * El analizador visual sí descuenta la luz («light pink, chrome silver, clear»): un tono que solo ven los
- * píxeles es luz o reflejo y se descarta. Los neutros pasan siempre, porque la luz no los crea.
+ * píxeles es luz o reflejo y se descarta.
+ *
+ * Los neutros tampoco pasan sin nombre (2026-10-05). Pasaban siempre («la luz no los crea»), pero los píxeles
+ * no solo ven luz: ven lo que cae dentro de la caja, y una pared blanca o un fondo negro SÍ son neutros. Su
+ * «Fashion Blanco» entraba al blueprint, y la regla 3 de `aplicarReferenciasMedidas` cambiaba por él el Satín
+ * Lila que la foto sí tenía. Es la misma regla que los dominantes (`coloresNombradosOrdenados` en
+ * colores-referencia.ts), con la lista entera de lo nombrado y no solo los tres primeros: el cuarto color de
+ * la foto también tiene su referencia. El transparente sigue a su etiqueta como cualquier otro: solo con un
+ * «clear» del analizador, porque los píxeles no ven un globo transparente. Sin un solo color nombrado no hay
+ * nada que afinar y no queda ninguna referencia.
  */
 function referenciasCompatibles(referencias: readonly ReferenciaMedida[], acabadoPorColor: ReadonlyMap<string, string | undefined>): ReferenciaMedida[] {
-  if (acabadoPorColor.size === 0) return [...referencias];
   return referencias
-    .filter((referencia) => {
-      const color = colorDeReferencia(referencia.nombre);
-      return COLORES_NEUTROS.has(color) || acabadoPorColor.has(color);
-    })
+    .filter((referencia) => acabadoPorColor.has(colorDeReferencia(referencia.nombre)))
     .map((referencia) => {
       // La familia es segura cuando el analizador dijo el acabado de ESE color («chrome silver») y la
       // referencia es de una familia de ese acabado. La restricción de la medición solo existía si TODAS las
@@ -111,13 +113,13 @@ const FAMILIAS_DEL_ACABADO: Readonly<Record<string, readonly string[]>> = {
   mate: ["fashion", "pastelMate", "pastelDusk"],
 };
 
-/** Los colores que el analizador nombró en la pieza, con el acabado que les vio (si lo dijo). */
+/**
+ * Los colores que el analizador nombró en la pieza, con el acabado que les vio (si lo dijo). TODOS, sin el
+ * tope de tres de los dominantes: leerlos de la lista acotada hacía que el cuarto color nombrado contara como
+ * «nadie lo vio», y la regla 3 de `aplicarReferenciasMedidas` podía cambiarlo por otro (2026-10-05).
+ */
 export function coloresDelAnalizador(apariencia: ReferenceBlueprintV2["elements"][number]["appearance"]): Map<string, string | undefined> {
-  const colores = new Map<string, string | undefined>();
-  for (const observado of coloresConAcabadoReferencia(apariencia)) {
-    if (!colores.has(observado.color) || (!colores.get(observado.color) && observado.acabado)) colores.set(observado.color, observado.acabado);
-  }
-  return colores;
+  return new Map(coloresNombradosReferencia(apariencia).map((observado) => [observado.color, observado.acabado]));
 }
 
 /** El blueprint con las referencias medidas de cada pieza; sin análisis de color, el mismo blueprint. */
@@ -203,8 +205,21 @@ function elementoDeEstructura(estructura: Pick<Estructura, "referencia_element_i
   return blueprint.elements.find((candidato) => candidato.approved && candidato.element_id === estructura.referencia_element_id);
 }
 
+/**
+ * Las referencias medidas de una pieza que cuentan: las que llegan a `PARTE_MINIMA_REFERENCIA` y cuyo color
+ * nombró el analizador. La segunda condición ya la aplicó `conReferenciasMedidas` al guardarlas, pero el
+ * blueprint viaja con el navegador en cada turno: uno analizado antes del 2026-10-05 todavía puede traer la
+ * referencia de la pared, y aquí se vuelve a exigir para que la regla no dependa de cuándo se analizó la
+ * foto. Es lo que leen la compra (`aplicarReferenciasMedidas`), las búsquedas del servidor y el prompt.
+ */
+export function referenciasUsables(apariencia: ReferenceBlueprintV2["elements"][number]["appearance"]): ReferenciaMedida[] {
+  const nombrados = coloresDelAnalizador(apariencia);
+  return (apariencia.referencias_medidas ?? []).filter((referencia) => referencia.parte >= PARTE_MINIMA_REFERENCIA && nombrados.has(colorDeReferencia(referencia.nombre)));
+}
+
 function referenciasDeEstructura(estructura: Pick<Estructura, "referencia_element_id">, blueprint: Pick<ReferenceBlueprintV2, "elements"> | undefined): ReferenciaMedida[] {
-  return (elementoDeEstructura(estructura, blueprint)?.appearance.referencias_medidas ?? []).filter((referencia) => referencia.parte >= PARTE_MINIMA_REFERENCIA);
+  const elemento = elementoDeEstructura(estructura, blueprint);
+  return elemento ? referenciasUsables(elemento.appearance) : [];
 }
 
 /**
@@ -256,6 +271,11 @@ function distanciaHex(a: string, b: string): number {
  *
  * El color pasa a ser el de la referencia y el acabado el del producto nuevo. Una variante fijada por el
  * modelo o una línea con `variant_override` nombran ESE producto: no se cambian por debajo.
+ *
+ * Cuando el cambio es solo de familia (regla 2, el mismo color en la línea que la foto midió) queda como
+ * `acabado_referencia`, sin aviso. Cuando cambia el COLOR (regla 3) queda como `color_referencia`, que sí le
+ * llega al cliente (`avisosClienteAjustes`): el modelo le describió un fucsia y la cotización compra un
+ * rosado, y hasta el 2026-10-05 nadie se lo decía.
  */
 export function aplicarReferenciasMedidas(
   plan: PlanDecoracion,
@@ -316,7 +336,9 @@ export function aplicarReferenciasMedidas(
       if (!reemplazo || reemplazo === material.product_id) return material;
       const nuevo = disponibilidad.get(reemplazo)!;
       const color = colorDeReferencia(masCercana.nombre);
-      ajustes.push({ tipo: "acabado_referencia", estructura_id: estructura.estructura_id, product_id: material.product_id, despues: reemplazo, color, acabado: masCercana.nombre_completo });
+      ajustes.push(plegar(material.color ?? "") === color
+        ? { tipo: "acabado_referencia", estructura_id: estructura.estructura_id, product_id: material.product_id, despues: reemplazo, color, acabado: masCercana.nombre_completo }
+        : { tipo: "color_referencia", estructura_id: estructura.estructura_id, product_id: material.product_id, despues: reemplazo, antes: material.color ?? null, color, referencia: masCercana.nombre_completo });
       // El acabado del material es el del producto nuevo; si el catálogo no se lo leyó, no lleva ninguno
       // (el del producto anterior sería falso).
       const cambiado: typeof material = { ...material, product_id: reemplazo, color };

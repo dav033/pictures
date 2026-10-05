@@ -35,7 +35,7 @@ from app.armado_columna import TIPOS_REMATE
 from app.generated_models import contract_schema
 from app.operational_models import ContractModel, OperationalRequest
 from app.patron_color import ANCLAS as ANCLAS_PATRON
-from app.patron_color import EXTENSION_ZONA_MAXIMA, ZONAS_MAXIMAS
+from app.patron_color import CONFIANZA_MINIMA_PISTA, EXTENSION_ZONA_MAXIMA, ZONAS_MAXIMAS
 from app.patron_color import DIRECCIONES as DIRECCIONES_PATRON
 from app.patron_color import MODOS as MODOS_PATRON
 
@@ -374,6 +374,14 @@ def _pista(
     if modo == MODO_MONOCROMO:
         # Un solo color, y tiene que ser uno: con cero no se sabe cuál y con dos no es monocroma. En los dos
         # casos la lectura vale menos que admitir que no se distingue, así que cae a "ninguno".
+        #
+        # Y con la confianza de cualquier otra lectura de la foto (``CONFIANZA_MINIMA_PISTA``): la monocroma no
+        # es una pista que ``patron_color`` pueda descartar después, sino el ``color_unico`` del blueprint, que
+        # en Next manda sobre las etiquetas y sobre la medida. Dicha con 0,2 dejaba una columna dorada, blanca y
+        # negra comprada solo en dorado (2026-10-05). Por debajo del corte también cae a "ninguno"; el remate y
+        # los tamaños, leídos arriba, se quedan.
+        if float(confianza) < CONFIANZA_MINIMA_PISTA:
+            return pista
         crudos = item.get("colores")
         nombres = [
             nombre
@@ -486,8 +494,9 @@ def validar_pistas(raw: object, elementos: list[ElementoReferencia]) -> list[dic
     leer). Cada pista se valida por separado: una que nombra un elemento que no
     se pidió, repite uno o trae un modo desconocido se descarta; los colores
     fuera de la paleta se quitan y los números se acotan a su rango. Una pista
-    que se queda sin colores pasa a "ninguno". El remate solo se conserva en una columna, y solo si su tipo
-    existe en el motor.
+    que se queda sin colores pasa a "ninguno", y también una "monocromo" por debajo de
+    ``CONFIANZA_MINIMA_PISTA``: en Next es el ``color_unico`` de la pieza, que manda sobre sus etiquetas. El
+    remate solo se conserva en una columna, y solo si su tipo existe en el motor.
     """
 
     if not isinstance(raw, dict) or not isinstance(raw.get("pistas"), list):

@@ -77,7 +77,7 @@ import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, mezclasAdmisiblesEstructura, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
+import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, mezclasAdmisiblesEstructura, productosDelAjuste, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
 import { aplicarReferenciasMedidas, busquedasDeReferencias } from "@/lib/plan/referencias-medidas";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, accionEstimacionInconsistente, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
@@ -1507,11 +1507,11 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         nombres: new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre])),
         coloresReportados: sustitucionesDeColor.map((item) => ({ estructura_id: item.estructura_id, color: item.pedido })),
         coloresDelCliente: estado.restriccionesUsuario.colores.map((color) => color.valor),
-        materialesFuera: estado.ajustesCobertura.flatMap((ajuste) => (
-          ajuste.tipo !== "mezcla" && !materialesEnPlan.has(`${ajuste.estructura_id}|${ajuste.product_id}`)
-            ? [{ estructura_id: ajuste.estructura_id, product_id: ajuste.product_id }]
-            : []
-        )),
+        // También el producto NUEVO de un cambio de producto (`productosDelAjuste`): el aviso de un color que
+        // cambió por el globo medido en la foto habla de ese, y la convergencia pudo sacarlo después.
+        materialesFuera: estado.ajustesCobertura.flatMap((ajuste) => productosDelAjuste(ajuste)
+          .filter((productId) => !materialesEnPlan.has(`${ajuste.estructura_id}|${productId}`))
+          .map((productId) => ({ estructura_id: ajuste.estructura_id, product_id: productId }))),
       }),
       ...avisosConvergencia,
       ...sustitucionesDeColor.map((item) => item.motivo),
@@ -1542,7 +1542,10 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       sustituciones: resuelto.sustituciones,
       avisos_cliente: avisosCliente,
       ...(avisosCliente.length
-        ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye, y los ajustes de color o acabado que el sistema le hizo al plan que confirmaste: la tarjeta de la propuesta se los muestra al cliente uno por uno, así que no los enumeres: menciónalos en una sola frase de tu resumen, con tus palabras (no afirmes que el catálogo no tiene un color), y ofrece buscar esos colores si quiere acercarse más a la foto." }
+        // La tarjeta solo enseña lo que viaja firmado en el plan (`sustituciones`): los colores de la foto que la
+        // propuesta no lleva. Los ajustes del servidor (un globo cambiado por el medido en la foto, quitado o
+        // con otro acabado) solo le llegan al cliente por el resumen del modelo.
+        ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye, y los ajustes de color o acabado que el sistema le hizo al plan que confirmaste. La tarjeta de la propuesta solo le muestra al cliente los colores de la foto que la propuesta no lleva; los ajustes (un globo que cambió de color o de acabado, o que se quitó) solo los sabrá por ti. No los enumeres uno por uno: menciónalos en una sola frase de tu resumen, con tus palabras (no afirmes que el catálogo no tiene un color), y ofrece buscar esos colores si quiere acercarse más a la foto." }
         : {}),
       sin_cobertura: resuelto.sin_cobertura,
       advertencias: resuelto.advertencias,
