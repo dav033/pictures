@@ -79,6 +79,7 @@ from app.armado_columna import armado_resuelto as armado_columna_resuelto
 from app.armado_columna import config_inicial as config_inicial_columna
 from app.armado_columna_organica import ArmadoInvalido as ArmadoColumnaOrganicaInvalido
 from app.armado_columna_organica import EstructuraColumnaOrganica
+from app.armado_arco_organico import ArmadoInvalido as ArmadoArcoOrganicoInvalido
 from app.armado_arco_organico import EstructuraArcoOrganico
 from app.armado_arco_organico import VERSION as VERSION_ARMADO_ARCO_ORGANICO
 from app.armado_arco_organico import opciones_admitidas as opciones_arco_organico
@@ -2262,6 +2263,10 @@ def _motivo(motivo: str, mensaje: str, estructura_id: str | None) -> PlanResolut
 #: Las tres puertas lanzan la misma excepción con distinto nombre; se atrapan juntas.
 _INVALIDOS = (
     ArmadoArcoInvalido,
+    #: El arco orgánico y el semiarco tienen su propia puerta. Faltaba aquí: un armado viejo que la pieza ya no
+    #: sostiene (un índice de material que la convergencia quitó, 2026-10-05) escapaba de ``_valida`` como error
+    #: interno, la confirmación seguía sin armado y la guía de escena se quedaba sin la pieza.
+    ArmadoArcoOrganicoInvalido,
     ArmadoColumnaInvalido,
     ArmadoColumnaOrganicaInvalido,
     ArmadoGuirnaldaInvalido,
@@ -2273,7 +2278,11 @@ _INVALIDOS = (
 
 def _rechazo(
     error: (
-        ArmadoArcoInvalido | ArmadoColumnaInvalido | ArmadoGuirnaldaInvalido | FormaListaDesconocida
+        ArmadoArcoInvalido
+        | ArmadoArcoOrganicoInvalido
+        | ArmadoColumnaInvalido
+        | ArmadoGuirnaldaInvalido
+        | FormaListaDesconocida
     ),
     estructura_id: str | None,
 ) -> PlanResolutionError:
