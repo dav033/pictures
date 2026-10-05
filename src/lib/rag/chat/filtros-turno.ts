@@ -20,7 +20,7 @@ import { extraerFiltrosDurosBusqueda, type FiltrosDurosBusqueda } from "@/lib/ra
  * are still enforced on the plan (`restricciones.tamanos`).
  *
  * Colors a later customer message withdrew are not filters either, and a
- * color, finish, shape or category that only the brief says is not a filter:
+ * color, finish, shape, category or occasion that only the brief says is not a filter:
  * the model writes the brief too (2026-10-05).
  */
 export function filtrosDurosDeBusqueda(input: {
@@ -44,8 +44,10 @@ export function filtrosDurosDeBusqueda(input: {
   // El brief también lo escribe el modelo (`guardar_brief`), y vuelve en cada turno. Con una foto y sin
   // texto guardó «dorado reflex» en `estilo`: `reflex` quedó de filtro duro —que no se relaja— en todas las
   // búsquedas del turno, el globo transparente Fashion que la foto pedía no salió nunca y la propuesta no
-  // cerró (pruebas del 2026-10-05). Un color, un acabado, una forma o una categoría del brief solo filtran
-  // si el cliente los escribió; el evento y el presupuesto siguen saliendo del brief.
+  // cerró (pruebas del 2026-10-05). Un color, un acabado, una forma, una categoría o una ocasión del brief
+  // solo filtran si el cliente los escribió: el «cumpleaños» que el modelo dedujo de esa misma foto dejaba
+  // solo globos impresos de cumpleaños, sin el liso «Fashion Arena» que buscaba por su título. El presupuesto
+  // sigue saliendo del brief.
   const delCliente = extraerFiltrosDurosBusqueda(solicitud, {});
   const dichos = <T>(valores: readonly T[], cliente: readonly T[]) => valores.filter((valor) => cliente.includes(valor));
   const fuera = new Set((input.coloresRetirados ?? []).map(colorDeCatalogo));
@@ -56,6 +58,7 @@ export function filtrosDurosDeBusqueda(input: {
     acabados: dichos(delTurno.acabados, delCliente.acabados),
     formas: dichos(delTurno.formas, delCliente.formas),
     categorias: dichos(delTurno.categorias, delCliente.categorias),
+    ocasiones: dichos(delTurno.ocasiones, delCliente.ocasiones),
     diametros_pulgadas: deLaBusqueda.diametros_pulgadas.filter((diametro) => delTurno.diametros_pulgadas.includes(diametro)),
   };
 }

@@ -317,6 +317,8 @@ async function main(): Promise<void> {
   const briefDelModelo = filtrosDurosDeBusqueda({ mensaje: "globo latex redondo fashion transparente", solicitudOriginal: "Adjunto imágenes de referencia del estilo que busco.", brief: { estilo: "Elegante y lujoso con tonos azul navy, champagne y dorado reflex" } as never });
   assert.deepEqual(briefDelModelo.acabados, [], "the model's 'dorado reflex' in the brief is not a finish filter");
   assert.deepEqual(briefDelModelo.colores, [], "nor are the photo colors it copied into the brief");
+  assert.deepEqual(filtrosDurosDeBusqueda({ mensaje: "B2b Globo Latex Redondo Fashion Arena", solicitudOriginal: "Adjunto imágenes de referencia del estilo que busco.", brief: { tipo_evento: "cumpleaños" } as never }).ocasiones, [], "an occasion the model guessed from the photo kept only printed birthday balloons");
+  assert.deepEqual(filtrosDurosDeBusqueda({ mensaje: "globo azul", solicitudOriginal: "es para un cumpleaños", brief: { tipo_evento: "cumpleaños" } as never }).ocasiones, ["cumpleanos"], "the occasion the customer wrote still filters");
   ok("D3: el filtro de tamaño sale de cada búsqueda, no de la solicitud original");
 
   // ---------------------------------------------------------------------------
