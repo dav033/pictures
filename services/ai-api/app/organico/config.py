@@ -152,5 +152,8 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[ConfigOrg, list[str]
             "precio": _maximo(0, _num(real.get("precio"), base["real"]["precio"])),
         },
     }
+    # Solo se escribe encendida: un diseño sin la opción sigue siendo, campo por campo, el de siempre.
+    if colores.get("cuotas") is True:
+        cfg["colores"]["cuotas"] = True
     saneado, cambios = sanear(cfg)
     return saneado, list(cambios)

@@ -26,7 +26,7 @@ ninguna guirnalda los activa, así que en los vectores de oro no hay ``indice: -
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -785,13 +785,17 @@ def colorear(cfg: dict[str, Any], bs: list[B], esp: Espina) -> list[int]:
 
     Primero se reparten los acentos (globos sueltos que no se tocan entre sí) y el resto se colorea con los
     colores base según el reparto elegido.
+
+    Con ``colores.cuotas`` (opcional), cuántos globos lleva cada color se fija antes, con ``cuotas_por_peso``, y
+    el reparto solo decide dónde va cada uno. Sin ella todo sigue exactamente como antes, globo por globo.
     """
     col = cfg["colores"]
     lista = col["lista"]
     tamano_de = col.get("tamanoDe")
+    cuotas = col.get("cuotas") is True
     semilla = cfg["aspecto"]["semilla"] * 104729 + 7
     if not tamano_de:
-        return _colorear_lista(lista, col["reparto"], col["mezcla"], semilla, bs, esp)
+        return _colorear_lista(lista, col["reparto"], col["mezcla"], semilla, bs, esp, cuotas)
     # Por capas: cada tamaño se colorea, con el mismo reparto, solo con los colores de las capas de ese tamaño.
     salida = [0] * len(bs)
     tamanos = list(dict.fromkeys((b.nominal if b.nominal is not None else 12) for b in bs))
@@ -814,10 +818,47 @@ def colorear(cfg: dict[str, Any], bs: list[B], esp: Espina) -> list[int]:
             semilla + t * 7919,
             [bs[i] for i in indices],
             esp,
+            cuotas,
         )
         for k, ig in enumerate(indices):
             salida[ig] = capas_t[local[k]]
     return salida
+
+
+def cuotas_por_peso(pesos: Sequence[float], n: int) -> list[int]:
+    """Cuántos globos le tocan a cada color cuando la cantidad la manda el plan (``colores.cuotas``).
+
+    La parte de cada peso sobre ``n``, redondeada por el mayor resto. Suman ``n`` exactos. Un resto empatado lo
+    gana el color que va antes en la lista; un peso negativo cuenta como cero y, si ninguno pesa, se reparte por
+    igual. Solo usa sumas, productos, cocientes y ``floor``, que IEEE-754 fija: da lo mismo que el original en
+    cualquier plataforma. Las sumas van en un bucle y no con ``sum()``, que desde Python 3.12 compensa el
+    redondeo y ya no suma como ``reduce`` de JavaScript.
+    """
+    positivos = [_maximo(0, p) for p in pesos]
+    w = positivos if any(p > 0 for p in positivos) else [1.0 for _ in positivos]
+    if n <= 0 or not w:
+        return [0 for _ in w]
+    total = 0.0
+    for p in w:
+        total += p
+    exactas = [(n * p) / total for p in w]
+    cuotas = [int(_piso(q)) for q in exactas]
+    faltan = n
+    for q in cuotas:
+        faltan -= q
+    por_resto = sorted(range(len(w)), key=lambda i: (-(exactas[i] - cuotas[i]), i))
+    k = 0
+    while faltan > 0:
+        cuotas[por_resto[k]] += 1
+        k = (k + 1) % len(por_resto)
+        faltan -= 1
+    return cuotas
+
+
+#: Con cuotas, cuánto resta (en la escala de la proporción, 0–1) repetir el color del racimo anterior. Sin
+#: cuotas está prohibido, y eso es lo que impedía que un color pasara de la mitad de los racimos: con uno del
+#: 70 % la repetición no se puede evitar.
+REPETIR_RACIMO = 0.15
 
 
 def _colorear_lista(
@@ -827,6 +868,7 @@ def _colorear_lista(
     semilla: float,
     bs: list[B],
     esp: Espina,
+    cuotas: bool = False,
 ) -> list[int]:
     n = len(bs)
     rnd = crear_rng(semilla)
@@ -849,7 +891,27 @@ def _colorear_lista(
         cuota = _redondear((n * peso_ac) / (peso_ac + peso_base))
         orden = [o[0] for o in sorted(((i, rnd()) for i in range(n)), key=lambda o: o[1])]
         cuenta: dict[int, int] = dict.fromkeys(acentos, 0)
+        # Con cuotas, el presupuesto de los acentos se reparte entre ellos por el mayor resto y ninguno pasa
+        # del suyo.
+        tope = cuotas_por_peso([lista[i]["peso"] for i in acentos], int(cuota)) if cuotas else None
         puestos = 0
+
+        def poner_acento(i: int) -> None:
+            nonlocal puestos
+            # El acento más atrasado respecto a su proporción.
+            mejor = acentos[0]
+            mejor_puntaje = -mate.inf
+            for a, cc in enumerate(acentos):
+                if tope is not None and cuenta[cc] >= tope[a]:
+                    continue
+                puntaje = lista[cc]["peso"] / peso_ac - cuenta[cc] / (puestos + 1) + rnd() * 0.15
+                if puntaje > mejor_puntaje:
+                    mejor_puntaje = puntaje
+                    mejor = cc
+            salida[i] = mejor
+            cuenta[mejor] = cuenta[mejor] + 1
+            puestos += 1
+
         for i in orden:
             if puestos >= cuota:
                 break
@@ -861,17 +923,15 @@ def _colorear_lista(
                     vecino = True
             if vecino:
                 continue
-            # El acento más atrasado respecto a su proporción.
-            mejor = acentos[0]
-            mejor_puntaje = -mate.inf
-            for cc in acentos:
-                puntaje = lista[cc]["peso"] / peso_ac - cuenta[cc] / (puestos + 1) + rnd() * 0.15
-                if puntaje > mejor_puntaje:
-                    mejor_puntaje = puntaje
-                    mejor = cc
-            salida[i] = mejor
-            cuenta[mejor] = cuenta[mejor] + 1
-            puestos += 1
+            poner_acento(i)
+        # Con cuotas el presupuesto se cumple entero: si ya no queda un globo que no toque otro acento, los que
+        # faltan van igual, en el mismo orden al azar. Devolvérselos a los colores base cambiaría lo que se compra.
+        if tope is not None:
+            for i in orden:
+                if puestos >= cuota:
+                    break
+                if salida[i] < 0:
+                    poner_acento(i)
 
     # 2) Colores base en lo que quedó.
     K = len(base)
@@ -881,6 +941,31 @@ def _colorear_lista(
         for i in range(n):
             if salida[i] < 0:
                 salida[i] = base[0]
+        return salida
+    # Con cuotas, cuántos globos lleva cada color base se decide aquí, sobre los que quedaron libres; el reparto
+    # solo dice dónde.
+    objetivo = (
+        cuotas_por_peso([lista[i]["peso"] for i in base], sum(1 for c in salida if c < 0))
+        if cuotas
+        else None
+    )
+
+    if reparto == "tramos" and objetivo is not None:
+        # Con cuotas, los tramos se cortan por cantidad de globos y no por largo: los libres se ordenan a lo largo
+        # de la pieza (con el mismo difuminado de siempre) y cada color se lleva los suyos, en el orden de la lista.
+        posiciones: list[tuple[float, int]] = []
+        for i in range(n):
+            if salida[i] < 0:
+                posiciones.append((_acotar(fr[i] + (rnd() - 0.5) * 0.5 * mezcla, 0, 0.9999), i))
+        posiciones.sort()
+        c = 0
+        quedan = objetivo[0]
+        for _f, i in posiciones:
+            while quedan == 0:
+                c += 1
+                quedan = objetivo[c]
+            salida[i] = base[c]
+            quedan -= 1
         return salida
 
     if reparto == "tramos":
@@ -913,6 +998,8 @@ def _colorear_lista(
             g["cuantos"] += 1
             g["miembros"].append(i)
         ordenados = sorted(grupos.values(), key=lambda g: g["suma"] / g["cuantos"])
+        if objetivo is not None:
+            return _racimos_con_cuotas(ordenados, objetivo, base, bs, salida, mezcla, rnd)
         usados_c = [0] * K
         colocados = 0
         previo = -1
@@ -940,6 +1027,28 @@ def _colorear_lista(
     for i in range(len(indices) - 1, 0, -1):
         j = int(_piso(rnd() * (i + 1)))
         indices[i], indices[j] = indices[j], indices[i]
+    if objetivo is not None:
+        # Con cuotas, el color sale de los que aún tienen globos por poner: pesa lo que le falta frente a lo que
+        # queda por colorear y resta cada vecino que ya lo lleva. Evitar al vecino es una preferencia que nunca
+        # rompe una cuota.
+        resta = list(objetivo)
+        quedan = len(indices)
+        for i in indices:
+            vecinos = [salida[j] for j in range(n) if j != i and salida[j] >= 0 and toca(i, j)]
+            mejor = -1
+            mejor_puntaje = -mate.inf
+            for cc in range(K):
+                if resta[cc] == 0:
+                    continue
+                repetidos = sum(1 for v in vecinos if v == base[cc])
+                puntaje = (resta[cc] / quedan) * 4 - repetidos * 0.9 + rnd() * 0.25
+                if puntaje > mejor_puntaje:
+                    mejor_puntaje = puntaje
+                    mejor = cc
+            salida[i] = base[mejor]
+            resta[mejor] -= 1
+            quedan -= 1
+        return salida
     cuenta_base = [0] * K
     colocados = 0
     for i in indices:
@@ -956,6 +1065,64 @@ def _colorear_lista(
         salida[i] = base[mejor]
         cuenta_base[mejor] += 1
         colocados += 1
+    return salida
+
+
+def _racimos_con_cuotas(
+    ordenados: list[dict[str, Any]],
+    objetivo: list[int],
+    base: list[int],
+    bs: list[B],
+    salida: list[int],
+    mezcla: float,
+    rnd: Callable[[], float],
+) -> list[int]:
+    """El reparto en racimos con cuotas.
+
+    Cada racimo, en orden a lo largo de la pieza, va al color base que más se atrasó respecto a su cuota, y
+    repetir el color del racimo anterior resta ``REPETIR_RACIMO`` en vez de estar prohibido. Si al color no le
+    alcanza para el racimo entero, el resto del racimo —lo más adelantado a lo largo de la pieza— pasa al
+    siguiente color: los conteos salen exactos y como mucho K − 1 racimos quedan partidos en dos colores.
+    """
+    libres_todos = [i for i in range(len(bs)) if salida[i] < 0]
+    total = len(libres_todos)
+    resta = list(objetivo)
+    colocados = 0
+    previo = -1
+    for g in ordenados:
+        # Por el punto de la línea guía (``si``, entero y creciente a lo largo de la pieza) y no por ``fr``: el
+        # orden no depende así del último bit de una división.
+        miembros = sorted((i for i in g["miembros"] if salida[i] < 0), key=lambda i: (bs[i].si, i))
+        k = 0
+        while k < len(miembros):
+            quedan = len(miembros) - k
+            mejor = -1
+            mejor_puntaje = -mate.inf
+            for c in range(len(objetivo)):
+                if resta[c] == 0:
+                    continue
+                puntaje = (
+                    objetivo[c] / total
+                    - (objetivo[c] - resta[c]) / (colocados + quedan)
+                    - (REPETIR_RACIMO if c == previo else 0)
+                    + rnd() * 0.08
+                )
+                if puntaje > mejor_puntaje:
+                    mejor_puntaje = puntaje
+                    mejor = c
+            toma = min(quedan, resta[mejor])
+            for q in range(k, k + toma):
+                salida[miembros[q]] = base[mejor]
+            k += toma
+            resta[mejor] -= toma
+            colocados += toma
+            previo = mejor
+    # La mezcla ensucia los racimos sin tocar los conteos: un globo cambia su color por el de otro libre al azar.
+    # Cada cambio mancha dos globos, así que va con la mitad de la probabilidad con que antes se manchaba uno.
+    for i in libres_todos:
+        if rnd() < mezcla * 0.15:
+            j = libres_todos[int(_piso(rnd() * total))]
+            salida[i], salida[j] = salida[j], salida[i]
     return salida
 
 

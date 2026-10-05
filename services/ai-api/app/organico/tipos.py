@@ -143,6 +143,10 @@ class Colores(TypedDict, total=False):
     mezcla: float
     #: Solo lo pone el modo por capas: el tamaño de globo de cada color de la lista.
     tamanoDe: list[int]
+    #: Cuotas exactas por color (opcional; sin ella, el reparto de siempre). Con ``True`` el peso de cada color deja
+    #: de ser una tendencia: antes de colorear se fija cuántos globos lleva cada uno (el mayor resto) y el reparto
+    #: solo decide **dónde** va cada uno. Ver ``_colorear_lista`` en ``motor.py``.
+    cuotas: bool
 
 
 class CapaOrg(TypedDict):

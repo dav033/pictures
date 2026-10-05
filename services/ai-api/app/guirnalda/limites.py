@@ -366,4 +366,7 @@ def normalizar_config_con_cambios(entrada: object) -> tuple[ConfigGuir, list[str
             "precio": _num(re.get("precio"), base["real"]["precio"]),
         },
     }
+    # Solo se escribe encendida: un diseño sin la opción sigue siendo, campo por campo, el de siempre.
+    if co.get("cuotas") is True:
+        cfg["colores"]["cuotas"] = True
     return sanear(cfg)
