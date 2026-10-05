@@ -7,7 +7,7 @@ import {
 } from "@/lib/ia/nucleo/python-adapter";
 import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
-import { reubicarGuirnaldas } from "@/lib/ia/referencia/reference-structure";
+import { reclasificarColumnasConGuirnalda, reubicarGuirnaldas } from "@/lib/ia/referencia/reference-structure";
 import { adjuntarLecturasBouquet } from "./bouquet-referencia";
 import { adjuntarLecturasConteo } from "./conteo-referencia";
 import { adjuntarLecturasGuirnalda } from "./guirnalda-referencia";
@@ -201,7 +201,7 @@ export async function leerLecturaUnica(
   if (conLecturas === blueprint) return blueprint;
   // El blueprint viaja después al chat y a la generación, que lo validan con
   // este esquema: uno que no lo pase aquí no se entrega.
-  const validado = ReferenceBlueprintV2Schema.safeParse(reubicarGuirnaldas(conLecturas));
+  const validado = ReferenceBlueprintV2Schema.safeParse(reubicarGuirnaldas(reclasificarColumnasConGuirnalda(conLecturas)));
   if (!validado.success) {
     registrarOmision(contexto, "*", { code: "BLUEPRINT_INVALIDO", issues: validado.error.issues.slice(0, 3).map((issue) => issue.path.join(".")) });
     return blueprint;

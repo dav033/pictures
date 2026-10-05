@@ -1,7 +1,7 @@
 import "server-only";
 import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
-import { reubicarGuirnaldas } from "@/lib/ia/referencia/reference-structure";
+import { reclasificarColumnasConGuirnalda, reubicarGuirnaldas } from "@/lib/ia/referencia/reference-structure";
 import { conArmadosDe, leerArmadosReferencia } from "./bouquet-referencia";
 import { conConteosDe, leerConteosReferencia } from "./conteo-referencia";
 import { conGuirnaldasDe, leerGuirnaldasReferencia } from "./guirnalda-referencia";
@@ -53,5 +53,5 @@ export async function leerLecturasDeFoto(
   ]);
   const conLecturas = conArmadosDe(conPatron, conArmado);
   const conConteos = banderas.conteo ? conConteosDe(conLecturas, conConteo) : conLecturas;
-  return banderas.guirnalda ? reubicarGuirnaldas(conGuirnaldasDe(conConteos, conGuirnalda)) : conConteos;
+  return banderas.guirnalda ? reubicarGuirnaldas(reclasificarColumnasConGuirnalda(conGuirnaldasDe(conConteos, conGuirnalda))) : conConteos;
 }

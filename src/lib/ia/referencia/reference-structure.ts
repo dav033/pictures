@@ -334,6 +334,37 @@ export function reubicarGuirnaldas(blueprint: ReferenceBlueprintV2): ReferenceBl
   return cambio ? { ...blueprint, elements } : blueprint;
 }
 
+/** Soportes de una guirnalda que la apoyan en algo: una columna se sostiene sola en el piso o en una mesa. */
+const SOPORTES_APOYADOS: ReadonlySet<string> = new Set(["pared", "colgada", "sobre_estructura"]);
+
+/**
+ * El blueprint con cada "columna" que en realidad es un semiarco: una pieza que la misma lectura de la foto
+ * describe como guirnalda (`appearance.armado_guirnalda` confiable) apoyada en una pared o en otra pieza y que
+ * no va recta. El análisis le pone el tipo por la silueta, y una guirnalda que trepa por un lado de un panel y
+ * se curva por arriba se ve alta y estrecha: la foto 3 de las pruebas del 2026-10-05 salió "columna" con su
+ * lectura de guirnalda en U invertida sobre el panel (0,92), y el plan la armó, compró y dibujó como una columna
+ * inclinada. La misma pieza al otro lado (foto 4) salió "semiarco". La lectura de guirnalda solo se pide para
+ * guirnaldas, arcos y semiarcos ("omit it for a column", `lectura-unica.ts`), así que su presencia es la
+ * señal. La forma visible pasa a decir "half-arch" para que el plan no lea dos tipos. Nunca modifica el
+ * recibido; devuelve el mismo objeto si nada cambia.
+ */
+export function reclasificarColumnasConGuirnalda(blueprint: ReferenceBlueprintV2): ReferenceBlueprintV2 {
+  let cambio = false;
+  const elements = blueprint.elements.map((elemento) => {
+    const semantica = elemento.visual_semantics;
+    const lectura = elemento.appearance.armado_guirnalda;
+    if (!elemento.approved || elemento.category !== "balloon_structure" || semantica?.structure_type !== "columna") return elemento;
+    if (!lectura || lectura.confianza < 0.5 || !SOPORTES_APOYADOS.has(lectura.soporte) || lectura.forma === "recta") return elemento;
+    cambio = true;
+    return {
+      ...elemento,
+      visual_semantics: { ...semantica, structure_type: "semiarco" as const },
+      appearance: { ...elemento.appearance, shape: elemento.appearance.shape.replace(/\bcolumn\b/i, "half-arch") },
+    };
+  });
+  return cambio ? { ...blueprint, elements } : blueprint;
+}
+
 export function shapeDescription(structure: DetectedStructure): string {
   const noun = structure.type === "half_arch" ? "half-arch" : structure.type === "hoop" ? "circular hoop" : structure.type.replace(/_/g, " ");
   const qualifiers = [structure.relativeHeight, structure.density === "dense" ? "dense" : structure.density === "airy" ? "airy" : "", structure.outline === "asymmetric" ? "asymmetrical" : ""].filter(Boolean).join(" ");

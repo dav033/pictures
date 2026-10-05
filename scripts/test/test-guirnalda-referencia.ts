@@ -65,7 +65,7 @@ async function main(): Promise<void> {
   const { LecturaGuirnaldaSchema } = await import("../../src/lib/plan/armado-guirnalda");
   const { crearCacheLecturaGuirnalda, conGuirnaldasDe, elementosGuirnalda, leerGuirnaldasReferencia } = await import("../../src/lib/ia/amaterasu/guirnalda-referencia");
   const { leerLecturasDeFoto } = await import("../../src/lib/ia/amaterasu/lecturas-foto");
-  const { refinarPlacementGuirnalda, reubicarGuirnaldas } = await import("../../src/lib/ia/referencia/reference-structure");
+  const { reclasificarColumnasConGuirnalda, refinarPlacementGuirnalda, reubicarGuirnaldas } = await import("../../src/lib/ia/referencia/reference-structure");
   const { llamarPythonPlanResolution } = await import("../../src/lib/ia/nucleo/python-adapter");
   const { pistasGuirnaldaDelPlan } = await import("../../src/lib/ia/herramientas/registro-herramientas");
   type Blueprint = import("../../src/lib/ia/referencia/reference-blueprint").ReferenceBlueprintV2;
@@ -274,6 +274,26 @@ async function main(): Promise<void> {
   const quieto = blueprintDe([elemento("REF_01_E01", { tipo: "guirnalda" })]);
   assert.equal(reubicarGuirnaldas(quieto), quieto, "sin cambios, el mismo objeto");
   ok("placement de guirnaldas: soporte leído y mesa detectada, siempre en Plan 1.0 y con un solo fondo_pared por foto");
+
+  // Pruebas con fotos del 2026-10-05 (foto 3): una guirnalda que trepa por un lado de un panel y se curva por
+  // arriba salió "columna" por su silueta, con su lectura de guirnalda en U invertida sobre el panel. La misma
+  // pieza al otro lado salió "semiarco". La lectura de guirnalda no se pide para columnas: su presencia manda.
+  const trepadora = { ...lectura, soporte: "sobre_estructura", forma: "u_invertida", confianza: 0.92 };
+  const columnas = blueprintDe([
+    { ...elemento("REF_01_E01", { tipo: "columna", ubicacion: "lateral_izquierdo", lectura: trepadora }), appearance: { ...elemento("REF_01_E01", { lectura: trepadora }).appearance, shape: "tall dense asymmetrical column, on the left" } },
+    elemento("REF_01_E02", { tipo: "columna", ubicacion: "lateral_derecho", lectura: { ...trepadora, soporte: "piso" } }),
+    elemento("REF_01_E03", { tipo: "columna", ubicacion: "lateral_derecho", lectura: { ...trepadora, confianza: 0.3 } }),
+    elemento("REF_01_E04", { tipo: "columna", ubicacion: "lateral_derecho", lectura: { ...trepadora, forma: "recta" } }),
+    elemento("REF_01_E05", { tipo: "columna", ubicacion: "lateral_derecho" }),
+  ]);
+  const reclasificado = reclasificarColumnasConGuirnalda(columnas);
+  assert.deepEqual(reclasificado.elements.map((item) => item.visual_semantics?.structure_type), ["semiarco", "columna", "columna", "columna", "columna"], "solo la apoyada, confiable y no recta");
+  assert.equal(reclasificado.elements[0]!.visual_semantics?.placement, "lateral_izquierdo", "el lado se queda");
+  assert.equal(reclasificado.elements[0]!.appearance.shape, "tall dense asymmetrical half-arch, on the left", "la forma visible ya no dice columna");
+  assert.equal(ReferenceBlueprintV2Schema.safeParse(reclasificado).success, true);
+  const sinCambio = blueprintDe([elemento("REF_01_E01", { tipo: "columna" })]);
+  assert.equal(reclasificarColumnasConGuirnalda(sinCambio), sinCambio, "sin cambios, el mismo objeto");
+  ok("una columna con lectura de guirnalda confiable apoyada en una pared o una pieza es un semiarco");
 
   // ---------------------------------------------------------------------------
   const plan = { estructuras: [{ referencia_element_id: "REF_01_E01" }, { referencia_element_id: "REF_01_E01" }, { referencia_element_id: "REF_01_E03" }, {}] } as never;
