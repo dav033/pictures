@@ -205,10 +205,11 @@ def hex_del_material(
         ),
         None,
     )
+    # Sin acabado en el material, el de la línea comprada: un «Metal Vinotinto» es un rojo de la familia
+    # Metal (515), no el Rojo Fashion 015 que la familia sola daría. La lámina no tiene «Vinotinto».
+    acabado = acabado or (_texto(comprada.get("acabado")) if comprada is not None else None)
     referencia = (
-        referencia_del_titulo(
-            _texto(comprada.get("titulo")), acabado or _texto(comprada.get("acabado"))
-        )
+        referencia_del_titulo(_texto(comprada.get("titulo")), acabado)
         if comprada is not None
         else None
     ) or referencia_de(color, acabado)
