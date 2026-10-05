@@ -18,6 +18,13 @@ la manda a FLUX por ``/edit`` en lugar de la foto, que nunca sale hacia el prove
 - Lo que no reconoce nadie (o una pieza sin materiales) se devuelve en ``omitidas`` con su motivo: no se inventa
   una forma.
 
+**Lo que se ve sin ser globo** sale, si la pieza lo tiene, en ``trazos`` (líneas y arcos con grosor) y
+``rellenos`` (elipses y polígonos planos), en el mismo marco que los discos: el anillo de metal, el poste, la base
+y el forro de un aro y el anillo y el poste del mini aro (capturados de su dibujo,
+``dibujo_estructura.globos_y_estructura_de``, sin tocar el SVG de la UI) y las cintas y la pesa o la caja de un
+bouquet sin armado (su módulo los publica en ``elementos``). Entran en la caja de la pieza salvo en una pieza
+flotante, donde cuelgan por debajo del origen hasta el piso (``_pieza``). No cuentan ni se cotizan.
+
 **Lo que la resolución ya sabe de cada pieza** viaja en ``mezclas[]`` de la petición, todo derivado y opcional
 salvo ``mezcla_real``; sin ello cada pieza se dibuja como antes:
 

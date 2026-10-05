@@ -1,7 +1,12 @@
 "use client";
 
-import { ClipboardList, Info, LoaderCircle, Palette, RotateCcw, TriangleAlert } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { ClipboardList, Info, LoaderCircle, Palette, Pencil, RotateCcw, TriangleAlert } from "lucide-react";
+import { delaPieza, textoEditar, type NombrePieza } from "@/lib/plan/nombre-pieza";
+import { MarcoEdicion } from "../motor/MarcoEdicion";
 import { VistaMotor } from "../motor/VistaMotor";
+import { borradorDe, camposMedidaDe, cambiosDe, densidadesDe, formasDe, piezaConBorrador, type BorradorPieza, type CambiosPieza } from "./borrador-pieza";
+import { EditorPiezaSinMotor } from "./EditorPiezaSinMotor";
 import { SelectorFormaPieza } from "./SelectorFormaPieza";
 import { useVistaDibujoEstructura } from "./usarVistaDibujoEstructura";
 import { type PanelDibujoEstructura, type PiezaDibujoEstructura } from "./vista-dibujo-estructura";
@@ -51,34 +56,107 @@ type Props = {
   pendientes?: PendientesAjustes;
   /** Mientras se guarda un cambio: el botón del editor sigue enfocable y el toque no hace nada. */
   ocupado?: boolean;
+  /**
+   * Guarda en **una** edición lo que el editor de la pieza cambió —forma, densidad y medidas, lo que la fórmula de
+   * la propuesta lee— y resuelve el motivo si no quedó. Con él, el encabezado ofrece «Editar pared» (o «Editar
+   * aro», «Editar techo»…) en vez del selector de forma suelto. Sin él, el bloque es el de antes.
+   */
+  onGuardarPropiedades?: (cambios: CambiosPieza) => Promise<string | null>;
+  /** Cómo se llama la pieza en los textos («Editar pared», «Forma del aro»). */
+  nombre?: NombrePieza;
 };
 
 const botonReintentar = "ui-button-secondary ui-pressable min-h-11 px-3 py-1.5 text-xs";
 /** El dibujo al lado de la nota cuando hay sitio, y encima cuando no. */
 const MARCO = "relative h-64 overflow-hidden rounded-xl bg-superficie ring-1 ring-borde-suave ring-inset @md:h-auto @md:w-64 @md:min-h-64 @md:shrink-0";
 
-export function BloqueDibujoEstructura({ pieza, nombrePieza, onEditarPatron, onHojaArmado, onCambiarForma, pendientes, ocupado = false }: Props) {
-  const { estado, reintentar } = useVistaDibujoEstructura(pieza);
+export function BloqueDibujoEstructura({ pieza, nombrePieza, onEditarPatron, onHojaArmado, onCambiarForma, pendientes, ocupado = false, onGuardarPropiedades, nombre }: Props) {
+  // El editor arranca con lo que el plan trae y no se guarda nada hasta «Guardar»: el dibujo que se ve mientras
+  // tanto es el del borrador (su forma), con la misma pausa y "gana la última" que el del plan.
+  const [sesion, setSesion] = useState<{ enPlan: BorradorPieza; borrador: BorradorPieza } | null>(null);
+  const [guardando, setGuardando] = useState(false);
+  const [errorGuardado, setErrorGuardado] = useState<string | null>(null);
+  const botonEditar = useRef<HTMLButtonElement | null>(null);
+  const oficial = pieza.declarada.estructura_oficial;
+  const campos = camposMedidaDe(oficial, pieza.declarada.tipo);
+  const { estado, reintentar } = useVistaDibujoEstructura(sesion ? piezaConBorrador(pieza, sesion.borrador.forma) : pieza);
+  const cerrar = () => {
+    setSesion(null);
+    setErrorGuardado(null);
+    // El botón vuelve a existir en el render siguiente: el foco regresa a donde estaba el decorador.
+    window.requestAnimationFrame(() => botonEditar.current?.focus());
+  };
+  const cambios = sesion ? cambiosDe(sesion.enPlan, sesion.borrador, campos) : null;
+  const guardar = async () => {
+    if (!sesion || !onGuardarPropiedades || !cambios || guardando) return;
+    setGuardando(true);
+    setErrorGuardado(null);
+    const motivo = await onGuardarPropiedades(cambios);
+    setGuardando(false);
+    if (motivo === null) cerrar();
+    else setErrorGuardado(motivo);
+  };
+  const accion = onGuardarPropiedades && nombre && !sesion ? (
+    <button
+      ref={botonEditar}
+      type="button"
+      aria-disabled={ocupado || undefined}
+      title={ocupado ? "Espera a que termine de guardarse el último cambio" : undefined}
+      onClick={() => {
+        if (ocupado) return;
+        const enPlan = borradorDe(pieza.declarada);
+        setSesion({ enPlan, borrador: enPlan });
+      }}
+      data-testid="editar-pieza-sin-motor"
+      className="ui-button-secondary ui-pressable min-h-11 shrink-0 px-3.5 py-1.5 text-[13px]"
+    >
+      <Pencil className="size-3.5" aria-hidden="true" />{textoEditar(nombre)}
+    </button>
+  ) : undefined;
+  const editor = sesion && nombre && onGuardarPropiedades ? (
+    <EditorPiezaSinMotor
+      nombre={nombre}
+      borrador={sesion.borrador}
+      formas={formasDe(oficial)}
+      densidades={densidadesDe(oficial)}
+      campos={campos}
+      hayCambios={cambios !== null}
+      guardando={guardando}
+      errorGuardado={errorGuardado}
+      ocupado={ocupado}
+      onCambiar={(borrador) => setSesion((actual) => (actual ? { ...actual, borrador } : actual))}
+      onGuardar={() => void guardar()}
+      onDescartar={cerrar}
+      onRestablecer={() => setSesion((actual) => (actual ? { ...actual, borrador: actual.enPlan } : actual))}
+    />
+  ) : undefined;
   return (
     <PanelDibujo
       estado={estado}
       nombrePieza={nombrePieza}
+      titulo={nombre ? `Forma ${delaPieza(nombre)}` : "Forma de la pieza"}
       onReintentar={reintentar}
       onEditarPatron={onEditarPatron}
       onHojaArmado={onHojaArmado}
       forma={pieza.declarada.forma}
-      oficial={pieza.declarada.estructura_oficial}
-      onCambiarForma={onCambiarForma}
+      oficial={oficial}
+      // Con el editor de la pieza, la forma se elige dentro de él: el selector suelto sobraría.
+      onCambiarForma={onGuardarPropiedades && nombre ? undefined : onCambiarForma}
       pendientes={pendientes}
       ocupado={ocupado}
+      accion={accion}
+      editor={editor}
     />
   );
 }
 
 /** Presentación: lo que se ve en cada estado (cargando, error y la pieza dibujada). */
-function PanelDibujo({ estado, nombrePieza, onReintentar, onEditarPatron, onHojaArmado, forma, oficial, onCambiarForma, pendientes, ocupado }: {
+function PanelDibujo({ estado, nombrePieza, titulo, onReintentar, onEditarPatron, onHojaArmado, forma, oficial, onCambiarForma, pendientes, ocupado, accion, editor }: {
   estado: PanelDibujoEstructura;
   nombrePieza: string;
+  titulo: string;
+  accion?: ReactNode;
+  editor?: ReactNode;
   onReintentar: () => void;
   onEditarPatron?: () => void;
   onHojaArmado?: () => void;
@@ -89,12 +167,19 @@ function PanelDibujo({ estado, nombrePieza, onReintentar, onEditarPatron, onHoja
   ocupado: boolean;
 }) {
   return (
-    <section aria-label="Forma de la pieza" data-testid="bloque-dibujo-estructura" data-fase={estado.fase} className="@container rounded-2xl bg-superficie-suave p-3 ring-1 ring-borde-suave ring-inset">
+    <section aria-label={titulo} data-testid="bloque-dibujo-estructura" data-fase={estado.fase} className="@container rounded-2xl bg-superficie-suave p-3 ring-1 ring-borde-suave ring-inset">
       {estado.fase === "listo" ? (
-        <PiezaDibujada estado={estado} nombrePieza={nombrePieza} onReintentar={onReintentar} />
+        <PiezaDibujada estado={estado} nombrePieza={nombrePieza} titulo={titulo} onReintentar={onReintentar} accion={accion} editor={editor} />
       ) : (
         <div className="space-y-2">
-          <p className="text-[13px] font-semibold text-texto">Forma de la pieza</p>
+          {accion ? (
+            <div className="flex items-start justify-between gap-2">
+              <p className="self-center text-[13px] font-semibold text-texto">{titulo}</p>
+              {accion}
+            </div>
+          ) : (
+            <p className="text-[13px] font-semibold text-texto">{titulo}</p>
+          )}
           {estado.fase === "cargando" ? (
             <p role="status" className="brillo-carga flex items-center gap-1.5 rounded-xl bg-superficie px-3 py-6 text-center text-xs text-texto-suave">
               <LoaderCircle className="size-3.5 animate-spin text-acento motion-reduce:animate-none" aria-hidden="true" />
@@ -109,6 +194,7 @@ function PanelDibujo({ estado, nombrePieza, onReintentar, onEditarPatron, onHoja
               </button>
             </div>
           )}
+          {editor}
         </div>
       )}
       {/*
@@ -174,15 +260,19 @@ function AccionesDelPatron({ onEditar, onHojaArmado, ocupado }: {
 }
 
 /** La pieza dibujada, con la nota de que el dibujo es un esquema y no una medida del trabajo. */
-function PiezaDibujada({ estado, nombrePieza, onReintentar }: {
+function PiezaDibujada({ estado, nombrePieza, titulo, onReintentar, accion, editor }: {
   estado: Extract<PanelDibujoEstructura, { fase: "listo" }>;
   nombrePieza: string;
+  titulo: string;
   onReintentar: () => void;
+  accion?: ReactNode;
+  editor?: ReactNode;
 }) {
   const { grafica, actualizando, fallo } = estado;
   // Un dibujo que no es el de la pieza a la vista (el nuevo está en camino o no se pudo dibujar) se ve apagado.
   const tenue = actualizando ? "opacity-60 transition-opacity motion-reduce:transition-none" : "";
   return (
+    <MarcoEdicion editor={editor}>
     <div aria-busy={actualizando} className="flex flex-col gap-3 @md:flex-row">
       <div className={`${MARCO} ${tenue}`}>
         <VistaMotor
@@ -194,11 +284,14 @@ function PiezaDibujada({ estado, nombrePieza, onReintentar }: {
         />
       </div>
       <div className="min-w-0 flex-1 space-y-2.5">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <p className="text-[13px] font-semibold text-texto">Forma de la pieza</p>
-          <span aria-live="polite" className="inline-flex items-center gap-1 text-[11px] font-medium text-texto-suave">
-            {actualizando && <><LoaderCircle className="size-3 animate-spin text-acento motion-reduce:animate-none" aria-hidden="true" />Actualizando…</>}
-          </span>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 self-center">
+            <p className="text-[13px] font-semibold text-texto">{titulo}</p>
+            <span aria-live="polite" className="inline-flex items-center gap-1 text-[11px] font-medium text-texto-suave">
+              {actualizando && <><LoaderCircle className="size-3 animate-spin text-acento motion-reduce:animate-none" aria-hidden="true" />Actualizando…</>}
+            </span>
+          </div>
+          {accion}
         </div>
         <p className="flex items-start gap-1.5 text-xs text-texto-suave">
           <Info className="mt-px size-3.5 shrink-0 text-texto-tenue" aria-hidden="true" />
@@ -218,5 +311,6 @@ function PiezaDibujada({ estado, nombrePieza, onReintentar }: {
         )}
       </div>
     </div>
+    </MarcoEdicion>
   );
 }

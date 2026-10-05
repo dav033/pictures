@@ -216,12 +216,18 @@ def test_un_semiarco_sale_con_el_arco_organico_y_cortado() -> None:
     assert armado["version"] == "armado-arco-organico.v1"
     forma = cast(dict[str, Any], armado["forma"])
     assert forma["corte"] < 1, "un medio arco se corta antes de bajar por la otra pata"
-    # El corte es el de la forma lista del motor, no un número escrito en la puerta.
+    # El corte es el de la forma lista del motor, no un número escrito en la puerta, y la forma va entera:
+    # su carga y su volumen también (copiar solo el corte dejaba el volumen del arco completo).
+    assert FORMA_SEMIARCO == "medio-corto", "la de la ficha «medio arco» del clasificador"
+    lista = next(f for f in FORMAS_LISTAS if f.id == FORMA_SEMIARCO)
     assert forma["corte"] == _CORTE[FORMA_SEMIARCO]
-    # El lado todavía no se decide aquí: `PiezaArmado` no trae `ubicacion` y lo voltea el editor.
+    assert forma["carga"] == lista.forma["carga"]
+    assert cast(dict[str, Any], armado["volumen"]) == dict(lista.volumen)
+    # Sin ubicación a la derecha, sin espejo: la pata a la izquierda.
     assert forma["espejo"] is False
-    # Y lo demás es lo mismo que un arco orgánico: las medidas y la paleta de la pieza, con su acabado.
-    assert (forma["anchoM"], forma["altoM"]) == (3.6, 2.6)
+    # El alto es el del plan; el ancho del motor es el del arco COMPLETO que, cortado, mide el del plan.
+    assert forma["altoM"] == 2.6
+    assert forma["anchoM"] > 3.6
     paleta = cast(list[dict[str, Any]], cast(dict[str, Any], armado["colores"])["paleta"])
     assert [color["material"] for color in paleta] == [0, 1]
     assert paleta[0]["acabado"] == "cromado"

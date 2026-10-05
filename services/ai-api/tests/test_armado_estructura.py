@@ -653,9 +653,11 @@ def test_armar_una_guirnalda_pide_paleta_y_no_patron() -> None:
 
 
 def test_la_receta_de_la_guirnalda_sale_del_largo_de_la_pieza_y_reparte_sus_colores() -> None:
-    plan = _plan(_estructura(
+    plan = _plan(
+        _estructura(
             "EST_01_GUIRNALDA", "guirnalda", 2, acabados=(None, "cromado"), mezcla="organica_fina"
-        ))
+        )
+    )
     armados = cast(
         list[dict[str, Any]],
         resolver_armado_estructura(_peticion(accion="completar", plan=plan))["armados"],

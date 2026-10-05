@@ -23,10 +23,10 @@ export type CambiosPieza = { forma?: string | null; densidad?: Densidad; medidas
 export type BorradorPieza = { forma: string | null; densidad: Densidad; medidas: MedidasPieza };
 
 /** Un mando de medida: qué campos del plan escribe (el diámetro de un aro escribe ancho y alto a la vez). */
-export type CampoMedida = { etiqueta: string; ayuda: string; claves: readonly ClaveMedida[]; testid: string };
+export type CampoMedida = { etiqueta: string; ayuda: string; claves: readonly ClaveMedida[]; testid: string; min: number; max: number; paso: number };
 
-const ANCHO: CampoMedida = { etiqueta: "Ancho", ayuda: "De lado a lado.", claves: ["ancho_m"], testid: "medida-ancho" };
-const ALTO: CampoMedida = { etiqueta: "Alto", ayuda: "Del piso (o de la mesa) hasta arriba.", claves: ["alto_m"], testid: "medida-alto" };
+const ANCHO: CampoMedida = { etiqueta: "Ancho", ayuda: "De lado a lado.", claves: ["ancho_m"], testid: "medida-ancho", min: 0.5, max: 12, paso: 0.1 };
+const ALTO: CampoMedida = { etiqueta: "Alto", ayuda: "Del piso hasta arriba.", claves: ["alto_m"], testid: "medida-alto", min: 0.5, max: 6, paso: 0.1 };
 
 /**
  * Las medidas que cuenta cada pieza, en el orden en que se leen. Son las mismas que usa `_eje`/`_total_globos` de
@@ -35,13 +35,16 @@ const ALTO: CampoMedida = { etiqueta: "Alto", ayuda: "Del piso (o de la mesa) ha
  */
 export function camposMedidaDe(oficial: string | undefined, tipo: string): readonly CampoMedida[] {
   if (oficial === "aro_circular") {
-    return [{ etiqueta: "Diámetro", ayuda: "De borde a borde del aro. Los globos van por toda la vuelta.", claves: ["ancho_m", "alto_m"], testid: "medida-diametro" }];
+    return [{ etiqueta: "Diámetro", ayuda: "De borde a borde del aro. Los globos van por toda la vuelta.", claves: ["ancho_m", "alto_m"], testid: "medida-diametro", min: 0.5, max: 4, paso: 0.1 }];
   }
   if (oficial === "techo_globos" || tipo === "guirnalda") {
-    return [{ etiqueta: "Largo", ayuda: "Lo que recorre la instalación por el techo.", claves: ["largo_m"], testid: "medida-largo" }];
+    return [{ etiqueta: "Largo", ayuda: "Lo que recorre la instalación por el techo.", claves: ["largo_m"], testid: "medida-largo", min: 1, max: 30, paso: 0.5 }];
   }
   if (tipo === "centro_mesa") {
-    return [{ ...ANCHO, etiqueta: "Diámetro", ayuda: "Lo que ocupa sobre la mesa." }, ALTO];
+    return [
+      { ...ANCHO, etiqueta: "Diámetro", ayuda: "Lo que ocupa sobre la mesa.", testid: "medida-diametro", min: 0.2, max: 2, paso: 0.05 },
+      { ...ALTO, ayuda: "Desde la mesa hasta arriba.", min: 0.2, max: 2.5, paso: 0.05 },
+    ];
   }
   if (tipo === "pared") return [ANCHO, ALTO];
   return [];
@@ -79,12 +82,9 @@ export function borradorDe(declarada: { forma?: string; densidad?: string; medid
   return { forma: declarada.forma ?? null, densidad, medidas: { ...(declarada.medidas ?? {}) } };
 }
 
-/** Límites de un mando de medida en el editor (metros). El contrato admite hasta 100 m; una pieza real, mucho menos. */
-export const MEDIDA_MIN = 0.2;
-export const MEDIDA_MAX = 30;
-
-export function medidaValida(valor: number | undefined): boolean {
-  return typeof valor === "number" && Number.isFinite(valor) && valor >= MEDIDA_MIN && valor <= MEDIDA_MAX;
+/** Una medida nueva es válida dentro del rango de su mando (el contrato admite hasta 100 m; una pieza real, mucho menos). */
+export function medidaValida(valor: number | undefined, campo: CampoMedida): boolean {
+  return typeof valor === "number" && Number.isFinite(valor) && valor >= campo.min && valor <= campo.max;
 }
 
 /** Solo lo que cambió respecto del plan; `null` si nada cambió o si una medida no es válida. */
@@ -96,16 +96,11 @@ export function cambiosDe(enPlan: BorradorPieza, borrador: BorradorPieza, campos
   for (const campo of campos) {
     const valor = valorMedida(borrador.medidas, campo);
     if (valor === valorMedida(enPlan.medidas, campo)) continue;
-    if (!medidaValida(valor)) return null;
+    if (!medidaValida(valor, campo)) return null;
     for (const clave of campo.claves) medidas[clave] = valor;
   }
   if (Object.keys(medidas).length > 0) cambios.medidas = medidas;
   return Object.keys(cambios).length > 0 ? cambios : null;
-}
-
-/** Si el borrador tiene alguna medida fuera de rango (para decirlo junto al botón). */
-export function medidaInvalida(borrador: BorradorPieza, campos: readonly CampoMedida[]): CampoMedida | null {
-  return campos.find((campo) => valorMedida(borrador.medidas, campo) !== undefined && !medidaValida(valorMedida(borrador.medidas, campo))) ?? null;
 }
 
 /** Las formas que la pieza ofrece (vacío si su oficial no tiene lámina). */

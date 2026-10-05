@@ -1096,7 +1096,10 @@ def _armado_guirnalda(
         # Solo el volumen: el estilo del diseñador no toca la línea ni, en ligero y lleno, los tamaños.
         inicial["volumen"] = dict(estilo.aplicar(cast(Any, inicial))["volumen"])
     if linea:
-        inicial["forma"] = {**cast(Mapping[str, Any], inicial["forma"]), **_linea_en_contrato(linea)}
+        inicial["forma"] = {
+            **cast(Mapping[str, Any], inicial["forma"]),
+            **_linea_en_contrato(linea),
+        }
     volumen_motor = cast(Mapping[str, Any], inicial["volumen"])
     tamanos_motor = cast(Mapping[str, Any], inicial["tamanos"])
     colores_motor = cast(Mapping[str, Any], inicial["colores"])
@@ -1434,7 +1437,9 @@ def _ancho_visible_del_medio(cfg: Mapping[str, Any], ancho_completo: float) -> f
     return float(max(b for _a, b in bordes) - min(a for a, _b in bordes))
 
 
-def _ancho_del_arco_completo(cfg: Mapping[str, Any], ancho_visible: float, avisos: list[str]) -> float:
+def _ancho_del_arco_completo(
+    cfg: Mapping[str, Any], ancho_visible: float, avisos: list[str]
+) -> float:
     """El ``anchoM`` del arco completo que, cortado como medio arco, mide ``ancho_visible`` (bisección).
 
     Lo que no cabe en el motor se acota a su rango y se avisa: un semiarco más angosto que el más angosto que
@@ -1686,7 +1691,15 @@ def _receta(
     peticion = _peticion_con_reparto(del_reparto)
     propios: list[str] = []
     armado = _armado_guirnalda(
-        pieza, paleta, peticion, propios, del_reparto, inclinacion, curva, pieza.linea, pieza.densidad
+        pieza,
+        paleta,
+        peticion,
+        propios,
+        del_reparto,
+        inclinacion,
+        curva,
+        pieza.linea,
+        pieza.densidad,
     )
     if pieza.densidad == "lujosa" and globos_estimados_guirnalda(armado) > GUIRNALDA_MAX_GLOBOS:
         # El estilo lleno no puede dejar una guirnalda que la resolución rechace por grande
@@ -1986,7 +1999,8 @@ def _linea_por_partes(estructura: Mapping[str, Any]) -> dict[str, float] | None:
     por_partes = estructura.get("armado_guirnalda")
     if not isinstance(por_partes, Mapping):
         return None
-    return linea_guirnalda_del_motor(cast(Mapping[str, object], por_partes))
+    linea: dict[str, float] = linea_guirnalda_del_motor(cast(Mapping[str, object], por_partes))
+    return linea
 
 
 #: El campo del plan que le toca a cada armado **orgánico**, que son los que no se deducen del tipo: una
@@ -2071,34 +2085,6 @@ def _semiarco_fuera_del_plan(pieza: PiezaArmado, armado: Mapping[str, Any]) -> s
         if not pieza.ancho_m * 0.75 <= visible <= objetivo * 1.25:
             return "medidas_del_plan"
     return None
-
-
-def armado_columna_de_receta(estructura: Mapping[str, Any]) -> tuple[str, dict[str, Any]] | None:
-    """El armado de la receta para una columna que no trae ninguno, con el campo del plan que le toca.
-
-    Es lo que ``completar`` le escribe al confirmar sin lecturas de la foto: ``armado_columna`` (anillos) o
-    ``armado_columna_organica`` (mezcla orgánica o ``columna_asimetrica``), con la densidad del plan. Sirve para
-    que la resolución cuente y la guía dibuje la misma columna cuando la confirmación no la armó (bandera del
-    motor apagada, o Python no disponible y ``sinArmadosDeMotor`` quitó el armado): sin esto la pieza se cobraba
-    con la fórmula y la guía se quedaba en ``sin_dibujo``. Gemelo de ``armado_arco_de_receta``.
-
-    ``None`` si no le toca: no es una columna, ya trae alguno de sus dos armados, o no es pieza del motor
-    (``_pieza_del_plan``). Puro y determinista.
-    """
-    if (
-        estructura.get("tipo") != "columna"
-        or isinstance(estructura.get("armado_columna"), Mapping)
-        or isinstance(estructura.get("armado_columna_organica"), Mapping)
-    ):
-        return None
-    pieza = _pieza_del_plan(estructura)
-    if pieza is None or pieza.tipo != "columna":
-        return None
-    armado = _receta(pieza, [])
-    if _valida(pieza, armado) is not None:
-        return None
-    version = cast(str, armado.get("version") or "")
-    return _CLAVE_POR_VERSION.get(version, CLAVE_ARMADO["columna"]), armado
 
 
 def armado_semiarco_de_receta(estructura: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -2407,7 +2393,10 @@ def armado_guirnalda_de_receta(estructura: Mapping[str, Any]) -> dict[str, Any] 
     if pieza is None:
         return None
     armado = _receta(pieza, [])
-    if _valida(pieza, armado) is not None or globos_estimados_guirnalda(armado) > GUIRNALDA_MAX_GLOBOS:
+    if (
+        _valida(pieza, armado) is not None
+        or globos_estimados_guirnalda(armado) > GUIRNALDA_MAX_GLOBOS
+    ):
         return None
     return armado
 

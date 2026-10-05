@@ -120,7 +120,8 @@ async def test_completar_arma_la_guirnalda_sin_cambiar_la_compra() -> None:
     assert (armado["origen"], armado["soporte"], armado["forma"]) == ("sugerido", "pared", "recta")
     resuelto = cast(list[dict[str, object]], armada["armados_guirnalda"])[0]
     leyenda = cast(list[dict[str, object]], resuelto["leyenda"])
-    assert sum(cast(int, e["unidades_total"]) for e in leyenda) == _unidades(armada) == 48
+    # 76: la guirnalda orgánica sin armado la cuenta la receta del motor (``plan.armado_guirnalda_de_receta``).
+    assert sum(cast(int, e["unidades_total"]) for e in leyenda) == _unidades(armada) == 76
     assert {e["product_id"] for e in leyenda} == {"prod-rosado", "prod-blanco"}
     assert leyenda[0]["descripcion"] == "R-5 rosado", "nombrado por la línea que compra"
 
@@ -211,7 +212,13 @@ async def test_la_lectura_de_la_foto_decide_la_distribucion_y_no_la_cantidad() -
     assert armado["relleno"] == {"material": 1, "proporcion": 0.1}
     assert armado["remates"] == [{"material": 0, "posicion": "extremo_izq"}]
     assert cast(dict[str, object], armado["racimo"])["unidad"] == "trio"
-    assert lineas(leida) == lineas(base) and _total(leida) == _total(base), "la foto no compra"
+    # La foto no compra por sí misma: la guirnalda orgánica se cuenta con la línea de su armado (la onda de la
+    # forma ``ondulada`` del motor), y el plan firmado con ese armado compra lo mismo sin la lectura.
+    firmado = await resolver(cast(dict[str, object], leida["plan"]))
+    assert lineas(leida) == lineas(firmado) and _total(leida) == _total(firmado), (
+        "la foto no compra"
+    )
+    assert _unidades(leida) > _unidades(base), "la onda alarga la tira que arma el motor"
     dudosa = await resolver(
         plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista(confianza=0.3)]
     )
@@ -257,7 +264,7 @@ def _pista_geometria(**extra: object) -> dict[str, object]:
 async def test_la_caida_y_el_desnivel_de_la_foto_llegan_al_armado_y_a_la_compra() -> None:
     # Decisión 27: la lectura trae la caída y el desnivel relativos al largo;
     # el armado los lleva en metros sobre los 2,5 m y la compra sigue la cuerda.
-    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    plan_ = plan(guirnalda(mezcla="clasica", referencia_element_id="REF_01_E01"))
     sin = await resolver(
         plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista_geometria()]
     )
@@ -277,7 +284,7 @@ async def test_la_caida_y_el_desnivel_de_la_foto_llegan_al_armado_y_a_la_compra(
     cuerda = _garland_cord(2.5, armado)
     assert cuerda == pytest.approx(math.hypot(2.5, 0.63))
     assert cast(list[dict[str, object]], cae["estructuras"])[0]["eje_m"] == round(cuerda, 2)
-    assert _unidades(cae) > _unidades(sin) == 48, "la cuerda desnivelada lleva más globos"
+    assert _unidades(cae) > _unidades(sin) == 54, "la cuerda desnivelada lleva más globos"
     resuelto = cast(list[dict[str, object]], cae["armados_guirnalda"])[0]
     assert resuelto["globos_por_instancia"] == _unidades(cae), "el armado reparte lo que se compra"
     assert (resuelto["largo_m"], resuelto["largo_cuerda_m"]) == (2.5, round(cuerda, 2))
@@ -316,7 +323,7 @@ async def test_la_caida_y_el_desnivel_de_la_foto_llegan_al_armado_y_a_la_compra(
 async def test_la_foto_arqueada_hacia_arriba_llega_como_curva_y_a_la_compra() -> None:
     # Decisión 28: la guirnalda de la foto del usuario, alta a la izquierda, arqueada
     # por arriba y cayendo hacia la derecha. La v2 solo sabía caer y salía una U.
-    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    plan_ = plan(guirnalda(mezcla="clasica", referencia_element_id="REF_01_E01"))
     sin = await resolver(
         plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista_geometria()]
     )
@@ -338,7 +345,7 @@ async def test_la_foto_arqueada_hacia_arriba_llega_como_curva_y_a_la_compra() ->
     )
     assert cuerda > math.hypot(2.5, 0.63)
     assert cast(list[dict[str, object]], arriba["estructuras"])[0]["eje_m"] == round(cuerda, 2)
-    assert _unidades(arriba) > _unidades(sin) == 48, "la cuerda arqueada lleva más globos"
+    assert _unidades(arriba) > _unidades(sin) == 54, "la cuerda arqueada lleva más globos"
     resuelto = cast(list[dict[str, object]], arriba["armados_guirnalda"])[0]
     assert resuelto["globos_por_instancia"] == _unidades(arriba)
     assert (resuelto["largo_m"], resuelto["largo_cuerda_m"]) == (2.5, round(cuerda, 2))
@@ -425,17 +432,19 @@ async def test_el_conteo_se_compara_con_la_cuerda_que_se_compra() -> None:
     # Una U invertida con caída: el conteo busca densidad y largo con el mismo
     # conteo que la resolución (la cuerda parabólica), no con el largo recto.
     colgada = _armado(forma="u_invertida", caida_m=0.8)
-    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01", armado_guirnalda=colgada))
+    plan_ = plan(
+        guirnalda(mezcla="clasica", referencia_element_id="REF_01_E01", armado_guirnalda=colgada)
+    )
     sin_conteo = await resolver(plan_)
     ajustado = await resolver(
-        plan_, completar_conteos=True, pistas_conteo=[_conteo(estimado_total=72)]
+        plan_, completar_conteos=True, pistas_conteo=[_conteo(estimado_total=81)]
     )
     [conteo] = cast(list[dict[str, object]], ajustado["conteos_referencia"])
-    assert conteo["globos_antes"] == _unidades(sin_conteo) > 48, (
+    assert conteo["globos_antes"] == _unidades(sin_conteo) > 54, (
         "la cuenta de antes es la de la cuerda"
     )
     assert conteo["decision"] == "ajustado"
-    assert abs(_unidades(ajustado) - 72) <= max(2, 0.15 * 72), "dentro de la tolerancia del conteo"
+    assert abs(_unidades(ajustado) - 81) <= max(2, 0.15 * 81), "dentro de la tolerancia del conteo"
     assert conteo["globos_despues"] == _unidades(ajustado)
     estructura = estructura_del_plan(ajustado)
     assert estructura["armado_guirnalda"] == colgada, "el conteo no toca el armado"
@@ -452,11 +461,11 @@ async def test_con_medidas_del_cliente_el_conteo_se_compara_con_la_cuerda_de_la_
     # Decisión 27: el conteo corre antes de completar el armado, pero cuenta la
     # guirnalda con la caída que la lectura le va a dar. Con las medidas del
     # cliente el largo no se mueve (tampoco por la caída): solo la densidad.
-    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    plan_ = plan(guirnalda(mezcla="clasica", referencia_element_id="REF_01_E01"))
     pista = _pista_geometria(caida_relativa=0.3)
     con_caida = await resolver(plan_, completar_armados_guirnalda=True, pistas_guirnalda=[pista])
-    assert _unidades(con_caida) > 48
-    conteo = {"completar_conteos": True, "pistas_conteo": [_conteo(estimado_total=70)]}
+    assert _unidades(con_caida) > 54
+    conteo = {"completar_conteos": True, "pistas_conteo": [_conteo(estimado_total=79)]}
     ajustado = await resolver(
         plan_, completar_armados_guirnalda=True, pistas_guirnalda=[pista], **conteo
     )
@@ -464,7 +473,7 @@ async def test_con_medidas_del_cliente_el_conteo_se_compara_con_la_cuerda_de_la_
     assert registro["globos_antes"] == _unidades(con_caida), "la cuenta de antes es la de la cuerda"
     assert registro["decision"] == "ajustado"
     assert registro["globos_despues"] == _unidades(ajustado), "lo que el conteo eligió se compra"
-    assert abs(_unidades(ajustado) - 70) <= 0.15 * 70
+    assert abs(_unidades(ajustado) - 79) <= 0.15 * 79
     estructura = estructura_del_plan(ajustado)
     assert estructura["medidas"] == {"largo_m": 2.5}
     armado = cast(dict[str, object], estructura["armado_guirnalda"])
@@ -476,7 +485,7 @@ async def test_sin_medidas_fijas_el_conteo_mueve_el_largo_y_la_caida_lo_sigue() 
     # Un largo asumido que el conteo alarga: la caída se mide sobre el largo nuevo,
     # y la cuenta con que el conteo eligió ese largo es la de la cuerda que se compra.
     plan_ = {
-        **plan(guirnalda(referencia_element_id="REF_01_E01", medidas={})),
+        **plan(guirnalda(mezcla="clasica", referencia_element_id="REF_01_E01", medidas={})),
         "espacio": {"tipo": "salon", "fuente": "supuesto"},
     }
     pista = _pista_geometria(caida_relativa=0.3, desnivel_relativo=-0.2)
@@ -506,7 +515,11 @@ async def test_un_largo_chico_sin_dato_del_cliente_lo_decide_el_conteo_con_la_cu
     # unos 75 globos. ±35 % no llega; la cantidad decide el largo, contado con
     # la cuerda que la caída y el desnivel de la lectura le van a dar.
     plan_ = {
-        **plan(guirnalda(referencia_element_id="REF_01_E01", medidas={"largo_m": 0.5})),
+        **plan(
+            guirnalda(
+                mezcla="clasica", referencia_element_id="REF_01_E01", medidas={"largo_m": 0.5}
+            )
+        ),
         "espacio": {"tipo": "salon", "fuente": "supuesto"},
     }
     pista = _pista_geometria(caida_relativa=0.3, desnivel_relativo=-0.2)
@@ -530,7 +543,7 @@ async def test_un_largo_chico_sin_dato_del_cliente_lo_decide_el_conteo_con_la_cu
 
 @pytest.mark.anyio
 async def test_la_cantidad_sale_del_conteo_y_la_distribucion_de_la_lectura() -> None:
-    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    plan_ = plan(guirnalda(mezcla="clasica", referencia_element_id="REF_01_E01"))
     conteo = {"completar_conteos": True, "pistas_conteo": [_conteo(estimado_total=60)]}
     solo_conteo = await resolver(plan_, completar_armados_guirnalda=True, **conteo)
     con_lectura = await resolver(
@@ -774,14 +787,14 @@ def test_la_cuerda_arqueada_es_la_misma_parabola_reflejada() -> None:
 
 @pytest.mark.anyio
 async def test_la_caida_alarga_la_cuerda_y_el_conteo_la_sigue() -> None:
-    recta = await resolver(plan(guirnalda(armado_guirnalda=_armado())))
+    recta = await resolver(plan(guirnalda(mezcla="clasica", armado_guirnalda=_armado())))
     colgada = _armado(soporte="colgada", forma="arco_caido", caida_m=0.8, puntos_de_anclaje=2)
-    caida = await resolver(plan(guirnalda(armado_guirnalda=colgada)))
+    caida = await resolver(plan(guirnalda(mezcla="clasica", armado_guirnalda=colgada)))
     cuerda = _garland_cord(2.5, colgada)
     estructura = cast(list[dict[str, object]], caida["estructuras"])[0]
     assert estructura["eje_m"] == round(cuerda, 2)
-    assert _unidades(caida) > _unidades(recta) == 48
-    assert _unidades(caida) == pytest.approx(48 * cuerda / 2.5, rel=0.05)
+    assert _unidades(caida) > _unidades(recta) == 54
+    assert _unidades(caida) == pytest.approx(54 * cuerda / 2.5, rel=0.05)
     resuelto = cast(list[dict[str, object]], caida["armados_guirnalda"])[0]
     assert resuelto["largo_cuerda_m"] == round(cuerda, 2) and resuelto["largo_m"] == 2.5
     assert not any(a.startswith("puerta_fisica:") for a in cast(list[str], caida["advertencias"]))

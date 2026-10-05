@@ -2049,11 +2049,6 @@ def _armado_del_motor(
     del_arco = armado_arco_de_receta(structure)
     if del_arco is not None:
         return "arco", del_arco
-    # Y una columna o un semiarco sin armado, con el de la receta que le escribe la confirmación
-    # (``armado_columna_o_semiarco_de_receta``): así cuenta, compra y guía salen del mismo armado.
-    de_la_receta = armado_columna_o_semiarco_de_receta(structure)
-    if de_la_receta is not None:
-        return de_la_receta
     # Y una guirnalda orgánica sin armado, con la receta que le escribe la confirmación
     # (``armado_guirnalda_de_receta``). La clásica no: es del armado por partes, que cuenta la fórmula y
     # dibuja ``vista_previa_de_armado_guirnalda``.
@@ -2113,50 +2108,6 @@ def _armado_arco_de_receta(estructura: str) -> str | None:
 
     armado = receta_del_arco(cast(Mapping[str, object], json.loads(estructura)))
     return None if armado is None else json.dumps(armado, ensure_ascii=False, sort_keys=True)
-
-
-#: La clase del motor por el campo del plan en el que la receta de una columna o un semiarco escribe su armado.
-_CLASE_POR_CAMPO: dict[str, str] = {
-    campo: clase for clase, (campo, _eje, _lista) in _ARMADOS_DEL_MOTOR.items()
-}
-
-
-def armado_columna_o_semiarco_de_receta(
-    structure: Mapping[str, object],
-) -> tuple[str, dict[str, object]] | None:
-    """La clase y el armado de la receta de una columna o un semiarco que no trae ninguno; ``None`` si no lo es.
-
-    Es lo que la confirmación les escribe (``armado_estructura.armado_columna_de_receta`` y
-    ``armado_semiarco_de_receta``): sin él, una confirmación que cayó en ``sinArmadosDeMotor`` dejaba la pieza
-    cobrada con la fórmula y la guía en ``sin_dibujo``. Derivado del plan, determinista y fuera de
-    ``estructuras``, como ``armado_arco_de_receta``; lo que cuenta entra en ``compras``. Recordado por pieza.
-    """
-    if structure.get("tipo") not in ("columna", "semiarco"):
-        return None
-    recordado = _armado_columna_o_semiarco_de_receta(
-        json.dumps(structure, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-    )
-    if recordado is None:
-        return None
-    clase, armado = cast(tuple[str, dict[str, object]], tuple(json.loads(recordado)))
-    return clase, armado
-
-
-@lru_cache(maxsize=_MAX_PIEZAS_RECORDADAS)
-def _armado_columna_o_semiarco_de_receta(estructura: str) -> str | None:
-    """``armado_columna_o_semiarco_de_receta`` sobre la pieza en JSON canónico (inmutable en caché)."""
-    # Importación diferida por el mismo ciclo que ``_armado_arco_de_patron``.
-    from app.armado_estructura import armado_columna_de_receta, armado_semiarco_de_receta
-
-    pieza = cast(Mapping[str, object], json.loads(estructura))
-    de_columna = armado_columna_de_receta(pieza)
-    if de_columna is not None:
-        clase = _CLASE_POR_CAMPO[de_columna[0]]
-        return json.dumps([clase, de_columna[1]], ensure_ascii=False, sort_keys=True)
-    del_semiarco = armado_semiarco_de_receta(pieza)
-    if del_semiarco is None:
-        return None
-    return json.dumps(["arco_organico", del_semiarco], ensure_ascii=False, sort_keys=True)
 
 
 def armado_guirnalda_de_receta(structure: Mapping[str, object]) -> dict[str, object] | None:
@@ -5454,15 +5405,23 @@ def _suggest_garland_assembly(
     keeps that cord; otherwise the reading without its geometry decides, as
     before. Without a drop or a tilt this is exactly ``sugerir_armado`` over
     ``structure``.
+
+    An organic garland is counted by its motor recipe, whose line follows the
+    assembly's shape (``armado_guirnalda.linea_del_motor``): there any shape
+    other than ``recta`` changes the purchase, not only the cord. So what
+    decides is whether the purchase changed, and when even the reading without
+    its geometry changes it, the recipe (straight, as the motor recipe without
+    a shape) does.
     """
     context = _garland_context(_with_structure(plan, index, structure), structure)
     first: dict[str, object] | None = sugerir_armado_guirnalda(context, reading)
-    if first is None or _garland_cord(context.largo_m, first) == context.largo_m:
-        return first
+    if first is None:
+        return None
     placed = {**structure, "armado_guirnalda": first}
-    again: dict[str, object] | None = sugerir_armado_guirnalda(
-        _garland_context(_with_structure(plan, index, placed), placed), reading
-    )
+    placed_context = _garland_context(_with_structure(plan, index, placed), placed)
+    if placed_context.globos == context.globos:
+        return first
+    again: dict[str, object] | None = sugerir_armado_guirnalda(placed_context, reading)
     if again is not None and _garland_cord(context.largo_m, again) == _garland_cord(
         context.largo_m, first
     ):
@@ -5470,7 +5429,16 @@ def _suggest_garland_assembly(
     flat: dict[str, object] | None = sugerir_armado_guirnalda(
         context, _without_read_geometry(reading)
     )
-    return flat
+    if flat is None:
+        return None
+    flat_placed = {**structure, "armado_guirnalda": flat}
+    if flat != first and (
+        _garland_context(_with_structure(plan, index, flat_placed), flat_placed).globos
+        == context.globos
+    ):
+        return flat
+    recipe: dict[str, object] | None = sugerir_armado_guirnalda(context)
+    return recipe
 
 
 def _with_garland_assembly(
@@ -5492,9 +5460,11 @@ def _with_garland_assembly(
     if assembly is None:
         return None
     placed = {**structure, "armado_guirnalda": assembly}
-    measures = _mapping(structure.get("medidas"))
-    length = _number(measures.get("largo_m")) or _number(measures.get("ancho_m")) or 0.0
-    if structure.get("patron_color") is None or _garland_cord(length, assembly) == length:
+    if structure.get("patron_color") is None or (
+        # The purchase, not only the cord: an organic garland's motor line follows the shape too.
+        _garland_context(_with_structure(plan, index, placed), placed).globos
+        == _garland_context(_with_structure(plan, index, structure), structure).globos
+    ):
         return placed
     candidate = _with_structure(plan, index, placed)
     try:

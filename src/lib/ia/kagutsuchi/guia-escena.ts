@@ -20,7 +20,9 @@ import { FONDO_GUIA, PISO_GUIA } from "./guia-estructura";
  *   pesa en el piso: se encaja contando su `elevacion_m` y sus globos quedan esa altura por encima del fondo de la
  *   caja, a la escala de la pieza y siempre dentro de ella; nunca pegados a la franja de piso.
  * - Fondo liso y una franja de piso, círculos planos con su color exacto: sin degradados, sin sombras, sin texto,
- *   sin persona ni marcas de altura. Un modelo de imagen copia lo que ve.
+ *   sin persona ni marcas de altura. Un modelo de imagen copia lo que ve. Lo único que no es un globo es lo que se
+ *   construye de verdad y Python publica (`trazos` y `rellenos`: el marco y el poste de un aro, su forro, las
+ *   cintas y la pesa de un bouquet), plano y detrás de los discos de su pieza.
  * - Cada disco lleva un borde fino de su propio tono, más oscuro (`bordeDeDisco`), y el fondo baja de
  *   `FONDO_GUIA` hacia un gris medio neutro cuando hay discos claros (`fondoDeEscena`): sin las dos cosas, un globo
  *   blanco, crema, transparente o pastel desaparecía contra el fondo y entre sus vecinos. El relleno nunca cambia:

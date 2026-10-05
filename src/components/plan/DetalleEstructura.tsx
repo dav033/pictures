@@ -37,6 +37,8 @@ import type { ArmadoColumnaOrganicaV1 } from "@/lib/plan/armado-columna-organica
 import type { ArmadoArcoOrganicoV1 } from "@/lib/plan/armado-arco-organico";
 import type { ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
 import type { PiezaDibujoEstructura } from "./dibujo/vista-dibujo-estructura";
+import type { CambiosPieza } from "./dibujo/borrador-pieza";
+import { nombreDePieza } from "@/lib/plan/nombre-pieza";
 import { BloquePatron } from "./patron/BloquePatron";
 import { BloqueBouquet } from "./bouquet/BloqueBouquet";
 import { BloqueGuirnalda } from "./guirnalda/BloqueGuirnalda";
@@ -169,8 +171,8 @@ type Props = {
     leyenda: readonly ColorLeyenda[];
     /**
      * Writes the arch assembly into the proposal (`armado_arco_organico` edit; ADR-0035) and resolves the reason
-     * when it did not get in, or `null`. Without it the block is read-only, which is how the card shows it while
-     * that edit does not exist yet on either side of the Python boundary.
+     * when it did not get in, or `null`. Without it the block is read-only (the card without editing). It also
+     * saves a half arch (`semiarco`), which is this same assembly with `forma.corte` < 1.
      */
     onGuardar?: (armado: ArmadoArcoOrganicoV1) => Promise<string | null>;
     ocupado?: boolean;
@@ -250,6 +252,11 @@ type Props = {
     pieza: PiezaDibujoEstructura;
     /** Saves the chosen shape (`null` removes it); without it the block only draws. */
     onCambiarForma?: (forma: string | null) => Promise<string | null>;
+    /**
+     * Saves what the piece's editor changed (shape, density, measures) as ONE `propiedades` edit; with it the
+     * block offers «Editar pared» / «Editar aro»… instead of the loose shape selector.
+     */
+    onGuardarPropiedades?: (cambios: CambiosPieza) => Promise<string | null>;
   };
   /**
    * Live drawing of the colors slider on a confetti pattern (ADR-0028 §10):
@@ -579,6 +586,8 @@ export function DetalleEstructura({
               pieza={dibujo.pieza}
               nombrePieza={nombreVisible}
               onCambiarForma={dibujo.onCambiarForma}
+              onGuardarPropiedades={dibujo.onGuardarPropiedades}
+              nombre={nombreDePieza(oficial?.id ?? declarada?.estructura_oficial, estructura.tipo)}
               pendientes={pendientes}
               // Las dos acciones del patrón viajan con el dibujo: este bloque ocupa el hueco de `BloquePatron`
               // en estas piezas, y sin ellas una pared se quedaba sin poder editar su patrón de color.

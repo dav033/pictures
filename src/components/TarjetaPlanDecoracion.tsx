@@ -1359,6 +1359,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                   onCambiarForma: editorDisponible
                     ? (forma) => aplicarAjusteDirecto({ accion: "forma", estructura_id: estructura.estructura_id, forma }, forma === null ? "Listo, la pieza vuelve a su forma por defecto." : "Listo, cambié la forma de la pieza.", { enDialogo: true })
                     : undefined,
+                  // «Editar pared» / «Editar aro»…: forma, densidad y medidas en UNA edición (`propiedades`), así que la
+                  // propuesta se recalcula y se firma una vez y el aviso ofrece un solo «Deshacer».
+                  onGuardarPropiedades: editorDisponible
+                    ? (cambios) => aplicarAjusteDirecto({ accion: "propiedades", estructura_id: estructura.estructura_id, ...cambios }, "Listo, guardé la pieza: la propuesta recalculó sus globos y su precio.", { enDialogo: true })
+                    : undefined,
                 } : undefined}
                 vistaReparto={editorDisponible ? {
                   pedir: (participaciones, signal) => pedirVistaPatron(peticionVistaPieza({ plan: plan.plan, estructuraId: estructura.estructura_id, lineas: estructura.lineas }, { patron_color: null, participaciones: [...participaciones] }), { signal }),

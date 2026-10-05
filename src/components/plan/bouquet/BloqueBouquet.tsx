@@ -81,7 +81,7 @@ export function BloqueBouquet({ resuelto, leyenda, nombrePieza, onEditar, onHoja
           <div className="flex flex-wrap gap-2 pt-0.5">
             {onEditar && (
               <button type="button" {...propsAbrirEditor(ocupado, onEditar)} data-testid="editar-armado" className={botonSecundario}>
-                <Layers className="size-4" aria-hidden="true" />Editar armado
+                <Layers className="size-4" aria-hidden="true" />Editar bouquet
               </button>
             )}
             {onHojaArmado && (

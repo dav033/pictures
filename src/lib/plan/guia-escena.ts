@@ -10,7 +10,8 @@ import { TIPOS_GLOBO_BOUQUET } from "./armado-bouquet";
  * lista que ya calculó el motor de la pieza o, si ningún motor la arma, del dibujo esquemático
  * (`app/dibujo_estructura.py`) o de su módulo en `app/guia_piezas` (bouquet, figura, guirnalda clásica), con lo
  * que la resolución ya sabe de cada material (`mezclas[]`). Aquí solo se publica la forma de la pregunta y de la
- * respuesta (incluido cómo se sostiene cada pieza: `anclaje` y `elevacion_m`); TypeScript
+ * respuesta (incluido cómo se sostiene cada pieza: `anclaje` y `elevacion_m`, y lo que se ve sin ser globo:
+ * `trazos` y `rellenos`); TypeScript
  * compone y rasteriza (`src/lib/ia/kagutsuchi/guia-escena.ts`), nunca coloca un globo.
  *
  * Derivado: no entra en el plan, en el snapshot ni en `plan_hash`. No cuenta ni cotiza nada.

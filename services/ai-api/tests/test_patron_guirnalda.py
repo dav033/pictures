@@ -337,9 +337,11 @@ async def test_sin_armado_la_confirmacion_da_el_patron_de_antes() -> None:
 
 @pytest.mark.anyio
 async def test_una_guirnalda_armada_recibe_el_patron_por_racimo_y_lo_sigue() -> None:
-    trio = _armado(racimo={"unidad": "trio", "tamano_pulg_base": 12})
+    # La clásica: el patrón por racimo es de los racimos que se compran (la orgánica la cuenta el motor).
+    trio = _armado(racimo={"unidad": "trio", "tamano_pulg_base": 12}, relleno=None)
     resuelto = await resolver(
-        plan(guirnalda(armado_guirnalda=trio, densidad="sencilla")), completar_patrones=True
+        plan(guirnalda(armado_guirnalda=trio, densidad="sencilla", mezcla="clasica")),
+        completar_patrones=True,
     )
     patron = cast(dict[str, object], estructura_del_plan(resuelto)["patron_color"])
     assert patron["globos_por_racimo"] == 3
@@ -358,7 +360,13 @@ async def test_la_u_invertida_en_espejo_se_arma_simetrica() -> None:
         "simetria": "espejo",
     }
     resuelto = await resolver(
-        plan(guirnalda(armado_guirnalda=_armado(**U_INVERTIDA), patron_color=espejo))
+        plan(
+            guirnalda(
+                armado_guirnalda=_armado(**U_INVERTIDA, relleno=None),
+                patron_color=espejo,
+                mezcla="clasica",
+            )
+        )
     )
     racimos = _materiales_por_racimo(resuelto)
     assert len(racimos) >= 4

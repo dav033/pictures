@@ -21,6 +21,9 @@ export type DeclaradaDibujo = {
   estructura_oficial?: string;
   /** La forma que eligió el decorador (`formas-pieza.ts`); sin ella manda la que implica su oficial. */
   forma?: string;
+  /** Lo que el editor de la pieza parte del plan (`borrador-pieza.ts`); el dibujo no los lee. */
+  densidad?: string;
+  medidas?: { ancho_m?: number; alto_m?: number; largo_m?: number };
   materiales: readonly { color?: string; acabado?: string; participacion?: number }[];
   patron_color?: { base: { modo: string } };
 };

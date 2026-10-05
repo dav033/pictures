@@ -428,5 +428,24 @@ de que la IA o el editor puedan escribir los dos.
 - La vista previa pide el dibujo a Python en cada cambio. El motor orgánico es el más caro de los tres (~230 ms
   por pieza); el `debounce` y el `lru_cache` que ya existen lo cubren, pero conviene medirlo antes de dar por
   bueno un deslizador continuo.
-- Lo que hoy no se puede editar seguirá sin poder editarse: pared, centro de mesa, aro, semiarco y escultura no
-  tienen motor migrado y se quedan con el camino de siempre.
+- ~~Lo que hoy no se puede editar seguirá sin poder editarse: pared, centro de mesa, aro, semiarco y escultura no
+  tienen motor migrado y se quedan con el camino de siempre.~~ Superado el 2026-10-04 (abajo).
+
+## Estado (2026-10-04): «Editar <pieza>» en todas las estructuras
+
+- **Arco orgánico, arco asimétrico y semiarco**: la edición `armado_arco_organico` existe en los dos lados
+  (`EdicionArmadoArcoOrganicoSchema` en `edicion-esquemas.ts`; `app/plan_edicion_arco_organico.py`, gemela de la
+  columna orgánica: valida sin catálogo con la puerta del motor, el ancho y el alto los pone el armado, reparto,
+  mezcla y propiedades se rechazan con `armado_arco_organico_activo`, quitar un color revalida la paleta, y en un
+  `arco` con el clásico guardado responde `armado_arco_presente`). La tarjeta pasa `onGuardar` y el bloque y el
+  editor nombran la pieza: «Editar semiarco», «Guardar semiarco».
+- **Pared, aro circular, techo de globos y centro de mesa** (sin motor): «Editar pared» / «Editar aro»… abre un
+  editor al lado del dibujo con la forma (`formas-pieza.ts`), la densidad que admite la oficial y las medidas que
+  su fórmula lee (pared ancho × alto; aro, diámetro; techo, largo; centro de mesa, diámetro y alto). Se guarda en
+  **una** edición nueva, `propiedades` (`app/plan_edicion_pieza.py`: `densidad_invalida` con las admitidas, medidas
+  mezcladas con las que había, rechazo si un motor cuenta la pieza). El dibujo del editor es el del borrador en su
+  forma; globos y precio los recalcula la propuesta al guardar.
+- **Bouquet y guirnalda por partes**: su botón dice «Editar bouquet» / «Editar guirnalda» en vez de «Editar armado».
+- **Pendiente**: la figura no tiene mandos que su cuenta lea (se cotiza por lo que compra); una pieza que un motor
+  podría armar y llega sin armado (bandera apagada) solo ofrece «Editar patrón» — el botón «Armar con el motor»
+  sigue esperando la decisión de arriba.

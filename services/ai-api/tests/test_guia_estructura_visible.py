@@ -87,7 +87,13 @@ def _guia(estructura: Mapping[str, object]) -> dict[str, Any]:
 
 @pytest.mark.parametrize("vector", VECTORES, ids=[str(v["nombre"]) for v in VECTORES])
 def test_el_aro_con_densidad_es_el_del_clasificador(vector: Mapping[str, Any]) -> None:
-    datos = cast(DatosDibujo, {**vector["datos"], "mezcla": {int(k): float(v) for k, v in vector["datos"]["mezcla"].items()}})
+    datos = cast(
+        DatosDibujo,
+        {
+            **vector["datos"],
+            "mezcla": {int(k): float(v) for k, v in vector["datos"]["mezcla"].items()},
+        },
+    )
     dibujo = dibujar_circulo(vector["forma"], None, datos)
 
     assert (dibujo["ancho"], dibujo["alto"]) == (vector["ancho"], vector["alto"])
@@ -118,10 +124,16 @@ def test_la_guia_del_aro_lleva_mas_globos_cuanto_mas_densa(forma: str | None) ->
 # --- Lo que no es globo: capturado sin tocar el SVG de la UI ---------------------------------------------------
 
 
-@pytest.mark.parametrize("estructura", [*[_aro(f) for f in FORMAS_ARO], _mini_aro()], ids=[*map(str, FORMAS_ARO), "mini-aro"])
+@pytest.mark.parametrize(
+    "estructura",
+    [*[_aro(f) for f in FORMAS_ARO], _mini_aro()],
+    ids=[*map(str, FORMAS_ARO), "mini-aro"],
+)
 def test_capturar_la_estructura_no_cambia_el_dibujo(estructura: dict[str, object]) -> None:
     dibujo = dibujo_de(estructura, MEZCLA)
-    capturado, _globos, elementos = con_globos_y_estructura(lambda: cast(Any, dibujo_de(estructura, MEZCLA)))
+    capturado, _globos, elementos = con_globos_y_estructura(
+        lambda: cast(Any, dibujo_de(estructura, MEZCLA))
+    )
 
     assert dibujo is not None and capturado == dibujo
     assert elementos, "un aro siempre tiene su marco"
@@ -137,7 +149,9 @@ def test_cada_aro_trae_su_marco_su_poste_y_su_base() -> None:
         assert resultado is not None
         _globos, elementos = resultado
         anillo = _arcos(elementos)
-        assert [(a.cx, a.cy, a.r, a.hasta - a.desde, a.hex) for a in anillo] == [(0, 1.25, 1, 360, METAL)]
+        assert [(a.cx, a.cy, a.r, a.hasta - a.desde, a.hex) for a in anillo] == [
+            (0, 1.25, 1, 360, METAL)
+        ]
         postes = [e for e in elementos if isinstance(e, LineaDibujo)]
         assert [(p.y1, p.y2) for p in postes] == [(0.25, 0)], "del aro al piso"
         assert any(isinstance(e, ElipseDibujo) and e.cy == 0 and e.hex == METAL for e in elementos)
@@ -161,7 +175,9 @@ def test_el_aro_doble_son_dos_aros_con_su_poste() -> None:
 
 
 def test_la_media_luna_trae_su_tela_y_su_marco() -> None:
-    _globos, elementos = cast(tuple[Any, list[Any]], globos_y_estructura_de(_aro("media-luna"), MEZCLA))
+    _globos, elementos = cast(
+        tuple[Any, list[Any]], globos_y_estructura_de(_aro("media-luna"), MEZCLA)
+    )
 
     telas = [e for e in elementos if isinstance(e, PoligonoDibujo)]
     assert len(telas) == 1 and telas[0].hex == TELA and 3 <= len(telas[0].puntos) <= 64
@@ -206,7 +222,10 @@ def _firma(pieza: Any) -> tuple[object, ...]:
 
 
 def test_cada_forma_del_bouquet_se_dibuja_distinta() -> None:
-    firmas = {forma: _firma(pieza_de(_ramo(7, (3 / 7, 3 / 7, 1 / 7), forma=forma), COLORES)) for forma in FORMAS_BOUQUET}
+    firmas = {
+        forma: _firma(pieza_de(_ramo(7, (3 / 7, 3 / 7, 1 / 7), forma=forma), COLORES))
+        for forma in FORMAS_BOUQUET
+    }
 
     assert len(set(firmas.values())) == len(FORMAS_BOUQUET)
 
@@ -217,7 +236,11 @@ def test_todas_las_formas_dibujan_lo_que_se_compra() -> None:
             estructura = _ramo(7, (3 / 7, 3 / 7, 1 / 7), forma=forma, densidad=densidad)
             pieza = pieza_de(estructura, COLORES)
             assert pieza is not None
-            assert Counter(t for *_xyr, t in pieza.globos) == {"#ff0000": 3, "#00ff00": 3, "#0000ff": 1}
+            assert Counter(t for *_xyr, t in pieza.globos) == {
+                "#ff0000": 3,
+                "#00ff00": 3,
+                "#0000ff": 1,
+            }
             assert sum(cantidades_por_instancia(estructura)) == len(pieza.globos)
 
 
@@ -234,7 +257,15 @@ def test_la_caja_sorpresa_lleva_su_caja_y_el_de_helio_su_bolsa_y_sus_cintas() ->
     for pieza in (caja, helio):
         cintas = [e for e in pieza.elementos if isinstance(e, LineaDibujo)]
         assert len(cintas) == len(pieza.globos), "una cinta por globo"
-        assert min(y for _x, y in [p for e in pieza.elementos if isinstance(e, PoligonoDibujo) for p in e.puntos]) == 0
+        assert (
+            min(
+                y
+                for _x, y in [
+                    p for e in pieza.elementos if isinstance(e, PoligonoDibujo) for p in e.puntos
+                ]
+            )
+            == 0
+        )
 
 
 def test_la_burbuja_de_la_forma_la_lleva_el_material_que_menos_globos_compra() -> None:
@@ -244,8 +275,12 @@ def test_la_burbuja_de_la_forma_la_lleva_el_material_que_menos_globos_compra() -
     assert sin_contexto is not None and con_contexto is not None
 
     burbuja = max(sin_contexto.globos, key=lambda g: g[2])
-    assert burbuja[3] == "#0000ff" and burbuja[2] > 0.25, "la burbuja de 61 cm, del material de 1 globo"
-    assert max(r for _x, _y, r, _t in con_contexto.globos) < 0.2, "si se sabe que todo es látex, no hay burbuja"
+    assert burbuja[3] == "#0000ff" and burbuja[2] > 0.25, (
+        "la burbuja de 61 cm, del material de 1 globo"
+    )
+    assert max(r for _x, _y, r, _t in con_contexto.globos) < 0.2, (
+        "si se sabe que todo es látex, no hay burbuja"
+    )
 
 
 def test_la_densidad_reparte_el_ramo_de_helio_sin_cambiar_cuantos_globos_lleva() -> None:
@@ -258,11 +293,21 @@ def test_la_densidad_reparte_el_ramo_de_helio_sin_cambiar_cuantos_globos_lleva()
     for forma in (None, "helio", "caja"):
         firmas = [_firma(pieza(forma, d)) for d in DENSIDADES]
         assert len(set(firmas)) == 3, forma
-        alturas = [max(y + r for _x, y, r, _t in pieza(forma, d).globos) - min(y - r for _x, y, r, _t in pieza(forma, d).globos) for d in DENSIDADES]
-        assert alturas[0] < alturas[1] < alturas[2], "ligero, estándar y lleno: dos, tres y cuatro niveles"
-    assert _firma(pieza(None, "media")) == _firma(pieza_de(_ramo(7, (3 / 7, 3 / 7, 1 / 7)), COLORES))
+        alturas = [
+            max(y + r for _x, y, r, _t in pieza(forma, d).globos)
+            - min(y - r for _x, y, r, _t in pieza(forma, d).globos)
+            for d in DENSIDADES
+        ]
+        assert alturas[0] < alturas[1] < alturas[2], (
+            "ligero, estándar y lleno: dos, tres y cuatro niveles"
+        )
+    assert _firma(pieza(None, "media")) == _firma(
+        pieza_de(_ramo(7, (3 / 7, 3 / 7, 1 / 7)), COLORES)
+    )
     for forma in ("piso", "burbuja", "con-numero", "relleno"):
-        assert len({_firma(pieza(forma, d)) for d in DENSIDADES}) == 1, "las demás formas ya dicen cómo se acomodan"
+        assert len({_firma(pieza(forma, d)) for d in DENSIDADES}) == 1, (
+            "las demás formas ya dicen cómo se acomodan"
+        )
 
 
 def test_las_cintas_del_bouquet_flotante_bajan_hasta_la_pesa_en_el_piso() -> None:

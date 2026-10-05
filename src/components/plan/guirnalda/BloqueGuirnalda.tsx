@@ -92,7 +92,7 @@ export function BloqueGuirnalda({ resuelto, leyenda, nombrePieza, anfitriona, on
           <div className="flex flex-wrap gap-2 pt-0.5">
             {onEditar && (
               <button type="button" {...propsAbrirEditor(ocupado, onEditar)} data-testid="editar-armado-guirnalda" className={botonSecundario}>
-                <Spline className="size-4" aria-hidden="true" />Editar armado
+                <Spline className="size-4" aria-hidden="true" />Editar guirnalda
               </button>
             )}
             {onHojaArmado && (

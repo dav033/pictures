@@ -200,6 +200,14 @@ async def test_sin_armado_el_total_y_el_reparto_son_los_de_la_resolucion(
 ) -> None:
     real = await resolver_pieza(pieza_del_plan(tipo, densidad=densidad, mezcla=mezcla))
     estimado = uno(tipo, densidad=densidad, mezcla=mezcla)
+    if tipo == "guirnalda" and mezcla != "clasica":
+        # Una guirnalda orgánica sin armado la cuenta la receta del motor (``plan.armado_guirnalda_de_receta``),
+        # la misma que la resolución: el estimado es el total que se cobra.
+        assert estimado["fuente"] == "motor"
+        assert estimado["total_vigente"] == estimado["total_motor"] == real["total"]
+        assert reparto_estimado(estimado) == real["reparto"]
+        assert estimado["puerta_fisica"]["dentro"] is (real["puerta"] == [])
+        return
     assert estimado["fuente"] == "formula"
     assert estimado["total_motor"] is None
     assert estimado["total_vigente"] == estimado["total_formula"] == real["total"]
@@ -414,11 +422,12 @@ def _gap(objetivo: int, total: int) -> int:
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("objetivo", [30, 36, 60])
+@pytest.mark.parametrize("objetivo", [30, 36, 80])
 async def test_la_sugerencia_de_formula_aplicada_y_resuelta_da_el_total_prometido(
     objetivo: int,
 ) -> None:
-    estimado = uno("guirnalda", objetivo={"conteo": objetivo})
+    # La guirnalda clásica: la orgánica sin armado la cuenta el motor y no sugiere por la fórmula.
+    estimado = uno("guirnalda", mezcla="clasica", objetivo={"conteo": objetivo})
     sugerencia = estimado["sugerencia"]
     assert sugerencia["estado"] == "propuesta" and sugerencia["via"] == "formula"
     assert sugerencia["brecha"]["dentro_de_tolerancia"] is True
@@ -428,7 +437,12 @@ async def test_la_sugerencia_de_formula_aplicada_y_resuelta_da_el_total_prometid
     cambios = {c["campo"]: c["despues"] for c in sugerencia["cambios"]}
     medidas = {**PIEZAS["guirnalda"][1], **{k: v for k, v in cambios.items() if k.endswith("_m")}}
     real = await resolver_pieza(
-        pieza_del_plan("guirnalda", densidad=cambios.get("densidad", "media"), medidas=medidas)
+        pieza_del_plan(
+            "guirnalda",
+            mezcla="clasica",
+            densidad=cambios.get("densidad", "media"),
+            medidas=medidas,
+        )
     )
     assert real["total"] == sugerencia["total_resultante"]
     assert real["puerta"] == []
@@ -476,7 +490,7 @@ def test_si_las_medidas_son_del_cliente_la_sugerencia_de_formula_no_las_mueve() 
 
 
 def test_dentro_de_la_tolerancia_no_hace_falta_cambiar_nada() -> None:
-    estimado = uno("guirnalda", objetivo={"conteo": 50})
+    estimado = uno("guirnalda", mezcla="clasica", objetivo={"conteo": 50})
     assert estimado["brecha"]["dentro_de_tolerancia"] is True
     assert estimado["sugerencia"]["estado"] == "no_necesaria"
     assert estimado["sugerencia"]["cambios"] == []
@@ -484,7 +498,7 @@ def test_dentro_de_la_tolerancia_no_hace_falta_cambiar_nada() -> None:
 
 def test_la_brecha_usa_la_tolerancia_de_conteo_foto_y_no_una_copia() -> None:
     objetivo = 40
-    estimado = uno("guirnalda", objetivo={"conteo": objetivo, "exacto": True})
+    estimado = uno("guirnalda", mezcla="clasica", objetivo={"conteo": objetivo, "exacto": True})
     brecha = estimado["brecha"]
     assert brecha["objetivo"] == objetivo
     assert brecha["diferencia"] == estimado["total_vigente"] - objetivo
@@ -826,7 +840,7 @@ def test_el_mejor_candidato_esta_dentro_de_tolerancia_y_de_la_puerta_fisica() ->
     resultado = estimar(
         [
             candidato("lejos", "arco"),
-            candidato("cerca", "guirnalda"),
+            candidato("cerca", "guirnalda", mezcla="clasica"),
             candidato("tambien cerca", "columna"),
         ],
         objetivo={"conteo": 48},

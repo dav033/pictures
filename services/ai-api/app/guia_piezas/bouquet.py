@@ -13,8 +13,13 @@ dueño de cómo se arma. Este módulo los usa así:
   (``armado_bouquet.validar``, el dueño de esa regla); si no, se dibuja como el bouquet sin armado.
 - **Sin armado**: el ramo de ``motor.ts`` (``crear_disposicion``), configurado como la vista previa del
   clasificador (``referencias/vista-previa.ts``, ``bouquet``): la forma lista que corresponde a la ``forma`` de
-  la pieza (``RAMO_FORMA``) y tantos látex como globos compra una instancia. Es determinista: su azar va
-  sembrado con la semilla de la forma.
+  la pieza (``RAMO_FORMA``, las seis de la lámina ``bouquet``, que el contrato admite desde
+  ``formas-pieza.ts``) y tantos látex como globos compra una instancia. Es determinista: su azar va sembrado con
+  la semilla de la forma. Cada forma sale distinta: la de helio y la caja sorpresa son el ramo clásico, una con su
+  bolsa de peso y la otra con su caja de regalo; la burbuja, el número y el relleno llevan su globo especial (si
+  la compra no dice cuál es, el material que menos globos compra, ``_especial_de_la_forma``); la de piso es la
+  pila a ras del suelo. La **densidad** reparte el ramo de helio (``FORMA_POR_DENSIDAD``: mini, clásico o
+  grande) sin cambiar cuántos globos lleva, que es la compra.
 
 **Qué globo es cada material.** La estructura del plan no trae ni el tipo ni el tamaño de cada material (eso
 está en el catálogo); los trae el contexto (``ContextoPieza``): la leyenda del armado resuelto o las líneas
@@ -29,8 +34,10 @@ número foil de 16" y uno que solo va de remate es un metalizado de 18" (las for
 pesa más 0,35 m de cinta (0,5 m escalonado, ``armado.ts``); sin armado, cada nivel cuelga de su cinta
 (``cintaM`` de la forma lista: 1,1 m el clásico, 1,2 m el de número, ``formas.ts``). Los globos salen con
 ``y`` desde el piso y la pieza se publica ``flotante`` con la altura de su globo más bajo (``elevacion_m``), para
-que la composición no la pegue al piso. La base de aire y el ramo «a ras del suelo» son ``piso``. Las cintas,
-la pesa y la base no son globos y no salen.
+que la composición no la pegue al piso. La base de aire y el ramo «a ras del suelo» son ``piso``. Sin armado,
+las cintas (una por globo, del nudo al punto de unión) y la pesa o la caja salen como lo que se ve sin ser globo
+(``PiezaConEstructura.elementos``; la guía las publica como ``trazos`` y ``rellenos``): en la pieza flotante
+cuelgan por debajo de los globos hasta el piso. Con armado, el soporte todavía no sale.
 
 Las cantidades son las de la compra (``plan._distribute_units`` sobre ``unidades_declaradas``) divididas entre
 las ``repeticiones``: la guía dibuja una sola instancia y la composición pone las demás.
@@ -478,7 +485,7 @@ def _globos_del_ramo(
     forma = _forma_del_ramo(estructura)
     especiales, material_de = _especiales(cantidades, colores, contexto)
     _especial_de_la_forma(forma, cantidades, colores, contexto, especiales, material_de)
-    latex =[(i, c) for i, c in enumerate(cantidades) if i not in material_de]
+    latex = [(i, c) for i, c in enumerate(cantidades) if i not in material_de]
     secuencia = _intercalar(sorted(latex, key=lambda item: (-item[1], item[0])))[:MAX_GLOBOS]
     cfg = aplicar_forma_ramo(config_inicial(), forma)
     # Sin contexto todo es látex R12 (el plan no dice qué material es especial). Siempre del tamaño exacto,
