@@ -91,9 +91,13 @@ motor.
 
 **La distinción que es el motivo de todo esto:**
 
-- **Campo ausente** = «no se ve la punta» (la corta el borde, la tapa algo, está borrosa) → el remate lo pone
-  el motor, que sigue siendo su globo de 24". Es la decisión del 2026-10-02: paridad con el valor de partida
-  del diseñador en `clasificador-decoraciones`, que es el repo dueño del armado.
+- **Campo ausente** = «no se ve la punta» (la corta el borde, la tapa algo, está borrosa) → **la columna va
+  sin corona**. *Enmienda del 2026-10-05, decisión del dueño (D9):* hasta el 2026-10-04 el remate lo ponía el
+  motor, su globo de 24", por paridad con el valor de partida del diseñador en `clasificador-decoraciones`; el
+  commit `6fc3e95` lo quitó (`armado_estructura._receta`: «coronar una columna que nadie pidió es cobrar
+  globos inventados») y esta ADR seguía diciendo lo contrario. El globo de 24" nunca entraba en la compra, así
+  que el precio no cambia: una columna de 1,8 m sigue en 32 globos, y su dibujo baja de 2,23 m a 1,82 m de
+  alto. Es la regla única de D9 en `PLAN-calidad-imagen.md`: sin lectura, sin corona.
 - **`{tipo: "ninguno"}`** = «la punta no lleva nada», que es una lectura → la columna queda a ras de su último
   anillo.
 
