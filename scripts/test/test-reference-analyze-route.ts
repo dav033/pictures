@@ -153,6 +153,23 @@ async function run(): Promise<void> {
     assert.ok(Math.abs(data[abajo] - data[abajo + 1]) < 30, "abajo es gris tras aplicar la orientación");
   });
 
+  await caso("A0.2 EXIF: la medida de color sí endereza la foto, porque sus cajas son de la foto como se ve", async () => {
+    // Las dos mitades de este asunto son distintas: los BYTES que van al
+    // proveedor se dejan como llegan (el caso siguiente), pero los PÍXELES que
+    // se miden se enderezan, porque `reference_bbox` es relativa a la foto como
+    // el analizador la vio. Sin `.rotate()` el fotograma sale 240×160 y la misma
+    // caja cae sobre otra región de la imagen.
+    const { decodificarPixeles } = await import("../../src/lib/ia/amaterasu/decodificar-pixeles");
+    const { medirDominanciaColor } = await import("../../src/lib/plan/dominancia-color");
+    const muestra = await decodificarPixeles(exifOrientacion6);
+    assert.deepEqual([muestra.ancho, muestra.alto], [160, 240], "el fotograma medido es el de la vista derecha");
+    assert.ok(muestra.rgb[0]! > 200 && muestra.rgb[1]! < 60, "arriba a la izquierda es la franja roja, no el gris de abajo");
+    // Y por tanto la caja relativa cae donde debe: el 40 % superior lleva 16 %
+    // de gris enderezado, y 66 % sin enderezar (que es lo que se medía antes).
+    const arriba = medirDominanciaColor(muestra, { x: 0, y: 0, width: 1, height: 0.4 });
+    assert.ok((arriba.dominantes.find((entrada) => entrada.color === "gris")?.participacion ?? 0) < 0.2, JSON.stringify(arriba.dominantes));
+  });
+
   await caso("A0.2 EXIF: hoy el servidor no normaliza la orientación; los bytes con orientación 6 llegan intactos al proveedor", () => {
     // Characterization, not the target: both UI clients upright the photo in
     // the browser (createImageBitmap imageOrientation "from-image" + canvas
