@@ -78,7 +78,7 @@ import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, mezclasAdmisiblesEstructura, productosDelAjuste, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
-import { aplicarReferenciasMedidas, busquedasDeReferencias } from "@/lib/plan/referencias-medidas";
+import { aplicarReferenciasMedidas, busquedasDeReferencias, familiaDeTitulo } from "@/lib/plan/referencias-medidas";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, accionEstimacionInconsistente, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
@@ -1654,7 +1654,12 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // Incondicional a propósito (fase 2.9): un color de la foto que la
       // búsqueda no puede ofrecer es la misma pérdida haya habido relajación o
       // no, y hasta ahora solo se veía en el caso raro.
-      const coloresFotoSinCubrir = coloresContexto.length > 0 ? coloresSinCubrir(coloresContexto, respuesta.candidatos) : [];
+      // Un color de la foto solo lo cubre un globo LISO de ese color (`familiaDeTitulo`): un impreso no es un
+      // globo dorado para armar una pieza. Sin embeddings, la búsqueda léxica pone primero los impresos —repiten
+      // el color en el título («2 Caras Copa Dorada Reflex Dorado»)— y el arco de la foto 1 de las pruebas del
+      // 2026-10-05 se armó con copas impresas; contándolos como cubiertos, la pista del liso no salía nunca.
+      const lisos = respuesta.candidatos.filter((candidato) => familiaDeTitulo(candidato.titulo) !== null);
+      const coloresFotoSinCubrir = coloresContexto.length > 0 ? coloresSinCubrir(coloresContexto, lisos) : [];
       if (coloresFotoSinCubrir.length > 0) estado.ragColoresFotoSinCubrir = [...new Set([...(estado.ragColoresFotoSinCubrir ?? []), ...coloresFotoSinCubrir])];
       if (respuesta.filtroRelajado === "colores") {
         estado.ragColorRelaxed = [...new Set([...(estado.ragColorRelaxed ?? []), "colores"])]
