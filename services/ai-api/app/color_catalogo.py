@@ -13,6 +13,7 @@ misma prioridad de familias que ``_FAMILIAS_POR_ACABADO``). Antes solo lo llevab
 from __future__ import annotations
 
 import json
+import re
 import unicodedata
 from functools import lru_cache
 from typing import Any, Mapping
@@ -94,6 +95,29 @@ def referencia_de(color: str | None, acabado: str | None) -> dict[str, Any] | No
     return candidatas[0]
 
 
+def referencia_del_titulo(titulo: str | None, acabado: str | None) -> dict[str, Any] | None:
+    """La referencia que nombra el título del producto que se compra, o ``None`` si no nombra una sola.
+
+    El color del material es la familia («azul») y la familia cae en su primera referencia: el Azul 040, un
+    celeste. El producto comprado dice el tono («Fashion Azul Rey», «Fashion Azul Naval»), y la guía de escena
+    dibujaba celestes unas columnas azul rey (pruebas del 2026-10-05). Se busca el nombre más largo de la
+    lámina que el título dice con palabras enteras; con dos nombres distintos no se elige ninguno.
+    """
+    if not titulo:
+        return None
+    plegado = f" {' '.join(re.sub(r'[^a-z0-9]+', ' ', _plegar(titulo)).split())} "
+    dichos = [nombre for nombre in _por_nombre() if f" {nombre} " in plegado]
+    # «azul» va dentro de «azul rey»: el nombre que otro más largo contiene no es otro tono.
+    tonos = [
+        nombre
+        for nombre in dichos
+        if not any(nombre != otro and f" {nombre} " in f" {otro} " for otro in dichos)
+    ]
+    if len(tonos) != 1:
+        return None
+    return referencia_de(tonos[0], acabado)
+
+
 #: La familia de la referencia del catálogo, en el acabado con el que pinta el motor orgánico. Es la tabla
 #: ``acabadoDe`` de ``src/lib/referencias/vista-previa.ts`` del repo dueño (clasificador-decoraciones), y
 #: esta es su **única** copia en pictures: la leen el dibujo de las piezas (``dibujo_estructura.py``) y las
@@ -156,4 +180,5 @@ __all__ = [
     "acabado_del_motor",
     "es_aproximacion_del_motor",
     "referencia_de",
+    "referencia_del_titulo",
 ]

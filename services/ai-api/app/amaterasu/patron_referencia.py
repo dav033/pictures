@@ -99,6 +99,11 @@ TAMANOS: tuple[str, ...] = _tamanos_del_contrato()
 REMATES = TIPOS_REMATE
 TIPO_COLUMNA = "columna"
 
+#: Los modos que la columna clásica arma con anillos de un solo tamaño (``patron_de_la_foto``: espiral,
+#: apilado). El motor orgánico no arma una espiral, y unos anillos o unos bloques bajo un globo gigante son
+#: la columna clásica de siempre.
+MODOS_DE_ANILLOS = frozenset({"espiral", "anillos", "bloques"})
+
 # Vocabulario de color del catálogo: `x-paleta-colores` del contrato
 # `plan-decoracion.v1` (exportada desde PALETA_COLORES_V2 en TypeScript).
 # "multicolor" es un producto surtido, no el color de una posición del patrón.
@@ -347,6 +352,26 @@ def _motas_validas(crudas: object, excluir: list[str]) -> list[str]:
     return motas[:MAX_MOTAS]
 
 
+def _tamanos_del_cuerpo(tamanos: str, remate: object, modo: str | None, confianza: float) -> str:
+    """Los tamaños del cuerpo de la pieza, sin contar el globo que la corona.
+
+    El remate se lee y se arma aparte, pero el lector lo cuenta en los tamaños: unas columnas clásicas en
+    espiral de globos iguales con un globo gigante encima salían «chicos con pocos grandes», que es la mezcla
+    orgánica fina, y se armaban, dibujaban y compraban como columnas orgánicas (pruebas del 2026-10-05). Con
+    una corona de un globo y un patrón de anillos leído con confianza, el globo grande es la corona y el
+    cuerpo es de un solo tamaño. Sin corona, o con un patrón que también arma el orgánico, la lectura se queda.
+    """
+    corona = remate.get("tipo") if isinstance(remate, Mapping) else None
+    if (
+        tamanos == "chicos_con_pocos_grandes"
+        and corona == "globo"
+        and modo in MODOS_DE_ANILLOS
+        and confianza >= CONFIANZA_MINIMA_PISTA
+    ):
+        return "un_solo_tamano"
+    return tamanos
+
+
 def _pista(
     item: object, pendientes: set[str], tipos: Mapping[str, str]
 ) -> dict[str, object] | None:
@@ -385,7 +410,9 @@ def _pista(
     # 2026-10-03 —monocroma— nunca habría llegado a decirlos, que es justo el caso que lo motivó.
     tamanos = item.get("tamanos")
     if isinstance(tamanos, str) and tamanos.strip().lower() in TAMANOS:
-        pista["tamanos"] = tamanos.strip().lower()
+        pista["tamanos"] = _tamanos_del_cuerpo(
+            tamanos.strip().lower(), pista.get("remate"), modo, float(confianza)
+        )
     if modo == MODO_NINGUNO:
         return pista
     if modo == MODO_MONOCROMO:

@@ -83,7 +83,7 @@ from pydantic import model_validator
 
 from app.arco.tipos import INFLADO_PULG
 from app.armado_bouquet import MaterialBouquet
-from app.color_catalogo import referencia_de
+from app.color_catalogo import referencia_de, referencia_del_titulo
 from app.dibujo_estructura import FORMAS_POR_OFICIAL, forma_de, globos_y_estructura_de
 from app.generated_models import contract_schema
 from app.guia_piezas import (
@@ -186,10 +186,32 @@ def _plegar(texto: str) -> str:
     )
 
 
-def hex_del_material(material: Mapping[str, object]) -> str:
-    """El color del globo inflado de lo que se compra para este material, en ``#rrggbb`` minúsculas."""
+def hex_del_material(
+    material: Mapping[str, object], lineas: Sequence[Mapping[str, object]] = ()
+) -> str:
+    """El color del globo inflado de lo que se compra para este material, en ``#rrggbb`` minúsculas.
+
+    Con las ``lineas`` resueltas de la pieza manda el título del producto que se compra: el material dice la
+    familia («azul») y el producto el tono («Fashion Azul Rey», el 041, no el celeste 040).
+    """
     color = _texto(material.get("color"))
-    referencia = referencia_de(color, _texto(material.get("acabado")))
+    acabado = _texto(material.get("acabado"))
+    producto = _texto(material.get("product_id"))
+    comprada = next(
+        (
+            linea
+            for linea in lineas
+            if producto is not None and _texto(linea.get("product_id")) == producto
+        ),
+        None,
+    )
+    referencia = (
+        referencia_del_titulo(
+            _texto(comprada.get("titulo")), acabado or _texto(comprada.get("acabado"))
+        )
+        if comprada is not None
+        else None
+    ) or referencia_de(color, acabado)
     if referencia is None:
         referencia = color_de(color)
     if referencia is not None and isinstance(referencia.get("hexGlobo"), str):
@@ -582,7 +604,8 @@ def pieza_de_guia(
     materiales = materiales_de(estructura)
     if not materiales:
         return "sin_materiales"
-    colores = [hex_del_material(material) for material in materiales]
+    lineas = _mapeos((datos or {}).get("lineas"))
+    colores = [hex_del_material(material, lineas) for material in materiales]
     del_motor = pieza_del_motor_resuelta(estructura)
     if del_motor is not None:
         clase, pieza = del_motor
