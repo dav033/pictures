@@ -1,24 +1,31 @@
-"""La guirnalda clásica, para la guía de escena.
+"""La guirnalda sin armado del motor y el arco clásico sin armado, para la guía de escena.
 
-Es una pieza de motor que llega aquí **sin el armado del motor** (``plan.pieza_del_motor_resuelta`` devuelve
-``None``) y se quedaba fuera de la guía con ``sin_dibujo``: una ``guirnalda`` de mezcla ``clasica`` o con su
-armado por partes (``armado_guirnalda``, ADR-0032) y sin ``armado_guirnalda_organica``. «Racimos de cuatro globos
-iguales en línea» (clasificador, ``referencias/variantes.ts``).
+Son piezas de motor que llegan aquí **sin el armado del motor guardado** (``plan.pieza_del_motor_resuelta``
+devuelve ``None``) y se quedarían fuera de la guía con ``sin_dibujo``. Sin armado guardado las cuenta y las cotiza
+la fórmula (``plan._armado_del_motor``, decisión del dueño del 2026-10-05, que deshizo la cuenta por la receta
+del motor del 2026-10-04).
 
-Una guirnalda **orgánica** sin armado ya no llega aquí: desde el 2026-10-04 la arma la resolución con la receta
-del motor (``plan.armado_guirnalda_de_receta``) y sale por ``pieza_del_motor_resuelta``, con los globos que se
-cotizan. Llega solo cuando esa receta no le toca (pasaría del tope de globos que el motor arma a la vez) y la
-resolución la cobra con la fórmula: entonces se dibuja igual que la clásica, con la receta del armado por partes
-sobre esa misma compra, en vez de quedarse en ``sin_dibujo``.
+- **La guirnalda**, clásica u orgánica: una ``guirnalda`` sin ``armado_guirnalda_organica``, de mezcla
+  ``clasica``, orgánica o con su armado por partes (``armado_guirnalda``, ADR-0032). «Racimos de cuatro globos
+  iguales en línea» (clasificador, ``referencias/variantes.ts``). Se dibuja con **exactamente lo que el plan
+  compra** (abajo).
+- **El arco clásico** (mezcla clásica o sin mezcla, ni orgánico ni asimétrico), con o sin ``patron_color``: se
+  dibuja como lo arma el motor del arco clásico con la receta que la confirmación le escribiría
+  (``plan.armado_arco_de_receta``: con su patrón como pista si lo trae, ``plan.armado_arco_de_patron``, y si no
+  por número de colores), la misma con la que arranca su editor. Es la forma y el orden de colores del arco,
+  **no su cuenta**: la cotización es la de la fórmula y la rejilla de su patrón, y en un arco angosto el motor
+  coloca menos globos (58 en 2,5 × 2,2 m, donde se cotizan 118). Vivió aquí hasta el 2026-10-04, cuando la
+  resolución pasó a contarlo con esa receta y la guía a leerlo por ``pieza_del_motor_resuelta``; vuelve con la
+  reversión, para que la imagen no pierda el arco.
 
-Un arco, un medio arco o una columna sin armado **no son de este módulo** y se devuelven con ``None``. El arco
-clásico que solo trae su patrón de color vivió aquí hasta el 2026-10-04; ahora lo arma la resolución del plan (``plan.armado_arco_de_patron``) y llega a la guía por ``pieza_del_motor_resuelta``,
-con los mismos globos que se cotizan.
+Un medio arco, una columna o un arco orgánico sin armado **no son de este módulo** y se devuelven con ``None``.
 
 **Aquí no se inventa ninguna pieza.** La guirnalda sale de la misma resolución que su hoja de armado (``plan.vista_previa_de_armado_guirnalda``): el
 armado por partes que trae, o la receta si no trae ninguno. Eso da **exactamente lo que el plan compra** —cada
 globo en un racimo, en el relleno, en un remate o suelto— y el color de cada globo de cada racimo ya puesto por
-el patrón (``filas_de_racimos``). Lo que se coloca aquí es solo dónde va cada uno:
+el patrón (``filas_de_racimos``). El arco sale del motor del arco clásico, por la misma puerta que lo cuenta
+cuando trae su armado (``plan.pieza_del_motor_resuelta``). Lo que se coloca aquí es solo dónde va cada globo de
+la guirnalda:
 
 - La **línea** es la de la guirnalda del motor (``guirnalda.espina.altura_guirnalda``): recta, con el
   ``desnivel_m``, la ``caida_m`` de cada festón (``arco_caido`` entre sus puntos de anclaje, la U invertida
@@ -33,7 +40,8 @@ el patrón (``filas_de_racimos``). Lo que se coloca aquí es solo dónde va cada
   en los huecos entre racimos, repartidos parejo», pasos de ``armado_guirnalda``), y los **remates** delante
   del racimo que su resolución nombra.
 
-**Las cuentas.** La guirnalda tiene exactamente los globos de su resolución por instancia.
+**Las cuentas.** La guirnalda tiene exactamente los globos de su resolución por instancia. El arco, los que
+coloca el motor con esa receta.
 
 Derivado y puro: sin catálogo, sin E/S, sin reloj; determinista. No entra en el plan ni en ``plan_hash``.
 """
@@ -56,6 +64,8 @@ from app.guia_piezas import ContextoPieza
 from app.plan import (
     OFICIALES_SIN_MOTOR,
     PlanResolutionError,
+    armado_arco_de_receta,
+    pieza_del_motor_resuelta,
     vista_previa_de_armado_guirnalda,
 )
 
@@ -299,21 +309,67 @@ def _guirnalda(estructura: Mapping[str, object], colores: Sequence[str]) -> list
     return [(x, y, r, hex_) for _z, _orden, x, y, r, hex_ in sorted(colocados)]
 
 
+# --- El arco clásico -------------------------------------------------------------------------------------
+
+
+def _arco(estructura: Mapping[str, object], colores: Sequence[str]) -> list[Globo] | None:
+    """El arco clásico sin armado guardado, como lo arma el motor con la receta de la confirmación.
+
+    ``None`` si la receta no le toca (``plan.armado_arco_de_receta``: un arco orgánico o asimétrico, un aro, una
+    pieza que ya trae su armado). El motor publica sus globos en píxeles de su lienzo con ``y`` hacia abajo; se
+    pasan a metros con la escala de su propio ``ancho_m`` sobre la anchura que ocupan, como ``guia_escena``
+    hace con el arco que sí trae su armado.
+    """
+    armado = armado_arco_de_receta(estructura)
+    del_motor = (
+        None if armado is None else pieza_del_motor_resuelta({**estructura, "armado_arco": armado})
+    )
+    if del_motor is None or del_motor[0] != "arco":
+        return None
+    pieza = del_motor[1]
+
+    def tono(indice: object) -> str:
+        """El color del material ``indice``; el primero si no apunta a ninguno, como ``guia_escena``."""
+        if isinstance(indice, int) and not isinstance(indice, bool) and 0 <= indice < len(colores):
+            return colores[indice]
+        return colores[0]
+
+    en_pixeles = [
+        (
+            float(cast(float, globo["x"])),
+            -float(cast(float, globo["y"])),
+            (float(cast(float, globo["rx"])) + float(cast(float, globo["ry"]))) / 2,
+            tono(globo.get("material")),
+        )
+        for globo in cast(Sequence[Mapping[str, object]], pieza["globos"])
+    ]
+    if not en_pixeles:
+        return None
+    anchura = max(x + r for x, _y, r, _t in en_pixeles) - min(x - r for x, _y, r, _t in en_pixeles)
+    escala = (_numero(pieza.get("ancho_m")) or 0.0) / anchura if anchura > 0 else 0.0
+    if escala <= 0:
+        return None
+    return [(x * escala, y * escala, r * escala, hex_) for x, y, r, hex_ in en_pixeles]
+
+
 def globos_de(
     estructura: Mapping[str, object],
     colores: Sequence[str],
     contexto: ContextoPieza | None = None,
 ) -> list[Globo] | None:
-    """Los globos de una guirnalda sin armado del motor (``es_guirnalda_por_racimos``); ``None`` para lo demás.
+    """Los globos de una guirnalda o un arco clásico sin armado del motor; ``None`` para lo demás.
 
-    ``contexto`` se acepta y no hace falta: el tamaño y el material de cada globo ya vienen de la leyenda de su
-    propia resolución (``vista_previa_de_armado_guirnalda``), la misma que el contexto resumiría.
+    ``contexto`` se acepta y no hace falta: el tamaño y el material de cada globo de la guirnalda ya vienen de
+    la leyenda de su propia resolución (``vista_previa_de_armado_guirnalda``), la misma que el contexto
+    resumiría, y los del arco, del motor.
     """
     del contexto
     if not colores:
         return None
     if es_guirnalda_por_racimos(estructura):
         return _guirnalda(estructura, colores)
+    if estructura.get("tipo") == "arco":
+        return _arco(estructura, colores)
     return None
 
 

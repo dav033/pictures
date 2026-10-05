@@ -200,8 +200,9 @@ def vista_previa_armado_arco(request: PlanArmadoArcoRequest) -> dict[str, object
     armado = (
         dict(request.armado_arco)
         if request.armado_arco is not None
-        # Un arco clásico con patrón de color tiene ya su receta: la que la resolución cuenta y cotiza cuando no
-        # trae armado (``plan.armado_arco_de_patron``). El editor arranca de ese arco y no de otro.
+        # Un arco clásico con patrón de color tiene ya su receta: la que la confirmación le escribe y la guía de
+        # escena dibuja (``plan.armado_arco_de_patron``). El editor arranca de ese arco y no de otro. Hasta que se
+        # guarde, la resolución lo cobra con la fórmula y la rejilla del patrón.
         else armado_arco_de_patron({k: v for k, v in estructura.items() if k != "armado_arco"})
         or _receta(estructura, opciones, len(tonos))
     )

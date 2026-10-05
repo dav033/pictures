@@ -8,13 +8,16 @@ la manda a FLUX por ``/edit`` en lugar de la foto, que nunca sale hacia el prove
 
 **Aquí no se coloca ningún globo.** Python ya los colocó y esto solo los lee:
 
-- Una pieza que arma un motor (arco, columna, arco/columna/guirnalda orgánica) sale de la **misma puerta que la
-  resolución** (``plan.pieza_del_motor_resuelta``, con su caché): son exactamente los globos que se contaron y se
-  cotizaron, uno por disco. La columna clásica suma su remate, que el motor no coloca en ``globos``.
+- Una pieza que arma un motor con su armado guardado (arco, columna, arco/columna/guirnalda orgánica) sale de la
+  **misma puerta que la resolución** (``plan.pieza_del_motor_resuelta``, con su caché): son exactamente los
+  globos que se contaron y se cotizaron, uno por disco. La columna clásica suma su remate, que el motor no coloca
+  en ``globos``.
 - Una pieza sin motor (la pared, el aro, el techo, el centro de mesa) sale de su dibujo esquemático
   (``dibujo_estructura.globos_de``), leído de la lista que se pinta, no del SVG.
-- Una pieza sin motor ni dibujo (el bouquet, la figura, la guirnalda clásica por partes, el arco que solo trae
-  patrón de color) sale de su módulo en ``app/guia_piezas`` (``globos_de_pieza``), que se descubre solo.
+- Una pieza sin motor ni dibujo (el bouquet, la figura, la guirnalda sin armado del motor, el arco clásico sin
+  armado, con o sin patrón de color) sale de su módulo en ``app/guia_piezas`` (``globos_de_pieza``), que se
+  descubre solo. El arco clásico sin armado lo cobra la fórmula y se dibuja con la receta del motor: su forma y
+  sus colores, no su cuenta (``guia_piezas/clasica.py``).
 - Lo que no reconoce nadie (o una pieza sin materiales) se devuelve en ``omitidas`` con su motivo: no se inventa
   una forma.
 

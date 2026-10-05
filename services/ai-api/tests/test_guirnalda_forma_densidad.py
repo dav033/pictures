@@ -5,7 +5,9 @@
   quintetos). Cotización y guía salen de la misma resolución.
 - La **orgánica** toma su línea del armado por partes que trae (recta, curva, ondulada, U invertida, arco caído)
   y su volumen del estilo del motor para su densidad (ligero / estándar / lleno).
-- Una orgánica **sin armado** la arma la resolución con la misma receta que la confirmación.
+- Una orgánica **sin armado del motor** la cuenta la fórmula (decisión del dueño del 2026-10-05, que deshizo la
+  cuenta por la receta del motor del 2026-10-04) y la guía la dibuja por racimos sobre esa compra. La receta es
+  lo que la confirmación le escribe; ya guardada, la cuenta el motor.
 
 Criterios: ``clasificador-decoraciones/docs/investigacion-guirnalda.md`` (§ Guirnalda en un plan).
 """
@@ -182,10 +184,15 @@ def test_la_densidad_de_la_organica_es_el_estilo_del_motor() -> None:
         assert armado["tamanos"] == media["tamanos"]
 
 
+def _con_su_receta(estructura: dict[str, object]) -> dict[str, object]:
+    """La guirnalda con la receta del motor que le escribe la confirmación, guardada: la cuenta el motor."""
+    return {**estructura, "armado_guirnalda_organica": _armado_de(estructura)}
+
+
 def test_la_organica_mas_densa_nunca_lleva_menos_globos() -> None:
     for mezcla in ("organica_fina", "organica_gruesa", "solo_grandes"):
         totales = [
-            contar_pieza(guirnalda(mezcla=mezcla, densidad=d)).total_vigente
+            contar_pieza(_con_su_receta(guirnalda(mezcla=mezcla, densidad=d))).total_vigente
             for d in ("sencilla", "media", "lujosa")
         ]
         assert totales == sorted(totales) and totales[0] < totales[-1], mezcla
@@ -197,28 +204,48 @@ def test_la_lujosa_que_pasaria_del_tope_va_con_el_volumen_estandar() -> None:
     [media] = _completados(guirnalda(densidad="media", medidas=larga))
     assert lujosa["armado"]["volumen"] == media["armado"]["volumen"]
     assert any("densidad lujosa" in aviso for aviso in lujosa["avisos"])
-    # Y nunca menos globos que la media.
-    assert contar_pieza(guirnalda(densidad="lujosa", medidas=larga)).total_vigente >= (
-        contar_pieza(guirnalda(densidad="media", medidas=larga)).total_vigente
-    )
+    # Y nunca menos globos que la media, contadas por el motor con ese armado guardado.
+    con_lujosa = {
+        **guirnalda(densidad="lujosa", medidas=larga),
+        "armado_guirnalda_organica": lujosa["armado"],
+    }
+    con_media = {
+        **guirnalda(densidad="media", medidas=larga),
+        "armado_guirnalda_organica": media["armado"],
+    }
+    assert contar_pieza(con_lujosa).total_vigente >= contar_pieza(con_media).total_vigente
 
 
 # --- La orgánica sin armado ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("forma", [None, "ondulada", "arco_caido"])
-def test_sin_armado_la_resolucion_la_arma_con_la_receta_de_la_confirmacion(
+def test_sin_armado_la_cuenta_la_formula_y_la_receta_es_la_de_la_confirmacion(
     forma: str | None,
 ) -> None:
+    """Sin armado del motor, la fórmula; la guía la dibuja por racimos con exactamente lo que se compra.
+
+    Del 2026-10-04 al 2026-10-05 la resolución la armaba con la receta del motor (lujosa de 2,5 m: 204 globos)
+    y contar la foto sobre ella tardaba minutos; el dueño lo revirtió. La receta sigue siendo la que la
+    confirmación le escribe, y con ella guardada cuenta el motor y la guía lo dibuja.
+    """
     extra = {} if forma is None else {"armado_guirnalda": _por_partes(forma)}
     estructura = guirnalda(**extra)
 
     assert armado_guirnalda_de_receta(estructura) == _armado_de(estructura)
     contada = contar_pieza(estructura)
-    assert contada.fuente == "motor"
+    assert (contada.fuente, contada.total_motor) == ("formula", None)
+    assert pieza_del_motor_resuelta(estructura) is None
     pieza = pieza_de_guia(estructura, ())
-    assert not isinstance(pieza, str) and pieza["fuente"] == "motor"
+    assert not isinstance(pieza, str) and pieza["fuente"] == "dibujo"
     assert len(cast(list[object], pieza["discos"])) == contada.total_vigente
+
+    armada = _con_su_receta(estructura)
+    del_motor = contar_pieza(armada)
+    assert del_motor.fuente == "motor"
+    pieza = pieza_de_guia(armada, ())
+    assert not isinstance(pieza, str) and pieza["fuente"] == "motor"
+    assert len(cast(list[object], pieza["discos"])) == del_motor.total_vigente
 
 
 def test_la_receta_no_es_para_lo_que_no_es_una_organica_sin_armado() -> None:

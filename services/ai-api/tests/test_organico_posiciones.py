@@ -12,9 +12,11 @@ foto ya decía dónde iba cada color y la receta lo perdía:
 - el desnivel de los extremos que leía la foto no llegaba (regresión del arreglo del 2026-09-28);
 - un medio arco derecho ponía la pata gruesa y los globos grandes en su punta libre.
 
-Y la regla que no se mueve: **una pieza sin lectura de la foto sale igual que antes**, porque los planes sin armado
-guardado se vuelven a contar con esta misma receta (``plan.armado_guirnalda_de_receta``) y un cambio ahí movería su
-conteo y su ``plan_hash``. Esa parte se comprueba contra lo que armaba el código anterior (abajo, ``ANTES``).
+Y la regla que no se mueve: **una pieza sin lectura de la foto sale igual que antes**, porque es lo que la
+confirmación sin foto le escribe y, ya guardado, lo que cuenta y firma la resolución: un cambio ahí movería el conteo
+y el ``plan_hash`` de los planes nuevos. (Del 2026-10-04 al 2026-10-05 la resolución contaba además con esta receta
+las guirnaldas orgánicas sin armado; el dueño lo revirtió el 2026-10-05 y hoy esas las cuenta la fórmula.) Esa parte
+se comprueba contra lo que armaba el código anterior (abajo, ``ANTES``).
 """
 
 from __future__ import annotations
@@ -243,9 +245,9 @@ def test_sin_lectura_la_receta_arma_cuenta_y_firma_lo_de_antes(
 ) -> None:
     """El mismo armado (byte a byte) y los mismos globos que antes, por las dos puertas de la receta.
 
-    ``completar`` es lo que se escribe al confirmar; ``armado_guirnalda_de_receta`` es con lo que la resolución
-    vuelve a contar una guirnalda que no trae armado guardado. Mismo armado y mismos globos es mismo conteo,
-    misma compra y mismo ``plan_hash``.
+    ``completar`` es lo que se escribe al confirmar; ``armado_guirnalda_de_receta`` es la misma receta fuera de la
+    confirmación. Mismo armado y mismos globos es mismo conteo, misma compra y mismo ``plan_hash`` una vez
+    guardado (sin armado guardado, la guirnalda la cuenta la fórmula).
     """
     [salida] = completados([estructura])
     huella, globos = ANTES[str(estructura["estructura_id"])]

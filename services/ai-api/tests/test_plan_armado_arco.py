@@ -103,18 +103,25 @@ def test_sin_armado_devuelve_la_receta_con_la_geometria_de_la_pieza() -> None:
     assert armado["materiales"] == [0, 1]
 
 
-def test_un_arco_de_patron_arranca_del_arco_que_se_cotiza() -> None:
-    """Con patrón de color y sin armado, la receta del editor es la que la resolución cuenta y cotiza."""
+def test_un_arco_de_patron_arranca_de_la_receta_de_su_patron() -> None:
+    """Con patrón de color, el editor arranca de la receta del patrón: la que la confirmación escribe.
+
+    Sin armado guardado la resolución cobra el arco con la fórmula y la rejilla del patrón (decisión del dueño
+    del 2026-10-05); con esa receta guardada, la cuenta y la cotiza el motor con los mismos globos que el editor.
+    """
     patron = {
         "version": "patron-color.v1",
         "origen": "decorador",
         "base": {"modo": "anillos", "secuencia": [1, 0], "largo": 1},
     }
     pieza = _arco_dos_colores(mezcla="clasica", patron_color=patron)
-    cotizado = pieza_del_motor_resuelta(pieza)
+    receta = armado_arco_de_patron(pieza)
+    assert receta is not None
+    assert pieza_del_motor_resuelta(pieza) is None
+    cotizado = pieza_del_motor_resuelta({**pieza, "armado_arco": receta})
     assert cotizado is not None
 
-    for guardado in (None, armado_arco_de_patron(pieza)):
+    for guardado in (None, receta):
         # También al pedir la receta de un arco que ya trae su armado guardado.
         con_armado = pieza if guardado is None else {**pieza, "armado_arco": guardado}
         resultado = vista_previa_armado_arco(_peticion(None, estructuras=(con_armado,)))

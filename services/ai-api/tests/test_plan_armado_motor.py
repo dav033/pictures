@@ -386,7 +386,14 @@ async def test_un_arco_con_armado_cuenta_los_globos_que_el_motor_coloco() -> Non
     assert pieza["eje_m"] != 6.21 and pieza["total_unidades"] != 119
 
 
-# --- Un arco clásico que solo trae su patrón: también cuenta el motor -----------------------------
+# --- Un arco clásico sin armado: la fórmula; con el armado de su receta, el motor -------------------
+#
+# Del 2026-10-04 (``6fc3e95``) al 2026-10-05 la resolución armaba con la receta del motor el arco clásico que
+# llegaba sin ``armado_arco`` y cobraba lo que esa receta colocaba. El dueño lo revirtió el 2026-10-05: por
+# debajo de 2,6 m de ancho la receta arma el arco en tríos (58 globos donde la fórmula cuenta 118), reparte
+# los colores por igual e ignora los tamaños que exige el cliente. Sin armado guardado vuelve la fórmula (con
+# ``patron_color``, la rejilla de su patrón), como en producción (``c0ebd23``). La receta sigue siendo lo que
+# la confirmación escribe y de donde arrancan el editor y la guía; guardada en la pieza, la cuenta el motor.
 
 
 def patron_anillos(*secuencia: int) -> dict[str, object]:
@@ -398,48 +405,61 @@ def patron_anillos(*secuencia: int) -> dict[str, object]:
 
 
 @pytest.mark.anyio
-async def test_un_arco_clasico_con_patron_y_sin_armado_cuenta_los_globos_del_motor() -> None:
-    """Lo que se cotiza es lo que el motor coloca, no la fórmula (2026-10-04).
+async def test_un_arco_clasico_con_patron_y_sin_armado_cuenta_con_la_rejilla_de_su_patron() -> None:
+    """Sin ``armado_arco`` se cobra la fórmula con la rejilla del patrón; guardando la receta, el motor.
 
-    El arco no trae ``armado_arco``: lo arma la receta del motor con su patrón como pista
-    (``armado_arco_de_patron``), la misma puerta por la que la guía de escena lo dibuja. Antes se contaba con
-    la fórmula y el plan cobraba un arco que nadie arma mientras la guía dibujaba otro.
+    3 × 2,4 m clásico en media son 132 globos por la fórmula, los de producción (``c0ebd23``): la rejilla de
+    anillos de dos colores los reparte 68/64. La receta del patrón (``armado_arco_de_patron``) coloca 88: es lo
+    que la confirmación escribe en la pieza y, ya guardada, lo que se cobra.
     """
     pieza_plan = arco(mezcla="clasica", patron_color=patron_anillos(0, 1))
+
+    resuelto = await resolver(plan(pieza_plan))
+    pieza = estructura(resuelto, ARCO)
+
+    assert (pieza["eje_m"], pieza["total_unidades"]) == (6.21, 132)
+    assert unidades_por_tamano_y_color(pieza) == {(12.0, "dorado"): 68, (12.0, "blanco"): 64}
+    [publicado] = cast(list[dict[str, Any]], resuelto["patrones_color"])
+    assert {fila["color"]: fila["unidades_total"] for fila in publicado["conteo"]} == {
+        "dorado": 68,
+        "blanco": 64,
+    }
+    # Nada del motor: ni pieza para la guía por la puerta de la resolución, ni hoja del instalador.
+    assert pieza_del_motor_resuelta(pieza_plan) is None
+    assert "armados_arco" not in resuelto
+    assert "armado_arco" not in estructura_del_plan(resuelto)
+
+    # La receta del patrón sigue ahí, y con ella guardada en la pieza cuenta el motor.
     armado = armado_arco_de_patron(pieza_plan)
     assert armado is not None and armado["materiales"] == [0, 1]
     del_motor = armado_arco_resuelto(
         EstructuraArco(es_arco=True, materiales=COLORES_ARCO), armado, MERMA
     )
-
-    resuelto = await resolver(plan(pieza_plan))
-    pieza = estructura(resuelto, ARCO)
-
-    assert pieza["total_unidades"] == len(cast(list[object], del_motor["globos"]))
-    assert unidades_por_tamano_y_color(pieza) == conteo_del_motor(del_motor, COLORES_ARCO)
-    assert pieza["eje_m"] == round(cast(float, del_motor["largo_m"]), 2)
-    # La guía de escena lee la misma pieza: los mismos globos que se cotizaron.
-    de_la_guia = pieza_del_motor_resuelta(pieza_plan)
-    assert de_la_guia is not None and de_la_guia[0] == "arco"
-    assert len(cast(list[object], de_la_guia[1]["globos"])) == pieza["total_unidades"]
-    # El armado es derivado: el plan sigue sin él y la hoja del instalador sí se publica.
-    assert "armado_arco" not in estructura_del_plan(resuelto)
-    publicados = cast(list[dict[str, Any]], resuelto["armados_arco"])
+    con_armado = await resolver(plan({**pieza_plan, "armado_arco": armado}))
+    armada = estructura(con_armado, ARCO)
+    assert armada["total_unidades"] == len(cast(list[object], del_motor["globos"])) == 88
+    assert unidades_por_tamano_y_color(armada) == conteo_del_motor(del_motor, COLORES_ARCO)
+    assert armada["eje_m"] == round(cast(float, del_motor["largo_m"]), 2)
+    publicados = cast(list[dict[str, Any]], con_armado["armados_arco"])
     assert [item["estructura_id"] for item in publicados] == [ARCO]
-    assert sum(int(item["cantidad"]) for item in publicados[0]["conteo"]) == pieza["total_unidades"]
+    assert sum(int(item["cantidad"]) for item in publicados[0]["conteo"]) == 88
+
+
+#: Lo que la fórmula cobra por un arco clásico de 3 × 2,4 m por densidad, sin armado: los números de producción
+#: (``c0ebd23``), escritos a mano. Con la receta guardada el motor coloca 68 / 88 / 88 (``DENSIDAD_DEL_ARCO``).
+FORMULA_DEL_ARCO_CLASICO = {"sencilla": 103, "media": 132, "lujosa": 165}
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("densidad", ["sencilla", "media", "lujosa"])
 @pytest.mark.parametrize("colores", [1, 2, 3])
-async def test_un_arco_clasico_sin_patron_ni_armado_lo_arma_la_receta(
+async def test_un_arco_clasico_sin_patron_ni_armado_cuenta_con_la_formula(
     densidad: str, colores: int
 ) -> None:
-    """Sin patrón y sin armado, el arco lo arma la receta por número de colores (2026-10-04).
+    """Sin patrón y sin armado, la fórmula; la receta por número de colores es lo que escribe la confirmación.
 
-    Es el mismo armado que le escribe la confirmación (``completar`` sin pistas), así que la cotización, la hoja
-    del instalador y la guía de escena salen de un solo arco. Antes se cobraba con la fórmula —118 globos en el
-    arco de 2,5 × 2,2 m de los vectores dorados, donde el motor coloca 58— y la guía lo omitía (``sin_dibujo``).
+    Con esa receta guardada en ``armado_arco`` la pieza la cuenta el motor, y la cotización, la hoja del
+    instalador y la guía salen de ese armado. Sin ella, el arco no es del motor: ni lo cuenta ni lo publica.
     """
     tres = [material("dorado", 0.5, principal=True), material("blanco", 0.3)]
     tres.append(material("rosado", 0.2))
@@ -450,14 +470,26 @@ async def test_un_arco_clasico_sin_patron_ni_armado_lo_arma_la_receta(
     armado = armado_arco_de_receta(pieza_plan)
     assert confirmado["clave"] == "armado_arco" and confirmado["armado"] == armado
 
+    contada = contar_pieza(pieza_plan)
+    assert (contada.fuente, contada.total_motor) == ("formula", None)
+    assert contada.total_vigente == FORMULA_DEL_ARCO_CLASICO[densidad]
     resuelto = await resolver(plan(pieza_plan))
-    pieza = estructura(resuelto, ARCO)
-    de_la_guia = pieza_del_motor_resuelta(pieza_plan)
+    assert estructura(resuelto, ARCO)["total_unidades"] == FORMULA_DEL_ARCO_CLASICO[densidad]
+    assert pieza_del_motor_resuelta(pieza_plan) is None
+    assert "armados_arco" not in resuelto
+
+    con_armado = {**pieza_plan, "armado_arco": confirmado["armado"]}
+    de_la_guia = pieza_del_motor_resuelta(con_armado)
     assert de_la_guia is not None and de_la_guia[0] == "arco"
-    assert len(cast(list[object], de_la_guia[1]["globos"])) == pieza["total_unidades"]
-    publicados = cast(list[dict[str, Any]], resuelto["armados_arco"])
-    assert sum(int(item["cantidad"]) for item in publicados[0]["conteo"]) == pieza["total_unidades"]
-    assert "armado_arco" not in estructura_del_plan(resuelto)
+    armado_resuelto = await resolver(plan(con_armado))
+    total = estructura(armado_resuelto, ARCO)["total_unidades"]
+    assert (
+        total
+        == len(cast(list[object], de_la_guia[1]["globos"]))
+        == contar_pieza(con_armado).total_vigente
+    )
+    publicados = cast(list[dict[str, Any]], armado_resuelto["armados_arco"])
+    assert sum(int(item["cantidad"]) for item in publicados[0]["conteo"]) == total
 
 
 def test_el_arco_sin_patron_que_no_es_clasico_sigue_sin_receta() -> None:
@@ -472,6 +504,7 @@ def test_el_arco_sin_patron_que_no_es_clasico_sigue_sin_receta() -> None:
 
 @pytest.mark.anyio
 async def test_el_arco_de_patron_reparte_los_colores_en_el_orden_del_patron() -> None:
+    """La receta del patrón, guardada como la escribe la confirmación, sigue el orden del patrón."""
     tres = ("dorado", "blanco", "rosado")
     materiales = [material(tres[0], 0.34, principal=True), material(tres[1], 0.33)]
     materiales.append(material(tres[2], 0.33))
@@ -486,7 +519,7 @@ async def test_el_arco_de_patron_reparte_los_colores_en_el_orden_del_patron() ->
             EstructuraArco(es_arco=True, materiales=tres), armado, MERMA
         )
         cuentas[secuencia] = unidades_por_tamano_y_color(
-            estructura(await resolver(plan(pieza_plan)), ARCO)
+            estructura(await resolver(plan({**pieza_plan, "armado_arco": armado})), ARCO)
         )
         assert cuentas[secuencia] == conteo_del_motor(del_motor, tres)
     # El color que abre el patrón es el que más globos lleva: el primer anillo y cada tercero.
@@ -510,10 +543,11 @@ DENSIDAD_DEL_ARCO = {
 async def test_la_densidad_del_arco_de_patron_mueve_sus_globos_a_lo_ancho(
     medidas: tuple[float, float],
 ) -> None:
-    """Sencilla ≤ media ≤ lujosa, contados por el motor y nunca por la fórmula; la guía dibuja lo que se cobra.
+    """Sencilla ≤ media ≤ lujosa en la receta del patrón; ya guardada la cuenta el motor, y la guía la dibuja.
 
     La densidad del arco clásico es «globos por capa» (``investigacion-arcos.md`` del clasificador): una capa
-    menos o una más que ``media``, que es el arco de siempre.
+    menos o una más que ``media``, que es el arco de siempre. Sin el armado guardado el arco lo cuenta la
+    fórmula (``test_un_arco_clasico_con_patron_y_sin_armado_cuenta_con_la_rejilla_de_su_patron``).
     """
     ancho, alto = medidas
     totales: list[int] = []
@@ -527,12 +561,14 @@ async def test_la_densidad_del_arco_de_patron_mueve_sus_globos_a_lo_ancho(
         armado = armado_arco_de_patron(pieza_plan)
         assert armado is not None
         assert cast(Mapping[str, object], armado["geometria"])["globosAncho"] == globos_ancho
-        contada = contar_pieza(pieza_plan)
+        assert contar_pieza(pieza_plan).fuente == "formula"
+        con_armado = {**pieza_plan, "armado_arco": armado}
+        contada = contar_pieza(con_armado)
         assert contada.fuente == "motor"
         assert contada.total_vigente == globos != contada.total_formula
-        pieza = estructura(await resolver(plan(pieza_plan)), ARCO)
+        pieza = estructura(await resolver(plan(con_armado)), ARCO)
         assert pieza["total_unidades"] == globos
-        de_la_guia = pieza_del_motor_resuelta(pieza_plan)
+        de_la_guia = pieza_del_motor_resuelta(con_armado)
         assert de_la_guia is not None
         assert len(cast(list[object], de_la_guia[1]["globos"])) == globos
         totales.append(globos)
@@ -577,13 +613,14 @@ def completados(*estructuras: dict[str, object]) -> list[dict[str, Any]]:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("densidad", ["sencilla", "media", "lujosa"])
-async def test_la_confirmacion_arma_el_arco_de_patron_igual_que_la_resolucion(
+async def test_la_confirmacion_arma_el_arco_de_patron_con_la_receta_del_patron(
     densidad: str,
 ) -> None:
-    """Sin foto, la confirmación usa el ``patron_color`` del plan como pista, como la resolución.
+    """Sin foto, la confirmación usa el ``patron_color`` del plan como pista: la receta del editor y la guía.
 
     Armaba por el número de colores (la espiral del diseñador) y escribía en el plan un arco distinto del que
-    la resolución contaba con ese patrón y del que la rejilla de patrón enseñaba.
+    la rejilla de patrón enseñaba y del que el editor y la guía de escena parten (``armado_arco_de_patron``).
+    Lo que se cobra cambia al escribirlo: sin él, la fórmula con la rejilla del patrón; con él, el motor.
     """
     secuencia = (1, 0, 0)
     pieza_plan = arco(
@@ -597,12 +634,17 @@ async def test_la_confirmacion_arma_el_arco_de_patron_igual_que_la_resolucion(
     (completado,) = completados(pieza_plan)
     assert completado["clave"] == "armado_arco"
     assert completado["armado"] == del_patron
-    # Y lo que se cobra con el armado ya escrito en el plan es lo mismo que sin él.
-    sin_armado = estructura(await resolver(plan(pieza_plan)), ARCO)
+
+    sin_armado = await resolver(plan(pieza_plan))
+    assert "armados_arco" not in sin_armado
+    assert contar_pieza(pieza_plan).fuente == "formula"
     con_armado = estructura(
         await resolver(plan({**pieza_plan, "armado_arco": completado["armado"]})), ARCO
     )
-    assert unidades_por_tamano_y_color(con_armado) == unidades_por_tamano_y_color(sin_armado)
+    del_motor = armado_arco_resuelto(
+        EstructuraArco(es_arco=True, materiales=COLORES_ARCO), del_patron, MERMA
+    )
+    assert unidades_por_tamano_y_color(con_armado) == conteo_del_motor(del_motor, COLORES_ARCO)
 
 
 def test_un_arco_asimetrico_lo_arma_el_organico_con_las_patas_distintas() -> None:

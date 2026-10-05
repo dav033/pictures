@@ -329,10 +329,13 @@ def _materiales_por_racimo(resuelto: Mapping[str, object]) -> list[list[int]]:
 
 @pytest.mark.anyio
 async def test_sin_armado_la_confirmacion_da_el_patron_de_antes() -> None:
-    # La orgánica la cuenta la receta de su motor: no recibe patrón sugerido (decisión 3, 2026-10-05).
+    # La orgánica sin armado del motor la cuenta la fórmula (decisión del dueño del 2026-10-05, que deshizo la
+    # cuenta por la receta del motor): recibe el preset de siempre, el confeti de su mezcla de tamaños.
     organica = await resolver(plan(), completar_patrones=True)
-    assert "patron_color" not in estructura_del_plan(organica)
-    # La clásica (por partes) sí, el de antes: un solo tamaño, la espiral de cuartetos.
+    preset = cast(dict[str, object], estructura_del_plan(organica)["patron_color"])
+    assert cast(Mapping[str, object], preset["base"])["modo"] == "aleatorio"
+    assert "globos_por_racimo" not in preset
+    # La clásica (por partes) también, el de antes: un solo tamaño, la espiral de cuartetos.
     resuelto = await resolver(plan(guirnalda(mezcla="clasica")), completar_patrones=True)
     patron = cast(dict[str, object], estructura_del_plan(resuelto)["patron_color"])
     assert cast(Mapping[str, object], patron["base"])["modo"] == "espiral"
@@ -341,7 +344,7 @@ async def test_sin_armado_la_confirmacion_da_el_patron_de_antes() -> None:
 
 @pytest.mark.anyio
 async def test_una_guirnalda_armada_recibe_el_patron_por_racimo_y_lo_sigue() -> None:
-    # La clásica: el patrón por racimo es de los racimos que se compran (la orgánica la cuenta el motor).
+    # La clásica: el patrón por racimo es de los racimos que se compran.
     trio = _armado(racimo={"unidad": "trio", "tamano_pulg_base": 12}, relleno=None)
     resuelto = await resolver(
         plan(guirnalda(armado_guirnalda=trio, densidad="sencilla", mezcla="clasica")),

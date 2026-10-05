@@ -1,10 +1,12 @@
-"""La guirnalda clásica y el arco de patrón en la guía de escena (``app/guia_piezas/clasica.py``).
+"""La guirnalda clásica y el arco clásico sin armado en la guía de escena (``app/guia_piezas/clasica.py``).
 
 - **La guirnalda clásica** (mezcla ``clasica`` o con armado por partes, sin armado del motor) sale con los
   globos que el plan compra, racimo por racimo, con el color que el patrón le pone a cada globo.
-- **El arco que solo trae su patrón** ya no es de este módulo: lo arma la resolución del plan con el motor del
-  arco clásico (``plan.armado_arco_de_patron``), con los colores en el orden del patrón, y la guía lo dibuja
-  por la puerta del motor con **los mismos globos que se cotizan**.
+- **El arco clásico sin armado**, con o sin patrón, vuelve a este módulo (decisión del dueño del 2026-10-05):
+  la resolución lo cobra con la fórmula y la rejilla de su patrón, y la guía lo dibuja con la receta del motor
+  del arco clásico (``plan.armado_arco_de_receta``), con los colores en el orden del patrón, para que la imagen
+  no lo pierda. Es la forma del arco, no su cuenta: en 3 × 2,4 m el motor coloca 88 y se cotizan 132. Con el
+  armado guardado sale por la puerta del motor de la resolución, con **los mismos globos que se cotizan**.
 - Lo que no es de este módulo devuelve ``None``, y todo es determinista.
 """
 
@@ -20,7 +22,11 @@ import pytest
 from app.guia_escena import PlanGuiaEscenaRequest, guia_escena, hex_del_material, pieza_de_guia
 from app.guia_piezas import clasica
 from app.guia_piezas.clasica import globos_de
-from app.plan import pieza_del_motor_resuelta, vista_previa_de_armado_guirnalda
+from app.plan import (
+    armado_arco_de_receta,
+    pieza_del_motor_resuelta,
+    vista_previa_de_armado_guirnalda,
+)
 from tests.guirnalda_datos import lineas, material, plan, resolver
 
 GUIRNALDA = "EST_01_GUIRNALDA"
@@ -133,8 +139,11 @@ def _comprados(estructura: dict[str, object]) -> Counter[str]:
         _guirnalda(),
         _guirnalda(patron_color=ANILLOS, colores=("rosado", "blanco", "dorado")),
         _pieza(GUIRNALDA, "guirnalda", None, {"largo_m": 2.5}),
+        _guirnalda(mezcla="organica_fina"),
+        _arco(patron_color=ANILLOS),
+        _arco(),
     ],
-    ids=["receta", "patron", "sin-oficial"],
+    ids=["receta", "patron", "sin-oficial", "organica", "arco-patron", "arco-sin-patron"],
 )
 def test_lo_que_caia_sin_dibujo_ahora_tiene_discos(estructura: dict[str, object]) -> None:
     # Sin armado del motor, la puerta de la resolución no la arma y no tiene dibujo esquemático.
@@ -259,18 +268,25 @@ def test_relleno_y_remates_entran_en_la_guirnalda() -> None:
     assert len(radios) >= 3
 
 
-# --- El arco que solo trae su patrón: lo arma la resolución -------------------------------------------
+# --- El arco clásico sin armado: lo dibuja la receta del motor, lo cobra la fórmula ---------------------
 
 
-def _discos_del_motor(estructura: Mapping[str, object]) -> list[tuple[float, float, float, str]]:
-    """Los discos de la guía de un arco de patrón, que salen de la puerta del motor de la resolución."""
+def _discos_del_arco(estructura: Mapping[str, object]) -> list[tuple[float, float, float, str]]:
+    """Los discos de la guía de un arco clásico sin armado, que salen de este módulo con la receta del motor."""
     pieza = pieza_de_guia(estructura, ())
     assert not isinstance(pieza, str), pieza
-    assert pieza["fuente"] == "motor"
+    assert pieza["fuente"] == "dibujo"
     return [
         (float(d["x_m"]), float(d["y_m"]), float(d["r_m"]), str(d["hex"]))
         for d in cast(list[dict[str, Any]], pieza["discos"])
     ]
+
+
+def _con_su_receta(estructura: Mapping[str, object]) -> dict[str, object]:
+    """El arco con la receta que la confirmación le escribe, guardada en ``armado_arco``."""
+    armado = armado_arco_de_receta(estructura)
+    assert armado is not None
+    return {**estructura, "armado_arco": armado}
 
 
 def _pie_izquierdo(globos: Sequence[tuple[float, float, float, str]]) -> str:
@@ -279,13 +295,21 @@ def _pie_izquierdo(globos: Sequence[tuple[float, float, float, str]]) -> str:
     return min((g for g in globos if g[0] < centro), key=lambda g: (g[1], g[0]))[3]
 
 
-def test_el_arco_de_patron_sale_de_la_puerta_del_motor() -> None:
-    estructura = _arco(patron_color=ANILLOS)
-    # Ya no cae a este módulo: la resolución lo arma con el motor del arco clásico.
-    assert globos_de(estructura, _colores(estructura)) is None
-    del_motor = pieza_del_motor_resuelta(estructura)
-    assert del_motor is not None and del_motor[0] == "arco"
-    assert _discos_del_motor(estructura)
+@pytest.mark.parametrize("patron", [ANILLOS, None], ids=["patron", "sin-patron"])
+def test_el_arco_sin_armado_lo_dibuja_este_modulo_con_la_receta_del_motor(
+    patron: dict[str, object] | None,
+) -> None:
+    estructura = _arco() if patron is None else _arco(patron_color=patron)
+    # La resolución no lo arma: sin armado guardado lo cobra la fórmula.
+    assert pieza_del_motor_resuelta(estructura) is None
+    globos = globos_de(estructura, _colores(estructura))
+    # Lo dibuja este módulo, con los globos que coloca el motor con la receta de la confirmación.
+    receta = pieza_del_motor_resuelta(_con_su_receta(estructura))
+    assert receta is not None and receta[0] == "arco"
+    assert globos is not None and len(globos) == len(cast(list[object], receta[1]["globos"]))
+    assert len(_discos_del_arco(estructura)) == len(globos)
+    # Con la receta guardada en la pieza ya no es de este módulo: sale por la puerta del motor.
+    assert globos_de(_con_su_receta(estructura), _colores(estructura)) is None
 
 
 def test_el_arco_asimetrico_no_es_del_arco_de_patrones() -> None:
@@ -301,25 +325,37 @@ def test_el_arco_asimetrico_no_es_del_arco_de_patrones() -> None:
     assert pieza_del_motor_resuelta(estructura) is None
 
 
-def test_el_arco_de_la_guia_tiene_exactamente_lo_que_el_plan_compra() -> None:
-    """La guía y la cotización del mismo plan: los mismos globos, del mismo color (antes, 88 frente a 132)."""
+def test_el_arco_sin_armado_se_dibuja_con_su_receta_y_se_cotiza_con_la_formula() -> None:
+    """Sin armado, la guía dibuja el arco del motor (88 globos en 3 × 2,4 m) y el plan cobra la fórmula (132).
+
+    Es lo que había antes del 2026-10-04 y lo que el dueño decidió el 2026-10-05: la guía conserva la forma y
+    el orden de colores del arco, no su cuenta. Con la receta guardada, guía y cotización vuelven a ser los
+    mismos globos, del mismo color.
+    """
     for estructura in (
         _arco(patron_color=ANILLOS),
         _arco(patron_color=_patron({"modo": "anillos", "secuencia": [2, 0, 1], "largo": 1})),
         _arco(colores=("dorado", "blanco"), patron_color=ESPIRAL),
     ):
-        discos = _discos_del_motor(estructura)
-        assert Counter(tono for *_xyr, tono in discos) == _comprados(estructura)
+        discos = _discos_del_arco(estructura)
+        assert len(discos) == 88
+        assert sum(_comprados(estructura).values()) == 132
+        armado = _con_su_receta(estructura)
+        pieza = pieza_de_guia(armado, ())
+        assert not isinstance(pieza, str) and pieza["fuente"] == "motor"
+        del_motor = Counter(str(d["hex"]) for d in cast(list[dict[str, Any]], pieza["discos"]))
+        assert del_motor == Counter(tono for *_xyr, tono in discos)
+        assert del_motor == _comprados(armado)
 
 
 def test_el_arco_sale_del_motor_con_los_colores_en_el_orden_del_patron() -> None:
     rosado, blanco, dorado = _colores(_arco())
 
-    globos = _discos_del_motor(_arco(patron_color=ANILLOS))
+    globos = _discos_del_arco(_arco(patron_color=ANILLOS))
     assert {tono for *_xyr, tono in globos} == {rosado, blanco, dorado}
     assert _pie_izquierdo(globos) == rosado
 
-    al_reves = _discos_del_motor(
+    al_reves = _discos_del_arco(
         _arco(patron_color=_patron({"modo": "anillos", "secuencia": [2, 0, 1], "largo": 1}))
     )
     assert _pie_izquierdo(al_reves) == dorado
@@ -340,7 +376,7 @@ def test_dos_materiales_del_mismo_color_no_se_confunden_en_el_arco() -> None:
         patron_color=_patron({"modo": "anillos", "secuencia": [1, 0], "largo": 1}),
     )
     # Mismo color: el disco no distingue el material, pero el arco se arma con los dos.
-    assert len(_discos_del_motor(estructura)) > 0
+    assert len(_discos_del_arco(estructura)) > 0
 
 
 # --- Lo que no es de este módulo -----------------------------------------------------------------------
@@ -350,7 +386,7 @@ def test_dos_materiales_del_mismo_color_no_se_confunden_en_el_arco() -> None:
     "estructura",
     [
         _pieza(GUIRNALDA, "guirnalda", "techo_globos", {"ancho_m": 3, "alto_m": 3}),
-        _arco(),
+        _pieza(ARCO, "arco", "aro_circular", {"ancho_m": 2, "alto_m": 2}, patron_color=ANILLOS),
         _arco(mezcla="organica_fina", patron_color=ANILLOS),
         _pieza(
             "EST_03_SEMIARCO",
@@ -364,7 +400,7 @@ def test_dos_materiales_del_mismo_color_no_se_confunden_en_el_arco() -> None:
     ],
     ids=[
         "techo",
-        "arco-sin-patron",
+        "aro",
         "arco-organico",
         "semiarco",
         "columna",
@@ -387,6 +423,7 @@ def test_con_el_armado_del_motor_manda_el_motor() -> None:
     )
     for estructura in con_armado:
         assert not clasica.es_guirnalda_clasica(estructura)
+        assert globos_de(estructura, _colores(estructura)) is None
         pieza = pieza_de_guia(estructura, ())
         assert not isinstance(pieza, str) and pieza["fuente"] == "motor"
 
@@ -427,7 +464,8 @@ def test_la_guia_de_escena_las_incluye_y_no_las_omite() -> None:
     assert resultado["omitidas"] == []
     piezas = {p["estructura_id"]: p for p in cast(list[dict[str, Any]], resultado["piezas"])}
     assert set(piezas) == {GUIRNALDA, ARCO}
-    # La guirnalda clásica sale de este módulo; el arco de patrón, de la puerta del motor de la resolución.
+    # Las dos salen de este módulo: la guirnalda clásica con lo que compra y el arco de patrón, que llega sin
+    # armado, con la receta del motor.
     assert piezas[GUIRNALDA]["fuente"] == "dibujo"
-    assert piezas[ARCO]["fuente"] == "motor"
+    assert piezas[ARCO]["fuente"] == "dibujo"
     assert resultado["total_discos"] == sum(len(p["discos"]) for p in piezas.values())

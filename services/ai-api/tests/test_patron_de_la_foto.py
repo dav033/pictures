@@ -347,16 +347,23 @@ def test_el_armado_del_modelo_manda_sobre_la_lectura() -> None:
 
 
 def test_la_lectura_del_patron_no_toca_el_remate() -> None:
-    """El patrón es una cosa y el remate otra: la lectura del color no decide si la columna lleva globo."""
-    [con_pista] = _completar(
-        [_estructura("columna", ["blanco", "dorado"])],
-        [_pista("anillos", ["blanco", "dorado"])],
-    )
-    [sin_pista] = _completar([_estructura("columna", ["blanco", "dorado"])])
-    remate_con = cast("dict[str, Any]", con_pista["armado"])["remate"]
-    remate_sin = cast("dict[str, Any]", sin_pista["armado"])["remate"]
-    assert remate_con == remate_sin
-    assert remate_con["tipo"] == "globo" and remate_con["tamano"] == 24
+    """El patrón es una cosa y el remate otra: la lectura del color no decide si la columna lleva globo.
+
+    Se comprueba en los dos sentidos: sin lectura del remate la columna no se corona (2026-10-04, ver
+    ``test_sin_lectura_del_remate_la_columna_no_se_corona``) lea o no la foto su patrón, y con un globo leído
+    lo lleva igual con patrón que sin él.
+    """
+    for remates, tipo in (((), "ninguno"), ((_remate("globo", color="dorado"),), "globo")):
+        [con_pista] = _completar(
+            [_estructura("columna", ["blanco", "dorado"])],
+            [_pista("anillos", ["blanco", "dorado"])],
+            remates=remates,
+        )
+        [sin_pista] = _completar([_estructura("columna", ["blanco", "dorado"])], remates=remates)
+        remate_con = cast("dict[str, Any]", con_pista["armado"])["remate"]
+        remate_sin = cast("dict[str, Any]", sin_pista["armado"])["remate"]
+        assert remate_con == remate_sin, tipo
+        assert remate_con["tipo"] == tipo and remate_con["tamano"] == 24, tipo
 
 
 def test_los_globos_por_racimo_de_la_foto_acotados_por_el_motor() -> None:
@@ -444,6 +451,10 @@ def test_el_espejo_leido_llega_al_armado_del_arco() -> None:
 
 # --- La guirnalda orgánica: no tiene patrón, tiene reparto -----------------------------
 
+#: La mezcla de una guirnalda **orgánica**. La de ``_estructura`` (``clasica``) es la del armado por partes de
+#: ADR-0032, que no es pieza de este motor (``armado_estructura._pieza_del_plan``) y ``completar`` no la arma.
+ORGANICA = "organica_fina"
+
 
 def test_la_guirnalda_reparte_como_la_foto_leyo() -> None:
     """Los tres repartos del motor dicen lo mismo que tres de los ocho modos de la foto."""
@@ -459,7 +470,8 @@ def test_la_guirnalda_reparte_como_la_foto_leyo() -> None:
         if modo == "zonas":
             pista["zonas"] = [{"color": "dorado", "ancla": "centro", "extension": 30}]
         [completado] = _completar(
-            [_estructura("guirnalda", ["blanco", "dorado"])], [cast("dict[str, object]", pista)]
+            [_estructura("guirnalda", ["blanco", "dorado"], mezcla=ORGANICA)],
+            [cast("dict[str, object]", pista)],
         )
         armado = cast("dict[str, Any]", completado["armado"])
         assert armado["colores"]["reparto"] == reparto, modo
@@ -473,7 +485,7 @@ def test_un_modo_que_una_guirnalda_no_puede_armar_se_dice() -> None:
         if modo == "espiral":
             pista["globos_por_racimo"] = 4
         [completado] = _completar(
-            [_estructura("guirnalda", ["blanco", "dorado", "rosado"])],
+            [_estructura("guirnalda", ["blanco", "dorado", "rosado"], mezcla=ORGANICA)],
             [cast("dict[str, object]", pista)],
         )
         assert completado["origen"] == "receta", modo
@@ -484,7 +496,7 @@ def test_un_modo_que_una_guirnalda_no_puede_armar_se_dice() -> None:
 
 def test_la_paleta_de_la_guirnalda_sigue_el_orden_de_la_foto() -> None:
     [completado] = _completar(
-        [_estructura("guirnalda", ["blanco", "dorado"])],
+        [_estructura("guirnalda", ["blanco", "dorado"], mezcla=ORGANICA)],
         [_pista("anillos", ["dorado", "blanco"])],
     )
     paleta = cast(
@@ -496,7 +508,7 @@ def test_la_paleta_de_la_guirnalda_sigue_el_orden_de_la_foto() -> None:
 def test_los_pesos_de_la_guirnalda_son_del_plan_no_de_la_foto() -> None:
     """El reparto dice dónde va cada color; cuánto se compra de cada uno lo dice el plan."""
     [con_pista] = _completar(
-        [_estructura("guirnalda", ["blanco", "dorado"])],
+        [_estructura("guirnalda", ["blanco", "dorado"], mezcla=ORGANICA)],
         [_pista("aleatorio", ["blanco", "dorado"], pesos=[90, 10])],
     )
     paleta = cast(
@@ -524,11 +536,18 @@ def test_una_columna_que_la_foto_ve_sin_remate_queda_sin_remate() -> None:
     assert completado["origen"] == "referencia"
 
 
-def test_sin_lectura_del_remate_sigue_el_globo_del_motor() -> None:
-    """Decisión del 2026-10-02: ausente es «no se ve la punta», y entonces manda el valor del diseñador."""
+def test_sin_lectura_del_remate_la_columna_no_se_corona() -> None:
+    """Sin lectura del remate, **sin remate** (2026-10-04; antes, decisión del 2026-10-02, el globo del motor).
+
+    El plan no tiene campo con el que pedir el remate, y coronar una columna que nadie pidió cobraba globos
+    inventados: es el criterio del clasificador (su vista previa solo corona la ficha «con-remate») y el de la
+    columna orgánica (``armado_estructura._receta``, ``test_armado_semiarco_columna``). El tamaño y la
+    cantidad del motor se quedan en el armado para cuando el decorador lo encienda.
+    """
     [completado] = _completar([_estructura("columna", ["blanco", "dorado"])])
     remate = cast("dict[str, Any]", completado["armado"])["remate"]
-    assert remate["tipo"] == "globo" and remate["tamano"] == 24 and remate["cantidad"] == 5
+    assert remate["tipo"] == "ninguno" and remate["tamano"] == 24 and remate["cantidad"] == 5
+    assert completado["origen"] == "receta"
 
 
 def test_el_globo_grande_leido_lleva_su_color() -> None:
@@ -585,9 +604,11 @@ def test_el_remate_no_se_lee_en_un_arco() -> None:
 def test_el_remate_de_otro_elemento_no_se_aplica() -> None:
     [completado] = _completar(
         [_estructura("columna", ["blanco", "dorado"], elemento="el-9")],
-        remates=[_remate("ninguno")],
+        remates=[_remate("globo", color="dorado")],
     )
-    assert cast("dict[str, Any]", completado["armado"])["remate"]["tipo"] == "globo"
+    # El globo leído es del el-1: la columna del el-9 se queda como sin lectura, sin remate.
+    assert cast("dict[str, Any]", completado["armado"])["remate"]["tipo"] == "ninguno"
+    assert completado["origen"] == "receta"
 
 
 def test_una_pieza_sin_motor_no_entra_en_la_operacion() -> None:

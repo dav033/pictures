@@ -42,13 +42,7 @@ from app.estimar_conteo_mandos import (
     marcadores,
 )
 from app.armado_estructura import CLAVE_ARMADO
-from app.plan import (
-    PiezaContada,
-    PlanResolutionError,
-    armado_guirnalda_de_receta,
-    contar_pieza,
-    puerto_de_conteo,
-)
+from app.plan import PiezaContada, PlanResolutionError, contar_pieza, puerto_de_conteo
 
 Fuente = Literal["formula", "motor"]
 
@@ -371,18 +365,9 @@ def _sugerir_guirnalda(
             "largo. Cambia el armado con armar_estructura (forma, volumen, mezcla de tamaños) y vuelve a "
             "estimar.",
         )
-    propio = estructura.get("armado_guirnalda_organica")
-    if not isinstance(propio, Mapping):
-        # Sin armado la cuenta la receta de la resolución (``plan.armado_guirnalda_de_receta``): se barre el
-        # largo de ese mismo armado, puesto en la pieza, que es lo que se aplica con ``armar_estructura``.
-        propio = armado_guirnalda_de_receta(estructura)
-        # Una guirnalda contada por el motor sin armado es siempre la de la receta: esto no se alcanza.
-        if propio is None:  # pragma: no cover
-            return hacer_sugerencia(
-                "no_evaluada", "motor", "La guirnalda no tiene un armado del motor que barrer."
-            )
-        estructura = {**estructura, "armado_guirnalda_organica": propio}
-    armado = cast(Mapping[str, object], propio)
+    # Solo llega aquí una guirnalda que trae su armado: sin él la cuenta la fórmula (``plan._armado_del_motor``)
+    # y la sugerencia es la de ``conteo_foto``.
+    armado = cast(Mapping[str, object], estructura["armado_guirnalda_organica"])
     forma = cast(Mapping[str, object], armado["forma"])
     limites = limites_de_guirnalda(
         armado, EstructuraGuirnalda(es_guirnalda=True, materiales=marcadores(estructura))

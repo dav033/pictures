@@ -1186,12 +1186,14 @@ def _suggested_pattern(
 
     ``None`` when the structure admits no pattern: not geometric, a single
     color, or a grid too small for the preset (it keeps today's organic
-    distribution), and when its motor counts it (``_armado_del_motor``, the
-    recipe-counted classic arch and organic garland included). A motor piece
-    is bought as its motor places it, so a grid on it was a second count that
-    nobody builds: a classic arch declared 70/20/10 bought 30/29/29, echoed
+    distribution), and when its motor counts it (``_armado_del_motor``: it
+    carries its stored assembly). A motor piece is bought as its motor places
+    it, so a grid on it was a second count that nobody builds: a classic arch
+    with its assembly, declared 70/20/10, bought 30/29/29, echoed
     0.5/0.25/0.25 and charted 44/22/22. Its photo hint reaches the motor
     through its assembly (``patron_de_la_foto``), not through ``patron_color``.
+    A classic arch or an organic garland without an assembly is counted by
+    the formula, so it gets its preset as always.
 
     ``avisos`` gets the ``advertencias`` entries of what did not go as asked: a
     photo color its pattern was built without (``pista_patron_incompleta``), or
@@ -2108,7 +2110,7 @@ class _ConteoDelMotor:
 def _armado_del_motor(
     structure: Mapping[str, object],
 ) -> tuple[str, Mapping[str, object]] | None:
-    """El armado del motor de esta pieza, si lo trae y le corresponde por tipo.
+    """El armado del motor de esta pieza, si lo trae guardado y le corresponde por tipo.
 
     ``armado_arco`` solo cuenta en un arco y ``armado_columna`` solo en una
     columna: el contrato no impide el cruce, pero la puerta del motor lo
@@ -2124,6 +2126,19 @@ def _armado_del_motor(
     con ``tipo`` ``arco`` y ``guirnalda``, pero ningún motor hace un aro ni un
     techo (``OFICIALES_SIN_MOTOR``). Un armado guardado en una de esas piezas no
     la cuenta: se queda con su fórmula, que es la cifra correcta de la pieza.
+
+    **Solo cuenta un armado guardado en la pieza.** Sin él, la pieza la cuenta
+    la fórmula (ADR-0034 §3), también el arco clásico —con ``patron_color``,
+    con la rejilla de su patrón— y la guirnalda orgánica. Del 2026-10-04
+    (``6fc3e95``) al 2026-10-05 esas dos se armaban aquí con la receta del
+    motor; el dueño lo revirtió el 2026-10-05 porque la receta no está lista
+    para cotizar: por debajo de 2,6 m de ancho arma el arco en tríos (58
+    globos donde la fórmula cuenta 118), reparte los colores por igual e ignora
+    los tamaños que exige el cliente; la guirnalda lujosa de 2,5 m salía con
+    204 globos y relleno de 5" que el catálogo puede no vender, y contar la
+    foto sobre la receta corría el motor unas 217 veces por confirmación. La
+    receta sigue siendo lo que la confirmación escribe en la pieza
+    (``armado_estructura.completar``); ya guardada, la cuenta el motor.
     """
     if (_text(structure.get("estructura_oficial")) or "") in OFICIALES_SIN_MOTOR:
         return None
@@ -2134,27 +2149,17 @@ def _armado_del_motor(
         armado = structure.get(campo)
         if isinstance(armado, Mapping):
             return clase, cast(Mapping[str, object], armado)
-    # Un arco clásico sin armado también es del motor: lo arma la receta, con su patrón de color como pista si
-    # lo trae (``armado_estructura.armado_arco_de_patron``) y, si no, por número de colores, que es lo mismo que
-    # le escribe la confirmación (``armado_estructura.armado_arco_de_receta``). Se contaba con la fórmula y el
-    # plan cobraba un arco que nadie arma —132 globos donde el motor coloca 88— mientras la guía lo dibujaba con
-    # el motor (con patrón) o no lo dibujaba (sin él, ``sin_dibujo``).
-    del_arco = armado_arco_de_receta(structure)
-    if del_arco is not None:
-        return "arco", del_arco
-    # Y una guirnalda orgánica sin armado, con la receta que le escribe la confirmación
-    # (``armado_guirnalda_de_receta``). La clásica no: es del armado por partes, que cuenta la fórmula y
-    # dibuja ``vista_previa_de_armado_guirnalda``.
-    de_la_guirnalda = armado_guirnalda_de_receta(structure)
-    return None if de_la_guirnalda is None else ("guirnalda", de_la_guirnalda)
+    return None
 
 
 def armado_arco_de_patron(structure: Mapping[str, object]) -> dict[str, object] | None:
     """El armado del motor de un arco clásico que trae ``patron_color`` y ningún armado; ``None`` si no lo es.
 
-    Derivado del plan, determinista y **fuera del plan**: no se escribe en ``estructuras`` (el plan sigue sin
-    ``armado_arco``), pero lo que cuenta sí entra en ``compras`` y por eso en ``plan_hash``. Recordado por
-    pieza, porque a la misma pieza se le pregunta varias veces por resolución.
+    Es la receta con el patrón del plan como pista: la que la confirmación escribe en la pieza
+    (``armado_estructura.completar``), con la que arranca el editor del arco (``plan_armado_arco``) y la que
+    dibuja la guía de escena (``guia_piezas/clasica.py``). **No cuenta**: mientras la pieza no la traiga
+    guardada en ``armado_arco``, la resolución cobra el arco con la fórmula y la rejilla de su patrón
+    (``_armado_del_motor``, decisión del dueño del 2026-10-05). Derivado y determinista; recordado por pieza.
     """
     if structure.get("tipo") != "arco" or not isinstance(structure.get("patron_color"), Mapping):
         return None
@@ -2180,8 +2185,9 @@ def armado_arco_de_receta(structure: Mapping[str, object]) -> dict[str, object] 
     """El armado del motor de un arco clásico sin armado, con o sin ``patron_color``; ``None`` si no lo es.
 
     Con patrón es ``armado_arco_de_patron``; sin él, la receta por número de colores
-    (``armado_estructura.armado_arco_de_receta``). Derivado del plan, determinista y fuera de ``estructuras``,
-    pero lo que cuenta entra en ``compras`` y por eso en ``plan_hash``. Recordado por pieza.
+    (``armado_estructura.armado_arco_de_receta``): el arco que la confirmación escribiría. Lo dibuja la guía de
+    escena (``guia_piezas/clasica.py``) para no dejar el arco fuera de la imagen; **no cuenta ni cotiza**: sin
+    armado guardado, el arco lo cobra la fórmula (``_armado_del_motor``). Determinista; recordado por pieza.
     """
     if structure.get("tipo") != "arco":
         return None
@@ -2203,44 +2209,16 @@ def _armado_arco_de_receta(estructura: str) -> str | None:
     return None if armado is None else json.dumps(armado, ensure_ascii=False, sort_keys=True)
 
 
-def armado_guirnalda_de_receta(structure: Mapping[str, object]) -> dict[str, object] | None:
-    """El armado del motor de una guirnalda orgánica que no trae ninguno; ``None`` si no lo es.
-
-    Es lo que la confirmación le escribe (``armado_estructura.armado_guirnalda_de_receta``): sin él, una
-    confirmación que cayó en ``sinArmadosDeMotor`` dejaba la guirnalda cobrada con la fórmula y la guía en
-    ``sin_dibujo``. Derivado del plan, determinista y fuera de ``estructuras``, como ``armado_arco_de_receta``;
-    lo que cuenta entra en ``compras``. Recordado por pieza.
-    """
-    if structure.get("tipo") != "guirnalda" or isinstance(
-        structure.get("armado_guirnalda_organica"), Mapping
-    ):
-        return None
-    recordado = _armado_guirnalda_de_receta(
-        json.dumps(structure, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-    )
-    return None if recordado is None else cast(dict[str, object], json.loads(recordado))
-
-
-@lru_cache(maxsize=_MAX_PIEZAS_RECORDADAS)
-def _armado_guirnalda_de_receta(estructura: str) -> str | None:
-    """``armado_guirnalda_de_receta`` sobre la pieza en JSON canónico (inmutable en caché)."""
-    # Importación diferida por el mismo ciclo que ``_armado_arco_de_patron``.
-    from app.armado_estructura import armado_guirnalda_de_receta as receta_de_la_guirnalda
-
-    armado = receta_de_la_guirnalda(cast(Mapping[str, object], json.loads(estructura)))
-    return None if armado is None else json.dumps(armado, ensure_ascii=False, sort_keys=True)
-
-
 def pieza_del_motor_resuelta(
     structure: Mapping[str, object],
 ) -> tuple[str, dict[str, object]] | None:
     """La pieza que su motor arma, con cada globo colocado, o ``None`` si ningún motor la arma.
 
     Es la misma puerta que usa la resolución (``_armado_del_motor`` y ``_resolver_con_el_motor``, con su caché),
-    así que los globos son exactamente los que se contaron y se cotizaron. Devuelve la clase del motor
-    (``arco``, ``columna``, ``arco_organico``, ``columna_organica`` o ``guirnalda``) y la pieza tal como la
-    publica ``armados_*`` antes de recortarla. La lee la guía de escena de la imagen (``app/guia_escena.py``):
-    derivado, fuera del snapshot y de ``plan_hash``.
+    así que los globos son exactamente los que se contaron y se cotizaron: solo hay pieza si trae su armado
+    guardado. Devuelve la clase del motor (``arco``, ``columna``, ``arco_organico``, ``columna_organica`` o
+    ``guirnalda``) y la pieza tal como la publica ``armados_*`` antes de recortarla. La lee la guía de escena
+    de la imagen (``app/guia_escena.py``): derivado, fuera del snapshot y de ``plan_hash``.
     """
     entrada = _armado_del_motor(structure)
     if entrada is None:
@@ -5703,22 +5681,20 @@ def _suggest_garland_assembly(
     before. Without a drop or a tilt this is exactly ``sugerir_armado`` over
     ``structure``.
 
-    An organic garland is counted by its motor recipe, whose line follows the
-    assembly's shape (``armado_guirnalda.linea_del_motor``): there any shape
-    other than ``recta`` changes the purchase, not only the cord. So what
-    decides is whether the purchase changed, and when even the reading without
-    its geometry changes it, the recipe (straight, as the motor recipe without
-    a shape) does.
+    A garland without the motor's assembly, organic included, is counted by
+    the formula over this cord (``_eje``), so comparing cords is comparing
+    what it buys. From 2026-10-04 to 2026-10-05 an organic one was counted by
+    its motor recipe, whose line follows the shape, and this compared
+    purchases instead; the owner reverted that counting on 2026-10-05.
     """
     context = _garland_context(_with_structure(plan, index, structure), structure)
     first: dict[str, object] | None = sugerir_armado_guirnalda(context, reading)
-    if first is None:
-        return None
-    placed = {**structure, "armado_guirnalda": first}
-    placed_context = _garland_context(_with_structure(plan, index, placed), placed)
-    if placed_context.globos == context.globos:
+    if first is None or _garland_cord(context.largo_m, first) == context.largo_m:
         return first
-    again: dict[str, object] | None = sugerir_armado_guirnalda(placed_context, reading)
+    placed = {**structure, "armado_guirnalda": first}
+    again: dict[str, object] | None = sugerir_armado_guirnalda(
+        _garland_context(_with_structure(plan, index, placed), placed), reading
+    )
     if again is not None and _garland_cord(context.largo_m, again) == _garland_cord(
         context.largo_m, first
     ):
@@ -5726,16 +5702,7 @@ def _suggest_garland_assembly(
     flat: dict[str, object] | None = sugerir_armado_guirnalda(
         context, _without_read_geometry(reading)
     )
-    if flat is None:
-        return None
-    flat_placed = {**structure, "armado_guirnalda": flat}
-    if flat != first and (
-        _garland_context(_with_structure(plan, index, flat_placed), flat_placed).globos
-        == context.globos
-    ):
-        return flat
-    recipe: dict[str, object] | None = sugerir_armado_guirnalda(context)
-    return recipe
+    return flat
 
 
 def _with_garland_assembly(
@@ -5757,11 +5724,9 @@ def _with_garland_assembly(
     if assembly is None:
         return None
     placed = {**structure, "armado_guirnalda": assembly}
-    if structure.get("patron_color") is None or (
-        # The purchase, not only the cord: an organic garland's motor line follows the shape too.
-        _garland_context(_with_structure(plan, index, placed), placed).globos
-        == _garland_context(_with_structure(plan, index, structure), structure).globos
-    ):
+    measures = _mapping(structure.get("medidas"))
+    length = _number(measures.get("largo_m")) or _number(measures.get("ancho_m")) or 0.0
+    if structure.get("patron_color") is None or _garland_cord(length, assembly) == length:
         return placed
     candidate = _with_structure(plan, index, placed)
     try:

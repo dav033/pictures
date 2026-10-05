@@ -20,6 +20,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from app.armado_estructura import armado_guirnalda_de_receta
 from app.main import Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
 from app import plan as plan_module
@@ -120,8 +121,9 @@ async def test_completar_arma_la_guirnalda_sin_cambiar_la_compra() -> None:
     assert (armado["origen"], armado["soporte"], armado["forma"]) == ("sugerido", "pared", "recta")
     resuelto = cast(list[dict[str, object]], armada["armados_guirnalda"])[0]
     leyenda = cast(list[dict[str, object]], resuelto["leyenda"])
-    # 76: la guirnalda orgánica sin armado la cuenta la receta del motor (``plan.armado_guirnalda_de_receta``).
-    assert sum(cast(int, e["unidades_total"]) for e in leyenda) == _unidades(armada) == 76
+    # 48: sin armado del motor, la guirnalda orgánica la cuenta la fórmula (decisión del dueño del 2026-10-05; del
+    # 2026-10-04 al 2026-10-05 la contaba la receta del motor y salían 76).
+    assert sum(cast(int, e["unidades_total"]) for e in leyenda) == _unidades(armada) == 48
     assert {e["product_id"] for e in leyenda} == {"prod-rosado", "prod-blanco"}
     assert leyenda[0]["descripcion"] == "R-5 rosado", "nombrado por la línea que compra"
 
@@ -198,21 +200,11 @@ def _pista(**extra: object) -> dict[str, object]:
     }
 
 
-#: Un remate que esta guirnalda puede armar. Con las cuotas exactas del motor orgánico (2026-10-05) la guirnalda
-#: compra justo 60/40, y los tres globos grandes (18" y 24") le salen blancos: un remate rosado, que necesita un
-#: rosado más grande que los del racimo, ya no cabe (``test_un_remate_que_no_se_compra_deja_la_forma_leida``).
-REMATE_BLANCO = [{"clase": "latex", "color": "blanco", "posicion": "extremo_izq"}]
-
-
 @pytest.mark.anyio
 async def test_la_lectura_de_la_foto_decide_la_distribucion_y_no_la_cantidad() -> None:
     plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
     base = await resolver(plan_)
-    leida = await resolver(
-        plan_,
-        completar_armados_guirnalda=True,
-        pistas_guirnalda=[_pista(remates=REMATE_BLANCO)],
-    )
+    leida = await resolver(plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista()])
     armado = cast(dict[str, object], estructura_del_plan(leida)["armado_guirnalda"])
     assert (armado["origen"], armado["soporte"], armado["forma"]) == (
         "referencia",
@@ -220,15 +212,10 @@ async def test_la_lectura_de_la_foto_decide_la_distribucion_y_no_la_cantidad() -
         "ondulada",
     )
     assert armado["relleno"] == {"material": 1, "proporcion": 0.1}
-    assert armado["remates"] == [{"material": 1, "posicion": "extremo_izq"}]
+    assert armado["remates"] == [{"material": 0, "posicion": "extremo_izq"}]
     assert cast(dict[str, object], armado["racimo"])["unidad"] == "trio"
-    # La foto no compra por sí misma: la guirnalda orgánica se cuenta con la línea de su armado (la onda de la
-    # forma ``ondulada`` del motor), y el plan firmado con ese armado compra lo mismo sin la lectura.
-    firmado = await resolver(cast(dict[str, object], leida["plan"]))
-    assert lineas(leida) == lineas(firmado) and _total(leida) == _total(firmado), (
-        "la foto no compra"
-    )
-    assert _unidades(leida) > _unidades(base), "la onda alarga la tira que arma el motor"
+    # Sin armado del motor la guirnalda la cuenta la fórmula sobre su cuerda, y una ``ondulada`` no la alarga.
+    assert lineas(leida) == lineas(base) and _total(leida) == _total(base), "la foto no compra"
     dudosa = await resolver(
         plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista(confianza=0.3)]
     )
@@ -247,11 +234,20 @@ async def test_la_lectura_de_la_foto_decide_la_distribucion_y_no_la_cantidad() -
 
 @pytest.mark.anyio
 async def test_un_remate_que_no_se_compra_deja_la_forma_leida() -> None:
-    """El rosado del remate leído necesita un globo rosado grande, y con cuotas exactas la guirnalda no compra
-    ninguno (sus tres grandes son blancos). ``sugerir_armado`` hace lo que dice: conserva la forma leída
-    (soporte y forma) con el relleno y los remates de la receta, en vez de inventar un globo que no se compra.
+    """Con su armado del motor guardado, la guirnalda compra lo que el motor coloca con cuotas exactas.
+
+    El armado es la receta del motor sobre la línea ondulada que leyó la foto, como la escribiría la
+    confirmación: compra justo 60/40 y sus globos grandes (18" y 24") le salen blancos (2026-10-05). El rosado
+    del remate leído necesita un globo rosado grande, y no se compra ninguno. ``sugerir_armado`` hace lo que
+    dice: conserva la forma leída (soporte y forma) con el relleno y los remates de la receta, en vez de
+    inventar un globo que no se compra. Sin el armado del motor la cuenta la fórmula, que sí compra un rosado
+    grande, y el remate leído cabe (``test_la_lectura_de_la_foto_decide_la_distribucion_y_no_la_cantidad``).
     """
-    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    sin_armado = guirnalda(referencia_element_id="REF_01_E01")
+    ondulada = {**sin_armado, "armado_guirnalda": _armado(soporte="mesa", forma="ondulada")}
+    del_motor = armado_guirnalda_de_receta(ondulada)
+    assert del_motor is not None
+    plan_ = plan({**sin_armado, "armado_guirnalda_organica": del_motor})
     leida = await resolver(plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista()])
     armado = cast(dict[str, object], estructura_del_plan(leida)["armado_guirnalda"])
     assert (armado["soporte"], armado["forma"]) == ("mesa", "ondulada")

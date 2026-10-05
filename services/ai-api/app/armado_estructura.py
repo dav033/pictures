@@ -2011,8 +2011,8 @@ def _receta(
     De una guirnalda llegan además ``lectura_linea``, la línea que leyó la foto en el vocabulario de la lectura
     (``LecturaGuirnaldaSchema``: forma, soporte, flecha, desnivel...), y ``soporte``, dónde la pone el plan
     (``SOPORTE_POR_UBICACION``). El soporte solo se usa con alguna lectura de la foto: una pieza sin lectura se
-    cuenta, se dibuja y se firma igual que siempre, porque los planes sin armado guardado se vuelven a contar
-    con esta misma receta (``armado_guirnalda_de_receta``) y un cambio ahí movería su ``plan_hash``.
+    arma igual que siempre, y es lo que la confirmación sin foto le escribe (``armado_guirnalda_de_receta``);
+    una vez guardado, ese armado es el que cuenta la resolución y el que firma su ``plan_hash``.
     """
     de_la_pieza = _materiales_patron(pieza)
     # **Qué motor arma la pieza lo decide la mezcla que el plan declara**, y se decide antes que nada: una
@@ -2638,10 +2638,10 @@ def completar(request: ArmadoEstructuraRequest) -> dict[str, Any]:
         origen = "modelo"
         pista = pistas.get(del_elemento) if del_elemento else None
         if elegido is None and pista is None:
-            # Sin lectura de la foto, el patrón que el propio plan declara es la pista, igual que en la resolución
-            # (``plan._armado_del_motor`` → ``armado_arco_de_patron``): sin esto, la confirmación armaba por el
-            # número de colores y escribía en el plan un arco distinto del que la resolución cuenta y la rejilla
-            # de patrón enseña. Es la misma función, así que las dos dan el mismo armado.
+            # Sin lectura de la foto, el patrón que el propio plan declara es la pista, igual que en el editor del
+            # arco y en la guía de escena (``plan.armado_arco_de_patron``): sin esto, la confirmación armaba por el
+            # número de colores y escribía en el plan un arco distinto del que la rejilla de patrón enseña y del
+            # que el editor y la guía parten. Es la misma función, así que dan el mismo armado.
             elegido = _armado_del_patron_declarado(estructura, pieza)
             if elegido is not None:
                 origen = "referencia"
@@ -2722,10 +2722,11 @@ def armado_arco_de_patron(estructura: Mapping[str, Any]) -> dict[str, Any] | Non
 
     Un arco así lo arma **la receta del motor del arco clásico** (``completar``), con el patrón del plan como
     pista: la traducción de un modo de ``patron-color.v1`` a un patrón del motor es de
-    ``patron_de_la_foto.patron_del_motor``, la misma que sigue una lectura de la foto. Es lo que
-    ``plan._armado_del_motor`` usa para que la resolución cuente estos arcos con el motor y no con la fórmula
-    (antes un arco de 3 × 2,4 m se cotizaba con 132 globos y el motor le coloca 88): la cotización, la lista
-    de materiales, la hoja de armado y la guía de escena salen así del mismo armado.
+    ``patron_de_la_foto.patron_del_motor``, la misma que sigue una lectura de la foto. Es el armado que la
+    confirmación escribe en la pieza, con el que arranca el editor del arco y el que dibuja la guía de escena
+    (``plan.armado_arco_de_patron``). **No cuenta mientras no esté guardado**: sin ``armado_arco``, la
+    resolución cobra el arco con la fórmula y la rejilla de su patrón (decisión del dueño del 2026-10-05; un
+    arco de 3 × 2,4 m se cotiza con 132 globos y el motor le coloca 88).
 
     Qué arco es: ``tipo`` ``arco`` con una mezcla clásica o sin mezcla (la mezcla orgánica lo arma el otro
     motor), con ``patron_color`` y sin ``armado_arco`` ni ``armado_arco_organico``. Un aro u otra oficial sin
@@ -2799,10 +2800,10 @@ def armado_arco_de_receta(estructura: Mapping[str, Any]) -> dict[str, Any] | Non
 
     Con patrón es ``armado_arco_de_patron`` (el patrón del plan como pista). Sin patrón es lo que ``completar``
     le escribe al confirmar cuando no hay lectura de la foto: la receta del motor del arco clásico por número
-    de colores (``_receta`` sin pista). Antes este arco se quedaba fuera de los dos caminos: la resolución lo
-    cobraba con la fórmula y la guía de escena lo omitía (``sin_dibujo``), mientras uno con patrón se contaba
-    y se dibujaba con el motor. Así la cotización, los materiales, la hoja de armado y la guía salen del mismo
-    armado en los dos casos. La densidad de la pieza entra igual que allí (``_globos_ancho_por_densidad``).
+    de colores (``_receta`` sin pista). Con ella la guía de escena dibuja el arco que llega sin armado
+    (``guia_piezas/clasica.py``), que si no se quedaría en ``sin_dibujo``; **no cuenta**: sin armado guardado,
+    la resolución cobra el arco con la fórmula (decisión del dueño del 2026-10-05). La densidad de la pieza
+    entra igual que allí (``_globos_ancho_por_densidad``).
 
     ``None`` si no le toca: no es un arco, ya trae ``armado_arco`` o ``armado_arco_organico``, su mezcla es
     orgánica o es un ``arco_asimetrico`` (los arma el otro motor solo con su armado; sin él, la fórmula), o no
@@ -2830,10 +2831,11 @@ def armado_arco_de_receta(estructura: Mapping[str, Any]) -> dict[str, Any] | Non
 def armado_guirnalda_de_receta(estructura: Mapping[str, Any]) -> dict[str, Any] | None:
     """El ``armado-guirnalda-organica.v1`` de la receta para una guirnalda orgánica que no trae el suyo.
 
-    Es lo que ``completar`` le escribe al confirmar (sin lecturas de la foto), para que la resolución cuente
-    y la guía dibuje la misma guirnalda cuando la confirmación no la armó: la bandera del motor apagada, o
-    Python no disponible y ``sinArmadosDeMotor`` quitó el armado. Sin esto la pieza se cobraba con la fórmula
-    y la guía se quedaba en ``sin_dibujo``. Es el gemelo de ``armado_arco_de_receta``.
+    Es lo que ``completar`` le escribe al confirmar (sin lecturas de la foto). **No cuenta mientras no esté
+    guardado**: una guirnalda orgánica sin ``armado_guirnalda_organica`` la cobra la fórmula y la guía la
+    dibuja con el armado por partes sobre esa compra (``guia_piezas/clasica.py``); del 2026-10-04 al
+    2026-10-05 la resolución la contaba con esta receta, y el dueño lo revirtió (la lujosa salía con unos 80
+    globos por metro y contar la foto sobre ella tardaba minutos). Es el gemelo de ``armado_arco_de_receta``.
 
     ``None`` si no le toca: no es una guirnalda, ya trae ``armado_guirnalda_organica``, no es pieza del motor
     (la clásica, el techo, sin materiales: ``_pieza_del_plan``) o la receta pasaría del tope de globos que la

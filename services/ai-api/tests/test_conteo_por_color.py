@@ -1,14 +1,17 @@
 """Conteo por color: lo que el plan declara, lo que se compra y lo que se dice (2026-10-05).
 
-Un arco clásico declarado 70/20/10 tenía tres respuestas por color: ``participacion`` reescrita a
-0,5/0,25/0,25 desde la rejilla de un preset, 44/22/22 en ``patrones_color`` y 30/29/29 en las líneas
-que se compran, que son las del motor. Y un color declarado podía quedarse sin un solo globo sin que
-nadie lo dijera (un centro de mesa de 0,4 m a 75/20/5 compraba 6/2/0). Lo que fija este archivo:
+Un arco clásico con su armado del motor, declarado 70/20/10, tenía tres respuestas por color:
+``participacion`` reescrita a 0,5/0,25/0,25 desde la rejilla de un preset, 44/22/22 en
+``patrones_color`` y 30/29/29 en las líneas que se compran, que son las del motor. Y un color declarado
+podía quedarse sin un solo globo sin que nadie lo dijera (un centro de mesa de 0,4 m a 75/20/5 compraba
+6/2/0). Lo que fija este archivo:
 
 - el reparto entero de una pieza contada por la fórmula no deja sin globo a un color declarado
   mientras haya uno para cada color, y no cambia el de las piezas que ya se lo daban;
-- una pieza que cuenta su motor no recibe patrón sugerido ni ``participacion`` reescrita, y si trae
-  un patrón, ``patrones_color`` publica el conteo del motor;
+- una pieza que cuenta su motor (la que trae su armado guardado) no recibe patrón sugerido ni
+  ``participacion`` reescrita, y si trae un patrón, ``patrones_color`` publica el conteo del motor;
+- un arco clásico **sin** armado lo cuenta la fórmula (decisión del dueño del 2026-10-05, que deshizo
+  la cuenta por la receta del motor del 2026-10-04): compra lo que declara y recibe su preset;
 - ``advertencias`` dice ``reparto_distinto``, ``color_sin_globos`` y ``patron_sin_aplicar``, y nada
   de eso entra en ``plan_hash``.
 
@@ -24,6 +27,7 @@ from typing import cast
 import pytest
 
 import app.plan as plan_module
+from app.armado_estructura import armado_arco_de_receta, armado_guirnalda_de_receta
 from app.patron_color import AVISO_CONTEO_DEL_ARMADO
 from app.plan import (
     _apportion_margins,
@@ -40,7 +44,7 @@ COLUMNA = "EST_01_COLUMNA"
 
 
 def _arco(**extra: object) -> dict[str, object]:
-    """Un arco clásico de 3 × 2,4 m: lo cuenta la receta del motor aunque no traiga armado."""
+    """Un arco clásico de 3 × 2,4 m sin armado: lo cuenta la fórmula (132 globos)."""
     return {
         "estructura_id": ARCO,
         "nombre": "Arco principal",
@@ -60,6 +64,26 @@ def _arco(**extra: object) -> dict[str, object]:
         "porque": "Arco de prueba.",
         **extra,
     }
+
+
+def _arco_del_motor(**extra: object) -> dict[str, object]:
+    """El mismo arco con el armado que la confirmación le escribe guardado: lo cuenta el motor (88 globos).
+
+    Es la receta del motor del arco clásico (``armado_estructura.armado_arco_de_receta``: con ``patron_color``,
+    la del patrón; sin él, por número de colores) puesta en ``armado_arco``, como queda tras confirmar.
+    """
+    sin_armado = _arco(**extra)
+    armado = armado_arco_de_receta(sin_armado)
+    assert armado is not None
+    return {**sin_armado, "armado_arco": armado}
+
+
+def _guirnalda_del_motor() -> dict[str, object]:
+    """La guirnalda orgánica de ``guirnalda_datos`` con la receta del motor guardada, como tras confirmar."""
+    sin_armado = guirnalda()
+    armado = armado_guirnalda_de_receta(sin_armado)
+    assert armado is not None
+    return {**sin_armado, "armado_guirnalda_organica": armado}
 
 
 def _centro(
@@ -204,7 +228,7 @@ async def test_un_reparto_distinto_se_avisa_desde_diez_globos_por_pieza() -> Non
     # 10 puntos de lo declarado, se dice. A 0,4 m (8 globos) es redondeo y no.
     pequeno = await resolver(plan(_centro([("rosado", 0.75), ("blanco", 0.2), ("dorado", 0.05)])))
     assert not _avisos(pequeno, "reparto_distinto")
-    arco = await resolver(plan(_arco()))
+    arco = await resolver(plan(_arco_del_motor()))
     [aviso] = _avisos(arco, "reparto_distinto")
     assert aviso.startswith(f"reparto_distinto:{ARCO}: Arco principal: el plan declara blanco 70 %")
 
@@ -240,15 +264,31 @@ async def test_un_reparto_que_sigue_lo_declarado_no_avisa() -> None:
     assert not _avisos(resuelto, "color_sin_globos")
 
 
+@pytest.mark.anyio
+async def test_un_arco_clasico_sin_armado_compra_el_reparto_que_declara() -> None:
+    """Sin armado guardado el arco clásico lo cuenta la fórmula, y su reparto sigue a ``participacion``.
+
+    Del 2026-10-04 al 2026-10-05 lo contaba la receta del motor: 30/29/29 de 88, por igual pidiera lo que
+    pidiera el plan. El dueño lo revirtió el 2026-10-05. Con la fórmula son 132 globos de un solo tamaño:
+    70/20/10 es 92,4/26,4/13,2 y el mayor resto da el globo que sobra al blanco (las cuotas se renormalizan y
+    0,7 + 0,2 + 0,1 no suma 1 en coma flotante, como en ``test_el_reparto_que_ya_compraba_cada_color_no_cambia``).
+    """
+    resuelto = await resolver(plan(_arco()))
+
+    assert _por_color(resuelto) == {"blanco": 93, "dorado": 26, "rosado": 13}
+    assert not _avisos(resuelto, "reparto_distinto")
+    assert "armados_arco" not in resuelto
+
+
 # --- Las piezas que cuenta el motor ------------------------------------------------------------
 
 
 @pytest.mark.anyio
 async def test_el_arco_del_motor_no_recibe_patron_ni_participacion_de_rejilla() -> None:
-    sin_completar = await resolver(plan(_arco()))
-    completado = await resolver(plan(_arco()), completar_patrones=True)
+    sin_completar = await resolver(plan(_arco_del_motor()))
+    completado = await resolver(plan(_arco_del_motor()), completar_patrones=True)
 
-    # Lo que se compra lo coloca el motor, con patrón o sin él: 30/29/29 de 88.
+    # Lo que se compra lo coloca el motor con su armado guardado, con patrón o sin él: 30/29/29 de 88.
     assert _por_color(completado) == {"blanco": 30, "dorado": 29, "rosado": 29}
     assert "patron_color" not in _estructura(completado)
     assert "patrones_color" not in completado
@@ -265,17 +305,19 @@ async def test_el_arco_del_motor_no_recibe_patron_ni_participacion_de_rejilla() 
 
 @pytest.mark.anyio
 async def test_la_guirnalda_organica_del_motor_tampoco_recibe_patron() -> None:
-    completada = await resolver(plan(guirnalda()), completar_patrones=True)
+    completada = await resolver(plan(_guirnalda_del_motor()), completar_patrones=True)
 
     assert "patron_color" not in _estructura(completada)
     assert "patrones_color" not in completada
     assert _participaciones(completada) == [0.6, 0.4]
-    assert "armados_guirnalda_organica" in completada, "la cuenta su receta del motor"
+    assert "armados_guirnalda_organica" in completada, "la cuenta su armado del motor"
 
 
 @pytest.mark.anyio
-async def test_una_pieza_sin_motor_sigue_recibiendo_su_preset() -> None:
-    completada = await resolver(plan(_columna()), completar_patrones=True)
+@pytest.mark.parametrize("pieza", [_columna(), _arco()], ids=["columna", "arco-sin-armado"])
+async def test_una_pieza_sin_motor_sigue_recibiendo_su_preset(pieza: dict[str, object]) -> None:
+    # Sin armado guardado, tampoco el arco clásico es del motor: lo cuenta la fórmula y recibe su preset.
+    completada = await resolver(plan(pieza), completar_patrones=True)
 
     patron = cast(dict[str, object], _estructura(completada)["patron_color"])
     assert patron["origen"] == "sugerido"
@@ -291,9 +333,9 @@ async def test_un_patron_en_una_pieza_del_motor_publica_el_conteo_del_motor() ->
         "origen": "decorador",
         "base": {"modo": "espiral", "racimo": [0, 1, 0, 2], "trazo": "espiral"},
     }
-    resuelto = await resolver(plan(_arco(patron_color=espiral)))
+    resuelto = await resolver(plan(_arco_del_motor(patron_color=espiral)))
 
-    # El patrón es la pista del motor del arco; su rejilla (2/1/1 por racimo) no reescribe nada.
+    # El patrón fue la pista del armado guardado; su rejilla (2/1/1 por racimo) no reescribe nada.
     assert _participaciones(resuelto) == [0.7, 0.2, 0.1]
     lineas = _por_color(resuelto)
     [publicado] = cast(list[dict[str, object]], resuelto["patrones_color"])
@@ -320,8 +362,10 @@ async def test_un_patron_en_una_pieza_del_motor_publica_el_conteo_del_motor() ->
 
 
 def test_una_edicion_no_le_pone_preset_a_una_pieza_del_motor() -> None:
-    assert sugerir_patron_para_estructura(plan(_arco()), ARCO) is None
+    assert sugerir_patron_para_estructura(plan(_arco_del_motor()), ARCO) is None
     assert sugerir_patron_para_estructura(plan(_columna()), COLUMNA) is not None
+    # Sin armado guardado el arco clásico no es del motor: recibe su preset como la columna.
+    assert sugerir_patron_para_estructura(plan(_arco()), ARCO) is not None
 
 
 # --- Lo que se dice y lo que se firma ----------------------------------------------------------
@@ -346,9 +390,9 @@ async def test_un_preset_que_no_cabe_ya_no_cae_en_silencio() -> None:
 async def test_las_advertencias_de_color_no_entran_en_el_plan_hash(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    con_avisos = await resolver(plan(_arco()))
+    con_avisos = await resolver(plan(_arco_del_motor()))
     monkeypatch.setattr(plan_module, "_color_warnings", lambda *_args, **_kwargs: [])
-    sin_avisos = await resolver(plan(_arco()))
+    sin_avisos = await resolver(plan(_arco_del_motor()))
 
     assert _avisos(con_avisos, "reparto_distinto") and not _avisos(sin_avisos, "reparto_distinto")
     assert con_avisos["plan_hash"] == sin_avisos["plan_hash"]
