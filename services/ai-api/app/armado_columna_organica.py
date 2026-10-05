@@ -218,6 +218,10 @@ def _config_desde_armado(
             ],
             "reparto": _mapa(armado, "colores").get("reparto", "azar"),
             "mezcla": _mapa(armado, "colores").get("mezcla", 0.5),
+            # El plan decide CUÁNTOS globos lleva cada color y el motor DÓNDE (2026-10-05): sin cuotas, una
+            # columna orgánica declarada 70/20/10 se armaba y se cobraba 47/29/24. Ver ``cuotas_por_peso`` en
+            # ``organico/motor.py`` (puerto 1 a 1 del clasificador, con sus vectores de oro).
+            "cuotas": True,
         },
         "adornos": dict(_mapa(armado, "adornos")),
         "aspecto": dict(_mapa(armado, "aspecto")),

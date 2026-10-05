@@ -198,11 +198,21 @@ def _pista(**extra: object) -> dict[str, object]:
     }
 
 
+#: Un remate que esta guirnalda puede armar. Con las cuotas exactas del motor orgánico (2026-10-05) la guirnalda
+#: compra justo 60/40, y los tres globos grandes (18" y 24") le salen blancos: un remate rosado, que necesita un
+#: rosado más grande que los del racimo, ya no cabe (``test_un_remate_que_no_se_compra_deja_la_forma_leida``).
+REMATE_BLANCO = [{"clase": "latex", "color": "blanco", "posicion": "extremo_izq"}]
+
+
 @pytest.mark.anyio
 async def test_la_lectura_de_la_foto_decide_la_distribucion_y_no_la_cantidad() -> None:
     plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
     base = await resolver(plan_)
-    leida = await resolver(plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista()])
+    leida = await resolver(
+        plan_,
+        completar_armados_guirnalda=True,
+        pistas_guirnalda=[_pista(remates=REMATE_BLANCO)],
+    )
     armado = cast(dict[str, object], estructura_del_plan(leida)["armado_guirnalda"])
     assert (armado["origen"], armado["soporte"], armado["forma"]) == (
         "referencia",
@@ -210,7 +220,7 @@ async def test_la_lectura_de_la_foto_decide_la_distribucion_y_no_la_cantidad() -
         "ondulada",
     )
     assert armado["relleno"] == {"material": 1, "proporcion": 0.1}
-    assert armado["remates"] == [{"material": 0, "posicion": "extremo_izq"}]
+    assert armado["remates"] == [{"material": 1, "posicion": "extremo_izq"}]
     assert cast(dict[str, object], armado["racimo"])["unidad"] == "trio"
     # La foto no compra por sí misma: la guirnalda orgánica se cuenta con la línea de su armado (la onda de la
     # forma ``ondulada`` del motor), y el plan firmado con ese armado compra lo mismo sin la lectura.
@@ -233,6 +243,19 @@ async def test_la_lectura_de_la_foto_decide_la_distribucion_y_no_la_cantidad() -
     assert cast(dict[str, object], estructura_del_plan(ajena)["armado_guirnalda"])["origen"] == (
         "sugerido"
     )
+
+
+@pytest.mark.anyio
+async def test_un_remate_que_no_se_compra_deja_la_forma_leida() -> None:
+    """El rosado del remate leído necesita un globo rosado grande, y con cuotas exactas la guirnalda no compra
+    ninguno (sus tres grandes son blancos). ``sugerir_armado`` hace lo que dice: conserva la forma leída
+    (soporte y forma) con el relleno y los remates de la receta, en vez de inventar un globo que no se compra.
+    """
+    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    leida = await resolver(plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista()])
+    armado = cast(dict[str, object], estructura_del_plan(leida)["armado_guirnalda"])
+    assert (armado["soporte"], armado["forma"]) == ("mesa", "ondulada")
+    assert {"material": 0, "posicion": "extremo_izq"} not in cast(list[object], armado["remates"])
 
 
 @pytest.mark.anyio
