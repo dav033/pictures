@@ -339,15 +339,16 @@ async function main(): Promise<void> {
   };
   const planVino = PlanDecoracionSchema.parse({ plan_version: "1.0", plan_id: "07070707-0707-4070-8070-070707070707", concepto: { titulo: "Galáctico", descripcion: "Arco", paleta: [] }, espacio: { tipo: "salón", fuente: "supuesto" }, supuestos: [], estructuras: [arcoVino] });
   const conPaleta = restricciones.aplicarColoresReferencia(planVino, marcoVino);
-  assert.deepEqual(conPaleta.estructuras[0]!.colores_referencia, ["burdeos", "blanco", "plateado", "gris", "rosado"], "grey (4th arch color) and pink (chairs) are no longer dropped");
+  assert.deepEqual(conPaleta.estructuras[0]!.colores_referencia, ["burdeos", "blanco", "plateado", "gris"], "grey (4th arch color) is no longer dropped; the chairs' pink is scenery, not decoration (2026-10-05)");
   const avisos = coloresReferencia.sustitucionesColorReferencia("EST_01_ARCO", conPaleta.estructuras[0]!.colores_referencia!, ["plateado", "violeta", "blanco"]);
-  assert.deepEqual(avisos.map((item) => item.pedido), ["burdeos", "gris", "rosado"]);
+  assert.deepEqual(avisos.map((item) => item.pedido), ["burdeos", "gris"]);
   // A color some structure buys is not noticed. The clear balloons of the
   // garland are now claimed on top of its three hues (2026-09-24): a plan
   // without them is told so.
   const planRosaPlata = PlanDecoracionSchema.parse({ ...planVino, estructuras: [{ ...arcoVino, referencia_element_id: "REF_01_E03", materiales: [["P-ROSADO", "rosado"], ["P-PLATA", "plateado"], ["P-BLANCO", "blanco"]].map(([productId, color], index) => ({ product_id: productId!, color: color!, participacion: index === 0 ? 0.4 : 0.3, rol_material: index === 0 ? "principal" : "secundario" })) }] });
   assert.deepEqual(restricciones.aplicarColoresReferencia(planRosaPlata, semiarcos).estructuras[0]!.colores_referencia, ["rosado", "plateado", "blanco", "transparente"]);
-  // Only the element colors are claimed; pink from the chairs is a notice, never a refusal.
+  // Only the element colors are claimed. The chairs' pink was a notice until 2026-10-05; now it is scenery
+  // and says nothing (AGENTS.md: scenery enters the image prompt only).
   const filasVino = [fila("P-PLATA", "V-PLATA-12", "plateado"), fila("P-VIOLETA", "V-VIOLETA-12", "violeta"), fila("P-BLANCO", "V-BLANCO-12", "blanco")];
   const candidatosVino = [
     candidato("P-PLATA", "Globo Reflex Plata", "globo_latex", ["plateado"], [{ variantId: "V-PLATA-12", diamPulg: 12 }]),
@@ -368,16 +369,18 @@ async function main(): Promise<void> {
   // (ΔE 72 del burdeos, 77 del gris, 79 del plateado; el tope de sustitución es
   // 45, y un rojo —a 41 del burdeos— sí se habría quedado). El servidor lo saca
   // antes de cotizar y lo avisa: el arco queda en plateado y blanco, y los avisos
-  // pasan de tres a cuatro. Antes el violeta se cotizaba y se dibujaba.
+  // pasan de tres a cuatro. Antes el violeta se cotizaba y se dibujaba. Desde el 2026-10-05 son tres: el
+  // rosado de las sillas es escenario y ya no se avisa.
   assert.deepEqual(
     turnoVino.estado.planResuelto?.plan.estructuras[0]?.materiales.map((material) => material.color),
     ["plateado", "blanco"],
     "un color que la foto no tiene no llega a la cotización",
   );
   assert.ok(avisosVino.some((aviso) => /violeta/.test(aviso) && /tu foto no los tiene/.test(aviso)), avisosVino.join(" | "));
-  assert.equal(avisosVino.length, 4, avisosVino.join(" | "));
+  assert.equal(avisosVino.length, 3, avisosVino.join(" | "));
+  assert.ok(!avisosVino.some((aviso) => /rosad/i.test(aviso)), "the chairs' pink is not a notice: " + avisosVino.join(" | "));
   for (const aviso of avisosVino) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
-  ok("D5: todo color de la foto que la propuesta no lleva se avisa (gris y rosado incluidos) y un color que la foto no tiene no se compra");
+  ok("D5: todo color de la decoración de la foto que la propuesta no lleva se avisa (gris incluido; el rosado de las sillas es escenario) y un color que la foto no tiene no se compra");
 
   // ---------------------------------------------------------------------------
   // D6: character and brand names, and X-Request-ID on /api/generate.

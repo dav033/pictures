@@ -550,9 +550,11 @@ export function validarCoberturaReferencia(plan: PlanDecoracion, blueprint: Refe
  * no materialized element names goes to the first structure that materializes
  * a photo element. Until 2026-10-05 every extra went to that first structure,
  * so the silver beyond the cap of a gold/black/white/silver column was reported
- * as missing from the arch. A color that only the venue contributes (the
- * `backdrop` element: a brick wall, a curtain wall behind the piece) is not
- * decoration and is left out. Those extras are notices only:
+ * as missing from the arch. A color that only the scenery contributes (the
+ * chairs, a neon sign, flowers, lights, the wall: anything that is neither a
+ * balloon element of the photo nor an element the plan builds) is not
+ * decoration and is left out since 2026-10-05, which also drops the chairs'
+ * pink of that E2E. Those extras are notices only:
  * `confirmar_plan_decoracion` claims just the element colors
  * (`coloresElementoReferencia`).
  */
@@ -569,15 +571,20 @@ export function aplicarColoresReferencia<T extends PlanDecoracion>(plan: T, blue
   });
   const listados = new Set(porEstructura.flat());
   const comprados = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => normalizar(material.color ?? "").trim())).filter(Boolean));
-  // El color que solo aporta el local queda fuera: la pared de ladrillo de una
-  // foto ponía "cafe" y "rojo" en la paleta y de ahí en los colores que se le
-  // exigían a la pieza (2026-09-29). Un color que también está en un elemento
-  // decorativo (las sillas del E2E de 2026-09-15) sigue avisando.
+  // Un color que solo trae el escenario no es de la decoración: el escenario entra en el prompt de imagen y
+  // en nada más (AGENTS.md). Cuenta lo que nombran las piezas de globos de la foto y las piezas que el plan
+  // construye; la pared de ladrillo ponía "cafe" y "rojo" (2026-09-29), y el letrero de neón turquesa y las
+  // flores blancas de las pruebas del 2026-10-05 avisaban de colores que ninguna pieza de globos tiene.
+  // Una foto sin piezas de globos sigue el corte de antes: solo se queda fuera lo que aporta el fondo.
   const aprobados = (blueprint?.elements ?? []).filter((elemento) => elemento.approved);
+  const materializados = new Set(plan.estructuras.map((estructura) => estructura.referencia_element_id).filter(Boolean));
+  const decoracion = aprobados.filter((elemento) => elemento.category === "balloon_structure" || materializados.has(elemento.element_id));
+  const deLaDecoracion = new Set(decoracion.flatMap((elemento) => coloresNombradosReferencia(elemento.appearance).map((item) => item.color)));
   const soloDelLocal = (color: string) =>
     aprobados.some((elemento) => elemento.category === "backdrop" && coloresDominantesReferencia(elemento.appearance).includes(color)) &&
     !aprobados.some((elemento) => elemento.category !== "backdrop" && coloresDominantesReferencia(elemento.appearance).includes(color));
-  const extras = coloresFotoCliente(blueprint).filter((color) => !listados.has(color) && !comprados.has(normalizar(color)) && !soloDelLocal(color));
+  const delEscenario = (color: string) => (decoracion.length ? !deLaDecoracion.has(color) : soloDelLocal(color));
+  const extras = coloresFotoCliente(blueprint).filter((color) => !listados.has(color) && !comprados.has(normalizar(color)) && !delEscenario(color));
   const primera = porEstructura.findIndex((colores) => colores.length > 0);
   // Cada color extra a la pieza que lo muestra en la foto: el aviso dice "esta pieza no lo lleva", y tiene
   // que decirlo de la pieza correcta. Solo un color que ningún elemento materializado nombra (las sillas del
