@@ -3,7 +3,7 @@ import { planBlueprint } from "@/lib/plan/blueprint";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
-import { compileLoraCaption } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
+import { compileFluxCaption } from "@/lib/ia/kagutsuchi/caption-flux";
 import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
 import type { VisualContext } from "@/lib/ia/escena/visual-context";
 import { planFijado } from "../lib/planes-fijados";
@@ -63,7 +63,7 @@ const PROMPT_PIDE_SEPARACION = /stand apart with an open gap between them/;
  * comprobación es la que detecta que diverjan.
  */
 function paridadConPrompt(caso: string, { escena, officialStructures }: PlanAprobado, pideSeparacion: boolean): void {
-  const prompt = compileLoraCaption({ sceneSpec: escena, visualContext: CONTEXTO, officialStructures }).prompt;
+  const prompt = compileFluxCaption({ sceneSpec: escena, visualContext: CONTEXTO, officialStructures }).prompt;
   assert.equal(PROMPT_PIDE_SEPARACION.test(prompt), pideSeparacion, `${caso}: el prompt LoRA ${pideSeparacion ? "debe" : "no debe"} pedir separación: ${prompt}`);
   const promptGemini = buildImagePrompt({ sceneSpec: escena, officialStructures });
   assert.equal(/SEPARATE SIDE PIECES:/.test(promptGemini), pideSeparacion, `${caso}: el prompt de imagen ${pideSeparacion ? "debe" : "no debe"} pedir el hueco abierto`);

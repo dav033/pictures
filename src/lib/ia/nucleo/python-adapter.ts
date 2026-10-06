@@ -156,8 +156,8 @@ export const PYTHON_HAPPIE_GENERATE_PATH = "/internal/v1/ia/happie-generate";
 export const PYTHON_HAPPIE_GENERATE_SCOPE = "ia.happie_generate";
 export const PYTHON_REFERENCE_TURN_PATH = "/internal/v1/ia/reference-turn";
 export const PYTHON_REFERENCE_TURN_SCOPE = "ia.reference_turn";
-export const PYTHON_LORA_GENERATE_PATH = "/internal/v1/ia/lora-generate";
-export const PYTHON_LORA_GENERATE_SCOPE = "ia.lora_generate";
+export const PYTHON_FLUX_GENERATE_PATH = "/internal/v1/ia/lora-generate";
+export const PYTHON_FLUX_GENERATE_SCOPE = "ia.lora_generate";
 export const PYTHON_CHAT_TURN_STREAM_PATH = "/internal/v1/ia/chat-turn-stream";
 export const PYTHON_CHAT_TURN_STREAM_SCOPE = "ia.chat_turn_stream";
 export const PYTHON_PATRON_REFERENCIA_PATH = "/internal/v1/ia/patron-referencia";
@@ -461,7 +461,7 @@ function upstreamEmbeddingAttempts(value: unknown): PythonEmbeddingAttempt[] | u
 /**
  * Generic passthrough for a domain error's original provider status/detail
  * (Kagutsuchi's account-rejected fal.ai responses -- see
- * ProveedorImagenNoDisponibleError in kagutsuchi/sempertex-lora.ts, which
+ * ProveedorImagenNoDisponibleError in kagutsuchi/flux.ts, which
  * needs the real 401/402/403 fal returned, not the boundary's own 502/503).
  * Not specific to one operation: any future domain error can populate these
  * two fields the same way Python's `_detail_metadata` already does.
@@ -1328,21 +1328,21 @@ export interface PythonPatronReferenciaResult {
   replayed?: boolean;
 }
 
-export interface PythonLoraSpec {
+export interface PythonFluxSpec {
   path: string;
   scale: number;
 }
 
-export interface PythonLoraGenerateInput {
+export interface PythonFluxGenerateInput {
   mode: "text" | "edit";
   prompt: string;
-  loras: PythonLoraSpec[];
+  loras: PythonFluxSpec[];
   guidanceScale: number;
   numInferenceSteps: number;
   imageWidth: number;
   imageHeight: number;
   seed?: number;
-  /** `data:<mime>;base64,<...>` strings, already built by referenciasParaLoraEdit's caller -- empty for mode "text". */
+  /** `data:<mime>;base64,<...>` strings, already built by referenciasParaFluxEdit's caller -- empty for mode "text". */
   imageDataUrls: string[];
   requestId: string;
   correlationId: string;
@@ -1354,7 +1354,7 @@ export interface PythonLoraGenerateInput {
   randomUUID?: () => string;
 }
 
-export interface PythonLoraGenerateResult {
+export interface PythonFluxGenerateResult {
   imageBase64: string;
   mime: string;
   providerRequestId: string | null;
@@ -2477,7 +2477,7 @@ const chatTurnStreamEventSchema = z.discriminatedUnion("type", [
 
 export type PythonChatTurnStreamEvent = z.infer<typeof chatTurnStreamEventSchema>;
 
-const loraGeneratePayloadResultSchema = z.object({
+const fluxGeneratePayloadResultSchema = z.object({
   image_base64: z.string().min(1),
   mime: z.enum(["image/png", "image/jpeg", "image/webp"]),
   provider_request_id: z.string().min(1).nullable(),
@@ -3101,10 +3101,10 @@ export async function llamarPythonLecturaUnica(
 
 /**
  * The submit -> poll -> download sequence against fal.ai's queue that
- * `generarConSempertexLora` makes directly today
- * (src/lib/ia/kagutsuchi/sempertex-lora.ts). `prompt`, `loras`, `mode` and
+ * `generarConSempertexFlux` makes directly today
+ * (src/lib/ia/kagutsuchi/flux.ts). `prompt`, `loras`, `mode` and
  * every sizing/guidance value already reflect TypeScript's composition
- * (buildLoraEditPrompt, referenciasParaLoraEdit,
+ * (buildFluxEditPrompt, referenciasParaFluxEdit,
  * guidanceScaleSeguro) -- Python only talks to the provider and applies the
  * SSRF allow-list. Uses `maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES` (up to
  * 4 reference images for `/edit`) and a `deadlineMs` above the shared
@@ -3112,9 +3112,9 @@ export async function llamarPythonLecturaUnica(
  * (submit + poll + download), the same budget the direct path already
  * spends inside the browser-facing /api/generate call.
  */
-export async function llamarPythonLoraGenerate(
-  input: PythonLoraGenerateInput,
-): Promise<PythonLoraGenerateResult> {
+export async function llamarPythonFluxGenerate(
+  input: PythonFluxGenerateInput,
+): Promise<PythonFluxGenerateResult> {
   const { mode, prompt, loras, guidanceScale, numInferenceSteps, imageWidth, imageHeight, seed, imageDataUrls, deadlineMs, ...rest } = input;
   const operationPayload = {
     schema_version: "lora-generate.v1" as const,
@@ -3128,18 +3128,18 @@ export async function llamarPythonLoraGenerate(
     ...(seed === undefined ? {} : { seed }),
     image_data_urls: imageDataUrls,
   };
-  const response = await llamarPythonOperacion(PYTHON_LORA_GENERATE_PATH, PYTHON_LORA_GENERATE_SCOPE, {
+  const response = await llamarPythonOperacion(PYTHON_FLUX_GENERATE_PATH, PYTHON_FLUX_GENERATE_SCOPE, {
     ...rest,
     payload: operationPayload,
     operationBody: operationPayload,
     maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
     deadlineMs: deadlineMs ?? DEADLINE_MAX_MS,
   });
-  const parsed = loraGeneratePayloadResultSchema.safeParse(response.payload);
+  const parsed = fluxGeneratePayloadResultSchema.safeParse(response.payload);
   if (!parsed.success) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
-  const result: PythonLoraGenerateResult = {
+  const result: PythonFluxGenerateResult = {
     imageBase64: parsed.data.image_base64,
     mime: parsed.data.mime,
     providerRequestId: parsed.data.provider_request_id,

@@ -102,11 +102,11 @@ from app.omoikane.turno_stream import (
     ChatTurnStreamRequest,
     abrir_turno_stream,
 )
-from app.kagutsuchi.lora import (
-    LORA_GENERATE_SCOPE,
-    LoraGenerateError,
-    LoraGenerateRequest,
-    generar_lora_fal,
+from app.kagutsuchi.flux import (
+    FLUX_GENERATE_SCOPE,
+    FluxGenerateError,
+    FluxGenerateRequest,
+    generar_flux_fal,
 )
 from app.watatsumi.catalog_embeddings import (
     DEFAULT_EMBEDDING_DIMENSIONS,
@@ -343,7 +343,7 @@ BouquetReferenciaHandler = Callable[[BouquetReferenciaRequest], Awaitable[dict[s
 ConteoReferenciaHandler = Callable[[ConteoReferenciaRequest], Awaitable[dict[str, object]]]
 GuirnaldaReferenciaHandler = Callable[[GuirnaldaReferenciaRequest], Awaitable[dict[str, object]]]
 LecturaUnicaHandler = Callable[[LecturaUnicaRequest], Awaitable[dict[str, object]]]
-LoraGenerateHandler = Callable[[LoraGenerateRequest], Awaitable[dict[str, object]]]
+FluxGenerateHandler = Callable[[FluxGenerateRequest], Awaitable[dict[str, object]]]
 # Not awaited: it validates what can fail before the stream opens (raising an
 # HTTPException) and returns the event generator the boundary drains.
 ChatTurnStreamHandler = Callable[[ChatTurnStreamRequest], AsyncGenerator[dict[str, object], None]]
@@ -555,10 +555,10 @@ async def _default_patron_referencia_handler(payload: PatronReferenciaRequest) -
     return {"payload": result}
 
 
-async def _default_lora_generate_handler(payload: LoraGenerateRequest) -> dict[str, object]:
+async def _default_flux_generate_handler(payload: FluxGenerateRequest) -> dict[str, object]:
     try:
-        result = await generar_lora_fal(payload)
-    except LoraGenerateError as error:
+        result = await generar_flux_fal(payload)
+    except FluxGenerateError as error:
         details: dict[str, object] = {}
         if error.provider_status is not None:
             details["provider_status"] = error.provider_status
@@ -924,7 +924,7 @@ def _detail_metadata(exception: HTTPException) -> dict[str, object]:
                 )
         if safe_attempts:
             metadata["attempts"] = safe_attempts
-    # Kagutsuchi's account-rejected fal.ai responses (see LoraGenerateError):
+    # Kagutsuchi's account-rejected fal.ai responses (see FluxGenerateError):
     # the real provider status/detail, distinct from this exception's own
     # boundary status_code, so the TypeScript wrapper can rebuild
     # ProveedorImagenNoDisponibleError with fal's actual 401/402/403.
@@ -1298,7 +1298,7 @@ def create_app(
     intent_parse_handler: IntentParseHandler | None = None,
     happie_generate_handler: HappieGenerateHandler | None = None,
     reference_turn_handler: ReferenceTurnHandler | None = None,
-    lora_generate_handler: LoraGenerateHandler | None = None,
+    flux_generate_handler: FluxGenerateHandler | None = None,
     chat_turn_stream_handler: ChatTurnStreamHandler | None = None,
     patron_referencia_handler: PatronReferenciaHandler | None = None,
     bouquet_referencia_handler: BouquetReferenciaHandler | None = None,
@@ -1401,7 +1401,7 @@ def create_app(
         guirnalda_referencia_handler or _default_guirnalda_referencia_handler
     )
     lectura_unica_handler_fn = lectura_unica_handler or _default_lectura_unica_handler
-    lora_generate_handler_fn = lora_generate_handler or _default_lora_generate_handler
+    flux_generate_handler_fn = flux_generate_handler or _default_flux_generate_handler
     chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
 
     @application.middleware("http")
@@ -2077,13 +2077,13 @@ def create_app(
         )
 
     @application.post("/internal/v1/ia/lora-generate")
-    async def ia_lora_generate(request: Request) -> Response:
+    async def ia_flux_generate(request: Request) -> Response:
         return await _handle_operational_request(
             request,
             operation="ia.lora_generate",
-            model=LoraGenerateRequest,
-            scope=LORA_GENERATE_SCOPE,
-            handler=cast(OperationalHandler, lora_generate_handler_fn),
+            model=FluxGenerateRequest,
+            scope=FLUX_GENERATE_SCOPE,
+            handler=cast(OperationalHandler, flux_generate_handler_fn),
             max_body_bytes=current_settings.max_body_bytes_imagenes,
         )
 

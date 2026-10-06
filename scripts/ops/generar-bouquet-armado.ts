@@ -31,13 +31,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
 import { ArmadoBouquetResueltoSchema } from "@/lib/plan/armado-bouquet";
 import { BOUQUET_15_LADOS, BOUQUET_80, BOUQUET_SINTETICO, captionCanonico, escenaBouquet, type BouquetSintetico } from "../lib/escenas-armado-bouquet";
-import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lib/fal-evaluacion";
+import { correrExperimento, flag, resolverIdentidadFlux, type Celda, type Defaults } from "../lib/fal-evaluacion";
 
-const identidad = resolverIdentidadLora(flag("artifact-id", "v004-1000"));
+const identidad = resolverIdentidadFlux(flag("artifact-id", "v004-1000"));
 // La escala de producción la da el slot del registro (`lora_scale`); 0.8 es la de las evaluaciones de v004/v007.
 const escala = Number(flag("escala", "0.8"));
 if (!Number.isFinite(escala) || escala <= 0 || escala > 2) throw new Error("--escala espera un número entre 0 y 2.");
@@ -62,7 +62,7 @@ const celdas: Celda[] = CASOS.flatMap((caso) => {
   const frases = frasesDeEstructuras({ armados_bouquet: [{ ...armado, estructura_id: BOUQUET_SINTETICO }] });
   return (["con-armado", "sin-armado"] as const).flatMap((variante) => {
     const compilado = captionCanonico(escena, variante === "con-armado" ? frases : undefined);
-    const reporte = preflightLoraPrompt({ sceneSpec: escena, clauses: compilado.clauses, prompt: compilado.prompt });
+    const reporte = preflightFluxPrompt({ sceneSpec: escena, clauses: compilado.clauses, prompt: compilado.prompt });
     if (!reporte.ok) throw new Error(`${caso.id}/${variante}: el preflight rechaza el caption (${reporte.errors.join("; ")})`);
     const prompt = compilado.prompt;
     return semillas.map((seed) => ({

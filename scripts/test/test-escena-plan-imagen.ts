@@ -10,8 +10,8 @@
 import assert from "node:assert/strict";
 import { buildImagePrompt } from "../../src/lib/ia/uzume/build-image-prompt";
 import { NIVELES_CREATIVIDAD, sugerenciaEscena, type NivelCreatividad } from "../../src/lib/ia/escena/creatividad";
-import { compileLoraCaption } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileFluxCaption } from "../../src/lib/ia/kagutsuchi/caption-flux";
+import { findFluxPromptLanguageLeaks } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 import { bloqueCreatividad } from "../../src/lib/ia/omoikane/prompt-sistema";
 import { SceneSpecSchema, type SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { buildVisualContext, buildVisualSceneLock, completarEscenaConPlan, escenaEspecificada, type EscenaDelPlan } from "../../src/lib/ia/escena/visual-context";
@@ -63,9 +63,9 @@ const primerSorteo = () => 0;
   assert.match(buildVisualSceneLock(context), /MANDATORY VENUE: piscina del conjunto/);
   assert.doesNotMatch(buildVisualSceneLock(context), /jard/);
   assert.equal(context.lightingKind, "night", "the time the customer left open still comes from the plan");
-  const lora = compileLoraCaption({ sceneSpec: sceneSpec("text_to_image"), visualContext: context }).prompt;
+  const lora = compileFluxCaption({ sceneSpec: sceneSpec("text_to_image"), visualContext: context }).prompt;
   assert.doesNotMatch(lora, /garden/, lora);
-  assert.deepEqual(findLoraPromptLanguageLeaks(lora), [], "the open place never reaches the LoRA prompt verbatim");
+  assert.deepEqual(findFluxPromptLanguageLeaks(lora), [], "the open place never reaches the LoRA prompt verbatim");
 
   const iglesia = contextoGeneracion({ brief: { tipo_evento: "boda" }, userRequest: "Decoración para una boda en la iglesia", plan: escenaPlan("salón", "supuesto", "día"), nivel: 1 });
   assert.equal(iglesia.venue, "iglesia");

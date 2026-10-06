@@ -25,7 +25,7 @@ export type EscenaParaCoherencia = {
 export type CaptionParaCoherencia = {
   /** Cláusulas compiladas, con los colores ya traducidos al inglés. */
   clausulas: ReadonlyArray<{ elementIds: readonly string[]; colors: readonly string[] }>;
-  /** El mismo traductor con el que se compiló el caption (`translateLoraColor`). */
+  /** El mismo traductor con el que se compiló el caption (`translateFluxColor`). */
   traducirColor: (color: string) => string;
 };
 
@@ -174,7 +174,7 @@ function erroresDeColor(prompt: string, plan: PlanResuelto, escena: EscenaParaCo
  * comprueban las CLÁUSULAS y no el texto renderizado porque la compactación
  * puede referir un color repetido ("in matching white") sin volver a nombrarlo.
  */
-export function verificarColoresCaptionLora(plan: PlanResuelto, escena: EscenaParaCoherencia, caption: CaptionParaCoherencia): ResultadoCoherencia {
+export function verificarColoresCaptionFlux(plan: PlanResuelto, escena: EscenaParaCoherencia, caption: CaptionParaCoherencia): ResultadoCoherencia {
   const errores: string[] = [];
   for (const estructura of plan.estructuras) {
     const esperados = coloresDeEstructura(estructura);

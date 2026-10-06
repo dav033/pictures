@@ -20,7 +20,7 @@ import {
   sellarEstructurasOficiales,
 } from "../../src/lib/plan/estructuras-oficiales";
 import { parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../../src/lib/ia/referencia/reference-structure";
-import { compileLoraCaption } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { compileFluxCaption } from "../../src/lib/ia/kagutsuchi/caption-flux";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 
 let passed = 0;
@@ -134,7 +134,7 @@ const columnas = scene([
   element("COL_L", "Columna asimétrica izquierda", "columna", "lateral_izquierdo", "soporte", "media"),
   element("COL_R", "Columna derecha", "columna", "lateral_derecho", "soporte", "media"),
 ]);
-const producto = compileLoraCaption({ sceneSpec: columnas, visualContext: context });
+const producto = compileFluxCaption({ sceneSpec: columnas, visualContext: context });
 // `airy` no está ni una vez en las 345 captions del corpus; el sustantivo que queda, `organic balloon
 // arch`, aparece 107 veces. Ver `productDialectNoun`.
 assert.match(producto.prompt, /organic balloon arch/);
@@ -145,12 +145,12 @@ assert.doesNotMatch(producto.prompt, /airy/);
 assert.match(producto.prompt, /balloon column/);
 assert.doesNotMatch(producto.prompt, /asymmetrical[a-z ]*balloon column/);
 assert.equal(producto.clauses.length, 3, "an asymmetrical column never pairs with a plain one");
-const escena = compileLoraCaption({ sceneSpec: columnas, visualContext: context });
+const escena = compileFluxCaption({ sceneSpec: columnas, visualContext: context });
 // El sustantivo del arco no se tocó en esta pasada: sigue llevando «airy» dentro (`arco_no_denso`).
 assert.match(escena.prompt, /an airy organic balloon garland arch/);
 assert.match(escena.prompt, /a balloon column/);
 assert.doesNotMatch(escena.prompt, /matching one another|one standing on the left and one on the right/);
-const pared = compileLoraCaption({ sceneSpec: scene([element("PARED", "Pared de globos densa", "pared", "fondo_pared", "focal", "lujosa")]), visualContext: context });
+const pared = compileFluxCaption({ sceneSpec: scene([element("PARED", "Pared de globos densa", "pared", "fondo_pared", "focal", "lujosa")]), visualContext: context });
 assert.match(pared.prompt, /dense balloon wall installation in blue against the rear wall/);
 pass("official variants reach both LoRA wordings and keep separate pieces separate");
 
@@ -175,7 +175,7 @@ pass("official variants reach both LoRA wordings and keep separate pieces separa
   assert.equal(new Set(reglas).size, ESTRUCTURAS_OFICIALES_IDS.length, "the exported JSON Schema carries the coherence rule of every official structure for Python");
   assert.deepEqual(incoherenciasEstructuraOficial({ estructura_oficial: "pared_densa", tipo: "pared", densidad: "lujosa", ubicacion: "fondo_pared" }), []);
 
-  const declarada = compileLoraCaption({
+  const declarada = compileFluxCaption({
     sceneSpec: scene([element("EST_01_COLUMNA#1", "Columna izquierda", "columna", "lateral_izquierdo", "soporte", "media")]),
     visualContext: context,
     officialStructures: new Map([["EST_01_COLUMNA", "columna_asimetrica"]])

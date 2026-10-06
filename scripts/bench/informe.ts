@@ -240,7 +240,7 @@ footer{border-top:1px solid var(--rule);padding-top:1rem;font-size:.82rem;color:
       <span><b>Phase</b> ${ETIQUETA_FASE[m.fase]}</span>
       <span><b>Commit</b> ${escapar(m.commit.slice(0, 7))}</span>
       <span><b>Date</b> ${escapar(m.fecha.slice(0, 10))}</span>
-      <span><b>LoRA</b> ${escapar(m.slotLora.artifactId)} (${escapar(m.slotLora.evaluationStatus)})</span>
+      <span><b>LoRA</b> ${escapar(m.slotFlux.artifactId)} (${escapar(m.slotFlux.evaluationStatus)})</span>
       <span><b>Selection seed</b> ${m.semillaSeleccion}</span>
       <span><b>Spend</b> ${m.gastoUsd === null ? "—" : `US$${m.gastoUsd.toFixed(3)}`}</span>
     </div>

@@ -380,7 +380,7 @@ function construirFiltroDuro(
       // producto esté entrenado no implica que todos sus tamaños se hayan
       // fotografiado. Con el OR anterior, un R-24 de un producto entrenado
       // solo en R-5..R-18 pasaba la búsqueda, Gemini lo metía al plan y
-      // /api/generate lo rechazaba después con LORA_DATASET_ALLOWLIST_REJECTED.
+      // /api/generate lo rechazaba después con FLUX_DATASET_ALLOWLIST_REJECTED.
       params.push(variantIds);
       condiciones.push(`${aliases.variant}.variant_id = ANY($${params.length}::text[])`);
     } else {

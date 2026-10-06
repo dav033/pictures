@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
-import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
-import { findLoraPromptProductLeaks, preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/producto-flux";
+import { findFluxPromptProductLeaks, preflightFluxPrompt } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 
 const id = "7109611258049";
 const sceneSpec: SceneSpec = {
@@ -28,7 +28,7 @@ const compiled = compileProductPrompt({
 assert.equal(compiled.legacy, false);
 assert.match(compiled.prompt, /gold/i);
 assert.doesNotMatch(compiled.prompt, /Reflex|eventdecor_style|SKU|7109611258049/i);
-assert.equal(preflightLoraPrompt({ sceneSpec, clauses: compiled.clauses, prompt: compiled.prompt }).ok, true);
-assert.equal(findLoraPromptProductLeaks("SKU 10 pack x 6 COP 25").length, 3);
-assert.deepEqual(findLoraPromptProductLeaks(compiled.prompt), []);
+assert.equal(preflightFluxPrompt({ sceneSpec, clauses: compiled.clauses, prompt: compiled.prompt }).ok, true);
+assert.equal(findFluxPromptProductLeaks("SKU 10 pack x 6 COP 25").length, 3);
+assert.deepEqual(findFluxPromptProductLeaks(compiled.prompt), []);
 console.log("FLUX base vocabulary: OK");

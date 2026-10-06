@@ -4,16 +4,16 @@
  *
  * Invariante: toda escena que el plan puede aprobar (focal + soportes +
  * acentos, hasta 6 estructuras y 4 colores) compila a un prompt que pasa el
- * preflight. Un fallo aquí es exactamente el LORA_PREFLIGHT_FAILED que antes
+ * preflight. Un fallo aquí es exactamente el FLUX_PREFLIGHT_FAILED que antes
  * llegaba al cliente.
  *
- * Sin red ni llamadas pagadas. Run: npx tsx scripts/test/test-lora-preflight-barrido.ts [--detalle]
+ * Sin red ni llamadas pagadas. Run: npx tsx scripts/test/test-flux-preflight-barrido.ts [--detalle]
  */
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
-import { BASE_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
-import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { BASE_PROMPT_MAX_LENGTH, FLUX_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/caption-flux";
+import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/producto-flux";
+import { preflightFluxPrompt } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 
 
@@ -22,7 +22,7 @@ type Tipo = "arco" | "semiarco" | "guirnalda" | "columna" | "pared" | "centro_me
 type Ubicacion = "fondo_pared" | "arco_central" | "sobre_mesa_principal" | "lateral_izquierdo" | "lateral_derecho" | "piso_frontal" | "mesas_invitados" | "entrada" | "techo";
 type Rol = "focal" | "soporte" | "acento";
 
-// Productos reales del vocabulario v007 (los mismos de test-lora-product-runtime.ts).
+// Productos reales del vocabulario v007 (los mismos de test-producto-flux.ts).
 const PRODUCTO_POR_COLOR: Readonly<Record<string, string>> = {
   dorado: "7109611258049",
   plateado: "20014244",
@@ -126,10 +126,10 @@ const ACENTOS: ReadonlyArray<(p: string[]) => Elemento[]> = [
 
 // ---------------------------------------------------------------------------
 // Selección suelta sin plan (fallo real observado en /api/generate el
-// 2026-09-14: "LORA_PREFLIGHT_FAILED: 3 tipo(s) sin visual_semantics del plan,
+// 2026-09-14: "FLUX_PREFLIGHT_FAILED: 3 tipo(s) sin visual_semantics del plan,
 // inferido(s) por nombre (balloon decoration kit…)"). No es un problema de
 // longitud: el preflight debe marcarlo como `requiresPlanSemantics` para que
-// la ruta responda LORA_PLAN_REQUIRED en vez de un fallo reintentable.
+// la ruta responda FLUX_PLAN_REQUIRED en vez de un fallo reintentable.
 // ---------------------------------------------------------------------------
 {
   const sinSemantica = (id: string, nombre: string, color: string): Elemento => {
@@ -143,13 +143,13 @@ const ACENTOS: ReadonlyArray<(p: string[]) => Elemento[]> = [
   const sinPlan = { ...suelta, metadata: { ...suelta.metadata, plan_hash: undefined } } as SceneSpec;
   const contextoSuelto = buildVisualContext({ userRequest: "globos blancos y dorados" });
   const compilada = compileProductPrompt({ sceneSpec: sinPlan, visualContext: contextoSuelto });
-  const reporteSinPlan = preflightLoraPrompt({ sceneSpec: sinPlan, clauses: compilada.clauses, prompt: compilada.prompt });
+  const reporteSinPlan = preflightFluxPrompt({ sceneSpec: sinPlan, clauses: compilada.clauses, prompt: compilada.prompt });
   assert.equal(reporteSinPlan.ok, false);
   assert.equal(reporteSinPlan.requiresPlanSemantics, true, reporteSinPlan.errors.join("; "));
 
   // La misma escena bajo un plan aprobado es un defecto de mapeo, no "pide una propuesta".
   const conPlan = compileProductPrompt({ sceneSpec: suelta, visualContext: contextoSuelto });
-  const reporteConPlan = preflightLoraPrompt({ sceneSpec: suelta, clauses: conPlan.clauses, prompt: conPlan.prompt });
+  const reporteConPlan = preflightFluxPrompt({ sceneSpec: suelta, clauses: conPlan.clauses, prompt: conPlan.prompt });
   assert.equal(reporteConPlan.ok, false);
   assert.equal(reporteConPlan.requiresPlanSemantics, false);
   console.log("ok - selección suelta sin plan → requiresPlanSemantics; con plan_hash no");
@@ -181,7 +181,7 @@ function evaluarEscena(elementos: Elemento[], paleta: string[], evento: (typeof 
   });
   const resultado = compileProductPrompt({ sceneSpec: spec, visualContext: contexto, sizeConfirmations, productCatalogTitles: TITULOS_CATALOGO });
   const prompt = resultado.prompt;
-  const reporte = preflightLoraPrompt({ sceneSpec: spec, clauses: resultado.clauses, prompt });
+  const reporte = preflightFluxPrompt({ sceneSpec: spec, clauses: resultado.clauses, prompt });
   const errores = [
     ...reporte.errors,
     ...(resultado.unresolved_products.length ? [`productos sin resolver: ${resultado.unresolved_products.length}`] : []),
@@ -215,7 +215,7 @@ for (const combinacion of combinaciones) {
   }
 }
 
-console.log(`Escenas: ${total}; compactadas: ${compactadas}; longitud máxima: ${maxLongitud}/${LORA_PROMPT_MAX_LENGTH} (base ${maxLongitudBase}/${BASE_PROMPT_MAX_LENGTH}); fallos: ${fallos.length}`);
+console.log(`Escenas: ${total}; compactadas: ${compactadas}; longitud máxima: ${maxLongitud}/${FLUX_PROMPT_MAX_LENGTH} (base ${maxLongitudBase}/${BASE_PROMPT_MAX_LENGTH}); fallos: ${fallos.length}`);
 for (const [error, veces] of [...conteoErrores.entries()].sort((a, b) => b[1] - a[1])) console.log(`  ${veces}× ${error}`);
 if (detalle) {
   for (const fallo of fallos.slice(0, 5)) console.log(`\n[${fallo.escena}] (${fallo.longitud})\n  ${fallo.errores.join("\n  ")}\n  ${fallo.prompt}`);

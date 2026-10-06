@@ -25,7 +25,7 @@ export function cuerpoGenerar(plan: PlanSmoke, opciones: { incluirCampoRetirado?
     planHash: plan.plan_hash,
     brief: {},
     solicitudUsuario: "Smoke local: columna de globos redondos blancos",
-    ...(opciones.incluirCampoRetirado ? { usarLora: true } : {}),
+    ...(opciones.incluirCampoRetirado ? { usarFlux: true } : {}),
     ...(opciones.escenaAlterada ? { sceneSpecHash: "f".repeat(64) } : {}),
     aspecto: "3:2",
   };

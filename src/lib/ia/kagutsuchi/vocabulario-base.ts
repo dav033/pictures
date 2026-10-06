@@ -61,7 +61,7 @@ export function colorVisibleDelCatalogo(color: string | null | undefined, acabad
  * el acabado que se nota en la superficie, la forma, el tamaño en pulgadas con su escala relativa.
  *
  * Este módulo solo es dueño de las tablas de palabras visibles. No traduce colores del español
- * (`LORA_COLOR_NAMES_EN`/`translateLoraColor` del compilador), ni acabados del español al inglés llano
+ * (`FLUX_COLOR_NAMES_EN`/`translateFluxColor` del compilador), ni acabados del español al inglés llano
  * (`ACABADO_EN` de `mezcla-color-escena.ts`), ni nombres comerciales a perceptuales (`aDescriptorPerceptual`):
  * los reutiliza y añade solo lo que les falta. Puro: sin red, sin base de datos, sin variables de entorno.
  */
@@ -289,7 +289,7 @@ export function leerTituloCatalogo(titulo: string): TituloCatalogoBase | undefin
   return { forma, material: foil ? "foil" : "latex", acabado, restoColor };
 }
 
-/** Términos base de un título leído y su color ya en inglés (lo traduce quien llama, con `translateLoraColor`). */
+/** Términos base de un título leído y su color ya en inglés (lo traduce quien llama, con `translateFluxColor`). */
 export function terminosBaseDeTitulo(leido: TituloCatalogoBase, colorIngles: string): TerminosBase | undefined {
   const color = colorVisible(colorIngles);
   const noun = leido.forma ? SUSTANTIVO_POR_FORMA[leido.forma]?.[leido.material] : undefined;

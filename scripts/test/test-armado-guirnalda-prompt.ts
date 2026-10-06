@@ -4,14 +4,14 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
-import { LORA_PROMPT_MAX_LENGTH, translateLoraColor, type LoraVisualClause } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
-import { buildLoraEditPrompt } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { FLUX_PROMPT_MAX_LENGTH, translateFluxColor, type FluxVisualClause } from "@/lib/ia/kagutsuchi/caption-flux";
+import { findFluxPromptLanguageLeaks, preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
+import { buildFluxEditPrompt } from "@/lib/ia/kagutsuchi/flux";
 import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, fraseInstanciaConArmadoGuirnalda } from "@/lib/ia/uzume/armado-en-prompt";
-import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_GARLAND_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, LORA_PRESENTATION_INSTRUCTION, piezasDeLosArmados, promptPresentacionLora } from "./fixtures/gemini-composition-historica";
+import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_GARLAND_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, FLUX_PRESENTATION_INSTRUCTION, piezasDeLosArmados, promptPresentacionFlux } from "./fixtures/gemini-composition-historica";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";
-import { verificarCoherenciaPrompt, verificarColoresCaptionLora } from "@/lib/plan/coherencia";
+import { verificarCoherenciaPrompt, verificarColoresCaptionFlux } from "@/lib/plan/coherencia";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { captionBaseDePlan, escenaDePlan, escenaParaCoherencia, promptGeminiDePlan } from "../lib/escenas-armado-bouquet";
@@ -93,14 +93,14 @@ function escenaJson(prompt: string): { elements: Array<{ name: string; color_pat
   return JSON.parse(/<AUTOMATIC_SCENE_SPEC>\n(.+)\n<\/AUTOMATIC_SCENE_SPEC>/.exec(prompt)![1]!) as { elements: Array<{ name: string; color_pattern?: string }> };
 }
 
-function clausulaDe(clauses: readonly LoraVisualClause[], elementId: string): LoraVisualClause {
+function clausulaDe(clauses: readonly FluxVisualClause[], elementId: string): FluxVisualClause {
   const clausula = clauses.find((clause) => clause.elementIds.includes(elementId));
   assert.ok(clausula, `ninguna cláusula representa ${elementId}`);
   return clausula;
 }
 
-function preflight(sceneSpec: SceneSpec, resultado: { clauses: LoraVisualClause[]; prompt: string }, prompt = resultado.prompt, maxLength?: number) {
-  return preflightLoraPrompt({ sceneSpec, clauses: resultado.clauses, prompt, maxLength });
+function preflight(sceneSpec: SceneSpec, resultado: { clauses: FluxVisualClause[]; prompt: string }, prompt = resultado.prompt, maxLength?: number) {
+  return preflightFluxPrompt({ sceneSpec, clauses: resultado.clauses, prompt, maxLength });
 }
 
 /** Las frases de Python de un plan, pasadas a la guirnalda de la escena sintética. */
@@ -292,7 +292,7 @@ function loraCanonico(): void {
     const frases = frasesSinteticas(nombre);
     const frase = frases[0]!.prompt_lora;
     const escena = escenaGuirnalda({ placement: PLACEMENT_DE[nombre] });
-      for (const maxLength of [undefined, LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length]) {
+      for (const maxLength of [undefined, FLUX_PROMPT_MAX_LENGTH - FLUX_PRESENTATION_INSTRUCTION.length]) {
         const resultado = captionCanonicoGuirnalda(escena, frases, maxLength);
         const caso = `${nombre}${maxLength ? " híbrido" : ""}: ${resultado.prompt}`;
         assert.equal(resultado.legacy, false, caso);
@@ -305,12 +305,12 @@ function loraCanonico(): void {
         assert.doesNotMatch(resultado.prompt, /garland[^,.]*organic balloon garland/, caso);
         assert.doesNotMatch(frase, /\d|garland/, caso);
         assert.doesNotMatch(clausula.colorPattern ?? "", /mixed organically/, caso);
-        const limite = maxLength ?? LORA_PROMPT_MAX_LENGTH;
+        const limite = maxLength ?? FLUX_PROMPT_MAX_LENGTH;
         assert.ok(resultado.prompt.length <= limite, `${caso} (${resultado.prompt.length} > ${limite})`);
-        const texto = maxLength ? promptPresentacionLora(resultado.prompt) : resultado.prompt;
+        const texto = maxLength ? promptPresentacionFlux(resultado.prompt) : resultado.prompt;
         const reporte = preflight(escena, resultado, texto);
         assert.equal(reporte.ok, true, `${caso}: ${reporte.errors.join("; ")}`);
-        assert.deepEqual(findLoraPromptLanguageLeaks(texto), [], caso);
+        assert.deepEqual(findFluxPromptLanguageLeaks(texto), [], caso);
       }
     // La compactación nunca toca la frase del armado: alterarla falla cerrado.
     const resultado = captionCanonicoGuirnalda(escena, frases);
@@ -361,11 +361,11 @@ function loraBaseDelPlan(): void {
       const clausula = clausulaDe(caption.clauses, GUIRNALDA_PLAN);
       assert.equal(clausula.colorPattern, frases[0]!.prompt_lora);
       assert.equal(vecesEn(caption.prompt, frases[0]!.prompt_lora), 1, caption.prompt);
-      assert.ok(caption.prompt.length <= LORA_PROMPT_MAX_LENGTH);
+      assert.ok(caption.prompt.length <= FLUX_PROMPT_MAX_LENGTH);
       const reporte = preflight(escena, caption);
       assert.equal(reporte.ok, true, `${nombre}: ${reporte.errors.join("; ")}`);
-      assert.deepEqual(findLoraPromptLanguageLeaks(caption.prompt), []);
-      const colores = verificarColoresCaptionLora(fijado.plan, escenaParaCoherencia(escena, frases), { clausulas: caption.clauses, traducirColor: translateLoraColor });
+      assert.deepEqual(findFluxPromptLanguageLeaks(caption.prompt), []);
+      const colores = verificarColoresCaptionFlux(fijado.plan, escenaParaCoherencia(escena, frases), { clausulas: caption.clauses, traducirColor: translateFluxColor });
       assert.equal(colores.ok, true, colores.errores.join("; "));
     }
   }
@@ -517,18 +517,18 @@ function sinCintasEnLaImagen(): void {
   const coherencia = verificarCoherenciaPrompt(prompt, fijado.plan, escenaParaCoherencia(escenaDePlan(fijado), frases));
   assert.equal(coherencia.ok, true, coherencia.errores.join("; "));
   // LoRA canónico en los dos dialectos, solo texto y en el presupuesto del híbrido,
-  // hasta el prompt que recibe fal (`buildLoraEditPrompt` sin referencias).
+  // hasta el prompt que recibe fal (`buildFluxEditPrompt` sin referencias).
   const sinteticas = frasesSinteticas("pared-espiral-tres-colores");
   const escena = escenaGuirnalda();
   {
     for (const hibrido of [false, true]) {
-      const resultado = captionCanonicoGuirnalda(escena, sinteticas, hibrido ? LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length : undefined);
-      const texto = hibrido ? promptPresentacionLora(resultado.prompt) : resultado.prompt;
-      const aFal = buildLoraEditPrompt(texto, []);
+      const resultado = captionCanonicoGuirnalda(escena, sinteticas, hibrido ? FLUX_PROMPT_MAX_LENGTH - FLUX_PRESENTATION_INSTRUCTION.length : undefined);
+      const texto = hibrido ? promptPresentacionFlux(resultado.prompt) : resultado.prompt;
+      const aFal = buildFluxEditPrompt(texto, []);
       const caso = `${hibrido ? "híbrido" : "base"}: ${aFal}`;
       assert.equal(vecesEn(aFal, sinteticas[0]!.prompt_lora), 1, caso);
       assert.doesNotMatch(aFal, CINTAS, caso);
-      assert.ok(aFal.length <= LORA_PROMPT_MAX_LENGTH, caso);
+      assert.ok(aFal.length <= FLUX_PROMPT_MAX_LENGTH, caso);
       assert.equal(preflight(escena, resultado, texto).ok, true, caso);
       if (hibrido) {
         const candado = hardLockComposicionGemini(...candadosDeComposicion(resultado.clauses), conArmadoGuirnaldaEnCaption(resultado.clauses), piezasDeLosArmados(resultado.clauses));
@@ -559,7 +559,7 @@ function enAltoNuncaUnArcoDePie(): void {
     assert.ok(resultado.prompt.includes(forma), resultado.prompt);
     assert.doesNotMatch(resultado.prompt, /\barch(es)?\b|\bstands?\b|\blegs?\b|grounded supports|floor contact/i, resultado.prompt);
     assert.ok(resultado.prompt.endsWith("natural depth."), resultado.prompt);
-    assert.ok(resultado.prompt.length <= LORA_PROMPT_MAX_LENGTH);
+    assert.ok(resultado.prompt.length <= FLUX_PROMPT_MAX_LENGTH);
     const reporte = preflight(escena, resultado, resultado.prompt);
     assert.equal(reporte.ok, true, reporte.errors.join("; "));
     // La misma escena SIN el armado de ADR-0032 tampoco pide apoyos en el piso desde el 2026-10-03, y es

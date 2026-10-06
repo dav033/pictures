@@ -1,11 +1,11 @@
 import type { SceneElement, SceneSpec } from "../escena/scene-spec";
 import type { VisualContext } from "../escena/visual-context";
-import { compileLoraCaption, translateLoraColor, type LoraVisualClause, type ProductConceptClauseInput } from "./lora-caption-compiler";
+import { compileFluxCaption, translateFluxColor, type FluxVisualClause, type ProductConceptClauseInput } from "./caption-flux";
 import { canonicalizeSku } from "@/lib/rag/catalog/canonicalize";
 import { leerTituloCatalogo, terminosBaseDeTitulo } from "./vocabulario-base";
 import type { FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
-export const LORA_PRODUCT_RUNTIME_VERSION = "flux-product-runtime.v1" as const;
+export const FLUX_PRODUCT_RUNTIME_VERSION = "flux-product-runtime.v1" as const;
 
 export type UnresolvedProductReason = "unknown" | "ambiguous" | "invalid";
 export type UnresolvedProduct = { product_id?: string; title?: string; reason: UnresolvedProductReason };
@@ -26,7 +26,7 @@ export type ProductPromptRuntimeResult = {
   legacy: boolean;
   legacyReason?: string;
   captionCompilerVersion: string;
-  clauses: LoraVisualClause[];
+  clauses: FluxVisualClause[];
   diagnostics: string[];
 };
 
@@ -80,10 +80,10 @@ function entradaCatalogo(
   for (const titulo of titulos) {
     const lectura = leerTituloCatalogo(titulo);
     if (!lectura) continue;
-    const colorTitulo = lectura.restoColor ? translateLoraColor(lectura.restoColor) : "";
+    const colorTitulo = lectura.restoColor ? translateFluxColor(lectura.restoColor) : "";
     const color = colorTitulo && colorTitulo !== lectura.restoColor
       ? colorTitulo
-      : productoUnico ? element.resolved_colors.map(translateLoraColor).join(" and ") : "";
+      : productoUnico ? element.resolved_colors.map(translateFluxColor).join(" and ") : "";
     const terminos = terminosBaseDeTitulo(lectura, color);
     if (!terminos || terminos.kind !== "balloon") continue;
     const sizeCodes = (tallas.get(productId) ?? [])
@@ -138,7 +138,7 @@ export function compileProductPrompt(input: {
       }
     }
   }
-  const compilacion = compileLoraCaption({
+  const compilacion = compileFluxCaption({
     sceneSpec: input.sceneSpec,
     visualContext: input.visualContext,
     productConcepts: entradas,
@@ -158,7 +158,7 @@ export function compileProductPrompt(input: {
     unresolved_products: unresolved,
     dropped_sizes: [],
     vocabulary_version: "catalog-title",
-    compiler_version: LORA_PRODUCT_RUNTIME_VERSION,
+    compiler_version: FLUX_PRODUCT_RUNTIME_VERSION,
     legacy,
     legacyReason: legacy ? "no product could be described from its catalog title" : undefined,
     captionCompilerVersion: compilacion.compilerVersion,

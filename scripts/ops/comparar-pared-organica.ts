@@ -28,9 +28,9 @@
  * una rejilla? ¿Conserva los tres colores?
  */
 import path from "node:path";
-import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lib/fal-evaluacion";
+import { correrExperimento, flag, resolverIdentidadFlux, type Celda, type Defaults } from "../lib/fal-evaluacion";
 
-const identidad = resolverIdentidadLora(flag("--artifact-id", "v004-1000"));
+const identidad = resolverIdentidadFlux(flag("--artifact-id", "v004-1000"));
 const escala = Number(flag("--escala", "0.8"));
 const semillas = flag("--semillas", "101").split(",").map((valor) => Number(valor.trim())).filter((valor) => Number.isFinite(valor));
 

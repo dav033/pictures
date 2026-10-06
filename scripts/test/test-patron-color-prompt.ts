@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { buildVisualContext } from "@/lib/ia/escena/visual-context";
-import { compileLoraCaption } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileFluxCaption } from "@/lib/ia/kagutsuchi/caption-flux";
+import { preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 
 const sceneSpec: SceneSpec = {
   schema_version: "1.0", generation_mode: "text_to_image",
@@ -18,17 +18,17 @@ const sceneSpec: SceneSpec = {
   negative_prompt: { forbidden_elements: [], forbidden_venue_changes: [], forbidden_compositing_artifacts: [] },
   metadata: { created_by: "server_default", plan_hash: "patron-color-base" },
 };
-const promptLora = "wrapped in a spiral of gold and black stripes winding from the left base over the top to the right base";
-const compilation = compileLoraCaption({
+const promptFlux = "wrapped in a spiral of gold and black stripes winding from the left base over the top to the right base";
+const compilation = compileFluxCaption({
   sceneSpec,
   visualContext: buildVisualContext({ userRequest: "arco dorado y negro en salón" }),
-  colorPatterns: [{ estructura_id: "ARC", aplicado: true, prompt_gemini: "", prompt_lora: promptLora }],
+  colorPatterns: [{ estructura_id: "ARC", aplicado: true, prompt_gemini: "", prompt_lora: promptFlux }],
 });
 const clause = compilation.clauses.find((item) => item.elementIds.includes("ARC"));
-assert.equal(clause?.colorPattern, promptLora);
-assert.equal(compilation.prompt.split(promptLora).length - 1, 1);
-assert.equal(preflightLoraPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt }).ok, true);
-const altered = preflightLoraPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt.replace("wrapped in a spiral", "wrapped in a swirl") });
+assert.equal(clause?.colorPattern, promptFlux);
+assert.equal(compilation.prompt.split(promptFlux).length - 1, 1);
+assert.equal(preflightFluxPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt }).ok, true);
+const altered = preflightFluxPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt.replace("wrapped in a spiral", "wrapped in a swirl") });
 assert.equal(altered.ok, false);
 assert.match(altered.errors.join("; "), /patrón de color ausente o alterado/);
 console.log("Patrones de color en FLUX base: OK");

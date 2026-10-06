@@ -98,7 +98,7 @@ const MENSAJE_CLIENTE_AJUSTE_GENERICO = "No pude aplicar ese cambio a la propues
  * still reads as internal jargon is replaced rather than relayed.
  */
 export function mensajeClienteDeRechazo(mensaje: string): string {
-  if (mensaje.startsWith("LORA_DATASET_ALLOWLIST_REJECTED")) return MENSAJE_CLIENTE_PIEZA_FUERA_DEL_ESTILO;
+  if (mensaje.startsWith("FLUX_DATASET_ALLOWLIST_REJECTED")) return MENSAJE_CLIENTE_PIEZA_FUERA_DEL_ESTILO;
   return detectarJergaInterna(mensaje).length > 0 ? MENSAJE_CLIENTE_AJUSTE_GENERICO : mensaje;
 }
 

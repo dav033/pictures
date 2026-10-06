@@ -11,7 +11,7 @@
  *   ella y sin tocar la franja de piso; el `anclaje` de Python manda sobre la ubicación del plan.
  * - Los datos de cada pieza para Python: líneas del catálogo, leyenda del bouquet y proporción de la caja de la foto.
  * - El adaptador de Python: la operación, el scope y la validación de la respuesta.
- * - El camino de `/api/generate` (caso de uso `guiaEscenaParaGeneracion` + `generarConSempertexLora`): `/edit`
+ * - El camino de `/api/generate` (caso de uso `guiaEscenaParaGeneracion` + `generarConSempertexFlux`): `/edit`
  *   recibe EXACTAMENTE una imagen, la guía, y ningún byte de la foto de referencia; el caption va primero y la nota
  *   después; si la guía no se puede construir, se genera sin ella y el resumen lo dice.
  * - Las banderas: `GUIA_ESCENA_V1` encendida por defecto y `REFERENCIA_EN_ETAPA1_V1` apagada.
@@ -25,20 +25,20 @@ import { ANALISIS_EJEMPLOS } from "@/lib/ia/amaterasu/analisis-ejemplos";
 import { FONDO_GUIA, PISO_GUIA, tamanoGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { contrasteWcag, encaje, generacionAdmiteGuiaEscena, instanciasDeEscena, lDeHex, planConReferencia, svgGuiaEscena, type InstanciaGuia } from "@/lib/ia/kagutsuchi/guia-escena";
 import { labDeRgb } from "@/lib/rag/catalog/similitud-color";
-import { LORA_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { FLUX_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/caption-flux";
+import { findFluxPromptLanguageLeaks, findFluxPromptProductLeaks, preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 import { datosDePiezas, guiaEscenaParaGeneracion, prepararGuiaEscena } from "@/lib/ia/kagutsuchi/preparar-guia-escena";
-import { buildLoraEditPrompt, generarConSempertexLora, imageSizeFor, NOTA_GUIA_ESCENA, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA, notaGuiaEscena, reservaNotaGuiaEscena, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { buildFluxEditPrompt, generarConSempertexFlux, imageSizeFor, NOTA_GUIA_ESCENA, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA, notaGuiaEscena, reservaNotaGuiaEscena, type ImagenGuiaFlux } from "@/lib/ia/kagutsuchi/flux";
 import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { llamarPythonPlanGuiaEscena, PYTHON_PLAN_GUIA_ESCENA_PATH, PYTHON_PLAN_GUIA_ESCENA_SCOPE } from "@/lib/ia/nucleo/python-adapter";
 import { PlanGuiaEscenaResultV1Schema, type PiezaGuiaEscena, type PlanGuiaEscenaResultV1 } from "@/lib/plan/guia-escena";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { capturarPeticion, imagenDePrueba, LORA_DE_PRUEBA } from "../lib/capturar-peticion-lora";
+import { capturarPeticion, imagenDePrueba, FLUX_DE_PRUEBA } from "../lib/capturar-peticion-flux";
 import { captionDeCaso, casoArcoPatron } from "../lib/escenas-guia-estructura";
 
 configurarPersistenciaTelemetria(undefined);
 
-const EDIT = "https://queue.fal.run/fal-ai/flux-2/lora/edit";
+const EDIT = "https://queue.fal.run/fal-ai/flux-2/edit";
 const TAMANO = tamanoGuia(imageSizeFor("3:2"));
 const EJEMPLO_01 = ANALISIS_EJEMPLOS.ejemplos.find((ejemplo) => ejemplo.id === "ejemplo-01")!.resultado.blueprint;
 const IZQUIERDA = "REF_01_E02";
@@ -295,9 +295,9 @@ function testDatosDePiezas(): void {
 }
 
 function testCuandoSeUsa(): void {
-  const base = { bandera: true, usarLora: true, hibrido: false, fotoEspacio: false, resultadoPrevio: false, editApagado: false, formatoTexto: true, conReferencia: true };
+  const base = { bandera: true, usarFlux: true, hibrido: false, fotoEspacio: false, resultadoPrevio: false, editApagado: false, formatoTexto: true, conReferencia: true };
   assert.equal(generacionAdmiteGuiaEscena(base), true);
-  for (const [campo, valor] of [["bandera", false], ["usarLora", false], ["hibrido", true], ["fotoEspacio", true], ["resultadoPrevio", true], ["editApagado", true], ["formatoTexto", false], ["conReferencia", false]] as const) {
+  for (const [campo, valor] of [["bandera", false], ["usarFlux", false], ["hibrido", true], ["fotoEspacio", true], ["resultadoPrevio", true], ["editApagado", true], ["formatoTexto", false], ["conReferencia", false]] as const) {
     assert.equal(generacionAdmiteGuiaEscena({ ...base, [campo]: valor }), false, campo);
   }
   assert.equal(planConReferencia([estructura("A", { referencia_element_id: IZQUIERDA })]), true);
@@ -363,12 +363,12 @@ async function testCaminoDeGeneracion(): Promise<void> {
     return (await llamarPythonPlanGuiaEscena({ plan: planPedido, requestId: "00000000-0000-4000-8000-000000000001", correlationId: "00000000-0000-4000-8000-000000000002", env: ENV, fetchImpl })).resultado;
   };
   const compilar = (maxLength: number) => captionDeCaso(caso, maxLength);
-  const cabe = (compilacion: ReturnType<typeof compilar>, imagenes: readonly ImagenGuiaLora[]) => preflightLoraPrompt({
+  const cabe = (compilacion: ReturnType<typeof compilar>, imagenes: readonly ImagenGuiaFlux[]) => preflightFluxPrompt({
     sceneSpec: caso.escena,
     clauses: compilacion.clauses,
-    prompt: buildLoraEditPrompt(compilacion.prompt, imagenes)
+    prompt: buildFluxEditPrompt(compilacion.prompt, imagenes)
 }).ok;
-  const guia = await guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos, maximo: LORA_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length });
+  const guia = await guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos, maximo: FLUX_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length });
   assert.equal(pedidos.length, 1);
   assert.ok(guia.imagenes && guia.compilacion && guia.resumen);
   assert.deepEqual(guia.resumen, { usada: true, guia_sha256: guia.preparada!.sha256, piezas: 1, discos: 4, omitidas: [{ estructura_id: "EST_09_BOUQUET", motivo: "sin_dibujo" }], cajas_de_la_foto: 2, cajas_del_plan: 0, coste_entradas_extra_usd_estimado: 0.021 });
@@ -381,11 +381,11 @@ async function testCaminoDeGeneracion(): Promise<void> {
   // Lo que la ruta manda a fal: la guía como ÚNICA imagen de /edit, aunque la petición traiga la foto de referencia.
   const referencia = imagenDePrueba("composition_reference", 2, "REF_01", FOTO_REFERENCIA);
   const producto = imagenDePrueba("catalog_product_reference", 3, "CATALOG_01", Buffer.from("FOTO-DE-PRODUCTO").toString("base64"));
-  for (const loras of [[], [LORA_DE_PRUEBA]]) {
+  for (const loras of [[], [FLUX_DE_PRUEBA]]) {
     const caption = guia.compilacion.prompt;
-    const capturada = await capturarPeticion(generarConSempertexLora, caption, "3:2", [referencia, producto], { loras, seed: 7, imagenesEdit: guia.imagenes });
+    const capturada = await capturarPeticion(generarConSempertexFlux, caption, "3:2", [referencia, producto], { loras, seed: 7, imagenesEdit: guia.imagenes });
     const cuerpo = capturada.cuerpo as { prompt: string; image_urls?: string[] };
-    assert.equal(capturada.destino, EDIT);
+    assert.equal(capturada.destino, loras.length ? "https://queue.fal.run/fal-ai/flux-2/lora/edit" : EDIT);
     assert.deepEqual(cuerpo.image_urls, [`data:image/png;base64,${guia.imagenes[0]!.base64}`], "exactamente una imagen: la guía");
     const enviado = JSON.stringify(capturada.cuerpo);
     assert.ok(!enviado.includes(FOTO_REFERENCIA), "ningún byte de la foto de referencia sale hacia fal");
@@ -400,9 +400,9 @@ async function testCaminoDeGeneracion(): Promise<void> {
   console.log("[PASS] /edit recibe solo la guía (modo base y entrenado), ningún byte de la foto, y la nota sigue al caption");
 
   // El prompt final cabe y no filtra nada.
-  const final = buildLoraEditPrompt(guia.compilacion.prompt, guia.imagenes);
-  assert.ok(final.length <= LORA_PROMPT_MAX_LENGTH, `el prompt con la nota mide ${final.length}`);
-  assert.deepEqual([...findLoraPromptLanguageLeaks(final), ...findLoraPromptProductLeaks(final)], []);
+  const final = buildFluxEditPrompt(guia.compilacion.prompt, guia.imagenes);
+  assert.ok(final.length <= FLUX_PROMPT_MAX_LENGTH, `el prompt con la nota mide ${final.length}`);
+  assert.deepEqual([...findFluxPromptLanguageLeaks(final), ...findFluxPromptProductLeaks(final)], []);
   assert.ok(reservaNotaGuiaEscena() === Math.max(NOTA_GUIA_ESCENA.length, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA.length) + 2);
   // CASE-005 de images-judge: sin aro, poste ni cintas dibujados, la nota no le sugiere a FLUX un aro con marco y
   // poste (unía dos piezas separadas en un arco), y dice que las piezas separadas siguen separadas.
@@ -410,29 +410,29 @@ async function testCaminoDeGeneracion(): Promise<void> {
   assert.doesNotMatch(notaGuiaEscena(false), /hoop|stand/);
   assert.match(notaGuiaEscena(false), /pieces drawn apart stay apart/);
   assert.equal(notaGuiaEscena(undefined), NOTA_GUIA_ESCENA, "sin dato, la nota de siempre");
-  const sinEstructura = buildLoraEditPrompt("caption", [{ ...guia.imagenes![0]!, conEstructura: false }]);
+  const sinEstructura = buildFluxEditPrompt("caption", [{ ...guia.imagenes![0]!, conEstructura: false }]);
   assert.ok(sinEstructura.endsWith(NOTA_GUIA_ESCENA_SIN_ESTRUCTURA));
-  assert.throws(() => buildLoraEditPrompt("caption", [...(guia.imagenes ?? []), referencia]), /LORA_GUIA_INVALIDA/, "la guía de escena viaja sola");
+  assert.throws(() => buildFluxEditPrompt("caption", [...(guia.imagenes ?? []), referencia]), /FLUX_GUIA_INVALIDA/, "la guía de escena viaja sola");
   console.log("[PASS] el prompt con la nota cabe en el presupuesto, pasa el preflight y la guía no admite compañía");
 
   // Si Python falla, se genera sin guía y la respuesta lo dice; nunca en silencio.
-  const caida = await guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos: async () => { throw new Error("motor_ocupado"); }, maximo: LORA_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length });
+  const caida = await guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos: async () => { throw new Error("motor_ocupado"); }, maximo: FLUX_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length });
   assert.equal(caida.imagenes, undefined);
   assert.equal(caida.compilacion, undefined);
   assert.equal(caida.resumen?.usada, false);
   assert.match(caida.resumen?.motivo ?? "", /no se pudo construir la guía de escena: motor_ocupado/);
-  const sinGuia = await capturarPeticion(generarConSempertexLora, guia.compilacion.prompt, "3:2", [referencia, producto], { loras: [], seed: 7 });
+  const sinGuia = await capturarPeticion(generarConSempertexFlux, guia.compilacion.prompt, "3:2", [referencia, producto], { loras: [], seed: 7 });
   assert.ok(!JSON.stringify(sinGuia.cuerpo).includes(FOTO_REFERENCIA), "sin guía tampoco sale la foto");
   assert.equal((sinGuia.cuerpo as { image_urls?: unknown }).image_urls, undefined);
   // Una cancelación no es un fallo de la guía: se relanza.
   const corte = new AbortController();
   corte.abort();
-  await assert.rejects(guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos: async () => { throw new Error("cancelada"); }, maximo: LORA_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length, signal: corte.signal }), /cancelada/);
+  await assert.rejects(guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos: async () => { throw new Error("cancelada"); }, maximo: FLUX_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length, signal: corte.signal }), /cancelada/);
   // Si no cabe la nota, tampoco se usa, y se dice.
-  const sinSitio = await guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos, maximo: LORA_PROMPT_MAX_LENGTH, compilar, cabe: () => false, largo: (c) => c.prompt.length });
+  const sinSitio = await guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos, maximo: FLUX_PROMPT_MAX_LENGTH, compilar, cabe: () => false, largo: (c) => c.prompt.length });
   assert.equal(sinSitio.imagenes, undefined);
   assert.match(sinSitio.resumen?.motivo ?? "", /no cabe/);
-  assert.deepEqual(await guiaEscenaParaGeneracion({ admite: false, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos, maximo: LORA_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length }), {});
+  assert.deepEqual(await guiaEscenaParaGeneracion({ admite: false, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos, maximo: FLUX_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length }), {});
   console.log("[PASS] sin guía (Python caído o nota sin sitio) se genera solo con texto y el resumen dice por qué; cancelar se relanza");
 
   const preparada = await prepararGuiaEscena({ plan, foto: undefined, aspecto: "2:3", pedirDiscos });

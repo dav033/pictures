@@ -18,7 +18,7 @@ export type MetaCorrida = {
   /** Semilla del PRNG que eligió las referencias: fija la selección entre fases. */
   semillaSeleccion: number;
   espacio: { nombre: string; ancho: number; alto: number };
-  slotLora: { slug: string; artifactId: string; trigger: string; evaluationStatus: string; escala: number };
+  slotFlux: { slug: string; artifactId: string; trigger: string; evaluationStatus: string; escala: number };
   modelos: { lora: string; imagen: string; chat: string };
   parametros: { pasos: number; guidance: number; ancho: number; alto: number };
   /**
@@ -29,7 +29,7 @@ export type MetaCorrida = {
    * vez de a una variable de entorno olvidada.
    */
   banderas?: Readonly<Record<string, boolean>>;
-  /** Semilla fija de la corrida (`LORA_EVAL_SEED`), o `null` si se sorteó cada imagen. */
+  /** Semilla fija de la corrida (`FLUX_EVAL_SEED`), o `null` si se sorteó cada imagen. */
   semillaImagen?: number | null;
   /** Gasto real medido contra el saldo del proveedor. `null` si no se pudo medir. */
   gastoUsd: number | null;

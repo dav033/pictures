@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { compilarDescriptorProductoPerceptual, assertDescriptorPerceptualSeguro } from "../../src/lib/ia/kagutsuchi/descriptor-perceptual";
 import { SceneSpecSchema } from "../../src/lib/ia/escena/scene-spec";
-import { compileLoraCaption } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileFluxCaption } from "../../src/lib/ia/kagutsuchi/caption-flux";
+import { preflightFluxPrompt } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 
 
@@ -103,7 +103,7 @@ assert.doesNotMatch(descriptor, /Reflex|SKU|price|paquete/i);
 assert.doesNotThrow(() => assertDescriptorPerceptualSeguro(descriptor));
 assert.throws(() => assertDescriptorPerceptualSeguro("Reflex high-shine SKU 123"), /descriptor perceptual/i);
 
-const compilation = compileLoraCaption({
+const compilation = compileFluxCaption({
   sceneSpec: scene,
   visualContext: buildVisualContext({ userRequest: "Halloween en la puerta" }),
   productConcepts: [{ elementId: "EST_01_ARANA", conceptId: concept.concept_id, canonicalLabel: descriptor }],
@@ -114,7 +114,7 @@ assert.match(compilation.prompt, /black bats and white ghosts/i);
 assert.match(compilation.prompt, /three .*pumpkins/i);
 assert.doesNotMatch(compilation.prompt, /Reflex|SKU|precio|paquete|EST_01|PROP_01/i);
 
-const preflight = preflightLoraPrompt({ sceneSpec: scene, clauses: compilation.clauses, prompt: compilation.prompt });
+const preflight = preflightFluxPrompt({ sceneSpec: scene, clauses: compilation.clauses, prompt: compilation.prompt });
 assert.equal(preflight.ok, true, preflight.errors.join("; "));
 assert.deepEqual(preflight.structures, { expected: 2, represented: 2 });
 assert.deepEqual(preflight.locations, { expected: 2, represented: 2 });

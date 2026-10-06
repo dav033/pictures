@@ -8,7 +8,7 @@ import { tonosColoresCatalogo } from "../../src/lib/rag/catalog/similitud-color"
 import { reglasMezclas } from "../../src/lib/plan/mezclas";
 import { reglasGuirnalda } from "../../src/lib/plan/armado-guirnalda";
 import { FORMAS_LISTAS_ARCO_ORGANICO } from "../../src/lib/plan/armado-arco-organico";
-import { LORA_COLOR_NAMES_EN } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { FLUX_COLOR_NAMES_EN } from "../../src/lib/ia/kagutsuchi/caption-flux";
 import { HEX_COLORES_V2, PALETA_COLORES_V2 } from "../../src/lib/rag/taxonomy/v2";
 import { ACABADO_EN } from "../../src/lib/ia/uzume/mezcla-color-escena";
 import { ListaMaterialesRequestSchema, ListaMaterialesResultadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
@@ -119,7 +119,7 @@ async function main(): Promise<void> {
           // prompts with the same ES→EN tables the TypeScript prompts use
           // (ADR-0028): the LoRA caption's color names (palette plus aliases, so
           // "gris" is "gray" in both) and the Gemini scene's finish words.
-          "x-colores-en": { ...LORA_COLOR_NAMES_EN },
+          "x-colores-en": { ...FLUX_COLOR_NAMES_EN },
           // The catalog color vocabulary itself (taxonomy/v2.ts): the photo
           // pattern detection may only answer with these names.
           "x-paleta-colores": [...PALETA_COLORES_V2],

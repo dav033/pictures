@@ -1,14 +1,14 @@
-import type { LoraPlacement } from "../escena/lora-semantics";
+import type { FluxPlacement } from "../escena/scene-semantics";
 
 /**
- * The fields of a caption clause this rule reads. `LoraVisualClause` satisfies
+ * The fields of a caption clause this rule reads. `FluxVisualClause` satisfies
  * it, so the rule runs on the compiler's grouping: `bilateral` is set only when
  * the compiler paired a left and a right structure as one mirrored instruction.
  */
 export type SidePieceCandidate = {
   readonly elementIds: readonly string[];
   readonly structureType: string;
-  readonly placement: LoraPlacement;
+  readonly placement: FluxPlacement;
   readonly bilateral?: boolean;
 };
 
@@ -40,7 +40,7 @@ function isHalfArch(piece: SidePieceCandidate): boolean {
  * the one that «explains the columns merging into the arch legs». Until the LoRA is retrained, saying the gap
  * out loud is the only cure available.
  *
- * Owner of this rule, and now the only copy: `separatePiecesPhrase` in lora-caption-compiler.ts calls this
+ * Owner of this rule, and now the only copy: `separatePiecesPhrase` in caption-flux.ts calls this
  * and maps `kind` to its phrase. It used to keep its own filter, and that is exactly what broke — the phrase
  * was added there for two columns and not here, so the caption asked for the gap and the Gemini prompt did
  * not. `test-image-qa-piezas-separadas.ts` is what caught the divergence.

@@ -8,12 +8,12 @@ import { CREATIVIDAD_POR_DEFECTO, NIVELES_CREATIVIDAD, nivelCreatividadParaGener
 import { abrirContextoPlan, crearTokenPlan, verificarTokenAprobacion } from "../../src/lib/plan/aprobacion";
 import { bloqueCreatividad, construirSistema } from "../../src/lib/ia/omoikane/prompt-sistema";
 import { ChatRequestV1Schema, parseChatRequestV1 } from "../../src/lib/ia/contracts/chat-v1";
-import { guidanceScaleSeguro } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
+import { guidanceScaleSeguro } from "../../src/lib/ia/kagutsuchi/flux";
 import { ReferenceBlueprintV2Schema } from "../../src/lib/ia/referencia/reference-blueprint";
 import { validarEstructurasFueraDeReferencia, validarRangoCreatividad } from "../../src/lib/plan/restricciones";
 import { PlanDecoracionSchema } from "../../src/lib/plan/tipos";
-import { compileLoraCaption } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileFluxCaption } from "../../src/lib/ia/kagutsuchi/caption-flux";
+import { findFluxPromptLanguageLeaks } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 
@@ -135,13 +135,13 @@ const escena = {
   metadata: { created_by: "server_default", plan_hash: "plan-test" },
 } as SceneSpec;
 const contexto = buildVisualContext({ userRequest: "cumpleaños en salón" });
-const compilar = (nivel: 2 | 5, maxLength?: number) => compileLoraCaption({ sceneSpec: escena, visualContext: contexto, creativeCues: perfilCreatividad(nivel).pistasPrompt, ...(maxLength ? { maxLength } : {}) });
-const sinPistas = compileLoraCaption({ sceneSpec: escena, visualContext: contexto });
+const compilar = (nivel: 2 | 5, maxLength?: number) => compileFluxCaption({ sceneSpec: escena, visualContext: contexto, creativeCues: perfilCreatividad(nivel).pistasPrompt, ...(maxLength ? { maxLength } : {}) });
+const sinPistas = compileFluxCaption({ sceneSpec: escena, visualContext: contexto });
 assert.equal(compilar(2).prompt, sinPistas.prompt, "level 2 prompt is unchanged");
 const libre = compilar(5);
 for (const pista of perfilCreatividad(5).pistasPrompt) assert.ok(libre.prompt.includes(pista), pista);
 assert.ok(libre.prompt.length <= 750);
-assert.deepEqual(findLoraPromptLanguageLeaks(libre.prompt), []);
+assert.deepEqual(findFluxPromptLanguageLeaks(libre.prompt), []);
 const ajustado = compilar(5, sinPistas.prompt.length);
 assert.doesNotMatch(ajustado.prompt, /rich layered styling|cinematic|editorial/, "cues are dropped before anything else when the budget is tight");
 assert.match(ajustado.prompt, /column/);

@@ -3,15 +3,15 @@ import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildApprovedSceneSpec } from "@/lib/ia/escena/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { buildVisualContext } from "@/lib/ia/escena/visual-context";
-import { compileLoraCaption } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileFluxCaption } from "@/lib/ia/kagutsuchi/caption-flux";
+import { preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 import { planFijadoDesdeVector } from "../lib/vectores-golden";
 
 /**
  * Fixture end-to-end real: PlanResuelto -> planBlueprint -> SceneSpec ->
- * compileLoraCaption. Verifica que la cadena completa preserve
+ * compileFluxCaption. Verifica que la cadena completa preserve
  * tipo/ubicación/rol de la estructura y los colores realmente comprados, no
- * solo los fixtures sintéticos de scripts/test/test-lora-caption-compiler.ts.
+ * solo los fixtures sintéticos de scripts/test/test-caption-flux.ts.
  *
  * El plan es un **plan congelado**: sale del bloque `expected` de un vector
  * dorado (`planFijadoDesdeVector`), no de volver a resolverlo. Aquí el plan es
@@ -64,15 +64,15 @@ async function main(): Promise<void> {
   assert.equal(sceneSpec.elements[0]!.visual_semantics?.structure_type, "arco", "el SceneSpec debe recibir la semántica canónica sin perderla en buildApprovedSceneSpec");
 
   const visualContext = buildVisualContext({ brief: { tipo_evento: "cumpleaños" } });
-  const compilation = compileLoraCaption({ sceneSpec, visualContext });
+  const compilation = compileFluxCaption({ sceneSpec, visualContext });
   assert.ok(compilation.prompt.includes("arch"), "el caption debe traducir 'arco' a 'arch' en inglés");
   assert.ok(compilation.prompt.length <= 750, "el caption no debe superar el límite duro de 750 caracteres");
   assert.doesNotMatch(compilation.prompt, /balloon installation/, "un tipo conocido (arco) nunca debe degradar a 'balloon installation' genérico");
 
-  const preflight = preflightLoraPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt });
+  const preflight = preflightFluxPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt });
   assert.equal(preflight.ok, true, `el preflight debe pasar para este plan real: ${preflight.errors.join("; ")}`);
 
-  console.log("[PASS] PlanResuelto -> planBlueprint -> SceneSpec -> compileLoraCaption preserva tipo/ubicación/rol end-to-end");
+  console.log("[PASS] PlanResuelto -> planBlueprint -> SceneSpec -> compileFluxCaption preserva tipo/ubicación/rol end-to-end");
   console.log(`caption: ${compilation.prompt}`);
 
   await parDeColumnasLaterales();
@@ -121,10 +121,10 @@ async function parDeColumnasLaterales(): Promise<void> {
     planHash: resultado.plan_hash,
     catalogOnly: true,
   });
-  const compilation = compileLoraCaption({ sceneSpec, visualContext: buildVisualContext({ brief: { tipo_evento: "cumpleaños" } }) });
+  const compilation = compileFluxCaption({ sceneSpec, visualContext: buildVisualContext({ brief: { tipo_evento: "cumpleaños" } }) });
   assert.match(compilation.prompt, /one standing on the left and one on the right/, compilation.prompt);
   assert.doesNotMatch(compilation.prompt, /standing on the left side/);
-  const preflight = preflightLoraPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt });
+  const preflight = preflightFluxPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt });
   assert.equal(preflight.ok, true, preflight.errors.join("; "));
   assert.deepEqual(preflight.relationships, { expected: 1, represented: 1 });
 

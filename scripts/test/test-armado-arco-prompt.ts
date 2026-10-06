@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LORA_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { FLUX_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/caption-flux";
+import { findFluxPromptLanguageLeaks } from "@/lib/ia/kagutsuchi/preflight-flux";
 import { frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import type { ArcoResuelto } from "@/lib/plan/armado-arco";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
@@ -131,8 +131,8 @@ caso("LoRA: la frase entra una vez en el caption, cabe, es ASCII y sin español"
   const sin = captionCanonicoGuirnalda(escena, undefined);
   assert.equal(veces(con.prompt, FRASES.prompt_lora), 1, "una sola vez");
   assert.ok(!sin.prompt.includes(FRASES.prompt_lora));
-  assert.ok(con.prompt.length <= LORA_PROMPT_MAX_LENGTH, `${con.prompt.length} > ${LORA_PROMPT_MAX_LENGTH}`);
-  assert.deepEqual(findLoraPromptLanguageLeaks(con.prompt), []);
+  assert.ok(con.prompt.length <= FLUX_PROMPT_MAX_LENGTH, `${con.prompt.length} > ${FLUX_PROMPT_MAX_LENGTH}`);
+  assert.deepEqual(findFluxPromptLanguageLeaks(con.prompt), []);
   assert.ok(/^[\x20-\x7E]*$/.test(FRASES.prompt_lora) && !/\d/.test(FRASES.prompt_lora), "la frase del LoRA es ASCII y sin cifras");
 });
 

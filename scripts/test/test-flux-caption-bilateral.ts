@@ -3,24 +3,24 @@
  *
  * El defecto: cuando las dos estructuras laterales son las ÚNICAS del plan, la
  * cláusula fusionada es también la focal, y `resolveRelations`
- * (`lora-caption-compiler.ts`) descarta la focal con `continue` antes de
+ * (`caption-flux.ts`) descarta la focal con `continue` antes de
  * asignarle `flanking`. Sin esa relación el render caía en "standing apart on
  * the left" —las dos columnas a la izquierda— y el preflight exigía justo la
- * frase espejo, así que `/api/generate` lanzaba LORA_PREFLIGHT_FAILED y la
+ * frase espejo, así que `/api/generate` lanzaba FLUX_PREFLIGHT_FAILED y la
  * petición no producía imagen alguna.
  *
  * Ninguno de los 24 planes congelados tiene esa forma, así que la batería no
  * podía verla. Estos tres casos la fijan.
  *
  * Sin red ni llamadas pagadas.
- *   npx tsx --conditions=react-server scripts/test/test-lora-caption-bilateral.ts
+ *   npx tsx --conditions=react-server scripts/test/test-flux-caption-bilateral.ts
  */
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
-import { GROUPING_ONLY_CONTEXT, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { LORA_PRESENTATION_INSTRUCTION } from "./fixtures/gemini-composition-historica";
-import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
-import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { GROUPING_ONLY_CONTEXT, FLUX_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/caption-flux";
+import { FLUX_PRESENTATION_INSTRUCTION } from "./fixtures/gemini-composition-historica";
+import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/producto-flux";
+import { preflightFluxPrompt } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 
 
 type Elemento = SceneSpec["elements"][number];
@@ -67,12 +67,12 @@ function compilar(elementos: Elemento[]): { prompt: string; ok: boolean; errores
     sceneSpec: spec,
     visualContext: GROUPING_ONLY_CONTEXT,
     sizeConfirmations,
-    maxLength: LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length,
+    maxLength: FLUX_PROMPT_MAX_LENGTH - FLUX_PRESENTATION_INSTRUCTION.length,
     ambientDecor: [],
     officialStructures: new Map<string, string>()
 });
   const prompt = compilacion.prompt;
-  const reporte = preflightLoraPrompt({ sceneSpec: spec, clauses: compilacion.clauses, prompt });
+  const reporte = preflightFluxPrompt({ sceneSpec: spec, clauses: compilacion.clauses, prompt });
   return { prompt, ok: reporte.ok, errores: reporte.errors };
 }
 

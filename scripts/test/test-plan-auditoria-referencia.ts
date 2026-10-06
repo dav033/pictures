@@ -399,15 +399,15 @@ async function main(): Promise<void> {
     { color: "rosado", product_id: "P-ROSADO", titulo: "Globo Latex Redondo Fashion Rosado" },
     { color: "plateado", product_id: "P-PLATA", titulo: "Globo Latex Redondo Reflex Plata" },
   ]);
-  const rechazoLora = await lora.confirmar(["transparente"]);
-  assert.equal(rechazoLora.status, "COLORES_REFERENCIA_OMITIDOS", JSON.stringify(rechazoLora).slice(0, 400));
-  const omitidosLora = rechazoLora.colores_omitidos as Array<{ color: string; productos: Array<{ product_id: string; en_busqueda: boolean }> }>;
-  assert.deepEqual(omitidosLora[0]!.productos.map((item) => item.en_busqueda), [false]);
+  const rechazoFlux = await lora.confirmar(["transparente"]);
+  assert.equal(rechazoFlux.status, "COLORES_REFERENCIA_OMITIDOS", JSON.stringify(rechazoFlux).slice(0, 400));
+  const omitidosFlux = rechazoFlux.colores_omitidos as Array<{ color: string; productos: Array<{ product_id: string; en_busqueda: boolean }> }>;
+  assert.deepEqual(omitidosFlux[0]!.productos.map((item) => item.en_busqueda), [false]);
   // Bug fix: grey ("gris") has no exact catalog product, but the pool has
   // silver ("plateado") -- same neutral family in similitud-color.ts -- so it
   // now borrows it by chromatic distance instead of disappearing.
-  assert.deepEqual(omitidosLora.map((item) => item.color), ["rosado", "plateado", "gris"], "grey resolves to the nearest stocked color instead of being dropped");
-  assert.deepEqual(omitidosLora.find((item) => item.color === "gris")?.productos.map((item) => item.product_id), ["P-PLATA"], "grey borrows silver's real products, not a synonym table");
+  assert.deepEqual(omitidosFlux.map((item) => item.color), ["rosado", "plateado", "gris"], "grey resolves to the nearest stocked color instead of being dropped");
+  assert.deepEqual(omitidosFlux.find((item) => item.color === "gris")?.productos.map((item) => item.product_id), ["P-PLATA"], "grey borrows silver's real products, not a synonym table");
   assert.equal(lora.consultasPresencia.length, 1);
   assert.equal(lora.consultasColor.length, 1);
   // The literal word "gris" is never queried: it resolved to "plateado" before the product lookup.

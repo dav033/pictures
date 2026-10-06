@@ -10,7 +10,7 @@
  * - `con`: lo que mandaría con la bandera encendida: `/edit` con la guía como
  *   primera imagen (y la carta si cabe), sus notas delante y el caption
  *   compactado para que el prompt entero siga dentro de
- *   `LORA_PROMPT_MAX_LENGTH`. La compactación es parte de la bandera, no una
+ *   `FLUX_PROMPT_MAX_LENGTH`. La compactación es parte de la bandera, no una
  *   segunda variable: sin ella las notas no caben.
  * El LoRA, la escala, el guidance, el tamaño y las semillas son los mismos.
  *
@@ -23,11 +23,11 @@ import os from "node:os";
 import path from "node:path";
 import sharp, { type OverlayOptions } from "sharp";
 import { decodificarPixeles } from "@/lib/ia/amaterasu/decodificar-pixeles";
-import { LORA_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { FLUX_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/caption-flux";
+import { preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 import { elegirCaptionConGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { prepararGuiaEstructura, type GuiaPreparada } from "@/lib/ia/kagutsuchi/rasterizar-guia";
-import { buildLoraEditPrompt, reservaNotasGuia, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { buildFluxEditPrompt, reservaNotasGuia, type ImagenGuiaFlux } from "@/lib/ia/kagutsuchi/flux";
 import type { Celda, Manifiesto } from "./fal-evaluacion";
 import { captionDeCaso, casosGuia, type CasoGuia } from "./escenas-guia-estructura";
 import { medirContraGuia, type MedidaGuia } from "./medir-guia";
@@ -38,8 +38,8 @@ function captionBase(prompt: string): string {
   return prompt;
 }
 
-function exigirPreflight(caso: CasoGuia, clauses: Parameters<typeof preflightLoraPrompt>[0]["clauses"], prompt: string, etiqueta: string): void {
-  const reporte = preflightLoraPrompt({ sceneSpec: caso.escena, clauses, prompt });
+function exigirPreflight(caso: CasoGuia, clauses: Parameters<typeof preflightFluxPrompt>[0]["clauses"], prompt: string, etiqueta: string): void {
+  const reporte = preflightFluxPrompt({ sceneSpec: caso.escena, clauses, prompt });
   if (!reporte.ok) throw new Error(`${caso.nombre} (${etiqueta}): el preflight rechaza el prompt (${reporte.errors.join("; ")})`);
 }
 
@@ -53,15 +53,15 @@ export async function prepararCorridaGuia(opciones: { escala: number; semillas: 
     const completo = captionDeCaso(caso);
     const promptSin = completo.prompt;
     exigirPreflight(caso, completo.clauses, promptSin, "sin guía");
-    const elegido = elegirCaptionConGuia<ReturnType<typeof captionDeCaso>, ImagenGuiaLora>({
+    const elegido = elegirCaptionConGuia<ReturnType<typeof captionDeCaso>, ImagenGuiaFlux>({
       imagenes: guia.imagenes,
-      maximo: LORA_PROMPT_MAX_LENGTH,
+      maximo: FLUX_PROMPT_MAX_LENGTH,
       reserva: reservaNotasGuia,
       compilar: (maxLength) => captionDeCaso(caso, maxLength),
-      cabe: (compilacion, imagenes) => preflightLoraPrompt({ sceneSpec: caso.escena, clauses: compilacion.clauses, prompt: buildLoraEditPrompt(compilacion.prompt, imagenes) }).ok,
+      cabe: (compilacion, imagenes) => preflightFluxPrompt({ sceneSpec: caso.escena, clauses: compilacion.clauses, prompt: buildFluxEditPrompt(compilacion.prompt, imagenes) }).ok,
     });
     if (!elegido) throw new Error(`${caso.nombre}: las notas de la guía no caben ni sin la carta`);
-    const promptCon = buildLoraEditPrompt(elegido.compilacion.prompt, elegido.imagenes);
+    const promptCon = buildFluxEditPrompt(elegido.compilacion.prompt, elegido.imagenes);
     exigirPreflight(caso, elegido.compilacion.clauses, promptCon, "con guía");
     guias.push({ caso: caso.nombre, guia, promptSin, promptCon, conCarta: elegido.imagenes.length > 1 });
     for (const seed of opciones.semillas) {

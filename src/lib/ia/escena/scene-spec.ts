@@ -7,7 +7,7 @@ import {
   type ReferenceElement,
 } from "../referencia/reference-blueprint";
 import { MaterialEstimateSchema, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
-import { VisualSemanticsSchema } from "./lora-semantics";
+import { VisualSemanticsSchema } from "./scene-semantics";
 import {
   CatalogVisualDescriptorSchema,
   PhysicalFormSchema,

@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { bloqueColoresExactos } from "../../src/lib/ia/uzume/build-image-prompt";
-import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
+import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/producto-flux";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import { referenciaDelCatalogo, referenciaDelTitulo } from "../../src/lib/plan/referencia-sempertex";
 import { colorDeReferencia } from "../../src/lib/ia/kagutsuchi/vocabulario-base";

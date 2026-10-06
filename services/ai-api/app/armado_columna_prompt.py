@@ -26,7 +26,7 @@ frase tiene que contar la columna que se construye, no la que se escribió.
 Gemini lee inglés con cifras (medidas reales, tamaños nominales, globos por anillo). El fragmento LoRA va en
 ASCII y **sin cifras** (ADR-0028 §8): el v004 no aprendió números, así que las cantidades van en palabras. Es
 un **modificador** y no empieza por el sustantivo: el compilador del caption ya escribió «a balloon column of
-... balloons» y pega esto detrás (``lora-caption-compiler.ts``), así que empezar por el sustantivo nombraría
+... balloons» y pega esto detrás (``caption-flux.ts``), así que empezar por el sustantivo nombraría
 dos columnas seguidas — el fallo que ya tuvieron el bouquet y la guirnalda. Nunca nombra un arco: en el
 vocabulario del corpus esa palabra es otra pieza.
 

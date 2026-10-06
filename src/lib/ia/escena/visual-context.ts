@@ -274,7 +274,7 @@ export function buildPositiveEnvironmentCues(context: VisualContext): string[] {
  * trained on English captions, so unknown venue text and open event labels
  * must not be copied into its prompt.
  */
-export function buildLoraEnvironmentCues(context: VisualContext): string[] {
+export function buildFluxEnvironmentCues(context: VisualContext): string[] {
   const cues: string[] = [];
   const venueMatch = matchVenue(context.venue);
   if (venueMatch) cues.push(venueMatch.cue);

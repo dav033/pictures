@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { configurarPersistenciaTelemetria } from "@sempertex/agente-core";
 import { CATALOGO_ERRORES_UI_V1, UiErrorCodeV1Schema } from "../../src/lib/ia/contracts/ui-error-v1";
 import { clasificarErrorServidor, traducirErrorServidor } from "../../src/lib/errores-ui/traducir-error-servidor";
-import { generarConSempertexLora, ProveedorImagenNoDisponibleError, type LoraApplication } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
+import { generarConSempertexFlux, ProveedorImagenNoDisponibleError, type FluxApplication } from "../../src/lib/ia/kagutsuchi/flux";
 
 /**
  * fal.ai without balance answers the queue submission with 403 ("User is
@@ -16,7 +16,7 @@ import { generarConSempertexLora, ProveedorImagenNoDisponibleError, type LoraApp
 
 configurarPersistenciaTelemetria(undefined);
 
-const LORA: LoraApplication = { artifactId: "debug-artifact", path: "https://example.invalid/debug-lora.safetensors", trigger: "eventdecor_style_v2", scale: 0.8 };
+const LORA: FluxApplication = { artifactId: "debug-artifact", path: "https://example.invalid/debug-lora.safetensors", trigger: "eventdecor_style_v2", scale: 0.8 };
 const MENSAJE = "La vista previa de la imagen no está disponible por ahora. Tu propuesta y su precio quedan guardados.";
 
 async function falConRespuesta(status: number, cuerpo: unknown): Promise<{ error: unknown; llamadas: number }> {
@@ -29,7 +29,7 @@ async function falConRespuesta(status: number, cuerpo: unknown): Promise<{ error
     return new Response(JSON.stringify(cuerpo), { status, headers: { "content-type": "application/json" } });
   }) as typeof fetch;
   try {
-    await generarConSempertexLora("eventdecor_style_v2, a balloon arch", "3:2", [], { loras: [LORA] });
+    await generarConSempertexFlux("eventdecor_style_v2, a balloon arch", "3:2", [], { loras: [LORA] });
     return { error: undefined, llamadas };
   } catch (error) {
     return { error, llamadas };

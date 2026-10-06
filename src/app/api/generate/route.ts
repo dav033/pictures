@@ -5,12 +5,12 @@ import { z } from "zod";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/uzume/build-image-prompt";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
 import { mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
-import { BASE_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { resolveLoraSeed } from "@/lib/ia/kagutsuchi/lora-seed";
+import { BASE_PROMPT_MAX_LENGTH, translateFluxColor } from "@/lib/ia/kagutsuchi/caption-flux";
+import { resolveFluxSeed } from "@/lib/ia/kagutsuchi/semilla-flux";
 import { applySceneryVisibility, elementosMaterializados, sceneryFromReference, type SceneryItem } from "@/lib/ia/referencia/reference-structure";
 import { nivelCreatividadParaGenerar, perfilCreatividad } from "@/lib/ia/escena/creatividad";
-import { aliasesDeProducto, compileProductPrompt, sizeConfirmationsFromMaterialLines } from "@/lib/ia/kagutsuchi/lora-product-runtime";
-import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { aliasesDeProducto, compileProductPrompt, sizeConfirmationsFromMaterialLines } from "@/lib/ia/kagutsuchi/producto-flux";
+import { findFluxPromptLanguageLeaks, findFluxPromptProductLeaks, preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 import { bloqueMezclaTamanos, bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import { descripcionProductoParaImagen } from "@/lib/ia/uzume/producto-para-imagen";
 import { type Cotizacion } from "@/lib/cotizacion/motor";
@@ -24,7 +24,7 @@ import { chatDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
-import { buildLoraEditPrompt, generarConSempertexLora, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit, reservaNotaGuiaEscena, reservaNotasGuia, type ImagenEditLora, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { buildFluxEditPrompt, generarConSempertexFlux, FLUX_EDIT_PROMPT_MAX_LENGTH, referenciasParaFluxEdit, reservaNotaGuiaEscena, reservaNotasGuia, type ImagenEditFlux, type ImagenGuiaFlux } from "@/lib/ia/kagutsuchi/flux";
 import { costeEntradasUsdEstimado, elegirCaptionConGuia, generacionAdmiteGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { prepararGuiaEstructura } from "@/lib/ia/kagutsuchi/rasterizar-guia";
 import { generacionAdmiteGuiaEscena, planConReferencia } from "@/lib/ia/kagutsuchi/guia-escena";
@@ -55,7 +55,7 @@ import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traduc
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
-import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
+import { verificarCoherenciaPrompt, verificarColoresCaptionFlux, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
 import { abrirContextoPlan, aprobacionSinHuellaEnPruebas, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import {
@@ -547,7 +547,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // Esto se resuelve ANTES de resolver el plan: el resolutor necesita el
     // allowlist para no elegir variantes que el modelo nunca vio, y los ids
     // que llegan del cliente conviene rechazarlos antes de cotizar.
-    const resolvedLoras: [] = [];
+    const resolvedFluxApplications: [] = [];
     // El plan se re-resuelve con el mismo backend que lo produjo (ADR 0006):
     // resolverlo con el otro podría dar otro hash y estaríamos aprobando un
     // plan distinto del que vio el cliente.
@@ -619,14 +619,14 @@ async function generar(request: Request, generationRequestId: string): Promise<R
            motorImagenPrevisto,
            diagnosticoGeneracion: {
              hashesEntrada: selected.inputs.map((input) => createHash("sha256").update(Buffer.from(input.base64, "base64")).digest("hex").slice(0, 16)),
-             semilla: loraSeed,
+             semilla: fluxSeed,
              // El resolvedor no devuelve el estado de evaluación junto al artifact;
              // dejar el slot nulo evita atribuir un estado que no vimos.
              slot: null,
-             captionHash: hashPrompt(promptLoraParaGenerar).slice(0, 16),
-             captionLongitud: promptLoraParaGenerar.length,
-             preflightOk: loraPreflightParaGenerar.ok,
-             preflightErrores: loraPreflightParaGenerar.errors,
+             captionHash: hashPrompt(promptFluxParaGenerar).slice(0, 16),
+             captionLongitud: promptFluxParaGenerar.length,
+             preflightOk: fluxPreflightParaGenerar.ok,
+             preflightErrores: fluxPreflightParaGenerar.errors,
              tallasOmitidas: [...new Set(
                productPromptCompilation.diagnostics
                  .flatMap((linea) => /size\(s\) ([^ ]+(?:, [^ ]+)*) are not in allowed_codes/.exec(linea)?.[1]?.split(", ") ?? []),
@@ -918,10 +918,10 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // puede elegir de la lista, nunca ampliarla.
     const ambiente = featureEnabled("AMBIENTE_FIESTA_V1") ? ambienteDeFiesta(nivelAmbienteConPolitica(nivelAmbienteDe(body.ambiente), politicaPresentacion)) : ambienteDeFiesta("ninguno");
     const ambientDecor = escenografiaVisible.map((item) => item.name).slice(0, 3);
-    const visualContextLora = visualContext;
+    const visualContextFlux = visualContext;
     const compilarCaptionCon = (maxLength: number | undefined, frases: typeof colorPatterns) => compileProductPrompt({
       sceneSpec: transformedSceneSpec,
-      visualContext: visualContextLora,
+      visualContext: visualContextFlux,
       sizeConfirmations,
       productIdAliases,
       productCatalogTitles,
@@ -935,16 +935,16 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // En base, el límite de 1000 es del CAPTION (que la decoración vaya primero), no de la nota fija que explica
     // la guía de escena: con la nota dentro del mismo 1000, al caption le quedaban ~380 caracteres, dos piezas no
     // cabían, la guía se caía y el caption sin guía (frases de Python incluidas) fallaba en 1152 (2026-10-06,
-    // FLUX_PREFLIGHT_FAILED). El tope duro del prompt que recibe fal sigue siendo LORA_EDIT_PROMPT_MAX_LENGTH.
+    // FLUX_PREFLIGHT_FAILED). El tope duro del prompt que recibe fal sigue siendo FLUX_EDIT_PROMPT_MAX_LENGTH.
     const limiteConGuiaEscena = BASE_PROMPT_MAX_LENGTH + reservaNotaGuiaEscena();
     // Guía de escena (GUIA_ESCENA_V1, encendida): el plan salió de una foto de referencia, así que FLUX recibe
     // por `/edit` UNA imagen con los globos de todas las piezas, dibujados por el motor en Python y colocados
     // donde la foto tiene cada una. La foto del cliente nunca sale hacia fal. Si la guía no se puede construir
     // o su nota no cabe, se genera sin ella y la respuesta lo dice (`guiaEscena.usada: false`, `motivo`).
     // Con foto de referencia sustituye a la guía de estructura, que queda para los planes sin foto.
-    const admiteGuiaEscena = Boolean(planResuelto && resolvedLoras && generacionAdmiteGuiaEscena({
+    const admiteGuiaEscena = Boolean(planResuelto && resolvedFluxApplications && generacionAdmiteGuiaEscena({
       bandera: featureEnabled("GUIA_ESCENA_V1"),
-      usarLora: true,
+      usarFlux: true,
       hibrido: false,
       fotoEspacio: Boolean(venue),
       resultadoPrevio: Boolean(previous),
@@ -952,7 +952,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       formatoTexto: true,
       conReferencia: planConReferencia(planResuelto.plan.estructuras),
     }));
-    const guiaEscena = planResuelto && resolvedLoras
+    const guiaEscena = planResuelto && resolvedFluxApplications
       ? await guiaEscenaParaGeneracion<ReturnType<typeof compilarCaption>>({
           admite: admiteGuiaEscena,
           plan: planResuelto,
@@ -973,10 +973,10 @@ async function generar(request: Request, generationRequestId: string): Promise<R
           // quedan: el caption cuenta piezas y elige candados con ellos.
           compilarSinFrases: (maxLength) => compilarCaptionCon(maxLength, colorPatterns?.filter((frase) => frase.armado || frase.guirnalda)),
           largo: (compilacion) => compilacion.prompt.length,
-          cabe: (compilacion, imagenes) => preflightLoraPrompt({
+          cabe: (compilacion, imagenes) => preflightFluxPrompt({
             sceneSpec: transformedSceneSpec,
             clauses: compilacion.clauses,
-            prompt: buildLoraEditPrompt(compilacion.prompt, imagenes),
+            prompt: buildFluxEditPrompt(compilacion.prompt, imagenes),
             maxLength: limiteConGuiaEscena,
           }).ok,
           signal: request.signal,
@@ -991,9 +991,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // mapa de color plano de esa estructura y su carta. Las notas de la guía
     // cuentan contra el presupuesto del caption; si no caben ni sin la carta,
     // la generación sigue sin guía y se registra.
-    const guiaEstructura = !admiteGuiaEscena && planResuelto && resolvedLoras && generacionAdmiteGuia({
+    const guiaEstructura = !admiteGuiaEscena && planResuelto && resolvedFluxApplications && generacionAdmiteGuia({
       bandera: featureEnabled("GUIA_ESTRUCTURA_V1"),
-      usarLora: true,
+      usarFlux: true,
       hibrido: false,
       fotoEspacio: Boolean(venue),
       resultadoPrevio: Boolean(previous),
@@ -1002,21 +1002,21 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     })
       ? await prepararGuiaEstructura(planResuelto, aspecto)
       : null;
-    const captionConGuia = guiaEstructura && resolvedLoras
-      ? elegirCaptionConGuia<ReturnType<typeof compilarCaption>, ImagenGuiaLora>({
+    const captionConGuia = guiaEstructura && resolvedFluxApplications
+      ? elegirCaptionConGuia<ReturnType<typeof compilarCaption>, ImagenGuiaFlux>({
           imagenes: guiaEstructura.imagenes,
           maximo: BASE_PROMPT_MAX_LENGTH,
           reserva: reservaNotasGuia,
           compilar: compilarCaption,
           largo: (compilacion) => compilacion.prompt.length,
-          cabe: (compilacion, imagenes) => preflightLoraPrompt({
+          cabe: (compilacion, imagenes) => preflightFluxPrompt({
             sceneSpec: transformedSceneSpec,
             clauses: compilacion.clauses,
-            prompt: buildLoraEditPrompt(compilacion.prompt, imagenes),
+            prompt: buildFluxEditPrompt(compilacion.prompt, imagenes),
           }).ok,
         })
       : null;
-    const imagenesGuia: readonly ImagenGuiaLora[] | undefined = guiaEscena.imagenes ?? captionConGuia?.imagenes;
+    const imagenesGuia: readonly ImagenGuiaFlux[] | undefined = guiaEscena.imagenes ?? captionConGuia?.imagenes;
     if (guiaEstructura) {
       const entradasExtra = imagenesGuia?.length ?? 0;
       // Solo el hash y metadatos: la guía no va a registros. El coste es ESTIMADO (US$ 0,021 por MP de entrada).
@@ -1033,36 +1033,36 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       });
     }
     const productPromptCompilation = guiaEscena.compilacion ?? captionConGuia?.compilacion ?? compilarCaption(undefined);
-    const loraCompilation = {
+    const fluxCompilation = {
       prompt: productPromptCompilation.prompt,
       clauses: productPromptCompilation.clauses,
       compilerVersion: productPromptCompilation.captionCompilerVersion,
     };
-    const promptLoraParaGenerar = loraCompilation.prompt;
-    const loraPreflight = preflightLoraPrompt({
+    const promptFluxParaGenerar = fluxCompilation.prompt;
+    const fluxPreflight = preflightFluxPrompt({
       sceneSpec: transformedSceneSpec,
-      clauses: loraCompilation.clauses,
-      prompt: promptLoraParaGenerar,
+      clauses: fluxCompilation.clauses,
+      prompt: promptFluxParaGenerar,
     });
-    const loraPreflightParaGenerar = imagenesGuia
-      ? preflightLoraPrompt({
+    const fluxPreflightParaGenerar = imagenesGuia
+      ? preflightFluxPrompt({
           sceneSpec: transformedSceneSpec,
-          clauses: loraCompilation.clauses,
-          prompt: buildLoraEditPrompt(promptLoraParaGenerar, imagenesGuia),
+          clauses: fluxCompilation.clauses,
+          prompt: buildFluxEditPrompt(promptFluxParaGenerar, imagenesGuia),
           maxLength: limiteConGuiaEscena,
         })
-      : loraPreflight;
-    const loraLanguageLeaks = findLoraPromptLanguageLeaks(promptLoraParaGenerar);
-    if (loraLanguageLeaks.length) {
-      throw new Error(`FLUX_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (${loraLanguageLeaks.join(", ")})`);
+      : fluxPreflight;
+    const fluxLanguageLeaks = findFluxPromptLanguageLeaks(promptFluxParaGenerar);
+    if (fluxLanguageLeaks.length) {
+      throw new Error(`FLUX_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (${fluxLanguageLeaks.join(", ")})`);
     }
-    if (!loraPreflightParaGenerar.ok) {
-      const codigo = loraPreflightParaGenerar.requiresPlanSemantics ? "FLUX_PLAN_REQUIRED" : "FLUX_PREFLIGHT_FAILED";
-      throw new Error(`${codigo}: ${loraPreflightParaGenerar.errors.join("; ")}`);
+    if (!fluxPreflightParaGenerar.ok) {
+      const codigo = fluxPreflightParaGenerar.requiresPlanSemantics ? "FLUX_PLAN_REQUIRED" : "FLUX_PREFLIGHT_FAILED";
+      throw new Error(`${codigo}: ${fluxPreflightParaGenerar.errors.join("; ")}`);
     }
     if (planResuelto) {
-      const coherenciaLora = verificarColoresCaptionLora(planResuelto, escenaParaCoherencia, { clausulas: loraCompilation.clauses, traducirColor: translateLoraColor });
-      if (!coherenciaLora.ok) throw new Error(`El caption FLUX no coincide con el plan resuelto: ${coherenciaLora.errores.join("; ")}`);
+      const coherenciaFlux = verificarColoresCaptionFlux(planResuelto, escenaParaCoherencia, { clausulas: fluxCompilation.clauses, traducirColor: translateFluxColor });
+      if (!coherenciaFlux.ok) throw new Error(`El caption FLUX no coincide con el plan resuelto: ${coherenciaFlux.errores.join("; ")}`);
     }
     const revisionFlux = revisionInstruction?.trim()
       ? await traducirRevisionParaFlux(revisionInstruction, async (texto) => {
@@ -1081,37 +1081,37 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const sufijoRevision = revisionFlux
       ? `\n\nUser revision request: ${revisionFlux}. Apply only this change; preserve the current scene and venue.`
       : "";
-    const promptFlux = `${promptLoraParaGenerar}${sufijoRevision}`;
+    const promptFlux = `${promptFluxParaGenerar}${sufijoRevision}`;
     const referenciasEtapa1 = selected.inputs;
-    const imagenesEdit: readonly ImagenEditLora[] = imagenesGuia ?? referenciasParaLoraEdit(selected.inputs);
+    const imagenesEdit: readonly ImagenEditFlux[] = imagenesGuia ?? referenciasParaFluxEdit(selected.inputs);
     // El preflight inspecciona texto final, incluidas referencias y revisión traducida.
-    const promptFinal = `${buildLoraEditPrompt(promptLoraParaGenerar, imagenesEdit)}${sufijoRevision}`;
-    const preflightFinal = preflightLoraPrompt({
+    const promptFinal = `${buildFluxEditPrompt(promptFluxParaGenerar, imagenesEdit)}${sufijoRevision}`;
+    const preflightFinal = preflightFluxPrompt({
       sceneSpec: transformedSceneSpec,
-      clauses: loraCompilation.clauses,
+      clauses: fluxCompilation.clauses,
       prompt: promptFinal,
-      maxLength: LORA_EDIT_PROMPT_MAX_LENGTH,
+      maxLength: FLUX_EDIT_PROMPT_MAX_LENGTH,
     });
-    const fugasFinales = [...findLoraPromptLanguageLeaks(promptFinal), ...findLoraPromptProductLeaks(promptFinal)];
+    const fugasFinales = [...findFluxPromptLanguageLeaks(promptFinal), ...findFluxPromptProductLeaks(promptFinal)];
     if (fugasFinales.length) throw new Error(`FLUX_EDIT_PREFLIGHT_FAILED: el prompt enviado a FLUX filtra ${fugasFinales.join(", ")}`);
-    if (promptFinal.length > LORA_EDIT_PROMPT_MAX_LENGTH) {
-      throw new Error(`FLUX_EDIT_PREFLIGHT_FAILED: el prompt enviado a FLUX mide ${promptFinal.length} y supera el límite ${LORA_EDIT_PROMPT_MAX_LENGTH}`);
+    if (promptFinal.length > FLUX_EDIT_PROMPT_MAX_LENGTH) {
+      throw new Error(`FLUX_EDIT_PREFLIGHT_FAILED: el prompt enviado a FLUX mide ${promptFinal.length} y supera el límite ${FLUX_EDIT_PROMPT_MAX_LENGTH}`);
     }
     if (!preflightFinal.ok) throw new Error(`FLUX_PREFLIGHT_FAILED: ${preflightFinal.errors.join("; ")}`);
     // Solo tiene sentido encadenar contexto real cuando esta petición ES una
     // revisión de una imagen previa; una generación nueva no hereda otra.
     // Semilla fija para atribuir esta llamada a fal.
-    const loraSeed = resolveLoraSeed(undefined);
-    const generarLora = (prompt: string, intento: number) => generarConSempertexLora(prompt, aspecto, referenciasEtapa1, {
-      loras: resolvedLoras ?? [],
+    const fluxSeed = resolveFluxSeed(undefined);
+    const generarFlux = (prompt: string, intento: number) => generarConSempertexFlux(prompt, aspecto, referenciasEtapa1, {
+      loras: resolvedFluxApplications ?? [],
       signal: request.signal,
       telemetria: { ...contextoTelemetria, intento },
       guidanceScale: creatividad.guidanceScale,
-      ...(loraSeed === undefined ? {} : { seed: loraSeed }),
+      ...(fluxSeed === undefined ? {} : { seed: fluxSeed }),
       imagenesEdit,
     });
-    const loraPrimaryImage = await generarLora(promptFlux, 1);
-    const imagen = loraPrimaryImage;
+    const fluxPrimaryImage = await generarFlux(promptFlux, 1);
+    const imagen = fluxPrimaryImage;
     await auditarImagen("IMAGEN_GENERADA", transformedSceneSpec);
     // Etiqueta explícita del motor único de imagen.
     const etiquetaFlux = "FLUX base";

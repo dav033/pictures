@@ -10,7 +10,7 @@
  * Crystal, que también abren una frase como adjetivos, solo cuentan delante de
  * otra palabra con mayúscula (el título de un producto: "Pastel Dusk").
  */
-const PALABRAS_SOLO_LORA: ReadonlyArray<{ patron: RegExp; etiqueta: string; reemplazo: string }> = [
+const PALABRAS_SOLO_FLUX: ReadonlyArray<{ patron: RegExp; etiqueta: string; reemplazo: string }> = [
   { patron: /\beventdecor_\w+/gi, etiqueta: "trigger de LoRA", reemplazo: "" },
   { patron: /\b(?:Reflex|Fashion|Silk)\b/g, etiqueta: "nombre de línea comercial", reemplazo: "" },
   { patron: /\b(?:Crystal|Pastel)\b(?= [A-ZÁÉÍÓÚÑ])/g, etiqueta: "nombre de línea comercial", reemplazo: "" },
@@ -19,8 +19,8 @@ const PALABRAS_SOLO_LORA: ReadonlyArray<{ patron: RegExp; etiqueta: string; reem
 ];
 
 /** Etiquetas de las palabras solo-LoRA presentes en el texto (vacío si no hay ninguna). */
-export function palabrasSoloLora(texto: string): string[] {
-  return [...new Set(PALABRAS_SOLO_LORA.filter(({ patron }) => new RegExp(patron.source, patron.flags).test(texto)).map(({ etiqueta }) => etiqueta))];
+export function palabrasSoloFlux(texto: string): string[] {
+  return [...new Set(PALABRAS_SOLO_FLUX.filter(({ patron }) => new RegExp(patron.source, patron.flags).test(texto)).map(({ etiqueta }) => etiqueta))];
 }
 
 /**
@@ -30,7 +30,7 @@ export function palabrasSoloLora(texto: string): string[] {
 export function limpiarTextoBase(texto: string): { texto: string; quitadas: string[] } {
   const quitadas = new Set<string>();
   let limpio = texto;
-  for (const { patron, reemplazo } of PALABRAS_SOLO_LORA) {
+  for (const { patron, reemplazo } of PALABRAS_SOLO_FLUX) {
     limpio = limpio.replace(patron, (encontrada) => {
       quitadas.add(encontrada);
       return reemplazo;

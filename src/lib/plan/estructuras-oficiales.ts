@@ -35,7 +35,7 @@ import type { PlanDecoracion } from "./tipos";
  * escribir una palabra que el modelo no vio es justo el fallo que este comentario documenta.
  *
  * **Por qué solo cambió la columna.** `sustantivoEn` lo lee el dialecto de escena (`eventdecor_style_v2`,
- * el LoRA v004); el de producto (v007) nombra por `STRUCTURE_NOUNS` en `lora-caption-compiler.ts`, que ya
+ * el LoRA v004); el de producto (v007) nombra por `STRUCTURE_NOUNS` en `caption-flux.ts`, que ya
  * coincide con este corpus pieza por pieza. Del dataset de v004 no queda copia, así que sus sustantivos no
  * se pueden medir: los que siguen fuera de corpus («airy organic balloon garland arch», «asymmetrical
  * organic balloon wall installation») se dejan como están, porque nadie ha visto fallar la imagen que
