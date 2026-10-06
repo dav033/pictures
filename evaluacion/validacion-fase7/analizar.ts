@@ -11,6 +11,7 @@
 import { DATOS, REPO } from "../rutas";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { extname } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const AQUI = `${DATOS}/validacion-fase7`;
@@ -22,6 +23,8 @@ async function main(): Promise<void> {
   delete process.env.CATALOG_DATABASE_URL;
   const casos = arg("--casos", "1,2,3,4,5").split(",").map(Number);
   const maxLlamadas = Number(arg("--max-llamadas", "5"));
+  const imagenPersonalizada = arg("--imagen", "");
+  const casoPersonalizado = Number(arg("--caso", "1"));
   const bloqueadas: Record<string, number> = {};
   (globalThis as { __ragPool?: unknown }).__ragPool = {
     query: async (sql: string) => {
@@ -49,14 +52,17 @@ async function main(): Promise<void> {
 
   const SALIDA = arg("--salida", `${AQUI}/blueprints`);
   mkdirSync(SALIDA, { recursive: true });
-  for (const c of casos) {
+  for (const c of imagenPersonalizada ? [casoPersonalizado] : casos) {
     const destino = `${SALIDA}/case-00${c}-run-1.json`;
     if (existsSync(destino)) { console.log(`[ya existe] caso ${c}`); continue; }
-    const base64 = readFileSync(`${AQUI}/entradas/case-00${c}-ref.png`).toString("base64");
+    const rutaImagen = imagenPersonalizada || `${AQUI}/entradas/case-00${c}-ref.png`;
+    const extension = extname(rutaImagen).toLowerCase();
+    const mime = extension === ".jpg" || extension === ".jpeg" ? "image/jpeg" : extension === ".webp" ? "image/webp" : "image/png";
+    const base64 = readFileSync(rutaImagen).toString("base64");
     const res = await POST(new Request("http://localhost/api/references/analyze", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ images: [{ base64, mime: "image/png" }], sinCache: true }),
+      body: JSON.stringify({ images: [{ base64, mime }], sinCache: true }),
     }));
     const cuerpo = await res.json() as { blueprint?: unknown; error?: unknown };
     if (!res.ok || !cuerpo.blueprint) { console.log(`[caso ${c}] status=${res.status} ${JSON.stringify(cuerpo).slice(0, 300)}`); continue; }

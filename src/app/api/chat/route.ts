@@ -10,7 +10,6 @@ import { sugerenciaEscenaDelTurno } from "@/lib/ia/herramientas/sugerencia-escen
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { RAG_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import type { Brief, ChatMessage } from "@/lib/types";
-import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { RagUnavailableError } from "@/lib/rag/retrieval/search";
 import { isPythonAdapterError } from "@/lib/ia/nucleo/python-adapter";
 import {
@@ -42,8 +41,6 @@ type LegacyBody = {
    * como contexto de composición para el modelo; el emparejamiento con
    * catálogo real sigue siendo exclusivo de buscar_catalogo_rag (R3). */
   referenceBlueprint?: unknown;
-  /** Modo LoRA activo; habilita el allowlist de productos de su dataset. */
-  loraMode?: unknown;
 };
 
 type Body = ChatRequestV1 & Partial<LegacyBody>;
@@ -207,7 +204,7 @@ export async function POST(request: Request) {
   }
   const requestId = contextoOperativo.request_id;
   const correlationId = contextoOperativo.correlation_id;
-  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint, loraMode: rawLoraMode, planVigente } = body;
+  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint, planVigente } = body;
   const creatividad = parseNivelCreatividad(body.creatividad);
   const cookieProveedor = request.headers
     .get("cookie")
@@ -217,7 +214,6 @@ export async function POST(request: Request) {
   let historial: Mensaje[];
   let sistema: string;
   let referenceBlueprint: ReferenceBlueprintV2 | undefined;
-  let loraModeSlug: string | undefined;
 
   try {
     if (!RAG_ENABLED) throw new RagUnavailableError({});
@@ -227,8 +223,6 @@ export async function POST(request: Request) {
     referenceBlueprint = rawReferenceBlueprint
       ? ReferenceBlueprintV2Schema.parse(rawReferenceBlueprint)
       : undefined;
-    const loraMode = rawLoraMode == null ? null : LoraModeSlugSchema.parse(rawLoraMode);
-    loraModeSlug = loraMode ?? undefined;
 
     // Only what the customer left open gets a server-picked venue/time, and only
     // at levels that suggest one (a venue photo leaves nothing open); logged so
@@ -272,7 +266,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const datos = datosDeError(error);
     const code = codigoDeError(error);
-    // Unclassified setup failures (LoRA resolution, blueprint parsing) used to
+    // Unclassified setup failures (blueprint parsing) used to
     // surface only as a generic 502; keep the cause observable without logging
     // the conversation.
     if (code === "INTERNAL_ERROR" || code === "RAG_UNAVAILABLE") {
@@ -297,7 +291,7 @@ export async function POST(request: Request) {
     creatividad,
     planVigente,
     signal: deadline.signal,
-    hechosPeticion: { tieneFotoEspacio: Boolean(fotoEspacio), tieneImagenesReferencia: (imagenesReferencia?.length ?? 0) > 0, loraMode: loraModeSlug },
+    hechosPeticion: { tieneFotoEspacio: Boolean(fotoEspacio), tieneImagenesReferencia: (imagenesReferencia?.length ?? 0) > 0 },
     onLlamada: (nombre) => {
       // Solo el nombre de la herramienta: nunca registrar argumentos del
       // cliente ni contenido de imágenes. Sirve para diagnosticar fallos que

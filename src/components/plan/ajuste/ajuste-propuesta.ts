@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { LoraModeSlug } from "@/lib/lora/schema";
 import { DIAMETROS_REDONDOS_CATALOGO_V2 } from "@/lib/rag/taxonomy/v2";
 import { productoCliente, pulgadasCliente } from "@/lib/plan/presentacion-cliente";
 import type { LineaMaterial } from "@/lib/plan/resuelto";
@@ -89,7 +88,6 @@ export type EntradaBusqueda = {
   limite: number;
   /** Sin token la búsqueda no queda fijada al catálogo de la propuesta (una propuesta sin procedencia firmada). */
   approvalToken?: string;
-  loraMode?: LoraModeSlug;
   /** Línea que se cambia: un globo solo admite globos de su misma forma. */
   lineaObjetivo?: LineaObjetivo;
 };
@@ -98,13 +96,12 @@ export type CuerpoBuscar = {
   modo: "buscar";
   consulta: string;
   approval_token?: string;
-  loraMode?: LoraModeSlug;
   filtros?: { colores?: string[]; tamanos_pulgadas?: number[] };
   limite: number;
   linea_objetivo?: LineaObjetivo;
 };
 
-export type CuerpoColores = { modo: "colores"; approval_token?: string; loraMode?: LoraModeSlug };
+export type CuerpoColores = { modo: "colores"; approval_token?: string };
 
 function acotarLimite(limite: number): number {
   return Math.min(LIMITE_MAXIMO, Math.max(1, Math.floor(limite)));
@@ -121,15 +118,14 @@ export function armarBusqueda(entrada: EntradaBusqueda): CuerpoBuscar {
     modo: "buscar",
     consulta,
     ...(entrada.approvalToken === undefined ? {} : { approval_token: entrada.approvalToken }),
-    ...(entrada.loraMode === undefined ? {} : { loraMode: entrada.loraMode }),
     ...(hayFiltros ? { filtros: { ...(colores.length ? { colores } : {}), ...(tamanos.length ? { tamanos_pulgadas: tamanos } : {}) } } : {}),
     limite: acotarLimite(entrada.limite),
     ...(entrada.lineaObjetivo ? { linea_objetivo: entrada.lineaObjetivo } : {}),
   };
 }
 
-export function armarPeticionColores(approvalToken: string | undefined, loraMode?: LoraModeSlug): CuerpoColores {
-  return { modo: "colores", ...(approvalToken === undefined ? {} : { approval_token: approvalToken }), ...(loraMode === undefined ? {} : { loraMode }) };
+export function armarPeticionColores(approvalToken: string | undefined): CuerpoColores {
+  return { modo: "colores", ...(approvalToken === undefined ? {} : { approval_token: approvalToken }) };
 }
 
 /** Forma y tamaño de la línea que se cambia; una línea sin diámetro (telón, kit) admite cualquier producto. */

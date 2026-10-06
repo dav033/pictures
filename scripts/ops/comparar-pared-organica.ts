@@ -28,7 +28,7 @@
  * una rejilla? ¿Conserva los tres colores?
  */
 import path from "node:path";
-import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lora/exp-fal-lib";
+import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lib/fal-evaluacion";
 
 const identidad = resolverIdentidadLora(flag("--artifact-id", "v004-1000"));
 const escala = Number(flag("--escala", "0.8"));

@@ -120,7 +120,9 @@ generador de imagen con Gemini en TS o Python. Gemini se queda solo para analiza
   V-RED-12-UNSEEN, 5000 COP). Verificado tras el merge: tsc, eslint, `contracts:export:domain --check` (36), invariantes-plan (32
   vectores), ui-error-contract, python-adapter, catalog-allowlist, flux-revision, pytest regresión allowlist + placeholders (5).
 
-### 3.2 Inventario de lo que queda (mapeado el 2026-10-06)
+- **Etapa 4 hecha (2026-10-06, rama `etapa4-borrado`)**: se retiraron las rutas, componentes y página de administración LoRA; el registro, modos entrenados, datasets, artefactos y vocabularios de producto; scripts LoRA y utilidades de selección/curación/descarga/empaquetado del dataset de entrenamiento con sus entradas de `package.json` y pruebas. El diff total elimina unas 25,6 mil líneas, principalmente datos de vocabulario y código de administración. `vocabulario-base.ts` y `descriptor-perceptual.ts` se movieron a `src/lib/ia/kagutsuchi/`. Se limpiaron contratos y configuración; `package.json` conserva CRLF. Permanecen las piezas FLUX base para etapa 5 (incluidos los seis archivos Kagutsuchi), el adaptador Python opcional `app/kagutsuchi/lora.py`/`LORA_GENERATION_PYTHON_ENABLED` porque sirve ese transporte base, la lectura de snapshots para compatibilidad y tablas/migraciones de base de datos para etapa 6. No se tocaron `data/staging/` ni las migraciones. Verificado secuencialmente: `npx tsc --noEmit` OK; `npm run -s lint` OK (19 avisos preexistentes); export domain con `--check` OK (36 schemas); pruebas puntuales base de runtime, texto, UI error, guía de escena, edición y FLUX revisión OK; pytest del modelo generado 3/3 y Ruff OK. Sin llamadas pagadas ni imágenes.
+
+### 3.2 Inventario previo a la etapa 4 (mapeado el 2026-10-06; lo de «solo entrenamiento/administración» ya se borró, ver §3.1)
 Bloqueos o rarezas que siguen corriendo en base:
 - `src/lib/ia/kagutsuchi/lora-prompt-preflight.ts:273-277` rechaza prompts con `Reflex|Fashion|Silk|Crystal|Pastel`, ®/™ o `eventdecor_*`
   → `LORA_PREFLIGHT_FAILED` (`route.ts` ~1266). Mejor: quitar esas palabras al construir el texto (`vocabulario-base.ts`
@@ -167,17 +169,15 @@ Tamaño:
    edición); quitar `training_*`, `unlimited`, `loraSelection`, `NEXT_PUBLIC_LORA_MODE`, el selector del cliente y
    `usarLora`/`loraMode` del contrato de `/api/generate` (siempre FLUX base); quitar la allowlist de dataset y `lora_variant_ids`
    (contrato, en el orden de §2). Quitar `ensureLoraTriggers`, triggers y los dialectos `scene_v004`/`product_v007` del compilador.
-4. **Borrar** el código de entrenamiento/admin, `src/lib/lora/*` que ya no se importe, el vocabulario y sus datos, `scripts/lora/*`,
+4. **[HECHA y fusionada, merge 99cf2dd]** **Borrar** el código de entrenamiento/admin, `src/lib/lora/*` que ya no se importe, el vocabulario y sus datos, `scripts/lora/*`,
    las pruebas `test-lora-*` de dialectos entrenados y sus entradas en `package.json`. Mover `vocabulario-base.ts` y
    `descriptor-perceptual.ts` a `src/lib/ia/kagutsuchi/` (o `src/lib/flux/`).
 5. **Renombrar** `sempertex-lora.ts` → `flux.ts`, `lora-caption-compiler.ts` → `caption-flux.ts`, etc., y `fal-ai/flux-2/lora/edit` →
    `fal-ai/flux-2/edit` si fal lo admite con las mismas entradas (comprobar con 1 imagen y tope).
 6. `data/staging` y tablas `lora_*`: solo con confirmación explícita del dueño.
-   Etapa 4 hecha en rama (2026-10-06 tarde): `etapa4-borrado`, worktree `Downloads/e3l`, commits 9514139..973cd2a: 132 archivos,
-   −25 583 líneas (administración, APIs `/api/lora/*`, modos entrenados, vocabularios, utilidades de dataset, scripts y pruebas de
-   entrenamiento); `vocabulario-base.ts` y `descriptor-perceptual.ts` movidos a `src/lib/ia/kagutsuchi/`; sin tocar `data/staging`,
-   migraciones ni tablas. tsc, lint (0 errores), export de contratos (36), pruebas del camino base, pytest 3/3, ruff. SIN fusionar:
-   en revisión adversarial (camino FLUX base, chat, vista guiada, scripts de package.json colgantes).
+   Etapa 4 fusionada (2026-10-06 tarde, merge 99cf2dd; marca de vuelta atrás `antes-etapa4-medidas`): revisión adversarial sin
+   bloqueantes (204 scripts de package.json válidos, camino FLUX, chat y vista guiada OK); se quitaron además un diagnóstico roto
+   (`evaluacion/validacion-fase4/diag-coral.ts`) y las variables `LORA_ARTIFACT_ROOT`/`LORA_SNAPSHOT_*` sin lectores. Siguiente: etapa 5.
 Tras cada etapa: `tsc`, `eslint` de lo tocado, pruebas puntuales y 1-2 imágenes FLUX de control (001 y 002), juzgadas con Codex.
 
 ## 4. Misión de fidelidad foto → imagen (estado al 2026-10-06)
@@ -214,17 +214,14 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
 003 ahora genera (Codex 38/28). Media 43→52.
 
 ### 4.4 Pendiente de fidelidad (en orden)
-1. **Ancho/alto de las piezas laterales** (rama `fix/medidas-de-la-foto`, worktree `Downloads/e3f`, commit 9522591, SIN fusionar; caso
-   2026-10-06: columna de la foto del dueño ≈1,36 × 0,73 m y el plan pide 1,8 m de alto y 1,04 m de base). Tras la revisión adversarial
-   (7 fallos corregidos) su informe dice que la columna del dueño pasa de 1,8 a **2,2 m** (empeora: debería bajar a ≈1,36) y CASE-002
-   de 1,8 a 2,2 m: revisar antes de fusionar (¿ancla en la altura estándar de 2,2 m en vez de en el semiarco?). El chat inventa medidas (F7-5 ocupa el 83 % del ancho de la foto y el chat pide 1,2 m; el 002 a
-   veces 1,8 m de alto cuando llega al techo; 003 cruza demasiado por arriba). Propiedad huérfana: proporción de la caja de la foto.
-   3.ª pasada (2026-10-06 tarde, commit 83f1f14 + merge de la principal 1505ac7, US$0): la escala ya no se ancla en la altura
-   estándar; prioriza medidas del cliente y semiarcos; caja que toca el borde conserva la medida del motor con aviso; el grosor de la
-   columna orgánica sale de la caja sin cortar. Dueño 1,35 × 0,72 m; CASE-002 1,8 m (caja cortada arriba); F7-5 sin cambio.
-   pytest 11/11, tsc, ruff, contracts:check. Revisión adversarial: 3 fallos (medida explícita del cliente ignorada en el armado,
-   `aspect_ratio` ausente supuesto 1.0, `pared_organica` fuera) → corregidos en 4e0b8de (pytest 14/14); segunda revisión en curso
-   (incluye comprobar por qué la proporción medida de la foto del dueño sale 1,0).
+1. **Ancho/alto de las piezas laterales — FUSIONADO (2026-10-06 tarde, rama `fix/medidas-de-la-foto`, commits 83f1f14 + 4e0b8de)**.
+   La escala sale de la medida del cliente, luego del semiarco u otra estructura estándar; nunca de la altura estándar de una columna
+   ni de 2,2 m arbitrarios. Caja cortada por un borde: conserva la medida del motor y avisa. Sin proporción fiable de la foto: no
+   ancla ni deriva. La medida explícita del cliente manda también en el armado. `pared_organica` entra en el cálculo (bouquet y
+   racimo_pared no, son kits). Columna orgánica: grosor desde la caja. Dueño (foto 1200×1200) 1,35 × 0,72 m (a mano ≈1,36 × 0,73);
+   CASE-002 1,8 m conservado (caja cortada arriba, $51.703); F7-5 2,2 m ($197.211). Dos revisiones adversariales (3 fallos
+   corregidos; la segunda sin bloqueantes, cada prueba nueva falla sin el arreglo). pytest 14/14, pruebas TS, tsc, ruff.
+   Pendiente: el chat aún puede inventar medidas en el texto (F7-5 1,2 m cuando ocupa el 83 % del ancho; 003 cruza por arriba).
 2. **Colores de la foto del dueño 2026-10-06** (semiarco + columna orgánicos en rosa empolvado mate, crema, perla rosa claro y
    burbujas transparentes; foto en `Downloads/WhatsApp Image 2026-10-06 at 9.58.10 AM.jpeg`, datos en
    `informes-calidad/dueno-2026-10-06/`). Salió: «Fashion Chocolate 076» en la lista (no hay marrón); el plan compra «Rosado mate»
@@ -253,7 +250,7 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    racimos, muchas bolas de 18-24" entre relleno de 5" y burbujas transparentes con confeti; generada: tubo delgado (≈12 %), regular,
    2/3 del alto, dos franjas de color. La forma la dicta la guía (motor Python de discos) + las medidas. Encolado en rama
    `fix/forma-organica-002` (worktree `Downloads/e3i`) tras fusionar `fix/medidas-de-la-foto`; tope US$0,40, juez Codex.
-5. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
+5. **Grosor de la columna orgánica:** corregido en tercera pasada; `grosorPatasM` deriva de la proporción de su caja cuando no está cortada.
 6. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
 7. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
 8. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
@@ -301,7 +298,7 @@ en azul»: Azul Rey $13.974 + Blanco $13.037 + impreso bebé $24.143 = $51.154 c
 del catálogo, enlace al kit en sempertex.com sin el prefijo `b2b-`, distribuidor cercano); `darkreader-lock` (la extensión Dark
 Reader del equipo del dueño repintaba la app). Recorrido en el navegador verificado: espacio (ilustración), baby shower niño →
 elegir → comprar → costear personal. Hasta la presentación NO se fusionan en la principal las
-ramas de motor (colores `fix/sombra-no-es-color`, medidas `fix/medidas-de-la-foto`, forma `fix/forma-organica-002`) ni la etapa 4
+ramas de motor (colores `fix/sombra-no-es-color`, forma `fix/forma-organica-002`; medidas y etapa 4 ya fusionadas tras revisión)
 sin revisión adversarial y prueba (el dueño pidió el 2026-10-06 seguir también con esas mejoras, no solo con el chat).
 Tarde del 2026-10-06 (verificado en el navegador): tras «Aprender» salen las 4 opciones; el modelo no habla de «la pantalla»;
 «Contratar decorador» pregunta la ciudad con botones (Bogotá/Medellín/Cali/Barranquilla) y muestra tarjetas de ejemplo (2 decoradores

@@ -17,7 +17,7 @@ import {
   SceneElementKindSchema,
   type CatalogVisualDescriptor,
 } from "./scene-visual-contract";
-import { assertDescriptorPerceptualSeguro } from "@/lib/lora/descriptor-perceptual";
+import { assertDescriptorPerceptualSeguro } from "@/lib/ia/kagutsuchi/descriptor-perceptual";
 
 const texto = (max: number) => z.string().trim().min(1).max(max);
 

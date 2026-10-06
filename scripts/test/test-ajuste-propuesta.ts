@@ -82,10 +82,10 @@ caso("la búsqueda respeta lo que el servidor acepta: sin repetidos, máximo 8 y
 });
 
 caso("el token y el modo LoRA viajan solo si existen, y la línea objetivo solo si es un globo", () => {
-  const sinToken = armarBusqueda({ ...BASE, approvalToken: undefined, loraMode: "training_1" });
+  const sinToken = armarBusqueda({ ...BASE, approvalToken: undefined });
   assert.equal("approval_token" in sinToken, false);
-  assert.equal(sinToken.loraMode, "training_1");
-  assert.deepEqual(armarPeticionColores("t", "training_2"), { modo: "colores", approval_token: "t", loraMode: "training_2" });
+  assert.equal(Object.hasOwn(sinToken, "loraMode"), false);
+  assert.deepEqual(armarPeticionColores("t"), { modo: "colores", approval_token: "t" });
   assert.deepEqual(armarPeticionColores(undefined), { modo: "colores" });
   const globo = { forma: "redondo", diam_pulg: 12 };
   assert.deepEqual(lineaObjetivoDe(globo), { forma: "redondo", diam_pulg: 12 });

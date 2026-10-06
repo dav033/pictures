@@ -32,7 +32,7 @@ const sinonimosEvento: string[][] = [
 const sinonimosColor: string[][] = [
   ["rosa", "rosado", "rosada", "fucsia"], ["dorado", "oro"], ["azul", "celeste"],
   ["verde", "selva", "tropical"], ["negro", "negra"], ["blanco", "blanca", "perla"],
-  ["lila", "morado", "violeta", "purpura"], ["arcoiris", "multicolor", "colores vivos"],
+  ["lila", "morado", "violeta", "purpura"], ["arcoiris", "multicolor", "colores vivos", "vivos", "neon", "carnaval", "festivo", "festivos", "alegre", "alegres", "colorido", "colorida", "coloridos"],
 ];
 
 export function normalizarBusqueda(valor: string): string {
@@ -53,6 +53,12 @@ function puntajeEvento(evento: string, decoracion: DecoracionSempertex): number 
   if (contieneAlguno(eventos, consulta.split(" ").filter((palabra) => palabra.length > 3))) return 3;
   if (contieneAlguno(tematica, consulta.split(" ").filter((palabra) => palabra.length > 3))) return 1;
   return 0;
+}
+
+const EVENTOS_PROPIOS = ["baby shower", "bienvenida de bebe", "boda", "matrimonio", "bautizo", "comunion", "primera comunion", "xv", "quince anos", "quinceanera"];
+
+function esDeEventoPropio(decoracion: DecoracionSempertex): boolean {
+  return decoracion.eventos.some((evento) => contieneAlguno(normalizarBusqueda(evento), EVENTOS_PROPIOS));
 }
 
 function puntajeEdad(edad: number | undefined, decoracion: DecoracionSempertex): number {
@@ -86,6 +92,15 @@ export function buscarDecoracionesSempertex(entrada: { evento?: string; edad?: n
     .sort((a, b) => puntajeEvento(entrada.evento ?? "", b.decoracion) - puntajeEvento(entrada.evento ?? "", a.decoracion) || b.puntaje - a.puntaje);
   if (exactas.length) return exactas.slice(0, 6).map(({ decoracion }) => ({ ...decoracion, coincidencia: "exacta" }));
   const candidatas = puntajes.filter((item) => item.edad >= 0 && (item.evento > 0 || item.puntajeColor > 0));
+  // Un evento que la biblioteca no tiene (divorcio, jubilación, despedida…) no deja al cliente sin ideas: se ofrecen las de fiesta
+  // general que encajan por edad y colores, nunca las de un evento ajeno (un baby shower o una boda para un divorcio).
+  // Con una sola idea parecida se completa hasta dos con las de fiesta general, para que el cliente pueda elegir.
+  if (candidatas.length < 2) {
+    const generales = puntajes.filter((item) => item.edad >= 0 && !esDeEventoPropio(item.decoracion) && !candidatas.includes(item))
+      .sort((a, b) => b.puntaje - a.puntaje);
+    return [...candidatas, ...generales].slice(0, candidatas.length ? 2 : 4)
+      .map(({ decoracion }) => ({ ...decoracion, coincidencia: "cercana" }));
+  }
   // Con evento conocido, una idea de otro evento (un baby shower para un cumpleaños de 35) no se ofrece si hay alguna del mismo.
   const delEvento = candidatas.filter((item) => item.evento > 0);
   return (delEvento.length ? delEvento : candidatas)

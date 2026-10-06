@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowUp, ImagePlus, LoaderCircle, Sparkles, X } from "lucide-react";
 import { z } from "zod";
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
@@ -81,6 +81,9 @@ export function VistaGuiada() {
   const [seleccionada, setSeleccionada] = useState<DecoracionSempertex | null>(null);
   const [uso, setUso] = useState<Uso | null>(null);
   const [foto, setFoto] = useState<File | null>(null);
+  // Hasta hidratar, un clic o una tecla se pierden sin aviso (pasaba en la demo con el servidor recién arrancado): se muestran
+  // desactivados y se activan solos al quedar lista la página.
+  const hidratado = useSyncExternalStore(suscribirNada, () => true, () => false);
   const entradaRef = useRef<HTMLInputElement>(null);
   const finRef = useRef<HTMLDivElement>(null);
   const turnoRef = useRef(0);
@@ -97,7 +100,7 @@ export function VistaGuiada() {
     return separarOpciones(ultimo.content).opciones;
   }, [mensajes.length, ultimo, cargando]);
   const hayEjemplos = useMemo(() => mensajes.some((mensaje) => mensaje.widgets?.some((widget) => (widget.tipo === "decoraciones" && widget.decoraciones.some((decoracion) => decoracion.origen === "ejemplo")) || ("decoracion" in widget && widget.decoracion.origen === "ejemplo"))), [mensajes]);
-  const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? [brief.evento, brief.edad ? `${brief.edad} años` : null, brief.tematica].filter(Boolean).map((parte) => conMayuscula(String(parte))).join(" · ") : null;
+  const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? [brief.evento, brief.edad ? `${brief.edad} años` : null, /^por definir$/i.test(brief.tematica.trim()) ? null : brief.tematica].filter(Boolean).map((parte) => conMayuscula(String(parte))).join(" · ") : null;
 
   useEffect(() => {
     try {
@@ -291,7 +294,7 @@ export function VistaGuiada() {
                     : !mensaje.widgets?.length && cargando && indice === mensajes.length - 1 ? <Escribiendo /> : null}
                   {mensaje.widgets?.map((widget, posicion) => renderWidget(widget, indice === indiceActivo, `${mensaje.id}-${posicion}`))}
                 </BurbujaAsistente>)}
-            {respuestasRapidas.length > 0 && <div className="pl-11"><RespuestasRapidas opciones={respuestasRapidas} deshabilitado={cargando} onElegir={(texto) => void enviar(texto)} /></div>}
+            {respuestasRapidas.length > 0 && <div className="pl-11"><RespuestasRapidas opciones={respuestasRapidas} deshabilitado={cargando || !hidratado} onElegir={(texto) => void enviar(texto)} /></div>}
           </div>
           {error && <div role="alert" className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
             <span className="flex-1">No pude responder esta vez. Inténtalo de nuevo.</span>
@@ -305,7 +308,7 @@ export function VistaGuiada() {
           <input ref={entradaRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => setFoto(event.target.files?.[0] ?? null)} />
           <button type="button" aria-label="Adjuntar foto de inspiración" title="Adjuntar foto de inspiración" className="rounded-xl p-2 text-texto-secundario hover:bg-fondo" onClick={() => entradaRef.current?.click()}><ImagePlus className="size-5" /></button>
           {foto && <span className="flex max-w-40 items-center gap-1 rounded-lg bg-fondo px-2 py-1 text-xs"><span className="truncate">{foto.name}</span><button type="button" aria-label="Quitar foto" onClick={() => setFoto(null)}><X className="size-3.5" /></button></span>}
-          <input aria-label="Escribe tu mensaje" value={entrada} maxLength={6000} onChange={(event) => setEntrada(event.target.value)} placeholder={mensajes.length ? "Escribe tu respuesta…" : "O cuéntame con tus palabras qué quieres celebrar…"} className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-texto-secundario" disabled={cargando} />
+          <input aria-label="Escribe tu mensaje" value={entrada} maxLength={6000} onChange={(event) => setEntrada(event.target.value)} placeholder={mensajes.length ? "Escribe tu respuesta…" : "O cuéntame con tus palabras qué quieres celebrar…"} className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-texto-secundario" disabled={cargando || !hidratado} />
           <button type="submit" aria-label="Enviar mensaje" disabled={cargando || !entrada.trim()} className="grid size-10 place-items-center rounded-xl bg-acento text-white transition-opacity disabled:opacity-40">{cargando ? <LoaderCircle className="size-4 animate-spin" /> : <ArrowUp className="size-5" />}</button>
         </div>
         {hayEjemplos && <p className="mt-2 text-center text-xs text-texto-secundario">Las ideas marcadas «Ejemplo» son ilustrativas; los precios salen del catálogo actual de Sempertex.</p>}
@@ -358,4 +361,8 @@ async function leerFoto(archivo: File): Promise<{ mime: string; base64: string }
 
 function conMayuscula(texto: string): string {
   return texto.charAt(0).toLocaleUpperCase("es") + texto.slice(1);
+}
+
+function suscribirNada(): () => void {
+  return () => {};
 }

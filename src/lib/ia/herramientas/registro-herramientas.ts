@@ -31,6 +31,7 @@ import {
 } from "@/lib/plan/armado-estructura-ia";
 import { llamarPythonEstimarConteo, llamarPythonOmoikaneArmarEstructura, llamarPythonOmoikaneCatalogoArmado, llamarPythonOmoikaneCompletarArmados } from "@/lib/ia/nucleo/python-adapter";
 import type { PistaConteo } from "@/lib/plan/conteo-referencia";
+import type { PistaGeometria } from "@/lib/plan/geometria-referencia";
 import type { PistaPatron, PistaTamanos } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, comoCubrirElementosReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
@@ -64,7 +65,7 @@ import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
 import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
 import { sellarEstructurasOficiales } from "@/lib/plan/estructuras-oficiales";
 import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
-import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/plan/medidas-defecto";
+import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio, estructurasMedidasPorCliente } from "@/lib/plan/medidas-defecto";
 import { acabadosObservadosDeMateriales, coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, materialesDeColorInventado, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { colorDeCompraSinVenta } from "@/lib/rag/catalog/similitud-color";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
@@ -1385,6 +1386,23 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       }
     };
     const resolverPlanDelTurno = (plan: PlanDecoracion) => {
+      const blueprint = estado.referenceBlueprint;
+      const elementos = new Map(blueprint?.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]) ?? []);
+      const proporciones = new Map(blueprint?.source_images.map((imagen) => [imagen.image_id, imagen.aspect_ratio]).filter((entrada): entrada is [string, number] => entrada[1] !== undefined) ?? []);
+      const pistasGeometria = new Map<string, PistaGeometria>();
+      for (const estructura of plan.estructuras) {
+        const id = estructura.referencia_element_id;
+        const elemento = id ? elementos.get(id) : undefined;
+        const aspectRatio = elemento ? proporciones.get(elemento.source_image_id) : undefined;
+        if (!id || !elemento || pistasGeometria.has(id)) continue;
+        pistasGeometria.set(id, {
+          referencia_element_id: id,
+          source_image_id: elemento.source_image_id,
+          caja: { ...elemento.reference_bbox },
+          ...(aspectRatio === undefined ? {} : { aspect_ratio: aspectRatio }),
+          confianza: elemento.detection_confidence,
+        });
+      }
       const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasGuirnalda = completarArmadosGuirnalda ? pistasGuirnaldaDelPlan(plan, estado.referenceBlueprint) : [];
@@ -1418,7 +1436,9 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         ...(completarArmadosGuirnalda ? { completarArmadosGuirnalda } : {}),
         ...(pistasGuirnalda.length > 0 ? { pistasGuirnalda } : {}),
         ...(pistasConteo.length > 0 ? { completarConteos: true, pistasConteo } : {}),
-        ...(pistasConteo.length > 0 && medidasDelCliente ? { medidasDelCliente: true } : {}),
+        ...(pistasGeometria.size > 0 ? { pistasGeometria: [...pistasGeometria.values()] } : {}),
+        ...(pistasGeometria.size > 0 ? { medidasClienteDe: estructurasMedidasPorCliente(plan.estructuras, estado.solicitudOriginal) } : {}),
+        ...(pistasGeometria.size > 0 && medidasDelCliente ? { medidasDelCliente: true } : {}),
         requestId: estado.ragRequestId,
         correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
         ...(options.signal ? { signal: options.signal } : {}),

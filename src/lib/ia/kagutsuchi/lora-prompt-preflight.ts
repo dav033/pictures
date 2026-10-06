@@ -90,7 +90,7 @@ function expectedBilateralPairs(sceneSpec: SceneSpec, clauses: readonly LoraVisu
 }
 
 // A concept_id has the shape `segment.segment.segment...` (writing-block.md
-// §7 / product-vocabulary.ts productConceptSchema), e.g.
+// contrato de producto perceptual), e.g.
 // "balloon.round.latex.reflex.rose_gold". Real prose never contains
 // lowercase, dot-joined, multi-segment tokens like this, so requiring at
 // least 3 segments (2 dots) keeps this check from false-positiving on

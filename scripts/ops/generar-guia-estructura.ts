@@ -30,7 +30,7 @@
  * guirnalda de pared) y conserva los colores? ¿Devuelve una foto o el dibujo
  * retocado? ¿Pinta la carta?
  */
-import { flag, correrExperimento, resolverIdentidadLora, type Defaults } from "../lora/exp-fal-lib";
+import { flag, correrExperimento, resolverIdentidadLora, type Defaults } from "../lib/fal-evaluacion";
 import { cerrarCorridaGuia, directorioSalida, prepararCorridaGuia } from "../lib/corrida-guia-estructura";
 
 async function main(): Promise<void> {

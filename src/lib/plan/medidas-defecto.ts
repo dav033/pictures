@@ -21,6 +21,42 @@ export function clienteDioMedidasEspacio(solicitudOriginal: string): boolean {
   return MEDIDA_EN_TEXTO.test(solicitudOriginal);
 }
 
+/** Piezas nombradas junto a una medida explícita en el mensaje del cliente. */
+export function estructurasMedidasPorCliente(
+  estructuras: ReadonlyArray<Pick<PlanDecoracion["estructuras"][number], "estructura_id" | "tipo" | "nombre">>,
+  solicitudOriginal: string,
+): string[] {
+  const normalizar = (texto: string) => texto.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  const alias: Readonly<Record<string, readonly string[]>> = {
+    arco: ["arco", "semiarco", "medio arco"],
+    arco_organico: ["arco", "arco organico", "semiarco", "medio arco"],
+    semiarco: ["semiarco", "medio arco", "arco"],
+    columna: ["columna", "columnas", "columna clasica", "columna organica"],
+    columna_organica: ["columna", "columnas", "columna organica"],
+    pared: ["pared", "paredes"],
+    pared_organica: ["pared", "paredes", "pared organica"],
+  };
+  const tramos = normalizar(solicitudOriginal).split(/[.!?;,\n]|\s+y\s+/u).filter((tramo) => MEDIDA_EN_TEXTO.test(tramo));
+  const salida = new Set<string>();
+  const descriptores = ["izquierda", "izquierdo", "derecha", "derecho", "central", "principal", "primera", "segundo", "segunda"];
+  for (const tramo of tramos) {
+    const candidatas = estructuras.filter((estructura) => {
+      const palabras = [estructura.tipo, ...(alias[estructura.tipo] ?? [])].map(normalizar);
+      return palabras.some((palabra) => new RegExp(`\\b${palabra}\\b`, "u").test(tramo));
+    });
+    if (candidatas.length === 1) {
+      salida.add(candidatas[0]!.estructura_id);
+      continue;
+    }
+    const descriptor = descriptores.find((palabra) => new RegExp(`\\b${palabra}\\b`, "u").test(tramo));
+    const nombradas = descriptor
+      ? candidatas.filter((estructura) => normalizar(estructura.nombre).includes(descriptor))
+      : candidatas.filter((estructura) => new RegExp(`\\b${normalizar(estructura.nombre)}\\b`, "u").test(tramo));
+    if (nombradas.length === 1) salida.add(nombradas[0]!.estructura_id);
+  }
+  return [...salida];
+}
+
 /**
  * Before signing, the server decides the source of the space measures from the
  * customer's evidence, not from the model: measures the customer gave are
