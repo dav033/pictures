@@ -227,7 +227,9 @@ ofrecer_opciones, preguntar_uso, costear_decoracion, pasos_decoracion, buscar_pr
 (Zod, unión por `origen`, ejemplos `ej-` ocultos en producción), conmutador «Clásica / Guiada» con `<Link>` en `CabeceraApp`
 (preferencia en localStorage `demo-decoracion:vista-app`), `page.tsx` sin cambios. El costeo lo cotiza Python (regla de §2), nunca TS.
 Reutiliza `TarjetaCotizacion` (personal) y `CotizacionProfesional` (negocio). En curso: rama `feat/asistente-guiado`
-(worktree `Downloads/e3g`, Codex). La prueba de un turno real con el LLM la hago yo al final.
+(worktree `Downloads/e3g`, Codex). La prueba de un turno real con el LLM la hago yo al final. Python cotiza con la operación nueva
+`plan.lista_materiales`. Dueño (2026-10-06): sí a enlazar 3-4 decoraciones de ejemplo a kits/variantes REALES (E-DECORS, Fiestas
+prediseñadas) para que el costeo de la demo muestre precios; siguen marcadas «Ejemplo» (segunda pasada encolada).
 
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
