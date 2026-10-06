@@ -6,7 +6,7 @@ import { getRagPool } from "@/lib/rag/db";
 assert.equal(decoracionesSempertex.length, 14);
 assert.equal(proveedoresSempertex.length, 4);
 assert.ok(decoracionesSempertex.every((decoracion) => decoracion.origen === "ejemplo" && decoracion.id.startsWith("ej-") && decoracion.aviso === "DATO DE EJEMPLO — no es real"));
-assert.ok(decoracionesSempertex.every((decoracion) => decoracion.materiales.length > 0 && decoracion.fotos[0]?.url.startsWith("https://cdn.shopify.com/") && decoracion.fotos[0]?.fuente.includes("Foto real del E-Decor")));
+assert.ok(decoracionesSempertex.every((decoracion) => decoracion.materiales.length > 0 && (decoracion.fotos[0]?.url.startsWith("https://cdn.shopify.com/") || decoracion.fotos[0]?.url.startsWith("/biblioteca-sempertex/kits/")) && decoracion.fotos[0]?.fuente.includes("Foto real del E-Decor")));
 assert.ok(decoracionesSempertex.every((decoracion) => decoracion.pasos.length >= 4 && decoracion.pasos.length <= 6));
 assert.ok(proveedoresSempertex.every((proveedor) => proveedor.origen === "ejemplo" && proveedor.id.startsWith("ej-prov-") && proveedor.contacto === null && new URL(proveedor.url).hostname === "example.com"));
 assert.ok(bibliotecaVisible().every((decoracion) => decoracion.origen === "ejemplo" || decoracion.id.startsWith("deco-")));

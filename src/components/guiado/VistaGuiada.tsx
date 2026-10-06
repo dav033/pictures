@@ -96,7 +96,7 @@ export function VistaGuiada() {
     return separarOpciones(ultimo.content).opciones;
   }, [mensajes.length, ultimo, cargando]);
   const hayEjemplos = useMemo(() => mensajes.some((mensaje) => mensaje.widgets?.some((widget) => (widget.tipo === "decoraciones" && widget.decoraciones.some((decoracion) => decoracion.origen === "ejemplo")) || ("decoracion" in widget && widget.decoracion.origen === "ejemplo"))), [mensajes]);
-  const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? `${brief.evento ?? ""}${brief.edad !== undefined ? ` · ${brief.edad} años` : ""} · ${brief.tematica}` : null;
+  const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? `${brief.evento ?? ""}${brief.edad ? ` · ${brief.edad} años` : ""} · ${brief.tematica}` : null;
 
   useEffect(() => {
     try {
