@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 
-const FotoSchema = z.object({ url: z.string().min(1), fuente: z.url(), licencia: z.enum(["sempertex_propia", "pexels", "ejemplo_sin_licencia"]) }).strict();
+const FotoSchema = z.object({ url: z.url(), fuente: z.string().trim().min(1), licencia: z.enum(["sempertex_propia", "pexels", "ejemplo_sin_licencia"]) }).strict();
 const MaterialSchema = z.object({ variantId: z.string().min(1), sku: z.string().nullable(), cantidad: z.number().int().positive(), nota: z.string().optional() }).strict();
 const PasoSchema = z.object({ orden: z.number().int().positive(), texto: z.string().min(1), foto: z.string().optional(), videoSeg: z.number().positive().optional() }).strict();
 const BaseSchema = z.object({
