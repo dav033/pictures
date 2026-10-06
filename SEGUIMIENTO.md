@@ -222,7 +222,7 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    CASE-002 1,8 m conservado (caja cortada arriba, $51.703); F7-5 2,2 m ($197.211). Dos revisiones adversariales (3 fallos
    corregidos; la segunda sin bloqueantes, cada prueba nueva falla sin el arreglo). pytest 14/14, pruebas TS, tsc, ruff.
    Pendiente: el chat aún puede inventar medidas en el texto (F7-5 1,2 m cuando ocupa el 83 % del ancho; 003 cruza por arriba).
-2. **Colores de la foto del dueño 2026-10-06** (semiarco + columna orgánicos en rosa empolvado mate, crema, perla rosa claro y
+2. **[FUSIONADO 2026-10-06 tarde, merge 21e6860; vuelta atrás: tag `antes-colores`]** **Colores de la foto del dueño 2026-10-06** (semiarco + columna orgánicos en rosa empolvado mate, crema, perla rosa claro y
    burbujas transparentes; foto en `Downloads/WhatsApp Image 2026-10-06 at 9.58.10 AM.jpeg`, datos en
    `informes-calidad/dueno-2026-10-06/`). Salió: «Fashion Chocolate 076» en la lista (no hay marrón); el plan compra «Rosado mate»
    (rosa bebé) en vez de Palo de Rosa 010; la columna lleva 83/127 (65 %) de «Oro rosa cromado» y FLUX pinta bolas cobre oscuro.
@@ -243,6 +243,10 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    el color del globo opaco («gold confetti balloons»), y el color del relleno solo se descarta con indicio transparente; «matte light grey»
    archivado de CASE-002 habilita gris; bajos: crema sin referencia medida, constante huérfana. Pendiente de diseño: mostrar tonos
    no nombrados para que el cliente los confirme (no se compran solos).
+   CASE-002 «horripilante» en la vista clásica (2026-10-06 13:35: bastones finos con franjas plata/rosa/blanco, lila perdido, 40
+   blanco mate inventado): rama `fix/forma-organica-002` (e3i) ya mezcla colores con 5 bandas medidas y conserva tonos nombrados con
+   presencia ≥3 % (lila); la forma sigue sin resolver y sin imagen juzgable (FLUX `fetch failed`); en curso con su propio ai-api en el
+   puerto 8010 (tope US$0,40; gastado antes ≈US$0,35).
    Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
    Pendiente aparte: `test-guia-estructura.ts` ya falla en la rama principal (espera `#f2a7c3`, sale `#f8a3bc` en guirnalda-pared).
 3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
@@ -299,7 +303,7 @@ en azul»: Azul Rey $13.974 + Blanco $13.037 + impreso bebé $24.143 = $51.154 c
 del catálogo, enlace al kit en sempertex.com sin el prefijo `b2b-`, distribuidor cercano); `darkreader-lock` (la extensión Dark
 Reader del equipo del dueño repintaba la app). Recorrido en el navegador verificado: espacio (ilustración), baby shower niño →
 elegir → comprar → costear personal. Hasta la presentación NO se fusionan en la principal las
-ramas de motor (colores `fix/sombra-no-es-color`, forma `fix/forma-organica-002`; medidas y etapa 4 ya fusionadas tras revisión)
+ramas de motor sin revisión (forma `fix/forma-organica-002`; colores, medidas y etapa 4 ya fusionadas tras revisión adversarial)
 sin revisión adversarial y prueba (el dueño pidió el 2026-10-06 seguir también con esas mejoras, no solo con el chat).
 Tarde del 2026-10-06 (verificado en el navegador): tras «Aprender» salen las 4 opciones; el modelo no habla de «la pantalla»;
 «Contratar decorador» pregunta la ciudad con botones (Bogotá/Medellín/Cali/Barranquilla) y muestra tarjetas de ejemplo (2 decoradores
@@ -310,6 +314,12 @@ Más tarde: idea «Fiesta tropical» con el kit real Verano Tropical (variantes 
 la búsqueda no ofrece ideas de otro evento (un cumpleaños de 35 recibía un baby shower); fotos de kit completas sobre blanco;
 miniatura de la foto de inspiración en el mensaje del cliente; «Ninguna me convence» + foto verificado (la IA ve la foto y propone
 ideas «Parecida»). 2026-10-06 ~13:35 el sistema cortó por memoria los procesos en segundo plano; el servidor Next sobrevivió.
+Después (2026-10-06 ~14:00, captura del dueño «divorcio de mis padres» → «carnaval»: la IA decía «esta propuesta» sin mostrar ninguna
+tarjeta porque la búsqueda devolvía vacío): evento fuera del catálogo → ideas de fiesta general por edad y colores (nunca de otro
+evento); carnaval/neón/festivo/colorido = multicolor; con una sola idea se completa hasta dos; sin ideas la herramienta lo dice y el
+prompt prohíbe hablar de una propuesta; controles desactivados hasta hidratar (el primer clic tras recargar se perdía); en baby
+shower no se pregunta la edad. En esta vista NO se genera imagen (decisión del dueño); posible botón «Ver cómo quedaría en mi
+espacio» que lleve la idea a la vista clásica: pendiente de decisión del dueño (riesgo en vivo).
 
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
