@@ -9,7 +9,8 @@
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
         "rosado",
-        "lila"
+        "morado",
+        "dorado"
       ],
       "estilo": "orgánico"
     },
@@ -36,15 +37,22 @@
             "product_id": "8634233585959",
             "variant_id": "46594211414311",
             "color": "rosado",
-            "participacion": 0.7440191387559809,
+            "participacion": 0.4,
             "rol_material": "principal"
           },
           {
-            "product_id": "8634232996135",
-            "variant_id": "46594210496807",
-            "color": "lila",
-            "participacion": 0.25598086124401914,
+            "product_id": "8634302464295",
+            "variant_id": "46594343731495",
+            "color": "morado",
+            "participacion": 0.35,
             "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "color": "dorado",
+            "participacion": 0.25,
+            "rol_material": "acento"
           }
         ],
         "porque": "Recreación de referencia REF_01_E03, con color y forma observados.",
@@ -52,7 +60,8 @@
         "estructura_oficial": "columna",
         "colores_referencia": [
           "rosado",
-          "lila"
+          "morado",
+          "dorado"
         ]
       },
       {
@@ -73,15 +82,22 @@
             "product_id": "8634233585959",
             "variant_id": "46594211414311",
             "color": "rosado",
-            "participacion": 0.8171513060620996,
+            "participacion": 0.4,
             "rol_material": "principal"
           },
           {
-            "product_id": "8634232996135",
-            "variant_id": "46594210496807",
-            "color": "lila",
-            "participacion": 0.18284869393790046,
+            "product_id": "8634302464295",
+            "variant_id": "46594343731495",
+            "color": "morado",
+            "participacion": 0.35,
             "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "color": "dorado",
+            "participacion": 0.25,
+            "rol_material": "acento"
           }
         ],
         "porque": "Recreación de referencia REF_01_E04, con color y forma observados.",
@@ -89,7 +105,8 @@
         "estructura_oficial": "columna",
         "colores_referencia": [
           "rosado",
-          "lila"
+          "morado",
+          "dorado"
         ]
       }
     ],
@@ -108,7 +125,8 @@
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
           "rosado",
-          "lila"
+          "morado",
+          "dorado"
         ],
         "estilo": "orgánico"
       },
@@ -135,15 +153,22 @@
               "product_id": "8634233585959",
               "variant_id": "46594211414311",
               "color": "rosado",
-              "participacion": 0.7440191387559809,
+              "participacion": 0.4,
               "rol_material": "principal"
             },
             {
-              "product_id": "8634232996135",
-              "variant_id": "46594210496807",
-              "color": "lila",
-              "participacion": 0.25598086124401914,
+              "product_id": "8634302464295",
+              "variant_id": "46594343731495",
+              "color": "morado",
+              "participacion": 0.35,
               "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634255638823",
+              "variant_id": "46594264695079",
+              "color": "dorado",
+              "participacion": 0.25,
+              "rol_material": "acento"
             }
           ],
           "porque": "Recreación de referencia REF_01_E03, con color y forma observados.",
@@ -151,7 +176,8 @@
           "estructura_oficial": "columna",
           "colores_referencia": [
             "rosado",
-            "lila"
+            "morado",
+            "dorado"
           ]
         },
         {
@@ -172,15 +198,22 @@
               "product_id": "8634233585959",
               "variant_id": "46594211414311",
               "color": "rosado",
-              "participacion": 0.8171513060620996,
+              "participacion": 0.4,
               "rol_material": "principal"
             },
             {
-              "product_id": "8634232996135",
-              "variant_id": "46594210496807",
-              "color": "lila",
-              "participacion": 0.18284869393790046,
+              "product_id": "8634302464295",
+              "variant_id": "46594343731495",
+              "color": "morado",
+              "participacion": 0.35,
               "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634255638823",
+              "variant_id": "46594264695079",
+              "color": "dorado",
+              "participacion": 0.25,
+              "rol_material": "acento"
             }
           ],
           "porque": "Recreación de referencia REF_01_E04, con color y forma observados.",
@@ -188,7 +221,8 @@
           "estructura_oficial": "columna",
           "colores_referencia": [
             "rosado",
-            "lila"
+            "morado",
+            "dorado"
           ]
         }
       ],
@@ -199,36 +233,36 @@
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "a59687e2e22b93c119e2eb59f9713f00aae832de3b5b8be7a5bfc3888d6e1e5a",
+    "plan_hash": "0f0c3422509ee604623f4e7547907f25eb3e576ae1ee1d0de99e10c34f3e02d1",
     "request_id": "d2258ba7-5ccd-575c-95bb-1f112b0d92a4",
     "compras": [
       {
-        "variant_id": "46594210496807",
-        "product_id": "8634232996135",
-        "sku": "B2B-20000765",
-        "sku_original": "B2B-20000765",
+        "variant_id": "46594211414311",
+        "product_id": "8634233585959",
+        "sku": "B2B-20010675",
+        "sku_original": "B2B-20010675",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
-        "inventory_quantity": 985804,
+        "source_variant_id": "gid://shopify/ProductVariant/46594211414311",
+        "inventory_quantity": 990363,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+        "titulo": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50",
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
-        "color": "lila",
-        "unidades_necesarias": 21,
-        "design_quantity": 21,
-        "waste_reserve": 8,
-        "required_quantity": 29,
-        "unidades_con_merma": 29,
+        "color": "rosado",
+        "unidades_necesarias": 39,
+        "design_quantity": 39,
+        "waste_reserve": 0,
+        "required_quantity": 39,
+        "unidades_con_merma": 39,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 21,
-        "leftover_inventory": 21,
-        "consumption_cost": 7561,
+        "used": 39,
+        "leftover_inventory": 11,
+        "consumption_cost": 10169,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 29,
+        "sobrante": 11,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -245,37 +279,37 @@
             "id": "EST_02_COLUMNA"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Palo_de_Rosa_-_Rosewood_010.jpg?v=1762966820"
       },
       {
-        "variant_id": "46594211414311",
-        "product_id": "8634233585959",
-        "sku": "B2B-20010675",
-        "sku_original": "B2B-20010675",
+        "variant_id": "46594264695079",
+        "product_id": "8634255638823",
+        "sku": "B2B-20014156",
+        "sku_original": "B2B-20014156",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594211414311",
-        "inventory_quantity": 990363,
+        "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
+        "inventory_quantity": 958502,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50",
+        "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
-        "color": "rosado",
-        "unidades_necesarias": 76,
-        "design_quantity": 76,
-        "waste_reserve": 0,
-        "required_quantity": 76,
-        "unidades_con_merma": 76,
+        "color": "dorado",
+        "unidades_necesarias": 24,
+        "design_quantity": 24,
+        "waste_reserve": 8,
+        "required_quantity": 32,
+        "unidades_con_merma": 32,
         "unidades_paquete": 50,
-        "paquetes": 2,
-        "purchase_quantity": 100,
-        "used": 76,
-        "leftover_inventory": 24,
-        "consumption_cost": 19816,
-        "purchase_cost": 26074,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 24,
+        "leftover_inventory": 18,
+        "consumption_cost": 18545,
+        "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "sobrante": 24,
-        "precio_paquete": 13037,
-        "subtotal": 26074,
+        "sobrante": 26,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
         "estructuras": [
           "EST_01_COLUMNA",
           "EST_02_COLUMNA"
@@ -290,7 +324,52 @@
             "id": "EST_02_COLUMNA"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Palo_de_Rosa_-_Rosewood_010.jpg?v=1762966820"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+      },
+      {
+        "variant_id": "46594343731495",
+        "product_id": "8634302464295",
+        "sku": "B2B-20017220",
+        "sku_original": "B2B-20017220",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594343731495",
+        "inventory_quantity": 998261,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "morado",
+        "unidades_necesarias": 34,
+        "design_quantity": 34,
+        "waste_reserve": 0,
+        "required_quantity": 34,
+        "unidades_con_merma": 34,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 34,
+        "leftover_inventory": 16,
+        "consumption_cost": 8865,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 16,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_COLUMNA",
+          "EST_02_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Orquidea_Morada_Purple_Orchid_056.jpg?v=1763148616"
       }
     ],
     "totales": {
@@ -298,17 +377,17 @@
         "R-12": 97
       },
       "total_unidades": 97,
-      "total_cop": 39111,
+      "total_cop": 55051,
       "design_quantity": 97,
       "target_waste_reserve": 8,
       "covered_waste_reserve": 8,
       "uncovered_waste_reserve": 0,
       "natural_package_surplus": 53,
-      "purchase_cost": 39111,
-      "consumption_cost": 27377,
+      "purchase_cost": 55051,
+      "consumption_cost": 37579,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
-      "ahorro_paquetes_cop": 13037,
+      "ahorro_paquetes_cop": 55051,
       "incluye_iva": true,
       "merma_porcentaje": 8
     },
@@ -321,7 +400,8 @@
     "sustituciones": [],
     "sin_cobertura": [],
     "advertencias": [
-      "sobrante_alto:46594210496807"
+      "sobrante_alto:46594264695079",
+      "sobrante_alto:46594343731495"
     ],
     "estructuras": [
       {
@@ -354,7 +434,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 32,
+            "unidades": 17,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Palo_de_Rosa_-_Rosewood_010.jpg?v=1762966820",
             "sustitucion": null
           },
@@ -364,23 +444,48 @@
               "kind": "estructura",
               "id": "EST_01_COLUMNA"
             },
-            "product_id": "8634232996135",
-            "variant_id": "46594210496807",
-            "sku": "B2B-20000765",
-            "sku_original": "B2B-20000765",
+            "product_id": "8634302464295",
+            "variant_id": "46594343731495",
+            "sku": "B2B-20017220",
+            "sku_original": "B2B-20017220",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
-            "inventory_quantity": 985804,
+            "source_variant_id": "gid://shopify/ProductVariant/46594343731495",
+            "inventory_quantity": 998261,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
-            "color": "lila",
+            "titulo": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
+            "color": "morado",
             "tamano_codigo": "R-12",
             "diam_pulg": 12,
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
+            "unidades": 15,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Orquidea_Morada_Purple_Orchid_056.jpg?v=1763148616",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "sku": "B2B-20014156",
+            "sku_original": "B2B-20014156",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
+            "inventory_quantity": 958502,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
             "unidades": 11,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985",
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
             "sustitucion": null
           }
         ],
@@ -424,7 +529,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 44,
+            "unidades": 22,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Palo_de_Rosa_-_Rosewood_010.jpg?v=1762966820",
             "sustitucion": null
           },
@@ -434,23 +539,48 @@
               "kind": "estructura",
               "id": "EST_02_COLUMNA"
             },
-            "product_id": "8634232996135",
-            "variant_id": "46594210496807",
-            "sku": "B2B-20000765",
-            "sku_original": "B2B-20000765",
+            "product_id": "8634302464295",
+            "variant_id": "46594343731495",
+            "sku": "B2B-20017220",
+            "sku_original": "B2B-20017220",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
-            "inventory_quantity": 985804,
+            "source_variant_id": "gid://shopify/ProductVariant/46594343731495",
+            "inventory_quantity": 998261,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
-            "color": "lila",
+            "titulo": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
+            "color": "morado",
             "tamano_codigo": "R-12",
             "diam_pulg": 12,
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 10,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985",
+            "unidades": 19,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Orquidea_Morada_Purple_Orchid_056.jpg?v=1763148616",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "sku": "B2B-20014156",
+            "sku_original": "B2B-20014156",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
+            "inventory_quantity": 958502,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 13,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
             "sustitucion": null
           }
         ],
@@ -468,11 +598,11 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_COLUMNA",
-        "consumo_cop": 11212
+        "consumo_cop": 14719
       },
       {
         "estructura_id": "EST_02_COLUMNA",
-        "consumo_cop": 14080
+        "consumo_cop": 18224
       }
     ],
     "conteos_referencia": [
@@ -585,17 +715,30 @@
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 32,
+        "design_quantity": 17,
         "waste_reserve": 0,
-        "required_quantity": 32,
-        "waste_adjusted_quantity": 32
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17
       },
       {
         "structure_id": "EST_01_COLUMNA",
-        "product_id": "8634232996135",
-        "variant_id": "46594210496807",
-        "color": "lila",
+        "product_id": "8634302464295",
+        "variant_id": "46594343731495",
+        "color": "morado",
         "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 15,
+        "waste_reserve": 0,
+        "required_quantity": 15,
+        "waste_adjusted_quantity": 15
+      },
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264695079",
+        "color": "dorado",
+        "finish": "reflex",
         "size_inches": 12,
         "shape": "redondo",
         "design_quantity": 11,
@@ -611,62 +754,93 @@
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 44,
+        "design_quantity": 22,
         "waste_reserve": 0,
-        "required_quantity": 44,
-        "waste_adjusted_quantity": 44
+        "required_quantity": 22,
+        "waste_adjusted_quantity": 22
       },
       {
         "structure_id": "EST_02_COLUMNA",
-        "product_id": "8634232996135",
-        "variant_id": "46594210496807",
-        "color": "lila",
+        "product_id": "8634302464295",
+        "variant_id": "46594343731495",
+        "color": "morado",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 10,
+        "design_quantity": 19,
         "waste_reserve": 0,
-        "required_quantity": 10,
-        "waste_adjusted_quantity": 10
+        "required_quantity": 19,
+        "waste_adjusted_quantity": 19
+      },
+      {
+        "structure_id": "EST_02_COLUMNA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264695079",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 13,
+        "waste_reserve": 0,
+        "required_quantity": 13,
+        "waste_adjusted_quantity": 13
       }
     ],
     "special_elements": [],
     "purchases": [
       {
-        "product_id": "8634232996135",
-        "variant_id": "46594210496807",
-        "design_quantity": 21,
-        "waste_reserve": 8,
-        "required_quantity": 29,
-        "waste_adjusted_quantity": 29,
+        "product_id": "8634233585959",
+        "variant_id": "46594211414311",
+        "design_quantity": 39,
+        "waste_reserve": 0,
+        "required_quantity": 39,
+        "waste_adjusted_quantity": 39,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 21,
-        "leftover_inventory": 21,
-        "consumption_cost": 7561,
+        "used": 39,
+        "leftover_inventory": 11,
+        "consumption_cost": 10169,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 21,
-        "potential_surplus": 29
+        "operational_surplus": 11,
+        "potential_surplus": 11
       },
       {
-        "product_id": "8634233585959",
-        "variant_id": "46594211414311",
-        "design_quantity": 76,
-        "waste_reserve": 0,
-        "required_quantity": 76,
-        "waste_adjusted_quantity": 76,
+        "product_id": "8634255638823",
+        "variant_id": "46594264695079",
+        "design_quantity": 24,
+        "waste_reserve": 8,
+        "required_quantity": 32,
+        "waste_adjusted_quantity": 32,
         "units_per_package": 50,
-        "package_count": 2,
-        "purchase_quantity": 100,
-        "used": 76,
-        "leftover_inventory": 24,
-        "consumption_cost": 19816,
-        "purchase_cost": 26074,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 24,
+        "leftover_inventory": 18,
+        "consumption_cost": 18545,
+        "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "operational_surplus": 24,
-        "potential_surplus": 24
+        "operational_surplus": 18,
+        "potential_surplus": 26
+      },
+      {
+        "product_id": "8634302464295",
+        "variant_id": "46594343731495",
+        "design_quantity": 34,
+        "waste_reserve": 0,
+        "required_quantity": 34,
+        "waste_adjusted_quantity": 34,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 34,
+        "leftover_inventory": 16,
+        "consumption_cost": 8865,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 16,
+        "potential_surplus": 16
       }
     ],
     "totals": {
@@ -676,8 +850,8 @@
       "uncovered_waste_reserve": 0,
       "natural_package_surplus": 53,
       "required_quantity": 105,
-      "consumption_cost": 27377,
-      "purchase_cost": 39111,
+      "consumption_cost": 37579,
+      "purchase_cost": 55051,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "waste_adjusted_quantity": 105,
@@ -686,55 +860,12 @@
       "potential_surplus": 53
     },
     "warnings": [
-      "sobrante_alto:46594210496807"
+      "sobrante_alto:46594264695079",
+      "sobrante_alto:46594343731495"
     ]
   },
   "quote": {
     "lineas": [
-      {
-        "id": "46594210496807",
-        "productId": "8634232996135",
-        "tamano": "R-12",
-        "tamanoCodigo": "R-12",
-        "diamPulg": 12,
-        "estructuras": [
-          "EST_01_COLUMNA",
-          "EST_02_COLUMNA"
-        ],
-        "elementosOrigen": [
-          {
-            "kind": "estructura",
-            "id": "EST_01_COLUMNA"
-          },
-          {
-            "kind": "estructura",
-            "id": "EST_02_COLUMNA"
-          }
-        ],
-        "referenciaElementIds": [
-          "REF_01_E03",
-          "REF_01_E04"
-        ],
-        "color": "lila",
-        "cantidadNecesaria": 21,
-        "designQuantity": 21,
-        "wasteReserve": 8,
-        "requiredQuantity": 29,
-        "purchaseQuantity": 50,
-        "used": 21,
-        "leftoverInventory": 21,
-        "consumptionCost": 7561,
-        "purchaseCost": 13037,
-        "additionalPackageForWaste": false,
-        "disponible": true,
-        "varianteId": "46594210496807",
-        "nombre": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
-        "precioPaquete": 13037,
-        "unidadesPaquete": 50,
-        "paquetes": 1,
-        "subtotal": 13037,
-        "sobrante": 29
-      },
       {
         "id": "46594211414311",
         "productId": "8634233585959",
@@ -760,36 +891,124 @@
           "REF_01_E04"
         ],
         "color": "rosado",
-        "cantidadNecesaria": 76,
-        "designQuantity": 76,
+        "cantidadNecesaria": 39,
+        "designQuantity": 39,
         "wasteReserve": 0,
-        "requiredQuantity": 76,
-        "purchaseQuantity": 100,
-        "used": 76,
-        "leftoverInventory": 24,
-        "consumptionCost": 19816,
-        "purchaseCost": 26074,
+        "requiredQuantity": 39,
+        "purchaseQuantity": 50,
+        "used": 39,
+        "leftoverInventory": 11,
+        "consumptionCost": 10169,
+        "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
         "varianteId": "46594211414311",
         "nombre": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50",
         "precioPaquete": 13037,
         "unidadesPaquete": 50,
-        "paquetes": 2,
-        "subtotal": 26074,
-        "sobrante": 24
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 11
+      },
+      {
+        "id": "46594264695079",
+        "productId": "8634255638823",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA",
+          "EST_02_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "dorado",
+        "cantidadNecesaria": 24,
+        "designQuantity": 24,
+        "wasteReserve": 8,
+        "requiredQuantity": 32,
+        "purchaseQuantity": 50,
+        "used": 24,
+        "leftoverInventory": 18,
+        "consumptionCost": 18545,
+        "purchaseCost": 28977,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594264695079",
+        "nombre": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+        "precioPaquete": 28977,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 28977,
+        "sobrante": 26
+      },
+      {
+        "id": "46594343731495",
+        "productId": "8634302464295",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA",
+          "EST_02_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "morado",
+        "cantidadNecesaria": 34,
+        "designQuantity": 34,
+        "wasteReserve": 0,
+        "requiredQuantity": 34,
+        "purchaseQuantity": 50,
+        "used": 34,
+        "leftoverInventory": 16,
+        "consumptionCost": 8865,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594343731495",
+        "nombre": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 16
       }
     ],
-    "total": 39111,
+    "total": 55051,
     "mermaPorcentaje": 8,
-    "purchaseCost": 39111,
-    "consumptionCost": 27377,
+    "purchaseCost": 55051,
+    "consumptionCost": 37579,
     "targetWasteReserve": 8,
     "coveredWasteReserve": 8,
     "leftoverInventory": 45,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "a59687e2e22b93c119e2eb59f9713f00aae832de3b5b8be7a5bfc3888d6e1e5a"
+    "plan_hash": "0f0c3422509ee604623f4e7547907f25eb3e576ae1ee1d0de99e10c34f3e02d1"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -797,27 +1016,37 @@
     "incluye_iva": true,
     "lineas": [
       {
-        "variant_id": "46594210496807",
+        "variant_id": "46594211414311",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 21,
+        "cantidad_necesaria": 39,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 29
+        "sobrante": 11
       },
       {
-        "variant_id": "46594211414311",
+        "variant_id": "46594264695079",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 76,
+        "cantidad_necesaria": 24,
         "unidades_paquete": 50,
-        "paquetes": 2,
+        "paquetes": 1,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
+        "sobrante": 26
+      },
+      {
+        "variant_id": "46594343731495",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 34,
+        "unidades_paquete": 50,
+        "paquetes": 1,
         "precio_paquete": 13037,
-        "subtotal": 26074,
-        "sobrante": 24
+        "subtotal": 13037,
+        "sobrante": 16
       }
     ],
-    "total": 39111
+    "total": 55051
   },
   "descartadas": []
 }

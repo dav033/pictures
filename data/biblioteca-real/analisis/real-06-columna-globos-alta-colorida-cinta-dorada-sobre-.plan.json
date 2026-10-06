@@ -8,9 +8,11 @@
       "titulo": "real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
-        "verde",
+        "azul",
         "rojo",
-        "amarillo"
+        "verde",
+        "amarillo",
+        "naranja"
       ],
       "estilo": "orgánico"
     },
@@ -34,24 +36,38 @@
         "mezcla": "clasica",
         "materiales": [
           {
-            "product_id": "8634233618727",
-            "variant_id": "46594211840295",
-            "color": "verde",
-            "participacion": 0.405908539053015,
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "color": "azul",
+            "participacion": 0.30000000000000004,
             "rol_material": "principal"
           },
           {
             "product_id": "8634239942951",
             "variant_id": "46594236416295",
             "color": "rojo",
-            "participacion": 0.3146499392958317,
+            "participacion": 0.20000000000000004,
             "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634233618727",
+            "variant_id": "46594211840295",
+            "color": "verde",
+            "participacion": 0.20000000000000004,
+            "rol_material": "acento"
           },
           {
             "product_id": "8634239287591",
             "variant_id": "46594231992615",
             "color": "amarillo",
-            "participacion": 0.2794415216511534,
+            "participacion": 0.20000000000000004,
+            "rol_material": "acento"
+          },
+          {
+            "product_id": "8634238599463",
+            "variant_id": "46594228715815",
+            "color": "naranja",
+            "participacion": 0.10000000000000002,
             "rol_material": "acento"
           }
         ],
@@ -59,9 +75,11 @@
         "referencia_element_id": "REF_01_E01",
         "estructura_oficial": "columna",
         "colores_referencia": [
-          "verde",
+          "azul",
           "rojo",
-          "amarillo"
+          "verde",
+          "amarillo",
+          "naranja"
         ]
       }
     ],
@@ -79,9 +97,11 @@
         "titulo": "real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
-          "verde",
+          "azul",
           "rojo",
-          "amarillo"
+          "verde",
+          "amarillo",
+          "naranja"
         ],
         "estilo": "orgánico"
       },
@@ -105,24 +125,38 @@
           "mezcla": "clasica",
           "materiales": [
             {
-              "product_id": "8634233618727",
-              "variant_id": "46594211840295",
-              "color": "verde",
-              "participacion": 0.405908539053015,
+              "product_id": "8634239385895",
+              "variant_id": "46594233925927",
+              "color": "azul",
+              "participacion": 0.30000000000000004,
               "rol_material": "principal"
             },
             {
               "product_id": "8634239942951",
               "variant_id": "46594236416295",
               "color": "rojo",
-              "participacion": 0.3146499392958317,
+              "participacion": 0.20000000000000004,
               "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634233618727",
+              "variant_id": "46594211840295",
+              "color": "verde",
+              "participacion": 0.20000000000000004,
+              "rol_material": "acento"
             },
             {
               "product_id": "8634239287591",
               "variant_id": "46594231992615",
               "color": "amarillo",
-              "participacion": 0.2794415216511534,
+              "participacion": 0.20000000000000004,
+              "rol_material": "acento"
+            },
+            {
+              "product_id": "8634238599463",
+              "variant_id": "46594228715815",
+              "color": "naranja",
+              "participacion": 0.10000000000000002,
               "rol_material": "acento"
             }
           ],
@@ -130,9 +164,11 @@
           "referencia_element_id": "REF_01_E01",
           "estructura_oficial": "columna",
           "colores_referencia": [
-            "verde",
+            "azul",
             "rojo",
-            "amarillo"
+            "verde",
+            "amarillo",
+            "naranja"
           ]
         }
       ],
@@ -142,7 +178,7 @@
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "1c67750a78345112d47f1e0e6bf05b91dfdcaca98c77f105fdb4b0dd763a8caa",
+    "plan_hash": "a80ff89768d57d03fe76df684dad5a60893858a3388f6f7cb8b30f5bf24f9f87",
     "request_id": "a995ac2f-8987-57ff-87ad-90dd4eb83b44",
     "compras": [
       {
@@ -158,20 +194,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "verde",
-        "unidades_necesarias": 17,
-        "design_quantity": 17,
+        "unidades_necesarias": 9,
+        "design_quantity": 9,
         "waste_reserve": 0,
-        "required_quantity": 17,
-        "unidades_con_merma": 17,
+        "required_quantity": 9,
+        "unidades_con_merma": 9,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 17,
-        "leftover_inventory": 33,
-        "consumption_cost": 4433,
+        "used": 9,
+        "leftover_inventory": 41,
+        "consumption_cost": 2347,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 33,
+        "sobrante": 41,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -186,6 +222,46 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fashion_Verde_-_Green_030.jpg?v=1763138390"
       },
       {
+        "variant_id": "46594228715815",
+        "product_id": "8634238599463",
+        "sku": "B2B-20000773",
+        "sku_original": "B2B-20000773",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594228715815",
+        "inventory_quantity": 986124,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "naranja",
+        "unidades_necesarias": 4,
+        "design_quantity": 4,
+        "waste_reserve": 4,
+        "required_quantity": 8,
+        "unidades_con_merma": 8,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 42,
+        "consumption_cost": 2086,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 46,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Naranja_-_Orange_061.jpg?v=1763150269"
+      },
+      {
         "variant_id": "46594231992615",
         "product_id": "8634239287591",
         "sku": "B2B-20000737",
@@ -198,20 +274,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "amarillo",
-        "unidades_necesarias": 12,
-        "design_quantity": 12,
-        "waste_reserve": 4,
-        "required_quantity": 16,
-        "unidades_con_merma": 16,
+        "unidades_necesarias": 8,
+        "design_quantity": 8,
+        "waste_reserve": 0,
+        "required_quantity": 8,
+        "unidades_con_merma": 8,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 12,
-        "leftover_inventory": 34,
-        "consumption_cost": 4472,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 2236,
         "purchase_cost": 13974,
         "additional_package_for_waste": false,
-        "sobrante": 38,
+        "sobrante": 42,
         "precio_paquete": 13974,
         "subtotal": 13974,
         "estructuras": [
@@ -226,6 +302,46 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Amarillo_-_Yellow_020.jpg?v=1763047205"
       },
       {
+        "variant_id": "46594233925927",
+        "product_id": "8634239385895",
+        "sku": "B2B-20000758",
+        "sku_original": "B2B-20000758",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
+        "inventory_quantity": 984338,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "azul",
+        "unidades_necesarias": 13,
+        "design_quantity": 13,
+        "waste_reserve": 0,
+        "required_quantity": 13,
+        "unidades_con_merma": 13,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 13,
+        "leftover_inventory": 37,
+        "consumption_cost": 3390,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 37,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141"
+      },
+      {
         "variant_id": "46594236416295",
         "product_id": "8634239942951",
         "sku": "B2B-20000732",
@@ -238,20 +354,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "rojo",
-        "unidades_necesarias": 14,
-        "design_quantity": 14,
+        "unidades_necesarias": 9,
+        "design_quantity": 9,
         "waste_reserve": 0,
-        "required_quantity": 14,
-        "unidades_con_merma": 14,
+        "required_quantity": 9,
+        "unidades_con_merma": 9,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 14,
-        "leftover_inventory": 36,
-        "consumption_cost": 3650,
+        "used": 9,
+        "leftover_inventory": 41,
+        "consumption_cost": 2347,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 36,
+        "sobrante": 41,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -271,14 +387,14 @@
         "R-12": 43
       },
       "total_unidades": 43,
-      "total_cop": 40048,
+      "total_cop": 66122,
       "design_quantity": 43,
       "target_waste_reserve": 4,
       "covered_waste_reserve": 4,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 107,
-      "purchase_cost": 40048,
-      "consumption_cost": 12555,
+      "natural_package_surplus": 207,
+      "purchase_cost": 66122,
+      "consumption_cost": 12406,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "ahorro_paquetes_cop": 0,
@@ -295,7 +411,9 @@
     "sin_cobertura": [],
     "advertencias": [
       "sobrante_alto:46594211840295",
+      "sobrante_alto:46594228715815",
       "sobrante_alto:46594231992615",
+      "sobrante_alto:46594233925927",
       "sobrante_alto:46594236416295"
     ],
     "estructuras": [
@@ -314,23 +432,23 @@
               "kind": "estructura",
               "id": "EST_01_COLUMNA"
             },
-            "product_id": "8634233618727",
-            "variant_id": "46594211840295",
-            "sku": "B2B-20000745",
-            "sku_original": "B2B-20000745",
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "sku": "B2B-20000758",
+            "sku_original": "B2B-20000758",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594211840295",
-            "inventory_quantity": 995853,
+            "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
+            "inventory_quantity": 984338,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50",
-            "color": "verde",
+            "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+            "color": "azul",
             "tamano_codigo": "R-12",
             "diam_pulg": 12,
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 17,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fashion_Verde_-_Green_030.jpg?v=1763138390",
+            "unidades": 13,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141",
             "sustitucion": null
           },
           {
@@ -354,8 +472,33 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 14,
+            "unidades": 9,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634233618727",
+            "variant_id": "46594211840295",
+            "sku": "B2B-20000745",
+            "sku_original": "B2B-20000745",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594211840295",
+            "inventory_quantity": 995853,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 9,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fashion_Verde_-_Green_030.jpg?v=1763138390",
             "sustitucion": null
           },
           {
@@ -379,8 +522,33 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 12,
+            "unidades": 8,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Amarillo_-_Yellow_020.jpg?v=1763047205",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634238599463",
+            "variant_id": "46594228715815",
+            "sku": "B2B-20000773",
+            "sku_original": "B2B-20000773",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594228715815",
+            "inventory_quantity": 986124,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50",
+            "color": "naranja",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 4,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Naranja_-_Orange_061.jpg?v=1763150269",
             "sustitucion": null
           }
         ],
@@ -398,7 +566,7 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_COLUMNA",
-        "consumo_cop": 11437
+        "consumo_cop": 11362
       }
     ],
     "conteos_referencia": [
@@ -449,16 +617,16 @@
     "balloons": [
       {
         "structure_id": "EST_01_COLUMNA",
-        "product_id": "8634233618727",
-        "variant_id": "46594211840295",
-        "color": "verde",
+        "product_id": "8634239385895",
+        "variant_id": "46594233925927",
+        "color": "azul",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 17,
+        "design_quantity": 13,
         "waste_reserve": 0,
-        "required_quantity": 17,
-        "waste_adjusted_quantity": 17
+        "required_quantity": 13,
+        "waste_adjusted_quantity": 13
       },
       {
         "structure_id": "EST_01_COLUMNA",
@@ -468,10 +636,23 @@
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 14,
+        "design_quantity": 9,
         "waste_reserve": 0,
-        "required_quantity": 14,
-        "waste_adjusted_quantity": 14
+        "required_quantity": 9,
+        "waste_adjusted_quantity": 9
+      },
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634233618727",
+        "variant_id": "46594211840295",
+        "color": "verde",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 9,
+        "waste_reserve": 0,
+        "required_quantity": 9,
+        "waste_adjusted_quantity": 9
       },
       {
         "structure_id": "EST_01_COLUMNA",
@@ -481,10 +662,23 @@
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 12,
+        "design_quantity": 8,
         "waste_reserve": 0,
-        "required_quantity": 12,
-        "waste_adjusted_quantity": 12
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8
+      },
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634238599463",
+        "variant_id": "46594228715815",
+        "color": "naranja",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
       }
     ],
     "special_elements": [],
@@ -492,56 +686,92 @@
       {
         "product_id": "8634233618727",
         "variant_id": "46594211840295",
-        "design_quantity": 17,
+        "design_quantity": 9,
         "waste_reserve": 0,
-        "required_quantity": 17,
-        "waste_adjusted_quantity": 17,
+        "required_quantity": 9,
+        "waste_adjusted_quantity": 9,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 17,
-        "leftover_inventory": 33,
-        "consumption_cost": 4433,
+        "used": 9,
+        "leftover_inventory": 41,
+        "consumption_cost": 2347,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 33,
-        "potential_surplus": 33
+        "operational_surplus": 41,
+        "potential_surplus": 41
+      },
+      {
+        "product_id": "8634238599463",
+        "variant_id": "46594228715815",
+        "design_quantity": 4,
+        "waste_reserve": 4,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 42,
+        "consumption_cost": 2086,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 42,
+        "potential_surplus": 46
       },
       {
         "product_id": "8634239287591",
         "variant_id": "46594231992615",
-        "design_quantity": 12,
-        "waste_reserve": 4,
-        "required_quantity": 16,
-        "waste_adjusted_quantity": 16,
+        "design_quantity": 8,
+        "waste_reserve": 0,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 12,
-        "leftover_inventory": 34,
-        "consumption_cost": 4472,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 2236,
         "purchase_cost": 13974,
         "additional_package_for_waste": false,
-        "operational_surplus": 34,
-        "potential_surplus": 38
+        "operational_surplus": 42,
+        "potential_surplus": 42
+      },
+      {
+        "product_id": "8634239385895",
+        "variant_id": "46594233925927",
+        "design_quantity": 13,
+        "waste_reserve": 0,
+        "required_quantity": 13,
+        "waste_adjusted_quantity": 13,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 13,
+        "leftover_inventory": 37,
+        "consumption_cost": 3390,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 37,
+        "potential_surplus": 37
       },
       {
         "product_id": "8634239942951",
         "variant_id": "46594236416295",
-        "design_quantity": 14,
+        "design_quantity": 9,
         "waste_reserve": 0,
-        "required_quantity": 14,
-        "waste_adjusted_quantity": 14,
+        "required_quantity": 9,
+        "waste_adjusted_quantity": 9,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 14,
-        "leftover_inventory": 36,
-        "consumption_cost": 3650,
+        "used": 9,
+        "leftover_inventory": 41,
+        "consumption_cost": 2347,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 36,
-        "potential_surplus": 36
+        "operational_surplus": 41,
+        "potential_surplus": 41
       }
     ],
     "totals": {
@@ -549,20 +779,22 @@
       "target_waste_reserve": 4,
       "covered_waste_reserve": 4,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 107,
+      "natural_package_surplus": 207,
       "required_quantity": 47,
-      "consumption_cost": 12555,
-      "purchase_cost": 40048,
+      "consumption_cost": 12406,
+      "purchase_cost": 66122,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "waste_adjusted_quantity": 47,
-      "purchase_quantity": 150,
-      "operational_surplus": 103,
-      "potential_surplus": 107
+      "purchase_quantity": 250,
+      "operational_surplus": 203,
+      "potential_surplus": 207
     },
     "warnings": [
       "sobrante_alto:46594211840295",
+      "sobrante_alto:46594228715815",
       "sobrante_alto:46594231992615",
+      "sobrante_alto:46594233925927",
       "sobrante_alto:46594236416295"
     ]
   },
@@ -587,14 +819,14 @@
           "REF_01_E01"
         ],
         "color": "verde",
-        "cantidadNecesaria": 17,
-        "designQuantity": 17,
+        "cantidadNecesaria": 9,
+        "designQuantity": 9,
         "wasteReserve": 0,
-        "requiredQuantity": 17,
+        "requiredQuantity": 9,
         "purchaseQuantity": 50,
-        "used": 17,
-        "leftoverInventory": 33,
-        "consumptionCost": 4433,
+        "used": 9,
+        "leftoverInventory": 41,
+        "consumptionCost": 2347,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -604,7 +836,45 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 33
+        "sobrante": 41
+      },
+      {
+        "id": "46594228715815",
+        "productId": "8634238599463",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "naranja",
+        "cantidadNecesaria": 4,
+        "designQuantity": 4,
+        "wasteReserve": 4,
+        "requiredQuantity": 8,
+        "purchaseQuantity": 50,
+        "used": 4,
+        "leftoverInventory": 42,
+        "consumptionCost": 2086,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594228715815",
+        "nombre": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 46
       },
       {
         "id": "46594231992615",
@@ -625,14 +895,14 @@
           "REF_01_E01"
         ],
         "color": "amarillo",
-        "cantidadNecesaria": 12,
-        "designQuantity": 12,
-        "wasteReserve": 4,
-        "requiredQuantity": 16,
+        "cantidadNecesaria": 8,
+        "designQuantity": 8,
+        "wasteReserve": 0,
+        "requiredQuantity": 8,
         "purchaseQuantity": 50,
-        "used": 12,
-        "leftoverInventory": 34,
-        "consumptionCost": 4472,
+        "used": 8,
+        "leftoverInventory": 42,
+        "consumptionCost": 2236,
         "purchaseCost": 13974,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -642,7 +912,45 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13974,
-        "sobrante": 38
+        "sobrante": 42
+      },
+      {
+        "id": "46594233925927",
+        "productId": "8634239385895",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 13,
+        "designQuantity": 13,
+        "wasteReserve": 0,
+        "requiredQuantity": 13,
+        "purchaseQuantity": 50,
+        "used": 13,
+        "leftoverInventory": 37,
+        "consumptionCost": 3390,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594233925927",
+        "nombre": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 37
       },
       {
         "id": "46594236416295",
@@ -663,14 +971,14 @@
           "REF_01_E01"
         ],
         "color": "rojo",
-        "cantidadNecesaria": 14,
-        "designQuantity": 14,
+        "cantidadNecesaria": 9,
+        "designQuantity": 9,
         "wasteReserve": 0,
-        "requiredQuantity": 14,
+        "requiredQuantity": 9,
         "purchaseQuantity": 50,
-        "used": 14,
-        "leftoverInventory": 36,
-        "consumptionCost": 3650,
+        "used": 9,
+        "leftoverInventory": 41,
+        "consumptionCost": 2347,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -680,19 +988,19 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 36
+        "sobrante": 41
       }
     ],
-    "total": 40048,
+    "total": 66122,
     "mermaPorcentaje": 8,
-    "purchaseCost": 40048,
-    "consumptionCost": 12555,
+    "purchaseCost": 66122,
+    "consumptionCost": 12406,
     "targetWasteReserve": 4,
     "coveredWasteReserve": 4,
-    "leftoverInventory": 103,
+    "leftoverInventory": 203,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "1c67750a78345112d47f1e0e6bf05b91dfdcaca98c77f105fdb4b0dd763a8caa"
+    "plan_hash": "a80ff89768d57d03fe76df684dad5a60893858a3388f6f7cb8b30f5bf24f9f87"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -702,35 +1010,55 @@
       {
         "variant_id": "46594211840295",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 17,
+        "cantidad_necesaria": 9,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 33
+        "sobrante": 41
+      },
+      {
+        "variant_id": "46594228715815",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 4,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 46
       },
       {
         "variant_id": "46594231992615",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 12,
+        "cantidad_necesaria": 8,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13974,
         "subtotal": 13974,
-        "sobrante": 38
+        "sobrante": 42
       },
       {
-        "variant_id": "46594236416295",
+        "variant_id": "46594233925927",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 14,
+        "cantidad_necesaria": 13,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 36
+        "sobrante": 37
+      },
+      {
+        "variant_id": "46594236416295",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 9,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 41
       }
     ],
-    "total": 40048
+    "total": 66122
   },
   "descartadas": []
 }

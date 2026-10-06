@@ -9,8 +9,8 @@
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
         "rosado",
-        "dorado",
-        "rojo"
+        "rojo",
+        "dorado"
       ],
       "estilo": "orgánico"
     },
@@ -36,21 +36,21 @@
             "product_id": "8634233585959",
             "variant_id": "46594211414311",
             "color": "rosado",
-            "participacion": 0.6747989641542864,
+            "participacion": 0.5,
             "rol_material": "principal"
-          },
-          {
-            "product_id": "8634252493095",
-            "variant_id": "46594256044327",
-            "color": "dorado",
-            "participacion": 0.2143928035982009,
-            "rol_material": "secundario"
           },
           {
             "product_id": "8634239942951",
             "variant_id": "46594236416295",
             "color": "rojo",
-            "participacion": 0.1108082322475126,
+            "participacion": 0.3,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "color": "dorado",
+            "participacion": 0.2,
             "rol_material": "acento"
           }
         ],
@@ -59,8 +59,8 @@
         "estructura_oficial": "guirnalda",
         "colores_referencia": [
           "rosado",
-          "dorado",
-          "rojo"
+          "rojo",
+          "dorado"
         ]
       }
     ],
@@ -79,8 +79,8 @@
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
           "rosado",
-          "dorado",
-          "rojo"
+          "rojo",
+          "dorado"
         ],
         "estilo": "orgánico"
       },
@@ -106,21 +106,21 @@
               "product_id": "8634233585959",
               "variant_id": "46594211414311",
               "color": "rosado",
-              "participacion": 0.6747989641542864,
+              "participacion": 0.5,
               "rol_material": "principal"
-            },
-            {
-              "product_id": "8634252493095",
-              "variant_id": "46594256044327",
-              "color": "dorado",
-              "participacion": 0.2143928035982009,
-              "rol_material": "secundario"
             },
             {
               "product_id": "8634239942951",
               "variant_id": "46594236416295",
               "color": "rojo",
-              "participacion": 0.1108082322475126,
+              "participacion": 0.3,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634255638823",
+              "variant_id": "46594264695079",
+              "color": "dorado",
+              "participacion": 0.2,
               "rol_material": "acento"
             }
           ],
@@ -129,8 +129,8 @@
           "estructura_oficial": "guirnalda",
           "colores_referencia": [
             "rosado",
-            "dorado",
-            "rojo"
+            "rojo",
+            "dorado"
           ]
         }
       ],
@@ -140,7 +140,7 @@
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "7ce69bd3677bdbeabd19e7cf36b8c9a891524d6789f3bf6c9945f054a728ca87",
+    "plan_hash": "870de716ab7a990bff2d8b5b2eabf9d195b9d6f67dd80f20c8c3a680825e3fbb",
     "request_id": "df30193f-812c-5761-a909-439cc6be68fe",
     "compras": [
       {
@@ -156,20 +156,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "rosado",
-        "unidades_necesarias": 34,
-        "design_quantity": 34,
+        "unidades_necesarias": 26,
+        "design_quantity": 26,
         "waste_reserve": 0,
-        "required_quantity": 34,
-        "unidades_con_merma": 34,
+        "required_quantity": 26,
+        "unidades_con_merma": 26,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 34,
-        "leftover_inventory": 16,
-        "consumption_cost": 8865,
+        "used": 26,
+        "leftover_inventory": 24,
+        "consumption_cost": 6779,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 16,
+        "sobrante": 24,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -196,20 +196,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "rojo",
-        "unidades_necesarias": 6,
-        "design_quantity": 6,
-        "waste_reserve": 5,
-        "required_quantity": 11,
-        "unidades_con_merma": 11,
+        "unidades_necesarias": 15,
+        "design_quantity": 15,
+        "waste_reserve": 0,
+        "required_quantity": 15,
+        "unidades_con_merma": 15,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 6,
-        "leftover_inventory": 39,
-        "consumption_cost": 2868,
+        "used": 15,
+        "leftover_inventory": 35,
+        "consumption_cost": 3911,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 44,
+        "sobrante": 35,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -224,34 +224,34 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149"
       },
       {
-        "variant_id": "46594256044327",
-        "product_id": "8634252493095",
-        "sku": "B2B-20007292",
-        "sku_original": "B2B-20007292",
+        "variant_id": "46594264695079",
+        "product_id": "8634255638823",
+        "sku": "B2B-20014156",
+        "sku_original": "B2B-20014156",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594256044327",
-        "inventory_quantity": 999990,
+        "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
+        "inventory_quantity": 958502,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50",
+        "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "dorado",
-        "unidades_necesarias": 11,
-        "design_quantity": 11,
-        "waste_reserve": 0,
-        "required_quantity": 11,
-        "unidades_con_merma": 11,
+        "unidades_necesarias": 10,
+        "design_quantity": 10,
+        "waste_reserve": 5,
+        "required_quantity": 15,
+        "unidades_con_merma": 15,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 11,
-        "leftover_inventory": 39,
-        "consumption_cost": 5311,
-        "purchase_cost": 24143,
+        "used": 10,
+        "leftover_inventory": 35,
+        "consumption_cost": 8693,
+        "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "sobrante": 39,
-        "precio_paquete": 24143,
-        "subtotal": 24143,
+        "sobrante": 40,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
         "estructuras": [
           "EST_01_GUIRNALDA"
         ],
@@ -261,7 +261,7 @@
             "id": "EST_01_GUIRNALDA"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/R12-Filigree-Gold--Dorado-570_225_39b6ec6a-c60b-40fb-b6a1-3c4961df4a60.jpg?v=1694793173"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
       }
     ],
     "totales": {
@@ -269,14 +269,14 @@
         "R-12": 51
       },
       "total_unidades": 51,
-      "total_cop": 50217,
+      "total_cop": 55051,
       "design_quantity": 51,
       "target_waste_reserve": 5,
       "covered_waste_reserve": 5,
       "uncovered_waste_reserve": 0,
       "natural_package_surplus": 99,
-      "purchase_cost": 50217,
-      "consumption_cost": 17044,
+      "purchase_cost": 55051,
+      "consumption_cost": 19383,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "ahorro_paquetes_cop": 0,
@@ -294,7 +294,7 @@
     "advertencias": [
       "sobrante_alto:46594211414311",
       "sobrante_alto:46594236416295",
-      "sobrante_alto:46594256044327"
+      "sobrante_alto:46594264695079"
     ],
     "estructuras": [
       {
@@ -327,33 +327,8 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 34,
+            "unidades": 26,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Palo_de_Rosa_-_Rosewood_010.jpg?v=1762966820",
-            "sustitucion": null
-          },
-          {
-            "estructura_id": "EST_01_GUIRNALDA",
-            "origen": {
-              "kind": "estructura",
-              "id": "EST_01_GUIRNALDA"
-            },
-            "product_id": "8634252493095",
-            "variant_id": "46594256044327",
-            "sku": "B2B-20007292",
-            "sku_original": "B2B-20007292",
-            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594256044327",
-            "inventory_quantity": 999990,
-            "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50",
-            "color": "dorado",
-            "tamano_codigo": "R-12",
-            "diam_pulg": 12,
-            "diam_cm": 30.5,
-            "forma": "redondo",
-            "acabado": "metal",
-            "unidades": 11,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/R12-Filigree-Gold--Dorado-570_225_39b6ec6a-c60b-40fb-b6a1-3c4961df4a60.jpg?v=1694793173",
             "sustitucion": null
           },
           {
@@ -377,8 +352,33 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 6,
+            "unidades": 15,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634255638823",
+            "variant_id": "46594264695079",
+            "sku": "B2B-20014156",
+            "sku_original": "B2B-20014156",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
+            "inventory_quantity": 958502,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 10,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
             "sustitucion": null
           }
         ],
@@ -396,7 +396,7 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_GUIRNALDA",
-        "consumo_cop": 15741
+        "consumo_cop": 16486
       }
     ],
     "conteos_referencia": [
@@ -461,23 +461,10 @@
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 34,
+        "design_quantity": 26,
         "waste_reserve": 0,
-        "required_quantity": 34,
-        "waste_adjusted_quantity": 34
-      },
-      {
-        "structure_id": "EST_01_GUIRNALDA",
-        "product_id": "8634252493095",
-        "variant_id": "46594256044327",
-        "color": "dorado",
-        "finish": "metal",
-        "size_inches": 12,
-        "shape": "redondo",
-        "design_quantity": 11,
-        "waste_reserve": 0,
-        "required_quantity": 11,
-        "waste_adjusted_quantity": 11
+        "required_quantity": 26,
+        "waste_adjusted_quantity": 26
       },
       {
         "structure_id": "EST_01_GUIRNALDA",
@@ -487,10 +474,23 @@
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 6,
+        "design_quantity": 15,
         "waste_reserve": 0,
-        "required_quantity": 6,
-        "waste_adjusted_quantity": 6
+        "required_quantity": 15,
+        "waste_adjusted_quantity": 15
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634255638823",
+        "variant_id": "46594264695079",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 10,
+        "waste_reserve": 0,
+        "required_quantity": 10,
+        "waste_adjusted_quantity": 10
       }
     ],
     "special_elements": [],
@@ -498,56 +498,56 @@
       {
         "product_id": "8634233585959",
         "variant_id": "46594211414311",
-        "design_quantity": 34,
+        "design_quantity": 26,
         "waste_reserve": 0,
-        "required_quantity": 34,
-        "waste_adjusted_quantity": 34,
+        "required_quantity": 26,
+        "waste_adjusted_quantity": 26,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 34,
-        "leftover_inventory": 16,
-        "consumption_cost": 8865,
+        "used": 26,
+        "leftover_inventory": 24,
+        "consumption_cost": 6779,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 16,
-        "potential_surplus": 16
+        "operational_surplus": 24,
+        "potential_surplus": 24
       },
       {
         "product_id": "8634239942951",
         "variant_id": "46594236416295",
-        "design_quantity": 6,
-        "waste_reserve": 5,
-        "required_quantity": 11,
-        "waste_adjusted_quantity": 11,
+        "design_quantity": 15,
+        "waste_reserve": 0,
+        "required_quantity": 15,
+        "waste_adjusted_quantity": 15,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 6,
-        "leftover_inventory": 39,
-        "consumption_cost": 2868,
+        "used": 15,
+        "leftover_inventory": 35,
+        "consumption_cost": 3911,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 39,
-        "potential_surplus": 44
+        "operational_surplus": 35,
+        "potential_surplus": 35
       },
       {
-        "product_id": "8634252493095",
-        "variant_id": "46594256044327",
-        "design_quantity": 11,
-        "waste_reserve": 0,
-        "required_quantity": 11,
-        "waste_adjusted_quantity": 11,
+        "product_id": "8634255638823",
+        "variant_id": "46594264695079",
+        "design_quantity": 10,
+        "waste_reserve": 5,
+        "required_quantity": 15,
+        "waste_adjusted_quantity": 15,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 11,
-        "leftover_inventory": 39,
-        "consumption_cost": 5311,
-        "purchase_cost": 24143,
+        "used": 10,
+        "leftover_inventory": 35,
+        "consumption_cost": 8693,
+        "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "operational_surplus": 39,
-        "potential_surplus": 39
+        "operational_surplus": 35,
+        "potential_surplus": 40
       }
     ],
     "totals": {
@@ -557,8 +557,8 @@
       "uncovered_waste_reserve": 0,
       "natural_package_surplus": 99,
       "required_quantity": 56,
-      "consumption_cost": 17044,
-      "purchase_cost": 50217,
+      "consumption_cost": 19383,
+      "purchase_cost": 55051,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "waste_adjusted_quantity": 56,
@@ -569,7 +569,7 @@
     "warnings": [
       "sobrante_alto:46594211414311",
       "sobrante_alto:46594236416295",
-      "sobrante_alto:46594256044327"
+      "sobrante_alto:46594264695079"
     ]
   },
   "quote": {
@@ -593,14 +593,14 @@
           "REF_01_E02"
         ],
         "color": "rosado",
-        "cantidadNecesaria": 34,
-        "designQuantity": 34,
+        "cantidadNecesaria": 26,
+        "designQuantity": 26,
         "wasteReserve": 0,
-        "requiredQuantity": 34,
+        "requiredQuantity": 26,
         "purchaseQuantity": 50,
-        "used": 34,
-        "leftoverInventory": 16,
-        "consumptionCost": 8865,
+        "used": 26,
+        "leftoverInventory": 24,
+        "consumptionCost": 6779,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -610,7 +610,7 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 16
+        "sobrante": 24
       },
       {
         "id": "46594236416295",
@@ -631,14 +631,14 @@
           "REF_01_E02"
         ],
         "color": "rojo",
-        "cantidadNecesaria": 6,
-        "designQuantity": 6,
-        "wasteReserve": 5,
-        "requiredQuantity": 11,
+        "cantidadNecesaria": 15,
+        "designQuantity": 15,
+        "wasteReserve": 0,
+        "requiredQuantity": 15,
         "purchaseQuantity": 50,
-        "used": 6,
-        "leftoverInventory": 39,
-        "consumptionCost": 2868,
+        "used": 15,
+        "leftoverInventory": 35,
+        "consumptionCost": 3911,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -648,11 +648,11 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 44
+        "sobrante": 35
       },
       {
-        "id": "46594256044327",
-        "productId": "8634252493095",
+        "id": "46594264695079",
+        "productId": "8634255638823",
         "tamano": "R-12",
         "tamanoCodigo": "R-12",
         "diamPulg": 12,
@@ -669,36 +669,36 @@
           "REF_01_E02"
         ],
         "color": "dorado",
-        "cantidadNecesaria": 11,
-        "designQuantity": 11,
-        "wasteReserve": 0,
-        "requiredQuantity": 11,
+        "cantidadNecesaria": 10,
+        "designQuantity": 10,
+        "wasteReserve": 5,
+        "requiredQuantity": 15,
         "purchaseQuantity": 50,
-        "used": 11,
-        "leftoverInventory": 39,
-        "consumptionCost": 5311,
-        "purchaseCost": 24143,
+        "used": 10,
+        "leftoverInventory": 35,
+        "consumptionCost": 8693,
+        "purchaseCost": 28977,
         "additionalPackageForWaste": false,
         "disponible": true,
-        "varianteId": "46594256044327",
-        "nombre": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50",
-        "precioPaquete": 24143,
+        "varianteId": "46594264695079",
+        "nombre": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+        "precioPaquete": 28977,
         "unidadesPaquete": 50,
         "paquetes": 1,
-        "subtotal": 24143,
-        "sobrante": 39
+        "subtotal": 28977,
+        "sobrante": 40
       }
     ],
-    "total": 50217,
+    "total": 55051,
     "mermaPorcentaje": 8,
-    "purchaseCost": 50217,
-    "consumptionCost": 17044,
+    "purchaseCost": 55051,
+    "consumptionCost": 19383,
     "targetWasteReserve": 5,
     "coveredWasteReserve": 5,
     "leftoverInventory": 94,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "7ce69bd3677bdbeabd19e7cf36b8c9a891524d6789f3bf6c9945f054a728ca87"
+    "plan_hash": "870de716ab7a990bff2d8b5b2eabf9d195b9d6f67dd80f20c8c3a680825e3fbb"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -708,35 +708,35 @@
       {
         "variant_id": "46594211414311",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 34,
+        "cantidad_necesaria": 26,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 16
+        "sobrante": 24
       },
       {
         "variant_id": "46594236416295",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 6,
+        "cantidad_necesaria": 15,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 44
+        "sobrante": 35
       },
       {
-        "variant_id": "46594256044327",
+        "variant_id": "46594264695079",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 11,
+        "cantidad_necesaria": 10,
         "unidades_paquete": 50,
         "paquetes": 1,
-        "precio_paquete": 24143,
-        "subtotal": 24143,
-        "sobrante": 39
+        "precio_paquete": 28977,
+        "subtotal": 28977,
+        "sobrante": 40
       }
     ],
-    "total": 50217
+    "total": 55051
   },
   "descartadas": []
 }

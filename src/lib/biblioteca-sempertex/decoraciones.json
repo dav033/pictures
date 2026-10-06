@@ -1259,13 +1259,13 @@
       {
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
-        "cantidad": 81,
+        "cantidad": 72,
         "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
       },
       {
         "variantId": "46594235269415",
         "sku": "B2B-20000781",
-        "cantidad": 64,
+        "cantidad": 73,
         "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
       }
     ],
@@ -1329,13 +1329,13 @@
       {
         "variantId": "46594228715815",
         "sku": "B2B-20000773",
-        "cantidad": 43,
+        "cantidad": 81,
         "nota": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50 · R-12 · naranja"
       },
       {
         "variantId": "46594235269415",
         "sku": "B2B-20000781",
-        "cantidad": 110,
+        "cantidad": 72,
         "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
       }
     ],
@@ -1408,20 +1408,26 @@
       {
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
-        "cantidad": 14,
+        "cantidad": 9,
         "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
       },
       {
         "variantId": "46594233925927",
         "sku": "B2B-20000758",
-        "cantidad": 14,
+        "cantidad": 70,
         "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
       },
       {
-        "variantId": "46594247557415",
-        "sku": "B2B-20001699",
-        "cantidad": 61,
-        "nota": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+        "variantId": "46594267709735",
+        "sku": "B2B-20014160",
+        "cantidad": 9,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+      },
+      {
+        "variantId": "47230981112103",
+        "sku": "B2B-20010806",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
       }
     ],
     "pasos": [
@@ -1484,16 +1490,34 @@
     ],
     "materiales": [
       {
-        "variantId": "46594211840295",
-        "sku": "B2B-20000745",
-        "cantidad": 64,
-        "nota": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50 · R-12 · verde"
+        "variantId": "46594233925927",
+        "sku": "B2B-20000758",
+        "cantidad": 29,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
       },
       {
-        "variantId": "46594256044327",
-        "sku": "B2B-20007292",
-        "cantidad": 38,
-        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "variantId": "46594247983399",
+        "sku": "B2B-20000870",
+        "cantidad": 39,
+        "nota": "B2b Globo Latex Redondo Metal Verde — R-12 / PAQUETE X 50 · R-12 · verde"
+      },
+      {
+        "variantId": "46594264695079",
+        "sku": "B2B-20014156",
+        "cantidad": 15,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+      },
+      {
+        "variantId": "47230981112103",
+        "sku": "B2B-20010806",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
+      },
+      {
+        "variantId": "47392128467239",
+        "sku": "B2B-20018043",
+        "cantidad": 14,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Turquesa Profundo — R-12 / PAQUETE X 50 · R-12 · turquesa"
       }
     ],
     "pasos": [
@@ -1556,22 +1580,28 @@
     ],
     "materiales": [
       {
-        "variantId": "46594221343015",
-        "sku": "B2B-20000723",
-        "cantidad": 25,
-        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "variantId": "46594211414311",
+        "sku": "B2B-20010675",
+        "cantidad": 33,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
       },
       {
         "variantId": "46594230157607",
         "sku": "B2B-20014530",
-        "cantidad": 47,
+        "cantidad": 24,
         "nota": "B2b Globo Latex Redondo Fashion Arena — R-12 / PAQUETE X 50 · R-12 · beige"
       },
       {
-        "variantId": "46594271576359",
-        "sku": "B2B-20009132",
-        "cantidad": 30,
-        "nota": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+        "variantId": "46594236416295",
+        "sku": "B2B-20000732",
+        "cantidad": 9,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
+      },
+      {
+        "variantId": "46594251456807",
+        "sku": "B2B-20014158",
+        "cantidad": 36,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
       }
     ],
     "pasos": [
@@ -1634,19 +1664,31 @@
       {
         "variantId": "46594211840295",
         "sku": "B2B-20000745",
-        "cantidad": 17,
+        "cantidad": 9,
         "nota": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50 · R-12 · verde"
+      },
+      {
+        "variantId": "46594228715815",
+        "sku": "B2B-20000773",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50 · R-12 · naranja"
       },
       {
         "variantId": "46594231992615",
         "sku": "B2B-20000737",
-        "cantidad": 12,
+        "cantidad": 8,
         "nota": "B2b Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50 · R-12 · amarillo"
+      },
+      {
+        "variantId": "46594233925927",
+        "sku": "B2B-20000758",
+        "cantidad": 13,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
       },
       {
         "variantId": "46594236416295",
         "sku": "B2B-20000732",
-        "cantidad": 14,
+        "cantidad": 9,
         "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
       }
     ],
@@ -1711,16 +1753,22 @@
     ],
     "materiales": [
       {
-        "variantId": "46594210496807",
-        "sku": "B2B-20000765",
-        "cantidad": 21,
-        "nota": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50 · R-12 · lila"
-      },
-      {
         "variantId": "46594211414311",
         "sku": "B2B-20010675",
-        "cantidad": 76,
+        "cantidad": 39,
         "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+      },
+      {
+        "variantId": "46594264695079",
+        "sku": "B2B-20014156",
+        "cantidad": 24,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+      },
+      {
+        "variantId": "46594343731495",
+        "sku": "B2B-20017220",
+        "cantidad": 34,
+        "nota": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50 · R-12 · morado"
       }
     ],
     "pasos": [
@@ -1787,14 +1835,14 @@
       {
         "variantId": "46594235269415",
         "sku": "B2B-20000781",
-        "cantidad": 63,
+        "cantidad": 42,
         "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
       },
       {
-        "variantId": "46594256044327",
-        "sku": "B2B-20007292",
-        "cantidad": 23,
-        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "variantId": "46594264695079",
+        "sku": "B2B-20014156",
+        "cantidad": 44,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
       }
     ],
     "pasos": [
@@ -1858,20 +1906,20 @@
       {
         "variantId": "46594211414311",
         "sku": "B2B-20010675",
-        "cantidad": 34,
+        "cantidad": 26,
         "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
       },
       {
         "variantId": "46594236416295",
         "sku": "B2B-20000732",
-        "cantidad": 6,
+        "cantidad": 15,
         "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
       },
       {
-        "variantId": "46594256044327",
-        "sku": "B2B-20007292",
-        "cantidad": 11,
-        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "variantId": "46594264695079",
+        "sku": "B2B-20014156",
+        "cantidad": 10,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
       }
     ],
     "pasos": [
@@ -1935,10 +1983,28 @@
     ],
     "materiales": [
       {
-        "variantId": "46594247557415",
-        "sku": "B2B-20001699",
-        "cantidad": 78,
-        "nota": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+        "variantId": "46594233925927",
+        "sku": "B2B-20000758",
+        "cantidad": 33,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+      },
+      {
+        "variantId": "46594267709735",
+        "sku": "B2B-20014160",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+      },
+      {
+        "variantId": "46594286780711",
+        "sku": "B2B-20000829",
+        "cantidad": 25,
+        "nota": "B2b Globo Latex Redondo Satin Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "47230981112103",
+        "sku": "B2B-20010806",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
       }
     ],
     "pasos": [
@@ -2000,22 +2066,40 @@
     ],
     "materiales": [
       {
+        "variantId": "46594210496807",
+        "sku": "B2B-20000765",
+        "cantidad": 28,
+        "nota": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50 · R-12 · lila"
+      },
+      {
         "variantId": "46594211414311",
         "sku": "B2B-20010675",
-        "cantidad": 46,
+        "cantidad": 39,
         "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
       },
       {
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
-        "cantidad": 67,
+        "cantidad": 16,
         "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "46594252898599",
+        "sku": "B2B-20000885",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
       },
       {
         "variantId": "46594343731495",
         "sku": "B2B-20017220",
-        "cantidad": 7,
+        "cantidad": 5,
         "nota": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50 · R-12 · morado"
+      },
+      {
+        "variantId": "47392128467239",
+        "sku": "B2B-20018043",
+        "cantidad": 28,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Turquesa Profundo — R-12 / PAQUETE X 50 · R-12 · turquesa"
       }
     ],
     "pasos": [
@@ -2079,19 +2163,19 @@
       {
         "variantId": "46594210496807",
         "sku": "B2B-20000765",
-        "cantidad": 16,
+        "cantidad": 25,
         "nota": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50 · R-12 · lila"
       },
       {
-        "variantId": "46594247557415",
-        "sku": "B2B-20001699",
-        "cantidad": 31,
-        "nota": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+        "variantId": "46594267709735",
+        "sku": "B2B-20014160",
+        "cantidad": 15,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
       },
       {
         "variantId": "46594343731495",
         "sku": "B2B-20017220",
-        "cantidad": 15,
+        "cantidad": 22,
         "nota": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50 · R-12 · morado"
       }
     ],
@@ -2157,16 +2241,16 @@
     ],
     "materiales": [
       {
-        "variantId": "46594221343015",
-        "sku": "B2B-20000723",
-        "cantidad": 6,
-        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "variantId": "46594251456807",
+        "sku": "B2B-20014158",
+        "cantidad": 63,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
       },
       {
-        "variantId": "46594271576359",
-        "sku": "B2B-20009132",
-        "cantidad": 98,
-        "nota": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+        "variantId": "46594286780711",
+        "sku": "B2B-20000829",
+        "cantidad": 41,
+        "nota": "B2b Globo Latex Redondo Satin Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
       }
     ],
     "pasos": [
@@ -2230,13 +2314,13 @@
       {
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
-        "cantidad": 81,
+        "cantidad": 72,
         "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
       },
       {
         "variantId": "46594235269415",
         "sku": "B2B-20000781",
-        "cantidad": 64,
+        "cantidad": 73,
         "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
       }
     ],
@@ -2301,22 +2385,22 @@
     ],
     "materiales": [
       {
-        "variantId": "46594221343015",
-        "sku": "B2B-20000723",
-        "cantidad": 60,
-        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
-      },
-      {
         "variantId": "46594236416295",
         "sku": "B2B-20000732",
-        "cantidad": 16,
+        "cantidad": 31,
         "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
       },
       {
-        "variantId": "46594256044327",
-        "sku": "B2B-20007292",
-        "cantidad": 17,
-        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "variantId": "46594264695079",
+        "sku": "B2B-20014156",
+        "cantidad": 27,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+      },
+      {
+        "variantId": "46594286780711",
+        "sku": "B2B-20000829",
+        "cantidad": 35,
+        "nota": "B2b Globo Latex Redondo Satin Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
       }
     ],
     "pasos": [
@@ -2383,10 +2467,22 @@
     ],
     "materiales": [
       {
-        "variantId": "46594233925927",
-        "sku": "B2B-20000758",
-        "cantidad": 95,
-        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+        "variantId": "46594250440999",
+        "sku": "B2B-20014152",
+        "cantidad": 44,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+      },
+      {
+        "variantId": "46594267709735",
+        "sku": "B2B-20014160",
+        "cantidad": 9,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+      },
+      {
+        "variantId": "47230981112103",
+        "sku": "B2B-20010806",
+        "cantidad": 42,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
       }
     ],
     "pasos": [
@@ -2450,10 +2546,28 @@
     ],
     "materiales": [
       {
-        "variantId": "46594271576359",
-        "sku": "B2B-20009132",
-        "cantidad": 102,
-        "nota": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+        "variantId": "46594211414311",
+        "sku": "B2B-20010675",
+        "cantidad": 20,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+      },
+      {
+        "variantId": "46594231992615",
+        "sku": "B2B-20000737",
+        "cantidad": 20,
+        "nota": "B2b Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50 · R-12 · amarillo"
+      },
+      {
+        "variantId": "46594251456807",
+        "sku": "B2B-20014158",
+        "cantidad": 31,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+      },
+      {
+        "variantId": "46594264695079",
+        "sku": "B2B-20014156",
+        "cantidad": 31,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
       }
     ],
     "pasos": [
@@ -2516,20 +2630,20 @@
       {
         "variantId": "46594211414311",
         "sku": "B2B-20010675",
-        "cantidad": 19,
+        "cantidad": 27,
         "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
       },
       {
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
-        "cantidad": 18,
+        "cantidad": 6,
         "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
       },
       {
-        "variantId": "46594256044327",
-        "sku": "B2B-20007292",
-        "cantidad": 3,
-        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "variantId": "46594264695079",
+        "sku": "B2B-20014156",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
       }
     ],
     "pasos": [
@@ -2594,20 +2708,26 @@
       {
         "variantId": "46594211414311",
         "sku": "B2B-20010675",
-        "cantidad": 18,
+        "cantidad": 12,
         "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
       },
       {
         "variantId": "46594234614055",
         "sku": "B2B-20000729",
-        "cantidad": 10,
+        "cantidad": 12,
         "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 50 · R-12 · fucsia"
       },
       {
-        "variantId": "46594271576359",
-        "sku": "B2B-20009132",
-        "cantidad": 23,
-        "nota": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+        "variantId": "46594251456807",
+        "sku": "B2B-20014158",
+        "cantidad": 9,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+      },
+      {
+        "variantId": "46594264695079",
+        "sku": "B2B-20014156",
+        "cantidad": 18,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
       }
     ],
     "pasos": [
@@ -2671,10 +2791,16 @@
     ],
     "materiales": [
       {
-        "variantId": "46594233925927",
-        "sku": "B2B-20000758",
-        "cantidad": 49,
-        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+        "variantId": "46594250440999",
+        "sku": "B2B-20014152",
+        "cantidad": 27,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+      },
+      {
+        "variantId": "47230981112103",
+        "sku": "B2B-20010806",
+        "cantidad": 22,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
       }
     ],
     "pasos": [
