@@ -268,6 +268,16 @@ a la decoración elegida) + menores. Turno real con el LLM (2026-10-06, 2 llamad
 buscar_decoraciones_sempertex → 2 decoraciones; la primera respuesta citaba ids internos («ej-…»): regla 9 del prompt, verificado sin
 ids. Pendiente: datos reales de decoraciones y proveedores, verificación visual del dueño.
 
+**Rediseño de experiencia para la presentación del 2026-10-07 (prioridad absoluta del dueño)**: el asistente abre la conversación
+(saludo fijo + «¿Qué vas a celebrar?» con botones; una pregunta por turno con línea «Opciones:» que la interfaz convierte en botones);
+cada respuesta lleva sus piezas en orden (ideas, elección, 4 opciones con iconos, negocio/personal, precio, pasos, proveedores) y las
+anteriores quedan como historia; desplazamiento automático; indicador de escritura; identidad del asistente; materiales en palabras
+de cliente. El servidor costea y muestra pasos con la decoración y el uso elegidos en la interfaz (el modelo no ve ids y fallaba 3
+veces antes de costear). Recorrido completo verificado en el navegador (cumpleaños → 4-6 años → princesas → elegir → costear →
+personal → $39.111). En curso: biblioteca con ~12 temáticas y búsqueda honesta (rama `ux/biblioteca-tematicas`, `Downloads/e3j`) y
+precio por color sin jerga (rama `ux/precio-por-color`, `Downloads/e3k`). Hasta la presentación NO se fusionan en la principal las
+ramas de motor (colores `fix/sombra-no-es-color`, medidas `fix/medidas-de-la-foto`, forma `fix/forma-organica-002`) ni la etapa 4.
+
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
 - Pendientes: taxonomía 12 o 18 clases (las 5 que AGENTS.md daba por retiradas: `arco_no_denso`, `columna_no_densa`, `pared_densa`,
