@@ -200,3 +200,57 @@ def test_tope_avisa_y_columna_organica_respeta_limite_del_motor() -> None:
     assert volumen["grosorPatasM"] <= columna["medidas"]["alto_m"] / 0.85
     assert volumen["grosorCimaM"] >= max(0.35, volumen["grosorPatasM"] * 0.35)
     assert any("excedía límites" in aviso for aviso in avisos)
+
+
+def test_ancho_del_cliente_prevalece_al_sincronizar_columna_organica() -> None:
+    plan = {"supuestos": [], "estructuras": [
+        {
+            "estructura_id": "columna", "tipo": "columna_organica", "referencia_element_id": "c",
+            "medidas": {"ancho_m": 0.8, "alto_m": 1.8},
+            "armado_columna_organica": {
+                "forma": {"altoM": 1.8},
+                "volumen": {"grosorPatasM": 0.44, "grosorCimaM": 0.45},
+            },
+        },
+    ]}
+    pistas = [_pista("c", {"x": 0.2, "y": 0.2, "width": 0.3, "height": 0.6}, aspect=2.0)]
+
+    resultado, _ = _medir_desde_cajas(plan, pistas, medidas_del_cliente=False, medidas_cliente_de=["columna"])
+
+    columna = resultado["estructuras"][0]
+    assert columna["medidas"] == {"ancho_m": 0.8, "alto_m": 1.8}
+    assert columna["armado_columna_organica"]["volumen"]["grosorPatasM"] == 0.8
+
+
+def test_sin_proporcion_no_usa_caja_como_ancla_ni_deriva_ancho() -> None:
+    plan = {"supuestos": [], "estructuras": [
+        {
+            "estructura_id": "arco", "tipo": "arco", "referencia_element_id": "a",
+            "medidas": {"ancho_m": 1.7, "alto_m": 2.2},
+        },
+    ]}
+    pista = _pista("a", {"x": 0.2, "y": 0.2, "width": 0.3, "height": 0.5}, aspect=2.0)
+    pista.pop("aspect_ratio")
+
+    resultado, avisos = _medir_desde_cajas(plan, [pista], medidas_del_cliente=False)
+
+    assert resultado["estructuras"][0]["medidas"] == {"ancho_m": 1.7, "alto_m": 2.2}
+    assert any("no usé su caja como ancla" in aviso for aviso in avisos)
+
+
+def test_pared_organica_oficial_se_mide_como_pared() -> None:
+    plan = {"supuestos": [], "estructuras": [
+        {"estructura_id": "arco", "tipo": "arco", "referencia_element_id": "a", "medidas": {"alto_m": 2.0}},
+        {
+            "estructura_id": "pared", "tipo": "pared_organica", "referencia_element_id": "p",
+            "medidas": {"ancho_m": 2.4, "alto_m": 2.4},
+        },
+    ]}
+    pistas = [
+        _pista("a", {"x": 0.1, "y": 0.1, "width": 0.4, "height": 0.8}),
+        _pista("p", {"x": 0.5, "y": 0.2, "width": 0.3, "height": 0.5}),
+    ]
+
+    resultado, _ = _medir_desde_cajas(plan, pistas, medidas_del_cliente=False)
+
+    assert resultado["estructuras"][1]["medidas"] == {"ancho_m": 0.75, "alto_m": 1.25}

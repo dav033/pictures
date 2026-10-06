@@ -990,6 +990,7 @@ def _medir_desde_cajas(
         ancho: float | None,
         id_estructura: str,
         grosor_base_m: float | None = None,
+        dimensiones_cliente: Mapping[str, float] | None = None,
     ) -> None:
         organica = estructura.get("armado_columna_organica")
         if isinstance(organica, Mapping):
@@ -1002,7 +1003,11 @@ def _medir_desde_cajas(
             if grosor_base_m is not None:
                 punta *= base / base_original
             base_tope = min(1.6, math.floor(alto / 0.85 * 20 + 1e-9) / 20)
-            base_ajustada = min(base_tope, max(0.35, base))
+            base_ajustada = (
+                dimensiones_cliente["ancho_m"]
+                if dimensiones_cliente and "ancho_m" in dimensiones_cliente
+                else min(base_tope, max(0.35, base))
+            )
             punta_minima = max(0.35, math.ceil(base_ajustada * 0.35 * 20 - 1e-9) / 20)
             punta_tope = min(
                 1.6,
@@ -1012,7 +1017,9 @@ def _medir_desde_cajas(
             punta_ajustada = min(punta_tope, max(punta_minima, punta))
             if base_ajustada != base or punta_ajustada != punta:
                 avisos.append(f"Ajusté grosor del armado de {id_estructura} para respetar límites de altura.")
-            forma["altoM"] = round(alto, 2)
+            forma["altoM"] = round(
+                dimensiones_cliente.get("alto_m", alto) if dimensiones_cliente else alto, 2
+            )
             volumen["grosorPatasM"] = round(base_ajustada, 2)
             volumen["grosorCimaM"] = round(punta_ajustada, 2)
             armado["forma"] = forma
@@ -1049,11 +1056,25 @@ def _medir_desde_cajas(
             estructura["armado_columna"] = armado
 
     medidas_cliente = set(medidas_cliente_de)
+    tipos_geometricos_oficiales = {
+        "arco_asimetrico": "arco",
+        "arco_no_denso": "arco",
+        "semiarco_asimetrico": "semiarco",
+        "columna_asimetrica": "columna",
+        "columna_no_densa": "columna",
+        "pared_densa": "pared",
+        "pared_no_densa": "pared",
+        "pared_organica": "pared",
+    }
     for original in _mappings(plan.get("estructuras")):
         estructura = dict(original)
         referencia = _text(estructura.get("referencia_element_id"))
         pista = por_id.get(referencia or "")
-        tipo = _text(estructura.get("tipo")) or ""
+        tipo_original = _text(estructura.get("tipo")) or ""
+        oficial = _text(estructura.get("estructura_oficial")) or ""
+        tipo = tipos_geometricos_oficiales.get(
+            oficial, tipos_geometricos_oficiales.get(tipo_original, tipo_original)
+        )
         if tipo not in {"semiarco", "arco", "arco_organico", "columna", "columna_organica", "pared"}:
             continue
         caja = _mapping(pista.get("caja")) if pista else {}
@@ -1075,7 +1096,8 @@ def _medir_desde_cajas(
             bordes.append("derecho")
         if bordes:
             avisos.append(f"La caja de {referencia} está cortada por el borde {' y '.join(bordes)}; no ancla ni deriva esa pieza.")
-            medidas = dict(_mapping(estructura.get("medidas")))
+            medidas_entregadas = dict(_mapping(estructura.get("medidas")))
+            medidas = dict(medidas_entregadas)
             conservar_cliente = _text(estructura.get("estructura_id")) in medidas_cliente
             for clave, valor in medidas_armado(estructura).items():
                 if not conservar_cliente or _number(medidas.get(clave)) is None:
@@ -1084,7 +1106,17 @@ def _medir_desde_cajas(
                 estructura["medidas"] = medidas
                 alto_motor = _number(medidas.get("alto_m"))
                 if conservar_cliente and alto_motor is not None:
-                    sincronizar_armados(estructura, alto_motor, _number(medidas.get("ancho_m")), _text(estructura.get("estructura_id")) or "pieza")
+                    sincronizar_armados(
+                        estructura,
+                        alto_motor,
+                        _number(medidas.get("ancho_m")),
+                        _text(estructura.get("estructura_id")) or "pieza",
+                        dimensiones_cliente={
+                            clave: valor
+                            for clave in ("ancho_m", "alto_m")
+                            if (valor := _number(medidas_entregadas.get(clave))) is not None
+                        },
+                    )
                 id_cortada = _text(estructura.get("estructura_id"))
                 if id_cortada:
                     cortadas[id_cortada] = estructura
@@ -1095,9 +1127,10 @@ def _medir_desde_cajas(
             )
             continue
         piezas.append((estructura, caja, _mapping(estructura.get("medidas")), pista))
-        if _number(pista.get("aspect_ratio")) is None:
+        aspecto_foto = _number(pista.get("aspect_ratio"))
+        if aspecto_foto is None or aspecto_foto <= 0:
             avisos.append(
-                f"No pude leer la proporción de la foto para {referencia}; usé una foto cuadrada como escala de respaldo."
+                f"No pude leer la proporción de la foto para {referencia}; conservé medidas del motor y no usé su caja como ancla."
             )
 
     if not piezas:
@@ -1130,7 +1163,12 @@ def _medir_desde_cajas(
     escalas: dict[str, float] = {}
     avisos_escala: list[str] = []
     for source_image_id, piezas_foto in por_foto.items():
-        con_medida = [pieza for pieza in piezas_foto if _number(pieza[2].get("alto_m")) or _number(pieza[2].get("ancho_m"))]
+        con_medida = [
+            pieza
+            for pieza in piezas_foto
+            if (_number(pieza[2].get("alto_m")) or _number(pieza[2].get("ancho_m")))
+            and (_number(pieza[3].get("aspect_ratio")) or 0.0) > 0
+        ]
         cliente = [pieza for pieza in con_medida if _text(pieza[0].get("estructura_id")) in medidas_cliente]
         # La columna suele traer una altura estándar de motor, pero no sirve como
         # referencia de escala: el tamaño real de esa misma pieza es lo que buscamos.
@@ -1181,13 +1219,21 @@ def _medir_desde_cajas(
             continue
         ancho_caja = _number(caja.get("width")) or 0.0
         alto_caja = _number(caja.get("height")) or 0.0
-        aspecto_foto = _number(pista.get("aspect_ratio")) or 1.0
+        aspecto_foto = _number(pista.get("aspect_ratio"))
         alto_estimado = alto_caja * escalas[source_image_id]
-        ancho_estimado = ancho_caja * aspecto_foto * escalas[source_image_id]
+        ancho_estimado = (
+            ancho_caja * aspecto_foto * escalas[source_image_id]
+            if aspecto_foto is not None and aspecto_foto > 0
+            else None
+        )
         medidas = dict(medidas_originales)
         anterior_alto = _number(medidas.get("alto_m"))
         anterior_ancho = _number(medidas.get("ancho_m"))
-        tipo = _text(estructura.get("tipo")) or ""
+        tipo_original = _text(estructura.get("tipo")) or ""
+        oficial = _text(estructura.get("estructura_oficial")) or ""
+        tipo = tipos_geometricos_oficiales.get(
+            oficial, tipos_geometricos_oficiales.get(tipo_original, tipo_original)
+        )
         id_estructura = _text(estructura.get("estructura_id")) or ""
         conservar_cliente = id_estructura in medidas_cliente
         es_columna_organica = tipo == "columna_organica" or isinstance(estructura.get("armado_columna_organica"), Mapping)
@@ -1203,9 +1249,9 @@ def _medir_desde_cajas(
         alto_minimo, alto_maximo, ancho_minimo, ancho_maximo = limites_tipo.get(tipo, (0.5, 4.5, 0.3, 8.0))
         alto_final = min(alto_maximo, max(alto_minimo, alto_sin_tope))
         dimensiones_ancho = tipo in {"arco", "semiarco", "arco_organico", "columna", "pared"} and not es_columna_organica
-        ancho_sin_tope = anterior_ancho if conservar_cliente and anterior_ancho is not None else ancho_estimado
-        ancho_final = min(ancho_maximo, max(ancho_minimo, ancho_sin_tope))
-        if dimensiones_ancho and ancho_final != ancho_sin_tope:
+        ancho_sin_tope = anterior_ancho if conservar_cliente and anterior_ancho is not None else (ancho_estimado if ancho_estimado is not None else anterior_ancho)
+        ancho_final = min(ancho_maximo, max(ancho_minimo, ancho_sin_tope)) if ancho_sin_tope is not None else None
+        if dimensiones_ancho and ancho_final is not None and ancho_final != ancho_sin_tope:
             avisos.append(f"El ancho derivado de {id_estructura} ({ancho_sin_tope:.2f} m) excedía límites; ajusté a {ancho_final:.2f} m.")
         if tipo in {"semiarco", "arco_organico"}:
             armado_arco_org = mapa_opcional(estructura.get("armado_arco_organico"))
@@ -1213,15 +1259,15 @@ def _medir_desde_cajas(
             grosor_cima = _number(volumen_arco_org.get("grosorCimaM")) or 0.45
             alto_minimo_org = max(
                 1.0,
-                math.ceil(0.4 * ancho_final * 10 - 1e-9) / 10,
+                math.ceil(0.4 * (ancho_final or 0.0) * 10 - 1e-9) / 10,
                 math.ceil((grosor_cima / 2 + 0.7) * 10 - 1e-9) / 10,
             )
-            alto_maximo_org = max(alto_minimo_org, math.floor(min(6.0, 1.8 * ancho_final) * 10 + 1e-9) / 10)
+            alto_maximo_org = max(alto_minimo_org, math.floor(min(6.0, 1.8 * (ancho_final or 0.0)) * 10 + 1e-9) / 10)
             alto_final = min(alto_maximo_org, max(alto_minimo_org, alto_sin_tope))
         if alto_final != alto_sin_tope:
             avisos.append(f"La altura derivada de {id_estructura} ({alto_sin_tope:.2f} m) excedía límites; ajusté a {alto_final:.2f} m.")
         medidas["alto_m"] = round(alto_final, 2)
-        if dimensiones_ancho:
+        if dimensiones_ancho and ancho_final is not None:
             medidas["ancho_m"] = round(ancho_final, 2)
         elif es_columna_organica and not conservar_cliente:
             medidas.pop("ancho_m", None)
@@ -1229,13 +1275,22 @@ def _medir_desde_cajas(
 
         if es_columna_organica and not isinstance(estructura.get("armado_columna_organica"), Mapping):
             avisos.append(f"Grosor de {id_estructura} queda al motor: la caja puede incluir su inclinación.")
-        grosor_base = ancho_estimado if es_columna_organica else None
+        grosor_base = (
+            anterior_ancho if conservar_cliente and anterior_ancho is not None else ancho_estimado
+        ) if es_columna_organica else None
+        if aspecto_foto is None or aspecto_foto <= 0:
+            avisos.append(f"Conservé las dimensiones de {id_estructura}: falta proporción fiable de la foto.")
         sincronizar_armados(
             estructura,
             alto_final,
             ancho_final if dimensiones_ancho else None,
             id_estructura,
             grosor_base_m=grosor_base,
+            dimensiones_cliente={
+                clave: valor
+                for clave in ("ancho_m", "alto_m")
+                if conservar_cliente and (valor := _number(medidas_originales.get(clave))) is not None
+            },
         )
 
         cambio = (
