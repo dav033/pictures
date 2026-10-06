@@ -192,13 +192,17 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
 003 ahora genera (Codex 38/28). Media 43→52.
 
 ### 4.4 Pendiente de fidelidad (en orden)
-1. **Ancho/alto de las piezas laterales**: el chat inventa medidas (F7-5 ocupa el 83 % del ancho de la foto y el chat pide 1,2 m; el 002 a
+1. **Ancho/alto de las piezas laterales** (en curso: rama `fix/medidas-de-la-foto`, worktree `Downloads/e3f`, Codex, tope US$0,30; caso
+   nuevo 2026-10-06: columna de la foto del dueño ≈1,36 × 0,73 m y el plan pide 1,8 m de alto y 1,04 m de base): el chat inventa medidas (F7-5 ocupa el 83 % del ancho de la foto y el chat pide 1,2 m; el 002 a
    veces 1,8 m de alto cuando llega al techo; 003 cruza demasiado por arriba). Propiedad huérfana: proporción de la caja de la foto.
-2. **Una sombra no es un color** (2026-10-06, foto del dueño rosa empolvado/crema sin marrón → la lista Sempertex mostraba «Fashion
-   Chocolate 076»): `medirColoresSempertex` cruza cada grupo ≥6 % con la referencia más cercana sin preguntarse si es la cara en
-   sombra de otro color medido (#7a443d en la columna, 7 %, abajo). En curso en la rama `fix/sombra-no-es-color` (worktree
-   `Downloads/e3e`, Codex): juntar la sombra con su color si el analizador no nombró ese color oscuro; verificar antes/después en
-   las 13 fotos sin coste.
+2. **Colores de la foto del dueño 2026-10-06** (semiarco + columna orgánicos en rosa empolvado mate, crema, perla rosa claro y
+   burbujas transparentes; foto en `Downloads/WhatsApp Image 2026-10-06 at 9.58.10 AM.jpeg`, datos en
+   `informes-calidad/dueno-2026-10-06/`). Salió: «Fashion Chocolate 076» en la lista (no hay marrón); el plan compra «Rosado mate»
+   (rosa bebé) en vez de Palo de Rosa 010; la columna lleva 83/127 (65 %) de «Oro rosa cromado» y FLUX pinta bolas cobre oscuro.
+   Hipótesis: H1 la sombra del rosa (#7a443d) se cruza como color propio; H2 los tonos medios del rosa empolvado (#c6a29a, #b47f77)
+   caen junto al Dorado Rosa y la dominancia le da casi la mitad; H3 «rosado» elige 609 (los brillos) y no 010, que se midió y nadie
+   usa; H4 el «dorado rosa» de la foto es perla claro, no cromado. En curso: rama `fix/sombra-no-es-color` (worktree `Downloads/e3e`,
+   Codex, tope US$0,20, sin imágenes). Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
 3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
 4. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
 5. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
