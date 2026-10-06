@@ -103,6 +103,16 @@ generador de imagen con Gemini en TS o Python. Gemini se queda solo para analiza
   (`limiteConGuiaEscena` en `route.ts`); el tope duro de fal sigue en 2500. Pendiente: sin guía, el caption con frases de Python aún
   puede pasar de 1000 (probar a quitar esas frases antes de fallar). Verificado: tsc, eslint, `test-guia-escena`.
 
+- **Etapa 3, superficies B+D integradas (2026-10-06, merge `4d96ab7`, rama `etapa3-d`)**: `/api/generate` genera SIEMPRE con FLUX base
+  (`loras: []`; `/edit` cuando hay imagen de entrada, texto→imagen sin ella, porque fal exige `image_urls` en `/edit`); cualquier
+  `proveedor` de imagen o campo retirado (`usarLora`, `loraMode`, `loraSelection`) → `IMAGEN_SOLO_FLUX`; revisión: el resultado previo
+  va como @image1 y la foto del espacio como @image2; el texto de revisión pasa por `limpiarTextoBase`, se traduce al inglés con
+  Gemini de TEXTO (`revision-flux.ts`, falla cerrado) y el preflight mira el prompt final. Quitados: generación Gemini pura,
+  composición FLUX→Gemini, `REFERENCIA_EN_ETAPA1_V1`, adaptadores `uzume/imagen*.ts`, `GEMINI_IMAGE_MODEL`, endpoint Python
+  `/image-generate`, generación del laboratorio (responde 410), selector LoRA del cliente, acción `generar_estilo_estandar`. Revisión
+  adversarial previa (3 fallos confirmados, corregidos). Verificado tras el merge: tsc, eslint, edit-referencias, flux-revision,
+  ui-error-contract, guia-escena, texto-base, product-runtime; `/api/generate` responde. Sin imagen de control todavía.
+
 ### 3.2 Inventario de lo que queda (mapeado el 2026-10-06)
 Bloqueos o rarezas que siguen corriendo en base:
 - `src/lib/ia/kagutsuchi/lora-prompt-preflight.ts:273-277` rechaza prompts con `Reflex|Fashion|Silk|Crystal|Pastel`, ®/™ o `eventdecor_*`
