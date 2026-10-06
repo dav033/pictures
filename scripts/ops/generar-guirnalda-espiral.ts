@@ -40,7 +40,7 @@ import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
 import { captionCanonicoGuirnalda, escenaGuirnalda, GUIRNALDA_SINTETICA, planGuirnalda, PRODUCTOS_GUIRNALDA } from "../lib/escenas-armado-guirnalda";
-import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lora/exp-fal-lib";
+import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lib/fal-evaluacion";
 
 /** La frase del patrón que `patron_color.py` escribía en `main` 94ad16b para este plan. */
 const PATRON_ANTES = "wrapped in a spiral of pink, white and gold stripes winding along its length";

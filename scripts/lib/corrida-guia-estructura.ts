@@ -28,7 +28,7 @@ import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { elegirCaptionConGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { prepararGuiaEstructura, type GuiaPreparada } from "@/lib/ia/kagutsuchi/rasterizar-guia";
 import { buildLoraEditPrompt, reservaNotasGuia, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
-import type { Celda, Manifiesto } from "../lora/exp-fal-lib";
+import type { Celda, Manifiesto } from "./fal-evaluacion";
 import { captionDeCaso, casosGuia, type CasoGuia } from "./escenas-guia-estructura";
 import { medirContraGuia, type MedidaGuia } from "./medir-guia";
 

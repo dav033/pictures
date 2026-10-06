@@ -9,7 +9,7 @@ import { directorioOrdenes } from "./directorio";
  *
  * El cálculo vive aquí y no en la ruta porque tiene dos consumidores: la ruta
  * `/api/admin/ordenes/estadisticas` cuando la carpeta local existe, y el
- * snapshot (`lib/lora/snapshot.ts`) que se publica al servidor. El servidor no
+ * snapshot (`lib/ordenes/snapshot.ts`) que se publica al servidor. El servidor no
  * tiene la carpeta de órdenes ni las fotos, así que allí las estadísticas solo
  * pueden venir del snapshot generado en la máquina que sí las tiene.
  */

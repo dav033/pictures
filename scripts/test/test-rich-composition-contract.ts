@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { compilarDescriptorProductoPerceptual, assertDescriptorPerceptualSeguro } from "../../src/lib/lora/descriptor-perceptual";
+import { compilarDescriptorProductoPerceptual, assertDescriptorPerceptualSeguro } from "../../src/lib/ia/kagutsuchi/descriptor-perceptual";
 import { SceneSpecSchema } from "../../src/lib/ia/escena/scene-spec";
 import { compileLoraCaption } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
@@ -15,13 +15,13 @@ const concept = {
     material: "latex",
     color: "black",
     finish: "Reflex high-shine",
-    pattern: { kind: "printed", motif: "black bats and white ghosts", contains_text: false },
+    pattern: { kind: "printed", motif: "black bats and white ghosts", contains_text: false, text_policy: "none" },
   },
   aliases: { es: [], en: [], contextual: [] },
   catalog_product_ids: ["V-HALLOWEEN"],
   sizes: { separate: true as const, allowed_codes: ["R-12"] },
   status: "active" as const,
-  vocabulary_version: "product-vocabulary.v1",
+  vocabulary_version: "catalog-title.v1",
 };
 
 const scene = SceneSpecSchema.parse({

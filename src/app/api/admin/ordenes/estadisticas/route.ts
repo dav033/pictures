@@ -1,6 +1,6 @@
 import { calcularEstadisticasOrdenes, rutaOrdenes, type EstadisticasOrdenes } from "@/lib/ordenes/estadisticas";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
-import { readLocalSnapshot } from "@/lib/lora/snapshot";
+import { readLocalSnapshot } from "@/lib/ordenes/snapshot";
 
 export type { Alerta, ConteoEtiqueta, ConteoImagen, EstadisticasOrdenes, ReferenciaProducto } from "@/lib/ordenes/estadisticas";
 

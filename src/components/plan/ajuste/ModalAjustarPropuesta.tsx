@@ -7,7 +7,6 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type MutableRef
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
-import type { LoraModeSlug } from "@/lib/lora/schema";
 import { muestraColor, productoCliente, pulgadasCliente } from "@/lib/plan/presentacion-cliente";
 import type { LineaMaterial } from "@/lib/plan/resuelto";
 import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
@@ -25,7 +24,6 @@ export type PropsModalAjustarPropuesta = {
   lineasDe: (estructuraId: string) => readonly LineaMaterial[];
   imagenDeLinea: (linea: LineaMaterial) => string | undefined;
   approvalToken?: string;
-  loraMode?: LoraModeSlug;
   /** Variantes que la propuesta ya compra: una opción que ya está en la propuesta se aplica con la misma variante. */
   variantIdsDelPlan: ReadonlySet<string>;
   /** Id del contenido del diálogo: el botón «Ajustar plan» lo nombra en `aria-controls`. */
@@ -195,12 +193,12 @@ type PropsDialogo = Omit<PropsModalAjustarPropuesta, "abrirRef"> & { inicial: Ap
  * No guarda por su cuenta: `onAplicar` publica la edición en la propuesta y devuelve el motivo si falló; el modal
  * lo muestra aquí mismo y no se cierra hasta que haya salido bien.
  */
-function DialogoAjuste({ piezas, lineasDe, imagenDeLinea, inicial, approvalToken, loraMode, variantIdsDelPlan, idContenido, onAplicar, onCerrar }: PropsDialogo) {
+function DialogoAjuste({ piezas, lineasDe, imagenDeLinea, inicial, approvalToken, variantIdsDelPlan, idContenido, onAplicar, onCerrar }: PropsDialogo) {
   const idBase = useId();
   const reducir = useReducedMotion();
   const focoRetorno = useFocoDeRetorno();
   const campoBusqueda = useRef<HTMLInputElement | null>(null);
-  const ajuste = useAjustePropuesta({ piezas, lineasDe, inicial, approvalToken, loraMode, variantIdsDelPlan, onAplicar, onAplicado: onCerrar });
+  const ajuste = useAjustePropuesta({ piezas, lineasDe, inicial, approvalToken, variantIdsDelPlan, onAplicar, onAplicado: onCerrar });
   const { guardando } = ajuste;
 
   return (

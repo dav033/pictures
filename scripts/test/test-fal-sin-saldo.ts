@@ -16,7 +16,7 @@ import { generarConSempertexLora, ProveedorImagenNoDisponibleError, type LoraApp
 
 configurarPersistenciaTelemetria(undefined);
 
-const LORA: LoraApplication = { artifactId: "debug-artifact", specialization: "structure", path: "https://example.invalid/debug-lora.safetensors", trigger: "eventdecor_style_v2", scale: 0.8 };
+const LORA: LoraApplication = { artifactId: "debug-artifact", path: "https://example.invalid/debug-lora.safetensors", trigger: "eventdecor_style_v2", scale: 0.8 };
 const MENSAJE = "La vista previa de la imagen no está disponible por ahora. Tu propuesta y su precio quedan guardados.";
 
 async function falConRespuesta(status: number, cuerpo: unknown): Promise<{ error: unknown; llamadas: number }> {

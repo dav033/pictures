@@ -11,10 +11,7 @@ import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
 import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
-import { ReferenciasEntrenamientoModal, type ReferenciasEvidenciaData } from "@/components/ReferenciasEntrenamientoModal";
-import type { LoraModeSlug } from "@/lib/lora/schema";
 import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
-import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import { identificarEstructuraOficial, OFICIALES_SIN_MOTOR } from "@/lib/plan/estructuras-oficiales";
 import { OFICIALES_CON_DIBUJO_ESQUEMATICO } from "@/lib/plan/dibujo-estructura";
 import { esSustitucionDeColor } from "@/lib/plan/colores-referencia";
@@ -93,26 +90,13 @@ type LineaCatalogoSeleccionada = {
   estructura: string;
 };
 
-type ReferenciaEntrenamiento = { total: number; bySize?: Record<string, number> };
-type ReferenciasEntrenamientoResponse = { countsByCatalogId?: Record<string, ReferenciaEntrenamiento> };
-type ReferenciaEvidenciaSeleccionada = {
-  catalogId: string;
-  sizeCode: string | null;
-  productLabel: string;
-  expectedCount: number;
-};
-
 type Props = {
   plan: PlanResuelto;
   onAprobar?: () => void;
   aprobado?: boolean;
   generando?: boolean;
   onPlanActualizado?: (plan: PlanResuelto, cotizacion?: Cotizacion) => void;
-  /** Modo LoRA activo: el editor de piezas debe respetar el mismo allowlist
-   * de dataset que ya aplica el chat, o se puede agregar/reemplazar una
-   * pieza que el modelo nunca vio y enterarse recién al generar. */
-  loraMode?: LoraModeSlug;
-  /** Modo dev (B2): muestra niveles de coincidencia, ajustes declarados y referencias de entrenamiento. */
+  /** Modo dev (B2): muestra niveles de coincidencia y ajustes declarados. */
   modoDev?: boolean;
   /** Referencia analizada del turno que produjo el plan: recortes por pieza y ambientación que no se cotiza. */
   referenceBlueprint?: ReferenceBlueprintV2;
@@ -266,7 +250,7 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
   );
 }
 
-export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle, onPedirAjuste, precioCliente }: Props) {
+export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle, onPedirAjuste, precioCliente }: Props) {
   const [celebracion, setCelebracion] = useState(0);
   // Feedback after an edit: what changed, the new total and a way back while it is still the last change.
   // `avisos`: Python's own sentences about the edit (/api/plan-editar), verbatim.
@@ -281,12 +265,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const detalleRef = useRef<HTMLDivElement | null>(null);
   const [imagenesCatalogo, setImagenesCatalogo] = useState<Record<string, string>>({});
   const [imagenesAusentes, setImagenesAusentes] = useState<Record<string, true>>({});
-  const [referenciasEntrenamiento, setReferenciasEntrenamiento] = useState<Record<string, ReferenciaEntrenamiento>>({});
-  const [referenciaEvidencia, setReferenciaEvidencia] = useState<ReferenciaEvidenciaSeleccionada | null>(null);
-  const [estadoEvidencia, setEstadoEvidencia] = useState<"idle" | "loading" | "error" | "ready">("idle");
-  const [datosEvidencia, setDatosEvidencia] = useState<ReferenciasEvidenciaData | null>(null);
-  const [errorEvidencia, setErrorEvidencia] = useState<string | null>(null);
-  const [revisionEvidencia, setRevisionEvidencia] = useState(0);
   const [seleccionCatalogo, setSeleccionCatalogo] = useState<LineaCatalogoSeleccionada | null>(null);
   const [intercambioAbierto, setIntercambioAbierto] = useState(false);
   const [recomendaciones, setRecomendaciones] = useState<ProductoCandidato[]>([]);
@@ -332,8 +310,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const busquedaCatalogoRef = useRef<HTMLInputElement | null>(null);
   const peticionCatalogoRef = useRef<AbortController | null>(null);
   const secuenciaCatalogoRef = useRef(0);
-  const peticionEvidenciaRef = useRef<AbortController | null>(null);
-  const secuenciaEvidenciaRef = useRef(0);
   const editorDisponible = Boolean(onPlanActualizado);
   const editorId = `editor-plan-${plan.plan.plan_id}`;
   const supuestos = [...new Set(plan.plan.supuestos)];
@@ -569,66 +545,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     else setCotizacionAbierta(true);
   }
 
-  function referenciaEntrenamiento(linea: PlanResuelto["estructuras"][number]["lineas"][number]): { count: number; catalogId: string } | null {
-    const referencia = [linea.sku, linea.product_id, linea.variant_id]
-      .filter((id): id is string => Boolean(id))
-      .map((id) => ({ catalogId: id, reference: referenciasEntrenamiento[id] }))
-      .find((item) => Boolean(item.reference));
-    if (!referencia) return null;
-    const count = linea.tamano_codigo && referencia.reference.bySize?.[linea.tamano_codigo] != null
-      ? referencia.reference.bySize[linea.tamano_codigo]
-      : referencia.reference.total;
-    return { count, catalogId: referencia.catalogId };
-  }
-
-  function cargarEvidencia(seleccion: ReferenciaEvidenciaSeleccionada): void {
-    peticionEvidenciaRef.current?.abort();
-    const controlador = new AbortController();
-    peticionEvidenciaRef.current = controlador;
-    const secuencia = ++secuenciaEvidenciaRef.current;
-    setRevisionEvidencia((revision) => revision + 1);
-    setEstadoEvidencia("loading");
-    setDatosEvidencia(null);
-    setErrorEvidencia(null);
-    const parametros = new URLSearchParams({ catalog_id: seleccion.catalogId });
-    if (seleccion.sizeCode) parametros.set("size_code", seleccion.sizeCode);
-    fetch(`/api/lora/training-references?${parametros}`, { signal: controlador.signal, cache: "no-store" })
-      .then(async (respuesta) => {
-        const datos = await respuesta.json() as ReferenciasEvidenciaData & { error?: string };
-        if (!respuesta.ok) throw new Error(datos.error ?? "No se pudieron cargar las fotos de entrenamiento.");
-        return datos;
-      })
-      .then((datos) => {
-        if (secuencia !== secuenciaEvidenciaRef.current) return;
-        setDatosEvidencia(datos);
-        setEstadoEvidencia("ready");
-      })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        if (secuencia !== secuenciaEvidenciaRef.current) return;
-        setErrorEvidencia(mensajeErrorCliente(error, "No se pudieron cargar las fotos de entrenamiento."));
-        setEstadoEvidencia("error");
-      });
-  }
-
-  function abrirEvidencia(linea: PlanResuelto["estructuras"][number]["lineas"][number], referencia: NonNullable<ReturnType<typeof referenciaEntrenamiento>>): void {
-    const seleccion = {
-      catalogId: referencia.catalogId,
-      sizeCode: linea.tamano_codigo ?? null,
-      productLabel: linea.titulo,
-      expectedCount: referencia.count,
-    };
-    setReferenciaEvidencia(seleccion);
-    cargarEvidencia(seleccion);
-  }
-
-  function cerrarEvidencia(): void {
-    peticionEvidenciaRef.current?.abort();
-    ++secuenciaEvidenciaRef.current;
-    setReferenciaEvidencia(null);
-    setEstadoEvidencia("idle");
-  }
-
   /** Opens "Ajusta la propuesta" (a modal) on a piece, and on a balloon of it when the customer chose "Modificar". */
   function abrirEditor(modo: ModoAjuste, estructuraId: string, objetivo?: PlanResuelto["estructuras"][number]["lineas"][number]) {
     setErrorEdicion(null);
@@ -728,7 +644,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     if (!opciones.enDialogo) setErrorEdicion(null);
     try {
       await tramo.encolar(async (base) => {
-        const datos = await pedir({ modo: "aplicar", base, edicion, loraMode }, "No se pudo actualizar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+        const datos = await pedir({ modo: "aplicar", base, edicion }, "No se pudo actualizar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
         if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo actualizar la pieza."));
         const avisos = avisosDeEdicion(datos);
         opciones.alAvisar?.(avisos);
@@ -959,7 +875,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setErrorEdicion(null);
     try {
       await cola.encolar(async (base) => {
-        const datos = await pedirPlanEditar({ modo: "aplicar", base, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } }, loraMode }, "No se pudo cambiar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+        const datos = await pedirPlanEditar({ modo: "aplicar", base, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } } }, "No se pudo cambiar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
         if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo cambiar la pieza."));
         planEditado(datos.plan, datos.cotizacion, "Listo, cambié el globo.", undefined, avisosDeEdicion(datos));
         return datos.plan;
@@ -985,7 +901,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     const tramo = cola.tramo();
     try {
       await tramo.encolar(async (anterior) => {
-        const datos = await pedirPlanEditar({ modo: "aplicar", base: anterior, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id }, loraMode }, "No se pudo quitar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+        const datos = await pedirPlanEditar({ modo: "aplicar", base: anterior, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id } }, "No se pudo quitar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
         if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo quitar la pieza."));
         planEditado(datos.plan, datos.cotizacion, `Quité ${nombre} de ${pieza}.`, { tramo, texto: `Volví a poner ${nombre}.` }, avisosDeEdicion(datos));
         return datos.plan;
@@ -1010,7 +926,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoCatalogo(true);
     setErrorEdicion(null);
     try {
-      const datos = await pedirPlanEditar({ modo: "recomendadas", variant_id: seleccionCatalogo.linea.variant_id, approval_token: plan.approval_token, loraMode }, RESPALDO_RECOMENDACIONES, { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
+      const datos = await pedirPlanEditar({ modo: "recomendadas", variant_id: seleccionCatalogo.linea.variant_id, approval_token: plan.approval_token }, RESPALDO_RECOMENDACIONES, { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
       if (secuencia !== secuenciaCatalogoRef.current) return;
       setRecomendaciones(datos.candidatos ?? []);
     } catch (error) {
@@ -1031,7 +947,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoCatalogo(true);
     setErrorEdicion(null);
     try {
-      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode, ...(lineaObjetivoDe(seleccionCatalogo?.linea.variant_id) ? { linea_objetivo: lineaObjetivoDe(seleccionCatalogo?.linea.variant_id) } : {}) }, "No se pudo buscar en el catálogo.", { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
+      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, ...(lineaObjetivoDe(seleccionCatalogo?.linea.variant_id) ? { linea_objetivo: lineaObjetivoDe(seleccionCatalogo?.linea.variant_id) } : {}) }, "No se pudo buscar en el catálogo.", { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
       if (secuencia !== secuenciaCatalogoRef.current) return;
       setResultadosCatalogo(datos.candidatos ?? []);
     } catch (error) {
@@ -1056,7 +972,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     };
     // The search function reads only current local state; changing it on every
     // render would restart the debounce.
-  }, [consultaCatalogo, intercambioAbierto, loraMode]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- timer uses current state without restarting on every render.
+  }, [consultaCatalogo, intercambioAbierto]);
 
   useEffect(() => {
     if (!intercambioAbierto) peticionCatalogoRef.current?.abort();
@@ -1079,23 +996,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       });
     return () => controlador.abort();
   }, [solicitudImagenes]);
-
-  useEffect(() => {
-    // Cuántas veces salió cada producto en el entrenamiento del LoRA (solo modo dev).
-    if (!modoDev) return;
-    const controlador = new AbortController();
-    const parametros = loraMode ? `?loraMode=${encodeURIComponent(loraMode)}` : "";
-    fetch(`/api/lora/training-reference-counts${parametros}`, { signal: controlador.signal, cache: "no-store" })
-      .then((respuesta) => (respuesta.ok ? respuesta.json() : Promise.reject(new Error("No se pudieron cargar las referencias de entrenamiento."))))
-      .then((datos: ReferenciasEntrenamientoResponse) => setReferenciasEntrenamiento(datos.countsByCatalogId ?? {}))
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setReferenciasEntrenamiento({});
-      });
-    return () => controlador.abort();
-  }, [loraMode, modoDev]);
-
-  useEffect(() => () => peticionEvidenciaRef.current?.abort(), []);
 
   // A plan that arrives from outside (the chat built another one) is the base of the next edit.
   useEffect(() => {
@@ -1121,7 +1021,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   }, [intercambioAbierto]);
 
   /** The explorer's colors and first page start loading when the customer reaches for "Ajustar plan". */
-  const precalentarAjuste = () => precalentarExplorador(plan.approval_token, loraMode);
+  const precalentarAjuste = () => precalentarExplorador(plan.approval_token);
   const botonAjustar = editorDisponible && <button type="button" data-testid="editar-plan" aria-expanded="false" aria-controls={editorId} onPointerEnter={precalentarAjuste} onFocus={precalentarAjuste} onTouchStart={precalentarAjuste} onClick={() => abrirEditor("agregar", plan.plan.estructuras[0]?.estructura_id ?? "")} className="ui-pressable inline-flex items-center gap-1 rounded-full border border-borde px-2.5 py-1 text-xs font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"><Plus className="size-3" aria-hidden="true" />Ajustar plan</button>;
 
   return (
@@ -1252,7 +1152,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
               lineasDe={(estructuraId) => lineasVisiblesPorVariante(plan.estructuras.find((estructura) => estructura.estructura_id === estructuraId)?.lineas ?? [])}
               imagenDeLinea={(linea) => imagenLinea(linea.variant_id, linea.imagen)}
               approvalToken={plan.approval_token}
-              loraMode={loraMode}
               variantIdsDelPlan={new Set(plan.estructuras.flatMap((estructura) => estructura.lineas.map((linea) => linea.variant_id)))}
               idContenido={editorId}
               onAplicar={(edicion, aviso) => aplicarAjusteDirecto(edicion, aviso, { enDialogo: true })}
@@ -1374,12 +1273,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                 pendientes={pendientes}
                 onVerProducto={(linea, disparador) => { disparadorModalRef.current = disparador; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }}
                 modoDev={modoDev}
-                extraLinea={(linea) => {
-                  // LoRA training evidence is a development tool, not something a customer reads.
-                  if (!modoDev) return null;
-                  const referencias = referenciaEntrenamiento(linea);
-                  return referencias && <button type="button" data-testid="linea-referencias-entrenamiento" onClick={() => abrirEvidencia(linea, referencias)} className="ui-pressable shrink-0 rounded-lg border border-acento/35 bg-acento-suave px-2 py-1.5 text-left text-[11px] font-semibold leading-4 text-acento hover:bg-acento/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento" aria-label={`Ver ${referencias.count} ${referencias.count === 1 ? "referencia" : "referencias"} de entrenamiento para ${linea.titulo}`}><span className="block tabular-nums">{referencias.count} {referencias.count === 1 ? "referencia" : "referencias"}</span><span className="block font-normal">en entrenamiento</span></button>;
-                }}
               />
             ))}
           </ol>
@@ -1693,17 +1586,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-      <ReferenciasEntrenamientoModal
-        key={revisionEvidencia}
-        open={Boolean(referenciaEvidencia)}
-        onClose={cerrarEvidencia}
-        onRetry={() => { if (referenciaEvidencia) cargarEvidencia(referenciaEvidencia); }}
-        loadState={estadoEvidencia}
-        error={errorEvidencia}
-        data={datosEvidencia}
-        productLabel={referenciaEvidencia?.productLabel ?? "Producto"}
-        expectedCount={referenciaEvidencia?.expectedCount ?? 0}
-      />
     </motion.section>
   );
 }

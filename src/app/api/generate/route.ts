@@ -30,7 +30,6 @@ import { prepararGuiaEstructura } from "@/lib/ia/kagutsuchi/rasterizar-guia";
 import { generacionAdmiteGuiaEscena, planConReferencia } from "@/lib/ia/kagutsuchi/guia-escena";
 import { guiaEscenaParaGeneracion } from "@/lib/ia/kagutsuchi/preparar-guia-escena";
 import { bloqueoPorGeneracionSinReferencia, CODIGO_GENERACION_SIN_REFERENCIA, leerPoliticaDePresentacion, nivelAmbienteConPolitica, nivelCreatividadConPolitica } from "@/lib/presentacion/modo-presentacion";
-import { resolveLoraMode } from "@/lib/lora/mode-resolver";
 import { FluxRevisionTranslationError, traducirRevisionParaFlux } from "@/lib/ia/kagutsuchi/revision-flux";
 
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/escena/visual-context";
@@ -548,8 +547,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // Esto se resuelve ANTES de resolver el plan: el resolutor necesita el
     // allowlist para no elegir variantes que el modelo nunca vio, y los ids
     // que llegan del cliente conviene rechazarlos antes de cotizar.
-    const explicitLoraMode = "base" as const;
-    const resolvedLoras = await resolveLoraMode(explicitLoraMode);
+    const resolvedLoras: [] = [];
     // El plan se re-resuelve con el mismo backend que lo produjo (ADR 0006):
     // resolverlo con el otro podría dar otro hash y estaríamos aprobando un
     // plan distinto del que vio el cliente.

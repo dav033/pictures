@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { InterruptorTema } from "@/components/ui/interruptor-tema";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { LoraDatasetGalleryData } from "@/lib/lora/dataset-v005-view";
 import type { Decoracion, Producto } from "@/lib/types";
 import { ArquitecturaTab } from "./ArquitecturaTab";
 import { CatalogoShopifyTab } from "./CatalogoShopifyTab";
@@ -12,18 +11,15 @@ import { DecoracionesTab } from "./DecoracionesTab";
 import { MotorIATab } from "./MotorIATab";
 import { OrdenesTab } from "./OrdenesTab";
 import { ProductosTab } from "./ProductosTab";
-import LoraDatasetGallery from "../lora/LoraDatasetGallery";
 
-type Tab = "arquitectura" | "productos" | "decoraciones" | "motor-ia" | "catalogo-shopify" | "ordenes" | "lora-dataset";
+type Tab = "arquitectura" | "productos" | "decoraciones" | "motor-ia" | "catalogo-shopify" | "ordenes";
 
 export function AdminTabs({
   productosIniciales,
   decoracionesIniciales,
-  datasetLoraInicial,
 }: {
   productosIniciales: Producto[];
   decoracionesIniciales: Decoracion[];
-  datasetLoraInicial: LoraDatasetGalleryData | null;
 }) {
   const [tab, setTab] = useState<Tab>("arquitectura");
   const [productos, setProductos] = useState<Producto[]>(productosIniciales);
@@ -66,9 +62,6 @@ export function AdminTabs({
           <TabsTrigger value="ordenes" activo={tab === "ordenes"}>
             Órdenes (dataset)
           </TabsTrigger>
-          <TabsTrigger value="lora-dataset" activo={tab === "lora-dataset"}>
-            Dataset LoRA
-          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -84,7 +77,6 @@ export function AdminTabs({
       {tab === "motor-ia" && <MotorIATab />}
       {tab === "catalogo-shopify" && <CatalogoShopifyTab />}
       {tab === "ordenes" && <OrdenesTab />}
-      {tab === "lora-dataset" && <LoraDatasetGallery data={datasetLoraInicial} />}
     </div>
   );
 }
