@@ -222,7 +222,10 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    1.ª pasada (US$0,11) confirmó H1 (sombra/café 11,6 % en la columna) y H2 (#b47f77 → 968 Dorado Rosa; ahora 010) y que la caja del
    semiarco incluía el panel marfil del fondo; la dominancia mide dentro del croquis y solo en tonos nombrados. NO fusionada: la columna
    pasó a «rosado 100 %» (pierde el crema visible), el semiarco mide crema 69 %/rosado 23 % y 010 se mide pero no se compra (H3). En
-   curso 2.ª pasada (tope US$0,10). Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
+   curso 2.ª pasada (tope US$0,10). Caso nuevo del dueño (2026-10-06 11:35, CASE-002 en vivo): el analizador nombró plateado, rosado y
+   blanco (patrón «bloques»), pero el plan compró plateado 126, rosado 64, **gris 38** y transparente 26: el blanco bajo luz lila se
+   midió gris y FLUX pinta el pie gris oscuro. Condición para fusionar colores: en ese caso deben salir blanco + plata + rosa y nada
+   de gris. Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
    Pendiente aparte: `test-guia-estructura.ts` ya falla en la rama principal (espera `#f2a7c3`, sale `#f8a3bc` en guirnalda-pared).
 3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
 4. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
