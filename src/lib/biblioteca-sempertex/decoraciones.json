@@ -1,0 +1,59 @@
+[
+  {
+    "id": "ej-cumpleanos-estrellas",
+    "origen": "ejemplo",
+    "aviso": "DATO DE EJEMPLO — no es real",
+    "titulo": "Cumpleaños entre estrellas",
+    "tematica": "Estrellas y tonos cálidos",
+    "eventos": ["cumpleaños", "fiesta infantil"],
+    "edad": { "min": 1, "max": 12 },
+    "fotos": [{ "url": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/GarlandAmor_d1c90f67-c295-4731-9a4c-e0a0dcee0d58.jpg?v=1694793280", "fuente": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/GarlandAmor_d1c90f67-c295-4731-9a4c-e0a0dcee0d58.jpg?v=1694793280", "licencia": "sempertex_propia" }],
+    "video": null,
+    "piezas": [{ "estructura": "arco_asimetrico", "cantidad": 1 }, { "estructura": "bouquet", "cantidad": 2 }],
+    "materiales": [
+      { "variantId": "50030991311143", "sku": "B2B-20019705", "cantidad": 40, "nota": "Globo látex R-12 Rosewood, paquete x50; precio actual de catálogo. Cantidad sugerida de ejemplo." },
+      { "variantId": "46594211053863", "sku": "B2B-20000770", "cantidad": 20, "nota": "Globo látex R-12 Durazno, paquete x50; precio actual de catálogo. Cantidad sugerida de ejemplo." },
+      { "variantId": "46594221343015", "sku": "B2B-20000723", "cantidad": 20, "nota": "Globo látex R-12 Blanco, paquete x50; precio actual de catálogo. Cantidad sugerida de ejemplo." }
+    ],
+    "pasos": [{ "orden": 1, "texto": "Prepara una base estable para el arco." }, { "orden": 2, "texto": "Infla y agrupa los globos por color y tamaño." }, { "orden": 3, "texto": "Fija los grupos desde la base y completa los espacios." }],
+    "shopifyHandle": "b2b-e-decor-amor"
+  },
+  {
+    "id": "ej-baby-shower-jardin",
+    "origen": "ejemplo",
+    "aviso": "DATO DE EJEMPLO — no es real",
+    "titulo": "Jardín para baby shower",
+    "tematica": "Flores y colores suaves",
+    "eventos": ["baby shower", "bienvenida de bebé"],
+    "edad": null,
+    "fotos": [{ "url": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/Arco-BigoteSurt_168203a7-3560-4ceb-a115-f5b6fcecedd3.jpg?v=1694793272", "fuente": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/Arco-BigoteSurt_168203a7-3560-4ceb-a115-f5b6fcecedd3.jpg?v=1694793272", "licencia": "sempertex_propia" }],
+    "video": null,
+    "piezas": [{ "estructura": "semiarco", "cantidad": 1 }, { "estructura": "racimo_pared", "cantidad": 3 }],
+    "materiales": [
+      { "variantId": "46594235826471", "sku": "B2B-20000726", "cantidad": 36, "nota": "Globo látex R-12 Rosado, paquete x50; precio actual de catálogo. Cantidad sugerida de ejemplo." },
+      { "variantId": "46594221343015", "sku": "B2B-20000723", "cantidad": 18, "nota": "Globo látex R-12 Blanco, paquete x50; precio actual de catálogo. Cantidad sugerida de ejemplo." },
+      { "variantId": "46594222784807", "sku": "B2B-20014540", "cantidad": 18, "nota": "Globo látex R-12 Eucalipto, paquete x50; precio actual de catálogo. Cantidad sugerida de ejemplo." }
+    ],
+    "pasos": [{ "orden": 1, "texto": "Define el espacio y distribuye las piezas." }, { "orden": 2, "texto": "Arma los racimos por grupos de tamaño." }, { "orden": 3, "texto": "Coloca el semiarco y añade los racimos para dar movimiento." }],
+    "shopifyHandle": "b2b-e-decor-nino-bigotes"
+  },
+  {
+    "id": "ej-fiesta-arco-color",
+    "origen": "ejemplo",
+    "aviso": "DATO DE EJEMPLO — no es real",
+    "titulo": "Fiesta en arco de color",
+    "tematica": "Formas y colores vivos",
+    "eventos": ["cumpleaños", "aniversario", "graduación"],
+    "edad": { "min": 1, "max": 99 },
+    "fotos": [{ "url": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/ArcoIndependenciaColombia_d98c16ba-e3d9-4cad-ad25-896af4cfd0d0.jpg?v=1694793268", "fuente": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/ArcoIndependenciaColombia_d98c16ba-e3d9-4cad-ad25-896af4cfd0d0.jpg?v=1694793268", "licencia": "sempertex_propia" }],
+    "video": null,
+    "piezas": [{ "estructura": "arco", "cantidad": 1 }],
+    "materiales": [
+      { "variantId": "46594236416295", "sku": "B2B-20000732", "cantidad": 36, "nota": "Globo látex R-12 Rojo, paquete x50; precio actual de catálogo. Cantidad sugerida de ejemplo." },
+      { "variantId": "46594231992615", "sku": "B2B-20000737", "cantidad": 18, "nota": "Globo látex R-12 Amarillo, paquete x50; precio actual de catálogo. Cantidad sugerida de ejemplo." },
+      { "variantId": "46594232582439", "sku": "B2B-20000761", "cantidad": 18, "nota": "Globo látex R-12 Azul Rey, paquete x50; precio actual de catálogo. Cantidad sugerida de ejemplo." }
+    ],
+    "pasos": [{ "orden": 1, "texto": "Asegura la estructura del arco." }, { "orden": 2, "texto": "Monta las guirnaldas por secciones." }, { "orden": 3, "texto": "Une las secciones y revisa que la decoración quede firme." }],
+    "shopifyHandle": "b2b-e-decor-colombia"
+  }
+]

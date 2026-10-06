@@ -1,11 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { ChartColumn, FlaskConical, LayoutGrid, ListChecks, Monitor, Moon, Settings2, Shield, Sun, Trash2 } from "lucide-react";
 import { OPCIONES_TEMA } from "@/lib/tema/tema";
 import { useTema } from "@/lib/tema/use-tema";
 import type { NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import type { ModoVista } from "@/lib/estado/modo-vista";
+import { ConmutadorVista } from "@/components/guiado/ConmutadorVista";
 import { SwitchModoVista } from "@/components/modo/SwitchModoVista";
 import { InterruptorTema } from "@/components/ui/interruptor-tema";
 import { MenuApp, type ItemMenu } from "./MenuApp";
@@ -14,8 +16,8 @@ import { SelectorCreatividad } from "./SelectorCreatividad";
 type Props = {
   /** "Cumpleaños · rosa y plata · hasta $ 1.500.000" o null si el brief está vacío. */
   contexto: string | null;
-  creatividad: NivelCreatividad;
-  onCreatividad: (nivel: NivelCreatividad) => void;
+  creatividad?: NivelCreatividad;
+  onCreatividad?: (nivel: NivelCreatividad) => void;
   modoVista: ModoVista;
   onModoVista: (modo: ModoVista) => void;
   onLimpiar: () => void;
@@ -44,6 +46,7 @@ function MarcaIcono() {
  * del evento al centro, creatividad compacta, tema, "Modo dev" y menú.
  */
 export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, onModoVista, onLimpiar, limpiarDeshabilitado, onAbrirSeleccion, totalSeleccion, barraDev }: Props) {
+  const pathname = usePathname();
   const esDev = modoVista === "dev";
   const { preferencia: preferenciaTema, cambiar: cambiarTema } = useTema();
   const ICONO_TEMA = { light: <Sun className="size-4" />, dark: <Moon className="size-4" />, sistema: <Monitor className="size-4" /> } as const;
@@ -56,6 +59,9 @@ export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, o
     // D10: the header switch flips light/dark quickly; here the customer can also go back to "Sistema".
     { tipo: "separador", id: "sep-tema" },
     { tipo: "titulo", id: "titulo-tema", etiqueta: "Tema" },
+    pathname === "/asistente"
+      ? { tipo: "enlace", id: "vista-clasica", etiqueta: "Vista clásica", href: "/" }
+      : { tipo: "enlace", id: "vista-guiada", etiqueta: "Asistente guiado", href: "/asistente" },
     ...OPCIONES_TEMA.map((opcion): ItemMenu => ({ tipo: "opcion", id: `tema-${opcion.valor}`, etiqueta: opcion.etiqueta, marcado: preferenciaTema === opcion.valor, onSeleccionar: () => cambiarTema(opcion.valor), icono: ICONO_TEMA[opcion.valor] })),
     ...(esDev
       ? ([
@@ -79,7 +85,8 @@ export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, o
           {contexto && <p className="truncate" title={contexto}>{contexto}</p>}
         </div>
         <div className="app-acciones">
-          <SelectorCreatividad valor={creatividad} onCambiar={onCreatividad} />
+          <ConmutadorVista />
+          {creatividad !== undefined && onCreatividad && <SelectorCreatividad valor={creatividad} onCambiar={onCreatividad} />}
           <InterruptorTema />
           <SwitchModoVista modo={modoVista} onCambiar={onModoVista} />
           <MenuApp items={items} />

@@ -259,6 +259,14 @@ Reutiliza `TarjetaCotizacion` (personal) y `CotizacionProfesional` (negocio). En
 `plan.lista_materiales`. Dueño (2026-10-06): sí a enlazar 3-4 decoraciones de ejemplo a kits/variantes REALES (E-DECORS, Fiestas
 prediseñadas) para que el costeo de la demo muestre precios; siguen marcadas «Ejemplo» (segunda pasada encolada).
 
+**Integrada (2026-10-06, merge de `feat/asistente-guiado`)**: ruta `/asistente`, conmutador «Clásica / Guiada» en la navbar, API
+`/api/asistente-guiado`, biblioteca con 3 decoraciones de ejemplo enlazadas a kits E-DECORS reales (Amor, Niño Bigotes, Colombia; fotos
+de Shopify; variantes R-12 reales del snapshot publicado el 11-sep-2026; temática, edad, cantidades y pasos son de ejemplo), costeo por
+`plan.lista_materiales` en Python (p. ej. «Cumpleaños entre estrellas»: 3 variantes ×50, $39.111 COP personal y negocio).
+Revisión adversarial: 3 fallos confirmados corregidos (uso en el mismo POST, errores de herramienta devueltos al modelo, precio ligado
+a la decoración elegida) + menores. Pendiente: prueba de un turno real con el LLM (la hago yo), datos reales de decoraciones y
+proveedores, verificación visual.
+
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
 - Pendientes: taxonomía 12 o 18 clases (las 5 que AGENTS.md daba por retiradas: `arco_no_denso`, `columna_no_densa`, `pared_densa`,

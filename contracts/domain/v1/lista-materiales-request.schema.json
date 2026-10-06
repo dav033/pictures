@@ -1,0 +1,41 @@
+{
+  "$id": "lista-materiales.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "lista-materiales.v1"
+    },
+    "materiales": {
+      "minItems": 1,
+      "maxItems": 256,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "variant_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "cantidad": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "variant_id",
+          "cantidad"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "materiales"
+  ],
+  "additionalProperties": false
+}

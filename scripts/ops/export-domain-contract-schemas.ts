@@ -11,6 +11,7 @@ import { FORMAS_LISTAS_ARCO_ORGANICO } from "../../src/lib/plan/armado-arco-orga
 import { LORA_COLOR_NAMES_EN } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { HEX_COLORES_V2, PALETA_COLORES_V2 } from "../../src/lib/rag/taxonomy/v2";
 import { ACABADO_EN } from "../../src/lib/ia/uzume/mezcla-color-escena";
+import { ListaMaterialesRequestSchema, ListaMaterialesResultadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
 
 const outputDirectory = path.join(process.cwd(), "contracts", "domain", "v1");
 const checkOnly = process.argv.includes("--check");
@@ -62,11 +63,16 @@ const filenames: Record<string, string> = {
   "operational-context.v1": "operational-context.schema.json",
   "internal-request-signature.v1": "internal-request-signature.schema.json",
   "backend-selection.v1": "backend-selection.schema.json",
+  "lista-materiales.v1": "lista-materiales-request.schema.json",
+  "lista-materiales-result.v1": "lista-materiales-result.schema.json",
 };
 
 const schemas: Record<string, { id: string; schema: z.ZodType }> = Object.fromEntries(
   Object.entries(DomainContractSchemas).map(([id, schema]) => [filenames[id] ?? `${id}.schema.json`, { id, schema }]),
 );
+for (const [id, schema] of [["lista-materiales.v1", ListaMaterialesRequestSchema], ["lista-materiales-result.v1", ListaMaterialesResultadoSchema]] as const) {
+  schemas[filenames[id]!] = { id, schema };
+}
 
 async function main(): Promise<void> {
   await mkdir(outputDirectory, { recursive: true });
