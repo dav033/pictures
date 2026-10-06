@@ -203,6 +203,7 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    caen junto al Dorado Rosa y la dominancia le da casi la mitad; H3 «rosado» elige 609 (los brillos) y no 010, que se midió y nadie
    usa; H4 el «dorado rosa» de la foto es perla claro, no cromado. En curso: rama `fix/sombra-no-es-color` (worktree `Downloads/e3e`,
    Codex, tope US$0,20, sin imágenes). Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
+   Pendiente aparte: `test-guia-estructura.ts` ya falla en la rama principal (espera `#f2a7c3`, sale `#f8a3bc` en guirnalda-pared).
 3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
 4. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
 5. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
@@ -220,7 +221,13 @@ pide, tras preguntar negocio/personal (negocio: todo «Ajustar mi precio», cost
 e-commerce y botón visible «Cotiza con un proveedor cerca de ti»). Sin fila de tarjetas de estructuras. Texto de inicio «Cuéntame qué
 quieres hacer»; fotos de inicio de Sempertex. Decisiones del dueño: **en esta vista no se genera imagen**; la biblioteca de
 decoraciones y los directorios se construyen con **ejemplos marcados** hasta que lleguen los datos reales.
-Estado: mapeo de la UI en curso (workflow `mapa-ui-vista-guiada`); se implementa tras integrar la rama D (que toca `page.tsx`).
+Diseño (workflow `mapa-ui-vista-guiada`, 2026-10-06): ruta propia `/asistente` + API propia `/api/asistente-guiado` (contrato
+`asistente-guiado-v1`, prompt y herramientas propias en `src/lib/ia/guiado/`: guardar_brief_guiado, buscar_decoraciones_sempertex,
+ofrecer_opciones, preguntar_uso, costear_decoracion, pasos_decoracion, buscar_proveedores), biblioteca `src/lib/biblioteca-sempertex/`
+(Zod, unión por `origen`, ejemplos `ej-` ocultos en producción), conmutador «Clásica / Guiada» con `<Link>` en `CabeceraApp`
+(preferencia en localStorage `demo-decoracion:vista-app`), `page.tsx` sin cambios. El costeo lo cotiza Python (regla de §2), nunca TS.
+Reutiliza `TarjetaCotizacion` (personal) y `CotizacionProfesional` (negocio). En curso: rama `feat/asistente-guiado`
+(worktree `Downloads/e3g`, Codex). La prueba de un turno real con el LLM la hago yo al final.
 
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
