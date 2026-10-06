@@ -4,10 +4,13 @@ Documento único del proyecto (2026-10-06). Sustituye a todos los `.md` anterior
 `C:\Users\davidt\Downloads\pictures-workspace\respaldo-md-2026-10-06\` (misma estructura de carpetas, para consulta).
 Ahí también están `AGENTS.md` y `CLAUDE.md` (sus reglas esenciales están en §2; `next dev` puede volver a crear un
 `AGENTS.md` con su bloque generado) y una copia del `SEGUIMIENTO.md` anterior del 2026-10-05
-(`SEGUIMIENTO-anterior-copia-2026-10-05.md`; la versión posterior a esa fecha se sobrescribió por error y no se pudo recuperar).
+(`SEGUIMIENTO-anterior-copia-2026-10-05.md`; la versión completa anterior está en git: `git show b49c069:SEGUIMIENTO.md`).
 La pauta del juez visual pasó de `juez/visual-prompt.md` a `juez/visual-prompt.txt` (mismo contenido).
 Copia del código antes de quitar el LoRA: `C:\Users\davidt\Downloads\pictures-workspace\respaldo-antes-de-quitar-lora-2026-10-06\`
-(`src`, `ai-api-app`, `scripts`, `package.json`). **El proyecto no tiene git**: todo borrado es irreversible salvo por esos respaldos.
+(`src`, `ai-api-app`, `scripts`, `package.json`). El proyecto **sí es un repositorio git** (`origin` = `https://github.com/dav033/pictures.git`,
+rama de trabajo `fix/color-organico-conteo`, subida el 2026-10-06 en el commit `19af97e`): cualquier archivo borrado o sobrescrito se
+recupera del historial (`git show b49c069:SEGUIMIENTO.md` es el seguimiento anterior completo). `informes-calidad/` (scripts del juez y de
+evaluación) está fuera del repositorio y sin git.
 
 ---
 
