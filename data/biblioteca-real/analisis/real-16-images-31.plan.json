@@ -1,0 +1,752 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "e16b92c1-4227-5098-bcc2-6cb594ff16e8",
+    "concepto": {
+      "titulo": "real-16-images-31",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "azul"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "nombre": "Guirnalda orgánica",
+        "tipo": "guirnalda",
+        "rol_escena": "focal",
+        "ubicacion": "fondo_pared",
+        "medidas": {
+          "largo_m": 2.4
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "color": "azul",
+            "participacion": 1,
+            "rol_material": "principal"
+          }
+        ],
+        "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+        "referencia_element_id": "REF_01_E02",
+        "estructura_oficial": "guirnalda",
+        "colores_referencia": [
+          "azul"
+        ]
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "nombre": "Bouquet de globos",
+        "tipo": "kit",
+        "rol_escena": "soporte",
+        "ubicacion": "sobre_mesa_principal",
+        "medidas": {},
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "color": "azul",
+            "participacion": 1,
+            "rol_material": "principal"
+          }
+        ],
+        "unidades_declaradas": 12,
+        "porque": "Recreación de referencia REF_01_E05, con color y forma observados.",
+        "referencia_element_id": "REF_01_E05",
+        "estructura_oficial": "bouquet",
+        "colores_referencia": [
+          "azul"
+        ]
+      },
+      {
+        "estructura_id": "EST_03_BOUQUET",
+        "nombre": "Bouquet de globos",
+        "tipo": "kit",
+        "rol_escena": "soporte",
+        "ubicacion": "sobre_mesa_principal",
+        "medidas": {},
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "color": "azul",
+            "participacion": 1,
+            "rol_material": "principal"
+          }
+        ],
+        "unidades_declaradas": 10,
+        "porque": "Recreación de referencia REF_01_E06, con color y forma observados.",
+        "referencia_element_id": "REF_01_E06",
+        "estructura_oficial": "bouquet",
+        "colores_referencia": [
+          "azul"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "e16b92c1-4227-5098-bcc2-6cb594ff16e8",
+      "concepto": {
+        "titulo": "real-16-images-31",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "azul"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda orgánica",
+          "tipo": "guirnalda",
+          "rol_escena": "focal",
+          "ubicacion": "fondo_pared",
+          "medidas": {
+            "largo_m": 2.74
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634239385895",
+              "variant_id": "46594233925927",
+              "color": "azul",
+              "participacion": 1,
+              "rol_material": "principal"
+            }
+          ],
+          "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+          "referencia_element_id": "REF_01_E02",
+          "estructura_oficial": "guirnalda",
+          "colores_referencia": [
+            "azul"
+          ]
+        },
+        {
+          "estructura_id": "EST_02_BOUQUET",
+          "nombre": "Bouquet de globos",
+          "tipo": "kit",
+          "rol_escena": "soporte",
+          "ubicacion": "sobre_mesa_principal",
+          "medidas": {},
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634239385895",
+              "variant_id": "46594233925927",
+              "color": "azul",
+              "participacion": 1,
+              "rol_material": "principal"
+            }
+          ],
+          "unidades_declaradas": 12,
+          "porque": "Recreación de referencia REF_01_E05, con color y forma observados.",
+          "referencia_element_id": "REF_01_E05",
+          "estructura_oficial": "bouquet",
+          "colores_referencia": [
+            "azul"
+          ]
+        },
+        {
+          "estructura_id": "EST_03_BOUQUET",
+          "nombre": "Bouquet de globos",
+          "tipo": "kit",
+          "rol_escena": "soporte",
+          "ubicacion": "sobre_mesa_principal",
+          "medidas": {},
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634239385895",
+              "variant_id": "46594233925927",
+              "color": "azul",
+              "participacion": 1,
+              "rol_material": "principal"
+            }
+          ],
+          "unidades_declaradas": 10,
+          "porque": "Recreación de referencia REF_01_E06, con color y forma observados.",
+          "referencia_element_id": "REF_01_E06",
+          "estructura_oficial": "bouquet",
+          "colores_referencia": [
+            "azul"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+        "Se usan globos redondos R-12 disponibles en el snapshot vigente.",
+        "Guirnalda orgánica: la foto muestra unos 85 globos y el plan tenía 51; densidad media → lujosa, largo 2,4 → 2,74 m equivalente a la foto (no medido): quedó en 73."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "d42cd11618ca6f605f66d31e2b4469c3854d7472e270f59f087381e23bd34ddd",
+    "request_id": "8e816b7a-120f-5404-8580-3aa6b697609d",
+    "compras": [
+      {
+        "variant_id": "46594233925927",
+        "product_id": "8634239385895",
+        "sku": "B2B-20000758",
+        "sku_original": "B2B-20000758",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
+        "inventory_quantity": 984338,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "azul",
+        "unidades_necesarias": 95,
+        "design_quantity": 95,
+        "waste_reserve": 8,
+        "required_quantity": 103,
+        "unidades_con_merma": 103,
+        "unidades_paquete": 50,
+        "paquetes": 3,
+        "purchase_quantity": 150,
+        "used": 95,
+        "leftover_inventory": 47,
+        "consumption_cost": 26856,
+        "purchase_cost": 39111,
+        "additional_package_for_waste": true,
+        "sobrante": 55,
+        "precio_paquete": 13037,
+        "subtotal": 39111,
+        "estructuras": [
+          "EST_01_GUIRNALDA",
+          "EST_02_BOUQUET",
+          "EST_03_BOUQUET"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_BOUQUET"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_03_BOUQUET"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 95
+      },
+      "total_unidades": 95,
+      "total_cop": 39111,
+      "design_quantity": 95,
+      "target_waste_reserve": 8,
+      "covered_waste_reserve": 8,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 5,
+      "purchase_cost": 39111,
+      "consumption_cost": 26856,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 1,
+      "ahorro_paquetes_cop": 13037,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [
+      {
+        "familia_id": "8634239385895",
+        "titulo": "B2b Globo Latex Redondo Fashion Azul",
+        "total_cop": 26074,
+        "ahorro_cop": 13037,
+        "etiqueta": "economica"
+      }
+    ],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "nombre": "Guirnalda orgánica",
+        "tipo": "guirnalda",
+        "ubicacion": "fondo_pared",
+        "repeticiones": 1,
+        "eje_m": 2.74,
+        "total_unidades": 73,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "sku": "B2B-20000758",
+            "sku_original": "B2B-20000758",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
+            "inventory_quantity": 984338,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 73,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 73,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "nombre": "Bouquet de globos",
+        "tipo": "kit",
+        "ubicacion": "sobre_mesa_principal",
+        "repeticiones": 1,
+        "eje_m": null,
+        "total_unidades": 12,
+        "lineas": [
+          {
+            "estructura_id": "EST_02_BOUQUET",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_BOUQUET"
+            },
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "sku": "B2B-20000758",
+            "sku_original": "B2B-20000758",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
+            "inventory_quantity": 984338,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 12,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 12,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_03_BOUQUET",
+        "nombre": "Bouquet de globos",
+        "tipo": "kit",
+        "ubicacion": "sobre_mesa_principal",
+        "repeticiones": 1,
+        "eje_m": null,
+        "total_unidades": 10,
+        "lineas": [
+          {
+            "estructura_id": "EST_03_BOUQUET",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_03_BOUQUET"
+            },
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "sku": "B2B-20000758",
+            "sku_original": "B2B-20000758",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
+            "inventory_quantity": 984338,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 10,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 10,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "consumo_cop": 19034
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "consumo_cop": 3129
+      },
+      {
+        "estructura_id": "EST_03_BOUQUET",
+        "consumo_cop": 2607
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "referencia_element_id": "REF_01_E02",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 65,
+          "exacto": false,
+          "estimado_total": 85,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.2
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.6
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.2
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.9
+        },
+        "globos_foto": 85,
+        "globos_antes": 51,
+        "globos_despues": 73,
+        "cambios": [
+          {
+            "campo": "densidad",
+            "antes": "media",
+            "despues": "lujosa"
+          },
+          {
+            "campo": "largo_m",
+            "antes": 2.4,
+            "despues": 2.74
+          }
+        ],
+        "motivo": "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "referencia_element_id": "REF_01_E05",
+        "decision": "coincide",
+        "lectura": {
+          "globos_visibles": 12,
+          "exacto": true,
+          "estimado_total": null,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.3
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.6
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.1
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.88
+        },
+        "globos_foto": 12,
+        "globos_antes": 12,
+        "globos_despues": 12,
+        "cambios": [],
+        "motivo": "La cantidad del plan ya sigue la foto."
+      },
+      {
+        "estructura_id": "EST_03_BOUQUET",
+        "referencia_element_id": "REF_01_E06",
+        "decision": "coincide",
+        "lectura": {
+          "globos_visibles": 10,
+          "exacto": true,
+          "estimado_total": null,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.3
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.6
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.1
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.88
+        },
+        "globos_foto": 10,
+        "globos_antes": 10,
+        "globos_despues": 10,
+        "cambios": [],
+        "motivo": "La cantidad del plan ya sigue la foto."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "composite_installation",
+      "shape": "coordinated structures",
+      "dimensions_m": {
+        "width": null,
+        "height": null,
+        "length": 2.74
+      },
+      "installation_length_m": 2.74,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "medium",
+      "cluster_count": 3
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634239385895",
+        "variant_id": "46594233925927",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 73,
+        "waste_reserve": 0,
+        "required_quantity": 73,
+        "waste_adjusted_quantity": 73
+      },
+      {
+        "structure_id": "EST_02_BOUQUET",
+        "product_id": "8634239385895",
+        "variant_id": "46594233925927",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12
+      },
+      {
+        "structure_id": "EST_03_BOUQUET",
+        "product_id": "8634239385895",
+        "variant_id": "46594233925927",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 10,
+        "waste_reserve": 0,
+        "required_quantity": 10,
+        "waste_adjusted_quantity": 10
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634239385895",
+        "variant_id": "46594233925927",
+        "design_quantity": 95,
+        "waste_reserve": 8,
+        "required_quantity": 103,
+        "waste_adjusted_quantity": 103,
+        "units_per_package": 50,
+        "package_count": 3,
+        "purchase_quantity": 150,
+        "used": 95,
+        "leftover_inventory": 47,
+        "consumption_cost": 26856,
+        "purchase_cost": 39111,
+        "additional_package_for_waste": true,
+        "operational_surplus": 47,
+        "potential_surplus": 55
+      }
+    ],
+    "totals": {
+      "design_quantity": 95,
+      "target_waste_reserve": 8,
+      "covered_waste_reserve": 8,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 55,
+      "required_quantity": 103,
+      "consumption_cost": 26856,
+      "purchase_cost": 39111,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 1,
+      "waste_adjusted_quantity": 103,
+      "purchase_quantity": 150,
+      "operational_surplus": 47,
+      "potential_surplus": 55
+    },
+    "warnings": []
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594233925927",
+        "productId": "8634239385895",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_GUIRNALDA",
+          "EST_02_BOUQUET",
+          "EST_03_BOUQUET"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_BOUQUET"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_03_BOUQUET"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02",
+          "REF_01_E05",
+          "REF_01_E06"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 95,
+        "designQuantity": 95,
+        "wasteReserve": 8,
+        "requiredQuantity": 103,
+        "purchaseQuantity": 150,
+        "used": 95,
+        "leftoverInventory": 47,
+        "consumptionCost": 26856,
+        "purchaseCost": 39111,
+        "additionalPackageForWaste": true,
+        "disponible": true,
+        "varianteId": "46594233925927",
+        "nombre": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 3,
+        "subtotal": 39111,
+        "sobrante": 55
+      }
+    ],
+    "total": 39111,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 39111,
+    "consumptionCost": 26856,
+    "targetWasteReserve": 8,
+    "coveredWasteReserve": 8,
+    "leftoverInventory": 47,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "d42cd11618ca6f605f66d31e2b4469c3854d7472e270f59f087381e23bd34ddd"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594233925927",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 95,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "sobrante": 5
+      }
+    ],
+    "total": 26074
+  },
+  "descartadas": []
+}

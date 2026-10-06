@@ -6,6 +6,13 @@ import { resolveRuntimeCommercialEnvironment } from "@/lib/generacion/provenance
 export type CoincidenciaDecoracion = DecoracionSempertex & { coincidencia: "exacta" | "cercana" };
 
 const sinonimosTematicos: string[][] = [
+  ["elegante negro y dorado", "negro y dorado", "elegante", "cumpleaños adulto", "graduación"],
+  ["elegante blanco y negro", "blanco y negro", "monocromático", "graduación"],
+  ["infantil colorida", "infantil", "arcoíris", "multicolor", "disfraces"],
+  ["rosa y lila", "lila y morado", "rosa y morado", "pastel"],
+  ["rosa y dorado", "rosado y dorado", "oro rosa", "romántico"],
+  ["azul y plateado", "azul y plata", "azul", "celeste"],
+  ["baby shower niña", "baby shower", "bienvenida de bebé niña", "nina", "girl"],
   ["princesa", "princesas", "castillo", "cuento"],
   ["dinosaurio", "dinosaurios", "dino", "dinos"],
   ["superheroe", "superheroes", "heroe", "heroes", "heroina", "heroínas"],
@@ -34,6 +41,10 @@ const sinonimosColor: string[][] = [
   ["verde", "selva", "tropical"], ["negro", "negra"], ["blanco", "blanca", "perla", "frozen", "nieve"],
   ["lila", "morado", "violeta", "purpura"], ["arcoiris", "multicolor", "colores vivos", "vivos", "neon", "carnaval", "festivo", "festivos", "alegre", "alegres", "colorido", "colorida", "coloridos"],
 ];
+
+function prioridadOrigen(decoracion: DecoracionSempertex): number {
+  return decoracion.origen === "referencia_real" ? 1 : 0;
+}
 
 export function normalizarBusqueda(valor: string): string {
   return valor.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es").replace(/[^a-z0-9]+/g, " ").trim();
@@ -99,7 +110,7 @@ export function buscarDecoracionesSempertex(entradaCruda: { evento?: string; eda
   const exactasDisponibles = exactasDelEvento.length ? exactasDelEvento : exactasEdad;
   const fuerzaMaxima = Math.max(0, ...exactasDisponibles.map((item) => item.fuerzaExacta));
   const exactas = exactasDisponibles.filter((item) => item.fuerzaExacta === fuerzaMaxima)
-    .sort((a, b) => puntajeEvento(entrada.evento ?? "", b.decoracion) - puntajeEvento(entrada.evento ?? "", a.decoracion) || b.puntaje - a.puntaje);
+    .sort((a, b) => prioridadOrigen(b.decoracion) - prioridadOrigen(a.decoracion) || puntajeEvento(entrada.evento ?? "", b.decoracion) - puntajeEvento(entrada.evento ?? "", a.decoracion) || b.puntaje - a.puntaje);
   if (exactas.length) return exactas.slice(0, 6).map(({ decoracion }) => ({ ...decoracion, coincidencia: "exacta" }));
   const candidatas = puntajes.filter((item) => item.edad >= 0 && (item.evento > 0 || item.puntajeColor > 0));
   // Ideas de fiesta general: ni de otro evento propio (baby shower, boda, XV, bautizo) ni infantiles si no se dio una edad.
@@ -107,7 +118,7 @@ export function buscarDecoracionesSempertex(entradaCruda: { evento?: string; eda
   // Con ideas del evento pedido, solo esas (un baby shower no se ofrece para un cumpleaños de 35). Sin ellas, las de color que
   // sean de fiesta general (nunca un baby shower o unos XV para una graduación o un divorcio).
   const delEvento = candidatas.filter((item) => item.evento > 0);
-  const elegidas = (delEvento.length ? delEvento : candidatas.filter(esGeneral)).sort((a, b) => b.puntaje - a.puntaje);
+  const elegidas = (delEvento.length ? delEvento : candidatas.filter(esGeneral)).sort((a, b) => prioridadOrigen(b.decoracion) - prioridadOrigen(a.decoracion) || b.puntaje - a.puntaje);
   // Con menos de dos, se completa con fiesta general para que el cliente siempre pueda elegir.
   const relleno = elegidas.length < 2
     ? puntajes.filter((item) => esGeneral(item) && !elegidas.includes(item)).sort((a, b) => b.puntaje - a.puntaje)

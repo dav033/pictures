@@ -1,0 +1,736 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "d8262d5c-3096-5763-9180-663d2617c7dc",
+    "concepto": {
+      "titulo": "real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "verde",
+        "rojo",
+        "amarillo"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "nombre": "Columna de globos",
+        "tipo": "columna",
+        "rol_escena": "focal",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {
+          "ancho_m": 0.55,
+          "alto_m": 2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634233618727",
+            "variant_id": "46594211840295",
+            "color": "verde",
+            "participacion": 0.405908539053015,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634239942951",
+            "variant_id": "46594236416295",
+            "color": "rojo",
+            "participacion": 0.3146499392958317,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634239287591",
+            "variant_id": "46594231992615",
+            "color": "amarillo",
+            "participacion": 0.2794415216511534,
+            "rol_material": "acento"
+          }
+        ],
+        "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+        "referencia_element_id": "REF_01_E01",
+        "estructura_oficial": "columna",
+        "colores_referencia": [
+          "verde",
+          "rojo",
+          "amarillo"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "d8262d5c-3096-5763-9180-663d2617c7dc",
+      "concepto": {
+        "titulo": "real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "verde",
+          "rojo",
+          "amarillo"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_COLUMNA",
+          "nombre": "Columna de globos",
+          "tipo": "columna",
+          "rol_escena": "focal",
+          "ubicacion": "lateral_izquierdo",
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634233618727",
+              "variant_id": "46594211840295",
+              "color": "verde",
+              "participacion": 0.405908539053015,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634239942951",
+              "variant_id": "46594236416295",
+              "color": "rojo",
+              "participacion": 0.3146499392958317,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634239287591",
+              "variant_id": "46594231992615",
+              "color": "amarillo",
+              "participacion": 0.2794415216511534,
+              "rol_material": "acento"
+            }
+          ],
+          "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+          "referencia_element_id": "REF_01_E01",
+          "estructura_oficial": "columna",
+          "colores_referencia": [
+            "verde",
+            "rojo",
+            "amarillo"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+        "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "1c67750a78345112d47f1e0e6bf05b91dfdcaca98c77f105fdb4b0dd763a8caa",
+    "request_id": "a995ac2f-8987-57ff-87ad-90dd4eb83b44",
+    "compras": [
+      {
+        "variant_id": "46594211840295",
+        "product_id": "8634233618727",
+        "sku": "B2B-20000745",
+        "sku_original": "B2B-20000745",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594211840295",
+        "inventory_quantity": 995853,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "verde",
+        "unidades_necesarias": 17,
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "unidades_con_merma": 17,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 4433,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 33,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fashion_Verde_-_Green_030.jpg?v=1763138390"
+      },
+      {
+        "variant_id": "46594231992615",
+        "product_id": "8634239287591",
+        "sku": "B2B-20000737",
+        "sku_original": "B2B-20000737",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594231992615",
+        "inventory_quantity": 975181,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "amarillo",
+        "unidades_necesarias": 12,
+        "design_quantity": 12,
+        "waste_reserve": 4,
+        "required_quantity": 16,
+        "unidades_con_merma": 16,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 12,
+        "leftover_inventory": 34,
+        "consumption_cost": 4472,
+        "purchase_cost": 13974,
+        "additional_package_for_waste": false,
+        "sobrante": 38,
+        "precio_paquete": 13974,
+        "subtotal": 13974,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Amarillo_-_Yellow_020.jpg?v=1763047205"
+      },
+      {
+        "variant_id": "46594236416295",
+        "product_id": "8634239942951",
+        "sku": "B2B-20000732",
+        "sku_original": "B2B-20000732",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594236416295",
+        "inventory_quantity": 939494,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "rojo",
+        "unidades_necesarias": 14,
+        "design_quantity": 14,
+        "waste_reserve": 0,
+        "required_quantity": 14,
+        "unidades_con_merma": 14,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 14,
+        "leftover_inventory": 36,
+        "consumption_cost": 3650,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 36,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 43
+      },
+      "total_unidades": 43,
+      "total_cop": 40048,
+      "design_quantity": 43,
+      "target_waste_reserve": 4,
+      "covered_waste_reserve": 4,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 107,
+      "purchase_cost": 40048,
+      "consumption_cost": 12555,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:46594211840295",
+      "sobrante_alto:46594231992615",
+      "sobrante_alto:46594236416295"
+    ],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "nombre": "Columna de globos",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo",
+        "repeticiones": 1,
+        "eje_m": 2,
+        "total_unidades": 43,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634233618727",
+            "variant_id": "46594211840295",
+            "sku": "B2B-20000745",
+            "sku_original": "B2B-20000745",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594211840295",
+            "inventory_quantity": 995853,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 17,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fashion_Verde_-_Green_030.jpg?v=1763138390",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634239942951",
+            "variant_id": "46594236416295",
+            "sku": "B2B-20000732",
+            "sku_original": "B2B-20000732",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594236416295",
+            "inventory_quantity": 939494,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50",
+            "color": "rojo",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 14,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634239287591",
+            "variant_id": "46594231992615",
+            "sku": "B2B-20000737",
+            "sku_original": "B2B-20000737",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594231992615",
+            "inventory_quantity": 975181,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50",
+            "color": "amarillo",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 12,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Amarillo_-_Yellow_020.jpg?v=1763047205",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 43,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "consumo_cop": 11437
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "referencia_element_id": "REF_01_E01",
+        "decision": "coincide",
+        "lectura": {
+          "globos_visibles": 32,
+          "exacto": false,
+          "estimado_total": 40,
+          "racimos": 10,
+          "globos_por_racimo": 4,
+          "por_tamano": [
+            {
+              "clase": "mediano",
+              "proporcion": 1
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.95
+        },
+        "globos_foto": 40,
+        "globos_antes": 43,
+        "globos_despues": 43,
+        "cambios": [],
+        "motivo": "El plan ya sigue la foto."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "columna",
+      "shape": "clasica",
+      "dimensions_m": {
+        "width": 0.55,
+        "height": 2,
+        "length": null
+      },
+      "installation_length_m": 2,
+      "density": "media",
+      "visual_density": "medium",
+      "visual_scale": "medium",
+      "cluster_count": 1
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634233618727",
+        "variant_id": "46594211840295",
+        "color": "verde",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17
+      },
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634239942951",
+        "variant_id": "46594236416295",
+        "color": "rojo",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 14,
+        "waste_reserve": 0,
+        "required_quantity": 14,
+        "waste_adjusted_quantity": 14
+      },
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634239287591",
+        "variant_id": "46594231992615",
+        "color": "amarillo",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634233618727",
+        "variant_id": "46594211840295",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 4433,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 33,
+        "potential_surplus": 33
+      },
+      {
+        "product_id": "8634239287591",
+        "variant_id": "46594231992615",
+        "design_quantity": 12,
+        "waste_reserve": 4,
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 12,
+        "leftover_inventory": 34,
+        "consumption_cost": 4472,
+        "purchase_cost": 13974,
+        "additional_package_for_waste": false,
+        "operational_surplus": 34,
+        "potential_surplus": 38
+      },
+      {
+        "product_id": "8634239942951",
+        "variant_id": "46594236416295",
+        "design_quantity": 14,
+        "waste_reserve": 0,
+        "required_quantity": 14,
+        "waste_adjusted_quantity": 14,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 14,
+        "leftover_inventory": 36,
+        "consumption_cost": 3650,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 36,
+        "potential_surplus": 36
+      }
+    ],
+    "totals": {
+      "design_quantity": 43,
+      "target_waste_reserve": 4,
+      "covered_waste_reserve": 4,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 107,
+      "required_quantity": 47,
+      "consumption_cost": 12555,
+      "purchase_cost": 40048,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 47,
+      "purchase_quantity": 150,
+      "operational_surplus": 103,
+      "potential_surplus": 107
+    },
+    "warnings": [
+      "sobrante_alto:46594211840295",
+      "sobrante_alto:46594231992615",
+      "sobrante_alto:46594236416295"
+    ]
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594211840295",
+        "productId": "8634233618727",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "verde",
+        "cantidadNecesaria": 17,
+        "designQuantity": 17,
+        "wasteReserve": 0,
+        "requiredQuantity": 17,
+        "purchaseQuantity": 50,
+        "used": 17,
+        "leftoverInventory": 33,
+        "consumptionCost": 4433,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594211840295",
+        "nombre": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 33
+      },
+      {
+        "id": "46594231992615",
+        "productId": "8634239287591",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "amarillo",
+        "cantidadNecesaria": 12,
+        "designQuantity": 12,
+        "wasteReserve": 4,
+        "requiredQuantity": 16,
+        "purchaseQuantity": 50,
+        "used": 12,
+        "leftoverInventory": 34,
+        "consumptionCost": 4472,
+        "purchaseCost": 13974,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594231992615",
+        "nombre": "B2b Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50",
+        "precioPaquete": 13974,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13974,
+        "sobrante": 38
+      },
+      {
+        "id": "46594236416295",
+        "productId": "8634239942951",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "rojo",
+        "cantidadNecesaria": 14,
+        "designQuantity": 14,
+        "wasteReserve": 0,
+        "requiredQuantity": 14,
+        "purchaseQuantity": 50,
+        "used": 14,
+        "leftoverInventory": 36,
+        "consumptionCost": 3650,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594236416295",
+        "nombre": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 36
+      }
+    ],
+    "total": 40048,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 40048,
+    "consumptionCost": 12555,
+    "targetWasteReserve": 4,
+    "coveredWasteReserve": 4,
+    "leftoverInventory": 103,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "1c67750a78345112d47f1e0e6bf05b91dfdcaca98c77f105fdb4b0dd763a8caa"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594211840295",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 17,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 33
+      },
+      {
+        "variant_id": "46594231992615",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 12,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13974,
+        "subtotal": 13974,
+        "sobrante": 38
+      },
+      {
+        "variant_id": "46594236416295",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 14,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 36
+      }
+    ],
+    "total": 40048
+  },
+  "descartadas": []
+}

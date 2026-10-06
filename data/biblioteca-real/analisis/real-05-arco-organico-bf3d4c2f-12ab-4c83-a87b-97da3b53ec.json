@@ -1,0 +1,457 @@
+{
+  "id": "real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec",
+  "fuente": "Arco-Organico_bf3d4c2f-12ab-4c83-a87b-97da3b53ec44_1200x1200.webp",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "5803947d-c089-42ae-bd47-2a2ef02e38d4",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "organic balloon half arch",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Continuous organic balloon structure standing on the floor, ascending on the left and bending rightwards at the top with distinct color sections.",
+          "reference_bbox": {
+            "x": 0.069,
+            "y": 0.12,
+            "width": 0.8069999999999999,
+            "height": 0.865
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome rose gold",
+              "matte beige",
+              "matte dusty rose",
+              "matte hot pink",
+              "pearl light pink",
+              "fuchsia with white print"
+            ],
+            "measured_colors": [
+              {
+                "color": "beige",
+                "share": 0.3625
+              },
+              {
+                "color": "dorado rosa",
+                "share": 0.2284
+              },
+              {
+                "color": "blanco",
+                "share": 0.1898
+              },
+              {
+                "color": "rosado",
+                "share": 0.08
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense asymmetrical half-arch, on the left, curving toward the right, strong top overhang, standing on the floor",
+            "composition": "30% chrome rose gold metallic balloons at the base, 20% nude/beige, 20% dusty pink, 15% hot pink/red, 15% light pink at the top with printed accent balloons scattered throughout",
+            "patron_color": {
+              "modo": "bloques",
+              "colores": [
+                "dorado rosa",
+                "fucsia",
+                "rosado",
+                "rosado",
+                "beige"
+              ],
+              "pesos": [
+                25,
+                15,
+                20,
+                20,
+                20
+              ],
+              "confianza": 0.92
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "inclinacion": 0.45,
+            "conteo": {
+              "globos_visibles": 85,
+              "exacto": false,
+              "estimado_total": 120,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.45
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.15
+                },
+                {
+                  "clase": "gigante",
+                  "proporcion": 0.05
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "piso",
+              "forma": "curva",
+              "puntos_de_anclaje": 2,
+              "sentido_curva": "arriba",
+              "flecha_relativa": 0.299,
+              "desnivel_relativo": null,
+              "racimos_visibles": 28,
+              "colores_por_racimo": [
+                "dorado rosa",
+                "beige",
+                "rosado",
+                "fucsia"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "fucsia",
+                  "posicion": "cada_n"
+                }
+              ],
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "609",
+                "familia": "pastelMate",
+                "nombre": "Rosado",
+                "nombre_completo": "Pastel Mate Rosado",
+                "parte": 0.5374,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "968",
+                "familia": "reflex",
+                "nombre": "Dorado Rosa",
+                "nombre_completo": "Reflex Dorado Rosa",
+                "parte": 0.3408,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "012",
+                "familia": "fashion",
+                "nombre": "Fucsia",
+                "nombre_completo": "Fashion Fucsia",
+                "parte": 0.1218,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "semiarco",
+            "placement": "lateral_izquierdo",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary decorative organic balloon arrangement in the scene.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "background wall",
+          "category": "backdrop",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Flat off-white interior wall behind the balloon structure.",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 0.838
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "off-white",
+              "cream"
+            ],
+            "measured_colors": [
+              {
+                "color": "crema",
+                "share": 0.7769
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "plaster/paint",
+            "shape": "shape not determinable",
+            "composition": "Plain neutral off-white painted wall filling the background."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Background backdrop wall framing the decoration.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "wood floor",
+          "category": "lighting",
+          "scene_role": "lighting",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Light-toned wooden floor planks at the base of the image.",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0.828,
+            "width": 1,
+            "height": 0.17200000000000004
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "light brown",
+              "natural wood"
+            ],
+            "measured_colors": [
+              {
+                "color": "cafe",
+                "share": 0.4084
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "wood/laminate",
+            "shape": "shape not determinable",
+            "composition": "Horizontal light wood laminate flooring along the bottom of the frame."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Floor surface on which the balloon structure rests.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Organic balloon half-arch with color blocking from metallic rose gold at the base to soft pink at the curving top",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "chrome rose gold",
+          "beige",
+          "dusty rose",
+          "fuchsia",
+          "light pink",
+          "off-white"
+        ],
+        "priority": [
+          "chrome rose gold",
+          "beige",
+          "dusty rose",
+          "fuchsia",
+          "light pink",
+          "off-white"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "297849159942c207fccb9b3675f20b3c82de7b35f45610b54935f3493bf0bfdd",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 800,
+            "height": 800
+          },
+          "processed": {
+            "width": 800,
+            "height": 800
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "semiarco",
+          "croquis": {
+            "forma": "anillo de arco (parcial)",
+            "parteDeLaCaja": 0.5708
+          },
+          "pixeles": {
+            "medidos": 108360,
+            "deLaCaja": 183816
+          },
+          "colores": [
+            {
+              "hex": "#eee5d3",
+              "parte": 0.5374,
+              "pixeles": 58238,
+              "cruce": {
+                "hex": "#eee5d3",
+                "candidatas": [
+                  {
+                    "codigo": "609",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Pastel Mate Rosado",
+                    "nombreEn": "pastel light pink",
+                    "pms": "677",
+                    "acabado": "matte",
+                    "hexGlobo": "#e6cfd6",
+                    "deltaE": 15.1,
+                    "distancia": 3.7,
+                    "tono": 93.1,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#bb7363",
+              "parte": 0.3408,
+              "pixeles": 36925,
+              "cruce": {
+                "hex": "#bb7363",
+                "candidatas": [
+                  {
+                    "codigo": "968",
+                    "nombre": "Dorado Rosa",
+                    "nombreCompleto": "Reflex Dorado Rosa",
+                    "nombreEn": "chrome rose gold",
+                    "pms": "10410",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#c27469",
+                    "deltaE": 3.5,
+                    "distancia": 5.6,
+                    "tono": 4.9,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#f14e59",
+              "parte": 0.1218,
+              "pixeles": 13197,
+              "cruce": {
+                "hex": "#f14e59",
+                "candidatas": [
+                  {
+                    "codigo": "012",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Fashion Fucsia",
+                    "nombreEn": "matte hot pink",
+                    "pms": "205",
+                    "acabado": "matte",
+                    "hexGlobo": "#e44a80",
+                    "deltaE": 26.1,
+                    "distancia": 22.9,
+                    "tono": 22,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Un tono era el mismo color con otra luz y se juntó con el suyo.",
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

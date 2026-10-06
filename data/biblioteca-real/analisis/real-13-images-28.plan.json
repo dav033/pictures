@@ -1,0 +1,755 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "13c470a3-44ee-5923-979b-935e868b3d2c",
+    "concepto": {
+      "titulo": "real-13-images-28",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "dorado rosa",
+        "blanco"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "nombre": "Semiarco orgánico",
+        "tipo": "semiarco",
+        "rol_escena": "focal",
+        "ubicacion": "fondo_pared",
+        "medidas": {
+          "ancho_m": 1.7,
+          "alto_m": 2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634258489639",
+            "variant_id": "46594271576359",
+            "color": "dorado rosa",
+            "participacion": 0.9384418901660281,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "color": "blanco",
+            "participacion": 0.0615581098339719,
+            "rol_material": "secundario"
+          }
+        ],
+        "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+        "referencia_element_id": "REF_01_E01",
+        "estructura_oficial": "semiarco",
+        "colores_referencia": [
+          "dorado rosa",
+          "blanco"
+        ]
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "nombre": "Bouquet de globos",
+        "tipo": "kit",
+        "rol_escena": "soporte",
+        "ubicacion": "sobre_mesa_principal",
+        "medidas": {},
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634258489639",
+            "variant_id": "46594271576359",
+            "color": "dorado rosa",
+            "participacion": 1,
+            "rol_material": "principal"
+          }
+        ],
+        "unidades_declaradas": 5,
+        "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+        "referencia_element_id": "REF_01_E02",
+        "estructura_oficial": "bouquet",
+        "colores_referencia": [
+          "dorado rosa"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "13c470a3-44ee-5923-979b-935e868b3d2c",
+      "concepto": {
+        "titulo": "real-13-images-28",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "dorado rosa",
+          "blanco"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco orgánico",
+          "tipo": "semiarco",
+          "rol_escena": "focal",
+          "ubicacion": "fondo_pared",
+          "medidas": {
+            "ancho_m": 2.23,
+            "alto_m": 2.62
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634258489639",
+              "variant_id": "46594271576359",
+              "color": "dorado rosa",
+              "participacion": 0.9384418901660281,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634235781415",
+              "variant_id": "46594221343015",
+              "color": "blanco",
+              "participacion": 0.0615581098339719,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+          "referencia_element_id": "REF_01_E01",
+          "estructura_oficial": "semiarco",
+          "colores_referencia": [
+            "dorado rosa",
+            "blanco"
+          ]
+        },
+        {
+          "estructura_id": "EST_02_BOUQUET",
+          "nombre": "Bouquet de globos",
+          "tipo": "kit",
+          "rol_escena": "soporte",
+          "ubicacion": "sobre_mesa_principal",
+          "medidas": {},
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634258489639",
+              "variant_id": "46594271576359",
+              "color": "dorado rosa",
+              "participacion": 1,
+              "rol_material": "principal"
+            }
+          ],
+          "unidades_declaradas": 2,
+          "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+          "referencia_element_id": "REF_01_E02",
+          "estructura_oficial": "bouquet",
+          "colores_referencia": [
+            "dorado rosa"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+        "Se usan globos redondos R-12 disponibles en el snapshot vigente.",
+        "Semiarco orgánico: la foto muestra unos 120 globos y el plan tenía 62; densidad media → lujosa, ancho 1,7 → 2,23 m y alto 2 → 2,62 m equivalentes a la foto (no medidos): quedó en 102.",
+        "Bouquet de globos: la foto muestra 2 globos por pieza, así que la cantidad quedó en 2 (el plan decía 5)."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "8e21149aae479ab3b7a4eb170f8ffdef2592987dfb6af11cad537691562a5d67",
+    "request_id": "332b5ed4-91d8-5f7e-8670-02a2e9788198",
+    "compras": [
+      {
+        "variant_id": "46594221343015",
+        "product_id": "8634235781415",
+        "sku": "B2B-20000723",
+        "sku_original": "B2B-20000723",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+        "inventory_quantity": 930449,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "blanco",
+        "unidades_necesarias": 6,
+        "design_quantity": 6,
+        "waste_reserve": 9,
+        "required_quantity": 15,
+        "unidades_con_merma": 15,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 6,
+        "leftover_inventory": 35,
+        "consumption_cost": 3911,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 44,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+      },
+      {
+        "variant_id": "46594271576359",
+        "product_id": "8634258489639",
+        "sku": "B2B-20009132",
+        "sku_original": "B2B-20009132",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594271576359",
+        "inventory_quantity": 993215,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "dorado rosa",
+        "unidades_necesarias": 98,
+        "design_quantity": 98,
+        "waste_reserve": 0,
+        "required_quantity": 98,
+        "unidades_con_merma": 98,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 98,
+        "leftover_inventory": 2,
+        "consumption_cost": 27140,
+        "purchase_cost": 27694,
+        "additional_package_for_waste": false,
+        "sobrante": 2,
+        "precio_paquete": 13847,
+        "subtotal": 27694,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_BOUQUET"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_BOUQUET"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_Rosa_-_Rose_Gold_568.jpg?v=1763501177"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 104
+      },
+      "total_unidades": 104,
+      "total_cop": 40731,
+      "design_quantity": 104,
+      "target_waste_reserve": 9,
+      "covered_waste_reserve": 9,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 46,
+      "purchase_cost": 40731,
+      "consumption_cost": 31051,
+      "waste_only_savings_cop": 13847,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 13847,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:46594221343015"
+    ],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "nombre": "Semiarco orgánico",
+        "tipo": "semiarco",
+        "ubicacion": "fondo_pared",
+        "repeticiones": 1,
+        "eje_m": 3.82,
+        "total_unidades": 102,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634258489639",
+            "variant_id": "46594271576359",
+            "sku": "B2B-20009132",
+            "sku_original": "B2B-20009132",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594271576359",
+            "inventory_quantity": 993215,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50",
+            "color": "dorado rosa",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "metal",
+            "unidades": 96,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_Rosa_-_Rose_Gold_568.jpg?v=1763501177",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "sku": "B2B-20000723",
+            "sku_original": "B2B-20000723",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+            "inventory_quantity": 930449,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 6,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 102,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "nombre": "Bouquet de globos",
+        "tipo": "kit",
+        "ubicacion": "sobre_mesa_principal",
+        "repeticiones": 1,
+        "eje_m": null,
+        "total_unidades": 2,
+        "lineas": [
+          {
+            "estructura_id": "EST_02_BOUQUET",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_BOUQUET"
+            },
+            "product_id": "8634258489639",
+            "variant_id": "46594271576359",
+            "sku": "B2B-20009132",
+            "sku_original": "B2B-20009132",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594271576359",
+            "inventory_quantity": 993215,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50",
+            "color": "dorado rosa",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "metal",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_Rosa_-_Rose_Gold_568.jpg?v=1763501177",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 2,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "consumo_cop": 28151
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "consumo_cop": 554
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "referencia_element_id": "REF_01_E01",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 75,
+          "exacto": false,
+          "estimado_total": 120,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.3
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.5
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.2
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.9
+        },
+        "globos_foto": 120,
+        "globos_antes": 62,
+        "globos_despues": 102,
+        "cambios": [
+          {
+            "campo": "densidad",
+            "antes": "media",
+            "despues": "lujosa"
+          },
+          {
+            "campo": "ancho_m",
+            "antes": 1.7,
+            "despues": 2.23
+          },
+          {
+            "campo": "alto_m",
+            "antes": 2,
+            "despues": 2.62
+          }
+        ],
+        "motivo": "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "referencia_element_id": "REF_01_E02",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 2,
+          "exacto": true,
+          "estimado_total": null,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "gigante",
+              "proporcion": 1
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.98
+        },
+        "globos_foto": 2,
+        "globos_antes": 5,
+        "globos_despues": 2,
+        "cambios": [
+          {
+            "campo": "unidades_declaradas",
+            "antes": 5,
+            "despues": 2
+          }
+        ],
+        "motivo": "La cuenta exacta de la foto manda."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "composite_installation",
+      "shape": "coordinated structures",
+      "dimensions_m": {
+        "width": 2.23,
+        "height": 2.62,
+        "length": null
+      },
+      "installation_length_m": 3.82,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "large",
+      "cluster_count": 2
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634258489639",
+        "variant_id": "46594271576359",
+        "color": "dorado rosa",
+        "finish": "metal",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 96,
+        "waste_reserve": 0,
+        "required_quantity": 96,
+        "waste_adjusted_quantity": 96
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "color": "blanco",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6
+      },
+      {
+        "structure_id": "EST_02_BOUQUET",
+        "product_id": "8634258489639",
+        "variant_id": "46594271576359",
+        "color": "dorado rosa",
+        "finish": "metal",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "design_quantity": 6,
+        "waste_reserve": 9,
+        "required_quantity": 15,
+        "waste_adjusted_quantity": 15,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 6,
+        "leftover_inventory": 35,
+        "consumption_cost": 3911,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 35,
+        "potential_surplus": 44
+      },
+      {
+        "product_id": "8634258489639",
+        "variant_id": "46594271576359",
+        "design_quantity": 98,
+        "waste_reserve": 0,
+        "required_quantity": 98,
+        "waste_adjusted_quantity": 98,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 98,
+        "leftover_inventory": 2,
+        "consumption_cost": 27140,
+        "purchase_cost": 27694,
+        "additional_package_for_waste": false,
+        "operational_surplus": 2,
+        "potential_surplus": 2
+      }
+    ],
+    "totals": {
+      "design_quantity": 104,
+      "target_waste_reserve": 9,
+      "covered_waste_reserve": 9,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 46,
+      "required_quantity": 113,
+      "consumption_cost": 31051,
+      "purchase_cost": 40731,
+      "waste_only_savings_cop": 13847,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 113,
+      "purchase_quantity": 150,
+      "operational_surplus": 37,
+      "potential_surplus": 46
+    },
+    "warnings": [
+      "sobrante_alto:46594221343015"
+    ]
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594221343015",
+        "productId": "8634235781415",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 6,
+        "designQuantity": 6,
+        "wasteReserve": 9,
+        "requiredQuantity": 15,
+        "purchaseQuantity": 50,
+        "used": 6,
+        "leftoverInventory": 35,
+        "consumptionCost": 3911,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594221343015",
+        "nombre": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 44
+      },
+      {
+        "id": "46594271576359",
+        "productId": "8634258489639",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_BOUQUET"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_BOUQUET"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01",
+          "REF_01_E02"
+        ],
+        "color": "dorado rosa",
+        "cantidadNecesaria": 98,
+        "designQuantity": 98,
+        "wasteReserve": 0,
+        "requiredQuantity": 98,
+        "purchaseQuantity": 100,
+        "used": 98,
+        "leftoverInventory": 2,
+        "consumptionCost": 27140,
+        "purchaseCost": 27694,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594271576359",
+        "nombre": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50",
+        "precioPaquete": 13847,
+        "unidadesPaquete": 50,
+        "paquetes": 2,
+        "subtotal": 27694,
+        "sobrante": 2
+      }
+    ],
+    "total": 40731,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 40731,
+    "consumptionCost": 31051,
+    "targetWasteReserve": 9,
+    "coveredWasteReserve": 9,
+    "leftoverInventory": 37,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "8e21149aae479ab3b7a4eb170f8ffdef2592987dfb6af11cad537691562a5d67"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594221343015",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 6,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 44
+      },
+      {
+        "variant_id": "46594271576359",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 98,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "precio_paquete": 13847,
+        "subtotal": 27694,
+        "sobrante": 2
+      }
+    ],
+    "total": 40731
+  },
+  "descartadas": []
+}

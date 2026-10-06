@@ -1,0 +1,915 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "f72c2536-47ff-5283-bc9d-9128a60a7733",
+    "concepto": {
+      "titulo": "real-15-images-30",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "blanco",
+        "dorado",
+        "rojo"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "nombre": "Semiarco orgánico",
+        "tipo": "semiarco",
+        "rol_escena": "focal",
+        "ubicacion": "fondo_pared",
+        "medidas": {
+          "ancho_m": 1.7,
+          "alto_m": 2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "color": "blanco",
+            "participacion": 0.5790361445783133,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634252493095",
+            "variant_id": "46594256044327",
+            "color": "dorado",
+            "participacion": 0.2166265060240964,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634239942951",
+            "variant_id": "46594236416295",
+            "color": "rojo",
+            "participacion": 0.20433734939759038,
+            "rol_material": "acento"
+          }
+        ],
+        "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+        "referencia_element_id": "REF_01_E01",
+        "estructura_oficial": "semiarco",
+        "colores_referencia": [
+          "blanco",
+          "dorado",
+          "rojo"
+        ]
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "nombre": "Bouquet de globos",
+        "tipo": "kit",
+        "rol_escena": "soporte",
+        "ubicacion": "sobre_mesa_principal",
+        "medidas": {},
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "color": "blanco",
+            "participacion": 1,
+            "rol_material": "principal"
+          }
+        ],
+        "unidades_declaradas": 12,
+        "porque": "Recreación de referencia REF_01_E07, con color y forma observados.",
+        "referencia_element_id": "REF_01_E07",
+        "estructura_oficial": "bouquet",
+        "colores_referencia": [
+          "blanco"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "f72c2536-47ff-5283-bc9d-9128a60a7733",
+      "concepto": {
+        "titulo": "real-15-images-30",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "blanco",
+          "dorado",
+          "rojo"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco orgánico",
+          "tipo": "semiarco",
+          "rol_escena": "focal",
+          "ubicacion": "fondo_pared",
+          "medidas": {
+            "ancho_m": 1.7,
+            "alto_m": 2
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634235781415",
+              "variant_id": "46594221343015",
+              "color": "blanco",
+              "participacion": 0.5790361445783133,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634252493095",
+              "variant_id": "46594256044327",
+              "color": "dorado",
+              "participacion": 0.2166265060240964,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634239942951",
+              "variant_id": "46594236416295",
+              "color": "rojo",
+              "participacion": 0.20433734939759038,
+              "rol_material": "acento"
+            }
+          ],
+          "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+          "referencia_element_id": "REF_01_E01",
+          "estructura_oficial": "semiarco",
+          "colores_referencia": [
+            "blanco",
+            "dorado",
+            "rojo"
+          ]
+        },
+        {
+          "estructura_id": "EST_02_BOUQUET",
+          "nombre": "Bouquet de globos",
+          "tipo": "kit",
+          "rol_escena": "soporte",
+          "ubicacion": "sobre_mesa_principal",
+          "medidas": {},
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634235781415",
+              "variant_id": "46594221343015",
+              "color": "blanco",
+              "participacion": 1,
+              "rol_material": "principal"
+            }
+          ],
+          "unidades_declaradas": 15,
+          "porque": "Recreación de referencia REF_01_E07, con color y forma observados.",
+          "referencia_element_id": "REF_01_E07",
+          "estructura_oficial": "bouquet",
+          "colores_referencia": [
+            "blanco"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+        "Se usan globos redondos R-12 disponibles en el snapshot vigente.",
+        "Semiarco orgánico: la foto muestra unos 85 globos y el plan tenía 62; densidad media → lujosa: quedó en 78.",
+        "Bouquet de globos: la foto muestra unos 15 globos por pieza, así que la cantidad quedó en 15 (el plan decía 12)."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "17d1ce7d9dc4792111d701f0fa357c53a0a1e21b5ea935973835e7bbe76d2354",
+    "request_id": "7f814703-6f57-554d-a169-966817fe9ddb",
+    "compras": [
+      {
+        "variant_id": "46594221343015",
+        "product_id": "8634235781415",
+        "sku": "B2B-20000723",
+        "sku_original": "B2B-20000723",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+        "inventory_quantity": 930449,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "blanco",
+        "unidades_necesarias": 60,
+        "design_quantity": 60,
+        "waste_reserve": 8,
+        "required_quantity": 68,
+        "unidades_con_merma": 68,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 60,
+        "leftover_inventory": 32,
+        "consumption_cost": 17730,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "sobrante": 40,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_BOUQUET"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_BOUQUET"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+      },
+      {
+        "variant_id": "46594236416295",
+        "product_id": "8634239942951",
+        "sku": "B2B-20000732",
+        "sku_original": "B2B-20000732",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594236416295",
+        "inventory_quantity": 939494,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "rojo",
+        "unidades_necesarias": 16,
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "unidades_con_merma": 16,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 16,
+        "leftover_inventory": 34,
+        "consumption_cost": 4172,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 34,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149"
+      },
+      {
+        "variant_id": "46594256044327",
+        "product_id": "8634252493095",
+        "sku": "B2B-20007292",
+        "sku_original": "B2B-20007292",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594256044327",
+        "inventory_quantity": 999990,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "dorado",
+        "unidades_necesarias": 17,
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "unidades_con_merma": 17,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 8209,
+        "purchase_cost": 24143,
+        "additional_package_for_waste": false,
+        "sobrante": 33,
+        "precio_paquete": 24143,
+        "subtotal": 24143,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/R12-Filigree-Gold--Dorado-570_225_39b6ec6a-c60b-40fb-b6a1-3c4961df4a60.jpg?v=1694793173"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 93
+      },
+      "total_unidades": 93,
+      "total_cop": 63254,
+      "design_quantity": 93,
+      "target_waste_reserve": 8,
+      "covered_waste_reserve": 8,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 107,
+      "purchase_cost": 63254,
+      "consumption_cost": 30111,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:46594221343015",
+      "sobrante_alto:46594236416295",
+      "sobrante_alto:46594256044327"
+    ],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "nombre": "Semiarco orgánico",
+        "tipo": "semiarco",
+        "ubicacion": "fondo_pared",
+        "repeticiones": 1,
+        "eje_m": 2.91,
+        "total_unidades": 78,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "sku": "B2B-20000723",
+            "sku_original": "B2B-20000723",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+            "inventory_quantity": 930449,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 45,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634252493095",
+            "variant_id": "46594256044327",
+            "sku": "B2B-20007292",
+            "sku_original": "B2B-20007292",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594256044327",
+            "inventory_quantity": 999990,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "metal",
+            "unidades": 17,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/R12-Filigree-Gold--Dorado-570_225_39b6ec6a-c60b-40fb-b6a1-3c4961df4a60.jpg?v=1694793173",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634239942951",
+            "variant_id": "46594236416295",
+            "sku": "B2B-20000732",
+            "sku_original": "B2B-20000732",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594236416295",
+            "inventory_quantity": 939494,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50",
+            "color": "rojo",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 16,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 78,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "nombre": "Bouquet de globos",
+        "tipo": "kit",
+        "ubicacion": "sobre_mesa_principal",
+        "repeticiones": 1,
+        "eje_m": null,
+        "total_unidades": 15,
+        "lineas": [
+          {
+            "estructura_id": "EST_02_BOUQUET",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_BOUQUET"
+            },
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "sku": "B2B-20000723",
+            "sku_original": "B2B-20000723",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+            "inventory_quantity": 930449,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 15,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 15,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "consumo_cop": 24114
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "consumo_cop": 3911
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "referencia_element_id": "REF_01_E01",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 62,
+          "exacto": false,
+          "estimado_total": 85,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.3
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.5
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.2
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.92
+        },
+        "globos_foto": 85,
+        "globos_antes": 62,
+        "globos_despues": 78,
+        "cambios": [
+          {
+            "campo": "densidad",
+            "antes": "media",
+            "despues": "lujosa"
+          }
+        ],
+        "motivo": "Densidad y tamaños ajustados con las medidas del plan."
+      },
+      {
+        "estructura_id": "EST_02_BOUQUET",
+        "referencia_element_id": "REF_01_E07",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 11,
+          "exacto": false,
+          "estimado_total": 15,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "mediano",
+              "proporcion": 0.7
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.3
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.88
+        },
+        "globos_foto": 15,
+        "globos_antes": 12,
+        "globos_despues": 15,
+        "cambios": [
+          {
+            "campo": "unidades_declaradas",
+            "antes": 12,
+            "despues": 15
+          }
+        ],
+        "motivo": "El estimado de la foto supera lo declarado."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "composite_installation",
+      "shape": "coordinated structures",
+      "dimensions_m": {
+        "width": 1.7,
+        "height": 2,
+        "length": null
+      },
+      "installation_length_m": 2.91,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "medium",
+      "cluster_count": 2
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "color": "blanco",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 45,
+        "waste_reserve": 0,
+        "required_quantity": 45,
+        "waste_adjusted_quantity": 45
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634252493095",
+        "variant_id": "46594256044327",
+        "color": "dorado",
+        "finish": "metal",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634239942951",
+        "variant_id": "46594236416295",
+        "color": "rojo",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16
+      },
+      {
+        "structure_id": "EST_02_BOUQUET",
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "color": "blanco",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 15,
+        "waste_reserve": 0,
+        "required_quantity": 15,
+        "waste_adjusted_quantity": 15
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "design_quantity": 60,
+        "waste_reserve": 8,
+        "required_quantity": 68,
+        "waste_adjusted_quantity": 68,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 60,
+        "leftover_inventory": 32,
+        "consumption_cost": 17730,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "operational_surplus": 32,
+        "potential_surplus": 40
+      },
+      {
+        "product_id": "8634239942951",
+        "variant_id": "46594236416295",
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 16,
+        "leftover_inventory": 34,
+        "consumption_cost": 4172,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 34,
+        "potential_surplus": 34
+      },
+      {
+        "product_id": "8634252493095",
+        "variant_id": "46594256044327",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 8209,
+        "purchase_cost": 24143,
+        "additional_package_for_waste": false,
+        "operational_surplus": 33,
+        "potential_surplus": 33
+      }
+    ],
+    "totals": {
+      "design_quantity": 93,
+      "target_waste_reserve": 8,
+      "covered_waste_reserve": 8,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 107,
+      "required_quantity": 101,
+      "consumption_cost": 30111,
+      "purchase_cost": 63254,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 101,
+      "purchase_quantity": 200,
+      "operational_surplus": 99,
+      "potential_surplus": 107
+    },
+    "warnings": [
+      "sobrante_alto:46594221343015",
+      "sobrante_alto:46594236416295",
+      "sobrante_alto:46594256044327"
+    ]
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594221343015",
+        "productId": "8634235781415",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_BOUQUET"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_BOUQUET"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01",
+          "REF_01_E07"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 60,
+        "designQuantity": 60,
+        "wasteReserve": 8,
+        "requiredQuantity": 68,
+        "purchaseQuantity": 100,
+        "used": 60,
+        "leftoverInventory": 32,
+        "consumptionCost": 17730,
+        "purchaseCost": 26074,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594221343015",
+        "nombre": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 2,
+        "subtotal": 26074,
+        "sobrante": 40
+      },
+      {
+        "id": "46594236416295",
+        "productId": "8634239942951",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "rojo",
+        "cantidadNecesaria": 16,
+        "designQuantity": 16,
+        "wasteReserve": 0,
+        "requiredQuantity": 16,
+        "purchaseQuantity": 50,
+        "used": 16,
+        "leftoverInventory": 34,
+        "consumptionCost": 4172,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594236416295",
+        "nombre": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 34
+      },
+      {
+        "id": "46594256044327",
+        "productId": "8634252493095",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "dorado",
+        "cantidadNecesaria": 17,
+        "designQuantity": 17,
+        "wasteReserve": 0,
+        "requiredQuantity": 17,
+        "purchaseQuantity": 50,
+        "used": 17,
+        "leftoverInventory": 33,
+        "consumptionCost": 8209,
+        "purchaseCost": 24143,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594256044327",
+        "nombre": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50",
+        "precioPaquete": 24143,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 24143,
+        "sobrante": 33
+      }
+    ],
+    "total": 63254,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 63254,
+    "consumptionCost": 30111,
+    "targetWasteReserve": 8,
+    "coveredWasteReserve": 8,
+    "leftoverInventory": 99,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "17d1ce7d9dc4792111d701f0fa357c53a0a1e21b5ea935973835e7bbe76d2354"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594221343015",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 60,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "sobrante": 40
+      },
+      {
+        "variant_id": "46594236416295",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 16,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 34
+      },
+      {
+        "variant_id": "46594256044327",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 17,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 24143,
+        "subtotal": 24143,
+        "sobrante": 33
+      }
+    ],
+    "total": 63254
+  },
+  "descartadas": []
+}

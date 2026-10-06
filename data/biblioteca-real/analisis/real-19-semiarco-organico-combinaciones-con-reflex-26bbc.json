@@ -1,0 +1,479 @@
+{
+  "id": "real-19-semiarco-organico-combinaciones-con-reflex-26bbc",
+  "fuente": "Semiarco-Organico-Combinaciones-con-Reflex_26bbcc5b-3c4b-46ac-9c75-63909164c307_520x500.webp",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "34397723-2357-4bbf-8aa0-34262ecc0343",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1.2968
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "organic balloon garland",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "diagonal organic balloon garland composed of pink, fuchsia, gold, rose gold, and confetti balloons",
+          "reference_bbox": {
+            "x": 0.14,
+            "y": 0.01,
+            "width": 0.72,
+            "height": 0.98
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "soft pink",
+              "fuchsia pink",
+              "chrome gold",
+              "metallic rose gold",
+              "clear confetti"
+            ],
+            "measured_colors": [
+              {
+                "color": "dorado rosa",
+                "share": 0.1606
+              },
+              {
+                "color": "rosado",
+                "share": 0.1244
+              },
+              {
+                "color": "fucsia",
+                "share": 0.067
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense asymmetrical garland, on the center, raised off the floor",
+            "composition": "40% pink and fuchsia balloons mixed with 30% metallic gold, 15% rose gold/burgundy, and 15% clear confetti balloons throughout the diagonal garland",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "rosado",
+                "fucsia",
+                "dorado",
+                "burdeos",
+                "transparente"
+              ],
+              "pesos": [
+                30,
+                25,
+                25,
+                10,
+                10
+              ],
+              "direccion": "diagonal",
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 45,
+              "exacto": false,
+              "estimado_total": 55,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.3
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.45
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.2
+                },
+                {
+                  "clase": "gigante",
+                  "proporcion": 0.05
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.92
+            },
+            "armado_guirnalda": {
+              "soporte": "pared",
+              "forma": "ondulada",
+              "sentido_curva": "arriba",
+              "flecha_relativa": 0.175,
+              "desnivel_relativo": null,
+              "racimos_visibles": 15,
+              "unidad_racimo": "cuarteto",
+              "colores_por_racimo": [
+                "rosado",
+                "fucsia",
+                "dorado",
+                "rosado"
+              ],
+              "relleno": {
+                "color": "dorado",
+                "proporcion": 0.2
+              },
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "dorado",
+                  "posicion": "extremo_der"
+                },
+                {
+                  "clase": "latex",
+                  "color": "dorado",
+                  "posicion": "extremo_izq"
+                }
+              ],
+              "confianza": 0.95
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "609",
+                "familia": "pastelMate",
+                "nombre": "Rosado",
+                "nombre_completo": "Pastel Mate Rosado",
+                "parte": 0.5811,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "409",
+                "familia": "satin",
+                "nombre": "Rosado",
+                "nombre_completo": "Satín Rosado",
+                "parte": 0.1339,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "970",
+                "familia": "reflex",
+                "nombre": "Dorado",
+                "nombre_completo": "Reflex Dorado",
+                "parte": 0.1029,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "568",
+                "familia": "metal",
+                "nombre": "Dorado Rosa",
+                "nombre_completo": "Metal Dorado Rosa",
+                "parte": 0.0915,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "011",
+                "familia": "fashion",
+                "nombre": "Rosa",
+                "nombre_completo": "Fashion Rosa",
+                "parte": 0.0906,
+                "familia_fiable": false
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "guirnalda",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary balloon garland installation in the composition",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "diagonal organic balloon garland with pink, fuchsia, metallic gold, rose gold and clear confetti balloons",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "soft pink",
+          "fuchsia",
+          "chrome gold",
+          "metallic rose gold",
+          "clear confetti"
+        ],
+        "priority": [
+          "soft pink",
+          "fuchsia",
+          "chrome gold",
+          "metallic rose gold",
+          "clear confetti"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "db6b6079575d594357e3dad27b256068f06d892bd50e7190a21ff9f2734a7077",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 520,
+            "height": 401
+          },
+          "processed": {
+            "width": 520,
+            "height": 401
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "guirnalda",
+          "croquis": {
+            "forma": "banda con caída",
+            "parteDeLaCaja": 0.6748
+          },
+          "pixeles": {
+            "medidos": 98948,
+            "deLaCaja": 143930
+          },
+          "colores": [
+            {
+              "hex": "#ffffff",
+              "parte": 0.5811,
+              "pixeles": 57497,
+              "cruce": {
+                "hex": "#ffffff",
+                "candidatas": [
+                  {
+                    "codigo": "609",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Pastel Mate Rosado",
+                    "nombreEn": "pastel light pink",
+                    "pms": "677",
+                    "acabado": "matte",
+                    "hexGlobo": "#e6cfd6",
+                    "deltaE": 17.5,
+                    "distancia": 16.6,
+                    "tono": 59.7,
+                    "razonCroma": 0
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#eda6c0",
+              "parte": 0.1339,
+              "pixeles": 13253,
+              "cruce": {
+                "hex": "#eda6c0",
+                "candidatas": [
+                  {
+                    "codigo": "409",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Satín Rosado",
+                    "nombreEn": "satin light pink",
+                    "pms": "230",
+                    "acabado": "satin",
+                    "hexGlobo": "#eea5be",
+                    "deltaE": 1,
+                    "distancia": 1.8,
+                    "tono": 1.7,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "009",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Fashion Rosado",
+                    "nombreEn": "matte light pink",
+                    "pms": "189",
+                    "acabado": "matte",
+                    "hexGlobo": "#f2b6c8",
+                    "deltaE": 7.4,
+                    "distancia": 6.1,
+                    "tono": 3.9,
+                    "razonCroma": 1.2
+                  },
+                  {
+                    "codigo": "412",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Satín Fucsia",
+                    "nombreEn": "satin pink",
+                    "pms": "699",
+                    "acabado": "satin",
+                    "hexGlobo": "#e581a4",
+                    "deltaE": 16,
+                    "distancia": 8,
+                    "tono": 3.2,
+                    "razonCroma": 0.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#c0936f",
+              "parte": 0.1029,
+              "pixeles": 10181,
+              "cruce": {
+                "hex": "#c0936f",
+                "candidatas": [
+                  {
+                    "codigo": "970",
+                    "nombre": "Dorado",
+                    "nombreCompleto": "Reflex Dorado",
+                    "nombreEn": "chrome gold",
+                    "pms": "10444",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a08344",
+                    "deltaE": 17.2,
+                    "distancia": 24.7,
+                    "tono": 20.6,
+                    "razonCroma": 0.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#984a3a",
+              "parte": 0.0915,
+              "pixeles": 9051,
+              "cruce": {
+                "hex": "#984a3a",
+                "candidatas": [
+                  {
+                    "codigo": "568",
+                    "nombre": "Dorado Rosa",
+                    "nombreCompleto": "Metal Dorado Rosa",
+                    "nombreEn": "metallic rose gold",
+                    "pms": "7408",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#eea798",
+                    "deltaE": 35.1,
+                    "distancia": 20,
+                    "tono": 1.4,
+                    "razonCroma": 1.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#e02d7d",
+              "parte": 0.0906,
+              "pixeles": 8966,
+              "cruce": {
+                "hex": "#e02d7d",
+                "candidatas": [
+                  {
+                    "codigo": "011",
+                    "nombre": "Rosa",
+                    "nombreCompleto": "Fashion Rosa",
+                    "nombreEn": "matte pink",
+                    "pms": "204",
+                    "acabado": "matte",
+                    "hexGlobo": "#e04b87",
+                    "deltaE": 9.5,
+                    "distancia": 2.4,
+                    "tono": 0.5,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "512",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Metal Fucsia",
+                    "nombreEn": "metallic hot pink",
+                    "pms": "219",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#e3437f",
+                    "deltaE": 7.2,
+                    "distancia": 4.2,
+                    "tono": 2.7,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "212",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Neón Fucsia",
+                    "nombreEn": "neon hot pink",
+                    "pms": "226",
+                    "acabado": "bright matte",
+                    "hexGlobo": "#ea5190",
+                    "deltaE": 9.9,
+                    "distancia": 4.7,
+                    "tono": 1.4,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": []
+        }
+      ]
+    }
+  }
+}

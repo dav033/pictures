@@ -1,0 +1,748 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "b3143bd9-72bb-581a-a417-b254da65964b",
+    "concepto": {
+      "titulo": "real-12-images-27",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "plateado",
+        "lila",
+        "morado"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "nombre": "Semiarco orgánico",
+        "tipo": "semiarco",
+        "rol_escena": "focal",
+        "ubicacion": "fondo_pared",
+        "medidas": {
+          "ancho_m": 1.7,
+          "alto_m": 2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634245742887",
+            "variant_id": "46594247557415",
+            "color": "plateado",
+            "participacion": 0.4977953474228372,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634232996135",
+            "variant_id": "46594210496807",
+            "color": "lila",
+            "participacion": 0.2564999239774973,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634302464295",
+            "variant_id": "46594343731495",
+            "color": "morado",
+            "participacion": 0.24570472859966552,
+            "rol_material": "acento"
+          }
+        ],
+        "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+        "referencia_element_id": "REF_01_E02",
+        "estructura_oficial": "semiarco",
+        "colores_referencia": [
+          "plateado",
+          "lila",
+          "morado"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "b3143bd9-72bb-581a-a417-b254da65964b",
+      "concepto": {
+        "titulo": "real-12-images-27",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "plateado",
+          "lila",
+          "morado"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco orgánico",
+          "tipo": "semiarco",
+          "rol_escena": "focal",
+          "ubicacion": "fondo_pared",
+          "medidas": {
+            "ancho_m": 1.7,
+            "alto_m": 2
+          },
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634245742887",
+              "variant_id": "46594247557415",
+              "color": "plateado",
+              "participacion": 0.4977953474228372,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634232996135",
+              "variant_id": "46594210496807",
+              "color": "lila",
+              "participacion": 0.2564999239774973,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634302464295",
+              "variant_id": "46594343731495",
+              "color": "morado",
+              "participacion": 0.24570472859966552,
+              "rol_material": "acento"
+            }
+          ],
+          "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+          "referencia_element_id": "REF_01_E02",
+          "estructura_oficial": "semiarco",
+          "colores_referencia": [
+            "plateado",
+            "lila",
+            "morado"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+        "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "feab1f2745c8d7fed2c2f321ff214db92169ca2b582b8a78154fba3e66dc149b",
+    "request_id": "906df0f3-b0d8-5297-ad2e-8d22f34d9edd",
+    "compras": [
+      {
+        "variant_id": "46594210496807",
+        "product_id": "8634232996135",
+        "sku": "B2B-20000765",
+        "sku_original": "B2B-20000765",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
+        "inventory_quantity": 985804,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "lila",
+        "unidades_necesarias": 16,
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "unidades_con_merma": 16,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 16,
+        "leftover_inventory": 34,
+        "consumption_cost": 4172,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 34,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985"
+      },
+      {
+        "variant_id": "46594247557415",
+        "product_id": "8634245742887",
+        "sku": "B2B-20001699",
+        "sku_original": "B2B-20001699",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594247557415",
+        "inventory_quantity": 999924,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "plateado",
+        "unidades_necesarias": 31,
+        "design_quantity": 31,
+        "waste_reserve": 0,
+        "required_quantity": 31,
+        "unidades_con_merma": 31,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 31,
+        "leftover_inventory": 19,
+        "consumption_cost": 14969,
+        "purchase_cost": 24143,
+        "additional_package_for_waste": false,
+        "sobrante": 19,
+        "precio_paquete": 24143,
+        "subtotal": 24143,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/R12-Inf-Grado-481_fef0d84b-1aff-4aab-89b3-843f161045cc.jpg?v=1694793132"
+      },
+      {
+        "variant_id": "46594343731495",
+        "product_id": "8634302464295",
+        "sku": "B2B-20017220",
+        "sku_original": "B2B-20017220",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594343731495",
+        "inventory_quantity": 998261,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "morado",
+        "unidades_necesarias": 15,
+        "design_quantity": 15,
+        "waste_reserve": 5,
+        "required_quantity": 20,
+        "unidades_con_merma": 20,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 15,
+        "leftover_inventory": 30,
+        "consumption_cost": 5215,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 35,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Orquidea_Morada_Purple_Orchid_056.jpg?v=1763148616"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 62
+      },
+      "total_unidades": 62,
+      "total_cop": 50217,
+      "design_quantity": 62,
+      "target_waste_reserve": 5,
+      "covered_waste_reserve": 5,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 88,
+      "purchase_cost": 50217,
+      "consumption_cost": 24356,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:46594210496807",
+      "sobrante_alto:46594247557415",
+      "sobrante_alto:46594343731495"
+    ],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "nombre": "Semiarco orgánico",
+        "tipo": "semiarco",
+        "ubicacion": "fondo_pared",
+        "repeticiones": 1,
+        "eje_m": 2.91,
+        "total_unidades": 62,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634245742887",
+            "variant_id": "46594247557415",
+            "sku": "B2B-20001699",
+            "sku_original": "B2B-20001699",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594247557415",
+            "inventory_quantity": 999924,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50",
+            "color": "plateado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "satin",
+            "unidades": 31,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/R12-Inf-Grado-481_fef0d84b-1aff-4aab-89b3-843f161045cc.jpg?v=1694793132",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634232996135",
+            "variant_id": "46594210496807",
+            "sku": "B2B-20000765",
+            "sku_original": "B2B-20000765",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
+            "inventory_quantity": 985804,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 16,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634302464295",
+            "variant_id": "46594343731495",
+            "sku": "B2B-20017220",
+            "sku_original": "B2B-20017220",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594343731495",
+            "inventory_quantity": 998261,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
+            "color": "morado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 15,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Orquidea_Morada_Purple_Orchid_056.jpg?v=1763148616",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 62,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "consumo_cop": 23052
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "referencia_element_id": "REF_01_E02",
+        "decision": "sin_ajuste_posible",
+        "lectura": {
+          "globos_visibles": 120,
+          "exacto": false,
+          "estimado_total": 180,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.35
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.4
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.2
+            },
+            {
+              "clase": "gigante",
+              "proporcion": 0.05
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.88
+        },
+        "globos_foto": 180,
+        "globos_antes": 62,
+        "globos_despues": 62,
+        "cambios": [],
+        "motivo": "Ninguna densidad ni medida dentro de ±35 % alcanza la cuenta de la foto."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "semiarco",
+      "shape": "clasica",
+      "dimensions_m": {
+        "width": 1.7,
+        "height": 2,
+        "length": null
+      },
+      "installation_length_m": 2.91,
+      "density": "media",
+      "visual_density": "medium",
+      "visual_scale": "medium",
+      "cluster_count": 1
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634245742887",
+        "variant_id": "46594247557415",
+        "color": "plateado",
+        "finish": "satin",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 31,
+        "waste_reserve": 0,
+        "required_quantity": 31,
+        "waste_adjusted_quantity": 31
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634232996135",
+        "variant_id": "46594210496807",
+        "color": "lila",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634302464295",
+        "variant_id": "46594343731495",
+        "color": "morado",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 15,
+        "waste_reserve": 0,
+        "required_quantity": 15,
+        "waste_adjusted_quantity": 15
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634232996135",
+        "variant_id": "46594210496807",
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 16,
+        "leftover_inventory": 34,
+        "consumption_cost": 4172,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 34,
+        "potential_surplus": 34
+      },
+      {
+        "product_id": "8634245742887",
+        "variant_id": "46594247557415",
+        "design_quantity": 31,
+        "waste_reserve": 0,
+        "required_quantity": 31,
+        "waste_adjusted_quantity": 31,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 31,
+        "leftover_inventory": 19,
+        "consumption_cost": 14969,
+        "purchase_cost": 24143,
+        "additional_package_for_waste": false,
+        "operational_surplus": 19,
+        "potential_surplus": 19
+      },
+      {
+        "product_id": "8634302464295",
+        "variant_id": "46594343731495",
+        "design_quantity": 15,
+        "waste_reserve": 5,
+        "required_quantity": 20,
+        "waste_adjusted_quantity": 20,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 15,
+        "leftover_inventory": 30,
+        "consumption_cost": 5215,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 30,
+        "potential_surplus": 35
+      }
+    ],
+    "totals": {
+      "design_quantity": 62,
+      "target_waste_reserve": 5,
+      "covered_waste_reserve": 5,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 88,
+      "required_quantity": 67,
+      "consumption_cost": 24356,
+      "purchase_cost": 50217,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 67,
+      "purchase_quantity": 150,
+      "operational_surplus": 83,
+      "potential_surplus": 88
+    },
+    "warnings": [
+      "sobrante_alto:46594210496807",
+      "sobrante_alto:46594247557415",
+      "sobrante_alto:46594343731495"
+    ]
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594210496807",
+        "productId": "8634232996135",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "lila",
+        "cantidadNecesaria": 16,
+        "designQuantity": 16,
+        "wasteReserve": 0,
+        "requiredQuantity": 16,
+        "purchaseQuantity": 50,
+        "used": 16,
+        "leftoverInventory": 34,
+        "consumptionCost": 4172,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594210496807",
+        "nombre": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 34
+      },
+      {
+        "id": "46594247557415",
+        "productId": "8634245742887",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "plateado",
+        "cantidadNecesaria": 31,
+        "designQuantity": 31,
+        "wasteReserve": 0,
+        "requiredQuantity": 31,
+        "purchaseQuantity": 50,
+        "used": 31,
+        "leftoverInventory": 19,
+        "consumptionCost": 14969,
+        "purchaseCost": 24143,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594247557415",
+        "nombre": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50",
+        "precioPaquete": 24143,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 24143,
+        "sobrante": 19
+      },
+      {
+        "id": "46594343731495",
+        "productId": "8634302464295",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "morado",
+        "cantidadNecesaria": 15,
+        "designQuantity": 15,
+        "wasteReserve": 5,
+        "requiredQuantity": 20,
+        "purchaseQuantity": 50,
+        "used": 15,
+        "leftoverInventory": 30,
+        "consumptionCost": 5215,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594343731495",
+        "nombre": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 35
+      }
+    ],
+    "total": 50217,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 50217,
+    "consumptionCost": 24356,
+    "targetWasteReserve": 5,
+    "coveredWasteReserve": 5,
+    "leftoverInventory": 83,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "feab1f2745c8d7fed2c2f321ff214db92169ca2b582b8a78154fba3e66dc149b"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594210496807",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 16,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 34
+      },
+      {
+        "variant_id": "46594247557415",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 31,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 24143,
+        "subtotal": 24143,
+        "sobrante": 19
+      },
+      {
+        "variant_id": "46594343731495",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 15,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 35
+      }
+    ],
+    "total": 50217
+  },
+  "descartadas": []
+}

@@ -1,0 +1,533 @@
+{
+  "id": "real-10-images-25",
+  "fuente": "images (25).jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-10-images-25.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "f7371500-0c35-4da4-b343-a0935e620862",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1.1825
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "balloon half arch garland",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Large organic balloon arch starting from floor on left side and arching across the top right.",
+          "reference_bbox": {
+            "x": 0.228,
+            "y": 0.032,
+            "width": 0.74,
+            "height": 0.963
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "light blue",
+              "pearl white",
+              "chrome silver",
+              "navy blue",
+              "clear confetti"
+            ],
+            "measured_colors": [
+              {
+                "color": "plateado",
+                "share": 0.6122
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex, foil confetti",
+            "shape": "tall dense asymmetrical half-arch, on the left, curving toward the right, strong top overhang, standing on the floor",
+            "composition": "40% light blue round balloons, 30% white balloons, 15% metallic silver balloons, 10% dark navy blue balloons, and 5% clear confetti balloons arranged organically from the floor up and across the top.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "azul",
+                "blanco",
+                "plateado",
+                "negro"
+              ],
+              "pesos": [
+                40,
+                30,
+                20,
+                10
+              ],
+              "motas": [
+                "transparente"
+              ],
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "inclinacion": 0.45,
+            "conteo": {
+              "globos_visibles": 62,
+              "exacto": false,
+              "estimado_total": 85,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.45
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.2
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.92
+            },
+            "armado_guirnalda": {
+              "soporte": "pared",
+              "forma": "u_invertida",
+              "puntos_de_anclaje": 3,
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": null,
+              "racimos_visibles": 28,
+              "unidad_racimo": "cuarteto",
+              "colores_por_racimo": [
+                "azul",
+                "blanco",
+                "plateado",
+                "negro"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "burbuja",
+                  "color": "transparente",
+                  "posicion": "centro"
+                }
+              ],
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "981",
+                "familia": "reflex",
+                "nombre": "Plata",
+                "nombre_completo": "Reflex Plata",
+                "parte": 0.773,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "040",
+                "familia": "fashion",
+                "nombre": "Azul",
+                "nombre_completo": "Fashion Azul",
+                "parte": 0.1314,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "839",
+                "familia": "silk",
+                "nombre": "Azul Ártico",
+                "nombre_completo": "Silk Azul Ártico",
+                "parte": 0.0956,
+                "familia_fiable": false
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "semiarco",
+            "placement": "lateral_izquierdo",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary focal decorative balloon half arch structure.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "silver shimmer foil fringe curtain backdrop",
+          "category": "curtain",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Silver foil metallic tinsel / fringe curtain hung on wall behind balloon structure.",
+          "reference_bbox": {
+            "x": 0.478,
+            "y": 0.254,
+            "width": 0.29700000000000004,
+            "height": 0.597
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome silver"
+            ],
+            "measured_colors": [
+              {
+                "color": "plateado",
+                "share": 0.6036
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "metallic foil",
+            "shape": "shape not determinable",
+            "composition": "100% silver metallic foil fringe strips hung vertically forming a glittering rectangular backdrop wall."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Key background curtain backdrop behind balloon arch.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "black geometric side table",
+          "category": "furniture",
+          "scene_role": "midground",
+          "detection_confidence": 0.88,
+          "visible_evidence": "Small wireframe metal accent table on left floor.",
+          "reference_bbox": {
+            "x": 0.026,
+            "y": 0.747,
+            "width": 0.14200000000000002,
+            "height": 0.236
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "black"
+            ],
+            "measured_colors": [
+              {
+                "color": "negro",
+                "share": 0.9679
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "metal",
+            "shape": "shape not determinable",
+            "composition": "100% black geometric metal wire frame with flat black round table top holding a potted white orchid."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Decorative side table framing lower left space.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E04",
+          "source_image_id": "REF_01",
+          "name": "potted white orchid plant",
+          "category": "floral",
+          "scene_role": "midground",
+          "detection_confidence": 0.85,
+          "visible_evidence": "White potted flower sitting on small accent table.",
+          "reference_bbox": {
+            "x": 0.048,
+            "y": 0.564,
+            "width": 0.131,
+            "height": 0.19700000000000006
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "white",
+              "green"
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "silk / natural",
+            "shape": "shape not determinable",
+            "composition": "80% white phalaenopsis bloom petaling with 20% green leaves and stems in a white oval ceramic pot."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Floral accent piece on side table.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Blue, white, silver and navy balloon garland arch framing a silver foil fringe backdrop curtain",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "light blue",
+          "chrome silver",
+          "pearl white",
+          "navy blue",
+          "grey"
+        ],
+        "priority": [
+          "light blue",
+          "chrome silver",
+          "pearl white",
+          "navy blue",
+          "grey"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "e63c6c343debe830095177df1cac6f85204c717140d65c744868c29ff1a947d4",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 486,
+            "height": 411
+          },
+          "processed": {
+            "width": 486,
+            "height": 411
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "semiarco",
+          "croquis": {
+            "forma": "anillo de arco (parcial)",
+            "parteDeLaCaja": 0.5708
+          },
+          "pixeles": {
+            "medidos": 84886,
+            "deLaCaja": 142956
+          },
+          "colores": [
+            {
+              "hex": "#868886",
+              "parte": 0.773,
+              "pixeles": 65612,
+              "cruce": {
+                "hex": "#868886",
+                "candidatas": [
+                  {
+                    "codigo": "981",
+                    "nombre": "Plata",
+                    "nombreCompleto": "Reflex Plata",
+                    "nombreEn": "chrome silver",
+                    "pms": "877",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a7a8aa",
+                    "deltaE": 12.6,
+                    "distancia": 6.4,
+                    "tono": 127,
+                    "razonCroma": 1.2
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#517b9b",
+              "parte": 0.1314,
+              "pixeles": 11155,
+              "cruce": {
+                "hex": "#517b9b",
+                "candidatas": [
+                  {
+                    "codigo": "040",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Fashion Azul",
+                    "nombreEn": "matte light blue",
+                    "pms": "2915",
+                    "acabado": "matte",
+                    "hexGlobo": "#01b2e8",
+                    "deltaE": 27.4,
+                    "distancia": 21.5,
+                    "tono": 12.5,
+                    "razonCroma": 0.5
+                  },
+                  {
+                    "codigo": "140",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Pastel Dusk Azul",
+                    "nombreEn": "dusty pastel light blue",
+                    "pms": "5425",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#7396a9",
+                    "deltaE": 13.1,
+                    "distancia": 24.4,
+                    "tono": 14,
+                    "razonCroma": 1.4
+                  },
+                  {
+                    "codigo": "839",
+                    "nombre": "Azul Ártico",
+                    "nombreCompleto": "Silk Azul Ártico",
+                    "nombreEn": "pearlescent light blue",
+                    "pms": "10431",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#7d9bab",
+                    "deltaE": 16,
+                    "distancia": 33.9,
+                    "tono": 15.3,
+                    "razonCroma": 1.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#a2c2d1",
+              "parte": 0.0956,
+              "pixeles": 8119,
+              "cruce": {
+                "hex": "#a2c2d1",
+                "candidatas": [
+                  {
+                    "codigo": "839",
+                    "nombre": "Azul Ártico",
+                    "nombreCompleto": "Silk Azul Ártico",
+                    "nombreEn": "pearlescent light blue",
+                    "pms": "10431",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#7d9bab",
+                    "deltaE": 14.3,
+                    "distancia": 11.6,
+                    "tono": 4.4,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "140",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Pastel Dusk Azul",
+                    "nombreEn": "dusty pastel light blue",
+                    "pms": "5425",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#7396a9",
+                    "deltaE": 16.7,
+                    "distancia": 13.9,
+                    "tono": 5.7,
+                    "razonCroma": 0.8
+                  },
+                  {
+                    "codigo": "440",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Satín Azul",
+                    "nombreEn": "satin light blue",
+                    "pms": "292",
+                    "acabado": "satin",
+                    "hexGlobo": "#b1d5e0",
+                    "deltaE": 7,
+                    "distancia": 14.7,
+                    "tono": 11.5,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}
