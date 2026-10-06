@@ -10,10 +10,28 @@ import type { AnalisisColorSempertex } from "../../src/lib/plan/analisis-color";
 import { avisosClienteAjustes, type DisponibilidadProducto } from "../../src/lib/plan/cobertura-materiales";
 import type { PlanDecoracion } from "../../src/lib/plan/tipos";
 import type { ReferenceBlueprintV2 } from "../../src/lib/ia/referencia/reference-blueprint";
-import { aplicarReferenciasMedidas, busquedasDeReferencias, colorDeReferencia, conReferenciasMedidas, familiaDeTitulo, referenciasDePieza } from "../../src/lib/plan/referencias-medidas";
+import { aplicarReferenciasMedidas, busquedasDeReferencias, colorDeReferencia, conReferenciasMedidas, familiaDeTitulo, referenciasDePieza, referenciasUsables } from "../../src/lib/plan/referencias-medidas";
 import { serializeReferenceBlueprint } from "../../src/lib/ia/omoikane/prompt-sistema";
 import { detectarJergaInterna } from "../../src/lib/ia/omoikane/jerga-interna";
 import { coloresDominantesReferencia } from "../../src/lib/plan/colores-referencia";
+
+// CASE-002 archivado v6: balance de blancos + medida regional clasificaron blanco;
+// «matte light grey» ya no mantiene Fashion Gris 081 como referencia usable.
+{
+  const apariencia = {
+    observed_colors: ["pearl pink", "chrome silver", "matte light grey", "clear"],
+    measured_colors: [{ color: "plateado", share: 0.6454 }, { color: "crema", share: 0.1524 }, { color: "blanco", share: 0.1327 }, { color: "rosado", share: 0.0695 }],
+    referencias_medidas: [
+      { codigo: "609", familia: "pastelMate", nombre: "Rosado", nombre_completo: "Pastel Mate Rosado", parte: 0.4942, familia_fiable: false },
+      { codigo: "981", familia: "reflex", nombre: "Plata", nombre_completo: "Reflex Plata", parte: 0.1703, familia_fiable: true },
+      { codigo: "081", familia: "fashion", nombre: "Gris", nombre_completo: "Fashion Gris", parte: 0.107, familia_fiable: true },
+    ],
+  } as unknown as ReferenceBlueprintV2["elements"][number]["appearance"];
+  assert.deepEqual(referenciasUsables(apariencia).map((referencia) => referencia.codigo), ["609", "981"]);
+  assert.ok(coloresDominantesReferencia(apariencia).includes("blanco"));
+  assert.ok(!coloresDominantesReferencia(apariencia).includes("gris"));
+  console.log("[PASS] CASE-002 archivado: rosado 609 + plata 981; gris 081 filtrado");
+}
 
 // 1. La familia de un producto, leída de su título; los impresos y surtidos no son una referencia.
 const titulos: Array<[string, string | null]> = [
@@ -23,6 +41,7 @@ const titulos: Array<[string, string | null]> = [
   ["B2b Globo Latex Redondo Reflex Fucsia", "reflex"],
   ["B2b Globo Latex Redondo Cristal Pastel Lila", "cristal"],
   ["B2b Globo Latex Redondo Fashion Transparente", "fashion"],
+  ["B2b Globo Latex Redondo Fashion Palo de Rosa", "fashion"],
   ["B2b Globo Latex Redondo Neon Fucsia", "neon"],
   ["B2b Globo Latex Redondo Infinity® Coquette Cristal Transparente", null],
   ["B2b Globo Latex Redondo 2 Caras Mis 15 Años Reflex Fucsia", null],
@@ -107,6 +126,30 @@ const plan = {
     materiales: [material("p-reflex-fucsia", "fucsia", "reflex", 0.4), material("p-reflex-plata", "plateado", "reflex", 0.3), material("p-fashion-lila", "lila", "fashion", 0.3)],
   }],
 } as unknown as PlanDecoracion;
+
+// Sin acabado explícito, la compra conserva la familia del código dominante medido.
+// 010 Fashion Palo de Rosa y 609 Pastel Mate Rosado colapsan ambos a «rosado» en el plan.
+{
+  const conFashionMedido = structuredClone(blueprint);
+  conFashionMedido.elements[0]!.appearance.observed_colors = ["pink"];
+  conFashionMedido.elements[0]!.appearance.referencias_medidas = [
+    { codigo: "010", familia: "fashion", nombre: "Palo de Rosa", nombre_completo: "Fashion Palo de Rosa", parte: 0.21, familia_fiable: false },
+  ];
+  assert.deepEqual(referenciasUsables(conFashionMedido.elements[0]!.appearance).map(({ codigo }) => codigo), ["010"]);
+  const opciones = new Map([
+    ...disponibilidad,
+    ["p-fashion-palo-rosa", producto("B2b Globo Latex Redondo Fashion Palo de Rosa", ["rosado"], ["fashion"])],
+  ]);
+  const precompra = { estructuras: [{ ...plan.estructuras[0]!, materiales: [material("p-satin-rosado", "rosado", "satin", 1)] }] } as unknown as PlanDecoracion;
+  const compra = aplicarReferenciasMedidas(precompra, conFashionMedido, opciones);
+  assert.equal(compra.plan.estructuras[0]!.materiales[0]!.product_id, "p-fashion-palo-rosa");
+  console.log("[PASS] 010 Fashion Palo de Rosa dominante no se sustituye por 609 cuando el analizador no nombra otro acabado");
+
+  conFashionMedido.elements[0]!.appearance.observed_colors = ["pearl pink"];
+  const acabadoExplicito = aplicarReferenciasMedidas(precompra, conFashionMedido, opciones);
+  assert.equal(acabadoExplicito.plan.estructuras[0]!.materiales[0]!.product_id, "p-satin-rosado");
+  console.log("[PASS] un acabado Satin dicho por el analizador permite cambiar la familia del 010 medido");
+}
 const { plan: corregido, ajustes } = aplicarReferenciasMedidas(plan, conMedidas, disponibilidad);
 const comprados = corregido.estructuras[0]!.materiales.map((m) => `${m.product_id}:${m.color}:${m.acabado ?? "-"}`);
 assert.equal(comprados[1], "p-reflex-plata:plateado:reflex", "la plata cromada ya era la referencia");
@@ -263,7 +306,7 @@ void (async () => {
   const foto = readFileSync("public/referencias-ejemplo/ejemplo-01.jpg").toString("base64");
   const medido = await medirColoresSempertex(real, [{ id: real.source_images[0]!.image_id, base64: foto, mime: "image/jpeg", descripcion: "" } as never]);
   const crudo = medido.piezas.flatMap((pieza) => referenciasDePieza(pieza)).map((r) => colorDeReferencia(r.nombre));
-  assert.ok(crudo.includes("lila"), "los píxeles sí leen la luz morada como lila (si esto cambia, revisar la regla)");
+  assert.ok(!crudo.includes("lila"), "el analizador no nombró lila: la luz morada no puede crear esa referencia");
   const finales = conReferenciasMedidas(real, medido).elements.flatMap((elemento) => elemento.appearance.referencias_medidas ?? []);
   assert.ok(finales.length > 0);
   assert.ok(!finales.some((r) => colorDeReferencia(r.nombre) === "lila"), `ningún lila: ${finales.map((r) => r.nombre_completo).join(", ")}`);

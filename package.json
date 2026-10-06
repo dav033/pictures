@@ -209,7 +209,10 @@
     "ordenes:desglose": "tsx scripts/dataset/obtener-desglose-orden.ts",
     "ordenes:procesar": "tsx scripts/dataset/procesar-ordenes.ts",
     "ia:test-flux-revision": "tsx --conditions=react-server scripts/test/test-flux-revision.ts",
-    "ia:test-plan-lora-e2e": "tsx --conditions=react-server scripts/test/test-plan-lora-e2e.ts"
+    "ia:test-plan-lora-e2e": "tsx --conditions=react-server scripts/test/test-plan-lora-e2e.ts",
+    "plan:test-color-foto-colores-nombrados": "tsx --conditions=react-server scripts/test/test-color-foto-colores-nombrados.ts",
+    "lora:test-tope-fal": "tsx scripts/test/test-exp-fal-lib-tope.ts",
+    "lora:test-fal-sin-saldo": "tsx --conditions=react-server scripts/test/test-fal-sin-saldo.ts"
   },
   "dependencies": {
     "@google/genai": "^2.16.0",

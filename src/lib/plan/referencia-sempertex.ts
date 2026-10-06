@@ -222,6 +222,8 @@ export type OpcionesCruce = {
    * señal más fuerte que hay, porque el acabado solo lo ve el modelo y el color solo lo ven los píxeles.
    */
   nombradas?: readonly string[];
+  /** Códigos de la lámina cuyo color nombró el analizador para este tono. */
+  permitidas?: readonly string[];
   /**
    * Las familias compatibles con el acabado que vio el analizador (`acabado-observado.ts`). Restringir por
    * aquí es lo que arregla los cromados: el color promedio de un dorado Reflex y el de un café mate son casi
@@ -235,12 +237,15 @@ export type OpcionesCruce = {
 
 /** Las referencias más parecidas a un color medido, ordenadas por la distancia de globo. */
 export function cruzarColor(hex: string, opciones: OpcionesCruce | number = {}): CruceColor {
-  const { cuantas = 3, familias = [], nombradas = [] } =
-    typeof opciones === "number" ? { cuantas: opciones, familias: [], nombradas: [] } : opciones;
+  const { cuantas = 3, familias = [], nombradas = [], permitidas } =
+    typeof opciones === "number" ? { cuantas: opciones, familias: [], nombradas: [], permitidas: undefined } : opciones;
   const lab = labDeHex(hex);
   const neutro = croma(lab) < CROMA_NEUTRO;
   // Un neutro solo se compara con neutros: su tono es ruido y lo llevaría a cualquier color pálido.
   const mismaNaturaleza = TABLA_SEMPERTEX.referencias.filter((r) => r.neutro === neutro);
+  const colorNombrado = permitidas?.length
+    ? mismaNaturaleza.filter((r) => permitidas.includes(r.codigo))
+    : mismaNaturaleza;
 
   const ordenar = (lista: readonly ReferenciaSempertex[]): Candidata[] =>
     lista
@@ -252,11 +257,11 @@ export function cruzarColor(hex: string, opciones: OpcionesCruce | number = {}):
     ? mismaNaturaleza.filter((r) => (familias as readonly string[]).includes(r.familia))
     : [];
   let usadas: FamiliaSempertex[] = [];
-  let ordenadas = ordenar(mismaNaturaleza);
+  let ordenadas = ordenar(colorNombrado);
   if (restringidas.length > 0) {
-    const conFamilia = ordenar(restringidas);
+    const conFamilia = ordenar(restringidas.filter((r) => colorNombrado.includes(r)));
     // La restricción manda mientras dé algo que se sostenga; si no, es peor que no restringir.
-    if (conFamilia[0].distancia <= UMBRAL_SIN_REFERENCIA) {
+    if (conFamilia[0] && conFamilia[0].distancia <= UMBRAL_SIN_REFERENCIA) {
       ordenadas = conFamilia;
       usadas = [...familias];
     }
@@ -266,7 +271,7 @@ export function cruzarColor(hex: string, opciones: OpcionesCruce | number = {}):
   // nombradas elige la más cercana, que es como se reparten las etiquetas de una pieza de acabados mezclados.
   let porNombre = false;
   if (nombradas.length > 0) {
-    const candidatasNombradas = mismaNaturaleza
+    const candidatasNombradas = colorNombrado
       .filter((r) => nombradas.includes(r.codigo))
       .map((r) => candidata(r, lab, LAB_POR_REFERENCIA.get(r.codigo) ?? lab))
       .sort((a, b) => a.distancia - b.distancia);
@@ -533,6 +538,11 @@ const CABEZAS_EN: ReadonlyMap<string, string[]> = (() => {
  */
 export function codigosPorPalabras(etiqueta: string): string[] {
   const palabras = etiqueta.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  // El analizador y colores-referencia comparten la familia «crema», aunque la
+  // tabla la escriba como cream/ivory/off-white y algunas etiquetas inviertan palabras.
+  if (/^(?:cream|crema|ivory|off white|white cream|cream white|white ivory|ivory white)$/.test(palabras.join(" "))) {
+    return [...(CABEZAS_EN.get("cream") ?? [])];
+  }
   const cabeza = palabras[palabras.length - 1];
   const base = cabeza ? CABEZAS_EN.get(cabeza) : undefined;
   if (!base) return [];

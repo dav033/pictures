@@ -2,12 +2,14 @@ import { medirDominanciaColor, medirDominanciaElemento, type MuestraPixeles } fr
 import { decodificarPixeles, proporcionDeImagen } from "./decodificar-pixeles";
 import { ordenDesdeElPie } from "./orden-color-pie";
 import { equilibrarMuestra } from "@/lib/plan/balance-blancos";
+import { coloresNombradosReferencia } from "@/lib/plan/colores-referencia";
+import { zonaDeCroquis } from "@/lib/plan/croquis-zona";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
 
 /**
- * Rellena `appearance.measured_colors` de cada elemento del blueprint midiendo
- * los píxeles de su caja.
+ * Rellena `appearance.measured_colors` con los tonos nombrados, medidos dentro
+ * del croquis de la pieza para excluir fondo, reflejos y sombras como colores nuevos.
  *
  * Va aquí y no dentro de `buildBlueprint` porque decodificar imágenes es
  * asíncrono y toca `sharp`, mientras que el ensamblaje del blueprint es
@@ -72,7 +74,17 @@ export async function enriquecerConDominancia(blueprint: ReferenceBlueprintV2, i
     elements: blueprint.elements.map((elemento) => {
       const muestra = porImagen.get(elemento.source_image_id);
       if (!muestra) return elemento;
-      const medicion = medirDominanciaElemento(muestra, elemento.reference_bbox);
+      const coloresAdmitidos = [...new Set(coloresNombradosReferencia(elemento.appearance)
+        .map((color) => color.color)
+        .filter((color) => color !== "transparente"))];
+      if (coloresAdmitidos.length === 0) return elemento;
+      const croquis = zonaDeCroquis(
+        elemento.visual_semantics?.structure_type ?? "",
+        undefined,
+        elemento.visual_semantics?.placement,
+        elemento.reference_bbox.width / elemento.reference_bbox.height,
+      );
+      const medicion = medirDominanciaElemento(muestra, elemento.reference_bbox, coloresAdmitidos, croquis.dentro);
       if (medicion.dominantes.length === 0) return elemento;
       return {
         ...elemento,

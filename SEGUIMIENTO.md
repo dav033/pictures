@@ -239,7 +239,8 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    autorizan tonos (los píxeles ordenan y pesan); blanco nombrado sigue blanco aunque la luz lo mida gris/lila; CASE-002 offline:
    plata + rosa + blanco, cero gris. Duda abierta: el blueprint archivado de CASE-002 nombra «matte light grey». En revisión
    adversarial: sin bloqueantes (F7-5 conserva 044; foto del dueño semiarco crema 69,1/rosado 23,4, columna rosado 55,7/crema 33,5, sin
-   chocolate). Medios en corrección (Codex): transparencia en etiquetas compuestas («clear gold confetti»), «matte light grey»
+   chocolate). Medios en corrección (Codex): transparencia en etiquetas compuestas («clear gold confetti»); confeti estampado conserva
+   el color del globo opaco («gold confetti balloons»), y el color del relleno solo se descarta con indicio transparente; «matte light grey»
    archivado de CASE-002 habilita gris; bajos: crema sin referencia medida, constante huérfana. Pendiente de diseño: mostrar tonos
    no nombrados para que el cliente los confirme (no se compran solos).
    Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.

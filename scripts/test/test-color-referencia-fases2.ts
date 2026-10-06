@@ -179,8 +179,8 @@ const casos: Caso[] = [
         ["rosado", "transparente"],
         "sin nombre, la plata medida no entra",
       );
-      // "clear pink" es la línea Cristal teñida: rosado, no el transparente incoloro.
-      assert.deepEqual(coloresDominantesReferencia(["clear pink", "silver"]), ["rosado", "plateado"]);
+      // «clear pink» conserva el tono Cristal y declara también la transparencia.
+      assert.deepEqual(coloresDominantesReferencia(["clear pink", "silver"]), ["rosado", "transparente", "plateado"]);
     },
   },
   {

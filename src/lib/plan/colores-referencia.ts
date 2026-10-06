@@ -59,7 +59,10 @@ const TRANSPARENTE = "transparente";
 const SINONIMOS_FOTO: ReadonlyArray<readonly [RegExp, string]> = [
   // Before the generic "pink" alias: the catalog sells these as fucsia.
   [/\b(?:hot|neon|shocking)\s+pink\b/g, "fucsia"],
-  [/\boff white\b/g, "crema"],
+  // The analyzer sometimes reverses these two-word labels. Preserve ivory/cream
+  // instead of letting the generic white classifier win on the first word.
+  [/\b(?:white\s+(?:cream|ivory)|(?:cream|ivory)\s+white)\b/g, "crema"],
+  [/\boff[- ]white\b/g, "crema"],
   [/\b(?:lilac|lavender|mauve)\b/g, "lila"],
   [/\bviolet\b/g, "violeta"],
   [/\b(?:maroon|wine|bordeaux|oxblood)\b/g, "burdeos"],
@@ -78,7 +81,10 @@ const GRIS = /\b(?:gr[ae]y|graphite|charcoal|gris|grafito)\b/;
  * ("clear pink", "crystal blue") and the catalog sells the Cristal line in
  * several hues. Alone it is the color "transparente".
  */
-const TRANSPARENCIA = /\b(?:clear|transparent|transparente|transparentes|crystal|cristal)\b/g;
+const TRANSPARENCIA = /\b(?:clear|transparent|transparente|transparentes|crystal|cristal|see[- ]through|bubbles?)\b/g;
+const INDICIO_TRANSPARENCIA = /\b(?:clear|transparent|transparente|transparentes|crystal|cristal|see[- ]through|bubbles?)\b/;
+/** El color del confeti describe el relleno, no el látex que se compra. */
+const CONTENIDO_CONFETI = /\b(?:confetti|confetti-filled|rellen[oa]s? de confeti)\b/;
 
 /** Punctuation that joins several colors in one label ("white/gold"); the fold turns it into a space, so it has to be split first. */
 const SEPARADOR_PUNTUACION = /[,;/&+]/;
@@ -101,11 +107,14 @@ const SEPARADOR_AMBIGUO = /\s*\b(?:or|o|u)\b\s*/;
  * "silver grey") keeps its first, more specific word, so it does not report a
  * second color the photo never had.
  */
-function coloresDeParte(parte: string): string[] {
+function coloresDeParte(parte: string, apariencia?: AparienciaColor, descartarColorConfeti = false): string[] {
   let texto = parte;
   for (const [patron, color] of SINONIMOS_FOTO) texto = texto.replace(patron, color);
+  const confeti = CONTENIDO_CONFETI.test(texto);
   const sinTransparencia = texto.replace(TRANSPARENCIA, " ");
   const transparente = sinTransparencia !== texto;
+  if (confeti && transparente) return [TRANSPARENTE];
+  if (confeti && descartarColorConfeti) return [];
   texto = sinTransparencia;
   const clasificacion = clasificarColores(texto);
   const utiles = clasificacion.values.filter((color) => color !== "multicolor");
@@ -114,10 +123,18 @@ function coloresDeParte(parte: string): string[] {
   // la foto; el resultado era que la mitad de las veces se compraba el otro. Si
   // no decidió, no decidimos por él: entran los dos y la foto —o el cliente— lo
   // desempata.
-  if (clasificacion.status === "ambiguous" && utiles.length > 1) return utiles;
+  if (clasificacion.status === "ambiguous" && utiles.length > 1) return transparente ? [...utiles, TRANSPARENTE] : utiles;
   const conocido = clasificacion.status === "unknown" ? undefined : utiles[0];
-  const unico = conocido ?? (GRIS.test(texto) ? "gris" : transparente ? "transparente" : undefined);
-  return unico ? [unico] : [];
+  const nombrado = conocido ?? (GRIS.test(texto) ? "gris" : undefined);
+  // `blanco` aquí sale de píxeles de la región tras balance de blancos: la clasificación LAB ya ponderó
+  // luminosidad y croma. Exigir 12 % y ausencia total de gris evita convertir un gris real por una chispa blanca.
+  const muyClaroEnBlanco = nombrado === "gris"
+    && /\b(?:light|pale|very light)\b/.test(texto)
+    && (apariencia?.measured_colors ?? []).some((medido) => medido.color === "blanco" && medido.share >= 0.12)
+    && !(apariencia?.measured_colors ?? []).some((medido) => medido.color === "gris");
+  // Riesgo aceptado: gris humo/perla junto a plata y blanco, sin «gris» medido, se leerá blanco.
+  const tono = muyClaroEnBlanco ? "blanco" : nombrado;
+  return [...(tono ? [tono] : []), ...(transparente ? [TRANSPARENTE] : [])];
 }
 
 /**
@@ -190,7 +207,7 @@ function conAcabadoDeEtiqueta(entrada: AparienciaColor, colores: readonly string
   const porColor = new Map<string, ColorObservadoConAcabado>();
   for (const etiqueta of entrada.observed_colors) {
     const acabado = acabadoDeEtiqueta(etiqueta);
-    for (const color of coloresDeEtiqueta(etiqueta)) {
+    for (const color of coloresDeEtiqueta(etiqueta, entrada)) {
       if (!porColor.has(color)) porColor.set(color, { color, etiqueta, ...(acabado ? { acabado } : {}) });
     }
   }
@@ -200,13 +217,16 @@ function conAcabadoDeEtiqueta(entrada: AparienciaColor, colores: readonly string
 }
 
 /** Catalog-vocabulary colors of one observed label, in reading order. */
-function coloresDeEtiqueta(etiqueta: string): string[] {
+function coloresDeEtiqueta(etiqueta: string, apariencia?: AparienciaColor): string[] {
   const colores: string[] = [];
+  const hayTransparencia = INDICIO_TRANSPARENCIA.test(plegarTexto(etiqueta));
   for (const bruto of etiqueta.split(SEPARADOR_PUNTUACION)) {
     for (const parte of plegarTexto(bruto).split(SEPARADOR_COLORES)) {
       // Una parte ambigua aporta TODAS sus alternativas: si el analizador no
       // eligió, elegir por él acierta la mitad de las veces.
-      for (const alternativa of parte.split(SEPARADOR_AMBIGUO)) colores.push(...coloresDeParte(alternativa));
+      for (const alternativa of parte.split(SEPARADOR_AMBIGUO)) {
+        colores.push(...coloresDeParte(alternativa, apariencia, hayTransparencia));
+      }
     }
   }
   return colores;
@@ -216,7 +236,7 @@ function coloresDeEtiqueta(etiqueta: string): string[] {
 function coloresObservados(apariencia: AparienciaColor): string[] {
   const colores: string[] = [];
   for (const etiqueta of apariencia.observed_colors) {
-    for (const color of coloresDeEtiqueta(etiqueta)) {
+    for (const color of coloresDeEtiqueta(etiqueta, apariencia)) {
       if (!colores.includes(color)) colores.push(color);
     }
   }
@@ -318,7 +338,9 @@ export function coloresDominantesReferencia(apariencia: AparienciaColor | readon
  *
  * No filtra al catálogo: esto es lo que se le enseña al cliente como "los
  * colores de tu foto", y un `gris` que el catálogo no vende tiene que aparecer
- * para poder reportarse como perdido, no desaparecer. Hasta el 2026-10-05 eran
+ * para poder reportarse como perdido, no desaparecer. La medición solo ordena
+ * y pesa nombres del analizador; luz coloreada no añade tonos comprables.
+ * Hasta el 2026-10-05 eran
  * los colores medidos crudos, sin mirar las etiquetas: la madera de una mesa o
  * la pared que caían en la caja de una pieza llegaban al cliente como color de
  * su foto y volvían como aviso de "esta pieza no lo lleva".
@@ -390,17 +412,15 @@ export function coloresElementoReferencia(blueprint: Pick<ReferenceBlueprintV2, 
  * el plan compra existe en la foto. Acotarla aquí acusaría de invención al
  * cuarto color de una foto que sí lo tiene.
  *
- * Por lo mismo sigue contando lo medido que nadie nombró, al revés que los
- * dominantes (`coloresNombradosOrdenados`): aquí se decide QUITAR un globo del
- * plan, y para quitarlo hace falta que ni las etiquetas ni los píxeles lo vean.
- * Que un color medido no pida cupo no prueba que la foto no lo tenga.
+ * Solo cuenta colores nombrados por el analizador, igual que los dominantes:
+ * gris/lila medidos por la luz no habilitan compras ni evitan que se quite del
+ * plan un globo de color no nombrado.
  */
 export function coloresObservadosElemento(apariencia: AparienciaColor): string[] {
-  const colores = coloresObservados(apariencia);
-  for (const entrada of apariencia.measured_colors ?? []) {
-    if (!colores.includes(entrada.color)) colores.push(entrada.color);
-  }
-  return colores;
+  // Los píxeles ordenan y ponderan tonos nombrados, pero no pueden inventar
+  // uno. En particular, luz lila sobre globos blancos puede medirse gris/lila;
+  // esos valores no deben volver al plan como colores comprables.
+  return coloresObservados(apariencia);
 }
 
 export type MaterialColorInventado = { estructura_id: string; product_id: string; color: string };
