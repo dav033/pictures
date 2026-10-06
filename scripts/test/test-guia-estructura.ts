@@ -263,17 +263,6 @@ async function peticionAFal(): Promise<void> {
   await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", [], opciones);
   assert.equal(ultimosEventos()[0]!.promptVersion, undefined, "sin guía, el evento de siempre");
 
-  // El interruptor de retiro de /edit también apaga la guía.
-  const retiro = process.env.SEMPERTEX_LORA_EDIT;
-  process.env.SEMPERTEX_LORA_EDIT = "false";
-  try {
-    const apagado = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", [], { ...opciones, imagenesEdit: guia.imagenes });
-    assert.equal(apagado.destino, TEXTO);
-    assert.equal(JSON.stringify(apagado.cuerpo), JSON.stringify(BASE.directo["sin-imagenes"]!.cuerpo), "SEMPERTEX_LORA_EDIT=false: texto a imagen de siempre");
-  } finally {
-    if (retiro === undefined) delete process.env.SEMPERTEX_LORA_EDIT;
-    else process.env.SEMPERTEX_LORA_EDIT = retiro;
-  }
   console.log("[PASS] fal: sin guía byte a byte la de 90da1ef; con guía /edit con image_urls[0] = guía y la carta después");
 }
 

@@ -44,11 +44,11 @@ export type SempertexLoraOptions = {
   telemetria?: ContextoTelemetriaIA;
   /**
    * Imágenes que quien llama ya eligió para `/edit`, en su orden: la guía de
-   * estructura con su carta (ADR-0033) o las referencias de la etapa 1 del
-   * híbrido (`REFERENCIA_EN_ETAPA1_V1`). No se vuelven a filtrar con
+   * estructura con su carta (ADR-0033) o las referencias seleccionadas para
+   * `/edit`. No se vuelven a filtrar con
    * `referenciasParaLoraEdit`, que las descartaba sin foto del espacio ni
    * resultado previo. Ausente, el comportamiento es el de siempre: se filtran
-   * los `inputs`. `SEMPERTEX_LORA_EDIT=false` las apaga igual.
+   * los `inputs`.
    */
   imagenesEdit?: readonly ImagenEditLora[];
 };
@@ -267,8 +267,6 @@ export const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
  * tonos en vez de una propuesta (2026-09-24; lo había activado ef9b77b). La
  * referencia ya llega resumida en el blueprint, el plan y el caption. Fotos de
  * producto tampoco cambian el endpoint.
- * `SEMPERTEX_LORA_EDIT=false` apaga `/edit` por completo (interruptor de retiro).
- *
  * La excepción es explícita y no pasa por aquí: con `GUIA_ESTRUCTURA_V1`, la
  * ruta manda por `imagenesEdit` el mapa de color plano de la estructura
  * aprobada y su carta (ADR-0033). No es una foto que copiar, y la nota del
@@ -276,9 +274,19 @@ export const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
  */
 const ROLES_QUE_ACTIVAN_EDIT = new Set<ImageInput["role"]>(["venue_base", "previous_generated_result"]);
 
-export function referenciasParaLoraEdit(inputs: readonly ImageInput[], interruptor = process.env.SEMPERTEX_LORA_EDIT): ImageInput[] {
-  if (interruptor === "false") return [];
+export function referenciasParaLoraEdit(inputs: readonly ImageInput[]): ImageInput[] {
   if (!inputs.some((input) => ROLES_QUE_ACTIVAN_EDIT.has(input.role))) return [];
+  const previous = [...inputs]
+    .filter((input) => input.role === "previous_generated_result")
+    .sort((a, b) => a.priority - b.priority)[0];
+  if (previous) {
+    const venue = [...inputs]
+      .filter((input) => input.role === "venue_base")
+      .sort((a, b) => a.priority - b.priority)[0];
+    // El resultado previo ya contiene escena y decoración; el venue solo suma
+    // contexto arquitectónico y nunca desplaza esa imagen base.
+    return venue ? [previous, venue] : [previous];
+  }
   const hayVenue = inputs.some((input) => input.role === "venue_base");
   // FLUX.2 /edit puede copiar el fondo de cualquier imagen enviada. Con un
   // venue real, solo la foto del cliente entra como píxel; referencia,
@@ -298,17 +306,11 @@ export function referenciasParaLoraEdit(inputs: readonly ImageInput[], interrupt
 
 /**
  * Las imágenes que quien llama eligió de antemano (`imagenesEdit`), acotadas
- * al máximo de `/edit`. Solo el interruptor de retiro las quita: no hay filtro
- * por rol, porque la elección ya la hizo el dueño de cada caso.
+ * al máximo de `/edit`. No hay filtro por rol: la elección ya la hizo quien
+ * llama.
  */
-export function imagenesEditExplicitas(imagenes: readonly ImagenEditLora[], interruptor = process.env.SEMPERTEX_LORA_EDIT): ImagenEditLora[] {
-  if (interruptor === "false") return [];
+export function imagenesEditExplicitas(imagenes: readonly ImagenEditLora[]): ImagenEditLora[] {
   return imagenes.slice(0, MAX_EDIT_IMAGES);
-}
-
-/** Whether a request with these images must be rejected for LoRA (only when /edit is switched off). */
-export function loraEditApagado(interruptor = process.env.SEMPERTEX_LORA_EDIT): boolean {
-  return interruptor === "false";
 }
 
 /** Como mucho un LoRA por generación; cero es el modelo base (modo `base`). */
@@ -363,12 +365,18 @@ export function buildLoraEditPrompt(prompt: string, references: readonly ImagenE
   if (!references.length) return prompt;
   if (references.some((imagen) => imagen.role === "scene_guide")) return promptConGuiaEscena(prompt, references);
   if (references.some(esImagenGuia)) return promptConGuia(prompt, references);
-  const frases = references.filter((image): image is ImageInput => !esImagenGuia(image)).map((image, index) => `Input image ${index + 1} (@image${index + 1}): ${FRASE_POR_ROL[image.role]}`);
+  const revision = references.some((image) => image.role === "previous_generated_result");
+  const frases = references.filter((image): image is ImageInput => !esImagenGuia(image)).map((image, index) => {
+    const frase = revision && image.role === "venue_base"
+      ? "venue context only: use architecture, camera, crop and light; preserve the current result's composition and decoration."
+      : FRASE_POR_ROL[image.role];
+    return `Input image ${index + 1} (@image${index + 1}): ${frase}`;
+  });
   const baseIndex = references.findIndex((image) => image.role === "previous_generated_result" || image.role === "venue_base");
   const baseInstruction = baseIndex < 0
     ? "No venue base; create venue from prompt."
     : references[baseIndex]!.role === "previous_generated_result"
-      ? `PRIMARY BASE @image${baseIndex + 1}: preserve current scene and venue; apply only requested change.`
+      ? `PRIMARY BASE @image${baseIndex + 1}: preserve current scene and venue; apply only requested change.${references.some((image) => image.role === "venue_base") ? " The venue image is context only and never replaces this base." : ""}`
       : `PRIMARY VENUE @image${baseIndex + 1}: preserve this venue; never use another input background.`;
   return `${prompt}\n\nINPUT IMAGES\n${baseInstruction}\n${frases.join("\n")}\nOne cohesive photorealistic scene; no collage, board, cutouts or samples.`;
 }

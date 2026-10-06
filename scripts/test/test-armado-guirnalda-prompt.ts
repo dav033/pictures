@@ -8,7 +8,7 @@ import { LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { buildLoraEditPrompt, ensureLoraTriggers } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, fraseInstanciaConArmadoGuirnalda } from "@/lib/ia/uzume/armado-en-prompt";
-import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_GARLAND_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, LORA_PRESENTATION_INSTRUCTION, piezasDeLosArmados, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
+import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_GARLAND_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, LORA_PRESENTATION_INSTRUCTION, piezasDeLosArmados, promptPresentacionLora } from "./fixtures/gemini-composition-historica";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";

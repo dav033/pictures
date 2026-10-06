@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Lock, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ETIQUETA_FORMATO_PROMPT, esSeleccionFormatoPrompt, FORMATO_PROMPT_AUTOMATICO, OPCIONES_FORMATO_PROMPT, promptFormatParaGenerar, type SeleccionFormatoPrompt } from "@/lib/lora/formato-prompt-cliente";
 import { CREATIVIDAD_POR_DEFECTO, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import { DecoracionCard } from "@/components/DecoracionCard";
 import { Lightbox } from "@/components/Lightbox";
@@ -23,21 +22,17 @@ import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { Imagen, PeticionImagen } from "@/lib/ia/nucleo/tipos";
 import { ASPECTOS_SOPORTADOS, aspectoMasCercano } from "@/lib/ia/nucleo/aspecto";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
-import type { LoraModeSlug } from "@/lib/lora/schema";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { ItemRechazado, ItemValidado } from "@/lib/rag/chat/validar";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
 
-// FLUX.2 base sin LoRA por defecto (2026-10-04); en desarrollo
-// NEXT_PUBLIC_LORA_MODE puede elegir un modo entrenado para comparar.
-const DEFAULT_LORA_MODE: LoraModeSlug = modoLoraPorDefecto({ nodeEnv: process.env.NODE_ENV, modoPedido: process.env.NEXT_PUBLIC_LORA_MODE });
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1, leerUiErrorV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { AvisoError } from "@/components/errores/AvisoError";
 import { useModoVista } from "@/lib/estado/modo-vista";
-import { abrirPromptAutomaticamente, modoLoraPorDefecto, nombreRutaFlux, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
+import { abrirPromptAutomaticamente } from "@/lib/estado/modo-vista-reglas";
 import { aplicarEventoHerramienta, cerrarPasos, type PasoAsistente } from "@/lib/estado/pasos-asistente";
 import { contextoEventoConversacion } from "@/lib/estado/contexto-evento";
 import { crearEsperaAnalisis, type EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
@@ -69,20 +64,13 @@ import { HojaSeleccion } from "@/components/ui/shell/HojaSeleccion";
 import { volarFoto } from "@/components/ui/shell/vuelo-foto";
 
 type ProveedorId = "gemini";
-type SelectorIA = ProveedorId | "lora";
-
 const NOMBRE_PROVEEDOR: Record<ProveedorId, string> = {
-  gemini: "Gemini 3.6 Flash / Nano Banana 2",
-};
-
-const NOMBRE_SELECTOR: Record<SelectorIA, string> = {
-  ...NOMBRE_PROVEEDOR,
-  lora: nombreRutaFlux(DEFAULT_LORA_MODE),
+  gemini: "Gemini 3.6 Flash (chat)",
 };
 
 type GeneracionVisible = {
-  modo: "gemini" | "lora";
-  solicitado: SelectorIA;
+  modo: "flux";
+  solicitado: ProveedorId;
   etiqueta: string;
   prompts: Array<{ label: string; prompt: string }>;
 };
@@ -215,18 +203,13 @@ type GenerarOverride = {
   anchorMessageId?: string;
   /** Adjuntos de la propuesta anclada; evita usar fotos de otro turno. */
   adjuntos?: AdjuntosTurno;
-  /**
-   * El cliente pidió explícitamente "Generar con estilo estándar" desde un
-   * aviso de error: este intento no usa LoRA. Nunca se activa solo.
-   */
-  estiloEstandar?: boolean;
 };
 
 type ErrorVisible = { ui: UiErrorV1; origen: OrigenError };
 
 const ACCIONES_POR_ORIGEN: Readonly<Record<OrigenError, ReadonlySet<AccionUiV1>>> = {
   chat: new Set<AccionUiV1>(["reintentar", "ajustar_propuesta", "pedir_nueva_propuesta", "revisar_adjuntos"]),
-  generacion: new Set<AccionUiV1>(["reintentar", "generar_estilo_estandar", "revisar_propuesta", "pedir_nueva_propuesta", "ajustar_propuesta", "revisar_adjuntos"]),
+  generacion: new Set<AccionUiV1>(["reintentar", "revisar_propuesta", "pedir_nueva_propuesta", "ajustar_propuesta", "revisar_adjuntos"]),
   catalogo: new Set<AccionUiV1>(),
   plan: new Set<AccionUiV1>(["revisar_propuesta"]),
 };
@@ -514,10 +497,6 @@ export default function Page() {
   // estándar" desde el aviso de error. `override` indefinido = clic manual.
   const ultimoIntentoGeneracionRef = useRef<{ override: GenerarOverride } | null>(null);
   const [proveedor, setProveedor] = useState<ProveedorId>("gemini");
-  const [selectorIA, setSelectorIA] = useState<SelectorIA>("lora");
-  // Formato del prompt LoRA: automático (lo resuelve el servidor por el trigger
-  // y no se envía), texto (entrenado), JSON o ambos (dos imágenes para comparar).
-  const [formatoPromptLora, setFormatoPromptLora] = useState<SeleccionFormatoPrompt>(FORMATO_PROMPT_AUTOMATICO);
   // Calibración de creatividad 0–5 (src/lib/ia/escena/creatividad.ts): la leen el
   // chat (diseño) y la generación (prompt LoRA). El ref evita cierres viejos
   // en los callbacks que arman las peticiones.
@@ -527,11 +506,6 @@ export default function Page() {
     creatividadRef.current = nivel;
     setCreatividad(nivel);
   };
-  const loraModeRef = useRef<LoraModeSlug>(DEFAULT_LORA_MODE);
-  // Espejo en estado del ref anterior, solo para lecturas durante el render
-  // (p. ej. la tarjeta del plan): un ref no puede leerse ahí sin violar las
-  // reglas de React, así que este valor se actualiza junto con el ref.
-  const [loraModeParaBadge, setLoraModeParaBadge] = useState<LoraModeSlug>(DEFAULT_LORA_MODE);
   const [proveedoresDisponibles, setProveedoresDisponibles] = useState<ProveedorId[]>(["gemini"]);
   const [cargadoDeStorage, setCargadoDeStorage] = useState(false);
   // Las tarjetas clicables y la propuesta autónoma de la IA conviven siempre
@@ -588,7 +562,6 @@ export default function Page() {
   // Id de la interacción de Gemini que produjo la última imagen — se manda
   // de vuelta en la siguiente revisión (ajuste sobre una imagen ya generada)
   // para que el modelo encadene contexto real, no solo la imagen final.
-  const ultimaInteraccionIdRef = useRef<string | undefined>(undefined);
   // Recursos de la generación activa. Se guardan en refs para que la limpieza
   // no dependa del closure de un render viejo: timeout, abort y desmontaje
   // deben dejar la UI en estado idle incluso si la API devuelve 4xx/5xx.
@@ -780,28 +753,12 @@ export default function Page() {
         if (disponibles.length) {
           setProveedoresDisponibles(disponibles);
           setProveedor(data.predeterminado ?? disponibles[0]);
-          // No pisar `selectorIA` acá: este endpoint solo conoce proveedores
-          // Gemini (`ProveedorId`), nunca "lora" — sobrescribirlo en cada
-          // carga volvía a Gemini el default real (LoRA) sin que el usuario
-          // lo pidiera.
         }
       })
       .catch(() => {});
   }, []);
 
-  async function cambiarSelector(nuevo: SelectorIA) {
-    setSelectorIA(nuevo);
-    if (nuevo === "lora") {
-      setMensajes((previos) => [
-        ...previos,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-            content: `Listo: las imágenes se crearán con ${NOMBRE_SELECTOR.lora}. Seguimos conversando igual.`,
-        },
-      ]);
-      return;
-    }
+  async function cambiarProveedor(nuevo: ProveedorId) {
     if (nuevo === proveedor) return;
     setProveedor(nuevo);
     try {
@@ -1014,7 +971,6 @@ export default function Page() {
           messages: nuevos.map(({ role, content }) => ({ role, content })),
           brief: briefRef.current,
           proveedor,
-          loraMode: loraModeRef.current ?? undefined,
           // Leídos de los refs (no del estado directo), mismo criterio que
           // en generar(): garantiza el valor más reciente sin importar
           // cuándo se creó este closure de enviar().
@@ -1149,9 +1105,6 @@ export default function Page() {
     setPromptModalAbierto(false);
     setError(null);
     setSeleccionPendiente(false);
-    setSelectorIA("lora");
-    loraModeRef.current = DEFAULT_LORA_MODE;
-    setLoraModeParaBadge(DEFAULT_LORA_MODE);
     setFotoEspacio(null);
     setImagenesReferencia([]);
     setEtiquetasAdjuntos({});
@@ -1159,7 +1112,6 @@ export default function Page() {
     setHojaSeleccionAbierta(false);
     setErrorAdjuntos(null);
     aspectoActivoRef.current = undefined;
-    ultimaInteraccionIdRef.current = undefined;
     pendienteAutoGlobal = null;
     limpiarSeleccion();
     setPlanAprobadoHash(null);
@@ -1269,14 +1221,6 @@ export default function Page() {
       setGenerando(true);
       setSegundosGeneracion(0);
       setError(null);
-      const usarLoraEnIntento = usarLoraEfectivo({
-        modo: modoVista,
-        selectorLora: selectorIA === "lora",
-        estiloEstandarExplicito: Boolean(override?.estiloEstandar),
-        hayFotoEspacio: Boolean(fotoEspacioParaGenerar),
-        hayReferencias: imagenesReferenciaParaGenerar.length > 0,
-        esAjusteDeImagen: Boolean((override?.instruccion ?? ajuste.trim()) && ultimaImagenGenerada),
-      });
 
       const controlador = new AbortController();
       generacionAbortRef.current = controlador;
@@ -1300,12 +1244,6 @@ export default function Page() {
             brief: briefAUsar,
             solicitudUsuario,
             instruccion: (override?.instruccion ?? ajuste.trim()) || undefined,
-            proveedor,
-            usarLora: usarLoraEnIntento,
-            // El servidor ya no acepta una llamada LoRA sin modo resuelto
-            // (PLAN-COMPOSICION-RICA-V001.md §1.1/§9.2: no hay fallback
-            loraMode: usarLoraEnIntento ? loraModeRef.current ?? undefined : undefined,
-            promptFormat: promptFormatParaGenerar(formatoPromptLora, usarLoraEnIntento),
             creatividad: creatividadRef.current,
             // Propuestas ancladas usan los adjuntos del mensaje exacto. Los
             // envíos nuevos usan el compositor actual.
@@ -1337,10 +1275,6 @@ export default function Page() {
             previousGeneratedImage:
               (override?.instruccion ?? ajuste.trim()) && ultimaImagenGenerada
                 ? ultimaImagenGenerada
-                : undefined,
-            previousInteractionId:
-              (override?.instruccion ?? ajuste.trim()) && ultimaImagenGenerada
-                ? ultimaInteraccionIdRef.current
                 : undefined,
             // Sin imagen previa no hay nada que ajustar: el servidor también lo ignora.
             revisionInstruction: ultimaImagenGenerada ? (override?.instruccion ?? ajuste.trim()) || undefined : undefined,
@@ -1376,8 +1310,8 @@ export default function Page() {
           if (typeof data.imagen === "string") void guardarGeneracionAprobada(hashAprobado, data.imagen);
         }
 
-         const modoGeneracion: GeneracionVisible["modo"] = data.modoImagen === "lora" ? "lora" : "gemini";
-         const etiquetaGeneracion = modoGeneracion === "lora" ? NOMBRE_SELECTOR.lora : "Nano Banana 2 (Gemini)";
+         const modoGeneracion: GeneracionVisible["modo"] = "flux";
+         const etiquetaGeneracion = "FLUX base";
         const prompts = typeof data.prompts === "object" && data.prompts !== null
           ? Object.entries(data.prompts as Record<string, unknown>)
               .filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim().length > 0)
@@ -1385,12 +1319,9 @@ export default function Page() {
           : typeof data.prompt === "string" && data.prompt.trim().length > 0
             ? [{ label: etiquetaGeneracion, prompt: data.prompt }]
             : [];
-        setUltimaGeneracion({ modo: modoGeneracion, solicitado: selectorIA, etiqueta: etiquetaGeneracion, prompts });
+        setUltimaGeneracion({ modo: modoGeneracion, solicitado: proveedor, etiqueta: etiquetaGeneracion, prompts });
         setPromptModalAbierto(abrirPromptAutomaticamente(modoVista, prompts.length > 0));
-        ultimaInteraccionIdRef.current = typeof data.interactionId === "string" ? data.interactionId : undefined;
-        // Con formato "ambos" llega una segunda imagen (prompt JSON) con la misma semilla.
-        const imagenJson = typeof data.imagenAlternativa?.imagen === "string" && data.imagenAlternativa.imagen.startsWith("data:") ? data.imagenAlternativa.imagen : undefined;
-        setImagenes((previas) => [data.imagen, ...(imagenJson ? [imagenJson] : []), ...previas]);
+        setImagenes((previas) => [data.imagen, ...previas]);
         setAvisoNoCotizado(typeof data.avisoNoCotizado === "string" && data.avisoNoCotizado.trim() ? data.avisoNoCotizado : null);
         setImagenAmpliada(null);
         // La imagen que se acaba de generar ya refleja la selección actual.
@@ -1477,11 +1408,6 @@ export default function Page() {
           const indice = mensajes.map((mensaje) => mensaje.role).lastIndexOf("user");
           if (indice >= 0) void enviar(mensajes[indice].content, mensajes.slice(0, indice));
         }
-        return;
-      }
-      case "generar_estilo_estandar": {
-        const intento = ultimoIntentoGeneracionRef.current;
-        if (intento) generar({ ...(intento.override ?? { ids: [] }), estiloEstandar: true });
         return;
       }
       case "revisar_propuesta": {
@@ -1803,8 +1729,8 @@ export default function Page() {
         barraDev={
           <>
             <span className="font-medium text-texto-suave">Dev</span>
-            <label htmlFor="selector-modelo" className="sr-only">Modelo para generar imágenes</label>
-            <Select value={selectorIA} onValueChange={(v) => cambiarSelector(v as SelectorIA)}>
+            <label htmlFor="selector-modelo" className="sr-only">Proveedor de chat</label>
+            <Select value={proveedor} onValueChange={(v) => cambiarProveedor(v as ProveedorId)}>
               <SelectTrigger id="selector-modelo">
                 <SelectValue />
               </SelectTrigger>
@@ -1818,26 +1744,8 @@ export default function Page() {
                     </span>
                   </SelectItem>
                 ))}
-                <SelectItem value="lora">{NOMBRE_SELECTOR.lora}</SelectItem>
               </SelectContent>
             </Select>
-            {selectorIA === "lora" && (
-              <>
-                <label htmlFor="formato-prompt-lora" className="sr-only">Formato del prompt LoRA</label>
-                <Select value={formatoPromptLora} onValueChange={(v) => { if (esSeleccionFormatoPrompt(v)) setFormatoPromptLora(v); }}>
-                  <SelectTrigger id="formato-prompt-lora" title="Automático: el servidor elige el formato según el estilo LoRA. Texto: prompt entrenado. JSON: prompt estructurado. Ambos: dos imágenes con la misma semilla (doble costo).">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {OPCIONES_FORMATO_PROMPT.map((formato) => (
-                      <SelectItem key={formato} value={formato}>
-                        {ETIQUETA_FORMATO_PROMPT[formato]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            )}
           </>
         }
       />
@@ -1988,7 +1896,6 @@ export default function Page() {
                           escenografiaApagada={escenografiaApagada}
                           onEscenografiaToggle={alternarEscenografia}
                           onPedirAjuste={m.plan.plan_hash === planActual?.plan_hash && !cargandoChat ? (texto) => void enviar(texto) : undefined}
-                          loraMode={loraModeParaBadge}
                           precioCliente={m.cotizacion ? <CotizacionProfesional cotizacion={m.cotizacion} clave={m.id} incrustada /> : undefined}
                         />
                       )}

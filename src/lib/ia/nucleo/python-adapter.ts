@@ -154,8 +154,6 @@ export const PYTHON_HAPPIE_GENERATE_PATH = "/internal/v1/ia/happie-generate";
 export const PYTHON_HAPPIE_GENERATE_SCOPE = "ia.happie_generate";
 export const PYTHON_REFERENCE_TURN_PATH = "/internal/v1/ia/reference-turn";
 export const PYTHON_REFERENCE_TURN_SCOPE = "ia.reference_turn";
-export const PYTHON_IMAGE_GENERATE_PATH = "/internal/v1/ia/image-generate";
-export const PYTHON_IMAGE_GENERATE_SCOPE = "ia.image_generate";
 export const PYTHON_LORA_GENERATE_PATH = "/internal/v1/ia/lora-generate";
 export const PYTHON_LORA_GENERATE_SCOPE = "ia.lora_generate";
 export const PYTHON_CHAT_TURN_STREAM_PATH = "/internal/v1/ia/chat-turn-stream";
@@ -1326,44 +1324,6 @@ export interface PythonPatronReferenciaResult {
   replayed?: boolean;
 }
 
-export type PythonImageGenerateInputBlock =
-  | { type: "text"; text: string }
-  | { type: "image"; data: string; mimeType: "image/png" | "image/jpeg" | "image/webp" };
-
-export interface PythonImageGenerateInput {
-  model?: string;
-  input: PythonImageGenerateInputBlock[];
-  store?: boolean;
-  previousInteractionId?: string;
-  aspectRatio: "1:1" | "2:3" | "3:2" | "16:9";
-  imageSize: "1K" | "2K";
-  requestId: string;
-  correlationId: string;
-  deadlineMs?: number;
-  idempotencyKey?: string;
-  parentSignal?: AbortSignal;
-  env?: AdapterEnvironment;
-  fetchImpl?: typeof fetch;
-  randomUUID?: () => string;
-}
-
-export interface PythonImageGenerateUsage {
-  total_input_tokens?: number;
-  total_output_tokens?: number;
-  total_thought_tokens?: number;
-  total_cached_tokens?: number;
-  total_tool_use_tokens?: number;
-  total_tokens?: number;
-}
-
-export interface PythonImageGenerateResult {
-  imageBase64: string;
-  model: string;
-  interactionId: string | null;
-  usage: PythonImageGenerateUsage | null;
-  replayed?: boolean;
-}
-
 export interface PythonLoraSpec {
   path: string;
   scale: number;
@@ -2486,22 +2446,6 @@ const planDibujoEstructuraPayloadResultSchema = z.object({
   grafica: GraficaDibujoEstructuraSchema,
 }).strict();
 
-const imageGenerateUsageSchema = z.object({
-  total_input_tokens: z.number().int().nonnegative().optional(),
-  total_output_tokens: z.number().int().nonnegative().optional(),
-  total_thought_tokens: z.number().int().nonnegative().optional(),
-  total_cached_tokens: z.number().int().nonnegative().optional(),
-  total_tool_use_tokens: z.number().int().nonnegative().optional(),
-  total_tokens: z.number().int().nonnegative().optional(),
-}).strict();
-
-const imageGeneratePayloadResultSchema = z.object({
-  image_base64: z.string().min(1),
-  model: z.string().min(1),
-  interaction_id: z.string().nullable(),
-  usage: imageGenerateUsageSchema.nullable(),
-}).strict();
-
 const chatTurnStreamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("text"), delta: z.string().min(1) }).strict(),
   z.object({
@@ -3148,49 +3092,6 @@ export async function llamarPythonLecturaUnica(
     armadosBouquet: parsed.data.armados_bouquet,
     armadosGuirnalda: parsed.data.armados_guirnalda,
     validadorVersion: parsed.data.validador_version,
-  };
-  return response.replayed ? { ...result, replayed: true } : result;
-}
-
-/**
- * The one Gemini Interactions call `crearImagenGemini`'s `generar()` makes
- * (src/lib/ia/uzume/imagen.ts, via the ImagenPort
- * src/lib/ia/uzume/imagen-python.ts wraps around this). `input` travels
- * already fully composed (prompt + per-image role/allowed_use labels) --
- * Python never decides what a reference image is for, only sends it. Uses
- * `maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES` since reference/product
- * images are far larger than every other operation's payload.
- */
-export async function llamarPythonImageGenerate(
-  input: PythonImageGenerateInput,
-): Promise<PythonImageGenerateResult> {
-  const { model, input: blocks, store, previousInteractionId, aspectRatio, imageSize, ...rest } = input;
-  const operationPayload = {
-    schema_version: "image-generate.v1" as const,
-    input: blocks.map((block) => block.type === "text"
-      ? { type: "text" as const, text: block.text }
-      : { type: "image" as const, data: block.data, mime_type: block.mimeType }),
-    store: store ?? true,
-    ...(previousInteractionId === undefined ? {} : { previous_interaction_id: previousInteractionId }),
-    aspect_ratio: aspectRatio,
-    image_size: imageSize,
-    ...(model === undefined ? {} : { model }),
-  };
-  const response = await llamarPythonOperacion(PYTHON_IMAGE_GENERATE_PATH, PYTHON_IMAGE_GENERATE_SCOPE, {
-    ...rest,
-    payload: operationPayload,
-    operationBody: operationPayload,
-    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
-  });
-  const parsed = imageGeneratePayloadResultSchema.safeParse(response.payload);
-  if (!parsed.success) {
-    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
-  }
-  const result: PythonImageGenerateResult = {
-    imageBase64: parsed.data.image_base64,
-    model: parsed.data.model,
-    interactionId: parsed.data.interaction_id,
-    usage: parsed.data.usage,
   };
   return response.replayed ? { ...result, replayed: true } : result;
 }

@@ -102,6 +102,7 @@ const CONCEPT_ID_SHAPE_PATTERN = /\b[a-z0-9]+(?:\.[a-z0-9_]+){2,}\b/g;
 
 const COMMERCIAL_LEAK_PATTERNS: Array<[RegExp, string]> = [
   [/\bsku\b/i, "sku"],
+  [/\bB2B-\d+\b/i, "catalog identifier"],
   [/paquete\s*x\s*\d+/i, "paquete x N"],
   [/\bpack\s*x\s*\d+/i, "pack x N"],
   [/\$\s?\d/, "currency amount"],

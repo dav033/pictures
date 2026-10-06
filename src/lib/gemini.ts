@@ -1,7 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
 export const MODELO_CHAT = process.env.GEMINI_CHAT_MODEL ?? "gemini-3.6-flash";
-export const MODELO_IMAGEN = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-image";
 
 // Fase 3.6: antes se instanciaba un GoogleGenAI (y su agente HTTP
 // subyacente) en cada llamada — potencialmente un handshake TLS por vuelta
