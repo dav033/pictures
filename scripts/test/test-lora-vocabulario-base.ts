@@ -3,6 +3,8 @@ import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { findLoraPromptProductLeaks, preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { referenciaDelTitulo } from "../../src/lib/plan/referencia-sempertex";
+import { colorDeReferencia } from "../../src/lib/ia/kagutsuchi/vocabulario-base";
 
 const id = "7109611258049";
 const sceneSpec: SceneSpec = {
@@ -32,3 +34,26 @@ assert.equal(preflightLoraPrompt({ sceneSpec, clauses: compiled.clauses, prompt:
 assert.equal(findLoraPromptProductLeaks("SKU 10 pack x 6 COP 25").length, 3);
 assert.deepEqual(findLoraPromptProductLeaks(compiled.prompt), []);
 console.log("FLUX base vocabulary: OK");
+
+const colorDeTitulo = (titulo: string, acabado: string) => {
+  const referencia = referenciaDelTitulo(titulo, acabado);
+  assert.ok(referencia, `sin referencia de catálogo: ${titulo}`);
+  return colorDeReferencia(referencia);
+};
+
+assert.match(colorDeTitulo("B2b Globo Latex Redondo Silk Rosa Primaveral", "satin pearlescent"), /(?:pale|light).*blush pink|blush pink/i);
+assert.match(colorDeTitulo("B2b Globo Latex Redondo Pastel Mate Nude", "soft matte"), /(?:pale|light|muted).*nude beige|nude beige/i);
+assert.match(colorDeTitulo("B2b Globo Latex Redondo Reflex Plata", "mirror-like chrome"), /bright silver/i);
+assert.equal(colorDeTitulo("B2b Globo Latex Redondo Reflex Dorado", "mirror-like chrome"), "gold");
+assert.match(colorDeTitulo("B2b Globo Latex Redondo Fashion Azul Naval", "matte"), /navy blue/i);
+assert.equal(colorDeTitulo("B2b Globo Latex Redondo Fashion Blanco", "matte"), "white");
+const captionDeTitulo = (titulo: string) => compileProductPrompt({
+  sceneSpec,
+  visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
+  productCatalogTitles: new Map([[id, titulo]]),
+}).prompt;
+assert.match(captionDeTitulo("B2b Globo Latex Redondo Silk Rosa Primaveral"), /blush pink.*pearlescent|pearlescent.*blush pink/i);
+assert.match(captionDeTitulo("B2b Globo Latex Redondo Pastel Mate Nude"), /(?:pale|light|muted).*nude beige/i);
+assert.match(captionDeTitulo("B2b Globo Latex Redondo Reflex Plata"), /bright silver.*mirror-like chrome|mirror-like chrome.*bright silver/i);
+assert.match(captionDeTitulo("B2b Globo Latex Redondo Reflex Plata"), /reflecting the room/i);
+console.log("Perceptual catalog colors (pink, nude, chrome silver, gold, navy, white): OK");
