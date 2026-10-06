@@ -1,0 +1,338 @@
+{
+  "id": "real-01-305",
+  "fuente": "305.gif",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-01-305.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "b1d4e519-2c95-4457-a9ae-914e53a5f1ff",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1.1065
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "black and white balloon arch",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "A full continuous arch of black and white latex balloons arranged in spiral clusters standing on two bases on the tiled floor.",
+          "reference_bbox": {
+            "x": 0.085,
+            "y": 0.073,
+            "width": 0.802,
+            "height": 0.8370000000000001
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "matte white",
+              "matte black"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.4404
+              },
+              {
+                "color": "negro",
+                "share": 0.3507
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense arch, spanning the full width, standing on the floor",
+            "composition": "50% black round balloons and 50% white round balloons arranged in a classic spiral pattern across the full arch structure",
+            "patron_color": {
+              "modo": "espiral",
+              "colores": [
+                "blanco",
+                "blanco",
+                "negro",
+                "negro"
+              ],
+              "globos_por_racimo": 4,
+              "simetria": "espejo",
+              "confianza": 0.96
+            },
+            "tamanos_leidos": "un_solo_tamano",
+            "conteo": {
+              "globos_visibles": 95,
+              "exacto": false,
+              "estimado_total": 152,
+              "racimos": 38,
+              "globos_por_racimo": 4,
+              "por_tamano": [
+                {
+                  "clase": "mediano",
+                  "proporcion": 1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.92
+            },
+            "armado_guirnalda": {
+              "soporte": "piso",
+              "forma": "u_invertida",
+              "puntos_de_anclaje": 2,
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": 0.042,
+              "racimos_visibles": 38,
+              "unidad_racimo": "cuarteto",
+              "colores_por_racimo": [
+                "blanco",
+                "blanco",
+                "negro",
+                "negro"
+              ],
+              "relleno": null,
+              "remates": [],
+              "confianza": 0.95
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "005",
+                "familia": "fashion",
+                "nombre": "Blanco",
+                "nombre_completo": "Fashion Blanco",
+                "parte": 0.5066,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "080",
+                "familia": "fashion",
+                "nombre": "Negro",
+                "nombre_completo": "Fashion Negro",
+                "parte": 0.4934,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "arco",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary decorative balloon structure in scene.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "left window with white curtain",
+          "category": "other",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.88,
+          "visible_evidence": "Sheer white fabric curtains hanging on a rod in front of a multi-pane window on the left side of the room.",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0.141,
+            "width": 0.263,
+            "height": 0.704
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "white",
+              "translucent white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.3503
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "fabric",
+            "shape": "shape not determinable",
+            "composition": "White sheer curtain panels covering a window with dark frame on the left wall"
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Background architectural/backdrop element.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Spiral black and white balloon arch spanning across the room frame",
+        "density": "dense",
+        "symmetry": "symmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "matte white",
+          "matte black",
+          "terracotta red",
+          "grey tile"
+        ],
+        "priority": [
+          "matte white",
+          "matte black",
+          "terracotta red",
+          "grey tile"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "de5e9bc4584eb652cbc410fd9f5229850ae3cb7855a9d13a79698c433a5c71c0",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 800,
+            "height": 723
+          },
+          "processed": {
+            "width": 800,
+            "height": 723
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "arco",
+          "croquis": {
+            "forma": "anillo de arco",
+            "parteDeLaCaja": 0.4697
+          },
+          "pixeles": {
+            "medidos": 78438,
+            "deLaCaja": 160268
+          },
+          "colores": [
+            {
+              "hex": "#f2f0ed",
+              "parte": 0.5066,
+              "pixeles": 39733,
+              "cruce": {
+                "hex": "#f2f0ed",
+                "candidatas": [
+                  {
+                    "codigo": "005",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Fashion Blanco",
+                    "nombreEn": "matte white",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#ffffff",
+                    "deltaE": 5.4,
+                    "distancia": 4.2,
+                    "tono": 148.1,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": [
+                  "fashion",
+                  "pastelMate",
+                  "neon"
+                ]
+              }
+            },
+            {
+              "hex": "#0a090e",
+              "parte": 0.4934,
+              "pixeles": 38705,
+              "cruce": {
+                "hex": "#0a090e",
+                "candidatas": [
+                  {
+                    "codigo": "080",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Fashion Negro",
+                    "nombreEn": "matte black",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#000000",
+                    "deltaE": 3.4,
+                    "distancia": 3.5,
+                    "tono": 62.7,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": [
+                  "fashion",
+                  "pastelMate",
+                  "neon"
+                ]
+              }
+            }
+          ],
+          "avisos": [
+            "3 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -23,6 +23,7 @@ export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir
                 <FotoDecoracion decoracion={decoracion} sizes="(max-width: 640px) 78vw, 272px" />
                 <span className="absolute left-2.5 top-2.5 flex gap-1.5">
                   {decoracion.origen === "ejemplo" && <span className="rounded-full bg-white/90 px-2 py-0.5 text-[0.7rem] font-semibold text-[#6d3c39] shadow-sm">Ejemplo</span>}
+                  {decoracion.origen === "referencia_real" && <span className="rounded-full bg-white/90 px-2 py-0.5 text-[0.7rem] font-medium text-texto-secundario shadow-sm">Referencia</span>}
                   {decoracion.coincidencia === "cercana" && <span className="rounded-full bg-white/90 px-2 py-0.5 text-[0.7rem] font-semibold text-[#5b4a6b] shadow-sm">Parecida</span>}
                 </span>
                 {elegida && <span className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full bg-acento text-white shadow"><Check className="size-4" aria-label="Elegida" /></span>}

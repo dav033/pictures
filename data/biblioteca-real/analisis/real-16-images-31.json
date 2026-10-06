@@ -1,0 +1,954 @@
+{
+  "id": "real-16-images-31",
+  "fuente": "images (31).jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-16-images-31.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "abb584ff-8c4d-4289-ad27-fb48ffdb297b",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "silver foil fringe curtain backdrop",
+          "category": "curtain",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Silver metallic fringe curtain running vertically behind the central design",
+          "reference_bbox": {
+            "x": 0.138,
+            "y": 0.253,
+            "width": 0.785,
+            "height": 0.566
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome silver"
+            ],
+            "measured_colors": [
+              {
+                "color": "plateado",
+                "share": 0.7296
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "foil",
+            "shape": "shape not determinable",
+            "composition": "100% silver metallic foil fringe curtain acting as wall backdrop"
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Essential backdrop element",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "organic blue balloon arch garland",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Large balloon garland arching over the top and down both sides of the silver curtain",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0,
+            "width": 0.998,
+            "height": 0.642
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "royal blue",
+              "chrome blue",
+              "navy blue",
+              "clear with silver confetti"
+            ],
+            "measured_colors": [
+              {
+                "color": "azul",
+                "share": 0.1097
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex and foil",
+            "shape": "tall dense asymmetrical garland, spanning the full width, raised off the floor",
+            "composition": "50% dark navy blue latex, 30% chrome blue latex, 10% clear confetti balloons, 10% blue foil stars and hearts",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "azul",
+                "transparente"
+              ],
+              "pesos": [
+                85,
+                15
+              ],
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 65,
+              "exacto": false,
+              "estimado_total": 85,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.2
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.6
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.2
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "pared",
+              "forma": "u_invertida",
+              "puntos_de_anclaje": 3,
+              "sentido_curva": "arriba",
+              "flecha_relativa": 0.493,
+              "desnivel_relativo": 0.161,
+              "racimos_visibles": 35,
+              "colores_por_racimo": [
+                "azul",
+                "transparente"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "metalizado",
+                  "color": "azul",
+                  "posicion": "extremo_izq"
+                },
+                {
+                  "clase": "metalizado",
+                  "color": "azul",
+                  "posicion": "centro"
+                }
+              ],
+              "confianza": 0.95
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "044",
+                "familia": "fashion",
+                "nombre": "Azul Naval",
+                "nombre_completo": "Fashion Azul Naval",
+                "parte": 0.218,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "540",
+                "familia": "metal",
+                "nombre": "Azul",
+                "nombre_completo": "Metal Azul",
+                "parte": 0.1427,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "guirnalda",
+            "placement": "fondo_pared",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E02",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Main balloon arch/garland structure",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "feliz cumpleaños silver foil letter banner",
+          "category": "signage",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Silver foil letters forming 'FELIZ CUMPLEAÑOS' pinned to the backdrop",
+          "reference_bbox": {
+            "x": 0.251,
+            "y": 0.338,
+            "width": 0.583,
+            "height": 0.23599999999999993
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome silver"
+            ],
+            "measured_colors": [
+              {
+                "color": "plateado",
+                "share": 0.8755
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "foil",
+            "shape": "shape not determinable",
+            "composition": "100% silver foil letter balloons spelling FELIZ CUMPLEAÑOS"
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Main birthday message signage",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E04",
+          "source_image_id": "REF_01",
+          "name": "draped dessert table",
+          "category": "furniture",
+          "scene_role": "midground",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Table covered with white cloth and draped blue satin fabric in front of the backdrop",
+          "reference_bbox": {
+            "x": 0.199,
+            "y": 0.75,
+            "width": 0.6439999999999999,
+            "height": 0.25
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pearl white",
+              "royal blue"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.5162
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "fabric",
+            "shape": "shape not determinable",
+            "composition": "60% white tablecloth base, 40% royal blue satin runner draped diagonally"
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Table staging cake and desserts",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E05",
+          "source_image_id": "REF_01",
+          "name": "left blue balloon bouquet with star topper",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.92,
+          "visible_evidence": "Standing balloon bouquet on the floor left side with a blue foil star on top",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0.678,
+            "width": 0.227,
+            "height": 0.31799999999999995
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "royal blue",
+              "chrome blue",
+              "navy blue"
+            ],
+            "measured_colors": [
+              {
+                "color": "azul",
+                "share": 0.1696
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex and foil",
+            "shape": "short dense bouquet, on the left, standing on the floor, mirroring right blue balloon bouquet with heart topper",
+            "composition": "70% dark/chrome blue round balloons, 30% large blue foil star topper",
+            "color_unico": "azul",
+            "armado_bouquet": {
+              "variante": "base_aire",
+              "niveles": [
+                {
+                  "unidad": "cuarteto",
+                  "colores": [
+                    "azul"
+                  ],
+                  "cantidad": 2,
+                  "clase_tamano": "mediano"
+                }
+              ],
+              "remate": {
+                "clase": "metalizado",
+                "color": "azul"
+              },
+              "confianza": 0.9,
+              "total_globos": 9,
+              "avisos": [
+                "nivel 1: cuarteto con 1 de 4 colores",
+                "disposición sin números; se omitió"
+              ]
+            },
+            "conteo": {
+              "globos_visibles": 12,
+              "exacto": true,
+              "estimado_total": null,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.3
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.6
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.88
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "540",
+                "familia": "metal",
+                "nombre": "Azul",
+                "nombre_completo": "Metal Azul",
+                "parte": 0.3879,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "041",
+                "familia": "fashion",
+                "nombre": "Azul Rey",
+                "nombre_completo": "Fashion Azul Rey",
+                "parte": 0.2775,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "940",
+                "familia": "reflex",
+                "nombre": "Azul",
+                "nombre_completo": "Reflex Azul",
+                "parte": 0.1462,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "kit",
+            "placement": "lateral_izquierdo",
+            "design_role": "soporte",
+            "repetition_group": "REF_01_E05",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Floor bouquet structure on the left",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E06",
+          "source_image_id": "REF_01",
+          "name": "right blue balloon bouquet with heart topper",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.92,
+          "visible_evidence": "Standing balloon bouquet on the floor right side with a blue foil heart shape",
+          "reference_bbox": {
+            "x": 0.81,
+            "y": 0.657,
+            "width": 0.18799999999999994,
+            "height": 0.34299999999999997
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "royal blue",
+              "chrome blue",
+              "clear with silver confetti"
+            ],
+            "measured_colors": [
+              {
+                "color": "azul",
+                "share": 0.321
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex and foil",
+            "shape": "short dense asymmetrical bouquet, on the right, standing on the floor, mirroring left blue balloon bouquet with star topper",
+            "composition": "70% dark/chrome blue round balloons, 20% blue foil heart topper, 10% clear confetti balloon",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "azul",
+                "transparente"
+              ],
+              "pesos": [
+                90,
+                10
+              ],
+              "confianza": 0.85
+            },
+            "armado_bouquet": {
+              "variante": "base_aire",
+              "niveles": [
+                {
+                  "unidad": "cuarteto",
+                  "colores": [
+                    "azul"
+                  ],
+                  "cantidad": 2,
+                  "clase_tamano": "mediano"
+                }
+              ],
+              "remate": {
+                "clase": "metalizado",
+                "color": "azul"
+              },
+              "confianza": 0.9,
+              "total_globos": 9,
+              "avisos": [
+                "nivel 1: cuarteto con 1 de 4 colores",
+                "disposición sin números; se omitió"
+              ]
+            },
+            "conteo": {
+              "globos_visibles": 10,
+              "exacto": true,
+              "estimado_total": null,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.3
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.6
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.88
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "041",
+                "familia": "fashion",
+                "nombre": "Azul Rey",
+                "nombre_completo": "Fashion Azul Rey",
+                "parte": 0.6595,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "kit",
+            "placement": "lateral_derecho",
+            "design_role": "soporte",
+            "repetition_group": "REF_01_E06",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Floor bouquet structure on the right",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Blue balloon garland framing a silver fringe backdrop with cake table",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "royal blue",
+          "chrome blue",
+          "navy blue",
+          "chrome silver",
+          "pearl white"
+        ],
+        "priority": [
+          "royal blue",
+          "chrome blue",
+          "navy blue",
+          "chrome silver",
+          "pearl white"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "bec5b7e433a5a0103109682ac14ff2f7dbebc36a011e495161de1ee30879724c",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 447,
+            "height": 447
+          },
+          "processed": {
+            "width": 447,
+            "height": 447
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E02",
+          "tipo": "guirnalda",
+          "croquis": {
+            "forma": "banda con caída",
+            "parteDeLaCaja": 0.6748
+          },
+          "pixeles": {
+            "medidos": 88489,
+            "deLaCaja": 128289
+          },
+          "colores": [
+            {
+              "hex": "#09296a",
+              "parte": 0.218,
+              "pixeles": 19292,
+              "cruce": {
+                "hex": "#09296a",
+                "candidatas": [
+                  {
+                    "codigo": "044",
+                    "nombre": "Azul Naval",
+                    "nombreCompleto": "Fashion Azul Naval",
+                    "nombreEn": "matte navy blue",
+                    "pms": "7687",
+                    "acabado": "matte",
+                    "hexGlobo": "#172c59",
+                    "deltaE": 13.8,
+                    "distancia": 10.9,
+                    "tono": 5.5,
+                    "razonCroma": 1.4
+                  },
+                  {
+                    "codigo": "540",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Metal Azul",
+                    "nombreEn": "metallic navy blue",
+                    "pms": "287",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#005f9f",
+                    "deltaE": 25.4,
+                    "distancia": 30.3,
+                    "tono": 20.2,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "944",
+                    "nombre": "Azul Galaxy",
+                    "nombreCompleto": "Reflex Azul Galaxy",
+                    "nombreEn": "chrome navy blue",
+                    "pms": "10365",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#4c5b72",
+                    "deltaE": 36.5,
+                    "distancia": 82.4,
+                    "tono": 21.2,
+                    "razonCroma": 3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#3879b6",
+              "parte": 0.1427,
+              "pixeles": 12625,
+              "cruce": {
+                "hex": "#3879b6",
+                "candidatas": [
+                  {
+                    "codigo": "540",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Metal Azul",
+                    "nombreEn": "metallic navy blue",
+                    "pms": "287",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#005f9f",
+                    "deltaE": 10.9,
+                    "distancia": 8,
+                    "tono": 2.9,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "044",
+                    "nombre": "Azul Naval",
+                    "nombreCompleto": "Fashion Azul Naval",
+                    "nombreEn": "matte navy blue",
+                    "pms": "7687",
+                    "acabado": "matte",
+                    "hexGlobo": "#172c59",
+                    "deltaE": 33.1,
+                    "distancia": 32.8,
+                    "tono": 17.5,
+                    "razonCroma": 1.2
+                  },
+                  {
+                    "codigo": "944",
+                    "nombre": "Azul Galaxy",
+                    "nombreCompleto": "Reflex Azul Galaxy",
+                    "nombreEn": "chrome navy blue",
+                    "pms": "10365",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#4c5b72",
+                    "deltaE": 25.8,
+                    "distancia": 46.6,
+                    "tono": 1.8,
+                    "razonCroma": 2.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": []
+        },
+        {
+          "elementId": "REF_01_E05",
+          "tipo": "kit",
+          "croquis": {
+            "forma": "elipse alta",
+            "parteDeLaCaja": 0.6304
+          },
+          "pixeles": {
+            "medidos": 9304,
+            "deLaCaja": 14586
+          },
+          "colores": [
+            {
+              "hex": "#1e69a9",
+              "parte": 0.3879,
+              "pixeles": 3609,
+              "cruce": {
+                "hex": "#1e69a9",
+                "candidatas": [
+                  {
+                    "codigo": "540",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Metal Azul",
+                    "nombreEn": "metallic navy blue",
+                    "pms": "287",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#005f9f",
+                    "deltaE": 4.1,
+                    "distancia": 2.6,
+                    "tono": 0.5,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "044",
+                    "nombre": "Azul Naval",
+                    "nombreCompleto": "Fashion Azul Naval",
+                    "nombreEn": "matte navy blue",
+                    "pms": "7687",
+                    "acabado": "matte",
+                    "hexGlobo": "#172c59",
+                    "deltaE": 27.8,
+                    "distancia": 29.3,
+                    "tono": 15.2,
+                    "razonCroma": 1.3
+                  },
+                  {
+                    "codigo": "944",
+                    "nombre": "Azul Galaxy",
+                    "nombreCompleto": "Reflex Azul Galaxy",
+                    "nombreEn": "chrome navy blue",
+                    "pms": "10365",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#4c5b72",
+                    "deltaE": 26.1,
+                    "distancia": 47,
+                    "tono": 0.5,
+                    "razonCroma": 2.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#08286d",
+              "parte": 0.2775,
+              "pixeles": 2582,
+              "cruce": {
+                "hex": "#08286d",
+                "candidatas": [
+                  {
+                    "codigo": "041",
+                    "nombre": "Azul Rey",
+                    "nombreCompleto": "Fashion Azul Rey",
+                    "nombreEn": "royal blue",
+                    "pms": "Reflex Blue",
+                    "acabado": "matte",
+                    "hexGlobo": "#2d4f9c",
+                    "deltaE": 17.1,
+                    "distancia": 13.7,
+                    "tono": 5.5,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#709abc",
+              "parte": 0.1462,
+              "pixeles": 1360,
+              "cruce": {
+                "hex": "#709abc",
+                "candidatas": [
+                  {
+                    "codigo": "940",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Reflex Azul",
+                    "nombreEn": "chrome blue",
+                    "pms": "10270",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#417693",
+                    "deltaE": 15,
+                    "distancia": 16.3,
+                    "tono": 9,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E06",
+          "tipo": "kit",
+          "croquis": {
+            "forma": "elipse alta",
+            "parteDeLaCaja": 0.6304
+          },
+          "pixeles": {
+            "medidos": 8401,
+            "deLaCaja": 13090
+          },
+          "colores": [
+            {
+              "hex": "#0e5bb0",
+              "parte": 0.6595,
+              "pixeles": 5541,
+              "cruce": {
+                "hex": "#0e5bb0",
+                "candidatas": [
+                  {
+                    "codigo": "041",
+                    "nombre": "Azul Rey",
+                    "nombreCompleto": "Fashion Azul Rey",
+                    "nombreEn": "royal blue",
+                    "pms": "Reflex Blue",
+                    "acabado": "matte",
+                    "hexGlobo": "#2d4f9c",
+                    "deltaE": 7.5,
+                    "distancia": 7.1,
+                    "tono": 5.1,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#9cd5ed",
+              "parte": 0.0687,
+              "pixeles": 577,
+              "cruce": {
+                "hex": "#9cd5ed",
+                "candidatas": [
+                  {
+                    "codigo": "940",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Reflex Azul",
+                    "nombreEn": "chrome blue",
+                    "pms": "10270",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#417693",
+                    "deltaE": 35.4,
+                    "distancia": 30,
+                    "tono": 12.5,
+                    "razonCroma": 0.9
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": true,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores eran el mismo globo visto con otra luz y se juntaron con el suyo.",
+            "Un color no tiene un globo igual en el catálogo."
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "entrada": "carpeta local privada; solo nombres de archivo",
+  "imagenes": [
+    {
+      "id": "real-01-305",
+      "fuente": "305.gif",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-02-34722b3ec9978bfe7439a121c16a1db7",
+      "fuente": "34722b3ec9978bfe7439a121c16a1db7.jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1",
+      "fuente": "63ba2a23-cda3-4af6-af27-bb1746751288-1.jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-04-71mp5umakml-ac-uf894-1000-ql80",
+      "fuente": "71mP5UMAKML._AC_UF894,1000_QL80_.jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec",
+      "fuente": "Arco-Organico_bf3d4c2f-12ab-4c83-a87b-97da3b53ec44_1200x1200.webp",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
+      "fuente": "columna-globos-alta-colorida-cinta-dorada-sobre-fondo-blanco_1647699-6728.avif",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-07-eb12910e210c94b6184d025127acce95",
+      "fuente": "eb12910e210c94b6184d025127acce95.jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-08-images-23",
+      "fuente": "images (23).jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-09-images-24",
+      "fuente": "images (24).jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-10-images-25",
+      "fuente": "images (25).jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-11-images-26",
+      "fuente": "images (26).jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-12-images-27",
+      "fuente": "images (27).jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-13-images-28",
+      "fuente": "images (28).jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-14-images-29",
+      "fuente": "images (29).jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-15-images-30",
+      "fuente": "images (30).jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-16-images-31",
+      "fuente": "images (31).jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-17-img-2939-1-600x600",
+      "fuente": "IMG_2939-1-600x600.webp",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-18-sddefault",
+      "fuente": "sddefault.jpg",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-19-semiarco-organico-combinaciones-con-reflex-26bbc",
+      "fuente": "Semiarco-Organico-Combinaciones-con-Reflex_26bbcc5b-3c4b-46ac-9c75-63909164c307_520x500.webp",
+      "estado": "analizada"
+    },
+    {
+      "id": "real-20-semiarcoilusionazul-1200x1200",
+      "fuente": "SemiarcoIlusionAzul_1200x1200.webp",
+      "estado": "analizada"
+    }
+  ]
+}

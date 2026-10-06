@@ -15,6 +15,7 @@ export function TarjetaEleccion({ decoracion }: { decoracion: DecoracionSemperte
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold">{decoracion.titulo}</h3>
         {decoracion.origen === "ejemplo" && <span className="shrink-0 rounded-full bg-acento-suave px-2 py-0.5 text-[0.7rem] font-semibold text-acento">Ejemplo</span>}
+        {decoracion.origen === "referencia_real" && <span className="shrink-0 rounded-full border border-borde-suave px-2 py-0.5 text-[0.7rem] font-medium text-texto-secundario">Referencia</span>}
       </div>
       {piezas.length > 0 && <p className="mt-1 text-sm text-texto-secundario">{piezas.join(" · ")}</p>}
       {decoracion.materiales.length > 0 && <ul className="mt-3 space-y-1.5 text-sm">

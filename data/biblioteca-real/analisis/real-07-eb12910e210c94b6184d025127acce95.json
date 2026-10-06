@@ -1,0 +1,958 @@
+{
+  "id": "real-07-eb12910e210c94b6184d025127acce95",
+  "fuente": "eb12910e210c94b6184d025127acce95.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-07-eb12910e210c94b6184d025127acce95.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "ceae086d-d706-49e3-8582-bac1ef2b0df8",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.962
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "gold shimmer wall panel",
+          "category": "backdrop",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Square wall assembled from shimmering gold sequin tiles behind the balloon columns",
+          "reference_bbox": {
+            "x": 0.263,
+            "y": 0.176,
+            "width": 0.42999999999999994,
+            "height": 0.6360000000000001
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome gold",
+              "metallic bronze"
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "plastic sequin panels",
+            "shape": "shape not determinable",
+            "composition": "100% reflective gold square sequins creating a shiny grid panel backdrop"
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Central background element defining the decor setup",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "neon birthday sign",
+          "category": "signage",
+          "scene_role": "lighting",
+          "detection_confidence": 0.97,
+          "visible_evidence": "Illuminated LED neon sign reading 'IT'S MY Birthday' mounted on the shimmer backdrop",
+          "reference_bbox": {
+            "x": 0.35,
+            "y": 0.243,
+            "width": 0.31800000000000006,
+            "height": 0.181
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "warm white",
+              "bright white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.429
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "acrylic / LED neon tube",
+            "shape": "shape not determinable",
+            "composition": "100% illuminated white acrylic/neon script letters spelling IT'S MY Birthday"
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Central signage prop attached to shimmer wall",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "left balloon column",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Vertical organic balloon column on the left side featuring pink, purple and gold balloons resting on the floor",
+          "reference_bbox": {
+            "x": 0.004,
+            "y": 0.103,
+            "width": 0.317,
+            "height": 0.752
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "matte soft pink",
+              "dusty mauve purple",
+              "chrome gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "rosado",
+                "share": 0.2488
+              },
+              {
+                "color": "lila",
+                "share": 0.0856
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "medium dense asymmetrical column, on the left, no top overhang, standing on the floor, mirroring right balloon column",
+            "composition": "40% matte light pink, 35% mauve purple, 25% metallic chrome gold clusters stacked vertically",
+            "patron_color": {
+              "modo": "bloques",
+              "colores": [
+                "rosado",
+                "morado",
+                "dorado"
+              ],
+              "pesos": [
+                35,
+                40,
+                25
+              ],
+              "confianza": 0.88
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 38,
+              "exacto": false,
+              "estimado_total": 45,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.3
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.15
+                },
+                {
+                  "clase": "gigante",
+                  "proporcion": 0.05
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "piso",
+              "forma": "recta",
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": null,
+              "racimos_visibles": 12,
+              "colores_por_racimo": [
+                "rosado",
+                "morado",
+                "dorado"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "rosado",
+                  "posicion": "extremo_der"
+                }
+              ],
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "609",
+                "familia": "pastelMate",
+                "nombre": "Rosado",
+                "nombre_completo": "Pastel Mate Rosado",
+                "parte": 0.2597,
+                "familia_fiable": true
+              }
+            ],
+            "inclinacion": 0
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "columna",
+            "placement": "lateral_izquierdo",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E03",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [
+            "Mirrored pair with REF_01_E04: the same piece repeated, built as one structure with 2 repetitions."
+          ],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary left organic balloon column",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E04",
+          "source_image_id": "REF_01",
+          "name": "right balloon column",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Tall vertical organic balloon column on the right side with pink, purple and gold balloons resting on the floor",
+          "reference_bbox": {
+            "x": 0.587,
+            "y": 0.027,
+            "width": 0.3430000000000001,
+            "height": 0.91
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "matte soft pink",
+              "dusty mauve purple",
+              "chrome gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "rosado",
+                "share": 0.3316
+              },
+              {
+                "color": "lila",
+                "share": 0.0742
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "medium dense asymmetrical column, on the right, no top overhang, standing on the floor, mirroring left balloon column",
+            "composition": "40% matte light pink, 35% dusty purple, 25% metallic gold balloons stacked high",
+            "patron_color": {
+              "modo": "bloques",
+              "colores": [
+                "rosado",
+                "morado",
+                "dorado"
+              ],
+              "pesos": [
+                35,
+                40,
+                25
+              ],
+              "confianza": 0.88
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 46,
+              "exacto": false,
+              "estimado_total": 55,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.3
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.15
+                },
+                {
+                  "clase": "gigante",
+                  "proporcion": 0.05
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "piso",
+              "forma": "recta",
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": null,
+              "racimos_visibles": 14,
+              "colores_por_racimo": [
+                "rosado",
+                "morado",
+                "dorado"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "rosado",
+                  "posicion": "extremo_der"
+                }
+              ],
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "609",
+                "familia": "pastelMate",
+                "nombre": "Rosado",
+                "nombre_completo": "Pastel Mate Rosado",
+                "parte": 0.1802,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "409",
+                "familia": "satin",
+                "nombre": "Rosado",
+                "nombre_completo": "Satín Rosado",
+                "parte": 0.1614,
+                "familia_fiable": true
+              }
+            ],
+            "inclinacion": 0
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "columna",
+            "placement": "lateral_derecho",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E03",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [
+            "Mirrored pair with REF_01_E03: the same piece repeated, built as one structure with 2 repetitions."
+          ],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary right tall organic balloon column",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Gold shimmer square backdrop panel flanked by two organic balloon columns with neon signage in center",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "chrome gold",
+          "matte soft pink",
+          "dusty mauve purple",
+          "warm white"
+        ],
+        "priority": [
+          "chrome gold",
+          "matte soft pink",
+          "dusty mauve purple",
+          "warm white"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "cfee39aea58323129f2c43c6638960e3d0e85e3937d52270cbf7011ac24aa906",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 735,
+            "height": 764
+          },
+          "processed": {
+            "width": 735,
+            "height": 764
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E03",
+          "tipo": "columna",
+          "croquis": {
+            "forma": "franja vertical",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 50552,
+            "deLaCaja": 60988
+          },
+          "colores": [
+            {
+              "hex": "#cb93b1",
+              "parte": 0.2689,
+              "pixeles": 13591,
+              "cruce": {
+                "hex": "#cb93b1",
+                "candidatas": [
+                  {
+                    "codigo": "412",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Satín Fucsia",
+                    "nombreEn": "satin pink",
+                    "pms": "699",
+                    "acabado": "satin",
+                    "hexGlobo": "#e581a4",
+                    "deltaE": 17.8,
+                    "distancia": 14.4,
+                    "tono": 13.7,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "409",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Satín Rosado",
+                    "nombreEn": "satin light pink",
+                    "pms": "230",
+                    "acabado": "satin",
+                    "hexGlobo": "#eea5be",
+                    "deltaE": 10.9,
+                    "distancia": 16.4,
+                    "tono": 12.3,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "009",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Fashion Rosado",
+                    "nombreEn": "matte light pink",
+                    "pms": "189",
+                    "acabado": "matte",
+                    "hexGlobo": "#f2b6c8",
+                    "deltaE": 14.5,
+                    "distancia": 20.8,
+                    "tono": 14.4,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#aaa4a1",
+              "parte": 0.2597,
+              "pixeles": 13126,
+              "cruce": {
+                "hex": "#aaa4a1",
+                "candidatas": [
+                  {
+                    "codigo": "609",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Pastel Mate Rosado",
+                    "nombreEn": "pastel light pink",
+                    "pms": "677",
+                    "acabado": "matte",
+                    "hexGlobo": "#e6cfd6",
+                    "deltaE": 19.2,
+                    "distancia": 15.1,
+                    "tono": 58.6,
+                    "razonCroma": 0.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#6f4a63",
+              "parte": 0.2205,
+              "pixeles": 11146,
+              "cruce": {
+                "hex": "#6f4a63",
+                "candidatas": [
+                  {
+                    "codigo": "056",
+                    "nombre": "Orquídea Morada",
+                    "nombreCompleto": "Fashion Orquídea Morada",
+                    "nombreEn": "bright matte purple",
+                    "pms": "2354",
+                    "acabado": "matte",
+                    "hexGlobo": "#a42287",
+                    "deltaE": 44.3,
+                    "distancia": 7,
+                    "tono": 0.5,
+                    "razonCroma": 0.3
+                  },
+                  {
+                    "codigo": "951",
+                    "nombre": "Violeta",
+                    "nombreCompleto": "Reflex Violeta",
+                    "nombreEn": "chrome purple",
+                    "pms": "10215",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#815b9d",
+                    "deltaE": 25,
+                    "distancia": 28.5,
+                    "tono": 24.1,
+                    "razonCroma": 0.5
+                  },
+                  {
+                    "codigo": "051",
+                    "nombre": "Violeta",
+                    "nombreCompleto": "Fashion Violeta",
+                    "nombreEn": "deep matte purple",
+                    "pms": "Violeta",
+                    "acabado": "matte",
+                    "hexGlobo": "#542d86",
+                    "deltaE": 39.9,
+                    "distancia": 34.9,
+                    "tono": 27.1,
+                    "razonCroma": 0.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#644b35",
+              "parte": 0.1322,
+              "pixeles": 6683,
+              "cruce": {
+                "hex": "#644b35",
+                "candidatas": [
+                  {
+                    "codigo": "970",
+                    "nombre": "Dorado",
+                    "nombreCompleto": "Reflex Dorado",
+                    "nombreEn": "chrome gold",
+                    "pms": "10444",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a08344",
+                    "deltaE": 30.6,
+                    "distancia": 29.7,
+                    "tono": 18.4,
+                    "razonCroma": 0.5
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": true,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#351b1b",
+              "parte": 0.1188,
+              "pixeles": 6006,
+              "cruce": {
+                "hex": "#351b1b",
+                "candidatas": [
+                  {
+                    "codigo": "909",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Reflex Rosado",
+                    "nombreEn": "chrome light pink",
+                    "pms": "10420",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a06973",
+                    "deltaE": 38.7,
+                    "distancia": 33.6,
+                    "tono": 15,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "010",
+                    "nombre": "Palo de Rosa",
+                    "nombreCompleto": "Fashion Palo de Rosa",
+                    "nombreEn": "matte blush pink",
+                    "pms": "500",
+                    "acabado": "matte",
+                    "hexGlobo": "#d8a1a3",
+                    "deltaE": 58.6,
+                    "distancia": 34,
+                    "tono": 5,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "110",
+                    "nombre": "Rosa",
+                    "nombreCompleto": "Pastel Dusk Rosa",
+                    "nombreEn": "dusty pastel blush pink",
+                    "pms": "5035",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#e5c1c5",
+                    "deltaE": 67.9,
+                    "distancia": 45.8,
+                    "tono": 11.9,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": true,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores no tienen un globo igual en el catálogo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E04",
+          "tipo": "columna",
+          "croquis": {
+            "forma": "franja vertical",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 66066,
+            "deLaCaja": 79390
+          },
+          "colores": [
+            {
+              "hex": "#ba829b",
+              "parte": 0.2507,
+              "pixeles": 16564,
+              "cruce": {
+                "hex": "#ba829b",
+                "candidatas": [
+                  {
+                    "codigo": "412",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Satín Fucsia",
+                    "nombreEn": "satin pink",
+                    "pms": "699",
+                    "acabado": "satin",
+                    "hexGlobo": "#e581a4",
+                    "deltaE": 18.2,
+                    "distancia": 10.9,
+                    "tono": 8.3,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "212",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Neón Fucsia",
+                    "nombreEn": "neon hot pink",
+                    "pms": "226",
+                    "acabado": "bright matte",
+                    "hexGlobo": "#ea5190",
+                    "deltaE": 38.8,
+                    "distancia": 13,
+                    "tono": 8.5,
+                    "razonCroma": 0.4
+                  },
+                  {
+                    "codigo": "409",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Satín Rosado",
+                    "nombreEn": "satin light pink",
+                    "pms": "230",
+                    "acabado": "satin",
+                    "hexGlobo": "#eea5be",
+                    "deltaE": 15.8,
+                    "distancia": 14.2,
+                    "tono": 6.9,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#6c475f",
+              "parte": 0.2354,
+              "pixeles": 15552,
+              "cruce": {
+                "hex": "#6c475f",
+                "candidatas": [
+                  {
+                    "codigo": "056",
+                    "nombre": "Orquídea Morada",
+                    "nombreCompleto": "Fashion Orquídea Morada",
+                    "nombreEn": "bright matte purple",
+                    "pms": "2354",
+                    "acabado": "matte",
+                    "hexGlobo": "#a42287",
+                    "deltaE": 44.7,
+                    "distancia": 9.1,
+                    "tono": 1.8,
+                    "razonCroma": 0.3
+                  },
+                  {
+                    "codigo": "951",
+                    "nombre": "Violeta",
+                    "nombreCompleto": "Reflex Violeta",
+                    "nombreEn": "chrome purple",
+                    "pms": "10215",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#815b9d",
+                    "deltaE": 26,
+                    "distancia": 30.4,
+                    "tono": 25.4,
+                    "razonCroma": 0.5
+                  },
+                  {
+                    "codigo": "051",
+                    "nombre": "Violeta",
+                    "nombreCompleto": "Fashion Violeta",
+                    "nombreEn": "deep matte purple",
+                    "pms": "Violeta",
+                    "acabado": "matte",
+                    "hexGlobo": "#542d86",
+                    "deltaE": 40.2,
+                    "distancia": 35.7,
+                    "tono": 28.4,
+                    "razonCroma": 0.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#90837a",
+              "parte": 0.1802,
+              "pixeles": 11906,
+              "cruce": {
+                "hex": "#90837a",
+                "candidatas": [
+                  {
+                    "codigo": "609",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Pastel Mate Rosado",
+                    "nombreEn": "pastel light pink",
+                    "pms": "677",
+                    "acabado": "matte",
+                    "hexGlobo": "#e6cfd6",
+                    "deltaE": 30.9,
+                    "distancia": 16.5,
+                    "tono": 66.8,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#4f3a2d",
+              "parte": 0.1723,
+              "pixeles": 11381,
+              "cruce": {
+                "hex": "#4f3a2d",
+                "candidatas": [
+                  {
+                    "codigo": "663",
+                    "nombre": "Melón",
+                    "nombreCompleto": "Pastel Mate Melón",
+                    "nombreEn": "pale pink",
+                    "pms": "196",
+                    "acabado": "matte",
+                    "hexGlobo": "#e0c4b8",
+                    "deltaE": 54.8,
+                    "distancia": 35.1,
+                    "tono": 7.8,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "909",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Reflex Rosado",
+                    "nombreEn": "chrome light pink",
+                    "pms": "10420",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a06973",
+                    "deltaE": 30.1,
+                    "distancia": 61.7,
+                    "tono": 49.6,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "010",
+                    "nombre": "Palo de Rosa",
+                    "nombreCompleto": "Fashion Palo de Rosa",
+                    "nombreEn": "matte blush pink",
+                    "pms": "500",
+                    "acabado": "matte",
+                    "hexGlobo": "#d8a1a3",
+                    "deltaE": 47.2,
+                    "distancia": 62.1,
+                    "tono": 39.6,
+                    "razonCroma": 0.6
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": true,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#d6a7c9",
+              "parte": 0.1614,
+              "pixeles": 10663,
+              "cruce": {
+                "hex": "#d6a7c9",
+                "candidatas": [
+                  {
+                    "codigo": "409",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Satín Rosado",
+                    "nombreEn": "satin light pink",
+                    "pms": "230",
+                    "acabado": "satin",
+                    "hexGlobo": "#eea5be",
+                    "deltaE": 11.8,
+                    "distancia": 22.4,
+                    "tono": 21.6,
+                    "razonCroma": 0.8
+                  },
+                  {
+                    "codigo": "009",
+                    "nombre": "Rosado",
+                    "nombreCompleto": "Fashion Rosado",
+                    "nombreEn": "matte light pink",
+                    "pms": "189",
+                    "acabado": "matte",
+                    "hexGlobo": "#f2b6c8",
+                    "deltaE": 12,
+                    "distancia": 26.9,
+                    "tono": 23.7,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "412",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Satín Fucsia",
+                    "nombreEn": "satin pink",
+                    "pms": "699",
+                    "acabado": "satin",
+                    "hexGlobo": "#e581a4",
+                    "deltaE": 23.1,
+                    "distancia": 27,
+                    "tono": 23.1,
+                    "razonCroma": 0.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Un color no tiene un globo igual en el catálogo."
+          ]
+        }
+      ]
+    }
+  }
+}

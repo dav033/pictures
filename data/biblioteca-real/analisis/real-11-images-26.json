@@ -1,0 +1,618 @@
+{
+  "id": "real-11-images-26",
+  "fuente": "images (26).jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-11-images-26.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "527067ac-ac5f-418e-9967-dd510a36e152",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.6673
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "balloon garland",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Large organic L-shaped/curved balloon garland attached to the wall framing the top and right side of the dessert table.",
+          "reference_bbox": {
+            "x": 0.108,
+            "y": 0.076,
+            "width": 0.879,
+            "height": 0.7360000000000001
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pink",
+              "purple",
+              "turquoise",
+              "white",
+              "gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.3295
+              },
+              {
+                "color": "rosado",
+                "share": 0.2281
+              },
+              {
+                "color": "turquesa",
+                "share": 0.0615
+              },
+              {
+                "color": "morado",
+                "share": 0.0345
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense asymmetrical garland, spanning the full width, curving toward the right, standing on the floor",
+            "composition": "Organic balloon garland framing the wall in pink, purple, turquoise, white, and gold accents.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "rosado",
+                "lila",
+                "turquesa",
+                "blanco"
+              ],
+              "pesos": [
+                35,
+                25,
+                25,
+                15
+              ],
+              "confianza": 0.92
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "inclinacion": 0.45,
+            "conteo": {
+              "globos_visibles": 75,
+              "exacto": false,
+              "estimado_total": 120,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.3
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.2
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "pared",
+              "forma": "u_invertida",
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": null,
+              "racimos_visibles": 35,
+              "colores_por_racimo": [
+                "rosado",
+                "lila",
+                "turquesa",
+                "blanco"
+              ],
+              "relleno": null,
+              "remates": [],
+              "confianza": 0.92
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "405",
+                "familia": "satin",
+                "nombre": "Blanco",
+                "nombre_completo": "Satín Blanco",
+                "parte": 0.8045,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "056",
+                "familia": "fashion",
+                "nombre": "Orquídea Morada",
+                "nombre_completo": "Fashion Orquídea Morada",
+                "parte": 0.1121,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "guirnalda",
+            "placement": "fondo_pared",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Main organic balloon garland decoration framing the setup",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "unicorn paper flower backdrop design",
+          "category": "floral",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Paper flowers forming unicorn floral headpiece along with gold horn, paper ears, and vinyl eyelash wall decals.",
+          "reference_bbox": {
+            "x": 0.269,
+            "y": 0.262,
+            "width": 0.388,
+            "height": 0.22199999999999998
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pink",
+              "turquoise",
+              "purple",
+              "gold",
+              "white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.1552
+              },
+              {
+                "color": "turquesa",
+                "share": 0.1476
+              },
+              {
+                "color": "rosado",
+                "share": 0.1324
+              },
+              {
+                "color": "morado",
+                "share": 0.0468
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "paper",
+            "shape": "shape not determinable",
+            "composition": "Paper flowers in blue, pink, and purple with golden unicorn horn and ears mounted on wall."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Unicorn face paper flower wall feature",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "dessert table with sequin tablecloth",
+          "category": "furniture",
+          "scene_role": "midground",
+          "detection_confidence": 0.96,
+          "visible_evidence": "Table draped with rose gold/pink sequined table cover hosting the cake and sweets.",
+          "reference_bbox": {
+            "x": 0.16,
+            "y": 0.678,
+            "width": 0.638,
+            "height": 0.2639999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pink",
+              "champagne gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "rosado",
+                "share": 0.3954
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "sequin fabric",
+            "shape": "shape not determinable",
+            "composition": "Rectangular table covered with a sparkling sequin tablecloth in pinkish champagne gold."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Main dessert table with sequin table linen",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E04",
+          "source_image_id": "REF_01",
+          "name": "unicorn cake",
+          "category": "other",
+          "scene_role": "midground",
+          "detection_confidence": 0.94,
+          "visible_evidence": "Two-tiered cake with unicorn face, ears, and gold horn on a central stand.",
+          "reference_bbox": {
+            "x": 0.391,
+            "y": 0.53,
+            "width": 0.12,
+            "height": 0.13
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "white",
+              "gold",
+              "pink"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.83
+              },
+              {
+                "color": "rosado",
+                "share": 0.0324
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "edible",
+            "shape": "shape not determinable",
+            "composition": "Two-tiered white frosted unicorn birthday cake with gold horn and floral details."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Unicorn themed birthday cake",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E05",
+          "source_image_id": "REF_01",
+          "name": "side table with pink tablecloth",
+          "category": "furniture",
+          "scene_role": "midground",
+          "detection_confidence": 0.88,
+          "visible_evidence": "Small auxiliary table on the left draped in vibrant magenta/pink fabric.",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0.728,
+            "width": 0.23,
+            "height": 0.272
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "bright pink"
+            ],
+            "measured_colors": [
+              {
+                "color": "rosado",
+                "share": 0.1887
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "fabric",
+            "shape": "shape not determinable",
+            "composition": "Round side table dressed in bright pink fabric drape."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Side table with pink draped cloth",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Unicorn dessert table arrangement with asymmetrical balloon garland framed on the wall",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "pink",
+          "purple",
+          "turquoise",
+          "white",
+          "gold",
+          "champagne"
+        ],
+        "priority": [
+          "pink",
+          "purple",
+          "turquoise",
+          "white",
+          "gold",
+          "champagne"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "52ebe1e55af8eff37616077c422a5014a58a85caf383a2145ad1bf8cace57865",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 365,
+            "height": 547
+          },
+          "processed": {
+            "width": 365,
+            "height": 547
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "guirnalda",
+          "croquis": {
+            "forma": "banda con caída",
+            "parteDeLaCaja": 0.6748
+          },
+          "pixeles": {
+            "medidos": 78730,
+            "deLaCaja": 114156
+          },
+          "colores": [
+            {
+              "hex": "#a3a8a4",
+              "parte": 0.8045,
+              "pixeles": 63341,
+              "cruce": {
+                "hex": "#a3a8a4",
+                "candidatas": [
+                  {
+                    "codigo": "405",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Satín Blanco",
+                    "nombreEn": "satin white",
+                    "pms": null,
+                    "acabado": "satin",
+                    "hexGlobo": "#f7f7f5",
+                    "deltaE": 28.9,
+                    "distancia": 16.3,
+                    "tono": 40.4,
+                    "razonCroma": 2.9
+                  },
+                  {
+                    "codigo": "005",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Fashion Blanco",
+                    "nombreEn": "matte white",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#ffffff",
+                    "deltaE": 31.8,
+                    "distancia": 18.7,
+                    "tono": 146.4,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#ce93bc",
+              "parte": 0.1121,
+              "pixeles": 8829,
+              "cruce": {
+                "hex": "#ce93bc",
+                "candidatas": [
+                  {
+                    "codigo": "056",
+                    "nombre": "Orquídea Morada",
+                    "nombreCompleto": "Fashion Orquídea Morada",
+                    "nombreEn": "bright matte purple",
+                    "pms": "2354",
+                    "acabado": "matte",
+                    "hexGlobo": "#a42287",
+                    "deltaE": 44.8,
+                    "distancia": 15.7,
+                    "tono": 0.6,
+                    "razonCroma": 0.5
+                  },
+                  {
+                    "codigo": "951",
+                    "nombre": "Violeta",
+                    "nombreCompleto": "Reflex Violeta",
+                    "nombreEn": "chrome purple",
+                    "pms": "10215",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#815b9d",
+                    "deltaE": 28.7,
+                    "distancia": 34.4,
+                    "tono": 23,
+                    "razonCroma": 0.8
+                  },
+                  {
+                    "codigo": "051",
+                    "nombre": "Violeta",
+                    "nombreCompleto": "Fashion Violeta",
+                    "nombreEn": "deep matte purple",
+                    "pms": "Violeta",
+                    "acabado": "matte",
+                    "hexGlobo": "#542d86",
+                    "deltaE": 51,
+                    "distancia": 45.9,
+                    "tono": 26,
+                    "razonCroma": 0.5
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#734d86",
+              "parte": 0.0833,
+              "pixeles": 6560,
+              "cruce": {
+                "hex": "#734d86",
+                "candidatas": [
+                  {
+                    "codigo": "951",
+                    "nombre": "Violeta",
+                    "nombreCompleto": "Reflex Violeta",
+                    "nombreEn": "chrome purple",
+                    "pms": "10215",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#815b9d",
+                    "deltaE": 7.6,
+                    "distancia": 5.9,
+                    "tono": 2.9,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "051",
+                    "nombre": "Violeta",
+                    "nombreCompleto": "Fashion Violeta",
+                    "nombreEn": "deep matte purple",
+                    "pms": "Violeta",
+                    "acabado": "matte",
+                    "hexGlobo": "#542d86",
+                    "deltaE": 23.1,
+                    "distancia": 11.4,
+                    "tono": 5.9,
+                    "razonCroma": 0.7
+                  },
+                  {
+                    "codigo": "056",
+                    "nombre": "Orquídea Morada",
+                    "nombreCompleto": "Fashion Orquídea Morada",
+                    "nombreEn": "bright matte purple",
+                    "pms": "2354",
+                    "acabado": "matte",
+                    "hexGlobo": "#a42287",
+                    "deltaE": 33.6,
+                    "distancia": 20.9,
+                    "tono": 20.8,
+                    "razonCroma": 0.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,429 @@
+{
+  "id": "real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
+  "fuente": "columna-globos-alta-colorida-cinta-dorada-sobre-fondo-blanco_1647699-6728.avif",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-06-columna-globos-alta-colorida-cinta-dorada-sobre-.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "286d4914-a341-4bf4-b0ad-c1af9793fbb6",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.7297
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Rainbow Ring Balloon Column",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "A stacked balloon column with distinct color rings, topped with a cluster of blue balloons and wrapped in gold ribbon.",
+          "reference_bbox": {
+            "x": 0.298,
+            "y": 0.029,
+            "width": 0.39699999999999996,
+            "height": 0.944
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "matte red",
+              "royal blue",
+              "matte green",
+              "matte orange",
+              "matte yellow",
+              "light blue",
+              "metallic gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "verde",
+                "share": 0.2006
+              },
+              {
+                "color": "rojo",
+                "share": 0.1555
+              },
+              {
+                "color": "amarillo",
+                "share": 0.1381
+              },
+              {
+                "color": "azul",
+                "share": 0.1252
+              },
+              {
+                "color": "naranja",
+                "share": 0.0675
+              },
+              {
+                "color": "dorado",
+                "share": 0.0272
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex balloon, ribbon",
+            "shape": "tall dense column, on the center, no top overhang, standing on the floor",
+            "composition": "A vertical balloon column constructed of horizontal ring layers in red, dark blue, green, orange, yellow, dark green, yellow, red, dark blue, and light blue from bottom to top, wrapped in a thin gold spiral ribbon accent.",
+            "patron_color": {
+              "modo": "anillos",
+              "colores": [
+                "rojo",
+                "azul",
+                "verde",
+                "naranja",
+                "amarillo",
+                "verde",
+                "amarillo",
+                "rojo",
+                "azul",
+                "azul"
+              ],
+              "confianza": 0.92
+            },
+            "remate_columna": {
+              "tipo": "racimo",
+              "color": "azul"
+            },
+            "tamanos_leidos": "un_solo_tamano",
+            "inclinacion": 0,
+            "conteo": {
+              "globos_visibles": 32,
+              "exacto": false,
+              "estimado_total": 40,
+              "racimos": 10,
+              "globos_por_racimo": 4,
+              "por_tamano": [
+                {
+                  "clase": "mediano",
+                  "proporcion": 1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.95
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "041",
+                "familia": "fashion",
+                "nombre": "Azul Rey",
+                "nombre_completo": "Fashion Azul Rey",
+                "parte": 0.2414,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "032",
+                "familia": "fashion",
+                "nombre": "Verde Selva",
+                "nombre_completo": "Fashion Verde Selva",
+                "parte": 0.236,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "015",
+                "familia": "fashion",
+                "nombre": "Rojo",
+                "nombre_completo": "Fashion Rojo",
+                "parte": 0.2301,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "020",
+                "familia": "fashion",
+                "nombre": "Amarillo",
+                "nombre_completo": "Fashion Amarillo",
+                "parte": 0.1665,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "630",
+                "familia": "pastelMate",
+                "nombre": "Verde",
+                "nombre_completo": "Pastel Mate Verde",
+                "parte": 0.1259,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "columna",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary focal balloon column structure.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "A colorful stacked balloon column with horizontal/ring color layers wrapped in a gold ribbon.",
+        "density": "dense",
+        "symmetry": "symmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "royal blue",
+          "matte red",
+          "matte green",
+          "matte yellow",
+          "matte orange",
+          "light blue",
+          "metallic gold"
+        ],
+        "priority": [
+          "royal blue",
+          "matte red",
+          "matte green",
+          "matte yellow",
+          "matte orange",
+          "light blue",
+          "metallic gold"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "f6daae4e4a036f3dbd540c2c82c45d2afa4a2210955511c07c29223c0d05f813",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 540,
+            "height": 740
+          },
+          "processed": {
+            "width": 540,
+            "height": 740
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "columna",
+          "croquis": {
+            "forma": "franja vertical",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 60345,
+            "deLaCaja": 72265
+          },
+          "colores": [
+            {
+              "hex": "#1657ae",
+              "parte": 0.2414,
+              "pixeles": 14566,
+              "cruce": {
+                "hex": "#1657ae",
+                "candidatas": [
+                  {
+                    "codigo": "041",
+                    "nombre": "Azul Rey",
+                    "nombreCompleto": "Fashion Azul Rey",
+                    "nombreEn": "royal blue",
+                    "pms": "Reflex Blue",
+                    "acabado": "matte",
+                    "hexGlobo": "#2d4f9c",
+                    "deltaE": 6.9,
+                    "distancia": 4.3,
+                    "tono": 2.9,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#158450",
+              "parte": 0.236,
+              "pixeles": 14244,
+              "cruce": {
+                "hex": "#158450",
+                "candidatas": [
+                  {
+                    "codigo": "032",
+                    "nombre": "Verde Selva",
+                    "nombreCompleto": "Fashion Verde Selva",
+                    "nombreEn": "matte dark green",
+                    "pms": "341",
+                    "acabado": "matte",
+                    "hexGlobo": "#007b45",
+                    "deltaE": 3.9,
+                    "distancia": 3.2,
+                    "tono": 1.4,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "530",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Metal Verde",
+                    "nombreEn": "metallic dark green",
+                    "pms": "349",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#158536",
+                    "deltaE": 14.7,
+                    "distancia": 10.4,
+                    "tono": 10.4,
+                    "razonCroma": 0.8
+                  },
+                  {
+                    "codigo": "030",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Fashion Verde",
+                    "nombreEn": "deep matte green",
+                    "pms": "3405",
+                    "acabado": "matte",
+                    "hexGlobo": "#43b88e",
+                    "deltaE": 20.7,
+                    "distancia": 19.4,
+                    "tono": 9.9,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#d5362c",
+              "parte": 0.2301,
+              "pixeles": 13886,
+              "cruce": {
+                "hex": "#d5362c",
+                "candidatas": [
+                  {
+                    "codigo": "015",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Fashion Rojo",
+                    "nombreEn": "matte red",
+                    "pms": "185",
+                    "acabado": "matte",
+                    "hexGlobo": "#e01b2b",
+                    "deltaE": 9.8,
+                    "distancia": 3.4,
+                    "tono": 3.3,
+                    "razonCroma": 0.9
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#eccc0d",
+              "parte": 0.1665,
+              "pixeles": 10050,
+              "cruce": {
+                "hex": "#eccc0d",
+                "candidatas": [
+                  {
+                    "codigo": "020",
+                    "nombre": "Amarillo",
+                    "nombreCompleto": "Fashion Amarillo",
+                    "nombreEn": "matte yellow",
+                    "pms": "108",
+                    "acabado": "matte",
+                    "hexGlobo": "#f6e702",
+                    "deltaE": 14.1,
+                    "distancia": 9.6,
+                    "tono": 5.7,
+                    "razonCroma": 0.9
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#ebeada",
+              "parte": 0.1259,
+              "pixeles": 7599,
+              "cruce": {
+                "hex": "#ebeada",
+                "candidatas": [
+                  {
+                    "codigo": "630",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Pastel Mate Verde",
+                    "nombreEn": "pale green",
+                    "pms": "621",
+                    "acabado": "matte",
+                    "hexGlobo": "#d4e0d4",
+                    "deltaE": 6.7,
+                    "distancia": 2.8,
+                    "tono": 37.2,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": []
+        }
+      ]
+    }
+  }
+}

@@ -21,15 +21,15 @@ for (const [evento, edad, tematica] of exactas) {
 }
 
 const babyGirl = buscarDecoracionesSempertex({ evento: "baby shower", tematica: "niña" });
-assert.equal(babyGirl[0]?.id, "ej-baby-nina");
+assert.equal(babyGirl[0]?.origen, "referencia_real", "Una referencia real debe tener prioridad sobre el ejemplo cuando coinciden.");
 assert.equal(babyGirl[0]?.coincidencia, "exacta");
 
 const babyRosa = buscarDecoracionesSempertex({ evento: "baby shower", tematica: "rosa" });
-assert.equal(babyRosa[0]?.id, "ej-baby-nina", "Preferir baby shower rosa para niña.");
+assert.equal(babyRosa[0]?.origen, "referencia_real", "Preferir referencia real para baby shower rosa.");
 assert.ok(!babyRosa.some((resultado) => resultado.id === "ej-boda-elegante"), "No ofrecer boda sin afinidad de evento ni de color.");
 const babyGirlConMensaje = buscarDecoracionesSempertex({ evento: "baby shower", tematica: "rosa Estoy organizando un baby shower para una niña" });
-assert.equal(babyGirlConMensaje.length, 1, "No mezclar opciones de niño ni neutras con una petición para niña.");
-assert.equal(babyGirlConMensaje[0]?.id, "ej-baby-nina");
+assert.ok(babyGirlConMensaje.every((resultado) => resultado.id !== "ej-baby-nino" && resultado.id !== "ej-baby-neutro"), "No mezclar opciones de niño ni neutras con una petición para niña.");
+assert.equal(babyGirlConMensaje[0]?.origen, "referencia_real");
 assert.equal(babyGirlConMensaje[0]?.coincidencia, "exacta", "La búsqueda debe aprovechar la temática explícita del mensaje original.");
 
 const resultadoCercano = buscarDecoracionesSempertex(
@@ -42,5 +42,8 @@ assert.equal(resultadoCercano[0]?.id, "ej-unicornio-arcoiris");
 const resultadoMixto = buscarDecoracionesSempertex({ evento: "cumpleaños", edad: 6, tematica: "princesa" });
 assert.equal(resultadoMixto[0]?.id, "ej-princesas", "La temática exacta debe aparecer primero.");
 assert.equal(resultadoMixto[0]?.coincidencia, "exacta");
+
+const eleganteReal = buscarDecoracionesSempertex({ evento: "graduación", tematica: "elegante negro y dorado" });
+assert.equal(eleganteReal[0]?.origen, "referencia_real", "Las temáticas nuevas deben encontrar decoración real primero.");
 
 console.log("test-busqueda-biblioteca-sempertex: sinónimos, edad, coincidencia exacta y cercana correctos.");

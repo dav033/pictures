@@ -1,0 +1,823 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "13cc280f-e5fb-5e27-adce-2f4b81db1f21",
+    "concepto": {
+      "titulo": "real-07-eb12910e210c94b6184d025127acce95",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "rosado",
+        "lila"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "nombre": "Columna de globos",
+        "tipo": "columna",
+        "rol_escena": "focal",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {
+          "ancho_m": 0.55,
+          "alto_m": 2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634233585959",
+            "variant_id": "46594211414311",
+            "color": "rosado",
+            "participacion": 0.7440191387559809,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634232996135",
+            "variant_id": "46594210496807",
+            "color": "lila",
+            "participacion": 0.25598086124401914,
+            "rol_material": "secundario"
+          }
+        ],
+        "porque": "Recreación de referencia REF_01_E03, con color y forma observados.",
+        "referencia_element_id": "REF_01_E03",
+        "estructura_oficial": "columna",
+        "colores_referencia": [
+          "rosado",
+          "lila"
+        ]
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA",
+        "nombre": "Columna de globos",
+        "tipo": "columna",
+        "rol_escena": "soporte",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {
+          "ancho_m": 0.55,
+          "alto_m": 2
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634233585959",
+            "variant_id": "46594211414311",
+            "color": "rosado",
+            "participacion": 0.8171513060620996,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634232996135",
+            "variant_id": "46594210496807",
+            "color": "lila",
+            "participacion": 0.18284869393790046,
+            "rol_material": "secundario"
+          }
+        ],
+        "porque": "Recreación de referencia REF_01_E04, con color y forma observados.",
+        "referencia_element_id": "REF_01_E04",
+        "estructura_oficial": "columna",
+        "colores_referencia": [
+          "rosado",
+          "lila"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+    ],
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "13cc280f-e5fb-5e27-adce-2f4b81db1f21",
+      "concepto": {
+        "titulo": "real-07-eb12910e210c94b6184d025127acce95",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "rosado",
+          "lila"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_COLUMNA",
+          "nombre": "Columna de globos",
+          "tipo": "columna",
+          "rol_escena": "focal",
+          "ubicacion": "lateral_izquierdo",
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634233585959",
+              "variant_id": "46594211414311",
+              "color": "rosado",
+              "participacion": 0.7440191387559809,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634232996135",
+              "variant_id": "46594210496807",
+              "color": "lila",
+              "participacion": 0.25598086124401914,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "Recreación de referencia REF_01_E03, con color y forma observados.",
+          "referencia_element_id": "REF_01_E03",
+          "estructura_oficial": "columna",
+          "colores_referencia": [
+            "rosado",
+            "lila"
+          ]
+        },
+        {
+          "estructura_id": "EST_02_COLUMNA",
+          "nombre": "Columna de globos",
+          "tipo": "columna",
+          "rol_escena": "soporte",
+          "ubicacion": "lateral_izquierdo",
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "8634233585959",
+              "variant_id": "46594211414311",
+              "color": "rosado",
+              "participacion": 0.8171513060620996,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634232996135",
+              "variant_id": "46594210496807",
+              "color": "lila",
+              "participacion": 0.18284869393790046,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "Recreación de referencia REF_01_E04, con color y forma observados.",
+          "referencia_element_id": "REF_01_E04",
+          "estructura_oficial": "columna",
+          "colores_referencia": [
+            "rosado",
+            "lila"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
+        "Se usan globos redondos R-12 disponibles en el snapshot vigente.",
+        "Columna de globos: la foto muestra unos 55 globos y el plan tenía 43; densidad media → lujosa: quedó en 54."
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "a59687e2e22b93c119e2eb59f9713f00aae832de3b5b8be7a5bfc3888d6e1e5a",
+    "request_id": "d2258ba7-5ccd-575c-95bb-1f112b0d92a4",
+    "compras": [
+      {
+        "variant_id": "46594210496807",
+        "product_id": "8634232996135",
+        "sku": "B2B-20000765",
+        "sku_original": "B2B-20000765",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
+        "inventory_quantity": 985804,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "lila",
+        "unidades_necesarias": 21,
+        "design_quantity": 21,
+        "waste_reserve": 8,
+        "required_quantity": 29,
+        "unidades_con_merma": 29,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 21,
+        "leftover_inventory": 21,
+        "consumption_cost": 7561,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 29,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_COLUMNA",
+          "EST_02_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985"
+      },
+      {
+        "variant_id": "46594211414311",
+        "product_id": "8634233585959",
+        "sku": "B2B-20010675",
+        "sku_original": "B2B-20010675",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594211414311",
+        "inventory_quantity": 990363,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "rosado",
+        "unidades_necesarias": 76,
+        "design_quantity": 76,
+        "waste_reserve": 0,
+        "required_quantity": 76,
+        "unidades_con_merma": 76,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 76,
+        "leftover_inventory": 24,
+        "consumption_cost": 19816,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "sobrante": 24,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "estructuras": [
+          "EST_01_COLUMNA",
+          "EST_02_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Palo_de_Rosa_-_Rosewood_010.jpg?v=1762966820"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 97
+      },
+      "total_unidades": 97,
+      "total_cop": 39111,
+      "design_quantity": 97,
+      "target_waste_reserve": 8,
+      "covered_waste_reserve": 8,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 53,
+      "purchase_cost": 39111,
+      "consumption_cost": 27377,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 13037,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:46594210496807"
+    ],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "nombre": "Columna de globos",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo",
+        "repeticiones": 1,
+        "eje_m": 2,
+        "total_unidades": 43,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634233585959",
+            "variant_id": "46594211414311",
+            "sku": "B2B-20010675",
+            "sku_original": "B2B-20010675",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594211414311",
+            "inventory_quantity": 990363,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 32,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Palo_de_Rosa_-_Rosewood_010.jpg?v=1762966820",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634232996135",
+            "variant_id": "46594210496807",
+            "sku": "B2B-20000765",
+            "sku_original": "B2B-20000765",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
+            "inventory_quantity": 985804,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 11,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 43,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA",
+        "nombre": "Columna de globos",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo",
+        "repeticiones": 1,
+        "eje_m": 2,
+        "total_unidades": 54,
+        "lineas": [
+          {
+            "estructura_id": "EST_02_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA"
+            },
+            "product_id": "8634233585959",
+            "variant_id": "46594211414311",
+            "sku": "B2B-20010675",
+            "sku_original": "B2B-20010675",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594211414311",
+            "inventory_quantity": 990363,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 44,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Palo_de_Rosa_-_Rosewood_010.jpg?v=1762966820",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA"
+            },
+            "product_id": "8634232996135",
+            "variant_id": "46594210496807",
+            "sku": "B2B-20000765",
+            "sku_original": "B2B-20000765",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
+            "inventory_quantity": 985804,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 10,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 54,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "consumo_cop": 11212
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA",
+        "consumo_cop": 14080
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "referencia_element_id": "REF_01_E03",
+        "decision": "coincide",
+        "lectura": {
+          "globos_visibles": 38,
+          "exacto": false,
+          "estimado_total": 45,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.3
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.5
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.15
+            },
+            {
+              "clase": "gigante",
+              "proporcion": 0.05
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.9
+        },
+        "globos_foto": 45,
+        "globos_antes": 43,
+        "globos_despues": 43,
+        "cambios": [],
+        "motivo": "El plan ya sigue la foto."
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA",
+        "referencia_element_id": "REF_01_E04",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 46,
+          "exacto": false,
+          "estimado_total": 55,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.3
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.5
+            },
+            {
+              "clase": "grande",
+              "proporcion": 0.15
+            },
+            {
+              "clase": "gigante",
+              "proporcion": 0.05
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.9
+        },
+        "globos_foto": 55,
+        "globos_antes": 43,
+        "globos_despues": 54,
+        "cambios": [
+          {
+            "campo": "densidad",
+            "antes": "media",
+            "despues": "lujosa"
+          }
+        ],
+        "motivo": "Densidad y tamaños ajustados con las medidas del plan."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "composite_installation",
+      "shape": "coordinated structures",
+      "dimensions_m": {
+        "width": 0.55,
+        "height": 2,
+        "length": null
+      },
+      "installation_length_m": 4,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "very_large",
+      "cluster_count": 2
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634233585959",
+        "variant_id": "46594211414311",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 32,
+        "waste_reserve": 0,
+        "required_quantity": 32,
+        "waste_adjusted_quantity": 32
+      },
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634232996135",
+        "variant_id": "46594210496807",
+        "color": "lila",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 11,
+        "waste_reserve": 0,
+        "required_quantity": 11,
+        "waste_adjusted_quantity": 11
+      },
+      {
+        "structure_id": "EST_02_COLUMNA",
+        "product_id": "8634233585959",
+        "variant_id": "46594211414311",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 44,
+        "waste_reserve": 0,
+        "required_quantity": 44,
+        "waste_adjusted_quantity": 44
+      },
+      {
+        "structure_id": "EST_02_COLUMNA",
+        "product_id": "8634232996135",
+        "variant_id": "46594210496807",
+        "color": "lila",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 10,
+        "waste_reserve": 0,
+        "required_quantity": 10,
+        "waste_adjusted_quantity": 10
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634232996135",
+        "variant_id": "46594210496807",
+        "design_quantity": 21,
+        "waste_reserve": 8,
+        "required_quantity": 29,
+        "waste_adjusted_quantity": 29,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 21,
+        "leftover_inventory": 21,
+        "consumption_cost": 7561,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 21,
+        "potential_surplus": 29
+      },
+      {
+        "product_id": "8634233585959",
+        "variant_id": "46594211414311",
+        "design_quantity": 76,
+        "waste_reserve": 0,
+        "required_quantity": 76,
+        "waste_adjusted_quantity": 76,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 76,
+        "leftover_inventory": 24,
+        "consumption_cost": 19816,
+        "purchase_cost": 26074,
+        "additional_package_for_waste": false,
+        "operational_surplus": 24,
+        "potential_surplus": 24
+      }
+    ],
+    "totals": {
+      "design_quantity": 97,
+      "target_waste_reserve": 8,
+      "covered_waste_reserve": 8,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 53,
+      "required_quantity": 105,
+      "consumption_cost": 27377,
+      "purchase_cost": 39111,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 105,
+      "purchase_quantity": 150,
+      "operational_surplus": 45,
+      "potential_surplus": 53
+    },
+    "warnings": [
+      "sobrante_alto:46594210496807"
+    ]
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594210496807",
+        "productId": "8634232996135",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA",
+          "EST_02_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "lila",
+        "cantidadNecesaria": 21,
+        "designQuantity": 21,
+        "wasteReserve": 8,
+        "requiredQuantity": 29,
+        "purchaseQuantity": 50,
+        "used": 21,
+        "leftoverInventory": 21,
+        "consumptionCost": 7561,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594210496807",
+        "nombre": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 29
+      },
+      {
+        "id": "46594211414311",
+        "productId": "8634233585959",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA",
+          "EST_02_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E03",
+          "REF_01_E04"
+        ],
+        "color": "rosado",
+        "cantidadNecesaria": 76,
+        "designQuantity": 76,
+        "wasteReserve": 0,
+        "requiredQuantity": 76,
+        "purchaseQuantity": 100,
+        "used": 76,
+        "leftoverInventory": 24,
+        "consumptionCost": 19816,
+        "purchaseCost": 26074,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594211414311",
+        "nombre": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 2,
+        "subtotal": 26074,
+        "sobrante": 24
+      }
+    ],
+    "total": 39111,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 39111,
+    "consumptionCost": 27377,
+    "targetWasteReserve": 8,
+    "coveredWasteReserve": 8,
+    "leftoverInventory": 45,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "a59687e2e22b93c119e2eb59f9713f00aae832de3b5b8be7a5bfc3888d6e1e5a"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594210496807",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 21,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 29
+      },
+      {
+        "variant_id": "46594211414311",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 76,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "precio_paquete": 13037,
+        "subtotal": 26074,
+        "sobrante": 24
+      }
+    ],
+    "total": 39111
+  },
+  "descartadas": []
+}

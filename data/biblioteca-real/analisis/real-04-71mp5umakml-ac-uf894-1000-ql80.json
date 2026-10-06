@@ -1,0 +1,1515 @@
+{
+  "id": "real-04-71mp5umakml-ac-uf894-1000-ql80",
+  "fuente": "71mP5UMAKML._AC_UF894,1000_QL80_.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-04-71mp5umakml-ac-uf894-1000-ql80.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "2be17dc7-7d09-46c6-91ce-d3e3b40a02ce",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Organic Balloon Half-Arch",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Large organic balloon cluster forming an arch over top left to bottom right floor.",
+          "reference_bbox": {
+            "x": 0.063,
+            "y": 0.021,
+            "width": 0.931,
+            "height": 0.938
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "dark navy blue",
+              "chrome teal",
+              "metallic green",
+              "lime green",
+              "chrome gold"
+            ],
+            "measured_colors": [
+              {
+                "color": "verde",
+                "share": 0.1027
+              },
+              {
+                "color": "dorado",
+                "share": 0.0598
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex, foil",
+            "shape": "tall dense asymmetrical half-arch, on the right, curving toward the left, strong top overhang, standing on the floor",
+            "composition": "Organic balloon half arch framing top and right side of backdrop with dark blue, chrome teal, metallic green, lime green, and chrome gold balloons interleaved with faux palm leaves and ferns.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "verde",
+                "azul",
+                "dorado",
+                "turquesa"
+              ],
+              "pesos": [
+                40,
+                30,
+                15,
+                15
+              ],
+              "confianza": 0.92
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "inclinacion": -0.45,
+            "conteo": {
+              "globos_visibles": 75,
+              "exacto": false,
+              "estimado_total": 120,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.15
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "gigante",
+                  "proporcion": 0.15
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.92
+            },
+            "armado_guirnalda": {
+              "soporte": "sobre_estructura",
+              "forma": "curva",
+              "puntos_de_anclaje": 3,
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": null,
+              "racimos_visibles": 35,
+              "colores_por_racimo": [
+                "azul",
+                "verde",
+                "dorado",
+                "turquesa"
+              ],
+              "relleno": null,
+              "remates": [],
+              "confianza": 0.95
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "970",
+                "familia": "reflex",
+                "nombre": "Dorado",
+                "nombre_completo": "Reflex Dorado",
+                "parte": 0.4687,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "931",
+                "familia": "reflex",
+                "nombre": "Verde Lima",
+                "nombre_completo": "Reflex Verde Lima",
+                "parte": 0.2417,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "044",
+                "familia": "fashion",
+                "nombre": "Azul Naval",
+                "nombre_completo": "Fashion Azul Naval",
+                "parte": 0.1491,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "530",
+                "familia": "metal",
+                "nombre": "Verde",
+                "nombre_completo": "Metal Verde",
+                "parte": 0.1405,
+                "familia_fiable": false
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "semiarco",
+            "placement": "lateral_derecho",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary focal decorative balloon element in scene.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "Ribbed Arch Backdrop Panel",
+          "category": "backdrop",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Arched textured panel wall standing centrally behind table/props.",
+          "reference_bbox": {
+            "x": 0.157,
+            "y": 0.024,
+            "width": 0.5409999999999999,
+            "height": 0.843
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "beige",
+              "cream",
+              "olive green"
+            ],
+            "measured_colors": [
+              {
+                "color": "beige",
+                "share": 0.3457
+              },
+              {
+                "color": "crema",
+                "share": 0.0944
+              },
+              {
+                "color": "verde",
+                "share": 0.0645
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "wood, MDF",
+            "shape": "shape not determinable",
+            "composition": "Vertical fluted/ribbed beige arch panel mounted on light background wall with green lettering \"ROAR! IT'S MY BIRTHDAY\"."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Main background arch backdrop panel holding signage and framing setup.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "\"ROAR! IT'S MY BIRTHDAY\" Wall Sign",
+          "category": "signage",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Lettering attached directly onto the fluted backdrop panel.",
+          "reference_bbox": {
+            "x": 0.342,
+            "y": 0.355,
+            "width": 0.23299999999999993,
+            "height": 0.121
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "dark green"
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "acrylic, wood",
+            "shape": "shape not determinable",
+            "composition": "Green dimensional typography spelling ROAR! IT'S MY BIRTHDAY attached to center of backdrop wall."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Central theme text sign.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E04",
+          "source_image_id": "REF_01",
+          "name": "T-Rex Dinosaur Cutout",
+          "category": "other",
+          "scene_role": "midground",
+          "detection_confidence": 0.96,
+          "visible_evidence": "Green T-rex cutout sitting at left floor area.",
+          "reference_bbox": {
+            "x": 0.176,
+            "y": 0.522,
+            "width": 0.22900000000000004,
+            "height": 0.30499999999999994
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "olive green",
+              "dark green"
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "wood, cardboard",
+            "shape": "shape not determinable",
+            "composition": "Flat dark green silhouette cutout of T-Rex dinosaur standing on the floor next to directional sign post."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Theme character prop cutout.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E05",
+          "source_image_id": "REF_01",
+          "name": "Wooden Directional Signpost",
+          "category": "signage",
+          "scene_role": "midground",
+          "detection_confidence": 0.94,
+          "visible_evidence": "Wooden arrow signpost standing in front of dinosaur cutout.",
+          "reference_bbox": {
+            "x": 0.178,
+            "y": 0.654,
+            "width": 0.12,
+            "height": 0.19699999999999995
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "natural wood",
+              "tan",
+              "brown"
+            ],
+            "measured_colors": [
+              {
+                "color": "cafe",
+                "share": 0.5218
+              },
+              {
+                "color": "beige",
+                "share": 0.2867
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "wood",
+            "shape": "shape not determinable",
+            "composition": "Wooden directional arrow signpost with three arrows printed with \"DINO TRAIL\", \"ADVENTURE\", \"THIS WAY\"."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Decorative theme directional signpost prop.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E06",
+          "source_image_id": "REF_01",
+          "name": "Wooden Log Cake Pedestal",
+          "category": "other",
+          "scene_role": "midground",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Round wood trunk pedestal placed in lower center area.",
+          "reference_bbox": {
+            "x": 0.393,
+            "y": 0.692,
+            "width": 0.119,
+            "height": 0.20000000000000007
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "brown",
+              "natural wood"
+            ],
+            "measured_colors": [
+              {
+                "color": "cafe",
+                "share": 0.7414
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "wood",
+            "shape": "shape not determinable",
+            "composition": "Natural wood log trunk pedestal standing vertically on floor holding birthday cake."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Cake display pedestal table.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E07",
+          "source_image_id": "REF_01",
+          "name": "Dinosaur Theme Cake",
+          "category": "other",
+          "scene_role": "midground",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Cake resting on central log pedestal.",
+          "reference_bbox": {
+            "x": 0.41,
+            "y": 0.592,
+            "width": 0.07900000000000001,
+            "height": 0.10899999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "light green",
+              "dark green",
+              "brown"
+            ],
+            "measured_colors": [
+              {
+                "color": "cafe",
+                "share": 0.3785
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "edible icing",
+            "shape": "shape not determinable",
+            "composition": "Single tier round birthday cake covered in light green frosting with dinosaur toppers and foliage embellishments."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Thematic birthday cake on pedestal.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E08",
+          "source_image_id": "REF_01",
+          "name": "Potted Palm Plant in Basket",
+          "category": "floral",
+          "scene_role": "midground",
+          "detection_confidence": 0.94,
+          "visible_evidence": "Large potted green palm on the left side.",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0.421,
+            "width": 0.259,
+            "height": 0.47500000000000003
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "green",
+              "brown"
+            ],
+            "measured_colors": [
+              {
+                "color": "cafe",
+                "share": 0.417
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "live plant / artificial plant, wicker",
+            "shape": "shape not determinable",
+            "composition": "Large potted palm plant in woven rattan planter basket sitting on far left floor."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Background framing foliage plant.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E09",
+          "source_image_id": "REF_01",
+          "name": "Loose Floor Balloon - Green",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.9,
+          "visible_evidence": "Loose balloon resting on floor near left bottom corner.",
+          "reference_bbox": {
+            "x": 0.035,
+            "y": 0.88,
+            "width": 0.098,
+            "height": 0.10399999999999998
+          },
+          "depth_layer": 2,
+          "include_policy": "exclude",
+          "approved": false,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "metallic green"
+            ],
+            "measured_colors": [
+              {
+                "color": "verde",
+                "share": 0.4075
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "shape not determinable",
+            "composition": "Single metallic green round balloon lying on floor on bottom left corner.",
+            "referencias_medidas": [
+              {
+                "codigo": "530",
+                "familia": "metal",
+                "nombre": "Verde",
+                "nombre_completo": "Metal Verde",
+                "parte": 0.5654,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "029",
+                "familia": "fashion",
+                "nombre": "Verde Trébol",
+                "nombre_completo": "Fashion Verde Trébol",
+                "parte": 0.1929,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [
+            "Loose balloons on the floor are not a built structure."
+          ],
+          "model_decision": {
+            "action": "omit",
+            "match_type": "none",
+            "reason": "Minor floor balloon accent.",
+            "adaptation": "Elemento omitido: no es relevante para la composición."
+          }
+        },
+        {
+          "element_id": "REF_01_E10",
+          "source_image_id": "REF_01",
+          "name": "Loose Floor Balloon - Lime Green",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.88,
+          "visible_evidence": "Small loose balloon sitting near left sign base.",
+          "reference_bbox": {
+            "x": 0.16,
+            "y": 0.836,
+            "width": 0.07,
+            "height": 0.07300000000000006
+          },
+          "depth_layer": 2,
+          "include_policy": "exclude",
+          "approved": false,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "metallic lime green"
+            ],
+            "measured_colors": [
+              {
+                "color": "verde",
+                "share": 0.3168
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "shape not determinable",
+            "composition": "Single light metallic green round balloon resting on floor.",
+            "referencias_medidas": [
+              {
+                "codigo": "931",
+                "familia": "reflex",
+                "nombre": "Verde Lima",
+                "nombre_completo": "Reflex Verde Lima",
+                "parte": 1,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [
+            "Loose balloons on the floor are not a built structure."
+          ],
+          "model_decision": {
+            "action": "omit",
+            "match_type": "none",
+            "reason": "Minor floor balloon accent.",
+            "adaptation": "Elemento omitido: no es relevante para la composición."
+          }
+        },
+        {
+          "element_id": "REF_01_E11",
+          "source_image_id": "REF_01",
+          "name": "Loose Floor Balloon - Teal",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.88,
+          "visible_evidence": "Small teal balloon lying near left pedestal base.",
+          "reference_bbox": {
+            "x": 0.304,
+            "y": 0.838,
+            "width": 0.063,
+            "height": 0.06600000000000006
+          },
+          "depth_layer": 2,
+          "include_policy": "exclude",
+          "approved": false,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome teal"
+            ],
+            "measured_colors": [
+              {
+                "color": "turquesa",
+                "share": 0.2198
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "shape not determinable",
+            "composition": "Single chrome teal/blue balloon resting on floor center-left."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [
+            "Loose balloons on the floor are not a built structure."
+          ],
+          "model_decision": {
+            "action": "omit",
+            "match_type": "none",
+            "reason": "Minor floor balloon accent.",
+            "adaptation": "Elemento omitido: no es relevante para la composición."
+          }
+        },
+        {
+          "element_id": "REF_01_E12",
+          "source_image_id": "REF_01",
+          "name": "Loose Floor Balloon - Light Green",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.88,
+          "visible_evidence": "Loose light green balloon sitting near middle pedestal.",
+          "reference_bbox": {
+            "x": 0.461,
+            "y": 0.845,
+            "width": 0.07500000000000001,
+            "height": 0.08100000000000007
+          },
+          "depth_layer": 2,
+          "include_policy": "exclude",
+          "approved": false,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "lime green"
+            ],
+            "measured_colors": [
+              {
+                "color": "verde",
+                "share": 0.0374
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "shape not determinable",
+            "composition": "Single pale lime green balloon resting on floor near central pedestal.",
+            "referencias_medidas": [
+              {
+                "codigo": "931",
+                "familia": "reflex",
+                "nombre": "Verde Lima",
+                "nombre_completo": "Reflex Verde Lima",
+                "parte": 0.8718,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [
+            "Loose balloons on the floor are not a built structure."
+          ],
+          "model_decision": {
+            "action": "omit",
+            "match_type": "none",
+            "reason": "Minor floor balloon accent.",
+            "adaptation": "Elemento omitido: no es relevante para la composición."
+          }
+        },
+        {
+          "element_id": "REF_01_E13",
+          "source_image_id": "REF_01",
+          "name": "Loose Floor Balloon - Chrome Teal",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.9,
+          "visible_evidence": "Chrome teal balloon sitting on floor at bottom right corner.",
+          "reference_bbox": {
+            "x": 0.879,
+            "y": 0.884,
+            "width": 0.10099999999999998,
+            "height": 0.10099999999999998
+          },
+          "depth_layer": 2,
+          "include_policy": "exclude",
+          "approved": false,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome teal"
+            ],
+            "measured_colors": [
+              {
+                "color": "turquesa",
+                "share": 0.2449
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "shape not determinable",
+            "composition": "Single chrome teal balloon on floor at bottom right edge."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [
+            "Loose balloons on the floor are not a built structure."
+          ],
+          "model_decision": {
+            "action": "omit",
+            "match_type": "none",
+            "reason": "Minor floor balloon accent.",
+            "adaptation": "Elemento omitido: no es relevante para la composición."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Dinosaur theme ribbed wall backdrop with large organic balloon arch and decor props",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "dark navy blue",
+          "chrome teal",
+          "metallic green",
+          "lime green",
+          "chrome gold",
+          "beige",
+          "natural wood brown"
+        ],
+        "priority": [
+          "dark navy blue",
+          "chrome teal",
+          "metallic green",
+          "lime green",
+          "chrome gold",
+          "beige",
+          "natural wood brown"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "b84e2ab96fa4f4929552b62b52d5cf4243f87b60fdfdf226a3fd6926f80eabcb",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 800,
+            "height": 800
+          },
+          "processed": {
+            "width": 800,
+            "height": 800
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "semiarco",
+          "croquis": {
+            "forma": "anillo de arco (parcial)",
+            "parteDeLaCaja": 0.5708
+          },
+          "pixeles": {
+            "medidos": 136380,
+            "deLaCaja": 229914
+          },
+          "colores": [
+            {
+              "hex": "#a38f59",
+              "parte": 0.4687,
+              "pixeles": 63929,
+              "cruce": {
+                "hex": "#a38f59",
+                "candidatas": [
+                  {
+                    "codigo": "970",
+                    "nombre": "Dorado",
+                    "nombreCompleto": "Reflex Dorado",
+                    "nombreEn": "chrome gold",
+                    "pms": "10444",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a08344",
+                    "deltaE": 8.2,
+                    "distancia": 7.1,
+                    "tono": 5.1,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#344315",
+              "parte": 0.2417,
+              "pixeles": 32959,
+              "cruce": {
+                "hex": "#344315",
+                "candidatas": [
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 39.2,
+                    "distancia": 23.6,
+                    "tono": 5.1,
+                    "razonCroma": 0.7
+                  },
+                  {
+                    "codigo": "230",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Neón Verde",
+                    "nombreEn": "neon green",
+                    "pms": "802",
+                    "acabado": "bright matte",
+                    "hexGlobo": "#95cd49",
+                    "deltaE": 64.5,
+                    "distancia": 31.4,
+                    "tono": 3.9,
+                    "razonCroma": 0.4
+                  },
+                  {
+                    "codigo": "027",
+                    "nombre": "Eucalipto",
+                    "nombreCompleto": "Fashion Eucalipto",
+                    "nombreEn": "matte sage green",
+                    "pms": "5635",
+                    "acabado": "matte",
+                    "hexGlobo": "#95aa85",
+                    "deltaE": 41.9,
+                    "distancia": 33.6,
+                    "tono": 10.8,
+                    "razonCroma": 1.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#131c32",
+              "parte": 0.1491,
+              "pixeles": 20329,
+              "cruce": {
+                "hex": "#131c32",
+                "candidatas": [
+                  {
+                    "codigo": "044",
+                    "nombre": "Azul Naval",
+                    "nombreCompleto": "Fashion Azul Naval",
+                    "nombreEn": "matte navy blue",
+                    "pms": "7687",
+                    "acabado": "matte",
+                    "hexGlobo": "#172c59",
+                    "deltaE": 16.9,
+                    "distancia": 7.1,
+                    "tono": 3,
+                    "razonCroma": 0.5
+                  },
+                  {
+                    "codigo": "944",
+                    "nombre": "Azul Galaxy",
+                    "nombreCompleto": "Reflex Azul Galaxy",
+                    "nombreEn": "chrome navy blue",
+                    "pms": "10365",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#4c5b72",
+                    "deltaE": 28,
+                    "distancia": 26.6,
+                    "tono": 12.8,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "540",
+                    "nombre": "Azul",
+                    "nombreCompleto": "Metal Azul",
+                    "nombreEn": "metallic navy blue",
+                    "pms": "287",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#005f9f",
+                    "deltaE": 38.2,
+                    "distancia": 29.1,
+                    "tono": 11.7,
+                    "razonCroma": 0.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#3f7b31",
+              "parte": 0.1405,
+              "pixeles": 19163,
+              "cruce": {
+                "hex": "#3f7b31",
+                "candidatas": [
+                  {
+                    "codigo": "530",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Metal Verde",
+                    "nombreEn": "metallic dark green",
+                    "pms": "349",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#158536",
+                    "deltaE": 12.7,
+                    "distancia": 9.9,
+                    "tono": 8.7,
+                    "razonCroma": 0.8
+                  },
+                  {
+                    "codigo": "029",
+                    "nombre": "Verde Trébol",
+                    "nombreCompleto": "Fashion Verde Trébol",
+                    "nombreEn": "bright matte green",
+                    "pms": "7481",
+                    "acabado": "matte",
+                    "hexGlobo": "#02ae26",
+                    "deltaE": 38.6,
+                    "distancia": 11.2,
+                    "tono": 3.3,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "032",
+                    "nombre": "Verde Selva",
+                    "nombreCompleto": "Fashion Verde Selva",
+                    "nombreEn": "matte dark green",
+                    "pms": "341",
+                    "acabado": "matte",
+                    "hexGlobo": "#007b45",
+                    "deltaE": 14.9,
+                    "distancia": 18.2,
+                    "tono": 17.7,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Un color era el mismo globo visto con otra luz y se juntó con el suyo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E09",
+          "tipo": "",
+          "croquis": {
+            "forma": "caja entera",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 2400,
+            "deLaCaja": 2808
+          },
+          "colores": [
+            {
+              "hex": "#40713a",
+              "parte": 0.5654,
+              "pixeles": 1357,
+              "cruce": {
+                "hex": "#40713a",
+                "candidatas": [
+                  {
+                    "codigo": "530",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Metal Verde",
+                    "nombreEn": "metallic dark green",
+                    "pms": "349",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#158536",
+                    "deltaE": 21.1,
+                    "distancia": 8.7,
+                    "tono": 6,
+                    "razonCroma": 0.7
+                  },
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 22.5,
+                    "distancia": 23.7,
+                    "tono": 13.6,
+                    "razonCroma": 0.9
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": [
+                  "metal",
+                  "reflex"
+                ]
+              }
+            },
+            {
+              "hex": "#c2a573",
+              "parte": 0.2417,
+              "pixeles": 580,
+              "cruce": {
+                "hex": "#c2a573",
+                "candidatas": [
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 28.5,
+                    "distancia": 44.8,
+                    "tono": 41.8,
+                    "razonCroma": 0.7
+                  },
+                  {
+                    "codigo": "230",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Neón Verde",
+                    "nombreEn": "neon green",
+                    "pms": "802",
+                    "acabado": "bright matte",
+                    "hexGlobo": "#95cd49",
+                    "deltaE": 51.1,
+                    "distancia": 46.2,
+                    "tono": 40.6,
+                    "razonCroma": 0.4
+                  },
+                  {
+                    "codigo": "031",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Fashion Verde Lima",
+                    "nombreEn": "matte lime green",
+                    "pms": "375",
+                    "acabado": "matte",
+                    "hexGlobo": "#8ac85b",
+                    "deltaE": 46.1,
+                    "distancia": 48.9,
+                    "tono": 46,
+                    "razonCroma": 0.5
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": true,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#77a674",
+              "parte": 0.1929,
+              "pixeles": 463,
+              "cruce": {
+                "hex": "#77a674",
+                "candidatas": [
+                  {
+                    "codigo": "029",
+                    "nombre": "Verde Trébol",
+                    "nombreCompleto": "Fashion Verde Trébol",
+                    "nombreEn": "bright matte green",
+                    "pms": "7481",
+                    "acabado": "matte",
+                    "hexGlobo": "#02ae26",
+                    "deltaE": 50.3,
+                    "distancia": 5.8,
+                    "tono": 1.9,
+                    "razonCroma": 0.4
+                  },
+                  {
+                    "codigo": "530",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Metal Verde",
+                    "nombreEn": "metallic dark green",
+                    "pms": "349",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#158536",
+                    "deltaE": 29.1,
+                    "distancia": 11,
+                    "tono": 3.4,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 13.5,
+                    "distancia": 16.5,
+                    "tono": 16.2,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": [
+                  "metal",
+                  "reflex"
+                ]
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores eran el mismo globo visto con otra luz y se juntaron con el suyo.",
+            "Un color no tiene un globo igual en el catálogo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E10",
+          "tipo": "",
+          "croquis": {
+            "forma": "caja entera",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 1190,
+            "deLaCaja": 1406
+          },
+          "colores": [
+            {
+              "hex": "#a8b394",
+              "parte": 1,
+              "pixeles": 1190,
+              "cruce": {
+                "hex": "#a8b394",
+                "candidatas": [
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 25.7,
+                    "distancia": 8.4,
+                    "tono": 1.8,
+                    "razonCroma": 0.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": [
+                  "metal",
+                  "reflex"
+                ]
+              }
+            }
+          ],
+          "avisos": [
+            "4 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E11",
+          "tipo": "",
+          "croquis": {
+            "forma": "caja entera",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 992,
+            "deLaCaja": 1122
+          },
+          "colores": [
+            {
+              "hex": "#caeeeb",
+              "parte": 1,
+              "pixeles": 992,
+              "cruce": {
+                "hex": "#caeeeb",
+                "candidatas": [
+                  {
+                    "codigo": "932",
+                    "nombre": "Verde Aurora",
+                    "nombreCompleto": "Reflex Verde Aurora",
+                    "nombreEn": "chrome teal",
+                    "pms": "10294",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#3b8b7c",
+                    "deltaE": 42.1,
+                    "distancia": 34,
+                    "tono": 12.8,
+                    "razonCroma": 0.4
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": true,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "4 colores eran el mismo globo visto con otra luz y se juntaron con el suyo.",
+            "Un color no tiene un globo igual en el catálogo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E12",
+          "tipo": "",
+          "croquis": {
+            "forma": "caja entera",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 1365,
+            "deLaCaja": 1677
+          },
+          "colores": [
+            {
+              "hex": "#758528",
+              "parte": 0.8718,
+              "pixeles": 1190,
+              "cruce": {
+                "hex": "#758528",
+                "candidatas": [
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 16.4,
+                    "distancia": 17.4,
+                    "tono": 12.2,
+                    "razonCroma": 1.2
+                  },
+                  {
+                    "codigo": "031",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Fashion Verde Lima",
+                    "nombreEn": "matte lime green",
+                    "pms": "375",
+                    "acabado": "matte",
+                    "hexGlobo": "#8ac85b",
+                    "deltaE": 29.3,
+                    "distancia": 27.3,
+                    "tono": 16.4,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#e6e5a2",
+              "parte": 0.1282,
+              "pixeles": 175,
+              "cruce": {
+                "hex": "#e6e5a2",
+                "candidatas": [
+                  {
+                    "codigo": "031",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Fashion Verde Lima",
+                    "nombreEn": "matte lime green",
+                    "pms": "375",
+                    "acabado": "matte",
+                    "hexGlobo": "#8ac85b",
+                    "deltaE": 35.6,
+                    "distancia": 29.8,
+                    "tono": 22.3,
+                    "razonCroma": 0.6
+                  },
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 29.9,
+                    "distancia": 31.3,
+                    "tono": 18.1,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": true,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "3 colores eran el mismo globo visto con otra luz y se juntaron con el suyo.",
+            "Un color no tiene un globo igual en el catálogo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E13",
+          "tipo": "",
+          "croquis": {
+            "forma": "caja entera",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 2352,
+            "deLaCaja": 2756
+          },
+          "colores": [
+            {
+              "hex": "#709284",
+              "parte": 1,
+              "pixeles": 2352,
+              "cruce": {
+                "hex": "#709284",
+                "candidatas": [
+                  {
+                    "codigo": "932",
+                    "nombre": "Verde Aurora",
+                    "nombreCompleto": "Reflex Verde Aurora",
+                    "nombreEn": "chrome teal",
+                    "pms": "10294",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#3b8b7c",
+                    "deltaE": 14.5,
+                    "distancia": 14.5,
+                    "tono": 12.1,
+                    "razonCroma": 0.5
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": [
+                  "reflex",
+                  "metal"
+                ]
+              }
+            }
+          ],
+          "avisos": [
+            "4 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

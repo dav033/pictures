@@ -1227,5 +1227,1485 @@
       "#f4a03c"
     ],
     "fotoRepresentativa": true
+  },
+  {
+    "id": "deco-real-01-305",
+    "titulo": "Arco de entrada en blanco y negro",
+    "tematica": "Elegante blanco y negro",
+    "eventos": [
+      "Cumpleaños",
+      "Graduación",
+      "Fiesta de empresa"
+    ],
+    "edad": {
+      "min": 18,
+      "max": 70
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-01-305.jpg",
+        "fuente": "305.gif",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "arco",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 81,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "46594235269415",
+        "sku": "B2B-20000781",
+        "cantidad": 64,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón espiral y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#f2f0ed",
+      "#0a090e"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-02-34722b3ec9978bfe7439a121c16a1db7",
+    "titulo": "Arco naranja y negro para fiesta de disfraces",
+    "tematica": "Infantil naranja y negro",
+    "eventos": [
+      "Halloween",
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 3,
+      "max": 16
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-02-34722b3ec9978bfe7439a121c16a1db7.jpg",
+        "fuente": "34722b3ec9978bfe7439a121c16a1db7.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "arco",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594228715815",
+        "sku": "B2B-20000773",
+        "cantidad": 43,
+        "nota": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50 · R-12 · naranja"
+      },
+      {
+        "variantId": "46594235269415",
+        "sku": "B2B-20000781",
+        "cantidad": 110,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón espiral y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#bc4c0c",
+      "#1b0f0a",
+      "#908861"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1",
+    "titulo": "Semiarco azul y plateado con centros de mesa",
+    "tematica": "Azul y plateado",
+    "eventos": [
+      "Baby shower",
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 0,
+      "max": 14
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.jpg",
+        "fuente": "63ba2a23-cda3-4af6-af27-bb1746751288-1.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "semiarco",
+        "cantidad": 1
+      },
+      {
+        "estructura": "bouquet",
+        "cantidad": 1
+      },
+      {
+        "estructura": "centro_mesa",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 14,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "46594233925927",
+        "sku": "B2B-20000758",
+        "cantidad": 14,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+      },
+      {
+        "variantId": "46594247557415",
+        "sku": "B2B-20001699",
+        "cantidad": 61,
+        "nota": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#7fbee0",
+      "#cddbe8",
+      "#6e767b",
+      "#0661ba",
+      "#ccd2d8"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-04-71mp5umakml-ac-uf894-1000-ql80",
+    "titulo": "Semiarco selvático de dinosaurios",
+    "tematica": "Infantil de dinosaurios",
+    "eventos": [
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 2,
+      "max": 12
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-04-71mp5umakml-ac-uf894-1000-ql80.jpg",
+        "fuente": "71mP5UMAKML._AC_UF894,1000_QL80_.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "semiarco",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594211840295",
+        "sku": "B2B-20000745",
+        "cantidad": 64,
+        "nota": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50 · R-12 · verde"
+      },
+      {
+        "variantId": "46594256044327",
+        "sku": "B2B-20007292",
+        "cantidad": 38,
+        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#a38f59",
+      "#344315",
+      "#131c32",
+      "#3f7b31"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec",
+    "titulo": "Semiarco rosa palo y dorado",
+    "tematica": "Romántico rosa y dorado",
+    "eventos": [
+      "Boda",
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 18,
+      "max": 60
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.jpg",
+        "fuente": "Arco-Organico_bf3d4c2f-12ab-4c83-a87b-97da3b53ec44_1200x1200.webp",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "semiarco",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 25,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "46594230157607",
+        "sku": "B2B-20014530",
+        "cantidad": 47,
+        "nota": "B2b Globo Latex Redondo Fashion Arena — R-12 / PAQUETE X 50 · R-12 · beige"
+      },
+      {
+        "variantId": "46594271576359",
+        "sku": "B2B-20009132",
+        "cantidad": 30,
+        "nota": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón bloques y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#eee5d3",
+      "#bb7363",
+      "#f14e59"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
+    "titulo": "Columna arcoíris con cinta dorada",
+    "tematica": "Infantil colorida",
+    "eventos": [
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 1,
+      "max": 12
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-06-columna-globos-alta-colorida-cinta-dorada-sobre-.jpg",
+        "fuente": "columna-globos-alta-colorida-cinta-dorada-sobre-fondo-blanco_1647699-6728.avif",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "columna",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594211840295",
+        "sku": "B2B-20000745",
+        "cantidad": 17,
+        "nota": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50 · R-12 · verde"
+      },
+      {
+        "variantId": "46594231992615",
+        "sku": "B2B-20000737",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50 · R-12 · amarillo"
+      },
+      {
+        "variantId": "46594236416295",
+        "sku": "B2B-20000732",
+        "cantidad": 14,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Fija una base pesada y arma el soporte vertical."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 y agrúpalos en cuartetos parejos."
+      },
+      {
+        "orden": 3,
+        "texto": "Monta los grupos desde la base, girando el color en espiral. Sigue el patrón anillos y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#1657ae",
+      "#158450",
+      "#d5362c",
+      "#eccc0d",
+      "#ebeada"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-07-eb12910e210c94b6184d025127acce95",
+    "titulo": "Dos columnas rosa, lila y dorado",
+    "tematica": "Rosa y lila",
+    "eventos": [
+      "Cumpleaños",
+      "XV años"
+    ],
+    "edad": {
+      "min": 8,
+      "max": 25
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-07-eb12910e210c94b6184d025127acce95.jpg",
+        "fuente": "eb12910e210c94b6184d025127acce95.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "columna",
+        "cantidad": 2
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594210496807",
+        "sku": "B2B-20000765",
+        "cantidad": 21,
+        "nota": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50 · R-12 · lila"
+      },
+      {
+        "variantId": "46594211414311",
+        "sku": "B2B-20010675",
+        "cantidad": 76,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Fija una base pesada y arma el soporte vertical."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 y agrúpalos en cuartetos parejos."
+      },
+      {
+        "orden": 3,
+        "texto": "Monta los grupos desde la base, girando el color en espiral. Sigue el patrón bloques y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#cb93b1",
+      "#aaa4a1",
+      "#6f4a63",
+      "#644b35",
+      "#351b1b"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-08-images-23",
+    "titulo": "Columnas negras y doradas",
+    "tematica": "Elegante negro y dorado",
+    "eventos": [
+      "Cumpleaños",
+      "Graduación",
+      "Fiesta de empresa"
+    ],
+    "edad": {
+      "min": 18,
+      "max": 70
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-08-images-23.jpg",
+        "fuente": "images (23).jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "columna",
+        "cantidad": 2
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594235269415",
+        "sku": "B2B-20000781",
+        "cantidad": 63,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
+      },
+      {
+        "variantId": "46594256044327",
+        "sku": "B2B-20007292",
+        "cantidad": 23,
+        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Fija una base pesada y arma el soporte vertical."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 y agrúpalos en cuartetos parejos."
+      },
+      {
+        "orden": 3,
+        "texto": "Monta los grupos desde la base, girando el color en espiral. Sigue el patrón espiral y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#efdcb6",
+      "#160d05",
+      "#b87e1b",
+      "#170d05"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-09-images-24",
+    "titulo": "Guirnalda rosa y dorada de cumpleaños",
+    "tematica": "Rosa y dorado",
+    "eventos": [
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 1,
+      "max": 30
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-09-images-24.jpg",
+        "fuente": "images (24).jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "guirnalda",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594211414311",
+        "sku": "B2B-20010675",
+        "cantidad": 34,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+      },
+      {
+        "variantId": "46594236416295",
+        "sku": "B2B-20000732",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
+      },
+      {
+        "variantId": "46594256044327",
+        "sku": "B2B-20007292",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Marca los puntos de anclaje y prepara la tira de soporte."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+      },
+      {
+        "orden": 3,
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#eec9da",
+      "#a68835",
+      "#d0bab2",
+      "#943724",
+      "#c5817e"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-10-images-25",
+    "titulo": "Semiarco azul, blanco y plateado",
+    "tematica": "Azul y plateado",
+    "eventos": [
+      "Baby shower",
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 0,
+      "max": 14
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-10-images-25.jpg",
+        "fuente": "images (25).jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "semiarco",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594247557415",
+        "sku": "B2B-20001699",
+        "cantidad": 78,
+        "nota": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#868886",
+      "#517b9b",
+      "#a2c2d1"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-11-images-26",
+    "titulo": "Arco pastel rosa y turquesa",
+    "tematica": "Baby shower niña",
+    "eventos": [
+      "Baby shower",
+      "Primer cumpleaños"
+    ],
+    "edad": {
+      "min": 0,
+      "max": 8
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-11-images-26.jpg",
+        "fuente": "images (26).jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "guirnalda",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594211414311",
+        "sku": "B2B-20010675",
+        "cantidad": 46,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+      },
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 67,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "46594343731495",
+        "sku": "B2B-20017220",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50 · R-12 · morado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Marca los puntos de anclaje y prepara la tira de soporte."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+      },
+      {
+        "orden": 3,
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#a3a8a4",
+      "#ce93bc",
+      "#734d86"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-12-images-27",
+    "titulo": "Semiarco lila y morado",
+    "tematica": "Lila y morado",
+    "eventos": [
+      "XV años",
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 12,
+      "max": 30
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-12-images-27.jpg",
+        "fuente": "images (27).jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "semiarco",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594210496807",
+        "sku": "B2B-20000765",
+        "cantidad": 16,
+        "nota": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50 · R-12 · lila"
+      },
+      {
+        "variantId": "46594247557415",
+        "sku": "B2B-20001699",
+        "cantidad": 31,
+        "nota": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+      },
+      {
+        "variantId": "46594343731495",
+        "sku": "B2B-20017220",
+        "cantidad": 15,
+        "nota": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50 · R-12 · morado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#8d6696",
+      "#c0c3b1"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-13-images-28",
+    "titulo": "Semiarco blanco y oro rosa",
+    "tematica": "Romántico rosa y dorado",
+    "eventos": [
+      "Boda",
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 18,
+      "max": 60
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-13-images-28.jpg",
+        "fuente": "images (28).jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "semiarco",
+        "cantidad": 1
+      },
+      {
+        "estructura": "bouquet",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "46594271576359",
+        "sku": "B2B-20009132",
+        "cantidad": 98,
+        "nota": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#341107",
+      "#a29e9e",
+      "#a8827f"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-14-images-29",
+    "titulo": "Arco de entrada blanco y negro",
+    "tematica": "Elegante blanco y negro",
+    "eventos": [
+      "Graduación",
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 16,
+      "max": 70
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-14-images-29.jpg",
+        "fuente": "images (29).jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "arco",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 81,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "46594235269415",
+        "sku": "B2B-20000781",
+        "cantidad": 64,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón espiral y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#f2f0ed",
+      "#0b0a0e"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-15-images-30",
+    "titulo": "Semiarco rojo, blanco y dorado",
+    "tematica": "Infantil colorida",
+    "eventos": [
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 1,
+      "max": 16
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-15-images-30.jpg",
+        "fuente": "images (30).jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "semiarco",
+        "cantidad": 1
+      },
+      {
+        "estructura": "bouquet",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 60,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "46594236416295",
+        "sku": "B2B-20000732",
+        "cantidad": 16,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
+      },
+      {
+        "variantId": "46594256044327",
+        "sku": "B2B-20007292",
+        "cantidad": 17,
+        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón bloques y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#9a7455",
+      "#82121c",
+      "#d8cbbf",
+      "#5b0c13",
+      "#98785d"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-16-images-31",
+    "titulo": "Guirnalda azul para cumpleaños",
+    "tematica": "Azul y plateado",
+    "eventos": [
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 1,
+      "max": 16
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-16-images-31.jpg",
+        "fuente": "images (31).jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "guirnalda",
+        "cantidad": 1
+      },
+      {
+        "estructura": "bouquet",
+        "cantidad": 2
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594233925927",
+        "sku": "B2B-20000758",
+        "cantidad": 95,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Marca los puntos de anclaje y prepara la tira de soporte."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+      },
+      {
+        "orden": 3,
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#09296a",
+      "#3879b6",
+      "#1e69a9",
+      "#08286d",
+      "#709abc"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-17-img-2939-1-600x600",
+    "titulo": "Semiarco rosa y champagne",
+    "tematica": "Romántico rosa y dorado",
+    "eventos": [
+      "Boda",
+      "XV años"
+    ],
+    "edad": {
+      "min": 15,
+      "max": 60
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-17-img-2939-1-600x600.jpg",
+        "fuente": "IMG_2939-1-600x600.webp",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "semiarco",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594271576359",
+        "sku": "B2B-20009132",
+        "cantidad": 102,
+        "nota": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#9e8787",
+      "#aca17c"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-18-sddefault",
+    "titulo": "Guirnalda rosa pastel y dorado",
+    "tematica": "Baby shower niña",
+    "eventos": [
+      "Baby shower",
+      "Primer cumpleaños"
+    ],
+    "edad": {
+      "min": 0,
+      "max": 8
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-18-sddefault.jpg",
+        "fuente": "sddefault.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "guirnalda",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594211414311",
+        "sku": "B2B-20010675",
+        "cantidad": 19,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+      },
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 18,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+      },
+      {
+        "variantId": "46594256044327",
+        "sku": "B2B-20007292",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Infinity® Filigree Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Marca los puntos de anclaje y prepara la tira de soporte."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+      },
+      {
+        "orden": 3,
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#d8c7c5",
+      "#daabb4",
+      "#ac772a",
+      "#cf888d"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-19-semiarco-organico-combinaciones-con-reflex-26bbc",
+    "titulo": "Guirnalda rosa, fucsia y oro rosa",
+    "tematica": "Rosa y dorado",
+    "eventos": [
+      "Cumpleaños",
+      "XV años"
+    ],
+    "edad": {
+      "min": 12,
+      "max": 40
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.jpg",
+        "fuente": "Semiarco-Organico-Combinaciones-con-Reflex_26bbcc5b-3c4b-46ac-9c75-63909164c307_520x500.webp",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "guirnalda",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594211414311",
+        "sku": "B2B-20010675",
+        "cantidad": 18,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+      },
+      {
+        "variantId": "46594234614055",
+        "sku": "B2B-20000729",
+        "cantidad": 10,
+        "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 50 · R-12 · fucsia"
+      },
+      {
+        "variantId": "46594271576359",
+        "sku": "B2B-20009132",
+        "cantidad": 23,
+        "nota": "B2b Globo Latex Redondo Metal Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Marca los puntos de anclaje y prepara la tira de soporte."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+      },
+      {
+        "orden": 3,
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#ffffff",
+      "#eda6c0",
+      "#c0936f",
+      "#984a3a",
+      "#e02d7d"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-20-semiarcoilusionazul-1200x1200",
+    "titulo": "Semiarco azul ilusión",
+    "tematica": "Azul y plateado",
+    "eventos": [
+      "Baby shower",
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 0,
+      "max": 16
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/real-20-semiarcoilusionazul-1200x1200.jpg",
+        "fuente": "SemiarcoIlusionAzul_1200x1200.webp",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "semiarco",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594233925927",
+        "sku": "B2B-20000758",
+        "cantidad": 49,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos R-12 con tamaño uniforme."
+      },
+      {
+        "orden": 3,
+        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 5,
+        "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#95b7c5",
+      "#1279b4",
+      "#022566"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
   }
 ]

@@ -1,0 +1,921 @@
+{
+  "id": "real-15-images-30",
+  "fuente": "images (30).jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-15-images-30.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "c8d59495-478b-4231-b50a-1ea472ce2531",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 0.5611
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Organic Balloon Garland",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Organic balloon garland attached to white arch panel arching over the top from left to center.",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0.13,
+            "width": 0.87,
+            "height": 0.642
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pearl white",
+              "chrome gold",
+              "crimson red"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.2403
+              },
+              {
+                "color": "dorado",
+                "share": 0.0899
+              },
+              {
+                "color": "rojo",
+                "share": 0.0848
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense asymmetrical half-arch, on the left, curving toward the right, strong top overhang, standing on the floor",
+            "composition": "40% pearl white balloons, 35% chrome gold balloons, and 25% crimson red balloons arranged organically in clusters with mini balloon accents.",
+            "patron_color": {
+              "modo": "bloques",
+              "colores": [
+                "blanco",
+                "rojo",
+                "dorado"
+              ],
+              "pesos": [
+                35,
+                30,
+                35
+              ],
+              "confianza": 0.95
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "inclinacion": 0.45,
+            "conteo": {
+              "globos_visibles": 62,
+              "exacto": false,
+              "estimado_total": 85,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.3
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.2
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.92
+            },
+            "armado_guirnalda": {
+              "soporte": "sobre_estructura",
+              "forma": "u_invertida",
+              "puntos_de_anclaje": 3,
+              "sentido_curva": "arriba",
+              "flecha_relativa": 0.502,
+              "desnivel_relativo": null,
+              "racimos_visibles": 18,
+              "unidad_racimo": "cuarteto",
+              "colores_por_racimo": [
+                "blanco",
+                "dorado",
+                "rojo"
+              ],
+              "relleno": null,
+              "remates": [
+                {
+                  "clase": "latex",
+                  "color": "dorado",
+                  "posicion": "centro"
+                }
+              ],
+              "confianza": 0.95
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "970",
+                "familia": "reflex",
+                "nombre": "Dorado",
+                "nombre_completo": "Reflex Dorado",
+                "parte": 0.3733,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "semiarco",
+            "placement": "lateral_izquierdo",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Key focal decorative balloon structure framing backdrop",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "White Arch Backdrop Panel",
+          "category": "backdrop",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.98,
+          "visible_evidence": "White arched wooden panel behind tables supporting yellow glowing neon sign.",
+          "reference_bbox": {
+            "x": 0.335,
+            "y": 0.295,
+            "width": 0.6219999999999999,
+            "height": 0.37600000000000006
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "white",
+              "warm yellow"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.3534
+              },
+              {
+                "color": "amarillo",
+                "share": 0.0649
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "wood",
+            "shape": "shape not determinable",
+            "composition": "100% white arch backdrop panel featuring glowing yellow neon signage in Spanish."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Central background structure defining event scope",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "Feliz Cumpleaños Neon Sign",
+          "category": "signage",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.99,
+          "visible_evidence": "Glowing neon text mounted on center of white arch panel reading ¡Feliz Cumpleaños!.",
+          "reference_bbox": {
+            "x": 0.402,
+            "y": 0.344,
+            "width": 0.367,
+            "height": 0.09300000000000003
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "warm yellow"
+            ],
+            "measured_colors": [
+              {
+                "color": "amarillo",
+                "share": 0.3611
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "neon flex",
+            "shape": "shape not determinable",
+            "composition": "100% warm yellow glowing neon LED cursive script spelling ¡Feliz Cumpleaños!."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary focal text signage",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E04",
+          "source_image_id": "REF_01",
+          "name": "Small Gold Wire Plinth Table",
+          "category": "furniture",
+          "scene_role": "midground",
+          "detection_confidence": 0.96,
+          "visible_evidence": "Small gold wire criss-cross pedestal table holding a flower vase.",
+          "reference_bbox": {
+            "x": 0.322,
+            "y": 0.598,
+            "width": 0.305,
+            "height": 0.277
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "metallic gold",
+              "white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.0449
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "metal and wood",
+            "shape": "shape not determinable",
+            "composition": "100% metallic gold geometric wire frame with a white circular top surface."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Furniture plinth supporting floral arrangement",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E05",
+          "source_image_id": "REF_01",
+          "name": "Tall Gold Wire Plinth Table",
+          "category": "furniture",
+          "scene_role": "midground",
+          "detection_confidence": 0.96,
+          "visible_evidence": "Taller gold wire geometric pedestal table holding a cake/plate decor.",
+          "reference_bbox": {
+            "x": 0.612,
+            "y": 0.543,
+            "width": 0.32000000000000006,
+            "height": 0.33199999999999996
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "metallic gold",
+              "white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.0837
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "metal and wood",
+            "shape": "shape not determinable",
+            "composition": "100% metallic gold geometric wire frame with a white circular top surface."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Furniture plinth for cake or display",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E06",
+          "source_image_id": "REF_01",
+          "name": "Red Rose Floral Centerpiece",
+          "category": "floral",
+          "scene_role": "accent",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Fresh flower bouquet with red roses and greenery resting on small plinth.",
+          "reference_bbox": {
+            "x": 0.357,
+            "y": 0.421,
+            "width": 0.23099999999999998,
+            "height": 0.21200000000000002
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "crimson red",
+              "white",
+              "green"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.2157
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "fresh flowers",
+            "shape": "shape not determinable",
+            "composition": "60% deep red roses, 20% white filler blooms, and 20% green foliage in a vase."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Decorative tabletop flower arrangement",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E07",
+          "source_image_id": "REF_01",
+          "name": "Right Floor Balloon Cluster",
+          "category": "balloon_structure",
+          "scene_role": "accent",
+          "detection_confidence": 0.92,
+          "visible_evidence": "Small cluster of red and off-white balloons resting on the floor to the right of the backdrop.",
+          "reference_bbox": {
+            "x": 0.756,
+            "y": 0.464,
+            "width": 0.244,
+            "height": 0.25499999999999995
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "crimson red",
+              "pearl white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.206
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "short dense asymmetrical cluster, on the right, standing on the floor",
+            "composition": "70% crimson red balloons, 30% pearl white balloons clustered at base of right backdrop.",
+            "patron_color": {
+              "modo": "bloques",
+              "colores": [
+                "rojo",
+                "blanco"
+              ],
+              "pesos": [
+                70,
+                30
+              ],
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "conteo": {
+              "globos_visibles": 11,
+              "exacto": false,
+              "estimado_total": 15,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.7
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.3
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.88
+            }
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "kit",
+            "placement": "lateral_derecho",
+            "design_role": "soporte",
+            "repetition_group": "REF_01_E07",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Base fill decorative balloon cluster",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E08",
+          "source_image_id": "REF_01",
+          "name": "Beige Shag Area Rug",
+          "category": "other",
+          "scene_role": "midground",
+          "detection_confidence": 0.95,
+          "visible_evidence": "Beige plush rug placed under tables and balloon setup.",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0.712,
+            "width": 0.996,
+            "height": 0.22100000000000009
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "beige",
+              "cream"
+            ],
+            "measured_colors": [
+              {
+                "color": "beige",
+                "share": 0.3418
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "fabric",
+            "shape": "shape not determinable",
+            "composition": "100% beige plush shag carpet covering floor space beneath display."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Floor mat framing display zone",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Asymmetric organic balloon garland framing a white arch backdrop with neon sign and tables",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "pearl white",
+          "chrome gold",
+          "crimson red",
+          "beige"
+        ],
+        "priority": [
+          "pearl white",
+          "chrome gold",
+          "crimson red",
+          "beige"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "221e76f1510f8bf3266c2cf4dcf76988f0a925b5d28c1ac64284e4123246c298",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 335,
+            "height": 597
+          },
+          "processed": {
+            "width": 335,
+            "height": 597
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "semiarco",
+          "croquis": {
+            "forma": "anillo de arco (parcial)",
+            "parteDeLaCaja": 0.5708
+          },
+          "pixeles": {
+            "medidos": 48920,
+            "deLaCaja": 82500
+          },
+          "colores": [
+            {
+              "hex": "#9a7455",
+              "parte": 0.3733,
+              "pixeles": 18265,
+              "cruce": {
+                "hex": "#9a7455",
+                "candidatas": [
+                  {
+                    "codigo": "970",
+                    "nombre": "Dorado",
+                    "nombreCompleto": "Reflex Dorado",
+                    "nombreEn": "chrome gold",
+                    "pms": "10444",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a08344",
+                    "deltaE": 17.2,
+                    "distancia": 22.5,
+                    "tono": 20.3,
+                    "razonCroma": 0.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#82121c",
+              "parte": 0.3359,
+              "pixeles": 16430,
+              "cruce": {
+                "hex": "#82121c",
+                "candidatas": [
+                  {
+                    "codigo": "018",
+                    "nombre": "Merlot",
+                    "nombreCompleto": "Fashion Merlot",
+                    "nombreEn": "wine red",
+                    "pms": "202",
+                    "acabado": "matte",
+                    "hexGlobo": "#812a28",
+                    "deltaE": 9.8,
+                    "distancia": 2.4,
+                    "tono": 0.9,
+                    "razonCroma": 1.2
+                  },
+                  {
+                    "codigo": "915",
+                    "nombre": "Cristal Rojo",
+                    "nombreCompleto": "Reflex Cristal Rojo",
+                    "nombreEn": "chrome red",
+                    "pms": "10445",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a62d2f",
+                    "deltaE": 11.5,
+                    "distancia": 5.8,
+                    "tono": 0.5,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "515",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Metal Rojo",
+                    "nombreEn": "metallic red",
+                    "pms": "199",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#b21827",
+                    "deltaE": 18.6,
+                    "distancia": 6,
+                    "tono": 0.6,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#d8cbbf",
+              "parte": 0.2908,
+              "pixeles": 14225,
+              "cruce": {
+                "hex": "#d8cbbf",
+                "candidatas": [
+                  {
+                    "codigo": "406",
+                    "nombre": "Perla",
+                    "nombreCompleto": "Satín Perla",
+                    "nombreEn": "satin pearl white",
+                    "pms": "Perlado",
+                    "acabado": "satin",
+                    "hexGlobo": "#ede6da",
+                    "deltaE": 9.4,
+                    "distancia": 5.9,
+                    "tono": 15.4,
+                    "razonCroma": 1.2
+                  },
+                  {
+                    "codigo": "806",
+                    "nombre": "Blanco Nácar",
+                    "nombreCompleto": "Silk Blanco Nácar",
+                    "nombreEn": "pearlescent pearl white",
+                    "pms": "427",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#d0d3d4",
+                    "deltaE": 9.3,
+                    "distancia": 7.8,
+                    "tono": 154.2,
+                    "razonCroma": 6.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E07",
+          "tipo": "kit",
+          "croquis": {
+            "forma": "elipse alta",
+            "parteDeLaCaja": 0.6304
+          },
+          "pixeles": {
+            "medidos": 5965,
+            "deLaCaja": 9372
+          },
+          "colores": [
+            {
+              "hex": "#5b0c13",
+              "parte": 0.4159,
+              "pixeles": 2481,
+              "cruce": {
+                "hex": "#5b0c13",
+                "candidatas": [
+                  {
+                    "codigo": "018",
+                    "nombre": "Merlot",
+                    "nombreCompleto": "Fashion Merlot",
+                    "nombreEn": "wine red",
+                    "pms": "202",
+                    "acabado": "matte",
+                    "hexGlobo": "#812a28",
+                    "deltaE": 13.1,
+                    "distancia": 8.3,
+                    "tono": 2.1,
+                    "razonCroma": 0.9
+                  },
+                  {
+                    "codigo": "915",
+                    "nombre": "Cristal Rojo",
+                    "nombreCompleto": "Reflex Cristal Rojo",
+                    "nombreEn": "chrome red",
+                    "pms": "10445",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a62d2f",
+                    "deltaE": 26.5,
+                    "distancia": 11.7,
+                    "tono": 1.6,
+                    "razonCroma": 0.7
+                  },
+                  {
+                    "codigo": "515",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Metal Rojo",
+                    "nombreEn": "metallic red",
+                    "pms": "199",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#b21827",
+                    "deltaE": 34.6,
+                    "distancia": 11.9,
+                    "tono": 1.8,
+                    "razonCroma": 0.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#98785d",
+              "parte": 0.3564,
+              "pixeles": 2126,
+              "cruce": {
+                "hex": "#98785d",
+                "candidatas": [
+                  {
+                    "codigo": "015",
+                    "nombre": "Rojo",
+                    "nombreCompleto": "Fashion Rojo",
+                    "nombreEn": "matte red",
+                    "pms": "185",
+                    "acabado": "matte",
+                    "hexGlobo": "#e01b2b",
+                    "deltaE": 66.8,
+                    "distancia": 43.6,
+                    "tono": 33.9,
+                    "razonCroma": 0.3
+                  },
+                  {
+                    "codigo": "016",
+                    "nombre": "Rojo Imperial",
+                    "nombreCompleto": "Fashion Rojo Imperial",
+                    "nombreEn": "dark red",
+                    "pms": "200",
+                    "acabado": "matte",
+                    "hexGlobo": "#820101",
+                    "deltaE": 51.5,
+                    "distancia": 45.9,
+                    "tono": 27.9,
+                    "razonCroma": 0.3
+                  },
+                  {
+                    "codigo": "018",
+                    "nombre": "Merlot",
+                    "nombreCompleto": "Fashion Merlot",
+                    "nombreEn": "wine red",
+                    "pms": "202",
+                    "acabado": "matte",
+                    "hexGlobo": "#812a28",
+                    "deltaE": 36.4,
+                    "distancia": 47.2,
+                    "tono": 35.9,
+                    "razonCroma": 0.5
+                  }
+                ],
+                "porNombre": false,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": true,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#ddcbbc",
+              "parte": 0.2277,
+              "pixeles": 1358,
+              "cruce": {
+                "hex": "#ddcbbc",
+                "candidatas": [
+                  {
+                    "codigo": "406",
+                    "nombre": "Perla",
+                    "nombreCompleto": "Satín Perla",
+                    "nombreEn": "satin pearl white",
+                    "pms": "Perlado",
+                    "acabado": "satin",
+                    "hexGlobo": "#ede6da",
+                    "deltaE": 9.9,
+                    "distancia": 8.2,
+                    "tono": 18.6,
+                    "razonCroma": 1.6
+                  },
+                  {
+                    "codigo": "806",
+                    "nombre": "Blanco Nácar",
+                    "nombreCompleto": "Silk Blanco Nácar",
+                    "nombreEn": "pearlescent pearl white",
+                    "pms": "427",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#d0d3d4",
+                    "deltaE": 11.7,
+                    "distancia": 10.1,
+                    "tono": 157.4,
+                    "razonCroma": 8.7
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores eran el mismo globo visto con otra luz y se juntaron con el suyo.",
+            "Un color no tiene un globo igual en el catálogo."
+          ]
+        }
+      ]
+    }
+  }
+}

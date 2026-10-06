@@ -1,0 +1,527 @@
+{
+  "id": "real-08-images-23",
+  "fuente": "images (23).jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/real-08-images-23.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "1e36c8fd-c52b-47cd-9613-8f6049662917",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Left Balloon Column",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Freestanding tall balloon column made of spiraled gold and black balloons topped with a giant black balloon.",
+          "reference_bbox": {
+            "x": 0.236,
+            "y": 0.057,
+            "width": 0.247,
+            "height": 0.8989999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome gold",
+              "black"
+            ],
+            "measured_colors": [
+              {
+                "color": "negro",
+                "share": 0.5601
+              },
+              {
+                "color": "dorado",
+                "share": 0.1922
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense column, on the left, no top overhang, standing on the floor, mirroring Right Balloon Column",
+            "composition": "50% chrome gold balloons and 50% black latex balloons spiraling up the column body, topped with 1 giant black jumbo balloon.",
+            "patron_color": {
+              "modo": "espiral",
+              "colores": [
+                "dorado",
+                "negro"
+              ],
+              "globos_por_racimo": 4,
+              "confianza": 0.95
+            },
+            "remate_columna": {
+              "tipo": "globo",
+              "color": "negro"
+            },
+            "tamanos_leidos": "un_solo_tamano",
+            "conteo": {
+              "globos_visibles": 45,
+              "exacto": false,
+              "estimado_total": null,
+              "racimos": 11,
+              "globos_por_racimo": 4,
+              "por_tamano": [
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.95
+                },
+                {
+                  "clase": "gigante",
+                  "proporcion": 0.05
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.95
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "970",
+                "familia": "reflex",
+                "nombre": "Dorado",
+                "nombre_completo": "Reflex Dorado",
+                "parte": 0.5939,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "080",
+                "familia": "fashion",
+                "nombre": "Negro",
+                "nombre_completo": "Fashion Negro",
+                "parte": 0.4061,
+                "familia_fiable": false
+              }
+            ],
+            "inclinacion": 0
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "columna",
+            "placement": "lateral_izquierdo",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [
+            "Mirrored pair with REF_01_E02: the same piece repeated, built as one structure with 2 repetitions."
+          ],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary focal balloon decoration column on the left side.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E02",
+          "source_image_id": "REF_01",
+          "name": "Right Balloon Column",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Freestanding tall balloon column made of spiraled gold and black balloons topped with a giant black balloon.",
+          "reference_bbox": {
+            "x": 0.534,
+            "y": 0.063,
+            "width": 0.244,
+            "height": 0.8879999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "chrome gold",
+              "black"
+            ],
+            "measured_colors": [
+              {
+                "color": "negro",
+                "share": 0.5357
+              },
+              {
+                "color": "dorado",
+                "share": 0.1958
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense column, on the right, no top overhang, standing on the floor, mirroring Right Balloon Column",
+            "composition": "50% chrome gold balloons and 50% black latex balloons spiraling up the column body, topped with 1 giant black jumbo balloon.",
+            "patron_color": {
+              "modo": "espiral",
+              "colores": [
+                "dorado",
+                "negro"
+              ],
+              "globos_por_racimo": 4,
+              "confianza": 0.95
+            },
+            "remate_columna": {
+              "tipo": "globo",
+              "color": "negro"
+            },
+            "tamanos_leidos": "un_solo_tamano",
+            "conteo": {
+              "globos_visibles": 45,
+              "exacto": false,
+              "estimado_total": null,
+              "racimos": 11,
+              "globos_por_racimo": 4,
+              "por_tamano": [
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.95
+                },
+                {
+                  "clase": "gigante",
+                  "proporcion": 0.05
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.95
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "970",
+                "familia": "reflex",
+                "nombre": "Dorado",
+                "nombre_completo": "Reflex Dorado",
+                "parte": 0.6217,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "080",
+                "familia": "fashion",
+                "nombre": "Negro",
+                "nombre_completo": "Fashion Negro",
+                "parte": 0.3784,
+                "familia_fiable": false
+              }
+            ],
+            "inclinacion": 0
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "columna",
+            "placement": "lateral_derecho",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [
+            "Mirrored pair with REF_01_E01: the same piece repeated, built as one structure with 2 repetitions."
+          ],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary focal balloon decoration column on the right side.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        },
+        {
+          "element_id": "REF_01_E03",
+          "source_image_id": "REF_01",
+          "name": "Blue Backdrop Curtain",
+          "category": "curtain",
+          "scene_role": "backdrop",
+          "detection_confidence": 0.92,
+          "visible_evidence": "Blue fabric perimeter drapes running along the left wall section.",
+          "reference_bbox": {
+            "x": 0,
+            "y": 0.23,
+            "width": 0.268,
+            "height": 0.29300000000000004
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "blue"
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "fabric",
+            "shape": "shape not determinable",
+            "composition": "100% blue fabric draping lining the back left perimeter."
+          },
+          "relationships": [],
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Backdrop drape defining the venue background space.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Pair of tall balloon columns with giant black topper balloons on a white aisle floor",
+        "density": "moderate",
+        "symmetry": "symmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "black",
+          "chrome gold",
+          "blue",
+          "white"
+        ],
+        "priority": [
+          "black",
+          "chrome gold",
+          "blue",
+          "white"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "3faafd3c022ca0a1a489d8ab2fdc6fc1b0d602d5c1f1df72d76cff9d9b9893be",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 447,
+            "height": 447
+          },
+          "processed": {
+            "width": 447,
+            "height": 447
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "columna",
+          "croquis": {
+            "forma": "franja vertical",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 36729,
+            "deLaCaja": 44733
+          },
+          "colores": [
+            {
+              "hex": "#efdcb6",
+              "parte": 0.5939,
+              "pixeles": 21812,
+              "cruce": {
+                "hex": "#efdcb6",
+                "candidatas": [
+                  {
+                    "codigo": "970",
+                    "nombre": "Dorado",
+                    "nombreCompleto": "Reflex Dorado",
+                    "nombreEn": "chrome gold",
+                    "pms": "10444",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a08344",
+                    "deltaE": 36.4,
+                    "distancia": 19.1,
+                    "tono": 3,
+                    "razonCroma": 0.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#160d05",
+              "parte": 0.4061,
+              "pixeles": 14917,
+              "cruce": {
+                "hex": "#160d05",
+                "candidatas": [
+                  {
+                    "codigo": "080",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Fashion Negro",
+                    "nombreEn": "matte black",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#000000",
+                    "deltaE": 6.5,
+                    "distancia": 7,
+                    "tono": 62.1,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "580",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Metal Negro",
+                    "nombreEn": "metallic black",
+                    "pms": null,
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#1a1a1a",
+                    "deltaE": 7,
+                    "distancia": 7.4,
+                    "tono": 125.3,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "3 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        },
+        {
+          "elementId": "REF_01_E02",
+          "tipo": "columna",
+          "croquis": {
+            "forma": "franja vertical",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 36600,
+            "deLaCaja": 43780
+          },
+          "colores": [
+            {
+              "hex": "#b87e1b",
+              "parte": 0.6217,
+              "pixeles": 22752,
+              "cruce": {
+                "hex": "#b87e1b",
+                "candidatas": [
+                  {
+                    "codigo": "970",
+                    "nombre": "Dorado",
+                    "nombreCompleto": "Reflex Dorado",
+                    "nombreEn": "chrome gold",
+                    "pms": "10444",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a08344",
+                    "deltaE": 22.7,
+                    "distancia": 19.3,
+                    "tono": 9.4,
+                    "razonCroma": 1.6
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#170d05",
+              "parte": 0.3784,
+              "pixeles": 13848,
+              "cruce": {
+                "hex": "#170d05",
+                "candidatas": [
+                  {
+                    "codigo": "080",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Fashion Negro",
+                    "nombreEn": "matte black",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#000000",
+                    "deltaE": 6.8,
+                    "distancia": 7.5,
+                    "tono": 58.4,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "580",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Metal Negro",
+                    "nombreEn": "metallic black",
+                    "pms": null,
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#1a1a1a",
+                    "deltaE": 7.2,
+                    "distancia": 7.7,
+                    "tono": 121.6,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "3 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}
