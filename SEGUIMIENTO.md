@@ -72,7 +72,10 @@ fal necesita `NODE_OPTIONS=--use-system-ca`.
 ## 3. PRIORIDAD ACTUAL: eliminar el LoRA de la faz del proyecto
 
 Decisión del dueño (2026-10-06): **no hay LoRA ni entrenamiento, solo FLUX base**. Quitar toda referencia al LoRA; el vocabulario de
-productos no debe afectar en nada al comportamiento ni tomar ninguna decisión.
+productos no debe afectar en nada al comportamiento ni tomar ninguna decisión. Precisión del dueño (2026-10-06, tarde): «hay que quitar
+lora pero dejar la generación por flux; **Gemini no debe tener ningún camino para generar imágenes**». Eso incluye la generación Gemini
+pura de `/api/generate`, la composición FLUX→Gemini sobre la foto del espacio (`usarComposicionLoraGemini`) y cualquier edición o
+generador de imagen con Gemini en TS o Python. Gemini se queda solo para analizar fotos y para el chat.
 
 ### 3.1 Hecho (2026-10-06, sin pruebas ejecutadas salvo `tsc`)
 - `src/lib/ia/kagutsuchi/lora-product-runtime.ts`: en dialecto `base` el vocabulario no se consulta; cada producto se describe desde
@@ -137,7 +140,8 @@ Tamaño:
 1. **Que el vocabulario no decida nada** (casi hecho, §3.1): correr `eslint` y `test-lora-product-runtime`; ajustar sus aserciones de base.
    Probar 1 imagen FLUX (tope 1) de CASE-003 y F7-5, que fallaban por el nude.
 2. **Preflight**: en base, quitar del texto las palabras de línea comercial en vez de fallar; renombrar errores `LORA_*` → `FLUX_*`.
-3. **Un solo modo**: quitar `training_*`, `unlimited`, `loraSelection`, `NEXT_PUBLIC_LORA_MODE`, el selector del cliente y
+3. **Un solo modo y un solo generador**: quitar todo camino de imagen con Gemini (generación, composición sobre la foto del espacio,
+   edición); quitar `training_*`, `unlimited`, `loraSelection`, `NEXT_PUBLIC_LORA_MODE`, el selector del cliente y
    `usarLora`/`loraMode` del contrato de `/api/generate` (siempre FLUX base); quitar la allowlist de dataset y `lora_variant_ids`
    (contrato, en el orden de §2). Quitar `ensureLoraTriggers`, triggers y los dialectos `scene_v004`/`product_v007` del compilador.
 4. **Borrar** el código de entrenamiento/admin, `src/lib/lora/*` que ya no se importe, el vocabulario y sus datos, `scripts/lora/*`,
@@ -191,7 +195,7 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
 6. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
 
 ## 5. Decisiones del dueño
-- Tomadas: FLUX base sin LoRA (eliminar el LoRA); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
+- Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
 - Pendientes: taxonomía 12 o 18 clases (las 5 que AGENTS.md daba por retiradas: `arco_no_denso`, `columna_no_densa`, `pared_densa`,
   `pared_no_densa`, `semiarco` simple; el código aún las asigna y cotiza); borrar `data/staging` y tablas `lora_*`; cobro del remate de
   columna clásica (Hito 16 antiguo: +1 globo R-24 por columna).
