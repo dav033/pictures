@@ -10,8 +10,8 @@ import { ChipsOpciones, type OpcionGuiada } from "./ChipsOpciones";
 import { CostosMateriales } from "./CostosMateriales";
 import { PasoAPaso } from "./PasoAPaso";
 import { PreguntaUso } from "./PreguntaUso";
+import { RespuestasRapidas, separarOpciones } from "./RespuestasRapidas";
 import { useModoVista } from "@/lib/estado/modo-vista";
-import { bibliotecaVisible } from "@/lib/biblioteca-sempertex/biblioteca";
 import { DecoracionSempertexSchema, ProveedorSempertexSchema, type DecoracionSempertex, type ProveedorSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { CotizacionGuiadaSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
@@ -35,6 +35,13 @@ const ResultadoSchema = z.object({
 
 function nuevoId(): string { return crypto.randomUUID(); }
 
+/**
+ * La conversación la abre el asistente (pruebas del 5-oct: «el cliente se encuentra perdido» si nadie le pregunta
+ * nada). El saludo es fijo, sale al instante y no viaja en el historial: el prompt guiado sabe que ya se hizo.
+ */
+const SALUDO = "¡Hola! Soy tu asistente de decoración con globos Sempertex. Te hago unas preguntas cortas y te muestro decoraciones que encajen con tu celebración.\n\n**¿Qué vas a celebrar?**";
+const OPCIONES_SALUDO = ["Cumpleaños", "Baby shower", "Boda", "XV años", "Bautizo o comunión", "Otra celebración"] as const;
+
 export function VistaGuiada() {
   const { modo, cambiar } = useModoVista();
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
@@ -54,7 +61,9 @@ export function VistaGuiada() {
   const [cotizacionDecoracionId, setCotizacionDecoracionId] = useState<string | null>(null);
   const entradaRef = useRef<HTMLInputElement>(null);
   const turnoRef = useRef(0);
-  const galeriaInicial = useMemo(() => bibliotecaVisible(), []);
+  // Botones de la última pregunta del asistente: la línea «Opciones: …» con la que cierra cada pregunta.
+  const ultimo = mensajes.at(-1);
+  const respuestasRapidas = useMemo(() => !mensajes.length ? [...OPCIONES_SALUDO] : ultimo?.role === "assistant" && !cargando ? separarOpciones(ultimo.content).opciones : [], [mensajes.length, ultimo, cargando]);
   const contexto = mensajes.length ? (seleccionada ? `${seleccionada.tematica}${uso ? ` · ${uso === "negocio" ? "Negocio" : "Uso personal"}` : ""}` : null) : null;
 
   useEffect(() => {
@@ -163,12 +172,12 @@ export function VistaGuiada() {
     <CabeceraApp contexto={contexto} modoVista={modo} onModoVista={cambiar} onLimpiar={vaciar} limpiarDeshabilitado={!mensajes.length} totalSeleccion={0} />
     <section className="flex min-h-0 flex-1 flex-col" aria-label="Asistente guiado">
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-6">
-        {!mensajes.length && <div className="mb-6"><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Cuéntame qué quieres hacer</h1><p className="mt-2 max-w-2xl text-texto-secundario">Encontramos una decoración que encaje con tu celebración y te acompañamos con ideas, materiales y pasos.</p></div>}
         <div className="flex flex-col gap-5" aria-live="polite">
-          {mensajes.map((mensaje) => <article key={mensaje.id} className={`max-w-[min(100%,46rem)] ${mensaje.role === "user" ? "ml-auto rounded-2xl bg-superficie px-4 py-3" : "mr-auto w-full py-1"}`}><Markdown>{mensaje.content || (cargando ? "Estoy pensando…" : "")}</Markdown></article>)}
+          <article className="mr-auto w-full max-w-[min(100%,46rem)] py-1"><Markdown>{SALUDO}</Markdown></article>
+          {mensajes.map((mensaje) => <article key={mensaje.id} className={`max-w-[min(100%,46rem)] ${mensaje.role === "user" ? "ml-auto rounded-2xl bg-superficie px-4 py-3" : "mr-auto w-full py-1"}`}><Markdown>{(mensaje.role === "assistant" ? separarOpciones(mensaje.content).texto : mensaje.content) || (cargando ? "Estoy pensando…" : "")}</Markdown></article>)}
         </div>
+        <RespuestasRapidas opciones={respuestasRapidas} deshabilitado={cargando} onElegir={(texto) => void enviar(texto)} />
         {decoraciones.length > 0 && <CarruselDecoraciones decoraciones={decoraciones} onElegir={elegirDecoracion} />}
-        {!mensajes.length && <CarruselDecoraciones decoraciones={galeriaInicial} onElegir={elegirDecoracion} />}
         {seleccionada && opciones && <><p className="mt-5 text-sm font-medium">¿Qué te gustaría hacer ahora?</p><ChipsOpciones onElegir={elegirOpcion} /></>}
         {seleccionada && <section className="mt-4 rounded-2xl bg-superficie p-4" aria-label="Referencias y materiales"><div className="flex items-center justify-between gap-3"><h2 className="font-semibold">Referencias y materiales</h2>{seleccionada.origen === "ejemplo" && <span className="rounded-full bg-[#f6e7d9] px-2.5 py-1 text-xs font-semibold text-[#6d3c39]">Ejemplo</span>}</div><ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{seleccionada.piezas.map((pieza, indice) => <li key={`${pieza.estructura}-${indice}`}>{pieza.cantidad} × {pieza.estructura.replaceAll("_", " ")}</li>)}{seleccionada.materiales.map((material) => <li key={material.variantId}>{material.cantidad} unidades · {material.nota ?? `Variante ${material.variantId}`}</li>)}</ul>{seleccionada.origen === "ejemplo" && <p className="mt-2 text-xs text-texto-secundario">Temática, edad, cantidades y pasos son de ejemplo. Las variantes y los precios se consultan en el catálogo actual.</p>}</section>}
         {preguntaUso && <PreguntaUso onElegir={elegirUso} />}
