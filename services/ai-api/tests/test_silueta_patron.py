@@ -405,7 +405,6 @@ class _StoreDeVector:
         snapshot_id: str,
         product_ids: Sequence[str],
         variant_ids: Sequence[str],
-        lora_variant_ids: Sequence[str] = (),
     ) -> Sequence[Mapping[str, object]]:
         return self.rows
 
@@ -449,7 +448,6 @@ async def test_el_croquis_no_cambia_plan_hash_ni_el_conteo_por_color() -> None:
             "plan": vector["plan"],
             "allowlist": vector["allowlist"],
             "catalog_snapshot_id": vector["catalog_snapshot_id"],
-            "lora_variant_ids": vector.get("lora_variant_ids") or [],
         }
     )
     esperado = vector["expected_python"]["plan_resuelto"]

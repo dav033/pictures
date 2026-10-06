@@ -36,14 +36,13 @@ import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, comoCubrirElementosReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
 import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import { parseEventIntent } from "@/lib/rag/query-parser/parse-event";
-import type { CatalogAllowlist, EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
+import type { EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
 import { abrirContextoPlan, allowlistDesdeMapa, crearTokenPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import { aplicarEdicionPlan } from "@/lib/plan/aplicar-edicion";
 import type { BasePlan } from "@/lib/plan/edicion-esquemas";
 import { leerEdicionesChat } from "@/lib/plan/edicion-chat";
 import { aplicarEdicionesEncadenadas, cambioParaElModelo, EdicionEncadenadaError, geometriaAuditadaChat, mensajeClienteDeRechazo, primeraVarianteNoBuscada } from "./ajustar-plan-chat";
 import { PlanEditError } from "@/lib/plan/edicion-error";
-import { respuestaCatalogoLoraNoDisponible } from "@/lib/lora/catalogo-no-disponible";
 import {
   MENSAJE_CLIENTE_ESTIMACION,
   MENSAJE_CLIENTE_PIEZAS,
@@ -531,7 +530,6 @@ async function coloresReferenciaOmitidosDelTurno(
   plan: PlanDecoracion,
   estado: EstadoConversacion,
   pool: Pool,
-  catalogAllowlist: CatalogAllowlist | undefined,
 ) {
   if (!estado.referenceBlueprint || estado.restriccionesUsuario.colores.length > 0 || estado.coloresReferenciaReclamados.size > 0) return [];
   // After repeated refusals the photo colors are notices, never another refusal.
@@ -551,7 +549,7 @@ async function coloresReferenciaOmitidosDelTurno(
   const busquedaLosPuedeDevolver = !tieneFiltrosNoRelajables(filtrosDurosDeBusqueda({ mensaje: "", solicitudOriginal: estado.solicitudOriginal, brief: estado.brief }));
   if (sinBusqueda.length > 0 && busquedaLosPuedeDevolver) {
     try {
-      const catalogo = await buscarGlobosPorColor(pool, sinBusqueda, { variantIds: catalogAllowlist?.variantIds ?? null, catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
+      const catalogo = await buscarGlobosPorColor(pool, sinBusqueda, { catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
       for (const [color, productos] of catalogo) disponibles.set(color, productos);
     } catch (error) {
       console.warn("[plan] no se pudo consultar colores de la foto en el catálogo", { requestId: estado.ragRequestId, error: error instanceof Error ? error.message : String(error) });
@@ -807,9 +805,6 @@ export function separarNotasReparto(advertencias: readonly string[]): { adverten
  * if-chain de ejecutar.ts antes de esta extracción, sin cambios de lógica. */
 export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
   pool?: Pool;
-  catalogAllowlist?: CatalogAllowlist;
-  /** `LORA_*` cause when the active LoRA mode could not resolve its catalog pool: catalog tools fail closed. */
-  catalogoLoraNoDisponible?: string;
   correlationId?: string;
   signal?: AbortSignal;
   /** Creativity level chosen in the UI; decides how many extra pieces a reference plan may add. */
@@ -822,7 +817,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
   // refusals counted so far; clase_rechazo waits for the A4.1 classes.
   const auditarPlan = (datos: Omit<Parameters<typeof registrarPlanAudit>[1], "hechos">) =>
     registrarPlanAudit(ragPool, { ...datos, hechos: { ...options.hechosPeticion, rechazosTurno: estado.rechazosPlan } });
-  const catalogoBloqueado = options.catalogoLoraNoDisponible;
 
   /**
    * Invariante §7 punto 3: a lo sumo una herramienta comercial (confirmar_plan_decoracion
@@ -849,7 +843,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
   };
 
   const confirmarPlan = async (args: Record<string, unknown>): Promise<Record<string, unknown>> => {
-    if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
     // C4: occasion is the customer's open label, not a closed taxonomy
     // value invented by the model. Keep model wording only when no label
     // was recoverable from the original request.
@@ -951,7 +944,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     if (busquedasReferencia.length > 0) {
       const respuestas = await Promise.all(busquedasReferencia.map((frase) => buscarCatalogoRag(ragPool, frase, {
         focusedQueries: [frase],
-        allowlist: options.catalogAllowlist,
         catalogSnapshotId: estado.ragCatalogSnapshotId,
         rerankRequestId: estado.ragRequestId,
         rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
@@ -1206,7 +1198,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         mensaje_cliente: MENSAJE_CLIENTE_REFERENCIA,
       };
     }
-    const coloresOmitidos = await coloresReferenciaOmitidosDelTurno(planCanonico, estado, ragPool, options.catalogAllowlist);
+    const coloresOmitidos = await coloresReferenciaOmitidosDelTurno(planCanonico, estado, ragPool);
     if (coloresOmitidos.length > 0) {
       for (const item of coloresOmitidos) estado.coloresReferenciaReclamados.add(`${item.estructura_id}|${item.color}`);
       estado.planResuelto = undefined;
@@ -1418,7 +1410,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         plan,
         allowlist: allowlistTurno,
         catalogSnapshotId: snapshotTurno,
-        loraAllowlist: options.catalogAllowlist,
         ...(completarPatrones ? { completarPatrones } : {}),
         ...(pistasPatron.length > 0 ? { pistasPatron } : {}),
         ...(pistasTamanos.length > 0 ? { pistasTamanos } : {}),
@@ -1656,7 +1647,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     },
 
     buscar_catalogo_rag: async (args) => {
-      if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
       // Component text drives lexical/semantic retrieval. Customer constraints
       // stay locked from original request + brief, so model enrichment cannot
       // turn a style term such as "glamour" into a hard catalog filter.
@@ -1677,7 +1667,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         filtrosDuros,
         eventIntent,
         focusedQueries: [mensaje],
-        allowlist: options.catalogAllowlist,
         catalogSnapshotId: estado.ragCatalogSnapshotId,
         coloresContexto,
         rerankRequestId: estado.ragRequestId,
@@ -1737,7 +1726,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       let numerosEnCatalogo: Array<{ digito: string; disponibles: string[] }> = [];
       if (digitosSinFigura.length > 0) {
         try {
-          const porDigito = await buscarNumerosPorDigito(pool, digitosSinFigura, { variantIds: options.catalogAllowlist?.variantIds ?? null, catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
+          const porDigito = await buscarNumerosPorDigito(pool, digitosSinFigura, { catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
           numerosEnCatalogo = digitosSinFigura.map((digito) => ({ digito, disponibles: porDigito.get(digito) ?? [] }));
         } catch (error) {
           console.warn("[rag] no se pudo consultar globos de número por dígito", { requestId: estado.ragRequestId, error: error instanceof Error ? error.message : String(error) });
@@ -1753,7 +1742,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       let coloresEnCatalogo: Array<{ color: string; disponibles: Array<{ product_id: string; titulo: string }> }> = [];
       if (coloresFotoSinCubrir.length > 0) {
         try {
-          const porColor = await buscarGlobosPorColor(pool, coloresFotoSinCubrir, { variantIds: options.catalogAllowlist?.variantIds ?? null, catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
+          const porColor = await buscarGlobosPorColor(pool, coloresFotoSinCubrir, { catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
           coloresEnCatalogo = coloresFotoSinCubrir.map((color) => ({
             color,
             disponibles: (porColor.get(color) ?? []).slice(0, 3).map((producto) => ({ product_id: producto.product_id, titulo: producto.titulo })),
@@ -2186,7 +2175,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           aplicar: ({ base, edicion, esUltima }) => aplicarEdicionPlan({
             base,
             edicion,
-            catalogAllowlist: options.catalogAllowlist ?? null,
             correlationId: options.correlationId,
             pool: ragPool,
             ...(esUltima ? {} : { omitirAuditoria: true }),

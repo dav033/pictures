@@ -152,7 +152,6 @@ MAX_SAFE_INTEGER = 9_007_199_254_740_991
 # Mirrors PLAN_RESOLUTION_MAX_LORA_VARIANTS (domain-v1.ts) and the recommendations
 # bound: the same LoRA dataset pool reaches both. 2048 ids x 17 bytes (14-digit
 # id, quotes, comma) is about 34.8 KB of the 64 KB body limit; 4096 would not fit.
-MAX_PLAN_LORA_VARIANTS = 2048
 
 _EXTERIOR = re.compile(r"jard[ií]n|exterior|terraza|playa|patio|campo", re.IGNORECASE)
 # Which structures count their balloons by geometry: ``conteo_foto.es_geometrica`` (one owner; a
@@ -325,7 +324,6 @@ class CatalogPlanStore(Protocol):
         snapshot_id: str,
         product_ids: Sequence[str],
         variant_ids: Sequence[str],
-        lora_variant_ids: Sequence[str] = (),
     ) -> Sequence[Mapping[str, object]]: ...
 
     async def fetch_catalog_identity(
@@ -549,7 +547,6 @@ class PlanResolutionRequest(OperationalRequest):
     plan: dict[str, object]
     allowlist: list[PlanAllowlistEntry] = Field(max_length=256)
     catalog_snapshot_id: str = Field(min_length=1, max_length=160)
-    lora_variant_ids: list[str] = Field(default_factory=list, max_length=MAX_PLAN_LORA_VARIANTS)
     # ADR-0028 §7: Next asks for patterns once, when the plan is confirmed.
     # Later re-resolutions keep what the plan already declares.
     completar_patrones: bool = Field(default=False, strict=True)
@@ -600,16 +597,6 @@ class PlanResolutionRequest(OperationalRequest):
         if not value:
             raise ValueError("catalog_snapshot_id must not be blank")
         return value
-
-    @field_validator("lora_variant_ids")
-    @classmethod
-    def normalize_lora_variant_ids(cls, values: list[str]) -> list[str]:
-        normalized = [value.strip() for value in values]
-        if any(not value for value in normalized):
-            raise ValueError("lora_variant_ids must not contain blanks")
-        if len(normalized) != len(set(normalized)):
-            raise ValueError("lora_variant_ids must be unique")
-        return normalized
 
     @model_validator(mode="after")
     def validate_plan_and_allowlist(self) -> "PlanResolutionRequest":
@@ -4494,7 +4481,6 @@ async def resolve_plan(
         snapshot_id,
         product_ids,
         variant_ids,
-        request.lora_variant_ids,
     )
     result: dict[str, object] = await run_plan_cpu(
         _resolution_result, request, raw_plan, snapshot_id, rows, completion_warnings
@@ -4877,8 +4863,6 @@ def _resolution_result(
     for row in rows:
         candidate = _candidate(row, snapshot_id)
         if candidate is None:
-            continue
-        if request.lora_variant_ids and candidate.variant_id not in set(request.lora_variant_ids):
             continue
         candidates_by_product.setdefault(candidate.product_id, []).append(candidate)
         candidate_by_variant[candidate.variant_id] = candidate

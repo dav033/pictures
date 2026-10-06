@@ -146,7 +146,7 @@ async function main(): Promise<void> {
     estructuras,
     supuestos: [],
   });
-  const registroPara = (solicitud: string, opciones: { catalogoLoraNoDisponible?: string; veredicto?: VeredictoResolucion } = {}) => {
+  const registroPara = (solicitud: string, opciones: { veredicto?: VeredictoResolucion } = {}) => {
     const { veredicto, ...resto } = opciones;
     instalarResolutorPythonFalso(veredicto ? { veredicto: () => veredicto } : {});
     const estado = crearEstadoConversacion({}, solicitud);
@@ -172,10 +172,8 @@ async function main(): Promise<void> {
   statusVistos.add(revisarRechazo(await registroPara("un arco rojo y dorado, presupuesto máximo 5.000 pesos", {
     veredicto: { comercial: { estado: "PRESUPUESTO_EXCEDIDO", techo_cop: 5_000, delta_cop: 19_000 } },
   })(argsPlan([estructuraArco()]), llamada), "presupuesto"));
-  statusVistos.add(revisarRechazo(await registroPara("un arco rojo", { catalogoLoraNoDisponible: "LORA_VOCABULARY_ALLOWLIST_EMPTY" })(argsPlan([estructuraArco()]), llamada), "catálogo LoRA bloqueado"));
   assert.ok(statusVistos.has("RESTRICCIONES_INCONSISTENTES"), [...statusVistos].join(","));
   assert.ok(statusVistos.has("PRESUPUESTO_EXCEDIDO"), [...statusVistos].join(","));
-  assert.ok(statusVistos.has("CATALOGO_LORA_NO_DISPONIBLE"), [...statusVistos].join(","));
   ok(`confirmar_plan_decoracion: rechazos reales con mensaje_cliente limpio (${[...statusVistos].join(", ")})`);
 
   // 4b. Texto al agotar vueltas: con un plan ya verificado no se dice "me enredé".

@@ -12,10 +12,9 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.main import MAX_BODY_BYTES, Settings, build_signature, create_app
+from app.main import Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
 from app.plan import (
-    MAX_PLAN_LORA_VARIANTS,
     BalloonApportionmentError,
     PlanResolutionError,
     PlanResolutionRequest,
@@ -36,7 +35,6 @@ from app.plan import (
     _plan_cost_optimizer_enabled,
     resolve_plan,
 )
-from app.recommendations import MAX_RECOMMENDATIONS_LORA_VARIANTS
 
 
 ROOT = Path(__file__).parents[3]
@@ -69,7 +67,7 @@ class FakePlanStore:
         self.rows = list(rows)
         self.snapshot = snapshot
         self.requested_snapshot: str | None = None
-        self.requested_ids: tuple[list[str], list[str], list[str]] | None = None
+        self.requested_ids: tuple[list[str], list[str]] | None = None
         self.identity_calls: list[tuple[list[str], list[str]]] = []
 
     async def published_snapshot(self, snapshot_id: str) -> str | None:
@@ -81,9 +79,8 @@ class FakePlanStore:
         snapshot_id: str,
         product_ids: Sequence[str],
         variant_ids: Sequence[str],
-        lora_variant_ids: Sequence[str] = (),
     ) -> Sequence[dict[str, object]]:
-        self.requested_ids = (list(product_ids), list(variant_ids), list(lora_variant_ids))
+        self.requested_ids = (list(product_ids), list(variant_ids))
         assert snapshot_id == SNAPSHOT
         return self.rows
 
@@ -101,9 +98,7 @@ class FakePlanStore:
         return True
 
 
-def _request(
-    *, allowlist: list[dict[str, object]] | None = None, lora: list[str] | None = None
-) -> PlanResolutionRequest:
+def _request(*, allowlist: list[dict[str, object]] | None = None) -> PlanResolutionRequest:
     plan = json.loads(
         (ROOT / "contracts" / "domain" / "v1" / "fixtures" / "plan-resuelto-ok.json").read_text(
             encoding="utf-8"
@@ -124,7 +119,6 @@ def _request(
             "plan": plan,
             "allowlist": allowlist or [{"product_id": "prod-rojo", "variant_ids": ["var-rojo-12"]}],
             "catalog_snapshot_id": SNAPSHOT,
-            "lora_variant_ids": lora or [],
         }
     )
 
@@ -422,15 +416,9 @@ async def test_non_allowlisted_variant_is_reported_without_catalog_escape() -> N
 
 
 @pytest.mark.anyio
-async def test_lora_allowlist_is_applied_after_snapshot_query() -> None:
-    store = FakePlanStore([_row()])
-
-    result = await resolve_plan(_request(lora=["different-variant"]), store)
-
-    assert store.requested_ids is not None
-    assert store.requested_ids[2] == ["different-variant"]
-    resolved = cast(dict[str, object], result["plan_resuelto"])
-    assert resolved["compras"] == []
+async def test_resolution_request_rejects_legacy_lora_variant_ids() -> None:
+    with pytest.raises(ValidationError):
+        PlanResolutionRequest.model_validate({**_request().model_dump(), "lora_variant_ids": ["var-rojo-12"]})
 
 
 @pytest.mark.anyio
@@ -482,26 +470,6 @@ def test_resolution_request_requires_snapshot_and_unique_allowlist() -> None:
     plan_one_one["plan"]["plan_version"] = "1.1"
     with pytest.raises(ValidationError):
         PlanResolutionRequest.model_validate(plan_one_one)
-
-
-def _shopify_ids(count: int) -> list[str]:
-    # Real LoRA pools carry 14-digit Shopify variant ids.
-    return [str(46_594_221_000_000 + index) for index in range(count)]
-
-
-def test_resolution_request_accepts_lora_pool_up_to_shared_bound() -> None:
-    assert MAX_PLAN_LORA_VARIANTS == MAX_RECOMMENDATIONS_LORA_VARIANTS
-
-    # 492 is the training_1 dataset pool that exceeded the previous 256 cap.
-    assert len(_request(lora=_shopify_ids(492)).lora_variant_ids) == 492
-    at_bound = _request(lora=_shopify_ids(MAX_PLAN_LORA_VARIANTS))
-    assert len(at_bound.lora_variant_ids) == MAX_PLAN_LORA_VARIANTS
-
-    with pytest.raises(ValidationError):
-        _request(lora=_shopify_ids(MAX_PLAN_LORA_VARIANTS + 1))
-
-    body = json.dumps(at_bound.model_dump(mode="json"), separators=(",", ":"))
-    assert len(body.encode("utf-8")) < MAX_BODY_BYTES
 
 
 @pytest.mark.anyio

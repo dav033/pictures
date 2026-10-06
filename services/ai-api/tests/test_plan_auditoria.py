@@ -239,7 +239,6 @@ async def test_resolution_records_lost_photo_colors_per_structure() -> None:
             "plan": vector["plan"],
             "allowlist": vector["allowlist"],
             "catalog_snapshot_id": vector["catalog_snapshot_id"],
-            "lora_variant_ids": [],
         }
     )
 

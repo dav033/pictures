@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
-import { listLoraModeOptions, resolveLoraMode, resolveLoraModeDatasetAllowlist } from "../../src/lib/lora/mode-resolver";
+import { listLoraModeOptions, resolveLoraMode } from "../../src/lib/lora/mode-resolver";
 import { linkDatasetElementsToCatalog } from "../../src/lib/lora/dataset-catalog-link";
 import { readActiveLoraTrainingReferenceCounts } from "../../src/lib/lora/training-reference-counts";
 
@@ -150,79 +150,16 @@ async function testDatasetLinkedAfterCatalogReimport(): Promise<void> {
   assert.deepEqual(idLink.conflicts, ["b"]);
   assert.deepEqual(idLink.unmatched, ["c"]);
 
-  // Catalog queries honor their id parameters, so stale dataset ids find nothing.
-  // new-v1 is the only variant the dataset saw. Same product and shape in
-  // another package or size is the same family and color: it is allowed. A
-  // heart of the same product, or another product, is not.
-  const catalogRows = [
-    { variant_id: "new-v1", product_id: "new-p1", forma: "redondo", sku: "B2B-20014242", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
-    { variant_id: "new-v1-pack50", product_id: "new-p1", forma: "redondo", sku: "B2B-20017754", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
-    { variant_id: "new-v1-r5", product_id: "new-p1", forma: "redondo", sku: "B2B-20014200", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
-    { variant_id: "new-v1-corazon", product_id: "new-p1", forma: "corazon", sku: "B2B-20014299", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
-    { variant_id: "otro-v1", product_id: "otro-p1", forma: "redondo", sku: "B2B-30000001", titulo: "B2b Globo Latex Redondo Reflex Dorado Estampado" },
-  ];
-  const idsParam = (params: unknown[] | undefined): string[] => {
-    const first = params?.[0];
-    return Array.isArray(first) ? first.filter((value): value is string => typeof value === "string") : [];
-  };
-  const reimportedPool = {
-    query: async (sql: string, params?: unknown[]) => {
-      if (sql.includes("lora_mode_slots")) return { rows: [{ ...modeRow, dataset_id: "dataset-v004" }] };
-      if (sql.includes("FROM lora_dataset_element_stats")) return { rows: stats };
-      if (sql.includes("sku_canonical = ANY")) return { rows: catalog };
-      if (sql.includes("FROM catalog_products WHERE product_id")) return { rows: [] };
-      if (sql.includes("identidad_visual")) {
-        assert.ok(!/iv\.diam_pulg/.test(sql), "the family expansion no longer pins the diameter");
-        const vistas = catalogRows.filter((row) => idsParam(params).includes(row.variant_id));
-        return {
-          rows: catalogRows
-            .filter((row) => vistas.some((vista) => vista.product_id === row.product_id && vista.forma === row.forma))
-            .map(({ product_id, variant_id }) => ({ product_id, variant_id })),
-        };
-      }
-      if (sql.includes("JOIN catalog_products p")) {
-        const ids = idsParam(params);
-        return { rows: catalogRows.filter((row) => ids.includes(row.variant_id)) };
-      }
-      throw new Error(`unexpected query: ${sql}`);
-    },
-  } as unknown as Pool;
-  const warn = console.warn;
-  console.warn = () => undefined;
-  try {
-    const allowlist = await resolveLoraModeDatasetAllowlist("training_1", reimportedPool);
-    assert.deepEqual(allowlist?.productIds, ["new-p1"]);
-    assert.deepEqual([...(allowlist?.variantIds ?? [])].sort(), ["new-v1", "new-v1-pack50", "new-v1-r5"]);
-  } finally {
-    console.warn = warn;
-  }
-
-  // Fail closed with an explicit code when nothing links: never an empty-looking dataset.
-  const unlinkedPool = {
-    query: async (sql: string) => {
-      if (sql.includes("lora_mode_slots")) return { rows: [{ ...modeRow, dataset_id: "dataset-v004" }] };
-      if (sql.includes("FROM lora_dataset_element_stats")) return { rows: stats };
-      return { rows: [] };
-    },
-  } as unknown as Pool;
-  console.warn = () => undefined;
-  try {
-    await assert.rejects(() => resolveLoraModeDatasetAllowlist("training_1", unlinkedPool), /LORA_DATASET_CATALOG_UNLINKED: dataset-v004 \(unmatched=3, ambiguous=0, conflicts=0\)/);
-  } finally {
-    console.warn = warn;
-  }
-
   // `base` is the FLUX.2 base model without LoRA weights: it has no slot row,
   // applies nothing and restricts nothing, so it must never read the registry.
   const noQueryPool = {
     query: async () => { throw new Error("base mode must not query the LoRA registry"); },
   } as unknown as Pool;
   assert.deepEqual(await resolveLoraMode("base", noQueryPool), []);
-  assert.equal(await resolveLoraModeDatasetAllowlist("base", noQueryPool), null, "base mode: whole catalog (null = unrestricted)");
   assert.deepEqual(await readActiveLoraTrainingReferenceCounts("base", noQueryPool), { mode: "base", datasetId: null, datasetLabel: null, countsByCatalogId: {} });
-  // Trained modes keep resolving from the registry and keep their dataset restriction.
+  // The registry still resolves trained artifacts for administrative tools.
   assert.equal((await resolveLoraMode("training_1", pool)).length, 1);
-  console.log("[PASS] test-lora-modes: base mode resolves to no LoRA and no catalog restriction; trained modes unchanged");
+  console.log("[PASS] test-lora-modes: base mode resolves to no LoRA; trained artifacts remain resolvable");
 }
 
 main().catch((error) => {

@@ -14,7 +14,6 @@ import { claveResolucion, recordarResolucion, resolucionRecordada } from "./cach
 import { resolverPlan } from "./resolver-backend";
 import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
 import type { PlanResuelto } from "./resuelto";
-import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { BasePlan, EdicionPlan } from "./edicion-esquemas";
 import { ConteoAplicadoSchema, type PistaConteo } from "./conteo-referencia";
 import { PistaGuirnaldaSchema, type PistaGuirnalda } from "./armado-guirnalda";
@@ -115,8 +114,6 @@ function geometriaAuditada(edicion: EdicionPlan): Record<string, unknown> {
 export type AplicarEdicionInput = {
   base: BasePlan;
   edicion: EdicionPlan;
-  /** Already resolved by the caller (HTTP route or chat turn) — never derived here from a request body. */
-  catalogAllowlist: CatalogAllowlist | null;
   /** Preferred correlation id (e.g. the chat turn's); falls back to the plan's own request id. */
   correlationId?: string;
   signal?: AbortSignal;
@@ -248,7 +245,6 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
       plan,
       allowlist: allowlistPython,
       catalogSnapshotId: snapshotPython,
-      loraAllowlist: input.catalogAllowlist ?? undefined,
       // ADR-0030 / ADR-0032: only the edited piece gets its assembly suggested
       // again; one the decorator removed on purpose stays without it.
       ...(rehacer ? { completarArmadosDe: rehacer.completarArmadosDe } : {}),
@@ -267,14 +263,12 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
       ...(input.signal ? { signal: input.signal } : {}),
     });
 
-  const loraVariantIds = input.catalogAllowlist?.variantIds ?? null;
   // Saving edits one after another: the base is the plan the previous edit
   // resolved and signed here, so it is only resolved again when it is not.
   const planBaseVerificado = resolucionRecordada(base.plan_hash, claveResolucion({
     plan: base.plan,
     catalogSnapshotId: snapshotPython,
     allowlist: contextoPlan.allowlist,
-    loraVariantIds,
   })) ?? await resolver(base.plan, contextoPlan.allowlist);
   if (planBaseVerificado.resuelto.plan_hash !== base.plan_hash) {
     throw new PlanEditError(409, "El plan base cambió desde que se mostró. Vuelve a solicitar la propuesta.");
@@ -290,9 +284,6 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     // Se exige la variante exacta: que el producto esté entrenado no dice
     // nada del tamaño concreto, y aceptarlo por `product_id` dejaba pasar
     // tamaños nunca fotografiados (R-24 de un producto entrenado en R-5..R-18).
-    if (input.catalogAllowlist && !input.catalogAllowlist.variantIds.includes(variante.variant_id)) {
-      throw new PlanEditError(409, `LORA_DATASET_ALLOWLIST_REJECTED: ${variante.variant_id}`);
-    }
     // El resolutor admite el par dentro del snapshot firmado; Next no
     // consulta el catálogo por SQL.
     coloresVariante = await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, ...(input.signal ? { signal: input.signal } : {}) });
@@ -365,7 +356,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   });
   const planFirmado = PlanDecoracionSchema.safeParse(resuelto.plan);
   if (planFirmado.success) {
-    recordarResolucion(claveResolucion({ plan: planFirmado.data, catalogSnapshotId: snapshotPython, allowlist: allowlistFinal, loraVariantIds }), resolucionEditada);
+    recordarResolucion(claveResolucion({ plan: planFirmado.data, catalogSnapshotId: snapshotPython, allowlist: allowlistFinal }), resolucionEditada);
   }
   // Observability, not part of the answer: the decorator does not wait for it
   // (it already swallows its own failures), same as the chat's plan audits.

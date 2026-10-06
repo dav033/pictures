@@ -1157,7 +1157,7 @@ async function testCatalogRecommendationsEnvelope(): Promise<void> {
     reference_variant_id: "var-rojo-12",
     limit: 100,
   };
-  assert.equal("lora_variant_ids" in body, false, "sin LoRA no se envía lora_variant_ids");
+  assert.equal("lora_variant_ids" in body, false, "la solicitud no incluye allowlist de dataset");
   assert.deepEqual({
     schema_version: body.schema_version,
     catalog_snapshot_id: body.catalog_snapshot_id,
@@ -1167,32 +1167,14 @@ async function testCatalogRecommendationsEnvelope(): Promise<void> {
   assert.deepEqual(body.context.scopes, [PYTHON_CATALOG_RECOMMENDATIONS_SCOPE]);
   assert.equal(body.context.body_sha256, sha256Body(JSON.stringify(operationBody)));
 
-  const loraCalls: CapturedCall[] = [];
-  const allVariantIds = ["var-rojo-12-x50", "var-azul-12", "var-azul-12-x50"];
-  await llamarPythonCatalogRecommendations({
-    referenceVariantId: "var-rojo-12",
-    catalogSnapshotId: snapshot,
-    loraVariantIds: allVariantIds,
-    limit: 3,
-    requestId: REQUEST_ID,
-    correlationId: CORRELATION_ID,
-    env: BASE_ENV,
-    fetchImpl: async (input, init) => {
-      loraCalls.push({ input, init });
-      return successResponse(fixture);
-    },
-  });
-  assert.deepEqual((JSON.parse(String(loraCalls[0].init?.body)) as { lora_variant_ids: string[] }).lora_variant_ids, allVariantIds);
-
   const candidates = fixture.candidates as Array<Record<string, unknown> & { variants: Array<Record<string, unknown>> }>;
-  const invalidCases: Array<{ name: string; payload: Record<string, unknown>; lora?: string[]; limit?: number }> = [
+  const invalidCases: Array<{ name: string; payload: Record<string, unknown>; limit?: number }> = [
     { name: "snapshot distinto", payload: { ...fixture, catalog_snapshot_id: "products_catalog:other" } },
     { name: "eco de referencia distinto", payload: { ...fixture, reference: { ...(fixture.reference as Record<string, unknown>), variant_id: "var-otra" } } },
     {
       name: "referencia dentro de los candidatos",
       payload: { ...fixture, candidates: [{ ...candidates[0], variants: [{ ...candidates[0].variants[0], variant_id: "var-rojo-12" }] }, candidates[1]] },
     },
-    { name: "variante fuera del set LoRA", payload: fixture, lora: ["var-rojo-12-x50", "var-azul-12"] },
     {
       name: "variante duplicada",
       payload: { ...fixture, candidates: [candidates[0], { ...candidates[1], variants: [candidates[1].variants[0], { ...candidates[1].variants[1], variant_id: "var-rojo-12-x50" }] }] },
@@ -1206,7 +1188,6 @@ async function testCatalogRecommendationsEnvelope(): Promise<void> {
       () => llamarPythonCatalogRecommendations({
         referenceVariantId: "var-rojo-12",
         catalogSnapshotId: snapshot,
-        ...(invalid.lora ? { loraVariantIds: invalid.lora } : {}),
         limit: invalid.limit ?? 100,
         requestId: REQUEST_ID,
         correlationId: CORRELATION_ID,

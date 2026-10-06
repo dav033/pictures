@@ -33,7 +33,7 @@ import { generacionAdmiteGuiaEscena, planConReferencia } from "@/lib/ia/kagutsuc
 import { guiaEscenaParaGeneracion } from "@/lib/ia/kagutsuchi/preparar-guia-escena";
 import { bloqueoPorGeneracionSinReferencia, CODIGO_GENERACION_SIN_REFERENCIA, leerPoliticaDePresentacion, nivelAmbienteConPolitica, nivelCreatividadConPolitica } from "@/lib/presentacion/modo-presentacion";
 import { LoraModeSlugSchema, LoraSelectionSchema } from "@/lib/lora/schema";
-import { resolveLoraMode, resolveLoraModeDatasetAllowlist, resolveLoraSelection, type ResolvedLoraApplication } from "@/lib/lora/mode-resolver";
+import { resolveLoraMode, resolveLoraSelection, type ResolvedLoraApplication } from "@/lib/lora/mode-resolver";
 
 /**
  * Guardián en el punto de uso: nunca se llama a `generarConSempertexLora` con
@@ -611,23 +611,6 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // FLUX base no tiene LoRA ni vocabulario de productos (2026-10-06, decisión del dueño): nada se resuelve, se
     // rechaza ni se filtra contra él. Los modos entrenados siguen usando el suyo.
     const vocabularioDelModo = dialectoPreflight === "base" ? [] : PRODUCT_VOCABULARY;
-    const loraCatalogAllowlist = explicitLoraMode
-      ? await resolveLoraModeDatasetAllowlist(explicitLoraMode)
-      : null;
-    if (loraCatalogAllowlist) {
-      const allowedProductIds = new Set(loraCatalogAllowlist.productIds);
-      const allowedVariantIds = new Set(loraCatalogAllowlist.variantIds);
-      const requestedIds = [
-        ...(body.productIds ?? []),
-        ...(body.ragVariantIds ?? []),
-        ...(body.manualProducts ?? []).map((product) => product.id),
-      ];
-      // `productIds` solo puede validar ids de producto (p. ej. piezas manuales
-      // del chat); un variant_id tiene que estar en `variantIds` sí o sí, que
-      // es la granularidad real de la cobertura (modelo + familia + tamaño).
-      const outsidePool = [...new Set(requestedIds)].filter((id) => !allowedProductIds.has(id) && !allowedVariantIds.has(id));
-      if (outsidePool.length) throw new Error(`LORA_DATASET_ALLOWLIST_REJECTED: ${outsidePool.join(", ")}`);
-    }
     // El plan se re-resuelve con el mismo backend que lo produjo (ADR 0006):
     // resolverlo con el otro podría dar otro hash y estaríamos aprobando un
     // plan distinto del que vio el cliente.
@@ -638,7 +621,6 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       plan: planDeclarativo,
       allowlist: contextoPlan.allowlist,
       catalogSnapshotId: contextoPlan.catalogSnapshotId,
-      loraAllowlist: loraCatalogAllowlist,
       requestId: generationRequestId,
       correlationId: generationCorrelationId,
       signal: request.signal,
