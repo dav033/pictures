@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Standalone es para la imagen Docker del VPS; en Vercel choca con su adaptador (falta next-server.js.nft.json).
+  ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   // Next bloquea por defecto las peticiones cross-origin a los recursos de desarrollo
   // (`/_next/*`, incluido el WebSocket de HMR): solo acepta el host con el que arrancó, que
   // es `localhost`. Al abrir la app desde otra máquina de la red, Firefox no podía conectar a
