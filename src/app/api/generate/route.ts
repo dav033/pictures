@@ -26,7 +26,7 @@ import { targetBoxesFor } from "@/lib/ia/uzume/venue-placement";
 import { chatDe, imagenDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
-import { buildLoraEditPrompt, DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit, reservaNotasGuia, type ImagenEditLora, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { buildLoraEditPrompt, DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit, reservaNotaGuiaEscena, reservaNotasGuia, type ImagenEditLora, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { costeEntradasUsdEstimado, elegirCaptionConGuia, estructuraParaGuia, generacionAdmiteGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { prepararGuiaEstructura } from "@/lib/ia/kagutsuchi/rasterizar-guia";
 import { generacionAdmiteGuiaEscena, planConReferencia } from "@/lib/ia/kagutsuchi/guia-escena";
@@ -1091,6 +1091,11 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       colorPatterns: frases,
     });
     const compilarCaption = (maxLength: number | undefined) => compilarCaptionCon(maxLength, colorPatterns);
+    // En base, el límite de 1000 es del CAPTION (que la decoración vaya primero), no de la nota fija que explica
+    // la guía de escena: con la nota dentro del mismo 1000, al caption le quedaban ~380 caracteres, dos piezas no
+    // cabían, la guía se caía y el caption sin guía (frases de Python incluidas) fallaba en 1152 (2026-10-06,
+    // FLUX_PREFLIGHT_FAILED). El tope duro del prompt que recibe fal sigue siendo LORA_EDIT_PROMPT_MAX_LENGTH.
+    const limiteConGuiaEscena = dialectoPreflight === "base" ? BASE_PROMPT_MAX_LENGTH + reservaNotaGuiaEscena() : undefined;
     // Guía de escena (GUIA_ESCENA_V1, encendida): el plan salió de una foto de referencia, así que FLUX recibe
     // por `/edit` UNA imagen con los globos de todas las piezas, dibujados por el motor en Python y colocados
     // donde la foto tiene cada una. La foto del cliente nunca sale hacia fal. Si la guía no se puede construir
@@ -1119,7 +1124,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
             correlationId: generationCorrelationId,
             parentSignal: request.signal,
           })).resultado,
-          maximo: dialectoPreflight === "base" ? BASE_PROMPT_MAX_LENGTH : LORA_PROMPT_MAX_LENGTH,
+          maximo: limiteConGuiaEscena ?? LORA_PROMPT_MAX_LENGTH,
           compilar: compilarCaption,
           // Con guía, la forma y los colores de cada pieza los dibuja el mapa: las frases de Python de forma y
           // de patrón son lo prescindible si no caben con su nota (2026-10-04: dos piezas del motor orgánico
@@ -1134,6 +1139,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
             prompt: ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(compilacion.prompt, resolvedLoras), imagenes), resolvedLoras),
             triggers: resolvedLoras.map((lora) => lora.trigger),
             vocabulary: vocabularioDelModo,
+            ...(limiteConGuiaEscena ? { maxLength: limiteConGuiaEscena } : {}),
           }).ok,
           signal: request.signal,
         })
@@ -1254,6 +1260,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
             prompt: ensureLoraTriggers(buildLoraEditPrompt(promptLoraParaGenerar, imagenesGuia), resolvedLoras),
             triggers: resolvedLoras.map((lora) => lora.trigger),
             vocabulary: vocabularioDelModo,
+            ...(guiaEscena.imagenes && limiteConGuiaEscena ? { maxLength: limiteConGuiaEscena } : {}),
           })
         : loraPreflight;
     const loraLanguageLeaks = findLoraPromptLanguageLeaks(effectiveJsonPrompt ? `${loraPrompt} ${effectiveJsonPrompt}` : loraPrompt);

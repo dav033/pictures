@@ -97,6 +97,12 @@ generador de imagen con Gemini en TS o Python. Gemini se queda solo para analiza
   jerga, product-runtime, vocabulario-base, caption-compiler, preflight-barrido (5 760 escenas), caption-bilateral. Sin imagen de control
   todavía (se hará al cerrar la etapa 3, que toca más el camino).
 
+- **Arreglo 2026-10-06 (dueño, `FLUX_PREFLIGHT_FAILED: longitud 1152 supera límite 1000`)**: el límite base de 1000 contaba también
+  la nota fija de la guía de escena (~620): al caption le quedaban ~380, dos piezas no cabían, la guía se caía y el caption sin guía
+  (con las frases de forma de Python, que no se compactan) medía 1152. Ahora, con guía de escena, el límite es 1000 + la nota
+  (`limiteConGuiaEscena` en `route.ts`); el tope duro de fal sigue en 2500. Pendiente: sin guía, el caption con frases de Python aún
+  puede pasar de 1000 (probar a quitar esas frases antes de fallar). Verificado: tsc, eslint, `test-guia-escena`.
+
 ### 3.2 Inventario de lo que queda (mapeado el 2026-10-06)
 Bloqueos o rarezas que siguen corriendo en base:
 - `src/lib/ia/kagutsuchi/lora-prompt-preflight.ts:273-277` rechaza prompts con `Reflex|Fashion|Silk|Crystal|Pastel`, ®/™ o `eventdecor_*`
