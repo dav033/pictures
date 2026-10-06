@@ -19,6 +19,8 @@ import { DecoracionSempertexSchema, ProveedorSempertexSchema, type DecoracionSem
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { CotizacionGuiadaSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/utilidades";
+import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
+import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
 
 /**
  * Lo que el asistente muestra además de su texto. Cada pieza va PEGADA al mensaje que la trajo, en el orden de la
@@ -36,7 +38,8 @@ const WidgetSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("comprar"), decoracion: DecoracionSempertexSchema }).strict(),
 ]);
 type Widget = z.infer<typeof WidgetSchema>;
-const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetSchema).optional(), miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional() }).strict();
+const ReferenciaSchema = z.object({ frase: z.string(), aspecto: z.number().positive().optional(), piezas: z.array(z.object({ x: z.number(), y: z.number(), ancho: z.number(), alto: z.number() }).strict()), colores: z.array(z.object({ nombre: z.string(), hex: z.string() }).strict()) }).strict();
+const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetSchema).optional(), miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional(), referencia: ReferenciaSchema.optional(), notaFoto: z.string().optional() }).strict();
 type Mensaje = z.infer<typeof MensajeSchema>;
 type BriefGuiado = { evento?: string; edad?: number; tematica?: string };
 type Uso = "negocio" | "personal";
@@ -145,7 +148,30 @@ export function VistaGuiada() {
     if (foto) void miniaturaDe(foto).then((miniatura) => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === idUsuario ? { ...mensaje, miniatura } : mensaje)))
       .catch((cause: unknown) => console.warn("[asistente-guiado] no se pudo crear la miniatura de la foto.", cause));
     try {
-      const response = await fetch("/api/asistente-guiado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historial, brief, estadoGuiado: { ...(elegida ? { decoracionId: elegida.id } : {}), ...(usoEnvio ? { uso: usoEnvio } : {}) }, ...(foto ? { fotoInspiracion: await leerFoto(foto) } : {}) }) });
+      const imagen = foto ? await leerFoto(foto) : null;
+      const analisisFoto = imagen ? fetch("/api/references/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [imagen] }) })
+        .then(async (respuesta) => {
+          if (!respuesta.ok) throw new Error("No se pudo analizar la foto.");
+          const analisis: unknown = await respuesta.json();
+          const referencia = adaptarAnalisisReferencia(analisis);
+          if (!referencia) throw new Error("No se encontraron piezas en la foto.");
+          setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === idUsuario ? { ...mensaje, referencia } : mensaje));
+          return referencia;
+        })
+        .catch((cause: unknown) => {
+          console.warn("[asistente-guiado] no se pudo leer la foto de inspiración.", cause);
+          setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === idUsuario ? { ...mensaje, notaFoto: "No pude distinguir bien los detalles, pero podemos seguir con tu idea." } : mensaje));
+          return null;
+        }) : null;
+      // Da oportunidad breve al análisis para orientar búsqueda; chat no espera análisis completo.
+      const referenciaRapida = analisisFoto ? await Promise.race([
+        analisisFoto,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+      ]) : null;
+      const historialConLectura = referenciaRapida
+        ? historial.map((mensaje, indice) => indice === historial.length - 1 ? { ...mensaje, content: `${mensaje.content.slice(0, 5400)}\n\nLectura de la foto: ${referenciaRapida.frase}`.slice(0, 6000) } : mensaje)
+        : historial;
+      const response = await fetch("/api/asistente-guiado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historialConLectura, brief, estadoGuiado: { ...(elegida ? { decoracionId: elegida.id } : {}), ...(usoEnvio ? { uso: usoEnvio } : {}) }, ...(imagen ? { fotoInspiracion: imagen } : {}) }) });
       if (!response.ok || !response.body) throw new Error(`El asistente respondió con estado ${response.status}.`);
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -285,8 +311,10 @@ export function VistaGuiada() {
             {mensajes.map((mensaje, indice) => mensaje.role === "user"
               ? <div key={mensaje.id} className="ml-auto flex max-w-[min(85%,36rem)] flex-col items-end gap-1.5">
                   {/* eslint-disable-next-line @next/next/no-img-element -- miniatura local en data URL */}
-                  {mensaje.miniatura && <img src={mensaje.miniatura} alt="Foto de inspiración enviada" className="h-28 w-auto rounded-2xl border border-borde-suave object-cover shadow-sm" />}
+                  {mensaje.miniatura && !mensaje.referencia && <img src={mensaje.miniatura} alt="Foto de inspiración enviada" className="h-28 w-auto rounded-2xl border border-borde-suave object-cover shadow-sm" />}
                   <div className="rounded-2xl rounded-br-md bg-acento px-4 py-2.5 text-sm text-white shadow-sm">{mensaje.content}</div>
+                  {mensaje.miniatura && mensaje.referencia && <ReferenciaInspiracion miniatura={mensaje.miniatura} referencia={mensaje.referencia} />}
+                  {mensaje.notaFoto && <p role="status" className="max-w-64 text-xs text-texto-secundario">{mensaje.notaFoto}</p>}
                 </div>
               : <BurbujaAsistente key={mensaje.id}>
                   {mensaje.content.trim()
