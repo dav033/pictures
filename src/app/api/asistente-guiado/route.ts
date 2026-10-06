@@ -161,7 +161,9 @@ export async function POST(request: Request) {
       elegida ? `Decoración elegida por el cliente en la interfaz: «${elegida.titulo}».` : "El cliente todavía no eligió una decoración.",
       usoConfirmado ? `Uso elegido: ${usoConfirmado === "negocio" ? "para su negocio" : "uso personal"}.` : "El cliente todavía no eligió si es para negocio o uso personal.",
     ].join(" ");
-    const herramientasTurno = alcancePropuesta ? herramientas.map((herramienta): Herramienta => {
+    // En el turno en que el cliente elige «completa» o «individual» solo existe la herramienta de propuesta (y la del brief):
+    // con todas disponibles el modelo a veces buscaba en la biblioteca y mostraba una idea del carrusel (2026-10-06).
+    const herramientasTurno = alcancePropuesta ? herramientas.filter((herramienta) => herramienta.nombre === "proponer_composicion" || herramienta.nombre === "guardar_brief_guiado").map((herramienta): Herramienta => {
       if (herramienta.nombre !== "proponer_composicion") return herramienta;
       const esquema = esquemaHerramientaPropuesta(herramienta.esquema, alcancePropuesta);
       const { description, ...campos } = esquema;
@@ -169,7 +171,9 @@ export async function POST(request: Request) {
     }) : herramientas;
     const generador = ejecutarConversacionStream({ chat, sistema: `${PROMPT_GUIADO}
 
-    Estado confirmado (no lo leas en voz alta): ${estadoConfirmado}`, historial, herramientas: herramientasTurno, registro: registroProtegido, vueltasMax: 8, herramientasSoloLectura: new Set(["buscar_decoraciones_sempertex", "pasos_decoracion", "buscar_proveedores"]), signal: request.signal, telemetria: { flujo: "armador_decoracion", requestId, correlationId: requestId, superficie: "/api/asistente-guiado", promptVersion: "asistente-guiado.v1" } });
+    Estado confirmado (no lo leas en voz alta): ${estadoConfirmado}${alcancePropuesta ? `
+
+EN ESTE TURNO el cliente eligió ${alcancePropuesta === "completa" ? "una decoración completa (2-3 piezas)" : "una pieza individual"}: llama proponer_composicion ahora y no busques ideas en la biblioteca.` : ""}`, historial, herramientas: herramientasTurno, registro: registroProtegido, vueltasMax: 8, herramientasSoloLectura: new Set(["buscar_decoraciones_sempertex", "pasos_decoracion", "buscar_proveedores"]), signal: request.signal, telemetria: { flujo: "armador_decoracion", requestId, correlationId: requestId, superficie: "/api/asistente-guiado", promptVersion: "asistente-guiado.v1" } });
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const encoder = new TextEncoder();
