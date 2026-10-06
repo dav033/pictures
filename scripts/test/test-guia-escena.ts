@@ -28,10 +28,9 @@ import { labDeRgb } from "@/lib/rag/catalog/similitud-color";
 import { LORA_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { datosDePiezas, guiaEscenaParaGeneracion, prepararGuiaEscena } from "@/lib/ia/kagutsuchi/preparar-guia-escena";
-import { buildLoraEditPrompt, ensureLoraTriggers, generarConSempertexLora, imageSizeFor, NOTA_GUIA_ESCENA, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA, notaGuiaEscena, reservaNotaGuiaEscena, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { buildLoraEditPrompt, generarConSempertexLora, imageSizeFor, NOTA_GUIA_ESCENA, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA, notaGuiaEscena, reservaNotaGuiaEscena, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { llamarPythonPlanGuiaEscena, PYTHON_PLAN_GUIA_ESCENA_PATH, PYTHON_PLAN_GUIA_ESCENA_SCOPE } from "@/lib/ia/nucleo/python-adapter";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { PlanGuiaEscenaResultV1Schema, type PiezaGuiaEscena, type PlanGuiaEscenaResultV1 } from "@/lib/plan/guia-escena";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { capturarPeticion, imagenDePrueba, LORA_DE_PRUEBA } from "../lib/capturar-peticion-lora";
@@ -405,15 +404,12 @@ async function testCaminoDeGeneracion(): Promise<void> {
     const fetchImpl: typeof fetch = async () => respuestaPython(resultadoPython([columna("EST_01_COLUMNAS")]));
     return (await llamarPythonPlanGuiaEscena({ plan: planPedido, requestId: "00000000-0000-4000-8000-000000000001", correlationId: "00000000-0000-4000-8000-000000000002", env: ENV, fetchImpl })).resultado;
   };
-  const trigger = LORA_DE_PRUEBA.trigger;
-  const compilar = (maxLength: number) => captionDeCaso(caso, trigger, maxLength);
+  const compilar = (maxLength: number) => captionDeCaso(caso, maxLength);
   const cabe = (compilacion: ReturnType<typeof compilar>, imagenes: readonly ImagenGuiaLora[]) => preflightLoraPrompt({
     sceneSpec: caso.escena,
     clauses: compilacion.clauses,
-    prompt: ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(compilacion.prompt, [LORA_DE_PRUEBA]), imagenes), [LORA_DE_PRUEBA]),
-    triggers: [trigger],
-    vocabulary: PRODUCT_VOCABULARY,
-  }).ok;
+    prompt: buildLoraEditPrompt(compilacion.prompt, imagenes)
+}).ok;
   const guia = await guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos, maximo: LORA_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length });
   assert.equal(pedidos.length, 1);
   assert.ok(guia.imagenes && guia.compilacion && guia.resumen);
@@ -428,7 +424,7 @@ async function testCaminoDeGeneracion(): Promise<void> {
   const referencia = imagenDePrueba("composition_reference", 2, "REF_01", FOTO_REFERENCIA);
   const producto = imagenDePrueba("catalog_product_reference", 3, "CATALOG_01", Buffer.from("FOTO-DE-PRODUCTO").toString("base64"));
   for (const loras of [[], [LORA_DE_PRUEBA]]) {
-    const caption = ensureLoraTriggers(guia.compilacion.prompt, loras);
+    const caption = guia.compilacion.prompt;
     const capturada = await capturarPeticion(generarConSempertexLora, caption, "3:2", [referencia, producto], { loras, seed: 7, imagenesEdit: guia.imagenes });
     const cuerpo = capturada.cuerpo as { prompt: string; image_urls?: string[] };
     assert.equal(capturada.destino, EDIT);
@@ -446,9 +442,9 @@ async function testCaminoDeGeneracion(): Promise<void> {
   console.log("[PASS] /edit recibe solo la guía (modo base y entrenado), ningún byte de la foto, y la nota sigue al caption");
 
   // El prompt final cabe y no filtra nada.
-  const final = ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(guia.compilacion.prompt, [LORA_DE_PRUEBA]), guia.imagenes), [LORA_DE_PRUEBA]);
+  const final = buildLoraEditPrompt(guia.compilacion.prompt, guia.imagenes);
   assert.ok(final.length <= LORA_PROMPT_MAX_LENGTH, `el prompt con la nota mide ${final.length}`);
-  assert.deepEqual([...findLoraPromptLanguageLeaks(final), ...findLoraPromptProductLeaks(final, PRODUCT_VOCABULARY)], []);
+  assert.deepEqual([...findLoraPromptLanguageLeaks(final), ...findLoraPromptProductLeaks(final)], []);
   assert.ok(reservaNotaGuiaEscena() === Math.max(NOTA_GUIA_ESCENA.length, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA.length) + 2);
   // CASE-005 de images-judge: sin aro, poste ni cintas dibujados, la nota no le sugiere a FLUX un aro con marco y
   // poste (unía dos piezas separadas en un arco), y dice que las piezas separadas siguen separadas.

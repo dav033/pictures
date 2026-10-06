@@ -5,7 +5,6 @@ import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-sp
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
 import { compileProductPrompt } from "@/lib/ia/kagutsuchi/lora-product-runtime";
 import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import type { VisualContext } from "@/lib/ia/escena/visual-context";
 import { planFijado } from "../lib/planes-fijados";
 
@@ -127,14 +126,14 @@ async function main(): Promise<void> {
     const lateralRepetida = approvedScene(`qa-lateral-repetida-x${repeticiones}`);
     assert.equal(lateralRepetida.plan.estructuras.find((estructura) => estructura.estructura_id === "EST_02_COLUMNAS")?.repeticiones, repeticiones);
     const officialStructures = officialStructuresDePlan(lateralRepetida.plan);
-    const caption = compileProductPrompt({ sceneSpec: lateralRepetida.scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures });
+    const caption = compileProductPrompt({ sceneSpec: lateralRepetida.scene, visualContext: CONTEXT, officialStructures });
     // Todas las instancias del mismo grupo son UNA instrucción espejo, no la misma frase repetida.
     const bilaterales = caption.clauses.filter((clause) => clause.bilateral);
     assert.equal(bilaterales.length, 1, JSON.stringify(caption.clauses.map((clause) => clause.elementIds)));
     assert.equal(bilaterales[0]!.elementIds.length, repeticiones);
     const frase = repeticiones === 2 ? "one standing on the left and one on the right" : `${["", "one", "two", "three"][repeticiones / 2]} standing on each side`;
     assert.equal(caption.prompt.split(frase).length - 1, 1, caption.prompt);
-    const preflight = preflightLoraPrompt({ sceneSpec: lateralRepetida.scene, clauses: caption.clauses, prompt: caption.prompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY });
+    const preflight = preflightLoraPrompt({ sceneSpec: lateralRepetida.scene, clauses: caption.clauses, prompt: caption.prompt });
     assert.equal(preflight.ok, true, `repeticiones=${repeticiones}: ${JSON.stringify(preflight.errors)}`);
     assert.deepEqual(preflight.relationships, { expected: repeticiones / 2, represented: repeticiones / 2 });
   }

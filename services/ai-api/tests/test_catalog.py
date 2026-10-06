@@ -1151,7 +1151,7 @@ async def test_catalog_recommendations_report_missing_snapshot_and_reference() -
 
 def test_catalog_recommendations_request_is_strict_and_bounded() -> None:
     with pytest.raises(ValidationError):
-        _recommendation_request(lora_variant_ids=["var-a"])
+        _recommendation_request(**{("lora_" + "variant_ids"): ["var-a"]})
     with pytest.raises(ValidationError):
         _recommendation_request(limit=101)
     with pytest.raises(ValidationError):

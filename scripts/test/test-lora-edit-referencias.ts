@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { buildLoraEditPrompt, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { descripcionProductoParaImagen, nombreProductoParaImagen } from "../../src/lib/ia/uzume/producto-para-imagen";
-import { LORA_JSON_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { BASE_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import type { ImageInput } from "../../src/lib/ia/nucleo/tipos";
 
 /** Cableado FLUX `/edit`: referencias admitidas y prioridad de las imágenes base. */
@@ -36,7 +36,7 @@ console.log("[PASS] cableado FLUX /edit: venue y revisión siempre usan su image
  * el prompt final, y ninguno de los preflights lo veía: todos corren sobre el
  * caption, no sobre lo que se manda al proveedor.
  */
-const CAPTION = "eventdecor_style_v3, an organic balloon garland arch of round latex balloons in white as the central focal piece.";
+const CAPTION = "an organic balloon garland arch of round latex balloons in white as the central focal piece.";
 const referenciasSucias: ImageInput[] = [
   { ...img("venue_base", 1, "VENUE_01"), descripcion: "Foto del salón del cliente. Preservar cámara y arquitectura.", allowed_use: "solo el espacio" },
   { ...img("catalog_product_reference", 3, "CATALOG_01"), descripcion: "GLOBO LATEX REDONDO REFLEX DORADO — R-12 / PAQUETE X 50. Cotización: 3 paquete(s) de 50 unidades.", allowed_use: "identidad del producto, nunca los paquetes" },
@@ -63,7 +63,7 @@ assert.equal(buildLoraEditPrompt(CAPTION, []), CAPTION);
 const dosProductos = buildLoraEditPrompt(CAPTION, [referenciasSucias[1]!, { ...referenciasSucias[1]!, id: "CATALOG_02" }]);
 assert.equal((dosProductos.match(/Input image \d+ \(@image\d+\): product identity only/g) ?? []).length, 2, dosProductos);
 // Cabe sin recorte incluso con los cuatro roles que activan /edit.
-const cuatroRoles = buildLoraEditPrompt("x".repeat(LORA_JSON_PROMPT_MAX_LENGTH), [
+const cuatroRoles = buildLoraEditPrompt("x".repeat(BASE_PROMPT_MAX_LENGTH), [
   img("venue_base", 1, "V"),
   img("composition_reference", 2, "R1"),
   img("catalog_product_reference", 3, "P1"),

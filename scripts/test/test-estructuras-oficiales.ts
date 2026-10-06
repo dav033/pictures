@@ -134,7 +134,7 @@ const columnas = scene([
   element("COL_L", "Columna asimétrica izquierda", "columna", "lateral_izquierdo", "soporte", "media"),
   element("COL_R", "Columna derecha", "columna", "lateral_derecho", "soporte", "media"),
 ]);
-const producto = compileLoraCaption({ sceneSpec: columnas, visualContext: context, dialect: "product_v007" });
+const producto = compileLoraCaption({ sceneSpec: columnas, visualContext: context });
 // `airy` no está ni una vez en las 345 captions del corpus; el sustantivo que queda, `organic balloon
 // arch`, aparece 107 veces. Ver `productDialectNoun`.
 assert.match(producto.prompt, /organic balloon arch/);
@@ -145,12 +145,12 @@ assert.doesNotMatch(producto.prompt, /airy/);
 assert.match(producto.prompt, /balloon column/);
 assert.doesNotMatch(producto.prompt, /asymmetrical[a-z ]*balloon column/);
 assert.equal(producto.clauses.length, 3, "an asymmetrical column never pairs with a plain one");
-const escena = compileLoraCaption({ sceneSpec: columnas, visualContext: context, dialect: "scene_v004" });
+const escena = compileLoraCaption({ sceneSpec: columnas, visualContext: context });
 // El sustantivo del arco no se tocó en esta pasada: sigue llevando «airy» dentro (`arco_no_denso`).
 assert.match(escena.prompt, /an airy organic balloon garland arch/);
 assert.match(escena.prompt, /a balloon column/);
 assert.doesNotMatch(escena.prompt, /matching one another|one standing on the left and one on the right/);
-const pared = compileLoraCaption({ sceneSpec: scene([element("PARED", "Pared de globos densa", "pared", "fondo_pared", "focal", "lujosa")]), visualContext: context, dialect: "scene_v004" });
+const pared = compileLoraCaption({ sceneSpec: scene([element("PARED", "Pared de globos densa", "pared", "fondo_pared", "focal", "lujosa")]), visualContext: context });
 assert.match(pared.prompt, /dense balloon wall installation in blue against the rear wall/);
 pass("official variants reach both LoRA wordings and keep separate pieces separate");
 
@@ -178,9 +178,8 @@ pass("official variants reach both LoRA wordings and keep separate pieces separa
   const declarada = compileLoraCaption({
     sceneSpec: scene([element("EST_01_COLUMNA#1", "Columna izquierda", "columna", "lateral_izquierdo", "soporte", "media")]),
     visualContext: context,
-    dialect: "scene_v004",
-    officialStructures: new Map([["EST_01_COLUMNA", "columna_asimetrica"]]),
-  });
+    officialStructures: new Map([["EST_01_COLUMNA", "columna_asimetrica"]])
+});
   assert.match(declarada.prompt, /balloon column/, "repeated instances inherit the declared official structure");
   pass("estructura_oficial is validated in Next, exported for Python and read by the compiler");
 }

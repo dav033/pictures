@@ -1,7 +1,6 @@
 import type { SceneSpec } from "../escena/scene-spec";
-import type { LoraCaptionDialect, LoraVisualClause } from "./lora-caption-compiler";
-import { BASE_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "./lora-caption-compiler";
-import type { ProductVocabulary } from "@/lib/lora/product-vocabulary";
+import type { LoraVisualClause } from "./lora-caption-compiler";
+import { BASE_PROMPT_MAX_LENGTH, translateLoraColor } from "./lora-caption-compiler";
 import { palabrasSoloLora } from "./texto-base";
 
 export type LoraPromptPreflightReport = {
@@ -16,7 +15,6 @@ export type LoraPromptPreflightReport = {
   ambiguities: string[];
   discardedElementIds: string[];
   promptLength: number;
-  triggerCount: number;
   /** Internal concept_id strings and/or commercial tokens found leaked into the prompt text. Non-empty implies `ok: false`. */
   productLeaks: string[];
   /**
@@ -28,7 +26,6 @@ export type LoraPromptPreflightReport = {
   requiresPlanSemantics: boolean;
 };
 
-const DEFAULT_LORA_TRIGGER = "eventdecor_style_v2";
 
 const SPANISH_TOKENS = [
   "arco", "semiarco", "guirnalda", "columna", "pared", "centro de mesa", "sobre mesa",
@@ -102,9 +99,9 @@ const CONCEPT_ID_SHAPE_PATTERN = /\b[a-z0-9]+(?:\.[a-z0-9_]+){2,}\b/g;
 
 const COMMERCIAL_LEAK_PATTERNS: Array<[RegExp, string]> = [
   [/\bsku\b/i, "sku"],
-  [/\bB2B-\d+\b/i, "catalog identifier"],
-  [/paquete\s*x\s*\d+/i, "paquete x N"],
-  [/\bpack\s*x\s*\d+/i, "pack x N"],
+  [/\bB2B[-_ ]?\d{5,}\b/i, "SKU B2B"],
+  [/\b(?:paquete|pack|package)\s*(?:x|de|of)\s*\d+/i, "package quantity"],
+  [/\b\d+\s*(?:unidades?|units?)\s*(?:por|per)\s*(?:paquete|pack|package)\b/i, "package quantity"],
   [/\$\s?\d/, "currency amount"],
   [/\bcop\$?\b/i, "cop"],
   [/\busd\b/i, "usd"],
@@ -113,25 +110,13 @@ const COMMERCIAL_LEAK_PATTERNS: Array<[RegExp, string]> = [
 ];
 
 /**
- * Detects internal `concept_id` strings that leaked into a rendered prompt
- * (structurally, or literally against a known vocabulary) and commercial
- * tokens (SKU, price, package quantity) that must never reach the image
- * provider. Used by both preflight and audit tooling.
+ * Detecta identificadores internos y datos comerciales que no deben llegar al proveedor.
  */
-export function findLoraPromptProductLeaks(prompt: string, vocabulary?: ProductVocabulary): string[] {
+export function findLoraPromptProductLeaks(prompt: string): string[] {
   const leaks = new Set<string>();
 
   for (const match of prompt.match(CONCEPT_ID_SHAPE_PATTERN) ?? []) {
     leaks.add(`internal concept_id-shaped token: ${match}`);
-  }
-
-  if (vocabulary) {
-    const lowerPrompt = prompt.toLowerCase();
-    for (const concept of vocabulary) {
-      if (lowerPrompt.includes(concept.concept_id.toLowerCase())) {
-        leaks.add(`internal concept_id leaked verbatim: ${concept.concept_id}`);
-      }
-    }
   }
 
   for (const [pattern, label] of COMMERCIAL_LEAK_PATTERNS) {
@@ -156,22 +141,10 @@ export function preflightLoraPrompt(input: {
   sceneSpec: SceneSpec;
   clauses: LoraVisualClause[];
   prompt: string;
-  triggers?: string[];
-  /** Optional vocabulary to check for verbatim concept_id leakage against real known concept_ids, in addition to the always-on structural shape check. */
-  vocabulary?: ProductVocabulary;
-  /** Defaults to the text caption budget; the JSON variant passes `LORA_JSON_PROMPT_MAX_LENGTH`. */
+  /** Límite de texto para el preflight. */
   maxLength?: number;
-  /**
-   * Wording the prompt was compiled in. `base` (FLUX.2 without a LoRA) carries
-   * no trigger, has its own budget (`BASE_PROMPT_MAX_LENGTH`) and must not name
-   * a commercial product line. Absent: a trained dialect, checked as before.
-   */
-  dialect?: LoraCaptionDialect;
 }): LoraPromptPreflightReport {
   const { sceneSpec, clauses, prompt } = input;
-  const base = input.dialect === "base";
-  // The base model has no trigger to require: any trigger in its prompt is an error below.
-  const triggers = base ? [] : [...new Set((input.triggers ?? [DEFAULT_LORA_TRIGGER]).map((trigger) => trigger.trim()).filter(Boolean))];
   const errors: string[] = [];
   const warnings: string[] = [];
   const ambiguities: string[] = [];
@@ -217,11 +190,7 @@ export function preflightLoraPrompt(input: {
   const knownTypeFallbacks = clauses.filter((clause) => clause.usedFallbackSemantics).length;
   if (knownTypeFallbacks) errors.push(`${knownTypeFallbacks} tipo(s) sin visual_semantics del plan, inferido(s) por nombre (${clauses.filter((clause) => clause.usedFallbackSemantics).map((clause) => clause.noun).join(", ")})`);
 
-  const triggerCounts = triggers.map((trigger) => ({ trigger, count: (prompt.match(new RegExp(escapeRegExp(trigger), "gi")) ?? []).length }));
-  const triggerCount = triggerCounts.reduce((total, item) => total + item.count, 0);
-  const invalidTriggers = triggerCounts.filter((item) => item.count !== 1);
-  if (invalidTriggers.length) errors.push(`trigger duplicado o ausente (${invalidTriggers.map((item) => `${item.trigger}:${item.count}`).join(", ")})`);
-  if (base) errors.push(...basePromptErrors(prompt, clauses, warnings));
+  errors.push(...basePromptErrors(prompt, clauses, warnings));
   if (/(?:EST_\d{2}|CATALOG_|EDIT_|SKU|package|paquete|precio|price|\b\d+\s*(?:COP|USD))/.test(prompt)) errors.push("aparecen IDs, precios o datos de compra");
   const untranslated = findLoraPromptLanguageLeaks(prompt);
   if (untranslated.length) errors.push(`texto español sin traducir: ${untranslated.join(", ")}`);
@@ -239,11 +208,11 @@ export function preflightLoraPrompt(input: {
 
   const missingAnchors = requiredAnchorMissing(sceneSpec, prompt);
   if (missingAnchors.length) errors.push(`sin anclaje físico: ${missingAnchors.join(", ")}`);
-  const maxLength = input.maxLength ?? (base ? BASE_PROMPT_MAX_LENGTH : LORA_PROMPT_MAX_LENGTH);
+  const maxLength = input.maxLength ?? BASE_PROMPT_MAX_LENGTH;
   if (prompt.length > maxLength) errors.push(`longitud ${prompt.length} supera límite ${maxLength}`);
   if (prompt.length < 350) warnings.push(`caption corta (${prompt.length} caracteres)`);
 
-  const productLeaks = findLoraPromptProductLeaks(prompt, input.vocabulary);
+  const productLeaks = findLoraPromptProductLeaks(prompt);
   if (productLeaks.length) errors.push(`fuga de producto: ${productLeaks.join("; ")}`);
 
   return {
@@ -258,7 +227,6 @@ export function preflightLoraPrompt(input: {
     ambiguities,
     discardedElementIds,
     promptLength: prompt.length,
-    triggerCount,
     productLeaks,
     // Only a scene without an approved plan: a plan scene missing semantics is
     // a mapping defect, and telling that client to "request a plan" is wrong.
@@ -274,9 +242,5 @@ function basePromptErrors(prompt: string, clauses: readonly LoraVisualClause[], 
   const ownWording = clauses.reduce((text, clause) => clause.colorPattern ? text.split(clause.colorPattern).join(" ") : text, prompt);
   if (/[();]/.test(ownWording)) warnings.push("prompt base con paréntesis o punto y coma");
   return errors;
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 

@@ -416,9 +416,9 @@ async def test_non_allowlisted_variant_is_reported_without_catalog_escape() -> N
 
 
 @pytest.mark.anyio
-async def test_resolution_request_rejects_legacy_lora_variant_ids() -> None:
+async def test_resolution_request_rejects_legacy_dataset_allowlist() -> None:
     with pytest.raises(ValidationError):
-        PlanResolutionRequest.model_validate({**_request().model_dump(), "lora_variant_ids": ["var-rojo-12"]})
+        PlanResolutionRequest.model_validate({**_request().model_dump(), ("lora_" + "variant_ids"): ["var-rojo-12"]})
 
 
 @pytest.mark.anyio

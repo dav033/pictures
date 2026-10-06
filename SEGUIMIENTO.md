@@ -173,6 +173,11 @@ Tamaño:
 5. **Renombrar** `sempertex-lora.ts` → `flux.ts`, `lora-caption-compiler.ts` → `caption-flux.ts`, etc., y `fal-ai/flux-2/lora/edit` →
    `fal-ai/flux-2/edit` si fal lo admite con las mismas entradas (comprobar con 1 imagen y tope).
 6. `data/staging` y tablas `lora_*`: solo con confirmación explícita del dueño.
+   Etapa 4 hecha en rama (2026-10-06 tarde): `etapa4-borrado`, worktree `Downloads/e3l`, commits 9514139..973cd2a: 132 archivos,
+   −25 583 líneas (administración, APIs `/api/lora/*`, modos entrenados, vocabularios, utilidades de dataset, scripts y pruebas de
+   entrenamiento); `vocabulario-base.ts` y `descriptor-perceptual.ts` movidos a `src/lib/ia/kagutsuchi/`; sin tocar `data/staging`,
+   migraciones ni tablas. tsc, lint (0 errores), export de contratos (36), pruebas del camino base, pytest 3/3, ruff. SIN fusionar:
+   en revisión adversarial (camino FLUX base, chat, vista guiada, scripts de package.json colgantes).
 Tras cada etapa: `tsc`, `eslint` de lo tocado, pruebas puntuales y 1-2 imágenes FLUX de control (001 y 002), juzgadas con Codex.
 
 ## 4. Misión de fidelidad foto → imagen (estado al 2026-10-06)
@@ -209,9 +214,17 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
 003 ahora genera (Codex 38/28). Media 43→52.
 
 ### 4.4 Pendiente de fidelidad (en orden)
-1. **Ancho/alto de las piezas laterales** (en curso: rama `fix/medidas-de-la-foto`, worktree `Downloads/e3f`, Codex, tope US$0,30; caso
-   nuevo 2026-10-06: columna de la foto del dueño ≈1,36 × 0,73 m y el plan pide 1,8 m de alto y 1,04 m de base): el chat inventa medidas (F7-5 ocupa el 83 % del ancho de la foto y el chat pide 1,2 m; el 002 a
+1. **Ancho/alto de las piezas laterales** (rama `fix/medidas-de-la-foto`, worktree `Downloads/e3f`, commit 9522591, SIN fusionar; caso
+   2026-10-06: columna de la foto del dueño ≈1,36 × 0,73 m y el plan pide 1,8 m de alto y 1,04 m de base). Tras la revisión adversarial
+   (7 fallos corregidos) su informe dice que la columna del dueño pasa de 1,8 a **2,2 m** (empeora: debería bajar a ≈1,36) y CASE-002
+   de 1,8 a 2,2 m: revisar antes de fusionar (¿ancla en la altura estándar de 2,2 m en vez de en el semiarco?). El chat inventa medidas (F7-5 ocupa el 83 % del ancho de la foto y el chat pide 1,2 m; el 002 a
    veces 1,8 m de alto cuando llega al techo; 003 cruza demasiado por arriba). Propiedad huérfana: proporción de la caja de la foto.
+   3.ª pasada (2026-10-06 tarde, commit 83f1f14 + merge de la principal 1505ac7, US$0): la escala ya no se ancla en la altura
+   estándar; prioriza medidas del cliente y semiarcos; caja que toca el borde conserva la medida del motor con aviso; el grosor de la
+   columna orgánica sale de la caja sin cortar. Dueño 1,35 × 0,72 m; CASE-002 1,8 m (caja cortada arriba); F7-5 sin cambio.
+   pytest 11/11, tsc, ruff, contracts:check. Revisión adversarial: 3 fallos (medida explícita del cliente ignorada en el armado,
+   `aspect_ratio` ausente supuesto 1.0, `pared_organica` fuera) → corregidos en 4e0b8de (pytest 14/14); segunda revisión en curso
+   (incluye comprobar por qué la proporción medida de la foto del dueño sale 1,0).
 2. **Colores de la foto del dueño 2026-10-06** (semiarco + columna orgánicos en rosa empolvado mate, crema, perla rosa claro y
    burbujas transparentes; foto en `Downloads/WhatsApp Image 2026-10-06 at 9.58.10 AM.jpeg`, datos en
    `informes-calidad/dueno-2026-10-06/`). Salió: «Fashion Chocolate 076» en la lista (no hay marrón); el plan compra «Rosado mate»
@@ -225,7 +238,14 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    curso 2.ª pasada (tope US$0,10). Caso nuevo del dueño (2026-10-06 11:35, CASE-002 en vivo): el analizador nombró plateado, rosado y
    blanco (patrón «bloques»), pero el plan compró plateado 126, rosado 64, **gris 38** y transparente 26: el blanco bajo luz lila se
    midió gris y FLUX pinta el pie gris oscuro. Condición para fusionar colores: en ese caso deben salir blanco + plata + rosa y nada
-   de gris. Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
+   de gris. 3.ª pasada (2026-10-06 tarde, commits d872f57, merge 40f5393, b69cdab, US$0): solo las etiquetas del analizador
+   autorizan tonos (los píxeles ordenan y pesan); blanco nombrado sigue blanco aunque la luz lo mida gris/lila; CASE-002 offline:
+   plata + rosa + blanco, cero gris. Duda abierta: el blueprint archivado de CASE-002 nombra «matte light grey». En revisión
+   adversarial: sin bloqueantes (F7-5 conserva 044; foto del dueño semiarco crema 69,1/rosado 23,4, columna rosado 55,7/crema 33,5, sin
+   chocolate). Medios en corrección (Codex): transparencia en etiquetas compuestas («clear gold confetti»), «matte light grey»
+   archivado de CASE-002 habilita gris; bajos: crema sin referencia medida, constante huérfana. Pendiente de diseño: mostrar tonos
+   no nombrados para que el cliente los confirme (no se compran solos).
+   Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
    Pendiente aparte: `test-guia-estructura.ts` ya falla en la rama principal (espera `#f2a7c3`, sale `#f8a3bc` en guirnalda-pared).
 3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
 4. **Forma de las columnas orgánicas de CASE-002** (dueño 2026-10-06: «la forma no coincide para nada, el original es más intrincado y
@@ -258,6 +278,40 @@ Reutiliza `TarjetaCotizacion` (personal) y `CotizacionProfesional` (negocio). En
 (worktree `Downloads/e3g`, Codex). La prueba de un turno real con el LLM la hago yo al final. Python cotiza con la operación nueva
 `plan.lista_materiales`. Dueño (2026-10-06): sí a enlazar 3-4 decoraciones de ejemplo a kits/variantes REALES (E-DECORS, Fiestas
 prediseñadas) para que el costeo de la demo muestre precios; siguen marcadas «Ejemplo» (segunda pasada encolada).
+
+**Integrada (2026-10-06, merge de `feat/asistente-guiado`)**: ruta `/asistente`, conmutador «Clásica / Guiada» en la navbar, API
+`/api/asistente-guiado`, biblioteca con 3 decoraciones de ejemplo enlazadas a kits E-DECORS reales (Amor, Niño Bigotes, Colombia; fotos
+de Shopify; variantes R-12 reales del snapshot publicado el 11-sep-2026; temática, edad, cantidades y pasos son de ejemplo), costeo por
+`plan.lista_materiales` en Python (p. ej. «Cumpleaños entre estrellas»: 3 variantes ×50, $39.111 COP personal y negocio).
+Revisión adversarial: 3 fallos confirmados corregidos (uso en el mismo POST, errores de herramienta devueltos al modelo, precio ligado
+a la decoración elegida) + menores. Turno real con el LLM (2026-10-06, 2 llamadas Gemini): guardar_brief_guiado (cumpleaños, 6, estrellas) →
+buscar_decoraciones_sempertex → 2 decoraciones; la primera respuesta citaba ids internos («ej-…»): regla 9 del prompt, verificado sin
+ids. Pendiente: datos reales de decoraciones y proveedores, verificación visual del dueño.
+
+**Rediseño de experiencia para la presentación del 2026-10-07 (prioridad absoluta del dueño)**: el asistente abre la conversación
+(saludo fijo + «¿Qué vas a celebrar?» con botones; una pregunta por turno con línea «Opciones:» que la interfaz convierte en botones);
+cada respuesta lleva sus piezas en orden (ideas, elección, 4 opciones con iconos, negocio/personal, precio, pasos, proveedores) y las
+anteriores quedan como historia; desplazamiento automático; indicador de escritura; identidad del asistente; materiales en palabras
+de cliente. El servidor costea y muestra pasos con la decoración y el uso elegidos en la interfaz (el modelo no ve ids y fallaba 3
+veces antes de costear). Recorrido completo verificado en el navegador (cumpleaños → 4-6 años → princesas → elegir → costear →
+personal → $39.111). Integrados (2026-10-06 tarde): biblioteca de 14 temáticas con kits y variantes reales y búsqueda honesta (exacta/cercana,
+sello «Parecida»); fotos de los 5 kits servidas desde `public/biblioteca-sempertex/kits/` (800 px) y, cuando la foto no representa
+la decoración, ilustración de globos en su paleta rotulada «Ilustración de colores»; precio por color sin jerga (p. ej. «Bienvenida
+en azul»: Azul Rey $13.974 + Blanco $13.037 + impreso bebé $24.143 = $51.154 con IVA); «Comprar» al instante (globos con su foto
+del catálogo, enlace al kit en sempertex.com sin el prefijo `b2b-`, distribuidor cercano); `darkreader-lock` (la extensión Dark
+Reader del equipo del dueño repintaba la app). Recorrido en el navegador verificado: espacio (ilustración), baby shower niño →
+elegir → comprar → costear personal. Hasta la presentación NO se fusionan en la principal las
+ramas de motor (colores `fix/sombra-no-es-color`, medidas `fix/medidas-de-la-foto`, forma `fix/forma-organica-002`) ni la etapa 4
+sin revisión adversarial y prueba (el dueño pidió el 2026-10-06 seguir también con esas mejoras, no solo con el chat).
+Tarde del 2026-10-06 (verificado en el navegador): tras «Aprender» salen las 4 opciones; el modelo no habla de «la pantalla»;
+«Contratar decorador» pregunta la ciudad con botones (Bogotá/Medellín/Cali/Barranquilla) y muestra tarjetas de ejemplo (2 decoradores
+HAPPIA/Master Balloon Pro + 1 distribuidor por ciudad, con especialidad y cobertura) con «Solicitar cotización» resuelto en la
+conversación (sin enlaces a example.com); boda con el impreso real «Nuestra Boda Reflex Dorado» (antes uno de comunión); negocio:
+«Ajustar mi precio» con 30 % → $61.832 + $18.550 = $80.382; celular (390 px): compositor fijo abajo (antes se desplazaba la página).
+Más tarde: idea «Fiesta tropical» con el kit real Verano Tropical (variantes verificadas en el snapshot); sin coincidencia exacta,
+la búsqueda no ofrece ideas de otro evento (un cumpleaños de 35 recibía un baby shower); fotos de kit completas sobre blanco;
+miniatura de la foto de inspiración en el mensaje del cliente; «Ninguna me convence» + foto verificado (la IA ve la foto y propone
+ideas «Parecida»). 2026-10-06 ~13:35 el sistema cortó por memoria los procesos en segundo plano; el servidor Next sobrevivió.
 
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.

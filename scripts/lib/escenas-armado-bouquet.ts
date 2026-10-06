@@ -30,7 +30,6 @@ import { compileProductPrompt, type ElementSizeConfirmation } from "@/lib/ia/kag
 import { mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
 import type { FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import type { EscenaParaCoherencia } from "@/lib/plan/coherencia";
@@ -127,8 +126,8 @@ export function promptGeminiDePlan(fijado: PlanFijadoDeFixture, frases?: readonl
 }
 
 /** Caption LoRA sin vocabulario de producto (camino legacy de color/acabado). */
-export function captionLegacyDePlan(fijado: PlanFijadoDeFixture, dialect: "product_v007" | "scene_v004", frases?: readonly FraseDeEstructura[]) {
-  return compileLoraCaption({ sceneSpec: escenaDePlan(fijado), visualContext: CONTEXTO_CUMPLE, officialStructures: officialStructuresDe(fijado.plan), dialect, colorPatterns: frases });
+export function captionBaseDePlan(fijado: PlanFijadoDeFixture, frases?: readonly FraseDeEstructura[]) {
+  return compileLoraCaption({ sceneSpec: escenaDePlan(fijado), visualContext: CONTEXTO_CUMPLE, officialStructures: officialStructuresDe(fijado.plan), colorPatterns: frases });
 }
 
 type Elemento = SceneSpec["elements"][number];
@@ -241,16 +240,20 @@ export function tallasDe(escena: SceneSpec): ElementSizeConfirmation[] {
 }
 
 /** Caption canónico con el vocabulario v007, como en route.ts. Sin trigger el runtime compila el dialecto `base` (modelo sin LoRA); estos casos fijan el v007, que es el que el trigger v3 selecciona con la misma longitud que el v2. */
-export function captionCanonico(escena: SceneSpec, frases?: readonly FraseDeEstructura[], trigger = "eventdecor_style_v3") {
+export function captionCanonico(escena: SceneSpec, frases?: readonly FraseDeEstructura[]) {
+  const productCatalogTitles = new Map<string, string>();
+  for (const productId of escena.elements.flatMap((element) => element.catalog_product_ids ?? [])) {
+    const color = escena.elements.find((element) => element.catalog_product_ids?.includes(productId))?.resolved_colors[0] ?? "globos";
+    productCatalogTitles.set(productId, `B2b Globo Latex Redondo ${color}`);
+  }
   return compileProductPrompt({
     sceneSpec: escena,
     visualContext: CONTEXTO_CUMPLE,
-    vocabulary: PRODUCT_VOCABULARY,
     sizeConfirmations: tallasDe(escena),
-    trigger,
+    productCatalogTitles,
     officialStructures: ESTRUCTURAS_OFICIALES_SINTETICAS,
-    colorPatterns: frases,
-  });
+    colorPatterns: frases
+});
 }
 
 /** Gemini para la escena sintética (sin estimado de materiales ni bloque de tamaños). */
@@ -259,14 +262,8 @@ export function promptGeminiSintetico(escena: SceneSpec, frases?: readonly Frase
 }
 
 /** Todo lo que sale del compilador: texto, JSON, paso de compactación, diagnósticos y cláusulas. */
-export function textoLora(resultado: { prompt: string; jsonPrompt: string; compactionStep?: number; diagnostics?: string[]; clauses: unknown[] }): string {
-  return JSON.stringify({
-    prompt: resultado.prompt,
-    jsonPrompt: resultado.jsonPrompt,
-    compactionStep: resultado.compactionStep ?? null,
-    diagnostics: resultado.diagnostics ?? null,
-    clauses: resultado.clauses,
-  });
+export function textoLora(resultado: { prompt: string }): string {
+  return resultado.prompt;
 }
 
 /** Prompts sin armado de escenas con bouquets: la instantánea los fija byte a byte. */
@@ -274,14 +271,7 @@ export function casosSinArmado(): Array<{ nombre: string; generar: () => string 
   const repetido = { ...BOUQUET_80, repeticiones: 2 };
   return [
     { nombre: "gemini/vector-15", generar: () => promptGeminiDePlan(vector15()) },
-    { nombre: "lora-legacy-v007/vector-15", generar: () => textoLora(captionLegacyDePlan(vector15(), "product_v007")) },
-    { nombre: "lora-legacy-v004/vector-15", generar: () => textoLora(captionLegacyDePlan(vector15(), "scene_v004")) },
     { nombre: "gemini/bouquet-80", generar: () => promptGeminiSintetico(escenaBouquet(BOUQUET_80)) },
     { nombre: "gemini/bouquet-80-repetido", generar: () => promptGeminiSintetico(escenaBouquet(repetido)) },
-    { nombre: "lora-canonico-v007/bouquet-80", generar: () => textoLora(captionCanonico(escenaBouquet(BOUQUET_80))) },
-    { nombre: "lora-canonico-v004/bouquet-80", generar: () => textoLora(captionCanonico(escenaBouquet(BOUQUET_80), undefined, "eventdecor_style_v2")) },
-    { nombre: "lora-canonico-v007/bouquet-80-repetido", generar: () => textoLora(captionCanonico(escenaBouquet(repetido))) },
-    { nombre: "lora-canonico-v007/bouquet-15-lados", generar: () => textoLora(captionCanonico(escenaBouquet(BOUQUET_15_LADOS))) },
-    { nombre: "lora-canonico-v004/bouquet-15-lados", generar: () => textoLora(captionCanonico(escenaBouquet(BOUQUET_15_LADOS), undefined, "eventdecor_style_v2")) },
   ];
 }
