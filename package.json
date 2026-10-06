@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "node scripts/next-with-system-ca.cjs dev",
     "build": "next build",
+    "vercel-build": "npm run build --workspaces --if-present && next build",
     "contracts:export": "tsx scripts/ops/export-chat-contract-schemas.ts",
     "contracts:export:domain": "tsx scripts/ops/export-domain-contract-schemas.ts",
     "contracts:check": "tsx scripts/ops/export-chat-contract-schemas.ts --check && tsx scripts/ops/export-domain-contract-schemas.ts --check",
