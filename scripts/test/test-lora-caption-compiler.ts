@@ -91,6 +91,38 @@ assert.equal(translateLoraColor("plateado"), "silver", "plateado sigue siendo si
 assert.ok(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gris balloons").includes("gris"), "el preflight detecta 'gris' sin traducir");
 assert.deepEqual(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gray balloons"), []);
 
+const canonicalLabel = "round latex balloon in gold with a Reflex high-shine finish";
+const columnaOrganica = scene([element({ id: "ORGANICA", name: "Columna orgánica", type: "columna", placement: "lateral_izquierdo" })]);
+const textoColumnaOrganica = compileLoraCaption({
+  sceneSpec: columnaOrganica,
+  visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
+  officialStructures: new Map([["ORGANICA", "columna_asimetrica"]]),
+}).prompt;
+assert.match(textoColumnaOrganica, /organic balloon column/i);
+assert.match(textoColumnaOrganica, /uneven, deep silhouette and large balloons interspersed/i);
+assert.doesNotMatch(textoColumnaOrganica, /\btubes?\b|rigid balloon column/i);
+
+const canonicalSpec = scene([element({ id: "CANONICAL", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]);
+const canonicalPresence = compileLoraCaption({
+  sceneSpec: canonicalSpec,
+  visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
+  productConcepts: [{ elementId: "CANONICAL", conceptId: "fixture.canonical.product", canonicalLabel }],
+});
+assert.equal(canonicalPresence.usedCatalogProducts, true, "la etiqueta canónica debe gobernar el compilador base");
+
+const canonicalDeduplication = compileLoraCaption({
+  sceneSpec: scene([
+    element({ id: "CANONICAL_DUP_A", name: "Arco", type: "arco", placement: "arco_central", role: "focal", group: "same-product" }),
+    element({ id: "CANONICAL_DUP_B", name: "Arco", type: "arco", placement: "arco_central", role: "soporte", group: "same-product" }),
+  ]),
+  visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
+  productConcepts: [
+    { elementId: "CANONICAL_DUP_A", conceptId: "fixture.canonical.product", canonicalLabel },
+    { elementId: "CANONICAL_DUP_B", conceptId: "fixture.canonical.product", canonicalLabel },
+  ],
+});
+assert.deepEqual(canonicalDeduplication.clauses[0]?.canonicalConceptIds, ["fixture.canonical.product"], "el mismo concepto canónico debe deduplicarse dentro de la cláusula");
+
 const canonicalAbsent = check({ spec: scene([element({ id: "NO_CANONICAL", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]) });
 assert.doesNotMatch(canonicalAbsent.compilation.prompt, /using exact canonical product/i, "sin etiqueta canónica no debe agregarse restricción inventada");
 

@@ -40,6 +40,8 @@ type AparienciaColor = {
  * Pure: no provider, HTTP, database or environment.
  */
 export const MAX_COLORES_REFERENCIA = 3;
+/** A named tone this visible in the photo remains in the purchase palette beyond the default three slots. */
+const PRESENCIA_RELEVANTE = 0.03;
 
 /**
  * Transparency is a finish, not a hue (see `TRANSPARENCIA`). A piece with clear
@@ -308,7 +310,7 @@ function coloresNombradosOrdenados(apariencia: AparienciaColor): string[] {
  *   not push a real color out, but it stays so the resolver reports the
  *   substitution to the customer (phase 2.5: substitute, never hide).
  */
-function seleccionarDominantes(colores: readonly string[]): string[] {
+function seleccionarDominantes(colores: readonly string[], presenciaRelevante: ReadonlySet<string> = new Set()): string[] {
   const elegidos: string[] = [];
   let tonos = 0;
   for (const color of colores) {
@@ -316,7 +318,7 @@ function seleccionarDominantes(colores: readonly string[]): string[] {
     const sustituto = colorDeCompraSinVenta(color);
     const sinCupo = color === TRANSPARENTE || Boolean(sustituto && colores.includes(sustituto));
     if (!sinCupo) {
-      if (tonos === MAX_COLORES_REFERENCIA) continue;
+      if (tonos >= MAX_COLORES_REFERENCIA && !presenciaRelevante.has(color)) continue;
       tonos += 1;
     }
     elegidos.push(color);
@@ -325,7 +327,12 @@ function seleccionarDominantes(colores: readonly string[]): string[] {
 }
 
 export function coloresDominantesReferencia(apariencia: AparienciaColor | readonly string[]): string[] {
-  return seleccionarDominantes(coloresNombradosOrdenados(aparienciaDe(apariencia)));
+  const entrada = aparienciaDe(apariencia);
+  const nombrados = coloresNombradosOrdenados(entrada);
+  const presenciaRelevante = new Set((entrada.measured_colors ?? [])
+    .filter((medido) => medido.share >= PRESENCIA_RELEVANTE && nombrados.includes(medido.color))
+    .map((medido) => medido.color));
+  return seleccionarDominantes(nombrados, presenciaRelevante);
 }
 
 /**

@@ -74,6 +74,13 @@
                 "hex": {
                   "type": "string",
                   "pattern": "^#[0-9a-f]{6}$"
+                },
+                "apariencia": {
+                  "type": "string",
+                  "enum": [
+                    "burbuja",
+                    "burbuja_confeti"
+                  ]
                 }
               },
               "required": [

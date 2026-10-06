@@ -49,6 +49,10 @@ export type InstanciaGuia = {
   caja: ReferenceBBox;
   /** De dónde salió la caja: la foto de referencia o la geometría del plan. */
   fuente: "foto" | "plan";
+  /** La caja original alcanza el borde superior: guía vertical orgánica puede seguir hasta ese borde. */
+  toca_techo?: boolean;
+  /** La pieza es orgánica; clásico conserva encaje proporcional sin cambios. */
+  organica?: boolean;
   /** La copia derecha de una pieza repetida se dibuja en espejo, como se monta un par. */
   espejo: boolean;
   apoyo: ApoyoGuia;
@@ -142,6 +146,8 @@ export function instanciasDeEscena(estructuras: readonly EstructuraPlan[], foto:
         instancia: indice + 1,
         caja,
         fuente: indice < deLaFoto.length ? "foto" : "plan",
+        toca_techo: indice < deLaFoto.length && caja.y <= 0.025,
+        organica: estructura.tipo === "columna" && estructura.mezcla === "organica_fina",
         espejo: espejoDeInstancia(estructura, n, caja),
         apoyo: elemento && aroColgadoEnLaFoto(elemento) ? "pared" : apoyoDe(estructura),
       });
@@ -408,7 +414,8 @@ export function encaje(pieza: Pick<PiezaGuiaEscena, "ancho_m" | "alto_m" | "elev
 
 // --- Lo que se ve sin ser globo: trazos y rellenos de la pieza --------------------------------------------------
 
-type DiscoPx = { tipo: "disco"; x: number; y: number; r: number; hex: string };
+type AparienciaDisco = PiezaGuiaEscena["discos"][number]["apariencia"];
+type DiscoPx = { tipo: "disco"; x: number; y: number; r: number; hex: string; apariencia: AparienciaDisco };
 type TrazoPx =
   | { tipo: "linea"; x1: number; y1: number; x2: number; y2: number; grosor: number; hex: string }
   | { tipo: "arco"; cx: number; cy: number; r: number; desde: number; hasta: number; grosor: number; hex: string };
@@ -505,11 +512,31 @@ export function svgGuiaEscena(piezas: readonly PiezaGuiaEscena[], instancias: re
     const cajaAlto = instancia.caja.height * alto;
     const { escala, base } = encaje(pieza, instancia.apoyo, { x: cajaX, y: cajaY, ancho: cajaAncho, alto: cajaAlto });
     const centro = cajaX + cajaAncho / 2;
-    const t: Transformacion = { x: (xM) => centro + (instancia.espejo ? -xM : xM) * escala, y: (yM) => base - yM * escala, escala, espejo: instancia.espejo };
+    let escalaY = escala;
+    let baseY = base;
+    if (instancia.organica && instancia.toca_techo && instancia.apoyo === "piso" && pieza.discos.length) {
+      const extension = (factor: number) => {
+        const top = Math.max(...pieza.discos.map((disco) => disco.y_m * factor + disco.r_m * escala));
+        const bottom = Math.min(...pieza.discos.map((disco) => disco.y_m * factor - disco.r_m * escala));
+        return { alto: top - bottom, bottom };
+      };
+      const objetivo = Math.max(0, base - cajaY);
+      let bajo = escala;
+      let altoY = Math.max(escala * 2, pieza.alto_m > 0 ? (objetivo + escala) / pieza.alto_m : escala * 2);
+      while (extension(altoY).alto < objetivo && altoY < escala * 100) altoY *= 2;
+      for (let paso = 0; paso < 32; paso += 1) {
+        const medio = (bajo + altoY) / 2;
+        if (extension(medio).alto < objetivo) bajo = medio;
+        else altoY = medio;
+      }
+      escalaY = altoY;
+      baseY = base + extension(escalaY).bottom;
+    }
+    const t: Transformacion = { x: (xM) => centro + (instancia.espejo ? -xM : xM) * escala, y: (yM) => baseY - yM * escalaY, escala, espejo: instancia.espejo };
     for (const relleno of pieza.rellenos ?? []) pintables.push(rellenoEnPx(relleno, t));
     for (const trazo of pieza.trazos ?? []) pintables.push(trazoEnPx(trazo, t, grosorTrazoMinimo));
     for (const disco of pieza.discos) {
-      pintables.push({ tipo: "disco", x: t.x(disco.x_m), y: t.y(disco.y_m), r: Math.max(0.5, disco.r_m * escala), hex: conHex(disco.hex) });
+      pintables.push({ tipo: "disco", x: t.x(disco.x_m), y: t.y(disco.y_m), r: Math.max(0.5, disco.r_m * escala), hex: conHex(disco.hex), apariencia: disco.apariencia });
     }
   }
   const colores = fondoDeEscena(pintables.filter((item) => item.tipo === "disco" || item.tipo === "elipse" || item.tipo === "poligono").map((item) => item.hex));
@@ -527,7 +554,21 @@ export function svgGuiaEscena(piezas: readonly PiezaGuiaEscena[], instancias: re
     if (item.tipo === "disco") {
       // El borde va por dentro: el disco conserva su radio exterior.
       const grosor = Math.min(grosorBase, item.r * 0.3);
-      partes.push(`<circle cx="${redondear(item.x)}" cy="${redondear(item.y)}" r="${redondear(item.r - grosor / 2)}" fill="${item.hex}" stroke="${bordeDe(item.hex)}" stroke-width="${redondear(grosor)}"/>`);
+      if (item.apariencia) {
+        const cx = redondear(item.x);
+        const cy = redondear(item.y);
+        const radio = redondear(item.r - grosor / 2);
+        partes.push(`<circle cx="${cx}" cy="${cy}" r="${radio}" fill="${item.hex}" fill-opacity="0.12" stroke="#ffffff" stroke-opacity="0.94" stroke-width="${redondear(Math.max(grosor, item.r * 0.08))}"/>`);
+        partes.push(`<circle cx="${cx}" cy="${cy}" r="${redondear(radio * 0.82)}" fill="none" stroke="${bordeDe(item.hex)}" stroke-opacity="0.62" stroke-width="${redondear(Math.max(grosor * 0.55, item.r * 0.025))}"/>`);
+        if (item.apariencia === "burbuja_confeti") {
+          const puntos: ReadonlyArray<readonly [number, number, number]> = [[-0.34, -0.12, 0.055], [-0.08, -0.28, 0.04], [0.2, -0.16, 0.06], [0.31, 0.08, 0.045], [0.05, 0.22, 0.055], [-0.24, 0.2, 0.04]];
+          for (const [dx, dy, escala] of puntos) {
+            partes.push(`<circle cx="${redondear(item.x + item.r * dx)}" cy="${redondear(item.y + item.r * dy)}" r="${redondear(Math.max(1, item.r * escala))}" fill="${item.hex}" stroke="#ffffff" stroke-opacity="0.9" stroke-width="${redondear(Math.max(0.7, item.r * 0.018))}"/>`);
+          }
+        }
+      } else {
+        partes.push(`<circle cx="${redondear(item.x)}" cy="${redondear(item.y)}" r="${redondear(item.r - grosor / 2)}" fill="${item.hex}" stroke="${bordeDe(item.hex)}" stroke-width="${redondear(grosor)}"/>`);
+      }
     } else if (item.tipo === "elipse" || item.tipo === "poligono") {
       partes.push(svgDeRelleno(item, bordeDe(item.hex), grosorBase));
     } else {

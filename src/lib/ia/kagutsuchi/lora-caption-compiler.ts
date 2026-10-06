@@ -11,7 +11,7 @@ import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separa
 import { limpiarTextoBase } from "./texto-base";
 import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
 
-export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.8-perceptual-catalog-color" as const;
+export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.9-perceptual-color-organic-column" as const;
 
 /** Límite común de texto que mantiene primero la decoración. */
 export const LORA_PROMPT_MAX_LENGTH = 1000;
@@ -676,7 +676,9 @@ function createClause(
   return {
     elementIds,
     structureType: first.semantics.structure_type,
-    noun: STRUCTURE_NOUNS[first.semantics.structure_type],
+    noun: first.semantics.structure_type === "columna" && items.some((item) => /\borg[aá]nic[oa]/i.test(item.element.name))
+      ? "organic balloon cluster arrangement"
+      : STRUCTURE_NOUNS[first.semantics.structure_type],
     count: items.length,
     ...(globosCentro !== undefined ? { globosCentro } : {}),
     colors: uniqueEnglish(items.flatMap((item) => item.element.resolved_colors), translateLoraColor),
@@ -1056,7 +1058,8 @@ function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderSta
   const entries = clause.canonicalEntries ?? [];
   const parts = clause.canonicalPhrase && entries.length ? baseMaterialParts(entries, render) : undefined;
   const official = clause.officialStructure?.sustantivoEn;
-  const baseNoun = sustantivoCentroContado(clause) ?? official ?? SUSTANTIVOS_ESTRUCTURA_BASE[clause.structureType as keyof typeof SUSTANTIVOS_ESTRUCTURA_BASE] ?? clause.noun;
+  const organicColumn = clause.structureType === "columna" && clause.officialStructure?.id === "columna_asimetrica";
+  const baseNoun = sustantivoCentroContado(clause) ?? (organicColumn ? "organic balloon column" : official ?? SUSTANTIVOS_ESTRUCTURA_BASE[clause.structureType as keyof typeof SUSTANTIVOS_ESTRUCTURA_BASE] ?? clause.noun);
   // A product that is itself the piece (a foil banner, a printed mural) names the clause.
   const productIsThePiece = Boolean(parts && !parts.balloons.length && parts.pieces.length && !clause.officialStructure && ["kit", "accesorio"].includes(clause.structureType));
   const sizedNoun = clause.heightQualifier ? `${clause.heightQualifier} ${baseNoun}` : baseNoun;
@@ -1081,7 +1084,8 @@ function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderSta
     ? renderedCount === 1 ? descriptor : `${numberWord(renderedCount)} ${descriptor}`
     : renderedCount === 1 ? `${article} ${noun}` : `${numberWord(renderedCount)} ${pluralize(noun)}`;
   // Python's pattern phrase follows the material, verbatim (ADR-0028 §12).
-  const colored = [core, material, clause.colorPattern].filter(Boolean).join(" ");
+  const shapeCue = organicColumn ? "with an uneven, deep silhouette and large balloons interspersed among small cluster fillers" : "";
+  const colored = [core, material, clause.colorPattern, shapeCue].filter(Boolean).join(" ");
   // The same shape fixes the scene dialect learned: a lone side piece stands
   // apart from the focal arch, a half-arch elsewhere keeps its one-sided
   // shape, a garland without an assembly runs along its surface instead of

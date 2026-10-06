@@ -6,7 +6,7 @@
  * Run: npx tsx --conditions=react-server scripts/test/test-orden-color-pie.ts
  */
 import assert from "node:assert/strict";
-import { ordenDesdeElPie } from "@/lib/ia/amaterasu/orden-color-pie";
+import { mezclaVerticalMedida, ordenDesdeElPie } from "@/lib/ia/amaterasu/orden-color-pie";
 
 const p = (color: string, participacion: number) => ({ color, participacion });
 
@@ -30,5 +30,13 @@ assert.deepEqual(ordenDesdeElPie(["azul", "blanco", "dorado"], [p("dorado", 0.6)
 
 // Un solo color: nada que ordenar.
 assert.equal(ordenDesdeElPie(["rosado"], [p("rosado", 1)], [p("rosado", 1)]), null);
+
+// Five vertical bands show the same mixed palette: measured evidence rejects the model's "blocks" label.
+assert.equal(mezclaVerticalMedida(["rosado", "plateado", "blanco"], Array.from({ length: 5 }, () => [p("rosado", 0.4), p("plateado", 0.35), p("blanco", 0.25)])), true);
+
+// Colors confined to separate consecutive bands remain blocks.
+assert.equal(mezclaVerticalMedida(["rosado", "plateado"], [
+  [p("rosado", 1)], [p("rosado", 1)], [p("plateado", 1)], [p("plateado", 1)], [p("plateado", 1)],
+]), false);
 
 console.log("test-orden-color-pie: OK");

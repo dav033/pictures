@@ -55,6 +55,20 @@ function repartoEnPatron(colores: readonly string[], franja: readonly Participac
   return total > 0 ? reparto.map((valor) => valor / total) : reparto;
 }
 
+/** True when measured palette repeats with similar shares across the piece's vertical bands. */
+export function mezclaVerticalMedida(colores: readonly string[], franjas: readonly (readonly ParticipacionColor[])[]): boolean {
+  if (colores.length < 2 || franjas.length < 4) return false;
+  const repartos = franjas.map((franja) => repartoEnPatron(colores, franja));
+  const medias = colores.map((_color, indice) => repartos.reduce((suma, reparto) => suma + reparto[indice]!, 0) / repartos.length);
+  const activos = medias.map((media, indice) => ({ media, indice })).filter(({ media }) => media >= 0.08);
+  if (activos.length < 2) return false;
+  return activos.every(({ media, indice }) => {
+    const presencia = repartos.filter((reparto) => reparto[indice]! >= Math.max(0.04, media * 0.35)).length;
+    const desviacion = repartos.reduce((suma, reparto) => suma + Math.abs(reparto[indice]! - media), 0) / repartos.length;
+    return presencia >= Math.ceil(repartos.length * 0.7) && desviacion <= 0.18;
+  });
+}
+
 /**
  * La permutación de `colores` del pie a la punta (índices en el orden nuevo), o `null` si los píxeles no dan una
  * señal clara o el orden ya es ese. `abajo` y `arriba` son las dominancias medidas en las dos franjas.

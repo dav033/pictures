@@ -1,6 +1,6 @@
 import { medirDominanciaColor, medirDominanciaElemento, type MuestraPixeles } from "@/lib/plan/dominancia-color";
 import { decodificarPixeles, proporcionDeImagen } from "./decodificar-pixeles";
-import { ordenDesdeElPie } from "./orden-color-pie";
+import { mezclaVerticalMedida, ordenDesdeElPie } from "./orden-color-pie";
 import { equilibrarMuestra } from "@/lib/plan/balance-blancos";
 import { coloresNombradosReferencia } from "@/lib/plan/colores-referencia";
 import { zonaDeCroquis } from "@/lib/plan/croquis-zona";
@@ -133,6 +133,7 @@ const TIPOS_VERTICALES = new Set(["columna", "semiarco"]);
 const MODOS_CON_ORDEN = new Set(["bloques", "degradado"]);
 /** Alto de cada franja (abajo y arriba) en fracción de la caja de la pieza. */
 const FRANJA = 0.35;
+const BANDAS_PATRON = 5;
 
 /**
  * El `patron_color` de una columna o un semiarco con sus colores del pie a la punta, si los píxeles lo dicen
@@ -140,8 +141,19 @@ const FRANJA = 0.35;
  */
 function patronDesdeElPie(elemento: ReferenceBlueprintV2["elements"][number], muestra: MuestraPixeles): { patron_color?: NonNullable<ReferenceBlueprintV2["elements"][number]["appearance"]["patron_color"]> } {
   const patron = elemento.appearance.patron_color;
-  if (!patron || !MODOS_CON_ORDEN.has(patron.modo) || !TIPOS_VERTICALES.has(elemento.visual_semantics?.structure_type ?? "")) return {};
+  if (!patron || !TIPOS_VERTICALES.has(elemento.visual_semantics?.structure_type ?? "")) return {};
   const caja = elemento.reference_bbox;
+  if (patron.modo === "bloques" && patron.colores.length > 1) {
+    const franjas = Array.from({ length: BANDAS_PATRON }, (_unused, indice) => medirDominanciaColor(muestra, {
+      ...caja,
+      y: caja.y + (caja.height * indice) / BANDAS_PATRON,
+      height: caja.height / BANDAS_PATRON,
+    }).dominantes);
+    if (mezclaVerticalMedida(patron.colores, franjas)) {
+      return { patron_color: { ...patron, modo: "aleatorio" } };
+    }
+  }
+  if (!MODOS_CON_ORDEN.has(patron.modo)) return {};
   const abajo = medirDominanciaColor(muestra, { ...caja, y: caja.y + caja.height * (1 - FRANJA), height: caja.height * FRANJA }).dominantes;
   const arriba = medirDominanciaColor(muestra, { ...caja, height: caja.height * FRANJA }).dominantes;
   const orden = ordenDesdeElPie(patron.colores, abajo, arriba);

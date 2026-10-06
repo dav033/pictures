@@ -28,6 +28,7 @@ from app.guia_escena import (
     HEX_PALETA,
     MAX_DISCOS,
     PlanGuiaEscenaRequest,
+    _globos_de_lista,
     guia_escena,
     hex_del_material,
 )
@@ -343,6 +344,19 @@ def test_el_endpoint_devuelve_los_discos_de_cada_pieza(plan_motores: dict[str, o
     payload = cast(dict[str, Any], body["payload"])
     assert payload["operation_schema_version"] == "plan-guia-escena-result.v1"
     assert payload == guia_escena(_peticion(plan_motores))
+
+
+def test_el_motor_publica_apariencia_de_burbuja_transparente_y_confeti() -> None:
+    globos = _globos_de_lista(
+        [
+            {"x": 0, "y": 0.2, "r": 0.2, "material": 0, "acabado": "transparente"},
+            {"x": 0.4, "y": 0.2, "r": 0.2, "material": 0, "acabado": "confeti"},
+            {"x": 0.8, "y": 0.2, "r": 0.2, "material": 0, "acabado": "mate"},
+        ],
+        ["#ffffff"],
+    )
+
+    assert [globo.apariencia for globo in globos] == ["burbuja", "burbuja_confeti", None]
 
 
 def test_el_endpoint_exige_firma_y_su_propio_scope(plan_motores: dict[str, object]) -> None:
