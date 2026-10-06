@@ -3,7 +3,7 @@ import { Calculator, GraduationCap, ShoppingBag, UserRound } from "lucide-react"
 export const OPCIONES_GUIADAS = [
   { id: "costear", titulo: "Costear materiales", detalle: "Cuánto cuestan los globos", Icono: Calculator },
   { id: "comprar", titulo: "Comprar", detalle: "En línea o en un distribuidor", Icono: ShoppingBag },
-  { id: "aprender", titulo: "Aprender a hacerla", detalle: "Paso a paso", Icono: GraduationCap },
+  { id: "aprender", titulo: "Aprender a hacerlo", detalle: "Paso a paso", Icono: GraduationCap },
   { id: "contratar", titulo: "Contratar un decorador", detalle: "Expertos cerca de ti", Icono: UserRound },
 ] as const;
 

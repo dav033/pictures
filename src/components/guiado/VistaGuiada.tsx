@@ -24,6 +24,8 @@ import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
 import { ESTRUCTURAS_OFICIALES } from "@/lib/plan/estructuras-oficiales";
 import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
+import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
+import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 
 /**
  * Lo que el asistente muestra además de su texto. Cada pieza va PEGADA al mensaje que la trajo, en el orden de la
@@ -31,7 +33,7 @@ import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
  * asistente están activas; las anteriores quedan como historia (la idea elegida, el precio que salió…).
  */
 type Widget = WidgetGuiado;
-const ReferenciaSchema = z.object({ frase: z.string(), aspecto: z.number().positive().optional(), piezas: z.array(z.object({ x: z.number(), y: z.number(), ancho: z.number(), alto: z.number() }).strict()), colores: z.array(z.object({ nombre: z.string(), hex: z.string() }).strict()) }).strict();
+const ReferenciaSchema = z.object({ blueprint: ReferenceBlueprintV2Schema, frase: z.string(), aspecto: z.number().positive().optional(), piezas: z.array(z.object({ x: z.number(), y: z.number(), ancho: z.number(), alto: z.number() }).strict()), colores: z.array(z.object({ nombre: z.string(), hex: z.string() }).strict()) }).strict();
 const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetGuiadoSchema).optional(), miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional(), referencia: ReferenciaSchema.optional(), notaFoto: z.string().optional() }).strict();
 type Mensaje = z.infer<typeof MensajeSchema>;
 type BriefGuiado = { evento?: string; edad?: number; tematica?: string };
@@ -79,12 +81,14 @@ export function VistaGuiada() {
   const [uso, setUso] = useState<Uso | null>(null);
   const [imagenCargando, setImagenCargando] = useState(false);
   const [foto, setFoto] = useState<File | null>(null);
+  const [fotoReferencia, setFotoReferencia] = useState<{ base64: string; mime: string } | null>(null);
   // Hasta hidratar, un clic o una tecla se pierden sin aviso (pasaba en la demo con el servidor recién arrancado): se muestran
   // desactivados y se activan solos al quedar lista la página.
   const hidratado = useSyncExternalStore(suscribirNada, () => true, () => false);
   const entradaRef = useRef<HTMLInputElement>(null);
   const finRef = useRef<HTMLDivElement>(null);
   const turnoRef = useRef(0);
+  const fotosDePlanesRef = useRef(new Map<string, { base64: string; mime: string }>());
 
   const indiceActivo = useMemo(() => {
     for (let indice = mensajes.length - 1; indice >= 0; indice -= 1) if (mensajes[indice]!.role === "assistant") return indice;
@@ -123,7 +127,7 @@ export function VistaGuiada() {
 
   const vaciar = useCallback(() => {
     turnoRef.current += 1;
-    setMensajes([]); setBrief({}); setSeleccionada(null); setUso(null); setFoto(null); setCargando(false); setError(null);
+    setMensajes([]); setBrief({}); setSeleccionada(null); setUso(null); setFoto(null); setFotoReferencia(null); fotosDePlanesRef.current.clear(); setCargando(false); setError(null);
     try { sessionStorage.removeItem(CLAVE_SESION); } catch (cause) { console.warn("[asistente-guiado] no se pudo limpiar la sesión.", cause); }
   }, []);
 
@@ -144,6 +148,7 @@ export function VistaGuiada() {
       .catch((cause: unknown) => console.warn("[asistente-guiado] no se pudo crear la miniatura de la foto.", cause));
     try {
       const imagen = foto ? await leerFoto(foto) : null;
+      if (imagen) setFotoReferencia(imagen);
       const analisisFoto = imagen ? fetch("/api/references/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [imagen] }) })
         .then(async (respuesta) => {
           if (!respuesta.ok) throw new Error("No se pudo analizar la foto.");
@@ -234,7 +239,7 @@ export function VistaGuiada() {
     setMensajes(visibles); setCargando(true); setError(null);
     const turno = ++turnoRef.current;
     try {
-      const respuesta = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "chat.v1", messages: [...historial, { role: "user", content: instruccion }].slice(-16), brief: { tipo_evento: brief.evento, colores: propuesta.colores, estilo: brief.tematica } }) });
+      const respuesta = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "chat.v1", messages: historial.slice(-16), brief: { tipo_evento: brief.evento, colores: propuesta.colores, estilo: brief.tematica } }) });
       if (!respuesta.ok || !respuesta.body) throw new Error("No pude preparar el plan. Inténtalo otra vez.");
       const reader = respuesta.body.getReader(); const decoder = new TextDecoder(); let buffer = ""; let plan: unknown; let cotizacion: unknown;
       while (true) {
@@ -251,7 +256,8 @@ export function VistaGuiada() {
       const validado = PlanGuiadoSchema.safeParse(plan);
       if (!validado.success) throw new Error("El plan no llegó completo. Podemos intentarlo de nuevo.");
       const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacion);
-      setMensajes((actuales) => [...actuales.slice(0, -1), { id: nuevoId(), role: "assistant", content: "Listo. Este es tu plan; puedes costear, comprar, aprender o ver cómo quedaría.", widgets: [{ tipo: "plan", plan: validado.data, ...(precio.success ? { cotizacion: precio.data } : {}) }] }]);
+      const armado = generarPasosPlan(validado.data);
+      setMensajes((actuales) => [...actuales.slice(0, -1), { id: nuevoId(), role: "assistant", content: "Listo. Este es tu plan; puedes costear, comprar, aprender a hacerlo o ver cómo quedaría.", widgets: [{ tipo: "plan", plan: validado.data, pasos: armado.pasos, ...(precio.success ? { cotizacion: precio.data } : {}) }] }]);
     } catch (cause) {
       console.error("[asistente-guiado] no se pudo preparar el plan", cause);
       setError(cause instanceof Error ? cause.message : "No pude preparar el plan.");
@@ -259,12 +265,48 @@ export function VistaGuiada() {
     } finally { if (turno === turnoRef.current) setCargando(false); }
   }, [brief, cargando, mensajes]);
 
-  const verComoQuedaria = useCallback(async (plan: z.infer<typeof PlanGuiadoSchema>, mensajeId: string) => {
+  const aceptarPlanFoto = useCallback(async (referencia: z.infer<typeof ReferenceBlueprintV2Schema>) => {
+    if (cargando) return;
+    const instruccion = "Sí, armémoslo. Prepara el plan para reproducir las piezas de globos aprobadas en la foto y sus colores. Usa la lectura de referencia para resolverlo con Python.";
+    const historial = prepararHistorialGuiado(mensajes, instruccion);
+    setMensajes((actuales) => [...actuales, { id: nuevoId(), role: "user", content: "Sí, armémoslo." }, { id: nuevoId(), role: "assistant", content: "Estoy preparando el plan de tu foto…" }]);
+    setCargando(true); setError(null);
+    const turno = ++turnoRef.current;
+    try {
+      const respuesta = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "chat.v1", messages: historial.slice(-16), brief: { tipo_evento: brief.evento, estilo: brief.tematica }, ...(fotoReferencia ? { imagenesReferencia: [fotoReferencia] } : {}), referenceBlueprint: referencia }) });
+      if (!respuesta.ok || !respuesta.body) throw new Error("No pude resolver el plan de la foto. Inténtalo otra vez.");
+      const reader = respuesta.body.getReader(); const decoder = new TextDecoder(); let buffer = ""; let plan: unknown; let cotizacion: unknown;
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break;
+        buffer += decoder.decode(value, { stream: true }); const paquetes = buffer.split("\n\n"); buffer = paquetes.pop() ?? "";
+        for (const paquete of paquetes) {
+          const linea = paquete.split("\n").find((item) => item.startsWith("data: ")); if (!linea) continue;
+          const evento = ChatSseEventV1Schema.parse(JSON.parse(linea.slice(6)) as unknown);
+          if (evento.type === "error") throw new Error(evento.error);
+          if (evento.type === "fin") { plan = evento.plan; cotizacion = evento.cotizacion; }
+        }
+      }
+      if (turno !== turnoRef.current) return;
+      const validado = PlanGuiadoSchema.safeParse(plan);
+      if (!validado.success) throw new Error("El plan de la foto no llegó completo. Podemos intentarlo de nuevo.");
+      const armado = generarPasosPlan(validado.data);
+      const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacion);
+      if (fotoReferencia) fotosDePlanesRef.current.set(validado.data.plan_hash, fotoReferencia);
+      setMensajes((actuales) => [...actuales.slice(0, -1), { id: nuevoId(), role: "assistant", content: "Listo. Aquí tienes el plan de las piezas de globos de tu foto.", widgets: [{ tipo: "plan", plan: validado.data, pasos: armado.pasos, fotoInspiracion: true, ...(precio.success ? { cotizacion: precio.data } : {}) }] }]);
+    } catch (cause) {
+      console.error("[asistente-guiado] no se pudo resolver el plan de la foto", cause);
+      setError(cause instanceof Error ? cause.message : "No pude preparar el plan de la foto.");
+      setMensajes((actuales) => actuales.slice(0, -1));
+    } finally { if (turno === turnoRef.current) setCargando(false); }
+  }, [brief, cargando, fotoReferencia, mensajes]);
+
+  const verComoQuedaria = useCallback(async (plan: z.infer<typeof PlanGuiadoSchema>, mensajeId: string, usarFotoInspiracion = false) => {
     if (imagenCargando) return;
     setImagenCargando(true); setError(null);
     setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, content: "Estoy dibujando tu decoración, tarda unos segundos…" } : mensaje));
     try {
-      const respuesta = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan, planHash: plan.plan_hash, brief: { tipo_evento: brief.evento, colores: plan.plan.concepto.paleta, estilo: brief.tematica }, solicitudUsuario: plan.plan.concepto.descripcion }) });
+      const imagenReferencia = usarFotoInspiracion ? fotosDePlanesRef.current.get(plan.plan_hash) : undefined;
+      const respuesta = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan, planHash: plan.plan_hash, brief: { tipo_evento: brief.evento, colores: plan.plan.concepto.paleta, estilo: brief.tematica }, solicitudUsuario: plan.plan.concepto.descripcion, ...(imagenReferencia ? { imagenesReferencia: [imagenReferencia] } : {}) }) });
       if (!respuesta.ok) throw new Error("No pude generar la imagen. Puedes reintentar.");
       const cuerpo: unknown = await respuesta.json();
       const salida = z.object({ imagen: z.string().regex(/^data:image\/(?:png|jpeg|webp);base64,/), plan: PlanGuiadoSchema }).passthrough().parse(cuerpo);
@@ -304,7 +346,7 @@ export function VistaGuiada() {
       contratar: "Quiero contratar un decorador cerca de mí.",
       costear: "Quiero saber cuánto cuestan los materiales.",
       comprar: "Quiero saber dónde comprar los materiales.",
-      aprender: seleccionada ? `Quiero aprender a hacer «${seleccionada.titulo}» paso a paso.` : "Quiero aprender a hacerla paso a paso.",
+      aprender: seleccionada ? `Quiero aprender a hacerlo: armar «${seleccionada.titulo}» paso a paso.` : "Quiero aprender a hacerlo paso a paso.",
     };
     void enviar(textos[opcion]);
   }
@@ -339,6 +381,8 @@ export function VistaGuiada() {
         return <CostosMateriales key={clave} cotizacion={widget.cotizacion} uso={widget.uso} clave={`guiado-${widget.decoracion.id}`} mensajePendiente="Todavía no tengo el precio de estos materiales. Puedo buscarte un proveedor cerca." onProveedores={() => void enviar("Busca proveedores cerca de mí para cotizar los materiales.")} />;
       case "pasos":
         return <PasoAPaso key={clave} decoracion={widget.decoracion} />;
+      case "pasos-plan":
+        return <section key={clave} className="mt-4 rounded-2xl border border-borde-suave bg-superficie p-5 shadow-sm" aria-label="Guía paso a paso del plan"><h3 className="font-semibold">Aprender a hacerlo</h3><ol className="mt-4 space-y-4">{widget.pasos.map((paso) => <li key={paso.orden} className="flex gap-3 text-sm leading-6"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-acento text-xs font-bold text-white">{paso.orden}</span><span className="pt-0.5">{paso.texto}{paso.globos && <span className="mt-1 block text-xs text-texto-secundario">Globos: {paso.globos}</span>}</span></li>)}</ol></section>;
       case "proveedores":
         return <TarjetasProveedores key={clave} proveedores={widget.proveedores} activo={activo && !cargando} onSolicitar={solicitarProveedor} />;
       case "comprar":
@@ -353,13 +397,17 @@ export function VistaGuiada() {
         </article>;
       case "plan": {
         const piezas = widget.plan.plan.estructuras;
-        const globos = widget.plan.estructuras.flatMap((estructura) => estructura.lineas).reduce((suma, linea) => suma + (typeof linea.unidades === "number" ? linea.unidades : 0), 0);
-        const colores = [...new Set(widget.plan.plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.color).filter((color): color is string => Boolean(color))))];
+        const desglose = generarPasosPlan(widget.plan);
+        const pasos = widget.pasos ?? desglose.pasos;
+        const cantidadPiezas = piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0);
+        const colores = [...new Set(desglose.globos.map((globo) => globo.color))];
         return <article key={clave} className="mt-3 rounded-2xl border border-borde-suave bg-superficie p-4 shadow-sm"><h3 className="font-semibold">Tu plan</h3>
+          <p className="mt-2 text-sm">{cantidadPiezas} {cantidadPiezas === 1 ? "pieza" : "piezas"}: {piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} ` : ""}${pieza.nombre}`).join(", ")}</p>
           <ul className="mt-3 space-y-2">{piezas.map((pieza) => <li key={pieza.estructura_id} className="text-sm"><span className="font-medium">{pieza.nombre}</span>{pieza.medidas.ancho_m && pieza.medidas.alto_m ? ` · ${pieza.medidas.ancho_m} por ${pieza.medidas.alto_m} metros` : ""}</li>)}</ul>
-          <p className="mt-3 text-sm">{globos ? `Aproximadamente ${globos} globos` : "Globos según medidas del espacio"}{colores.length ? ` · ${colores.join(", ")}` : ""}</p>
+          <p className="mt-3 text-sm font-medium">${desglose.total} globos en total</p>
+          <ul className="mt-1 space-y-1 text-sm text-texto-secundario">{desglose.globos.map((globo) => <li key={`${globo.color}-${globo.tamano}`}>{globo.cantidad} globos {globo.color} de {globo.tamano}</li>)}</ul>
           {widget.imagen && <div className="mt-4"><img src={widget.imagen} alt="Imagen referencial generada con IA" className="w-full rounded-xl"/><p className="mt-2 text-xs text-texto-secundario">Imagen referencial generada con IA</p></div>}
-          {activo && <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={imagenCargando} onClick={() => void verComoQuedaria(widget.plan, mensajeId)} className="rounded-xl bg-acento px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{imagenCargando ? "Dibujando…" : widget.errorImagen ? "Reintentar imagen" : "Ver cómo quedaría"}</button>{widget.cotizacion && <><button type="button" onClick={() => setUso("personal")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear personal</button><button type="button" onClick={() => setUso("negocio")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear negocio</button></>}<button type="button" onClick={() => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, widgets: (mensaje.widgets ?? []).map((item) => item.tipo === "plan" ? { ...item, compraAbierta: true } : item) } : mensaje))} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Comprar</button><button type="button" onClick={() => void enviar(`Quiero aprender a armar ${piezas.map((pieza) => pieza.nombre).join(", ")} con globos ${colores.join(", ")}.`)} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Aprender</button><button type="button" onClick={() => void enviar(`Quiero contratar un decorador para ${piezas.map((pieza) => pieza.nombre).join(", ")} en ${brief.evento ?? "mi celebración"}.`)} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Contratar decorador</button></div>}
+          {activo && <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={imagenCargando} onClick={() => void verComoQuedaria(widget.plan, mensajeId, widget.fotoInspiracion)} className="rounded-xl bg-acento px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{imagenCargando ? "Dibujando…" : widget.errorImagen ? "Reintentar imagen" : "Ver cómo quedaría"}</button>{widget.cotizacion && <><button type="button" onClick={() => setUso("personal")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear personal</button><button type="button" onClick={() => setUso("negocio")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear negocio</button></>}<button type="button" onClick={() => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, widgets: (mensaje.widgets ?? []).map((item) => item.tipo === "plan" ? { ...item, compraAbierta: true } : item) } : mensaje))} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Comprar</button><button type="button" onClick={() => setMensajes((actuales) => [...actuales, { id: nuevoId(), role: "assistant", content: "Aquí tienes el paso a paso para armar tu plan.", widgets: [{ tipo: "pasos-plan", pasos }] }])} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Aprender a hacerlo</button><button type="button" onClick={() => void enviar(`Quiero contratar un decorador para ${piezas.map((pieza) => pieza.nombre).join(", ")} en ${brief.evento ?? "mi celebración"}.`)} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Contratar decorador</button></div>}
           {widget.compraAbierta && widget.cotizacion && <ComprarMateriales decoracion={decoracionDePlan(widget.plan, widget.cotizacion, brief)} onDistribuidor={() => void enviar(`Busca un distribuidor de Sempertex cerca de mí para ${colores.join(", ")}.`)} />}
           {widget.cotizacion && uso && <CostosMateriales cotizacion={widget.cotizacion} uso={uso} clave={`plan-${widget.plan.plan_hash}`} onProveedores={() => void enviar("Busca un proveedor cerca de mí para cotizar estos materiales.")} mensajePendiente="Todavía no tengo el precio de estos materiales." />}
         </article>;
@@ -385,7 +433,7 @@ export function VistaGuiada() {
                   {/* eslint-disable-next-line @next/next/no-img-element -- miniatura local en data URL */}
                   {mensaje.miniatura && !mensaje.referencia && <img src={mensaje.miniatura} alt="Foto de inspiración enviada" className="h-28 w-auto rounded-2xl border border-borde-suave object-cover shadow-sm" />}
                   <div className="rounded-2xl rounded-br-md bg-acento px-4 py-2.5 text-sm text-white shadow-sm">{mensaje.content}</div>
-                  {mensaje.miniatura && mensaje.referencia && <ReferenciaInspiracion miniatura={mensaje.miniatura} referencia={mensaje.referencia} />}
+                  {mensaje.miniatura && mensaje.referencia && <ReferenciaInspiracion miniatura={mensaje.miniatura} referencia={mensaje.referencia} onArmar={() => void aceptarPlanFoto(mensaje.referencia!.blueprint)} deshabilitado={cargando} />}
                   {mensaje.notaFoto && <p role="status" className="max-w-64 text-xs text-texto-secundario">{mensaje.notaFoto}</p>}
                 </div>
               : <BurbujaAsistente key={mensaje.id}>

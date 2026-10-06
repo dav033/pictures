@@ -1,6 +1,6 @@
 import type { ReferenciaGuiada } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 
-export function ReferenciaInspiracion({ miniatura, referencia }: { miniatura: string; referencia: ReferenciaGuiada }) {
+export function ReferenciaInspiracion({ miniatura, referencia, onArmar, deshabilitado }: { miniatura: string; referencia: ReferenciaGuiada; onArmar: () => void; deshabilitado?: boolean }) {
   return <section aria-label="Lo que veo en tu foto" className="mt-2 w-full max-w-64 overflow-hidden rounded-2xl border border-borde-suave bg-superficie shadow-sm">
     <div className="relative w-full overflow-hidden bg-fondo" style={referencia.aspecto ? { aspectRatio: referencia.aspecto } : undefined}>
       {/* eslint-disable-next-line @next/next/no-img-element -- miniatura local optimizada en el navegador */}
@@ -11,6 +11,7 @@ export function ReferenciaInspiracion({ miniatura, referencia }: { miniatura: st
     </div>
     <div className="space-y-2 p-3">
       <p className="text-sm text-texto">{referencia.frase}</p>
+      <button type="button" disabled={deshabilitado} onClick={onArmar} className="rounded-xl bg-acento px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Sí, armémoslo</button>
       {referencia.colores.length > 0 && <ul aria-label="Colores que veo" className="flex gap-2">
         {referencia.colores.map((color) => <li key={color.nombre}>
           <span role="img" aria-label={color.nombre} title={color.nombre} className="block size-4 rounded-full border border-borde-suave" style={{ backgroundColor: color.hex }} />

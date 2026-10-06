@@ -21,7 +21,7 @@ const raw = {
 
 const referencia = adaptarAnalisisReferencia(raw);
 assert.ok(referencia);
-assert.equal(referencia.frase, "Veo un arco y dos columnas en rosa, plata y blanco.");
+assert.equal(referencia.frase, "Veo un arco y dos columnas en rosa, plata y blanco. ¿Te armo el plan con estas piezas?");
 assert.equal(referencia.piezas.length, 3);
 assert.deepEqual(referencia.piezas[1], { x: 0.6, y: 0.1, ancho: 0.2, alto: 0.7 });
 assert.deepEqual(referencia.colores.map((color) => color.nombre), ["Rosa", "Plata", "Blanco"]);
@@ -31,6 +31,6 @@ console.log("test-adaptar-analisis-referencia-guiada: frase breve, piezas de glo
 // El analizador suele nombrar en inglés (y a veces solo en observed_colors): igual deben salir la frase y los puntos.
 const enIngles = adaptarAnalisisReferencia({ blueprint: { ...raw.blueprint, elements: [{ ...elemento("arco", "arco", 0.1, "chrome pink"), appearance: { ...elemento("arco", "arco", 0.1, "x").appearance, observed_colors: ["chrome pink", "gold", "navy blue"], resolved_colors: [] } }] } });
 assert.ok(enIngles);
-assert.equal(enIngles.frase, "Veo un arco en rosa, dorado y azul.");
+assert.equal(enIngles.frase, "Veo un arco en rosa, dorado y azul. ¿Te armo el plan con estas piezas?");
 assert.deepEqual(enIngles.colores.map((color) => color.nombre), ["Rosa", "Dorado", "Azul"]);
 console.log("test-adaptar-analisis-referencia-guiada: colores en inglés → palabras de cliente");
