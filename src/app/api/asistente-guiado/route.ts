@@ -20,9 +20,9 @@ const herramientas: Herramienta[] = [
   { nombre: "buscar_decoraciones_sempertex", descripcion: "Busca ideas de decoración según evento, edad y temática.", esquema: { type: "object", properties: { evento: { type: "string" }, edad: { type: "integer" }, tematica: { type: "string" } }, required: ["evento", "edad", "tematica"], additionalProperties: false } },
   { nombre: "ofrecer_opciones", descripcion: "Ofrece las cuatro opciones para continuar con una decoración elegida.", esquema: { type: "object", properties: {}, additionalProperties: false } },
   { nombre: "preguntar_uso", descripcion: "Solicita elegir entre negocio y uso personal antes de consultar precios.", esquema: { type: "object", properties: {}, additionalProperties: false } },
-  { nombre: "pasos_decoracion", descripcion: "Consulta los pasos de montaje de la decoración seleccionada.", esquema: { type: "object", properties: { decoracionId: { type: "string" } }, required: ["decoracionId"], additionalProperties: false } },
+  { nombre: "pasos_decoracion", descripcion: "Muestra los pasos de montaje de la decoración que el cliente eligió en la interfaz. No necesita argumentos.", esquema: { type: "object", properties: {}, additionalProperties: false } },
   { nombre: "buscar_proveedores", descripcion: "Busca proveedores de ejemplo visibles en una zona indicada.", esquema: { type: "object", properties: { tipo: { type: "string", enum: ["decorador_happia", "mbp", "distribuidor", "ecommerce"] }, ciudad: { type: "string" } }, required: ["tipo", "ciudad"], additionalProperties: false } },
-  { nombre: "costear_decoracion", descripcion: "Solicita una cotización de materiales solo después de fijar el uso.", esquema: { type: "object", properties: { decoracionId: { type: "string" }, uso: { type: "string", enum: ["negocio", "personal"] } }, required: ["decoracionId", "uso"], additionalProperties: false } },
+  { nombre: "costear_decoracion", descripcion: "Cotiza los materiales de la decoración que el cliente eligió en la interfaz, con el uso que eligió (negocio o personal). No necesita argumentos: el servidor usa lo que el cliente confirmó.", esquema: { type: "object", properties: {}, additionalProperties: false } },
 ];
 
 const ArgsSchema = z.object({ evento: z.string().optional(), edad: z.number().int().optional(), tematica: z.string().optional(), decoracionId: z.string().optional(), tipo: z.enum(["decorador_happia", "mbp", "distribuidor", "ecommerce"]).optional(), ciudad: z.string().optional(), uso: z.enum(["negocio", "personal"]).optional() }).strict();
@@ -94,8 +94,8 @@ export async function POST(request: Request) {
       preguntar_uso: async () => { datos.preguntaUso = true; return { pregunta: "¿Es para tu negocio o para uso personal?" }; },
       pasos_decoracion: async (args: Record<string, unknown>) => {
         const entrada = ArgsSchema.parse(args);
-        const deco = proveedores.find((item) => item.id === entrada.decoracionId);
-        if (!deco) return { ok: false, motivo: "decoracion_no_disponible" };
+        const deco = proveedores.find((item) => item.id === (entrada.decoracionId ?? decoracionConfirmada));
+        if (!deco) return { ok: false, motivo: decoracionConfirmada ? "decoracion_no_disponible" : "falta_que_el_cliente_elija_una_decoracion" };
         datos.pasos = deco.pasos;
         return { pasos: deco.pasos, aviso: deco.origen === "ejemplo" ? deco.aviso : "" };
       },
@@ -106,8 +106,11 @@ export async function POST(request: Request) {
         return { proveedores: encontrados, aviso: "Los registros actuales son ejemplos, no contactos reales." };
       },
       costear_decoracion: async (args: Record<string, unknown>) => {
-        const entrada = ArgsSchema.parse(args);
-        if (!usoConfirmado || entrada.uso !== usoConfirmado || !decoracionCotizableCoincide(decoracionConfirmada, entrada.decoracionId) || !proveedores.some((item) => item.id === entrada.decoracionId)) return { ok: false, motivo: "uso_o_decoracion_no_validado_por_el_cliente" };
+        // La decoración y el uso son los que el cliente eligió con los botones (estadoGuiado): el modelo no ve los
+        // ids internos y adivinarlos hacía fallar el costeo varias veces seguidas. Si aun así manda uno, debe coincidir.
+        const pedida = ArgsSchema.parse(args);
+        const entrada = { decoracionId: pedida.decoracionId ?? decoracionConfirmada, uso: pedida.uso ?? usoConfirmado };
+        if (!usoConfirmado || entrada.uso !== usoConfirmado || !decoracionCotizableCoincide(decoracionConfirmada, entrada.decoracionId) || !proveedores.some((item) => item.id === entrada.decoracionId)) return { ok: false, motivo: !usoConfirmado ? "falta_que_el_cliente_elija_negocio_o_personal" : "uso_o_decoracion_no_validado_por_el_cliente" };
         datos.uso = usoConfirmado;
         const decoracion = proveedores.find((item) => item.id === entrada.decoracionId);
         if (!decoracion || decoracion.materiales.length === 0) {
@@ -125,7 +128,14 @@ export async function POST(request: Request) {
       },
     };
     const registroProtegido = protegerHerramientas(registro);
-    const generador = ejecutarConversacionStream({ chat, sistema: PROMPT_GUIADO, historial, herramientas, registro: registroProtegido, vueltasMax: 8, herramientasSoloLectura: new Set(["buscar_decoraciones_sempertex", "pasos_decoracion", "buscar_proveedores"]), signal: request.signal, telemetria: { flujo: "armador_decoracion", requestId, correlationId: requestId, superficie: "/api/asistente-guiado", promptVersion: "asistente-guiado.v1" } });
+    const elegida = decoracionConfirmada ? proveedores.find((item) => item.id === decoracionConfirmada) : undefined;
+    const estadoConfirmado = [
+      elegida ? `Decoración elegida por el cliente en la interfaz: «${elegida.titulo}».` : "El cliente todavía no eligió una decoración.",
+      usoConfirmado ? `Uso elegido: ${usoConfirmado === "negocio" ? "para su negocio" : "uso personal"}.` : "El cliente todavía no eligió si es para negocio o uso personal.",
+    ].join(" ");
+    const generador = ejecutarConversacionStream({ chat, sistema: `${PROMPT_GUIADO}
+
+Estado confirmado (no lo leas en voz alta): ${estadoConfirmado}`, historial, herramientas, registro: registroProtegido, vueltasMax: 8, herramientasSoloLectura: new Set(["buscar_decoraciones_sempertex", "pasos_decoracion", "buscar_proveedores"]), signal: request.signal, telemetria: { flujo: "armador_decoracion", requestId, correlationId: requestId, superficie: "/api/asistente-guiado", promptVersion: "asistente-guiado.v1" } });
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const encoder = new TextEncoder();

@@ -1,25 +1,39 @@
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import Image from "next/image";
+import { Check } from "lucide-react";
 
-type Props = { decoraciones: DecoracionSempertex[]; onElegir: (decoracion: DecoracionSempertex, gusta: boolean) => void };
+type Props = {
+  decoraciones: DecoracionSempertex[];
+  /** Solo el carrusel del último mensaje se puede elegir; los anteriores quedan como historia. */
+  activo: boolean;
+  elegidaId: string | null;
+  onElegir: (decoracion: DecoracionSempertex) => void;
+  onNinguna: () => void;
+};
 
-export function CarruselDecoraciones({ decoraciones, onElegir }: Props) {
+export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir, onNinguna }: Props) {
   return (
-    <section aria-label="Ideas de decoración" className="mt-3">
-      <div className="mb-3 flex items-baseline justify-between gap-3"><h2 className="text-base font-semibold">Ideas Sempertex</h2><span className="text-xs text-texto-secundario">{decoraciones.every((decoracion) => decoracion.origen === "ejemplo") ? "Contenido de ejemplo" : "Referencias Sempertex"}</span></div>
-      <div className="flex snap-x gap-4 overflow-x-auto pb-3" data-testid="carrusel-decoraciones">
-        {decoraciones.map((decoracion) => (
-          <article key={decoracion.id} className="w-[min(82vw,21rem)] shrink-0 snap-start overflow-hidden rounded-2xl bg-superficie">
-            <div className="relative aspect-[1.52] bg-[#f7f1eb]">
-              <Image src={decoracion.fotos[0]?.url ?? "/biblioteca-sempertex/decoracion-ejemplo.svg"} alt={`${decoracion.origen === "ejemplo" ? "Referencia de ejemplo" : "Foto de referencia Sempertex"}: ${decoracion.titulo}`} fill sizes="(max-width: 640px) 82vw, 336px" unoptimized className="object-cover" />
-              {decoracion.origen === "ejemplo" && <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#6d3c39]">Ejemplo</span>}
-            </div>
-            <div className="p-4"><h3 className="font-semibold">{decoracion.titulo}</h3><p className="mt-1 text-sm text-texto-secundario">{decoracion.tematica}</p><p className="mt-2 text-xs text-texto-secundario">{decoracion.origen === "ejemplo" ? decoracion.aviso : "Referencia Sempertex"}</p>
-              <div className="mt-4 flex gap-2"><button type="button" className="flex-1 rounded-xl bg-acento px-3 py-2.5 text-sm font-semibold text-white" onClick={() => onElegir(decoracion, true)}>Sí, me gusta</button><button type="button" className="flex-1 rounded-xl border border-borde-suave px-3 py-2.5 text-sm font-medium" onClick={() => onElegir(decoracion, false)}>No, ver otra</button></div>
-            </div>
-          </article>
-        ))}
+    <section aria-label="Ideas de decoración" className="mt-4">
+      <div className="-mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-3" data-testid="carrusel-decoraciones">
+        {decoraciones.map((decoracion) => {
+          const elegida = decoracion.id === elegidaId;
+          return (
+            <article key={decoracion.id} className={`w-[min(78vw,17rem)] shrink-0 snap-start overflow-hidden rounded-2xl border bg-superficie shadow-sm transition ${elegida ? "border-acento ring-2 ring-acento/30" : "border-borde-suave"} ${!activo && !elegida ? "opacity-50" : ""}`}>
+              <div className="relative aspect-[4/3] bg-[#f7f1eb]">
+                <Image src={decoracion.fotos[0]?.url ?? "/biblioteca-sempertex/decoracion-ejemplo.svg"} alt={decoracion.titulo} fill sizes="(max-width: 640px) 78vw, 272px" unoptimized className="object-cover" />
+                {decoracion.origen === "ejemplo" && <span className="absolute left-2.5 top-2.5 rounded-full bg-white/90 px-2 py-0.5 text-[0.7rem] font-semibold text-[#6d3c39] shadow-sm">Ejemplo</span>}
+                {elegida && <span className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full bg-acento text-white shadow"><Check className="size-4" aria-label="Elegida" /></span>}
+              </div>
+              <div className="p-4">
+                <h3 className="font-semibold leading-snug">{decoracion.titulo}</h3>
+                <p className="mt-1 line-clamp-2 text-sm text-texto-secundario">{decoracion.tematica}</p>
+                {activo && <button type="button" className="mt-4 w-full rounded-xl bg-acento px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-acento-hover" onClick={() => onElegir(decoracion)}>Me gusta esta</button>}
+              </div>
+            </article>
+          );
+        })}
       </div>
+      {activo && <button type="button" onClick={onNinguna} className="mt-1 text-sm font-medium text-acento underline-offset-4 hover:underline">Ninguna me convence</button>}
     </section>
   );
 }
