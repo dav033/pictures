@@ -92,14 +92,14 @@ function detalleArmado(pieza: Record<string, unknown>): string {
   if (arco && typeof arco === "object") {
     const armado = arco as { patron?: string; capas?: unknown[]; secciones?: unknown[] };
     const detalles = [armado.capas?.length ? `${armado.capas.length} capas` : "capas", armado.secciones?.length ? `${armado.secciones.length} ${armado.secciones.length === 1 ? "sección" : "secciones"} de color` : "secciones de color"];
-    return `Sigue la guía del motor para armar el arco con patrón ${armado.patron ?? "indicado"}; respeta sus ${detalles.join(" y ")}.`;
+    return `Arma el arco siguiendo el dibujo del plan (patrón ${armado.patron ?? "del plan"}); respeta ${detalles.join(" y ")}.`;
   }
   const organic = pieza.armado_arco_organico ?? pieza.armado_columna_organica ?? pieza.armado_guirnalda_organica;
   if (organic && typeof organic === "object") {
     const armado = organic as { volumen?: { racimo?: number }; tamanos?: { mezcla?: Record<string, number> }; corona?: { activa?: boolean } };
     const racimo = armado.volumen?.racimo;
     const tamanos = Object.entries(armado.tamanos?.mezcla ?? {}).filter(([, peso]) => peso > 0).map(([tamano]) => Number(tamano)).filter(Number.isFinite);
-    return [racimo ? `forma racimos de ${racimo} globos según la guía del motor` : "sigue la guía de armado del motor", tamanos?.length ? `usa la mezcla de tamaños indicada (${[...new Set(tamanos)].map((n) => `${n}\"`).join(", ")})` : "respeta los tamaños separados en el paso anterior", armado.corona?.activa ? "coloca la corona que define el plan" : ""]
+    return [racimo ? `forma racimos de ${racimo} globos como en el dibujo del plan` : "sigue el dibujo de armado del plan", tamanos?.length ? `usa la mezcla de tamaños indicada (${[...new Set(tamanos)].map((n) => `${n}\"`).join(", ")})` : "respeta los tamaños separados en el paso anterior", armado.corona?.activa ? "coloca la corona que define el plan" : ""]
       .filter(Boolean).join("; ") + ".";
   }
   const guirnalda = pieza.armado_guirnalda;
@@ -111,7 +111,7 @@ function detalleArmado(pieza: Record<string, unknown>): string {
   if (bouquet && typeof bouquet === "object") {
     const armado = bouquet as { niveles?: Array<{ cantidad?: number; unidad?: string }>; variante?: string };
     const niveles = armado.niveles?.map((nivel) => `${nivel.cantidad} ${nivel.unidad}`).join(", ");
-    return `Arma el bouquet ${armado.variante === "base_aire" ? "con base de aire" : "según la disposición indicada"}${niveles ? `, nivel por nivel (${niveles})` : ""}; añade el remate y los números si aparecen en el plan.`;
+    return `Arma el bouquet ${armado.variante === "base_aire" ? "con base de aire" : "como en el dibujo del plan"}${niveles ? `, de abajo hacia arriba (${niveles.replace(/\b(\d+) trio\b/g, (_, n) => `${n} ${n === "1" ? "grupo" : "grupos"} de 3`)})` : ""}; añade el remate y los números si aparecen en el plan.`;
   }
   return "Arma esta estructura siguiendo la guía de armado que acompaña el plan.";
 }
