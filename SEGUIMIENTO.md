@@ -113,6 +113,13 @@ generador de imagen con Gemini en TS o Python. Gemini se queda solo para analiza
   adversarial previa (3 fallos confirmados, corregidos). Verificado tras el merge: tsc, eslint, edit-referencias, flux-revision,
   ui-error-contract, guia-escena, texto-base, product-runtime; `/api/generate` responde. Sin imagen de control todavía.
 
+- **Etapa 3, superficie C integrada (2026-10-06, merge `1809196`, rama `etapa3-c`)**: sin `lora_variant_ids` ni allowlist de dataset en
+  contratos, Python (`plan.py`, `catalog.py`, `recommendations.py`), adaptador, chat, edición y `/api/generate`; sin cambio de
+  comportamiento (en base ya era null). Revisión adversarial: 2 bloqueantes corregidos (SQL de `fetch_plan_rows` con un placeholder de
+  más → ningún plan se habría resuelto; esquema de vectores dorados). Vector 05 `expected` actualizado a mano (catálogo completo,
+  V-RED-12-UNSEEN, 5000 COP). Verificado tras el merge: tsc, eslint, `contracts:export:domain --check` (36), invariantes-plan (32
+  vectores), ui-error-contract, python-adapter, catalog-allowlist, flux-revision, pytest regresión allowlist + placeholders (5).
+
 ### 3.2 Inventario de lo que queda (mapeado el 2026-10-06)
 Bloqueos o rarezas que siguen corriendo en base:
 - `src/lib/ia/kagutsuchi/lora-prompt-preflight.ts:273-277` rechaza prompts con `Reflex|Fashion|Silk|Crystal|Pastel`, ®/™ o `eventdecor_*`
@@ -211,8 +218,11 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    (rosa bebé) en vez de Palo de Rosa 010; la columna lleva 83/127 (65 %) de «Oro rosa cromado» y FLUX pinta bolas cobre oscuro.
    Hipótesis: H1 la sombra del rosa (#7a443d) se cruza como color propio; H2 los tonos medios del rosa empolvado (#c6a29a, #b47f77)
    caen junto al Dorado Rosa y la dominancia le da casi la mitad; H3 «rosado» elige 609 (los brillos) y no 010, que se midió y nadie
-   usa; H4 el «dorado rosa» de la foto es perla claro, no cromado. En curso: rama `fix/sombra-no-es-color` (worktree `Downloads/e3e`,
-   Codex, tope US$0,20, sin imágenes). Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
+   usa; H4 el «dorado rosa» de la foto es perla claro, no cromado. Rama `fix/sombra-no-es-color` (worktree `Downloads/e3e`):
+   1.ª pasada (US$0,11) confirmó H1 (sombra/café 11,6 % en la columna) y H2 (#b47f77 → 968 Dorado Rosa; ahora 010) y que la caja del
+   semiarco incluía el panel marfil del fondo; la dominancia mide dentro del croquis y solo en tonos nombrados. NO fusionada: la columna
+   pasó a «rosado 100 %» (pierde el crema visible), el semiarco mide crema 69 %/rosado 23 % y 010 se mide pero no se compra (H3). En
+   curso 2.ª pasada (tope US$0,10). Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
    Pendiente aparte: `test-guia-estructura.ts` ya falla en la rama principal (espera `#f2a7c3`, sale `#f8a3bc` en guirnalda-pared).
 3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
 4. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
