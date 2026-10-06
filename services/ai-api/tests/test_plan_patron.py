@@ -89,7 +89,6 @@ class FakePlanStore:
         snapshot_id: str,
         product_ids: Sequence[str],
         variant_ids: Sequence[str],
-        lora_variant_ids: Sequence[str] = (),
     ) -> Sequence[dict[str, object]]:
         return self.rows
 

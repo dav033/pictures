@@ -1,7 +1,7 @@
 /**
  * Invariantes cruzadas del plan sobre TODOS los vectores golden.
  *
- * Los 31 vectores de `contracts/domain/v1/golden/plan-resolution` congelan la
+ * Los 32 vectores de `contracts/domain/v1/golden/plan-resolution` congelan la
  * salida exacta del resolutor, y desde el paso 5 del ADR-0023 quien los recorre
  * comparando conteos es `services/ai-api/tests/test_plan_regresion.py`, en
  * Python. Pero un valor congelado sólo dice "esto no cambió", no "esto cuadra",
@@ -365,7 +365,7 @@ async function invarianteColorPrompt(vector: GoldenVector, plan: PlanResuelto, e
 
 async function main(): Promise<void> {
   const vectores = loadVectors();
-  if (vectores.length === 0) throw new Error("No hay vectores golden que comprobar");
+  if (vectores.length !== 32) throw new Error(`loadVectors debe cargar 32 vectores golden; cargó ${vectores.length}`);
 
   const errores: string[] = [];
   let omitidas = 0;

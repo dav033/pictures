@@ -259,26 +259,8 @@ async function main(): Promise<void> {
   assert.equal(llamadasVacia.length, 0);
   console.log("[PASS] allowlist sin entradas falla cerrado con NO_MATCH y 0 llamadas a Python");
 
-  // --- resolverPlan: LoRA without variants fails closed before fetch.
   const fixture = JSON.parse(readFileSync(join(process.cwd(), "contracts", "domain", "v1", "fixtures", "plan-resuelto-ok.json"), "utf8")) as { plan: unknown };
   const plan = PlanDecoracionSchema.parse(fixture.plan);
-  const llamadasLora = instalarFetch(() => {
-    throw new Error("no debe llamar a Python con un modo LoRA sin variantes");
-  });
-  await assert.rejects(
-    resolverPlan({
-      plan,
-      allowlist: [{ product_id: "prod-rojo", variant_ids: ["var-rojo-12"] }],
-      catalogSnapshotId: "products_catalog:test",
-      loraAllowlist: soloProductos,
-      requestId: REQUEST_ID,
-      correlationId: CORRELATION_ID,
-    }),
-    /^Error: LORA_DATASET_ALLOWLIST_REJECTED/,
-  );
-  assert.equal(llamadasLora.length, 0);
-  console.log("[PASS] resolución Python con LoRA sin variantes lanza LORA_DATASET_ALLOWLIST_REJECTED antes de llamar");
-
   // --- resolverPlan: Python allowlist_product_mismatch becomes the stable error.
   const llamadasMismatch = instalarFetch(() => Response.json({ detail: { code: "allowlist_product_mismatch" } }, { status: 422 }));
   await assert.rejects(
@@ -340,45 +322,6 @@ async function main(): Promise<void> {
   assert.equal(new URL(llamadasRuta[0]!.url).pathname, "/internal/v1/plan/resolve");
   console.log("[PASS] /api/plan-editar responde 422 causa=ALLOWLIST_PRODUCTO_VARIANTE ante allowlist_product_mismatch");
 
-  // --- Chat with an unusable LoRA pool: conversation continues, catalog tools fail closed.
-  const { causaCatalogoLora, STATUS_CATALOGO_LORA_NO_DISPONIBLE } = await import("../../src/lib/lora/catalogo-no-disponible");
-  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../../src/lib/ia/herramientas/registro-herramientas");
-  const { construirSistema } = await import("../../src/lib/ia/omoikane/prompt-sistema");
-  assert.equal(causaCatalogoLora(new Error("LORA_VOCABULARY_ALLOWLIST_EMPTY: ninguna variante")), "LORA_VOCABULARY_ALLOWLIST_EMPTY");
-  assert.equal(causaCatalogoLora(new Error("LORA_MODE_NOT_CONFIGURED: training_2")), "LORA_MODE_NOT_CONFIGURED");
-  assert.equal(causaCatalogoLora(new Error("connect ECONNREFUSED 127.0.0.1:5432")), null, "un fallo de base de datos no se degrada");
-  assert.equal(causaCatalogoLora("LORA_MODE_NOT_CONFIGURED"), null);
-
-  const llamadasBloqueado = instalarFetch(() => {
-    throw new Error("un catálogo LoRA bloqueado no debe llamar a Python");
-  });
-  const registro = crearRegistroHerramientas(crearEstadoConversacion({}, "quiero un arco de globos"), {
-    pool: poolSinConsultas(),
-    catalogoLoraNoDisponible: "LORA_VOCABULARY_ALLOWLIST_EMPTY",
-  });
-  for (const herramienta of ["buscar_catalogo_rag", "confirmar_plan_decoracion"] as const) {
-    const args = { mensaje: "globos", seleccion: [] };
-    const salida: unknown = await registro[herramienta]!(args, { nombre: herramienta, args });
-    assert.ok(typeof salida === "object" && salida !== null);
-    assert.equal((salida as Record<string, unknown>).ok, false, herramienta);
-    assert.equal((salida as Record<string, unknown>).status, STATUS_CATALOGO_LORA_NO_DISPONIBLE, herramienta);
-    assert.equal((salida as Record<string, unknown>).causa, "LORA_VOCABULARY_ALLOWLIST_EMPTY", herramienta);
-  }
-  assert.equal(llamadasBloqueado.length, 0);
-  const briefArgs = { tipoEvento: "cumpleaños" };
-  const brief = await registro.guardar_brief!(briefArgs, { nombre: "guardar_brief", args: briefArgs });
-  // guardar_brief stores only chat.v1 brief fields (brief-herramienta.ts): the camelCase key maps to tipo_evento.
-  assert.deepEqual(brief, { ok: true, brief: { tipo_evento: "cumpleaños" } }, "las herramientas sin catálogo siguen funcionando");
-  assert.match(construirSistema({ ragEnabled: true, catalogoLoraNoDisponible: true }), /CATÁLOGO NO DISPONIBLE EN ESTE MODO/);
-  assert.doesNotMatch(construirSistema({ ragEnabled: true }), /CATÁLOGO NO DISPONIBLE EN ESTE MODO/);
-  console.log("[PASS] con el pool LoRA no disponible, las herramientas de catálogo fallan cerrado sin tocar base ni Python y el chat sigue");
-
-  // Base mode (FLUX.2 without LoRA): the chat, the editor and /api/generate get
-  // `null`, which every caller treats as the whole catalog, without a query.
-  const { resolveLoraModeDatasetAllowlist } = await import("../../src/lib/lora/mode-resolver");
-  assert.equal(await resolveLoraModeDatasetAllowlist("base", poolSinConsultas()), null);
-  assert.doesNotMatch(construirSistema({ ragEnabled: true, catalogAllowlist: undefined }), /CATÁLOGO NO DISPONIBLE EN ESTE MODO/);
-  console.log("[PASS] modo base: sin restricción de dataset LoRA en el catálogo del chat");
 }
 
 main().then(

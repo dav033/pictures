@@ -1526,7 +1526,6 @@ export interface PythonPlanResolutionInput {
   plan: PlanDecoracion;
   allowlist: PythonCatalogSearchAllowlistEntry[];
   catalogSnapshotId: string;
-  loraVariantIds?: string[];
   /** Absent unless the caller passes it: every other request stays byte-identical (ADR-0028 §7). */
   completarPatrones?: boolean;
   pistasPatron?: PistaPatron[];
@@ -1562,8 +1561,6 @@ export type PythonPlanResolutionResult = z.infer<typeof PlanResolutionResultV1Sc
 export interface PythonCatalogRecommendationsInput {
   referenceVariantId: string;
   catalogSnapshotId: string;
-  /** Absent means unrestricted. Never pass an empty list: callers fail closed before calling. */
-  loraVariantIds?: readonly string[];
   limit?: number;
   requestId: string;
   correlationId: string;
@@ -3280,7 +3277,6 @@ export async function llamarPythonPlanResolution(
     plan,
     allowlist,
     catalogSnapshotId,
-    loraVariantIds,
     completarPatrones,
     pistasPatron,
     pistasTamanos,
@@ -3300,7 +3296,6 @@ export async function llamarPythonPlanResolution(
     plan,
     allowlist,
     catalog_snapshot_id: catalogSnapshotId,
-    ...(loraVariantIds === undefined ? {} : { lora_variant_ids: loraVariantIds }),
     ...(completarPatrones === undefined ? {} : { completar_patrones: completarPatrones }),
     ...(pistasPatron === undefined ? {} : { pistas_patron: pistasPatron }),
     ...(pistasTamanos === undefined ? {} : { pistas_tamanos: pistasTamanos }),
@@ -3334,16 +3329,14 @@ const CATALOG_RECOMMENDATIONS_DEFAULT_LIMIT = 100;
 /**
  * Python owns which rows are recommendable; Next only checks that the answer
  * is the one it asked for and cannot widen anything: pinned snapshot and
- * reference echoed, reference excluded, unique ids, bounded by `limit`, and a
- * subset of the LoRA set when one was sent.
+ * reference echoed, reference excluded, unique ids, bounded by `limit`.
  */
 function catalogRecommendationsPayloadIsConsistent(
   payload: z.infer<typeof CatalogRecommendationsResultV1Schema>,
-  input: { referenceVariantId: string; catalogSnapshotId: string; loraVariantIds?: readonly string[]; limit: number },
+  input: { referenceVariantId: string; catalogSnapshotId: string; limit: number },
 ): boolean {
   if (payload.catalog_snapshot_id !== input.catalogSnapshotId) return false;
   if (payload.reference.variant_id !== input.referenceVariantId) return false;
-  const lora = input.loraVariantIds === undefined ? null : new Set(input.loraVariantIds);
   const productIds = new Set<string>();
   const variantIds = new Set<string>();
   for (const candidate of payload.candidates) {
@@ -3351,7 +3344,6 @@ function catalogRecommendationsPayloadIsConsistent(
     productIds.add(candidate.product_id);
     for (const variant of candidate.variants) {
       if (variant.variant_id === input.referenceVariantId || variantIds.has(variant.variant_id)) return false;
-      if (lora && !lora.has(variant.variant_id)) return false;
       variantIds.add(variant.variant_id);
     }
   }
@@ -3361,12 +3353,11 @@ function catalogRecommendationsPayloadIsConsistent(
 export async function llamarPythonCatalogRecommendations(
   input: PythonCatalogRecommendationsInput,
 ): Promise<PythonCatalogRecommendationsResult> {
-  const { referenceVariantId, catalogSnapshotId, loraVariantIds, limit = CATALOG_RECOMMENDATIONS_DEFAULT_LIMIT, ...rest } = input;
+  const { referenceVariantId, catalogSnapshotId, limit = CATALOG_RECOMMENDATIONS_DEFAULT_LIMIT, ...rest } = input;
   const operationBody = {
     schema_version: CATALOG_RECOMMENDATIONS_CONTRACT_VERSION,
     catalog_snapshot_id: catalogSnapshotId,
     reference_variant_id: referenceVariantId,
-    ...(loraVariantIds === undefined ? {} : { lora_variant_ids: [...loraVariantIds] }),
     limit,
   };
   const response = await llamarPythonOperacion(PYTHON_CATALOG_RECOMMENDATIONS_PATH, PYTHON_CATALOG_RECOMMENDATIONS_SCOPE, {
@@ -3378,7 +3369,7 @@ export async function llamarPythonCatalogRecommendations(
   const parsed = CatalogRecommendationsResultV1Schema.safeParse(response.payload);
   if (
     !parsed.success
-    || !catalogRecommendationsPayloadIsConsistent(parsed.data, { referenceVariantId, catalogSnapshotId, loraVariantIds, limit })
+    || !catalogRecommendationsPayloadIsConsistent(parsed.data, { referenceVariantId, catalogSnapshotId, limit })
   ) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }

@@ -18,7 +18,6 @@ import { coloresFotoParaBusqueda } from "@/lib/plan/colores-referencia";
 import { textoFinalTurno } from "./texto-final-turno";
 import { sistemaConPropuestaVigente } from "./resumen-plan-vigente";
 import type { ChatPort, Mensaje } from "@/lib/ia/nucleo/tipos";
-import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { FlujoIA } from "@sempertex/agente-core";
 import type { NivelCreatividad } from "@/lib/ia/escena/creatividad";
 
@@ -155,9 +154,6 @@ export async function ejecutarConversacion(opts: {
   /** Observabilidad pura: se llama justo antes de ejecutar cada herramienta,
    * con su nombre y args ya parseados. No cambia el flujo. */
   onLlamada?: (nombre: string, args: Record<string, unknown>) => void;
-  catalogAllowlist?: CatalogAllowlist;
-  /** `LORA_*` cause when the LoRA catalog pool is unavailable; see crearRegistroHerramientas. */
-  catalogoLoraNoDisponible?: string;
   signal?: AbortSignal;
   telemetria?: TelemetriaConversacion;
   hechosPeticion?: HechosRegistro;
@@ -170,7 +166,7 @@ export async function ejecutarConversacion(opts: {
     sistema: sistemaConPropuestaVigente(opts.sistema, estado.planVigente),
     historial: opts.historial,
     herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
-    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, hechosPeticion: hechosDelTurno(opts) }),
+    registro: crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, hechosPeticion: hechosDelTurno(opts) }),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     onLlamada: opts.onLlamada,
@@ -196,9 +192,6 @@ export async function* ejecutarConversacionStream(opts: {
   /** Blueprint de referencia visual analizado en este turno — ver
    * `EstadoConversacion.referenceBlueprint`. */
   referenceBlueprint?: ReferenceBlueprintV2;
-  catalogAllowlist?: CatalogAllowlist;
-  /** `LORA_*` cause when the LoRA catalog pool is unavailable; see crearRegistroHerramientas. */
-  catalogoLoraNoDisponible?: string;
   /** Observabilidad pura: nombre de cada herramienta antes de ejecutarla. */
   onLlamada?: (nombre: string, args: Record<string, unknown>) => void;
   /** Creativity level (creatividad.ts); the system prompt already carries its design rule. */
@@ -215,7 +208,7 @@ export async function* ejecutarConversacionStream(opts: {
     sistema: sistemaConPropuestaVigente(opts.sistema, estado.planVigente),
     historial: opts.historial,
     herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
-    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad, hechosPeticion: hechosDelTurno(opts) }),
+    registro: crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad, hechosPeticion: hechosDelTurno(opts) }),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),

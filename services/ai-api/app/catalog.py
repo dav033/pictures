@@ -378,7 +378,6 @@ class CatalogStore:
         snapshot_id: str,
         product_ids: Sequence[str],
         variant_ids: Sequence[str],
-        lora_variant_ids: Sequence[str] = (),
     ) -> Sequence[Mapping[str, object]]:
         """Fetch only commercial rows eligible for deterministic plan resolution.
 
@@ -418,11 +417,10 @@ class CatalogStore:
                   FROM catalog_variants v
                   JOIN catalog_products p ON p.product_id = v.product_id
                  WHERE (p.product_id = ANY($1::text[])
-                    OR v.variant_id = ANY($2::text[])
-                    OR v.variant_id = ANY($3::text[]))
+                    OR v.variant_id = ANY($2::text[]))
                    AND p.status = 'ACTIVE'
-                   AND p.source_snapshot_id = $4
-                   AND v.source_snapshot_id = $4
+                   AND p.source_snapshot_id = $3
+                   AND v.source_snapshot_id = $3
                    AND p.available = TRUE
                    AND v.available = TRUE
                    AND v.currency = 'COP'
@@ -432,7 +430,6 @@ class CatalogStore:
                 """,
                 sorted(set(product_ids)),
                 sorted(set(variant_ids)),
-                sorted(set(lora_variant_ids)),
                 snapshot_id,
             )
 
@@ -1386,9 +1383,6 @@ def _recommendation_query(
         )
     else:
         clauses.append(f"p.product_id = ${product_position}::text")
-    if operation.lora_variant_ids is not None:
-        params.append(sorted(set(operation.lora_variant_ids)))
-        clauses.append(f"v.variant_id = ANY(${len(params)}::text[])")
     params.append(operation.limit)
     limit_position = len(params)
     query = f"""

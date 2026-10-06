@@ -52,18 +52,6 @@ export const PLAN_RESOLUTION_RESULT_CONTRACT_VERSION = "plan-resolution-result.v
 export const CATALOG_RECOMMENDATIONS_CONTRACT_VERSION = "catalog-recommendations.v1" as const;
 export const CATALOG_RECOMMENDATIONS_RESULT_CONTRACT_VERSION = "catalog-recommendations-result.v1" as const;
 export const CATALOG_RECOMMENDATIONS_MAX_LIMIT = 100;
-/** 2048 ids × ~17 bytes ≈ 35 KB, below the 64 KB Python request body limit. */
-export const CATALOG_RECOMMENDATIONS_MAX_LORA_VARIANTS = 2048;
-/**
- * The same LoRA dataset pool travels to plan resolution, so both requests
- * accept the same bound. Budget against the 64 KB Python body limit:
- * Shopify ids are 14 digits, so each id costs 17 bytes on the wire
- * (`"46594221179175",`); 2048 ids ≈ 34.8 KB, leaving ≈ 30 KB for the envelope
- * (~0.5 KB), the plan and the same-turn allowlist. 4096 ids (≈ 69.6 KB) would
- * not fit. The count is not a byte guarantee: longer ids are still rejected by
- * the body limit (`PYTHON_PAYLOAD_TOO_LARGE` / `body_too_large`), fail closed.
- */
-export const PLAN_RESOLUTION_MAX_LORA_VARIANTS = CATALOG_RECOMMENDATIONS_MAX_LORA_VARIANTS;
 
 const idSchema = z.string().trim().min(1).max(160);
 /** COP is transported as whole pesos; rounding happens before this boundary. */
@@ -228,16 +216,11 @@ export const CatalogColorsResultV1Schema = z.object({
   }).strict()).max(256),
 }).strict();
 
-/**
- * Recommendations for one reference variant inside a pinned snapshot.
- * `lora_variant_ids` absent means unrestricted; an empty list is invalid so it
- * can never be mistaken for "no restriction". Python enforces id uniqueness.
- */
+/** Recommendations for one reference variant inside a pinned snapshot. */
 export const CatalogRecommendationsRequestV1Schema = z.object({
   schema_version: z.literal(CATALOG_RECOMMENDATIONS_CONTRACT_VERSION),
   catalog_snapshot_id: idSchema,
   reference_variant_id: idSchema,
-  lora_variant_ids: z.array(idSchema).min(1).max(CATALOG_RECOMMENDATIONS_MAX_LORA_VARIANTS).optional(),
   limit: z.number().int().min(1).max(CATALOG_RECOMMENDATIONS_MAX_LIMIT),
 }).strict();
 
@@ -537,7 +520,6 @@ export const PlanResolutionRequestV1Schema = z.object({
   plan: PlanDecoracionSchema,
   allowlist: z.array(CatalogAllowlistEntryV1Schema).max(256),
   catalog_snapshot_id: idSchema,
-  lora_variant_ids: z.array(idSchema).max(PLAN_RESOLUTION_MAX_LORA_VARIANTS).optional(),
   /** Solo al confirmar un plan: Python asigna patrón de color a las estructuras que no lo tienen (ADR-0028 §7). */
   completar_patrones: z.boolean().optional(),
   pistas_patron: z.array(PistaPatronSchema).max(16).optional(),
