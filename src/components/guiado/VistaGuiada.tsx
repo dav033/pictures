@@ -177,8 +177,8 @@ export function VistaGuiada() {
               widgets.push({ tipo: "cotizacion", cotizacion: valida ? valida.data : null, uso: usoCotizado, decoracion: elegida });
             }
             if (datos.pasos && elegida) widgets.push({ tipo: "pasos", decoracion: elegida });
-            // Después del precio, el cliente sigue teniendo las otras opciones a mano (comprar, aprender, decorador).
-            if (elegida && widgets.some((widget) => widget.tipo === "cotizacion") && !widgets.some((widget) => widget.tipo === "opciones")) widgets.push({ tipo: "opciones" });
+            // Después del precio o de los pasos, el cliente sigue teniendo las otras opciones a mano (comprar, decorador...).
+            if (elegida && widgets.some((widget) => widget.tipo === "cotizacion" || widget.tipo === "pasos") && !widgets.some((widget) => widget.tipo === "opciones")) widgets.push({ tipo: "opciones" });
             if (datos.proveedores) widgets.push({ tipo: "proveedores", proveedores: datos.proveedores });
             reemplazarUltimo({ content: textoFinal, ...(widgets.length ? { widgets } : {}) });
             if (!textoFinal.trim() && !widgets.length) setMensajes((actuales) => actuales.slice(0, -1));
@@ -226,10 +226,6 @@ export function VistaGuiada() {
 
   function elegirUso(valor: Uso): void { setUso(valor); void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor }); }
 
-  function verOtrasOpciones(): void {
-    setMensajes((actuales) => [...actuales, { id: nuevoId(), role: "assistant", content: "¿Qué más te gustaría hacer?", widgets: [{ tipo: "opciones" }] }]);
-  }
-
   function renderWidget(widget: Widget, activo: boolean, clave: string) {
     switch (widget.tipo) {
       case "decoraciones":
@@ -243,7 +239,7 @@ export function VistaGuiada() {
       case "cotizacion":
         return <CostosMateriales key={clave} cotizacion={widget.cotizacion} uso={widget.uso} clave={`guiado-${widget.decoracion.id}`} mensajePendiente="Todavía no tengo el precio de estos materiales. Puedo buscarte un proveedor cerca." onProveedores={() => void enviar("Busca proveedores cerca de mí para cotizar los materiales.")} />;
       case "pasos":
-        return <PasoAPaso key={clave} decoracion={widget.decoracion} alTerminar={activo ? verOtrasOpciones : undefined} />;
+        return <PasoAPaso key={clave} decoracion={widget.decoracion} />;
       case "proveedores":
         return <ListaProveedores key={clave} proveedores={widget.proveedores} />;
       case "comprar":
