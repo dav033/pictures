@@ -40,6 +40,8 @@ type AparienciaColor = {
  * Pure: no provider, HTTP, database or environment.
  */
 export const MAX_COLORES_REFERENCIA = 3;
+/** A named tone this visible in the photo remains in the purchase palette beyond the default three slots. */
+const PRESENCIA_RELEVANTE = 0.03;
 
 /**
  * Transparency is a finish, not a hue (see `TRANSPARENCIA`). A piece with clear
@@ -288,7 +290,7 @@ function coloresNombradosOrdenados(apariencia: AparienciaColor): string[] {
  *   not push a real color out, but it stays so the resolver reports the
  *   substitution to the customer (phase 2.5: substitute, never hide).
  */
-function seleccionarDominantes(colores: readonly string[]): string[] {
+function seleccionarDominantes(colores: readonly string[], presenciaRelevante: ReadonlySet<string> = new Set()): string[] {
   const elegidos: string[] = [];
   let tonos = 0;
   for (const color of colores) {
@@ -296,7 +298,7 @@ function seleccionarDominantes(colores: readonly string[]): string[] {
     const sustituto = colorDeCompraSinVenta(color);
     const sinCupo = color === TRANSPARENTE || Boolean(sustituto && colores.includes(sustituto));
     if (!sinCupo) {
-      if (tonos === MAX_COLORES_REFERENCIA) continue;
+      if (tonos >= MAX_COLORES_REFERENCIA && !presenciaRelevante.has(color)) continue;
       tonos += 1;
     }
     elegidos.push(color);
@@ -305,7 +307,12 @@ function seleccionarDominantes(colores: readonly string[]): string[] {
 }
 
 export function coloresDominantesReferencia(apariencia: AparienciaColor | readonly string[]): string[] {
-  return seleccionarDominantes(coloresNombradosOrdenados(aparienciaDe(apariencia)));
+  const entrada = aparienciaDe(apariencia);
+  const nombrados = coloresNombradosOrdenados(entrada);
+  const presenciaRelevante = new Set((entrada.measured_colors ?? [])
+    .filter((medido) => medido.share >= PRESENCIA_RELEVANTE && nombrados.includes(medido.color))
+    .map((medido) => medido.color));
+  return seleccionarDominantes(nombrados, presenciaRelevante);
 }
 
 /**
@@ -390,17 +397,12 @@ export function coloresElementoReferencia(blueprint: Pick<ReferenceBlueprintV2, 
  * el plan compra existe en la foto. Acotarla aquí acusaría de invención al
  * cuarto color de una foto que sí lo tiene.
  *
- * Por lo mismo sigue contando lo medido que nadie nombró, al revés que los
- * dominantes (`coloresNombradosOrdenados`): aquí se decide QUITAR un globo del
- * plan, y para quitarlo hace falta que ni las etiquetas ni los píxeles lo vean.
- * Que un color medido no pida cupo no prueba que la foto no lo tenga.
+ * Solo cuenta tonos nombrados por el analizador, igual que los dominantes:
+ * la luz lila puede medir globos blancos como gris o lila, pero esa medida no
+ * habilita compras ni evita que se quite un color que la foto no nombra.
  */
 export function coloresObservadosElemento(apariencia: AparienciaColor): string[] {
-  const colores = coloresObservados(apariencia);
-  for (const entrada of apariencia.measured_colors ?? []) {
-    if (!colores.includes(entrada.color)) colores.push(entrada.color);
-  }
-  return colores;
+  return coloresObservados(apariencia);
 }
 
 export type MaterialColorInventado = { estructura_id: string; product_id: string; color: string };

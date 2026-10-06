@@ -101,6 +101,22 @@ async function main(): Promise<void> {
     assert.match(colores.sustitucionesColorReferencia("E1", medido, ["plateado", "blanco"])[0]?.motivo ?? "", /muestra gris, que el catálogo no vende: se usó plateado/);
   });
 
+  await caso("B7 · solo etiquetas nombradas habilitan compras; tonos nombrados y medidos relevantes superan tres", () => {
+    const apariencia = {
+      observed_colors: ["chrome silver", "satin pink", "pastel lilac", "satin fuchsia", "white", "clear"],
+      measured_colors: [
+        { color: "plateado", share: 0.35 },
+        { color: "rosado", share: 0.3 },
+        { color: "lila", share: 0.12 },
+        { color: "fucsia", share: 0.04 },
+        { color: "blanco", share: 0.01 },
+        { color: "gris", share: 0.2 },
+      ],
+    };
+    assert.deepEqual(colores.coloresDominantesReferencia(apariencia), ["plateado", "rosado", "lila", "fucsia", "transparente"]);
+    assert.deepEqual(colores.coloresObservadosElemento(apariencia), ["plateado", "rosado", "lila", "fucsia", "blanco", "transparente"]);
+  });
+
   await caso("paleta del cliente · los colores nombrados, en el orden de la medida y con el gris a la vista", () => {
     // La madera de la mesa (cafe) cae en la caja del arco: medida, pero nadie la nombró.
     const arco = elemento("REF_01_E01", "balloon_structure", apariencia(["light pink", "white", "clear"], { measured_colors: [{ color: "cafe", share: 0.5 }, { color: "blanco", share: 0.3 }, { color: "rosado", share: 0.2 }] }), { x: 0, y: 0, width: 0.8, height: 0.8 });

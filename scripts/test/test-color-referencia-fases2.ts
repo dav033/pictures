@@ -84,6 +84,23 @@ const casos: Caso[] = [
     },
   },
   {
+    nombre: "2.2 · los tonos nombrados con presencia medida relevante amplían la paleta; los no nombrados no",
+    correr: () => {
+      const apariencia = {
+        observed_colors: ["chrome silver", "satin pink", "pastel lilac", "satin fuchsia", "white", "clear"],
+        measured_colors: [
+          { color: "plateado", share: 0.35 },
+          { color: "rosado", share: 0.3 },
+          { color: "lila", share: 0.12 },
+          { color: "fucsia", share: 0.04 },
+          { color: "blanco", share: 0.01 },
+          { color: "verde", share: 0.18 },
+        ],
+      };
+      assert.deepEqual(coloresDominantesReferencia(apariencia), ["plateado", "rosado", "lila", "fucsia", "transparente"]);
+    },
+  },
+  {
     nombre: "2.5 · el gris de una foto va a plateado, no a negro",
     correr: () => {
       assert.equal(colorCatalogoMasCercano("gris", ["negro", "plateado", "blanco", "dorado"]), "plateado");

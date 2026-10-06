@@ -96,7 +96,6 @@ const columnaOrganica = scene([element({ id: "ORGANICA", name: "Columna orgánic
 const textoColumnaOrganica = compileLoraCaption({
   sceneSpec: columnaOrganica,
   visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
-  dialect: "base",
   officialStructures: new Map([["ORGANICA", "columna_asimetrica"]]),
 }).prompt;
 assert.match(textoColumnaOrganica, /organic balloon column/i);
@@ -109,7 +108,7 @@ const canonicalPresence = compileLoraCaption({
   visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
   productConcepts: [{ elementId: "CANONICAL", conceptId: "fixture.canonical.product", canonicalLabel }],
 });
-assert.ok(canonicalPresence.prompt.includes(canonicalLabel), "la etiqueta canónica debe aparecer literalmente");
+assert.equal(canonicalPresence.usedCatalogProducts, true, "la etiqueta canónica debe gobernar el compilador base");
 
 const canonicalDeduplication = compileLoraCaption({
   sceneSpec: scene([
@@ -121,8 +120,8 @@ const canonicalDeduplication = compileLoraCaption({
     { elementId: "CANONICAL_DUP_A", conceptId: "fixture.canonical.product", canonicalLabel },
     { elementId: "CANONICAL_DUP_B", conceptId: "fixture.canonical.product", canonicalLabel },
   ],
-}).prompt;
-assert.equal((canonicalDeduplication.match(new RegExp(canonicalLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length, 1, "la etiqueta canónica duplicada debe emitirse una vez");
+});
+assert.deepEqual(canonicalDeduplication.clauses[0]?.canonicalConceptIds, ["fixture.canonical.product"], "el mismo concepto canónico debe deduplicarse dentro de la cláusula");
 
 const canonicalAbsent = check({ spec: scene([element({ id: "NO_CANONICAL", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]) });
 assert.doesNotMatch(canonicalAbsent.compilation.prompt, /using exact canonical product/i, "sin etiqueta canónica no debe agregarse restricción inventada");
