@@ -37,6 +37,10 @@ function plegar(texto: string): string {
 
 /** El color de la lámina en la paleta del plan («Plata» → «plateado», «Lavanda» → «lila»). */
 export function colorDeReferencia(nombre: string): string {
+  // Sempertex 010 is named "Palo de Rosa". The catalog taxonomy does not
+  // recognize that shade as rosado, so it was filtered out when the analyzer
+  // had named pink; 609 then survived as the only usable measured pink.
+  if (/\bpalo\s+de\s+rosa\b/.test(plegar(nombre))) return "rosado";
   return clasificarColores(nombre).values[0] ?? plegar(nombre);
 }
 
@@ -168,7 +172,9 @@ export function familiaDeTitulo(titulo: string): string | null {
   for (const [patron, familia] of FAMILIA_POR_PALABRAS) {
     if (!patron.test(resto)) continue;
     const color = resto.replace(patron, " ").replace(/\bpastel\b/, " ").replace(/\s+/g, " ").trim();
-    if (!color || /\d/.test(color) || color.split(" ").length > 2) return null;
+    // "Palo de Rosa" is the official 010 shade name; the middle preposition
+    // makes it three words without turning it into a printed/mixed balloon.
+    if (!color || /\d/.test(color) || (color.split(" ").length > 2 && color !== "palo de rosa")) return null;
     return familia;
   }
   return null;
@@ -190,6 +196,12 @@ function cumple(producto: DisponibilidadProducto, referencia: ReferenciaMedida, 
   const color = colorDeReferencia(referencia.nombre);
   if (!producto.coloresVariante.map(plegar).includes(color)) return false;
   if (color === "transparente") return true;
+  // Sin acabado explícito, la familia del dominante medido también forma parte
+  // de la referencia. No dejar que el orden del catálogo sustituya Fashion 010
+  // por Satin 609 solo porque ambas variantes se llaman "rosado".
+  if (!acabadoFoto) return familiaDeTitulo(producto.titulo) === referencia.familia;
+  // Un acabado que el analizador sí nombró puede cambiar la familia; el tono
+  // medido sigue limitando el color dentro de las familias de ese acabado.
   if (!referencia.familia_fiable) return familiaCompatibleConLaFoto(producto, acabadoFoto);
   return familiaDeTitulo(producto.titulo) === referencia.familia;
 }

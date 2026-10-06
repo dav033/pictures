@@ -1,6 +1,6 @@
 import { zonaDeCroquis } from "@/lib/plan/croquis-zona";
 import { paletaMedida, type Pixel } from "@/lib/plan/paleta-medida";
-import { cruzarColor, codigosPorPalabras, CODIGOS_POR_NOMBRE_EN } from "@/lib/plan/referencia-sempertex";
+import { cruzarColor, codigosPorPalabras, CODIGOS_POR_NOMBRE_EN, referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { acabadoObservado } from "@/lib/plan/acabado-observado";
 import {
   ANALISIS_COLOR_VERSION,
@@ -22,10 +22,9 @@ import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
  * (`paleta-medida.ts`) y cruza cada uno contra el color del globo inflado de las 90 referencias
  * (`referencia-sempertex.ts`).
  *
- * **No decide nada.** El resultado viaja fuera del blueprint, así que no entra en ningún contrato, no llega a
- * Python y no toca el `plan_hash`: es un bloque para mirar mientras se decide si el color medido debe
- * reemplazar las etiquetas de texto del analizador en lo que un plan compra. Quien lo quiera usar para comprar
- * tiene que cambiar `colores-referencia.ts`, y eso sí mueve dinero.
+ * El analizador decide qué tonos pueden aparecer; los píxeles eligen la referencia dentro de esos tonos. Así
+ * una sombra no abre marrones ni un rosa empolvado abre Dorado Rosa. El resultado viaja fuera del blueprint,
+ * así que no entra en ningún contrato, no llega a Python y no toca el `plan_hash`.
  *
  * Nunca rompe el análisis: una foto que no se puede decodificar o una caja sin píxeles suficientes deja a esa
  * pieza sin color medido y lo dice en sus avisos.
@@ -88,22 +87,9 @@ function unirPorReferencia(colores: readonly ColorConReferencia[]): {
 } {
   const avisos: string[] = [];
   /**
-   * **Cada color medido se queda con la referencia más cercana.** No se descarta ninguno.
-   *
-   * Antes solo se listaban los colores cuya etiqueta el analizador había escrito con el nombre exacto de la
-   * lámina. Era demasiado estricto por el lado que no toca: un arco verde oscuro, verde lima y blanco salía
-   * con **un solo color**, el blanco, porque el catálogo no llama a sus verdes «forest green» ni «light
-   * green». Y el color exacto no se puede sacar de una foto —hay luz, sombra, oclusión entre globos y una
-   * cámara de por medio—, así que exigirlo era exigir lo imposible.
-   *
-   * Lo que sí hace falta es no llenar la pantalla con la pared, la mesa y el mismo globo contado tres veces.
-   * De eso se encargan los pasos de antes, que son los que saben: el croquis recorta la zona de la pieza,
-   * `paleta-medida` descarta lo que ocupa menos del 6 % y topa en cinco colores, y aquí se juntan los grupos
-   * que caen en la misma referencia, que son el mismo globo con otra luz.
-   *
-   * Lo que el analizador **sí** nombró sigue teniendo ventaja: `cruzarColor` pone esa referencia delante
-   * cuando los píxeles la admiten, porque el acabado solo lo ve el modelo. Lo que cambia es que ya no es un
-   * requisito para existir.
+   * Cada grupo solo se cruza con referencias de los tonos que nombró el analizador. La etiqueta no tiene que
+   * repetir el nombre comercial exacto: `codigosPorPalabras` traduce «pearl pink» al conjunto rosa. Los tonos
+   * distintos por luz o sombra se juntan bajo la misma referencia; un tono no nombrado no crea otro color.
    */
   const porCodigo = new Map<string, ColorConReferencia>();
   for (const color of colores) {
@@ -174,7 +160,12 @@ export async function medirColoresSempertex(
     // El tipo del plan que el reconocedor le puso a la pieza (`STRUCTURE_TYPE_MAP`). Un aro llega como
     // `arco`, así que se recorta con el anillo del arco y no con el del aro: es lo que dice el blueprint.
     const tipo = elemento.visual_semantics?.structure_type ?? "";
-    const zona = zonaDeCroquis(tipo);
+    const zona = zonaDeCroquis(
+      tipo,
+      undefined,
+      elemento.visual_semantics?.placement,
+      elemento.reference_bbox.width / elemento.reference_bbox.height,
+    );
     if (!muestra) {
       piezas.push({
         elementId: elemento.element_id,
@@ -196,14 +187,22 @@ export async function medirColoresSempertex(
     // El acabado no se puede sacar de los píxeles —un dorado cromado y un café mate tienen casi el mismo color
     // promedio—, pero el analizador ya lo escribió («chrome gold», «matte white»). Con eso se restringe la
     // familia antes de cruzar, que es lo que distingue un Reflex de un Fashion.
-    const cruzados = paleta.colores.map((color) => ({
-      ...color,
-      cruce: cruzarColor(color.hex, {
-        cuantas: CANDIDATAS,
-        familias: acabado.familias,
-        nombradas: acabado.nombradas.flatMap((n) => n.codigos),
-      }),
-    }));
+    const coloresNombradosMedibles = acabado.nombradas.filter((referencia) =>
+      referencia.codigos.some((codigo) => referenciaPorCodigo(codigo)?.familia !== "cristal"),
+    );
+    const cruzados = paleta.colores.flatMap((color) => {
+      const candidatas = coloresNombradosMedibles
+        .map((referencia) => cruzarColor(color.hex, {
+          cuantas: CANDIDATAS,
+          familias: acabado.familias,
+          nombradas: referencia.codigos,
+          permitidas: referencia.codigos,
+        }))
+        .filter((cruce) => cruce.candidatas.length > 0)
+        .sort((a, b) => a.candidatas[0]!.distancia - b.candidatas[0]!.distancia);
+      const cruce = candidatas[0];
+      return cruce ? [{ ...color, cruce }] : [];
+    });
     const { colores, avisos } = unirPorReferencia(cruzados);
     piezas.push({
       elementId: elemento.element_id,

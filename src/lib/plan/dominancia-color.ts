@@ -96,11 +96,11 @@ const NO_MEDIBLES: ReadonlySet<string> = new Set(["transparente", "multicolor"])
 const TABLA: ReadonlyArray<readonly [string, Lab]> = Object.entries(LAB_COLORES).filter(([color]) => !NO_MEDIBLES.has(color));
 
 /** El color del catálogo más cercano a un píxel, o `undefined` si ninguno lo está. */
-function clasificarPixel(rojo: number, verde: number, azul: number): string | undefined {
+function clasificarPixel(rojo: number, verde: number, azul: number, tabla = TABLA): string | undefined {
   const lab = labDeRgb(rojo, verde, azul);
   let mejor: string | undefined;
   let mejorDistancia = DELTA_E_CLASIFICACION;
-  for (const [color, candidato] of TABLA) {
+  for (const [color, candidato] of tabla) {
     const distancia = Math.hypot(lab[0] - candidato[0], lab[1] - candidato[1], lab[2] - candidato[2]);
     // El desempate alfabético solo existe para que la medida sea determinista
     // cuando un píxel cae justo entre dos colores.
@@ -123,7 +123,12 @@ function regionDe(muestra: MuestraPixeles, caja: CajaRelativa | undefined): { x0
   return x1 > x0 && y1 > y0 ? { x0, y0, x1, y1 } : null;
 }
 
-export function medirDominanciaColor(muestra: MuestraPixeles, caja?: CajaRelativa): MedicionDominancia {
+export function medirDominanciaColor(
+  muestra: MuestraPixeles,
+  caja?: CajaRelativa,
+  coloresAdmitidos?: readonly string[],
+  dentroDeLaCaja?: (u: number, v: number) => boolean,
+): MedicionDominancia {
   const region = regionDe(muestra, caja);
   if (!region) return { dominantes: [], sinClasificar: 0, pixelesMedidos: 0 };
 
@@ -132,12 +137,18 @@ export function medirDominanciaColor(muestra: MuestraPixeles, caja?: CajaRelativ
   const paso = Math.max(1, Math.ceil(Math.sqrt((anchoRegion * altoRegion) / MAX_PIXELES_MUESTRA)));
 
   const conteo = new Map<string, number>();
+  const tabla = coloresAdmitidos
+    ? TABLA.filter(([nombre]) => coloresAdmitidos.includes(nombre))
+    : TABLA;
   let medidos = 0;
   let clasificados = 0;
   for (let y = region.y0; y < region.y1; y += paso) {
     for (let x = region.x0; x < region.x1; x += paso) {
+      const u = (x - region.x0 + 0.5) / anchoRegion;
+      const v = (y - region.y0 + 0.5) / altoRegion;
+      if (dentroDeLaCaja && !dentroDeLaCaja(u, v)) continue;
       const base = (y * muestra.ancho + x) * 3;
-      const color = clasificarPixel(muestra.rgb[base] ?? 0, muestra.rgb[base + 1] ?? 0, muestra.rgb[base + 2] ?? 0);
+      const color = clasificarPixel(muestra.rgb[base] ?? 0, muestra.rgb[base + 1] ?? 0, muestra.rgb[base + 2] ?? 0, tabla);
       medidos += 1;
       if (!color) continue;
       clasificados += 1;
@@ -200,9 +211,12 @@ export const ENRIQUECIMIENTO_MINIMO = 1.5;
 const COBERTURA_SIN_FUERA = 0.8;
 
 /** Medida de la región complementaria a la caja. */
-function medirFuera(muestra: MuestraPixeles, caja: CajaRelativa): Map<string, number> {
+function medirFuera(muestra: MuestraPixeles, caja: CajaRelativa, coloresAdmitidos?: readonly string[]): Map<string, number> {
   const region = regionDe(muestra, caja);
   const conteo = new Map<string, number>();
+  const tabla = coloresAdmitidos
+    ? TABLA.filter(([nombre]) => coloresAdmitidos.includes(nombre))
+    : TABLA;
   if (!region) return conteo;
   const paso = Math.max(1, Math.ceil(Math.sqrt((muestra.ancho * muestra.alto) / MAX_PIXELES_MUESTRA)));
   let medidos = 0;
@@ -210,7 +224,7 @@ function medirFuera(muestra: MuestraPixeles, caja: CajaRelativa): Map<string, nu
     for (let x = 0; x < muestra.ancho; x += paso) {
       if (x >= region.x0 && x < region.x1 && y >= region.y0 && y < region.y1) continue;
       const base = (y * muestra.ancho + x) * 3;
-      const color = clasificarPixel(muestra.rgb[base] ?? 0, muestra.rgb[base + 1] ?? 0, muestra.rgb[base + 2] ?? 0);
+      const color = clasificarPixel(muestra.rgb[base] ?? 0, muestra.rgb[base + 1] ?? 0, muestra.rgb[base + 2] ?? 0, tabla);
       medidos += 1;
       if (color) conteo.set(color, (conteo.get(color) ?? 0) + 1);
     }
@@ -222,35 +236,46 @@ function medirFuera(muestra: MuestraPixeles, caja: CajaRelativa): Map<string, nu
 
 /**
  * Los colores de LA DECORACIÓN de un elemento: lo que hay dentro de su caja
- * descontando lo que el sitio ya ponía. Es lo que debe alimentar
+ * descontando lo que el sitio ya ponía cuando hay píxeles comparables fuera. Es lo que debe alimentar
  * `colores_referencia`; `medirDominanciaColor` a secas mide una región y no
  * sabe qué es fondo.
  *
  * Las participaciones se renormalizan sobre los colores que sobreviven, así que
  * suman ~1 y siguen siendo comparables con `participacion` del plan.
  */
-export function medirDominanciaElemento(muestra: MuestraPixeles, caja: CajaRelativa): MedicionDominancia {
-  const dentro = medirDominanciaColor(muestra, caja);
+export function medirDominanciaElemento(
+  muestra: MuestraPixeles,
+  caja: CajaRelativa,
+  coloresAdmitidos?: readonly string[],
+  dentroDeLaCaja?: (u: number, v: number) => boolean,
+): MedicionDominancia {
+  const dentro = medirDominanciaColor(muestra, caja, coloresAdmitidos, dentroDeLaCaja);
   if (dentro.dominantes.length === 0) return dentro;
+
+  // Named colors measured inside a structure sketch already have two filters:
+  // the analyzer's hue list and the element's geometry. Comparing them with
+  // the whole-photo exterior can erase a real color shared by another piece.
+  if (coloresAdmitidos && dentroDeLaCaja) return dentro;
 
   const cobertura = Math.min(1, Math.max(0, caja.width)) * Math.min(1, Math.max(0, caja.height));
   if (cobertura >= COBERTURA_SIN_FUERA) return dentro;
 
-  const fuera = medirFuera(muestra, caja);
+  const fuera = medirFuera(muestra, caja, coloresAdmitidos);
   if (fuera.size === 0) return dentro;
 
-  const sobreviven = dentro.dominantes.filter((entrada) => {
-    const afuera = fuera.get(entrada.color) ?? 0;
-    // Un color que no está fuera en absoluto es decoración por definición.
-    return afuera <= 0 || entrada.participacion / afuera >= ENRIQUECIMIENTO_MINIMO;
-  });
-  // Si el filtro se lo lleva todo, la caja es indistinguible del fondo y lo
-  // honesto es devolver la medida cruda en vez de un vacío que se leería como
-  // "esta pieza no tiene color".
-  if (sobreviven.length === 0) return dentro;
+  // Subtract the background share instead of dropping a color wholesale. A
+  // named balloon color can also occur in a wall/panel outside the box; binary
+  // rejection erased the cream balloons in the owner's column together with
+  // the cream background. Keep only the excess measured inside the element.
+  const ajustados = dentro.dominantes
+    .map((entrada) => ({ color: entrada.color, participacion: Math.max(0, entrada.participacion - (fuera.get(entrada.color) ?? 0)) }))
+    .filter((entrada) => entrada.participacion > 0);
+  // If subtraction removes everything, box offers no color signal. Preserve
+  // raw measurement rather than returning an empty palette.
+  if (ajustados.length === 0) return dentro;
 
-  const total = sobreviven.reduce((suma, entrada) => suma + entrada.participacion, 0);
-  const dominantes = sobreviven
+  const total = ajustados.reduce((suma, entrada) => suma + entrada.participacion, 0);
+  const dominantes = ajustados
     .map((entrada) => ({ color: entrada.color, participacion: Number((entrada.participacion / total).toFixed(4)) }))
     .filter((entrada) => entrada.participacion >= PARTICIPACION_MINIMA_ELEMENTO)
     .sort((uno, otro) => otro.participacion - uno.participacion || (uno.color < otro.color ? -1 : 1));

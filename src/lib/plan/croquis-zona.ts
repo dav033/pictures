@@ -62,8 +62,8 @@ function anilloDeArco(grosor: number): (u: number, v: number) => boolean {
 }
 
 /** Franja vertical centrada: lo que ocupa una columna dentro de su caja, sin el suelo ni el aire de los lados. */
-function franjaVertical(ancho: number): (u: number, v: number) => boolean {
-  return (u, v) => dentroDelMargen(u, v) && Math.abs(2 * u - 1) <= ancho;
+function franjaVertical(ancho: number, centro = 0.5): (u: number, v: number) => boolean {
+  return (u, v) => dentroDelMargen(u, v) && Math.abs(2 * (u - centro)) <= ancho;
 }
 
 /** Banda horizontal con una caída suave al centro: una guirnalda cuelga aunque su caja sea un rectángulo. */
@@ -140,7 +140,19 @@ const RESPALDO = { forma: "caja entera", dentro: cajaEntera };
  * es un `kit` en el plan, y un aro es hueco). Un tipo desconocido se queda con la caja entera menos el margen:
  * medir la caja es lo que se hacía antes, así que nunca empeora.
  */
-export function zonaDeCroquis(tipo: string, oficialId?: string | null): Zona {
+export function zonaDeCroquis(tipo: string, oficialId?: string | null, placement?: string, proporcionCaja?: number): Zona {
+  // A lateral detector box can also enclose the neighboring arch/panel. Sample
+  // the outside lane nearest its declared side; the measured owner column's
+  // wide boxes (width/height >= 0.5) need side alignment. Narrow columns keep
+  // centered crop; CASE-002 uses narrow boxes and contains silver code 981.
+  if (tipo === "columna" && !oficialId && (proporcionCaja ?? 0) >= 0.5 && placement === "lateral_derecho") {
+    const dentro = franjaVertical(0.3, 0.9);
+    return { forma: "franja vertical del lado derecho", dentro, parteDeLaCaja: parteCubierta(dentro) };
+  }
+  if (tipo === "columna" && !oficialId && (proporcionCaja ?? 0) >= 0.5 && placement === "lateral_izquierdo") {
+    const dentro = franjaVertical(0.3, 0.1);
+    return { forma: "franja vertical del lado izquierdo", dentro, parteDeLaCaja: parteCubierta(dentro) };
+  }
   const elegida = (oficialId ? FORMAS[oficialId] : undefined) ?? FORMAS[tipo] ?? RESPALDO;
   return { forma: elegida.forma, dentro: elegida.dentro, parteDeLaCaja: parteCubierta(elegida.dentro) };
 }

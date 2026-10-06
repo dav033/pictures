@@ -59,6 +59,9 @@ const TRANSPARENTE = "transparente";
 const SINONIMOS_FOTO: ReadonlyArray<readonly [RegExp, string]> = [
   // Before the generic "pink" alias: the catalog sells these as fucsia.
   [/\b(?:hot|neon|shocking)\s+pink\b/g, "fucsia"],
+  // The analyzer sometimes reverses these two-word labels. Preserve ivory/cream
+  // instead of letting the generic white classifier win on the first word.
+  [/\b(?:white\s+(?:cream|ivory)|(?:cream|ivory)\s+white)\b/g, "crema"],
   [/\boff white\b/g, "crema"],
   [/\b(?:lilac|lavender|mauve)\b/g, "lila"],
   [/\bviolet\b/g, "violeta"],
