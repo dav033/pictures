@@ -92,7 +92,7 @@ export function VistaGuiada() {
   const finRef = useRef<HTMLDivElement>(null);
   const turnoRef = useRef(0);
   const mensajesRef = useRef(mensajes);
-  const aceptarPropuestaRef = useRef<((propuesta: z.infer<typeof PropuestaComposicionSchema>) => Promise<void>) | null>(null);
+  const aceptarPropuestaRef = useRef<((propuesta: z.infer<typeof PropuestaComposicionSchema>, desdeTurno?: boolean) => Promise<void>) | null>(null);
 
   useEffect(() => { mensajesRef.current = mensajes; }, [mensajes]);
   const fotosDePlanesRef = useRef(new Map<string, { base64: string; mime: string }>());
@@ -237,7 +237,7 @@ export function VistaGuiada() {
           }
         }
       }
-      if (propuestaParaPlan && turno === turnoRef.current) await aceptarPropuestaRef.current?.(propuestaParaPlan);
+      if (propuestaParaPlan && turno === turnoRef.current) await aceptarPropuestaRef.current?.(propuestaParaPlan, true);
       if (turno === turnoRef.current) setFoto(null);
     } catch (cause) {
       if (turno !== turnoRef.current) return;
@@ -248,8 +248,10 @@ export function VistaGuiada() {
     } finally { if (turno === turnoRef.current) setCargando(false); }
   }, [brief, cargando, mensajes, seleccionada, foto, uso]);
 
-  const aceptarPropuesta = useCallback(async (propuesta: z.infer<typeof PropuestaComposicionSchema>) => {
-    if (cargando) return;
+  // `desdeTurno`: la llama el propio turno que trajo la propuesta, que todavía figura como «cargando»; sin esta
+  // excepción la función se cancelaba sola y el plan nunca se pedía (2026-10-06).
+  const aceptarPropuesta = useCallback(async (propuesta: z.infer<typeof PropuestaComposicionSchema>, desdeTurno = false) => {
+    if (cargando && !desdeTurno) return;
     const piezas = propuesta.piezas.map((pieza) => `${pieza.cantidad} ${pieza.nombre ?? pieza.estructura}`).join(", ");
     const instruccion = `Resuelve ahora, sin pedir aceptación, el plan exacto de esta composición con Python: ${piezas}. Paleta Sempertex: ${propuesta.colores.join(", ")}. Contexto: ${brief.evento ?? "celebración"}${brief.edad ? `, ${brief.edad} años` : ""}, ${brief.tematica ?? "sin temática definida"}.`;
     const actuales = mensajesRef.current.filter((mensaje) => mensaje.content.trim() || mensaje.widgets?.length);
