@@ -39,7 +39,7 @@ export function ComprarMateriales({ decoracion, onDistribuidor }: { decoracion: 
     <ul className="mt-3 divide-y divide-borde-suave">
       {decoracion.materiales.map((material) => <li key={material.variantId} className="flex items-center gap-3 py-2.5">
         <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-fondo">
-          {imagenes[material.variantId] ? <Image src={imagenes[material.variantId]!} alt="" fill sizes="44px" unoptimized className="object-contain" /> : <span className="size-5 rounded-full bg-acento-suave" />}
+          {imagenes[material.variantId] ? <Image src={imagenes[material.variantId]!} alt="" fill sizes="44px" unoptimized loading="eager" className="object-contain" /> : <span className="size-5 rounded-full bg-acento-suave" />}
         </span>
         <span className="flex-1 text-sm">{nombreMaterial(material.nota) ?? "Globos"}</span>
         <span className="text-sm font-semibold tabular-nums">{material.cantidad}</span>
