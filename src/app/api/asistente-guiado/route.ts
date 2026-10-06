@@ -3,7 +3,7 @@ import type { Herramienta, Mensaje } from "@sempertex/agente-core";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { bibliotecaVisible, proveedoresVisibles } from "@/lib/biblioteca-sempertex/biblioteca";
-import { AsistenteGuiadoRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { AsistenteGuiadoRequestSchema, CotizacionGuiadaSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
 import { ChatSseEventV1Schema, CHAT_SSE_CONTRACT_VERSION } from "@/lib/ia/contracts/chat-v1";
@@ -12,6 +12,7 @@ import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
 import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
 import { decoracionCotizableCoincide, normalizarCiudad, protegerHerramientas } from "@/lib/ia/guiado/utilidades";
+import { presentacionMaterialGuiado } from "@/lib/ia/guiado/presentacion-material-guiado";
 
 export const maxDuration = 75;
 
@@ -112,16 +113,19 @@ export async function POST(request: Request) {
         const decoracion = proveedores.find((item) => item.id === entrada.decoracionId);
         if (!decoracion || decoracion.materiales.length === 0) {
           datos.cotizacion = null;
-          return { ok: false, motivo: "costeo_pendiente_datos_de_catalogo", aviso: "Esta decoración todavía no tiene variantes reales asociadas; no inventes un precio." };
+          return { ok: false, motivo: "costeo_pendiente_datos_de_catalogo", aviso: "Esta decoración todavía no tiene productos asociados en el catálogo; no inventes un precio." };
         }
         const entradaCotizacion = ListaMaterialesRequestSchema.parse({ schema_version: "lista-materiales.v1", materiales: decoracion.materiales.map((material) => ({ variant_id: material.variantId, cantidad: material.cantidad })) });
         const cotizada = await llamarPythonListaMateriales({ entrada: entradaCotizacion, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: request.signal });
-        const cotizacion = {
-          lineas: cotizada.lineas.map((linea) => ({ id: linea.variant_id, tamano: "sin tamaño aplicable", cantidadNecesaria: linea.cantidad_necesaria, disponible: true, varianteId: linea.variant_id, nombre: linea.nombre, precioPaquete: linea.precio_paquete, unidadesPaquete: linea.unidades_paquete, paquetes: linea.paquetes, subtotal: linea.subtotal, sobrante: linea.sobrante })),
+        const cotizacion = CotizacionGuiadaSchema.parse({
+          lineas: cotizada.lineas.map((linea) => {
+            const presentacion = presentacionMaterialGuiado(decoracion.materiales.find((material) => material.variantId === linea.variant_id)?.nota);
+            return { id: linea.variant_id, tamano: "sin tamaño aplicable", ...presentacion, cantidadNecesaria: linea.cantidad_necesaria, disponible: true, varianteId: linea.variant_id, precioPaquete: linea.precio_paquete, unidadesPaquete: linea.unidades_paquete, paquetes: linea.paquetes, subtotal: linea.subtotal, sobrante: linea.sobrante };
+          }),
           total: cotizada.total, mermaPorcentaje: 0, incluyeIva: true, complementosSoportados: false,
-        };
+        });
         datos.cotizacion = cotizacion;
-        return { cotizacion, incluyeIva: true, uso: usoConfirmado, aviso: decoracion.origen === "ejemplo" ? "Variantes y precios consultados del catálogo actual. Temática, cantidades y pasos son de ejemplo; no incluye montaje." : "Precio e-commerce. No incluye montaje." };
+        return { cotizacion, incluyeIva: true, uso: usoConfirmado, aviso: decoracion.origen === "ejemplo" ? "Productos y precios consultados del catálogo actual. Temática, cantidades y pasos son de ejemplo; no incluye montaje." : "Precio de tienda en línea. No incluye montaje." };
       },
     };
     const registroProtegido = protegerHerramientas(registro);

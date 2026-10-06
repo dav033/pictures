@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 
 export const ASISTENTE_GUIADO_VERSION = "asistente-guiado.v1" as const;
 const BriefGuiadoSchema = z.object({ evento: z.string().trim().min(1).max(120).optional(), edad: z.number().int().min(0).max(120).optional(), tematica: z.string().trim().min(1).max(160).optional() }).strict();
@@ -36,7 +37,7 @@ export const ListaMaterialesResultadoSchema = z.object({
   total: z.number().int().positive(),
 }).strict();
 export const CotizacionGuiadaSchema = z.object({
-  lineas: z.array(z.object({ id: z.string(), tamano: z.string(), cantidadNecesaria: z.number().int().positive(), disponible: z.boolean(), varianteId: z.string(), nombre: z.string(), precioPaquete: z.number().int().positive(), unidadesPaquete: z.number().int().positive(), paquetes: z.number().int().positive(), subtotal: z.number().int().positive(), sobrante: z.number().int().nonnegative() }).strict()).min(1),
+  lineas: z.array(z.object({ id: z.string(), tamano: z.string(), color: z.enum(PALETA_COLORES_V2).optional(), cantidadNecesaria: z.number().int().positive(), disponible: z.boolean(), varianteId: z.string(), nombre: z.string(), precioPaquete: z.number().int().positive(), unidadesPaquete: z.number().int().positive(), paquetes: z.number().int().positive(), subtotal: z.number().int().positive(), sobrante: z.number().int().nonnegative() }).strict()).min(1),
   total: z.number().int().positive(), mermaPorcentaje: z.literal(0), incluyeIva: z.literal(true), complementosSoportados: z.literal(false),
 }).strict();
 
