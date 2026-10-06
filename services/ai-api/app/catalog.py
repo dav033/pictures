@@ -471,6 +471,38 @@ class CatalogStore:
                 sorted(set(product_ids)),
             )
 
+    async def fetch_current_material_rows(
+        self, variant_ids: Sequence[str]
+    ) -> Sequence[Mapping[str, object]]:
+        """Datos comerciales de variantes activas del snapshot publicado actual."""
+        pool = self._pool
+        if pool is None:
+            raise RuntimeError("CATALOG_STORE_NOT_STARTED")
+        async with self._reading(pool) as connection:
+            return await connection.fetch(
+                """
+                WITH snapshot AS (
+                  SELECT source_snapshot_id
+                    FROM rag_source_snapshots
+                   WHERE source_kind = 'products_catalog' AND status = 'published'
+                   ORDER BY published_at DESC NULLS LAST, fetched_at DESC
+                   LIMIT 1
+                )
+                SELECT v.variant_id, v.title AS nombre, v.price AS precio,
+                       NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer AS unidades_paq
+                  FROM catalog_variants v
+                  JOIN catalog_products p ON p.product_id = v.product_id
+                  JOIN snapshot s ON s.source_snapshot_id = v.source_snapshot_id
+                 WHERE v.variant_id = ANY($1::text[])
+                   AND p.source_snapshot_id = s.source_snapshot_id
+                   AND p.status = 'ACTIVE' AND p.available = TRUE
+                   AND v.available = TRUE AND v.currency = 'COP' AND v.price > 0
+                   AND NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer > 0
+                 ORDER BY v.variant_id
+                """,
+                sorted(set(variant_ids)),
+            )
+
     async def recommend(self, operation: CatalogRecommendationsRequest) -> dict[str, object]:
         """Return commercially eligible alternatives for one reference variant.
 

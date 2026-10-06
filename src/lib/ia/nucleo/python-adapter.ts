@@ -18,6 +18,7 @@ import {
   type EstimarConteoRequestV1,
   type EstimarConteoResultV1,
 } from "@/lib/ia/contracts/domain-v1";
+import { ListaMaterialesResultadoSchema, ListaMaterialesRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import {
   ArmadoBouquetResueltoSchema,
   DISPOSICIONES_NUMERO,
@@ -201,6 +202,8 @@ export const PYTHON_OMOIKANE_ARMADO_PATH = "/internal/v1/omoikane/armado-estruct
 export const PYTHON_OMOIKANE_ARMADO_SCOPE = "omoikane.armado_estructura";
 export const PYTHON_COTIZACION_PROFESIONAL_PATH = "/internal/v1/plan/cotizacion-profesional";
 export const PYTHON_COTIZACION_PROFESIONAL_SCOPE = "plan.cotizacion_profesional";
+export const PYTHON_LISTA_MATERIALES_PATH = "/internal/v1/plan/lista-materiales";
+export const PYTHON_LISTA_MATERIALES_SCOPE = "plan.lista_materiales";
 export const PYTHON_ESTIMAR_CONTEO_PATH = "/internal/v1/plan/estimar-conteo";
 export const PYTHON_ESTIMAR_CONTEO_SCOPE = "plan.estimar_conteo";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
@@ -4107,6 +4110,33 @@ export async function llamarPythonCotizacionProfesional(input: PythonCotizacionP
     || parsed.data.materiales.lineas.length !== entrada.materiales.length
     || parsed.data.materiales.lineas.some((linea, indice) => linea.variant_id !== entrada.materiales[indice]!.variant_id)
   ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return parsed.data;
+}
+
+export type PythonListaMaterialesEntrada = z.infer<typeof ListaMaterialesRequestSchema>;
+export type PythonListaMaterialesResultado = z.infer<typeof ListaMaterialesResultadoSchema>;
+
+export async function llamarPythonListaMateriales(input: {
+  entrada: PythonListaMaterialesEntrada;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+}): Promise<PythonListaMaterialesResultado> {
+  const operationBody = input.entrada;
+  const response = await llamarPythonOperacion(PYTHON_LISTA_MATERIALES_PATH, PYTHON_LISTA_MATERIALES_SCOPE, {
+    requestId: input.requestId,
+    correlationId: input.correlationId,
+    deadlineMs: input.deadlineMs,
+    parentSignal: input.parentSignal,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_LISTA_MATERIALES_SCOPE],
+  });
+  const parsed = ListaMaterialesResultadoSchema.safeParse(response.payload);
+  if (!parsed.success || parsed.data.lineas.length !== input.entrada.materiales.length || parsed.data.lineas.some((linea, index) => linea.variant_id !== input.entrada.materiales[index]?.variant_id)) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
   return parsed.data;

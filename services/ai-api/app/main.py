@@ -136,9 +136,14 @@ from app.operational_models import ContractModel, OperationalRequest
 from app.plan import _plan_cost_optimizer_enabled
 from app.plan import (
     CatalogPlanStore,
+    CatalogMaterialQuoteStore,
+    LISTA_MATERIALES_SCOPE,
+    ListaMaterialesOperationalRequest,
+    ListaMaterialesPayload,
     PLAN_RESOLUTION_SCOPE,
     PlanResolutionError,
     PlanResolutionRequest,
+    cotizar_lista_materiales,
     resolve_plan,
 )
 from app.armado_bouquet import DISPOSICIONES as DISPOSICIONES_BOUQUET
@@ -1963,6 +1968,34 @@ def create_app(
             operation="plan.cotizacion_profesional",
             model=CotizacionProfesionalRequest,
             scope=COTIZACION_PROFESIONAL_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/lista-materiales")
+    async def plan_lista_materiales(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = request.app.state.catalog_store
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, ListaMaterialesOperationalRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await cotizar_lista_materiales(
+                    ListaMaterialesPayload.model_validate({
+                        "schema_version": payload.schema_version,
+                        "materiales": [linea.model_dump() for linea in payload.materiales],
+                    }),
+                    cast(CatalogMaterialQuoteStore, catalog),
+                )
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.lista_materiales",
+            model=ListaMaterialesOperationalRequest,
+            scope=LISTA_MATERIALES_SCOPE,
             handler=handler,
         )
 

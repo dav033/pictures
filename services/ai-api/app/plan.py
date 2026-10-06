@@ -51,6 +51,8 @@ from pydantic import ConfigDict, Field, ValidationError, field_validator, model_
 
 from app.generated_models import (
     contract_schema,
+    ListaMaterialesRequest as ListaMaterialesPayload,
+    ListaMaterialesResult,
     MaterialEstimate,
     PlanDecoracion,
     PlanResolutionResult,
@@ -142,6 +144,7 @@ from app.silueta_patron import (
 
 
 PLAN_RESOLUTION_SCOPE = "plan.resolve"
+LISTA_MATERIALES_SCOPE = "plan.lista_materiales"
 PLAN_RESOLUTION_REQUEST_VERSION = "plan-resolution.v1"
 PLAN_RESOLUTION_RESULT_VERSION = "plan-resolution-result.v1"
 PLAN_RESOLVED_VERSION = "plan-resuelto.v1"
@@ -342,7 +345,6 @@ class CatalogPlanStore(Protocol):
         """
         ...
 
-
 class PlanResolutionError(Exception):
     """Stable domain error translated by the HTTP boundary.
 
@@ -540,6 +542,26 @@ class PistaTamanos(ContractModel):
         "un_solo_tamano",
     ]
     confianza: float = Field(ge=0, le=1)
+
+
+class ListaMaterialesLinea(ContractModel):
+    variant_id: str = Field(min_length=1, max_length=160)
+    cantidad: int = Field(gt=0, le=100_000)
+
+
+class ListaMaterialesOperationalRequest(OperationalRequest):
+    schema_version: Literal["lista-materiales.v1"]
+    materiales: list[ListaMaterialesLinea] = Field(min_length=1, max_length=256)
+
+    @model_validator(mode="after")
+    def validar_contrato_exportado(self) -> "ListaMaterialesOperationalRequest":
+        ListaMaterialesPayload.model_validate(
+            {
+                "schema_version": self.schema_version,
+                "materiales": [linea.model_dump() for linea in self.materiales],
+            }
+        )
+        return self
 
 
 class PlanResolutionRequest(OperationalRequest):
@@ -6081,11 +6103,71 @@ def validar_armado_guirnalda_sin_catalogo(
     vista_previa_de_armado_guirnalda(plan, estructura_id, armado)
 
 
+LISTA_MATERIALES_RESULT_VERSION = "lista-materiales-result.v1"
+
+
+class CatalogMaterialQuoteStore(Protocol):
+    async def fetch_current_material_rows(
+        self, variant_ids: Sequence[str]
+    ) -> Sequence[Mapping[str, object]]: ...
+
+
+async def cotizar_lista_materiales(
+    request: ListaMaterialesPayload, catalog: CatalogMaterialQuoteStore
+) -> dict[str, object]:
+    """Cotiza variantes fijas; precio, paquetes cerrados e IVA viven aquí."""
+    payload = ListaMaterialesPayload.model_validate(request)
+    lineas_solicitadas = cast(list[dict[str, object]], payload.materiales)
+    ids = [cast(str, linea["variant_id"]) for linea in lineas_solicitadas]
+    filas = await catalog.fetch_current_material_rows(ids)
+    por_id = {cast(str, fila["variant_id"]): fila for fila in filas}
+    if len(por_id) != len(ids):
+        raise PlanResolutionError("material_no_disponible", 422)
+    lineas: list[dict[str, object]] = []
+    total = 0
+    for solicitada in lineas_solicitadas:
+        variant_id = cast(str, solicitada["variant_id"])
+        cantidad = cast(int, solicitada["cantidad"])
+        fila = por_id[variant_id]
+        unidades = _integer(fila.get("unidades_paq"))
+        precio = _price(fila.get("precio"))
+        if unidades is None or unidades <= 0 or precio is None or precio <= 0:
+            raise PlanResolutionError("material_no_disponible", 422)
+        paquetes = math.ceil(cantidad / unidades)
+        subtotal = paquetes * precio
+        if subtotal > MAX_SAFE_INTEGER - total:
+            raise PlanResolutionError("cotizacion_fuera_de_rango", 422)
+        total += subtotal
+        lineas.append(
+            {
+                "variant_id": variant_id,
+                "nombre": str(fila.get("nombre") or variant_id),
+                "cantidad_necesaria": cantidad,
+                "unidades_paquete": unidades,
+                "paquetes": paquetes,
+                "precio_paquete": precio,
+                "subtotal": subtotal,
+                "sobrante": paquetes * unidades - cantidad,
+            }
+        )
+    resultado = {
+        "operation_schema_version": LISTA_MATERIALES_RESULT_VERSION,
+        "currency": "COP",
+        "incluye_iva": True,
+        "lineas": lineas,
+        "total": total,
+    }
+    return ListaMaterialesResult.model_validate(resultado).model_dump()
+
+
 __all__ = [
     "armado_arco_de_patron",
     "armado_arco_de_receta",
     "pieza_del_motor_resuelta",
     "CatalogPlanStore",
+    "CatalogMaterialQuoteStore",
+    "ListaMaterialesPayload",
+    "LISTA_MATERIALES_RESULT_VERSION",
     "ComprasPorMaterial",
     "MERMA",
     "PLAN_RESOLUTION_SCOPE",
@@ -6101,6 +6183,7 @@ __all__ = [
     "compras_de_estructura",
     "con_medidas_por_defecto",
     "contar_pieza",
+    "cotizar_lista_materiales",
     "contexto_bouquet_de_globos",
     "modos_admitidos_de_estructura",
     "opciones_de_armado",
