@@ -183,7 +183,7 @@ export function VistaGuiada() {
       const historialConLectura = referenciaRapida
         ? historial.map((mensaje, indice) => indice === historial.length - 1 ? { ...mensaje, content: `${mensaje.content.slice(0, 5400)}\n\nLectura de la foto: ${referenciaRapida.frase}`.slice(0, 6000) } : mensaje)
         : historial;
-      const response = await fetch("/api/asistente-guiado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historialConLectura, brief, estadoGuiado: { ...(elegida ? { decoracionId: elegida.id } : {}), ...(usoEnvio ? { uso: usoEnvio } : {}), ...( /prop[oó]n|arma t[uú]|cambia|sin guirnalda|m[aá]s rosa|solo un arco/i.test(contenido) ? { propuesta: true } : {}) }, ...(imagen ? { fotoInspiracion: imagen } : {}) }) });
+      const response = await fetch("/api/asistente-guiado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historialConLectura, brief, estadoGuiado: { ...(elegida ? { decoracionId: elegida.id } : {}), ...(usoEnvio ? { uso: usoEnvio } : {}), ...( /prop[oó]n|arma t[uú]|cambia|sin guirnalda|m[aá]s rosa|solo un arco|decoraci[oó]n completa|pieza individual/i.test(contenido) ? { propuesta: true } : {}) }, ...(imagen ? { fotoInspiracion: imagen } : {}) }) });
       if (!response.ok || !response.body) throw new Error(`El asistente respondió con estado ${response.status}.`);
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -227,7 +227,9 @@ export function VistaGuiada() {
             // Después del precio o de los pasos, el cliente sigue teniendo las otras opciones a mano (comprar, decorador...).
             if (elegida && widgets.some((widget) => widget.tipo === "cotizacion" || widget.tipo === "pasos") && !widgets.some((widget) => widget.tipo === "opciones")) widgets.push({ tipo: "opciones" });
             if (datos.proveedores) widgets.push({ tipo: "proveedores", proveedores: datos.proveedores });
-            const resolverAhora = Boolean(datos.propuesta && /prop[oó]n|arma t[uú]|qu[eé] me recomiendas armar/i.test(contenido));
+            // Toda propuesta se convierte en plan en el acto (pedido del dueño: «cuando seleccione, me manda el plan»), venga del botón,
+            // de un «Decoración completa» escrito o de un «cambia…».
+            const resolverAhora = Boolean(datos.propuesta);
             if (datos.propuesta && !resolverAhora) widgets.push({ tipo: "propuesta", propuesta: datos.propuesta });
             if (resolverAhora) propuestaParaPlan = datos.propuesta!;
             reemplazarUltimo({ content: resolverAhora ? "Estoy preparando tu plan…" : textoFinal, ...(widgets.length ? { widgets } : {}) });
