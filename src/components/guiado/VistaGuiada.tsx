@@ -36,7 +36,7 @@ const WidgetSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("comprar"), decoracion: DecoracionSempertexSchema }).strict(),
 ]);
 type Widget = z.infer<typeof WidgetSchema>;
-const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetSchema).optional() }).strict();
+const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetSchema).optional(), miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional() }).strict();
 type Mensaje = z.infer<typeof MensajeSchema>;
 type BriefGuiado = { evento?: string; edad?: number; tematica?: string };
 type Uso = "negocio" | "personal";
@@ -135,8 +135,12 @@ export function VistaGuiada() {
     const mensajesVisibles = (opcionesEnvio?.reintentar ? sinUltimoTurnoGuiado(mensajes) : mensajes).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length);
     const usoEnvio = opcionesEnvio?.uso ?? uso;
     const elegida = seleccionada;
-    setMensajes([...mensajesVisibles, { id: nuevoId(), role: "user", content: contenido }, { id: nuevoId(), role: "assistant", content: "" }]);
+    const idUsuario = nuevoId();
+    setMensajes([...mensajesVisibles, { id: idUsuario, role: "user", content: contenido }, { id: nuevoId(), role: "assistant", content: "" }]);
     setEntrada(""); setError(null); setCargando(true);
+    // El cliente ve en su mensaje la foto que mandó (miniatura pequeña: la conversación vive en sessionStorage).
+    if (foto) void miniaturaDe(foto).then((miniatura) => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === idUsuario ? { ...mensaje, miniatura } : mensaje)))
+      .catch((cause: unknown) => console.warn("[asistente-guiado] no se pudo crear la miniatura de la foto.", cause));
     try {
       const response = await fetch("/api/asistente-guiado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historial, brief, estadoGuiado: { ...(elegida ? { decoracionId: elegida.id } : {}), ...(usoEnvio ? { uso: usoEnvio } : {}) }, ...(foto ? { fotoInspiracion: await leerFoto(foto) } : {}) }) });
       if (!response.ok || !response.body) throw new Error(`El asistente respondió con estado ${response.status}.`);
@@ -276,7 +280,11 @@ export function VistaGuiada() {
           <div className="flex flex-col gap-6" aria-live="polite">
             <BurbujaAsistente><Markdown>{SALUDO}</Markdown></BurbujaAsistente>
             {mensajes.map((mensaje, indice) => mensaje.role === "user"
-              ? <div key={mensaje.id} className="ml-auto max-w-[min(85%,36rem)] rounded-2xl rounded-br-md bg-acento px-4 py-2.5 text-sm text-white shadow-sm">{mensaje.content}</div>
+              ? <div key={mensaje.id} className="ml-auto flex max-w-[min(85%,36rem)] flex-col items-end gap-1.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- miniatura local en data URL */}
+                  {mensaje.miniatura && <img src={mensaje.miniatura} alt="Foto de inspiración enviada" className="h-28 w-auto rounded-2xl border border-borde-suave object-cover shadow-sm" />}
+                  <div className="rounded-2xl rounded-br-md bg-acento px-4 py-2.5 text-sm text-white shadow-sm">{mensaje.content}</div>
+                </div>
               : <BurbujaAsistente key={mensaje.id}>
                   {mensaje.content.trim()
                     ? <Markdown>{separarOpciones(mensaje.content).texto}</Markdown>
@@ -325,6 +333,18 @@ function decoracionDeLaConversacion(mensajes: readonly Mensaje[], id: string): D
     if ("decoracion" in widget && widget.decoracion.id === id) return widget.decoracion;
   }
   return null;
+}
+
+async function miniaturaDe(archivo: File): Promise<string> {
+  const imagen = await createImageBitmap(archivo);
+  const escala = Math.min(1, 240 / Math.max(imagen.width, imagen.height));
+  const lienzo = document.createElement("canvas");
+  lienzo.width = Math.round(imagen.width * escala); lienzo.height = Math.round(imagen.height * escala);
+  const contexto = lienzo.getContext("2d");
+  if (!contexto) throw new Error("Sin contexto 2D para la miniatura.");
+  contexto.drawImage(imagen, 0, 0, lienzo.width, lienzo.height);
+  imagen.close();
+  return lienzo.toDataURL("image/jpeg", 0.7);
 }
 
 async function leerFoto(archivo: File): Promise<{ mime: string; base64: string }> {
