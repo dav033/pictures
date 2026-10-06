@@ -18,7 +18,7 @@
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { GROUPING_ONLY_CONTEXT, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { LORA_PRESENTATION_INSTRUCTION } from "../../src/lib/ia/uzume/lora-gemini-composition";
+import { LORA_PRESENTATION_INSTRUCTION } from "./fixtures/gemini-composition-historica";
 import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 

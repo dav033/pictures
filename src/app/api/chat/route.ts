@@ -11,8 +11,6 @@ import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/
 import { RAG_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import type { Brief, ChatMessage } from "@/lib/types";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
-import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
-import { causaCatalogoLora } from "@/lib/lora/catalogo-no-disponible";
 import { RagUnavailableError } from "@/lib/rag/retrieval/search";
 import { isPythonAdapterError } from "@/lib/ia/nucleo/python-adapter";
 import {
@@ -219,8 +217,6 @@ export async function POST(request: Request) {
   let historial: Mensaje[];
   let sistema: string;
   let referenceBlueprint: ReferenceBlueprintV2 | undefined;
-  let catalogAllowlist: Awaited<ReturnType<typeof resolveLoraModeDatasetAllowlist>> = null;
-  let catalogoLoraNoDisponible: string | undefined;
   let loraModeSlug: string | undefined;
 
   try {
@@ -233,26 +229,13 @@ export async function POST(request: Request) {
       : undefined;
     const loraMode = rawLoraMode == null ? null : LoraModeSlugSchema.parse(rawLoraMode);
     loraModeSlug = loraMode ?? undefined;
-    if (RAG_ENABLED && loraMode) {
-      try {
-        catalogAllowlist = await resolveLoraModeDatasetAllowlist(loraMode);
-      } catch (error) {
-        // An unusable LoRA pool must not block a conversation that does not
-        // need the catalog ("hola"). Catalog tools fail closed instead; any
-        // non-LoRA failure (e.g. database down) still aborts the request.
-        const causa = causaCatalogoLora(error);
-        if (!causa) throw error;
-        catalogoLoraNoDisponible = causa;
-        console.warn("[chat] catálogo LoRA no disponible; herramientas de catálogo bloqueadas:", { requestId, loraMode, causa });
-      }
-    }
 
     // Only what the customer left open gets a server-picked venue/time, and only
     // at levels that suggest one (a venue photo leaves nothing open); logged so
     // a surprising scene can be traced.
     const sugerencia = sugerenciaEscenaDelTurno({ nivel: creatividad, mensajes: messages ?? [], brief, fotoEspacio: Boolean(fotoEspacio) });
     if (sugerencia) console.info("[chat] sugerencia de escena por creatividad", { requestId, creatividad, ...sugerencia });
-    sistema = construirSistema({ ragEnabled: RAG_ENABLED, brief, referenceBlueprint, catalogAllowlist: catalogAllowlist ?? undefined, catalogoLoraNoDisponible: catalogoLoraNoDisponible !== undefined, creatividad, sugerenciaEscena: sugerencia });
+    sistema = construirSistema({ ragEnabled: RAG_ENABLED, brief, referenceBlueprint, creatividad, sugerenciaEscena: sugerencia });
 
     // Las imágenes solo se adjuntan al último mensaje (el que se acaba de
     // mandar en este turno) — `historial` se reconstruye desde texto plano
@@ -311,8 +294,6 @@ export async function POST(request: Request) {
     historial,
     brief: brief ?? {},
     referenceBlueprint,
-    catalogAllowlist: catalogAllowlist ?? undefined,
-    catalogoLoraNoDisponible,
     creatividad,
     planVigente,
     signal: deadline.signal,

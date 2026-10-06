@@ -19,6 +19,7 @@ export const UiErrorCodeV1Schema = z.enum([
   "ESTILO_REQUIERE_PROPUESTA",
   "ESTILO_SIN_PRODUCTOS",
   "ESTILO_NO_ADMITE_FOTOS",
+  "IMAGEN_SOLO_FLUX",
   "APROBACION_REQUERIDA",
   "PROPUESTA_DESACTUALIZADA",
   "PROPUESTA_INCOMPLETA",
@@ -40,13 +41,10 @@ export const UiErrorCodeV1Schema = z.enum([
 export type UiErrorCodeV1 = z.infer<typeof UiErrorCodeV1Schema>;
 
 /**
- * Acciones que el cliente puede pedir desde el aviso de error. Ninguna se
- * ejecuta sola: "generar_estilo_estandar" en particular es una decisión
- * explícita del cliente, nunca un fallback automático.
+ * Acciones que el cliente puede pedir desde el aviso de error.
  */
 export const AccionUiV1Schema = z.enum([
   "reintentar",
-  "generar_estilo_estandar",
   "revisar_propuesta",
   "pedir_nueva_propuesta",
   "ajustar_propuesta",
@@ -91,24 +89,30 @@ export const CATALOGO_ERRORES_UI_V1: Readonly<Record<UiErrorCodeV1, EntradaCatal
   ESTILO_NO_PREPARADO: {
     mensaje_usuario: "No pudimos preparar la imagen con este estilo.",
     accion_sugerida: "reintentar",
-    acciones_alternativas: ["generar_estilo_estandar"],
+    acciones_alternativas: [],
     retryable: true,
   },
   ESTILO_REQUIERE_PROPUESTA: {
-    mensaje_usuario: "Este estilo necesita una propuesta de decoración aprobada. Puedes pedir la propuesta o crear la imagen con el estilo estándar.",
-    accion_sugerida: "generar_estilo_estandar",
-    acciones_alternativas: ["pedir_nueva_propuesta"],
+    mensaje_usuario: "Esta imagen necesita una propuesta de decoración aprobada. Pide una propuesta para continuar.",
+    accion_sugerida: "pedir_nueva_propuesta",
+    acciones_alternativas: [],
     retryable: false,
   },
   ESTILO_SIN_PRODUCTOS: {
     mensaje_usuario: "Algunas piezas de tu propuesta todavía no se pueden dibujar con este estilo.",
-    accion_sugerida: "generar_estilo_estandar",
-    acciones_alternativas: ["ajustar_propuesta"],
+    accion_sugerida: "ajustar_propuesta",
+    acciones_alternativas: [],
     retryable: false,
   },
   ESTILO_NO_ADMITE_FOTOS: {
-    mensaje_usuario: "Este estilo no puede usar las fotos que adjuntaste. Con el estilo estándar sí las tenemos en cuenta.",
-    accion_sugerida: "generar_estilo_estandar",
+    mensaje_usuario: "No pudimos usar las fotos adjuntas. Revísalas e inténtalo de nuevo.",
+    accion_sugerida: "revisar_adjuntos",
+    acciones_alternativas: [],
+    retryable: false,
+  },
+  IMAGEN_SOLO_FLUX: {
+    mensaje_usuario: "La creación de imágenes usa un único motor. Actualiza la página e inténtalo de nuevo.",
+    accion_sugerida: "reintentar",
     acciones_alternativas: [],
     retryable: false,
   },

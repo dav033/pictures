@@ -1,6 +1,5 @@
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { GROUPING_ONLY_CONTEXT, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { LORA_PRESENTATION_INSTRUCTION } from "../../src/lib/ia/uzume/lora-gemini-composition";
 import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 
@@ -150,7 +149,7 @@ export function compilarCaption(spec: SceneSpec): CaptionCompilado {
   const sizeConfirmations: ElementSizeConfirmation[] = spec.elements.flatMap((el) =>
     (el.catalog_product_ids ?? []).flatMap((productId) => TAMANOS.map((sizeCode) => ({ elementId: el.element_id, productId, sizeCode }))),
   );
-  const techo = LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length;
+  const techo = LORA_PROMPT_MAX_LENGTH;
   const compilacion = compileProductPrompt({
     sceneSpec: spec,
     visualContext: GROUPING_ONLY_CONTEXT,
@@ -170,6 +169,6 @@ export function compilarCaption(spec: SceneSpec): CaptionCompilado {
   return {
     caption: { texto, longitud: texto.length, techo, tallasOmitidas, diagnosticos: compilacion.diagnostics },
     preflight: { ok: reporte.ok, errores: reporte.errors },
-    promptFal: `${texto}${LORA_PRESENTATION_INSTRUCTION}`,
+    promptFal: texto,
   };
 }

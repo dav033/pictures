@@ -302,13 +302,10 @@ function testCuandoSeUsa(): void {
   }
   assert.equal(planConReferencia([estructura("A", { referencia_element_id: IZQUIERDA })]), true);
   assert.equal(planConReferencia([estructura("A")]), false);
-  const previas = { escena: process.env.GUIA_ESCENA_V1, etapa1: process.env.REFERENCIA_EN_ETAPA1_V1 };
+  const previaEscena = process.env.GUIA_ESCENA_V1;
   delete process.env.GUIA_ESCENA_V1;
-  delete process.env.REFERENCIA_EN_ETAPA1_V1;
   assert.equal(featureEnabled("GUIA_ESCENA_V1"), true, "GUIA_ESCENA_V1 va encendida por defecto");
-  assert.equal(featureEnabled("REFERENCIA_EN_ETAPA1_V1"), false, "la foto nunca va como píxel a la etapa 1 por defecto");
-  if (previas.escena !== undefined) process.env.GUIA_ESCENA_V1 = previas.escena;
-  if (previas.etapa1 !== undefined) process.env.REFERENCIA_EN_ETAPA1_V1 = previas.etapa1;
+  if (previaEscena !== undefined) process.env.GUIA_ESCENA_V1 = previaEscena;
   console.log("[PASS] cuándo se usa: bandera (encendida por defecto), FLUX directo, sin venue ni previo, texto y con foto de referencia");
 }
 

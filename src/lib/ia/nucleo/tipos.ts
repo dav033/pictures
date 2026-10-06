@@ -65,10 +65,6 @@ export type PeticionImagen = {
   inputs: ImageInput[];
   sceneSpec?: import("../escena/scene-spec").SceneSpec;
   previousGeneratedImage?: ImagenEtiquetada;
-  /** Id de la interacción anterior (solo Gemini) — encadena de verdad esta
-   * llamada con la anterior en la misma revisión, en vez de depender solo
-   * de reenviar la imagen previa como referencia. */
-  previousInteractionId?: string;
   revisionMode?: "new_generation" | "revise_current_result";
   aspecto: "3:2" | "1:1" | "2:3" | "16:9";
   calidad: "borrador" | "alta";
@@ -87,5 +83,5 @@ export interface ImagenPort {
   readonly capabilities: ProviderCapabilities;
   /** Cuántas imágenes de referencia + base admite una sola petición. */
   readonly maxReferencias: number;
-  generar(p: PeticionImagen): Promise<{ imagen: Imagen; modelo: string; ms: number; interactionId?: string }>;
+  generar(p: PeticionImagen): Promise<{ imagen: Imagen; modelo: string; ms: number }>;
 }

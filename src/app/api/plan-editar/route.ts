@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { buscarCatalogoRag, type FiltrosExploracion, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { listarColoresCatalogo } from "@/lib/rag/chat/colores-catalogo";
-import { allowlistParaExplorar, claveColores, coloresParaExplorar } from "@/lib/rag/chat/cache-exploracion";
+import { claveColores, coloresParaExplorar } from "@/lib/rag/chat/cache-exploracion";
 import { getRagPool } from "@/lib/rag/db";
 import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/nucleo/python-adapter";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
@@ -10,8 +10,6 @@ import { PlanEditError } from "@/lib/plan/edicion-error";
 import { exigirContextoPython, recomendarAlternativasPython } from "@/lib/plan/edicion-python";
 import { PlanBackendNoDisponibleError } from "@/lib/plan/resolver-backend";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
-import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
-import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
 import { filtrarCandidatosCompatibles } from "@/lib/plan/edicion-compatibilidad";
 import {
@@ -118,29 +116,17 @@ export async function POST(request: Request) {
     const body = BodySchema.parse(json);
     const pool = getRagPool();
 
-    // Un modo LoRA restringido (training_1/2) nunca debe poder ofrecer ni
-    // aplicar una pieza fuera de su dataset — el mismo allowlist que ya
-    // filtra la búsqueda del chat contra la allowlist del turno. Sin esto, el
-    // editor podía agregar/reemplazar cualquier producto real del catálogo y el
-    // rechazo solo aparecía al generar, ya tarde. Se resuelve después de abrir
-    // el token para que una aprobación inválida no llegue a consultar nada.
-    const resolverCatalogAllowlist = async (): Promise<CatalogAllowlist | null> => body.loraMode
-      ? await resolveLoraModeDatasetAllowlist(body.loraMode, pool)
-      : null;
-
     if (body.modo === "buscar") {
       // Con un token de plan Python la búsqueda queda fijada al snapshot firmado;
       // sin token (o con uno de Next) conserva el comportamiento anterior.
       const contextoBusqueda = body.approval_token === undefined ? null : abrirContextoExigido(body.approval_token);
       const catalogSnapshotId = contextoBusqueda?.backend === "python" ? exigirContextoPython(contextoBusqueda) : undefined;
-      // Leer el catálogo no decide nada que se guarde: la allowlist se recuerda un minuto (aplicar siempre la resuelve de nuevo).
-      const catalogAllowlist = await allowlistParaExplorar(body.loraMode, resolverCatalogAllowlist);
+      // La lectura usa filtros del cliente y el snapshot firmado, sin restringir por modo de generación.
       const exploracion = exploracionDe(body.filtros);
       const sinTexto = body.consulta.length < 2;
       const limite = body.limite ?? LIMITE_BUSQUEDA_PREDETERMINADO;
       const limitePython = body.linea_objetivo ? LIMITE_PYTHON_MAXIMO : body.limite;
       const resultado = await buscarCatalogoRag(pool, sinTexto ? ETIQUETA_EXPLORACION : body.consulta, {
-        allowlist: catalogAllowlist ?? undefined,
         ...(catalogSnapshotId === undefined ? {} : { catalogSnapshotId }),
         ...(exploracion === undefined ? {} : { exploracion }),
         ...(sinTexto ? { sinTexto: true } : {}),
@@ -156,17 +142,14 @@ export async function POST(request: Request) {
     }
 
     if (body.modo === "colores") {
-      // Same snapshot pin and allowlist as `buscar`: the chips can only offer
-      // colors the plan could actually be edited with.
+      // Mismo snapshot firmado que `buscar`.
       const contextoColores = body.approval_token === undefined ? null : abrirContextoExigido(body.approval_token);
       const catalogSnapshotId = contextoColores?.backend === "python" ? exigirContextoPython(contextoColores) : undefined;
-      const catalogAllowlist = await allowlistParaExplorar(body.loraMode, resolverCatalogAllowlist);
-      // La lista de un catálogo publicado no cambia: se recuerda por snapshot, modo y allowlist (cache-exploracion.ts).
+      // La lista de un snapshot publicado no cambia: se recuerda por snapshot (cache-exploracion.ts).
       const colores = await coloresParaExplorar(
-        claveColores(catalogSnapshotId, body.loraMode, catalogAllowlist),
+        claveColores(catalogSnapshotId),
         catalogSnapshotId !== undefined,
         () => listarColoresCatalogo({
-          allowlist: catalogAllowlist ?? undefined,
           ...(catalogSnapshotId === undefined ? {} : { catalogSnapshotId }),
           requestId: requestIdHttp,
         }),
@@ -183,7 +166,6 @@ export async function POST(request: Request) {
       const candidatos = await recomendarAlternativasPython({
         contexto: contextoPlan,
         variantId: body.variant_id,
-        catalogAllowlist: await resolverCatalogAllowlist(),
         correlationId: correlationDesde(contextoPlan.requestId),
         signal: request.signal,
       });
@@ -194,11 +176,9 @@ export async function POST(request: Request) {
     // `aplicarEdicionPlan` (src/lib/plan/aplicar-edicion.ts) so the chat tool
     // `ajustar_plan_decoracion` (src/lib/ia/herramientas/registro-herramientas.ts) can call
     // the exact same checks instead of a second implementation.
-    const catalogAllowlist = await resolverCatalogAllowlist();
     const { plan: resuelto, cotizacion, avisos } = await aplicarEdicionPlan({
       base: body.base,
       edicion: body.edicion,
-      catalogAllowlist,
       pool,
       signal: request.signal,
     });

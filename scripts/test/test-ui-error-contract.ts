@@ -60,7 +60,8 @@ caso("construirUiErrorV1 produce un sobre versionado y estricto", () => {
   assert.equal(ui.schema_version, UI_ERROR_CONTRACT_VERSION);
   assert.equal(ui.request_id, requestId);
   assert.equal(ui.accion_sugerida, "reintentar");
-  assert.deepEqual(ui.acciones_alternativas, ["generar_estilo_estandar"]);
+  assert.deepEqual(ui.acciones_alternativas, []);
+  assert.equal(AccionUiV1Schema.safeParse("generar_estilo_estandar").success, false);
   assert.equal(ui.detalles_dev.codigo_origen, "FLUX_PREFLIGHT_FAILED");
   assert.doesNotMatch(ui.mensaje_usuario, /LORA|límite|845/);
   assert.throws(() => UiErrorV1Schema.parse({ ...ui, extra: true }), ZodError);
@@ -101,6 +102,8 @@ const MENSAJES_REALES: ReadonlyArray<readonly [string, string]> = [
   ["FLUX_PREFLIGHT_FAILED: cobertura de colores 2/3; longitud 845 supera límite 750", "ESTILO_NO_PREPARADO"],
   ["FLUX_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (globos)", "ESTILO_NO_PREPARADO"],
   ["FLUX_EDIT_PREFLIGHT_FAILED: el prompt texto enviado al proveedor mide 2600 y supera el límite 2500", "ESTILO_NO_PREPARADO"],
+  ["FLUX_REVISION_TRANSLATION_FAILED: no se pudo traducir la instrucción de revisión.", "SERVICIO_NO_DISPONIBLE"],
+  ["IMAGEN_SOLO_FLUX: la generación solo admite FLUX base y el contrato actual.", "IMAGEN_SOLO_FLUX"],
   ["LORA_MODE_REQUIRED: no se pudo resolver un artifact LoRA registrado para esta generación.", "ESTILO_NO_PREPARADO"],
   ["LORA_MODE_INVALID: modo LoRA inválido.", "ESTILO_NO_PREPARADO"],
   ["LORA_SELECTION_INVALID: selecciona un artifact producto o estructura válido.", "ESTILO_NO_PREPARADO"],

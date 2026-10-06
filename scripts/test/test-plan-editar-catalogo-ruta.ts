@@ -112,7 +112,7 @@ async function main(): Promise<void> {
   const { listarColoresCatalogo } = await import("../../src/lib/rag/chat/colores-catalogo");
   const { buscarCatalogoRag } = await import("../../src/lib/rag/chat/buscar");
   const { crearCatalogAllowlist } = await import("../../src/lib/rag/retrieval/allowlist");
-  const { allowlistParaExplorar, claveColores, olvidarCachesExploracion } = await import("../../src/lib/rag/chat/cache-exploracion");
+  const { claveColores, olvidarCachesExploracion } = await import("../../src/lib/rag/chat/cache-exploracion");
   olvidarCaches = olvidarCachesExploracion;
   Object.defineProperty(getRagPool(), "query", {
     value: () => { throw new Error("la prueba no debe consultar la base"); },
@@ -315,29 +315,9 @@ async function main(): Promise<void> {
     assert.equal(llamadas.length, 2);
   });
 
-  await caso("la allowlist de un modo se resuelve una vez para leer y la clave de colores distingue modos y allowlists", async () => {
-    let resoluciones = 0;
-    const lista = crearCatalogAllowlist([{ productId: "prod-a", variantId: "var-a1" }]);
-    const resolver = async () => { resoluciones += 1; await new Promise((listo) => setTimeout(listo, 5)); return lista; };
-    const [uno, dos] = await Promise.all([allowlistParaExplorar("training_1", resolver), allowlistParaExplorar("training_1", resolver)]);
-    assert.equal(uno, dos);
-    await allowlistParaExplorar("training_1", resolver);
-    assert.equal(resoluciones, 1, "un modo se resuelve una vez, aunque lo pidan a la vez o después");
-    await allowlistParaExplorar("training_2", resolver);
-    assert.equal(resoluciones, 2, "otro modo es otra resolución");
-    await allowlistParaExplorar(undefined, resolver);
-    await allowlistParaExplorar(undefined, resolver);
-    assert.equal(resoluciones, 4, "sin modo restringido no se recuerda nada: es la ruta sin allowlist");
-    let fallos = 0;
-    const falla = async (): Promise<null> => { fallos += 1; throw new Error("LORA_X"); };
-    await assert.rejects(allowlistParaExplorar("training_9", falla));
-    await assert.rejects(allowlistParaExplorar("training_9", falla));
-    assert.equal(fallos, 2, "un fallo no se recuerda");
-    const otra = crearCatalogAllowlist([{ productId: "prod-a", variantId: "var-a1" }, { productId: "prod-b", variantId: "var-b1" }]);
-    assert.notEqual(claveColores(SNAPSHOT, "training_1", lista), claveColores(SNAPSHOT, "training_1", otra), "otra allowlist, otra clave");
-    assert.notEqual(claveColores(SNAPSHOT, "training_1", lista), claveColores(SNAPSHOT, "training_2", lista), "otro modo, otra clave");
-    assert.notEqual(claveColores(SNAPSHOT, undefined, null), claveColores("products_catalog:otro", undefined, null), "otro snapshot, otra clave");
-    assert.equal(claveColores(SNAPSHOT, "training_1", lista), claveColores(SNAPSHOT, "training_1", crearCatalogAllowlist([{ productId: "prod-a", variantId: "var-a1" }])), "la misma allowlist, la misma clave");
+  await caso("la clave de colores distingue snapshots del catálogo", async () => {
+    assert.notEqual(claveColores(SNAPSHOT), claveColores("products_catalog:otro"));
+    assert.equal(claveColores(SNAPSHOT), claveColores(SNAPSHOT));
   });
 
   console.log(`\n${casos} casos en verde`);

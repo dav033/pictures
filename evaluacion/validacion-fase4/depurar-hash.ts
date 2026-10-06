@@ -42,7 +42,9 @@ async function main(): Promise<void> {
   const resoluciones: unknown[] = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    if (/fal\.(run|ai|media)|image/i.test(url)) throw new Error("bloqueado");
+    const host = new URL(url).hostname;
+    if (host === "generativelanguage.googleapis.com" || host.endsWith(".aiplatform.googleapis.com")) throw new Error("Gemini bloqueado");
+    if (/(^|\.)fal\.(run|ai|media)$/.test(host)) throw new Error("fal.ai bloqueado");
     const res = await fetchOriginal(input, init);
     if (/127\.0\.0\.1:8000/.test(url) && /resol/i.test(url)) {
       resoluciones.push(await res.clone().json().catch(() => null));
@@ -54,7 +56,7 @@ async function main(): Promise<void> {
   const plan = JSON.parse(readFileSync(`${base}/plan-resuelto.json`, "utf8"));
   const blueprint = JSON.parse(readFileSync(`${base}/blueprint.json`, "utf8"));
   const imagen = { base64: readFileSync(`${LB}/sin-etiquetas/case-00${caso}-ref.png`).toString("base64"), mime: "image/png" };
-  const res = await POST(new Request("http://localhost/api/generate", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan, planHash: plan.plan_hash, brief: {}, solicitudUsuario: "Adjunto imágenes de referencia del estilo que busco.", imagenesReferencia: [imagen], blueprint, usarLora: false, proveedor: "gemini" }) }));
+  const res = await POST(new Request("http://localhost/api/generate", { method: "POST" , headers: { "content-type": "application/json" }, body: JSON.stringify({ plan, planHash: plan.plan_hash, brief: {}, solicitudUsuario: "Adjunto imágenes de referencia del estilo que busco.", imagenesReferencia: [imagen], blueprint }) }));
   console.log("status", res.status, "resoluciones capturadas", resoluciones.length);
   const re = resoluciones[0] as { plan_resuelto?: { plan_hash: string; plan: unknown } } | undefined;
   const nuevo = re?.plan_resuelto ?? (resoluciones[0] as { plan_hash?: string; plan?: unknown });

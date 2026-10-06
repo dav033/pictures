@@ -17,16 +17,6 @@
       "minLength": 1,
       "maxLength": 160
     },
-    "lora_variant_ids": {
-      "minItems": 1,
-      "maxItems": 2048,
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 160
-      }
-    },
     "limit": {
       "type": "integer",
       "minimum": 1,

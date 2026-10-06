@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   // página sin JavaScript (chunks bloqueados) y sin un solo botón que respondiera (2026-09-25).
   allowedDevOrigins: ["127.0.0.1", "192.168.72.101", "192.168.*.*", "10.*.*.*", "172.16.*.*", "172.30.*.*"],
   cacheComponents: true,
+  // SEGUIMIENTO.md es el único .md del proyecto (2026-10-06): `next dev` no genera AGENTS.md ni CLAUDE.md.
+  agentRules: false,
   experimental: {
     // `src/proxy.ts` matches every API route, so Next buffers each request body
     // up to this size and delivers a larger one truncated (no 413). Explicit
