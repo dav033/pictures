@@ -34,7 +34,7 @@ import path from "node:path";
 import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
 import { captionCanonicoGuirnalda, escenaGuirnalda, GUIRNALDA_SINTETICA, planGuirnalda, type GuirnaldaSintetica } from "../lib/escenas-armado-guirnalda";
-import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lora/exp-fal-lib";
+import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lib/fal-evaluacion";
 
 const identidad = resolverIdentidadLora(flag("artifact-id", "v004-1000"));
 // La escala de producción la da el slot del registro (`lora_scale`); 0.8 es la de las evaluaciones de v004/v007.

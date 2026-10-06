@@ -345,7 +345,7 @@ async function medida(): Promise<void> {
 
 async function vistaPrevia(): Promise<void> {
   const { directorioSalida, prepararCorridaGuia } = await import("../lib/corrida-guia-estructura");
-  const { correrExperimento } = await import("../lora/exp-fal-lib");
+  const { correrExperimento } = await import("../lib/fal-evaluacion");
   const argv = process.argv;
   const fetchOriginal = globalThis.fetch;
   const log = console.log;

@@ -3,7 +3,7 @@ import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { compileLoraCaption, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
-import { TERMINOS_COMERCIALES } from "../../src/lib/lora/descriptor-perceptual";
+import { TERMINOS_COMERCIALES } from "../../src/lib/ia/kagutsuchi/descriptor-perceptual";
 
 type ElementOptions = {
   id: string;
