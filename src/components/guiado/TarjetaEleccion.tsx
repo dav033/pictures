@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { FotoDecoracion } from "./FotoDecoracion";
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 
 /**
@@ -9,7 +9,7 @@ export function TarjetaEleccion({ decoracion }: { decoracion: DecoracionSemperte
   const piezas = decoracion.piezas.map((pieza) => `${pieza.cantidad} ${nombrePieza(pieza.estructura, pieza.cantidad)}`);
   return <section className="mt-4 flex flex-col overflow-hidden rounded-2xl border border-borde-suave bg-superficie shadow-sm sm:flex-row" aria-label="Tu elección">
     <div className="relative aspect-[4/3] shrink-0 bg-[#f7f1eb] sm:aspect-auto sm:w-48">
-      <Image src={decoracion.fotos[0]?.url ?? "/biblioteca-sempertex/decoracion-ejemplo.svg"} alt={decoracion.titulo} fill sizes="(max-width: 640px) 100vw, 192px" unoptimized className="object-cover" />
+      <FotoDecoracion decoracion={decoracion} sizes="(max-width: 640px) 100vw, 192px" />
     </div>
     <div className="flex-1 p-4">
       <div className="flex items-start justify-between gap-2">

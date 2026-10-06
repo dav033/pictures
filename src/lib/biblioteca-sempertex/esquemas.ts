@@ -11,6 +11,10 @@ const BaseSchema = z.object({
   fotos: z.array(FotoSchema).min(1), video: z.url().nullable(),
   piezas: z.array(z.object({ estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS), cantidad: z.number().int().positive() }).strict()),
   materiales: z.array(MaterialSchema), pasos: z.array(PasoSchema), shopifyHandle: z.string().nullable(),
+  /** Colores de la decoración (hex), del más presente al menos. Con ellos se dibuja la ilustración cuando no hay foto que la represente. */
+  paleta: z.array(z.string().regex(/^#[0-9a-f]{6}$/i)).min(2).max(5).optional(),
+  /** false: la foto es de otro kit y no representa esta decoración; la tarjeta muestra la ilustración de colores. */
+  fotoRepresentativa: z.boolean().optional(),
 }).strict();
 
 export const DecoracionSempertexSchema = z.discriminatedUnion("origen", [

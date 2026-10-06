@@ -1,5 +1,5 @@
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
-import Image from "next/image";
+import { FotoDecoracion } from "./FotoDecoracion";
 import { Check } from "lucide-react";
 
 type Props = {
@@ -20,7 +20,7 @@ export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir
           return (
             <article key={decoracion.id} className={`w-[min(78vw,17rem)] shrink-0 snap-start overflow-hidden rounded-2xl border bg-superficie shadow-sm transition ${elegida ? "border-acento ring-2 ring-acento/30" : "border-borde-suave"} ${!activo && !elegida ? "opacity-50" : ""}`}>
               <div className="relative aspect-[4/3] bg-[#f7f1eb]">
-                <Image src={decoracion.fotos[0]?.url ?? "/biblioteca-sempertex/decoracion-ejemplo.svg"} alt={decoracion.titulo} fill sizes="(max-width: 640px) 78vw, 272px" unoptimized className="object-cover" />
+                <FotoDecoracion decoracion={decoracion} sizes="(max-width: 640px) 78vw, 272px" />
                 {decoracion.origen === "ejemplo" && <span className="absolute left-2.5 top-2.5 rounded-full bg-white/90 px-2 py-0.5 text-[0.7rem] font-semibold text-[#6d3c39] shadow-sm">Ejemplo</span>}
                 {elegida && <span className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full bg-acento text-white shadow"><Check className="size-4" aria-label="Elegida" /></span>}
               </div>
