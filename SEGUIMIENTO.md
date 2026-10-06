@@ -327,6 +327,18 @@ prompt prohíbe hablar de una propuesta; controles desactivados hasta hidratar (
 shower no se pregunta la edad. En esta vista NO se genera imagen (decisión del dueño); posible botón «Ver cómo quedaría en mi
 espacio» que lleve la idea a la vista clásica: pendiente de decisión del dueño (riesgo en vivo).
 
+**Producción y rama local (2026-10-06 ~15:00-15:40).** `main` en GitHub = 83346fe (todo lo fusionado hasta tonos FLUX y forma
+parcial de CASE-002 + arreglos de Vercel: `vercel-build` compila los paquetes del workspace, `output: standalone` solo fuera de
+Vercel, preset Next.js en el proyecto, SQLite en /tmp en Vercel). Vercel producción `demo-decoracion.vercel.app` (con login) y VPS
+(`gh-deploy-vps pictures`, lanzado a mano porque CI falla: ruff format y una prueba de texto FLUX; DEPLOY_OK 83346fe) alineados.
+Dueño: «no subamos a main, intégralo a la raíz del código para ir probando» → la rama de trabajo local integra además: cobertura de
+5 colores (los 3 primeros nombrados siempre; 4.º-5.º solo con presencia ≥3 % o sin medición), racimo de pared por tallas, etapa 5
+(renombres FLUX; endpoint `fal-ai/flux-2/edit` sin LoRA), guía de escena sin 500 (schema Python regenerado: rechazaba `apariencia`
+de transparentes/confeti; ahora las excepciones dejan traceback con request_id) y foto de referencia en la guiada (widget mínimo:
+foto pequeña con contornos suaves, «Veo un arco en dorado, azul y rosa.», 3-5 puntos de color; reutiliza el análisis de la
+clásica; no genera imagen). Pendiente: CI verde en `main` (ruff format, prueba «organic balloon arch», test-python-adapter que
+aún espera LoRA) para que el despliegue al VPS vuelva a ser automático; subir a producción lo local solo cuando el dueño lo pida.
+
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
 - Pendientes: taxonomía 12 o 18 clases (las 5 que AGENTS.md daba por retiradas: `arco_no_denso`, `columna_no_densa`, `pared_densa`,
