@@ -96,6 +96,7 @@ export async function POST(request: Request) {
           ? coincidencias.filter((decoracion) => normalizarBusqueda(`${decoracion.titulo} ${decoracion.tematica}`).split(" ").includes(generoBaby))
           : coincidencias;
         datos.decoraciones = encontradas;
+        if (!encontradas.length) return { brief: brief.data, decoraciones: [], aviso: "No hay ideas que mostrar: NO hables de «esta propuesta» ni de opciones; pregunta otro estilo o colores, o pide una foto de inspiración." };
         return { brief: brief.data, decoraciones: encontradas, aviso: "Todos los registros visibles llevan marca de ejemplo." };
       },
       ofrecer_opciones: async () => { datos.opciones = ["contratar", "costear", "comprar", "aprender"]; return { opciones: datos.opciones }; },
