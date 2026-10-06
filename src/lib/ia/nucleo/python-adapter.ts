@@ -113,6 +113,7 @@ import {
 import { ArmadoColumnaV1Schema, ColumnaResueltaSchema, RemateLeidoSchema, VistaColumnaSchema, type ArmadoColumnaV1, type ColumnaResuelta, type PistaRemate, type VistaColumna } from "@/lib/plan/armado-columna";
 import { LimitesColumnaSchema, OpcionesArmadoColumnaSchema, type LimitesColumna, type OpcionesArmadoColumna } from "@/lib/plan/opciones-armado-columna";
 import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
+import type { PistaGeometria } from "@/lib/plan/geometria-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import { CotizacionProfesionalResultadoSchema, type CotizacionProfesionalResultado, type EntradaCotizacionProfesional } from "@/lib/cotizacion/profesional";
 import {
@@ -1582,6 +1583,7 @@ export interface PythonPlanResolutionInput {
   /** Absent unless the caller passes it (ADR-0031): same byte-identical rule. */
   completarConteos?: boolean;
   pistasConteo?: PistaConteo[];
+  pistasGeometria?: PistaGeometria[];
   completarConteosDe?: string[];
   /** With `completarConteos`: the customer gave measures, so the structures' declared measures stay (ADR-0031). */
   medidasDelCliente?: boolean;
@@ -3390,6 +3392,7 @@ export async function llamarPythonPlanResolution(
     pistasGuirnalda,
     completarConteos,
     pistasConteo,
+    pistasGeometria,
     completarConteosDe,
     medidasDelCliente,
     ...rest
@@ -3410,6 +3413,7 @@ export async function llamarPythonPlanResolution(
     ...(pistasGuirnalda === undefined ? {} : { pistas_guirnalda: pistasGuirnalda }),
     ...(completarConteos === undefined ? {} : { completar_conteos: completarConteos }),
     ...(pistasConteo === undefined ? {} : { pistas_conteo: pistasConteo }),
+    ...(pistasGeometria === undefined ? {} : { pistas_geometria: pistasGeometria }),
     ...(completarConteosDe === undefined ? {} : { completar_conteos_de: completarConteosDe }),
     ...(medidasDelCliente === undefined ? {} : { medidas_del_cliente: medidasDelCliente }),
   };

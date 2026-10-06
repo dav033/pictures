@@ -294,6 +294,9 @@ _GARLAND_SHAPES: dict[str, dict[str, object]] = cast(
 _GARLAND_HINT = Draft7Validator(
     contract_schema("PlanResolutionRequest")["properties"]["pistas_guirnalda"]["items"]
 )
+_PHOTO_GEOMETRY_HINT = Draft7Validator(
+    cast(Mapping[str, object], contract_schema("PlanResolutionRequest")["properties"]["pistas_geometria"]["items"])
+)
 _DEFAULT_MEASURES: dict[str, dict[str, dict[str, float]]] = {
     "arco": {"interior": {"ancho_m": 3, "alto_m": 2.4}, "exterior": {"ancho_m": 4, "alto_m": 2.6}},
     # ancho = horizontal reach of the curve; see src/lib/plan/medidas-defecto.ts.
@@ -583,6 +586,7 @@ class PlanResolutionRequest(OperationalRequest):
     # of each hint is validated against the exported contract.
     completar_conteos: bool = Field(default=False, strict=True)
     pistas_conteo: list[dict[str, object]] = Field(default_factory=list, max_length=16)
+    pistas_geometria: list[dict[str, object]] = Field(default_factory=list, max_length=16)
     completar_conteos_de: list[str] | None = Field(default=None, max_length=8)
     # Review 33: the customer gave measures (Next's clienteDioMedidasEspacio), so
     # the measures a structure declares are theirs and the count keeps them.
@@ -592,6 +596,14 @@ class PlanResolutionRequest(OperationalRequest):
     @classmethod
     def validate_count_hints(cls, values: list[dict[str, object]]) -> list[dict[str, object]]:
         return cast(list[dict[str, object]], conteo_foto.validar_pistas(values))
+
+    @field_validator("pistas_geometria")
+    @classmethod
+    def validate_photo_geometry(cls, values: list[dict[str, object]]) -> list[dict[str, object]]:
+        for value in values:
+            if list(_PHOTO_GEOMETRY_HINT.iter_errors(value)):
+                raise ValueError("pistas_geometria debe cumplir el contrato exportado")
+        return values
 
     @field_validator("catalog_snapshot_id")
     @classmethod
@@ -912,12 +924,156 @@ def proporciones_de_mezcla(mezcla: str) -> tuple[tuple[int, float], ...] | None:
     return _MIXES.get(mezcla)
 
 
+def _medir_desde_cajas(
+    raw_plan: Mapping[str, object],
+    pistas: Sequence[Mapping[str, object]],
+    *,
+    medidas_del_cliente: bool,
+) -> tuple[dict[str, object], list[str]]:
+    """Deriva medidas relativas desde cajas aprobadas, con una sola escala física."""
+    plan = dict(raw_plan)
+    if not pistas:
+        return plan, []
+    por_id = {
+        _text(pista.get("referencia_element_id")): pista
+        for pista in pistas
+        if _text(pista.get("referencia_element_id"))
+    }
+    piezas: list[tuple[dict[str, object], Mapping[str, object], Mapping[str, object], Mapping[str, object]]] = []
+    avisos: list[str] = []
+    for original in _mappings(plan.get("estructuras")):
+        estructura = dict(original)
+        referencia = _text(estructura.get("referencia_element_id"))
+        pista = por_id.get(referencia or "")
+        caja = _mapping(pista.get("caja")) if pista else {}
+        ancho = _number(caja.get("width")) or 0.0
+        alto = _number(caja.get("height")) or 0.0
+        y = _number(caja.get("y")) or 0.0
+        confianza = _number(pista.get("confianza")) if pista else None
+        if pista is None:
+            continue
+        if confianza is None or confianza < 0.5 or ancho < 0.025 or alto < 0.05 or y <= 0.01:
+            avisos.append(
+                f"No pude medir {referencia} con su caja de foto (confianza baja, caja pequeña o corte superior); conservé medidas supuestas."
+            )
+            continue
+        piezas.append((estructura, caja, _mapping(estructura.get("medidas")), pista))
+        if _number(pista.get("aspect_ratio")) is None:
+            avisos.append(
+                f"No pude leer la proporción de la foto para {referencia}; usé una foto cuadrada como escala de respaldo."
+            )
+
+    if not piezas:
+        return plan, avisos
+
+    def puntuacion_ancla(pieza: tuple[dict[str, object], Mapping[str, object], Mapping[str, object], Mapping[str, object]]) -> tuple[float, float, str]:
+        estructura, caja, medidas, pista = pieza
+        alto_declarado = _number(medidas.get("alto_m"))
+        ancho_declarado = _number(medidas.get("ancho_m"))
+        aspecto_foto = _number(pista.get("aspect_ratio")) or 1.0
+        alto_caja = _number(caja.get("height")) or 1.0
+        ancho_caja = _number(caja.get("width")) or 1.0
+        error = 0.0
+        if alto_declarado and ancho_declarado:
+            aspecto_fisico = ancho_declarado / alto_declarado
+            aspecto_caja = ancho_caja * aspecto_foto / alto_caja
+            error = abs(math.log(max(0.01, aspecto_fisico) / max(0.01, aspecto_caja)))
+        confianza = _number(pista.get("confianza")) or 0.0
+        return error, -confianza, _text(estructura.get("estructura_id")) or ""
+
+    con_medida = [pieza for pieza in piezas if _number(pieza[2].get("alto_m")) or _number(pieza[2].get("ancho_m"))]
+    if con_medida:
+        ancla = min(con_medida, key=puntuacion_ancla)
+        alto_ancla = _number(ancla[2].get("alto_m"))
+        ancho_ancla = _number(ancla[2].get("ancho_m"))
+        if alto_ancla is None and ancho_ancla is not None:
+            aspecto = _number(ancla[3].get("aspect_ratio")) or 1.0
+            ancho_fraccion = (_number(ancla[1].get("width")) or 1.0) * aspecto
+            alto_fraccion = _number(ancla[1].get("height")) or 1.0
+            alto_ancla = ancho_ancla * alto_fraccion / ancho_fraccion
+        alto_ancla = alto_ancla or 2.2
+        aviso_ancla = f"Escala de la foto anclada en {ancla[0].get('estructura_id')} ({alto_ancla:g} m)."
+    else:
+        ancla = max(piezas, key=lambda pieza: _number(pieza[1].get("height")) or 0.0)
+        alto_ancla = 2.2
+        ancho_ancla = None
+        aviso_ancla = f"Escala de la foto estimada con altura estándar de 2,2 m en {ancla[0].get('estructura_id')}."
+    caja_ancla, pista_ancla = ancla[1], ancla[3]
+    ancho_caja_ancla = _number(caja_ancla.get("width")) or 1.0
+    alto_caja_ancla = _number(caja_ancla.get("height")) or 1.0
+    aspecto_foto_ancla = _number(pista_ancla.get("aspect_ratio")) or 1.0
+    medidas_por_fraccion_vertical = alto_ancla / alto_caja_ancla
+    asumidos: list[str] = []
+
+    nuevas_estructuras: list[dict[str, object]] = []
+    for estructura_original in _mappings(plan.get("estructuras")):
+        estructura = dict(estructura_original)
+        referencia = _text(estructura.get("referencia_element_id"))
+        pieza = next((item for item in piezas if _text(item[0].get("estructura_id")) == _text(estructura.get("estructura_id"))), None)
+        if pieza is None:
+            nuevas_estructuras.append(estructura)
+            continue
+        _, caja, medidas_originales, pista = pieza
+        id_estructura = _text(estructura.get("estructura_id")) or referencia or "pieza"
+        ancho_caja = _number(caja.get("width")) or 0.0
+        alto_caja = _number(caja.get("height")) or 0.0
+        aspecto_foto = _number(pista.get("aspect_ratio")) or aspecto_foto_ancla
+        alto_estimado = alto_ancla * alto_caja / alto_caja_ancla
+        if ancho_ancla is not None:
+            ancho_estimado = ancho_ancla * ancho_caja / ancho_caja_ancla
+        else:
+            ancho_estimado = ancho_caja * aspecto_foto * medidas_por_fraccion_vertical
+        alto_estimado = min(4.5, max(0.5, alto_estimado))
+        ancho_estimado = min(8.0, max(0.3, ancho_estimado))
+        medidas = dict(medidas_originales)
+        anterior_alto = _number(medidas.get("alto_m"))
+        anterior_ancho = _number(medidas.get("ancho_m"))
+        tipo = _text(estructura.get("tipo")) or ""
+        alto_final = anterior_alto if medidas_del_cliente and anterior_alto is not None else alto_estimado
+        ancho_final = anterior_ancho if medidas_del_cliente and anterior_ancho is not None else ancho_estimado
+        medidas["alto_m"] = round(alto_final, 2)
+        if tipo in {"semiarco", "arco", "pared_organica", "pared_densa"} or estructura.get("armado_columna_organica") is not None:
+            medidas["ancho_m"] = round(ancho_final, 2)
+        estructura["medidas"] = medidas
+
+        organica = estructura.get("armado_columna_organica")
+        if isinstance(organica, Mapping):
+            armado = dict(organica)
+            forma = dict(_mapping(armado.get("forma")))
+            volumen = dict(_mapping(armado.get("volumen")))
+            base_anterior = _number(volumen.get("grosorPatasM")) or 0.85
+            punta_anterior = _number(volumen.get("grosorCimaM")) or 0.45
+            base = min(1.6, max(0.35, ancho_final))
+            punta = min(1.6, max(0.35, base * punta_anterior / base_anterior))
+            forma["altoM"] = round(alto_final, 2)
+            volumen["grosorPatasM"] = round(base, 2)
+            volumen["grosorCimaM"] = round(punta, 2)
+            armado["forma"] = forma
+            armado["volumen"] = volumen
+            estructura["armado_columna_organica"] = armado
+
+        cambio = (
+            anterior_alto is not None and abs(anterior_alto - alto_final) >= 0.05
+        ) or (anterior_ancho is not None and "ancho_m" in medidas and abs(anterior_ancho - ancho_final) >= 0.05)
+        if cambio:
+            antes = f"{anterior_ancho:g} × {anterior_alto:g} m" if anterior_ancho is not None and anterior_alto is not None else f"alto {anterior_alto:g} m" if anterior_alto is not None else "sin ancho"
+            despues = f"{medidas.get('ancho_m', '—')} × {medidas['alto_m']} m"
+            asumidos.append(f"Medidas de {id_estructura} ajustadas de {antes} a {despues} según proporción de la foto.")
+        nuevas_estructuras.append(estructura)
+
+    plan["estructuras"] = nuevas_estructuras
+    plan["supuestos"] = list(dict.fromkeys([*_strings(plan.get("supuestos")), aviso_ancla, *avisos, *asumidos]))
+    return plan, avisos
+
+
 def _complete_plan(
     raw_plan: Mapping[str, object],
     *,
     completar_patrones: bool = False,
     pistas: Sequence[Mapping[str, object]] = (),
     tamanos: Sequence[Mapping[str, object]] = (),
+    pistas_geometria: Sequence[Mapping[str, object]] = (),
+    medidas_del_cliente: bool = False,
     avisos: list[str] | None = None,
 ) -> dict[str, object]:
     """Fill default measures and make every color pattern authoritative.
@@ -935,7 +1091,12 @@ def _complete_plan(
     pattern), as ``advertencias`` entries: they describe this resolution, not
     the plan, so they never enter it nor its hash.
     """
-    plan = _complete_measures(raw_plan)
+    plan, avisos_geometria = _medir_desde_cajas(
+        raw_plan, pistas_geometria, medidas_del_cliente=medidas_del_cliente
+    )
+    if avisos is not None:
+        avisos.extend(avisos_geometria)
+    plan = _complete_measures(plan)
     # Los tamaños no esperan a ``completar_patrones``: no son una disposición de color (ver
     # ``pistas_tamanos``). Siguen yendo ANTES de ``_assign_patterns`` porque la rejilla de un patrón se
     # dimensiona desde la mezcla.
@@ -4436,6 +4597,8 @@ def _plan_to_resolve(request: PlanResolutionRequest) -> tuple[dict[str, object],
         completar_patrones=request.completar_patrones,
         pistas=[pista.model_dump(exclude_none=True) for pista in request.pistas_patron],
         tamanos=[pista.model_dump(exclude_none=True) for pista in request.pistas_tamanos],
+        pistas_geometria=request.pistas_geometria,
+        medidas_del_cliente=request.medidas_del_cliente,
         avisos=warnings,
     )
     try:

@@ -17,6 +17,7 @@
 import { DATOS } from "../rutas";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { extname } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const REPO = process.cwd();
@@ -146,11 +147,14 @@ async function main(): Promise<void> {
       };
 
       // Fase 4: la captura SIN el texto de la app (linea-base/sin-etiquetas), la misma del análisis.
-      const imagenBytes = readFileSync(`${argv0("--img-dir", `${LB}/sin-etiquetas`)}/case-00${c}-ref.png`).toString("base64");
+      const archivoImagen = argv0("--img-file", "") || `${argv0("--img-dir", `${LB}/sin-etiquetas`)}/case-00${c}-ref.png`;
+      const extensionImagen = extname(archivoImagen).toLowerCase();
+      const mimeImagen = extensionImagen === ".jpg" || extensionImagen === ".jpeg" ? "image/jpeg" : extensionImagen === ".webp" ? "image/webp" : "image/png";
+      const imagenBytes = readFileSync(archivoImagen).toString("base64");
       const brief = {};
       const sistema = construirSistema({ ragEnabled: RAG_ENABLED, brief, referenceBlueprint: blueprint, creatividad: parseNivelCreatividad(undefined) });
       writeFileSync(`${dir}/sistema-chat.txt`, sistema);
-      const historial = [{ rol: "usuario" as const, texto: "Adjunto imágenes de referencia del estilo que busco.", imagenes: [{ id: "ESTILO_01", mime: "image/png", base64: imagenBytes, descripcion: "Referencia visual de decoración del cliente." }] }];
+      const historial = [{ rol: "usuario" as const, texto: "Adjunto imágenes de referencia del estilo que busco.", imagenes: [{ id: "ESTILO_01", mime: mimeImagen, base64: imagenBytes, descripcion: "Referencia visual de decoración del cliente." }] }];
       const llamadasTool: Array<{ nombre: string; args: Record<string, unknown> }> = [];
       const t0 = Date.now();
       let error: string | null = null;

@@ -385,7 +385,7 @@ Composición general: foco visual "${blueprint.composition.focal_point}"; densid
 Paleta observada en toda la foto (incluye el local: paredes, piso y muebles; no es la lista de colores de ninguna pieza): ${blueprint.palette.observed.join(", ") || "no determinable"}.
 Elementos detectados:
 ${serializeReferenceBlueprint(blueprint)}
-Las posiciones (x/y/w/h) son proporciones DENTRO de la imagen de referencia, no coordenadas del render final — úsalas para entender proporción y relación entre estructuras, no como coordenadas literales a copiar.`;
+Las posiciones (x/y/w/h) son proporciones DENTRO de la imagen de referencia, no coordenadas del render final. Python usa las cajas para derivar alto, ancho y grosor relativos de las piezas: no inventes medidas físicas mirando la foto. Si el cliente dio una medida explícita, envíala en medidas; esa medida prevalece y Python escala las demás piezas desde ella.`;
 }
 
 /** Design rule of the creativity level; the default level adds nothing (see creatividad.ts). */

@@ -34,6 +34,7 @@ import { ArcoOrganicoResueltoSchema } from "@/lib/plan/armado-arco-organico";
 import { ArmadoGuirnaldaOrganicaV1Schema, GuirnaldaOrganicaResueltaSchema } from "@/lib/plan/armado-guirnalda-organica";
 import { ArmadoGuirnaldaResueltoSchema, ArmadoGuirnaldaV1Schema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
 import { ConteoAplicadoSchema, MAX_GLOBOS_CONTEO, PistaConteoSchema } from "@/lib/plan/conteo-referencia";
+import { PistaGeometriaSchema } from "@/lib/plan/geometria-referencia";
 import { PatronColorResueltoSchema, PistaPatronSchema, PistaTamanosSchema } from "@/lib/plan/patron-color";
 import { PlanGuiaEscenaRequestV1Schema, PlanGuiaEscenaResultV1Schema } from "@/lib/plan/guia-escena";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
@@ -559,6 +560,8 @@ export const PlanResolutionRequestV1Schema = z.object({
   /** Al confirmar un plan: Python ajusta cantidad, medidas, densidad o mezcla al conteo de la foto (ADR-0031). */
   completar_conteos: z.boolean().optional(),
   pistas_conteo: z.array(PistaConteoSchema).max(16).optional(),
+  /** Cajas aprobadas de la foto; Python decide su escala física. */
+  pistas_geometria: z.array(PistaGeometriaSchema).max(16).optional(),
   /**
    * Tras una edición: solo estas estructuras se ajustan (la de la mezcla
    * editada, o ninguna); las demás con pista conservan su lectura sin cambios.

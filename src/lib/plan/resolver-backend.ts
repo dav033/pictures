@@ -9,6 +9,7 @@ import type { EntradaAllowlistPlan } from "./aprobacion";
 import type { PistaArmado } from "./armado-bouquet";
 import type { PistaGuirnalda } from "./armado-guirnalda";
 import type { PistaConteo } from "./conteo-referencia";
+import type { PistaGeometria } from "./geometria-referencia";
 import type { MotivoSinSilueta, PatronColorResuelto, PistaPatron, PistaTamanos } from "./patron-color";
 import { cotizacionDesdePython, planResueltoDesdePython } from "./python-mapper";
 import type { PlanResuelto } from "./resuelto";
@@ -79,6 +80,8 @@ export type EntradaResolucionPlan = {
   completarConteos?: boolean;
   /** Conteos leídos en la foto, por elemento de referencia. */
   pistasConteo?: readonly PistaConteo[];
+  /** Cajas aprobadas de la referencia para que Python derive medidas relativas. */
+  pistasGeometria?: readonly PistaGeometria[];
   /** Con `completarConteos`: solo estas piezas (la editada, tras cambiar su mezcla). */
   completarConteosDe?: readonly string[];
   /** Con `completarConteos`: el cliente dio medidas; las que el plan declara por estructura no se mueven. */
@@ -123,6 +126,7 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       ...(entrada.pistasGuirnalda === undefined ? {} : { pistasGuirnalda: [...entrada.pistasGuirnalda] }),
       ...(entrada.completarConteos === undefined ? {} : { completarConteos: entrada.completarConteos }),
       ...(entrada.pistasConteo === undefined ? {} : { pistasConteo: [...entrada.pistasConteo] }),
+      ...(entrada.pistasGeometria === undefined ? {} : { pistasGeometria: [...entrada.pistasGeometria] }),
       ...(entrada.completarConteosDe === undefined ? {} : { completarConteosDe: [...entrada.completarConteosDe] }),
       ...(entrada.medidasDelCliente === undefined ? {} : { medidasDelCliente: entrada.medidasDelCliente }),
       requestId: entrada.requestId,
