@@ -135,14 +135,13 @@ const escena = {
   metadata: { created_by: "server_default", plan_hash: "plan-test" },
 } as SceneSpec;
 const contexto = buildVisualContext({ userRequest: "cumpleaños en salón" });
-const compilar = (nivel: 2 | 5, maxLength?: number) => compileLoraCaption({ sceneSpec: escena, visualContext: contexto, dialect: "scene_v004", creativeCues: perfilCreatividad(nivel).pistasPrompt, ...(maxLength ? { maxLength } : {}) });
-const sinPistas = compileLoraCaption({ sceneSpec: escena, visualContext: contexto, dialect: "scene_v004" });
+const compilar = (nivel: 2 | 5, maxLength?: number) => compileLoraCaption({ sceneSpec: escena, visualContext: contexto, creativeCues: perfilCreatividad(nivel).pistasPrompt, ...(maxLength ? { maxLength } : {}) });
+const sinPistas = compileLoraCaption({ sceneSpec: escena, visualContext: contexto });
 assert.equal(compilar(2).prompt, sinPistas.prompt, "level 2 prompt is unchanged");
 const libre = compilar(5);
 for (const pista of perfilCreatividad(5).pistasPrompt) assert.ok(libre.prompt.includes(pista), pista);
 assert.ok(libre.prompt.length <= 750);
 assert.deepEqual(findLoraPromptLanguageLeaks(libre.prompt), []);
-assert.match(libre.jsonPrompt, /bold editorial composition/, "the JSON prompt carries the same cues");
 const ajustado = compilar(5, sinPistas.prompt.length);
 assert.doesNotMatch(ajustado.prompt, /rich layered styling|cinematic|editorial/, "cues are dropped before anything else when the budget is tight");
 assert.match(ajustado.prompt, /column/);

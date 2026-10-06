@@ -18,6 +18,7 @@ import {
   type EstimarConteoRequestV1,
   type EstimarConteoResultV1,
 } from "@/lib/ia/contracts/domain-v1";
+import { ListaMaterialesResultadoSchema, ListaMaterialesRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import {
   ArmadoBouquetResueltoSchema,
   DISPOSICIONES_NUMERO,
@@ -154,8 +155,6 @@ export const PYTHON_HAPPIE_GENERATE_PATH = "/internal/v1/ia/happie-generate";
 export const PYTHON_HAPPIE_GENERATE_SCOPE = "ia.happie_generate";
 export const PYTHON_REFERENCE_TURN_PATH = "/internal/v1/ia/reference-turn";
 export const PYTHON_REFERENCE_TURN_SCOPE = "ia.reference_turn";
-export const PYTHON_IMAGE_GENERATE_PATH = "/internal/v1/ia/image-generate";
-export const PYTHON_IMAGE_GENERATE_SCOPE = "ia.image_generate";
 export const PYTHON_LORA_GENERATE_PATH = "/internal/v1/ia/lora-generate";
 export const PYTHON_LORA_GENERATE_SCOPE = "ia.lora_generate";
 export const PYTHON_CHAT_TURN_STREAM_PATH = "/internal/v1/ia/chat-turn-stream";
@@ -201,6 +200,8 @@ export const PYTHON_OMOIKANE_ARMADO_PATH = "/internal/v1/omoikane/armado-estruct
 export const PYTHON_OMOIKANE_ARMADO_SCOPE = "omoikane.armado_estructura";
 export const PYTHON_COTIZACION_PROFESIONAL_PATH = "/internal/v1/plan/cotizacion-profesional";
 export const PYTHON_COTIZACION_PROFESIONAL_SCOPE = "plan.cotizacion_profesional";
+export const PYTHON_LISTA_MATERIALES_PATH = "/internal/v1/plan/lista-materiales";
+export const PYTHON_LISTA_MATERIALES_SCOPE = "plan.lista_materiales";
 export const PYTHON_ESTIMAR_CONTEO_PATH = "/internal/v1/plan/estimar-conteo";
 export const PYTHON_ESTIMAR_CONTEO_SCOPE = "plan.estimar_conteo";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
@@ -1326,44 +1327,6 @@ export interface PythonPatronReferenciaResult {
   replayed?: boolean;
 }
 
-export type PythonImageGenerateInputBlock =
-  | { type: "text"; text: string }
-  | { type: "image"; data: string; mimeType: "image/png" | "image/jpeg" | "image/webp" };
-
-export interface PythonImageGenerateInput {
-  model?: string;
-  input: PythonImageGenerateInputBlock[];
-  store?: boolean;
-  previousInteractionId?: string;
-  aspectRatio: "1:1" | "2:3" | "3:2" | "16:9";
-  imageSize: "1K" | "2K";
-  requestId: string;
-  correlationId: string;
-  deadlineMs?: number;
-  idempotencyKey?: string;
-  parentSignal?: AbortSignal;
-  env?: AdapterEnvironment;
-  fetchImpl?: typeof fetch;
-  randomUUID?: () => string;
-}
-
-export interface PythonImageGenerateUsage {
-  total_input_tokens?: number;
-  total_output_tokens?: number;
-  total_thought_tokens?: number;
-  total_cached_tokens?: number;
-  total_tool_use_tokens?: number;
-  total_tokens?: number;
-}
-
-export interface PythonImageGenerateResult {
-  imageBase64: string;
-  model: string;
-  interactionId: string | null;
-  usage: PythonImageGenerateUsage | null;
-  replayed?: boolean;
-}
-
 export interface PythonLoraSpec {
   path: string;
   scale: number;
@@ -1566,7 +1529,6 @@ export interface PythonPlanResolutionInput {
   plan: PlanDecoracion;
   allowlist: PythonCatalogSearchAllowlistEntry[];
   catalogSnapshotId: string;
-  loraVariantIds?: string[];
   /** Absent unless the caller passes it: every other request stays byte-identical (ADR-0028 §7). */
   completarPatrones?: boolean;
   pistasPatron?: PistaPatron[];
@@ -1602,8 +1564,6 @@ export type PythonPlanResolutionResult = z.infer<typeof PlanResolutionResultV1Sc
 export interface PythonCatalogRecommendationsInput {
   referenceVariantId: string;
   catalogSnapshotId: string;
-  /** Absent means unrestricted. Never pass an empty list: callers fail closed before calling. */
-  loraVariantIds?: readonly string[];
   limit?: number;
   requestId: string;
   correlationId: string;
@@ -2486,22 +2446,6 @@ const planDibujoEstructuraPayloadResultSchema = z.object({
   grafica: GraficaDibujoEstructuraSchema,
 }).strict();
 
-const imageGenerateUsageSchema = z.object({
-  total_input_tokens: z.number().int().nonnegative().optional(),
-  total_output_tokens: z.number().int().nonnegative().optional(),
-  total_thought_tokens: z.number().int().nonnegative().optional(),
-  total_cached_tokens: z.number().int().nonnegative().optional(),
-  total_tool_use_tokens: z.number().int().nonnegative().optional(),
-  total_tokens: z.number().int().nonnegative().optional(),
-}).strict();
-
-const imageGeneratePayloadResultSchema = z.object({
-  image_base64: z.string().min(1),
-  model: z.string().min(1),
-  interaction_id: z.string().nullable(),
-  usage: imageGenerateUsageSchema.nullable(),
-}).strict();
-
 const chatTurnStreamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("text"), delta: z.string().min(1) }).strict(),
   z.object({
@@ -3153,54 +3097,11 @@ export async function llamarPythonLecturaUnica(
 }
 
 /**
- * The one Gemini Interactions call `crearImagenGemini`'s `generar()` makes
- * (src/lib/ia/uzume/imagen.ts, via the ImagenPort
- * src/lib/ia/uzume/imagen-python.ts wraps around this). `input` travels
- * already fully composed (prompt + per-image role/allowed_use labels) --
- * Python never decides what a reference image is for, only sends it. Uses
- * `maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES` since reference/product
- * images are far larger than every other operation's payload.
- */
-export async function llamarPythonImageGenerate(
-  input: PythonImageGenerateInput,
-): Promise<PythonImageGenerateResult> {
-  const { model, input: blocks, store, previousInteractionId, aspectRatio, imageSize, ...rest } = input;
-  const operationPayload = {
-    schema_version: "image-generate.v1" as const,
-    input: blocks.map((block) => block.type === "text"
-      ? { type: "text" as const, text: block.text }
-      : { type: "image" as const, data: block.data, mime_type: block.mimeType }),
-    store: store ?? true,
-    ...(previousInteractionId === undefined ? {} : { previous_interaction_id: previousInteractionId }),
-    aspect_ratio: aspectRatio,
-    image_size: imageSize,
-    ...(model === undefined ? {} : { model }),
-  };
-  const response = await llamarPythonOperacion(PYTHON_IMAGE_GENERATE_PATH, PYTHON_IMAGE_GENERATE_SCOPE, {
-    ...rest,
-    payload: operationPayload,
-    operationBody: operationPayload,
-    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
-  });
-  const parsed = imageGeneratePayloadResultSchema.safeParse(response.payload);
-  if (!parsed.success) {
-    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
-  }
-  const result: PythonImageGenerateResult = {
-    imageBase64: parsed.data.image_base64,
-    model: parsed.data.model,
-    interactionId: parsed.data.interaction_id,
-    usage: parsed.data.usage,
-  };
-  return response.replayed ? { ...result, replayed: true } : result;
-}
-
-/**
  * The submit -> poll -> download sequence against fal.ai's queue that
  * `generarConSempertexLora` makes directly today
  * (src/lib/ia/kagutsuchi/sempertex-lora.ts). `prompt`, `loras`, `mode` and
  * every sizing/guidance value already reflect TypeScript's composition
- * (buildLoraEditPrompt, ensureLoraTriggers, referenciasParaLoraEdit,
+ * (buildLoraEditPrompt, referenciasParaLoraEdit,
  * guidanceScaleSeguro) -- Python only talks to the provider and applies the
  * SSRF allow-list. Uses `maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES` (up to
  * 4 reference images for `/edit`) and a `deadlineMs` above the shared
@@ -3379,7 +3280,6 @@ export async function llamarPythonPlanResolution(
     plan,
     allowlist,
     catalogSnapshotId,
-    loraVariantIds,
     completarPatrones,
     pistasPatron,
     pistasTamanos,
@@ -3399,7 +3299,6 @@ export async function llamarPythonPlanResolution(
     plan,
     allowlist,
     catalog_snapshot_id: catalogSnapshotId,
-    ...(loraVariantIds === undefined ? {} : { lora_variant_ids: loraVariantIds }),
     ...(completarPatrones === undefined ? {} : { completar_patrones: completarPatrones }),
     ...(pistasPatron === undefined ? {} : { pistas_patron: pistasPatron }),
     ...(pistasTamanos === undefined ? {} : { pistas_tamanos: pistasTamanos }),
@@ -3433,16 +3332,14 @@ const CATALOG_RECOMMENDATIONS_DEFAULT_LIMIT = 100;
 /**
  * Python owns which rows are recommendable; Next only checks that the answer
  * is the one it asked for and cannot widen anything: pinned snapshot and
- * reference echoed, reference excluded, unique ids, bounded by `limit`, and a
- * subset of the LoRA set when one was sent.
+ * reference echoed, reference excluded, unique ids, bounded by `limit`.
  */
 function catalogRecommendationsPayloadIsConsistent(
   payload: z.infer<typeof CatalogRecommendationsResultV1Schema>,
-  input: { referenceVariantId: string; catalogSnapshotId: string; loraVariantIds?: readonly string[]; limit: number },
+  input: { referenceVariantId: string; catalogSnapshotId: string; limit: number },
 ): boolean {
   if (payload.catalog_snapshot_id !== input.catalogSnapshotId) return false;
   if (payload.reference.variant_id !== input.referenceVariantId) return false;
-  const lora = input.loraVariantIds === undefined ? null : new Set(input.loraVariantIds);
   const productIds = new Set<string>();
   const variantIds = new Set<string>();
   for (const candidate of payload.candidates) {
@@ -3450,7 +3347,6 @@ function catalogRecommendationsPayloadIsConsistent(
     productIds.add(candidate.product_id);
     for (const variant of candidate.variants) {
       if (variant.variant_id === input.referenceVariantId || variantIds.has(variant.variant_id)) return false;
-      if (lora && !lora.has(variant.variant_id)) return false;
       variantIds.add(variant.variant_id);
     }
   }
@@ -3460,12 +3356,11 @@ function catalogRecommendationsPayloadIsConsistent(
 export async function llamarPythonCatalogRecommendations(
   input: PythonCatalogRecommendationsInput,
 ): Promise<PythonCatalogRecommendationsResult> {
-  const { referenceVariantId, catalogSnapshotId, loraVariantIds, limit = CATALOG_RECOMMENDATIONS_DEFAULT_LIMIT, ...rest } = input;
+  const { referenceVariantId, catalogSnapshotId, limit = CATALOG_RECOMMENDATIONS_DEFAULT_LIMIT, ...rest } = input;
   const operationBody = {
     schema_version: CATALOG_RECOMMENDATIONS_CONTRACT_VERSION,
     catalog_snapshot_id: catalogSnapshotId,
     reference_variant_id: referenceVariantId,
-    ...(loraVariantIds === undefined ? {} : { lora_variant_ids: [...loraVariantIds] }),
     limit,
   };
   const response = await llamarPythonOperacion(PYTHON_CATALOG_RECOMMENDATIONS_PATH, PYTHON_CATALOG_RECOMMENDATIONS_SCOPE, {
@@ -3477,7 +3372,7 @@ export async function llamarPythonCatalogRecommendations(
   const parsed = CatalogRecommendationsResultV1Schema.safeParse(response.payload);
   if (
     !parsed.success
-    || !catalogRecommendationsPayloadIsConsistent(parsed.data, { referenceVariantId, catalogSnapshotId, loraVariantIds, limit })
+    || !catalogRecommendationsPayloadIsConsistent(parsed.data, { referenceVariantId, catalogSnapshotId, limit })
   ) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
@@ -4107,6 +4002,33 @@ export async function llamarPythonCotizacionProfesional(input: PythonCotizacionP
     || parsed.data.materiales.lineas.length !== entrada.materiales.length
     || parsed.data.materiales.lineas.some((linea, indice) => linea.variant_id !== entrada.materiales[indice]!.variant_id)
   ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return parsed.data;
+}
+
+export type PythonListaMaterialesEntrada = z.infer<typeof ListaMaterialesRequestSchema>;
+export type PythonListaMaterialesResultado = z.infer<typeof ListaMaterialesResultadoSchema>;
+
+export async function llamarPythonListaMateriales(input: {
+  entrada: PythonListaMaterialesEntrada;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+}): Promise<PythonListaMaterialesResultado> {
+  const operationBody = input.entrada;
+  const response = await llamarPythonOperacion(PYTHON_LISTA_MATERIALES_PATH, PYTHON_LISTA_MATERIALES_SCOPE, {
+    requestId: input.requestId,
+    correlationId: input.correlationId,
+    deadlineMs: input.deadlineMs,
+    parentSignal: input.parentSignal,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_LISTA_MATERIALES_SCOPE],
+  });
+  const parsed = ListaMaterialesResultadoSchema.safeParse(response.payload);
+  if (!parsed.success || parsed.data.lineas.length !== input.entrada.materiales.length || parsed.data.lineas.some((linea, index) => linea.variant_id !== input.entrada.materiales[index]?.variant_id)) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
   return parsed.data;

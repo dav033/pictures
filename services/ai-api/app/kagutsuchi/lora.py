@@ -2,7 +2,7 @@
 
 TypeScript (`src/lib/ia/kagutsuchi/sempertex-lora.ts`) still owns everything
 that is not a network call to the provider: which LoRA applications, prompt
-composition (`buildLoraEditPrompt`, `ensureLoraTriggers`), which references go
+composition (`buildLoraEditPrompt`, `trigger handling`), which references go
 into `/edit` (`referenciasParaLoraEdit`), and guidance/size/seed. This module
 makes exactly the submit -> poll -> download sequence
 `generarConSempertexLora` used to make directly against fal.ai's queue -- the

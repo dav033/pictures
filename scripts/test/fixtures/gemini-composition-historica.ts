@@ -1,3 +1,4 @@
+/** Fixture histórico de pruebas; no forma parte del runtime ni genera imágenes. */
 import type { ImageInput, Imagen, ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
 import { SOPORTES_CON_CAIDA_GUIRNALDA, type SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
 

@@ -1,12 +1,12 @@
 import { connection } from "next/server";
-import { MODELO_CHAT as MODELO_CHAT_GEMINI, MODELO_IMAGEN as MODELO_IMAGEN_GEMINI } from "@/lib/gemini";
+import { MODELO_CHAT as MODELO_CHAT_GEMINI } from "@/lib/gemini";
 import { obtenerAjusteGlobal, proveedoresDisponibles, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { ultimosEventos } from "@sempertex/agente-core";
 import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
 
 const PROVEEDORES_CHAT = ["gemini"] as const satisfies readonly ProveedorId[];
-const MODELOS: Record<(typeof PROVEEDORES_CHAT)[number], { chat: string; imagen: string }> = {
-  gemini: { chat: MODELO_CHAT_GEMINI, imagen: MODELO_IMAGEN_GEMINI },
+const MODELOS: Record<(typeof PROVEEDORES_CHAT)[number], { chat: string }> = {
+  gemini: { chat: MODELO_CHAT_GEMINI },
 };
 
 export async function GET() {

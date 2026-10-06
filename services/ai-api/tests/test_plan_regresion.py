@@ -164,7 +164,6 @@ class FakePlanStore:
         snapshot_id: str,
         product_ids: Sequence[str],
         variant_ids: Sequence[str],
-        lora_variant_ids: Sequence[str] = (),
     ) -> Sequence[dict[str, object]]:
         if snapshot_id != self.snapshot:
             raise AssertionError(f"unexpected snapshot {snapshot_id!r}")
@@ -192,12 +191,6 @@ def _request(vector: Mapping[str, object]) -> PlanResolutionRequest:
     snapshot = _text(vector["catalog_snapshot_id"], "catalog_snapshot_id")
     plan = _mapping(vector["plan"], "plan")
     allowlist = _list(vector["allowlist"], "allowlist")
-    lora_value = vector.get("lora_variant_ids")
-    lora = (
-        []
-        if lora_value is None
-        else [_text(item, "lora_variant_ids[]") for item in _list(lora_value, "lora_variant_ids")]
-    )
     return PlanResolutionRequest.model_validate(
         {
             "context": {
@@ -213,7 +206,6 @@ def _request(vector: Mapping[str, object]) -> PlanResolutionRequest:
             "plan": plan,
             "allowlist": allowlist,
             "catalog_snapshot_id": snapshot,
-            "lora_variant_ids": lora,
         }
     )
 

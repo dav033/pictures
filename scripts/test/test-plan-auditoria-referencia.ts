@@ -324,7 +324,7 @@ async function main(): Promise<void> {
   const argsSemiarco = (colores: string[]) => ({ concepto: { titulo: "Cumpleaños", descripcion: "Columna de la foto", paleta: colores }, espacio: { tipo: "salón", fuente: "foto" }, estructuras: [columnaFoto(colores)] });
   const transparentes = [candidato("P-TRANSP", "globo_latex", "transparente", [{ variantId: "V-TRANSP-12", diamPulg: 12 }])];
   const rosaYPlata = [candidato("P-ROSADO", "globo_latex", "rosado", [{ variantId: "V-ROSADO-12", diamPulg: 12 }]), candidato("P-PLATA", "globo_latex", "plateado", [{ variantId: "V-PLATA-12", diamPulg: 12 }])];
-  const confirmarSemiarco = (solicitud: string, candidatos: ProductoCandidato[], filasColor: Array<{ color: string; product_id: string; titulo: string }>, allowlistVariantes?: string[]) => {
+  const confirmarSemiarco = (solicitud: string, candidatos: ProductoCandidato[], filasColor: Array<{ color: string; product_id: string; titulo: string }>) => {
     // consultasPresencia: buscarGlobosPorColor's first query, "which colors does
     // the pool truly have" (fixture: the distinct colors of filasColor).
     // consultasColor: its second query, for products of the colors it resolved
@@ -352,8 +352,7 @@ async function main(): Promise<void> {
       estado.ragIdsRecuperados.add(c.productId);
       estado.ragVariantIdsRecuperados.set(c.productId, new Set(c.variantes.map((v) => v.variantId)));
     }
-    const catalogAllowlist = allowlistVariantes ? { entries: [], productIds: [], variantIds: allowlistVariantes } : undefined;
-    const registro = crearRegistroHerramientas(estado, { pool: poolColores, creatividad: 0, ...(catalogAllowlist ? { catalogAllowlist } : {}) });
+    const registro = crearRegistroHerramientas(estado, { pool: poolColores, creatividad: 0 });
     return { estado, consultasPresencia, consultasColor, confirmar: (colores: string[]) => registro.confirmar_plan_decoracion!(argsSemiarco(colores), llamada) as Promise<Record<string, unknown>> };
   };
 
@@ -395,12 +394,11 @@ async function main(): Promise<void> {
   assert.equal((insiste.avisos_cliente as string[]).length, 3);
   ok("confirmar_plan_decoracion devuelve un plan que descarta colores de la foto que el catálogo del turno tiene");
 
-  // The turn search missed them (E2E: only the clear balloon came back) but the
-  // active LoRA pool has them: the lookup stays inside that pool and asks for a search.
+  // La búsqueda del turno no los encontró; la consulta del catálogo publicado sí.
   const lora = confirmarSemiarco("Quiero algo así para un cumpleaños", transparentes, [
     { color: "rosado", product_id: "P-ROSADO", titulo: "Globo Latex Redondo Fashion Rosado" },
     { color: "plateado", product_id: "P-PLATA", titulo: "Globo Latex Redondo Reflex Plata" },
-  ], ["V-TRANSP-12", "V-ROSADO-12", "V-PLATA-12"]);
+  ]);
   const rechazoLora = await lora.confirmar(["transparente"]);
   assert.equal(rechazoLora.status, "COLORES_REFERENCIA_OMITIDOS", JSON.stringify(rechazoLora).slice(0, 400));
   const omitidosLora = rechazoLora.colores_omitidos as Array<{ color: string; productos: Array<{ product_id: string; en_busqueda: boolean }> }>;
@@ -414,7 +412,6 @@ async function main(): Promise<void> {
   assert.equal(lora.consultasColor.length, 1);
   // The literal word "gris" is never queried: it resolved to "plateado" before the product lookup.
   assert.deepEqual(lora.consultasColor[0]![0], ["rosado", "plateado"]);
-  assert.deepEqual(lora.consultasColor[0]![1], ["V-TRANSP-12", "V-ROSADO-12", "V-PLATA-12"], "the lookup never leaves the LoRA pool");
 
   // The catalog really lacks them: the plan goes on with the notices.
   const sinColores = confirmarSemiarco("Quiero algo así para un cumpleaños", transparentes, []);
@@ -424,7 +421,7 @@ async function main(): Promise<void> {
   // An explicit customer color overrides the photo.
   const explicito = await confirmarSemiarco("Quiero algo así para un cumpleaños pero en blanco", [...transparentes, ...rosaYPlata], []).confirmar(["transparente"]);
   assert.notEqual(explicito.status, "COLORES_REFERENCIA_OMITIDOS", "the customer chose the palette");
-  ok("colores de la foto: búsqueda en el pool activo, catálogo sin el color y color explícito del cliente");
+  ok("colores de la foto: búsqueda en catálogo completo, catálogo sin el color y color explícito del cliente");
 
   // ---------------------------------------------------------------------------
   // 2026-09-29: la mitad que le faltaba a la auditoría de color. Toda la

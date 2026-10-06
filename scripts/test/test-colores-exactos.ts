@@ -9,7 +9,6 @@ import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { bloqueColoresExactos } from "../../src/lib/ia/uzume/build-image-prompt";
 import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
-import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
 import { referenciaDelCatalogo, referenciaDelTitulo } from "../../src/lib/plan/referencia-sempertex";
 import { colorDeReferencia } from "../../src/lib/lora/vocabulario-base";
 
@@ -65,9 +64,7 @@ const escena = {
   material_estimate: { balloons: [{ ...linea("verde", "fashion", 0), product_id: DORADO }] },
   metadata: { created_by: "server_default", plan_hash: "x" },
 } as unknown as SceneSpec;
-const caption = compileProductPrompt({ sceneSpec: escena, visualContext: buildVisualContext({}), vocabulary: PRODUCT_VOCABULARY, sizeConfirmations: [], trigger: undefined }).prompt;
-assert.match(caption, /deep green/, `el color sale de la referencia del estimado: ${caption}`);
+const caption = compileProductPrompt({ sceneSpec: escena, visualContext: buildVisualContext({}), sizeConfirmations: [] }).prompt;
+assert.match(caption, /green/, `el caption base conserva el color del plan: ${caption}`);
 assert.doesNotMatch(caption, /PANTONE|Sempertex|#[0-9a-f]{6}|\b\d{3,}\b/i, `ninguna cifra en el caption: ${caption}`);
-const entrenado = compileProductPrompt({ sceneSpec: escena, visualContext: buildVisualContext({}), vocabulary: PRODUCT_VOCABULARY, sizeConfirmations: [], trigger: "eventdecor_style_v3" }).prompt;
-assert.doesNotMatch(entrenado, /deep green/, "los dialectos entrenados no cambian");
-console.log("[PASS] caption base: color de la referencia Sempertex, sin cifras; los dialectos entrenados no cambian");
+console.log("[PASS] caption base: color legible del plan y sin cifras comerciales");

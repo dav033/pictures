@@ -27,52 +27,48 @@ import { LORA_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/lora-caption-compile
 import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { elegirCaptionConGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { prepararGuiaEstructura, type GuiaPreparada } from "@/lib/ia/kagutsuchi/rasterizar-guia";
-import { buildLoraEditPrompt, ensureLoraTriggers, reservaNotasGuia, type ImagenGuiaLora, type LoraApplication } from "@/lib/ia/kagutsuchi/sempertex-lora";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
+import { buildLoraEditPrompt, reservaNotasGuia, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import type { Celda, Manifiesto } from "../lora/exp-fal-lib";
 import { captionDeCaso, casosGuia, type CasoGuia } from "./escenas-guia-estructura";
 import { medirContraGuia, type MedidaGuia } from "./medir-guia";
 
 export type GuiaDeCaso = { caso: CasoGuia["nombre"]; guia: GuiaPreparada; promptSin: string; promptCon: string; conCarta: boolean };
 
-function sinTrigger(prompt: string, trigger: string): string {
-  const prefijo = `${trigger}, `;
-  if (!prompt.startsWith(prefijo)) throw new Error(`el prompt no empieza por el trigger ${trigger}`);
-  return prompt.slice(prefijo.length);
+function captionBase(prompt: string): string {
+  return prompt;
 }
 
-function exigirPreflight(caso: CasoGuia, clauses: Parameters<typeof preflightLoraPrompt>[0]["clauses"], prompt: string, trigger: string, etiqueta: string): void {
-  const reporte = preflightLoraPrompt({ sceneSpec: caso.escena, clauses, prompt, triggers: [trigger], vocabulary: PRODUCT_VOCABULARY });
+function exigirPreflight(caso: CasoGuia, clauses: Parameters<typeof preflightLoraPrompt>[0]["clauses"], prompt: string, etiqueta: string): void {
+  const reporte = preflightLoraPrompt({ sceneSpec: caso.escena, clauses, prompt });
   if (!reporte.ok) throw new Error(`${caso.nombre} (${etiqueta}): el preflight rechaza el prompt (${reporte.errors.join("; ")})`);
 }
 
 /** Las celdas de la corrida y la guía de cada caso. Sin red: solo compila, rasteriza y pasa el preflight. */
-export async function prepararCorridaGuia(opciones: { trigger: string; escala: number; semillas: readonly number[] }): Promise<{ celdas: Celda[]; guias: GuiaDeCaso[] }> {
-  const loras: LoraApplication[] = [{ path: "corrida-guia", trigger: opciones.trigger, scale: opciones.escala }];
+export async function prepararCorridaGuia(opciones: { escala: number; semillas: readonly number[] }): Promise<{ celdas: Celda[]; guias: GuiaDeCaso[] }> {
   const guias: GuiaDeCaso[] = [];
   const celdas: Celda[] = [];
   for (const caso of casosGuia()) {
     const guia = await prepararGuiaEstructura(caso.plan, "3:2");
     if (!guia) throw new Error(`${caso.nombre}: el plan ya no admite guía`);
-    const completo = captionDeCaso(caso, opciones.trigger);
-    const promptSin = ensureLoraTriggers(completo.prompt, loras);
-    exigirPreflight(caso, completo.clauses, promptSin, opciones.trigger, "sin guía");
+    const completo = captionDeCaso(caso);
+    const promptSin = completo.prompt;
+    exigirPreflight(caso, completo.clauses, promptSin, "sin guía");
     const elegido = elegirCaptionConGuia<ReturnType<typeof captionDeCaso>, ImagenGuiaLora>({
       imagenes: guia.imagenes,
       maximo: LORA_PROMPT_MAX_LENGTH,
       reserva: reservaNotasGuia,
-      compilar: (maxLength) => captionDeCaso(caso, opciones.trigger, maxLength),
-      cabe: (compilacion, imagenes) => preflightLoraPrompt({ sceneSpec: caso.escena, clauses: compilacion.clauses, prompt: ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(compilacion.prompt, loras), imagenes), loras), triggers: [opciones.trigger], vocabulary: PRODUCT_VOCABULARY }).ok,
+      compilar: (maxLength) => captionDeCaso(caso, maxLength),
+      cabe: (compilacion, imagenes) => preflightLoraPrompt({ sceneSpec: caso.escena, clauses: compilacion.clauses, prompt: buildLoraEditPrompt(compilacion.prompt, imagenes) }).ok,
     });
     if (!elegido) throw new Error(`${caso.nombre}: las notas de la guía no caben ni sin la carta`);
-    const promptCon = ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(elegido.compilacion.prompt, loras), elegido.imagenes), loras);
-    exigirPreflight(caso, elegido.compilacion.clauses, promptCon, opciones.trigger, "con guía");
+    const promptCon = buildLoraEditPrompt(elegido.compilacion.prompt, elegido.imagenes);
+    exigirPreflight(caso, elegido.compilacion.clauses, promptCon, "con guía");
     guias.push({ caso: caso.nombre, guia, promptSin, promptCon, conCarta: elegido.imagenes.length > 1 });
     for (const seed of opciones.semillas) {
-      celdas.push({ id: `${caso.nombre}-sin-seed${seed}`, prompt: sinTrigger(promptSin, opciones.trigger), lora: opciones.escala, seed, nota: `${caso.nombre}, sin guía: fal-ai/flux-2/lora, caption completo` });
+      celdas.push({ id: `${caso.nombre}-sin-seed${seed}`, prompt: captionBase(promptSin), lora: opciones.escala, seed, nota: `${caso.nombre}, sin guía: fal-ai/flux-2/lora, caption completo` });
       celdas.push({
         id: `${caso.nombre}-con-seed${seed}`,
-        prompt: sinTrigger(promptCon, opciones.trigger),
+        prompt: captionBase(promptCon),
         lora: opciones.escala,
         seed,
         imagenes: elegido.imagenes.map((imagen) => `data:${imagen.mime};base64,${imagen.base64}`),

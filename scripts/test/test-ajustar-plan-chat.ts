@@ -235,7 +235,6 @@ async function main(): Promise<void> {
   const { construirSistema } = await import("../../src/lib/ia/omoikane/prompt-sistema");
   const { ejecutarConversacionStream } = await import("../../src/lib/ia/omoikane/ejecutar");
   const { detectarJergaInterna } = await import("../../src/lib/ia/omoikane/jerga-interna");
-  const { crearCatalogAllowlist } = await import("../../src/lib/rag/retrieval/allowlist");
   type BasePlan = import("../../src/lib/plan/edicion-esquemas").BasePlan;
   type ChatPort = import("../../src/lib/ia/nucleo/tipos").ChatPort;
   type PeticionChat = import("../../src/lib/ia/nucleo/tipos").PeticionChat;
@@ -287,11 +286,11 @@ async function main(): Promise<void> {
   }
 
   /** A turn state with the proposal verified and the new colors "seen" by this turn's search. */
-  function turno(base: BasePlan, vistos: string[] = ["ROJO", "LILA", "DORADO"], opciones: { catalogAllowlist?: ReturnType<typeof crearCatalogAllowlist> } = {}) {
+  function turno(base: BasePlan, vistos: string[] = ["ROJO", "LILA", "DORADO"]) {
     const estado = crearEstadoConversacion({}, "cambia el azul por rojo", undefined, { planVigente: base });
     assert.ok(estado.planVigente, "la propuesta de la prueba debe quedar verificada");
     for (const color of vistos) estado.ragVariantIdsRecuperados.set(`P-${color}`, new Set([`P-${color}-12`]));
-    const registro = crearRegistroHerramientas(estado, { pool: poolVacio, ...opciones });
+    const registro = crearRegistroHerramientas(estado, { pool: poolVacio });
     return { estado, ajustar: (args: Json) => registro.ajustar_plan_decoracion!(args, { nombre: "ajustar_plan_decoracion", args: {} }) as Promise<Json> };
   }
 
@@ -559,24 +558,6 @@ async function main(): Promise<void> {
     assert.equal(r.ediciones_aplicadas, 0);
     assert.equal(llamadas.length, 0, "ni una llamada a Python, ni siquiera para las dos primeras que sí estaban buscadas");
     assert.equal(estado.planResuelto, undefined);
-  });
-
-  await caso("ediciones: el modo LoRA se aplica a cada edición (variante fuera del pool → falla y nombra la edición)", async () => {
-    instalarPython();
-    const allowlist = crearCatalogAllowlist([{ productId: "P-ROJO", variantId: "P-ROJO-12" }, { productId: "P-AZUL", variantId: "P-AZUL-12" }, { productId: "P-BLANCO", variantId: "P-BLANCO-12" }]);
-    const { estado, ajustar } = turno(base, ["ROJO", "LILA"], { catalogAllowlist: allowlist });
-    const r = await ajustar({
-      ediciones: [
-        edicionReemplazo("EST_01_COLUMNA_IZQ", "P-AZUL-12", "ROJO"),
-        edicionReemplazo("EST_02_COLUMNA_DER", "P-AZUL-12", "LILA"),
-      ],
-    });
-    assert.equal(r.ok, false, JSON.stringify(r).slice(0, 300));
-    assert.equal(r.status, "AJUSTE_RECHAZADO");
-    assert.equal(r.edicion_fallida, 2);
-    assert.equal(estado.planResuelto, undefined);
-    assert.match(String(r.mensaje_cliente), /^La propuesta sigue como estaba\. Esa pieza no está disponible en el catálogo de este estilo/);
-    assert.deepEqual(detectarJergaInterna(String(r.mensaje_cliente)), [], "el código interno del rechazo no llega al cliente");
   });
 
   await caso("ediciones: esquema estricto y límites (0, más de 8, mezclar formas, campo suelto, patrón y armados no se ofrecen)", async () => {

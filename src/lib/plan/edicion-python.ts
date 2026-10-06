@@ -42,7 +42,6 @@ import type { VistaGuirnaldaOrganica } from "./opciones-armado-guirnalda-organic
 import type { GraficaDibujoEstructura } from "./dibujo-estructura";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { candidatoDesdePython } from "@/lib/rag/chat/candidato-python";
-import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import type { ContextoPlan } from "./aprobacion";
 import { coloresRealesProducto } from "./colores-producto";
@@ -129,7 +128,6 @@ export async function admitirVariantePython(input: {
 export async function recomendarAlternativasPython(input: {
   contexto: ContextoPlan;
   variantId: string;
-  catalogAllowlist: CatalogAllowlist | null;
   correlationId: string;
   signal?: AbortSignal;
 }): Promise<ProductoCandidato[]> {
@@ -138,14 +136,12 @@ export async function recomendarAlternativasPython(input: {
     throw new PlanEditError(404, MENSAJE_REFERENCIA_NO_ENCONTRADA, "VARIANTE_REFERENCIA_NO_ENCONTRADA");
   }
   // A LoRA mode without variants authorizes nothing; never send it as "unrestricted".
-  if (input.catalogAllowlist && input.catalogAllowlist.variantIds.length === 0) return [];
 
   let resultado: Awaited<ReturnType<typeof llamarPythonCatalogRecommendations>>;
   try {
     resultado = await llamarPythonCatalogRecommendations({
       referenceVariantId: input.variantId,
       catalogSnapshotId,
-      ...(input.catalogAllowlist ? { loraVariantIds: input.catalogAllowlist.variantIds } : {}),
       limit: RECOMENDACIONES_LIMITE_PYTHON,
       requestId: crypto.randomUUID(),
       correlationId: input.correlationId,

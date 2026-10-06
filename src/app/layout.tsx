@@ -34,6 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Aplica el tema claro/oscuro guardado antes del primer pintado (sin
             parpadeo). Sin elección, globals.css sigue prefers-color-scheme. */}
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA_ANTES_DE_PINTAR }} />
+        {/* La app ya tiene tema claro y oscuro: extensiones como Dark Reader no deben repintarla (quitaban el morado
+            y los fondos de las tarjetas; 2026-10-06). */}
+        <meta name="darkreader-lock" />
       </head>
       <body className="flex min-h-dvh flex-col font-sans">
         {/* "user": Motion respeta prefers-reduced-motion del sistema operativo,

@@ -43,7 +43,6 @@ import {
 import { prepararGuiaEstructura } from "@/lib/ia/kagutsuchi/rasterizar-guia";
 import {
   buildLoraEditPrompt,
-  ensureLoraTriggers,
   generarConSempertexLora,
   imageSizeFor,
   LORA_EDIT_PROMPT_MAX_LENGTH,
@@ -57,6 +56,8 @@ import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { CAPTION_DE_PRUEBA, capturarPeticion, casosBase, imagenDePrueba, LORA_DE_PRUEBA, type PeticionCapturada } from "../lib/capturar-peticion-lora";
+
+const CAPTION_BASE = CAPTION_DE_PRUEBA.replace(/^eventdecor_style_v3,\s*/, "");
 import { captionDeCaso, casoArcoPatron, casoGuirnaldaPared, planDeUnaEstructura } from "../lib/escenas-guia-estructura";
 import { planGuirnalda } from "../lib/escenas-armado-guirnalda";
 import { medirColores, medirSilueta, type Pixeles } from "../lib/medir-guia";
@@ -189,37 +190,33 @@ const GUIA: ImagenGuiaLora = { id: "STRUCTURE_GUIDE", role: "structure_guide", b
 const CARTA_IMG: ImagenGuiaLora = { id: "COLOR_CHART", role: "color_chart", base64: "Q0FSVEE=", mime: "image/png" };
 
 function promptConGuia(): void {
-  const conCarta = ensureLoraTriggers(buildLoraEditPrompt(CAPTION_DE_PRUEBA, [GUIA, CARTA_IMG]), [LORA_DE_PRUEBA]);
-  const cuerpo = CAPTION_DE_PRUEBA.replace(/^eventdecor_style_v3, /, "");
-  assert.equal(conCarta, `eventdecor_style_v3, ${NOTA_GUIA_ESTRUCTURA}\n\n${cuerpo}\n\n${notaCartaColor(2)}`, "nota delante, caption, nota de la carta");
-  assert.equal((conCarta.match(/eventdecor_style_v3/g) ?? []).length, 1, "un solo trigger");
-  assert.equal(conCarta.length - CAPTION_DE_PRUEBA.length, reservaNotasGuia(true), "la reserva mide exactamente las notas");
-  const sinCarta = ensureLoraTriggers(buildLoraEditPrompt(CAPTION_DE_PRUEBA, [GUIA]), [LORA_DE_PRUEBA]);
-  assert.equal(sinCarta.length - CAPTION_DE_PRUEBA.length, reservaNotasGuia(false));
+  const conCarta = buildLoraEditPrompt(CAPTION_BASE, [GUIA, CARTA_IMG]);
+  assert.equal(conCarta, `${NOTA_GUIA_ESTRUCTURA}\n\n${CAPTION_BASE}\n\n${notaCartaColor(2)}`, "nota delante, caption, nota de la carta");
+  assert.equal(conCarta.length - CAPTION_BASE.length, reservaNotasGuia(true), "la reserva mide exactamente las notas");
+  const sinCarta = buildLoraEditPrompt(CAPTION_BASE, [GUIA]);
+  assert.equal(sinCarta.length - CAPTION_BASE.length, reservaNotasGuia(false));
   assert.doesNotMatch(sinCarta, /color chart/);
   for (const prompt of [conCarta, sinCarta]) {
     assert.deepEqual(findLoraPromptLanguageLeaks(prompt), [], prompt);
     assert.deepEqual(findLoraPromptProductLeaks(prompt), [], prompt);
     assert.doesNotMatch(prompt, /INPUT IMAGES|STRUCTURE_GUIDE|COLOR_CHART/, "sin el bloque de referencias ni ids");
   }
-  assert.throws(() => buildLoraEditPrompt(CAPTION_DE_PRUEBA, [CARTA_IMG, GUIA]), /LORA_GUIA_INVALIDA/, "la guía va primera");
-  assert.throws(() => buildLoraEditPrompt(CAPTION_DE_PRUEBA, [GUIA, imagenDePrueba("composition_reference", 1, "R1")]), /LORA_GUIA_INVALIDA/, "la guía no se mezcla con referencias");
-  assert.throws(() => buildLoraEditPrompt(CAPTION_DE_PRUEBA, [GUIA, CARTA_IMG, CARTA_IMG]), /LORA_GUIA_INVALIDA/);
+  assert.throws(() => buildLoraEditPrompt(CAPTION_BASE, [CARTA_IMG, GUIA]), /LORA_GUIA_INVALIDA/, "la guía va primera");
+  assert.throws(() => buildLoraEditPrompt(CAPTION_BASE, [GUIA, imagenDePrueba("composition_reference", 1, "R1")]), /LORA_GUIA_INVALIDA/, "la guía no se mezcla con referencias");
+  assert.throws(() => buildLoraEditPrompt(CAPTION_BASE, [GUIA, CARTA_IMG, CARTA_IMG]), /LORA_GUIA_INVALIDA/);
 
   // El caption se compacta para que el prompt entero quepa en el LoRA; si ni así, sin carta.
-  const trigger = LORA_DE_PRUEBA.trigger;
-  const loras = [LORA_DE_PRUEBA];
   for (const [caso, cartaEsperada] of [[casoArcoPatron(), true], [casoGuirnaldaPared(), false]] as const) {
     const elegido = elegirCaptionConGuia<ReturnType<typeof captionDeCaso>, ImagenGuiaLora>({
       imagenes: [GUIA, CARTA_IMG],
       maximo: LORA_PROMPT_MAX_LENGTH,
       reserva: reservaNotasGuia,
-      compilar: (maxLength) => captionDeCaso(caso, trigger, maxLength),
-      cabe: (compilacion, imagenes) => ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(compilacion.prompt, loras), imagenes), loras).length <= LORA_PROMPT_MAX_LENGTH,
+      compilar: (maxLength) => captionDeCaso(caso, maxLength),
+      cabe: (compilacion, imagenes) => buildLoraEditPrompt(compilacion.prompt, imagenes).length <= LORA_PROMPT_MAX_LENGTH,
     });
     assert.ok(elegido, `${caso.nombre}: la guía cabe`);
     assert.equal(elegido.imagenes.length > 1, cartaEsperada, `${caso.nombre}: carta`);
-    const final = ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(elegido.compilacion.prompt, loras), elegido.imagenes), loras);
+    const final = buildLoraEditPrompt(elegido.compilacion.prompt, elegido.imagenes);
     assert.ok(final.length <= LORA_PROMPT_MAX_LENGTH, `${caso.nombre}: ${final.length}`);
     assert.ok(final.length <= LORA_EDIT_PROMPT_MAX_LENGTH);
   }
@@ -229,7 +226,7 @@ function promptConGuia(): void {
   elegirCaptionConGuia({ imagenes: ["guia", "carta"], maximo: 750, reserva: reservaNotasGuia, compilar: (maxLength) => { intentos.push(maxLength); return maxLength; }, cabe: () => false });
   assert.deepEqual(intentos, [750 - reservaNotasGuia(true), 750 - reservaNotasGuia(false)], "primero con carta, después sin ella");
   assert.equal(costeEntradasUsdEstimado(2), 0.042);
-  console.log("[PASS] prompt con guía: nota delante, carta al final, un trigger, sin español ni ids, dentro del presupuesto del LoRA");
+  console.log("[PASS] prompt con guía: nota delante, carta al final, caption base sin trigger, sin español ni ids, dentro del presupuesto del LoRA");
 }
 
 // ---------------------------------------------------------------------------
@@ -242,32 +239,32 @@ async function peticionAFal(): Promise<void> {
   for (const [nombre, inputs] of Object.entries(casosBase())) {
     const esperado = BASE.directo[nombre];
     assert.ok(esperado, `la instantánea no tiene ${nombre}`);
-    const capturada = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", inputs, opciones);
+    const capturada = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", inputs, opciones);
     assert.equal(capturada.destino, esperado.destino, `${nombre}: endpoint`);
     assert.equal(JSON.stringify(capturada.cuerpo), JSON.stringify(esperado.cuerpo), `${nombre}: el cuerpo cambió respecto a 90da1ef`);
   }
 
   // Con guía, sin foto del espacio: /edit, la guía primera y la carta después.
   const guia = (await prepararGuiaEstructura(casoArcoPatron().plan, "3:2"))!;
-  const conGuia = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", casosBase()["solo-productos"]!, { ...opciones, imagenesEdit: guia.imagenes });
+  const conGuia = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", casosBase()["solo-productos"]!, { ...opciones, imagenesEdit: guia.imagenes });
   assert.equal(conGuia.destino, EDIT);
   const cuerpo = conGuia.cuerpo as { prompt: string; image_urls: string[]; image_size: unknown };
   assert.deepEqual(cuerpo.image_urls, [`data:image/png;base64,${guia.imagenes[0].base64}`, `data:image/png;base64,${guia.imagenes[1].base64}`], "image_urls[0] es la guía; las fotos de producto no entran");
-  assert.ok(cuerpo.prompt.startsWith(`eventdecor_style_v3, ${NOTA_GUIA_ESTRUCTURA}\n\n`), cuerpo.prompt);
+  assert.ok(cuerpo.prompt.startsWith(`${NOTA_GUIA_ESTRUCTURA}\n\n`), cuerpo.prompt);
   assert.ok(cuerpo.prompt.endsWith(notaCartaColor(2)), cuerpo.prompt);
   assert.deepEqual(cuerpo.image_size, { width: 1536, height: 1024 });
   const evento = ultimosEventos()[0]!;
   assert.equal(evento.modelo, "flux-2/lora/edit");
   assert.equal(evento.promptVersion, PROMPT_VERSION_GUIA, "la telemetría distingue la llamada con guía");
   assert.equal(evento.bytesImagenEntrada, guia.bytes, "cuenta los bytes de la guía y la carta");
-  await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", [], opciones);
+  await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", [], opciones);
   assert.equal(ultimosEventos()[0]!.promptVersion, undefined, "sin guía, el evento de siempre");
 
   // El interruptor de retiro de /edit también apaga la guía.
   const retiro = process.env.SEMPERTEX_LORA_EDIT;
   process.env.SEMPERTEX_LORA_EDIT = "false";
   try {
-    const apagado = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", [], { ...opciones, imagenesEdit: guia.imagenes });
+    const apagado = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", [], { ...opciones, imagenesEdit: guia.imagenes });
     assert.equal(apagado.destino, TEXTO);
     assert.equal(JSON.stringify(apagado.cuerpo), JSON.stringify(BASE.directo["sin-imagenes"]!.cuerpo), "SEMPERTEX_LORA_EDIT=false: texto a imagen de siempre");
   } finally {
@@ -286,17 +283,17 @@ async function filtroDeImagenes(): Promise<void> {
   const referencias = casosBase()["referencias-hibrido"]!;
   // Antes (y todavía sin `imagenesEdit`): sin venue ni resultado previo, las
   // referencias de la etapa 1 se descartaban y la llamada iba a texto.
-  const filtradas = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", referencias, opciones);
+  const filtradas = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", referencias, opciones);
   assert.equal(filtradas.destino, TEXTO);
   // Elegidas por la ruta (REFERENCIA_EN_ETAPA1_V1): llegan a /edit, en su orden.
-  const elegidas = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", [], { ...opciones, imagenesEdit: referencias });
+  const elegidas = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", [], { ...opciones, imagenesEdit: referencias });
   assert.equal(elegidas.destino, EDIT, "REFERENCIA_EN_ETAPA1_V1 por fin cambia lo que recibe fal");
   const cuerpo = elegidas.cuerpo as { prompt: string; image_urls: string[] };
   assert.equal(cuerpo.image_urls.length, 2);
   assert.match(cuerpo.prompt, /No venue base; create venue from prompt\./);
   assert.match(cuerpo.prompt, /Input image 1 \(@image1\): composition only/);
   // Una lista explícita vacía es texto a imagen, igual que sin imágenes.
-  const vacia = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", referencias, { ...opciones, imagenesEdit: [] });
+  const vacia = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", referencias, { ...opciones, imagenesEdit: [] });
   assert.equal(JSON.stringify(vacia.cuerpo), JSON.stringify(BASE.directo["sin-imagenes"]!.cuerpo));
   console.log("[PASS] regresión: las imágenes elegidas por la ruta ya no se descartan sin foto del espacio");
 }
@@ -361,7 +358,7 @@ async function vistaPrevia(): Promise<void> {
   }) as typeof fetch;
   console.log = (...partes: unknown[]) => { salida.push(partes.map(String).join(" ")); };
   try {
-    const { celdas } = await prepararCorridaGuia({ trigger: "eventdecor_style_v3", escala: 0.8, semillas: [101, 202, 303] });
+    const { celdas } = await prepararCorridaGuia({ escala: 0.8, semillas: [101, 202, 303] });
     const manifiesto = await correrExperimento({ nombre: "guia-estructura-prueba", celdas, defaults: { seed: 101, guidance: 3.5, ancho: 1536, alto: 1024, loraUrl: "https://example.invalid/lora.safetensors", trigger: "eventdecor_style_v3" }, outDir: path.join(os.tmpdir(), "no-se-escribe") });
     assert.equal(llamadas, 0, "sin red");
     assert.equal(celdas.length, 12, "2 planes × 2 brazos × 3 semillas");

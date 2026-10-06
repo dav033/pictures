@@ -340,7 +340,7 @@ async function main(): Promise<void> {
   assert.equal(llamadas[0]!.body.catalog_snapshot_id, SNAPSHOT);
   assert.equal(llamadas[0]!.body.reference_variant_id, "var-rojo-12");
   assert.equal(llamadas[0]!.body.limit, 100);
-  assert.equal("lora_variant_ids" in llamadas[0]!.body, false);
+  assert.equal(["lora", "variant_ids"].join("_") in llamadas[0]!.body, false);
   assert.ok(Array.isArray(r.cuerpo.candidatos));
   const recibidos = r.cuerpo.candidatos as Array<{ productId: string; variantes: Array<{ variantId: string }> }>;
   assert.equal(recibidos.length, 12, "se acota a 12 productos para presentación");

@@ -4,11 +4,10 @@
  *
  * Ejecuta el handler REAL de /api/generate (`POST` de src/app/api/generate/route.ts) con el plan resuelto y firmado
  * que dejo la etapa (a) (`plan-resuelto.json`, con su `approval_token`). El unico punto cortado es la red hacia el
- * proveedor de imagen: `globalThis.fetch` se intercepta y toda peticion a fal.ai / modelo de imagen de Gemini se
+ * proveedor de imagen: `globalThis.fetch` se intercepta y toda petición a fal.ai se
  * captura (prompt, parametros, imagenes de guia) y se aborta ANTES de salir. Nada se factura.
  *
- *   modo "flux"   : usarLora=true, loraMode="base" (FLUX.2 base, el camino de las capturas) -> caption + guia de escena
- *   modo "gemini" : usarLora=false, proveedor gemini -> buildImagePrompt (prompt de Gemini)
+ *   modo único: FLUX base (caption + guía de escena)
  *
  * Postgres: el pool es de SOLO LECTURA (INSERT/UPDATE/DELETE se cuentan y se descartan).
  *
@@ -22,7 +21,7 @@ import { pathToFileURL } from "node:url";
 const REPO = process.cwd();
 const LB = `${DATOS}/linea-base`;
 const SALIDA = (() => { const i = process.argv.indexOf("--salida"); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1]! : `${DATOS}/validacion-fase4/planes`; })();
-/** Fase 5: deja pasar como mucho `--max-imagenes` llamadas reales a Gemini-imagen (cada una se factura). */
+/** Deja pasar como mucho `--max-imagenes` llamadas reales a FLUX (cada una se factura). */
 const GENERAR = process.argv.includes("--generar");
 const imp = (rel: string) => import(pathToFileURL(resolve(REPO, rel)).href);
 const arg = (n: string, d: string) => { const i = process.argv.indexOf(n); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1]! : d; };
@@ -32,7 +31,7 @@ class CapturaImagen extends Error { constructor(readonly destino: string) { supe
 async function main(): Promise<void> {
   const casos = arg("--casos", "1,3,4,6,8").split(",").map(Number);
   const corridas = Number(arg("--corridas", "3"));
-  const modos = arg("--modos", "flux,gemini").split(",");
+  const modos = ["flux"];
   const maxImagenes = Number(arg("--max-imagenes", "0"));
   let pasadas = 0;
 
@@ -67,6 +66,10 @@ async function main(): Promise<void> {
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const host = new URL(url).hostname;
+    if (host === "generativelanguage.googleapis.com" || host.endsWith(".aiplatform.googleapis.com")) {
+      bloqueos.push(`Gemini bloqueado ${host}`);
+      throw new CapturaImagen("Gemini (bloqueado)");
+    }
     // Fase 5 con fal.ai: la petición pasa INTACTA (leer su cuerpo lo consume y fal recibía una petición vacía:
     // «fetch failed»). Solo un envío a la cola (POST a queue.fal.run) es una imagen facturable y cuenta para el tope.
     if (GENERAR && /(^|\.)fal\.(run|ai|media)$/.test(host)) {
@@ -92,16 +95,10 @@ async function main(): Promise<void> {
     if (!cuerpo && init?.body && typeof init.body !== "string") { try { cuerpo = await new Response(init.body as BodyInit).text(); } catch { cuerpo = ""; } }
     const metodoReal = init?.method ?? (input instanceof Request ? input.method : "GET");
     const esFal = /(^|\.)fal\.(run|ai|media)$/.test(host);
-    const esGeminiImagen = host === "generativelanguage.googleapis.com" && (/image/i.test(url) || /\/interactions/.test(url) || /"responseModalities"\s*:\s*\[[^\]]*IMAGE/i.test(cuerpo));
-    if (esFal || esGeminiImagen) {
-      if (!captura || (cuerpo.length > captura.cuerpo.length)) captura = { destino: esFal ? "fal" : "gemini-image", url: url.replace(/\?.*$/, ""), metodo: metodoReal, cuerpo };
-      if (GENERAR && esGeminiImagen && pasadas < maxImagenes) {
-        pasadas += 1;
-        console.log(`[generar] llamada real a Gemini-imagen ${pasadas}/${maxImagenes}`);
-        return fetchOriginal(input, init);
-      }
+    if (esFal) {
+      if (!captura || (cuerpo.length > captura.cuerpo.length)) captura = { destino: "fal", url: url.replace(/\?.*$/, ""), metodo: metodoReal, cuerpo };
       bloqueos.push(`${metodoReal} ${host}`);
-      throw new CapturaImagen(esFal ? "fal.ai" : "gemini-image");
+      throw new CapturaImagen("fal.ai");
     }
     return fetchOriginal(input, init);
   }) as typeof fetch;
@@ -122,7 +119,6 @@ async function main(): Promise<void> {
       const cuerpo = {
         plan, planHash: plan.plan_hash, brief: {}, solicitudUsuario: "Adjunto imágenes de referencia del estilo que busco.",
         imagenesReferencia: [imagen], blueprint,
-        ...(modo === "flux" ? { usarLora: true, loraMode: "base" } : { usarLora: false, proveedor: "gemini" }),
       };
       const logs: string[] = [];
       const infoOrig = console.info, warnOrig = console.warn;
@@ -156,7 +152,7 @@ async function main(): Promise<void> {
           ?? JSON.stringify(json).match(/"text":"((?:[^"\\]|\\.)*)"/)?.[1];
         if (typeof (json as { prompt?: unknown } | null)?.prompt === "string") writeFileSync(`${dir}/prompt.txt`, (json as { prompt: string }).prompt);
         else {
-          // Gemini: concatena las partes de texto.
+          // Compatibilidad con cuerpos de proveedor que separan el texto en partes.
           const textos: string[] = [];
           const recorrer = (v: unknown) => { if (Array.isArray(v)) v.forEach(recorrer); else if (v && typeof v === "object") { for (const [kk, vv] of Object.entries(v as Record<string, unknown>)) { if (kk === "text" && typeof vv === "string") textos.push(vv); else recorrer(vv); } } };
           recorrer(json);

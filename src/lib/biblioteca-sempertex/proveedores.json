@@ -1,0 +1,6 @@
+[
+  {"id":"ej-prov-decorador-a","origen":"ejemplo","aviso":"DATO DE EJEMPLO — no es real","tipo":"decorador_happia","nombre":"Decorador de ejemplo A","zona":{"pais":"CO","departamento":"Cundinamarca","ciudad":"Bogotá","cobertura":["Bogotá"]},"contacto":null,"url":"https://example.com/decorador-a"},
+  {"id":"ej-prov-mbp-a","origen":"ejemplo","aviso":"DATO DE EJEMPLO — no es real","tipo":"mbp","nombre":"Decorador de ejemplo B","zona":{"pais":"CO","departamento":"Antioquia","ciudad":"Medellín","cobertura":["Medellín"]},"contacto":null,"url":"https://example.com/decorador-b"},
+  {"id":"ej-prov-distribuidor-a","origen":"ejemplo","aviso":"DATO DE EJEMPLO — no es real","tipo":"distribuidor","nombre":"Distribuidor de ejemplo","zona":{"pais":"CO","departamento":"Cundinamarca","ciudad":"Bogotá","cobertura":["Bogotá"]},"contacto":null,"url":"https://example.com/distribuidor"},
+  {"id":"ej-prov-ecommerce-a","origen":"ejemplo","aviso":"DATO DE EJEMPLO — no es real","tipo":"ecommerce","nombre":"Tienda en línea de ejemplo","zona":{"pais":"CO","departamento":"Cundinamarca","ciudad":"Bogotá","cobertura":["Colombia"]},"contacto":null,"url":"https://example.com/tienda"}
+]

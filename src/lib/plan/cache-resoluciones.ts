@@ -12,7 +12,7 @@ import type { PlanDecoracion } from "./tipos";
  * `plan_hash` es el del token, y el plan editado. Cuando el decorador guarda
  * cambios seguidos, el plan base es exactamente el que la edición anterior
  * acaba de resolver y firmar aquí. Solo se reutiliza si el plan que llega es
- * idéntico (mismo contenido canónico, snapshot, allowlist y variantes LoRA):
+ * idéntico (mismo contenido canónico, snapshot y allowlist comercial):
  * entonces su hash es, por construcción, el que Python calculó. El token se
  * sigue verificando siempre, y el plan editado se sigue resolviendo en Python.
  *
@@ -41,7 +41,6 @@ export type ContextoResolucion = {
   plan: PlanDecoracion;
   catalogSnapshotId: string;
   allowlist: ReadonlyArray<{ product_id: string; variant_ids: readonly string[] }>;
-  loraVariantIds?: readonly string[] | null;
 };
 
 /** Huella de todo lo que decide una resolución: el plan y contra qué catálogo se resolvió. */
@@ -49,9 +48,8 @@ export function claveResolucion(contexto: ContextoResolucion): string {
   const allowlist = [...contexto.allowlist]
     .map((entrada) => ({ product_id: entrada.product_id, variant_ids: [...entrada.variant_ids].sort() }))
     .sort((a, b) => a.product_id.localeCompare(b.product_id));
-  const lora = contexto.loraVariantIds ? [...contexto.loraVariantIds].sort() : null;
   return createHash("sha256")
-    .update(canonico({ plan: contexto.plan, snapshot: contexto.catalogSnapshotId, allowlist, lora }))
+    .update(canonico({ plan: contexto.plan, snapshot: contexto.catalogSnapshotId, allowlist }))
     .digest("hex");
 }
 

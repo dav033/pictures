@@ -63,7 +63,7 @@ const primerSorteo = () => 0;
   assert.match(buildVisualSceneLock(context), /MANDATORY VENUE: piscina del conjunto/);
   assert.doesNotMatch(buildVisualSceneLock(context), /jard/);
   assert.equal(context.lightingKind, "night", "the time the customer left open still comes from the plan");
-  const lora = compileLoraCaption({ sceneSpec: sceneSpec("text_to_image"), visualContext: context, dialect: "scene_v004" }).prompt;
+  const lora = compileLoraCaption({ sceneSpec: sceneSpec("text_to_image"), visualContext: context }).prompt;
   assert.doesNotMatch(lora, /garden/, lora);
   assert.deepEqual(findLoraPromptLanguageLeaks(lora), [], "the open place never reaches the LoRA prompt verbatim");
 

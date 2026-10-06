@@ -4,7 +4,7 @@ import { SceneSpecSchema } from "../../src/lib/ia/escena/scene-spec";
 import { compileLoraCaption } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
-import { ensureLoraTriggers } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
+
 
 const concept = {
   concept_id: "fixture.halloween.printed.balloon",
@@ -120,11 +120,7 @@ assert.deepEqual(preflight.structures, { expected: 2, represented: 2 });
 assert.deepEqual(preflight.locations, { expected: 2, represented: 2 });
 assert.equal(preflight.productLeaks.length, 0);
 
-const payloadPrompt = ensureLoraTriggers(compilation.prompt, [{
-  path: "https://example.test/artifact.safetensors",
-  trigger: "eventdecor_style_v2",
-  scale: 0.6,
-}]);
+const payloadPrompt = compilation.prompt;
 assert.equal(payloadPrompt, "eventdecor_style_v2, " + compilation.prompt.replace(/^eventdecor_style_v2,\s*/i, ""));
 
 console.log("Rich composition contract: OK");

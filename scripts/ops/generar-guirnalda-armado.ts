@@ -33,7 +33,6 @@
 import path from "node:path";
 import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { captionCanonicoGuirnalda, escenaGuirnalda, GUIRNALDA_SINTETICA, planGuirnalda, type GuirnaldaSintetica } from "../lib/escenas-armado-guirnalda";
 import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lora/exp-fal-lib";
 
@@ -65,11 +64,10 @@ const celdas: Celda[] = CASOS.flatMap((caso) => {
   const frase = frases?.[0]?.prompt_lora;
   if (!frase) throw new Error(`${caso.id}: el plan ${caso.plan} no trae armado de guirnalda`);
   return (["con-armado", "sin-armado"] as const).flatMap((variante) => {
-    const compilado = captionCanonicoGuirnalda(escena, variante === "con-armado" ? frases : undefined, identidad.trigger);
-    const reporte = preflightLoraPrompt({ sceneSpec: escena, clauses: compilado.clauses, prompt: compilado.prompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY });
+    const compilado = captionCanonicoGuirnalda(escena, variante === "con-armado" ? frases : undefined);
+    const reporte = preflightLoraPrompt({ sceneSpec: escena, clauses: compilado.clauses, prompt: compilado.prompt });
     if (!reporte.ok) throw new Error(`${caso.id}/${variante}: el preflight rechaza el caption (${reporte.errors.join("; ")})`);
-    // El compilador escribe su trigger; `payloadDe` antepone el del LoRA elegido.
-    const prompt = compilado.prompt.replace(/^eventdecor_style_v2,\s*/, "");
+    const prompt = compilado.prompt;
     return semillas.map((seed) => ({
       id: `${caso.id}-${variante}-seed${seed}`,
       prompt,
