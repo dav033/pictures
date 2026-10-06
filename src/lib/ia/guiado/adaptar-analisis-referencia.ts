@@ -31,6 +31,7 @@ const FORMAS: Readonly<Record<string, string>> = {
 };
 
 export type ReferenciaGuiada = {
+  blueprint: z.infer<typeof ReferenceBlueprintV2Schema>;
   frase: string;
   aspecto?: number;
   piezas: Array<{ x: number; y: number; ancho: number; alto: number }>;
@@ -71,7 +72,8 @@ export function adaptarAnalisisReferencia(raw: unknown): ReferenciaGuiada | null
   const nombres = colores.map((color) => color.nombre.toLocaleLowerCase("es"));
   const fraseColores = nombres.length ? ` en ${nombres.length > 1 ? `${nombres.slice(0, -1).join(", ")} y ${nombres.at(-1)}` : nombres[0]}` : "";
   return {
-    frase: `Veo ${frasePiezas}${fraseColores}.`,
+    blueprint: parsed.data.blueprint,
+    frase: `Veo ${frasePiezas}${fraseColores}. ¿Te armo el plan con estas piezas?`,
     ...(parsed.data.blueprint.source_images[0]?.aspect_ratio ? { aspecto: parsed.data.blueprint.source_images[0].aspect_ratio } : {}),
     piezas: elementos.slice(0, 8).map((elemento) => ({ x: elemento.reference_bbox.x, y: elemento.reference_bbox.y, ancho: elemento.reference_bbox.width, alto: elemento.reference_bbox.height })),
     colores,
