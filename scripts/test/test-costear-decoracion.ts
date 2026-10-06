@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert";
 import { CotizacionGuiadaSchema, ListaMaterialesRequestSchema, ListaMaterialesResultadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { materialesDesdeCotizacion } from "@/lib/cotizacion/borrador-profesional";
+import { presentacionMaterialGuiado } from "@/lib/ia/guiado/presentacion-material-guiado";
 
 const entrada = ListaMaterialesRequestSchema.parse({ schema_version: "lista-materiales.v1", materiales: [{ variant_id: "variante-real", cantidad: 51 }] });
 assert.equal(entrada.materiales[0]?.cantidad, 51);
@@ -12,4 +13,7 @@ assert.equal(cotizacion.total, 25000);
 const profesional = materialesDesdeCotizacion(cotizacion);
 assert.equal(profesional.sinPrecio, 0);
 assert.deepEqual(profesional.materiales, [{ variant_id: "variante-real", descripcion: "Globo Sempertex", paquetes: 2, precio_paquete_catalogo_cop: 12500 }]);
+assert.deepEqual(presentacionMaterialGuiado("Globo látex R-12 Rosewood, paquete x50"), { nombre: "Globo de látex 12\" Palo de rosa", color: "rosado" });
+assert.deepEqual(presentacionMaterialGuiado("Globo látex R-12 Durazno, paquete x50"), { nombre: "Globo de látex 12\" Durazno", color: "naranja" });
+assert.deepEqual(presentacionMaterialGuiado("Globo látex R-12 Blanco, paquete x50"), { nombre: "Globo de látex 12\" Blanco", color: "blanco" });
 console.log("test-costear-decoracion: contratos y paso a CotizacionProfesional correctos; cálculo viene de Python");

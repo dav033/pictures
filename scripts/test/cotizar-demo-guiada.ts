@@ -1,9 +1,9 @@
+import { DECORACION_DEMO_COTIZACION } from "./decoracion-demo-cotizacion";
 import { randomUUID } from "node:crypto";
-import { decoracionesSempertex } from "@/lib/biblioteca-sempertex/biblioteca";
 import { ListaMaterialesRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
 
-const decoracion = decoracionesSempertex.find((item) => item.id === "ej-cumpleanos-estrellas");
+const decoracion = DECORACION_DEMO_COTIZACION;
 if (!decoracion) throw new Error("Falta decoración de demostración para la cotización.");
 const decoracionId = decoracion.id;
 
