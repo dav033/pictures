@@ -13,6 +13,17 @@ const COLORES: Readonly<Record<string, { nombre: string; hex: string }>> = {
   verde: { nombre: "Verde", hex: "#22a06b" }, violeta: { nombre: "Violeta", hex: "#8b5cf6" },
 };
 
+// El analizador nombra los colores en inglés o con nombres de catálogo: el widget los dice en palabras de cliente.
+const SINONIMOS_COLOR: Readonly<Record<string, string>> = {
+  yellow: "amarillo", blue: "azul", navy: "azul", celeste: "azul", white: "blanco", ivory: "blanco", cream: "blanco", crema: "blanco",
+  brown: "cafe", gold: "dorado", golden: "dorado", oro: "dorado", fuchsia: "fucsia", magenta: "fucsia", lilac: "lila", lavender: "lila",
+  purple: "violeta", morado: "violeta", violet: "violeta", orange: "naranja", coral: "naranja", black: "negro", silver: "plata",
+  plateado: "plata", red: "rojo", pink: "rosado", rosa: "rosado", blush: "rosado", green: "verde", mint: "verde", sage: "verde",
+};
+
+const ARTICULO: Readonly<Record<string, string>> = { columna: "una", guirnalda: "una", "pared de globos": "una", "figura de globos": "una" };
+const NUMEROS = ["", "", "dos", "tres", "cuatro", "cinco", "seis"];
+
 const FORMAS: Readonly<Record<string, string>> = {
   arco: "arco", semiarco: "medio arco", columna: "columna", guirnalda: "guirnalda",
   pared: "pared de globos", bouquet: "ramo de globos", ramo: "ramo de globos",
@@ -29,7 +40,10 @@ export type ReferenciaGuiada = {
 function colorCliente(valor: string): { nombre: string; hex: string } | null {
   const limpio = valor.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
   const palabras = limpio.replace(/[^a-z ]/g, " ").split(/\s+/).filter(Boolean);
-  for (const palabra of palabras) if (COLORES[palabra]) return COLORES[palabra]!;
+  for (const palabra of palabras) {
+    const clave = COLORES[palabra] ? palabra : SINONIMOS_COLOR[palabra];
+    if (clave && COLORES[clave]) return COLORES[clave]!;
+  }
   return null;
 }
 
@@ -48,12 +62,12 @@ export function adaptarAnalisisReferencia(raw: unknown): ReferenciaGuiada | null
   }
   const formasUnicas = [...conteoFormas].map(([forma, cantidad]) => {
     const formaPlural = forma === "columna" ? "columnas" : forma === "arco" ? "arcos" : forma === "medio arco" ? "medios arcos" : forma;
-    return cantidad > 1 ? `${cantidad} ${formaPlural}` : forma;
+    return cantidad > 1 ? `${NUMEROS[cantidad] ?? cantidad} ${formaPlural}` : `${ARTICULO[forma] ?? "un"} ${forma}`;
   });
-  const colores = [...new Map(elementos.flatMap((elemento) => elemento.appearance.resolved_colors)
+  const colores = [...new Map(elementos.flatMap((elemento) => elemento.appearance.resolved_colors.length ? elemento.appearance.resolved_colors : elemento.appearance.observed_colors)
     .map(colorCliente).filter((color): color is { nombre: string; hex: string } => color !== null)
     .map((color) => [color.nombre, color])).values()].slice(0, 5);
-  const frasePiezas = formasUnicas.length ? formasUnicas.join(" y ") : "decoración con globos";
+  const frasePiezas = formasUnicas.length ? formasUnicas.join(" y ") : "una decoración con globos";
   const nombres = colores.map((color) => color.nombre.toLocaleLowerCase("es"));
   const fraseColores = nombres.length ? ` en ${nombres.length > 1 ? `${nombres.slice(0, -1).join(", ")} y ${nombres.at(-1)}` : nombres[0]}` : "";
   return {
