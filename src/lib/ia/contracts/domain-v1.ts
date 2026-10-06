@@ -37,8 +37,6 @@ import { ConteoAplicadoSchema, MAX_GLOBOS_CONTEO, PistaConteoSchema } from "@/li
 import { PatronColorResueltoSchema, PistaPatronSchema, PistaTamanosSchema } from "@/lib/plan/patron-color";
 import { PlanGuiaEscenaRequestV1Schema, PlanGuiaEscenaResultV1Schema } from "@/lib/plan/guia-escena";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
-import { LoraSelectionSchema } from "@/lib/lora/schema";
-import { productVocabularySchema } from "@/lib/lora/product-vocabulary";
 
 export const CATALOG_SELECTION_CONTRACT_VERSION = "catalog-selection.v1" as const;
 export const CATALOG_SEARCH_CONTRACT_VERSION = "catalog-search.v1" as const;
@@ -762,8 +760,6 @@ export const DomainContractSchemas = {
   "plan-guia-escena-result.v1": PlanGuiaEscenaResultV1Schema,
   "reference-blueprint.v2": ReferenceBlueprintV2Schema,
   "scene-spec.v1": SceneSpecSchema,
-  "lora-selection.v1": LoraSelectionSchema,
-  "product-vocabulary.v1": productVocabularySchema,
   "prop-catalogo.v1": PropCatalogoSchema,
   "happie-recommendation-request.v1": HappieRecommendationRequestV1Schema,
   "happie-recommendation-response.v1": HappieRecommendationResponseV1Schema,

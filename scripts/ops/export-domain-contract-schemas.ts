@@ -49,8 +49,6 @@ const filenames: Record<string, string> = {
   "plan-guia-escena-result.v1": "plan-guia-escena-result.schema.json",
   "reference-blueprint.v2": "reference-blueprint.schema.json",
   "scene-spec.v1": "scene-spec.schema.json",
-  "lora-selection.v1": "lora-selection.schema.json",
-  "product-vocabulary.v1": "product-vocabulary.schema.json",
   "prop-catalogo.v1": "prop-catalogo.schema.json",
   "happie-recommendation-request.v1": "happie-recommendation-request.schema.json",
   "happie-recommendation-response.v1": "happie-recommendation-response.schema.json",

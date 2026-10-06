@@ -1,4 +1,3 @@
-import type { ProductConcept } from "./product-vocabulary";
 import { aDescriptorPerceptual } from "./descriptor-perceptual";
 import { ACABADO_EN } from "@/lib/ia/uzume/mezcla-color-escena";
 import { referenciaDelCatalogo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
@@ -243,34 +242,12 @@ function sinAcabadoEnColor(acabado: string, color: string): string {
   return acabado.split(/\s+/).every((palabra) => palabras.has(palabra)) ? "" : acabado;
 }
 
-function sustantivoDeGlobo(forma: string, material: string): string | undefined {
-  const formas = SUSTANTIVO_POR_FORMA[plegar(forma)];
-  if (!formas) return undefined;
-  const materialPlegado = plegar(material);
-  if (/\bfoil\b|metalli[sz]ed|metalizad/.test(materialPlegado)) return formas.foil;
-  return /\blatex\b/.test(materialPlegado) ? formas.latex : undefined;
-}
-
 /**
  * Términos base de un concepto del vocabulario. Un globo liso de una forma conocida se describe por partes
  * (acabado, color, sustantivo); un impreso, un surtido o cualquier pieza que no es un globo se nombra con su
  * etiqueta canónica limpia, porque ahí la etiqueta describe cosas (el estampado, las piezas del kit) que el
  * reparto por partes perdería.
  */
-export function terminosBaseDeConcepto(concepto: ProductConcept): TerminosBase {
-  const { shape, material, color, finish, pattern } = concepto.visual;
-  const colorPlano = colorVisible(color);
-  const liso = ["solid", "plain", "none"].includes(pattern.kind.trim().toLowerCase()) && !pattern.motif && !pattern.contains_text;
-  const noun = sustantivoDeGlobo(shape, material);
-  const surtido = /\b(?:assorted|and|multicolor)\b|,/i.test(colorPlano);
-  if (noun && liso && colorPlano && !surtido) {
-    // Un foil «matte gold» ya dice su acabado en el color; «shiny» lo contradiría.
-    const acabado = /foil/.test(noun) ? (/\bmatte\b/i.test(colorPlano) ? "" : "shiny metallic") : sinAcabadoEnColor(acabadoVisible(finish || concepto.visual.family), colorPlano);
-    return { kind: "balloon", finish: acabado, color: colorPlano, noun };
-  }
-  return { kind: "piece", label: limpiarEtiqueta(concepto.canonical_label) };
-}
-
 /** Lo que se pudo leer de un título del catálogo. Hechos del catálogo, nunca salida de un modelo. */
 export type TituloCatalogoBase = {
   /** Forma del vocabulario (`round`, `heart`…), o undefined si el título no es de un globo. */

@@ -9,7 +9,7 @@ import { FUENTE_PLAN } from "@/lib/plan/blueprint";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, armadoGuirnaldaOrganicaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separate-side-pieces";
 import { limpiarTextoBase } from "./texto-base";
-import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "@/lib/lora/vocabulario-base";
+import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
 
@@ -51,7 +51,7 @@ export type ProductConceptClauseInput = {
   colorName?: string;
   /**
    * Same product in the plain wording of the `base` dialect (see
-   * src/lib/lora/vocabulario-base.ts). Without it the base dialect renders the
+   * src/lib/ia/kagutsuchi/vocabulario-base.ts). Without it the base dialect renders the
    * canonical label, cleaned of commercial names.
    */
   baseTerms?: TerminosBase;

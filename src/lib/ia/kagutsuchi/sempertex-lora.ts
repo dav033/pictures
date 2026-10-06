@@ -1,5 +1,4 @@
 import type { ImageInput, Imagen, PeticionImagen } from "@/lib/ia/nucleo/tipos";
-import type { LoraSpecialization } from "@/lib/lora/schema";
 import { idsTelemetria, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { bytesDeBase64, registrarLlamadaIA } from "@sempertex/agente-core";
 import { LORA_GENERATION_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
@@ -22,14 +21,7 @@ export type SempertexLoraOptions = {
   seed?: number;
   /** flux-2 guidance scale from the creativity level (creatividad.ts); defaults to 3.5. */
   guidanceScale?: number;
-  /**
-   * Obligatorio. Debe venir de `resolveLoraMode`/`resolveLoraSelection`
-   * (`@/lib/lora/mode-resolver`) — nunca de una URL o trigger escritos a
-   * mano. No existe combinación por defecto: sin esto, la llamada falla
-   * antes de tocar la red. Ver PLAN-COMPOSICION-RICA-V001.md §1.1 y §9.2.
-   * Una lista vacía es explícita y solo la produce el modo `base`: el modelo
-   * base FLUX.2 en fal, con `loras: []` y sin trigger. Más de uno se rechaza.
-   */
+  /** Lista explícita de adaptadores; vacía selecciona FLUX base sin trigger. */
   loras: LoraApplication[];
   /** Cancels provider I/O when the client disconnects or the route expires. */
   signal?: AbortSignal;
@@ -65,7 +57,6 @@ function esImagenGuia(imagen: ImagenEditLora): imagen is ImagenGuiaLora {
 
 export type LoraApplication = {
   artifactId?: string;
-  specialization?: LoraSpecialization;
   path: string;
   trigger: string;
   scale: number;
