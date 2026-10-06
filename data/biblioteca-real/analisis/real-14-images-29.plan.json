@@ -8,8 +8,8 @@
       "titulo": "real-14-images-29",
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
-        "blanco",
-        "negro"
+        "negro",
+        "blanco"
       ],
       "estilo": "orgánico"
     },
@@ -33,17 +33,17 @@
         "mezcla": "clasica",
         "materiales": [
           {
-            "product_id": "8634235781415",
-            "variant_id": "46594221343015",
-            "color": "blanco",
-            "participacion": 0.5610379649750735,
-            "rol_material": "principal"
-          },
-          {
             "product_id": "8634239516967",
             "variant_id": "46594235269415",
             "color": "negro",
-            "participacion": 0.4389620350249265,
+            "participacion": 0.5,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "color": "blanco",
+            "participacion": 0.5,
             "rol_material": "secundario"
           }
         ],
@@ -51,8 +51,8 @@
         "referencia_element_id": "REF_01_E01",
         "estructura_oficial": "arco",
         "colores_referencia": [
-          "blanco",
-          "negro"
+          "negro",
+          "blanco"
         ]
       }
     ],
@@ -70,8 +70,8 @@
         "titulo": "real-14-images-29",
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
-          "blanco",
-          "negro"
+          "negro",
+          "blanco"
         ],
         "estilo": "orgánico"
       },
@@ -95,17 +95,17 @@
           "mezcla": "clasica",
           "materiales": [
             {
-              "product_id": "8634235781415",
-              "variant_id": "46594221343015",
-              "color": "blanco",
-              "participacion": 0.5610379649750735,
-              "rol_material": "principal"
-            },
-            {
               "product_id": "8634239516967",
               "variant_id": "46594235269415",
               "color": "negro",
-              "participacion": 0.4389620350249265,
+              "participacion": 0.5,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634235781415",
+              "variant_id": "46594221343015",
+              "color": "blanco",
+              "participacion": 0.5,
               "rol_material": "secundario"
             }
           ],
@@ -113,8 +113,8 @@
           "referencia_element_id": "REF_01_E01",
           "estructura_oficial": "arco",
           "colores_referencia": [
-            "blanco",
-            "negro"
+            "negro",
+            "blanco"
           ]
         }
       ],
@@ -125,7 +125,7 @@
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "ad9351418943e9da92caaafad4f632ebfdf41cfd38a113b92e725d7b9ca45cc6",
+    "plan_hash": "9e29cb65645344d385d5f72d597d783dadbc85a97167aea0217c6c76b4f4ac57",
     "request_id": "f3f686c6-92e2-51cf-bb71-1a4b9887ca24",
     "compras": [
       {
@@ -141,20 +141,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "blanco",
-        "unidades_necesarias": 81,
-        "design_quantity": 81,
-        "waste_reserve": 0,
-        "required_quantity": 81,
-        "unidades_con_merma": 81,
+        "unidades_necesarias": 72,
+        "design_quantity": 72,
+        "waste_reserve": 12,
+        "required_quantity": 84,
+        "unidades_con_merma": 84,
         "unidades_paquete": 50,
         "paquetes": 2,
         "purchase_quantity": 100,
-        "used": 81,
-        "leftover_inventory": 19,
-        "consumption_cost": 21120,
+        "used": 72,
+        "leftover_inventory": 16,
+        "consumption_cost": 21902,
         "purchase_cost": 26074,
         "additional_package_for_waste": false,
-        "sobrante": 19,
+        "sobrante": 28,
         "precio_paquete": 13037,
         "subtotal": 26074,
         "estructuras": [
@@ -181,20 +181,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "negro",
-        "unidades_necesarias": 64,
-        "design_quantity": 64,
-        "waste_reserve": 12,
-        "required_quantity": 76,
-        "unidades_con_merma": 76,
+        "unidades_necesarias": 73,
+        "design_quantity": 73,
+        "waste_reserve": 0,
+        "required_quantity": 73,
+        "unidades_con_merma": 73,
         "unidades_paquete": 50,
         "paquetes": 2,
         "purchase_quantity": 100,
-        "used": 64,
-        "leftover_inventory": 24,
-        "consumption_cost": 19816,
+        "used": 73,
+        "leftover_inventory": 27,
+        "consumption_cost": 19034,
         "purchase_cost": 26074,
         "additional_package_for_waste": false,
-        "sobrante": 36,
+        "sobrante": 27,
         "precio_paquete": 13037,
         "subtotal": 26074,
         "estructuras": [
@@ -236,9 +236,7 @@
     "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
     "sustituciones": [],
     "sin_cobertura": [],
-    "advertencias": [
-      "sobrante_alto:46594235269415"
-    ],
+    "advertencias": [],
     "estructuras": [
       {
         "estructura_id": "EST_01_ARCO",
@@ -249,31 +247,6 @@
         "eje_m": 5.46,
         "total_unidades": 145,
         "lineas": [
-          {
-            "estructura_id": "EST_01_ARCO",
-            "origen": {
-              "kind": "estructura",
-              "id": "EST_01_ARCO"
-            },
-            "product_id": "8634235781415",
-            "variant_id": "46594221343015",
-            "sku": "B2B-20000723",
-            "sku_original": "B2B-20000723",
-            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
-            "inventory_quantity": 930449,
-            "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
-            "color": "blanco",
-            "tamano_codigo": "R-12",
-            "diam_pulg": 12,
-            "diam_cm": 30.5,
-            "forma": "redondo",
-            "acabado": "fashion",
-            "unidades": 81,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
-            "sustitucion": null
-          },
           {
             "estructura_id": "EST_01_ARCO",
             "origen": {
@@ -295,8 +268,33 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 64,
+            "unidades": 73,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "sku": "B2B-20000723",
+            "sku_original": "B2B-20000723",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+            "inventory_quantity": 930449,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 72,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
             "sustitucion": null
           }
         ],
@@ -371,29 +369,29 @@
     "balloons": [
       {
         "structure_id": "EST_01_ARCO",
-        "product_id": "8634235781415",
-        "variant_id": "46594221343015",
-        "color": "blanco",
-        "finish": "fashion",
-        "size_inches": 12,
-        "shape": "redondo",
-        "design_quantity": 81,
-        "waste_reserve": 0,
-        "required_quantity": 81,
-        "waste_adjusted_quantity": 81
-      },
-      {
-        "structure_id": "EST_01_ARCO",
         "product_id": "8634239516967",
         "variant_id": "46594235269415",
         "color": "negro",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 64,
+        "design_quantity": 73,
         "waste_reserve": 0,
-        "required_quantity": 64,
-        "waste_adjusted_quantity": 64
+        "required_quantity": 73,
+        "waste_adjusted_quantity": 73
+      },
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "color": "blanco",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 72,
+        "waste_reserve": 0,
+        "required_quantity": 72,
+        "waste_adjusted_quantity": 72
       }
     ],
     "special_elements": [],
@@ -401,38 +399,38 @@
       {
         "product_id": "8634235781415",
         "variant_id": "46594221343015",
-        "design_quantity": 81,
-        "waste_reserve": 0,
-        "required_quantity": 81,
-        "waste_adjusted_quantity": 81,
+        "design_quantity": 72,
+        "waste_reserve": 12,
+        "required_quantity": 84,
+        "waste_adjusted_quantity": 84,
         "units_per_package": 50,
         "package_count": 2,
         "purchase_quantity": 100,
-        "used": 81,
-        "leftover_inventory": 19,
-        "consumption_cost": 21120,
+        "used": 72,
+        "leftover_inventory": 16,
+        "consumption_cost": 21902,
         "purchase_cost": 26074,
         "additional_package_for_waste": false,
-        "operational_surplus": 19,
-        "potential_surplus": 19
+        "operational_surplus": 16,
+        "potential_surplus": 28
       },
       {
         "product_id": "8634239516967",
         "variant_id": "46594235269415",
-        "design_quantity": 64,
-        "waste_reserve": 12,
-        "required_quantity": 76,
-        "waste_adjusted_quantity": 76,
+        "design_quantity": 73,
+        "waste_reserve": 0,
+        "required_quantity": 73,
+        "waste_adjusted_quantity": 73,
         "units_per_package": 50,
         "package_count": 2,
         "purchase_quantity": 100,
-        "used": 64,
-        "leftover_inventory": 24,
-        "consumption_cost": 19816,
+        "used": 73,
+        "leftover_inventory": 27,
+        "consumption_cost": 19034,
         "purchase_cost": 26074,
         "additional_package_for_waste": false,
-        "operational_surplus": 24,
-        "potential_surplus": 36
+        "operational_surplus": 27,
+        "potential_surplus": 27
       }
     ],
     "totals": {
@@ -451,9 +449,7 @@
       "operational_surplus": 43,
       "potential_surplus": 55
     },
-    "warnings": [
-      "sobrante_alto:46594235269415"
-    ]
+    "warnings": []
   },
   "quote": {
     "lineas": [
@@ -476,14 +472,14 @@
           "REF_01_E01"
         ],
         "color": "blanco",
-        "cantidadNecesaria": 81,
-        "designQuantity": 81,
-        "wasteReserve": 0,
-        "requiredQuantity": 81,
+        "cantidadNecesaria": 72,
+        "designQuantity": 72,
+        "wasteReserve": 12,
+        "requiredQuantity": 84,
         "purchaseQuantity": 100,
-        "used": 81,
-        "leftoverInventory": 19,
-        "consumptionCost": 21120,
+        "used": 72,
+        "leftoverInventory": 16,
+        "consumptionCost": 21902,
         "purchaseCost": 26074,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -493,7 +489,7 @@
         "unidadesPaquete": 50,
         "paquetes": 2,
         "subtotal": 26074,
-        "sobrante": 19
+        "sobrante": 28
       },
       {
         "id": "46594235269415",
@@ -514,14 +510,14 @@
           "REF_01_E01"
         ],
         "color": "negro",
-        "cantidadNecesaria": 64,
-        "designQuantity": 64,
-        "wasteReserve": 12,
-        "requiredQuantity": 76,
+        "cantidadNecesaria": 73,
+        "designQuantity": 73,
+        "wasteReserve": 0,
+        "requiredQuantity": 73,
         "purchaseQuantity": 100,
-        "used": 64,
-        "leftoverInventory": 24,
-        "consumptionCost": 19816,
+        "used": 73,
+        "leftoverInventory": 27,
+        "consumptionCost": 19034,
         "purchaseCost": 26074,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -531,7 +527,7 @@
         "unidadesPaquete": 50,
         "paquetes": 2,
         "subtotal": 26074,
-        "sobrante": 36
+        "sobrante": 27
       }
     ],
     "total": 52148,
@@ -543,7 +539,7 @@
     "leftoverInventory": 43,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "ad9351418943e9da92caaafad4f632ebfdf41cfd38a113b92e725d7b9ca45cc6"
+    "plan_hash": "9e29cb65645344d385d5f72d597d783dadbc85a97167aea0217c6c76b4f4ac57"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -553,22 +549,22 @@
       {
         "variant_id": "46594221343015",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 81,
+        "cantidad_necesaria": 72,
         "unidades_paquete": 50,
         "paquetes": 2,
         "precio_paquete": 13037,
         "subtotal": 26074,
-        "sobrante": 19
+        "sobrante": 28
       },
       {
         "variant_id": "46594235269415",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 64,
+        "cantidad_necesaria": 73,
         "unidades_paquete": 50,
         "paquetes": 2,
         "precio_paquete": 13037,
         "subtotal": 26074,
-        "sobrante": 36
+        "sobrante": 27
       }
     ],
     "total": 52148

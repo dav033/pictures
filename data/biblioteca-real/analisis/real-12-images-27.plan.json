@@ -8,9 +8,9 @@
       "titulo": "real-12-images-27",
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
-        "plateado",
         "lila",
-        "morado"
+        "morado",
+        "plateado"
       ],
       "estilo": "orgánico"
     },
@@ -34,24 +34,24 @@
         "mezcla": "clasica",
         "materiales": [
           {
-            "product_id": "8634245742887",
-            "variant_id": "46594247557415",
-            "color": "plateado",
-            "participacion": 0.4977953474228372,
-            "rol_material": "principal"
-          },
-          {
             "product_id": "8634232996135",
             "variant_id": "46594210496807",
             "color": "lila",
-            "participacion": 0.2564999239774973,
-            "rol_material": "secundario"
+            "participacion": 0.4,
+            "rol_material": "principal"
           },
           {
             "product_id": "8634302464295",
             "variant_id": "46594343731495",
             "color": "morado",
-            "participacion": 0.24570472859966552,
+            "participacion": 0.35,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634257211687",
+            "variant_id": "46594267709735",
+            "color": "plateado",
+            "participacion": 0.25,
             "rol_material": "acento"
           }
         ],
@@ -59,9 +59,9 @@
         "referencia_element_id": "REF_01_E02",
         "estructura_oficial": "semiarco",
         "colores_referencia": [
-          "plateado",
           "lila",
-          "morado"
+          "morado",
+          "plateado"
         ]
       }
     ],
@@ -79,9 +79,9 @@
         "titulo": "real-12-images-27",
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
-          "plateado",
           "lila",
-          "morado"
+          "morado",
+          "plateado"
         ],
         "estilo": "orgánico"
       },
@@ -105,24 +105,24 @@
           "mezcla": "clasica",
           "materiales": [
             {
-              "product_id": "8634245742887",
-              "variant_id": "46594247557415",
-              "color": "plateado",
-              "participacion": 0.4977953474228372,
-              "rol_material": "principal"
-            },
-            {
               "product_id": "8634232996135",
               "variant_id": "46594210496807",
               "color": "lila",
-              "participacion": 0.2564999239774973,
-              "rol_material": "secundario"
+              "participacion": 0.4,
+              "rol_material": "principal"
             },
             {
               "product_id": "8634302464295",
               "variant_id": "46594343731495",
               "color": "morado",
-              "participacion": 0.24570472859966552,
+              "participacion": 0.35,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634257211687",
+              "variant_id": "46594267709735",
+              "color": "plateado",
+              "participacion": 0.25,
               "rol_material": "acento"
             }
           ],
@@ -130,9 +130,9 @@
           "referencia_element_id": "REF_01_E02",
           "estructura_oficial": "semiarco",
           "colores_referencia": [
-            "plateado",
             "lila",
-            "morado"
+            "morado",
+            "plateado"
           ]
         }
       ],
@@ -142,7 +142,7 @@
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "feab1f2745c8d7fed2c2f321ff214db92169ca2b582b8a78154fba3e66dc149b",
+    "plan_hash": "17f82f520e30a39b875e07707addf0d351608d260d1288b2cbf2f13fc1690165",
     "request_id": "906df0f3-b0d8-5297-ad2e-8d22f34d9edd",
     "compras": [
       {
@@ -158,20 +158,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "lila",
-        "unidades_necesarias": 16,
-        "design_quantity": 16,
+        "unidades_necesarias": 25,
+        "design_quantity": 25,
         "waste_reserve": 0,
-        "required_quantity": 16,
-        "unidades_con_merma": 16,
+        "required_quantity": 25,
+        "unidades_con_merma": 25,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 16,
-        "leftover_inventory": 34,
-        "consumption_cost": 4172,
+        "used": 25,
+        "leftover_inventory": 25,
+        "consumption_cost": 6519,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 34,
+        "sobrante": 25,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -186,34 +186,34 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985"
       },
       {
-        "variant_id": "46594247557415",
-        "product_id": "8634245742887",
-        "sku": "B2B-20001699",
-        "sku_original": "B2B-20001699",
+        "variant_id": "46594267709735",
+        "product_id": "8634257211687",
+        "sku": "B2B-20014160",
+        "sku_original": "B2B-20014160",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594247557415",
-        "inventory_quantity": 999924,
+        "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
+        "inventory_quantity": 980461,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50",
+        "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "plateado",
-        "unidades_necesarias": 31,
-        "design_quantity": 31,
-        "waste_reserve": 0,
-        "required_quantity": 31,
-        "unidades_con_merma": 31,
+        "unidades_necesarias": 15,
+        "design_quantity": 15,
+        "waste_reserve": 5,
+        "required_quantity": 20,
+        "unidades_con_merma": 20,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 31,
-        "leftover_inventory": 19,
-        "consumption_cost": 14969,
-        "purchase_cost": 24143,
+        "used": 15,
+        "leftover_inventory": 30,
+        "consumption_cost": 11591,
+        "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "sobrante": 19,
-        "precio_paquete": 24143,
-        "subtotal": 24143,
+        "sobrante": 35,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
         "estructuras": [
           "EST_01_SEMIARCO"
         ],
@@ -223,7 +223,7 @@
             "id": "EST_01_SEMIARCO"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/R12-Inf-Grado-481_fef0d84b-1aff-4aab-89b3-843f161045cc.jpg?v=1694793132"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
       },
       {
         "variant_id": "46594343731495",
@@ -238,20 +238,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "morado",
-        "unidades_necesarias": 15,
-        "design_quantity": 15,
-        "waste_reserve": 5,
-        "required_quantity": 20,
-        "unidades_con_merma": 20,
+        "unidades_necesarias": 22,
+        "design_quantity": 22,
+        "waste_reserve": 0,
+        "required_quantity": 22,
+        "unidades_con_merma": 22,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 15,
-        "leftover_inventory": 30,
-        "consumption_cost": 5215,
+        "used": 22,
+        "leftover_inventory": 28,
+        "consumption_cost": 5736,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 35,
+        "sobrante": 28,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -271,14 +271,14 @@
         "R-12": 62
       },
       "total_unidades": 62,
-      "total_cop": 50217,
+      "total_cop": 55051,
       "design_quantity": 62,
       "target_waste_reserve": 5,
       "covered_waste_reserve": 5,
       "uncovered_waste_reserve": 0,
       "natural_package_surplus": 88,
-      "purchase_cost": 50217,
-      "consumption_cost": 24356,
+      "purchase_cost": 55051,
+      "consumption_cost": 23846,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "ahorro_paquetes_cop": 0,
@@ -295,7 +295,7 @@
     "sin_cobertura": [],
     "advertencias": [
       "sobrante_alto:46594210496807",
-      "sobrante_alto:46594247557415",
+      "sobrante_alto:46594267709735",
       "sobrante_alto:46594343731495"
     ],
     "estructuras": [
@@ -308,31 +308,6 @@
         "eje_m": 2.91,
         "total_unidades": 62,
         "lineas": [
-          {
-            "estructura_id": "EST_01_SEMIARCO",
-            "origen": {
-              "kind": "estructura",
-              "id": "EST_01_SEMIARCO"
-            },
-            "product_id": "8634245742887",
-            "variant_id": "46594247557415",
-            "sku": "B2B-20001699",
-            "sku_original": "B2B-20001699",
-            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594247557415",
-            "inventory_quantity": 999924,
-            "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50",
-            "color": "plateado",
-            "tamano_codigo": "R-12",
-            "diam_pulg": 12,
-            "diam_cm": 30.5,
-            "forma": "redondo",
-            "acabado": "satin",
-            "unidades": 31,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/R12-Inf-Grado-481_fef0d84b-1aff-4aab-89b3-843f161045cc.jpg?v=1694793132",
-            "sustitucion": null
-          },
           {
             "estructura_id": "EST_01_SEMIARCO",
             "origen": {
@@ -354,7 +329,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 16,
+            "unidades": 25,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985",
             "sustitucion": null
           },
@@ -379,8 +354,33 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 15,
+            "unidades": 22,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Orquidea_Morada_Purple_Orchid_056.jpg?v=1763148616",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267709735",
+            "sku": "B2B-20014160",
+            "sku_original": "B2B-20014160",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
+            "inventory_quantity": 980461,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+            "color": "plateado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 15,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
             "sustitucion": null
           }
         ],
@@ -398,7 +398,7 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_SEMIARCO",
-        "consumo_cop": 23052
+        "consumo_cop": 20948
       }
     ],
     "conteos_referencia": [
@@ -461,29 +461,16 @@
     "balloons": [
       {
         "structure_id": "EST_01_SEMIARCO",
-        "product_id": "8634245742887",
-        "variant_id": "46594247557415",
-        "color": "plateado",
-        "finish": "satin",
-        "size_inches": 12,
-        "shape": "redondo",
-        "design_quantity": 31,
-        "waste_reserve": 0,
-        "required_quantity": 31,
-        "waste_adjusted_quantity": 31
-      },
-      {
-        "structure_id": "EST_01_SEMIARCO",
         "product_id": "8634232996135",
         "variant_id": "46594210496807",
         "color": "lila",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 16,
+        "design_quantity": 25,
         "waste_reserve": 0,
-        "required_quantity": 16,
-        "waste_adjusted_quantity": 16
+        "required_quantity": 25,
+        "waste_adjusted_quantity": 25
       },
       {
         "structure_id": "EST_01_SEMIARCO",
@@ -491,6 +478,19 @@
         "variant_id": "46594343731495",
         "color": "morado",
         "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 22,
+        "waste_reserve": 0,
+        "required_quantity": 22,
+        "waste_adjusted_quantity": 22
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634257211687",
+        "variant_id": "46594267709735",
+        "color": "plateado",
+        "finish": "reflex",
         "size_inches": 12,
         "shape": "redondo",
         "design_quantity": 15,
@@ -504,42 +504,24 @@
       {
         "product_id": "8634232996135",
         "variant_id": "46594210496807",
-        "design_quantity": 16,
+        "design_quantity": 25,
         "waste_reserve": 0,
-        "required_quantity": 16,
-        "waste_adjusted_quantity": 16,
+        "required_quantity": 25,
+        "waste_adjusted_quantity": 25,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 16,
-        "leftover_inventory": 34,
-        "consumption_cost": 4172,
+        "used": 25,
+        "leftover_inventory": 25,
+        "consumption_cost": 6519,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 34,
-        "potential_surplus": 34
+        "operational_surplus": 25,
+        "potential_surplus": 25
       },
       {
-        "product_id": "8634245742887",
-        "variant_id": "46594247557415",
-        "design_quantity": 31,
-        "waste_reserve": 0,
-        "required_quantity": 31,
-        "waste_adjusted_quantity": 31,
-        "units_per_package": 50,
-        "package_count": 1,
-        "purchase_quantity": 50,
-        "used": 31,
-        "leftover_inventory": 19,
-        "consumption_cost": 14969,
-        "purchase_cost": 24143,
-        "additional_package_for_waste": false,
-        "operational_surplus": 19,
-        "potential_surplus": 19
-      },
-      {
-        "product_id": "8634302464295",
-        "variant_id": "46594343731495",
+        "product_id": "8634257211687",
+        "variant_id": "46594267709735",
         "design_quantity": 15,
         "waste_reserve": 5,
         "required_quantity": 20,
@@ -549,11 +531,29 @@
         "purchase_quantity": 50,
         "used": 15,
         "leftover_inventory": 30,
-        "consumption_cost": 5215,
-        "purchase_cost": 13037,
+        "consumption_cost": 11591,
+        "purchase_cost": 28977,
         "additional_package_for_waste": false,
         "operational_surplus": 30,
         "potential_surplus": 35
+      },
+      {
+        "product_id": "8634302464295",
+        "variant_id": "46594343731495",
+        "design_quantity": 22,
+        "waste_reserve": 0,
+        "required_quantity": 22,
+        "waste_adjusted_quantity": 22,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 22,
+        "leftover_inventory": 28,
+        "consumption_cost": 5736,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 28,
+        "potential_surplus": 28
       }
     ],
     "totals": {
@@ -563,8 +563,8 @@
       "uncovered_waste_reserve": 0,
       "natural_package_surplus": 88,
       "required_quantity": 67,
-      "consumption_cost": 24356,
-      "purchase_cost": 50217,
+      "consumption_cost": 23846,
+      "purchase_cost": 55051,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "waste_adjusted_quantity": 67,
@@ -574,7 +574,7 @@
     },
     "warnings": [
       "sobrante_alto:46594210496807",
-      "sobrante_alto:46594247557415",
+      "sobrante_alto:46594267709735",
       "sobrante_alto:46594343731495"
     ]
   },
@@ -599,14 +599,14 @@
           "REF_01_E02"
         ],
         "color": "lila",
-        "cantidadNecesaria": 16,
-        "designQuantity": 16,
+        "cantidadNecesaria": 25,
+        "designQuantity": 25,
         "wasteReserve": 0,
-        "requiredQuantity": 16,
+        "requiredQuantity": 25,
         "purchaseQuantity": 50,
-        "used": 16,
-        "leftoverInventory": 34,
-        "consumptionCost": 4172,
+        "used": 25,
+        "leftoverInventory": 25,
+        "consumptionCost": 6519,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -616,11 +616,11 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 34
+        "sobrante": 25
       },
       {
-        "id": "46594247557415",
-        "productId": "8634245742887",
+        "id": "46594267709735",
+        "productId": "8634257211687",
         "tamano": "R-12",
         "tamanoCodigo": "R-12",
         "diamPulg": 12,
@@ -637,24 +637,24 @@
           "REF_01_E02"
         ],
         "color": "plateado",
-        "cantidadNecesaria": 31,
-        "designQuantity": 31,
-        "wasteReserve": 0,
-        "requiredQuantity": 31,
+        "cantidadNecesaria": 15,
+        "designQuantity": 15,
+        "wasteReserve": 5,
+        "requiredQuantity": 20,
         "purchaseQuantity": 50,
-        "used": 31,
-        "leftoverInventory": 19,
-        "consumptionCost": 14969,
-        "purchaseCost": 24143,
+        "used": 15,
+        "leftoverInventory": 30,
+        "consumptionCost": 11591,
+        "purchaseCost": 28977,
         "additionalPackageForWaste": false,
         "disponible": true,
-        "varianteId": "46594247557415",
-        "nombre": "B2b Globo Latex Redondo Infinity® Grado Satin Plata — R-12 / PAQUETE X 50",
-        "precioPaquete": 24143,
+        "varianteId": "46594267709735",
+        "nombre": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+        "precioPaquete": 28977,
         "unidadesPaquete": 50,
         "paquetes": 1,
-        "subtotal": 24143,
-        "sobrante": 19
+        "subtotal": 28977,
+        "sobrante": 35
       },
       {
         "id": "46594343731495",
@@ -675,14 +675,14 @@
           "REF_01_E02"
         ],
         "color": "morado",
-        "cantidadNecesaria": 15,
-        "designQuantity": 15,
-        "wasteReserve": 5,
-        "requiredQuantity": 20,
+        "cantidadNecesaria": 22,
+        "designQuantity": 22,
+        "wasteReserve": 0,
+        "requiredQuantity": 22,
         "purchaseQuantity": 50,
-        "used": 15,
-        "leftoverInventory": 30,
-        "consumptionCost": 5215,
+        "used": 22,
+        "leftoverInventory": 28,
+        "consumptionCost": 5736,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -692,19 +692,19 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 35
+        "sobrante": 28
       }
     ],
-    "total": 50217,
+    "total": 55051,
     "mermaPorcentaje": 8,
-    "purchaseCost": 50217,
-    "consumptionCost": 24356,
+    "purchaseCost": 55051,
+    "consumptionCost": 23846,
     "targetWasteReserve": 5,
     "coveredWasteReserve": 5,
     "leftoverInventory": 83,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "feab1f2745c8d7fed2c2f321ff214db92169ca2b582b8a78154fba3e66dc149b"
+    "plan_hash": "17f82f520e30a39b875e07707addf0d351608d260d1288b2cbf2f13fc1690165"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -714,35 +714,35 @@
       {
         "variant_id": "46594210496807",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 16,
+        "cantidad_necesaria": 25,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 34
+        "sobrante": 25
       },
       {
-        "variant_id": "46594247557415",
-        "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 31,
-        "unidades_paquete": 50,
-        "paquetes": 1,
-        "precio_paquete": 24143,
-        "subtotal": 24143,
-        "sobrante": 19
-      },
-      {
-        "variant_id": "46594343731495",
+        "variant_id": "46594267709735",
         "nombre": "R-12 / PAQUETE X 50",
         "cantidad_necesaria": 15,
         "unidades_paquete": 50,
         "paquetes": 1,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
+        "sobrante": 35
+      },
+      {
+        "variant_id": "46594343731495",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 22,
+        "unidades_paquete": 50,
+        "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 35
+        "sobrante": 28
       }
     ],
-    "total": 50217
+    "total": 55051
   },
   "descartadas": []
 }

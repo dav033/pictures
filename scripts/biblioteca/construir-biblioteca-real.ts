@@ -25,15 +25,22 @@ const FOTOS = path.join(process.cwd(), "public", "biblioteca-sempertex", "refere
 const EXTENSIONES = new Set([".jpg", ".jpeg", ".webp", ".avif", ".gif"]);
 
 const COLOR_EQUIVALENTE: Readonly<Record<string, string>> = {
-  pink: "rosado", rosa: "rosado", rosado: "rosado", fucsia: "fucsia", magenta: "fucsia",
+  pink: "rosado", rosa: "rosado", rosado: "rosado", fucsia: "fucsia", fuchsia: "fucsia", magenta: "fucsia",
   gold: "dorado", dorado: "dorado", "rose gold": "dorado rosa", "dorado rosa": "dorado rosa",
   black: "negro", negro: "negro", white: "blanco", blanco: "blanco", blue: "azul", azul: "azul",
-  navy: "azul", "light blue": "azul", silver: "plateado", plateado: "plateado", plata: "plateado",
+  navy: "azul marino", "navy blue": "azul marino", "dark navy blue": "azul marino", "azul marino": "azul marino",
+  "light blue": "azul", "royal blue": "azul", "bright blue": "azul", "chrome blue": "azul", "dark royal blue": "azul marino",
+  silver: "plateado", plateado: "plateado", plata: "plateado",
   purple: "morado", morado: "morado", violet: "violeta", violeta: "violeta", lilac: "lila", lila: "lila",
   green: "verde", verde: "verde", red: "rojo", rojo: "rojo", yellow: "amarillo", amarillo: "amarillo",
+  turquoise: "turquesa", turquesa: "turquesa", teal: "turquesa",
   orange: "naranja", naranja: "naranja", beige: "beige", tan: "beige", brown: "cafe", cafe: "cafe",
   "light brown": "cafe", cream: "crema", crema: "crema", coral: "coral", transparent: "transparente",
 };
+const EXCLUIR_COMO_GLOBO: ReadonlyArray<RegExp> = [
+  /\b(?:print|printed|impres[oa]s?|2 caras|filigree|grado|infinity)\b/i,
+  /\b(?:confetti|foil|star|heart|skull|ribbon|number|letter|letra|n[uú]mero)\b/i,
+];
 const TIPO_OFICIAL: Readonly<Record<string, { tipo: string; oficial: string; nombre: string; ubicacion: string; medidas: Record<string, number> }>> = {
   arco: { tipo: "arco", oficial: "arco", nombre: "Arco de globos", ubicacion: "arco_central", medidas: { ancho_m: 2.4, alto_m: 2.2 } },
   semiarco: { tipo: "semiarco", oficial: "semiarco", nombre: "Semiarco orgánico", ubicacion: "fondo_pared", medidas: { ancho_m: 1.7, alto_m: 2.0 } },
@@ -86,6 +93,75 @@ function colorCatalogo(valor: string): string | undefined {
   return COLOR_EQUIVALENTE[normalizado];
 }
 
+function coloresComposicion(texto: string): Array<{ color: string; share: number }> {
+  const colores: Array<{ color: string; share: number }> = [];
+  const porcentajes = [...texto.matchAll(/(\d+(?:\.\d+)?)\s*%\s*([\s\S]*?)(?=\s*(?:,?\s+and\s+)?\d+(?:\.\d+)?\s*%|[.;]|$)/gi)];
+  for (const [, porcentaje, segmento] of porcentajes) {
+    if (!porcentaje || !segmento) continue;
+    if (/silver\s+confetti/i.test(segmento)) {
+      colores.push({ color: "plateado", share: Number(porcentaje) / 100 });
+      continue;
+    }
+    if (EXCLUIR_COMO_GLOBO.some((patron) => patron.test(segmento))) continue;
+    const normalizado = segmento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("en");
+    const alias = Object.keys(COLOR_EQUIVALENTE).sort((a, b) => b.length - a.length)
+      .filter((nombre) => new RegExp(`(?:^|\\b)${nombre.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(?:\\b|$)`, "i").test(normalizado));
+    const coloresSegmento: string[] = [];
+    for (const nombre of alias) {
+      const expresion = new RegExp(`(?:^|\\b)${nombre.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(?:\\b|$)`, "i");
+      const coincidencia = expresion.exec(normalizado);
+      if (!coincidencia || coincidencia.index === undefined) continue;
+      const inicio = coincidencia.index + (coincidencia[0].startsWith(" ") ? 1 : 0);
+      const fin = inicio + coincidencia[0].trim().length;
+      if (alias.some((previo) => {
+        if (previo === nombre) return false;
+        const otra = new RegExp(`(?:^|\\b)${previo.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(?:\\b|$)`, "i").exec(normalizado);
+        if (!otra || otra.index === undefined) return false;
+        const otroInicio = otra.index + (otra[0].startsWith(" ") ? 1 : 0);
+        const otroFin = otroInicio + otra[0].trim().length;
+        return otroInicio <= inicio && otroFin >= fin;
+      })) continue;
+      const color = colorCatalogo(nombre);
+      if (color && !coloresSegmento.includes(color)) coloresSegmento.push(color);
+    }
+    for (const color of coloresSegmento) colores.push({ color, share: Number(porcentaje) / 100 / coloresSegmento.length });
+  }
+  return colores;
+}
+
+function coloresElemento(elemento: { appearance: { measured_colors?: Array<{ color?: string; share: number }>; observed_colors: string[]; composition?: string; patron_color?: { colores?: string[]; pesos?: number[] } } }): Array<{ color: string; share: number }> {
+  const appearance = elemento.appearance;
+  const composicion = coloresComposicion(appearance.composition ?? "");
+  const patron = appearance.patron_color;
+  const fuentes = composicion.length ? composicion : patron?.pesos?.length && patron.colores?.length
+    ? patron.colores.map((color, indice) => ({ color: colorCatalogo(color), share: patron.pesos?.[indice] ?? 0 })).filter((color): color is { color: string; share: number } => color.color !== undefined && color.share > 0)
+    : appearance.measured_colors?.map((color) => ({ color: colorCatalogo(color.color ?? ""), share: color.share }))
+      .filter((color): color is { color: string; share: number } => color.color !== undefined && color.share > 0) ?? [];
+  const suma = new Map<string, number>();
+  for (const item of fuentes) {
+    if (EXCLUIR_COMO_GLOBO.some((patronExcluir) => patronExcluir.test(item.color))) continue;
+    suma.set(item.color, (suma.get(item.color) ?? 0) + item.share);
+  }
+  // Si blueprint enumera colores pero no da pesos, frecuencia de patrón aporta proporción reproducible.
+  if (!composicion.length && !patron?.pesos?.length && patron?.colores?.length) {
+    suma.clear();
+    for (const nombre of patron.colores) {
+      const color = colorCatalogo(nombre);
+      if (color && !EXCLUIR_COMO_GLOBO.some((patronExcluir) => patronExcluir.test(nombre))) suma.set(color, (suma.get(color) ?? 0) + 1);
+    }
+  }
+  // Observados nombrados no deben desaparecer porque lector de píxeles solo midió color dominante.
+  const observados = appearance.observed_colors.map((nombre) => ({ nombre, color: colorCatalogo(nombre) }))
+    .filter((dato): dato is { nombre: string; color: string } => dato.color !== undefined && !EXCLUIR_COMO_GLOBO.some((patronExcluir) => patronExcluir.test(dato.nombre)));
+  for (const { color } of observados) if (!suma.has(color)) suma.set(color, Math.max(0.03, ...suma.values()) * 0.12);
+  if (/silver\s+confetti/i.test(appearance.observed_colors.join(" ")) && !suma.has("plateado")) {
+    const shareConfetti = appearance.composition?.match(/(\d+(?:\.\d+)?)\s*%\s*clear(?:\s+with\s+silver)?\s+confetti/i)?.[1];
+    if (shareConfetti) suma.set("plateado", Number(shareConfetti) / 100);
+  }
+  const total = [...suma.values()].reduce((a, b) => a + b, 0);
+  return [...suma].map(([color, share]) => ({ color, share: share / (total || 1) })).sort((a, b) => b.share - a.share);
+}
+
 function uuidDeterminista(valor: string): string {
   const hex = createHash("sha256").update(valor).digest("hex").slice(0, 32).split("");
   hex[12] = "5";
@@ -121,15 +197,26 @@ async function construirPlanesGuardados(): Promise<void> {
          JOIN catalog_variants v ON v.source_snapshot_id = s.source_snapshot_id AND v.product_id = p.product_id
         WHERE p.status = 'ACTIVE' AND p.available = TRUE AND v.available = TRUE
           AND v.currency = 'COP' AND v.price > 0 AND v.unidades_paq = 50 AND v.diam_pulg = 12
-          AND cardinality(v.derived_colors) = 1 AND v.title ILIKE 'R-12%'
+          AND (cardinality(v.derived_colors) = 1 OR p.title ILIKE '%Azul Turquesa%')
+          AND v.title ILIKE 'R-12%'
           AND p.title ILIKE '%Globo Latex Redondo%'
-          AND p.title !~* '(2 caras|cumple|bautizo|navidad|love|mami|papa|niña|niño|te amo|corazon|welcome)'
-        ORDER BY CASE WHEN p.title ILIKE '%Globo Latex Redondo Fashion%' THEN 0 ELSE 1 END, p.title, v.variant_id`,
+          AND p.title !~* '(infinity|filigree|grado|2 caras|4 caras|mascara|neon|cumple|bautizo|navidad|love|mami|papa|niña|niño|te amo|corazon|welcome|print|estampad|impres|confetti|foil|estrella|skull|ribbon)'
+        ORDER BY CASE
+          WHEN p.title ILIKE '%Globo Latex Redondo Fashion%' THEN 0
+          WHEN p.title ILIKE '%Globo Latex Redondo Pastel Mate%' THEN 1
+          WHEN p.title ILIKE '%Globo Latex Redondo Reflex%' THEN 2
+          WHEN p.title ILIKE '%Globo Latex Redondo Satin%' THEN 3
+          WHEN p.title ILIKE '%Globo Latex Redondo Metal%' THEN 4 ELSE 5 END,
+          p.title, v.variant_id`,
     );
     const snapshot = consulta.rows[0]?.source_snapshot_id;
     if (!snapshot) throw new Error("Snapshot publicado de productos no disponible.");
-    const porColor = new Map<string, (typeof consulta.rows)[number]>();
-    for (const fila of consulta.rows) if (!porColor.has(fila.color)) porColor.set(fila.color, fila);
+    const porColor = new Map<string, (typeof consulta.rows)[number][]>();
+    for (const fila of consulta.rows) {
+      const color = /azul\s*(?:marino|naval|noche|oscuro)|navy/i.test(fila.titulo) ? "azul marino"
+        : /turquesa/i.test(fila.titulo) ? "turquesa" : fila.color;
+      porColor.set(color, [...(porColor.get(color) ?? []), fila]);
+    }
     const { readdir: leerDirectorio } = await import("node:fs/promises");
     const archivos = (await leerDirectorio(ANALISIS)).filter((nombre) => nombre.endsWith(".json") && !nombre.endsWith(".plan.json")).sort();
     for (const archivo of archivos) {
@@ -151,21 +238,31 @@ async function construirPlanesGuardados(): Promise<void> {
         if (!ficha) { descartadas.push(`${elemento.element_id}: estructura ${tipoOriginal || "sin tipo"} no identificable`); continue; }
         const lectura = elemento.appearance.conteo;
         if (!lectura && (tipo === "bouquet" || tipo === "centro_mesa")) { descartadas.push(`${elemento.element_id}: sin conteo para pieza de unidades declaradas`); continue; }
-        const coloresBase = (elemento.appearance.measured_colors ?? [])
-          .map((color) => ({ color: colorCatalogo(color.color ?? ""), share: color.share }))
-          .filter((color) => color.color !== undefined && porColor.has(color.color))
-          .sort((a, b) => b.share - a.share)
-          .slice(0, 3);
-        const coloresUnicos = [...new Map(coloresBase.map((color) => [color.color, color])).values()];
-        if (!coloresUnicos.length) {
-          const fallback = elemento.appearance.observed_colors.map(colorCatalogo).find((color): color is string => color !== undefined && porColor.has(color));
-          if (fallback) coloresUnicos.push({ color: fallback, share: 1 });
-        }
+        const coloresUnicos = coloresElemento(elemento)
+          .filter((color) => porColor.has(color.color));
         if (!coloresUnicos.length) { descartadas.push(`${elemento.element_id}: sin color medido con variante R-12 en snapshot`); continue; }
         const suma = coloresUnicos.reduce((total, item) => total + item.share, 0);
         const materiales = coloresUnicos.map((item, indice) => {
-          const variante = porColor.get(item.color)!;
-          return { product_id: variante.product_id, variant_id: variante.variant_id, color: item.color, participacion: item.share / suma, rol_material: indice === 0 ? "principal" : indice === 1 ? "secundario" : "acento" };
+          const colorCatalogoElegido = item.color;
+          const candidatos = porColor.get(colorCatalogoElegido)!;
+          const observados = elemento.appearance.observed_colors.join(" ").toLocaleLowerCase("en");
+          const variante = [...candidatos].sort((a, b) => {
+            const titulo = (fila: typeof a) => fila.titulo.toLocaleLowerCase("es");
+            const puntaje = (fila: typeof a) => {
+              const t = titulo(fila);
+              if (item.color === "plateado" && /(silver|plata)/.test(observados)) return (t.includes("reflex") ? 0 : t.includes("satin") ? 1 : 2);
+              if (item.color === "blanco" && /pearl white/.test(observados)) return (t.includes("satin") ? 0 : 1);
+              if (item.color === "verde" && /metallic green/.test(observados)) return (t.includes("metal") ? 0 : t.includes("reflex") ? 1 : 2);
+              if (item.color === "turquesa" && /chrome teal/.test(observados)) return (t.includes("reflex") ? 0 : t.includes("metal") ? 1 : 2);
+              if (item.color === "turquesa" && /(turquoise|teal|turquesa)/.test(observados)) return (t.includes("turquesa") ? 0 : 1);
+              if (item.color === "azul" && /(chrome blue|metallic blue)/.test(observados)) return (t.includes("reflex") ? 0 : t.includes("metal") ? 1 : 2);
+              if ((item.color === "dorado" || item.color === "dorado rosa") && /(chrome gold|chrome rose gold)/.test(observados)) return (t.includes("reflex") ? 0 : t.includes("metal") ? 1 : 2);
+              if ((item.color === "dorado" || item.color === "dorado rosa") && /(metallic gold|metallic rose gold)/.test(observados)) return (t.includes("metal") ? 0 : t.includes("reflex") ? 1 : 2);
+              return (t.includes("fashion") ? 0 : t.includes("pastel mate") ? 1 : 2);
+            };
+            return puntaje(a) - puntaje(b) || a.titulo.localeCompare(b.titulo, "es");
+          })[0]!;
+          return { product_id: variante.product_id, variant_id: variante.variant_id, color: item.color === "turquesa" ? "azul" : colorCatalogoElegido, participacion: item.share / suma, rol_material: indice === 0 ? "principal" : indice === 1 ? "secundario" : "acento" };
         });
         const indicePieza = piezas.length + 1;
         const estructuraId = `EST_${String(indicePieza).padStart(2, "0")}_${tipo.toLocaleUpperCase("es")}`;
@@ -173,7 +270,7 @@ async function construirPlanesGuardados(): Promise<void> {
           estructura_id: estructuraId, nombre: ficha.nombre, tipo: ficha.tipo, estructura_oficial: ficha.oficial,
           rol_escena: indicePieza === 1 ? "focal" : "soporte", ubicacion: ficha.ubicacion,
           medidas: ficha.medidas, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales,
-          ...(tipo === "bouquet" || tipo === "centro_mesa" ? { unidades_declaradas: lectura.exacto ? Math.max(5, lectura.globos_visibles) : 12 } : {}),
+          ...(tipo === "bouquet" || tipo === "centro_mesa" ? { unidades_declaradas: lectura?.exacto ? Math.max(5, lectura.globos_visibles) : 12 } : {}),
           referencia_element_id: elemento.element_id,
           colores_referencia: coloresUnicos.map((item) => item.color),
           porque: `Recreación de referencia ${elemento.element_id}, con color y forma observados.`,
@@ -256,10 +353,20 @@ async function publicarBibliotecaReal(): Promise<void> {
     const planResuelto = record(planCrudo.plan_resuelto);
     const compras = Array.isArray(planResuelto.compras) ? planResuelto.compras.map(record) : [];
     const estructuras = Array.isArray(planResuelto.estructuras) ? planResuelto.estructuras.map(record) : [];
+    const coloresDeclarados = new Map<string, string>();
+    const planDeclarado = record(planCrudo.plan_declarado);
+    for (const estructura of Array.isArray(planDeclarado.estructuras) ? planDeclarado.estructuras.map(record) : []) {
+      const materialesDeclarados = Array.isArray(estructura.materiales) ? estructura.materiales.map(record) : [];
+      const coloresReferencia = Array.isArray(estructura.colores_referencia) ? estructura.colores_referencia : [];
+      for (const [indice, material] of materialesDeclarados.entries()) {
+        const color = typeof coloresReferencia[indice] === "string" ? coloresReferencia[indice] : material.color;
+        if (typeof material.variant_id === "string" && typeof color === "string") coloresDeclarados.set(material.variant_id, color);
+      }
+    }
     const materiales = compras.filter((linea) => typeof linea.variant_id === "string" && Number(linea.unidades_necesarias) > 0).map((linea) => ({
       variantId: String(linea.variant_id), sku: typeof linea.sku === "string" ? linea.sku : null,
       cantidad: Number(linea.unidades_necesarias),
-      nota: [linea.titulo, linea.tamano_codigo ? String(linea.tamano_codigo) : "R-12", linea.color].filter(Boolean).join(" · "),
+      nota: [linea.titulo, linea.tamano_codigo ? String(linea.tamano_codigo) : "R-12", coloresDeclarados.get(String(linea.variant_id)) ?? linea.color].filter(Boolean).join(" · "),
     }));
     const piezasPorEstructura = new Map<string, number>();
     for (const estructura of estructuras) {
@@ -276,7 +383,6 @@ async function publicarBibliotecaReal(): Promise<void> {
       }
     }
     const referenciasDePlan = new Set<string>();
-    const planDeclarado = record(planCrudo.plan_declarado);
     for (const pieza of Array.isArray(planDeclarado.estructuras) ? planDeclarado.estructuras.map(record) : []) {
       if (typeof pieza.referencia_element_id === "string") referenciasDePlan.add(pieza.referencia_element_id);
     }
