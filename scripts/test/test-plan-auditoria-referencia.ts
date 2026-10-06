@@ -16,6 +16,7 @@
  * Run: npx tsx --conditions=react-server scripts/test/test-plan-auditoria-referencia.ts
  */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import type { Pool } from "pg";
 import { colorCatalogoMasCercano } from "../../src/lib/rag/catalog/similitud-color";
 import { instalarResolutorPythonFalso, prepararEntornoPythonFalso, veredictoColoresReferencia, SNAPSHOT_FALSO } from "../lib/resolutor-python-falso";
@@ -216,7 +217,7 @@ async function main(): Promise<void> {
   });
   const conColores = restricciones.aplicarColoresReferencia(planDosFotos, dosFotos);
   assert.deepEqual(conColores.estructuras[0]!.colores_referencia, ["lila", "blanco", "plateado"], "the arch uses the palette of its own photo (and the server overwrites the model)");
-  assert.deepEqual(conColores.estructuras[1]!.colores_referencia, ["cafe", "azul", "plateado"], "the column uses the palette of the second photo, first three known colors");
+  assert.deepEqual(conColores.estructuras[1]!.colores_referencia, ["cafe", "azul", "plateado", "dorado"], "la columna toma hasta cinco colores conocidos de su propia foto");
   assert.equal(restricciones.aplicarColoresReferencia({ ...planDosFotos, estructuras: [{ ...planDosFotos.estructuras[0]!, referencia_element_id: undefined }] }, dosFotos).estructuras[0]!.colores_referencia, undefined, "no reference, no colors");
   assert.equal(restricciones.aplicarColoresReferencia(planDosFotos, undefined).estructuras[0]!.colores_referencia, undefined, "no blueprint, no colors");
   ok("colores de la foto: cada estructura toma la paleta de la foto de su referencia");
@@ -227,7 +228,7 @@ async function main(): Promise<void> {
   assert.deepEqual(coloresDominantesReferencia(["mint green"]), ["menta"]);
   assert.deepEqual(coloresDominantesReferencia(["wine red", "silver grey"]), ["burdeos", "plateado"]);
   assert.deepEqual(coloresDominantesReferencia(["salmon pink", "champagne gold", "ivory white"]), ["coral", "champagne", "crema"]);
-  assert.deepEqual(coloresDominantesReferencia(["white and gold", "royal blue/silver"]), ["blanco", "dorado", "azul"], "a label that joins colors keeps each of them");
+  assert.deepEqual(coloresDominantesReferencia(["white and gold", "royal blue/silver"]), ["blanco", "dorado", "azul", "plateado"], "una etiqueta que une colores conserva cada tono hasta el tope de cinco");
   assert.deepEqual(coloresDominantesReferencia(["transparent with gold confetti"]), ["transparente"]);
   assert.deepEqual(coloresDominantesReferencia(["charcoal grey", "rose gold"]), ["gris", "dorado rosa"]);
   assert.deepEqual(sustitucionesColorReferencia("EST_01", coloresDominantesReferencia(["mint green"]), ["menta"]), [], "a mint photo quoted in mint loses nothing");
@@ -253,6 +254,63 @@ async function main(): Promise<void> {
     "cada color se lleva el acabado de su propia etiqueta, no el del vecino",
   );
   ok("colores de la foto: el acabado viaja pegado a su color");
+
+  // CASE-004 usa la verdad de color y los pesos k-means guardados. De las
+  // muestras de la pieza (#D3655A coral, #E3B3AE rosa, #C4AFB2 plata,
+  // #CEACC9 malva, #E0D2D7 blanco), blanco queda quinto; el límite anterior
+  // de tres lo expulsaba del prompt y el chat podía cotizar sin ese color.
+  const verdad004 = JSON.parse(readFileSync("evaluacion/linea-base/verdad-visual.json", "utf8")) as {
+    casos: Record<string, { colores: Array<{ nombre: string; acabado: string }> }>;
+  };
+  const kmeans004 = JSON.parse(readFileSync("evaluacion/linea-base/colores-medidos-kmeans.json", "utf8")) as
+    Record<string, Array<[string, number]>>;
+  const colores004 = verdad004.casos["CASE-004"]!.colores;
+  const etiquetas004 = colores004.map(({ nombre, acabado }) => `${acabado} ${nombre}`);
+  const muestras004 = kmeans004["4"]!;
+  const apariencia004 = {
+    observed_colors: etiquetas004,
+    measured_colors: [
+      { color: "coral", share: muestras004[1]![1] },
+      { color: "rosado", share: muestras004[2]![1] },
+      { color: "plateado", share: muestras004[4]![1] },
+      { color: "lila", share: muestras004[7]![1] },
+      { color: "blanco", share: muestras004[8]![1] },
+    ],
+  };
+  assert.deepEqual(
+    coloresDominantesReferencia(apariencia004),
+    ["coral", "rosado", "plateado", "lila", "blanco"],
+    "CASE-004 conserva blanco aunque la medida lo ponga quinto",
+  );
+  assert.deepEqual(
+    coloresConAcabadoReferencia(apariencia004).map(({ color, acabado }) => [color, acabado]),
+    [["coral", "mate"], ["rosado", "mate"], ["plateado", "reflex"], ["lila", "mate"], ["blanco", "mate"]],
+    "CASE-004 aplica el acabado analizado a cada color, sin contagiar plata cromada a los mates",
+  );
+  const blueprint004 = blueprintDe(["REF_004"], [
+    elemento("REF_004_E01", "REF_004", "Guirnalda CASE-004", "balloon_structure", etiquetas004, {
+      appearance: {
+        ...apariencia004,
+        resolved_colors: [],
+        color_policy: "match_reference",
+        material: "latex",
+        shape: "mixed balloons",
+        composition: "mixed",
+      },
+    }),
+  ]);
+  const plan004 = PlanDecoracionSchema.parse({
+    plan_version: "1.0", plan_id: "04040404-0404-4040-8040-040404040404",
+    concepto: { titulo: "CASE-004", descripcion: "Guirnalda de la foto", paleta: etiquetas004 },
+    espacio: { tipo: "salón", fuente: "foto" }, supuestos: [],
+    estructuras: [{ ...arcoBlanco, referencia_element_id: "REF_004_E01" }],
+  });
+  assert.deepEqual(
+    restricciones.aplicarColoresReferencia(plan004, blueprint004).estructuras[0]!.colores_referencia,
+    ["coral", "rosado", "plateado", "lila", "blanco"],
+    "los cinco tonos, incluido blanco, viajan al plan de Python para compra/cobertura",
+  );
+  ok("CASE-004: cobertura offline de cinco colores y acabado ligado a cada uno");
 
   const filasColumna = [{
     product_id: "P-LILA", variant_id: "V-LILA-12", sku: null, sku_original: null, source_snapshot_id: null, source_variant_id: null, inventory_quantity: null, unidades_inferidas: null,
@@ -735,7 +793,7 @@ async function main(): Promise<void> {
   // Punctuation joins colors: the fold turned "/" and "," into a space before
   // the split, so only the first color of the label survived.
   assert.deepEqual(coloresDominantesReferencia(["gold/white"]), ["dorado", "blanco"]);
-  assert.deepEqual(coloresDominantesReferencia(["white, gold, silver, pink"]), ["blanco", "dorado", "plateado"], "the 3-color cap still applies");
+  assert.deepEqual(coloresDominantesReferencia(["white, gold, silver, pink"]), ["blanco", "dorado", "plateado", "rosado"], "el tope de cinco permite comprar los cuatro colores nombrados");
   assert.deepEqual(coloresDominantesReferencia(["blush+gold"]), ["rosado", "dorado"]);
   // Transparency is a finish: "clear pink" is the Cristal line in pink, and
   // claiming transparente as well would demand a material the photo never had.
