@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { ArrowUp, ImagePlus, LoaderCircle, Sparkles, X } from "lucide-react";
+import { ArrowUp, ImagePlus, LoaderCircle, Sparkles, X, CircleDot } from "lucide-react";
 import { z } from "zod";
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
 import { Markdown } from "@/components/Markdown";
@@ -17,29 +17,22 @@ import { TarjetasProveedores } from "./TarjetasProveedores";
 import { useModoVista } from "@/lib/estado/modo-vista";
 import { DecoracionSempertexSchema, ProveedorSempertexSchema, type DecoracionSempertex, type ProveedorSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
-import { CotizacionGuiadaSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { CotizacionGuiadaSchema, CotizacionPlanGuiadoSchema, PlanGuiadoSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/utilidades";
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
+import { ESTRUCTURAS_OFICIALES } from "@/lib/plan/estructuras-oficiales";
+import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
+import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
 
 /**
  * Lo que el asistente muestra además de su texto. Cada pieza va PEGADA al mensaje que la trajo, en el orden de la
  * conversación (antes todas se apilaban al final y no se sabía a qué respondían). Solo las del último mensaje del
  * asistente están activas; las anteriores quedan como historia (la idea elegida, el precio que salió…).
  */
-const WidgetSchema = z.discriminatedUnion("tipo", [
-  z.object({ tipo: z.literal("decoraciones"), decoraciones: z.array(DecoracionSempertexSchema) }).strict(),
-  z.object({ tipo: z.literal("seleccion"), decoracion: DecoracionSempertexSchema }).strict(),
-  z.object({ tipo: z.literal("opciones") }).strict(),
-  z.object({ tipo: z.literal("uso") }).strict(),
-  z.object({ tipo: z.literal("cotizacion"), cotizacion: CotizacionGuiadaSchema.nullable(), uso: z.enum(["negocio", "personal"]), decoracion: DecoracionSempertexSchema }).strict(),
-  z.object({ tipo: z.literal("pasos"), decoracion: DecoracionSempertexSchema }).strict(),
-  z.object({ tipo: z.literal("proveedores"), proveedores: z.array(ProveedorSempertexSchema) }).strict(),
-  z.object({ tipo: z.literal("comprar"), decoracion: DecoracionSempertexSchema }).strict(),
-]);
-type Widget = z.infer<typeof WidgetSchema>;
+type Widget = WidgetGuiado;
 const ReferenciaSchema = z.object({ frase: z.string(), aspecto: z.number().positive().optional(), piezas: z.array(z.object({ x: z.number(), y: z.number(), ancho: z.number(), alto: z.number() }).strict()), colores: z.array(z.object({ nombre: z.string(), hex: z.string() }).strict()) }).strict();
-const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetSchema).optional(), miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional(), referencia: ReferenciaSchema.optional(), notaFoto: z.string().optional() }).strict();
+const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetGuiadoSchema).optional(), miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional(), referencia: ReferenciaSchema.optional(), notaFoto: z.string().optional() }).strict();
 type Mensaje = z.infer<typeof MensajeSchema>;
 type BriefGuiado = { evento?: string; edad?: number; tematica?: string };
 type Uso = "negocio" | "personal";
@@ -60,6 +53,7 @@ const ResultadoSchema = z.object({
   uso: z.enum(["negocio", "personal"]).optional(),
   pasos: z.array(z.object({ orden: z.number().int().positive(), texto: z.string().min(1) }).strict()).optional(),
   proveedores: z.array(ProveedorSempertexSchema).optional(),
+  propuesta: PropuestaComposicionSchema.optional(),
 }).passthrough();
 
 function nuevoId(): string { return crypto.randomUUID(); }
@@ -72,7 +66,7 @@ const SALUDO = "¡Hola! Te hago unas preguntas cortas y te muestro decoraciones 
 const OPCIONES_SALUDO = ["Cumpleaños", "Baby shower", "Boda", "XV años", "Bautizo o comunión", "Otra celebración"] as const;
 
 /** Widgets que ya hacen la pregunta: con ellos, los botones «Opciones:» del texto sobran (salían duplicados). */
-const WIDGETS_QUE_PREGUNTAN = new Set<Widget["tipo"]>(["decoraciones", "opciones", "uso"]);
+const WIDGETS_QUE_PREGUNTAN = new Set<Widget["tipo"]>(["decoraciones", "opciones", "uso", "propuesta", "plan"]);
 
 export function VistaGuiada() {
   const { modo, cambiar } = useModoVista();
@@ -83,6 +77,7 @@ export function VistaGuiada() {
   const [error, setError] = useState<string | null>(null);
   const [seleccionada, setSeleccionada] = useState<DecoracionSempertex | null>(null);
   const [uso, setUso] = useState<Uso | null>(null);
+  const [imagenCargando, setImagenCargando] = useState(false);
   const [foto, setFoto] = useState<File | null>(null);
   // Hasta hidratar, un clic o una tecla se pierden sin aviso (pasaba en la demo con el servidor recién arrancado): se muestran
   // desactivados y se activan solos al quedar lista la página.
@@ -171,7 +166,7 @@ export function VistaGuiada() {
       const historialConLectura = referenciaRapida
         ? historial.map((mensaje, indice) => indice === historial.length - 1 ? { ...mensaje, content: `${mensaje.content.slice(0, 5400)}\n\nLectura de la foto: ${referenciaRapida.frase}`.slice(0, 6000) } : mensaje)
         : historial;
-      const response = await fetch("/api/asistente-guiado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historialConLectura, brief, estadoGuiado: { ...(elegida ? { decoracionId: elegida.id } : {}), ...(usoEnvio ? { uso: usoEnvio } : {}) }, ...(imagen ? { fotoInspiracion: imagen } : {}) }) });
+      const response = await fetch("/api/asistente-guiado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historialConLectura, brief, estadoGuiado: { ...(elegida ? { decoracionId: elegida.id } : {}), ...(usoEnvio ? { uso: usoEnvio } : {}), ...( /prop[oó]n|arma t[uú]|cambia|sin guirnalda|m[aá]s rosa|solo un arco/i.test(contenido) ? { propuesta: true } : {}) }, ...(imagen ? { fotoInspiracion: imagen } : {}) }) });
       if (!response.ok || !response.body) throw new Error(`El asistente respondió con estado ${response.status}.`);
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -214,6 +209,7 @@ export function VistaGuiada() {
             // Después del precio o de los pasos, el cliente sigue teniendo las otras opciones a mano (comprar, decorador...).
             if (elegida && widgets.some((widget) => widget.tipo === "cotizacion" || widget.tipo === "pasos") && !widgets.some((widget) => widget.tipo === "opciones")) widgets.push({ tipo: "opciones" });
             if (datos.proveedores) widgets.push({ tipo: "proveedores", proveedores: datos.proveedores });
+            if (datos.propuesta) widgets.push({ tipo: "propuesta", propuesta: datos.propuesta });
             reemplazarUltimo({ content: textoFinal, ...(widgets.length ? { widgets } : {}) });
             if (!textoFinal.trim() && !widgets.length) setMensajes((actuales) => actuales.slice(0, -1));
           }
@@ -228,6 +224,61 @@ export function VistaGuiada() {
       setMensajes((actuales) => actuales.filter((item) => item.content !== "" || item.widgets?.length));
     } finally { if (turno === turnoRef.current) setCargando(false); }
   }, [brief, cargando, mensajes, seleccionada, foto, uso]);
+
+  const aceptarPropuesta = useCallback(async (propuesta: z.infer<typeof PropuestaComposicionSchema>) => {
+    if (cargando) return;
+    const piezas = propuesta.piezas.map((pieza) => `${pieza.cantidad} ${pieza.nombre ?? pieza.estructura}`).join(", ");
+    const instruccion = `Me gusta, armémosla. Diseña exactamente esta composición usando estructuras oficiales: ${piezas}. Paleta Sempertex: ${propuesta.colores.join(", ")}. Contexto: ${brief.evento ?? "celebración"}${brief.edad ? `, ${brief.edad} años` : ""}, ${brief.tematica ?? "sin temática definida"}.`;
+    const historial = prepararHistorialGuiado(mensajes, instruccion);
+    const visibles = [...mensajes, { id: nuevoId(), role: "user" as const, content: "Me gusta, armémosla." }, { id: nuevoId(), role: "assistant" as const, content: "Estoy preparando tu plan…" }];
+    setMensajes(visibles); setCargando(true); setError(null);
+    const turno = ++turnoRef.current;
+    try {
+      const respuesta = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "chat.v1", messages: [...historial, { role: "user", content: instruccion }].slice(-16), brief: { tipo_evento: brief.evento, colores: propuesta.colores, estilo: brief.tematica } }) });
+      if (!respuesta.ok || !respuesta.body) throw new Error("No pude preparar el plan. Inténtalo otra vez.");
+      const reader = respuesta.body.getReader(); const decoder = new TextDecoder(); let buffer = ""; let plan: unknown; let cotizacion: unknown;
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break;
+        buffer += decoder.decode(value, { stream: true }); const paquetes = buffer.split("\n\n"); buffer = paquetes.pop() ?? "";
+        for (const paquete of paquetes) {
+          const linea = paquete.split("\n").find((item) => item.startsWith("data: ")); if (!linea) continue;
+          const evento = ChatSseEventV1Schema.parse(JSON.parse(linea.slice(6)) as unknown);
+          if (evento.type === "error") throw new Error(evento.error);
+          if (evento.type === "fin") { plan = evento.plan; cotizacion = evento.cotizacion; }
+        }
+      }
+      if (turno !== turnoRef.current) return;
+      const validado = PlanGuiadoSchema.safeParse(plan);
+      if (!validado.success) throw new Error("El plan no llegó completo. Podemos intentarlo de nuevo.");
+      const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacion);
+      setMensajes((actuales) => [...actuales.slice(0, -1), { id: nuevoId(), role: "assistant", content: "Listo. Este es tu plan; puedes costear, comprar, aprender o ver cómo quedaría.", widgets: [{ tipo: "plan", plan: validado.data, ...(precio.success ? { cotizacion: precio.data } : {}) }] }]);
+    } catch (cause) {
+      console.error("[asistente-guiado] no se pudo preparar el plan", cause);
+      setError(cause instanceof Error ? cause.message : "No pude preparar el plan.");
+      setMensajes((actuales) => actuales.slice(0, -1));
+    } finally { if (turno === turnoRef.current) setCargando(false); }
+  }, [brief, cargando, mensajes]);
+
+  const verComoQuedaria = useCallback(async (plan: z.infer<typeof PlanGuiadoSchema>, mensajeId: string) => {
+    if (imagenCargando) return;
+    setImagenCargando(true); setError(null);
+    setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, content: "Estoy dibujando tu decoración, tarda unos segundos…" } : mensaje));
+    try {
+      const respuesta = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan, planHash: plan.plan_hash, brief: { tipo_evento: brief.evento, colores: plan.plan.concepto.paleta, estilo: brief.tematica }, solicitudUsuario: plan.plan.concepto.descripcion }) });
+      if (!respuesta.ok) throw new Error("No pude generar la imagen. Puedes reintentar.");
+      const cuerpo: unknown = await respuesta.json();
+      const salida = z.object({ imagen: z.string().regex(/^data:image\/(?:png|jpeg|webp);base64,/), plan: PlanGuiadoSchema }).passthrough().parse(cuerpo);
+      const guardado = await fetch("/api/guiada-imagen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imagen: salida.imagen }) });
+      if (!guardado.ok) throw new Error("La imagen se generó, pero no pude guardarla para tu sesión.");
+      const referencia = z.object({ url: z.string().startsWith("/api/guiada-imagen/") }).strict().parse(await guardado.json());
+      const url = new URL(referencia.url, window.location.origin).toString();
+      setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, content: "Imagen referencial generada con IA", widgets: (mensaje.widgets ?? []).map((widget) => widget.tipo === "plan" ? { ...widget, plan: salida.plan, imagen: url } : widget) } : mensaje));
+    } catch (cause) {
+      console.error("[asistente-guiado] error al generar imagen", cause);
+      setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, content: "No pude dibujarla esta vez. Tu plan sigue guardado.", widgets: (mensaje.widgets ?? []).map((widget) => widget.tipo === "plan" ? { ...widget, errorImagen: true } : widget) } : mensaje));
+      setError("No pude dibujarla esta vez. Tu plan sigue guardado; puedes reintentar.");
+    } finally { setImagenCargando(false); }
+  }, [brief, imagenCargando]);
 
   function elegirDecoracion(decoracion: DecoracionSempertex): void {
     turnoRef.current += 1;
@@ -274,7 +325,7 @@ export function VistaGuiada() {
 
   function elegirUso(valor: Uso): void { setUso(valor); void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor }); }
 
-  function renderWidget(widget: Widget, activo: boolean, clave: string) {
+  function renderWidget(widget: Widget, activo: boolean, clave: string, mensajeId: string) {
     switch (widget.tipo) {
       case "decoraciones":
         return <CarruselDecoraciones key={clave} decoraciones={widget.decoraciones} activo={activo && !cargando} elegidaId={seleccionada?.id ?? null} onElegir={elegirDecoracion} onNinguna={() => void enviar("Ninguna me convence. Quiero ver otras ideas o mostrarte una foto de inspiración.")} />;
@@ -292,6 +343,27 @@ export function VistaGuiada() {
         return <TarjetasProveedores key={clave} proveedores={widget.proveedores} activo={activo && !cargando} onSolicitar={solicitarProveedor} />;
       case "comprar":
         return <ComprarMateriales key={clave} decoracion={widget.decoracion} onDistribuidor={() => void enviar("Busca un distribuidor de globos Sempertex cerca de mí.")} />;
+      case "propuesta":
+        return <article key={clave} className="mt-3 rounded-2xl border border-borde-suave bg-superficie p-4 shadow-sm">
+          <h3 className="font-semibold">Una idea para tu celebración</h3>
+          <p className="mt-2 text-sm text-texto-secundario">{widget.propuesta.frase}</p>
+          <ul className="mt-3 space-y-2">{widget.propuesta.piezas.map((pieza, indice) => <li key={`${pieza.estructura}-${indice}`} className="flex items-center gap-2 text-sm"><CircleDot className="size-4 text-acento" aria-hidden />{pieza.cantidad > 1 ? `${pieza.cantidad} ` : ""}{pieza.nombre ?? ESTRUCTURAS_OFICIALES[pieza.estructura].nombre}</li>)}</ul>
+          <div className="mt-3 flex items-center gap-2" aria-label={`Colores: ${widget.propuesta.colores.join(", ")}`}>{widget.propuesta.colores.map((color) => <span key={color} title={color} className="size-5 rounded-full border border-borde-suave" style={{ backgroundColor: HEX_COLORES_V2[color] }} />)}<span className="text-xs text-texto-secundario">{widget.propuesta.colores.join(", ")}</span></div>
+          {activo && <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={cargando} onClick={() => void aceptarPropuesta(widget.propuesta)} className="rounded-xl bg-acento px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Me gusta, armémosla</button><button type="button" disabled={cargando} onClick={() => { setEntrada("Quiero cambiar algo: "); document.querySelector<HTMLInputElement>('input[aria-label="Escribe tu mensaje"]')?.focus(); }} className="rounded-xl border border-borde-suave px-4 py-2 text-sm font-semibold disabled:opacity-50">Cambiar algo</button></div>}
+        </article>;
+      case "plan": {
+        const piezas = widget.plan.plan.estructuras;
+        const globos = widget.plan.estructuras.flatMap((estructura) => estructura.lineas).reduce((suma, linea) => suma + (typeof linea.unidades === "number" ? linea.unidades : 0), 0);
+        const colores = [...new Set(widget.plan.plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.color).filter((color): color is string => Boolean(color))))];
+        return <article key={clave} className="mt-3 rounded-2xl border border-borde-suave bg-superficie p-4 shadow-sm"><h3 className="font-semibold">Tu plan</h3>
+          <ul className="mt-3 space-y-2">{piezas.map((pieza) => <li key={pieza.estructura_id} className="text-sm"><span className="font-medium">{pieza.nombre}</span>{pieza.medidas.ancho_m && pieza.medidas.alto_m ? ` · ${pieza.medidas.ancho_m} por ${pieza.medidas.alto_m} metros` : ""}</li>)}</ul>
+          <p className="mt-3 text-sm">{globos ? `Aproximadamente ${globos} globos` : "Globos según medidas del espacio"}{colores.length ? ` · ${colores.join(", ")}` : ""}</p>
+          {widget.imagen && <div className="mt-4"><img src={widget.imagen} alt="Imagen referencial generada con IA" className="w-full rounded-xl"/><p className="mt-2 text-xs text-texto-secundario">Imagen referencial generada con IA</p></div>}
+          {activo && <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={imagenCargando} onClick={() => void verComoQuedaria(widget.plan, mensajeId)} className="rounded-xl bg-acento px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{imagenCargando ? "Dibujando…" : widget.errorImagen ? "Reintentar imagen" : "Ver cómo quedaría"}</button>{widget.cotizacion && <><button type="button" onClick={() => setUso("personal")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear personal</button><button type="button" onClick={() => setUso("negocio")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear negocio</button></>}<button type="button" onClick={() => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, widgets: (mensaje.widgets ?? []).map((item) => item.tipo === "plan" ? { ...item, compraAbierta: true } : item) } : mensaje))} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Comprar</button><button type="button" onClick={() => void enviar(`Quiero aprender a armar ${piezas.map((pieza) => pieza.nombre).join(", ")} con globos ${colores.join(", ")}.`)} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Aprender</button><button type="button" onClick={() => void enviar(`Quiero contratar un decorador para ${piezas.map((pieza) => pieza.nombre).join(", ")} en ${brief.evento ?? "mi celebración"}.`)} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Contratar decorador</button></div>}
+          {widget.compraAbierta && widget.cotizacion && <ComprarMateriales decoracion={decoracionDePlan(widget.plan, widget.cotizacion, brief)} onDistribuidor={() => void enviar(`Busca un distribuidor de Sempertex cerca de mí para ${colores.join(", ")}.`)} />}
+          {widget.cotizacion && uso && <CostosMateriales cotizacion={widget.cotizacion} uso={uso} clave={`plan-${widget.plan.plan_hash}`} onProveedores={() => void enviar("Busca un proveedor cerca de mí para cotizar estos materiales.")} mensajePendiente="Todavía no tengo el precio de estos materiales." />}
+        </article>;
+      }
     }
   }
 
@@ -320,7 +392,7 @@ export function VistaGuiada() {
                   {mensaje.content.trim()
                     ? <Markdown>{separarOpciones(mensaje.content).texto}</Markdown>
                     : !mensaje.widgets?.length && cargando && indice === mensajes.length - 1 ? <Escribiendo /> : null}
-                  {mensaje.widgets?.map((widget, posicion) => renderWidget(widget, indice === indiceActivo, `${mensaje.id}-${posicion}`))}
+                  {mensaje.widgets?.map((widget, posicion) => renderWidget(widget, indice === indiceActivo, `${mensaje.id}-${posicion}`, mensaje.id))}
                 </BurbujaAsistente>)}
             {respuestasRapidas.length > 0 && <div className="pl-11"><RespuestasRapidas opciones={respuestasRapidas} deshabilitado={cargando || !hidratado} onElegir={(texto) => void enviar(texto)} /></div>}
           </div>
@@ -332,6 +404,7 @@ export function VistaGuiada() {
         </div>
       </div>
       <form className="mx-auto w-full max-w-3xl px-4 pb-4 pt-2 sm:px-6" onSubmit={(event) => { event.preventDefault(); void enviar(entrada); }}>
+        <div className="mb-2 flex justify-end"><button type="button" disabled={cargando || !hidratado} onClick={() => void enviar("Propónme algo") } className="inline-flex items-center gap-2 rounded-full border border-acento/30 bg-acento-suave px-3 py-1.5 text-sm font-semibold text-acento disabled:opacity-50"><Sparkles className="size-4" aria-hidden />Propónme algo</button></div>
         <div className="flex items-center gap-2 rounded-2xl border border-borde-suave bg-superficie p-2 shadow-sm focus-within:ring-2 focus-within:ring-acento/30">
           <input ref={entradaRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => setFoto(event.target.files?.[0] ?? null)} />
           <button type="button" aria-label="Adjuntar foto de inspiración" title="Adjuntar foto de inspiración" className="rounded-xl p-2 text-texto-secundario hover:bg-fondo" onClick={() => entradaRef.current?.click()}><ImagePlus className="size-5" /></button>
@@ -364,6 +437,28 @@ function decoracionDeLaConversacion(mensajes: readonly Mensaje[], id: string): D
     if ("decoracion" in widget && widget.decoracion.id === id) return widget.decoracion;
   }
   return null;
+}
+
+function decoracionDePlan(
+  plan: z.infer<typeof PlanGuiadoSchema>,
+  cotizacion: z.infer<typeof CotizacionPlanGuiadoSchema>,
+  brief: BriefGuiado,
+): DecoracionSempertex {
+  return DecoracionSempertexSchema.parse({
+    id: `deco-plan-${plan.plan_hash.slice(0, 16)}`,
+    origen: "sempertex_manual",
+    titulo: plan.plan.concepto.titulo,
+    tematica: brief.tematica ?? plan.plan.concepto.estilo ?? "Celebración",
+    eventos: [brief.evento ?? "Celebración"],
+    edad: brief.edad === undefined ? null : { min: brief.edad, max: brief.edad },
+    fotos: [{ url: "/favicon.ico", fuente: "Catálogo de materiales", licencia: "ejemplo_sin_licencia" }],
+    video: null,
+    piezas: plan.plan.estructuras.flatMap((pieza) => pieza.estructura_oficial ? [{ estructura: pieza.estructura_oficial, cantidad: pieza.repeticiones }] : []),
+    materiales: cotizacion.lineas.flatMap((linea) => linea.varianteId ? [{ variantId: linea.varianteId, sku: null, cantidad: linea.cantidadNecesaria, nota: linea.nombre ?? linea.tamano }] : []),
+    pasos: [],
+    shopifyHandle: null,
+    fotoRepresentativa: false,
+  });
 }
 
 async function miniaturaDe(archivo: File): Promise<string> {

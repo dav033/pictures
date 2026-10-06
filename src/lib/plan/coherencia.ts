@@ -3,6 +3,16 @@ import type { PlanResuelto } from "./resuelto";
 
 export type ResultadoCoherencia = { ok: boolean; errores: string[] };
 
+/** Quita tallas nominales de imágenes/descripciones que no están en el estimado Python. */
+export function filtrarTallasNoCompradas(prompt: string, tamanosPython: readonly number[]): string {
+  const permitidos = new Set(tamanosPython);
+  return prompt
+    .replace(/\b(?:(?:small|medium|large|extra-large|giant)\s+)?(\d+(?:\.\d+)?)-inch(?:\s*\(\d+(?:\.\d+)?\s*cm\))?/gi, (texto, talla: string) => permitidos.has(Number(talla)) ? texto : "")
+    .replace(/\s+\b(?:and|to)\b(?=\s|,|\.|;|$)/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.;])/g, "$1");
+}
+
 /**
  * Lo que la escena aprobada dice de una instalación, en la forma mínima que
  * necesita esta comprobación: la capa del plan no depende del SceneSpec.
@@ -94,12 +104,31 @@ function elementosDeEstructura(escena: EscenaParaCoherencia, estructuraId: strin
  * escena, así que un "aparece en el prompt" se cumpliría aunque una estructura
  * perdiera o cambiara el suyo.
  */
-export function verificarCoherenciaPrompt(prompt: string, plan: PlanResuelto, escena?: EscenaParaCoherencia): ResultadoCoherencia {
+export function verificarCoherenciaPrompt(
+  prompt: string,
+  plan: PlanResuelto,
+  escena?: EscenaParaCoherencia,
+  tamanosDisenoPython: readonly number[] = [],
+): ResultadoCoherencia {
   const errores: string[] = [];
   for (const estructura of plan.estructuras) {
     if (!prompt.includes(estructura.estructura_id) && !prompt.includes(estructura.nombre)) errores.push(`falta estructura ${estructura.estructura_id} en el prompt`);
   }
-  const comprados = new Set(plan.compras.filter((compra) => compra.diam_pulg != null).map((compra) => compra.diam_pulg));
+  // Python devuelve cada línea comprada tanto agrupada en `compras` como
+  // ligada a su estructura. La agrupación puede perder el diámetro si dos
+  // variantes comparten compra; la línea de estructura conserva el dato que
+  // alimentó el prompt visual.
+  const lineasPorEstructura = plan.estructuras.flatMap((estructura) => Array.isArray(estructura.lineas) ? estructura.lineas : []);
+  const diametroComprado = (linea: { diam_pulg?: number | null; tamano_codigo?: string | null }): number | undefined => {
+    if (linea.diam_pulg != null) return linea.diam_pulg;
+    const codigo = linea.tamano_codigo?.match(/^R-(\d+(?:\.\d+)?)$/i);
+    return codigo ? Number(codigo[1]) : undefined;
+  };
+  const comprados = new Set([
+    ...plan.compras.map(diametroComprado).filter((diametro): diametro is number => diametro !== undefined),
+    ...lineasPorEstructura.map(diametroComprado).filter((diametro): diametro is number => diametro !== undefined),
+    ...tamanosDisenoPython,
+  ]);
   for (const compra of plan.compras) {
     if (compra.diam_pulg == null) continue;
     const descripcion = descripcionFisicaTamano(compra.diam_pulg, "redondo");

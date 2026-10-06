@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { buildImagePrompt } from "../../src/lib/ia/uzume/build-image-prompt";
 import { bloqueMezclaPorEstructura, type EstructuraMezclaTamanos } from "../../src/lib/ia/escena/tamano-fisico";
-import { verificarCoherenciaPrompt } from "../../src/lib/plan/coherencia";
+import { filtrarTallasNoCompradas, verificarCoherenciaPrompt } from "../../src/lib/plan/coherencia";
 import type { PlanResuelto } from "../../src/lib/plan/resuelto";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 
@@ -29,6 +29,20 @@ assert.ok(block?.includes("30.5 cm"));
 const coherence = verificarCoherenciaPrompt(`${block}\nArco rojo\n5-inch (12.7 cm)\n12-inch (30.5 cm)`, plan);
 assert.equal(coherence.ok, true);
 assert.equal(verificarCoherenciaPrompt("Arco rojo 9-inch (22.9 cm)", plan).ok, false);
+
+// La compra agrupada puede omitir el diámetro, pero Python lo conserva en la
+// línea ligada a su estructura; ese tamaño sí puede describirse en la imagen.
+const compraAgrupada = {
+  ...plan,
+  estructuras: [{ ...plan.estructuras[0]!, lineas: [{ diam_pulg: null, tamano_codigo: "R-9" }] }],
+} as unknown as PlanResuelto;
+assert.equal(verificarCoherenciaPrompt("Arco rojo 5-inch 12.7 cm 12-inch 30.5 cm 9-inch 22.9 cm", compraAgrupada).ok, true);
+assert.equal(verificarCoherenciaPrompt("Arco rojo 18-inch 45.7 cm", compraAgrupada).ok, false);
+assert.equal(verificarCoherenciaPrompt("Arco rojo 5-inch 12.7 cm 12-inch 30.5 cm 24-inch 61 cm", plan, undefined, [24]).ok, true);
+assert.equal(verificarCoherenciaPrompt("Arco rojo 5-inch 12.7 cm 12-inch 30.5 cm 24-inch 61 cm", plan).ok, false);
+const catalogDescription = filtrarTallasNoCompradas("Mixed small 5-inch (12.7 cm) and extra-large 24-inch (61 cm), with medium 12-inch (30.5 cm).", [12]);
+assert.doesNotMatch(catalogDescription, /5-inch|24-inch|12\.7 cm|61 cm/);
+assert.match(catalogDescription, /12-inch/);
 
 // Static size guidance must never smuggle an unquoted diameter into a plan
 // prompt. Regression from live Festival Lunaria flow: R-24-only quote was

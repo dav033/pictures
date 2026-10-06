@@ -13,12 +13,16 @@ import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
 import { decoracionCotizableCoincide, normalizarCiudad, protegerHerramientas } from "@/lib/ia/guiado/utilidades";
 import { presentacionMaterialGuiado } from "@/lib/ia/guiado/presentacion-material-guiado";
+import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
+import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
+import { normalizarPropuestaComposicion } from "@/lib/ia/guiado/propuesta-composicion";
 
 export const maxDuration = 75;
 
 const herramientas: Herramienta[] = [
   { nombre: "guardar_brief_guiado", descripcion: "Guarda evento, edad y temática que el cliente ya indicó.", esquema: { type: "object", properties: { evento: { type: "string" }, edad: { type: "integer" }, tematica: { type: "string" } }, required: ["evento", "edad", "tematica"], additionalProperties: false } },
   { nombre: "buscar_decoraciones_sempertex", descripcion: "Busca ideas de decoración según evento, edad y temática.", esquema: { type: "object", properties: { evento: { type: "string" }, edad: { type: "integer" }, tematica: { type: "string" } }, required: ["evento", "edad", "tematica"], additionalProperties: false } },
+  { nombre: "proponer_composicion", descripcion: "Propone entre una y tres estructuras oficiales para esta celebración. Usa exclusivamente ids oficiales y colores de la paleta Sempertex permitida. Llama cuando el cliente diga propónme algo, arma tú algo o pida cambiar su propuesta.", esquema: { type: "object", properties: { frase: { type: "string" }, colores: { type: "array", items: { type: "string", enum: [...PALETA_COLORES_V2] }, minItems: 1, maxItems: 5 }, piezas: { type: "array", items: { type: "object", properties: { estructura: { type: "string", enum: [...ESTRUCTURAS_OFICIALES_IDS] }, cantidad: { type: "integer", minimum: 1, maximum: 12 } }, required: ["estructura", "cantidad"], additionalProperties: false }, minItems: 1, maxItems: 3 } }, required: ["frase", "colores", "piezas"], additionalProperties: false } },
   { nombre: "ofrecer_opciones", descripcion: "Ofrece las cuatro opciones para continuar con una decoración elegida.", esquema: { type: "object", properties: {}, additionalProperties: false } },
   { nombre: "preguntar_uso", descripcion: "Solicita elegir entre negocio y uso personal antes de consultar precios.", esquema: { type: "object", properties: {}, additionalProperties: false } },
   { nombre: "pasos_decoracion", descripcion: "Muestra los pasos de montaje de la decoración que el cliente eligió en la interfaz. No necesita argumentos.", esquema: { type: "object", properties: {}, additionalProperties: false } },
@@ -98,6 +102,11 @@ export async function POST(request: Request) {
         datos.decoraciones = encontradas;
         if (!encontradas.length) return { brief: brief.data, decoraciones: [], aviso: "No hay ideas que mostrar: NO hables de «esta propuesta» ni de opciones; pregunta otro estilo o colores, o pide una foto de inspiración." };
         return { brief: brief.data, decoraciones: encontradas, aviso: "Todos los registros visibles llevan marca de ejemplo." };
+      },
+      proponer_composicion: async (args: Record<string, unknown>) => {
+        const validada = normalizarPropuestaComposicion(args);
+        datos.propuesta = validada;
+        return { propuesta: validada, aviso: "Las piezas y colores vienen del catálogo oficial. No agregues estructuras ni colores fuera de esta lista." };
       },
       ofrecer_opciones: async () => { datos.opciones = ["contratar", "costear", "comprar", "aprender"]; return { opciones: datos.opciones }; },
       preguntar_uso: async () => { datos.preguntaUso = true; return { pregunta: "¿Es para tu negocio o para uso personal?" }; },
