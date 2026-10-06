@@ -339,6 +339,15 @@ foto pequeña con contornos suaves, «Veo un arco en dorado, azul y rosa.», 3-5
 clásica; no genera imagen). Pendiente: CI verde en `main` (ruff format, prueba «organic balloon arch», test-python-adapter que
 aún espera LoRA) para que el despliegue al VPS vuelva a ser automático; subir a producción lo local solo cuando el dueño lo pida.
 
+**Vista guiada, más tarde (2026-10-06 ~15:50).** Producción: (1) «No pude responder esta vez» = SQLite en el disco de solo lectura de
+Vercel → base en /tmp (83346fe); (2) «no tenemos este tipo de decoración» para todo = la biblioteca ocultaba los ejemplos con
+NODE_ENV=production → se muestran salvo `BIBLIOTECA_OCULTAR_EJEMPLOS=true` (ab09868; desplegado en Vercel y VPS). Batería
+`scripts/test/bateria-guiada.ts` (20 guiones, paga LLM): antes, «cumple de niño, dinosaurios» → baby shower, graduación/divorcio
+preguntaban edad y traían baby shower/XV por color, «fiesta de empresa» → infantiles, edad 0 descartaba adultos, «la pantalla»,
+«opciones de abajo»; corregido en local (f35045b, c383530): 18/20 limpias y 2 con una sola pregunta correcta. Pedidos del dueño en
+curso (Codex e3v): «Propónme algo» → propuesta de piezas → plan DENTRO de la guiada → imagen FLUX; «Aprender a hacerlo» = pasos del
+plan; foto con piezas → plan de la foto (cuántos y cuáles globos) → flujo normal con imagen.
+
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
 - Pendientes: taxonomía 12 o 18 clases (las 5 que AGENTS.md daba por retiradas: `arco_no_denso`, `columna_no_densa`, `pared_densa`,
