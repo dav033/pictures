@@ -209,6 +209,19 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
 6. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
 7. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
 
+## 4.5 Vista nueva «Asistente guiado» (pedida por el dueño el 2026-10-06)
+
+Fuente: `Downloads/CUSTOMER JOURNEY MAP.pptx` (perfiles profesional/emprendedor/principiante; pruebas del 5-oct; guion del focus
+group). Vista conmutable desde la navbar, sin romper la clásica. Comportamiento de la IA: preguntar evento, edad y temática →
+mostrar decoraciones Sempertex ya hechas de esa temática (¿te gusta? sí/no) → si sí: referencias y materiales, y 4 opciones
+(contratar decorador HAPPIA/MBP de la zona, costear materiales, comprar en e-commerce o distribuidor cercano, aprender paso a paso al
+estilo Balloon Pro) → si no: pedir foto de inspiración (con foto, el mismo flujo; sin foto, decoradores). Precio solo si el usuario lo
+pide, tras preguntar negocio/personal (negocio: todo «Ajustar mi precio», costo editable; personal: solo materiales a precio
+e-commerce y botón visible «Cotiza con un proveedor cerca de ti»). Sin fila de tarjetas de estructuras. Texto de inicio «Cuéntame qué
+quieres hacer»; fotos de inicio de Sempertex. Decisiones del dueño: **en esta vista no se genera imagen**; la biblioteca de
+decoraciones y los directorios se construyen con **ejemplos marcados** hasta que lleguen los datos reales.
+Estado: mapeo de la UI en curso (workflow `mapa-ui-vista-guiada`); se implementa tras integrar la rama D (que toca `page.tsx`).
+
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
 - Pendientes: taxonomía 12 o 18 clases (las 5 que AGENTS.md daba por retiradas: `arco_no_denso`, `columna_no_densa`, `pared_densa`,
