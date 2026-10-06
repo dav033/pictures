@@ -2,9 +2,12 @@ import "server-only";
 import { mkdirSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
+import { tmpdir } from "node:os";
 import { CATALOGO_SEED } from "./catalog-data";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// En Vercel el disco del proyecto es de solo lectura (salvo /tmp): «unable to open database file» rompía
+// /api/asistente-guiado en producción. Allí la base vive en /tmp y se siembra al abrir.
+const DATA_DIR = process.env.VERCEL ? path.join(tmpdir(), "demo-decoracion-data") : path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "demo.sqlite");
 
 // En dev, Next.js puede reevaluar este módulo entre requests; guardamos la
