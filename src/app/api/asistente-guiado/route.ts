@@ -2,7 +2,7 @@ import { ejecutarConversacionStream } from "@sempertex/agente-core";
 import type { Herramienta, Mensaje } from "@sempertex/agente-core";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { bibliotecaVisible, proveedoresVisibles } from "@/lib/biblioteca-sempertex/biblioteca";
+import { bibliotecaVisible, buscarDecoracionesSempertex, normalizarBusqueda, proveedoresVisibles } from "@/lib/biblioteca-sempertex/biblioteca";
 import { AsistenteGuiadoRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
@@ -81,12 +81,19 @@ export async function POST(request: Request) {
         z.object({ evento: z.string().trim().min(1), edad: z.number().int().min(0).max(120), tematica: z.string().trim().min(1) }).strict().parse(args);
         const brief = z.object({ evento: z.string().min(1), edad: z.number().int(), tematica: z.string().min(1) }).strict().safeParse(datos.brief);
         if (!brief.success) return { ok: false, motivo: "brief_incompleto" };
-        const filtro = `${brief.data.evento} ${brief.data.tematica}`.toLocaleLowerCase("es");
-        const encontradas = proveedores.filter((decoracion) => {
-          const texto = `${decoracion.tematica} ${decoracion.eventos.join(" ")} ${decoracion.titulo}`.toLocaleLowerCase("es");
-          const edadValida = decoracion.edad === null || (brief.data.edad >= decoracion.edad.min && brief.data.edad <= decoracion.edad.max);
-          return edadValida && (!filtro.trim() || filtro.split(/\s+/).some((palabra) => palabra.length > 3 && texto.includes(palabra)));
-        }).slice(0, 6);
+        const ultimoMensajeUsuario = [...messages].reverse().find((mensaje) => mensaje.role === "user")?.content ?? "";
+        const tematicaBusqueda = `${brief.data.tematica} ${ultimoMensajeUsuario}`;
+        const coincidencias = buscarDecoracionesSempertex({ ...brief.data, tematica: tematicaBusqueda });
+        const eventoNormalizado = normalizarBusqueda(brief.data.evento);
+        const consultaNormalizada = normalizarBusqueda(tematicaBusqueda);
+        const generoBaby = eventoNormalizado.includes("baby shower")
+          ? consultaNormalizada.split(" ").includes("nina") ? "nina"
+            : consultaNormalizada.split(" ").includes("nino") ? "nino"
+              : consultaNormalizada.split(" ").some((palabra) => ["neutro", "neutra", "unisex"].includes(palabra)) ? "neutro" : null
+          : null;
+        const encontradas = generoBaby
+          ? coincidencias.filter((decoracion) => normalizarBusqueda(`${decoracion.titulo} ${decoracion.tematica}`).split(" ").includes(generoBaby))
+          : coincidencias;
         datos.decoraciones = encontradas;
         return { brief: brief.data, decoraciones: encontradas, aviso: "Todos los registros visibles llevan marca de ejemplo." };
       },
