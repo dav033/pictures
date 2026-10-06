@@ -186,6 +186,8 @@ export function VistaGuiada() {
       if (turno === turnoRef.current) setFoto(null);
     } catch (cause) {
       if (turno !== turnoRef.current) return;
+      // Al cliente, un mensaje amable; la causa real queda en la consola para diagnosticar.
+      console.error("[asistente-guiado] turno fallido", cause);
       setError(cause instanceof Error ? cause.message : "No se pudo enviar el mensaje.");
       setMensajes((actuales) => actuales.filter((item) => item.content !== "" || item.widgets?.length));
     } finally { if (turno === turnoRef.current) setCargando(false); }

@@ -15,6 +15,8 @@ const BaseSchema = z.object({
   paleta: z.array(z.string().regex(/^#[0-9a-f]{6}$/i)).min(2).max(5).optional(),
   /** false: la foto es de otro kit y no representa esta decoración; la tarjeta muestra la ilustración de colores. */
   fotoRepresentativa: z.boolean().optional(),
+  /** Lo añade la búsqueda (no la biblioteca): «cercana» = no es de la temática pedida, sino la más parecida. */
+  coincidencia: z.enum(["exacta", "cercana"]).optional(),
 }).strict();
 
 export const DecoracionSempertexSchema = z.discriminatedUnion("origen", [
