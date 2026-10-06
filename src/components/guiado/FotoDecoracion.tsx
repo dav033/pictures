@@ -9,7 +9,7 @@ import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 export function FotoDecoracion({ decoracion, sizes }: { decoracion: DecoracionSempertex; sizes: string }) {
   const foto = decoracion.fotos[0];
   if (foto && decoracion.fotoRepresentativa !== false) {
-    return <Image src={foto.url} alt={decoracion.titulo} fill sizes={sizes} unoptimized loading="eager" className="object-cover" />;
+    return <Image src={foto.url} alt={decoracion.titulo} fill sizes={sizes} unoptimized loading="eager" className="bg-white object-contain p-2" />;
   }
   return <>
     <IlustracionGlobos colores={decoracion.paleta ?? ["#f7a8c4", "#c7a6d8", "#f6f3ee"]} titulo={decoracion.titulo} />

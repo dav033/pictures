@@ -12,6 +12,7 @@ const sinonimosTematicos: string[][] = [
   ["unicornio", "unicornios", "arcoiris", "arco iris"],
   ["espacio", "estrella", "estrellas", "planeta", "planetas", "galaxia"],
   ["safari", "selva", "jungla", "animal", "animales"],
+  ["tropical", "hawaiano", "hawaiana", "hawai", "verano", "playa", "palmera", "palmeras"],
   ["futbol", "deporte", "deportes", "partido", "campeonato"],
   ["boda", "matrimonio", "casamiento"],
   ["xv", "quince", "quinceanos", "quinceanera", "15 anos"],
@@ -84,7 +85,10 @@ export function buscarDecoracionesSempertex(entrada: { evento?: string; edad?: n
   const exactas = exactasDisponibles.filter((item) => item.fuerzaExacta === fuerzaMaxima)
     .sort((a, b) => puntajeEvento(entrada.evento ?? "", b.decoracion) - puntajeEvento(entrada.evento ?? "", a.decoracion) || b.puntaje - a.puntaje);
   if (exactas.length) return exactas.slice(0, 6).map(({ decoracion }) => ({ ...decoracion, coincidencia: "exacta" }));
-  return puntajes.filter((item) => item.edad >= 0 && (item.evento > 0 || item.puntajeColor > 0))
+  const candidatas = puntajes.filter((item) => item.edad >= 0 && (item.evento > 0 || item.puntajeColor > 0));
+  // Con evento conocido, una idea de otro evento (un baby shower para un cumpleaños de 35) no se ofrece si hay alguna del mismo.
+  const delEvento = candidatas.filter((item) => item.evento > 0);
+  return (delEvento.length ? delEvento : candidatas)
     .sort((a, b) => b.puntaje - a.puntaje)
     .slice(0, 6)
     .map(({ decoracion }) => ({ ...decoracion, coincidencia: "cercana" }));

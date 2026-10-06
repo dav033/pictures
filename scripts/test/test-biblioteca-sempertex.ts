@@ -3,7 +3,7 @@ import { decoracionesSempertex, proveedoresSempertex, bibliotecaVisible } from "
 import { DecoracionSempertexSchema } from "@/lib/biblioteca-sempertex/esquemas";
 import { getRagPool } from "@/lib/rag/db";
 
-assert.equal(decoracionesSempertex.length, 14);
+assert.equal(decoracionesSempertex.length, 15);
 assert.equal(proveedoresSempertex.length, 13);
 assert.ok(["Bogotá", "Medellín", "Cali", "Barranquilla"].every((ciudad) => proveedoresSempertex.filter((proveedor) => proveedor.zona.ciudad === ciudad && (proveedor.tipo === "decorador_happia" || proveedor.tipo === "mbp")).length === 2));
 assert.ok(decoracionesSempertex.every((decoracion) => decoracion.origen === "ejemplo" && decoracion.id.startsWith("ej-") && decoracion.aviso === "DATO DE EJEMPLO — no es real"));

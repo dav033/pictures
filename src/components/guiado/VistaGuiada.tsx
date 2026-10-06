@@ -97,7 +97,7 @@ export function VistaGuiada() {
     return separarOpciones(ultimo.content).opciones;
   }, [mensajes.length, ultimo, cargando]);
   const hayEjemplos = useMemo(() => mensajes.some((mensaje) => mensaje.widgets?.some((widget) => (widget.tipo === "decoraciones" && widget.decoraciones.some((decoracion) => decoracion.origen === "ejemplo")) || ("decoracion" in widget && widget.decoracion.origen === "ejemplo"))), [mensajes]);
-  const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? `${brief.evento ?? ""}${brief.edad ? ` · ${brief.edad} años` : ""} · ${brief.tematica}` : null;
+  const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? [brief.evento, brief.edad ? `${brief.edad} años` : null, brief.tematica].filter(Boolean).map((parte) => conMayuscula(String(parte))).join(" · ") : null;
 
   useEffect(() => {
     try {
@@ -334,4 +334,8 @@ async function leerFoto(archivo: File): Promise<{ mime: string; base64: string }
   let binario = "";
   for (const byte of bytes) binario += String.fromCharCode(byte);
   return { mime: archivo.type, base64: btoa(binario) };
+}
+
+function conMayuscula(texto: string): string {
+  return texto.charAt(0).toLocaleUpperCase("es") + texto.slice(1);
 }
