@@ -45,5 +45,5 @@ export function nombreMaterial(nota: string | undefined): string | null {
   const nombre = nota.split(/[,;]/)[0]!.trim();
   const tamano = /\bR-?(\d{1,2})\b/i.exec(nombre)?.[1];
   const color = nombre.replace(/^globos?\s+(de\s+)?l[aá]tex\s*/i, "").replace(/\bR-?\d{1,2}\b/i, "").trim();
-  return `globos${tamano ? ` de ${tamano}"` : ""}${color ? ` ${color}` : ""}`;
+  return `Globos${tamano ? ` de ${tamano}"` : ""}${color ? ` ${color}` : ""}`;
 }
