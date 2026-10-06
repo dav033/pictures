@@ -9,7 +9,6 @@ import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-va
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { exigirContextoPython, recomendarAlternativasPython } from "@/lib/plan/edicion-python";
 import { PlanBackendNoDisponibleError } from "@/lib/plan/resolver-backend";
-import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
 import { filtrarCandidatosCompatibles } from "@/lib/plan/edicion-compatibilidad";
 import {
@@ -50,7 +49,6 @@ const BodySchema = z.discriminatedUnion("modo", [
     /** Free text; it may be empty (or one character) only when `filtros` carries at least one filter. */
     consulta: z.string().trim().max(240),
     approval_token: z.string().min(1).max(256 * 1024).optional(),
-    loraMode: LoraModeSlugSchema.optional(),
     /** Line the search would replace ("Modificar"): a balloon only accepts balloons of the same shape. */
     linea_objetivo: z.object({
       forma: z.string().trim().min(1).max(40).nullable().optional(),
@@ -68,10 +66,9 @@ const BodySchema = z.discriminatedUnion("modo", [
   z.object({
     modo: z.literal("colores"),
     approval_token: z.string().min(1).max(256 * 1024).optional(),
-    loraMode: LoraModeSlugSchema.optional(),
   }).strict(),
-  z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1), loraMode: LoraModeSlugSchema.optional() }).strict(),
-  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoArcoOrganicoSchema, EdicionFormaSchema, EdicionPropiedadesSchema]), loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1) }).strict(),
+  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoArcoOrganicoSchema, EdicionFormaSchema, EdicionPropiedadesSchema]) }).strict(),
 ]);
 
 const MENSAJE_JSON_INVALIDO = "El cuerpo de la solicitud no es JSON válido.";

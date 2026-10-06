@@ -183,7 +183,6 @@ function Panel({ titulo, children, accion }: { titulo: string; children: React.R
 
 export function EstadisticasOrdenes() {
   const [datos, setDatos] = useState<Estadisticas | null>(null);
-  const [imagenesUltimoEntrenamiento, setImagenesUltimoEntrenamiento] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [verTodo, setVerTodo] = useState(false);
   const [verTodoCatalogo, setVerTodoCatalogo] = useState(false);
@@ -191,17 +190,11 @@ export function EstadisticasOrdenes() {
 
   useEffect(() => {
     let vigente = true;
-    Promise.all([
-      fetch("/api/admin/ordenes/estadisticas").then((r) => r.json()),
-      fetch("/api/lora/overview", { cache: "no-store", headers: { Accept: "application/json" } })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
-    ]).then(([data, lora]) => {
+    fetch("/api/admin/ordenes/estadisticas").then((r) => r.json()).then((data) => {
         if (!vigente) return;
         if (data.error) setError(data.error);
         else {
           setDatos(data);
-          setImagenesUltimoEntrenamiento(lora?.recentRuns?.[0]?.image_count ?? null);
         }
       });
     return () => {
@@ -295,11 +288,6 @@ export function EstadisticasOrdenes() {
           className="sm:col-span-3"
           label="% con proporción relativa"
           value={captions.totalCaptions > 0 ? `${Math.round((captions.conProporcionRelativa / captions.totalCaptions) * 100)}%` : "—"}
-        />
-        <StatTile
-          className="sm:col-span-3"
-          label="Imágenes entrenadas"
-          value={imagenesUltimoEntrenamiento == null ? "—" : String(imagenesUltimoEntrenamiento)}
         />
       </div>
 

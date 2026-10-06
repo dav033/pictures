@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { LoraModeSlug } from "@/lib/lora/schema";
 import { esCancelacion, mensajeFalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import type { LineaMaterial } from "@/lib/plan/resuelto";
 import {
@@ -37,7 +36,6 @@ export type Entrada = {
   lineasDe: (estructuraId: string) => readonly LineaMaterial[];
   inicial: { modo: ModoAjuste; estructuraId: string; objetivoVariantId: string | null };
   approvalToken?: string;
-  loraMode?: LoraModeSlug;
   /** Variantes que la propuesta ya compra (ver `varianteParaAplicar`). */
   variantIdsDelPlan: ReadonlySet<string>;
   /** Publica la edición en la propuesta; devuelve el motivo (ya dicho para el cliente) si falló, o null. */
@@ -74,7 +72,7 @@ function alternar<T>(lista: readonly T[], valor: T): T[] {
  * «cargando» se deduce de que falte esa clave, y una respuesta tardía de un filtro viejo nunca se pinta.
  */
 export function useAjustePropuesta(entrada: Entrada) {
-  const { inicial, approvalToken, loraMode, lineasDe, variantIdsDelPlan, onAplicar, onAplicado } = entrada;
+  const { inicial, approvalToken, lineasDe, variantIdsDelPlan, onAplicar, onAplicado } = entrada;
   const [modo, setModo] = useState<ModoAjuste>(inicial.modo);
   const [estructuraId, setEstructuraId] = useState(inicial.estructuraId);
   const [objetivoVariantId, setObjetivoVariantId] = useState<string | null>(inicial.objetivoVariantId);
@@ -106,8 +104,8 @@ export function useAjustePropuesta(entrada: Entrada) {
   const formaObjetivo = lineaObjetivo?.forma ?? null;
   const diametroObjetivo = lineaObjetivo?.diam_pulg ?? null;
   const consultas = useMemo(
-    () => armarConsultas({ texto: textoBusqueda, familias, exactos, catalogo, tamanos, limite, approvalToken, loraMode, lineaObjetivo: lineaObjetivoDe({ forma: formaObjetivo, diam_pulg: diametroObjetivo }) }),
-    [textoBusqueda, familias, exactos, catalogo, tamanos, limite, approvalToken, loraMode, formaObjetivo, diametroObjetivo],
+    () => armarConsultas({ texto: textoBusqueda, familias, exactos, catalogo, tamanos, limite, approvalToken, lineaObjetivo: lineaObjetivoDe({ forma: formaObjetivo, diam_pulg: diametroObjetivo }) }),
+    [textoBusqueda, familias, exactos, catalogo, tamanos, limite, approvalToken, formaObjetivo, diametroObjetivo],
   );
 
   // Lo escrito se busca al hacer una pausa; Enter lo busca ya (`buscarYa`).
@@ -136,14 +134,14 @@ export function useAjustePropuesta(entrada: Entrada) {
   // Los colores se piden a la vez que la primera página, no después.
   useEffect(() => {
     const controlador = new AbortController();
-    pedirColoresCatalogo(approvalToken, loraMode, controlador.signal)
+    pedirColoresCatalogo(approvalToken, controlador.signal)
       .then((colores) => setColoresCatalogo({ intento: intentoColores, colores, error: null }))
       .catch((error: unknown) => {
         if (esCancelacion(error)) return;
         setColoresCatalogo({ intento: intentoColores, colores: null, error: mensajeFalloPlanEditar(error, RESPALDO_COLORES) });
       });
     return () => controlador.abort();
-  }, [approvalToken, loraMode, intentoColores]);
+  }, [approvalToken, intentoColores]);
 
   const secciones: SeccionResultados[] = consultas.map((consulta) => {
     const clave = `${intentoBusqueda}:${JSON.stringify(consulta.cuerpo)}`;

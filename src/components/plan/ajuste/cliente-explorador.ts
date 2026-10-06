@@ -1,5 +1,4 @@
 import { crearCacheTemporal } from "@/lib/cache/cache-temporal";
-import type { LoraModeSlug } from "@/lib/lora/schema";
 import { FalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import {
   LIMITE_INICIAL,
@@ -17,7 +16,7 @@ import {
  * muestra al instante al volver a abrir el modal o a quitar y poner un filtro, y dos pantallas que piden lo mismo
  * comparten una sola petición.
  *
- * La clave lleva el token de la propuesta y el modo LoRA, así que dos propuestas (o dos modos) nunca comparten
+ * La clave lleva el token de la propuesta, así que dos propuestas nunca comparten
  * respuesta. Un fallo no se recuerda. Editar la propuesta firma otro token y con él empieza otra memoria; el
  * servidor sí recuerda lo común (`cache-exploracion.ts`), por lo que esa primera vez sigue siendo rápida.
  */
@@ -51,8 +50,8 @@ export function pedirBusqueda(cuerpo: CuerpoBuscar, signal?: AbortSignal): Promi
   return cacheBusquedas.obtener(JSON.stringify(cuerpo), (cancelar) => leerBusqueda(cuerpo, cancelar), { signal });
 }
 
-export function pedirColoresCatalogo(approvalToken: string | undefined, loraMode: LoraModeSlug | undefined, signal?: AbortSignal): Promise<ColorCatalogo[]> {
-  const cuerpo = armarPeticionColores(approvalToken, loraMode);
+export function pedirColoresCatalogo(approvalToken: string | undefined, signal?: AbortSignal): Promise<ColorCatalogo[]> {
+  const cuerpo = armarPeticionColores(approvalToken);
   return cacheColores.obtener(JSON.stringify(cuerpo), (cancelar) => leerColores(cuerpo, cancelar), { signal });
 }
 
@@ -61,10 +60,10 @@ export function pedirColoresCatalogo(approvalToken: string | undefined, loraMode
  * cliente que acerca el dedo a «Ajustar plan» lo encuentre listo. Es lo mismo que el modal pediría: no cambia lo
  * que ve nadie, solo cuándo llega.
  */
-export function precalentarExplorador(approvalToken: string | undefined, loraMode: LoraModeSlug | undefined): void {
-  const colores = armarPeticionColores(approvalToken, loraMode);
+export function precalentarExplorador(approvalToken: string | undefined): void {
+  const colores = armarPeticionColores(approvalToken);
   cacheColores.precalentar(JSON.stringify(colores), (cancelar) => leerColores(colores, cancelar));
-  const primera = armarBusqueda({ texto: "", colores: [], tamanos: [], limite: LIMITE_INICIAL, approvalToken, loraMode });
+  const primera = armarBusqueda({ texto: "", colores: [], tamanos: [], limite: LIMITE_INICIAL, approvalToken });
   cacheBusquedas.precalentar(JSON.stringify(primera), (cancelar) => leerBusqueda(primera, cancelar));
 }
 
