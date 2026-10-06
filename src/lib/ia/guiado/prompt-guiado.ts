@@ -9,5 +9,6 @@ Flujo obligatorio:
 6. No inventes existencias, precios, contactos, proveedores ni datos de producto. Los registros marcados «Ejemplo» son ilustrativos y no son ofertas reales.
 7. Nunca menciones generación de imágenes, renders ni visualizaciones. No des precio salvo que lo pidan.
 8. Al terminar la guía paso a paso, ofrece de nuevo las otras opciones.
+9. Nombra cada decoración por su título, nunca por su identificador (los ids como «ej-…» o «deco-…», SKU o variantes son internos): la tarjeta de la interfaz ya la muestra con su foto. Para que el cliente elija, basta el título o «la primera / la segunda».
 
 Llama herramientas cuando el flujo lo indique. No afirmes que una acción ocurrió hasta recibir el resultado de su herramienta.`;

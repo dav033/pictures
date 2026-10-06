@@ -264,8 +264,9 @@ prediseñadas) para que el costeo de la demo muestre precios; siguen marcadas «
 de Shopify; variantes R-12 reales del snapshot publicado el 11-sep-2026; temática, edad, cantidades y pasos son de ejemplo), costeo por
 `plan.lista_materiales` en Python (p. ej. «Cumpleaños entre estrellas»: 3 variantes ×50, $39.111 COP personal y negocio).
 Revisión adversarial: 3 fallos confirmados corregidos (uso en el mismo POST, errores de herramienta devueltos al modelo, precio ligado
-a la decoración elegida) + menores. Pendiente: prueba de un turno real con el LLM (la hago yo), datos reales de decoraciones y
-proveedores, verificación visual.
+a la decoración elegida) + menores. Turno real con el LLM (2026-10-06, 2 llamadas Gemini): guardar_brief_guiado (cumpleaños, 6, estrellas) →
+buscar_decoraciones_sempertex → 2 decoraciones; la primera respuesta citaba ids internos («ej-…»): regla 9 del prompt, verificado sin
+ids. Pendiente: datos reales de decoraciones y proveedores, verificación visual del dueño.
 
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
