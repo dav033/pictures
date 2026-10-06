@@ -228,10 +228,15 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    de gris. Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
    Pendiente aparte: `test-guia-estructura.ts` ya falla en la rama principal (espera `#f2a7c3`, sale `#f8a3bc` en guirnalda-pared).
 3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
-4. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
-5. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
-6. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
-7. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
+4. **Forma de las columnas orgánicas de CASE-002** (dueño 2026-10-06: «la forma no coincide para nada, el original es más intrincado y
+   complejo»): original del suelo al techo curvándose arriba sobre el arco, voluminoso (≈25-30 % del ancho), silueta irregular con
+   racimos, muchas bolas de 18-24" entre relleno de 5" y burbujas transparentes con confeti; generada: tubo delgado (≈12 %), regular,
+   2/3 del alto, dos franjas de color. La forma la dicta la guía (motor Python de discos) + las medidas. Encolado en rama
+   `fix/forma-organica-002` (worktree `Downloads/e3i`) tras fusionar `fix/medidas-de-la-foto`; tope US$0,40, juez Codex.
+5. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
+6. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
+7. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
+8. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
 
 ## 4.5 Vista nueva «Asistente guiado» (pedida por el dueño el 2026-10-06)
 
