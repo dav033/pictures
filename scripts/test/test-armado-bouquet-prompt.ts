@@ -10,7 +10,7 @@ import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagut
 import { ensureLoraTriggers } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
 import { tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
-import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_ASSEMBLY_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, piezasDeLosArmados } from "@/lib/ia/uzume/lora-gemini-composition";
+import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_ASSEMBLY_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, piezasDeLosArmados } from "./fixtures/gemini-composition-historica";
 import { armadoDeElemento, frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { ArmadoBouquetResueltoSchema, type ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";

@@ -4,11 +4,10 @@
  *
  * Ejecuta el handler REAL de /api/generate (`POST` de src/app/api/generate/route.ts) con el plan resuelto y firmado
  * que dejo la etapa (a) (`plan-resuelto.json`, con su `approval_token`). El unico punto cortado es la red hacia el
- * proveedor de imagen: `globalThis.fetch` se intercepta y toda peticion a fal.ai / modelo de imagen de Gemini se
+ * proveedor de imagen: `globalThis.fetch` se intercepta y toda petición a fal.ai se
  * captura (prompt, parametros, imagenes de guia) y se aborta ANTES de salir. Nada se factura.
  *
- *   modo "flux"   : usarLora=true, loraMode="base" (FLUX.2 base, el camino de las capturas) -> caption + guia de escena
- *   modo "gemini" : usarLora=false, proveedor gemini -> buildImagePrompt (prompt de Gemini)
+ *   modo único: FLUX base (caption + guía de escena)
  *
  * Postgres: el pool es de SOLO LECTURA (INSERT/UPDATE/DELETE se cuentan y se descartan).
  *
@@ -30,7 +29,7 @@ class CapturaImagen extends Error { constructor(readonly destino: string) { supe
 async function main(): Promise<void> {
   const casos = arg("--casos", "1,3,4,6,8").split(",").map(Number);
   const corridas = Number(arg("--corridas", "3"));
-  const modos = arg("--modos", "flux,gemini").split(",");
+  const modos = ["flux"];
 
   // Pool de solo lectura sobre el catalogo real.
   const { Pool } = await import(pathToFileURL(resolve(REPO, "node_modules/pg/lib/index.js")).href).then((m) => (m.default ?? m) as typeof import("pg"));
@@ -63,16 +62,19 @@ async function main(): Promise<void> {
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const host = new URL(url).hostname;
+    if (host === "generativelanguage.googleapis.com" || host.endsWith(".aiplatform.googleapis.com")) {
+      bloqueos.push(`Gemini bloqueado ${host}`);
+      throw new CapturaImagen("Gemini (bloqueado)");
+    }
     let cuerpo = typeof init?.body === "string" ? init.body : "";
     if (!cuerpo && typeof Request !== "undefined" && input instanceof Request) cuerpo = await input.clone().text().catch(() => "");
     if (!cuerpo && init?.body && typeof init.body !== "string") { try { cuerpo = await new Response(init.body as BodyInit).text(); } catch { cuerpo = ""; } }
     const metodoReal = init?.method ?? (input instanceof Request ? input.method : "GET");
     const esFal = /(^|\.)fal\.(run|ai|media)$/.test(host);
-    const esGeminiImagen = host === "generativelanguage.googleapis.com" && (/image/i.test(url) || /\/interactions/.test(url) || /"responseModalities"\s*:\s*\[[^\]]*IMAGE/i.test(cuerpo));
-    if (esFal || esGeminiImagen) {
+    if (esFal) {
       bloqueos.push(`${metodoReal} ${host}`);
-      if (!captura || (cuerpo.length > captura.cuerpo.length)) captura = { destino: esFal ? "fal" : "gemini-image", url: url.replace(/\?.*$/, ""), metodo: metodoReal, cuerpo };
-      throw new CapturaImagen(esFal ? "fal.ai" : "gemini-image");
+      if (!captura || (cuerpo.length > captura.cuerpo.length)) captura = { destino: "fal", url: url.replace(/\?.*$/, ""), metodo: metodoReal, cuerpo };
+      throw new CapturaImagen("fal.ai");
     }
     return fetchOriginal(input, init);
   }) as typeof fetch;
@@ -93,7 +95,6 @@ async function main(): Promise<void> {
       const cuerpo = {
         plan, planHash: plan.plan_hash, brief: {}, solicitudUsuario: "Adjunto imágenes de referencia del estilo que busco.",
         imagenesReferencia: [imagen], blueprint,
-        ...(modo === "flux" ? { usarLora: true, loraMode: "base" } : { usarLora: false, proveedor: "gemini" }),
       };
       const logs: string[] = [];
       const infoOrig = console.info, warnOrig = console.warn;
@@ -127,7 +128,7 @@ async function main(): Promise<void> {
           ?? JSON.stringify(json).match(/"text":"((?:[^"\\]|\\.)*)"/)?.[1];
         if (typeof (json as { prompt?: unknown } | null)?.prompt === "string") writeFileSync(`${dir}/prompt.txt`, (json as { prompt: string }).prompt);
         else {
-          // Gemini: concatena las partes de texto.
+          // Compatibilidad con cuerpos de proveedor que separan el texto en partes.
           const textos: string[] = [];
           const recorrer = (v: unknown) => { if (Array.isArray(v)) v.forEach(recorrer); else if (v && typeof v === "object") { for (const [kk, vv] of Object.entries(v as Record<string, unknown>)) { if (kk === "text" && typeof vv === "string") textos.push(vv); else recorrer(vv); } } };
           recorrer(json);

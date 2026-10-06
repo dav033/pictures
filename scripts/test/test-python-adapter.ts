@@ -17,7 +17,6 @@ import {
   llamarPythonChatTurnStream,
   llamarPythonEcho,
   llamarPythonEmbedding,
-  llamarPythonImageGenerate,
   llamarPythonIntentParse,
   llamarPythonHappieGenerate,
   llamarPythonLoraGenerate,
@@ -661,88 +660,6 @@ async function testPatronReferenciaEnvelope(): Promise<void> {
   );
 }
 
-async function testImageGenerateEnvelope(): Promise<void> {
-  const calls: CapturedCall[] = [];
-  const fetchImpl: typeof fetch = async (input, init) => {
-    calls.push({ input, init });
-    return successResponse({
-      image_base64: "aW1hZ2VkYXRh",
-      model: "gemini-3.1-flash-image",
-      interaction_id: "int_123",
-      usage: { total_input_tokens: 500, total_output_tokens: 1200 },
-    });
-  };
-  const result = await llamarPythonImageGenerate({
-    input: [
-      { type: "text", text: "Un arco de globos dorados." },
-      { type: "image", data: "aGVsbG8=", mimeType: "image/jpeg" },
-    ],
-    aspectRatio: "3:2",
-    imageSize: "2K",
-    requestId: REQUEST_ID,
-    correlationId: CORRELATION_ID,
-    env: BASE_ENV,
-    fetchImpl,
-  });
-  assert.equal(result.imageBase64, "aW1hZ2VkYXRh");
-  assert.equal(result.model, "gemini-3.1-flash-image");
-  assert.equal(result.interactionId, "int_123");
-  assert.equal(calls.length, 1);
-  const body = JSON.parse(String(calls[0].init?.body)) as {
-    context: { body_sha256: string; scopes: string[] };
-    schema_version: string;
-    store: boolean;
-    aspect_ratio: string;
-    image_size: string;
-    input: Array<{ type: string; text?: string; data?: string; mime_type?: string }>;
-  };
-  assert.equal(body.schema_version, "image-generate.v1");
-  assert.equal(body.store, true);
-  assert.equal(body.aspect_ratio, "3:2");
-  assert.equal(body.image_size, "2K");
-  assert.deepEqual(body.input, [
-    { type: "text", text: "Un arco de globos dorados." },
-    { type: "image", data: "aGVsbG8=", mime_type: "image/jpeg" },
-  ]);
-  assert.equal(body.context.scopes[0], "ia.image_generate");
-  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/ia/image-generate");
-
-  const previousIdFetch: typeof fetch = async (_input, init) => {
-    const parsed = JSON.parse(String(init?.body)) as { previous_interaction_id?: string };
-    assert.equal(parsed.previous_interaction_id, "int_previous");
-    return successResponse({ image_base64: "b3RyYQ==", model: "gemini-3.1-flash-image", interaction_id: "int_456", usage: null });
-  };
-  await llamarPythonImageGenerate({
-    input: [{ type: "text", text: "otra vez" }],
-    previousInteractionId: "int_previous",
-    aspectRatio: "1:1",
-    imageSize: "1K",
-    requestId: REQUEST_ID,
-    correlationId: CORRELATION_ID,
-    env: BASE_ENV,
-    fetchImpl: previousIdFetch,
-  });
-
-  const invalidResponseFetch: typeof fetch = async () => Response.json({
-    schema_version: "operational.v1",
-    request_id: REQUEST_ID,
-    correlation_id: CORRELATION_ID,
-    payload: { image_base64: "", model: "gemini-3.1-flash-image", interaction_id: null, usage: null },
-  });
-  await assert.rejects(
-    () => llamarPythonImageGenerate({
-      input: [{ type: "text", text: "algo" }],
-      aspectRatio: "1:1",
-      imageSize: "1K",
-      requestId: REQUEST_ID,
-      correlationId: CORRELATION_ID,
-      env: BASE_ENV,
-      fetchImpl: invalidResponseFetch,
-    }),
-    (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
-  );
-}
-
 async function testLoraGenerateEnvelope(): Promise<void> {
   const calls: CapturedCall[] = [];
   const fetchImpl: typeof fetch = async (input, init) => {
@@ -1292,7 +1209,6 @@ async function main(): Promise<void> {
   await testHappieGenerateEnvelope();
   await testReferenceTurnEnvelope();
   await testPatronReferenciaEnvelope();
-  await testImageGenerateEnvelope();
   await testLoraGenerateEnvelope();
   await testChatTurnStreamEnvelope();
   await testCatalogSearchEnvelope();

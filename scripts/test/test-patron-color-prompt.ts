@@ -15,7 +15,7 @@ import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-sp
 import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import { buildVisualContext } from "@/lib/ia/escena/visual-context";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
-import { GEMINI_COMPOSITION_HARD_LOCK, hardLockComposicionGemini } from "@/lib/ia/uzume/lora-gemini-composition";
+import { GEMINI_COMPOSITION_HARD_LOCK, hardLockComposicionGemini } from "./fixtures/gemini-composition-historica";
 import { compileLoraCaption, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor, type LoraVisualClause } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { compileProductPrompt, type ElementSizeConfirmation } from "@/lib/ia/kagutsuchi/lora-product-runtime";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";

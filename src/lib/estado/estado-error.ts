@@ -17,7 +17,6 @@ export type PresentacionError = {
 
 export const ETIQUETA_ACCION_ERROR: Readonly<Record<AccionUiV1, string>> = {
   reintentar: "Reintentar",
-  generar_estilo_estandar: "Generar con estilo estándar",
   revisar_propuesta: "Ver propuesta",
   pedir_nueva_propuesta: "Pedir la propuesta de nuevo",
   ajustar_propuesta: "Ajustar propuesta",

@@ -10,7 +10,6 @@ export type FeatureFlag =
   | "VENUE_AWARE_PLACEMENT_V1"
   | "MEASURED_COLOR_DOMINANCE_V1"
   | "AMBIENTE_FIESTA_V1"
-  | "REFERENCIA_EN_ETAPA1_V1"
   | "PATRONES_COLOR_V1"
   | "BOUQUETS_ARMADO_V1"
   | "GUIRNALDAS_ARMADO_V1"
@@ -32,8 +31,6 @@ export type FeatureFlag =
  * siendo el interruptor para apagarlas. Quedan apagadas solo cuatro, por motivo:
  *
  * - `SCENE_PLAN_V2_SHADOW`: diagnóstico en sombra, no cambia la imagen.
- * - `REFERENCIA_EN_ETAPA1_V1`: manda la foto como píxeles a `/edit`, que conserva
- *   la imagen que recibe y puede copiar su fondo; sin medir con el modelo base.
  * - `GUIA_ESTRUCTURA_V1`: el mapa de color por `/edit` se diseñó para el LoRA
  *   entrenado y cuesta dos imágenes de entrada más; sin medir con el modelo base.
  * - `ARMADO_ARCO_COLUMNA_V1` (decisión del dueño del 2026-10-05): con ella, la
@@ -56,7 +53,7 @@ export type FeatureFlag =
  * CONTEO_REFERENCIA_V1 → ADR-0031). Varias cambian `plan_hash`, cantidades o
  * precio de los planes **nuevos**; los ya aprobados no cambian.
  */
-const DEFAULT_APAGADAS: ReadonlySet<FeatureFlag> = new Set<FeatureFlag>(["SCENE_PLAN_V2_SHADOW", "REFERENCIA_EN_ETAPA1_V1", "GUIA_ESTRUCTURA_V1", "ARMADO_ARCO_COLUMNA_V1"]);
+const DEFAULT_APAGADAS: ReadonlySet<FeatureFlag> = new Set<FeatureFlag>(["SCENE_PLAN_V2_SHADOW", "GUIA_ESTRUCTURA_V1", "ARMADO_ARCO_COLUMNA_V1"]);
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
@@ -117,9 +114,6 @@ export const INTENT_PARSER_PYTHON_ENABLED = process.env.INTENT_PARSER_PYTHON_ENA
 
 /** Default: OFF. Routes Amaterasu's two Gemini tool-calling passes (inventory + audit) through Python; the cache, retry loop and blueprint assembly stay in TypeScript either way. */
 export const REFERENCE_ANALYSIS_PYTHON_ENABLED = process.env.REFERENCE_ANALYSIS_PYTHON_ENABLED === "true";
-
-/** Default: OFF. Routes Uzume's Gemini Interactions call (image generation/composition) through Python; the labeled input array is still built in TypeScript either way. */
-export const GEMINI_IMAGE_PYTHON_ENABLED = process.env.GEMINI_IMAGE_PYTHON_ENABLED === "true";
 
 /** Default: OFF. Routes Kagutsuchi's fal.ai queue round trip (submit/poll/download, SSRF guard included) through Python; prompt composition and which references go to /edit stay in TypeScript either way. */
 export const LORA_GENERATION_PYTHON_ENABLED = process.env.LORA_GENERATION_PYTHON_ENABLED === "true";
@@ -223,7 +217,6 @@ const BANDERAS: readonly FeatureFlag[] = [
   "VENUE_AWARE_PLACEMENT_V1",
   "MEASURED_COLOR_DOMINANCE_V1",
   "AMBIENTE_FIESTA_V1",
-  "REFERENCIA_EN_ETAPA1_V1",
   "PATRONES_COLOR_V1",
   "BOUQUETS_ARMADO_V1",
   "GUIRNALDAS_ARMADO_V1",
@@ -255,10 +248,8 @@ export function resumenBanderas(): Record<string, boolean | string> {
     CONTEO_REFERENCIA_PYTHON_ENABLED,
     GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
     REFERENCE_ANALYSIS_PYTHON_ENABLED,
-    GEMINI_IMAGE_PYTHON_ENABLED,
     LORA_GENERATION_PYTHON_ENABLED,
     CHAT_PYTHON_ENABLED,
-    SEMPERTEX_LORA_EDIT: process.env.SEMPERTEX_LORA_EDIT !== "false",
     IMAGE_DEBUG,
   };
 }
