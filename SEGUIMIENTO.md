@@ -276,8 +276,13 @@ cada respuesta lleva sus piezas en orden (ideas, elección, 4 opciones con icono
 anteriores quedan como historia; desplazamiento automático; indicador de escritura; identidad del asistente; materiales en palabras
 de cliente. El servidor costea y muestra pasos con la decoración y el uso elegidos en la interfaz (el modelo no ve ids y fallaba 3
 veces antes de costear). Recorrido completo verificado en el navegador (cumpleaños → 4-6 años → princesas → elegir → costear →
-personal → $39.111). En curso: biblioteca con ~12 temáticas y búsqueda honesta (rama `ux/biblioteca-tematicas`, `Downloads/e3j`) y
-precio por color sin jerga (rama `ux/precio-por-color`, `Downloads/e3k`). Hasta la presentación NO se fusionan en la principal las
+personal → $39.111). Integrados (2026-10-06 tarde): biblioteca de 14 temáticas con kits y variantes reales y búsqueda honesta (exacta/cercana,
+sello «Parecida»); fotos de los 5 kits servidas desde `public/biblioteca-sempertex/kits/` (800 px) y, cuando la foto no representa
+la decoración, ilustración de globos en su paleta rotulada «Ilustración de colores»; precio por color sin jerga (p. ej. «Bienvenida
+en azul»: Azul Rey $13.974 + Blanco $13.037 + impreso bebé $24.143 = $51.154 con IVA); «Comprar» al instante (globos con su foto
+del catálogo, enlace al kit en sempertex.com sin el prefijo `b2b-`, distribuidor cercano); `darkreader-lock` (la extensión Dark
+Reader del equipo del dueño repintaba la app). Recorrido en el navegador verificado: espacio (ilustración), baby shower niño →
+elegir → comprar → costear personal. Hasta la presentación NO se fusionan en la principal las
 ramas de motor (colores `fix/sombra-no-es-color`, medidas `fix/medidas-de-la-foto`, forma `fix/forma-organica-002`) ni la etapa 4.
 
 ## 5. Decisiones del dueño
