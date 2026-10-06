@@ -161,7 +161,7 @@ const casos: Caso[] = [
     },
   },
   {
-    nombre: "transparencia · los globos transparentes se exigen además de los 3 colores de la pieza",
+    nombre: "transparencia · los globos transparentes se exigen además de los cinco tonos de la pieza",
     correr: () => {
       // 2026-09-24: rosado, plateado, blanco y transparente en una columna; el
       // transparente quedaba cuarto y nunca se exigía.
@@ -190,7 +190,7 @@ const casos: Caso[] = [
       // porque el resolutor le dice al cliente que se hizo con plateado (2.5).
       assert.deepEqual(coloresDominantesReferencia(["pink", "silver", "grey", "white", "clear"]), ["rosado", "plateado", "gris", "blanco", "transparente"]);
       // Sin plateado en la pieza, el gris ocupa su cupo como cualquier color.
-      assert.deepEqual(coloresDominantesReferencia(["grey", "pink", "white", "gold"]), ["gris", "rosado", "blanco"]);
+      assert.deepEqual(coloresDominantesReferencia(["grey", "pink", "white", "gold"]), ["gris", "rosado", "blanco", "dorado"]);
     },
   },
 ];

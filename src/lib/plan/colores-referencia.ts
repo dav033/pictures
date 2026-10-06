@@ -39,7 +39,10 @@ type AparienciaColor = {
  *
  * Pure: no provider, HTTP, database or environment.
  */
-export const MAX_COLORES_REFERENCIA = 3;
+// CASE-004 de `evaluacion/linea-base/verdad-visual.json` tiene cinco tonos
+// comprables en una sola pieza; con tres, el blanco quedaba fuera de la
+// cobertura del chat aunque el analizador sí lo hubiera nombrado.
+export const MAX_COLORES_REFERENCIA = 5;
 
 /**
  * Transparency is a finish, not a hue (see `TRANSPARENCIA`). A piece with clear

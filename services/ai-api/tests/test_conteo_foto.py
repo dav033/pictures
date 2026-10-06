@@ -1012,6 +1012,46 @@ async def test_la_mezcla_que_dijo_la_lectura_de_tamanos_no_la_mueve_el_conteo() 
 
 
 @pytest.mark.anyio
+async def test_f7_3_el_racimo_compra_la_mezcla_de_tamanos_leida() -> None:
+    """El kit conserva sus unidades declaradas, pero resuelve compras por cada talla del mix de foto."""
+    racimo = {
+        "estructura_id": "EST_01_RACIMO",
+        "nombre": "Racimo de pared",
+        "tipo": "kit",
+        "estructura_oficial": "racimo_pared",
+        "rol_escena": "focal",
+        "ubicacion": "fondo_pared",
+        "medidas": {"ancho_m": 0.8, "alto_m": 1.1},
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+            {"product_id": "prod-blanco", "color": "blanco", "participacion": 1.0, "rol_material": "principal"}
+        ],
+        "unidades_declaradas": 40,
+        "porque": "Racimo orgánico fijado a la pared.",
+        "referencia_element_id": "REF_01_E01",
+    }
+    filas = [_row_tamano("blanco", pulgadas) for pulgadas in (5, 9, 12, 18, 24)]
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(racimo, fuente="foto"),
+        filas,
+        pistas_tamanos=[
+            {
+                "referencia_element_id": "REF_01_E01",
+                "tamanos": "grandes_con_pocos_chicos",
+                "confianza": 0.9,
+            }
+        ],
+    )
+
+    assert _estructura(resolved)["mezcla"] == "organica_gruesa"
+    lineas = cast(list[dict[str, object]], resolved["estructuras"][0]["lineas"])
+    assert {linea["tamano_codigo"] for linea in lineas} == {"R-9", "R-12", "R-18", "R-24"}
+    assert sum(int(linea["unidades"]) for linea in lineas) == 40
+
+
+@pytest.mark.anyio
 async def test_solo_la_pieza_pedida_tras_una_edicion() -> None:
     otra = _guirnalda(estructura_id="EST_02_GUIRNALDA", nombre="Otra guirnalda")
     resolved = await _resolver_geometrico(

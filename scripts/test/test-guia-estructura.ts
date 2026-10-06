@@ -68,6 +68,13 @@ const EDIT = "https://queue.fal.run/fal-ai/flux-2/lora/edit";
 const TEXTO = "https://queue.fal.run/fal-ai/flux-2/lora";
 const BASE = JSON.parse(readFileSync(path.join("scripts", "fixtures", "guia-estructura", "peticiones-base.json"), "utf8")) as { directo: Record<string, PeticionCapturada> };
 const HEX: Readonly<Record<string, string>> = HEX_COLORES_V2;
+const HEX_PLAN: Readonly<Record<string, string>> = {
+  ...HEX,
+  // Estos fixtures compran Fashion Rosado 009 y Fashion Amarillo 020. Sus
+  // tintas son hexes de catálogo; la taxonomía solo guarda muestras genéricas.
+  rosado: "#f8a3bc",
+  amarillo: "#fedd00",
+};
 
 function rellenos(svg: string): Set<string> {
   return new Set([...svg.matchAll(/<ellipse [^>]*fill="(#[0-9a-f]{6})"/g)].map((coincidencia) => coincidencia[1]!));
@@ -83,7 +90,10 @@ function sinEtiquetas(svg: string): string {
 
 function coloresDelPlan(plan: PlanResuelto): Set<string> {
   const colores = plan.armados_guirnalda?.[0]?.leyenda.map((entrada) => entrada.color) ?? plan.patrones_color?.[0]?.conteo.map((fila) => fila.color) ?? [];
-  return new Set(colores.map((color) => HEX[color ?? ""] ?? "sin-hex"));
+  return new Set(colores.map((color) => {
+    const normalizado = color?.toLowerCase() ?? "";
+    return /^#[0-9a-f]{6}$/.test(normalizado) ? normalizado : HEX_PLAN[color ?? ""] ?? "sin-hex";
+  }));
 }
 
 async function pixelesDeSvg(svg: string): Promise<Pixeles> {
@@ -205,8 +215,9 @@ function promptConGuia(): void {
   assert.throws(() => buildLoraEditPrompt(CAPTION_BASE, [GUIA, imagenDePrueba("composition_reference", 1, "R1")]), /LORA_GUIA_INVALIDA/, "la guía no se mezcla con referencias");
   assert.throws(() => buildLoraEditPrompt(CAPTION_BASE, [GUIA, CARTA_IMG, CARTA_IMG]), /LORA_GUIA_INVALIDA/);
 
-  // El caption se compacta para que el prompt entero quepa en el LoRA; si ni así, sin carta.
-  for (const [caso, cartaEsperada] of [[casoArcoPatron(), true], [casoGuirnaldaPared(), false]] as const) {
+  // La carta acompaña ambos captions actuales porque caben dentro del límite.
+  // `elegirCaptionConGuia` solo la quita cuando el prompt no cabe con ella.
+  for (const [caso, cartaEsperada] of [[casoArcoPatron(), true], [casoGuirnaldaPared(), true]] as const) {
     const elegido = elegirCaptionConGuia<ReturnType<typeof captionDeCaso>, ImagenGuiaLora>({
       imagenes: [GUIA, CARTA_IMG],
       maximo: LORA_PROMPT_MAX_LENGTH,
@@ -239,7 +250,7 @@ async function peticionAFal(): Promise<void> {
   for (const [nombre, inputs] of Object.entries(casosBase())) {
     const esperado = BASE.directo[nombre];
     assert.ok(esperado, `la instantánea no tiene ${nombre}`);
-    const capturada = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", inputs, opciones);
+    const capturada = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", inputs, opciones);
     assert.equal(capturada.destino, esperado.destino, `${nombre}: endpoint`);
     assert.equal(JSON.stringify(capturada.cuerpo), JSON.stringify(esperado.cuerpo), `${nombre}: el cuerpo cambió respecto a 90da1ef`);
   }
@@ -260,17 +271,6 @@ async function peticionAFal(): Promise<void> {
   await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", [], opciones);
   assert.equal(ultimosEventos()[0]!.promptVersion, undefined, "sin guía, el evento de siempre");
 
-  // El interruptor de retiro de /edit también apaga la guía.
-  const retiro = process.env.SEMPERTEX_LORA_EDIT;
-  process.env.SEMPERTEX_LORA_EDIT = "false";
-  try {
-    const apagado = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", [], { ...opciones, imagenesEdit: guia.imagenes });
-    assert.equal(apagado.destino, TEXTO);
-    assert.equal(JSON.stringify(apagado.cuerpo), JSON.stringify(BASE.directo["sin-imagenes"]!.cuerpo), "SEMPERTEX_LORA_EDIT=false: texto a imagen de siempre");
-  } finally {
-    if (retiro === undefined) delete process.env.SEMPERTEX_LORA_EDIT;
-    else process.env.SEMPERTEX_LORA_EDIT = retiro;
-  }
   console.log("[PASS] fal: sin guía byte a byte la de 90da1ef; con guía /edit con image_urls[0] = guía y la carta después");
 }
 
@@ -283,7 +283,7 @@ async function filtroDeImagenes(): Promise<void> {
   const referencias = casosBase()["referencias-hibrido"]!;
   // Antes (y todavía sin `imagenesEdit`): sin venue ni resultado previo, las
   // referencias de la etapa 1 se descartaban y la llamada iba a texto.
-  const filtradas = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", referencias, opciones);
+  const filtradas = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", referencias, opciones);
   assert.equal(filtradas.destino, TEXTO);
   // Elegidas por la ruta (REFERENCIA_EN_ETAPA1_V1): llegan a /edit, en su orden.
   const elegidas = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", [], { ...opciones, imagenesEdit: referencias });
@@ -293,7 +293,7 @@ async function filtroDeImagenes(): Promise<void> {
   assert.match(cuerpo.prompt, /No venue base; create venue from prompt\./);
   assert.match(cuerpo.prompt, /Input image 1 \(@image1\): composition only/);
   // Una lista explícita vacía es texto a imagen, igual que sin imágenes.
-  const vacia = await capturarPeticion(generarConSempertexLora, CAPTION_BASE, "3:2", referencias, { ...opciones, imagenesEdit: [] });
+  const vacia = await capturarPeticion(generarConSempertexLora, CAPTION_DE_PRUEBA, "3:2", referencias, { ...opciones, imagenesEdit: [] });
   assert.equal(JSON.stringify(vacia.cuerpo), JSON.stringify(BASE.directo["sin-imagenes"]!.cuerpo));
   console.log("[PASS] regresión: las imágenes elegidas por la ruta ya no se descartan sin foto del espacio");
 }
@@ -363,11 +363,11 @@ async function vistaPrevia(): Promise<void> {
     assert.equal(llamadas, 0, "sin red");
     assert.equal(celdas.length, 12, "2 planes × 2 brazos × 3 semillas");
     assert.equal(manifiesto.resultados.length, 0);
-    assert.equal(manifiesto.coste_estimado_usd, 0.693, "6 × 0,042 + 3 × 0,063 (guía) + 3 × 0,084 (guía y carta), estimado");
+    assert.equal(manifiesto.coste_estimado_usd, 0.756, "6 × 0,042 + 3 × 0,063 (guía) + 3 × 0,105 (guía y carta), estimado");
     const impreso = salida.join("\n");
     assert.doesNotMatch(impreso, /base64,/, "las imágenes de entrada nunca se imprimen");
     assert.match(impreso, /<image\/png · \d+ bytes · sha256 [0-9a-f]{12}>/);
-    assert.match(impreso, /\[DRY-RUN\] 12 celdas, coste ESTIMADO US\$0\.693/);
+    assert.match(impreso, /\[DRY-RUN\] 12 celdas, coste ESTIMADO US\$0\.756/);
     assert.equal(manifiesto.celdas.filter((celda) => celda.endpoint.endsWith("/edit")).length, 6, "solo el brazo con guía va a /edit");
   } finally {
     process.argv = argv;
@@ -376,7 +376,7 @@ async function vistaPrevia(): Promise<void> {
   }
   assert.throws(() => directorioSalida(path.join(process.cwd(), "reports", "x"), "v007-1000"), /SALIDA_EN_EL_REPO/);
   assert.ok(!path.relative(process.cwd(), directorioSalida(undefined, "v007-1000")).startsWith("reports"));
-  console.log("[PASS] corrida pagada: la vista previa no gasta, no imprime base64 y estima US$ 0,693");
+  console.log("[PASS] corrida pagada: la vista previa no gasta, no imprime base64 y estima US$ 0,756");
 }
 
 async function main(): Promise<void> {

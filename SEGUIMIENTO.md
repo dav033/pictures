@@ -256,8 +256,9 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    2/3 del alto, dos franjas de color. La forma la dicta la guía (motor Python de discos) + las medidas. Encolado en rama
    `fix/forma-organica-002` (worktree `Downloads/e3i`) tras fusionar `fix/medidas-de-la-foto`; tope US$0,40, juez Codex.
 5. **Grosor de la columna orgánica:** corregido en tercera pasada; `grosorPatasM` deriva de la proporción de su caja cuando no está cortada.
-6. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
-7. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
+6. **Tamaños del racimo de pared — CORREGIDO (2026-10-06).** `plan.py` excluía `racimo_pared` del asignador de mezclas y después trataba el kit como una sola variante; la lectura `grandes_con_pocos_chicos` se perdía antes de comprar. El kit ahora conserva `unidades_declaradas` y desglosa/cotiza cada talla del mix leído. Regresión offline F7-3: 40 unidades en R-9/R-12/R-18/R-24.
+7. **Cobertura de colores del chat — CORREGIDO (2026-10-06).** En CASE-004, ordenar por medición dejaba blanco tras el tope anterior de tres tonos; la paleta de referencia admite cinco (contrato permite ocho). Se conservan los cinco colores nombrados y el acabado que el analizador asignó a cada uno. Regresión offline con `verdad-visual.json` y los pesos guardados en `colores-medidos-kmeans.json`: blanco viaja a la referencia y mate/reflex no se contagian entre colores.
+   También se corrigió `scripts/test/test-guia-estructura.ts`: la tinta correcta de Fashion Rosado 009 es `#f8a3bc`; `#f2a7c3` es solo la muestra genérica de la taxonomía. La prueba ahora usa el hex de catálogo y expectativas vigentes del caption, carta y coste seco.
 8. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
 
 ## 4.5 Vista nueva «Asistente guiado» (pedida por el dueño el 2026-10-06)

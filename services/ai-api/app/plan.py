@@ -1691,7 +1691,7 @@ def _assign_mixes(plan: dict[str, object], tamanos: Sequence[Mapping[str, object
     # corría detrás de `completar_patrones`, que es la primera resolución y nunca la segunda.
     traia = len(assumptions)
     for structure in cast(list[dict[str, object]], plan["estructuras"]):
-        if not conteo_foto.es_geometrica(structure):
+        if not conteo_foto.es_geometrica(structure) and _text(structure.get("estructura_oficial")) != "racimo_pared":
             continue
         element_id = _text(structure.get("referencia_element_id"))
         hint = next(
@@ -2866,6 +2866,13 @@ def _formula_count(
     mix = _text(structure.get("mezcla")) or "organica_fina"
     measures = _mapping(structure.get("medidas"))
     proportions, unplaced = _effective_proportions(mix, _required_sizes(plan))
+    if _text(structure.get("estructura_oficial")) == "racimo_pared":
+        axis = max(
+            _number(measures.get("ancho_m")) or 0.0,
+            _number(measures.get("alto_m")) or 0.0,
+            _number(measures.get("largo_m")) or 0.0,
+        )
+        return axis, max(0, _integer(structure.get("unidades_declaradas")) or 0), proportions, unplaced
     armado = structure.get("armado_guirnalda") if tipo == "guirnalda" else None
     axis, total = _total_globos(
         tipo,
@@ -2905,6 +2912,29 @@ def _despiece_with_plan_sizes(
 ) -> tuple[float, list[dict[str, object]], tuple[int, ...]]:
     materials = _mappings(structure.get("materiales"))
     repeats = max(1, _integer(structure.get("repeticiones")) or 1)
+    if _text(structure.get("estructura_oficial")) == "racimo_pared":
+        axis, total, proportions, unplaced = _structure_count(plan, structure)
+        matrix = _apportion_margins(
+            total,
+            proportions,
+            [_number(material.get("participacion")) or 0.0 for material in materials],
+        )
+        return (
+            round(axis, 2),
+            [
+                {
+                    "tamano": f"R-{pulgadas}",
+                    "pulgadas": pulgadas,
+                    "color": _text(materials[material].get("color")),
+                    "cantidad": cantidad,
+                    "material_index": material,
+                }
+                for fila, (pulgadas, _proporcion) in enumerate(proportions)
+                for material in range(len(materials))
+                if (cantidad := matrix[fila][material]) > 0
+            ],
+            unplaced,
+        )
     # ADR-0034 §3: con armado del motor no hay despiece que hacer. El motor ya
     # colocó cada globo, así que su conteo *es* el reparto por tamaño y por
     # material, sin cuotas, sin redondeos y sin la rejilla de ``patron_color``.
@@ -3625,7 +3655,7 @@ def _resolve_structures(
         designed = [0 for _material in materials]
         delivered = [0 for _material in materials]
         # A centerpiece of a few counted balloons buys declared units, like a kit (UI-6).
-        geometric = conteo_foto.es_geometrica(raw_structure)
+        geometric = conteo_foto.es_geometrica(raw_structure) or _text(raw_structure.get("estructura_oficial")) == "racimo_pared"
         if geometric:
             axis, demands, unplaced_sizes = _despiece_with_plan_sizes(plan, raw_structure)
             # The customer's size restriction belongs to the whole plan, not to
