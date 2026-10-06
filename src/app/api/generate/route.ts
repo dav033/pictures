@@ -55,7 +55,7 @@ import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traduc
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
-import { verificarCoherenciaPrompt, verificarColoresCaptionFlux, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
+import { filtrarTallasNoCompradas, verificarCoherenciaPrompt, verificarColoresCaptionFlux, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
 import { abrirContextoPlan, aprobacionSinHuellaEnPruebas, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import {
@@ -139,6 +139,24 @@ const SolicitudDelPlanSchema = z.string().trim().min(1).max(2000);
 function officialStructuresDePlan(plan: Pick<PlanResuelto, "plan"> | undefined): ReadonlyMap<string, string> | undefined {
   if (!plan) return undefined;
   return new Map(plan.plan.estructuras.flatMap((estructura) => estructura.estructura_oficial ? [[estructura.estructura_id, estructura.estructura_oficial] as const] : []));
+}
+
+/** La mezcla para el prompt sale del estimado que devolvió Python, pieza por pieza. */
+function mezclaDelEstimadoPython(
+  lines: DesignMaterialEstimate["balloons"],
+  estructuraId?: string,
+): Array<{ diamPulg: number; forma: string | null; unidades: number }> {
+  const grupos = new Map<string, { diamPulg: number; forma: string | null; unidades: number }>();
+  const hayEstructuras = lines.some((line) => line.structure_id !== undefined);
+  for (const line of lines) {
+    if ((estructuraId && hayEstructuras && line.structure_id !== estructuraId) || line.size_inches === null || line.design_quantity === 0) continue;
+    const clave = `${line.size_inches}:${line.shape ?? "redondo"}`;
+    const grupo = grupos.get(clave);
+    grupos.set(clave, { diamPulg: line.size_inches, forma: line.shape, unidades: (grupo?.unidades ?? 0) + line.design_quantity });
+  }
+  const mezcla = [...grupos.values()];
+  const total = mezcla.reduce((suma, linea) => suma + linea.unidades, 0);
+  return total > 0 ? mezcla : [];
 }
 
 function statusDe(causa: ErrorIA["causa"]): number {
@@ -852,13 +870,17 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // su tipo en la leyenda de Python, no como "latex balloon" (ADR-0030).
     const armadoPorEstructura = new Map((planResuelto?.armados_bouquet ?? []).map((armado) => [armado.estructura_id, armado] as const));
     const sizeMixBlock = planResuelto
-      ? bloqueMezclaPorEstructura(planResuelto.estructuras.map((estructura) => ({
-          nombre: estructura.nombre,
-          total_unidades: estructura.total_unidades,
-          repeticiones: estructura.repeticiones,
-          ubicacion_en_palabras: ubicacionPorEstructura.get(estructura.estructura_id),
-          mezcla_real: mezclaRealConArmado(estructura.mezcla_real, armadoPorEstructura.get(estructura.estructura_id)),
-        }))) ?? undefined
+      ? bloqueMezclaPorEstructura(planResuelto.estructuras.map((estructura) => {
+          const mezclaEstimada = mezclaDelEstimadoPython(materialEstimate.balloons, estructura.estructura_id);
+          const mezclaGlobalEstimada = mezclaDelEstimadoPython(materialEstimate.balloons);
+          return {
+            nombre: estructura.nombre,
+            total_unidades: estructura.total_unidades,
+            repeticiones: estructura.repeticiones,
+            ubicacion_en_palabras: ubicacionPorEstructura.get(estructura.estructura_id),
+            mezcla_real: mezclaEstimada.length ? mezclaEstimada : mezclaGlobalEstimada.length ? mezclaGlobalEstimada : mezclaRealConArmado(estructura.mezcla_real, armadoPorEstructura.get(estructura.estructura_id)),
+          };
+        })) ?? undefined
       : bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;
     // Mapa de estructuras oficiales declaradas en el plan, para nombrar el prompt de imagen con el mismo vocabulario que el catálogo.
     const officialStructures = officialStructuresDePlan(planResuelto);
@@ -884,10 +906,27 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       (planResuelto?.estructuras ?? []).flatMap((estructura) => estructura.lineas.map((linea) => [linea.product_id, linea.titulo] as const)),
     );
     const promptBase = { titulosProducto, sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length + fotosCatalogoFaltantes, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures, scenography: escenografiaParaEscena, colorPatterns, catalogoCerrado: politicaPresentacion.catalogoCerrado };
-    const providerPrompt = buildImagePrompt(promptBase);
+    const providerPrompt = filtrarTallasNoCompradas(
+      buildImagePrompt(promptBase),
+      materialEstimate.balloons.flatMap((linea) => linea.size_inches === null ? [] : [linea.size_inches]),
+    );
     if (planResuelto) {
-      const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto, escenaParaCoherencia);
-      if (!coherencia.ok) throw new Error(`El prompt no coincide con el plan resuelto: ${coherencia.errores.join("; ")}`);
+      const coherencia = verificarCoherenciaPrompt(
+        providerPrompt,
+        planResuelto,
+        escenaParaCoherencia,
+        materialEstimate.balloons.flatMap((linea) => linea.size_inches === null ? [] : [linea.size_inches]),
+      );
+      if (!coherencia.ok) {
+        console.warn("[generate] coherencia visual rechazada", {
+          request_id: generationRequestId,
+          errores: coherencia.errores,
+          tallas_del_bloque: [...(sizeMixBlock?.matchAll(/(\d+(?:\.\d+)?)-inch/g) ?? [])].map((match) => Number(match[1])),
+          tallas_del_estimado_python: [...new Set(materialEstimate.balloons.flatMap((linea) => linea.size_inches === null ? [] : [linea.size_inches]))],
+          tallas_del_prompt: [...(providerPrompt.matchAll(/(\d+(?:\.\d+)?)-inch/g))].map((match) => Number(match[1])),
+        });
+        throw new Error(`El prompt no coincide con el plan resuelto: ${coherencia.errores.join("; ")}`);
+      }
     }
     // The quote is finalized before the paid provider call. The image receives
     // the same estimate snapshot, but never gets package capacity as visual
