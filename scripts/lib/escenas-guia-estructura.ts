@@ -23,7 +23,6 @@ import { fileURLToPath } from "node:url";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { compileProductPrompt } from "@/lib/ia/kagutsuchi/lora-product-runtime";
 import { frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { CONTEXTO_CUMPLE } from "./escenas-armado-bouquet";
 import { escenaGuirnalda, GUIRNALDA_SINTETICA, planGuirnalda, PRODUCTOS_GUIRNALDA } from "./escenas-armado-guirnalda";
@@ -102,17 +101,15 @@ export function casosGuia(): CasoGuia[] {
 const TALLAS_R12 = [12];
 
 /** Caption canónico v007 de la escena del caso, como en `/api/generate` (con `maxLength` para reservar las notas de la guía). */
-export function captionDeCaso(caso: CasoGuia, trigger: string, maxLength?: number) {
+export function captionDeCaso(caso: CasoGuia, maxLength?: number) {
   const tallas = caso.escena.elements.flatMap((elemento) => (elemento.catalog_product_ids ?? []).flatMap((productId) =>
     (caso.nombre === "arco-patron" ? TALLAS_R12 : [5, 9, 12, 18]).map((diametro) => ({ elementId: elemento.element_id, productId, sizeCode: `R-${diametro}`, diameterInches: diametro }))));
   return compileProductPrompt({
     sceneSpec: caso.escena,
     visualContext: CONTEXTO_CUMPLE,
-    vocabulary: PRODUCT_VOCABULARY,
     sizeConfirmations: tallas,
-    trigger,
     maxLength,
     officialStructures: new Map([[caso.escena.elements[0]!.element_id, caso.nombre === "arco-patron" ? "arco" : "guirnalda"]]),
-    colorPatterns: caso.frases,
-  });
+    colorPatterns: caso.frases
+});
 }

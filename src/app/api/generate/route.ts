@@ -5,13 +5,11 @@ import { z } from "zod";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/uzume/build-image-prompt";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
 import { mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
-import { BASE_PROMPT_MAX_LENGTH, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/kagutsuchi/lora-prompt-format";
+import { BASE_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { resolveLoraSeed } from "@/lib/ia/kagutsuchi/lora-seed";
 import { applySceneryVisibility, elementosMaterializados, sceneryFromReference, type SceneryItem } from "@/lib/ia/referencia/reference-structure";
 import { nivelCreatividadParaGenerar, perfilCreatividad } from "@/lib/ia/escena/creatividad";
 import { aliasesDeProducto, compileProductPrompt, sizeConfirmationsFromMaterialLines } from "@/lib/ia/kagutsuchi/lora-product-runtime";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { bloqueMezclaTamanos, bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import { descripcionProductoParaImagen } from "@/lib/ia/uzume/producto-para-imagen";
@@ -26,26 +24,15 @@ import { chatDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
-import { buildLoraEditPrompt, DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit, reservaNotaGuiaEscena, reservaNotasGuia, type ImagenEditLora, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
-import { costeEntradasUsdEstimado, elegirCaptionConGuia, estructuraParaGuia, generacionAdmiteGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
+import { buildLoraEditPrompt, generarConSempertexLora, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit, reservaNotaGuiaEscena, reservaNotasGuia, type ImagenEditLora, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { costeEntradasUsdEstimado, elegirCaptionConGuia, generacionAdmiteGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { prepararGuiaEstructura } from "@/lib/ia/kagutsuchi/rasterizar-guia";
 import { generacionAdmiteGuiaEscena, planConReferencia } from "@/lib/ia/kagutsuchi/guia-escena";
 import { guiaEscenaParaGeneracion } from "@/lib/ia/kagutsuchi/preparar-guia-escena";
 import { bloqueoPorGeneracionSinReferencia, CODIGO_GENERACION_SIN_REFERENCIA, leerPoliticaDePresentacion, nivelAmbienteConPolitica, nivelCreatividadConPolitica } from "@/lib/presentacion/modo-presentacion";
-import { resolveLoraMode, type ResolvedLoraApplication } from "@/lib/lora/mode-resolver";
+import { resolveLoraMode } from "@/lib/lora/mode-resolver";
 import { FluxRevisionTranslationError, traducirRevisionParaFlux } from "@/lib/ia/kagutsuchi/revision-flux";
 
-/**
- * Guardián en el punto de uso: nunca se llama a `generarConSempertexLora` con
- * `loras` sin resolver. Es cinturón y tirantes sobre la resolución de más
- * arriba — si algo cambia esa lógica y deja de garantizar la resolución, esto
- * falla antes de tocar la red en vez de caer en un fallback anónimo. Una
- * lista vacía sí es válida: la resolvió el modo `base` (FLUX.2 sin LoRA).
- */
-function requireResolvedLoras(loras: ResolvedLoraApplication[] | undefined): ResolvedLoraApplication[] {
-  if (!loras) throw new Error("LORA_MODE_REQUIRED: no se pudo resolver un modo LoRA registrado para esta generación.");
-  return loras;
-}
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/escena/visual-context";
 import { ambienteDeFiesta, AVISO_ESCENOGRAFIA_NO_COTIZADA, nivelAmbienteDe, requiereAvisoNoCotizado } from "@/lib/ia/uzume/ambiente-fiesta";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen } from "@/lib/ia/nucleo/tipos";
@@ -563,11 +550,6 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // que llegan del cliente conviene rechazarlos antes de cotizar.
     const explicitLoraMode = "base" as const;
     const resolvedLoras = await resolveLoraMode(explicitLoraMode);
-    // Modo base (FLUX.2 sin LoRA): el caption sale en su propio dialecto, sin
-    // trigger y con su propio presupuesto, y el preflight tiene que medirlo así.
-    const dialectoPreflight = resolvedLoras && resolvedLoras.length === 0 ? ("base" as const) : undefined;
-    // FLUX base no consulta vocabulario ni selección de artifacts.
-    const vocabularioDelModo = dialectoPreflight === "base" ? [] : PRODUCT_VOCABULARY;
     // El plan se re-resuelve con el mismo backend que lo produjo (ADR 0006):
     // resolverlo con el otro podría dar otro hash y estaríamos aprobando un
     // plan distinto del que vio el cliente.
@@ -619,7 +601,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       imagenPrevia: Boolean(body.previousGeneratedImage),
     });
     if (bloqueoDeCero) throw new Error(bloqueoDeCero);
-    let motorImagenPrevisto = "fal-ai/flux-2/lora";
+    const motorImagenPrevisto = "flux";
     const auditarImagen =async (status: string, scene: SceneSpec) => {
       await registrarPlanAudit(getRagPool(), {
          requestId: approvalContext.requestId,
@@ -807,7 +789,6 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     SceneSpecSchema.parse(sceneSpec);
     if (sceneSpec.elements.length === 0 && productos.length === 0 && !body.revisionInstruction && !body.instruccion) throw new Error("Approve at least one element before generating.");
 
-    const usarLora = true;
     const capabilities = {
       exactAspectRatios: ["3:2", "1:1", "2:3", "16:9"] as PeticionImagen["aspecto"][],
       totalInputImageLimit: 0,
@@ -914,9 +895,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // the same estimate snapshot, but never gets package capacity as visual
     // quantity.
     const cotizacion: Cotizacion = cotizacionPlan;
-    // La identidad del producto se resuelve desde el vocabulario allowlisted
-    // de v007. El compilador solo recibe etiquetas ya resueltas; nunca infiere
-    // una etiqueta canónica desde color, SKU o nombre libre.
+    // El runtime describe productos desde sus títulos de catálogo.
     const sizeConfirmations = sizeConfirmationsFromMaterialLines(materialEstimate.balloons, productosConMateriales);
     const productIdAliases = new Map<string, string[]>();
     const productCatalogTitles = new Map<string, string>();
@@ -931,29 +910,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         if (product.familiaId) productCatalogTitles.set(product.familiaId, catalogTitle);
       }
     }
-    // La guía de estructura (ADR-0033) solo viaja con el caption de texto, y el
-    // formato se decide ANTES de prepararla, así que hay que saber aquí si va a
-    // haber guía. Sin esto el único LoRA aprobado nunca la recibe: su trigger es
-    // el único cuyo formato por defecto es JSON (ver `resolveLoraPromptFormat`).
+    // Las guías acompañan el único caption base de FLUX.
     // La guía de escena (GUIA_ESCENA_V1) cuenta igual: con un plan que salió de una foto de referencia, FLUX
     // recibe por `/edit` el mapa plano de toda la decoración en vez de la foto, y también viaja solo con texto.
-    const guiaEscenaPosible = Boolean(
-      featureEnabled("GUIA_ESCENA_V1")
-        && usarLora
-        && !venue
-        && !previous
-        && planResuelto
-        && planConReferencia(planResuelto.plan.estructuras),
-    );
-    const guiaPosible = guiaEscenaPosible || Boolean(
-      featureEnabled("GUIA_ESTRUCTURA_V1")
-        && usarLora
-        && !venue
-        && !previous
-        && planResuelto
-        && estructuraParaGuia(planResuelto),
-    );
-    const promptFormat = resolveLoraPromptFormat(undefined, resolvedLoras?.[0]?.trigger, guiaPosible);
     // La escenografía aprobada solo ambienta el caption de FLUX.
     // Fase 6.B. Dos fuentes legítimas y ninguna más: la escenografía que estaba
     // en la foto del propio cliente, y este interruptor explícito. El
@@ -965,11 +924,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const compilarCaptionCon = (maxLength: number | undefined, frases: typeof colorPatterns) => compileProductPrompt({
       sceneSpec: transformedSceneSpec,
       visualContext: visualContextLora,
-      vocabulary: vocabularioDelModo,
       sizeConfirmations,
       productIdAliases,
       productCatalogTitles,
-      trigger: usarLora ? resolvedLoras?.[0]?.trigger : undefined,
       maxLength,
       ambientDecor,
       creativeCues: creatividad.pistasPrompt,
@@ -981,7 +938,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // la guía de escena: con la nota dentro del mismo 1000, al caption le quedaban ~380 caracteres, dos piezas no
     // cabían, la guía se caía y el caption sin guía (frases de Python incluidas) fallaba en 1152 (2026-10-06,
     // FLUX_PREFLIGHT_FAILED). El tope duro del prompt que recibe fal sigue siendo LORA_EDIT_PROMPT_MAX_LENGTH.
-    const limiteConGuiaEscena = dialectoPreflight === "base" ? BASE_PROMPT_MAX_LENGTH + reservaNotaGuiaEscena() : undefined;
+    const limiteConGuiaEscena = BASE_PROMPT_MAX_LENGTH + reservaNotaGuiaEscena();
     // Guía de escena (GUIA_ESCENA_V1, encendida): el plan salió de una foto de referencia, así que FLUX recibe
     // por `/edit` UNA imagen con los globos de todas las piezas, dibujados por el motor en Python y colocados
     // donde la foto tiene cada una. La foto del cliente nunca sale hacia fal. Si la guía no se puede construir
@@ -989,12 +946,12 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // Con foto de referencia sustituye a la guía de estructura, que queda para los planes sin foto.
     const admiteGuiaEscena = Boolean(planResuelto && resolvedLoras && generacionAdmiteGuiaEscena({
       bandera: featureEnabled("GUIA_ESCENA_V1"),
-      usarLora,
+      usarLora: true,
       hibrido: false,
       fotoEspacio: Boolean(venue),
       resultadoPrevio: Boolean(previous),
       editApagado: false,
-      formatoTexto: promptFormat === "texto",
+      formatoTexto: true,
       conReferencia: planConReferencia(planResuelto.plan.estructuras),
     }));
     const guiaEscena = planResuelto && resolvedLoras
@@ -1010,7 +967,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
             correlationId: generationCorrelationId,
             parentSignal: request.signal,
           })).resultado,
-          maximo: limiteConGuiaEscena ?? LORA_PROMPT_MAX_LENGTH,
+          maximo: limiteConGuiaEscena,
           compilar: compilarCaption,
           // Con guía, la forma y los colores de cada pieza los dibuja el mapa: las frases de Python de forma y
           // de patrón son lo prescindible si no caben con su nota (2026-10-04: dos piezas del motor orgánico
@@ -1019,13 +976,10 @@ async function generar(request: Request, generationRequestId: string): Promise<R
           compilarSinFrases: (maxLength) => compilarCaptionCon(maxLength, colorPatterns?.filter((frase) => frase.armado || frase.guirnalda)),
           largo: (compilacion) => compilacion.prompt.length,
           cabe: (compilacion, imagenes) => preflightLoraPrompt({
-            dialect: dialectoPreflight,
             sceneSpec: transformedSceneSpec,
             clauses: compilacion.clauses,
-            prompt: ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(compilacion.prompt, resolvedLoras), imagenes), resolvedLoras),
-            triggers: resolvedLoras.map((lora) => lora.trigger),
-            vocabulary: vocabularioDelModo,
-            ...(limiteConGuiaEscena ? { maxLength: limiteConGuiaEscena } : {}),
+            prompt: buildLoraEditPrompt(compilacion.prompt, imagenes),
+            maxLength: limiteConGuiaEscena,
           }).ok,
           signal: request.signal,
         })
@@ -1041,29 +995,26 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // la generación sigue sin guía y se registra.
     const guiaEstructura = !admiteGuiaEscena && planResuelto && resolvedLoras && generacionAdmiteGuia({
       bandera: featureEnabled("GUIA_ESTRUCTURA_V1"),
-      usarLora,
+      usarLora: true,
       hibrido: false,
       fotoEspacio: Boolean(venue),
       resultadoPrevio: Boolean(previous),
       editApagado: false,
-      formatoTexto: promptFormat === "texto",
+      formatoTexto: true,
     })
       ? await prepararGuiaEstructura(planResuelto, aspecto)
       : null;
     const captionConGuia = guiaEstructura && resolvedLoras
       ? elegirCaptionConGuia<ReturnType<typeof compilarCaption>, ImagenGuiaLora>({
           imagenes: guiaEstructura.imagenes,
-          maximo: LORA_PROMPT_MAX_LENGTH,
+          maximo: BASE_PROMPT_MAX_LENGTH,
           reserva: reservaNotasGuia,
           compilar: compilarCaption,
           largo: (compilacion) => compilacion.prompt.length,
           cabe: (compilacion, imagenes) => preflightLoraPrompt({
-            dialect: dialectoPreflight,
             sceneSpec: transformedSceneSpec,
             clauses: compilacion.clauses,
-            prompt: ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(compilacion.prompt, resolvedLoras), imagenes), resolvedLoras),
-            triggers: resolvedLoras.map((lora) => lora.trigger),
-            vocabulary: vocabularioDelModo,
+            prompt: buildLoraEditPrompt(compilacion.prompt, imagenes),
           }).ok,
         })
       : null;
@@ -1089,70 +1040,31 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       clauses: productPromptCompilation.clauses,
       compilerVersion: productPromptCompilation.captionCompilerVersion,
     };
-    const catalogBackedElementCount = transformedSceneSpec.elements.filter((element) => element.source_type === "catalog_backed").length;
-    if (usarLora && dialectoPreflight !== "base" && (productPromptCompilation.unresolved_products.length || (catalogBackedElementCount > 0 && productPromptCompilation.legacy))) {
-      const unresolved = productPromptCompilation.unresolved_products.map((product) => product.product_id ?? product.title ?? "unknown");
-      throw new Error(`LORA_PRODUCT_VOCABULARY_FAILED: no se pudo resolver identidad canónica para ${unresolved.join(", ") || "uno o más productos visibles"}.`);
-    }
-    const loraPrompt = loraCompilation.prompt;
-    // La lista resuelta está vacía en base: no se antepone ni exige trigger.
-    const effectiveLoraPrompt = resolvedLoras ? ensureLoraTriggers(loraPrompt, resolvedLoras) : loraPrompt;
-    const triggersPreflight = resolvedLoras ? resolvedLoras.map((lora) => lora.trigger) : [DEFAULT_SEMPERTEX_LORA_TRIGGER];
+    const promptLoraParaGenerar = loraCompilation.prompt;
     const loraPreflight = preflightLoraPrompt({
-            dialect: dialectoPreflight,
       sceneSpec: transformedSceneSpec,
       clauses: loraCompilation.clauses,
-      prompt: effectiveLoraPrompt,
-      triggers: triggersPreflight,
-      vocabulary: vocabularioDelModo,
+      prompt: promptLoraParaGenerar,
     });
-    const effectiveJsonPrompt = includesJsonPrompt(promptFormat) && resolvedLoras
-      ? ensureLoraTriggers(productPromptCompilation.jsonPrompt, resolvedLoras)
-      : undefined;
-    const jsonPreflight = effectiveJsonPrompt
+    const loraPreflightParaGenerar = imagenesGuia
       ? preflightLoraPrompt({
-            dialect: dialectoPreflight,
           sceneSpec: transformedSceneSpec,
           clauses: loraCompilation.clauses,
-          prompt: effectiveJsonPrompt,
-          triggers: triggersPreflight,
-          vocabulary: vocabularioDelModo,
-          maxLength: LORA_JSON_PROMPT_MAX_LENGTH,
+          prompt: buildLoraEditPrompt(promptLoraParaGenerar, imagenesGuia),
+          maxLength: limiteConGuiaEscena,
         })
-      : undefined;
-    const promptPrincipal = promptFormat === "json" && effectiveJsonPrompt ? effectiveJsonPrompt : effectiveLoraPrompt;
-    const promptLoraParaGenerar = promptPrincipal;
-    const loraPreflightParaGenerar = imagenesGuia && resolvedLoras
-        // Con guía, el preflight (y su límite de largo) mira el prompt con las notas: el que recibe fal.
-        ? preflightLoraPrompt({
-            dialect: dialectoPreflight,
-            sceneSpec: transformedSceneSpec,
-            clauses: loraCompilation.clauses,
-            prompt: ensureLoraTriggers(buildLoraEditPrompt(promptLoraParaGenerar, imagenesGuia), resolvedLoras),
-            triggers: resolvedLoras.map((lora) => lora.trigger),
-            vocabulary: vocabularioDelModo,
-            ...(guiaEscena.imagenes && limiteConGuiaEscena ? { maxLength: limiteConGuiaEscena } : {}),
-          })
-        : loraPreflight;
-    const loraLanguageLeaks = findLoraPromptLanguageLeaks(effectiveJsonPrompt ? `${loraPrompt} ${effectiveJsonPrompt}` : loraPrompt);
+      : loraPreflight;
+    const loraLanguageLeaks = findLoraPromptLanguageLeaks(promptLoraParaGenerar);
     if (loraLanguageLeaks.length) {
       throw new Error(`FLUX_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (${loraLanguageLeaks.join(", ")})`);
     }
-    if (jsonPreflight && !jsonPreflight.ok) {
-      throw new Error(`FLUX_PREFLIGHT_FAILED: prompt JSON — ${jsonPreflight.errors.join("; ")}`);
-    }
-    // El caption del LoRA nunca pasa por verificarCoherenciaPrompt (no lleva
-    // diámetros ni nombres del plan), así que sus colores por estructura se
-    // comprueban sobre las cláusulas compiladas, con el mismo traductor.
-    if (planResuelto) {
-      const coherenciaLora = verificarColoresCaptionLora(planResuelto, escenaParaCoherencia, { clausulas: loraCompilation.clauses, traducirColor: translateLoraColor });
-      if (!coherenciaLora.ok) throw new Error(`El caption LoRA no coincide con el plan resuelto: ${coherenciaLora.errores.join("; ")}`);
-    }
-    if (includesTextPrompt(promptFormat) && !loraPreflightParaGenerar.ok) {
-      // Sin semánticas canónicas del plan (selección suelta sin propuesta
-      // aprobada) ninguna compactación ni reintento produce un prompt válido.
+    if (!loraPreflightParaGenerar.ok) {
       const codigo = loraPreflightParaGenerar.requiresPlanSemantics ? "FLUX_PLAN_REQUIRED" : "FLUX_PREFLIGHT_FAILED";
       throw new Error(`${codigo}: ${loraPreflightParaGenerar.errors.join("; ")}`);
+    }
+    if (planResuelto) {
+      const coherenciaLora = verificarColoresCaptionLora(planResuelto, escenaParaCoherencia, { clausulas: loraCompilation.clauses, traducirColor: translateLoraColor });
+      if (!coherenciaLora.ok) throw new Error(`El caption FLUX no coincide con el plan resuelto: ${coherenciaLora.errores.join("; ")}`);
     }
     const revisionFlux = revisionInstruction?.trim()
       ? await traducirRevisionParaFlux(revisionInstruction, async (texto) => {
@@ -1174,34 +1086,26 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const promptFlux = `${promptLoraParaGenerar}${sufijoRevision}`;
     const referenciasEtapa1 = selected.inputs;
     const imagenesEdit: readonly ImagenEditLora[] = imagenesGuia ?? referenciasParaLoraEdit(selected.inputs);
-    motorImagenPrevisto = imagenesEdit.length
-      ? "fal-ai/flux-2/lora/edit"
-      : "fal-ai/flux-2/lora";
-    // Preflight del prompt FINAL que recibe fal: con foto del espacio o
-    // referencias, el adaptador le añade la guía de imágenes de entrada
-    // DESPUÉS de todas las comprobaciones anteriores, que solo ven el caption.
-    // Fallar cerrado aquí es lo que impide mandar español, ids o datos
-    // comerciales al proveedor.
-    {
-      const referenciasEdit = imagenesEdit;
-      const promptsLora: Array<readonly [string, string | undefined]> = [["texto", promptLoraParaGenerar], ["JSON", effectiveJsonPrompt]];
-      for (const [etiqueta, prompt] of promptsLora) {
-        if (!prompt) continue;
-        const promptPreflight = buildLoraEditPrompt(prompt, referenciasEdit);
-        const promptFinal = `${promptPreflight}${prompt === promptLoraParaGenerar ? sufijoRevision : ""}`;
-        const fugas = [...findLoraPromptLanguageLeaks(promptFinal), ...findLoraPromptProductLeaks(promptFinal, vocabularioDelModo)];
-        if (fugas.length) throw new Error(`FLUX_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor filtra ${fugas.join(", ")}`);
-        if (promptFinal.length > LORA_EDIT_PROMPT_MAX_LENGTH) {
-          throw new Error(`FLUX_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor mide ${promptFinal.length} y supera el límite ${LORA_EDIT_PROMPT_MAX_LENGTH}`);
-        }
-      }
+    // El preflight inspecciona texto final, incluidas referencias y revisión traducida.
+    const promptFinal = `${buildLoraEditPrompt(promptLoraParaGenerar, imagenesEdit)}${sufijoRevision}`;
+    const preflightFinal = preflightLoraPrompt({
+      sceneSpec: transformedSceneSpec,
+      clauses: loraCompilation.clauses,
+      prompt: promptFinal,
+      maxLength: LORA_EDIT_PROMPT_MAX_LENGTH,
+    });
+    const fugasFinales = [...findLoraPromptLanguageLeaks(promptFinal), ...findLoraPromptProductLeaks(promptFinal)];
+    if (fugasFinales.length) throw new Error(`FLUX_EDIT_PREFLIGHT_FAILED: el prompt enviado a FLUX filtra ${fugasFinales.join(", ")}`);
+    if (promptFinal.length > LORA_EDIT_PROMPT_MAX_LENGTH) {
+      throw new Error(`FLUX_EDIT_PREFLIGHT_FAILED: el prompt enviado a FLUX mide ${promptFinal.length} y supera el límite ${LORA_EDIT_PROMPT_MAX_LENGTH}`);
     }
+    if (!preflightFinal.ok) throw new Error(`FLUX_PREFLIGHT_FAILED: ${preflightFinal.errors.join("; ")}`);
     // Solo tiene sentido encadenar contexto real cuando esta petición ES una
     // revisión de una imagen previa; una generación nueva no hereda otra.
     // Semilla fija para atribuir esta llamada a fal.
     const loraSeed = resolveLoraSeed(undefined);
     const generarLora = (prompt: string, intento: number) => generarConSempertexLora(prompt, aspecto, referenciasEtapa1, {
-      loras: requireResolvedLoras(resolvedLoras),
+      loras: resolvedLoras ?? [],
       signal: request.signal,
       telemetria: { ...contextoTelemetria, intento },
       guidanceScale: creatividad.guidanceScale,
@@ -1213,9 +1117,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     await auditarImagen("IMAGEN_GENERADA", transformedSceneSpec);
     // Etiqueta explícita del motor único de imagen.
     const etiquetaFlux = "FLUX base";
-    const promptsRespuesta = promptFormat === "ambos" && effectiveJsonPrompt
-        ? { [`${etiquetaFlux} · texto`]: effectiveLoraPrompt, [`${etiquetaFlux} · JSON`]: effectiveJsonPrompt }
-        : { [promptFormat === "json" ? `${etiquetaFlux} · JSON` : etiquetaFlux]: promptPrincipal };
+    const promptsRespuesta = { [etiquetaFlux]: promptFlux };
     const promptRespuesta = promptFlux;
     return Response.json({
       imagen: `data:${imagen.mime};base64,${imagen.base64}`,
@@ -1237,9 +1139,6 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     }
     if (error instanceof FluxRevisionTranslationError) {
       return responder({ error: error.message }, 503);
-    }
-    if (error instanceof Error && /^LORA_(?:MODE|SELECTION|ARTIFACT|SPECIALIZATION|RUN|EVALUATION|PROVIDER|INCOMPATIBLE|MULTI|DATASET_ALLOWLIST|PRODUCT_VOCABULARY)/.test(error.message)) {
-      return responder({ error: error.message }, 409);
     }
     if (error instanceof Error && error.message.startsWith(`${CODIGO_GENERACION_SIN_REFERENCIA}:`)) {
       return responder({ error: error.message, causa: "sin_referencia" }, 422);

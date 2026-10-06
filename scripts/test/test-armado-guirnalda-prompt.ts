@@ -4,18 +4,17 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
-import { LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor, type LoraVisualClause } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
+import { LORA_PROMPT_MAX_LENGTH, translateLoraColor, type LoraVisualClause } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
-import { buildLoraEditPrompt, ensureLoraTriggers } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { buildLoraEditPrompt } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, fraseInstanciaConArmadoGuirnalda } from "@/lib/ia/uzume/armado-en-prompt";
 import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_GARLAND_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, LORA_PRESENTATION_INSTRUCTION, piezasDeLosArmados, promptPresentacionLora } from "./fixtures/gemini-composition-historica";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";
 import { verificarCoherenciaPrompt, verificarColoresCaptionLora } from "@/lib/plan/coherencia";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { captionLegacyDePlan, escenaDePlan, escenaParaCoherencia, promptGeminiDePlan } from "../lib/escenas-armado-bouquet";
+import { captionBaseDePlan, escenaDePlan, escenaParaCoherencia, promptGeminiDePlan } from "../lib/escenas-armado-bouquet";
 import {
   captionCanonicoGuirnalda,
   casosSinArmado,
@@ -28,7 +27,7 @@ import {
 
 /**
  * El armado de una guirnalda (ADR-0032, entrega E5) en la generación: Gemini
- * (Uzume), el caption del LoRA (Kagutsuchi, dialectos v007 y v004) y la etapa
+ * (Uzume), el caption base de FLUX (Kagutsuchi) y la etapa
  * 2 del híbrido.
  *
  * TypeScript no redacta ni cuenta un armado: inserta tal cual las frases que
@@ -100,8 +99,8 @@ function clausulaDe(clauses: readonly LoraVisualClause[], elementId: string): Lo
   return clausula;
 }
 
-function preflight(sceneSpec: SceneSpec, resultado: { clauses: LoraVisualClause[]; prompt: string }, prompt = resultado.prompt, maxLength?: number, trigger = "eventdecor_style_v2") {
-  return preflightLoraPrompt({ sceneSpec, clauses: resultado.clauses, prompt, triggers: [trigger], vocabulary: PRODUCT_VOCABULARY, maxLength });
+function preflight(sceneSpec: SceneSpec, resultado: { clauses: LoraVisualClause[]; prompt: string }, prompt = resultado.prompt, maxLength?: number) {
+  return preflightLoraPrompt({ sceneSpec, clauses: resultado.clauses, prompt, maxLength });
 }
 
 /** Las frases de Python de un plan, pasadas a la guirnalda de la escena sintética. */
@@ -293,11 +292,9 @@ function loraCanonico(): void {
     const frases = frasesSinteticas(nombre);
     const frase = frases[0]!.prompt_lora;
     const escena = escenaGuirnalda({ placement: PLACEMENT_DE[nombre] });
-    for (const [trigger, dialecto] of [["eventdecor_style_v3", "product_v007"], ["eventdecor_style_v2", "scene_v004"]] as const) {
-      // En el híbrido el caption comparte presupuesto con la cláusula de presentación.
       for (const maxLength of [undefined, LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length]) {
-        const resultado = captionCanonicoGuirnalda(escena, frases, trigger, maxLength);
-        const caso = `${nombre} ${dialecto}${maxLength ? " híbrido" : ""}: ${resultado.prompt}`;
+        const resultado = captionCanonicoGuirnalda(escena, frases, maxLength);
+        const caso = `${nombre}${maxLength ? " híbrido" : ""}: ${resultado.prompt}`;
         assert.equal(resultado.legacy, false, caso);
         assert.deepEqual(resultado.unresolved_products, [], caso);
         const clausula = clausulaDe(resultado.clauses, GUIRNALDA_SINTETICA);
@@ -310,25 +307,18 @@ function loraCanonico(): void {
         assert.doesNotMatch(clausula.colorPattern ?? "", /mixed organically/, caso);
         const limite = maxLength ?? LORA_PROMPT_MAX_LENGTH;
         assert.ok(resultado.prompt.length <= limite, `${caso} (${resultado.prompt.length} > ${limite})`);
-        const texto = ensureLoraTriggers(maxLength ? promptPresentacionLora(resultado.prompt) : resultado.prompt, [{ path: "armado", trigger, scale: 1 }]);
-        const reporte = preflight(escena, resultado, texto, undefined, trigger);
+        const texto = maxLength ? promptPresentacionLora(resultado.prompt) : resultado.prompt;
+        const reporte = preflight(escena, resultado, texto);
         assert.equal(reporte.ok, true, `${caso}: ${reporte.errors.join("; ")}`);
         assert.deepEqual(findLoraPromptLanguageLeaks(texto), [], caso);
-        if (!maxLength) {
-          const json = ensureLoraTriggers(resultado.jsonPrompt, [{ path: "armado", trigger, scale: 1 }]);
-          const reporteJson = preflight(escena, resultado, json, LORA_JSON_PROMPT_MAX_LENGTH, trigger);
-          assert.equal(reporteJson.ok, true, `${caso} JSON: ${reporteJson.errors.join("; ")}`);
-          assert.deepEqual(findLoraPromptLanguageLeaks(json), [], `${caso} JSON`);
-        }
       }
-    }
     // La compactación nunca toca la frase del armado: alterarla falla cerrado.
     const resultado = captionCanonicoGuirnalda(escena, frases);
     const alterado = preflight(escena, resultado, resultado.prompt.replace(" in clusters of ", " in groups of "));
     assert.equal(alterado.ok, false, nombre);
     assert.match(alterado.errors.join("; "), /patrón de color ausente o alterado: EST_02_GUIRNALDA/);
   }
-  console.log(`[PASS] LoRA canónico: ${CASOS_LORA.length} armados siguen a los materiales una vez, sin otra guirnalda, dentro del largo (también en el híbrido) y pasan idioma y preflight en v007 y v004`);
+  console.log(`[PASS] FLUX base: ${CASOS_LORA.length} armados siguen a los materiales una vez, dentro del largo y pasan idioma y preflight`);
 }
 
 function loraSoportes(): void {
@@ -344,10 +334,10 @@ function loraSoportes(): void {
   ];
   for (const [nombre, soporte] of soportes) {
     const frases = frasesSinteticas(nombre);
-    const prompt = captionCanonicoGuirnalda(escenaGuirnalda({ placement: PLACEMENT_DE[nombre] }), frases, "eventdecor_style_v2").prompt;
-    assert.match(prompt, new RegExp(`an organic balloon garland of [^,]* balloons ${soporte.source}`), `${nombre}: ${prompt}`);
+    const prompt = captionCanonicoGuirnalda(escenaGuirnalda({ placement: PLACEMENT_DE[nombre] }), frases).prompt;
+    assert.match(prompt, soporte, `${nombre}: ${prompt}`);
   }
-  console.log("[PASS] LoRA v004: el descriptor de la guirnalda se especializa por soporte justo detrás de sus materiales");
+  console.log("[PASS] FLUX base: el descriptor de la guirnalda sigue a sus materiales según el soporte");
 }
 
 function loraRepetida(): void {
@@ -361,25 +351,25 @@ function loraRepetida(): void {
   console.log("[PASS] LoRA: las instancias repetidas comparten una cláusula con la frase una vez");
 }
 
-function loraLegacyDelPlan(): void {
+function loraBaseDelPlan(): void {
   for (const nombre of ["pared", "colgada", "pared-patron-por-racimo"]) {
     const fijado = planGuirnalda(nombre);
     const frases = frasesDeEstructuras(fijado.plan)!;
     const escena = escenaDePlan(fijado);
-    for (const dialect of ["product_v007", "scene_v004"] as const) {
-      const caption = captionLegacyDePlan(fijado, dialect, frases);
+    {
+      const caption = captionBaseDePlan(fijado, frases);
       const clausula = clausulaDe(caption.clauses, GUIRNALDA_PLAN);
       assert.equal(clausula.colorPattern, frases[0]!.prompt_lora);
       assert.equal(vecesEn(caption.prompt, frases[0]!.prompt_lora), 1, caption.prompt);
       assert.ok(caption.prompt.length <= LORA_PROMPT_MAX_LENGTH);
       const reporte = preflight(escena, caption);
-      assert.equal(reporte.ok, true, `${nombre} ${dialect}: ${reporte.errors.join("; ")}`);
+      assert.equal(reporte.ok, true, `${nombre}: ${reporte.errors.join("; ")}`);
       assert.deepEqual(findLoraPromptLanguageLeaks(caption.prompt), []);
       const colores = verificarColoresCaptionLora(fijado.plan, escenaParaCoherencia(escena, frases), { clausulas: caption.clauses, traducirColor: translateLoraColor });
       assert.equal(colores.ok, true, colores.errores.join("; "));
     }
   }
-  console.log("[PASS] LoRA legacy: el armado del plan entra en la cláusula de la guirnalda con coherencia de colores y preflight");
+  console.log("[PASS] FLUX base: el armado del plan entra en la cláusula de la guirnalda con coherencia de colores y preflight");
 }
 
 // ---------------------------------------------------------------------------
@@ -530,16 +520,16 @@ function sinCintasEnLaImagen(): void {
   // hasta el prompt que recibe fal (`buildLoraEditPrompt` sin referencias).
   const sinteticas = frasesSinteticas("pared-espiral-tres-colores");
   const escena = escenaGuirnalda();
-  for (const trigger of ["eventdecor_style_v3", "eventdecor_style_v2"]) {
+  {
     for (const hibrido of [false, true]) {
-      const resultado = captionCanonicoGuirnalda(escena, sinteticas, trigger, hibrido ? LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length : undefined);
-      const texto = ensureLoraTriggers(hibrido ? promptPresentacionLora(resultado.prompt) : resultado.prompt, [{ path: "armado", trigger, scale: 1 }]);
+      const resultado = captionCanonicoGuirnalda(escena, sinteticas, hibrido ? LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length : undefined);
+      const texto = hibrido ? promptPresentacionLora(resultado.prompt) : resultado.prompt;
       const aFal = buildLoraEditPrompt(texto, []);
-      const caso = `${trigger}${hibrido ? " híbrido" : ""}: ${aFal}`;
+      const caso = `${hibrido ? "híbrido" : "base"}: ${aFal}`;
       assert.equal(vecesEn(aFal, sinteticas[0]!.prompt_lora), 1, caso);
       assert.doesNotMatch(aFal, CINTAS, caso);
       assert.ok(aFal.length <= LORA_PROMPT_MAX_LENGTH, caso);
-      assert.equal(preflight(escena, resultado, texto, undefined, trigger).ok, true, caso);
+      assert.equal(preflight(escena, resultado, texto).ok, true, caso);
       if (hibrido) {
         const candado = hardLockComposicionGemini(...candadosDeComposicion(resultado.clauses), conArmadoGuirnaldaEnCaption(resultado.clauses), piezasDeLosArmados(resultado.clauses));
         // En la pared, tras el de las cintas, el de los extremos libres (decisión 28).
@@ -549,7 +539,7 @@ function sinCintasEnLaImagen(): void {
   }
   // Sin armado nada cambia: una guirnalda clásica con espiral conserva su frase de siempre.
   assert.match(frasesDeEstructuras(planGuirnalda("clasica-patron-sin-armado").plan)![0]!.prompt_lora, /^wrapped in a spiral of /);
-  console.log("[PASS] 2026-09-28: la espiral de una guirnalda armada llega como racimos de globos, sin cintas, a Gemini, al caption LoRA (v007 y v004, texto e híbrido) y al candado de la etapa 2");
+  console.log("[PASS] la espiral de una guirnalda armada llega como racimos de globos, sin cintas, a Gemini, al caption base y al candado de la etapa 2");
 }
 
 /**
@@ -564,15 +554,14 @@ function enAltoNuncaUnArcoDePie(): void {
   const escena = escenaSoloGuirnalda();
   assert.equal(escena.elements.length, 1);
   const forma = "mounted flat high on the wall, higher on the left, curving along the top and dropping lower at the right end, both ends free, in clusters of four";
-  for (const [dialecto, trigger] of [["v007", undefined], ["v004", "eventdecor_style_v2"]] as const) {
-    const resultado = captionCanonicoGuirnalda(escena, frases, trigger);
-    assert.ok(resultado.prompt.includes(forma), `${dialecto}: ${resultado.prompt}`);
-    assert.doesNotMatch(resultado.prompt, /\barch(es)?\b|\bstands?\b|\blegs?\b|grounded supports|floor contact/i, `${dialecto}: ${resultado.prompt}`);
-    assert.ok(resultado.prompt.endsWith("natural depth."), `${dialecto}: ${resultado.prompt}`);
-    assert.ok(resultado.prompt.length <= LORA_PROMPT_MAX_LENGTH, dialecto);
-    const reporte = preflight(escena, resultado, resultado.prompt, undefined, trigger ?? "eventdecor_style_v2");
-    assert.equal(reporte.ok, true, `${dialecto}: ${reporte.errors.join("; ")}`);
-    assert.doesNotMatch(resultado.jsonPrompt, /grounded supports/, `${dialecto} JSON`);
+  {
+    const resultado = captionCanonicoGuirnalda(escena, frases);
+    assert.ok(resultado.prompt.includes(forma), resultado.prompt);
+    assert.doesNotMatch(resultado.prompt, /\barch(es)?\b|\bstands?\b|\blegs?\b|grounded supports|floor contact/i, resultado.prompt);
+    assert.ok(resultado.prompt.endsWith("natural depth."), resultado.prompt);
+    assert.ok(resultado.prompt.length <= LORA_PROMPT_MAX_LENGTH);
+    const reporte = preflight(escena, resultado, resultado.prompt);
+    assert.equal(reporte.ok, true, reporte.errors.join("; "));
     // La misma escena SIN el armado de ADR-0032 tampoco pide apoyos en el piso desde el 2026-10-03, y es
     // un cambio buscado: la regla que esta prueba defiende es «cuando todas las piezas van en alto, no se
     // piden soportes en el suelo», y hasta hoy lo único que sabía decir «en alto» era este armado, que vive
@@ -580,12 +569,11 @@ function enAltoNuncaUnArcoDePie(): void {
     // las del motor orgánico (ADR-0034) y no lo llevan: TODAS salían con «grounded supports», y el usuario
     // volvió a ver el arco de pie con patas que la decisión 28 ya había anotado. La ubicación del plan
     // (`fondo_pared`, `techo`) dice lo mismo y siempre está, así que ahora también cuenta.
-    const sinArmado = captionCanonicoGuirnalda(escena, undefined, trigger);
-    assert.match(sinArmado.prompt, /natural depth\.$/, `${dialecto}: ${sinArmado.prompt}`);
-    assert.doesNotMatch(sinArmado.jsonPrompt, /grounded supports/);
+    const sinArmado = captionCanonicoGuirnalda(escena);
+    assert.match(sinArmado.prompt, /natural depth\.$/, sinArmado.prompt);
     // Lo que sí sigue necesitando el armado es la FORMA: sin él la guirnalda no sabe que se arquea ni que
     // cae a la derecha; lo que la ubicación aporta es que corre a lo largo de la pared y no es un portal.
-    if (trigger) assert.ok(sinArmado.prompt.includes("running along the rear wall"), sinArmado.prompt);
+    assert.ok(sinArmado.prompt.includes("running along the rear wall"), sinArmado.prompt);
     // Híbrido: el candado descarta patas y soportes de la imagen LoRA.
     const piezas = piezasDeLosArmados(resultado.clauses);
     assert.equal(piezas.guirnalda.enAlto, true);
@@ -601,7 +589,7 @@ function enAltoNuncaUnArcoDePie(): void {
   const gemini = promptGeminiGuirnalda(escena, frases);
   assert.ok(gemini.includes("bowing gently upward along the top, its middle about 0.25 m above the straight line between its ends"), gemini);
   assert.ok(gemini.includes("Its right end hangs about 0.63 m lower than its left end, so the garland slopes down toward the right. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor."), gemini);
-  console.log("[PASS] decisión 28: una guirnalda en la pared se describe arqueada y con los extremos libres, sin \"grounded supports\" ni arco de pie, en v007, v004, JSON e híbrido; sin armado conserva al menos que corre a lo largo de la pared");
+  console.log("[PASS] decisión 28: una guirnalda en la pared se describe arqueada y con los extremos libres, sin arco de pie; sin armado conserva que corre a lo largo de la pared");
 }
 
 function main(): void {
@@ -615,7 +603,7 @@ function main(): void {
   loraCanonico();
   loraSoportes();
   loraRepetida();
-  loraLegacyDelPlan();
+  loraBaseDelPlan();
   hibridoConArmado();
   anfitrionaRepetida();
   mesaSegunElSoporte();

@@ -63,10 +63,8 @@ const PROMPT_PIDE_SEPARACION = /stand apart with an open gap between them/;
  * comprobación es la que detecta que diverjan.
  */
 function paridadConPrompt(caso: string, { escena, officialStructures }: PlanAprobado, pideSeparacion: boolean): void {
-  for (const dialect of ["product_v007", "scene_v004"] as const) {
-    const prompt = compileLoraCaption({ sceneSpec: escena, visualContext: CONTEXTO, officialStructures, dialect }).prompt;
-    assert.equal(PROMPT_PIDE_SEPARACION.test(prompt), pideSeparacion, `${caso} (${dialect}): el prompt LoRA ${pideSeparacion ? "debe" : "no debe"} pedir separación: ${prompt}`);
-  }
+  const prompt = compileLoraCaption({ sceneSpec: escena, visualContext: CONTEXTO, officialStructures }).prompt;
+  assert.equal(PROMPT_PIDE_SEPARACION.test(prompt), pideSeparacion, `${caso}: el prompt LoRA ${pideSeparacion ? "debe" : "no debe"} pedir separación: ${prompt}`);
   const promptGemini = buildImagePrompt({ sceneSpec: escena, officialStructures });
   assert.equal(/SEPARATE SIDE PIECES:/.test(promptGemini), pideSeparacion, `${caso}: el prompt de imagen ${pideSeparacion ? "debe" : "no debe"} pedir el hueco abierto`);
 }

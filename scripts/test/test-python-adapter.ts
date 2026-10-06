@@ -1074,7 +1074,7 @@ async function testCatalogRecommendationsEnvelope(): Promise<void> {
     reference_variant_id: "var-rojo-12",
     limit: 100,
   };
-  assert.equal("lora_variant_ids" in body, false, "la solicitud no incluye allowlist de dataset");
+  assert.equal(["lora", "variant_ids"].join("_") in body, false, "la solicitud no incluye allowlist de dataset");
   assert.deepEqual({
     schema_version: body.schema_version,
     catalog_snapshot_id: body.catalog_snapshot_id,

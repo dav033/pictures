@@ -3101,7 +3101,7 @@ export async function llamarPythonLecturaUnica(
  * `generarConSempertexLora` makes directly today
  * (src/lib/ia/kagutsuchi/sempertex-lora.ts). `prompt`, `loras`, `mode` and
  * every sizing/guidance value already reflect TypeScript's composition
- * (buildLoraEditPrompt, ensureLoraTriggers, referenciasParaLoraEdit,
+ * (buildLoraEditPrompt, referenciasParaLoraEdit,
  * guidanceScaleSeguro) -- Python only talks to the provider and applies the
  * SSRF allow-list. Uses `maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES` (up to
  * 4 reference images for `/edit`) and a `deadlineMs` above the shared

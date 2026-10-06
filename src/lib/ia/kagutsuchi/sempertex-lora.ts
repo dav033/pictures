@@ -9,14 +9,6 @@ const TEXT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora";
 const EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora/edit";
 const FAL_QUEUE_HOSTS = new Set(["queue.fal.run", "rest.alpha.fal.ai"]);
 const MAX_FAL_IMAGE_BYTES = 16_000_000;
-/**
- * Trigger neutro usado SOLO para preflight/telemetría cuando todavía no hay
- * una aplicación LoRA resuelta (por ejemplo, al reportar qué trigger se
- * esperaría). Nunca se usa para armar un payload real: `lorasFor` exige
- * `ResolvedLoraApplication[]` explícito y falla si no lo recibe. Tampoco en
- * modo `base`, que no lleva trigger.
- */
-export const DEFAULT_SEMPERTEX_LORA_TRIGGER = "eventdecor_style_v3" as const;
 const MAX_EDIT_IMAGES = 4;
 /** `promptVersion` de la telemetría cuando el `/edit` lleva la guía de estructura (ADR-0033). */
 export const PROMPT_VERSION_GUIA = "guia-estructura.v1";
@@ -349,7 +341,7 @@ const FRASE_POR_ROL: Readonly<Record<ImageInput["role"], string>> = {
 
 /**
  * Longitud máxima del prompt que llega a `/edit`. Es el presupuesto del caption
- * más largo (`LORA_JSON_PROMPT_MAX_LENGTH`, 1800) más el bloque fijo de
+ * más largo (1000 caracteres) más el bloque fijo de
  * INPUT IMAGES con hasta cuatro entradas etiquetadas (menos de 700 caracteres).
  * Superarla significa que algo ajeno se coló en el prompt, no que el diseño sea
  * grande, así que la ruta falla cerrada antes de llamar al proveedor.
@@ -413,8 +405,8 @@ export function reservaNotasGuia(conCarta: boolean): number {
 }
 
 /**
- * `trigger, <nota de la guía>\n\n<caption>[\n\n<nota de la carta>]`, como el
- * origen: la nota va delante porque es la que evita el dibujo retocado. La
+ * `<nota de la guía>\n\n<caption>[\n\n<nota de la carta>]`: la nota va delante
+ * porque es la que evita el dibujo retocado. La
  * guía es la primera imagen y solo la sigue su carta; cualquier otra mezcla
  * falla cerrada antes de llegar al proveedor.
  */
@@ -424,10 +416,8 @@ function promptConGuia(prompt: string, references: readonly ImagenEditLora[]): s
     throw new Error("LORA_GUIA_INVALIDA: la guía de estructura va primera y solo la acompaña su carta de color.");
   }
   const texto = prompt.trim();
-  const triggers = LEADING_TRIGGER_RUN.exec(texto)?.[0] ?? "";
-  const cuerpo = texto.slice(triggers.length).trim();
   const carta = resto.length ? `\n\n${notaCartaColor(references.length)}` : "";
-  return `${triggers}${NOTA_GUIA_ESTRUCTURA}\n\n${cuerpo}${carta}`;
+  return `${NOTA_GUIA_ESTRUCTURA}\n\n${texto}${carta}`;
 }
 
 /**
@@ -508,8 +498,8 @@ export function errorDeAdaptadorLora(error: unknown): Error {
  * The submit -> poll -> download sequence `generarConSempertexLora` used to
  * make directly against fal.ai's queue, now made by Python
  * (services/ai-api/app/kagutsuchi/lora.py). Every value here already
- * reflects TypeScript's own composition (buildLoraEditPrompt,
- * ensureLoraTriggers, imageSizeFor, guidanceScaleSeguro) -- this function
+ * reflects TypeScript's own composition (buildLoraEditPrompt, imageSizeFor,
+ * guidanceScaleSeguro) -- this function
  * only shapes that into the Python operation's request and reads back its
  * result; it decides nothing about the prompt or which references apply.
  */
@@ -524,7 +514,7 @@ async function generarConSempertexLoraPython(
   try {
     const result = await llamarPythonLoraGenerate({
       mode: references.length ? "edit" : "text",
-      prompt: ensureLoraTriggers(buildLoraEditPrompt(prompt, references), options.loras),
+      prompt: buildLoraEditPrompt(prompt, references),
       loras: lorasFor(options.loras),
       guidanceScale: guidanceScaleSeguro(options.guidanceScale),
       numInferenceSteps: 28,
@@ -604,7 +594,7 @@ export async function generarConSempertexLora(
     method: "POST",
     headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      prompt: ensureLoraTriggers(buildLoraEditPrompt(prompt, references), options.loras),
+      prompt: buildLoraEditPrompt(prompt, references),
       loras: lorasFor(options.loras),
       guidance_scale: guidanceScaleSeguro(options.guidanceScale),
       num_inference_steps: 28,
@@ -677,33 +667,4 @@ export async function generarConSempertexLora(
 
 function lorasFor(loras: LoraApplication[]): Array<{ path: string; scale: number }> {
   return loras.map((lora) => ({ path: lora.path, scale: lora.scale }));
-}
-
-/**
- * Cualquier trigger de este proyecto sigue el patrón `eventdecor_<nombre>_v<N>`
- * (`eventdecor_style_v2`, `eventdecor_style_v3`, `eventdecor_structure_v1`, …).
- * En vez de mantener una lista hardcodeada de triggers "conocidos" para
- * quitar, se quita cualquier corrida de triggers que ya venga como preámbulo
- * del prompt — así no hay que tocar esta función cada vez que se registra un
- * nuevo trigger en el registro LoRA.
- */
-const LEADING_TRIGGER_RUN = /^(?:eventdecor_[a-z0-9]+_v\d+\s*,\s*)+/i;
-
-/**
- * Antepone los triggers de las aplicaciones LoRA resueltas y quita el
- * preámbulo de triggers que ya viniera en el texto (evita duplicarlo si el
- * compilador lo dejó suelto). `loras` es obligatorio: sin una aplicación
- * resuelta no hay trigger válido que anteponer. Con `[]` (modo `base`, el
- * modelo base sin LoRA) no se antepone nada y se quita cualquier trigger
- * suelto: el modelo base no conoce esas palabras.
- */
-export function ensureLoraTriggers(prompt: string, loras: LoraApplication[]): string {
-  if (!Array.isArray(loras)) {
-    throw new Error("LORA_APPLICATION_REQUIRED: ensureLoraTriggers necesita las aplicaciones resueltas desde el registro (vacías solo en modo base).");
-  }
-  validarAplicaciones(loras);
-  const trimmed = prompt.trim();
-  const triggers = [...new Set(loras.map((lora) => lora.trigger.trim()).filter(Boolean))];
-  const withoutTriggers = trimmed.replace(LEADING_TRIGGER_RUN, "").trim();
-  return triggers.length ? `${triggers.join(", ")}, ${withoutTriggers}` : withoutTriggers;
 }

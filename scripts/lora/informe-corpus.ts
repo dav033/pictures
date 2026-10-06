@@ -15,8 +15,7 @@ import { join } from "node:path";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
-import { ensureLoraTriggers } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
-import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
+
 
 const CAPDIR = join(process.cwd(), "data/staging/lora-v007/captions");
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9\-' ]+/g, " ").replace(/\s+/g, " ").trim();
@@ -56,8 +55,8 @@ for (const trigger of TRIGGERS) {
     const els = [...f(p), ...s(p), ...a(p)];
     const ctx = buildVisualContext({ brief: { tipo_evento: ev.tipo_evento, estilo: ev.estilo, colores: p, espacio: ev.espacio }, userRequest: `${ev.pedido}, colores ${p.join(", ")}` });
     const sizes: ElementSizeConfirmation[] = els.flatMap((e, i) => (e.catalog_product_ids ?? []).flatMap((pid) => (i === 0 ? TAM : ["R-12"]).map((sizeCode) => ({ elementId: e.element_id, productId: pid, sizeCode }))));
-    const r = compileProductPrompt({ sceneSpec: escena(els), visualContext: ctx, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations: sizes, trigger });
-    prompts.push(ensureLoraTriggers(r.prompt, [{ path: "informe", trigger, scale: 1 }]));
+    const r = compileProductPrompt({ sceneSpec: escena(els), visualContext: ctx, sizeConfirmations: sizes });
+    prompts.push(r.prompt);
   }
   console.log(`\n== ${trigger}: ${prompts.length} prompts`);
   console.log(`   ejemplo: ${prompts.at(-1)}`);

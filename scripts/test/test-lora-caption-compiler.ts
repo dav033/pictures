@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
-import { compileLoraCaption, translateLoraColor } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { compileLoraCaption, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import { TERMINOS_COMERCIALES } from "../../src/lib/lora/descriptor-perceptual";
@@ -62,8 +62,8 @@ function check(input: { spec: SceneSpec; request?: string }) {
   });
   const report = preflightLoraPrompt({ sceneSpec: input.spec, clauses: compilation.clauses, prompt: compilation.prompt });
   assert.equal(report.ok, true, report.errors.join("; "));
-  assert.equal((compilation.prompt.match(/eventdecor_style_v2/gi) ?? []).length, 1);
-  assert.ok(compilation.prompt.length <= 750, `prompt demasiado largo: ${compilation.prompt.length}`);
+  assert.equal((compilation.prompt.match(/eventdecor_style_v[23]/gi) ?? []).length, 0);
+  assert.ok(compilation.prompt.length <= LORA_PROMPT_MAX_LENGTH, `prompt demasiado largo: ${compilation.prompt.length}`);
   assert.doesNotMatch(compilation.prompt, /EST_|CATALOG_|SKU|precio|paquete/i);
   return { compilation, report };
 }
@@ -90,28 +90,6 @@ assert.equal(translateLoraColor("grafito"), "charcoal gray");
 assert.equal(translateLoraColor("plateado"), "silver", "plateado sigue siendo silver, no gris");
 assert.ok(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gris balloons").includes("gris"), "el preflight detecta 'gris' sin traducir");
 assert.deepEqual(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gray balloons"), []);
-
-const canonicalLabel = "round latex balloon in gold with a Reflex high-shine finish";
-const canonicalSpec = scene([element({ id: "CANONICAL", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]);
-const canonicalPresence = compileLoraCaption({
-  sceneSpec: canonicalSpec,
-  visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
-  productConcepts: [{ elementId: "CANONICAL", conceptId: "fixture.canonical.product", canonicalLabel }],
-});
-assert.ok(canonicalPresence.prompt.includes(canonicalLabel), "la etiqueta canónica debe aparecer literalmente");
-
-const canonicalDeduplication = compileLoraCaption({
-  sceneSpec: scene([
-    element({ id: "CANONICAL_DUP_A", name: "Arco", type: "arco", placement: "arco_central", role: "focal", group: "same-product" }),
-    element({ id: "CANONICAL_DUP_B", name: "Arco", type: "arco", placement: "arco_central", role: "soporte", group: "same-product" }),
-  ]),
-  visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
-  productConcepts: [
-    { elementId: "CANONICAL_DUP_A", conceptId: "fixture.canonical.product", canonicalLabel },
-    { elementId: "CANONICAL_DUP_B", conceptId: "fixture.canonical.product", canonicalLabel },
-  ],
-}).prompt;
-assert.equal((canonicalDeduplication.match(new RegExp(canonicalLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length, 1, "la etiqueta canónica duplicada debe emitirse una vez");
 
 const canonicalAbsent = check({ spec: scene([element({ id: "NO_CANONICAL", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]) });
 assert.doesNotMatch(canonicalAbsent.compilation.prompt, /using exact canonical product/i, "sin etiqueta canónica no debe agregarse restricción inventada");
@@ -149,12 +127,12 @@ assert.match(directQuincePrompt, /fifteenth-birthday celebration atmosphere/i);
 assert.doesNotMatch(directQuincePrompt, /quinceañera|club social|[áéíóúüñ¿¡]/i);
 
 const entrance = check({ spec: scene([element({ id: "ARCH_ENTRANCE", name: "Arco Orgánico", type: "arco", placement: "entrada", role: "focal" })]) });
-assert.match(entrance.compilation.prompt, /framing the venue entrance/i);
+assert.match(entrance.compilation.prompt, /framing the entrance doorway/i);
 assert.doesNotMatch(entrance.compilation.prompt, /stage photo area/i);
 
 const central = check({ spec: scene([element({ id: "ARCH_CENTER", name: "Arco Orgánico", type: "arco", placement: "arco_central", role: "focal" })]) });
-assert.match(central.compilation.prompt, /centered around the stage photo area/i);
-assert.doesNotMatch(central.compilation.prompt, /framing the venue entrance/i);
+assert.match(central.compilation.prompt, /centerpiece of the scene/i);
+assert.doesNotMatch(central.compilation.prompt, /framing the entrance doorway/i);
 
 // Regression: the "ubicaciones alternativas o incompatibles" preflight
 // check used to flag ANY standalone "or" in the whole prompt, not just a
@@ -200,22 +178,22 @@ const quince = check({
   ]),
   request: "XV años coquette en salón",
 });
-assert.match(quince.compilation.prompt, /low coordinated balloon centerpiece placed on the main table beneath the main arch/i);
+assert.match(quince.compilation.prompt, /small balloon cluster centerpiece on the main table beneath the main arch/i);
 assert.doesNotMatch(quince.compilation.prompt, /balloon installation/i);
 
 const backdrop = check({ spec: scene([
   element({ id: "ARCH", name: "Arco", type: "arco", placement: "arco_central", role: "focal" }),
   element({ id: "BACK", name: "Cortina", type: "backdrop", placement: "fondo_pared", role: "soporte", colors: ["blanco"] }),
 ]) });
-assert.match(backdrop.compilation.prompt, /decorated backdrop installed against the rear wall, behind the main arrangement/i);
+assert.match(backdrop.compilation.prompt, /decorated backdrop in white against the rear wall, behind the main arrangement/i);
 
 const manyCenterpieces = check({
   spec: scene(Array.from({ length: 12 }, (_, index) => element({ id: `TABLE_${index + 1}`, name: "Acento Bajo", type: "centro_mesa", placement: "mesas_invitados", group: "guest-centerpieces", colors: ["dorado"] }))),
 });
-assert.match(manyCenterpieces.compilation.prompt, /twelve low coordinated balloon centerpieces(?: in gold)? distributed across the guest tables/i);
+assert.match(manyCenterpieces.compilation.prompt, /twelve small balloon cluster centerpieces.*on the guest tables/i);
 
 const ceiling = check({ spec: scene([element({ id: "CEILING", name: "Instalación superior", type: "kit", placement: "techo", role: "soporte", colors: ["plateado"] })]) });
-assert.match(ceiling.compilation.prompt, /suspended overhead from the ceiling/i);
+assert.match(ceiling.compilation.prompt, /hanging from the ceiling/i);
 
 const sevenStructures = check({ spec: scene([
   element({ id: "S1", name: "Arco", type: "arco", placement: "arco_central", role: "focal" }),
@@ -255,28 +233,23 @@ assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin
   // suelo cuando la única pieza de la escena va colgada de la pared.
   const contexto = buildVisualContext({ userRequest: "cumpleanos en salon" });
   const muro = scene([element({ id: "GAR", name: "Guirnalda", type: "guirnalda", placement: "fondo_pared", role: "focal" })]);
-  const v004 = compileLoraCaption({ sceneSpec: muro, visualContext: contexto, trigger: "eventdecor_style_v2", dialect: "scene_v004" });
-  assert.ok(v004.prompt.includes("running along the rear wall"), v004.prompt);
-  assert.doesNotMatch(v004.prompt, /against the rear wall/, v004.prompt);
-  assert.doesNotMatch(v004.prompt, /grounded supports|floor contact/, v004.prompt);
-  assert.doesNotMatch(v004.jsonPrompt, /grounded supports/, v004.jsonPrompt);
+  const caption = compileLoraCaption({ sceneSpec: muro, visualContext: contexto });
+  assert.ok(caption.prompt.includes("running along the rear wall"), caption.prompt);
+  assert.doesNotMatch(caption.prompt, /against the rear wall/, caption.prompt);
+  assert.doesNotMatch(caption.prompt, /grounded supports|floor contact/, caption.prompt);
 
   // Con un arco en la escena los apoyos vuelven: los necesita el arco, no la guirnalda.
   const conArco = scene([
     element({ id: "GAR", name: "Guirnalda", type: "guirnalda", placement: "fondo_pared", role: "focal" }),
     element({ id: "ARCH", name: "Arco", type: "arco", placement: "arco_central", role: "focal" }),
   ]);
-  assert.match(compileLoraCaption({ sceneSpec: conArco, visualContext: contexto, trigger: "eventdecor_style_v2", dialect: "scene_v004" }).prompt, /grounded supports|floor contact/);
+  assert.match(compileLoraCaption({ sceneSpec: conArco, visualContext: contexto }).prompt, /grounded supports|floor contact/);
 
   // En el piso la ubicación ya no se puede leer como un portal y no se toca.
   const piso = scene([element({ id: "GAR", name: "Guirnalda", type: "guirnalda", placement: "piso_frontal", role: "focal" })]);
-  const enPiso = compileLoraCaption({ sceneSpec: piso, visualContext: contexto, trigger: "eventdecor_style_v2", dialect: "scene_v004" });
-  assert.ok(enPiso.prompt.includes("resting on the floor in front"), enPiso.prompt);
+  const enPiso = compileLoraCaption({ sceneSpec: piso, visualContext: contexto });
+  assert.ok(enPiso.prompt.includes("resting on the floor in the foreground"), enPiso.prompt);
   assert.match(enPiso.prompt, /grounded supports|floor contact/, enPiso.prompt);
-
-  // El dialecto de producto (v007) tiene su propio corpus y no se toca.
-  const v007 = compileLoraCaption({ sceneSpec: muro, visualContext: contexto, dialect: "product_v007" });
-  assert.ok(v007.prompt.includes("installed against the rear wall"), v007.prompt);
 
   // Y cuando el motor orgánico armó la pieza, su frase manda sobre la ubicación genérica: dice además la
   // curva, el desnivel y el racimo, que la ubicación no sabe. La escribe Python y entra tal cual.
@@ -284,8 +257,6 @@ assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin
   const armada = compileLoraCaption({
     sceneSpec: muro,
     visualContext: contexto,
-    trigger: "eventdecor_style_v2",
-    dialect: "scene_v004",
     colorPatterns: [{ estructura_id: "GAR", aplicado: true, prompt_gemini: "", prompt_lora: delMotor, guirnaldaOrganica: { enAlto: true } }],
   });
   assert.ok(armada.prompt.includes(delMotor), armada.prompt);
@@ -322,7 +293,7 @@ assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin
     assert.doesNotMatch(prompt, palabra, `el respaldo del acabado filtró el término comercial «${termino}»: ${prompt}`);
   }
   // Y lo que sí dice es lo mismo que dice el camino principal para ese acabado.
-  assert.match(prompt, /high-gloss chrome/i, prompt);
+  assert.match(prompt, /mirror-like chrome/i, prompt);
 }
 
 console.log("LoRA caption compiler: OK");

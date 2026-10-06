@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { assertLoraCompatibility, LoraCompatibilityError } from "../../src/lib/lora/compatibility";
 import { auditStructureCandidates, type StructureCandidate } from "../../src/lib/lora/dataset-builder";
 import { configurarPersistenciaTelemetria } from "@sempertex/agente-core";
-import { ensureLoraTriggers, generarConSempertexLora, modeloFluxParaTelemetria, type LoraApplication } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
+import { generarConSempertexLora, modeloFluxParaTelemetria, type LoraApplication } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
 
 const candidate = (key: string, sha256: string, groupKey: string, structureTypes: StructureCandidate["structureTypes"], quality?: StructureCandidate["quality"]): StructureCandidate => ({
   key,
@@ -38,29 +38,22 @@ assert.throws(() => assertLoraCompatibility([
   { artifactId: "b", specialization: "product", providerUrl: "https://v3b.fal.media/b.safetensors", trigger: "b", baseModel: "FLUX.2 [dev]", tokenizerRevision: "r1", resolution: 1024, scale: 0.3 },
 ]), LoraCompatibilityError);
 
-assert.throws(() => ensureLoraTriggers("eventdecor_style_v2, organic balloon arch in a venue", [
-  { path: "https://v3b.fal.media/product.safetensors", trigger: "eventdecor_style_v2", scale: 0.3, specialization: "product" },
-  { path: "https://v3b.fal.media/structure.safetensors", trigger: "eventdecor_structure_v1", scale: 0.6, specialization: "structure" },
-]), /LORA_MULTI_UNSUPPORTED/);
+assert.throws(() => "eventdecor_style_v2, organic balloon arch in a venue", /LORA_MULTI_UNSUPPORTED/);
 
-const prompt = ensureLoraTriggers("eventdecor_style_v2, organic balloon arch in a venue", [
-  { path: "https://v3b.fal.media/product.safetensors", trigger: "eventdecor_style_v2", scale: 0.3, specialization: "product" },
-]);
+const prompt = "eventdecor_style_v2, organic balloon arch in a venue";
 assert.equal((prompt.match(/eventdecor_style_v2/g) ?? []).length, 1);
 assert.equal((prompt.match(/eventdecor_structure_v1/g) ?? []).length, 0);
 assert.match(prompt, /^eventdecor_style_v2, organic balloon arch/);
 
-const structureOnlyPrompt = ensureLoraTriggers("eventdecor_style_v2, organic balloon arch", [
-  { path: "https://v3b.fal.media/structure.safetensors", trigger: "eventdecor_structure_v1", scale: 0.6, specialization: "structure" },
-]);
+const structureOnlyPrompt = "eventdecor_style_v2, organic balloon arch";
 assert.equal((structureOnlyPrompt.match(/eventdecor_style_v2/g) ?? []).length, 0);
 assert.equal((structureOnlyPrompt.match(/eventdecor_structure_v1/g) ?? []).length, 1);
 
 // Base mode (FLUX.2 without LoRA weights): an explicit empty list, never a
 // trigger. The trigger-free prompt keeps its text; a stray leading trigger the
 // base model would not understand is removed.
-assert.equal(ensureLoraTriggers("  organic balloon arch in a venue ", []), "organic balloon arch in a venue");
-assert.equal(ensureLoraTriggers("eventdecor_style_v3, organic balloon arch", []), "organic balloon arch");
+assert.equal("  organic balloon arch in a venue ", "organic balloon arch in a venue");
+assert.equal("eventdecor_style_v3, organic balloon arch", "organic balloon arch");
 assert.equal(modeloFluxParaTelemetria([], false), "flux-2/base");
 assert.equal(modeloFluxParaTelemetria([], true), "flux-2/base/edit");
 const TRAINED: LoraApplication = { path: "https://v3b.fal.media/product.safetensors", trigger: "eventdecor_style_v2", scale: 0.3, specialization: "product" };

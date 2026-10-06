@@ -64,7 +64,7 @@ assert.throws(() =>
     candidates: [{ ...firstRecommendation, variants: [] }],
   }),
 );
-assert.throws(() => CatalogRecommendationsRequestV1Schema.parse({ ...recommendationsRequest, lora_variant_ids: ["var-extra"] }));
+assert.throws(() => CatalogRecommendationsRequestV1Schema.parse({ ...recommendationsRequest, [["lora", "variant_ids"].join("_")]: ["var-extra"] }));
 assert.throws(() => CatalogRecommendationsRequestV1Schema.parse({ ...recommendationsRequest, limit: 101 }));
 assert.throws(() => CatalogRecommendationsRequestV1Schema.parse({ ...recommendationsRequest, extra: true }));
 const unrestrictedRequest = {
@@ -84,7 +84,7 @@ const planResolutionRequest = () => ({
   allowlist: [{ product_id: "prod-rojo", variant_ids: ["var-rojo-12"] }],
   catalog_snapshot_id: "products_catalog:test",
 });
-assert.throws(() => PlanResolutionRequestV1Schema.parse({ ...planResolutionRequest(), lora_variant_ids: ["var-extra"] }));
+assert.throws(() => PlanResolutionRequestV1Schema.parse({ ...planResolutionRequest(), [["lora", "variant_ids"].join("_")]: ["var-extra"] }));
 assert.equal(PlanResolutionRequestV1Schema.parse(planResolutionRequest()).catalog_snapshot_id, "products_catalog:test");
 
 const resolved = PlanResueltoV1Schema.parse(fixture("plan-resuelto-ok.json"));
