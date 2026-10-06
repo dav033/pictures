@@ -1,0 +1,56 @@
+[
+  {
+    "id": "002",
+    "grupo": "g3.5",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/forma-v4/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "g2.5",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/obediencia-g25/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "g5.0",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/obediencia-g50/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "001",
+    "grupo": "g3.5",
+    "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-1/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "001",
+    "grupo": "g2.5",
+    "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+    "img": "../validacion-fase4/obediencia-g25/caso-1/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "001",
+    "grupo": "g5.0",
+    "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+    "img": "../validacion-fase4/obediencia-g50/caso-1/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-5",
+    "grupo": "g3.5",
+    "ref": "../validacion-fase7/entradas/case-005-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-5/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-5",
+    "grupo": "g2.5",
+    "ref": "../validacion-fase7/entradas/case-005-ref.png",
+    "img": "../validacion-fase4/obediencia-g25-f7/caso-5/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-5",
+    "grupo": "g5.0",
+    "ref": "../validacion-fase7/entradas/case-005-ref.png",
+    "img": "../validacion-fase4/obediencia-g50-f7/caso-5/corrida-1/imagen-flux/final.png"
+  }
+]

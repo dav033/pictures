@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["composicion", "geometria", "colores", "orden_color", "escala", "densidad", "orientacion", "topologia", "piezas_faltan", "piezas_sobran", "atrezo_inventado", "nota", "defectos"],
+  "properties": {
+    "composicion": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "geometria": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "colores": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "orden_color": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "escala": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "densidad": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "orientacion": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "topologia": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "piezas_faltan": { "type": "array", "items": { "type": "string" } },
+    "piezas_sobran": { "type": "array", "items": { "type": "string" } },
+    "atrezo_inventado": { "type": "array", "items": { "type": "string" } },
+    "nota": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "defectos": { "type": "array", "items": { "type": "string" }, "maxItems": 5 }
+  }
+}

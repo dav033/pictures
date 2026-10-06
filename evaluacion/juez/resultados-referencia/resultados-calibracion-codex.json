@@ -1,0 +1,241 @@
+[
+ {
+  "id": "005",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-5/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 48,
+   "nota_min": 48,
+   "nota_max": 48,
+   "composicion": 6,
+   "geometria": 6,
+   "colores": 5,
+   "orden_color": 6,
+   "escala": 2,
+   "densidad": 4,
+   "orientacion": 7,
+   "topologia": 7,
+   "atrezo_inventado": [
+    "Soporte metálico curvo visible entre las piezas",
+    "Bases metálicas de suelo"
+   ],
+   "defectos": [
+    "La decoración ocupa casi todo el encuadre y es mucho mayor que en la referencia.",
+    "La columna derecha añade muchos globos color durazno, ausentes en la foto.",
+    "El medio arco es muy voluminoso y termina en un colgante central pronunciado.",
+    "Los racimos tienen globos mucho más grandes y abundantes."
+   ]
+  }
+ },
+ {
+  "id": "006",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-6/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 8,
+   "nota_min": 8,
+   "nota_max": 8,
+   "composicion": 1,
+   "geometria": 1,
+   "colores": 2,
+   "orden_color": 2,
+   "escala": 4,
+   "densidad": 5,
+   "orientacion": 2,
+   "topologia": 0,
+   "atrezo_inventado": [
+    "Cortina de fondo con luces",
+    "Ramo de globos con cintas",
+    "Globos sueltos a los lados"
+   ],
+   "defectos": [
+    "El marco completo rosa y malva de la referencia se reemplaza por un arco cobre y plata distinto.",
+    "La pieza central inferior translúcida no aparece.",
+    "Se añaden racimos blancos con cintas que no están en la referencia.",
+    "La paleta cambia casi por completo a cobre y plata metálicos."
+   ]
+  }
+ },
+ {
+  "id": "007",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-7/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 2,
+   "nota_min": 2,
+   "nota_max": 2,
+   "composicion": 1,
+   "geometria": 1,
+   "colores": 2,
+   "orden_color": 2,
+   "escala": 1,
+   "densidad": 1,
+   "orientacion": 1,
+   "topologia": 0,
+   "atrezo_inventado": [
+    "Mesa de postres y dulces.",
+    "Dos ramos de globos dorados con cintas y bases de globos."
+   ],
+   "defectos": [
+    "La decoración no reproduce ninguna de las dos piezas de la referencia.",
+    "Añade una guirnalda horizontal y un arco central que no aparecen en la foto.",
+    "Añade racimos laterales dorados y azules con cintas.",
+    "La paleta pastel de la referencia se reemplaza por gris, azul intenso y dorado.",
+    "Las piezas generadas son mucho más grandes y densas."
+   ]
+  }
+ },
+ {
+  "id": "005",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-5/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 8,
+   "nota_min": 8,
+   "nota_max": 8,
+   "composicion": 1,
+   "geometria": 1,
+   "colores": 3,
+   "orden_color": 5,
+   "escala": 2,
+   "densidad": 4,
+   "orientacion": 1,
+   "topologia": 1,
+   "atrezo_inventado": [
+    "Paneles rosados de fondo",
+    "Pared y suelo de interior"
+   ],
+   "defectos": [
+    "La decoración no conserva las dos piezas separadas ni sus formas originales.",
+    "El medio arco bajo sobre el respaldo rosa fue sustituido por una guirnalda alta y arqueada.",
+    "La columna derecha se convirtió en un racimo voluminoso y redondeado.",
+    "La imagen cambia el entorno exterior de piedra por un fondo interior con paneles rosados.",
+    "Los globos son principalmente azul intenso y rosa pálido, en vez de los tonos vivos de la referencia."
+   ]
+  }
+ },
+ {
+  "id": "006",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+  "img": "../validacion-fase4/planes-vino5/caso-6/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 38,
+   "nota_min": 38,
+   "nota_max": 38,
+   "composicion": 5,
+   "geometria": 3,
+   "colores": 2,
+   "orden_color": 4,
+   "escala": 6,
+   "densidad": 7,
+   "orientacion": 6,
+   "topologia": 5,
+   "atrezo_inventado": [
+    "mesa blanca"
+   ],
+   "defectos": [
+    "El marco rectangular de lados casi verticales se convirtió en un arco redondeado.",
+    "La paleta malva y rosa empolvado pasó a borgoña y cobre dorado.",
+    "La esfera transparente del frente quedó más baja y apoyada sobre una mesa añadida."
+   ]
+  }
+ },
+ {
+  "id": "007",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+  "img": "../validacion-fase4/planes-aro/caso-7/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 12,
+   "nota_min": 12,
+   "nota_max": 12,
+   "composicion": 2,
+   "geometria": 2,
+   "colores": 2,
+   "orden_color": 2,
+   "escala": 2,
+   "densidad": 2,
+   "orientacion": 3,
+   "topologia": 2,
+   "atrezo_inventado": [],
+   "defectos": [
+    "El semiarco pastel de la izquierda no aparece; lo reemplaza una guirnalda que cruza la pared.",
+    "El aro ralo de la derecha aparece como un aro denso azul y blanco en el centro.",
+    "Se añaden un gran arco multicolor y un ramo de globos dorados que no están en la referencia.",
+    "La paleta cambia de tonos pastel variados a azul, coral y dorado intensos.",
+    "La distribución y escala de las piezas son muy distintas."
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "ganchos",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/estable-3x/caso-2/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 20,
+   "nota_min": 20,
+   "nota_max": 20,
+   "composicion": 2,
+   "geometria": 2,
+   "colores": 6,
+   "orden_color": 5,
+   "escala": 5,
+   "densidad": 5,
+   "orientacion": 3,
+   "topologia": 3,
+   "atrezo_inventado": [
+    "Panel de madera",
+    "Pedestal blanco"
+   ],
+   "defectos": [
+    "Los dos semiarcos inclinados de la referencia se reemplazan por dos arcos altos, curvados y separados del nicho.",
+    "La decoración queda mucho más alta y extensa que en la foto.",
+    "Los globos rosas dominan; la referencia mezcla rosa con abundantes blancos y transparentes.",
+    "La distribución de los globos metálicos y rosas no sigue la de la referencia."
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "columnas",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/forma-v4/caso-2/corrida-2/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 42,
+   "nota_min": 42,
+   "nota_max": 42,
+   "composicion": 5,
+   "geometria": 6,
+   "colores": 4,
+   "orden_color": 5,
+   "escala": 4,
+   "densidad": 3,
+   "orientacion": 7,
+   "topologia": 7,
+   "atrezo_inventado": [
+    "Panel circular lila",
+    "Pedestal blanco"
+   ],
+   "defectos": [
+    "Los globos forman masas mucho más densas y voluminosas que en la referencia.",
+    "El rosa coral sustituye los tonos rosa pálido y lila; hay menos globos blancos.",
+    "Los racimos plateados ocupan gran parte de la zona baja, que en la referencia es más ligera.",
+    "Las dos piezas se aproximan a un arco simétrico alrededor del panel, en vez de seguir los bordes del nicho."
+   ]
+  }
+ }
+]

@@ -1,0 +1,90 @@
+[
+ {
+  "id": "002",
+  "grupo": "sin-wb",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/forma-v4/caso-2/corrida-2/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 42,
+   "nota_min": 42,
+   "nota_max": 42,
+   "composicion": 5,
+   "geometria": 6,
+   "colores": 4,
+   "orden_color": 5,
+   "escala": 4,
+   "densidad": 3,
+   "orientacion": 7,
+   "topologia": 7,
+   "atrezo_inventado": [
+    "Panel circular lila",
+    "Pedestal blanco"
+   ],
+   "defectos": [
+    "Los globos forman masas mucho más densas y voluminosas que en la referencia.",
+    "El rosa coral sustituye los tonos rosa pálido y lila; hay menos globos blancos.",
+    "Los racimos plateados ocupan gran parte de la zona baja, que en la referencia es más ligera.",
+    "Las dos piezas se aproximan a un arco simétrico alrededor del panel, en vez de seguir los bordes del nicho."
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "wb-r1",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/blancos-v6/caso-2/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 20,
+   "nota_min": 20,
+   "nota_max": 20,
+   "composicion": 2,
+   "geometria": 2,
+   "colores": 6,
+   "orden_color": 2,
+   "escala": 4,
+   "densidad": 3,
+   "orientacion": 5,
+   "topologia": 2,
+   "atrezo_inventado": [
+    "Pedestal blanco con tarta; la referencia muestra una mesa con dulces, no ese pedestal."
+   ],
+   "defectos": [
+    "Los dos semiarcos separados de la referencia se convierten en una guirnalda continua alrededor del nicho.",
+    "La paleta se desplaza a coral y gris oscuro; la referencia tiene globos rosa, blancos/translúcidos y plateados.",
+    "El orden de color cambia: la referencia mezcla rosa y plata en ambos lados, mientras la imagen concentra el coral abajo y el gris/plata arriba.",
+    "La decoración generada es mucho más grande, voluminosa y densa que los racimos medianos de la foto."
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "wb-r2",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/blancos-v6/caso-2/corrida-2/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 58,
+   "nota_min": 58,
+   "nota_max": 58,
+   "composicion": 6,
+   "geometria": 6,
+   "colores": 4,
+   "orden_color": 8,
+   "escala": 6,
+   "densidad": 7,
+   "orientacion": 8,
+   "topologia": 9,
+   "atrezo_inventado": [
+    "panel circular lila",
+    "pedestal blanco con tarta"
+   ],
+   "defectos": [
+    "El plateado y blanco de la foto se sustituyen en gran parte por globos cromados oscuros.",
+    "Los globos rosas son más coral y saturados que los de la referencia.",
+    "Los dos racimos generados son más gruesos y compactos que los arcos orgánicos de la foto."
+   ]
+  }
+ }
+]

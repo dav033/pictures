@@ -1,0 +1,356 @@
+[
+ {
+  "id": "001",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-1/corrida-1/imagen-flux/final.png",
+  "nota": 62,
+  "piezas_ref": [
+   "columna/left"
+  ],
+  "piezas_gen": [
+   "columna/center",
+   "kit/left"
+  ],
+  "faltan": 0,
+  "sobran": 1,
+  "tipo": 1,
+  "lado": 0,
+  "color": 0.57,
+  "forma": 0.98
+ },
+ {
+  "id": "002",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-2/corrida-1/imagen-flux/final.png",
+  "nota": 36,
+  "piezas_ref": [
+   "columna/left",
+   "columna/right"
+  ],
+  "piezas_gen": [
+   "semiarco/left",
+   "semiarco/right"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 0,
+  "lado": 1,
+  "color": 0.05,
+  "forma": 0.97
+ },
+ {
+  "id": "003",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-3/corrida-1/imagen-flux/final.png",
+  "nota": 67,
+  "piezas_ref": [
+   "semiarco/right"
+  ],
+  "piezas_gen": [
+   "semiarco/right"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 1,
+  "lado": 1,
+  "color": 0.08,
+  "forma": 0.67
+ },
+ {
+  "id": "005",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-5/corrida-1/imagen-flux/final.png",
+  "nota": 73,
+  "piezas_ref": [
+   "semiarco/left",
+   "columna/right"
+  ],
+  "piezas_gen": [
+   "semiarco/left",
+   "columna/right"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 1,
+  "lado": 1,
+  "color": 0.21,
+  "forma": 0.76
+ },
+ {
+  "id": "006",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-6/corrida-1/imagen-flux/final.png",
+  "nota": 30,
+  "piezas_ref": [
+   "arco/right",
+   "centro_mesa/center"
+  ],
+  "piezas_gen": [
+   "arco/center",
+   "kit/center",
+   "kit/left",
+   "kit/right"
+  ],
+  "faltan": 0,
+  "sobran": 2,
+  "tipo": 0.5,
+  "lado": 0,
+  "color": 0.48,
+  "forma": 0.51
+ },
+ {
+  "id": "007",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-7/corrida-1/imagen-flux/final.png",
+  "nota": 37,
+  "piezas_ref": [
+   "guirnalda/left",
+   "arco/right"
+  ],
+  "piezas_gen": [
+   "guirnalda/center",
+   "arco/center",
+   "kit/left",
+   "kit/right"
+  ],
+  "faltan": 0,
+  "sobran": 2,
+  "tipo": 0.5,
+  "lado": 0.5,
+  "color": 0.22,
+  "forma": 0.84
+ },
+ {
+  "id": "002",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-2/corrida-1/imagen-flux/final.png",
+  "nota": 34,
+  "piezas_ref": [
+   "columna/left",
+   "columna/right"
+  ],
+  "piezas_gen": [
+   "semiarco/left",
+   "semiarco/right"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 0,
+  "lado": 1,
+  "color": 0.07,
+  "forma": 0.78
+ },
+ {
+  "id": "004",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-004-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-4/corrida-1/imagen-flux/final.png",
+  "nota": 75,
+  "piezas_ref": [
+   "semiarco/right"
+  ],
+  "piezas_gen": [
+   "semiarco/right",
+   "kit/left"
+  ],
+  "faltan": 0,
+  "sobran": 1,
+  "tipo": 1,
+  "lado": 1,
+  "color": 0.59,
+  "forma": 0.48
+ },
+ {
+  "id": "005",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-5/corrida-1/imagen-flux/final.png",
+  "nota": 69,
+  "piezas_ref": [
+   "semiarco/left",
+   "columna/right"
+  ],
+  "piezas_gen": [
+   "semiarco/left",
+   "columna/right"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 1,
+  "lado": 1,
+  "color": 0.18,
+  "forma": 0.55
+ },
+ {
+  "id": "008",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-008-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-8/corrida-1/imagen-flux/final.png",
+  "nota": 43,
+  "piezas_ref": [
+   "pared/center"
+  ],
+  "piezas_gen": [
+   "guirnalda/center"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 0,
+  "lado": 1,
+  "color": 0.68,
+  "forma": 0.21
+ },
+ {
+  "id": "006",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+  "img": "../validacion-fase4/planes-vino5/caso-6/corrida-1/imagen-flux/final.png",
+  "nota": 33,
+  "piezas_ref": [
+   "arco/right",
+   "centro_mesa/center"
+  ],
+  "piezas_gen": [
+   "arco/center"
+  ],
+  "faltan": 1,
+  "sobran": 0,
+  "tipo": 1,
+  "lado": 0,
+  "color": 0.62,
+  "forma": 0.8
+ },
+ {
+  "id": "007",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+  "img": "../validacion-fase4/planes-aro/caso-7/corrida-1/imagen-flux/final.png",
+  "nota": 48,
+  "piezas_ref": [
+   "guirnalda/left",
+   "arco/right"
+  ],
+  "piezas_gen": [
+   "semiarco/center",
+   "kit/left",
+   "arco/right"
+  ],
+  "faltan": 0,
+  "sobran": 1,
+  "tipo": 0.5,
+  "lado": 1,
+  "color": 0.12,
+  "forma": 0.78
+ },
+ {
+  "id": "F7-1",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-001-ref.png",
+  "img": "../validacion-fase7/planes2/caso-1/corrida-1/imagen-flux/final.png",
+  "nota": 73,
+  "piezas_ref": [
+   "arco/center",
+   "columna/right",
+   "columna/left"
+  ],
+  "piezas_gen": [
+   "columna/left",
+   "columna/right",
+   "arco/center"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 1,
+  "lado": 1,
+  "color": 0.2,
+  "forma": 0.83
+ },
+ {
+  "id": "F7-2",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-002-ref.png",
+  "img": "../validacion-fase7/planes2/caso-2/corrida-1/imagen-flux/final.png",
+  "nota": 81,
+  "piezas_ref": [
+   "columna/left",
+   "columna/right"
+  ],
+  "piezas_gen": [
+   "columna/left",
+   "columna/right"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 1,
+  "lado": 1,
+  "color": 0.46,
+  "forma": 0.8
+ },
+ {
+  "id": "F7-3",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-003-ref.png",
+  "img": "../validacion-fase7/planes/caso-3/corrida-1/imagen-flux/final.png",
+  "nota": 77,
+  "piezas_ref": [
+   "kit/center"
+  ],
+  "piezas_gen": [
+   "kit/center"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 1,
+  "lado": 1,
+  "color": 0.24,
+  "forma": 0.99
+ },
+ {
+  "id": "F7-4",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-004-ref.png",
+  "img": "../validacion-fase7/planes/caso-4/corrida-1/imagen-flux/final.png",
+  "nota": 67,
+  "piezas_ref": [
+   "semiarco/center",
+   "centro_mesa/right"
+  ],
+  "piezas_gen": [
+   "semiarco/center",
+   "centro_mesa/center",
+   "centro_mesa/right"
+  ],
+  "faltan": 0,
+  "sobran": 1,
+  "tipo": 1,
+  "lado": 1,
+  "color": 0.28,
+  "forma": 0.59
+ },
+ {
+  "id": "F7-5",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-005-ref.png",
+  "img": "../validacion-fase7/planes/caso-5/corrida-1/imagen-flux/final.png",
+  "nota": 50,
+  "piezas_ref": [
+   "semiarco/center"
+  ],
+  "piezas_gen": [
+   "arco/center"
+  ],
+  "faltan": 0,
+  "sobran": 0,
+  "tipo": 0,
+  "lado": 1,
+  "color": 0.68,
+  "forma": 0.62
+ }
+]

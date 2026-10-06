@@ -1,0 +1,60 @@
+[
+ {
+  "id": "003",
+  "grupo": "nude-r1",
+  "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+  "img": "../validacion-fase4/nude-003/caso-3/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 38,
+   "nota_min": 38,
+   "nota_max": 38,
+   "composicion": 4,
+   "geometria": 3,
+   "colores": 4,
+   "orden_color": 5,
+   "escala": 3,
+   "densidad": 4,
+   "orientacion": 4,
+   "topologia": 4,
+   "atrezo_inventado": [
+    "Pedestal blanco"
+   ],
+   "defectos": [
+    "La guirnalda se extiende por casi todo el borde superior y forma una L, en vez de quedar como medio arco vertical a la derecha.",
+    "Añade globos rosa melocotón que no aparecen en la referencia.",
+    "La decoración es mucho mayor y más voluminosa que la original.",
+    "Los globos dorados grandes dominan el conjunto; en la foto predominan los blancos."
+   ]
+  }
+ },
+ {
+  "id": "003",
+  "grupo": "nude-r2",
+  "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+  "img": "../validacion-fase4/nude-003/caso-3/corrida-2/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 28,
+   "nota_min": 28,
+   "nota_max": 28,
+   "composicion": 3,
+   "geometria": 2,
+   "colores": 8,
+   "orden_color": 5,
+   "escala": 2,
+   "densidad": 4,
+   "orientacion": 2,
+   "topologia": 3,
+   "atrezo_inventado": [
+    "Dos pedestales blancos"
+   ],
+   "defectos": [
+    "La pieza vertical del lado derecho se convierte en un arco grande que cruza la parte superior.",
+    "La decoración ocupa casi todo el encuadre y es mucho mayor que en la foto.",
+    "La imagen añade muchos globos y aumenta notablemente la densidad.",
+    "La distribución de globos dorados, blancos y rosa pálido no conserva la de la referencia."
+   ]
+  }
+ }
+]

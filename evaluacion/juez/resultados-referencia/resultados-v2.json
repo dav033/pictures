@@ -1,0 +1,560 @@
+[
+ {
+  "id": "001",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-1/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 61,
+   "piezas_ref": [
+    "columna/left"
+   ],
+   "piezas_gen": [
+    "columna/center",
+    "kit/left"
+   ],
+   "faltan": 0,
+   "sobran": 1,
+   "tipo": 1,
+   "lado": 0,
+   "color": 0.51,
+   "forma": 0.98,
+   "escala": 0.37,
+   "area_ref": 0.34,
+   "area_gen": 0.6,
+   "topologia": null,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    61,
+    61,
+    61
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-2/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 88,
+   "piezas_ref": [
+    "semiarco/left",
+    "semiarco/right"
+   ],
+   "piezas_gen": [
+    "semiarco/left",
+    "semiarco/right"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.56,
+   "forma": 0.95,
+   "escala": 0.97,
+   "area_ref": 0.72,
+   "area_gen": 0.71,
+   "topologia": 1,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    89,
+    88,
+    88
+   ]
+  }
+ },
+ {
+  "id": "003",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-3/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 87,
+   "piezas_ref": [
+    "semiarco/right"
+   ],
+   "piezas_gen": [
+    "semiarco/right"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.6,
+   "forma": 0.67,
+   "escala": 0.98,
+   "area_ref": 0.38,
+   "area_gen": 0.38,
+   "topologia": null,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    86,
+    87,
+    86
+   ]
+  }
+ },
+ {
+  "id": "005",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-5/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 61,
+   "piezas_ref": [
+    "semiarco/left",
+    "columna/right"
+   ],
+   "piezas_gen": [
+    "semiarco/left",
+    "columna/right"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.33,
+   "forma": 0.76,
+   "escala": 0,
+   "area_ref": 0.19,
+   "area_gen": 0.64,
+   "topologia": 0,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    61,
+    61,
+    61
+   ]
+  }
+ },
+ {
+  "id": "006",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+  "img": "../validacion-fase4/planes-ui4/caso-6/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 58,
+   "piezas_ref": [
+    "arco/center",
+    "centro_mesa/center"
+   ],
+   "piezas_gen": [
+    "arco/center",
+    "kit/center",
+    "kit/left",
+    "kit/right"
+   ],
+   "faltan": 0,
+   "sobran": 2,
+   "tipo": 0.5,
+   "lado": 1,
+   "color": 0.63,
+   "forma": 0.65,
+   "escala": 0.61,
+   "area_ref": 0.67,
+   "area_gen": 0.96,
+   "topologia": 1,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    58,
+    59,
+    59
+   ]
+  }
+ },
+ {
+  "id": "007",
+  "grupo": "antes",
+  "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-7/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 47,
+   "piezas_ref": [
+    "semiarco/left",
+    "aro/right"
+   ],
+   "piezas_gen": [
+    "guirnalda/center",
+    "arco/center",
+    "kit/left",
+    "kit/right"
+   ],
+   "faltan": 0,
+   "sobran": 2,
+   "tipo": 0,
+   "lado": 1,
+   "color": 0.79,
+   "forma": 0.39,
+   "escala": 0.79,
+   "area_ref": 0.96,
+   "area_gen": 0.79,
+   "topologia": 1,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    48,
+    46,
+    45
+   ]
+  }
+ },
+ {
+  "id": "002",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-2/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 88,
+   "piezas_ref": [
+    "semiarco/left",
+    "semiarco/right"
+   ],
+   "piezas_gen": [
+    "semiarco/left",
+    "semiarco/right"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.66,
+   "forma": 0.81,
+   "escala": 0.86,
+   "area_ref": 0.72,
+   "area_gen": 0.64,
+   "topologia": 1,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    88,
+    89,
+    88
+   ]
+  }
+ },
+ {
+  "id": "004",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-004-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-4/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 77,
+   "piezas_ref": [
+    "semiarco/right"
+   ],
+   "piezas_gen": [
+    "semiarco/right",
+    "kit/left"
+   ],
+   "faltan": 0,
+   "sobran": 1,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.87,
+   "forma": 0.53,
+   "escala": 0,
+   "area_ref": 0.16,
+   "area_gen": 0.75,
+   "topologia": null,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    76,
+    76,
+    78
+   ]
+  }
+ },
+ {
+  "id": "005",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-5/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 69,
+   "piezas_ref": [
+    "semiarco/left",
+    "columna/right"
+   ],
+   "piezas_gen": [
+    "semiarco/left",
+    "columna/right"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.34,
+   "forma": 0.55,
+   "escala": 0,
+   "area_ref": 0.19,
+   "area_gen": 0.67,
+   "topologia": 1,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    69,
+    69,
+    69
+   ]
+  }
+ },
+ {
+  "id": "008",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-008-ref.png",
+  "img": "../validacion-fase4/planes-reencuadre/caso-8/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 54,
+   "piezas_ref": [
+    "techo/center"
+   ],
+   "piezas_gen": [
+    "guirnalda/center"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 0,
+   "lado": 1,
+   "color": 0.71,
+   "forma": 0.21,
+   "escala": 0.93,
+   "area_ref": 1,
+   "area_gen": 0.94,
+   "topologia": null,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    54,
+    54,
+    54
+   ]
+  }
+ },
+ {
+  "id": "006",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+  "img": "../validacion-fase4/planes-vino5/caso-6/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 44,
+   "piezas_ref": [
+    "arco/center",
+    "centro_mesa/center"
+   ],
+   "piezas_gen": [
+    "arco/center"
+   ],
+   "faltan": 1,
+   "sobran": 0,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.68,
+   "forma": 0.8,
+   "escala": 0.73,
+   "area_ref": 0.67,
+   "area_gen": 0.52,
+   "topologia": null,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    44,
+    44,
+    44
+   ]
+  }
+ },
+ {
+  "id": "007",
+  "grupo": "despues",
+  "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+  "img": "../validacion-fase4/planes-aro/caso-7/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 47,
+   "piezas_ref": [
+    "semiarco/left",
+    "aro/right"
+   ],
+   "piezas_gen": [
+    "semiarco/center",
+    "kit/left",
+    "arco/right"
+   ],
+   "faltan": 0,
+   "sobran": 1,
+   "tipo": 0.5,
+   "lado": 0.5,
+   "color": 0.7,
+   "forma": 0.7,
+   "escala": 0.55,
+   "area_ref": 0.96,
+   "area_gen": 0.63,
+   "topologia": 0,
+   "ref_estable": "verdad",
+   "notas_por_lectura": [
+    49,
+    47,
+    46
+   ]
+  }
+ },
+ {
+  "id": "F7-1",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-001-ref.png",
+  "img": "../validacion-fase7/planes2/caso-1/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 82,
+   "piezas_ref": [
+    "arco/center",
+    "columna/right",
+    "columna/left"
+   ],
+   "piezas_gen": [
+    "columna/left",
+    "columna/right",
+    "arco/center"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.53,
+   "forma": 0.84,
+   "escala": 0.91,
+   "area_ref": 0.69,
+   "area_gen": 0.74,
+   "topologia": 0.67,
+   "ref_estable": "n=3",
+   "notas_por_lectura": [
+    82,
+    83,
+    82
+   ]
+  }
+ },
+ {
+  "id": "F7-2",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-002-ref.png",
+  "img": "../validacion-fase7/planes2/caso-2/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 79,
+   "piezas_ref": [
+    "columna/left",
+    "columna/right"
+   ],
+   "piezas_gen": [
+    "columna/left",
+    "columna/right"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.72,
+   "forma": 0.77,
+   "escala": 0.87,
+   "area_ref": 0.79,
+   "area_gen": 0.7,
+   "topologia": 0,
+   "ref_estable": "n=3",
+   "notas_por_lectura": [
+    79,
+    80,
+    80
+   ]
+  }
+ },
+ {
+  "id": "F7-3",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-003-ref.png",
+  "img": "../validacion-fase7/planes/caso-3/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 89,
+   "piezas_ref": [
+    "kit/center"
+   ],
+   "piezas_gen": [
+    "kit/center"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 1,
+   "lado": 1,
+   "color": 0.78,
+   "forma": 0.99,
+   "escala": 0.51,
+   "area_ref": 0.74,
+   "area_gen": 0.47,
+   "topologia": null,
+   "ref_estable": "n=3",
+   "notas_por_lectura": [
+    89,
+    89,
+    89
+   ]
+  }
+ },
+ {
+  "id": "F7-4",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-004-ref.png",
+  "img": "../validacion-fase7/planes/caso-4/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 73,
+   "piezas_ref": [
+    "semiarco/center",
+    "centro_mesa/right"
+   ],
+   "piezas_gen": [
+    "semiarco/center",
+    "centro_mesa/center",
+    "centro_mesa/right"
+   ],
+   "faltan": 0,
+   "sobran": 1,
+   "tipo": 0.83,
+   "lado": 1,
+   "color": 0.61,
+   "forma": 0.59,
+   "escala": 0.69,
+   "area_ref": 0.97,
+   "area_gen": 0.73,
+   "topologia": 1,
+   "ref_estable": "n=3",
+   "notas_por_lectura": [
+    78,
+    63,
+    78
+   ]
+  }
+ },
+ {
+  "id": "F7-5",
+  "grupo": "fase7",
+  "ref": "../validacion-fase7/entradas/case-005-ref.png",
+  "img": "../validacion-fase7/planes/caso-5/corrida-1/imagen-flux/final.png",
+  "analisis": {
+   "nota": 61,
+   "piezas_ref": [
+    "semiarco/center"
+   ],
+   "piezas_gen": [
+    "arco/center"
+   ],
+   "faltan": 0,
+   "sobran": 0,
+   "tipo": 0,
+   "lado": 1,
+   "color": 0.84,
+   "forma": 0.61,
+   "escala": 0.84,
+   "area_ref": 0.65,
+   "area_gen": 0.75,
+   "topologia": null,
+   "ref_estable": "n=3",
+   "notas_por_lectura": [
+    61,
+    61,
+    61
+   ]
+  }
+ }
+]

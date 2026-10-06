@@ -1,0 +1,174 @@
+{
+  "schema": "verdad-visual.v1",
+  "elaborado_por": "inspeccion visual del agente + anexo-B-casos-images-judge.md (NO es verdad terreno validada por una persona experta en globos)",
+  "convenciones": {
+    "inclinacion_deg": "grados respecto de la vertical; positivo = la cima queda a la derecha de la base, negativo = a la izquierda. null = no determinable",
+    "inclinacion_frac": "aprox tan(grados): fraccion de la altura, mismo signo y misma escala que appearance.inclinacion del blueprint",
+    "hex_medido": "mediana de pixeles de la crop que cumplen una mascara HSV elegida a mano dentro de la pieza (ver medir_hex_ref.py). Las capturas llevan un velo violeta de la app sobre la caja de la pieza y la foto original esta reescalada: el hex tiene sesgo; tolerancia de color prevista DeltaE00 <= 15",
+    "hex_estimado_visual": "estimacion a ojo del anexo B (solo si difiere mucho del medido)",
+    "tipo_detector": "valores del enum DETECTED_STRUCTURE_TYPES; tipo_detector_aceptables incluye alternativas razonables"
+  },
+  "casos": {
+    "CASE-001": {
+      "carpeta": "1", "imagen": "case-001-ref.png", "overlay": "caja violeta + insignia + etiqueta sobre la base de la columna (tapa ~10% inferior); la estructura se ve",
+      "n_piezas": 1,
+      "piezas": [{
+        "id": "P1", "tipo_detector": "column", "tipo_detector_aceptables": ["column"], "nombre_usuario": "columna organica (el usuario escribio 'arco')",
+        "lado": "left", "inclinacion_deg": 8, "inclinacion_rango_deg": [3, 12], "inclinacion_frac": 0.14, "orientacion": "vertical, apoyada contra muro vegetal, cima ligeramente a la derecha",
+        "curva_hacia": "right", "top_overhang": "slight", "grounded": true, "simetria": null,
+        "densidad": "dense", "color_unico": "dorado cromado",
+        "colores": [
+          {"nombre": "dorado cromado", "acabado": "cromado", "hex_medido": "#A67B37", "hex_estimado_visual": "#C9A24A", "rol": "unico"}
+        ],
+        "r5_presentes": true, "r5_color": "dorado cromado (racimos de globos muy pequenos entre los grandes)",
+        "tamanos_dominantes": ["R-18", "R-24", "R-12", "R-5"], "tamanos_notas": "grandes cromados mezclados con racimos de ~R-5; el plan observado no tenia 5 pulgadas"
+      }],
+      "centro_mesa_globo_unico": null,
+      "incertidumbre": ["angulo estimado a ojo sobre una foto de 320x480 px"]
+    },
+    "CASE-002": {
+      "carpeta": "2", "imagen": "case-002-ref.png", "overlay": "caja violeta que abarca TODA la escena + etiqueta inferior; luz lila real de la fiesta tine todos los colores",
+      "n_piezas": 2,
+      "piezas": [
+        {"id": "P1", "tipo_detector": "half_arch", "tipo_detector_aceptables": ["half_arch", "column"], "lado": "left", "inclinacion_deg": -12, "inclinacion_rango_deg": [-18, -8], "inclinacion_frac": -0.2, "orientacion": "nace en el suelo a la izquierda del nicho y su cima se curva hacia el centro", "curva_hacia": "right", "top_overhang": "slight", "grounded": true, "simetria": "espejo de P2", "densidad": "medium"},
+        {"id": "P2", "tipo_detector": "half_arch", "tipo_detector_aceptables": ["half_arch", "column"], "lado": "right", "inclinacion_deg": 12, "inclinacion_rango_deg": [8, 18], "inclinacion_frac": 0.2, "orientacion": "nace en el suelo a la derecha del nicho y su cima se curva hacia el centro", "curva_hacia": "left", "top_overhang": "slight", "grounded": true, "simetria": "espejo de P1", "densidad": "medium"}
+      ],
+      "colores_compartidos": [
+        {"nombre": "rosa pastel", "acabado": "mate", "hex_medido": "#D6A2CA", "hex_estimado_visual": "#F2B6CF", "nota": "sesgado a lila por la luz"},
+        {"nombre": "gris azulado claro", "acabado": "mate", "hex_medido": "#BAB3C7", "hex_estimado_visual": "#C8CFDA"},
+        {"nombre": "plata", "acabado": "cromado", "hex_medido": "#ADA2A4", "hex_estimado_visual": "#B7B7C0", "nota": "hex_medido aproximado"},
+        {"nombre": "blanco nacar", "acabado": "perlado", "hex_medido": "#F2EDF2"},
+        {"nombre": "transparente", "acabado": "burbuja transparente", "hex_medido": null}
+      ],
+      "hay_rosa_cromado": false, "hay_reflex_rosado": false,
+      "r5_presentes": true, "r5_color": null,
+      "tamanos_dominantes": ["R-12", "R-18", "R-24 plata", "R-5"],
+      "centro_mesa_globo_unico": null,
+      "incertidumbre": ["son dos piezas separadas por el nicho (hueco visible)", "inclinacion hacia el centro: estimacion", "R5 poco visibles a esta resolucion"]
+    },
+    "CASE-003": {
+      "carpeta": "3", "imagen": "case-003-ref.png", "overlay": "caja violeta sobre el borde derecho (cubre la pieza), etiqueta cubre la base; foto escasa de luz (colores oscurecidos)",
+      "n_piezas": 1,
+      "piezas": [{
+        "id": "P1", "tipo_detector": "half_arch", "tipo_detector_aceptables": ["half_arch", "garland"], "nombre_usuario": "semiarco organico, no guirnalda",
+        "lado": "right", "inclinacion_deg": -12, "inclinacion_rango_deg": [-20, -5], "inclinacion_frac": -0.2,
+        "orientacion": "VERTICAL (80-90 grados respecto de la horizontal): cuelga del borde superior de la foto por el borde derecho del respaldo arqueado; la foto la corta por arriba",
+        "curva_hacia": "left", "top_overhang": "slight", "grounded": false, "simetria": null, "densidad": "medium"
+      }],
+      "colores": [
+        {"nombre": "crema/blanco", "acabado": "mate", "hex_medido": "#C5BDB5", "hex_estimado_visual": "#F4EFE6"},
+        {"nombre": "dorado champan", "acabado": "cromado/silk", "hex_medido": "#937E5F", "hex_estimado_visual": "#C9A24A", "nota": "mascara con pocos pixeles"},
+        {"nombre": "rosa empolvado", "acabado": "mate/cromado", "hex_medido": "#A78677", "hex_estimado_visual": "#D9B7A6", "ubicacion": "extremo superior"},
+        {"nombre": "bronce/moca", "acabado": "cromado", "hex_medido": "#624C3E", "hex_estimado_visual": "#8C6A4E", "ubicacion": "extremo inferior"}
+      ],
+      "r5_presentes": true, "r5_color": "crema y dorado, pocos",
+      "tamanos_dominantes": ["R-12", "R-18", "R-5"],
+      "centro_mesa_globo_unico": null,
+      "incertidumbre": ["una persona experta podria llamarlo guirnalda o semiarco: el usuario dice semiarco; se aceptan ambos tipos pero la ORIENTACION vertical no es negociable"]
+    },
+    "CASE-004": {
+      "carpeta": "4", "imagen": "case-004-ref.png", "overlay": "caja violeta sobre la pieza, etiqueta tapa la parte baja",
+      "n_piezas": 1,
+      "piezas": [{
+        "id": "P1", "tipo_detector": "half_arch", "tipo_detector_aceptables": ["half_arch"], "lado": "right",
+        "inclinacion_deg": -21, "inclinacion_rango_deg": [-26, -15], "inclinacion_frac": -0.38,
+        "orientacion": "nace a la derecha del respaldo arqueado; la cima (globo malva) queda a la izquierda de la base y encima del respaldo", "curva_hacia": "left", "top_overhang": "slight", "grounded": true, "simetria": null, "densidad": "medium"
+      }],
+      "colores": [
+        {"nombre": "coral", "acabado": "mate", "hex_medido": "#D06255", "hex_estimado_visual": "#E8685A"},
+        {"nombre": "rosa pastel", "acabado": "mate", "hex_medido": "#E7B2B5", "hex_estimado_visual": "#F4A7A7"},
+        {"nombre": "blanco", "acabado": "mate", "hex_medido": "#EAE3E9"},
+        {"nombre": "malva/lila", "acabado": "mate", "hex_medido": "#B3A1BE", "hex_estimado_visual": "#B7A3C6", "nota": "un globo grande en la cima"},
+        {"nombre": "plata", "acabado": "cromado", "hex_medido": "#A8A5A9", "hex_estimado_visual": "#B9B2B2", "nota": "SOLO en racimos R-5"}
+      ],
+      "hay_rosa_cromado": false,
+      "r5_presentes": true, "r5_color": "plata cromada, racimos de 2-3 intercalados a lo largo de todo el arco",
+      "tamanos_dominantes": ["R-12", "R-9", "R-18/R-24 (un globo grande malva y uno rosa)", "R-5"],
+      "orden_secciones": "malva (cima) - coral - rosa pastel/blanco - coral (base)",
+      "centro_mesa_globo_unico": null,
+      "incertidumbre": []
+    },
+    "CASE-005": {
+      "carpeta": "5", "imagen": "case-005-ref.png", "overlay": "dos cajas violeta y dos etiquetas grandes encima del montaje, que ocupa solo ~210x130 px de la crop (muy pequeno)",
+      "n_piezas": 2,
+      "piezas": [
+        {"id": "P1", "tipo_detector": "half_arch", "tipo_detector_aceptables": ["half_arch", "arch"], "lado": "left", "inclinacion_deg": null, "inclinacion_rango_deg": null, "inclinacion_frac": null, "orientacion": "nace del suelo a la izquierda y cruza arriba sobre el respaldo rosa (cima hacia la derecha)", "curva_hacia": "right", "top_overhang": "strong", "grounded": true, "densidad": "medium", "patron": "secciones: racimos rosa / azul alternados"},
+        {"id": "P2", "tipo_detector": "column", "tipo_detector_aceptables": ["column", "half_arch"], "nombre_usuario": "columna organica (no guirnalda)", "lado": "right", "inclinacion_deg": 0, "inclinacion_rango_deg": [-8, 8], "inclinacion_frac": 0.0, "orientacion": "vertical junto al respaldo azul", "curva_hacia": "none", "top_overhang": "slight", "grounded": true, "densidad": "medium", "patron": "secciones: rosa / azul alternados"}
+      ],
+      "colores_compartidos": [
+        {"nombre": "fucsia / rosa fuerte", "acabado": "mate/brillante", "hex_medido": "#D54D9C", "hex_estimado_visual": "#E8478F"},
+        {"nombre": "azul medio (cornflower/cielo)", "acabado": "mate/brillante", "hex_medido": "#3864AA", "hex_estimado_visual": "#4F8FE0", "nota": "NO es azul marino (#1F2F6B)"},
+        {"nombre": "rosa claro", "acabado": "mate", "hex_medido": null},
+        {"nombre": "azul claro/cielo", "acabado": "mate", "hex_medido": null}
+      ],
+      "r5_presentes": null, "r5_color": null,
+      "tamanos_dominantes": ["R-12", "R-5 (racimos, incierto)"],
+      "centro_mesa_globo_unico": null,
+      "incertidumbre": ["resolucion muy baja del montaje: tipos y R5 no determinables con certeza", "el recuadro de la app 'guirnalda' encierra en realidad la columna derecha"]
+    },
+    "CASE-006": {
+      "carpeta": "6", "imagen": "case-006-ref.png", "overlay": "caja violeta enorme sobre todo el marco de globos + etiquetas; velo violeta sobre el color; centro de mesa tapado por etiqueta",
+      "n_piezas": 2,
+      "piezas": [
+        {"id": "P1", "tipo_detector": "arch", "tipo_detector_aceptables": ["arch"], "nombre_usuario": "arco completo (no semiarco), asimetrico en tamanos", "lado": "center", "lado_aceptables": ["center", "full_width"], "inclinacion_deg": 0, "inclinacion_rango_deg": [-5, 5], "inclinacion_frac": 0, "orientacion": "marco completo: columna izquierda, banda superior, columna derecha mas larga y delgada", "curva_hacia": "none", "top_overhang": "none", "grounded": true, "simetria": "asymmetric", "densidad": "dense", "patron": "zonas oscuras (merlot/malva/plata) izquierda y arriba; claras (blanco/rosa/gris) a la derecha"},
+        {"id": "P2", "tipo_detector": "centerpiece", "tipo_detector_aceptables": ["centerpiece"], "lado": "center", "cantidad_globos": 1, "orientacion": null, "inclinacion_deg": null, "inclinacion_frac": null, "acabado": "transparente con confeti plateado", "tamano_aprox": "R-24 a R-36", "densidad": null}
+      ],
+      "colores_arco": [
+        {"nombre": "merlot / borgona", "acabado": "mate/cromado oscuro", "hex_medido": "#5B303D", "hex_estimado_visual": "#7A2538"},
+        {"nombre": "plata cromada", "acabado": "cromado", "hex_medido": "#ADA2A4", "hex_estimado_visual": "#B4B4BE"},
+        {"nombre": "blanco nacar", "acabado": "perlado", "hex_medido": "#DDCFD5", "hex_estimado_visual": "#F1ECF0"},
+        {"nombre": "rosa palido", "acabado": "mate", "hex_medido": "#DCC9D0", "hex_estimado_visual": "#EBC3CE"},
+        {"nombre": "malva/ciruela", "acabado": "mate", "hex_medido": null, "hex_estimado_visual": "#8E4A72"},
+        {"nombre": "gris metalico / negro", "acabado": "cromado", "hex_medido": null, "hex_estimado_visual": "#4A4A55"}
+      ],
+      "hay_cafe_cobre": false,
+      "r5_presentes": true, "r5_color": "plata y merlot, intercalados",
+      "tamanos_dominantes": ["R-12", "R-9", "R-5", "R-18/R-24"],
+      "centro_mesa_globo_unico": true,
+      "centro_mesa_color": {"nombre": "transparente (cristal)", "hex_medido": null},
+      "incertidumbre": ["las dos columnas del arco no son simetricas en altura (izquierda parcialmente tapada)", "el color real del merlot esta oscurecido por la luz lila"]
+    },
+    "CASE-007": {
+      "carpeta": "7", "imagen": "case-007-ref.png", "overlay": "dos cajas violeta, etiquetas tapan base del semiarco y parte del aro",
+      "n_piezas": 2,
+      "piezas": [
+        {"id": "P1", "tipo_detector": "half_arch", "tipo_detector_aceptables": ["half_arch", "column"], "lado": "left", "inclinacion_deg": null, "inclinacion_rango_deg": [-10, 10], "inclinacion_frac": null, "orientacion": "pegado a la pared, alto, organico, paleta pastel; foto cortada por arriba y por la izquierda", "curva_hacia": null, "top_overhang": null, "grounded": true, "densidad": "medium"},
+        {"id": "P2", "tipo_detector": "hoop", "tipo_detector_aceptables": ["hoop"], "lado": "right", "lado_nota": "ocupa la mitad derecha de la foto; la app lo etiquetaba 'centro'", "orientacion": "aro (hula) colgante o vertical, de ~1 m, con globos intercalados de forma rala: se ve el alambre/aro", "densidad": "airy", "grosor": "delgado, globos ralos"}
+      ],
+      "colores_compartidos": [
+        {"nombre": "blanco/verde menta muy claro", "acabado": "mate/perlado", "hex_medido": "#C8CFCB", "hex_estimado_visual": "#E5EEE8", "nota": "mascara con pocos pixeles"},
+        {"nombre": "azul polvo", "acabado": "mate", "hex_medido": "#BCC5DC", "hex_estimado_visual": "#B5CCE6"},
+        {"nombre": "durazno", "acabado": "mate", "hex_medido": "#E8B594", "hex_estimado_visual": "#F3C3A0"},
+        {"nombre": "dorado cromado", "acabado": "cromado", "hex_medido": "#B48620", "hex_estimado_visual": "#C8A23A"},
+        {"nombre": "cobre/naranja mate (un globo grande)", "acabado": "mate", "hex_medido": "#A35414"}
+      ],
+      "hay_coral_saturado": false, "hay_menta_saturada": false, "hay_azul_cian": false,
+      "r5_presentes": null, "r5_color": null,
+      "tamanos_dominantes": ["R-12", "R-18", "R-9"],
+      "centro_mesa_globo_unico": null,
+      "incertidumbre": ["los blancos tienen matiz verdoso: no se sabe si son 'menta' pastel o blanco con luz", "el '2' dorado y los ojos de monstruo no son estructuras de globos"]
+    },
+    "CASE-008": {
+      "carpeta": "8", "imagen": "case-008-ref.png", "overlay": "borde blanco + etiqueta inferior; casi sin velo",
+      "n_piezas": 1,
+      "piezas": [{
+        "id": "P1", "tipo_detector": "ceiling_installation", "tipo_detector_aceptables": ["ceiling_installation", "balloon_wall"], "lado": "full_width",
+        "inclinacion_deg": null, "inclinacion_frac": null, "orientacion": "masa densa de globos vista hacia arriba con cintas largas colgando; globo transparente naranja grande arriba",
+        "densidad": "dense", "simetria": "asymmetric"
+      }],
+      "colores": [
+        {"nombre": "amarillo", "acabado": "mate", "hex_medido": "#F0BD13", "hex_estimado_visual": "#F3D81C"},
+        {"nombre": "naranja", "acabado": "mate", "hex_medido": "#F16718", "hex_estimado_visual": "#EE6A1F"},
+        {"nombre": "naranja cobrizo", "acabado": "mate", "hex_medido": "#CF3E11", "hex_estimado_visual": "#CC4E12"},
+        {"nombre": "durazno/neon", "acabado": "mate", "hex_medido": "#ECA878", "hex_estimado_visual": "#F1A774"},
+        {"nombre": "verde oscuro metalico", "acabado": "cromado", "hex_medido": "#1D7451", "hex_estimado_visual": "#1B7A4A"},
+        {"nombre": "naranja translucido (globo grande)", "acabado": "transparente", "hex_medido": null}
+      ],
+      "r5_presentes": true, "r5_color": "amarillo/naranja/verde",
+      "tamanos_dominantes": ["variados R-5 a R-24 y un globo ~R-36 transparente"],
+      "centro_mesa_globo_unico": null,
+      "incertidumbre": ["sin .txt del usuario: la verdad de las fallas se infiere de las capturas"]
+    }
+  },
+  "recortes": "case-00N-ref.png: recorte de la foto dentro de la captura de la app; contiene el overlay de la app (cajas, insignias, etiquetas), que no se pudo quitar; 320x480 px (720x480 en los horizontales)"
+}

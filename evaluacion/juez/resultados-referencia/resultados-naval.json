@@ -1,0 +1,62 @@
+[
+ {
+  "id": "F7-5",
+  "grupo": "naval-r1",
+  "ref": "../validacion-fase7/entradas/case-005-ref.png",
+  "img": "../validacion-fase4/naval-v2/caso-5/corrida-1/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 30,
+   "nota_min": 30,
+   "nota_max": 30,
+   "composicion": 3,
+   "geometria": 2,
+   "colores": 7,
+   "orden_color": 5,
+   "escala": 6,
+   "densidad": 6,
+   "orientacion": 4,
+   "topologia": 2,
+   "atrezo_inventado": [
+    "Telón dorado con brillo",
+    "Estructuras escalonadas oscuras tipo podio"
+   ],
+   "defectos": [
+    "La guirnalda lateral abierta de la referencia se convierte en un arco casi cerrado alrededor del centro.",
+    "La decoración se reorganiza como una sola estructura envolvente, en vez de concentrarse arriba y a la derecha.",
+    "Se añaden grandes globos rosa pálido, ausentes en la referencia.",
+    "El telón y los podios cambian mucho el entorno, aunque no cuentan como decoración de globos."
+   ]
+  }
+ },
+ {
+  "id": "F7-5",
+  "grupo": "naval-r2",
+  "ref": "../validacion-fase7/entradas/case-005-ref.png",
+  "img": "../validacion-fase4/naval-v2/caso-5/corrida-2/imagen-flux/final.png",
+  "visual": {
+   "n": 1,
+   "nota": 34,
+   "nota_min": 34,
+   "nota_max": 34,
+   "composicion": 4,
+   "geometria": 3,
+   "colores": 7,
+   "orden_color": 6,
+   "escala": 6,
+   "densidad": 7,
+   "orientacion": 5,
+   "topologia": 5,
+   "atrezo_inventado": [
+    "Fondo de cortina dorada de lentejuelas en lugar del panel central de lentejuelas cuadradas y paredes iluminadas de la referencia."
+   ],
+   "defectos": [
+    "La guirnalda de un solo lado se convierte en un arco en U que ocupa ambos lados.",
+    "Falta el gran panel rectangular de lentejuelas que enmarca la guirnalda.",
+    "La guirnalda generada tiene globos más uniformes y agrupados en una curva continua.",
+    "Se pierden varios globos transparentes con confeti y los detalles florales integrados entre los globos.",
+    "La distribución de globos azul marino y dorados no reproduce la de la referencia."
+   ]
+  }
+ }
+]

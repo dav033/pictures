@@ -1,0 +1,50 @@
+[
+  {
+    "id": "005",
+    "grupo": "antes",
+    "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+    "img": "../validacion-fase4/planes-ui4/caso-5/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "006",
+    "grupo": "antes",
+    "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+    "img": "../validacion-fase4/planes-ui4/caso-6/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "007",
+    "grupo": "antes",
+    "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+    "img": "../validacion-fase4/planes-reencuadre/caso-7/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "005",
+    "grupo": "despues",
+    "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+    "img": "../validacion-fase4/planes-reencuadre/caso-5/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "006",
+    "grupo": "despues",
+    "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+    "img": "../validacion-fase4/planes-vino5/caso-6/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "007",
+    "grupo": "despues",
+    "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+    "img": "../validacion-fase4/planes-aro/caso-7/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "ganchos",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "columnas",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/forma-v4/caso-2/corrida-2/imagen-flux/final.png"
+  }
+]

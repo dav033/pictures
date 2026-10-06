@@ -1,0 +1,76 @@
+{
+ "items": [
+  {
+   "caso_n": 1,
+   "image_sha256": "1285930ad900392d1f00501869459cd1a0d68d18ad018ff60e267994d1a559b0",
+   "ruta_privada": "sin-etiquetas/case-001-ref.png",
+   "tamano": [
+    320,
+    480
+   ]
+  },
+  {
+   "caso_n": 2,
+   "image_sha256": "b3c55c2f2047b0e5a9607fc17fa995ed7c836f60ef02a457671361776db99440",
+   "ruta_privada": "sin-etiquetas/case-002-ref.png",
+   "tamano": [
+    720,
+    480
+   ]
+  },
+  {
+   "caso_n": 3,
+   "image_sha256": "cbd2e44c675e759634f6ca62360d35e44f39c34573ef66275b2876c4651e5f02",
+   "ruta_privada": "sin-etiquetas/case-003-ref.png",
+   "tamano": [
+    320,
+    480
+   ]
+  },
+  {
+   "caso_n": 4,
+   "image_sha256": "e89be2eabccf88412054f78acb06a9aa2984ab2c0da3a13fd47a7ba0326101e4",
+   "ruta_privada": "sin-etiquetas/case-004-ref.png",
+   "tamano": [
+    320,
+    480
+   ]
+  },
+  {
+   "caso_n": 5,
+   "image_sha256": "06d7e1d7892354af6e7f58462cb2d541bb559820cc7a5ba76d518a9ce8908d7c",
+   "ruta_privada": "sin-etiquetas/case-005-ref.png",
+   "tamano": [
+    320,
+    480
+   ]
+  },
+  {
+   "caso_n": 6,
+   "image_sha256": "1a28d878f6af2299990029c59edef96bfd58c92f986daccdd426f6eb90b22be5",
+   "ruta_privada": "sin-etiquetas/case-006-ref.png",
+   "tamano": [
+    720,
+    480
+   ]
+  },
+  {
+   "caso_n": 7,
+   "image_sha256": "03db7bfe2b741314e1c662c1fe94537c9768e89f9629dc812eec94b39d6da213",
+   "ruta_privada": "sin-etiquetas/case-007-ref.png",
+   "tamano": [
+    360,
+    480
+   ]
+  },
+  {
+   "caso_n": 8,
+   "image_sha256": "86b0b476af1322a0cdab6e121930a9c529fe5f6edf24d1e0f733a6ce19866f5b",
+   "ruta_privada": "sin-etiquetas/case-008-ref.png",
+   "tamano": [
+    320,
+    480
+   ]
+  }
+ ]
+}

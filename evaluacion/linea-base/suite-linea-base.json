@@ -1,0 +1,54 @@
+{
+  "suite_id": "linea-base-images-judge-20261005",
+  "taxonomy_version": "estructuras-2.0.0",
+  "items": [
+    {
+      "image_sha256": "61e95deb84cc52b867eca24505b123f24c1d9848dc99933f27a828e76f51f950",
+      "ruta_privada": "case-001-ref.png",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "201b875baa6e1b7a48f5cecd0391c9c521e6df41570e4b58da43968aa64c74c4",
+      "ruta_privada": "case-002-ref.png",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "d70477a40f93b9e4d33aa3e74db0b5122cb03c1fc2a6036e27e0b96413f462c7",
+      "ruta_privada": "case-003-ref.png",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "1f17c2e66dad2597a8094e1ae6cb926a6fce2796afe5802456374f3ca442584a",
+      "ruta_privada": "case-004-ref.png",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "22c1e40f806423683402b52d5e303e73e5d4fb21fc1695014435895646a07285",
+      "ruta_privada": "case-005-ref.png",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "98692f7aed57844b5f637dba7c7852887f98aa93a8098c0d1ef332ad62a88d24",
+      "ruta_privada": "case-006-ref.png",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "78cd8576a6b12852443972bf7cb98468c10be5c0dadc520d1d100407fa5e8c07",
+      "ruta_privada": "case-007-ref.png",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    },
+    {
+      "image_sha256": "cf5c757d92d799be40f329a9d0604f9d18a92a3b4f18de2f033f729d9b825cbc",
+      "ruta_privada": "case-008-ref.png",
+      "evaluacion_con_proveedor_externo": true,
+      "envio_proveedores_ia_permitido": true
+    }
+  ]
+}

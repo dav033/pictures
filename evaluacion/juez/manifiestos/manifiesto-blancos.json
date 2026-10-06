@@ -1,0 +1,20 @@
+[
+  {
+    "id": "002",
+    "grupo": "sin-wb",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/forma-v4/caso-2/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "wb-r1",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/blancos-v6/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "wb-r2",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/blancos-v6/caso-2/corrida-2/imagen-flux/final.png"
+  }
+]

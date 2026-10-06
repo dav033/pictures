@@ -1,0 +1,314 @@
+[
+  {
+    "id": "001",
+    "grupo": "base-r1",
+    "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-1/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "001",
+    "grupo": "base-r2",
+    "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-1/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "base-r1",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "base-r2",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-2/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "003",
+    "grupo": "base-r1",
+    "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-3/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "003",
+    "grupo": "base-r2",
+    "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-3/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "004",
+    "grupo": "base-r1",
+    "ref": "../linea-base/sin-etiquetas/case-004-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-4/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "004",
+    "grupo": "base-r2",
+    "ref": "../linea-base/sin-etiquetas/case-004-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-4/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "005",
+    "grupo": "base-r1",
+    "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-5/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "005",
+    "grupo": "base-r2",
+    "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-5/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "006",
+    "grupo": "base-r1",
+    "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-6/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "006",
+    "grupo": "base-r2",
+    "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-6/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "007",
+    "grupo": "base-r1",
+    "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-7/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "007",
+    "grupo": "base-r2",
+    "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-7/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "008",
+    "grupo": "base-r1",
+    "ref": "../linea-base/sin-etiquetas/case-008-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-8/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "008",
+    "grupo": "base-r2",
+    "ref": "../linea-base/sin-etiquetas/case-008-ref.png",
+    "img": "../validacion-fase4/estable-3x/caso-8/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-1",
+    "grupo": "base-r1",
+    "ref": "../validacion-fase7/entradas/case-001-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-1/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-1",
+    "grupo": "base-r2",
+    "ref": "../validacion-fase7/entradas/case-001-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-1/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-2",
+    "grupo": "base-r1",
+    "ref": "../validacion-fase7/entradas/case-002-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-2",
+    "grupo": "base-r2",
+    "ref": "../validacion-fase7/entradas/case-002-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-2/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-3",
+    "grupo": "base-r1",
+    "ref": "../validacion-fase7/entradas/case-003-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-3/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-3",
+    "grupo": "base-r2",
+    "ref": "../validacion-fase7/entradas/case-003-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-3/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-4",
+    "grupo": "base-r1",
+    "ref": "../validacion-fase7/entradas/case-004-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-4/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-4",
+    "grupo": "base-r2",
+    "ref": "../validacion-fase7/entradas/case-004-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-4/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-5",
+    "grupo": "base-r1",
+    "ref": "../validacion-fase7/entradas/case-005-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-5/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-5",
+    "grupo": "base-r2",
+    "ref": "../validacion-fase7/entradas/case-005-ref.png",
+    "img": "../validacion-fase4/estable-3x-f7/caso-5/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "001",
+    "grupo": "v2-r1",
+    "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-1/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "001",
+    "grupo": "v2-r2",
+    "ref": "../linea-base/sin-etiquetas/case-001-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-1/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "v2-r1",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "002",
+    "grupo": "v2-r2",
+    "ref": "../linea-base/sin-etiquetas/case-002-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-2/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "003",
+    "grupo": "v2-r1",
+    "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-3/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "003",
+    "grupo": "v2-r2",
+    "ref": "../linea-base/sin-etiquetas/case-003-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-3/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "004",
+    "grupo": "v2-r1",
+    "ref": "../linea-base/sin-etiquetas/case-004-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-4/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "004",
+    "grupo": "v2-r2",
+    "ref": "../linea-base/sin-etiquetas/case-004-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-4/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "005",
+    "grupo": "v2-r1",
+    "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-5/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "005",
+    "grupo": "v2-r2",
+    "ref": "../linea-base/sin-etiquetas/case-005-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-5/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "006",
+    "grupo": "v2-r1",
+    "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-6/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "006",
+    "grupo": "v2-r2",
+    "ref": "../linea-base/sin-etiquetas/case-006-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-6/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "007",
+    "grupo": "v2-r1",
+    "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-7/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "007",
+    "grupo": "v2-r2",
+    "ref": "../linea-base/sin-etiquetas/case-007-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-7/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "008",
+    "grupo": "v2-r1",
+    "ref": "../linea-base/sin-etiquetas/case-008-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-8/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "008",
+    "grupo": "v2-r2",
+    "ref": "../linea-base/sin-etiquetas/case-008-ref.png",
+    "img": "../validacion-fase4/medida-v2/caso-8/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-1",
+    "grupo": "v2-r1",
+    "ref": "../validacion-fase7/entradas/case-001-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-1/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-1",
+    "grupo": "v2-r2",
+    "ref": "../validacion-fase7/entradas/case-001-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-1/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-2",
+    "grupo": "v2-r1",
+    "ref": "../validacion-fase7/entradas/case-002-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-2/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-2",
+    "grupo": "v2-r2",
+    "ref": "../validacion-fase7/entradas/case-002-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-2/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-3",
+    "grupo": "v2-r1",
+    "ref": "../validacion-fase7/entradas/case-003-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-3/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-3",
+    "grupo": "v2-r2",
+    "ref": "../validacion-fase7/entradas/case-003-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-3/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-4",
+    "grupo": "v2-r1",
+    "ref": "../validacion-fase7/entradas/case-004-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-4/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-4",
+    "grupo": "v2-r2",
+    "ref": "../validacion-fase7/entradas/case-004-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-4/corrida-2/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-5",
+    "grupo": "v2-r1",
+    "ref": "../validacion-fase7/entradas/case-005-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-5/corrida-1/imagen-flux/final.png"
+  },
+  {
+    "id": "F7-5",
+    "grupo": "v2-r2",
+    "ref": "../validacion-fase7/entradas/case-005-ref.png",
+    "img": "../validacion-fase4/medida-v2-f7/caso-5/corrida-2/imagen-flux/final.png"
+  }
+]
