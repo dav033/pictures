@@ -173,7 +173,11 @@ Tamaño:
 5. **Renombrar** `sempertex-lora.ts` → `flux.ts`, `lora-caption-compiler.ts` → `caption-flux.ts`, etc., y `fal-ai/flux-2/lora/edit` →
    `fal-ai/flux-2/edit` si fal lo admite con las mismas entradas (comprobar con 1 imagen y tope).
 6. `data/staging` y tablas `lora_*`: solo con confirmación explícita del dueño.
-   Etapa 4 en curso (2026-10-06 tarde): rama `etapa4-borrado`, worktree `Downloads/e3l`, Codex; sin tocar `data/staging` ni tablas.
+   Etapa 4 hecha en rama (2026-10-06 tarde): `etapa4-borrado`, worktree `Downloads/e3l`, commits 9514139..973cd2a: 132 archivos,
+   −25 583 líneas (administración, APIs `/api/lora/*`, modos entrenados, vocabularios, utilidades de dataset, scripts y pruebas de
+   entrenamiento); `vocabulario-base.ts` y `descriptor-perceptual.ts` movidos a `src/lib/ia/kagutsuchi/`; sin tocar `data/staging`,
+   migraciones ni tablas. tsc, lint (0 errores), export de contratos (36), pruebas del camino base, pytest 3/3, ruff. SIN fusionar:
+   en revisión adversarial (camino FLUX base, chat, vista guiada, scripts de package.json colgantes).
 Tras cada etapa: `tsc`, `eslint` de lo tocado, pruebas puntuales y 1-2 imágenes FLUX de control (001 y 002), juzgadas con Codex.
 
 ## 4. Misión de fidelidad foto → imagen (estado al 2026-10-06)
@@ -218,7 +222,9 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    3.ª pasada (2026-10-06 tarde, commit 83f1f14 + merge de la principal 1505ac7, US$0): la escala ya no se ancla en la altura
    estándar; prioriza medidas del cliente y semiarcos; caja que toca el borde conserva la medida del motor con aviso; el grosor de la
    columna orgánica sale de la caja sin cortar. Dueño 1,35 × 0,72 m; CASE-002 1,8 m (caja cortada arriba); F7-5 sin cambio.
-   pytest 11/11, tsc, ruff, contracts:check. En revisión adversarial antes de fusionar.
+   pytest 11/11, tsc, ruff, contracts:check. Revisión adversarial: 3 fallos (medida explícita del cliente ignorada en el armado,
+   `aspect_ratio` ausente supuesto 1.0, `pared_organica` fuera) → corregidos en 4e0b8de (pytest 14/14); segunda revisión en curso
+   (incluye comprobar por qué la proporción medida de la foto del dueño sale 1,0).
 2. **Colores de la foto del dueño 2026-10-06** (semiarco + columna orgánicos en rosa empolvado mate, crema, perla rosa claro y
    burbujas transparentes; foto en `Downloads/WhatsApp Image 2026-10-06 at 9.58.10 AM.jpeg`, datos en
    `informes-calidad/dueno-2026-10-06/`). Salió: «Fashion Chocolate 076» en la lista (no hay marrón); el plan compra «Rosado mate»
@@ -235,7 +241,10 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    de gris. 3.ª pasada (2026-10-06 tarde, commits d872f57, merge 40f5393, b69cdab, US$0): solo las etiquetas del analizador
    autorizan tonos (los píxeles ordenan y pesan); blanco nombrado sigue blanco aunque la luz lo mida gris/lila; CASE-002 offline:
    plata + rosa + blanco, cero gris. Duda abierta: el blueprint archivado de CASE-002 nombra «matte light grey». En revisión
-   adversarial (riesgo: colores no nombrados que sí están en la foto, p. ej. 044 de F7-5).
+   adversarial: sin bloqueantes (F7-5 conserva 044; foto del dueño semiarco crema 69,1/rosado 23,4, columna rosado 55,7/crema 33,5, sin
+   chocolate). Medios en corrección (Codex): transparencia en etiquetas compuestas («clear gold confetti»), «matte light grey»
+   archivado de CASE-002 habilita gris; bajos: crema sin referencia medida, constante huérfana. Pendiente de diseño: mostrar tonos
+   no nombrados para que el cliente los confirme (no se compran solos).
    Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
    Pendiente aparte: `test-guia-estructura.ts` ya falla en la rama principal (espera `#f2a7c3`, sale `#f8a3bc` en guirnalda-pared).
 3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
@@ -299,6 +308,10 @@ Tarde del 2026-10-06 (verificado en el navegador): tras «Aprender» salen las 4
 HAPPIA/Master Balloon Pro + 1 distribuidor por ciudad, con especialidad y cobertura) con «Solicitar cotización» resuelto en la
 conversación (sin enlaces a example.com); boda con el impreso real «Nuestra Boda Reflex Dorado» (antes uno de comunión); negocio:
 «Ajustar mi precio» con 30 % → $61.832 + $18.550 = $80.382; celular (390 px): compositor fijo abajo (antes se desplazaba la página).
+Más tarde: idea «Fiesta tropical» con el kit real Verano Tropical (variantes verificadas en el snapshot); sin coincidencia exacta,
+la búsqueda no ofrece ideas de otro evento (un cumpleaños de 35 recibía un baby shower); fotos de kit completas sobre blanco;
+miniatura de la foto de inspiración en el mensaje del cliente; «Ninguna me convence» + foto verificado (la IA ve la foto y propone
+ideas «Parecida»). 2026-10-06 ~13:35 el sistema cortó por memoria los procesos en segundo plano; el servidor Next sobrevivió.
 
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
