@@ -194,11 +194,16 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
 ### 4.4 Pendiente de fidelidad (en orden)
 1. **Ancho/alto de las piezas laterales**: el chat inventa medidas (F7-5 ocupa el 83 % del ancho de la foto y el chat pide 1,2 m; el 002 a
    veces 1,8 m de alto cuando llega al techo; 003 cruza demasiado por arriba). Propiedad huérfana: proporción de la caja de la foto.
-2. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
-3. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
-4. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
-5. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
-6. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
+2. **Una sombra no es un color** (2026-10-06, foto del dueño rosa empolvado/crema sin marrón → la lista Sempertex mostraba «Fashion
+   Chocolate 076»): `medirColoresSempertex` cruza cada grupo ≥6 % con la referencia más cercana sin preguntarse si es la cara en
+   sombra de otro color medido (#7a443d en la columna, 7 %, abajo). En curso en la rama `fix/sombra-no-es-color` (worktree
+   `Downloads/e3e`, Codex): juntar la sombra con su color si el analizador no nombró ese color oscuro; verificar antes/después en
+   las 13 fotos sin coste.
+3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
+4. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
+5. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
+6. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
+7. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
 
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
