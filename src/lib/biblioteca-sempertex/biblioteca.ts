@@ -70,7 +70,9 @@ function puntajeEdad(edad: number | undefined, decoracion: DecoracionSempertex):
   return edad >= decoracion.edad.min && edad <= decoracion.edad.max ? 2 : -4;
 }
 
-export function buscarDecoracionesSempertex(entrada: { evento?: string; edad?: number; tematica?: string }, catalogo: DecoracionSempertex[] = bibliotecaVisible()): CoincidenciaDecoracion[] {
+export function buscarDecoracionesSempertex(entradaCruda: { evento?: string; edad?: number; tematica?: string }, catalogo: DecoracionSempertex[] = bibliotecaVisible()): CoincidenciaDecoracion[] {
+  // El asistente guarda edad 0 cuando no la sabe (boda, graduación…): 0 es «sin edad», no un bebé de 0 años.
+  const entrada = { ...entradaCruda, edad: entradaCruda.edad && entradaCruda.edad > 0 ? entradaCruda.edad : undefined };
   const temaConsulta = normalizarBusqueda(entrada.tematica ?? "");
   const esBabyShower = contieneAlguno(normalizarBusqueda(entrada.evento ?? ""), ["baby shower", "bienvenida de bebe"]);
   // «niño»/«niña» en «cumpleaños de mi niño de 7» no es un baby shower: esos grupos solo cuentan si el evento lo es.
