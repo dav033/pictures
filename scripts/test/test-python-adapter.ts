@@ -19,7 +19,7 @@ import {
   llamarPythonEmbedding,
   llamarPythonIntentParse,
   llamarPythonHappieGenerate,
-  llamarPythonLoraGenerate,
+  llamarPythonFluxGenerate,
   llamarPythonPatronReferencia,
   llamarPythonPlanResolution,
   llamarPythonReferenceTurn,
@@ -660,7 +660,7 @@ async function testPatronReferenciaEnvelope(): Promise<void> {
   );
 }
 
-async function testLoraGenerateEnvelope(): Promise<void> {
+async function testFluxGenerateEnvelope(): Promise<void> {
   const calls: CapturedCall[] = [];
   const fetchImpl: typeof fetch = async (input, init) => {
     calls.push({ input, init });
@@ -668,13 +668,13 @@ async function testLoraGenerateEnvelope(): Promise<void> {
       image_base64: "aW1hZ2VkYXRh",
       mime: "image/png",
       provider_request_id: "req_123",
-      endpoint: "flux-2/lora/edit",
+      endpoint: "flux-2/edit",
     });
   };
-  const result = await llamarPythonLoraGenerate({
+  const result = await llamarPythonFluxGenerate({
     mode: "edit",
     prompt: "eventdecor_style_v3, arco de globos dorados",
-    loras: [{ path: "loras/eventdecor-style-v3.safetensors", scale: 1 }],
+    loras: [],
     guidanceScale: 3.5,
     numInferenceSteps: 28,
     imageWidth: 1536,
@@ -689,7 +689,7 @@ async function testLoraGenerateEnvelope(): Promise<void> {
   assert.equal(result.imageBase64, "aW1hZ2VkYXRh");
   assert.equal(result.mime, "image/png");
   assert.equal(result.providerRequestId, "req_123");
-  assert.equal(result.endpoint, "flux-2/lora/edit");
+  assert.equal(result.endpoint, "flux-2/edit");
   assert.equal(calls.length, 1);
   assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/ia/lora-generate");
   const body = JSON.parse(String(calls[0].init?.body)) as {
@@ -723,7 +723,7 @@ async function testLoraGenerateEnvelope(): Promise<void> {
     endpoint: "flux-2/lora",
   });
   await assert.rejects(
-    () => llamarPythonLoraGenerate({
+    () => llamarPythonFluxGenerate({
       mode: "text",
       prompt: "eventdecor_style_v3, algo",
       loras: [{ path: "loras/x.safetensors", scale: 1 }],
@@ -741,11 +741,11 @@ async function testLoraGenerateEnvelope(): Promise<void> {
   );
 
   const accountRejectedFetch: typeof fetch = async () => Response.json(
-    { detail: { code: "lora_account_saldo_agotado", provider_status: 402, provider_detail: "insufficient balance" } },
+    { detail: { code: "flux_account_saldo_agotado", provider_status: 402, provider_detail: "insufficient balance" } },
     { status: 503 },
   );
   await assert.rejects(
-    () => llamarPythonLoraGenerate({
+    () => llamarPythonFluxGenerate({
       mode: "text",
       prompt: "eventdecor_style_v3, algo",
       loras: [{ path: "loras/x.safetensors", scale: 1 }],
@@ -761,7 +761,7 @@ async function testLoraGenerateEnvelope(): Promise<void> {
     }),
     (error: unknown) => {
       if (!(error instanceof PythonAdapterError)) return false;
-      assert.equal(error.domainCode, "lora_account_saldo_agotado");
+      assert.equal(error.domainCode, "flux_account_saldo_agotado");
       assert.equal(error.providerStatus, 402);
       assert.equal(error.providerDetail, "insufficient balance");
       return true;
@@ -1190,7 +1190,7 @@ async function main(): Promise<void> {
   await testHappieGenerateEnvelope();
   await testReferenceTurnEnvelope();
   await testPatronReferenciaEnvelope();
-  await testLoraGenerateEnvelope();
+  await testFluxGenerateEnvelope();
   await testChatTurnStreamEnvelope();
   await testCatalogSearchEnvelope();
   await testCatalogSelectionEnvelope();

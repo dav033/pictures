@@ -115,8 +115,14 @@ export const INTENT_PARSER_PYTHON_ENABLED = process.env.INTENT_PARSER_PYTHON_ENA
 /** Default: OFF. Routes Amaterasu's two Gemini tool-calling passes (inventory + audit) through Python; the cache, retry loop and blueprint assembly stay in TypeScript either way. */
 export const REFERENCE_ANALYSIS_PYTHON_ENABLED = process.env.REFERENCE_ANALYSIS_PYTHON_ENABLED === "true";
 
-/** Default: OFF. Routes Kagutsuchi's fal.ai queue round trip (submit/poll/download, SSRF guard included) through Python; prompt composition and which references go to /edit stay in TypeScript either way. */
-export const LORA_GENERATION_PYTHON_ENABLED = process.env.LORA_GENERATION_PYTHON_ENABLED === "true";
+/** Default: OFF. Routes FLUX's fal.ai queue round trip through Python. */
+const fluxGenerationPythonFlag = process.env.FLUX_GENERATION_PYTHON_ENABLED;
+const legacyFluxGenerationPythonFlag = process.env.LORA_GENERATION_PYTHON_ENABLED;
+if (fluxGenerationPythonFlag === undefined && legacyFluxGenerationPythonFlag !== undefined) {
+  console.warn("LORA_GENERATION_PYTHON_ENABLED está obsoleta; usa FLUX_GENERATION_PYTHON_ENABLED.");
+}
+export const FLUX_GENERATION_PYTHON_ENABLED =
+  (fluxGenerationPythonFlag ?? legacyFluxGenerationPythonFlag) === "true";
 
 /** Default: OFF. Routes each Omoikane chat turn's Gemini stream through Python (docs/architecture/decisions/0027); the tool loop, the browser SSE, the prompt and the tools stay in TypeScript either way. Only /api/chat reads it -- Amaterasu's chatDe() is unaffected. */
 export const CHAT_PYTHON_ENABLED = process.env.CHAT_PYTHON_ENABLED === "true";
@@ -248,7 +254,7 @@ export function resumenBanderas(): Record<string, boolean | string> {
     CONTEO_REFERENCIA_PYTHON_ENABLED,
     GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
     REFERENCE_ANALYSIS_PYTHON_ENABLED,
-    LORA_GENERATION_PYTHON_ENABLED,
+    FLUX_GENERATION_PYTHON_ENABLED,
     CHAT_PYTHON_ENABLED,
     IMAGE_DEBUG,
   };

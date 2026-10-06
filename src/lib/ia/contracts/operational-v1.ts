@@ -6,7 +6,7 @@ export const DEADLINE_DEFAULT_MS = 75_000;
 /**
  * Raised from 75_000 for Kagutsuchi (docs/architecture/decisions/0026): the
  * direct TypeScript fal.ai path already budgets 105s of wall-clock time for
- * submit+poll+download (sempertex-lora.ts), and that request already sits
+ * submit+poll+download (flux.ts), and that request already sits
  * inside the browser-facing /api/generate call today. Routing the same round
  * trip through this boundary needs a ceiling that can fit it plus margin; the
  * default for every other operation is unaffected since they never ask for

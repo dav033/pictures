@@ -30,11 +30,11 @@
  * guirnalda de pared) y conserva los colores? ¿Devuelve una foto o el dibujo
  * retocado? ¿Pinta la carta?
  */
-import { flag, correrExperimento, resolverIdentidadLora, type Defaults } from "../lib/fal-evaluacion";
+import { flag, correrExperimento, resolverIdentidadFlux, type Defaults } from "../lib/fal-evaluacion";
 import { cerrarCorridaGuia, directorioSalida, prepararCorridaGuia } from "../lib/corrida-guia-estructura";
 
 async function main(): Promise<void> {
-  const identidad = resolverIdentidadLora(flag("artifact-id", "v007-1000"));
+  const identidad = resolverIdentidadFlux(flag("artifact-id", "v007-1000"));
   const escala = Number(flag("escala", "0.8"));
   if (!Number.isFinite(escala) || escala <= 0 || escala > 2) throw new Error("--escala espera un número entre 0 y 2.");
   const semillas = flag("semillas", "101,202,303").split(",").map((valor) => Number(valor.trim()));

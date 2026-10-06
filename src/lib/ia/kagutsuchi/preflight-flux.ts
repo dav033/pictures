@@ -1,9 +1,9 @@
 import type { SceneSpec } from "../escena/scene-spec";
-import type { LoraVisualClause } from "./lora-caption-compiler";
-import { BASE_PROMPT_MAX_LENGTH, translateLoraColor } from "./lora-caption-compiler";
-import { palabrasSoloLora } from "./texto-base";
+import type { FluxVisualClause } from "./caption-flux";
+import { BASE_PROMPT_MAX_LENGTH, translateFluxColor } from "./caption-flux";
+import { palabrasSoloFlux } from "./texto-base";
 
-export type LoraPromptPreflightReport = {
+export type FluxPromptPreflightReport = {
   ok: boolean;
   errors: string[];
   warnings: string[];
@@ -41,7 +41,7 @@ function hasWholeToken(text: string, token: string): boolean {
   return new RegExp(`\\b${token.replace(/ /g, "\\s+")}\\b`, "i").test(text);
 }
 
-export function findLoraPromptLanguageLeaks(prompt: string): string[] {
+export function findFluxPromptLanguageLeaks(prompt: string): string[] {
   const leaks = new Set<string>();
   if (SPANISH_DIACRITICS.test(prompt)) leaks.add("caracteres españoles");
   for (const token of SPANISH_TOKENS) {
@@ -59,10 +59,10 @@ function similarApprovedHeights(a: number | undefined, b: number | undefined): b
  * Cada izquierda se empareja con una derecha distinta, igual que el compilador:
  * `find` sin consumir devolvía siempre la PRIMERA derecha, así que una lateral
  * repetida cuatro veces (dos por lado) producía los pares [#1,#2] y [#3,#2] y
- * solo uno tenía cláusula ("relaciones bilaterales 1/2" -> LORA_PREFLIGHT_FAILED
+ * solo uno tenía cláusula ("relaciones bilaterales 1/2" -> FLUX_PREFLIGHT_FAILED
  * sobre un caption correcto).
  */
-function expectedBilateralPairs(sceneSpec: SceneSpec, clauses: readonly LoraVisualClause[]): Array<[string, string]> {
+function expectedBilateralPairs(sceneSpec: SceneSpec, clauses: readonly FluxVisualClause[]): Array<[string, string]> {
   const pairs: Array<[string, string]> = [];
   const used = new Set<string>();
   // Same rule as the compiler's grouping key: two different color patterns (or
@@ -75,7 +75,7 @@ function expectedBilateralPairs(sceneSpec: SceneSpec, clauses: readonly LoraVisu
       element.visual_semantics?.placement === "lateral_derecho"
       && !used.has(element.element_id)
       && element.visual_semantics.structure_type === leftElement.visual_semantics?.structure_type
-      && element.resolved_colors.map(translateLoraColor).join("|") === leftElement.resolved_colors.map(translateLoraColor).join("|")
+      && element.resolved_colors.map(translateFluxColor).join("|") === leftElement.resolved_colors.map(translateFluxColor).join("|")
       // Same rule as the compiler: sides the plan sized clearly differently
       // (±15%) or gave different roles are two designed pieces, not a mirrored pair.
       && element.visual_semantics.design_role === leftElement.visual_semantics?.design_role
@@ -112,7 +112,7 @@ const COMMERCIAL_LEAK_PATTERNS: Array<[RegExp, string]> = [
 /**
  * Detecta identificadores internos y datos comerciales que no deben llegar al proveedor.
  */
-export function findLoraPromptProductLeaks(prompt: string): string[] {
+export function findFluxPromptProductLeaks(prompt: string): string[] {
   const leaks = new Set<string>();
 
   for (const match of prompt.match(CONCEPT_ID_SHAPE_PATTERN) ?? []) {
@@ -137,13 +137,13 @@ function requiredAnchorMissing(sceneSpec: SceneSpec, prompt: string): string[] {
   return missing;
 }
 
-export function preflightLoraPrompt(input: {
+export function preflightFluxPrompt(input: {
   sceneSpec: SceneSpec;
-  clauses: LoraVisualClause[];
+  clauses: FluxVisualClause[];
   prompt: string;
   /** Límite de texto para el preflight. */
   maxLength?: number;
-}): LoraPromptPreflightReport {
+}): FluxPromptPreflightReport {
   const { sceneSpec, clauses, prompt } = input;
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -177,7 +177,7 @@ export function preflightLoraPrompt(input: {
   const relationships = { expected: bilateralPairs.length, represented: relationshipsRepresented };
   if (relationshipsRepresented !== bilateralPairs.length) errors.push(`relaciones bilaterales ${relationshipsRepresented}/${bilateralPairs.length}`);
 
-  const expectedColors = new Set(sceneSpec.elements.flatMap((element) => element.resolved_colors.map(translateLoraColor).filter(Boolean)));
+  const expectedColors = new Set(sceneSpec.elements.flatMap((element) => element.resolved_colors.map(translateFluxColor).filter(Boolean)));
   const representedColors = [...expectedColors].filter((color) => prompt.toLowerCase().includes(color.toLowerCase())).length;
   const colors = { expected: expectedColors.size, represented: representedColors };
   if (representedColors !== expectedColors.size) errors.push(`cobertura de colores ${representedColors}/${expectedColors.size}`);
@@ -192,7 +192,7 @@ export function preflightLoraPrompt(input: {
 
   errors.push(...basePromptErrors(prompt, clauses, warnings));
   if (/(?:EST_\d{2}|CATALOG_|EDIT_|SKU|package|paquete|precio|price|\b\d+\s*(?:COP|USD))/.test(prompt)) errors.push("aparecen IDs, precios o datos de compra");
-  const untranslated = findLoraPromptLanguageLeaks(prompt);
+  const untranslated = findFluxPromptLanguageLeaks(prompt);
   if (untranslated.length) errors.push(`texto español sin traducir: ${untranslated.join(", ")}`);
   // Catches the compiler contradicting itself about where the focal piece
   // sits (e.g. both "framing the venue entrance" and "centered around the
@@ -212,7 +212,7 @@ export function preflightLoraPrompt(input: {
   if (prompt.length > maxLength) errors.push(`longitud ${prompt.length} supera límite ${maxLength}`);
   if (prompt.length < 350) warnings.push(`caption corta (${prompt.length} caracteres)`);
 
-  const productLeaks = findLoraPromptProductLeaks(prompt);
+  const productLeaks = findFluxPromptProductLeaks(prompt);
   if (productLeaks.length) errors.push(`fuga de producto: ${productLeaks.join("; ")}`);
 
   return {
@@ -234,9 +234,9 @@ export function preflightLoraPrompt(input: {
   };
 }
 
-function basePromptErrors(prompt: string, clauses: readonly LoraVisualClause[], warnings: string[]): string[] {
+function basePromptErrors(prompt: string, clauses: readonly FluxVisualClause[], warnings: string[]): string[] {
   // El compilador ya quita estas palabras (`limpiarTextoBase`): aquí son un invariante.
-  const errors = palabrasSoloLora(prompt).map((etiqueta) => `prompt base con ${etiqueta}`);
+  const errors = palabrasSoloFlux(prompt).map((etiqueta) => `prompt base con ${etiqueta}`);
   // Python's pattern phrases travel verbatim (ADR-0028 §12); only the
   // compiler's own wording is held to the plain-sentence shape.
   const ownWording = clauses.reduce((text, clause) => clause.colorPattern ? text.split(clause.colorPattern).join(" ") : text, prompt);

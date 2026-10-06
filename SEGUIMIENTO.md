@@ -122,6 +122,12 @@ generador de imagen con Gemini en TS o Python. Gemini se queda solo para analiza
 
 - **Etapa 4 hecha (2026-10-06, rama `etapa4-borrado`)**: se retiraron las rutas, componentes y página de administración LoRA; el registro, modos entrenados, datasets, artefactos y vocabularios de producto; scripts LoRA y utilidades de selección/curación/descarga/empaquetado del dataset de entrenamiento con sus entradas de `package.json` y pruebas. El diff total elimina unas 25,6 mil líneas, principalmente datos de vocabulario y código de administración. `vocabulario-base.ts` y `descriptor-perceptual.ts` se movieron a `src/lib/ia/kagutsuchi/`. Se limpiaron contratos y configuración; `package.json` conserva CRLF. Permanecen las piezas FLUX base para etapa 5 (incluidos los seis archivos Kagutsuchi), el adaptador Python opcional `app/kagutsuchi/lora.py`/`LORA_GENERATION_PYTHON_ENABLED` porque sirve ese transporte base, la lectura de snapshots para compatibilidad y tablas/migraciones de base de datos para etapa 6. No se tocaron `data/staging/` ni las migraciones. Verificado secuencialmente: `npx tsc --noEmit` OK; `npm run -s lint` OK (19 avisos preexistentes); export domain con `--check` OK (36 schemas); pruebas puntuales base de runtime, texto, UI error, guía de escena, edición y FLUX revisión OK; pytest del modelo generado 3/3 y Ruff OK. Sin llamadas pagadas ni imágenes.
 
+- **Etapa 5 hecha (2026-10-06, rama `etapa5-renombrar`)**: `sempertex-lora.ts` → `flux.ts`, compilador → `caption-flux.ts`, runtime → `producto-flux.ts`, preflight → `preflight-flux.ts`, semilla → `semilla-flux.ts`; `lora-semantics.ts` → `scene-semantics.ts`; renombradas pruebas base, adaptador `services/ai-api/app/kagutsuchi/flux.py` y utilitario de captura. `lora-prompt-format.ts` ya no existía en este worktree. Identificadores y diagnósticos internos del camino base usan FLUX. La bandera nueva `FLUX_GENERATION_PYTHON_ENABLED` aún lee la antigua `LORA_GENERATION_PYTHON_ENABLED` con aviso si aparece; se conservan el campo fal `loras` donde forma parte del contrato, y ruta/scope/esquema operacionales `/internal/v1/ia/lora-generate` (`lora-generate.v1`) como contrato estable. El campo antiguo de `/api/generate` `usarLora` sigue rechazado explícitamente.
+
+  fal confirma que `/fal-ai/flux-2/edit` acepta las mismas entradas de edición (`prompt`, `image_urls`, tamaño, guidance, pasos, semilla y opciones de salida); su esquema no tiene `loras`. Endpoint cambiado en los transportes TS, Python y evaluación para el caso base; adaptadores no vacíos conservan compatibilidad. Control CASE-001: 1 solicitud, endpoint nuevo, sin clave `loras`, HTTP 200; salida en el almacén externo `validacion-fase4/etapa5-renombrar-case001`. Comparada visualmente con `estable-3x/caso-1/corrida-1`; tamaño/semilla difieren (1024×1536 / 790224384 frente a 1536×1024 / 481100950), así que comparación no aísla solo el endpoint. Gasto estimado ≈ US$0,04; tope US$0,10. Sin cambio de `plan_hash` ni vectores dorados.
+
+  Verificado: `next typegen`; tsc OK; lint 0 errores (19 avisos preexistentes); `contracts:check` OK (9 chat, 36 domain); pruebas puntuales texto-base, runtime de producto, caption, preflight (1 920 escenas), guía, edición, revisión FLUX, UI-error, semilla, bandera Python y vista guiada OK; pytest Kagutsuchi/API 23/23 y Ruff OK. Snapshot de variantes de biblioteca se omitió en la prueba por falta de `DATABASE_URL`. `package.json` sigue CRLF y todos sus destinos de scripts existen. No se tocó `data/staging/` ni migraciones/tablas `lora_*`.
+
 ### 3.2 Inventario previo a la etapa 4 (mapeado el 2026-10-06; lo de «solo entrenamiento/administración» ya se borró, ver §3.1)
 Bloqueos o rarezas que siguen corriendo en base:
 - `src/lib/ia/kagutsuchi/lora-prompt-preflight.ts:273-277` rechaza prompts con `Reflex|Fashion|Silk|Crystal|Pastel`, ®/™ o `eventdecor_*`
@@ -172,12 +178,11 @@ Tamaño:
 4. **[HECHA y fusionada, merge 99cf2dd]** **Borrar** el código de entrenamiento/admin, `src/lib/lora/*` que ya no se importe, el vocabulario y sus datos, `scripts/lora/*`,
    las pruebas `test-lora-*` de dialectos entrenados y sus entradas en `package.json`. Mover `vocabulario-base.ts` y
    `descriptor-perceptual.ts` a `src/lib/ia/kagutsuchi/` (o `src/lib/flux/`).
-5. **Renombrar** `sempertex-lora.ts` → `flux.ts`, `lora-caption-compiler.ts` → `caption-flux.ts`, etc., y `fal-ai/flux-2/lora/edit` →
-   `fal-ai/flux-2/edit` si fal lo admite con las mismas entradas (comprobar con 1 imagen y tope).
+5. **[HECHA, rama `etapa5-renombrar`] Renombrar** el camino FLUX base y sus pruebas; `/flux-2/edit` confirmado en esquema fal y 1 control CASE-001 (tope US$0,10), ver §3.1.
 6. `data/staging` y tablas `lora_*`: solo con confirmación explícita del dueño.
    Etapa 4 fusionada (2026-10-06 tarde, merge 99cf2dd; marca de vuelta atrás `antes-etapa4-medidas`): revisión adversarial sin
    bloqueantes (204 scripts de package.json válidos, camino FLUX, chat y vista guiada OK); se quitaron además un diagnóstico roto
-   (`evaluacion/validacion-fase4/diag-coral.ts`) y las variables `LORA_ARTIFACT_ROOT`/`LORA_SNAPSHOT_*` sin lectores. Siguiente: etapa 5.
+   (`evaluacion/validacion-fase4/diag-coral.ts`) y las variables `LORA_ARTIFACT_ROOT`/`LORA_SNAPSHOT_*` sin lectores. Etapa 5 hecha; sigue etapa 6 con decisión del dueño.
 Tras cada etapa: `tsc`, `eslint` de lo tocado, pruebas puntuales y 1-2 imágenes FLUX de control (001 y 002), juzgadas con Codex.
 
 ## 4. Misión de fidelidad foto → imagen (estado al 2026-10-06)

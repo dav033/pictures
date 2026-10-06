@@ -1,7 +1,7 @@
 import type { SceneElement, SceneSpec } from "../escena/scene-spec";
-import { buildLoraEnvironmentCues, type VisualContext } from "../escena/visual-context";
+import { buildFluxEnvironmentCues, type VisualContext } from "../escena/visual-context";
 import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
-import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
+import type { FluxDensity, FluxDesignRole, FluxPlacement, FluxStructureType, VisualSemantics } from "../escena/scene-semantics";
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { SOPORTES_CON_CAIDA_GUIRNALDA, type SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
@@ -11,28 +11,28 @@ import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separa
 import { limpiarTextoBase } from "./texto-base";
 import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
 
-export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.9-perceptual-color-organic-column" as const;
+export const FLUX_CAPTION_COMPILER_VERSION = "lora-caption-v2.9-perceptual-color-organic-column" as const;
 
 /** Límite común de texto que mantiene primero la decoración. */
-export const LORA_PROMPT_MAX_LENGTH = 1000;
+export const FLUX_PROMPT_MAX_LENGTH = 1000;
 export const BASE_PROMPT_MAX_LENGTH = 1000;
-const UBICACIONES_SEMIARCO_BASE: Partial<Record<LoraPlacement, string>> = {
+const UBICACIONES_SEMIARCO_BASE: Partial<Record<FluxPlacement, string>> = {
   fondo_pared: "at one side of the rear wall",
   arco_central: "off to one side of center",
   entrada: "at one side of the doorway",
 };
-const UBICACIONES_GUIRNALDA_BASE: Partial<Record<LoraPlacement, string>> = {
+const UBICACIONES_GUIRNALDA_BASE: Partial<Record<FluxPlacement, string>> = {
   fondo_pared: "running along the rear wall",
   arco_central: "running across the middle of the scene",
   entrada: "running along the entrance doorway",
 };
 
 /** Alias legacy que aún aparece en nombres de escenas antiguas. */
-type CaptionStructureType = LoraStructureType | "bouquet";
+type CaptionStructureType = FluxStructureType | "bouquet";
 
 /**
  * A single element's resolved canonical product concept, supplied by the
- * caller (see src/lib/ia/kagutsuchi/lora-product-runtime.ts). This is the ONLY channel
+ * caller (see src/lib/ia/kagutsuchi/producto-flux.ts). This is the ONLY channel
  * through which product identity can override the legacy color/finish
  * translation for an element — the compiler never resolves concepts itself
  * and never receives or renders a `concept_id`, only the already-rendered
@@ -58,7 +58,7 @@ export type ProductConceptClauseInput = {
 };
 
 
-export type LoraVisualClause = {
+export type FluxVisualClause = {
   elementIds: string[];
   structureType: CaptionStructureType;
   noun: string;
@@ -73,7 +73,7 @@ export type LoraVisualClause = {
   finishes: string[];
   scale?: string;
   density?: string;
-  placement: LoraPlacement;
+  placement: FluxPlacement;
   relation?: string;
   anchorElementId?: string;
   bilateral?: boolean;
@@ -135,21 +135,21 @@ export type LoraVisualClause = {
   armadoGuirnaldaOrganica?: { enAlto: boolean };
 };
 
-export type LoraCaptionCompilation = {
+export type FluxCaptionCompilation = {
   prompt: string;
-  clauses: LoraVisualClause[];
-  compilerVersion: typeof LORA_CAPTION_COMPILER_VERSION;
+  clauses: FluxVisualClause[];
+  compilerVersion: typeof FLUX_CAPTION_COMPILER_VERSION;
   /**
    * True when at least one clause used a canonical product concept supplied
    * via `productConcepts`. False (the "legacy" path) must never be silently
    * reported as canonical — callers that need product fidelity (see
-   * lora-product-runtime.ts) must check this flag explicitly.
+   * producto-flux.ts) must check this flag explicitly.
    */
   usedCatalogProducts: boolean;
   /**
    * Index of the render step that produced `prompt` (0 = full rendering).
    * Higher steps are deterministic compactions applied only because the full
-   * rendering exceeded `LORA_PROMPT_MAX_LENGTH`; see `CAPTION_RENDER_STEPS`.
+   * rendering exceeded `FLUX_PROMPT_MAX_LENGTH`; see `CAPTION_RENDER_STEPS`.
    */
   compactionStep: number;
   /** Palabras solo-LoRA que `limpiarTextoBase` quitó del texto base (vacío fuera de base o si no había). */
@@ -261,13 +261,13 @@ const COLOR_ALIASES: Record<string, string> = {
 };
 
 /**
- * Spanish → English color names exactly as `translateLoraColor` looks them up:
+ * Spanish → English color names exactly as `translateFluxColor` looks them up:
  * the taxonomy palette wins, the aliases fill what it does not carry (`gris`,
  * `grafito`, `marron`…). Exported so the plan contract can hand Python this
  * same table (`x-colores-en`) for the color-pattern phrase it writes into the
  * caption (ADR-0028 §8): the palette alone left `gris` untranslated there.
  */
-export const LORA_COLOR_NAMES_EN: Readonly<Record<string, string>> = { ...COLOR_ALIASES, ...PALETA_COLORES_EN_V2 };
+export const FLUX_COLOR_NAMES_EN: Readonly<Record<string, string>> = { ...COLOR_ALIASES, ...PALETA_COLORES_EN_V2 };
 
 /**
  * El acabado con las palabras de lo que se VE, no con las del catalogo.
@@ -283,7 +283,7 @@ export const LORA_COLOR_NAMES_EN: Readonly<Record<string, string>> = { ...COLOR_
  * una palabra dice con que la entreno el LoRA; mirar la imagen dice que pinta. Manda la imagen.
  *
  * Asi que estas son las mismas palabras que el camino principal (`aDescriptorPerceptual` sobre la etiqueta
- * canonica del producto, exigidas por `test-lora-product-runtime.ts`): los dos caminos describen el mismo
+ * canonica del producto, exigidas por `test-producto-flux.ts`): los dos caminos describen el mismo
  * globo igual. `matte` (606 en el corpus), `satin` (106), `pearl` (46) y `metallic` (67) se quedan como
  * estaban: ya eran palabras de lo que se ve y ademas del corpus.
  *
@@ -356,7 +356,7 @@ function inferredStructureType(element: SceneElement): CaptionStructureType {
   return element.category === "balloon_structure" ? "kit" : "accesorio";
 }
 
-function inferredPlacement(element: SceneElement): LoraPlacement {
+function inferredPlacement(element: SceneElement): FluxPlacement {
   const centerX = element.target_bbox.x + element.target_bbox.width / 2;
   const centerY = element.target_bbox.y + element.target_bbox.height / 2;
   if (["backdrop", "curtain", "drape", "panel"].includes(element.category)) return "fondo_pared";
@@ -367,13 +367,13 @@ function inferredPlacement(element: SceneElement): LoraPlacement {
   return "arco_central";
 }
 
-function inferredRole(element: SceneElement, index: number): LoraDesignRole {
+function inferredRole(element: SceneElement, index: number): FluxDesignRole {
   if (index === 0) return "focal";
   if (["backdrop", "curtain", "drape", "panel"].includes(element.category)) return "soporte";
   return "acento";
 }
 
-function inferredDensity(sceneSpec: SceneSpec): LoraDensity {
+function inferredDensity(sceneSpec: SceneSpec): FluxDensity {
   const density = sceneSpec.material_estimate?.design.visual_density;
   if (density === "low") return "sencilla";
   if (density === "high") return "lujosa";
@@ -413,9 +413,9 @@ function physicalRelationsFor(element: SceneElement): PhysicalRelation[] {
   return element.physical_relations ?? [];
 }
 
-export function translateLoraColor(color: string): string {
+export function translateFluxColor(color: string): string {
   const key = normalized(color);
-  const direct = LORA_COLOR_NAMES_EN[key];
+  const direct = FLUX_COLOR_NAMES_EN[key];
   if (direct) return direct;
 
   // Resolve Spanish aliases such as "azul rey" or "verde esmeralda" to the
@@ -517,7 +517,7 @@ const FIELD_SEP = "";
 
 function compatibleKey(item: SemanticElement): string {
   const semantics = item.semantics;
-  const colors = uniqueEnglish(item.element.resolved_colors, translateLoraColor).join("|");
+  const colors = uniqueEnglish(item.element.resolved_colors, translateFluxColor).join("|");
   const finishes = sinAcabadoRepetido(uniqueEnglish(item.element.resolved_finishes ?? [], englishFinish)).join("|");
   const relationKey = physicalRelationsFor(item.element).map((relation) => JSON.stringify(relation)).sort().join("|");
   const motifKey = item.element.catalog_visual?.pattern.motif ?? "";
@@ -641,7 +641,7 @@ function createClause(
   items: SemanticElement[],
   placement = items[0]!.semantics.placement,
   productConceptsByElementId?: Map<string, ProductConceptClauseInput[]>,
-): LoraVisualClause {
+): FluxVisualClause {
   const first = items[0]!;
   const elementIds = items.map((item) => item.element.element_id);
   const conceptEntries = productConceptsByElementId
@@ -681,7 +681,7 @@ function createClause(
       : STRUCTURE_NOUNS[first.semantics.structure_type],
     count: items.length,
     ...(globosCentro !== undefined ? { globosCentro } : {}),
-    colors: uniqueEnglish(items.flatMap((item) => item.element.resolved_colors), translateLoraColor),
+    colors: uniqueEnglish(items.flatMap((item) => item.element.resolved_colors), translateFluxColor),
     finishes: sinAcabadoRepetido(uniqueEnglish(items.flatMap((item) => item.element.resolved_finishes ?? []), englishFinish)),
     scale: scaleFor(items),
     density: first.semantics.density,
@@ -730,7 +730,7 @@ const VERTICAL_STRUCTURES = new Set<CaptionStructureType>(["arco", "semiarco", "
  * tall one) must not be drawn as a matching pair: the shortest and tallest
  * vertical structures get an explicit "shorter"/"taller".
  */
-function assignHeightQualifiers(clauses: LoraVisualClause[]): void {
+function assignHeightQualifiers(clauses: FluxVisualClause[]): void {
   for (const clause of clauses) clause.heightQualifier = undefined;
   // Compared within one structure type: a short column next to two
   // half-arches must not make the lower half-arch lose its "shorter".
@@ -751,7 +751,7 @@ function assignHeightQualifiers(clauses: LoraVisualClause[]): void {
   // height (reference case of 2026-09-14).
   const laterals = separateLateralPieces(clauses).filter((clause) => clause.heightM !== undefined);
   if (laterals.length !== 2 || laterals.some((clause) => clause.heightQualifier)) return;
-  const [a, b] = laterals as [LoraVisualClause, LoraVisualClause];
+  const [a, b] = laterals as [FluxVisualClause, FluxVisualClause];
   if (a.placement === b.placement || similarHeights(a.heightM, b.heightM)) return;
   const [shorter, taller] = a.heightM! < b.heightM! ? [a, b] : [b, a];
   shorter.heightQualifier = "shorter";
@@ -764,7 +764,7 @@ function assignHeightQualifiers(clauses: LoraVisualClause[]): void {
  * Solo para los calificadores de altura: **quién forma un par separado lo decide
  * `findSeparateSidePieces`**, y este filtro ya no responde esa pregunta.
  */
-function separateLateralPieces(clauses: LoraVisualClause[]): LoraVisualClause[] {
+function separateLateralPieces(clauses: FluxVisualClause[]): FluxVisualClause[] {
   return clauses.filter((clause) => (clause.structureType === "semiarco" || clause.structureType === "columna")
     && !clause.bilateral
     && (clause.placement === "lateral_izquierdo" || clause.placement === "lateral_derecho"));
@@ -776,7 +776,7 @@ function separateLateralPieces(clauses: LoraVisualClause[]): LoraVisualClause[] 
  * Es un `Record` de la unión completa a propósito: el día que `findSeparateSidePieces` gane un `kind`, esto
  * deja de compilar en vez de devolver `undefined` en silencio y perder la frase.
  */
-const FRASE_PIEZAS_SEPARADAS: Record<SeparateSidePieces<LoraVisualClause>["kind"], string> = {
+const FRASE_PIEZAS_SEPARADAS: Record<SeparateSidePieces<FluxVisualClause>["kind"], string> = {
   half_arches: "the two curved garlands stand apart with an open gap between them",
   half_arch_and_column: "the garland and the column stand apart with an open gap between them",
   columns: "the two columns stand apart with an open gap between them",
@@ -791,16 +791,16 @@ const FRASE_PIEZAS_SEPARADAS: Record<SeparateSidePieces<LoraVisualClause>["kind"
  * columnas a la copia y no al dueño, así que el caption pedía el hueco y el prompt de imagen no.
  * `test-image-qa-piezas-separadas.ts`, que compara los dos, es lo que lo detectó.
  */
-function separatePiecesPhrase(clauses: LoraVisualClause[]): string | undefined {
+function separatePiecesPhrase(clauses: FluxVisualClause[]): string | undefined {
   const pieces = findSeparateSidePieces(clauses);
   return pieces && FRASE_PIEZAS_SEPARADAS[pieces.kind];
 }
 
-function findFocalClause(clauses: LoraVisualClause[]): LoraVisualClause | undefined {
+function findFocalClause(clauses: FluxVisualClause[]): FluxVisualClause | undefined {
   return clauses.find((clause) => clause.salience === 100) ?? clauses[0];
 }
 
-function focusDescription(clause: LoraVisualClause | undefined): string {
+function focusDescription(clause: FluxVisualClause | undefined): string {
   if (!clause) return "the main arrangement";
   if (["arco", "semiarco"].includes(clause.structureType)) return "the main arch";
   return "the main arrangement";
@@ -851,7 +851,7 @@ function relationPhrase(sceneSpec: SceneSpec, relation: PhysicalRelation): strin
   return relation.relacion === "conectar_con" ? `${base} ${target}${distribution}` : `${base} ${target}${distribution}`;
 }
 
-function resolveRelations(sceneSpec: SceneSpec, clauses: LoraVisualClause[]): void {
+function resolveRelations(sceneSpec: SceneSpec, clauses: FluxVisualClause[]): void {
   const focal = findFocalClause(clauses);
   const focalId = focal?.elementIds[0];
   const focus = focusDescription(focal);
@@ -1023,7 +1023,7 @@ function baseMaterialParts(entries: ProductConceptClauseInput[], render: Caption
 const BASE_NON_BALLOON_TYPES = new Set<CaptionStructureType>(["backdrop", "accesorio"]);
 
 /** Legacy path of the base dialect: the clause has no product terms, only plan colors and finishes. */
-function baseLegacyMaterial(clause: LoraVisualClause): string {
+function baseLegacyMaterial(clause: FluxVisualClause): string {
   const finishes = [...new Set(clause.finishes.map(acabadoVisible).filter(Boolean))];
   const colors = clause.colors.length ? `in ${joinNatural(clause.colors)}` : "";
   if (BASE_NON_BALLOON_TYPES.has(clause.structureType)) {
@@ -1044,17 +1044,17 @@ function baseLegacyMaterial(clause: LoraVisualClause): string {
 const MAX_GLOBOS_CENTRO_NOMBRADOS = 3;
 
 /** «single-balloon centerpiece», «two-balloon centerpiece»: the noun of a counted centerpiece, or `undefined`. */
-function sustantivoCentroContado(clause: LoraVisualClause): string | undefined {
+function sustantivoCentroContado(clause: FluxVisualClause): string | undefined {
   if (clause.globosCentro === undefined) return undefined;
   return clause.globosCentro === 1 ? "single-balloon centerpiece" : `${numberWord(clause.globosCentro)}-balloon centerpiece`;
 }
 
 /** The material of a one-balloon centerpiece names one balloon («made of a translucent clear latex balloon»). */
-function materialCentroContado(material: string, clause: LoraVisualClause): string {
+function materialCentroContado(material: string, clause: FluxVisualClause): string {
   return clause.globosCentro === 1 ? material.replace(/\bmade of (?!a |an |one )/, "made of one ").replace(/\bballoons\b/, "balloon") : material;
 }
 
-function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderState): string {
+function renderBaseClauseText(clause: FluxVisualClause, render: CaptionRenderState): string {
   const entries = clause.canonicalEntries ?? [];
   const parts = clause.canonicalPhrase && entries.length ? baseMaterialParts(entries, render) : undefined;
   const official = clause.officialStructure?.sustantivoEn;
@@ -1108,7 +1108,7 @@ function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderSta
   return `${colored} ${placementPhrase}`;
 }
 
-function renderClauseText(clause: LoraVisualClause, render: CaptionRenderState): string {
+function renderClauseText(clause: FluxVisualClause, render: CaptionRenderState): string {
   return renderBaseClauseText(clause, render);
 }
 
@@ -1127,13 +1127,13 @@ function buildStylePhrase(context: VisualContext): string | undefined {
 
 function dedupeEnvironment(context: VisualContext, eventPhrase?: string): string[] {
   const knownEvent = eventPhrase?.replace(/^set up for (?:a|an) /i, "").toLowerCase();
-  return buildLoraEnvironmentCues(context).filter((cue) => {
+  return buildFluxEnvironmentCues(context).filter((cue) => {
     const normalizedCue = cue.toLowerCase();
     return !normalizedCue.startsWith("open event cue:") && (!knownEvent || !normalizedCue.includes(knownEvent));
   });
 }
 
-function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<string, ProductConceptClauseInput[]>, officialStructures?: ReadonlyMap<string, string>, colorPatterns?: readonly FraseDeEstructura[]): LoraVisualClause[] {
+function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<string, ProductConceptClauseInput[]>, officialStructures?: ReadonlyMap<string, string>, colorPatterns?: readonly FraseDeEstructura[]): FluxVisualClause[] {
   // Repeated plan structures materialize as `<estructura_id>#<n>` elements.
   const items = sceneSpec.elements.map((element, index) => ({
     ...semanticFor(element, index, sceneSpec, officialStructures?.get(element.element_id) ?? officialStructures?.get(element.element_id.split("#")[0]!)),
@@ -1143,7 +1143,7 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
     armadoGuirnaldaOrganica: armadoGuirnaldaOrganicaDeElemento(colorPatterns, element),
   }));
   const used = new Set<string>();
-  const clauses: LoraVisualClause[] = [];
+  const clauses: FluxVisualClause[] = [];
 
   // Matching lateral structures are one spatial instruction, even when the plan
   // materialized them as separate physical elements. Every mirrored pair of the
@@ -1216,7 +1216,7 @@ type CaptionParts = {
  * garland without an assembly, keeps its caption byte for byte.
  */
 /** Ubicaciones en las que una guirnalda va sujeta a una superficie, no apoyada en el piso. */
-const GUIRNALDAS_SIN_PISO = new Set<LoraPlacement>(["fondo_pared", "pared_lateral", "techo", "techo_multipunto", "fachada"]);
+const GUIRNALDAS_SIN_PISO = new Set<FluxPlacement>(["fondo_pared", "pared_lateral", "techo", "techo_multipunto", "fachada"]);
 
 /**
  * Toda la escena son guirnaldas que no se apoyan en el piso, así que la cola no debe prometer apoyos en el
@@ -1229,7 +1229,7 @@ const GUIRNALDAS_SIN_PISO = new Set<LoraPlacement>(["fondo_pared", "pared_latera
  * hoy, no llevan ninguna de las dos cosas: todas salían con «grounded supports». La ubicación del plan dice
  * lo mismo y siempre está.
  */
-function soloGuirnaldasEnAlto(clauses: readonly LoraVisualClause[]): boolean {
+function soloGuirnaldasEnAlto(clauses: readonly FluxVisualClause[]): boolean {
   const conCaida: readonly SoporteGuirnalda[] = SOPORTES_CON_CAIDA_GUIRNALDA;
   return clauses.length > 0 && clauses.every((clause) => {
     // Quien armó la pieza lo sabe mejor que su ubicación: el motor conoce a qué altura va su línea.
@@ -1239,7 +1239,7 @@ function soloGuirnaldasEnAlto(clauses: readonly LoraVisualClause[]): boolean {
   });
 }
 
-function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, ambientDecor: readonly string[] = [], creativeCues: readonly string[] = []): string {
+function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, ambientDecor: readonly string[] = [], creativeCues: readonly string[] = []): string {
   const parts = buildCaptionParts(sceneSpec, context, clauses, step, ambientDecor, creativeCues);
   return `${capitalized(parts.structureSentence)}. ${capitalized(parts.tail.join(", "))}.`;
 }
@@ -1248,14 +1248,14 @@ function capitalized(text: string): string {
   return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
 
-function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[], step: CaptionRenderStep, ambientDecor: readonly string[], creativeCues: readonly string[] = []): CaptionParts {
+function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep, ambientDecor: readonly string[], creativeCues: readonly string[] = []): CaptionParts {
   resolveRelations(sceneSpec, clauses);
   assignHeightQualifiers(clauses);
   const render: CaptionRenderState = { step, describedConceptIds: new Set<string>() };
-  const clauseText = (clause: LoraVisualClause) => renderClauseText(clause, render);
+  const clauseText = (clause: FluxVisualClause) => renderClauseText(clause, render);
   const focal = clauses[0];
   const hasCanonicalSemantics = sceneSpec.elements.every((element) => Boolean(element.visual_semantics));
-  const conciseClause = (clause: LoraVisualClause): LoraVisualClause => {
+  const conciseClause = (clause: FluxVisualClause): FluxVisualClause => {
     // A patterned clause keeps its own colors: the pattern is laid out in them.
     if (!hasCanonicalSemantics || !focal || clause === focal || !clause.colors.length || clause.colorPattern) return clause;
     const focalColors = new Set(focal.colors);
@@ -1276,7 +1276,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
 
   const hasLocalColors = clauses.some((clause) => clause.colors.length > 0);
   const globalPalette = !hasLocalColors && context.palette.length
-    ? `in ${joinNatural(uniqueEnglish(context.palette, translateLoraColor))}`
+    ? `in ${joinNatural(uniqueEnglish(context.palette, translateFluxColor))}`
     : undefined;
   const eventPhrase = context.eventCue ? undefined : buildEventPhrase(context);
   const hasCanonicalProducts = clauses.some((clause) => Boolean(clause.canonicalPhrase));
@@ -1309,12 +1309,12 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
  */
 export const GROUPING_ONLY_CONTEXT: VisualContext = { venueKind: "unknown", lightingKind: "unspecified", palette: [] };
 
-export function compileLoraCaption(input: {
+export function compileFluxCaption(input: {
   sceneSpec: SceneSpec;
   visualContext: VisualContext;
   /**
    * Optional per-element canonical product concepts (see
-   * lora-product-runtime.ts). Purely additive: omitting this field preserves
+   * producto-flux.ts). Purely additive: omitting this field preserves
    * the exact legacy color/finish rendering used by every existing caller.
    */
   productConcepts?: ProductConceptClauseInput[];
@@ -1338,7 +1338,7 @@ export function compileLoraCaption(input: {
    * or an assembly. Absent: the legacy caption.
    */
   colorPatterns?: readonly FraseDeEstructura[];
-}): LoraCaptionCompilation {
+}): FluxCaptionCompilation {
   const productConceptsByElementId = input.productConcepts?.length
     ? input.productConcepts.reduce((map, entry) => {
         const existing = map.get(entry.elementId) ?? [];
@@ -1369,13 +1369,13 @@ export function compileLoraCaption(input: {
   return {
     prompt,
     clauses,
-    compilerVersion: LORA_CAPTION_COMPILER_VERSION,
+    compilerVersion: FLUX_CAPTION_COMPILER_VERSION,
     usedCatalogProducts: clauses.some((clause) => Boolean(clause.canonicalPhrase)),
     compactionStep,
     palabrasQuitadas: [...palabrasQuitadas],
   };
 }
 
-export function buildLoraImagePromptV2(input: { sceneSpec: SceneSpec; visualContext: VisualContext }): string {
-  return compileLoraCaption(input).prompt;
+export function buildFluxImagePromptV2(input: { sceneSpec: SceneSpec; visualContext: VisualContext }): string {
+  return compileFluxCaption(input).prompt;
 }

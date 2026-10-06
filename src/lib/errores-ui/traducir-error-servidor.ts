@@ -7,7 +7,7 @@ import { PlanBackendNoDisponibleError } from "@/lib/plan/resolver-backend";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { VistaPatronSinDibujoError } from "@/lib/plan/edicion-python";
-import { ProveedorImagenNoDisponibleError } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { ProveedorImagenNoDisponibleError } from "@/lib/ia/kagutsuchi/flux";
 import { construirUiErrorV1, type UiErrorCodeV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 
 /**
@@ -32,12 +32,12 @@ const CODIGOS_POR_PREFIJO: Readonly<Record<string, UiErrorCodeV1>> = {
   FLUX_PLAN_REQUIRED: "ESTILO_REQUIERE_PROPUESTA",
   FLUX_LANGUAGE_FAILED: "ESTILO_NO_PREPARADO",
   FLUX_REVISION_TRANSLATION_FAILED: "SERVICIO_NO_DISPONIBLE",
-  LORA_MODE_REQUIRED: "ESTILO_NO_PREPARADO",
-  LORA_MODE_INVALID: "ESTILO_NO_PREPARADO",
-  LORA_SELECTION_INVALID: "ESTILO_NO_PREPARADO",
-  LORA_MODE_SELECTION_CONFLICT: "ESTILO_NO_PREPARADO",
-  LORA_PRODUCT_VOCABULARY_FAILED: "ESTILO_SIN_PRODUCTOS",
-  LORA_DATASET_ALLOWLIST_REJECTED: "ESTILO_SIN_PRODUCTOS",
+  FLUX_MODE_REQUIRED: "ESTILO_NO_PREPARADO",
+  FLUX_MODE_INVALID: "ESTILO_NO_PREPARADO",
+  FLUX_SELECTION_INVALID: "ESTILO_NO_PREPARADO",
+  FLUX_MODE_SELECTION_CONFLICT: "ESTILO_NO_PREPARADO",
+  FLUX_PRODUCT_VOCABULARY_FAILED: "ESTILO_SIN_PRODUCTOS",
+  FLUX_DATASET_ALLOWLIST_REJECTED: "ESTILO_SIN_PRODUCTOS",
   APROBACION_REQUERIDA: "APROBACION_REQUERIDA",
   PRESUPUESTO_EXCEDIDO: "PRESUPUESTO_EXCEDIDO",
   REFERENCE_IMAGE_TOO_LARGE: "ADJUNTO_INVALIDO",
@@ -79,11 +79,11 @@ const MENSAJE_ADJUNTO_POR_ORIGEN: Readonly<Record<string, string>> = {
 };
 
 /**
- * Cualquier otro `LORA_*` (registro, modos, artifacts, allowlists vacías,
+ * Cualquier otro `FLUX_*` (registro, modos, artifacts, allowlists vacías,
  * proveedor) significa para el cliente lo mismo: este estilo no se pudo
  * preparar ahora. Las dos causas de producto tienen entrada propia arriba.
  */
-const PREFIJO_LORA = /^LORA_[A-Z_]+$/;
+const PREFIJO_LORA = /^FLUX_[A-Z_]+$/;
 
 /** Mensajes sin prefijo, por inicio de texto. */
 const CODIGOS_POR_INICIO: ReadonlyArray<readonly [string, UiErrorCodeV1]> = [
@@ -166,7 +166,7 @@ export function clasificarErrorServidor(error: unknown): ClasificacionError {
   if (!(error instanceof Error)) return { code: "ERROR_INTERNO", codigoOrigen: "NON_ERROR_THROWN" };
 
   // El código del mensaje gana sobre la clase: PlanEditError también puede
-  // llevar un prefijo técnico (LORA_DATASET_ALLOWLIST_REJECTED en plan-editar).
+  // llevar un prefijo técnico (FLUX_DATASET_ALLOWLIST_REJECTED en plan-editar).
   const mensaje = error.message.trim();
   const prefijo = /^([A-Z][A-Z0-9_]{3,})(?::|\s—|$)/.exec(mensaje)?.[1];
   if (prefijo) {

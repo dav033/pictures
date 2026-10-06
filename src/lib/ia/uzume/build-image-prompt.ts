@@ -4,7 +4,7 @@ import { referenciaDelCatalogo, referenciaDelTitulo } from "@/lib/plan/referenci
 import { acabadoEnIngles, armadoDeElemento, armadoGuirnaldaDeElemento, describirMezclaDeColor, frasePatronColor, idDeEstructura, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
 import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, fraseInstanciaConArmadoGuirnalda, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado, type AnfitrionaEnPrompt } from "./armado-en-prompt";
 import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
-import { compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
+import { compileFluxCaption, GROUPING_ONLY_CONTEXT, type FluxVisualClause } from "../kagutsuchi/caption-flux";
 import { findSeparateSidePieces } from "./separate-side-pieces";
 import {
   buildPositiveEnvironmentCues,
@@ -473,10 +473,10 @@ function cardinalityKind(element: SceneSpec["elements"][number], officialStructu
 function separateSidePiecesSentence(sceneSpec: SceneSpec, officialStructures?: ReadonlyMap<string, string>): string {
   // Sin `colorPatterns` a propósito: el patrón solo cambia la frase de reparto
   // de color (ADR-0028 §12), no qué piezas laterales forman un par.
-  const clauses = compileLoraCaption({ sceneSpec, visualContext: GROUPING_ONLY_CONTEXT, officialStructures }).clauses;
+  const clauses = compileFluxCaption({ sceneSpec, visualContext: GROUPING_ONLY_CONTEXT, officialStructures }).clauses;
   const pieces = findSeparateSidePieces(clauses);
   if (!pieces) return "";
-  const nombres = (grupo: readonly LoraVisualClause[]) => grupo
+  const nombres = (grupo: readonly FluxVisualClause[]) => grupo
     .flatMap((clause) => clause.elementIds)
     .map((id) => promptElementName(sceneSpec.elements.find((element) => element.element_id === id)?.name ?? id))
     .join(" and ");

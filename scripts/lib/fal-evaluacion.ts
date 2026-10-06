@@ -46,7 +46,7 @@ export const DEFAULT_LORA = "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhR
  * congelados como evidencia (exp-step0..4) — no lo uses en experimentos
  * nuevos.
  */
-export type LoraIdentidadConocida = {
+export type FluxIdentidadConocida = {
   artifactId: string;
   runId: string;
   datasetId: string;
@@ -56,7 +56,7 @@ export type LoraIdentidadConocida = {
   fuente: string;
 };
 
-export const LORA_IDENTIDADES_CONOCIDAS: Record<string, LoraIdentidadConocida> = {
+export const FLUX_IDENTIDADES_CONOCIDAS: Record<string, FluxIdentidadConocida> = {
   "v004-1000": {
     artifactId: "v004-1000",
     runId: "lora-run-v004-1000",
@@ -78,11 +78,11 @@ export const LORA_IDENTIDADES_CONOCIDAS: Record<string, LoraIdentidadConocida> =
 };
 
 /** Resuelve `--artifact-id` contra la tabla anterior. Nunca acepta una URL libre. */
-export function resolverIdentidadLora(artifactId: string): LoraIdentidadConocida {
-  const identidad = LORA_IDENTIDADES_CONOCIDAS[artifactId];
+export function resolverIdentidadFlux(artifactId: string): FluxIdentidadConocida {
+  const identidad = FLUX_IDENTIDADES_CONOCIDAS[artifactId];
   if (!identidad) {
     throw new Error(
-      `--artifact-id "${artifactId}" no está en el registro conocido. Usa uno de: ${Object.keys(LORA_IDENTIDADES_CONOCIDAS).join(", ")}. ` +
+      `--artifact-id "${artifactId}" no está en el registro conocido. Usa uno de: ${Object.keys(FLUX_IDENTIDADES_CONOCIDAS).join(", ")}. ` +
       "No se acepta una URL o trigger sueltos: la identidad de un LoRA es una tupla artifact/corrida/dataset/trigger/evaluación.",
     );
   }
@@ -187,11 +187,11 @@ export async function saldo(key: string): Promise<number | null> {
   }
 }
 
-/** Mismo payload que `sempertex-lora.ts`, con `loras` vaciable para la celda base. */
+/** Payload de fal; celda base usa entradas FLUX sin adaptadores. */
 export function payloadDe(celda: Celda, defaults: Defaults) {
   return {
     prompt: (celda.trigger ?? celda.lora !== null) ? `${defaults.trigger ?? TRIGGER}, ${celda.prompt}` : celda.prompt,
-    loras: celda.lora === null ? [] : [{ path: defaults.loraUrl, scale: celda.lora }],
+    ...(celda.lora === null ? {} : { loras: [{ path: defaults.loraUrl, scale: celda.lora }] }),
     guidance_scale: celda.guidance ?? defaults.guidance,
     num_inference_steps: 28,
     image_size: { width: celda.ancho ?? defaults.ancho, height: celda.alto ?? defaults.alto },
@@ -205,7 +205,9 @@ export function payloadDe(celda: Celda, defaults: Defaults) {
 }
 
 export function endpointDe(celda: Celda): string {
-  return celda.imagenes?.length ? ENDPOINT_EDIT : ENDPOINT;
+  return celda.imagenes?.length
+    ? celda.lora === null ? "https://queue.fal.run/fal-ai/flux-2/edit" : ENDPOINT_EDIT
+    : ENDPOINT;
 }
 
 /** Una `data:` URL resumida: tipo, bytes y hash, nunca su base64. */
@@ -280,13 +282,13 @@ export async function generar(key: string, payload: object, endpoint: string = E
  * "halloween-jardin", "halloween-referencia" y "riqueza-composicion"
  * (URL de v004 + trigger de v007). No falla ante una URL desconocida: los
  * scripts históricos congelados (exp-step0..4) usan checkpoints que no están
- * en `LORA_IDENTIDADES_CONOCIDAS` y siguen siendo evidencia válida.
+ * en `FLUX_IDENTIDADES_CONOCIDAS` y siguen siendo evidencia válida.
  */
 export function verificarIdentidadCoherente(defaults: Defaults): void {
-  const conocida = Object.values(LORA_IDENTIDADES_CONOCIDAS).find((identidad) => identidad.url === defaults.loraUrl);
+  const conocida = Object.values(FLUX_IDENTIDADES_CONOCIDAS).find((identidad) => identidad.url === defaults.loraUrl);
   if (conocida && defaults.trigger && defaults.trigger !== conocida.trigger) {
     throw new Error(
-      `IDENTIDAD_LORA_CRUZADA: defaults.loraUrl pertenece a ${conocida.artifactId} (trigger entrenado "${conocida.trigger}", fuente: ${conocida.fuente}), pero defaults.trigger es "${defaults.trigger}". La URL y el trigger deben pertenecer a la misma corrida.`,
+      `IDENTIDAD_FLUX_CRUZADA: defaults.loraUrl pertenece a ${conocida.artifactId} (trigger entrenado "${conocida.trigger}", fuente: ${conocida.fuente}), pero defaults.trigger es "${defaults.trigger}". La URL y el trigger deben pertenecer a la misma corrida.`,
     );
   }
 }

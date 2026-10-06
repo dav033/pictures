@@ -7,7 +7,7 @@ import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { costeEntradasUsdEstimado, elegirCaptionConGuia, tamanoGuia } from "./guia-estructura";
 import { instanciasDeEscena, proporcionDeLaFoto, reencuadrar, svgGuiaEscena, type InstanciaGuia } from "./guia-escena";
 import { rasterizarSvg } from "./rasterizar-guia";
-import { imageSizeFor, reservaNotaGuiaEscena, type ImagenGuiaLora } from "./sempertex-lora";
+import { imageSizeFor, reservaNotaGuiaEscena, type ImagenGuiaFlux } from "./flux";
 
 /**
  * La guía de escena para una generación (`GUIA_ESCENA_V1`): pide a Python los discos de cada pieza, los compone
@@ -61,7 +61,7 @@ export function datosDePiezas(plan: PlanResuelto, instancias: readonly Instancia
 }
 
 export type GuiaEscenaPreparada = {
-  imagen: ImagenGuiaLora;
+  imagen: ImagenGuiaFlux;
   /** Hash del PNG: lo único de la guía que va a registros y a la respuesta. */
   sha256: string;
   bytes: number;
@@ -144,10 +144,10 @@ export async function guiaEscenaParaGeneracion<T>(entrada: {
    * es lo prescindible cuando hay guía; se intenta solo si el caption completo no cabe.
    */
   compilarSinFrases?: (maxLength: number) => T;
-  cabe: (compilacion: T, imagenes: readonly ImagenGuiaLora[]) => boolean;
+  cabe: (compilacion: T, imagenes: readonly ImagenGuiaFlux[]) => boolean;
   largo: (compilacion: T) => number;
   signal?: AbortSignal;
-}): Promise<{ imagenes?: readonly ImagenGuiaLora[]; compilacion?: T; resumen?: ResumenGuiaEscena; preparada?: GuiaEscenaPreparada }> {
+}): Promise<{ imagenes?: readonly ImagenGuiaFlux[]; compilacion?: T; resumen?: ResumenGuiaEscena; preparada?: GuiaEscenaPreparada }> {
   if (!entrada.admite) return {};
   let preparada: GuiaEscenaPreparada;
   try {
@@ -156,7 +156,7 @@ export async function guiaEscenaParaGeneracion<T>(entrada: {
     if (entrada.signal?.aborted) throw error;
     return { resumen: { usada: false, motivo: motivoDe(error), coste_entradas_extra_usd_estimado: 0 } };
   }
-  const elegirCon = (compilar: (maxLength: number) => T) => elegirCaptionConGuia<T, ImagenGuiaLora>({
+  const elegirCon = (compilar: (maxLength: number) => T) => elegirCaptionConGuia<T, ImagenGuiaFlux>({
     imagenes: [preparada.imagen],
     maximo: entrada.maximo,
     reserva: () => reservaNotaGuiaEscena(),

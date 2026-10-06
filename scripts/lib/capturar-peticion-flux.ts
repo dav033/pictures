@@ -1,13 +1,13 @@
 /**
- * Captura lo que `generarConSempertexLora` manda de verdad al proveedor, sin
+ * Captura lo que `generarConSempertexFlux` manda de verdad al proveedor, sin
  * red: `globalThis.fetch` se sustituye por uno que guarda la primera petición y
  * responde 503, así que la llamada falla después del envío y nunca sondea ni
  * descarga nada.
  *
  * Dos caminos, los dos de producción:
- * - directo a fal (`LORA_GENERATION_PYTHON_ENABLED` apagada): el endpoint y el
+ * - directo a fal (`FLUX_GENERATION_PYTHON_ENABLED` apagada): el endpoint y el
  *   cuerpo JSON literal;
- * - por Python (`LORA_GENERATION_PYTHON_ENABLED=true`, que se lee al cargar el
+ * - por Python (`FLUX_GENERATION_PYTHON_ENABLED=true`, que se lee al cargar el
  *   módulo): la ruta interna y el cuerpo de la operación. El `context` del
  *   sobre operacional (ids, plazo, hash) queda fuera porque cambia en cada
  *   llamada.
@@ -17,17 +17,17 @@
  * Módulo importable: sin efectos al cargar.
  */
 import type { ImageInput, PeticionImagen } from "@/lib/ia/nucleo/tipos";
-import type { SempertexLoraOptions } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import type { SempertexFluxOptions } from "@/lib/ia/kagutsuchi/flux";
 
 export type PeticionCapturada = { destino: string; cuerpo: unknown };
 
-type Generar = (prompt: string, aspecto: PeticionImagen["aspecto"], inputs: ImageInput[], options: SempertexLoraOptions) => Promise<unknown>;
+type Generar = (prompt: string, aspecto: PeticionImagen["aspecto"], inputs: ImageInput[], options: SempertexFluxOptions) => Promise<unknown>;
 
 function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
 
-export async function capturarPeticion(generar: Generar, prompt: string, aspecto: PeticionImagen["aspecto"], inputs: ImageInput[], options: SempertexLoraOptions): Promise<PeticionCapturada> {
+export async function capturarPeticion(generar: Generar, prompt: string, aspecto: PeticionImagen["aspecto"], inputs: ImageInput[], options: SempertexFluxOptions): Promise<PeticionCapturada> {
   const fetchOriginal = globalThis.fetch;
   const claveOriginal = process.env.FAL_KEY;
   process.env.FAL_KEY = "clave-de-prueba-nunca-enviada";
@@ -48,7 +48,7 @@ export async function capturarPeticion(generar: Generar, prompt: string, aspecto
     else process.env.FAL_KEY = claveOriginal;
   }
   const primera = capturadas[0];
-  if (!primera) throw new Error("generarConSempertexLora no envió ninguna petición");
+  if (!primera) throw new Error("generarConSempertexFlux no envió ninguna petición");
   return primera;
 }
 
@@ -58,7 +58,7 @@ export function imagenDePrueba(role: ImageInput["role"], priority: number, id: s
 }
 
 /** El LoRA de los casos: la identidad de `v007-1000` (slot `training_2`), como la resuelve el registro. */
-export const LORA_DE_PRUEBA = { artifactId: "v007-1000", specialization: "structure" as const, path: "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors", trigger: "eventdecor_style_v3", scale: 0.8 };
+export const FLUX_DE_PRUEBA = { artifactId: "v007-1000", specialization: "structure" as const, path: "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors", trigger: "eventdecor_style_v3", scale: 0.8 };
 export const CAPTION_DE_PRUEBA = "eventdecor_style_v3, an organic balloon garland of round latex balloons in pink, white and gold mounted flat against the wall.";
 
 /**

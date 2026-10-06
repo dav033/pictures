@@ -32,7 +32,7 @@ function caso(nombre: string, fn: () => void): void {
 const PATRONES_PROHIBIDOS: ReadonlyArray<readonly [string, RegExp]> = [
   ["SKU", /\bsku\b/i],
   ["_ID", /_ID\b/i],
-  ["LORA_", /LORA_/i],
+  ["FLUX_", /FLUX_/i],
   ["LoRA/Gemini", /\b(lora|gemini|nano banana|fal)\b/i],
   ["cobertura", /cobertura/i],
   ["límite", /l[ií]mite/i],
@@ -104,14 +104,14 @@ const MENSAJES_REALES: ReadonlyArray<readonly [string, string]> = [
   ["FLUX_EDIT_PREFLIGHT_FAILED: el prompt texto enviado al proveedor mide 2600 y supera el límite 2500", "ESTILO_NO_PREPARADO"],
   ["FLUX_REVISION_TRANSLATION_FAILED: no se pudo traducir la instrucción de revisión.", "SERVICIO_NO_DISPONIBLE"],
   ["IMAGEN_SOLO_FLUX: la generación solo admite FLUX base y el contrato actual.", "IMAGEN_SOLO_FLUX"],
-  ["LORA_MODE_REQUIRED: no se pudo resolver un artifact LoRA registrado para esta generación.", "ESTILO_NO_PREPARADO"],
-  ["LORA_MODE_INVALID: modo LoRA inválido.", "ESTILO_NO_PREPARADO"],
-  ["LORA_SELECTION_INVALID: selecciona un artifact producto o estructura válido.", "ESTILO_NO_PREPARADO"],
-  ["LORA_MODE_SELECTION_CONFLICT: usa un modo o una selección manual, no ambos.", "ESTILO_NO_PREPARADO"],
-  ["LORA_ARTIFACT_NOT_READY: training_1", "ESTILO_NO_PREPARADO"],
+  ["FLUX_MODE_REQUIRED: no se pudo resolver un artifact LoRA registrado para esta generación.", "ESTILO_NO_PREPARADO"],
+  ["FLUX_MODE_INVALID: modo LoRA inválido.", "ESTILO_NO_PREPARADO"],
+  ["FLUX_SELECTION_INVALID: selecciona un artifact producto o estructura válido.", "ESTILO_NO_PREPARADO"],
+  ["FLUX_MODE_SELECTION_CONFLICT: usa un modo o una selección manual, no ambos.", "ESTILO_NO_PREPARADO"],
+  ["FLUX_ARTIFACT_NOT_READY: training_1", "ESTILO_NO_PREPARADO"],
   ["FLUX_PLAN_REQUIRED: 3 tipo(s) sin visual_semantics del plan, inferido(s) por nombre (balloon decoration kit)", "ESTILO_REQUIERE_PROPUESTA"],
-  ["LORA_PRODUCT_VOCABULARY_FAILED: no se pudo resolver identidad canónica para 123.", "ESTILO_SIN_PRODUCTOS"],
-  ["LORA_DATASET_ALLOWLIST_REJECTED: 4455, 6677", "ESTILO_SIN_PRODUCTOS"],
+  ["FLUX_PRODUCT_VOCABULARY_FAILED: no se pudo resolver identidad canónica para 123.", "ESTILO_SIN_PRODUCTOS"],
+  ["FLUX_DATASET_ALLOWLIST_REJECTED: 4455, 6677", "ESTILO_SIN_PRODUCTOS"],
   ["APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.", "APROBACION_REQUERIDA"],
   ["PRESUPUESTO_EXCEDIDO: 900000 COP supera el techo de 500000 COP por 400000 COP.", "PRESUPUESTO_EXCEDIDO"],
   ["Plan hash does not match the validated server plan.", "PROPUESTA_DESACTUALIZADA"],
@@ -139,25 +139,25 @@ caso("mensajes reales de generación se clasifican con código estable", () => {
     assert.equal(clasificarErrorServidor(new Error(mensaje)).code, esperado, mensaje);
     const ui = traducirErrorServidor(new Error(mensaje));
     assert.equal(ui.detalles_dev.mensaje, mensaje);
-    assert.doesNotMatch(ui.mensaje_usuario, /LORA_|FLUX_|EST_\d|hash|\d{3,}/);
+    assert.doesNotMatch(ui.mensaje_usuario, /FLUX_|FLUX_|EST_\d|hash|\d{3,}/);
   }
 });
 
-// Todos los prefijos LORA_* que lanza src/ (inventario 2026-09-14).
-const CODIGOS_LORA_ESTILO = [
-  "LORA_APPLICATION_REQUIRED", "LORA_ARTIFACT_NOT_APPROVED", "LORA_ARTIFACT_NOT_FOUND", "LORA_DATASET_ALLOWLIST_EMPTY",
-  "LORA_DATASET_CATALOG_UNLINKED", "LORA_EVALUATION_REQUIRED", "LORA_INCOMPATIBLE", "LORA_MODE_DISABLED",
-  "LORA_MODE_INVALID", "LORA_MODE_NOT_CONFIGURED", "LORA_MODE_NOT_FOUND", "LORA_MODE_NOT_READY", "LORA_MODE_REQUIRED",
-  "LORA_MODE_SELECTION_CONFLICT", "LORA_MULTI_UNSUPPORTED", "LORA_PROVIDER_URL_MISSING",
-  "LORA_REGISTRY_UNAVAILABLE", "LORA_RUN_NOT_COMPLETED", "LORA_SELECTION_INVALID", "LORA_SPECIALIZATION_MISMATCH",
-  "LORA_VOCABULARY_ALLOWLIST_EMPTY",
+// Todos los prefijos FLUX_* que lanza src/ (inventario 2026-09-14).
+const CODIGOS_FLUX_ESTILO = [
+  "FLUX_APPLICATION_REQUIRED", "FLUX_ARTIFACT_NOT_APPROVED", "FLUX_ARTIFACT_NOT_FOUND", "FLUX_DATASET_ALLOWLIST_EMPTY",
+  "FLUX_DATASET_CATALOG_UNLINKED", "FLUX_EVALUATION_REQUIRED", "FLUX_INCOMPATIBLE", "FLUX_MODE_DISABLED",
+  "FLUX_MODE_INVALID", "FLUX_MODE_NOT_CONFIGURED", "FLUX_MODE_NOT_FOUND", "FLUX_MODE_NOT_READY", "FLUX_MODE_REQUIRED",
+  "FLUX_MODE_SELECTION_CONFLICT", "FLUX_MULTI_UNSUPPORTED", "FLUX_PROVIDER_URL_MISSING",
+  "FLUX_REGISTRY_UNAVAILABLE", "FLUX_RUN_NOT_COMPLETED", "FLUX_SELECTION_INVALID", "FLUX_SPECIALIZATION_MISMATCH",
+  "FLUX_VOCABULARY_ALLOWLIST_EMPTY",
 ];
 
-caso("todos los LORA_* de estilo dan ESTILO_NO_PREPARADO y los de producto ESTILO_SIN_PRODUCTOS", () => {
-  for (const codigo of CODIGOS_LORA_ESTILO) {
+caso("todos los FLUX_* de estilo dan ESTILO_NO_PREPARADO y los de producto ESTILO_SIN_PRODUCTOS", () => {
+  for (const codigo of CODIGOS_FLUX_ESTILO) {
     assert.equal(clasificarErrorServidor(new Error(`${codigo}: detalle`)).code, "ESTILO_NO_PREPARADO", codigo);
   }
-  for (const codigo of ["LORA_PRODUCT_VOCABULARY_FAILED", "LORA_DATASET_ALLOWLIST_REJECTED"]) {
+  for (const codigo of ["FLUX_PRODUCT_VOCABULARY_FAILED", "FLUX_DATASET_ALLOWLIST_REJECTED"]) {
     assert.equal(clasificarErrorServidor(new Error(`${codigo}: 123`)).code, "ESTILO_SIN_PRODUCTOS", codigo);
   }
 });
@@ -204,8 +204,8 @@ caso("errores tipados se clasifican por clase, no por texto", () => {
   const incompatible = traducirErrorServidor(new PlanEditError(422, "Esa pieza no puede reemplazar un globo. Elige otro globo.", "REEMPLAZO_INCOMPATIBLE"));
   assert.equal(incompatible.code, "REEMPLAZO_NO_COMPATIBLE");
   assert.match(incompatible.mensaje_usuario, /Elige otro globo/);
-  // plan-editar lanza PlanEditError(409, "LORA_DATASET_ALLOWLIST_REJECTED: <variant>"): gana el código del mensaje.
-  assert.equal(clasificarErrorServidor(new PlanEditError(409, "LORA_DATASET_ALLOWLIST_REJECTED: 998877")).code, "ESTILO_SIN_PRODUCTOS");
+  // plan-editar lanza PlanEditError(409, "FLUX_DATASET_ALLOWLIST_REJECTED: <variant>"): gana el código del mensaje.
+  assert.equal(clasificarErrorServidor(new PlanEditError(409, "FLUX_DATASET_ALLOWLIST_REJECTED: 998877")).code, "ESTILO_SIN_PRODUCTOS");
   const zod = z.object({ a: z.string() }).safeParse({});
   assert.ok(!zod.success);
   assert.equal(clasificarErrorServidor(zod.error).code, "SOLICITUD_INVALIDA");

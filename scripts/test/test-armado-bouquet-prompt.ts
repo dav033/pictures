@@ -5,15 +5,15 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
-import { LORA_PROMPT_MAX_LENGTH, translateLoraColor, type LoraVisualClause } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { FLUX_PROMPT_MAX_LENGTH, translateFluxColor, type FluxVisualClause } from "@/lib/ia/kagutsuchi/caption-flux";
+import { findFluxPromptLanguageLeaks, preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 
 import { CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
 import { tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
 import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_ASSEMBLY_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, piezasDeLosArmados } from "./fixtures/gemini-composition-historica";
 import { armadoDeElemento, frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import { ArmadoBouquetResueltoSchema, type ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
-import { verificarCoherenciaPrompt, verificarColoresCaptionLora } from "@/lib/plan/coherencia";
+import { verificarCoherenciaPrompt, verificarColoresCaptionFlux } from "@/lib/plan/coherencia";
 import {
   BOUQUET_15_LADOS,
   BOUQUET_80,
@@ -80,14 +80,14 @@ function vecesEn(texto: string, fragmento: string): number {
   return texto.split(fragmento).length - 1;
 }
 
-function clausulaDe(clauses: readonly LoraVisualClause[], elementId: string): LoraVisualClause {
+function clausulaDe(clauses: readonly FluxVisualClause[], elementId: string): FluxVisualClause {
   const clausula = clauses.find((clause) => clause.elementIds.includes(elementId));
   assert.ok(clausula, `ninguna cláusula representa ${elementId}`);
   return clausula;
 }
 
-function preflight(sceneSpec: SceneSpec, resultado: { clauses: LoraVisualClause[]; prompt: string }, prompt = resultado.prompt, maxLength?: number) {
-  return preflightLoraPrompt({ sceneSpec, clauses: resultado.clauses, prompt, maxLength });
+function preflight(sceneSpec: SceneSpec, resultado: { clauses: FluxVisualClause[]; prompt: string }, prompt = resultado.prompt, maxLength?: number) {
+  return preflightFluxPrompt({ sceneSpec, clauses: resultado.clauses, prompt, maxLength });
 }
 
 function lineaQueEmpieza(prompt: string, inicio: string): string {
@@ -234,11 +234,11 @@ function loraCanonicoConArmado(): void {
     assert.equal(vecesEn(resultado.prompt, centro.prompt_lora), 1, caso);
     // Un solo bouquet nombrado: la frase de Python es un modificador, no otro sustantivo.
     assert.equal(vecesEn(resultado.prompt, "balloon bouquet"), 1, caso);
-    assert.ok(resultado.prompt.length <= LORA_PROMPT_MAX_LENGTH, `${resultado.prompt.length}`);
+    assert.ok(resultado.prompt.length <= FLUX_PROMPT_MAX_LENGTH, `${resultado.prompt.length}`);
     const texto = resultado.prompt;
     const reporte = preflight(escena, resultado, texto);
     assert.equal(reporte.ok, true, `${caso}: ${reporte.errors.join("; ")}`);
-    assert.deepEqual(findLoraPromptLanguageLeaks(texto), [], caso);
+    assert.deepEqual(findFluxPromptLanguageLeaks(texto), [], caso);
     // La compactación nunca toca la frase del armado.
     const alterado = preflight(escena, resultado, texto.replace("staggered heights", "different heights"));
     assert.equal(alterado.ok, false);
@@ -283,7 +283,7 @@ function loraLegacyDelPlan(): void {
     assert.equal(vecesEn(caption.prompt, armado15.prompt_lora), 1, caption.prompt);
     const reporte = preflight(escena, caption);
     assert.equal(reporte.ok, true, reporte.errors.join("; "));
-    const colores = verificarColoresCaptionLora(fijado.plan, escenaParaCoherencia(escena, frases), { clausulas: caption.clauses, traducirColor: translateLoraColor });
+    const colores = verificarColoresCaptionFlux(fijado.plan, escenaParaCoherencia(escena, frases), { clausulas: caption.clauses, traducirColor: translateFluxColor });
     assert.equal(colores.ok, true, colores.errores.join("; "));
   }
   const sinArmado = captionBaseDePlan(vector15());

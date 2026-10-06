@@ -1,5 +1,5 @@
 import type { ReferenceBBox, ReferenceBlueprintV2 } from "./reference-blueprint";
-import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
+import type { FluxDensity, FluxDesignRole, FluxPlacement, FluxStructureType, VisualSemantics } from "../escena/scene-semantics";
 
 /**
  * Typed structure detection for reference images.
@@ -265,7 +265,7 @@ export function parseCompositionRelevance(raw: unknown): CompositionRelevance | 
   return oneOf(COMPOSITION_RELEVANCE, raw);
 }
 
-const STRUCTURE_TYPE_MAP: Record<DetectedStructure["type"], LoraStructureType> = {
+const STRUCTURE_TYPE_MAP: Record<DetectedStructure["type"], FluxStructureType> = {
   arch: "arco",
   half_arch: "semiarco",
   column: "columna",
@@ -287,7 +287,7 @@ export function sideFromBBox(bbox: ReferenceBBox): "left" | "center" | "right" {
   return center < 0.4 ? "left" : center > 0.6 ? "right" : "center";
 }
 
-function placementFor(structure: DetectedStructure, bbox: ReferenceBBox): LoraPlacement {
+function placementFor(structure: DetectedStructure, bbox: ReferenceBBox): FluxPlacement {
   if (structure.type === "ceiling_installation") return "techo";
   if (structure.type === "centerpiece") return "sobre_mesa_principal";
   // A low, short run at the bottom of the frame lies on the floor even when it
@@ -359,12 +359,12 @@ function sobreLaMesa(guirnalda: ReferenceBBox, mesa: ReferenceBBox): boolean {
  *   mesa detectada es `sobre_mesa_principal`.
  */
 export function refinarPlacementGuirnalda(
-  actual: LoraPlacement,
+  actual: FluxPlacement,
   bbox: ReferenceBBox,
   muebles: readonly MuebleEnFoto[],
   soporte?: SoporteGuirnaldaLeido,
   fondoOcupado = false,
-): LoraPlacement {
+): FluxPlacement {
   if (actual === "techo" || actual === "techo_multipunto") return actual;
   if (soporte === "mesa") return "sobre_mesa_principal";
   if (soporte === "piso") return "piso_frontal";
@@ -508,9 +508,9 @@ export function referenceStructureSemantics(
 ): Map<string, VisualSemantics> {
   const structures = elements.filter((element): element is ElementForSemantics & { structure: DetectedStructure } => Boolean(element.structure));
   const focal = [...structures].sort((a, b) => b.bbox.width * b.bbox.height - a.bbox.width * a.bbox.height)[0];
-  const loraDensity: LoraDensity = density === "dense" ? "lujosa" : density === "sparse" ? "sencilla" : "media";
+  const loraDensity: FluxDensity = density === "dense" ? "lujosa" : density === "sparse" ? "sencilla" : "media";
   return new Map(structures.map((element) => {
-    const role: LoraDesignRole = element === focal ? "focal" : element.structure.type === "centerpiece" ? "acento" : "soporte";
+    const role: FluxDesignRole = element === focal ? "focal" : element.structure.type === "centerpiece" ? "acento" : "soporte";
     return [element.elementId, {
       structure_type: STRUCTURE_TYPE_MAP[element.structure.type],
       placement: placementFor(element.structure, element.bbox),

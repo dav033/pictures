@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
-import { compileLoraCaption, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileFluxCaption, FLUX_PROMPT_MAX_LENGTH, translateFluxColor } from "../../src/lib/ia/kagutsuchi/caption-flux";
+import { findFluxPromptLanguageLeaks, preflightFluxPrompt } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import { TERMINOS_COMERCIALES } from "../../src/lib/ia/kagutsuchi/descriptor-perceptual";
 
@@ -56,14 +56,14 @@ function scene(elements: SceneSpec["elements"][number][]): SceneSpec {
 }
 
 function check(input: { spec: SceneSpec; request?: string }) {
-  const compilation = compileLoraCaption({
+  const compilation = compileFluxCaption({
     sceneSpec: input.spec,
     visualContext: buildVisualContext({ userRequest: input.request ?? "cumpleaños en salón" }),
   });
-  const report = preflightLoraPrompt({ sceneSpec: input.spec, clauses: compilation.clauses, prompt: compilation.prompt });
+  const report = preflightFluxPrompt({ sceneSpec: input.spec, clauses: compilation.clauses, prompt: compilation.prompt });
   assert.equal(report.ok, true, report.errors.join("; "));
   assert.equal((compilation.prompt.match(/eventdecor_style_v[23]/gi) ?? []).length, 0);
-  assert.ok(compilation.prompt.length <= LORA_PROMPT_MAX_LENGTH, `prompt demasiado largo: ${compilation.prompt.length}`);
+  assert.ok(compilation.prompt.length <= FLUX_PROMPT_MAX_LENGTH, `prompt demasiado largo: ${compilation.prompt.length}`);
   assert.doesNotMatch(compilation.prompt, /EST_|CATALOG_|SKU|precio|paquete/i);
   return { compilation, report };
 }
@@ -74,26 +74,26 @@ function check(input: { spec: SceneSpec; request?: string }) {
 // `blue` y ahora es `turquoise`. La regla no cambia —solo se usa la palabra donde el corpus la usa—; lo que
 // cambia es que se midio, y tres tonos candidatos (`teal`, `dark green`, `light pink`) quedaron fuera porque
 // en el corpus describen un mantel, un piso y nada.
-assert.equal(translateLoraColor("azul rey"), "royal blue");
-assert.equal(translateLoraColor("azul caribe"), "turquoise");
-assert.equal(translateLoraColor("blanco nacar"), "pearl white");
-assert.equal(translateLoraColor("verde menta"), "mint green");
-assert.equal(translateLoraColor("verde esmeralda"), "green");
+assert.equal(translateFluxColor("azul rey"), "royal blue");
+assert.equal(translateFluxColor("azul caribe"), "turquoise");
+assert.equal(translateFluxColor("blanco nacar"), "pearl white");
+assert.equal(translateFluxColor("verde menta"), "mint green");
+assert.equal(translateFluxColor("verde esmeralda"), "green");
 // `gris` es un color real de producto (colores-producto.ts) fuera de la paleta
 // v2: sin alias llegaba en español al caption y el preflight no lo detectaba.
 //
 // Con `grey` y no `gray`: es la misma palabra y no la misma estadistica. En las 345 captions `grey` sale 15
 // veces y son las de globos («12-inch matte Fashion grey round latex balloons»); `gray` sale 7 y son paredes
 // y pisos. La ortografia la eligio quien escribio el corpus.
-assert.equal(translateLoraColor("gris"), "grey");
-assert.equal(translateLoraColor("grafito"), "charcoal gray");
-assert.equal(translateLoraColor("plateado"), "silver", "plateado sigue siendo silver, no gris");
-assert.ok(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gris balloons").includes("gris"), "el preflight detecta 'gris' sin traducir");
-assert.deepEqual(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gray balloons"), []);
+assert.equal(translateFluxColor("gris"), "grey");
+assert.equal(translateFluxColor("grafito"), "charcoal gray");
+assert.equal(translateFluxColor("plateado"), "silver", "plateado sigue siendo silver, no gris");
+assert.ok(findFluxPromptLanguageLeaks("eventdecor_style_v2, an arch of gris balloons").includes("gris"), "el preflight detecta 'gris' sin traducir");
+assert.deepEqual(findFluxPromptLanguageLeaks("eventdecor_style_v2, an arch of gray balloons"), []);
 
 const canonicalLabel = "round latex balloon in gold with a Reflex high-shine finish";
 const columnaOrganica = scene([element({ id: "ORGANICA", name: "Columna orgánica", type: "columna", placement: "lateral_izquierdo" })]);
-const textoColumnaOrganica = compileLoraCaption({
+const textoColumnaOrganica = compileFluxCaption({
   sceneSpec: columnaOrganica,
   visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
   officialStructures: new Map([["ORGANICA", "columna_asimetrica"]]),
@@ -103,14 +103,14 @@ assert.match(textoColumnaOrganica, /uneven, deep silhouette and large balloons i
 assert.doesNotMatch(textoColumnaOrganica, /\btubes?\b|rigid balloon column/i);
 
 const canonicalSpec = scene([element({ id: "CANONICAL", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]);
-const canonicalPresence = compileLoraCaption({
+const canonicalPresence = compileFluxCaption({
   sceneSpec: canonicalSpec,
   visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
   productConcepts: [{ elementId: "CANONICAL", conceptId: "fixture.canonical.product", canonicalLabel }],
 });
 assert.equal(canonicalPresence.usedCatalogProducts, true, "la etiqueta canónica debe gobernar el compilador base");
 
-const canonicalDeduplication = compileLoraCaption({
+const canonicalDeduplication = compileFluxCaption({
   sceneSpec: scene([
     element({ id: "CANONICAL_DUP_A", name: "Arco", type: "arco", placement: "arco_central", role: "focal", group: "same-product" }),
     element({ id: "CANONICAL_DUP_B", name: "Arco", type: "arco", placement: "arco_central", role: "soporte", group: "same-product" }),
@@ -141,7 +141,7 @@ const languageContext = buildVisualContext({
   userRequest: "quince años",
   eventLabel: "evento corporativo",
 });
-const languageV2 = compileLoraCaption({ sceneSpec: languageScene, visualContext: languageContext }).prompt;
+const languageV2 = compileFluxCaption({ sceneSpec: languageScene, visualContext: languageContext }).prompt;
 assert.match(languageV2, /fifteenth-birthday celebration atmosphere/i);
 // «azul rey» del brief llega traducido, y ahora con el tono que el dataset sabe decir: `royal blue`, no el
 // `blue` de la paleta de 26 palabras. Lo que prueba esta linea sigue siendo lo mismo —que el color del brief
@@ -149,9 +149,9 @@ assert.match(languageV2, /fifteenth-birthday celebration atmosphere/i);
 assert.match(languageV2, /in royal blue/i);
 assert.match(languageV2, /recognizable event venue environment/i);
 assert.doesNotMatch(languageV2, /quince|azul|club social|evento|corporativo|años|[áéíóúüñ¿¡]/i);
-assert.deepEqual(findLoraPromptLanguageLeaks(languageV2), []);
+assert.deepEqual(findFluxPromptLanguageLeaks(languageV2), []);
 
-const directQuincePrompt = compileLoraCaption({
+const directQuincePrompt = compileFluxCaption({
   sceneSpec: languageScene,
   visualContext: buildVisualContext({ brief: { tipo_evento: "quinceañera", espacio: "club social" } }),
 }).prompt;
@@ -190,7 +190,7 @@ assert.match(bilateral.compilation.prompt, /flanking the main arch/i);
 // element with N-1 finishes plus one extra token shifted in from the group
 // — two columns with the SAME color but a DIFFERENT finish count were
 // wrongly treated as compatible for bilateral pairing. This bypasses
-// preflightLoraPrompt (its bilateral check only compares colors, not
+// preflightFluxPrompt (its bilateral check only compares colors, not
 // finishes — a separate, pre-existing gap) to isolate the compiler's own
 // pairing decision.
 const asymmetricFinishSpec = scene([
@@ -198,7 +198,7 @@ const asymmetricFinishSpec = scene([
   element({ id: "COL_AF_L", name: "Columna izquierda", type: "columna", placement: "lateral_izquierdo", role: "soporte", group: "columns-af", colors: ["rojo"], finishes: ["reflex"] }),
   element({ id: "COL_AF_R", name: "Columna derecha", type: "columna", placement: "lateral_derecho", role: "soporte", group: "columns-af", colors: ["rojo"], finishes: ["reflex", "metalizado"] }),
 ]);
-const asymmetricFinishCompilation = compileLoraCaption({ sceneSpec: asymmetricFinishSpec, visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }) });
+const asymmetricFinishCompilation = compileFluxCaption({ sceneSpec: asymmetricFinishSpec, visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }) });
 assert.doesNotMatch(asymmetricFinishCompilation.prompt, /matching one another/i, "columnas con distinto número de acabados no son un par bilateral real");
 
 const quince = check({
@@ -242,16 +242,16 @@ assert.equal(sevenStructures.report.discardedElementIds.length, 0);
 // Regression: the Spanish-leak tokens and the diacritics class were stored as
 // mojibake ("quinceaÃ±era", "[Ã¡Ã©...]"), so real accented Spanish text never
 // matched and reached fal.ai untranslated.
-const accentedLeaks = findLoraPromptLanguageLeaks("eventdecor_style_v2, a quinceañera arch for XV años in the jardín.");
+const accentedLeaks = findFluxPromptLanguageLeaks("eventdecor_style_v2, a quinceañera arch for XV años in the jardín.");
 assert.ok(accentedLeaks.includes("quinceañera"), `quinceañera must be detected: ${accentedLeaks.join(", ")}`);
 assert.ok(accentedLeaks.includes("años"), `años must be detected: ${accentedLeaks.join(", ")}`);
 assert.ok(accentedLeaks.includes("jardín"), `jardín must be detected: ${accentedLeaks.join(", ")}`);
 assert.ok(accentedLeaks.includes("caracteres españoles"), "accented characters must be flagged on their own");
-assert.deepEqual(findLoraPromptLanguageLeaks("eventdecor_style_v2, celebración"), ["caracteres españoles", "celebración"]);
-assert.deepEqual(findLoraPromptLanguageLeaks("eventdecor_style_v2, ¿salón?"), ["caracteres españoles", "salón"]);
+assert.deepEqual(findFluxPromptLanguageLeaks("eventdecor_style_v2, celebración"), ["caracteres españoles", "celebración"]);
+assert.deepEqual(findFluxPromptLanguageLeaks("eventdecor_style_v2, ¿salón?"), ["caracteres españoles", "salón"]);
 const leakScene = scene([element({ id: "LEAK", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]);
-const leakCompilation = compileLoraCaption({ sceneSpec: leakScene, visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }) });
-const leakReport = preflightLoraPrompt({ sceneSpec: leakScene, clauses: leakCompilation.clauses, prompt: `${leakCompilation.prompt} Quinceañera.` });
+const leakCompilation = compileFluxCaption({ sceneSpec: leakScene, visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }) });
+const leakReport = preflightFluxPrompt({ sceneSpec: leakScene, clauses: leakCompilation.clauses, prompt: `${leakCompilation.prompt} Quinceañera.` });
 assert.equal(leakReport.ok, false);
 assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin traducir") && error.includes("quinceañera")), leakReport.errors.join("; "));
 
@@ -265,7 +265,7 @@ assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin
   // suelo cuando la única pieza de la escena va colgada de la pared.
   const contexto = buildVisualContext({ userRequest: "cumpleanos en salon" });
   const muro = scene([element({ id: "GAR", name: "Guirnalda", type: "guirnalda", placement: "fondo_pared", role: "focal" })]);
-  const caption = compileLoraCaption({ sceneSpec: muro, visualContext: contexto });
+  const caption = compileFluxCaption({ sceneSpec: muro, visualContext: contexto });
   assert.ok(caption.prompt.includes("running along the rear wall"), caption.prompt);
   assert.doesNotMatch(caption.prompt, /against the rear wall/, caption.prompt);
   assert.doesNotMatch(caption.prompt, /grounded supports|floor contact/, caption.prompt);
@@ -275,18 +275,18 @@ assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin
     element({ id: "GAR", name: "Guirnalda", type: "guirnalda", placement: "fondo_pared", role: "focal" }),
     element({ id: "ARCH", name: "Arco", type: "arco", placement: "arco_central", role: "focal" }),
   ]);
-  assert.match(compileLoraCaption({ sceneSpec: conArco, visualContext: contexto }).prompt, /grounded supports|floor contact/);
+  assert.match(compileFluxCaption({ sceneSpec: conArco, visualContext: contexto }).prompt, /grounded supports|floor contact/);
 
   // En el piso la ubicación ya no se puede leer como un portal y no se toca.
   const piso = scene([element({ id: "GAR", name: "Guirnalda", type: "guirnalda", placement: "piso_frontal", role: "focal" })]);
-  const enPiso = compileLoraCaption({ sceneSpec: piso, visualContext: contexto });
+  const enPiso = compileFluxCaption({ sceneSpec: piso, visualContext: contexto });
   assert.ok(enPiso.prompt.includes("resting on the floor in the foreground"), enPiso.prompt);
   assert.match(enPiso.prompt, /grounded supports|floor contact/, enPiso.prompt);
 
   // Y cuando el motor orgánico armó la pieza, su frase manda sobre la ubicación genérica: dice además la
   // curva, el desnivel y el racimo, que la ubicación no sabe. La escribe Python y entra tal cual.
   const delMotor = "mounted flat high on the wall, curving gently upward along the top, higher on the left and lower at the right end, both ends free, in clusters of four";
-  const armada = compileLoraCaption({
+  const armada = compileFluxCaption({
     sceneSpec: muro,
     visualContext: contexto,
     colorPatterns: [{ estructura_id: "GAR", aplicado: true, prompt_gemini: "", prompt_lora: delMotor, guirnaldaOrganica: { enAlto: true } }],
@@ -318,7 +318,7 @@ assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin
     colors: ["dorado"],
     finishes: todosLosAcabados,
   })]);
-  const prompt = compileLoraCaption({ sceneSpec: conAcabados, visualContext: buildVisualContext({ userRequest: "cumpleaños" }) }).prompt;
+  const prompt = compileFluxCaption({ sceneSpec: conAcabados, visualContext: buildVisualContext({ userRequest: "cumpleaños" }) }).prompt;
   for (const termino of TERMINOS_COMERCIALES) {
     // `TERMINOS_COMERCIALES` lleva patrones ya escapados por su dueño; aquí solo se buscan como palabra.
     const palabra = new RegExp(`\\b${termino.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");

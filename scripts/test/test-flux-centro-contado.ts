@@ -4,12 +4,12 @@
  * un racimo de doce. El conteo ya viajaba en el elemento del plan (`quantity`, material_units) y nadie lo leía.
  *
  * Sin red ni llamadas pagadas.
- *   npx tsx --conditions=react-server scripts/test/test-lora-centro-contado.ts
+ *   npx tsx --conditions=react-server scripts/test/test-flux-centro-contado.ts
  */
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
-import { GROUPING_ONLY_CONTEXT, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
+import { GROUPING_ONLY_CONTEXT, FLUX_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/caption-flux";
+import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/producto-flux";
 import { FUENTE_PLAN } from "../../src/lib/plan/blueprint";
 
 type Elemento = SceneSpec["elements"][number];
@@ -47,7 +47,7 @@ function caption(elemento: Elemento): string {
     sceneSpec: spec,
     visualContext: GROUPING_ONLY_CONTEXT,
     sizeConfirmations: [],
-    maxLength: LORA_PROMPT_MAX_LENGTH,
+    maxLength: FLUX_PROMPT_MAX_LENGTH,
     ambientDecor: [],
     officialStructures: new Map<string, string>()
 }).prompt;

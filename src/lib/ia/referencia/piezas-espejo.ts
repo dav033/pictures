@@ -1,5 +1,5 @@
 import type { ReferenceBBox, ReferenceBlueprintV2 } from "./reference-blueprint";
-import type { LoraDensity, LoraDesignRole, LoraStructureType } from "../escena/lora-semantics";
+import type { FluxDensity, FluxDesignRole, FluxStructureType } from "../escena/scene-semantics";
 import { coloresDominantesReferencia } from "@/lib/plan/colores-referencia";
 
 /**
@@ -25,7 +25,7 @@ import { coloresDominantesReferencia } from "@/lib/plan/colores-referencia";
 type Elemento = ReferenceBlueprintV2["elements"][number];
 
 /** Las piezas verticales de un lado: las únicas que el reconocedor confunde entre sí. */
-const TIPOS_VERTICALES: ReadonlySet<LoraStructureType> = new Set(["columna", "semiarco"]);
+const TIPOS_VERTICALES: ReadonlySet<FluxStructureType> = new Set(["columna", "semiarco"]);
 /** Frontera columna / semiarco en fracción del alto: la del prompt (`top_overhang` strong = más del 35 %). */
 export const VUELO_FRONTERA_SEMIARCO = 0.35;
 /** Diferencia máxima entre las distancias de las dos piezas al centro de la foto (fracción del ancho). */
@@ -77,8 +77,8 @@ export function parecidoEspejo(izquierda: Elemento, derecha: Elemento): number {
   return (1 - asimetria) * alto * ancho * colores;
 }
 
-const RANGO_ROL: Record<LoraDesignRole, number> = { acento: 0, soporte: 1, focal: 2 };
-const RANGO_DENSIDAD: Record<LoraDensity, number> = { sencilla: 0, media: 1, lujosa: 2 };
+const RANGO_ROL: Record<FluxDesignRole, number> = { acento: 0, soporte: 1, focal: 2 };
+const RANGO_DENSIDAD: Record<FluxDensity, number> = { sencilla: 0, media: 1, lujosa: 2 };
 
 /** Cambia izquierda por derecha en la descripción de la forma (la de la otra pieza, vista en espejo). */
 function enEspejo(texto: string): string {
@@ -91,7 +91,7 @@ function vueloDeLaPareja(a: Elemento, b: Elemento): number {
   return (vuelo(a) + vuelo(b)) / 2;
 }
 
-export type ParejaEspejo = { izquierda: string; derecha: string; tipo: LoraStructureType; grupo: string };
+export type ParejaEspejo = { izquierda: string; derecha: string; tipo: FluxStructureType; grupo: string };
 
 /** Las parejas en espejo de una foto, la mejor primero; cada elemento entra como mucho en una. */
 export function parejasEspejo(elementos: readonly Elemento[]): Array<{ izquierda: Elemento; derecha: Elemento }> {
@@ -134,7 +134,7 @@ export function unificarPiezasEspejo(blueprint: ReferenceBlueprintV2): Reference
     const si = izquierda.visual_semantics!;
     const sd = derecha.visual_semantics!;
     const vuelo = vueloDeLaPareja(izquierda, derecha);
-    const tipo: LoraStructureType = si.structure_type === sd.structure_type
+    const tipo: FluxStructureType = si.structure_type === sd.structure_type
       ? si.structure_type
       : vuelo > VUELO_FRONTERA_SEMIARCO ? "semiarco" : "columna";
     const rol = RANGO_ROL[si.design_role] >= RANGO_ROL[sd.design_role] ? si.design_role : sd.design_role;

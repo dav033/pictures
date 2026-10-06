@@ -43,6 +43,8 @@ type AparienciaColor = {
 // comprables en una sola pieza; con tres, el blanco quedaba fuera de la
 // cobertura del chat aunque el analizador sí lo hubiera nombrado.
 export const MAX_COLORES_REFERENCIA = 5;
+/** Tonos nombrados que entran siempre; del cuarto al quinto solo con presencia medida relevante (o sin medición). */
+const CUPO_BASE = 3;
 /** A named tone this visible in the photo remains in the purchase palette beyond the default slots. */
 const PRESENCIA_RELEVANTE = 0.03;
 
@@ -313,7 +315,7 @@ function coloresNombradosOrdenados(apariencia: AparienciaColor): string[] {
  *   not push a real color out, but it stays so the resolver reports the
  *   substitution to the customer (phase 2.5: substitute, never hide).
  */
-function seleccionarDominantes(colores: readonly string[], presenciaRelevante: ReadonlySet<string> = new Set()): string[] {
+function seleccionarDominantes(colores: readonly string[], presenciaRelevante: ReadonlySet<string> = new Set(), sinMedicion = true): string[] {
   const elegidos: string[] = [];
   let tonos = 0;
   for (const color of colores) {
@@ -321,7 +323,8 @@ function seleccionarDominantes(colores: readonly string[], presenciaRelevante: R
     const sustituto = colorDeCompraSinVenta(color);
     const sinCupo = color === TRANSPARENTE || Boolean(sustituto && colores.includes(sustituto));
     if (!sinCupo) {
-      if (tonos >= MAX_COLORES_REFERENCIA && !presenciaRelevante.has(color)) continue;
+      const admitido = tonos < CUPO_BASE || presenciaRelevante.has(color) || (sinMedicion && tonos < MAX_COLORES_REFERENCIA);
+      if (!admitido) continue;
       tonos += 1;
     }
     elegidos.push(color);
@@ -335,7 +338,7 @@ export function coloresDominantesReferencia(apariencia: AparienciaColor | readon
   const presenciaRelevante = new Set((entrada.measured_colors ?? [])
     .filter((medido) => medido.share >= PRESENCIA_RELEVANTE && nombrados.includes(medido.color))
     .map((medido) => medido.color));
-  return seleccionarDominantes(nombrados, presenciaRelevante);
+  return seleccionarDominantes(nombrados, presenciaRelevante, !(entrada.measured_colors ?? []).length);
 }
 
 /**

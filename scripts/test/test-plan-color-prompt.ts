@@ -4,8 +4,8 @@ import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
-import { compileLoraCaption, GROUPING_ONLY_CONTEXT, translateLoraColor } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
+import { compileFluxCaption, GROUPING_ONLY_CONTEXT, translateFluxColor } from "@/lib/ia/kagutsuchi/caption-flux";
+import { verificarCoherenciaPrompt, verificarColoresCaptionFlux, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import { planFijado, type PlanFijadoDeFixture } from "../lib/planes-fijados";
@@ -219,11 +219,11 @@ function main(): void {
 
   // 4c. El caption del LoRA nunca pasa por el prompt de imagen: se comprueba
   //     sobre las cláusulas compiladas, con el mismo traductor de color.
-  const clausulas = compileLoraCaption({ sceneSpec: escenaColumnas, visualContext: GROUPING_ONLY_CONTEXT, officialStructures: officialStructuresDeEstructuras(conColumnas.plan.estructuras) }).clauses;
-  const captionOk = verificarColoresCaptionLora(conColumnas, escenaCoherencia, { clausulas, traducirColor: translateLoraColor });
+  const clausulas = compileFluxCaption({ sceneSpec: escenaColumnas, visualContext: GROUPING_ONLY_CONTEXT, officialStructures: officialStructuresDeEstructuras(conColumnas.plan.estructuras) }).clauses;
+  const captionOk = verificarColoresCaptionFlux(conColumnas, escenaCoherencia, { clausulas, traducirColor: translateFluxColor });
   assert.equal(captionOk.ok, true, JSON.stringify(captionOk.errores));
   const clausulasSinDorado = clausulas.map((clausula) => clausula.elementIds.includes("EST_01_ARCO") ? { ...clausula, colors: clausula.colors.filter((color) => color !== "gold") } : clausula);
-  const captionFallo = verificarColoresCaptionLora(conColumnas, escenaCoherencia, { clausulas: clausulasSinDorado, traducirColor: translateLoraColor });
+  const captionFallo = verificarColoresCaptionFlux(conColumnas, escenaCoherencia, { clausulas: clausulasSinDorado, traducirColor: translateFluxColor });
   assert.equal(captionFallo.ok, false, "un color perdido en el caption tiene que fallar");
   assert.match(captionFallo.errores.join(" | "), /EST_01_ARCO en el caption LoRA no son los comprados \(faltan gold\)/, captionFallo.errores.join(" | "));
   console.log("[PASS] coherencia: los colores de cada estructura se comprueban en la escena, en el prompt y en el caption LoRA");

@@ -1,7 +1,7 @@
 /**
  * Fuente única del vocabulario compositivo (PLAN-COMPOSICION-RICA-V001.md §6.2).
  *
- * `tipos.ts`, `lora-semantics.ts`, `lora/schema.ts`, herramientas y tests
+ * `tipos.ts`, `scene-semantics.ts`, `lora/schema.ts`, herramientas y tests
  * importan estos enums de aquí cuando representan el mismo concepto. No se
  * mantiene una segunda lista manual de los mismos valores en ningún otro
  * archivo: si un consumidor necesita un subconjunto (por ejemplo, el enum

@@ -25,8 +25,8 @@
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import { buildVisualContext } from "@/lib/ia/escena/visual-context";
-import { compileLoraCaption } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
-import { compileProductPrompt, type ElementSizeConfirmation } from "@/lib/ia/kagutsuchi/lora-product-runtime";
+import { compileFluxCaption } from "@/lib/ia/kagutsuchi/caption-flux";
+import { compileProductPrompt, type ElementSizeConfirmation } from "@/lib/ia/kagutsuchi/producto-flux";
 import { mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
 import type { FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
@@ -127,7 +127,7 @@ export function promptGeminiDePlan(fijado: PlanFijadoDeFixture, frases?: readonl
 
 /** Caption LoRA sin vocabulario de producto (camino legacy de color/acabado). */
 export function captionBaseDePlan(fijado: PlanFijadoDeFixture, frases?: readonly FraseDeEstructura[]) {
-  return compileLoraCaption({ sceneSpec: escenaDePlan(fijado), visualContext: CONTEXTO_CUMPLE, officialStructures: officialStructuresDe(fijado.plan), colorPatterns: frases });
+  return compileFluxCaption({ sceneSpec: escenaDePlan(fijado), visualContext: CONTEXTO_CUMPLE, officialStructures: officialStructuresDe(fijado.plan), colorPatterns: frases });
 }
 
 type Elemento = SceneSpec["elements"][number];
@@ -262,7 +262,7 @@ export function promptGeminiSintetico(escena: SceneSpec, frases?: readonly Frase
 }
 
 /** Todo lo que sale del compilador: texto, JSON, paso de compactación, diagnósticos y cláusulas. */
-export function textoLora(resultado: { prompt: string }): string {
+export function textoFlux(resultado: { prompt: string }): string {
   return resultado.prompt;
 }
 

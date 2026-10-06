@@ -2596,7 +2596,7 @@ class _Redactor:
 
         Nombra el sitio solo cuando el color va en uno: con varios pesa más que
         cualquier otro fragmento del caption y el compilador tiene un tope
-        (``LORA_PROMPT_MAX_LENGTH``) que empieza a tirar partes. "in four compact
+        (``FLUX_PROMPT_MAX_LENGTH``) que empieza a tirar partes. "in four compact
         patches" dice el mismo look sin cifras.
         """
         if nombrados > 4:

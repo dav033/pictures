@@ -16,7 +16,7 @@
 import assert from "node:assert/strict";
 import { svgGuiaEscena, type InstanciaGuia } from "@/lib/ia/kagutsuchi/guia-escena";
 import { tamanoGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
-import { imageSizeFor } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { imageSizeFor } from "@/lib/ia/kagutsuchi/flux";
 import { formasDeOficial, incoherenciasFormaPieza } from "@/lib/plan/formas-pieza";
 import { PiezaGuiaEscenaSchema, PlanGuiaEscenaResultV1Schema, type PiezaGuiaEscena } from "@/lib/plan/guia-escena";
 

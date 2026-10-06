@@ -583,8 +583,8 @@ export function svgGuiaEscena(piezas: readonly PiezaGuiaEscena[], instancias: re
  * híbrido con foto del espacio), sin resultado previo (esa ya es la base de `/edit`), con `/edit` disponible, el
  * caption en texto y un plan que salió de una foto de referencia (alguna estructura la materializa).
  */
-export function generacionAdmiteGuiaEscena(entrada: { bandera: boolean; usarLora: boolean; hibrido: boolean; fotoEspacio: boolean; resultadoPrevio: boolean; editApagado: boolean; formatoTexto: boolean; conReferencia: boolean }): boolean {
-  return entrada.bandera && entrada.usarLora && !entrada.hibrido && !entrada.fotoEspacio && !entrada.resultadoPrevio && !entrada.editApagado && entrada.formatoTexto && entrada.conReferencia;
+export function generacionAdmiteGuiaEscena(entrada: { bandera: boolean; usarFlux: boolean; hibrido: boolean; fotoEspacio: boolean; resultadoPrevio: boolean; editApagado: boolean; formatoTexto: boolean; conReferencia: boolean }): boolean {
+  return entrada.bandera && entrada.usarFlux && !entrada.hibrido && !entrada.fotoEspacio && !entrada.resultadoPrevio && !entrada.editApagado && entrada.formatoTexto && entrada.conReferencia;
 }
 
 /** Si alguna estructura del plan materializa un elemento de una foto de referencia. */

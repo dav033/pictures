@@ -1,11 +1,12 @@
 import type { ImageInput, Imagen, PeticionImagen } from "@/lib/ia/nucleo/tipos";
 import { idsTelemetria, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { bytesDeBase64, registrarLlamadaIA } from "@sempertex/agente-core";
-import { LORA_GENERATION_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
-import { isPythonAdapterError, llamarPythonLoraGenerate } from "@/lib/ia/nucleo/python-adapter";
+import { FLUX_GENERATION_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
+import { isPythonAdapterError, llamarPythonFluxGenerate } from "@/lib/ia/nucleo/python-adapter";
 
 const TEXT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora";
-const EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora/edit";
+const EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/edit";
+const EDIT_ENDPOINT_WITH_ADAPTERS = "https://queue.fal.run/fal-ai/flux-2/lora/edit";
 const FAL_QUEUE_HOSTS = new Set(["queue.fal.run", "rest.alpha.fal.ai"]);
 const MAX_FAL_IMAGE_BYTES = 16_000_000;
 const MAX_EDIT_IMAGES = 4;
@@ -17,12 +18,12 @@ export const PROMPT_VERSION_GUIA = "guia-estructura.v1";
  */
 export const PROMPT_VERSION_GUIA_ESCENA = "guia-escena.v2";
 
-export type SempertexLoraOptions = {
+export type SempertexFluxOptions = {
   seed?: number;
   /** flux-2 guidance scale from the creativity level (creatividad.ts); defaults to 3.5. */
   guidanceScale?: number;
   /** Lista explícita de adaptadores; vacía selecciona FLUX base sin trigger. */
-  loras: LoraApplication[];
+  loras: FluxApplication[];
   /** Cancels provider I/O when the client disconnects or the route expires. */
   signal?: AbortSignal;
   telemetria?: ContextoTelemetriaIA;
@@ -30,11 +31,11 @@ export type SempertexLoraOptions = {
    * Imágenes que quien llama ya eligió para `/edit`, en su orden: la guía de
    * estructura con su carta (ADR-0033) o las referencias seleccionadas para
    * `/edit`. No se vuelven a filtrar con
-   * `referenciasParaLoraEdit`, que las descartaba sin foto del espacio ni
+   * `referenciasParaFluxEdit`, que las descartaba sin foto del espacio ni
    * resultado previo. Ausente, el comportamiento es el de siempre: se filtran
    * los `inputs`.
    */
-  imagenesEdit?: readonly ImagenEditLora[];
+  imagenesEdit?: readonly ImagenEditFlux[];
 };
 
 /**
@@ -42,20 +43,20 @@ export type SempertexLoraOptions = {
  * plano de la estructura aprobada y su carta de color. No son `ImageInput`
  * porque nunca pasan por Gemini, por `buildInputs` ni por el prompt de escena.
  */
-export type RolGuiaLora = "structure_guide" | "color_chart" | "scene_guide";
-export type ImagenGuiaLora = Imagen & {
+export type RolGuiaFlux = "structure_guide" | "color_chart" | "scene_guide";
+export type ImagenGuiaFlux = Imagen & {
   id: string;
-  role: RolGuiaLora;
+  role: RolGuiaFlux;
   /** Solo la guía de escena: si dibuja algo que no es globo (aro, poste, cintas). Decide qué nota la acompaña. */
   conEstructura?: boolean;
 };
-export type ImagenEditLora = ImageInput | ImagenGuiaLora;
+export type ImagenEditFlux = ImageInput | ImagenGuiaFlux;
 
-function esImagenGuia(imagen: ImagenEditLora): imagen is ImagenGuiaLora {
+function esImagenGuia(imagen: ImagenEditFlux): imagen is ImagenGuiaFlux {
   return imagen.role === "structure_guide" || imagen.role === "color_chart" || imagen.role === "scene_guide";
 }
 
-export type LoraApplication = {
+export type FluxApplication = {
   artifactId?: string;
   path: string;
   trigger: string;
@@ -257,7 +258,7 @@ export const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
  */
 const ROLES_QUE_ACTIVAN_EDIT = new Set<ImageInput["role"]>(["venue_base", "previous_generated_result"]);
 
-export function referenciasParaLoraEdit(inputs: readonly ImageInput[]): ImageInput[] {
+export function referenciasParaFluxEdit(inputs: readonly ImageInput[]): ImageInput[] {
   if (!inputs.some((input) => ROLES_QUE_ACTIVAN_EDIT.has(input.role))) return [];
   const previous = [...inputs]
     .filter((input) => input.role === "previous_generated_result")
@@ -292,17 +293,17 @@ export function referenciasParaLoraEdit(inputs: readonly ImageInput[]): ImageInp
  * al máximo de `/edit`. No hay filtro por rol: la elección ya la hizo quien
  * llama.
  */
-export function imagenesEditExplicitas(imagenes: readonly ImagenEditLora[]): ImagenEditLora[] {
+export function imagenesEditExplicitas(imagenes: readonly ImagenEditFlux[]): ImagenEditFlux[] {
   return imagenes.slice(0, MAX_EDIT_IMAGES);
 }
 
 /** Como mucho un LoRA por generación; cero es el modelo base (modo `base`). */
-function validarAplicaciones(loras: LoraApplication[]): void {
-  if (loras.length > 1) throw new Error("LORA_MULTI_UNSUPPORTED: solo se permite un LoRA por generación.");
+function validarAplicaciones(loras: FluxApplication[]): void {
+  if (loras.length > 1) throw new Error("FLUX_MULTI_UNSUPPORTED: solo se permite un LoRA por generación.");
 }
 
 /** Nombre del modelo para la telemetría: sin LoRA es el modelo base, aunque el endpoint de fal sea el mismo. */
-export function modeloFluxParaTelemetria(loras: readonly LoraApplication[], conReferencias: boolean): string {
+export function modeloFluxParaTelemetria(loras: readonly FluxApplication[], conReferencias: boolean): string {
   const familia = loras.length ? "flux-2/lora" : "flux-2/base";
   return conReferencias ? `${familia}/edit` : familia;
 }
@@ -337,14 +338,14 @@ const FRASE_POR_ROL: Readonly<Record<ImageInput["role"], string>> = {
  * Superarla significa que algo ajeno se coló en el prompt, no que el diseño sea
  * grande, así que la ruta falla cerrada antes de llamar al proveedor.
  */
-export const LORA_EDIT_PROMPT_MAX_LENGTH = 2500;
+export const FLUX_EDIT_PROMPT_MAX_LENGTH = 2500;
 
 /**
  * Prompt final que recibe `/edit`: el caption compilado más una guía de frases
  * fijas en inglés, una por imagen de entrada y con su posición explícita. Puro y sin ids,
  * para poder pasarlo por el preflight antes de llamar al proveedor.
  */
-export function buildLoraEditPrompt(prompt: string, references: readonly ImagenEditLora[]): string {
+export function buildFluxEditPrompt(prompt: string, references: readonly ImagenEditFlux[]): string {
   if (!references.length) return prompt;
   if (references.some((imagen) => imagen.role === "scene_guide")) return promptConGuiaEscena(prompt, references);
   if (references.some(esImagenGuia)) return promptConGuia(prompt, references);
@@ -386,7 +387,7 @@ export function notaCartaColor(posicion: number): string {
 
 /**
  * Caracteres que las notas de la guía ocupan en el prompt del LoRA. La ruta
- * los descuenta del presupuesto del caption (`LORA_PROMPT_MAX_LENGTH`), igual
+ * los descuenta del presupuesto del caption (`FLUX_PROMPT_MAX_LENGTH`), igual
  * que la instrucción de presentación del híbrido: el compilador compacta el
  * caption con sus pasos de siempre y el prompt entero sigue en el registro del
  * LoRA.
@@ -401,10 +402,10 @@ export function reservaNotasGuia(conCarta: boolean): number {
  * guía es la primera imagen y solo la sigue su carta; cualquier otra mezcla
  * falla cerrada antes de llegar al proveedor.
  */
-function promptConGuia(prompt: string, references: readonly ImagenEditLora[]): string {
+function promptConGuia(prompt: string, references: readonly ImagenEditFlux[]): string {
   const [guia, ...resto] = references;
   if (guia?.role !== "structure_guide" || resto.length > 1 || resto.some((imagen) => imagen.role !== "color_chart")) {
-    throw new Error("LORA_GUIA_INVALIDA: la guía de estructura va primera y solo la acompaña su carta de color.");
+    throw new Error("FLUX_GUIA_INVALIDA: la guía de estructura va primera y solo la acompaña su carta de color.");
   }
   const texto = prompt.trim();
   const carta = resto.length ? `\n\n${notaCartaColor(references.length)}` : "";
@@ -450,9 +451,9 @@ export function reservaNotaGuiaEscena(): number {
  * comprueban; la nota solo dice cómo leer el mapa. La guía de escena viaja SOLA: ninguna otra imagen (y nunca la
  * foto de referencia) puede acompañarla, y cualquier otra mezcla falla cerrada antes de llegar al proveedor.
  */
-function promptConGuiaEscena(prompt: string, references: readonly ImagenEditLora[]): string {
+function promptConGuiaEscena(prompt: string, references: readonly ImagenEditFlux[]): string {
   if (references.length !== 1 || references[0]!.role !== "scene_guide") {
-    throw new Error("LORA_GUIA_INVALIDA: la guía de escena viaja sola, como única imagen de /edit.");
+    throw new Error("FLUX_GUIA_INVALIDA: la guía de escena viaja sola, como única imagen de /edit.");
   }
   return `${prompt.trim()}\n\n${notaGuiaEscena(references[0]!.conEstructura)}`;
 }
@@ -464,7 +465,7 @@ export function guidanceScaleSeguro(valor: number | undefined): number {
 
 /**
  * Maps a Python-path failure back to what the direct path would have thrown.
- * `lora_account_*` is the only domain code that needs to become a real
+ * `flux_account_*` is the only domain code that needs to become a real
  * `ProveedorImagenNoDisponibleError` -- `traducir-error-servidor.ts` matches
  * that class by `instanceof`, not by message, so a generic Error here would
  * silently downgrade "cuenta de fal.ai rechazada" to ERROR_INTERNO. Every
@@ -473,10 +474,10 @@ export function guidanceScaleSeguro(valor: number | undefined): number {
  * ERROR_INTERNO today, so reproducing that (rather than inventing a richer
  * classification) is what keeps behavior identical between both paths.
  */
-export function errorDeAdaptadorLora(error: unknown): Error {
+export function errorDeAdaptadorFlux(error: unknown): Error {
   if (isPythonAdapterError(error)) {
-    if (error.domainCode === "lora_account_saldo_agotado" || error.domainCode === "lora_account_acceso_denegado") {
-      const causa = error.domainCode === "lora_account_saldo_agotado" ? "saldo_agotado" : "acceso_denegado";
+    if (error.domainCode === "flux_account_saldo_agotado" || error.domainCode === "flux_account_acceso_denegado") {
+      const causa = error.domainCode === "flux_account_saldo_agotado" ? "saldo_agotado" : "acceso_denegado";
       const status = error.providerStatus ?? (causa === "saldo_agotado" ? 402 : 403);
       return new ProveedorImagenNoDisponibleError(status, causa, error.providerDetail ?? "");
     }
@@ -486,26 +487,26 @@ export function errorDeAdaptadorLora(error: unknown): Error {
 }
 
 /**
- * The submit -> poll -> download sequence `generarConSempertexLora` used to
+ * The submit -> poll -> download sequence `generarConSempertexFlux` used to
  * make directly against fal.ai's queue, now made by Python
- * (services/ai-api/app/kagutsuchi/lora.py). Every value here already
- * reflects TypeScript's own composition (buildLoraEditPrompt, imageSizeFor,
+ * (services/ai-api/app/kagutsuchi/flux.py). Every value here already
+ * reflects TypeScript's own composition (buildFluxEditPrompt, imageSizeFor,
  * guidanceScaleSeguro) -- this function
  * only shapes that into the Python operation's request and reads back its
  * result; it decides nothing about the prompt or which references apply.
  */
-async function generarConSempertexLoraPython(
+async function generarConSempertexFluxPython(
   prompt: string,
   aspecto: PeticionImagen["aspecto"],
-  references: readonly ImagenEditLora[],
-  options: SempertexLoraOptions,
+  references: readonly ImagenEditFlux[],
+  options: SempertexFluxOptions,
   ids: { requestId: string; correlationId: string },
 ): Promise<{ imagen: Imagen; proveedorRequestId: string | undefined }> {
   const size = imageSizeFor(aspecto);
   try {
-    const result = await llamarPythonLoraGenerate({
+    const result = await llamarPythonFluxGenerate({
       mode: references.length ? "edit" : "text",
-      prompt: buildLoraEditPrompt(prompt, references),
+      prompt: buildFluxEditPrompt(prompt, references),
       loras: lorasFor(options.loras),
       guidanceScale: guidanceScaleSeguro(options.guidanceScale),
       numInferenceSteps: 28,
@@ -523,27 +524,29 @@ async function generarConSempertexLoraPython(
       proveedorRequestId: result.providerRequestId ?? undefined,
     };
   } catch (error) {
-    throw errorDeAdaptadorLora(error);
+    throw errorDeAdaptadorFlux(error);
   }
 }
 
-export async function generarConSempertexLora(
+export async function generarConSempertexFlux(
   prompt: string,
   aspecto: PeticionImagen["aspecto"],
   inputs: ImageInput[] = [],
-  options: SempertexLoraOptions,
+  options: SempertexFluxOptions,
 ): Promise<Imagen> {
   if (!Array.isArray(options.loras)) {
-    throw new Error("LORA_APPLICATION_REQUIRED: generarConSempertexLora necesita las aplicaciones resueltas desde el registro (vacías solo en modo base); no existe combinación URL/trigger por defecto.");
+    throw new Error("FLUX_APPLICATION_REQUIRED: generarConSempertexFlux necesita las aplicaciones resueltas desde el registro (vacías solo en modo base); no existe combinación URL/trigger por defecto.");
   }
   validarAplicaciones(options.loras);
   const key = process.env.FAL_KEY;
   if (!key) throw new Error("LoRA Sempertex no está conectado todavía: falta FAL_KEY en .env.local.");
 
   // Lo que eligió quien llama (guía o referencias de la etapa 1) no se vuelve a
-  // filtrar: `referenciasParaLoraEdit` lo descartaba sin venue ni resultado previo.
-  const references: readonly ImagenEditLora[] = options.imagenesEdit ? imagenesEditExplicitas(options.imagenesEdit) : referenciasParaLoraEdit(inputs);
-  const endpoint = references.length ? EDIT_ENDPOINT : TEXT_ENDPOINT;
+  // filtrar: `referenciasParaFluxEdit` lo descartaba sin venue ni resultado previo.
+  const references: readonly ImagenEditFlux[] = options.imagenesEdit ? imagenesEditExplicitas(options.imagenesEdit) : referenciasParaFluxEdit(inputs);
+  const endpoint = references.length
+    ? options.loras.length ? EDIT_ENDPOINT_WITH_ADAPTERS : EDIT_ENDPOINT
+    : TEXT_ENDPOINT;
   const conGuia = references.some((image) => image.role === "structure_guide");
   const conGuiaEscena = references.some((image) => image.role === "scene_guide");
 
@@ -575,8 +578,8 @@ export async function generarConSempertexLora(
   });
 
   try {
-  if (LORA_GENERATION_PYTHON_ENABLED) {
-    const { imagen, proveedorRequestId: pythonRequestId } = await generarConSempertexLoraPython(prompt, aspecto, references, options, ids);
+  if (FLUX_GENERATION_PYTHON_ENABLED) {
+    const { imagen, proveedorRequestId: pythonRequestId } = await generarConSempertexFluxPython(prompt, aspecto, references, options, ids);
     proveedorRequestId = pythonRequestId;
     registrar("ok");
     return imagen;
@@ -585,8 +588,8 @@ export async function generarConSempertexLora(
     method: "POST",
     headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      prompt: buildLoraEditPrompt(prompt, references),
-      loras: lorasFor(options.loras),
+      prompt: buildFluxEditPrompt(prompt, references),
+      ...(options.loras.length ? { loras: lorasFor(options.loras) } : {}),
       guidance_scale: guidanceScaleSeguro(options.guidanceScale),
       num_inference_steps: 28,
       image_size: imageSizeFor(aspecto),
@@ -656,6 +659,6 @@ export async function generarConSempertexLora(
   }
 }
 
-function lorasFor(loras: LoraApplication[]): Array<{ path: string; scale: number }> {
+function lorasFor(loras: FluxApplication[]): Array<{ path: string; scale: number }> {
   return loras.map((lora) => ({ path: lora.path, scale: lora.scale }));
 }

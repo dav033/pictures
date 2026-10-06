@@ -1,5 +1,5 @@
 {
-  "_comentario": "Peticiones que generarConSempertexLora mandaba al proveedor ANTES de la guía de estructura (ADR-0033), capturadas una sola vez sobre 90da1ef con scripts/lib/capturar-peticion-lora.ts (casosBase, CAPTION_DE_PRUEBA, LORA_DE_PRUEBA, 3:2, semilla 101, guidance 3.5). directo: LORA_GENERATION_PYTHON_ENABLED apagada; python: encendida (sin el context del sobre). No se regenera desde el código bajo prueba.",
+  "_comentario": "Peticiones que generarConSempertexFlux mandaba al proveedor ANTES de la guía de estructura (ADR-0033), capturadas una sola vez sobre 90da1ef con scripts/lib/capturar-peticion-flux.ts (casosBase, CAPTION_DE_PRUEBA, FLUX_DE_PRUEBA, 3:2, semilla 101, guidance 3.5). directo: FLUX_GENERATION_PYTHON_ENABLED apagada; python: encendida (sin el context del sobre). No se regenera desde el código bajo prueba.",
   "directo": {
     "sin-imagenes": {
       "destino": "https://queue.fal.run/fal-ai/flux-2/lora",

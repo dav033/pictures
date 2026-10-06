@@ -3,8 +3,8 @@ import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
-import { compileProductPrompt } from "@/lib/ia/kagutsuchi/lora-product-runtime";
-import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileProductPrompt } from "@/lib/ia/kagutsuchi/producto-flux";
+import { preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 import type { VisualContext } from "@/lib/ia/escena/visual-context";
 import { planFijado } from "../lib/planes-fijados";
 
@@ -121,7 +121,7 @@ async function main(): Promise<void> {
   //    que es lo que route.ts consulta antes de la llamada pagada. El
   //    compilador emitía la frase de par una vez POR PAR y
   //    `expectedBilateralPairs` emparejaba cada izquierda con la MISMA derecha,
-  //    así que salía "relaciones bilaterales 1/2" -> LORA_PREFLIGHT_FAILED.
+  //    así que salía "relaciones bilaterales 1/2" -> FLUX_PREFLIGHT_FAILED.
   for (const repeticiones of [2, 4, 6]) {
     const lateralRepetida = approvedScene(`qa-lateral-repetida-x${repeticiones}`);
     assert.equal(lateralRepetida.plan.estructuras.find((estructura) => estructura.estructura_id === "EST_02_COLUMNAS")?.repeticiones, repeticiones);
@@ -133,7 +133,7 @@ async function main(): Promise<void> {
     assert.equal(bilaterales[0]!.elementIds.length, repeticiones);
     const frase = repeticiones === 2 ? "one standing on the left and one on the right" : `${["", "one", "two", "three"][repeticiones / 2]} standing on each side`;
     assert.equal(caption.prompt.split(frase).length - 1, 1, caption.prompt);
-    const preflight = preflightLoraPrompt({ sceneSpec: lateralRepetida.scene, clauses: caption.clauses, prompt: caption.prompt });
+    const preflight = preflightFluxPrompt({ sceneSpec: lateralRepetida.scene, clauses: caption.clauses, prompt: caption.prompt });
     assert.equal(preflight.ok, true, `repeticiones=${repeticiones}: ${JSON.stringify(preflight.errors)}`);
     assert.deepEqual(preflight.relationships, { expected: repeticiones / 2, represented: repeticiones / 2 });
   }

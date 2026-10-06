@@ -5,7 +5,7 @@ import { RemateLeidoSchema } from "../../plan/armado-columna";
 import { LecturaGuirnaldaSchema } from "../../plan/armado-guirnalda";
 import { LecturaConteoSchema } from "../../plan/conteo-referencia";
 import { PistaPatronSchema, TAMANOS_LEIDOS } from "../../plan/patron-color";
-import { VisualSemanticsSchema } from "../escena/lora-semantics";
+import { VisualSemanticsSchema } from "../escena/scene-semantics";
 import {
   CatalogVisualDescriptorSchema,
   PhysicalFormSchema,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { buildImagePrompt } from "../../src/lib/ia/uzume/build-image-prompt";
 // The production LoRA path calls the compiler directly; the old wrapper had no other consumer.
-import { buildLoraImagePromptV2 as buildLoraImagePrompt } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { buildFluxImagePromptV2 as buildFluxImagePrompt } from "../../src/lib/ia/kagutsuchi/caption-flux";
 import { bloqueMezclaTamanos } from "../../src/lib/ia/escena/tamano-fisico";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import {
@@ -58,12 +58,12 @@ const sceneSpec = {
 // distribución y producía globos flotando y carteles alucinados (ver
 // la auditoría del corpus). El prompt debe quedarse
 // en registro de caption: una oración fluida, sin etiquetas ni ALL-CAPS.
-const loraPrompt = buildLoraImagePrompt({ sceneSpec, visualContext: christmasNight });
+const loraPrompt = buildFluxImagePrompt({ sceneSpec, visualContext: christmasNight });
 assert.match(loraPrompt, /^eventdecor_style_v2,/);
 // `element.name`/`resolved_colors`/`eventType` come from the catalog in
 // Spanish; the training captions are 100% English, so the LoRA prompt must
 // translate shape+color+event (see loraStructureNoun/loraColorWord/
-// LORA_EVENT_WORDS above) instead of embedding the raw Spanish text.
+// FLUX_EVENT_WORDS above) instead of embedding the raw Spanish text.
 assert.match(loraPrompt, /balloon arch/i);
 assert.match(loraPrompt, /red, green and gold/i);
 assert.match(loraPrompt, /christmas celebration/i);
@@ -87,7 +87,7 @@ const twoColumnsSceneSpec = {
     { name: "Columnas Laterales Pastel #2 de 2", category: "balloon_structure", quantity: { min: 30, max: 30 }, resolved_colors: ["rosado"], target_bbox: { x: 0.8, y: 0.3, width: 0.15, height: 0.6 } },
   ],
 } as unknown as SceneSpec;
-const twoColumnsPrompt = buildLoraImagePrompt({ sceneSpec: twoColumnsSceneSpec, visualContext: buildVisualContext({}) });
+const twoColumnsPrompt = buildFluxImagePrompt({ sceneSpec: twoColumnsSceneSpec, visualContext: buildVisualContext({}) });
 assert.match(twoColumnsPrompt, /two balloon columns in pink/i);
 assert.doesNotMatch(twoColumnsPrompt, /pink,\s*a balloon column in pink/i);
 

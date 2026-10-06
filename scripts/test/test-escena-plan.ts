@@ -6,11 +6,11 @@
  */
 import assert from "node:assert/strict";
 import type { NivelCreatividad } from "../../src/lib/ia/escena/creatividad";
-import { compileLoraCaption } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileFluxCaption } from "../../src/lib/ia/kagutsuchi/caption-flux";
+import { findFluxPromptLanguageLeaks } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 import { SceneSpecSchema } from "../../src/lib/ia/escena/scene-spec";
 import {
-  buildLoraEnvironmentCues,
+  buildFluxEnvironmentCues,
   buildVisualContext,
   buildVisualFailureConditions,
   buildVisualSceneLock,
@@ -60,8 +60,8 @@ const escena = SceneSpecSchema.parse({
 function contextoGeneracion(input: { brief?: Brief; userRequest?: string; plan?: ReturnType<typeof planCon>; nivel: NivelCreatividad }) {
   return buildVisualContext({ brief: completarEscenaConPlan(input), userRequest: input.userRequest });
 }
-function promptLora(context: ReturnType<typeof buildVisualContext>): string {
-  return compileLoraCaption({ sceneSpec: escena, visualContext: context }).prompt;
+function promptFlux(context: ReturnType<typeof buildVisualContext>): string {
+  return compileFluxCaption({ sceneSpec: escena, visualContext: context }).prompt;
 }
 
 const GARDEN_CUE = /outdoor garden setting/;
@@ -79,16 +79,16 @@ const jardinDeNoche = planCon({ tipo: "jardín", fuente: "supuesto" }, "noche");
   assert.equal(context.lightingKind, "night");
   assert.match(buildVisualSceneLock(context), /MANDATORY VENUE: jardín/);
   assert.match(buildVisualSceneLock(context), /MANDATORY TIME OF DAY: noche/);
-  assert.ok(buildLoraEnvironmentCues(context).some((cue) => GARDEN_CUE.test(cue)), "garden cue");
+  assert.ok(buildFluxEnvironmentCues(context).some((cue) => GARDEN_CUE.test(cue)), "garden cue");
   assert.ok(buildVisualFailureConditions(context).some((failure) => /indoor room/.test(failure)), "an indoor room is a failure");
-  const prompt = promptLora(context);
+  const prompt = promptFlux(context);
   assert.match(prompt, /garden/, prompt);
   assert.match(prompt, /nighttime/, prompt);
-  assert.deepEqual(findLoraPromptLanguageLeaks(prompt), [], "the Spanish plan value never leaks into the LoRA prompt");
+  assert.deepEqual(findFluxPromptLanguageLeaks(prompt), [], "the Spanish plan value never leaks into the LoRA prompt");
   // Before this change /api/generate ignored the plan: no venue, no lighting.
   const sinPlan = buildVisualContext({ brief: briefSinLugar, userRequest: pedidoSinLugar });
   assert.equal(sinPlan.venueKind, "unknown");
-  assert.doesNotMatch(promptLora(sinPlan), /garden|nighttime/);
+  assert.doesNotMatch(promptFlux(sinPlan), /garden|nighttime/);
 }
 ok("plan jardín/noche sin lugar del cliente: el prompt LoRA lleva jardín exterior nocturno");
 
@@ -97,15 +97,15 @@ ok("plan jardín/noche sin lugar del cliente: el prompt LoRA lleva jardín exter
   const porBrief = contextoGeneracion({ brief: { ...briefSinLugar, espacio: "salón" }, userRequest: pedidoSinLugar, plan: jardinDeNoche, nivel: 5 });
   assert.equal(porBrief.venue, "salón");
   assert.equal(porBrief.venueKind, "indoor");
-  assert.match(promptLora(porBrief), HALL_CUE);
-  assert.doesNotMatch(promptLora(porBrief), /garden/);
+  assert.match(promptFlux(porBrief), HALL_CUE);
+  assert.doesNotMatch(promptFlux(porBrief), /garden/);
   assert.equal(porBrief.lightingKind, "night", "the time the customer left open still comes from the plan");
 
   const porTexto = contextoGeneracion({ brief: briefSinLugar, userRequest: "Un arco dorado para el cumpleaños en el salón comunal", plan: jardinDeNoche, nivel: 5 });
   assert.equal(porTexto.venueKind, "indoor");
   assert.doesNotMatch(porTexto.venue ?? "", /jard/);
-  assert.match(promptLora(porTexto), HALL_CUE);
-  assert.doesNotMatch(promptLora(porTexto), /garden/);
+  assert.match(promptFlux(porTexto), HALL_CUE);
+  assert.doesNotMatch(promptFlux(porTexto), /garden/);
 }
 ok("el cliente dijo salón (brief o texto): manda el salón");
 
@@ -115,11 +115,11 @@ ok("el cliente dijo salón (brief o texto): manda el salón");
   assert.equal(porBrief.timeOfDay, "tarde");
   assert.equal(porBrief.lightingKind, "afternoon");
   assert.equal(porBrief.venue, "jardín", "the venue the customer left open still comes from the plan");
-  assert.doesNotMatch(promptLora(porBrief), NIGHT_CUE);
+  assert.doesNotMatch(promptFlux(porBrief), NIGHT_CUE);
 
   const porTexto = contextoGeneracion({ brief: briefSinLugar, userRequest: "Un arco dorado para un cumpleaños de día", plan: jardinDeNoche, nivel: 4 });
   assert.equal(porTexto.lightingKind, "day");
-  assert.doesNotMatch(promptLora(porTexto), NIGHT_CUE);
+  assert.doesNotMatch(promptFlux(porTexto), NIGHT_CUE);
 
   const porEstilo = contextoGeneracion({ brief: { ...briefSinLugar, estilo: "noche de gala" }, userRequest: pedidoSinLugar, plan: planCon({ tipo: "terraza", fuente: "supuesto" }, "día"), nivel: 4 });
   assert.equal(porEstilo.lightingKind, "night", "a time the context already reads from the brief is the customer's");
@@ -131,7 +131,7 @@ ok("el cliente dijo la hora (brief o texto): manda su hora");
   const antes = buildVisualContext({ brief: briefSinLugar, userRequest: pedidoSinLugar });
   const supuesto = contextoGeneracion({ brief: briefSinLugar, userRequest: pedidoSinLugar, plan: jardinDeNoche, nivel: 2 });
   assert.deepEqual(supuesto, antes, "level 2 ignores an assumed venue and a time without provenance");
-  assert.equal(promptLora(supuesto), promptLora(antes));
+  assert.equal(promptFlux(supuesto), promptFlux(antes));
   const foto = contextoGeneracion({ brief: briefSinLugar, userRequest: pedidoSinLugar, plan: planCon({ tipo: "terraza", fuente: "foto" }, "noche"), nivel: 2 });
   assert.deepEqual(foto, antes, "level 2 ignores a venue inferred from a photo");
 
@@ -154,7 +154,7 @@ ok("nivel 2: el supuesto del plan no cambia el prompt; lo que dijo el cliente s�
   const abierto = contextoGeneracion({ brief: briefSinLugar, userRequest: pedidoSinLugar, plan: planCon({ tipo: "club campestre", fuente: "supuesto" }, "atardecer"), nivel: 5 });
   assert.equal(abierto.venue, "club campestre", "an unrecognized place keeps the open label");
   assert.equal(abierto.lightingKind, "sunset");
-  assert.deepEqual(findLoraPromptLanguageLeaks(promptLora(abierto)), [], "an open venue label never reaches the LoRA prompt verbatim");
+  assert.deepEqual(findFluxPromptLanguageLeaks(promptFlux(abierto)), [], "an open venue label never reaches the LoRA prompt verbatim");
 }
 ok("niveles 0, 1, 3-5: la escena del plan llega; lugar abierto sin fuga de español");
 

@@ -23,7 +23,7 @@ import { SOPORTES_CON_CAIDA_GUIRNALDA, type SoporteGuirnalda } from "@/lib/plan/
  * lista de props siguen en `GEMINI_COMPOSITION_HARD_LOCK`, que es la etapa que
  * de verdad puede añadir un objeto.
  */
-export const LORA_PRESENTATION_INSTRUCTION = ", set against a plain white studio backdrop, no floor visible.";
+export const FLUX_PRESENTATION_INSTRUCTION = ", set against a plain white studio backdrop, no floor visible.";
 
 export const GEMINI_COMPOSITION_HARD_LOCK = "COMPOSITING HARD LOCK: use the venue image as the immutable base. From the LoRA image transfer only the approved quoted structures described in AUTOMATIC SCENE SPEC. Install each structure into its assigned venue target: frame the visible opening when one is indicated, set columns and floor pieces on the real floor, and place backdrops against the real flat wall. Re-pose, re-scale and re-light the approved structures to match the venue perspective, eye level and light direction; add contact shadows and physical supports so they do not look pasted on. Keep every approved asymmetric structure visibly uneven, with staggered cluster sizes and a non-mirrored top profile; never turn them into matching straight towers. Render approved pink as soft pastel pink, never saturated hot pink. Ignore its white studio background and every unapproved object in it, including backdrop, drapes, tables, chairs, flowers, plants, pedestals and props. Do not invent, retain or add any of those objects. Keep the venue's existing architecture, plants, ground, camera and crop unchanged.";
 
@@ -176,9 +176,9 @@ export function conArmadoGuirnaldaEnCaption(clauses: ReadonlyArray<ClausulaConFr
  * registro que el modelo no vio nunca. Se quita el punto final antes de unir y
  * se cierra una sola vez.
  */
-export function promptPresentacionLora(prompt: string): string {
+export function promptPresentacionFlux(prompt: string): string {
   const cuerpo = prompt.trimEnd().replace(/[.\s]+$/, "");
-  return `${cuerpo}${LORA_PRESENTATION_INSTRUCTION}`;
+  return `${cuerpo}${FLUX_PRESENTATION_INSTRUCTION}`;
 }
 
 /** Gemini compone dos fuentes: venue inalterable y decoración ya diseñada. */
@@ -192,7 +192,7 @@ export function inputsParaComposicionGemini(venue: ImagenEtiquetada, decoracion:
     },
     {
       ...decoracion,
-      id: "LORA_DECORATION",
+      id: "FLUX_DECORATION",
       descripcion: "LoRA render of the approved decoration on a white studio background.",
       role: "element_reference",
       priority: 1,

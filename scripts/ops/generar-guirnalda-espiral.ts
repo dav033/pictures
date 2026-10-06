@@ -37,15 +37,15 @@
  */
 import path from "node:path";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
-import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
 import { captionCanonicoGuirnalda, escenaGuirnalda, GUIRNALDA_SINTETICA, planGuirnalda, PRODUCTOS_GUIRNALDA } from "../lib/escenas-armado-guirnalda";
-import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lib/fal-evaluacion";
+import { correrExperimento, flag, resolverIdentidadFlux, type Celda, type Defaults } from "../lib/fal-evaluacion";
 
 /** La frase del patrón que `patron_color.py` escribía en `main` 94ad16b para este plan. */
 const PATRON_ANTES = "wrapped in a spiral of pink, white and gold stripes winding along its length";
 
-const identidad = resolverIdentidadLora(flag("artifact-id", "v007-1000"));
+const identidad = resolverIdentidadFlux(flag("artifact-id", "v007-1000"));
 const escala = Number(flag("escala", "0.8"));
 if (!Number.isFinite(escala) || escala <= 0 || escala > 2) throw new Error("--escala espera un número entre 0 y 2.");
 const semillas = flag("semillas", "101,202,303").split(",").map((valor) => Number(valor.trim()));
@@ -83,7 +83,7 @@ const celdas: Celda[] = (Object.entries(VARIANTES) as Array<[keyof typeof VARIAN
   });
   const laEscena = escena();
   const compilado = captionCanonicoGuirnalda(laEscena, frases);
-  const reporte = preflightLoraPrompt({ sceneSpec: laEscena, clauses: compilado.clauses, prompt: compilado.prompt });
+  const reporte = preflightFluxPrompt({ sceneSpec: laEscena, clauses: compilado.clauses, prompt: compilado.prompt });
   if (!reporte.ok) throw new Error(`${variante}: el preflight rechaza el caption (${reporte.errors.join("; ")})`);
   const prompt = compilado.prompt;
   return semillas.map((seed) => ({

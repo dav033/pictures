@@ -1,11 +1,11 @@
 """Kagutsuchi -- the fal.ai LoRA queue round trip inside image generation.
 
-TypeScript (`src/lib/ia/kagutsuchi/sempertex-lora.ts`) still owns everything
+TypeScript (`src/lib/ia/kagutsuchi/flux.ts`) still owns everything
 that is not a network call to the provider: which LoRA applications, prompt
-composition (`buildLoraEditPrompt`, `trigger handling`), which references go
-into `/edit` (`referenciasParaLoraEdit`), and guidance/size/seed. This module
+composition (`buildFluxEditPrompt`, `trigger handling`), which references go
+into `/edit` (`referenciasParaFluxEdit`), and guidance/size/seed. This module
 makes exactly the submit -> poll -> download sequence
-`generarConSempertexLora` used to make directly against fal.ai's queue -- the
+`generarConSempertexFlux` used to make directly against fal.ai's queue -- the
 SSRF allow-list, the account-rejected classification and the bounded image
 download all move here unchanged. Migration context:
 docs/architecture/decisions/0026-migrar-las-ias-a-python.md.
@@ -29,11 +29,12 @@ from pydantic import Field
 from app.operational_models import ContractModel, OperationalRequest
 
 
-LORA_GENERATE_SCOPE = "ia.lora_generate"
-LORA_GENERATE_SCHEMA_VERSION = "lora-generate.v1"
+FLUX_GENERATE_SCOPE = "ia.lora_generate"
+FLUX_GENERATE_SCHEMA_VERSION = "lora-generate.v1"
 
 TEXT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora"
-EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora/edit"
+EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/edit"
+EDIT_ENDPOINT_WITH_ADAPTERS = "https://queue.fal.run/fal-ai/flux-2/lora/edit"
 FAL_QUEUE_HOSTS = {"queue.fal.run", "rest.alpha.fal.ai"}
 MAX_FAL_IMAGE_BYTES = 16_000_000
 MAX_EDIT_IMAGES = 4
@@ -49,13 +50,13 @@ _NO_BALANCE_PATTERN = re.compile(
 _QUEUE_STATUSES = {"IN_QUEUE", "IN_PROGRESS", "COMPLETED", "FAILED", "CANCELLED"}
 
 
-class LoraGenerateError(Exception):
+class FluxGenerateError(Exception):
     """Stable domain error the HTTP boundary translates (see `_error` in
     main.py). `causa` is only set for account-rejected failures (401/402/403
     -- retrying cannot fix them), and `provider_status`/`provider_detail`
     carry the real fal.ai status/message so the TypeScript wrapper can rebuild
     the exact `ProveedorImagenNoDisponibleError` the direct path throws
-    (sempertex-lora.ts) instead of a generic transport error.
+    (flux.ts) instead of a generic transport error.
     """
 
     def __init__(
@@ -75,17 +76,17 @@ class LoraGenerateError(Exception):
         self.provider_detail = provider_detail
 
 
-class LoraSpec(ContractModel):
+class FluxSpec(ContractModel):
     path: str = Field(min_length=1, max_length=500)
     scale: float = Field(ge=0, le=4)
 
 
-class LoraGenerateRequest(OperationalRequest):
+class FluxGenerateRequest(OperationalRequest):
     """Authenticated operation body for one fal.ai LoRA generation. `prompt`
     already carries the trigger words and the /edit image guide -- this
     module never decides what the prompt says, only submits it. `mode`
     mirrors which endpoint TypeScript already chose (whether
-    `referenciasParaLoraEdit`'s result was empty). `loras` holds at most one
+    `referenciasParaFluxEdit`'s result was empty). `loras` holds at most one
     application; an empty list is the base FLUX.2 model (loraMode "base"),
     which fal accepts on the same endpoints, and its prompt carries no trigger.
     """
@@ -93,7 +94,7 @@ class LoraGenerateRequest(OperationalRequest):
     schema_version: Literal["lora-generate.v1"]
     mode: Literal["text", "edit"]
     prompt: str = Field(min_length=1, max_length=4000)
-    loras: list[LoraSpec] = Field(min_length=0, max_length=1)
+    loras: list[FluxSpec] = Field(min_length=0, max_length=1)
     guidance_scale: float = Field(ge=1.5, le=5)
     num_inference_steps: int = Field(ge=1, le=100)
     image_width: int = Field(ge=1, le=4096)
@@ -202,7 +203,7 @@ def _fal_error_detail(response: httpx.Response) -> str:
     return ""
 
 
-def _fal_error(response: httpx.Response, code: str) -> LoraGenerateError:
+def _fal_error(response: httpx.Response, code: str) -> FluxGenerateError:
     detail = _fal_error_detail(response)[:300]
     if response.status_code in ACCOUNT_REJECTED_STATUSES:
         causa: Literal["saldo_agotado", "acceso_denegado"] = (
@@ -210,14 +211,14 @@ def _fal_error(response: httpx.Response, code: str) -> LoraGenerateError:
             if response.status_code == 402 or _NO_BALANCE_PATTERN.search(detail)
             else "acceso_denegado"
         )
-        return LoraGenerateError(
-            f"lora_account_{causa}",
+        return FluxGenerateError(
+            f"flux_account_{causa}",
             503,
             causa=causa,
             provider_status=response.status_code,
             provider_detail=detail or None,
         )
-    return LoraGenerateError(
+    return FluxGenerateError(
         code, 502, provider_status=response.status_code, provider_detail=detail or None
     )
 
@@ -244,7 +245,7 @@ async def _fetch_allowed(
     json_body: dict[str, object] | None,
     is_allowed: Callable[[str], bool],
 ) -> httpx.Response:
-    """Mirrors `fetchFalAllowed` in sempertex-lora.ts: fal.ai redirects are
+    """Mirrors `fetchFalAllowed` in flux.ts: fal.ai redirects are
     followed manually, checking each hop against the same host allow-list
     fal.ai's own image CDN and queue use, up to MAX_REDIRECTS times."""
 
@@ -255,12 +256,12 @@ async def _fetch_allowed(
             return response
         location = response.headers.get("location")
         if not location:
-            raise LoraGenerateError("lora_redirect_no_location", 502)
+            raise FluxGenerateError("flux_redirect_no_location", 502)
         next_url = str(httpx.URL(current_url).join(location))
         if not is_allowed(next_url):
-            raise LoraGenerateError("lora_redirect_forbidden_host", 502)
+            raise FluxGenerateError("flux_redirect_forbidden_host", 502)
         current_url = next_url
-    raise LoraGenerateError("lora_redirect_limit_exceeded", 502)
+    raise FluxGenerateError("flux_redirect_limit_exceeded", 502)
 
 
 async def _download_bounded_image(
@@ -274,15 +275,15 @@ async def _download_bounded_image(
             if 300 <= response.status_code < 400:
                 location = response.headers.get("location")
                 if not location:
-                    raise LoraGenerateError("lora_redirect_no_location", 502)
+                    raise FluxGenerateError("flux_redirect_no_location", 502)
                 next_url = str(httpx.URL(current_url).join(location))
                 if not is_allowed(next_url):
-                    raise LoraGenerateError("lora_redirect_forbidden_host", 502)
+                    raise FluxGenerateError("flux_redirect_forbidden_host", 502)
                 current_url = next_url
                 continue
             if response.status_code >= 400:
-                raise LoraGenerateError(
-                    "lora_download_rejected", 502, provider_status=response.status_code
+                raise FluxGenerateError(
+                    "flux_download_rejected", 502, provider_status=response.status_code
                 )
             content_length = response.headers.get("content-length")
             if (
@@ -290,31 +291,33 @@ async def _download_bounded_image(
                 and content_length.isdigit()
                 and int(content_length) > MAX_FAL_IMAGE_BYTES
             ):
-                raise LoraGenerateError("lora_image_too_large", 502)
+                raise FluxGenerateError("flux_image_too_large", 502)
             chunks = bytearray()
             async for chunk in response.aiter_bytes():
                 chunks.extend(chunk)
                 if len(chunks) > MAX_FAL_IMAGE_BYTES:
-                    raise LoraGenerateError("lora_image_too_large", 502)
+                    raise FluxGenerateError("flux_image_too_large", 502)
             content_type = (
                 response.headers.get("content-type", "").split(";", 1)[0].strip().lower() or None
             )
             return bytes(chunks), content_type
-    raise LoraGenerateError("lora_redirect_limit_exceeded", 502)
+    raise FluxGenerateError("flux_redirect_limit_exceeded", 502)
 
 
-async def _generar_lora_fal(
-    payload: LoraGenerateRequest,
+async def _generar_flux_fal(
+    payload: FluxGenerateRequest,
     client_factory: Callable[[], httpx.AsyncClient] | None = None,
 ) -> dict[str, object]:
     key = os.getenv("FAL_KEY")
     if not key:
-        raise LoraGenerateError("lora_unavailable", 503)
+        raise FluxGenerateError("flux_unavailable", 503)
 
-    endpoint = EDIT_ENDPOINT if payload.mode == "edit" else TEXT_ENDPOINT
+    endpoint = (
+        EDIT_ENDPOINT_WITH_ADAPTERS if payload.loras else EDIT_ENDPOINT
+    ) if payload.mode == "edit" else TEXT_ENDPOINT
     body: dict[str, object] = {
         "prompt": payload.prompt,
-        "loras": [{"path": lora.path, "scale": lora.scale} for lora in payload.loras],
+        **({"loras": [{"path": lora.path, "scale": lora.scale} for lora in payload.loras]} if payload.loras else {}),
         "guidance_scale": payload.guidance_scale,
         "num_inference_steps": payload.num_inference_steps,
         "image_size": {"width": payload.image_width, "height": payload.image_height},
@@ -342,14 +345,14 @@ async def _generar_lora_fal(
             is_allowed=_is_allowed_queue_url,
         )
         if response.status_code >= 400:
-            raise _fal_error(response, "lora_submit_rejected")
+            raise _fal_error(response, "flux_submit_rejected")
         submission = _parse_queue_submission(_safe_json(response))
         if (
             submission is None
             or not _is_allowed_queue_url(submission["status_url"])
             or not _is_allowed_queue_url(submission["response_url"])
         ):
-            raise LoraGenerateError("lora_invalid_submission", 502)
+            raise FluxGenerateError("flux_invalid_submission", 502)
         provider_request_id = submission["request_id"]
 
         completed = False
@@ -363,17 +366,17 @@ async def _generar_lora_fal(
                 is_allowed=_is_allowed_queue_url,
             )
             if status_response.status_code >= 400:
-                raise _fal_error(status_response, "lora_status_rejected")
+                raise _fal_error(status_response, "flux_status_rejected")
             status = _parse_queue_status(_safe_json(status_response))
             if status is None:
-                raise LoraGenerateError("lora_invalid_status", 502)
+                raise FluxGenerateError("flux_invalid_status", 502)
             if status["status"] == "COMPLETED":
                 completed = True
                 break
             if status["status"] in ("FAILED", "CANCELLED"):
                 error_detail = status.get("error")
-                raise LoraGenerateError(
-                    "lora_generation_failed",
+                raise FluxGenerateError(
+                    "flux_generation_failed",
                     502,
                     provider_detail=error_detail[:300]
                     if isinstance(error_detail, str) and error_detail
@@ -381,7 +384,7 @@ async def _generar_lora_fal(
                 )
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
         if not completed:
-            raise LoraGenerateError("lora_timeout", 504)
+            raise FluxGenerateError("flux_timeout", 504)
 
         result_response = await _fetch_allowed(
             client,
@@ -392,12 +395,12 @@ async def _generar_lora_fal(
             is_allowed=_is_allowed_queue_url,
         )
         if result_response.status_code >= 400:
-            raise _fal_error(result_response, "lora_result_rejected")
+            raise _fal_error(result_response, "flux_result_rejected")
         images = _parse_fal_response(_safe_json(result_response))
         first = images[0] if images else None
         url = first.get("url") if first else None
         if not first or not url or not _is_allowed_image_url(url):
-            raise LoraGenerateError("lora_invalid_image_response", 502)
+            raise FluxGenerateError("flux_invalid_image_response", 502)
 
         image_bytes, header_content_type = await _download_bounded_image(
             client, url, _is_allowed_image_url
@@ -405,7 +408,7 @@ async def _generar_lora_fal(
         declared_content_type = first.get("content_type")
         content_type = (declared_content_type or header_content_type or "").lower()
         if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
-            raise LoraGenerateError("lora_image_type_rejected", 502)
+            raise FluxGenerateError("flux_image_type_rejected", 502)
 
     return {
         "image_base64": base64.b64encode(image_bytes).decode("ascii"),
@@ -415,29 +418,29 @@ async def _generar_lora_fal(
     }
 
 
-async def generar_lora_fal(
-    payload: LoraGenerateRequest,
+async def generar_flux_fal(
+    payload: FluxGenerateRequest,
     client_factory: Callable[[], httpx.AsyncClient] | None = None,
 ) -> dict[str, object]:
     """Makes the submit -> poll -> download sequence
-    `generarConSempertexLora`'s direct path used to make against fal.ai's
-    queue. Raises LoraGenerateError on any provider failure, invalid
+    `generarConSempertexFlux`'s direct path used to make against fal.ai's
+    queue. Raises FluxGenerateError on any provider failure, invalid
     response shape or a queue deadline exceeded -- never falls back
     silently."""
 
     try:
-        return await _generar_lora_fal(payload, client_factory)
-    except LoraGenerateError:
+        return await _generar_flux_fal(payload, client_factory)
+    except FluxGenerateError:
         raise
     except Exception as error:
-        raise LoraGenerateError("lora_network_error", 502) from error
+        raise FluxGenerateError("flux_network_error", 502) from error
 
 
 __all__ = [
-    "LORA_GENERATE_SCHEMA_VERSION",
-    "LORA_GENERATE_SCOPE",
-    "LoraGenerateError",
-    "LoraGenerateRequest",
-    "LoraSpec",
-    "generar_lora_fal",
+    "FLUX_GENERATE_SCHEMA_VERSION",
+    "FLUX_GENERATE_SCOPE",
+    "FluxGenerateError",
+    "FluxGenerateRequest",
+    "FluxSpec",
+    "generar_flux_fal",
 ]

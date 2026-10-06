@@ -1,21 +1,21 @@
 import { z } from "zod";
 
 /** Largest seed /api/generate accepts: an unsigned 32-bit integer. */
-export const LORA_SEED_MAX = 4_294_967_295;
-const LoraSeedSchema = z.number().int().min(0).max(LORA_SEED_MAX);
+export const FLUX_SEED_MAX = 4_294_967_295;
+const FluxSeedSchema = z.number().int().min(0).max(FLUX_SEED_MAX);
 
-export type LoraSeedParse = { ok: true; seed: number | undefined } | { ok: false; message: string };
+export type FluxSeedParse = { ok: true; seed: number | undefined } | { ok: false; message: string };
 
 /**
  * Validates the optional `seed` of POST /api/generate. Absent (undefined/null)
  * means "pick one"; anything else must be an integer in 0..2^32-1, never coerced.
  */
-export function parseLoraSeed(value: unknown): LoraSeedParse {
+export function parseFluxSeed(value: unknown): FluxSeedParse {
   if (value === undefined || value === null) return { ok: true, seed: undefined };
-  const parsed = LoraSeedSchema.safeParse(value);
+  const parsed = FluxSeedSchema.safeParse(value);
   return parsed.success
     ? { ok: true, seed: parsed.data }
-    : { ok: false, message: `LORA_SEED_INVALID: seed debe ser un entero entre 0 y ${LORA_SEED_MAX}.` };
+    : { ok: false, message: `FLUX_SEED_INVALID: seed debe ser un entero entre 0 y ${FLUX_SEED_MAX}.` };
 }
 
 /**
@@ -23,7 +23,7 @@ export function parseLoraSeed(value: unknown): LoraSeedParse {
  * reported and the image reproduced. Kept below 2^31-1, the range the "ambos"
  * comparison seed used before explicit seeds existed.
  */
-export function randomLoraSeed(): number {
+export function randomFluxSeed(): number {
   return crypto.getRandomValues(new Uint32Array(1))[0]! % 2_147_483_647;
 }
 
@@ -43,14 +43,14 @@ export function randomLoraSeed(): number {
  * misma imagen. Es una variable de entorno de evaluación, no una bandera de
  * producto, y por eso no vive en `feature-flags.ts`.
  */
-export function semillaDeEvaluacion(entorno: string | undefined = process.env.LORA_EVAL_SEED): number | undefined {
+export function semillaDeEvaluacion(entorno: string | undefined = process.env.FLUX_EVAL_SEED): number | undefined {
   if (entorno === undefined || entorno.trim() === "") return undefined;
-  const parsed = LoraSeedSchema.safeParse(Number(entorno));
+  const parsed = FluxSeedSchema.safeParse(Number(entorno));
   if (!parsed.success) {
     // Fallar en abierto y decirlo: una semilla mal escrita que se ignora en
     // silencio produce una corrida que PARECE determinista y no lo es, que es
     // peor que no tener la variable.
-    console.warn(`[lora-seed] LORA_EVAL_SEED="${entorno}" no es un entero entre 0 y ${LORA_SEED_MAX}; se ignora y se sortea la semilla.`);
+    console.warn(`[semilla-flux] FLUX_EVAL_SEED="${entorno}" no es un entero entre 0 y ${FLUX_SEED_MAX}; se ignora y se sortea la semilla.`);
     return undefined;
   }
   return parsed.data;
@@ -61,6 +61,6 @@ export function semillaDeEvaluacion(entorno: string | undefined = process.env.LO
  * Ese orden importa: una petición que pide semilla explícita la quiere aunque
  * la corrida tenga una fijada.
  */
-export function resolveLoraSeed(requested: number | undefined, random: () => number = randomLoraSeed, evaluacion: number | undefined = semillaDeEvaluacion()): number {
+export function resolveFluxSeed(requested: number | undefined, random: () => number = randomFluxSeed, evaluacion: number | undefined = semillaDeEvaluacion()): number {
   return requested ?? evaluacion ?? random();
 }

@@ -152,7 +152,7 @@ PLAN_RESOLVED_VERSION = "plan-resuelto.v1"
 #: re-exporta con su tipo, porque el resto del código y de las pruebas la lee de ``app.plan``.
 MERMA: float = _MERMA_COMPARTIDA
 MAX_SAFE_INTEGER = 9_007_199_254_740_991
-# Mirrors PLAN_RESOLUTION_MAX_LORA_VARIANTS (domain-v1.ts) and the recommendations
+# Mirrors PLAN_RESOLUTION_MAX_FLUX_VARIANTS (domain-v1.ts) and the recommendations
 # bound: the same LoRA dataset pool reaches both. 2048 ids x 17 bytes (14-digit
 # id, quotes, comma) is about 34.8 KB of the 64 KB body limit; 4096 would not fit.
 

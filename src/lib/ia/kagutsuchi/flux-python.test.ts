@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { PythonAdapterError, type PythonAdapterErrorCode } from "@/lib/ia/nucleo/python-adapter";
-import { errorDeAdaptadorLora, ProveedorImagenNoDisponibleError } from "./sempertex-lora";
+import { errorDeAdaptadorFlux, ProveedorImagenNoDisponibleError } from "./flux";
 
 const REQUEST_ID = "00000000-0000-4000-8000-000000000001";
 const CORRELATION_ID = "00000000-0000-4000-8000-000000000002";
@@ -23,9 +23,9 @@ function adapterError(input: {
   });
 }
 
-test("errorDeAdaptadorLora rebuilds ProveedorImagenNoDisponibleError for saldo_agotado, with fal.ai's real status", () => {
-  const error = errorDeAdaptadorLora(adapterError({
-    domainCode: "lora_account_saldo_agotado",
+test("errorDeAdaptadorFlux rebuilds ProveedorImagenNoDisponibleError for saldo_agotado, with fal.ai's real status", () => {
+  const error = errorDeAdaptadorFlux(adapterError({
+    domainCode: "flux_account_saldo_agotado",
     providerStatus: 402,
     providerDetail: "insufficient balance",
   }));
@@ -36,9 +36,9 @@ test("errorDeAdaptadorLora rebuilds ProveedorImagenNoDisponibleError for saldo_a
   assert.match(error.message, /insufficient balance/);
 });
 
-test("errorDeAdaptadorLora rebuilds ProveedorImagenNoDisponibleError for acceso_denegado", () => {
-  const error = errorDeAdaptadorLora(adapterError({
-    domainCode: "lora_account_acceso_denegado",
+test("errorDeAdaptadorFlux rebuilds ProveedorImagenNoDisponibleError for acceso_denegado", () => {
+  const error = errorDeAdaptadorFlux(adapterError({
+    domainCode: "flux_account_acceso_denegado",
     providerStatus: 401,
     providerDetail: "invalid api key",
   }));
@@ -48,9 +48,9 @@ test("errorDeAdaptadorLora rebuilds ProveedorImagenNoDisponibleError for acceso_
   assert.equal(error.causa, "acceso_denegado");
 });
 
-test("errorDeAdaptadorLora falls back to the causa-implied status when providerStatus is missing", () => {
-  const saldo = errorDeAdaptadorLora(adapterError({ domainCode: "lora_account_saldo_agotado" }));
-  const acceso = errorDeAdaptadorLora(adapterError({ domainCode: "lora_account_acceso_denegado" }));
+test("errorDeAdaptadorFlux falls back to the causa-implied status when providerStatus is missing", () => {
+  const saldo = errorDeAdaptadorFlux(adapterError({ domainCode: "flux_account_saldo_agotado" }));
+  const acceso = errorDeAdaptadorFlux(adapterError({ domainCode: "flux_account_acceso_denegado" }));
 
   assert.ok(saldo instanceof ProveedorImagenNoDisponibleError);
   assert.equal(saldo.status, 402);
@@ -58,21 +58,21 @@ test("errorDeAdaptadorLora falls back to the causa-implied status when providerS
   assert.equal(acceso.status, 403);
 });
 
-test("errorDeAdaptadorLora returns a plain Error (not ProveedorImagenNoDisponibleError) for every other domain code", () => {
-  for (const domainCode of ["lora_timeout", "lora_generation_failed", "lora_invalid_image_response", undefined]) {
-    const error = errorDeAdaptadorLora(adapterError({ domainCode }));
+test("errorDeAdaptadorFlux returns a plain Error (not ProveedorImagenNoDisponibleError) for every other domain code", () => {
+  for (const domainCode of ["flux_timeout", "flux_generation_failed", "flux_invalid_image_response", undefined]) {
+    const error = errorDeAdaptadorFlux(adapterError({ domainCode }));
     assert.equal(error instanceof ProveedorImagenNoDisponibleError, false);
     assert.ok(error instanceof Error);
   }
 });
 
-test("errorDeAdaptadorLora leaves a plain Error untouched", () => {
+test("errorDeAdaptadorFlux leaves a plain Error untouched", () => {
   const original = new Error("algo se rompió");
-  assert.equal(errorDeAdaptadorLora(original), original);
+  assert.equal(errorDeAdaptadorFlux(original), original);
 });
 
-test("errorDeAdaptadorLora wraps a non-Error throw", () => {
-  const error = errorDeAdaptadorLora("boom");
+test("errorDeAdaptadorFlux wraps a non-Error throw", () => {
+  const error = errorDeAdaptadorFlux("boom");
   assert.ok(error instanceof Error);
   assert.equal(error instanceof ProveedorImagenNoDisponibleError, false);
 });

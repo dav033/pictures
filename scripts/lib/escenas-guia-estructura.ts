@@ -21,7 +21,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
-import { compileProductPrompt } from "@/lib/ia/kagutsuchi/lora-product-runtime";
+import { compileProductPrompt } from "@/lib/ia/kagutsuchi/producto-flux";
 import { frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { CONTEXTO_CUMPLE } from "./escenas-armado-bouquet";

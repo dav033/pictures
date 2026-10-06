@@ -18,7 +18,7 @@ from app.main import (
     EchoRequest,
     EmbeddingRequest,
     IntentParseRequest,
-    LoraGenerateRequest,
+    FluxGenerateRequest,
     RerankRequest,
     Settings,
     build_signature,
@@ -620,7 +620,7 @@ def test_happie_generate_requires_its_own_scope_and_accepts_a_catalog_above_64kb
     assert bad_scope.status_code == 403
 
 
-def _lora_generate_body(
+def _flux_generate_body(
     scopes: list[str] | None = None,
     *,
     idempotency_key: str | None = None,
@@ -657,7 +657,7 @@ def _lora_generate_body(
     ).encode()
 
 
-async def _stub_lora_generate_handler(payload: LoraGenerateRequest) -> dict[str, object]:
+async def _stub_flux_generate_handler(payload: FluxGenerateRequest) -> dict[str, object]:
     return {
         "payload": {
             "image_base64": "aGVsbG8=",
@@ -668,23 +668,23 @@ async def _stub_lora_generate_handler(payload: LoraGenerateRequest) -> dict[str,
     }
 
 
-async def _failed_lora_generate_handler(payload: LoraGenerateRequest) -> dict[str, object]:
+async def _failed_flux_generate_handler(payload: FluxGenerateRequest) -> dict[str, object]:
     del payload
     raise main_module._error(
-        "lora_account_saldo_agotado",
+        "flux_account_saldo_agotado",
         503,
         {"provider_status": 402, "provider_detail": "insufficient balance"},
     )
 
 
-def test_lora_generate_requires_its_own_scope_and_returns_image() -> None:
+def test_flux_generate_requires_its_own_scope_and_returns_image() -> None:
     client = TestClient(
         create_app(
             Settings(environment="test", hmac_secret=SECRET),
-            lora_generate_handler=_stub_lora_generate_handler,
+            flux_generate_handler=_stub_flux_generate_handler,
         )
     )
-    body = _lora_generate_body()
+    body = _flux_generate_body()
     response = client.post(
         "/internal/v1/ia/lora-generate",
         content=body,
@@ -693,7 +693,7 @@ def test_lora_generate_requires_its_own_scope_and_returns_image() -> None:
     assert response.status_code == 200
     assert response.json()["payload"]["endpoint"] == "flux-2/lora"
 
-    bad_scope_body = _lora_generate_body(["ai.rerank"])
+    bad_scope_body = _flux_generate_body(["ai.rerank"])
     bad_scope = client.post(
         "/internal/v1/ia/lora-generate",
         content=bad_scope_body,
@@ -702,14 +702,14 @@ def test_lora_generate_requires_its_own_scope_and_returns_image() -> None:
     assert bad_scope.status_code == 403
 
 
-def test_lora_generate_propagates_provider_status_and_detail_on_account_rejection() -> None:
+def test_flux_generate_propagates_provider_status_and_detail_on_account_rejection() -> None:
     client = TestClient(
         create_app(
             Settings(environment="test", hmac_secret=SECRET),
-            lora_generate_handler=_failed_lora_generate_handler,
+            flux_generate_handler=_failed_flux_generate_handler,
         )
     )
-    body = _lora_generate_body()
+    body = _flux_generate_body()
     response = client.post(
         "/internal/v1/ia/lora-generate",
         content=body,
@@ -717,7 +717,7 @@ def test_lora_generate_propagates_provider_status_and_detail_on_account_rejectio
     )
     assert response.status_code == 503
     detail = response.json()["detail"]
-    assert detail["code"] == "lora_account_saldo_agotado"
+    assert detail["code"] == "flux_account_saldo_agotado"
     assert detail["provider_status"] == 402
     assert detail["provider_detail"] == "insufficient balance"
 

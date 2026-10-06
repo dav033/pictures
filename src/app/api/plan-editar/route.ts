@@ -194,7 +194,7 @@ export async function POST(request: Request) {
     }
     if (error instanceof PlanBackendNoDisponibleError) return responder({ error: error.message, causa: error.motivo }, 409);
     if (error instanceof AllowlistProductoVarianteError) return responder({ error: error.message, causa: error.causa }, 422);
-    if (error instanceof Error && /^LORA_/.test(error.message)) return responder({ error: error.message }, 409);
+    if (error instanceof Error && /^FLUX_/.test(error.message)) return responder({ error: error.message }, 409);
     if (isPythonAdapterError(error)) {
       return responder(pythonErrorBody(error), error.status >= 400 && error.status <= 599 ? error.status : 502);
     }

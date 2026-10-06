@@ -196,7 +196,7 @@ export function crearTokenAprobacion(planHash: string, requestId: string, ttlMs 
 
 /**
  * Desarrollo: deja de exigir que la huella del plan coincida con la que el
- * cliente aprobó. Mismo patrón que `LORA_ALLOW_REJECTED_FOR_TESTING`
+ * cliente aprobó. Mismo patrón que `FLUX_ALLOW_REJECTED_FOR_TESTING`
  * (resolución anterior de modo LoRA): **falla cerrado en producción**, porque
  * `NODE_ENV` no es "development" allí.
  *

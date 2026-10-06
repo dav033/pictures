@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
-import { compileProductPrompt, sizeConfirmationsFromMaterialLines } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
-import { findLoraPromptProductLeaks, preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { compileProductPrompt, sizeConfirmationsFromMaterialLines } from "../../src/lib/ia/kagutsuchi/producto-flux";
+import { findFluxPromptProductLeaks, preflightFluxPrompt } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 
 const producto = "7109611258049";
 const escena: SceneSpec = {
@@ -34,10 +34,10 @@ assert.deepEqual(resultado.unresolved_products, []);
 assert.match(resultado.prompt, /12-inch/);
 assert.match(resultado.prompt, /gold/);
 assert.doesNotMatch(resultado.prompt, /Reflex|SKU|7109611258049/i);
-assert.equal(preflightLoraPrompt({ sceneSpec: escena, clauses: resultado.clauses, prompt: resultado.prompt }).ok, true);
-assert.ok(findLoraPromptProductLeaks("SKU 123 pack x 4 COP 100").length >= 3);
-assert.equal(findLoraPromptProductLeaks("B2B-20014535, package of 50, $120").length, 3);
-assert.deepEqual(findLoraPromptProductLeaks("a golden balloon arch"), []);
+assert.equal(preflightFluxPrompt({ sceneSpec: escena, clauses: resultado.clauses, prompt: resultado.prompt }).ok, true);
+assert.ok(findFluxPromptProductLeaks("SKU 123 pack x 4 COP 100").length >= 3);
+assert.equal(findFluxPromptProductLeaks("B2B-20014535, package of 50, $120").length, 3);
+assert.deepEqual(findFluxPromptProductLeaks("a golden balloon arch"), []);
 assert.deepEqual(sizeConfirmationsFromMaterialLines(
   [{ structure_id: "EST_01_ARCO", product_id: producto }],
   [{ id: producto, tamanoCodigo: "R-12", diamPulg: 12 }],

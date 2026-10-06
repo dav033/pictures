@@ -4,7 +4,7 @@ import sharp from "sharp";
 import type { PeticionImagen } from "@/lib/ia/nucleo/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { CARTA, coloresDeGuia, discosDeGuia, estructuraParaGuia, svgCarta, svgGuia, tamanoGuia } from "./guia-estructura";
-import { imageSizeFor, type ImagenGuiaLora } from "./sempertex-lora";
+import { imageSizeFor, type ImagenGuiaFlux } from "./flux";
 
 /**
  * La guía de estructura y su carta en PNG (ADR-0033). Solo servidor: `sharp`
@@ -27,7 +27,7 @@ export async function rasterizarSvg(svg: string, tamano: { ancho: number; alto: 
 export type GuiaPreparada = {
   estructuraId: string;
   /** La guía primero y la carta después: el orden en que las recibe `/edit`. */
-  imagenes: readonly [ImagenGuiaLora, ImagenGuiaLora];
+  imagenes: readonly [ImagenGuiaFlux, ImagenGuiaFlux];
   /** Hash de la guía: lo único de ella que va a registros y telemetría. */
   sha256: string;
   bytes: number;

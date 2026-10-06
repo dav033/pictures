@@ -28,7 +28,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { PlanResueltoV1Schema } from "@/lib/ia/contracts/domain-v1";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
-import { compileProductPrompt, type ElementSizeConfirmation } from "@/lib/ia/kagutsuchi/lora-product-runtime";
+import { compileProductPrompt, type ElementSizeConfirmation } from "@/lib/ia/kagutsuchi/producto-flux";
 import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
 import type { FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import { MaterialEstimateSchema } from "@/lib/materiales/estimacion";

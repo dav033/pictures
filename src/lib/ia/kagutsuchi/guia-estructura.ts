@@ -239,13 +239,13 @@ export function svgCarta(hexes: readonly string[], ancho: number = CARTA.ancho, 
  * la base de `/edit`) y con `/edit` disponible. Con foto del espacio queda
  * pendiente.
  */
-export function generacionAdmiteGuia(entrada: { bandera: boolean; usarLora: boolean; hibrido: boolean; fotoEspacio: boolean; resultadoPrevio: boolean; editApagado: boolean; formatoTexto: boolean }): boolean {
-  return entrada.bandera && entrada.usarLora && !entrada.hibrido && !entrada.fotoEspacio && !entrada.resultadoPrevio && !entrada.editApagado && entrada.formatoTexto;
+export function generacionAdmiteGuia(entrada: { bandera: boolean; usarFlux: boolean; hibrido: boolean; fotoEspacio: boolean; resultadoPrevio: boolean; editApagado: boolean; formatoTexto: boolean }): boolean {
+  return entrada.bandera && entrada.usarFlux && !entrada.hibrido && !entrada.fotoEspacio && !entrada.resultadoPrevio && !entrada.editApagado && entrada.formatoTexto;
 }
 
 /**
  * El caption que acompaña a la guía, dentro del presupuesto del LoRA
- * (`LORA_PROMPT_MAX_LENGTH`): las notas de la guía y de la carta cuentan contra
+ * (`FLUX_PROMPT_MAX_LENGTH`): las notas de la guía y de la carta cuentan contra
  * él, como la instrucción de presentación del híbrido, y el compilador
  * compacta el caption con sus pasos de siempre (tamaños, entorno, cola,
  * etiquetas; nunca estructuras, colores ni el patrón). Si ni así cabe, la carta
