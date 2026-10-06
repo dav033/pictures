@@ -11,7 +11,7 @@ import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separa
 import { limpiarTextoBase } from "./texto-base";
 import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
 
-export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
+export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.8-perceptual-catalog-color" as const;
 
 /** Límite común de texto que mantiene primero la decoración. */
 export const LORA_PROMPT_MAX_LENGTH = 1000;

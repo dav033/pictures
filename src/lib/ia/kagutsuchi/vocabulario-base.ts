@@ -11,9 +11,6 @@ const PALABRAS_NO_COLOR = new Set(["matte", "satin", "chrome", "metallic", "pear
 const PALABRAS_OSCURO = /\b(?:deep|dark|navy|black|midnight)\b/;
 const PALABRAS_CLARO = /\b(?:pale|light|baby|soft|white|cream|ivory)\b/;
 const PALABRAS_APAGADO = /\b(?:muted|dusty|dusk|sage|grey|gray|smoky)\b/;
-/** Familias cuyo color medido en el globo inflado lo oscurece el reflejo, no el pigmento. */
-const FAMILIAS_ESPECULARES = new Set(["reflex", "metal", "cristal"]);
-
 /**
  * El color de un globo con las palabras de su **referencia real de Sempertex**: el `nombreEn` de la lámina
  * del fabricante («chrome light pink», «dusty pastel light blue»), sin las palabras de acabado o de línea, y
@@ -24,20 +21,33 @@ const FAMILIAS_ESPECULARES = new Set(["reflex", "metal", "cristal"]);
  * Nunca el código, el Pantone ni el hexadecimal: un modelo de difusión no sabe qué color es «PANTONE 10444»
  * y puede dibujar el número como texto. Las cifras van solo al prompt de Gemini (`bloqueColoresExactos`).
  *
- * El matiz medido no se aplica a Reflex, Metal ni Cristal: su `hexGlobo` lo oscurece el reflejo o la
- * transparencia, no el pigmento, y «deep» pintaría un dorado cromado como bronce.
+ * El hex guía claridad, croma y temperatura sin convertir reflejos en pigmento. Para plata neutra solo
+ * decide si decir «bright» o «dark»; su matiz Lab no es significativo.
  */
 export function colorDeReferencia(referencia: ReferenciaSempertex): string {
   const nombre = referencia.nombreEn.toLowerCase().split(/\s+/).filter((palabra) => palabra && !PALABRAS_NO_COLOR.has(palabra)).join(" ");
   if (!nombre) return "";
-  if (referencia.neutro || FAMILIAS_ESPECULARES.has(referencia.familia)) return nombre;
   const hex = referencia.hexGlobo.slice(1);
   const [l, a, b] = labDeRgb(Number.parseInt(hex.slice(0, 2), 16), Number.parseInt(hex.slice(2, 4), 16), Number.parseInt(hex.slice(4, 6), 16));
   const croma = Math.hypot(a, b);
-  if (l < 35 && !PALABRAS_OSCURO.test(nombre)) return `deep ${nombre}`;
-  if (l > 80 && croma < 30 && !PALABRAS_CLARO.test(nombre)) return `pale ${nombre}`;
-  if (croma < 18 && !PALABRAS_APAGADO.test(nombre) && !PALABRAS_CLARO.test(nombre)) return `muted ${nombre}`;
-  return nombre;
+  if (referencia.neutro && /\bsilver\b/.test(nombre)) {
+    if (l >= 60 && !/\b(?:bright|light|pale)\b/.test(nombre)) return `bright ${nombre}`;
+    if (l < 42 && !/\b(?:deep|dark)\b/.test(nombre)) return `dark ${nombre}`;
+    return nombre;
+  }
+
+  const tonos: string[] = [];
+  if (l < 35 && !PALABRAS_OSCURO.test(nombre)) tonos.push("deep");
+  else if (l < 48 && !PALABRAS_OSCURO.test(nombre)) tonos.push("dark");
+  else if (l > 84 && !PALABRAS_CLARO.test(nombre)) tonos.push("pale");
+  else if (l > 72 && !PALABRAS_CLARO.test(nombre)) tonos.push("light");
+
+  if (croma < 24 && !referencia.neutro && !PALABRAS_APAGADO.test(nombre) && !PALABRAS_CLARO.test(nombre)) tonos.push("muted");
+  // Lab b* positivo indica amarillo/cálido; negativo, azul/frío. Evita redundar con nombres
+  // que ya fijan temperatura, como gold, beige, navy o blue.
+  if (croma > 12 && b > 18 && !/\b(?:gold|yellow|beige|brown|orange|warm)\b/.test(nombre)) tonos.push("warm");
+  else if (croma > 12 && b < -12 && !/\b(?:blue|navy|violet|purple|cool)\b/.test(nombre)) tonos.push("cool");
+  return [...tonos, nombre].filter(Boolean).join(" ");
 }
 
 /**
@@ -82,8 +92,8 @@ export type TerminosBase =
  * de `ACABADO_EN` («high-shine chrome») y las palabras de `FINISH_WORDS` del compilador («soft pearlescent»).
  *
  * Por qué cada frase:
- * - `mirror-like chrome`: «glossy» o «high-shine» a secas salen como plástico brillante; un modelo general
- *   asocia «chrome» y «mirror-like» a una superficie que refleja el entorno, que es lo que hace un Reflex.
+ * - `mirror-like chrome reflecting the room`: «glossy» o «high-shine» a secas salen como plástico brillante;
+ *   nombrar el reflejo ancla el Reflex al entorno.
  * - `shiny metallic foil`: el foil es una lámina metálica arrugada en los bordes, distinta del látex; sin
  *   «foil» el modelo la pinta como un globo de látex cromado.
  * - `muted dusty matte` y `soft matte`: los tonos apagados y pálidos. «pastel» no se usa: es nombre de línea
@@ -100,7 +110,7 @@ const ACABADO_VISIBLE: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bpastel dusk\b|\bmuted\b|\bdusty\b/i, "muted dusty matte"],
   [/\bpastel\b|\bsoft matte\b/i, "soft matte"],
   [/\bfoil\b|\bmetalli[sz]ed\b|\bmetalizad[oa]s?\b/i, "shiny metallic foil"],
-  [/\breflex\b|\bchrome\b|\bcromad[oa]\b|\bhigh-shine\b|\bhigh-gloss\b|\bglossy\b/i, "mirror-like chrome"],
+  [/\breflex\b|\bchrome\b|\bcromad[oa]\b|\bhigh-shine\b|\bhigh-gloss\b|\bglossy\b/i, "mirror-like chrome reflecting the room"],
   [/\bsilk\b|\bseda\b|\bsatin\b|\bsatinad[oa]\b|\bpearl\w*\b|\bperlad[oa]s?\b|\bnacar\w*\b/i, "satin pearlescent"],
   [/\bcrystal\b|\bcristal\b|\btranslucent\b|\btransparente?s?\b/i, "translucent"],
   [/\bneon\b|\bfluorescent\b/i, "fluorescent"],
