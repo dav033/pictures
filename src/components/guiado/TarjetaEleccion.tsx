@@ -40,7 +40,7 @@ function nombrePieza(estructura: string, cantidad: number): string {
 }
 
 /** «Globo látex R-12 Rosewood, paquete x50; precio…» → «globos de 12" Rosewood». Sin nota no se inventa nada. */
-function nombreMaterial(nota: string | undefined): string | null {
+export function nombreMaterial(nota: string | undefined): string | null {
   if (!nota) return null;
   const nombre = nota.split(/[,;]/)[0]!.trim();
   const tamano = /\bR-?(\d{1,2})\b/i.exec(nombre)?.[1];

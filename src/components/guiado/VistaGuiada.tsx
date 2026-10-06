@@ -6,6 +6,7 @@ import { z } from "zod";
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
 import { Markdown } from "@/components/Markdown";
 import { CarruselDecoraciones } from "./CarruselDecoraciones";
+import { ComprarMateriales } from "./ComprarMateriales";
 import { ChipsOpciones, type OpcionGuiada } from "./ChipsOpciones";
 import { CostosMateriales } from "./CostosMateriales";
 import { PasoAPaso } from "./PasoAPaso";
@@ -31,6 +32,7 @@ const WidgetSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("cotizacion"), cotizacion: CotizacionGuiadaSchema.nullable(), uso: z.enum(["negocio", "personal"]), decoracion: DecoracionSempertexSchema }).strict(),
   z.object({ tipo: z.literal("pasos"), decoracion: DecoracionSempertexSchema }).strict(),
   z.object({ tipo: z.literal("proveedores"), proveedores: z.array(ProveedorSempertexSchema) }).strict(),
+  z.object({ tipo: z.literal("comprar"), decoracion: DecoracionSempertexSchema }).strict(),
 ]);
 type Widget = z.infer<typeof WidgetSchema>;
 const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetSchema).optional() }).strict();
@@ -204,6 +206,15 @@ export function VistaGuiada() {
   }
 
   function elegirOpcion(opcion: OpcionGuiada): void {
+    // «Comprar» no necesita al modelo: la lista y las dos salidas (tienda en línea, distribuidor) salen al instante.
+    if (opcion === "comprar" && seleccionada) {
+      setMensajes((actuales) => [
+        ...actuales,
+        { id: nuevoId(), role: "user", content: "Quiero comprar los materiales." },
+        { id: nuevoId(), role: "assistant", content: `Puedes comprar los globos de **${seleccionada.titulo}** en la tienda en línea de Sempertex o con un distribuidor cerca de ti.`, widgets: [{ tipo: "comprar", decoracion: seleccionada }, { tipo: "opciones" }] },
+      ]);
+      return;
+    }
     const textos: Record<OpcionGuiada, string> = {
       contratar: "Quiero contratar un decorador cerca de mí.",
       costear: "Quiero saber cuánto cuestan los materiales.",
@@ -235,6 +246,8 @@ export function VistaGuiada() {
         return <PasoAPaso key={clave} decoracion={widget.decoracion} alTerminar={activo ? verOtrasOpciones : undefined} />;
       case "proveedores":
         return <ListaProveedores key={clave} proveedores={widget.proveedores} />;
+      case "comprar":
+        return <ComprarMateriales key={clave} decoracion={widget.decoracion} onDistribuidor={() => void enviar("Busca un distribuidor de globos Sempertex cerca de mí.")} />;
     }
   }
 
