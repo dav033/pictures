@@ -387,6 +387,11 @@ async function testAdaptador(): Promise<void> {
   assert.ok((mezclas[0]!.lineas?.length ?? 0) > 0 && mezclas[0]!.aspecto_caja !== undefined);
   const invalida: typeof fetch = async () => respuestaPython({ operation_schema_version: "plan-guia-escena-result.v1", piezas: [], omitidas: [], total_discos: 7 });
   await assert.rejects(llamarPythonPlanGuiaEscena({ plan: plan.plan, requestId: "00000000-0000-4000-8000-000000000001", correlationId: "00000000-0000-4000-8000-000000000002", env: ENV, fetchImpl: invalida }), /PYTHON_INVALID_RESPONSE|inválid|invalid/i);
+  const errorInterno: typeof fetch = async () => Response.json({ detail: { code: "internal_error" } }, { status: 500 });
+  await assert.rejects(
+    llamarPythonPlanGuiaEscena({ plan: plan.plan, requestId: "00000000-0000-4000-8000-000000000001", correlationId: "00000000-0000-4000-8000-000000000002", env: ENV, fetchImpl: errorInterno }),
+    /El backend Python devolvió un error interno\./,
+  );
   console.log("[PASS] adaptador: ruta, scope y cuerpo de plan-guia-escena.v1; una respuesta que no suma sus discos se rechaza");
 }
 
@@ -463,6 +468,8 @@ async function testCaminoDeGeneracion(): Promise<void> {
   assert.equal(caida.compilacion, undefined);
   assert.equal(caida.resumen?.usada, false);
   assert.match(caida.resumen?.motivo ?? "", /no se pudo construir la guía de escena: motor_ocupado/);
+  const python500 = await guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos: async () => { throw new Error("El backend Python devolvió un error interno."); }, maximo: FLUX_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length });
+  assert.match(python500.resumen?.motivo ?? "", /El backend Python devolvió un error interno/);
   const sinGuia = await capturarPeticion(generarConSempertexFlux, guia.compilacion.prompt, "3:2", [referencia, producto], { loras: [], seed: 7 });
   assert.ok(!JSON.stringify(sinGuia.cuerpo).includes(FOTO_REFERENCIA), "sin guía tampoco sale la foto");
   assert.equal((sinGuia.cuerpo as { image_urls?: unknown }).image_urls, undefined);

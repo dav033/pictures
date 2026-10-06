@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import time
 from collections.abc import Mapping
 from typing import Any, cast
@@ -32,6 +33,7 @@ from app.guia_escena import (
     guia_escena,
     hex_del_material,
 )
+from app import main as main_module
 from app.main import Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
 from app.plan import PlanResolutionError, pieza_del_motor_resuelta
@@ -317,6 +319,8 @@ def _post(
         "x-internal-timestamp": str(timestamp),
         "x-internal-nonce": nonce,
         "x-internal-scopes": scope,
+        "x-request-id": str(context["request_id"]),
+        "x-correlation-id": str(context["correlation_id"]),
     }
     if firmar:
         headers["x-internal-signature"] = build_signature(
@@ -357,6 +361,49 @@ def test_el_motor_publica_apariencia_de_burbuja_transparente_y_confeti() -> None
     )
 
     assert [globo.apariencia for globo in globos] == ["burbuja", "burbuja_confeti", None]
+
+
+def test_el_resultado_final_admite_apariencia_de_burbuja_de_case002() -> None:
+    # CASE-002 lleva columnas orgánicas con globos transparentes/confeti. La guía publica
+    # apariencia en cada disco; el esquema Python debe seguir al contrato Zod generado.
+    discos = _globos_de_lista(
+        [
+            {"x": 0, "y": 0.2, "r": 0.2, "material": 0, "acabado": "transparente"},
+            {"x": 0.4, "y": 0.2, "r": 0.2, "material": 0, "acabado": "confeti"},
+        ],
+        ["#ffffff"],
+    )
+    pieza = modulo._pieza("EST_02_COLUMNA", "motor", discos)
+    resultado = {
+        "operation_schema_version": "plan-guia-escena-result.v1",
+        "piezas": [pieza],
+        "omitidas": [],
+        "total_discos": 2,
+    }
+
+    assert modulo._VALIDADOR_RESULTADO.is_valid(resultado)
+
+
+def test_excepcion_operativa_registra_traceback_y_request_id(
+    plan_motores: dict[str, object],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    request_id = str(CONTEXTO["request_id"])
+
+    def fallo_inesperado(_request: PlanGuiaEscenaRequest) -> dict[str, object]:
+        raise RuntimeError("fallo de prueba")
+
+    monkeypatch.setattr(main_module, "guia_escena", fallo_inesperado)
+    with caplog.at_level(logging.ERROR, logger="decoracion.ai_api"):
+        status, _body = _post(_operacion(plan_motores), "00000000-0000-4000-8000-000000000ef0")
+
+    registro = next(record for record in caplog.records if record.message == "operational endpoint failed")
+    assert status == 500
+    assert registro.request_id == request_id
+    assert registro.operation == "plan.guia_escena"
+    assert registro.exc_info is not None
+    assert "fallo de prueba" in caplog.text
 
 
 def test_el_endpoint_exige_firma_y_su_propio_scope(plan_motores: dict[str, object]) -> None:
