@@ -34,11 +34,10 @@ import { ArcoOrganicoResueltoSchema } from "@/lib/plan/armado-arco-organico";
 import { ArmadoGuirnaldaOrganicaV1Schema, GuirnaldaOrganicaResueltaSchema } from "@/lib/plan/armado-guirnalda-organica";
 import { ArmadoGuirnaldaResueltoSchema, ArmadoGuirnaldaV1Schema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
 import { ConteoAplicadoSchema, MAX_GLOBOS_CONTEO, PistaConteoSchema } from "@/lib/plan/conteo-referencia";
+import { PistaGeometriaSchema } from "@/lib/plan/geometria-referencia";
 import { PatronColorResueltoSchema, PistaPatronSchema, PistaTamanosSchema } from "@/lib/plan/patron-color";
 import { PlanGuiaEscenaRequestV1Schema, PlanGuiaEscenaResultV1Schema } from "@/lib/plan/guia-escena";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
-import { LoraSelectionSchema } from "@/lib/lora/schema";
-import { productVocabularySchema } from "@/lib/lora/product-vocabulary";
 
 export const CATALOG_SELECTION_CONTRACT_VERSION = "catalog-selection.v1" as const;
 export const CATALOG_SEARCH_CONTRACT_VERSION = "catalog-search.v1" as const;
@@ -541,6 +540,10 @@ export const PlanResolutionRequestV1Schema = z.object({
   /** Al confirmar un plan: Python ajusta cantidad, medidas, densidad o mezcla al conteo de la foto (ADR-0031). */
   completar_conteos: z.boolean().optional(),
   pistas_conteo: z.array(PistaConteoSchema).max(16).optional(),
+  /** Cajas aprobadas de la foto; Python decide su escala física. */
+  pistas_geometria: z.array(PistaGeometriaSchema).max(16).optional(),
+  /** Ids de piezas cuya medida física señaló el cliente en su mensaje. */
+  medidas_cliente_de: z.array(idSchema).max(16).optional(),
   /**
    * Tras una edición: solo estas estructuras se ajustan (la de la mezcla
    * editada, o ninguna); las demás con pista conservan su lectura sin cambios.
@@ -762,8 +765,6 @@ export const DomainContractSchemas = {
   "plan-guia-escena-result.v1": PlanGuiaEscenaResultV1Schema,
   "reference-blueprint.v2": ReferenceBlueprintV2Schema,
   "scene-spec.v1": SceneSpecSchema,
-  "lora-selection.v1": LoraSelectionSchema,
-  "product-vocabulary.v1": productVocabularySchema,
   "prop-catalogo.v1": PropCatalogoSchema,
   "happie-recommendation-request.v1": HappieRecommendationRequestV1Schema,
   "happie-recommendation-response.v1": HappieRecommendationResponseV1Schema,

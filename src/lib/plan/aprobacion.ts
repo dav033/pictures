@@ -197,7 +197,7 @@ export function crearTokenAprobacion(planHash: string, requestId: string, ttlMs 
 /**
  * Desarrollo: deja de exigir que la huella del plan coincida con la que el
  * cliente aprobó. Mismo patrón que `LORA_ALLOW_REJECTED_FOR_TESTING`
- * (`src/lib/lora/mode-resolver.ts:81`): **falla cerrado en producción**, porque
+ * (resolución anterior de modo LoRA): **falla cerrado en producción**, porque
  * `NODE_ENV` no es "development" allí.
  *
  * Por qué existe: cualquier cambio en el reparto de color mueve `plan_hash`, y

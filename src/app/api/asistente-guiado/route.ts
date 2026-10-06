@@ -109,9 +109,13 @@ export async function POST(request: Request) {
       },
       buscar_proveedores: async (args: Record<string, unknown>) => {
         const entrada = ArgsSchema.parse(args);
-        const encontrados = directorio.filter((item) => item.tipo === entrada.tipo && normalizarCiudad(item.zona.ciudad) === normalizarCiudad(entrada.ciudad ?? ""));
+        // «Decorador» es uno solo para el cliente: certificados HAPPIA y Master Balloon Pro salen juntos.
+        const tipos: ReadonlyArray<string | undefined> = entrada.tipo === "decorador_happia" || entrada.tipo === "mbp" ? ["decorador_happia", "mbp"] : [entrada.tipo];
+        const ciudad = normalizarCiudad(entrada.ciudad ?? "");
+        const encontrados = directorio.filter((item) => tipos.includes(item.tipo) && (normalizarCiudad(item.zona.ciudad) === ciudad || item.zona.cobertura.some((zona) => normalizarCiudad(zona) === ciudad)));
         datos.proveedores = encontrados;
-        return { proveedores: encontrados, aviso: "Los registros actuales son ejemplos, no contactos reales." };
+        const ciudadesDisponibles = [...new Set(directorio.filter((item) => tipos.includes(item.tipo)).map((item) => item.zona.ciudad))];
+        return { proveedores: encontrados, ...(encontrados.length ? {} : { ciudadesDisponibles }), aviso: "Los registros actuales son ejemplos, no contactos reales." };
       },
       costear_decoracion: async (args: Record<string, unknown>) => {
         // La decoración y el uso son los que el cliente eligió con los botones (estadoGuiado): el modelo no ve los

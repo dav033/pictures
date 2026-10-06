@@ -81,7 +81,8 @@ const GRIS = /\b(?:gr[ae]y|graphite|charcoal|gris|grafito)\b/;
  * ("clear pink", "crystal blue") and the catalog sells the Cristal line in
  * several hues. Alone it is the color "transparente".
  */
-const TRANSPARENCIA = /\b(?:clear|transparent|transparente|transparentes|crystal|cristal)\b/g;
+const TRANSPARENCIA = /\b(?:clear|transparent|transparente|transparentes|crystal|cristal|see[- ]through|bubbles?)\b/g;
+const INDICIO_TRANSPARENCIA = /\b(?:clear|transparent|transparente|transparentes|crystal|cristal|see[- ]through|bubbles?)\b/;
 /** El color del confeti describe el relleno, no el látex que se compra. */
 const CONTENIDO_CONFETI = /\b(?:confetti|confetti-filled|rellen[oa]s? de confeti)\b/;
 
@@ -106,13 +107,14 @@ const SEPARADOR_AMBIGUO = /\s*\b(?:or|o|u)\b\s*/;
  * "silver grey") keeps its first, more specific word, so it does not report a
  * second color the photo never had.
  */
-function coloresDeParte(parte: string, apariencia?: AparienciaColor): string[] {
+function coloresDeParte(parte: string, apariencia?: AparienciaColor, descartarColorConfeti = false): string[] {
   let texto = parte;
   for (const [patron, color] of SINONIMOS_FOTO) texto = texto.replace(patron, color);
   const confeti = CONTENIDO_CONFETI.test(texto);
   const sinTransparencia = texto.replace(TRANSPARENCIA, " ");
   const transparente = sinTransparencia !== texto;
-  if (confeti) return transparente ? [TRANSPARENTE] : [];
+  if (confeti && transparente) return [TRANSPARENTE];
+  if (confeti && descartarColorConfeti) return [];
   texto = sinTransparencia;
   const clasificacion = clasificarColores(texto);
   const utiles = clasificacion.values.filter((color) => color !== "multicolor");
@@ -130,6 +132,7 @@ function coloresDeParte(parte: string, apariencia?: AparienciaColor): string[] {
     && /\b(?:light|pale|very light)\b/.test(texto)
     && (apariencia?.measured_colors ?? []).some((medido) => medido.color === "blanco" && medido.share >= 0.12)
     && !(apariencia?.measured_colors ?? []).some((medido) => medido.color === "gris");
+  // Riesgo aceptado: gris humo/perla junto a plata y blanco, sin «gris» medido, se leerá blanco.
   const tono = muyClaroEnBlanco ? "blanco" : nombrado;
   return [...(tono ? [tono] : []), ...(transparente ? [TRANSPARENTE] : [])];
 }
@@ -216,11 +219,14 @@ function conAcabadoDeEtiqueta(entrada: AparienciaColor, colores: readonly string
 /** Catalog-vocabulary colors of one observed label, in reading order. */
 function coloresDeEtiqueta(etiqueta: string, apariencia?: AparienciaColor): string[] {
   const colores: string[] = [];
+  const hayTransparencia = INDICIO_TRANSPARENCIA.test(plegarTexto(etiqueta));
   for (const bruto of etiqueta.split(SEPARADOR_PUNTUACION)) {
     for (const parte of plegarTexto(bruto).split(SEPARADOR_COLORES)) {
       // Una parte ambigua aporta TODAS sus alternativas: si el analizador no
       // eligió, elegir por él acierta la mitad de las veces.
-      for (const alternativa of parte.split(SEPARADOR_AMBIGUO)) colores.push(...coloresDeParte(alternativa, apariencia));
+      for (const alternativa of parte.split(SEPARADOR_AMBIGUO)) {
+        colores.push(...coloresDeParte(alternativa, apariencia, hayTransparencia));
+      }
     }
   }
   return colores;

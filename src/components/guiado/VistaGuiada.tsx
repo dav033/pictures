@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowUp, ImagePlus, LoaderCircle, Sparkles, X } from "lucide-react";
 import { z } from "zod";
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
@@ -13,6 +13,7 @@ import { PasoAPaso } from "./PasoAPaso";
 import { PreguntaUso } from "./PreguntaUso";
 import { RespuestasRapidas, separarOpciones } from "./RespuestasRapidas";
 import { TarjetaEleccion } from "./TarjetaEleccion";
+import { TarjetasProveedores } from "./TarjetasProveedores";
 import { useModoVista } from "@/lib/estado/modo-vista";
 import { DecoracionSempertexSchema, ProveedorSempertexSchema, type DecoracionSempertex, type ProveedorSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
@@ -35,7 +36,7 @@ const WidgetSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("comprar"), decoracion: DecoracionSempertexSchema }).strict(),
 ]);
 type Widget = z.infer<typeof WidgetSchema>;
-const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetSchema).optional() }).strict();
+const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetSchema).optional(), miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional() }).strict();
 type Mensaje = z.infer<typeof MensajeSchema>;
 type BriefGuiado = { evento?: string; edad?: number; tematica?: string };
 type Uso = "negocio" | "personal";
@@ -80,6 +81,9 @@ export function VistaGuiada() {
   const [seleccionada, setSeleccionada] = useState<DecoracionSempertex | null>(null);
   const [uso, setUso] = useState<Uso | null>(null);
   const [foto, setFoto] = useState<File | null>(null);
+  // Hasta hidratar, un clic o una tecla se pierden sin aviso (pasaba en la demo con el servidor recién arrancado): se muestran
+  // desactivados y se activan solos al quedar lista la página.
+  const hidratado = useSyncExternalStore(suscribirNada, () => true, () => false);
   const entradaRef = useRef<HTMLInputElement>(null);
   const finRef = useRef<HTMLDivElement>(null);
   const turnoRef = useRef(0);
@@ -96,7 +100,7 @@ export function VistaGuiada() {
     return separarOpciones(ultimo.content).opciones;
   }, [mensajes.length, ultimo, cargando]);
   const hayEjemplos = useMemo(() => mensajes.some((mensaje) => mensaje.widgets?.some((widget) => (widget.tipo === "decoraciones" && widget.decoraciones.some((decoracion) => decoracion.origen === "ejemplo")) || ("decoracion" in widget && widget.decoracion.origen === "ejemplo"))), [mensajes]);
-  const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? `${brief.evento ?? ""}${brief.edad ? ` · ${brief.edad} años` : ""} · ${brief.tematica}` : null;
+  const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? [brief.evento, brief.edad ? `${brief.edad} años` : null, /^por definir$/i.test(brief.tematica.trim()) ? null : brief.tematica].filter(Boolean).map((parte) => conMayuscula(String(parte))).join(" · ") : null;
 
   useEffect(() => {
     try {
@@ -134,8 +138,12 @@ export function VistaGuiada() {
     const mensajesVisibles = (opcionesEnvio?.reintentar ? sinUltimoTurnoGuiado(mensajes) : mensajes).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length);
     const usoEnvio = opcionesEnvio?.uso ?? uso;
     const elegida = seleccionada;
-    setMensajes([...mensajesVisibles, { id: nuevoId(), role: "user", content: contenido }, { id: nuevoId(), role: "assistant", content: "" }]);
+    const idUsuario = nuevoId();
+    setMensajes([...mensajesVisibles, { id: idUsuario, role: "user", content: contenido }, { id: nuevoId(), role: "assistant", content: "" }]);
     setEntrada(""); setError(null); setCargando(true);
+    // El cliente ve en su mensaje la foto que mandó (miniatura pequeña: la conversación vive en sessionStorage).
+    if (foto) void miniaturaDe(foto).then((miniatura) => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === idUsuario ? { ...mensaje, miniatura } : mensaje)))
+      .catch((cause: unknown) => console.warn("[asistente-guiado] no se pudo crear la miniatura de la foto.", cause));
     try {
       const response = await fetch("/api/asistente-guiado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historial, brief, estadoGuiado: { ...(elegida ? { decoracionId: elegida.id } : {}), ...(usoEnvio ? { uso: usoEnvio } : {}) }, ...(foto ? { fotoInspiracion: await leerFoto(foto) } : {}) }) });
       if (!response.ok || !response.body) throw new Error(`El asistente respondió con estado ${response.status}.`);
@@ -224,6 +232,20 @@ export function VistaGuiada() {
     void enviar(textos[opcion]);
   }
 
+  // Los registros son de ejemplo: la solicitud se explica en la conversación, sin fingir que se envió a alguien.
+  function solicitarProveedor(proveedor: ProveedorSempertex): void {
+    const decorador = proveedor.tipo === "decorador_happia" || proveedor.tipo === "mbp";
+    const idea = seleccionada ? ` con tu idea **${seleccionada.titulo}**` : "";
+    const respuesta = decorador
+      ? `¡Perfecto! En la versión final, **${proveedor.nombre}** recibirá tu solicitud${idea} y te contactará para cotizar el montaje. Por ahora es un decorador de ejemplo. ¿Qué más te gustaría hacer?`
+      : `¡Perfecto! En la versión final verás aquí la dirección y el horario de **${proveedor.nombre}**. Por ahora es un distribuidor de ejemplo. ¿Qué más te gustaría hacer?`;
+    setMensajes((actuales) => [
+      ...actuales,
+      { id: nuevoId(), role: "user", content: decorador ? `Quiero cotizar con ${proveedor.nombre}.` : `Quiero comprar en ${proveedor.nombre}.` },
+      { id: nuevoId(), role: "assistant", content: respuesta, widgets: seleccionada ? [{ tipo: "opciones" }] : [] },
+    ]);
+  }
+
   function elegirUso(valor: Uso): void { setUso(valor); void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor }); }
 
   function renderWidget(widget: Widget, activo: boolean, clave: string) {
@@ -241,13 +263,14 @@ export function VistaGuiada() {
       case "pasos":
         return <PasoAPaso key={clave} decoracion={widget.decoracion} />;
       case "proveedores":
-        return <ListaProveedores key={clave} proveedores={widget.proveedores} />;
+        return <TarjetasProveedores key={clave} proveedores={widget.proveedores} activo={activo && !cargando} onSolicitar={solicitarProveedor} />;
       case "comprar":
         return <ComprarMateriales key={clave} decoracion={widget.decoracion} onDistribuidor={() => void enviar("Busca un distribuidor de globos Sempertex cerca de mí.")} />;
     }
   }
 
-  return <main className="app-shell">
+  // Alto fijo también en celular: el compositor queda siempre a la vista y solo se desplaza la conversación.
+  return <main className="app-shell h-dvh">
     <CabeceraApp contexto={contexto} modoVista={modo} onModoVista={cambiar} onLimpiar={vaciar} limpiarDeshabilitado={!mensajes.length} totalSeleccion={0} />
     <section className="flex min-h-0 flex-1 flex-col" aria-label="Asistente guiado">
       <div className="flex-1 overflow-y-auto">
@@ -260,14 +283,18 @@ export function VistaGuiada() {
           <div className="flex flex-col gap-6" aria-live="polite">
             <BurbujaAsistente><Markdown>{SALUDO}</Markdown></BurbujaAsistente>
             {mensajes.map((mensaje, indice) => mensaje.role === "user"
-              ? <div key={mensaje.id} className="ml-auto max-w-[min(85%,36rem)] rounded-2xl rounded-br-md bg-acento px-4 py-2.5 text-sm text-white shadow-sm">{mensaje.content}</div>
+              ? <div key={mensaje.id} className="ml-auto flex max-w-[min(85%,36rem)] flex-col items-end gap-1.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- miniatura local en data URL */}
+                  {mensaje.miniatura && <img src={mensaje.miniatura} alt="Foto de inspiración enviada" className="h-28 w-auto rounded-2xl border border-borde-suave object-cover shadow-sm" />}
+                  <div className="rounded-2xl rounded-br-md bg-acento px-4 py-2.5 text-sm text-white shadow-sm">{mensaje.content}</div>
+                </div>
               : <BurbujaAsistente key={mensaje.id}>
                   {mensaje.content.trim()
                     ? <Markdown>{separarOpciones(mensaje.content).texto}</Markdown>
                     : !mensaje.widgets?.length && cargando && indice === mensajes.length - 1 ? <Escribiendo /> : null}
                   {mensaje.widgets?.map((widget, posicion) => renderWidget(widget, indice === indiceActivo, `${mensaje.id}-${posicion}`))}
                 </BurbujaAsistente>)}
-            {respuestasRapidas.length > 0 && <div className="pl-11"><RespuestasRapidas opciones={respuestasRapidas} deshabilitado={cargando} onElegir={(texto) => void enviar(texto)} /></div>}
+            {respuestasRapidas.length > 0 && <div className="pl-11"><RespuestasRapidas opciones={respuestasRapidas} deshabilitado={cargando || !hidratado} onElegir={(texto) => void enviar(texto)} /></div>}
           </div>
           {error && <div role="alert" className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
             <span className="flex-1">No pude responder esta vez. Inténtalo de nuevo.</span>
@@ -281,7 +308,7 @@ export function VistaGuiada() {
           <input ref={entradaRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => setFoto(event.target.files?.[0] ?? null)} />
           <button type="button" aria-label="Adjuntar foto de inspiración" title="Adjuntar foto de inspiración" className="rounded-xl p-2 text-texto-secundario hover:bg-fondo" onClick={() => entradaRef.current?.click()}><ImagePlus className="size-5" /></button>
           {foto && <span className="flex max-w-40 items-center gap-1 rounded-lg bg-fondo px-2 py-1 text-xs"><span className="truncate">{foto.name}</span><button type="button" aria-label="Quitar foto" onClick={() => setFoto(null)}><X className="size-3.5" /></button></span>}
-          <input aria-label="Escribe tu mensaje" value={entrada} maxLength={6000} onChange={(event) => setEntrada(event.target.value)} placeholder={mensajes.length ? "Escribe tu respuesta…" : "O cuéntame con tus palabras qué quieres celebrar…"} className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-texto-secundario" disabled={cargando} />
+          <input aria-label="Escribe tu mensaje" value={entrada} maxLength={6000} onChange={(event) => setEntrada(event.target.value)} placeholder={mensajes.length ? "Escribe tu respuesta…" : "O cuéntame con tus palabras qué quieres celebrar…"} className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-texto-secundario" disabled={cargando || !hidratado} />
           <button type="submit" aria-label="Enviar mensaje" disabled={cargando || !entrada.trim()} className="grid size-10 place-items-center rounded-xl bg-acento text-white transition-opacity disabled:opacity-40">{cargando ? <LoaderCircle className="size-4 animate-spin" /> : <ArrowUp className="size-5" />}</button>
         </div>
         {hayEjemplos && <p className="mt-2 text-center text-xs text-texto-secundario">Las ideas marcadas «Ejemplo» son ilustrativas; los precios salen del catálogo actual de Sempertex.</p>}
@@ -303,22 +330,24 @@ function Escribiendo() {
   </span>;
 }
 
-function ListaProveedores({ proveedores }: { proveedores: readonly ProveedorSempertex[] }) {
-  if (!proveedores.length) return <p className="mt-3 rounded-2xl bg-superficie p-4 text-sm text-texto-secundario">Todavía no tengo proveedores registrados en esa zona.</p>;
-  return <div className="mt-3 grid gap-3 sm:grid-cols-2" aria-label="Proveedores">
-    {proveedores.map((proveedor) => <a key={proveedor.id} href={proveedor.url} target="_blank" rel="noreferrer" className="rounded-2xl border border-borde-suave bg-superficie p-4 transition-colors hover:border-acento">
-      <span className="flex items-center justify-between gap-2"><span className="font-medium">{proveedor.nombre}</span>{proveedor.origen === "ejemplo" && <span className="rounded-full bg-acento-suave px-2 py-0.5 text-[0.7rem] font-semibold text-acento">Ejemplo</span>}</span>
-      <span className="mt-1 block text-sm text-texto-secundario">{proveedor.zona.ciudad}</span>
-    </a>)}
-  </div>;
-}
-
 function decoracionDeLaConversacion(mensajes: readonly Mensaje[], id: string): DecoracionSempertex | null {
   for (const mensaje of [...mensajes].reverse()) for (const widget of mensaje.widgets ?? []) {
     if (widget.tipo === "decoraciones") { const encontrada = widget.decoraciones.find((decoracion) => decoracion.id === id); if (encontrada) return encontrada; }
     if ("decoracion" in widget && widget.decoracion.id === id) return widget.decoracion;
   }
   return null;
+}
+
+async function miniaturaDe(archivo: File): Promise<string> {
+  const imagen = await createImageBitmap(archivo);
+  const escala = Math.min(1, 240 / Math.max(imagen.width, imagen.height));
+  const lienzo = document.createElement("canvas");
+  lienzo.width = Math.round(imagen.width * escala); lienzo.height = Math.round(imagen.height * escala);
+  const contexto = lienzo.getContext("2d");
+  if (!contexto) throw new Error("Sin contexto 2D para la miniatura.");
+  contexto.drawImage(imagen, 0, 0, lienzo.width, lienzo.height);
+  imagen.close();
+  return lienzo.toDataURL("image/jpeg", 0.7);
 }
 
 async function leerFoto(archivo: File): Promise<{ mime: string; base64: string }> {
@@ -328,4 +357,12 @@ async function leerFoto(archivo: File): Promise<{ mime: string; base64: string }
   let binario = "";
   for (const byte of bytes) binario += String.fromCharCode(byte);
   return { mime: archivo.type, base64: btoa(binario) };
+}
+
+function conMayuscula(texto: string): string {
+  return texto.charAt(0).toLocaleUpperCase("es") + texto.slice(1);
+}
+
+function suscribirNada(): () => void {
+  return () => {};
 }

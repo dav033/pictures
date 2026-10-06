@@ -3,8 +3,9 @@ import { decoracionesSempertex, proveedoresSempertex, bibliotecaVisible } from "
 import { DecoracionSempertexSchema } from "@/lib/biblioteca-sempertex/esquemas";
 import { getRagPool } from "@/lib/rag/db";
 
-assert.equal(decoracionesSempertex.length, 14);
-assert.equal(proveedoresSempertex.length, 4);
+assert.equal(decoracionesSempertex.length, 15);
+assert.equal(proveedoresSempertex.length, 13);
+assert.ok(["Bogotá", "Medellín", "Cali", "Barranquilla"].every((ciudad) => proveedoresSempertex.filter((proveedor) => proveedor.zona.ciudad === ciudad && (proveedor.tipo === "decorador_happia" || proveedor.tipo === "mbp")).length === 2));
 assert.ok(decoracionesSempertex.every((decoracion) => decoracion.origen === "ejemplo" && decoracion.id.startsWith("ej-") && decoracion.aviso === "DATO DE EJEMPLO — no es real"));
 assert.ok(decoracionesSempertex.every((decoracion) => decoracion.materiales.length > 0 && (decoracion.fotos[0]?.url.startsWith("https://cdn.shopify.com/") || decoracion.fotos[0]?.url.startsWith("/biblioteca-sempertex/kits/")) && decoracion.fotos[0]?.fuente.includes("Foto real del E-Decor")));
 assert.ok(decoracionesSempertex.every((decoracion) => decoracion.pasos.length >= 4 && decoracion.pasos.length <= 6));

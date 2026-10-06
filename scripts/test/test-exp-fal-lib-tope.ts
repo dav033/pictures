@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { BALANCE_URL, correrExperimento, ENDPOINT, type Celda, type Defaults } from "../lora/exp-fal-lib";
+import { BALANCE_URL, correrExperimento, ENDPOINT, type Celda, type Defaults } from "../lib/fal-evaluacion";
 
 /**
  * El tope `--max-usd` de `correrExperimento` (los scripts de generación en

@@ -10,7 +10,7 @@ import { bloqueColoresExactos } from "../../src/lib/ia/uzume/build-image-prompt"
 import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import { referenciaDelCatalogo, referenciaDelTitulo } from "../../src/lib/plan/referencia-sempertex";
-import { colorDeReferencia } from "../../src/lib/lora/vocabulario-base";
+import { colorDeReferencia } from "../../src/lib/ia/kagutsuchi/vocabulario-base";
 
 // 1. La referencia que se compra.
 assert.equal(referenciaDelCatalogo("dorado", "reflex")?.codigo, "970", "la palabra del catálogo elige Reflex");

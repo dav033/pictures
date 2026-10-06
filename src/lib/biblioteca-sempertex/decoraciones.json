@@ -857,10 +857,10 @@
         "nota": "Globo látex R-12 Amarillo, paquete x50; cantidad sugerida de ejemplo."
       },
       {
-        "variantId": "50058317988135",
-        "sku": "B2B-20019825",
+        "variantId": "46594219180327",
+        "sku": "B2B-20015605",
         "cantidad": 20,
-        "nota": "Globo látex R-12 impreso en dorado para comunión, paquete x50; cantidad sugerida de ejemplo."
+        "nota": "Globo látex R-12 impreso «Nuestra Boda» en dorado, paquete x50; cantidad sugerida de ejemplo."
       }
     ],
     "pasos": [
@@ -1142,5 +1142,90 @@
       "#f6f3ee"
     ],
     "fotoRepresentativa": false
+  },
+  {
+    "id": "ej-fiesta-tropical",
+    "origen": "ejemplo",
+    "aviso": "DATO DE EJEMPLO — no es real",
+    "titulo": "Fiesta tropical",
+    "tematica": "Fiesta tropical en coral, violeta y mostaza con hojas de palma",
+    "eventos": [
+      "cumpleaños",
+      "cumpleaños adulto",
+      "fiesta",
+      "fiesta de verano",
+      "fiesta tropical"
+    ],
+    "edad": null,
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/kits/e-decor-verano-tropical.jpg",
+        "fuente": "Foto real del E-Decor Verano Tropical de Sempertex. Copia local reducida de https://cdn.shopify.com/s/files/1/0825/6100/7911/files/Captura_dd68b411-36b9-457e-8212-981202aeb71b.jpg",
+        "licencia": "sempertex_propia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "bouquet",
+        "cantidad": 2
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594233434407",
+        "sku": "B2B-20000768",
+        "cantidad": 40,
+        "nota": "Globo látex R-12 Violeta, paquete x50; cantidad sugerida de ejemplo."
+      },
+      {
+        "variantId": "46594359886119",
+        "sku": "B2B-20017232",
+        "cantidad": 30,
+        "nota": "Globo látex R-12 Coral Tropical, paquete x50; cantidad sugerida de ejemplo."
+      },
+      {
+        "variantId": "46594208006439",
+        "sku": "B2B-20015317",
+        "cantidad": 10,
+        "nota": "Globo látex R-12 Mostaza, paquete x50; cantidad sugerida de ejemplo."
+      },
+      {
+        "variantId": "46594351497511",
+        "sku": "B2B-20017250",
+        "cantidad": 20,
+        "nota": "Globo látex R-12 impreso «Paraíso Tropical», paquete x50; cantidad sugerida de ejemplo."
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Infla los violetas y corales pequeños para la base."
+      },
+      {
+        "orden": 2,
+        "texto": "Arma racimos de cuatro alternando violeta y coral."
+      },
+      {
+        "orden": 3,
+        "texto": "Monta la base orgánica y añade los mostaza a los lados."
+      },
+      {
+        "orden": 4,
+        "texto": "Ata los impresos de hojas a distintas alturas sobre la base."
+      },
+      {
+        "orden": 5,
+        "texto": "Revisa el equilibrio de colores y fija todo con cinta."
+      }
+    ],
+    "shopifyHandle": "b2b-e-decor-verano-tropical",
+    "paleta": [
+      "#7b2d8e",
+      "#f26b5b",
+      "#c9a227",
+      "#f4a03c"
+    ],
+    "fotoRepresentativa": true
   }
 ]

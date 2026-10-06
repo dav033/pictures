@@ -5,35 +5,16 @@
  *
  * Sin red y sin llamadas pagadas. El modelo no conoce el catálogo de Sempertex:
  * "spring pink" le dice rosa primaveral vivo y "Silk satin" le dice tela, no
- * látex perlado. Medido en reports/lora-debug/color-fidelidad.
+ * látex perlado.
  */
 import assert from "node:assert/strict";
-import { aDescriptorPerceptual } from "../../src/lib/lora/descriptor-perceptual";
-import { V007_DATASET_PRODUCT_CONCEPTS } from "../../src/lib/lora/v007-dataset-product-vocabulary";
+import { aDescriptorPerceptual } from "../../src/lib/ia/kagutsuchi/descriptor-perceptual";
 
 let passCount = 0;
 function pass(name: string) {
   passCount += 1;
   console.log(`  ok ${passCount}. ${name}`);
 }
-
-const PROHIBIDOS = [
-  "spring pink",
-  "arctic blue",
-  "amethyst",
-  "cream pearl",
-  "pearl white",
-  "mint green",
-  "aurora green",
-  "champagne",
-  "green tea",
-  "Silk satin",
-  "Reflex high-shine",
-  "Pastel Dusk muted",
-  "Pastel Matte",
-  "translucent Crystal",
-  "solid Fashion",
-];
 
 // El caso verificado contra la foto del producto.
 {
@@ -57,21 +38,6 @@ const PROHIBIDOS = [
   const basico = "round latex balloon in white with a solid matte finish";
   assert.equal(aDescriptorPerceptual(basico), basico);
   pass("los colores básicos quedan intactos");
-}
-
-// La red de seguridad real: ningún concepto del vocabulario puede filtrar marketing.
-{
-  const filtrados: string[] = [];
-  for (const concepto of V007_DATASET_PRODUCT_CONCEPTS) {
-    const salida = aDescriptorPerceptual(concepto.canonical_label);
-    for (const termino of PROHIBIDOS) {
-      if (new RegExp(`\\b${termino}\\b`, "i").test(salida)) {
-        filtrados.push(`${concepto.concept_id}: "${termino}" sobrevive en "${salida}"`);
-      }
-    }
-  }
-  assert.deepEqual(filtrados, [], `términos comerciales sin traducir:\n  ${filtrados.join("\n  ")}`);
-  pass(`ningún nombre comercial sobrevive en los ${V007_DATASET_PRODUCT_CONCEPTS.length} conceptos del vocabulario`);
 }
 
 console.log(`\n${passCount} pruebas ok`);

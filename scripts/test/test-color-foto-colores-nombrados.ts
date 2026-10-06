@@ -37,6 +37,9 @@ for (const etiqueta of ["cream", "ivory", "off white", "off-white", "cream white
 }
 assert.deepEqual(coloresDominantesReferencia(["clear pink"]), ["rosado", "transparente"], "el tono de Cristal conserva acabado transparente");
 assert.deepEqual(coloresDominantesReferencia(["clear gold confetti"]), ["transparente"], "el oro del confeti no se compra como látex");
+assert.deepEqual(coloresDominantesReferencia(["gold confetti balloons"]), ["dorado"], "confeti estampado no oculta color del globo opaco");
+assert.deepEqual(coloresDominantesReferencia(["transparent with gold confetti"]), ["transparente"], "color del confeti se descarta con evidencia de transparencia");
+assert.deepEqual(coloresDominantesReferencia(["see-through with gold confetti"]), ["transparente"], "see-through identifica relleno transparente");
 for (const [etiqueta, codigo, caso] of [["navy blue", "044", "F7-5"], ["chrome gold", "970", "001"]] as const) {
   const codigos = codigosPorPalabras(etiqueta);
   const referencia = referenciaPorCodigo(codigo);
@@ -44,7 +47,7 @@ for (const [etiqueta, codigo, caso] of [["navy blue", "044", "F7-5"], ["chrome g
   assert.ok(referencia, `${caso}: existe referencia ${codigo}`);
   assert.equal(cruzarColor(referencia.hexGlobo, { permitidas: codigos, nombradas: codigos }).candidatas[0]?.codigo, codigo, `${caso}: el color medido confirma ${codigo}`);
 }
-assert.deepEqual(codigosPorPalabras("clear gold confetti"), [], "F7-5: el oro del confeti no abre código de globo");
+assert.deepEqual(codigosPorPalabras("clear gold confetti"), [], "F7-5: el oro del confeti transparente no abre código de globo");
 for (const etiqueta of ["cream", "crema", "ivory", "off white", "off-white", "white cream", "cream white"]) {
   const codigos = codigosPorPalabras(etiqueta);
   assert.ok(codigos.includes("107"), `${etiqueta} conserva Sempertex Crema 107`);

@@ -35,7 +35,7 @@ import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
 import { ArmadoBouquetResueltoSchema } from "@/lib/plan/armado-bouquet";
 import { BOUQUET_15_LADOS, BOUQUET_80, BOUQUET_SINTETICO, captionCanonico, escenaBouquet, type BouquetSintetico } from "../lib/escenas-armado-bouquet";
-import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lora/exp-fal-lib";
+import { correrExperimento, flag, resolverIdentidadLora, type Celda, type Defaults } from "../lib/fal-evaluacion";
 
 const identidad = resolverIdentidadLora(flag("artifact-id", "v004-1000"));
 // La escala de producción la da el slot del registro (`lora_scale`); 0.8 es la de las evaluaciones de v004/v007.

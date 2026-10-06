@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { ChartColumn, FlaskConical, LayoutGrid, ListChecks, Monitor, Moon, Settings2, Shield, Sun, Trash2 } from "lucide-react";
+import { ChartColumn, FlaskConical, LayoutGrid, ListChecks, Monitor, Moon, Shield, Sun, Trash2 } from "lucide-react";
 import { OPCIONES_TEMA } from "@/lib/tema/tema";
 import { useTema } from "@/lib/tema/use-tema";
 import type { NivelCreatividad } from "@/lib/ia/escena/creatividad";
@@ -69,7 +69,6 @@ export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, o
           { tipo: "enlace", id: "estadisticas", etiqueta: "Estadísticas", href: "/estadisticas", icono: <ChartColumn className="size-4" /> },
           { tipo: "enlace", id: "laboratorio", etiqueta: "Laboratorio JSON", href: "/laboratorio-referencias", icono: <FlaskConical className="size-4" /> },
           { tipo: "enlace", id: "admin", etiqueta: "Panel de administración", href: "/admin", icono: <Shield className="size-4" /> },
-          { tipo: "enlace", id: "lora", etiqueta: "Configuración LoRA", href: "/configuracion-lora", icono: <Settings2 className="size-4" /> },
         ] satisfies ItemMenu[])
       : []),
   ];

@@ -31,7 +31,7 @@ type TelemetriaConversacion = {
 };
 
 /** What the HTTP route knows about the request (Plan A §A0.1 audit columns). */
-type HechosRegistro = { tieneFotoEspacio?: boolean; tieneImagenesReferencia?: boolean; loraMode?: string };
+type HechosRegistro = { tieneFotoEspacio?: boolean; tieneImagenesReferencia?: boolean };
 
 function hechosDelTurno(opts: { referenceBlueprint?: ReferenceBlueprintV2; telemetria?: TelemetriaConversacion; hechosPeticion?: HechosRegistro }) {
   const hechos = opts.hechosPeticion ?? {};
@@ -40,7 +40,6 @@ function hechosDelTurno(opts: { referenceBlueprint?: ReferenceBlueprintV2; telem
   return {
     ...(tieneReferencia !== undefined ? { tieneReferencia } : {}),
     ...(hechos.tieneFotoEspacio !== undefined ? { tieneFotoEspacio: hechos.tieneFotoEspacio } : {}),
-    ...(hechos.loraMode ? { loraMode: hechos.loraMode } : {}),
     superficie: opts.telemetria?.superficie ?? "/api/chat",
   };
 }

@@ -296,6 +296,9 @@ _GARLAND_SHAPES: dict[str, dict[str, object]] = cast(
 _GARLAND_HINT = Draft7Validator(
     contract_schema("PlanResolutionRequest")["properties"]["pistas_guirnalda"]["items"]
 )
+_PHOTO_GEOMETRY_HINT = Draft7Validator(
+    cast(Mapping[str, object], contract_schema("PlanResolutionRequest")["properties"]["pistas_geometria"]["items"])
+)
 _DEFAULT_MEASURES: dict[str, dict[str, dict[str, float]]] = {
     "arco": {"interior": {"ancho_m": 3, "alto_m": 2.4}, "exterior": {"ancho_m": 4, "alto_m": 2.6}},
     # ancho = horizontal reach of the curve; see src/lib/plan/medidas-defecto.ts.
@@ -608,6 +611,8 @@ class PlanResolutionRequest(OperationalRequest):
     # of each hint is validated against the exported contract.
     completar_conteos: bool = Field(default=False, strict=True)
     pistas_conteo: list[dict[str, object]] = Field(default_factory=list, max_length=16)
+    pistas_geometria: list[dict[str, object]] = Field(default_factory=list, max_length=16)
+    medidas_cliente_de: list[str] | None = Field(default=None, max_length=16)
     completar_conteos_de: list[str] | None = Field(default=None, max_length=8)
     # Review 33: the customer gave measures (Next's clienteDioMedidasEspacio), so
     # the measures a structure declares are theirs and the count keeps them.
@@ -617,6 +622,14 @@ class PlanResolutionRequest(OperationalRequest):
     @classmethod
     def validate_count_hints(cls, values: list[dict[str, object]]) -> list[dict[str, object]]:
         return cast(list[dict[str, object]], conteo_foto.validar_pistas(values))
+
+    @field_validator("pistas_geometria")
+    @classmethod
+    def validate_photo_geometry(cls, values: list[dict[str, object]]) -> list[dict[str, object]]:
+        for value in values:
+            if list(_PHOTO_GEOMETRY_HINT.iter_errors(value)):
+                raise ValueError("pistas_geometria debe cumplir el contrato exportado")
+        return values
 
     @field_validator("catalog_snapshot_id")
     @classmethod
@@ -927,12 +940,382 @@ def proporciones_de_mezcla(mezcla: str) -> tuple[tuple[int, float], ...] | None:
     return _MIXES.get(mezcla)
 
 
+def _medir_desde_cajas(
+    raw_plan: Mapping[str, object],
+    pistas: Sequence[Mapping[str, object]],
+    *,
+    medidas_del_cliente: bool,
+    medidas_cliente_de: Sequence[str] = (),
+) -> tuple[dict[str, object], list[str]]:
+    """Deriva medidas con una escala isotrópica por foto aprobada."""
+    plan = dict(raw_plan)
+    if not pistas:
+        return plan, []
+    por_id = {
+        _text(pista.get("referencia_element_id")): pista
+        for pista in pistas
+        if _text(pista.get("referencia_element_id"))
+    }
+    piezas: list[tuple[dict[str, object], Mapping[str, object], Mapping[str, object], Mapping[str, object]]] = []
+    avisos: list[str] = []
+    cortadas: dict[str, dict[str, object]] = {}
+
+    def mapa_opcional(value: object) -> Mapping[str, object]:
+        return _mapping(value) if isinstance(value, Mapping) else {}
+
+    def medidas_armado(estructura: Mapping[str, object]) -> dict[str, object]:
+        arco = mapa_opcional(estructura.get("armado_arco"))
+        geometria = mapa_opcional(arco.get("geometria"))
+        if geometria:
+            medidas_motor = {"ancho_m": _number(geometria.get("anchoM")), "alto_m": _number(geometria.get("altoM"))}
+            return {clave: valor for clave, valor in medidas_motor.items() if valor is not None}
+        arco_organico = mapa_opcional(estructura.get("armado_arco_organico"))
+        forma_arco = mapa_opcional(arco_organico.get("forma"))
+        if forma_arco:
+            medidas_motor = {"ancho_m": _number(forma_arco.get("anchoM")), "alto_m": _number(forma_arco.get("altoM"))}
+            return {clave: valor for clave, valor in medidas_motor.items() if valor is not None}
+        columna_organica = mapa_opcional(estructura.get("armado_columna_organica"))
+        forma_columna = mapa_opcional(columna_organica.get("forma"))
+        if forma_columna:
+            alto_motor = _number(forma_columna.get("altoM"))
+            return {} if alto_motor is None else {"alto_m": alto_motor}
+        columna = mapa_opcional(estructura.get("armado_columna"))
+        cuerpo = mapa_opcional(columna.get("cuerpo"))
+        alto_motor = _number(cuerpo.get("alto_m"))
+        return {} if alto_motor is None else {"alto_m": alto_motor}
+
+    def sincronizar_armados(
+        estructura: dict[str, object],
+        alto: float,
+        ancho: float | None,
+        id_estructura: str,
+        grosor_base_m: float | None = None,
+        dimensiones_cliente: Mapping[str, float] | None = None,
+    ) -> None:
+        organica = estructura.get("armado_columna_organica")
+        if isinstance(organica, Mapping):
+            armado = dict(organica)
+            forma = dict(mapa_opcional(armado.get("forma")))
+            volumen = dict(mapa_opcional(armado.get("volumen")))
+            base_original = _number(volumen.get("grosorPatasM")) or 0.6
+            base = grosor_base_m if grosor_base_m is not None else base_original
+            punta = _number(volumen.get("grosorCimaM")) or 0.45
+            if grosor_base_m is not None:
+                punta *= base / base_original
+            base_tope = min(1.6, math.floor(alto / 0.85 * 20 + 1e-9) / 20)
+            base_ajustada = (
+                dimensiones_cliente["ancho_m"]
+                if dimensiones_cliente and "ancho_m" in dimensiones_cliente
+                else min(base_tope, max(0.35, base))
+            )
+            punta_minima = max(0.35, math.ceil(base_ajustada * 0.35 * 20 - 1e-9) / 20)
+            punta_tope = min(
+                1.6,
+                math.floor(base_ajustada * 1.6 * 20 + 1e-9) / 20,
+                math.floor(alto / 0.85 * 20 + 1e-9) / 20,
+            )
+            punta_ajustada = min(punta_tope, max(punta_minima, punta))
+            if base_ajustada != base or punta_ajustada != punta:
+                avisos.append(f"Ajusté grosor del armado de {id_estructura} para respetar límites de altura.")
+            forma["altoM"] = round(
+                dimensiones_cliente.get("alto_m", alto) if dimensiones_cliente else alto, 2
+            )
+            volumen["grosorPatasM"] = round(base_ajustada, 2)
+            volumen["grosorCimaM"] = round(punta_ajustada, 2)
+            armado["forma"] = forma
+            armado["volumen"] = volumen
+            estructura["armado_columna_organica"] = armado
+            if grosor_base_m is None:
+                avisos.append(f"Conservé el grosor de {id_estructura}: la caja puede incluir su inclinación.")
+            else:
+                avisos.append(f"Derivé el grosor de {id_estructura} de la proporción de su caja de foto.")
+        armado_arco_organico = estructura.get("armado_arco_organico")
+        if isinstance(armado_arco_organico, Mapping) and isinstance(armado_arco_organico.get("forma"), Mapping):
+            armado = dict(armado_arco_organico)
+            forma = dict(mapa_opcional(armado.get("forma")))
+            forma["altoM"] = round(alto, 2)
+            if ancho is not None:
+                forma["anchoM"] = round(ancho, 2)
+            armado["forma"] = forma
+            estructura["armado_arco_organico"] = armado
+        armado_arco = estructura.get("armado_arco")
+        if isinstance(armado_arco, Mapping) and isinstance(armado_arco.get("geometria"), Mapping):
+            armado = dict(armado_arco)
+            geometria = dict(mapa_opcional(armado.get("geometria")))
+            geometria["altoM"] = round(alto, 2)
+            if ancho is not None:
+                geometria["anchoM"] = round(ancho, 2)
+            armado["geometria"] = geometria
+            estructura["armado_arco"] = armado
+        armado_columna = estructura.get("armado_columna")
+        if isinstance(armado_columna, Mapping) and isinstance(armado_columna.get("cuerpo"), Mapping):
+            armado = dict(armado_columna)
+            cuerpo = dict(mapa_opcional(armado.get("cuerpo")))
+            cuerpo["alto_m"] = round(alto, 2)
+            armado["cuerpo"] = cuerpo
+            estructura["armado_columna"] = armado
+
+    medidas_cliente = set(medidas_cliente_de)
+    tipos_geometricos_oficiales = {
+        "arco_asimetrico": "arco",
+        "arco_no_denso": "arco",
+        "semiarco_asimetrico": "semiarco",
+        "columna_asimetrica": "columna",
+        "columna_no_densa": "columna",
+        "pared_densa": "pared",
+        "pared_no_densa": "pared",
+        "pared_organica": "pared",
+    }
+    for original in _mappings(plan.get("estructuras")):
+        estructura = dict(original)
+        referencia = _text(estructura.get("referencia_element_id"))
+        pista = por_id.get(referencia or "")
+        tipo_original = _text(estructura.get("tipo")) or ""
+        oficial = _text(estructura.get("estructura_oficial")) or ""
+        tipo = tipos_geometricos_oficiales.get(
+            oficial, tipos_geometricos_oficiales.get(tipo_original, tipo_original)
+        )
+        if tipo not in {"semiarco", "arco", "arco_organico", "columna", "columna_organica", "pared"}:
+            continue
+        caja = _mapping(pista.get("caja")) if pista else {}
+        ancho = _number(caja.get("width")) or 0.0
+        alto = _number(caja.get("height")) or 0.0
+        x = _number(caja.get("x")) or 0.0
+        y = _number(caja.get("y")) or 0.0
+        confianza = _number(pista.get("confianza")) if pista else None
+        if pista is None:
+            continue
+        bordes = []
+        if y <= 0.01:
+            bordes.append("superior")
+        if y + alto >= 0.99:
+            bordes.append("inferior")
+        if x <= 0.01:
+            bordes.append("izquierdo")
+        if x + ancho >= 0.99:
+            bordes.append("derecho")
+        if bordes:
+            avisos.append(f"La caja de {referencia} está cortada por el borde {' y '.join(bordes)}; no ancla ni deriva esa pieza.")
+            medidas_entregadas = dict(_mapping(estructura.get("medidas")))
+            medidas = dict(medidas_entregadas)
+            conservar_cliente = _text(estructura.get("estructura_id")) in medidas_cliente
+            for clave, valor in medidas_armado(estructura).items():
+                if not conservar_cliente or _number(medidas.get(clave)) is None:
+                    medidas[clave] = valor
+            if medidas:
+                estructura["medidas"] = medidas
+                alto_motor = _number(medidas.get("alto_m"))
+                if conservar_cliente and alto_motor is not None:
+                    sincronizar_armados(
+                        estructura,
+                        alto_motor,
+                        _number(medidas.get("ancho_m")),
+                        _text(estructura.get("estructura_id")) or "pieza",
+                        dimensiones_cliente={
+                            clave: valor
+                            for clave in ("ancho_m", "alto_m")
+                            if (valor := _number(medidas_entregadas.get(clave))) is not None
+                        },
+                    )
+                id_cortada = _text(estructura.get("estructura_id"))
+                if id_cortada:
+                    cortadas[id_cortada] = estructura
+            continue
+        if confianza is None or confianza < 0.5 or ancho < 0.025 or alto < 0.05:
+            avisos.append(
+                f"No pude medir {referencia} con su caja de foto (confianza baja o caja pequeña); conservé medidas supuestas."
+            )
+            continue
+        piezas.append((estructura, caja, _mapping(estructura.get("medidas")), pista))
+        aspecto_foto = _number(pista.get("aspect_ratio"))
+        if aspecto_foto is None or aspecto_foto <= 0:
+            avisos.append(
+                f"No pude leer la proporción de la foto para {referencia}; conservé medidas del motor y no usé su caja como ancla."
+            )
+
+    if not piezas:
+        if cortadas:
+            plan["estructuras"] = [
+                cortadas.get(_text(estructura.get("estructura_id")) or "", estructura)
+                for estructura in _mappings(plan.get("estructuras"))
+            ]
+        return plan, avisos
+
+    def puntuacion_ancla(pieza: tuple[dict[str, object], Mapping[str, object], Mapping[str, object], Mapping[str, object]]) -> tuple[float, float, str]:
+        estructura, caja, medidas, pista = pieza
+        alto_declarado = _number(medidas.get("alto_m"))
+        ancho_declarado = _number(medidas.get("ancho_m"))
+        aspecto_foto = _number(pista.get("aspect_ratio")) or 1.0
+        alto_caja = _number(caja.get("height")) or 1.0
+        ancho_caja = _number(caja.get("width")) or 1.0
+        error = 1.0
+        if alto_declarado and ancho_declarado:
+            aspecto_fisico = ancho_declarado / alto_declarado
+            aspecto_caja = ancho_caja * aspecto_foto / alto_caja
+            error = abs(math.log(max(0.01, aspecto_fisico) / max(0.01, aspecto_caja)))
+        confianza = _number(pista.get("confianza")) or 0.0
+        return error, -confianza, _text(estructura.get("estructura_id")) or ""
+
+    por_foto: dict[str, list[tuple[dict[str, object], Mapping[str, object], Mapping[str, object], Mapping[str, object]]]] = {}
+    for pieza in piezas:
+        source_image_id = _text(pieza[3].get("source_image_id")) or ""
+        por_foto.setdefault(source_image_id, []).append(pieza)
+    escalas: dict[str, float] = {}
+    avisos_escala: list[str] = []
+    for source_image_id, piezas_foto in por_foto.items():
+        con_medida = [
+            pieza
+            for pieza in piezas_foto
+            if (_number(pieza[2].get("alto_m")) or _number(pieza[2].get("ancho_m")))
+            and (_number(pieza[3].get("aspect_ratio")) or 0.0) > 0
+        ]
+        cliente = [pieza for pieza in con_medida if _text(pieza[0].get("estructura_id")) in medidas_cliente]
+        # La columna suele traer una altura estándar de motor, pero no sirve como
+        # referencia de escala: el tamaño real de esa misma pieza es lo que buscamos.
+        # Priorizar medida explícita; después, semiarco/arco con medida estándar; por
+        # último, otras piezas no columna. Nunca inventar escala desde una columna sola.
+        semiarcos = [pieza for pieza in con_medida if _text(pieza[0].get("tipo")) == "semiarco"]
+        arcos = [
+            pieza
+            for pieza in con_medida
+            if _text(pieza[0].get("tipo")) in {"arco", "arco_organico"}
+        ]
+        otras_piezas = [
+            pieza
+            for pieza in con_medida
+            if _text(pieza[0].get("tipo")) not in {"columna", "columna_organica"}
+        ]
+        candidatas = cliente or semiarcos or arcos or otras_piezas
+        if candidatas:
+            ancla = min(candidatas, key=puntuacion_ancla)
+            alto_m = _number(ancla[2].get("alto_m"))
+            ancho_m = _number(ancla[2].get("ancho_m"))
+            alto_caja = _number(ancla[1].get("height")) or 1.0
+            ancho_img = (_number(ancla[1].get("width")) or 1.0) * (_number(ancla[3].get("aspect_ratio")) or 1.0)
+            # Una dimensión física fija ambas direcciones; si hay dos, el alto define
+            # la escala y la dimensión transversal declarada se conserva solo en el ancla.
+            escala = alto_m / alto_caja if alto_m is not None else (ancho_m or 2.2) / ancho_img
+            escalas[source_image_id] = escala
+            avisos_escala.append(f"Escala de la foto {source_image_id} anclada en {ancla[0].get('estructura_id')}.")
+        else:
+            avisos_escala.append(
+                f"No hay pieza de referencia fiable para escalar la foto {source_image_id}; conservé las medidas del motor."
+            )
+    asumidos: list[str] = []
+
+    nuevas_estructuras: list[dict[str, object]] = []
+    for estructura_original in _mappings(plan.get("estructuras")):
+        estructura = dict(estructura_original)
+        referencia = _text(estructura.get("referencia_element_id"))
+        pieza = next((item for item in piezas if _text(item[0].get("estructura_id")) == _text(estructura.get("estructura_id"))), None)
+        if pieza is None:
+            nuevas_estructuras.append(cortadas.get(_text(estructura.get("estructura_id")) or "", estructura))
+            continue
+        _, caja, medidas_originales, pista = pieza
+        id_estructura = _text(estructura.get("estructura_id")) or referencia or "pieza"
+        source_image_id = _text(pista.get("source_image_id")) or ""
+        if source_image_id not in escalas:
+            nuevas_estructuras.append(estructura)
+            continue
+        ancho_caja = _number(caja.get("width")) or 0.0
+        alto_caja = _number(caja.get("height")) or 0.0
+        aspecto_foto = _number(pista.get("aspect_ratio"))
+        alto_estimado = alto_caja * escalas[source_image_id]
+        ancho_estimado = (
+            ancho_caja * aspecto_foto * escalas[source_image_id]
+            if aspecto_foto is not None and aspecto_foto > 0
+            else None
+        )
+        medidas = dict(medidas_originales)
+        anterior_alto = _number(medidas.get("alto_m"))
+        anterior_ancho = _number(medidas.get("ancho_m"))
+        tipo_original = _text(estructura.get("tipo")) or ""
+        oficial = _text(estructura.get("estructura_oficial")) or ""
+        tipo = tipos_geometricos_oficiales.get(
+            oficial, tipos_geometricos_oficiales.get(tipo_original, tipo_original)
+        )
+        id_estructura = _text(estructura.get("estructura_id")) or ""
+        conservar_cliente = id_estructura in medidas_cliente
+        es_columna_organica = tipo == "columna_organica" or isinstance(estructura.get("armado_columna_organica"), Mapping)
+        alto_sin_tope = anterior_alto if conservar_cliente and anterior_alto is not None else alto_estimado
+        limites_tipo = {
+            "arco": (0.8, 6.0, 0.8, 10.0),
+            "arco_organico": (1.0, 6.0, 1.5, 10.0),
+            "semiarco": (1.0, 6.0, 1.5, 10.0),
+            "columna": (0.8, 4.5, 0.3, 8.0),
+            "columna_organica": (0.8, 4.5, 0.3, 8.0),
+            "pared": (0.5, 4.5, 0.3, 8.0),
+        }
+        alto_minimo, alto_maximo, ancho_minimo, ancho_maximo = limites_tipo.get(tipo, (0.5, 4.5, 0.3, 8.0))
+        alto_final = min(alto_maximo, max(alto_minimo, alto_sin_tope))
+        dimensiones_ancho = tipo in {"arco", "semiarco", "arco_organico", "columna", "pared"} and not es_columna_organica
+        ancho_sin_tope = anterior_ancho if conservar_cliente and anterior_ancho is not None else (ancho_estimado if ancho_estimado is not None else anterior_ancho)
+        ancho_final = min(ancho_maximo, max(ancho_minimo, ancho_sin_tope)) if ancho_sin_tope is not None else None
+        if dimensiones_ancho and ancho_final is not None and ancho_final != ancho_sin_tope:
+            avisos.append(f"El ancho derivado de {id_estructura} ({ancho_sin_tope:.2f} m) excedía límites; ajusté a {ancho_final:.2f} m.")
+        if tipo in {"semiarco", "arco_organico"}:
+            armado_arco_org = mapa_opcional(estructura.get("armado_arco_organico"))
+            volumen_arco_org = mapa_opcional(armado_arco_org.get("volumen"))
+            grosor_cima = _number(volumen_arco_org.get("grosorCimaM")) or 0.45
+            alto_minimo_org = max(
+                1.0,
+                math.ceil(0.4 * (ancho_final or 0.0) * 10 - 1e-9) / 10,
+                math.ceil((grosor_cima / 2 + 0.7) * 10 - 1e-9) / 10,
+            )
+            alto_maximo_org = max(alto_minimo_org, math.floor(min(6.0, 1.8 * (ancho_final or 0.0)) * 10 + 1e-9) / 10)
+            alto_final = min(alto_maximo_org, max(alto_minimo_org, alto_sin_tope))
+        if alto_final != alto_sin_tope:
+            avisos.append(f"La altura derivada de {id_estructura} ({alto_sin_tope:.2f} m) excedía límites; ajusté a {alto_final:.2f} m.")
+        medidas["alto_m"] = round(alto_final, 2)
+        if dimensiones_ancho and ancho_final is not None:
+            medidas["ancho_m"] = round(ancho_final, 2)
+        elif es_columna_organica and not conservar_cliente:
+            medidas.pop("ancho_m", None)
+        estructura["medidas"] = medidas
+
+        if es_columna_organica and not isinstance(estructura.get("armado_columna_organica"), Mapping):
+            avisos.append(f"Grosor de {id_estructura} queda al motor: la caja puede incluir su inclinación.")
+        grosor_base = (
+            anterior_ancho if conservar_cliente and anterior_ancho is not None else ancho_estimado
+        ) if es_columna_organica else None
+        if aspecto_foto is None or aspecto_foto <= 0:
+            avisos.append(f"Conservé las dimensiones de {id_estructura}: falta proporción fiable de la foto.")
+        sincronizar_armados(
+            estructura,
+            alto_final,
+            ancho_final if dimensiones_ancho else None,
+            id_estructura,
+            grosor_base_m=grosor_base,
+            dimensiones_cliente={
+                clave: valor
+                for clave in ("ancho_m", "alto_m")
+                if conservar_cliente and (valor := _number(medidas_originales.get(clave))) is not None
+            },
+        )
+
+        cambio = (
+            anterior_alto is not None and abs(anterior_alto - alto_final) >= 0.05
+        ) or (dimensiones_ancho and anterior_ancho is not None and abs(anterior_ancho - ancho_final) >= 0.05)
+        if cambio:
+            antes = f"{anterior_ancho:g} × {anterior_alto:g} m" if anterior_ancho is not None and anterior_alto is not None else f"alto {anterior_alto:g} m" if anterior_alto is not None else "sin ancho"
+            despues = f"{medidas.get('ancho_m', '—')} × {medidas['alto_m']} m"
+            asumidos.append(f"Medidas de {id_estructura} ajustadas de {antes} a {despues} según proporción de la foto.")
+        nuevas_estructuras.append(estructura)
+
+    plan["estructuras"] = nuevas_estructuras
+    plan["supuestos"] = list(dict.fromkeys([*_strings(plan.get("supuestos")), *avisos_escala, *avisos, *asumidos]))
+    return plan, avisos
+
+
 def _complete_plan(
     raw_plan: Mapping[str, object],
     *,
     completar_patrones: bool = False,
     pistas: Sequence[Mapping[str, object]] = (),
     tamanos: Sequence[Mapping[str, object]] = (),
+    pistas_geometria: Sequence[Mapping[str, object]] = (),
+    medidas_del_cliente: bool = False,
+    medidas_cliente_de: Sequence[str] = (),
     avisos: list[str] | None = None,
 ) -> dict[str, object]:
     """Fill default measures and make every color pattern authoritative.
@@ -950,7 +1333,15 @@ def _complete_plan(
     pattern), as ``advertencias`` entries: they describe this resolution, not
     the plan, so they never enter it nor its hash.
     """
-    plan = _complete_measures(raw_plan)
+    plan, avisos_geometria = _medir_desde_cajas(
+        raw_plan,
+        pistas_geometria,
+        medidas_del_cliente=medidas_del_cliente,
+        medidas_cliente_de=medidas_cliente_de,
+    )
+    if avisos is not None:
+        avisos.extend(avisos_geometria)
+    plan = _complete_measures(plan)
     # Los tamaños no esperan a ``completar_patrones``: no son una disposición de color (ver
     # ``pistas_tamanos``). Siguen yendo ANTES de ``_assign_patterns`` porque la rejilla de un patrón se
     # dimensiona desde la mezcla.
@@ -4451,6 +4842,9 @@ def _plan_to_resolve(request: PlanResolutionRequest) -> tuple[dict[str, object],
         completar_patrones=request.completar_patrones,
         pistas=[pista.model_dump(exclude_none=True) for pista in request.pistas_patron],
         tamanos=[pista.model_dump(exclude_none=True) for pista in request.pistas_tamanos],
+        pistas_geometria=request.pistas_geometria,
+        medidas_del_cliente=request.medidas_del_cliente,
+        medidas_cliente_de=request.medidas_cliente_de or (),
         avisos=warnings,
     )
     try:
@@ -5200,6 +5594,40 @@ def puerto_de_conteo(tamanos_obligatorios: Collection[int] = ()) -> conteo_foto.
     )
 
 
+def _ids_medidas_fijas_en_conteo(
+    plan: Mapping[str, object],
+    pistas_geometria: Sequence[Mapping[str, object]],
+    medidas_cliente_de: Sequence[str] | None,
+    medidas_del_cliente: bool,
+) -> set[str]:
+    ids_por_referencia = {
+        _text(pista.get("referencia_element_id"))
+        for pista in pistas_geometria
+        if _text(pista.get("referencia_element_id"))
+    }
+    ids_geometria = {
+        _text(estructura.get("estructura_id")) or ""
+        for estructura in _mappings(plan.get("estructuras"))
+        if _text(estructura.get("referencia_element_id")) in ids_por_referencia
+        and _text(estructura.get("tipo")) in {"semiarco", "arco", "arco_organico", "columna", "columna_organica", "pared"}
+    }
+    if medidas_cliente_de is not None or ids_por_referencia:
+        return set(medidas_cliente_de or ()) | ids_geometria
+    # Compatibilidad con llamadas anteriores al contrato por pieza.
+    return (
+        {
+            _text(structure.get("estructura_id")) or ""
+            for structure in _mappings(plan.get("estructuras"))
+            if any(
+                _number(_mapping(structure.get("medidas") or {}).get(key)) is not None
+                for key in ("ancho_m", "alto_m", "largo_m")
+            )
+        }
+        if medidas_del_cliente
+        else set()
+    )
+
+
 def _aplicar_conteos(
     request: PlanResolutionRequest,
     plan: Mapping[str, object],
@@ -5209,19 +5637,8 @@ def _aplicar_conteos(
     assembly_hints: Sequence[Mapping[str, object]],
 ) -> tuple[dict[str, object], list[dict[str, object]], list[dict[str, object]]]:
     """The plan adjusted to the photo's counts (ADR-0031), the assembly hints to use and ``conteos_referencia``."""
-    # Structures whose measures the request declared: with medidas_del_cliente
-    # those are the customer's (review 33); defaulted ones can still move.
-    customer_measures = (
-        {
-            _text(structure.get("estructura_id")) or ""
-            for structure in _mappings(request.plan.get("estructuras"))
-            if any(
-                _number(_mapping(structure.get("medidas") or {}).get(key)) is not None
-                for key in ("ancho_m", "alto_m", "largo_m")
-            )
-        }
-        if request.medidas_del_cliente
-        else set()
+    medidas_fijas = _ids_medidas_fijas_en_conteo(
+        request.plan, request.pistas_geometria, request.medidas_cliente_de, request.medidas_del_cliente
     )
     # A garland this confirmation assembles from its photo reading is counted
     # with the drop and tilt that reading will give it (decision 27).
@@ -5240,7 +5657,7 @@ def _aplicar_conteos(
         tamanos_obligatorios=bool(_required_sizes(plan)),
         densidades_admitidas=_admitted_densities,
         medidas_del_cliente=lambda structure: (_text(structure.get("estructura_id")) or "")
-        in customer_measures,
+        in medidas_fijas,
         variantes_redondas=lambda product_id: _round_variants(
             product_id, candidates_by_product, allowlist
         ),

@@ -2,7 +2,7 @@ import type { SceneElement, SceneSpec } from "../escena/scene-spec";
 import type { VisualContext } from "../escena/visual-context";
 import { compileLoraCaption, translateLoraColor, type LoraVisualClause, type ProductConceptClauseInput } from "./lora-caption-compiler";
 import { canonicalizeSku } from "@/lib/rag/catalog/canonicalize";
-import { leerTituloCatalogo, terminosBaseDeTitulo } from "@/lib/lora/vocabulario-base";
+import { leerTituloCatalogo, terminosBaseDeTitulo } from "./vocabulario-base";
 import type { FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
 export const LORA_PRODUCT_RUNTIME_VERSION = "flux-product-runtime.v1" as const;

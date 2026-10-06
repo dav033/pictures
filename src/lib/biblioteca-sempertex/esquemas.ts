@@ -27,6 +27,8 @@ export const DecoracionSempertexSchema = z.discriminatedUnion("origen", [
 const ZonaSchema = z.object({ pais: z.literal("CO"), departamento: z.string(), ciudad: z.string(), cobertura: z.array(z.string()) }).strict();
 const ProveedorBaseSchema = z.object({
   id: z.string().min(1), tipo: z.enum(["decorador_happia", "mbp", "distribuidor", "ecommerce"]), nombre: z.string().min(1),
+  /** Lo que mejor hace, en palabras de cliente (p. ej. «Baby showers y bautizos»). */
+  especialidad: z.string().min(1).optional(),
   zona: ZonaSchema, contacto: z.string().nullable(), url: z.url(),
 }).strict();
 export const ProveedorSempertexSchema = z.discriminatedUnion("origen", [

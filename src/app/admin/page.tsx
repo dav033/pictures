@@ -1,8 +1,6 @@
 import { connection } from "next/server";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { obtenerDecoraciones } from "@/lib/decoraciones";
-import { readLoraDatasetV005View } from "@/lib/lora/dataset-v005-view";
-import { readLocalSnapshot } from "@/lib/lora/snapshot";
 import { obtenerProductos } from "@/lib/products";
 
 // `cacheComponents` (next.config.ts) solo detecta como "dinámico" el acceso a
@@ -25,7 +23,6 @@ export default async function AdminPage() {
     <AdminTabs
       productosIniciales={productos}
       decoracionesIniciales={decoraciones}
-      datasetLoraInicial={readLoraDatasetV005View() ?? readLocalSnapshot()?.datasetGallery ?? null}
     />
   );
 }

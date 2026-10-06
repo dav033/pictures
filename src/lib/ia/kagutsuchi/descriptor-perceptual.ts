@@ -1,4 +1,22 @@
-import type { ProductConcept } from "./product-vocabulary";
+type DescriptorProducto = {
+  canonical_label: string;
+  visual: {
+    shape: string;
+    material: string;
+    color: string;
+    finish: string;
+    family: string;
+    transparency?: string;
+    pattern: {
+      kind: string;
+      motif?: string;
+      contains_text?: boolean;
+      text_policy: string;
+      approved_text?: string;
+      evidence_ref?: string;
+    };
+  };
+};
 
 /**
  * Traduce los nombres comerciales del catálogo a descripciones de lo que se ve.
@@ -71,7 +89,7 @@ export function aDescriptorPerceptual(frase: string): string {
   return resultado.replace(/\bsheen finish\b/gi, "sheen");
 }
 
-function patternDescription(pattern: ProductConcept["visual"]["pattern"]): string[] {
+function patternDescription(pattern: DescriptorProducto["visual"]["pattern"]): string[] {
   const kind = pattern.kind.trim().toLowerCase();
   const parts: string[] = [];
   if (kind === "printed" || pattern.motif) {
@@ -91,7 +109,7 @@ function patternDescription(pattern: ProductConcept["visual"]["pattern"]): strin
 }
 
 /** Compila solo atributos visuales evidenciados; nunca usa título, SKU o familia comercial. */
-export function compilarDescriptorProductoPerceptual(concepto: ProductConcept): string {
+export function compilarDescriptorProductoPerceptual(concepto: DescriptorProducto): string {
   const visual = concepto.visual;
   const parts = [
     visual.shape.trim(),

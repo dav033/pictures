@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
-import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { BasePlanSchema } from "@/lib/plan/edicion-esquemas";
 
 /** Versioned wire contracts for the Next facade and the future Python service. */
@@ -56,7 +55,6 @@ export const ChatRequestV1Schema = z.object({
   fotoEspacio: imageSchema.optional(),
   imagenesReferencia: z.array(imageSchema).max(8).optional(),
   referenceBlueprint: ReferenceBlueprintV2Schema.optional(),
-  loraMode: LoraModeSlugSchema.optional(),
   /** Creativity calibration 0-5 chosen in the UI (see src/lib/ia/escena/creatividad.ts); absent = default level. */
   creatividad: z.number().int().min(0).max(5).optional(),
   /**
@@ -88,7 +86,6 @@ export function parseChatRequestV1(input: unknown): ChatRequestV1 {
     fotoEspacio: input.fotoEspacio ?? undefined,
     imagenesReferencia: input.imagenesReferencia ?? undefined,
     referenceBlueprint: input.referenceBlueprint ?? undefined,
-    loraMode: input.loraMode ?? undefined,
     creatividad: input.creatividad ?? undefined,
     planVigente: input.planVigente ?? undefined,
   });
