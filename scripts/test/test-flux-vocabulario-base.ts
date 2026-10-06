@@ -46,7 +46,11 @@ assert.match(colorDeTitulo("B2b Globo Latex Redondo Pastel Mate Nude", "soft mat
 assert.match(colorDeTitulo("B2b Globo Latex Redondo Reflex Plata", "mirror-like chrome"), /bright silver/i);
 assert.equal(colorDeTitulo("B2b Globo Latex Redondo Reflex Dorado", "mirror-like chrome"), "gold");
 assert.match(colorDeTitulo("B2b Globo Latex Redondo Fashion Azul Naval", "matte"), /navy blue/i);
-assert.equal(colorDeTitulo("B2b Globo Latex Redondo Fashion Blanco", "matte"), "white");
+assert.equal(colorDeTitulo("B2b Globo Latex Redondo Fashion Blanco", "matte"), "white (#FFFFFF)");
+// Colores vivos: el nombre comercial no los aclara y FLUX recibe el hex real del globo (2026-10-06).
+assert.equal(colorDeTitulo("B2b Globo Latex Redondo Fashion Rosa", "matte"), "vivid pink (#E04B87)");
+assert.equal(colorDeTitulo("B2b Globo Latex Redondo Fashion Azul", "matte"), "vivid cyan blue (#01B2E8)");
+assert.doesNotMatch(colorDeTitulo("B2b Globo Latex Redondo Reflex Plata", "mirror-like chrome"), /#/, "en cromados el hex engaña: solo palabras");
 const captionDeTitulo = (titulo: string) => compileProductPrompt({
   sceneSpec,
   visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),

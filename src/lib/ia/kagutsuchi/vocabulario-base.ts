@@ -25,7 +25,7 @@ const PALABRAS_APAGADO = /\b(?:muted|dusty|dusk|sage|grey|gray|smoky)\b/;
  * decide si decir «bright» o «dark»; su matiz Lab no es significativo.
  */
 export function colorDeReferencia(referencia: ReferenciaSempertex): string {
-  const nombre = referencia.nombreEn.toLowerCase().split(/\s+/).filter((palabra) => palabra && !PALABRAS_NO_COLOR.has(palabra)).join(" ");
+  let nombre = referencia.nombreEn.toLowerCase().split(/\s+/).filter((palabra) => palabra && !PALABRAS_NO_COLOR.has(palabra)).join(" ");
   if (!nombre) return "";
   const hex = referencia.hexGlobo.slice(1);
   const [l, a, b] = labDeRgb(Number.parseInt(hex.slice(0, 2), 16), Number.parseInt(hex.slice(2, 4), 16), Number.parseInt(hex.slice(4, 6), 16));
@@ -37,6 +37,15 @@ export function colorDeReferencia(referencia: ReferenciaSempertex): string {
   }
 
   const tonos: string[] = [];
+  // El nombre comercial puede mentir sobre la intensidad: el Fashion 040 se llama «Light Blue» y es un cian intenso
+  // (#01b2e8), y «pink» a secas sale pastel en FLUX aunque el 011 sea un rosa fuerte (2026-10-06: el dueño vio pasteles
+  // donde la foto tenía colores vivos). Un color saturado de luminosidad media se dice «vivid», sin «light/pale».
+  const vivo = croma > 40 && l >= 40 && l <= 74;
+  if (vivo) {
+    nombre = nombre.replace(/\b(?:light|pale|soft|baby)\s+/g, "");
+    if (/\bblue\b/.test(nombre) && a < -8 && b < -20 && !/\b(?:cyan|turquoise|teal|aqua)\b/.test(nombre)) nombre = nombre.replace(/\bblue\b/, "cyan blue");
+    if (!/\b(?:vivid|bright|hot|neon)\b/.test(nombre)) tonos.push("vivid");
+  }
   if (l < 35 && !PALABRAS_OSCURO.test(nombre)) tonos.push("deep");
   else if (l < 48 && !PALABRAS_OSCURO.test(nombre)) tonos.push("dark");
   else if (l > 84 && !PALABRAS_CLARO.test(nombre)) tonos.push("pale");
@@ -47,7 +56,11 @@ export function colorDeReferencia(referencia: ReferenciaSempertex): string {
   // que ya fijan temperatura, como gold, beige, navy o blue.
   if (croma > 12 && b > 18 && !/\b(?:gold|yellow|beige|brown|orange|warm)\b/.test(nombre)) tonos.push("warm");
   else if (croma > 12 && b < -12 && !/\b(?:blue|navy|violet|purple|cool)\b/.test(nombre)) tonos.push("cool");
-  return [...tonos, nombre].filter(Boolean).join(" ");
+  // FLUX.2 respeta códigos hex en el texto: junto a las palabras va el color real del globo inflado (pedido del dueño,
+  // 2026-10-06: «FLUX debe recibir los códigos de color»). Las palabras siguen para el acabado y por si el hex se ignora.
+  const palabras = [...tonos, nombre].filter(Boolean).join(" ");
+  // En cromados y metalizados (Reflex, Metal) el hex del globo inflado es un ocre/gris apagado que FLUX pinta mate: van solo palabras.
+  return /reflex|metal|chrome|cromad/i.test(`${referencia.familia} ${referencia.acabado}`) ? palabras : `${palabras} (#${hex.toUpperCase()})`;
 }
 
 /**
