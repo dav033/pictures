@@ -144,6 +144,19 @@ function testComposicion(): void {
   assert.ok(instancias.every((instancia) => instancia.apoyo === "piso"));
   console.log("[PASS] una pieza repetida toma las dos cajas de la foto, izquierda y derecha, y la derecha va en espejo");
 
+  const fotoQueTocaTecho = {
+    ...EJEMPLO_01,
+    elements: EJEMPLO_01.elements.map((elemento) => elemento.element_id === IZQUIERDA
+      ? { ...elemento, reference_bbox: { ...elemento.reference_bbox, y: 0.01 } }
+      : elemento),
+  };
+  const organicaDesdeFoto = instanciasDeEscena(
+    [estructura("EST_01_ORGANICA", { mezcla: "organica_fina", referencia_element_id: IZQUIERDA })],
+    fotoQueTocaTecho,
+  )[0]!;
+  assert.equal(organicaDesdeFoto.toca_techo, true, "la caja de foto transmite su contacto con techo");
+  assert.equal(organicaDesdeFoto.organica, true, "la regla aplica a columna orgánica");
+
   // Cada instancia en su caja: dos colores distintos para poder separarlas en el SVG.
   const unaPorLado = [estructura("EST_01_IZQ", { referencia_element_id: IZQUIERDA }), estructura("EST_02_DER", { ubicacion: "lateral_derecho", referencia_element_id: DERECHA })];
   const porLado = instanciasDeEscena(unaPorLado, EJEMPLO_01);
@@ -161,6 +174,35 @@ function testComposicion(): void {
   assert.ok(plateados[0]!.cx > centroIzq, "la columna izquierda conserva su lado");
   assert.ok(plateados[1]!.cx < centroDer, "la columna derecha va en espejo");
   console.log("[PASS] la copia derecha de una pieza repetida es su espejo");
+
+  const tocaTecho: InstanciaGuia = {
+    estructura_id: "EST_01_ORGANICA",
+    instancia: 1,
+    caja: { x: 0.35, y: 0.05, width: 0.2, height: 0.85 },
+    fuente: "foto",
+    espejo: false,
+    apoyo: "piso",
+    toca_techo: true,
+    organica: true,
+  };
+  const piezaAncha = { ...columna("EST_01_ORGANICA"), ancho_m: 1.6 };
+  const sinTecho = svgGuiaEscena([piezaAncha], [{ ...tocaTecho, toca_techo: false }], TAMANO);
+  const conTecho = svgGuiaEscena([piezaAncha], [tocaTecho], TAMANO);
+  const bordeSuperior = tocaTecho.caja.y * TAMANO.alto;
+  const arribaSinTecho = Math.min(...circulos(sinTecho).map((item) => item.cy - item.r));
+  const arribaConTecho = Math.min(...circulos(conTecho).map((item) => item.cy - item.r));
+  assert.ok(arribaSinTecho > bordeSuperior + 80, "columna sin señal de techo conserva escala proporcional");
+  assert.ok(Math.abs(arribaConTecho - bordeSuperior) < 3, "columna orgánica cuya caja toca techo llega al borde");
+  console.log("[PASS] columna orgánica de caja alta llega al techo sin cambiar columna clásica");
+
+  const burbuja: PiezaGuiaEscena = {
+    ...columna("EST_01_ORGANICA"),
+    discos: [{ x_m: 0, y_m: 1, r_m: 0.35, hex: "#b9d3df", apariencia: "burbuja_confeti" }],
+  };
+  const svgBurbuja = svgGuiaEscena([burbuja], [tocaTecho], TAMANO);
+  assert.match(svgBurbuja, /fill-opacity="0\.12" stroke="#ffffff"/);
+  assert.equal((svgBurbuja.match(/stroke-opacity="0\.9"/g) ?? []).length, 6, "confeti interior determinista");
+  console.log("[PASS] burbuja transparente muestra cáscara y confeti determinista");
 
   // Determinista y plano: el único trazo es el borde liso de cada disco.
   assert.equal(svgGuiaEscena([columna("EST_01_COLUMNAS")], instancias, TAMANO), svgPareja, "el mismo plan da el mismo SVG");

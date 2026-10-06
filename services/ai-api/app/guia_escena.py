@@ -173,6 +173,7 @@ class _Globo:
     y: float
     r: float
     hex: str
+    apariencia: Literal["burbuja", "burbuja_confeti"] | None = None
 
 
 def _texto(valor: object) -> str | None:
@@ -249,6 +250,13 @@ def _globos_de_lista(
             _numero(g["y"]),
             _numero(g["r"]),
             _color_por_indice(colores, g.get("material")),
+            (
+                "burbuja_confeti"
+                if _plegar(str(g.get("acabado") or "")) in {"confeti", "confetti"}
+                else "burbuja"
+                if _plegar(str(g.get("acabado") or "")) == "transparente"
+                else None
+            ),
         )
         for g in ordenados
     ]
@@ -355,6 +363,7 @@ def _pieza(
                 "y_m": round((g.y - abajo) * escala, _DECIMALES),
                 "r_m": round(g.r * escala, _DECIMALES),
                 "hex": g.hex,
+                **({"apariencia": g.apariencia} if g.apariencia is not None else {}),
             }
             for g in globos
         ],

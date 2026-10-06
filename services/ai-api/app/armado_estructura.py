@@ -1758,6 +1758,11 @@ def _armado_columna_organica(
     if estilo is not None:
         # La densidad del plan es el estilo del diseñador (ligero / lleno), que solo mueve el volumen.
         volumen = dict(estilo.aplicar(cast(Any, {"volumen": volumen}))["volumen"])
+    # Una columna orgánica debe conservar racimos visibles: más relieve en su silueta y globos grandes repartidos
+    # por el cuerpo. El motor sigue usando mezcla y conteo del plan; esto solo cambia dónde coloca cada globo.
+    volumen["irregularidad"] = max(float(volumen["irregularidad"]), 0.55)
+    volumen["salientes"] = max(float(volumen["salientes"]), 0.55)
+    tamanos["grandesAbajo"] = min(float(tamanos["grandesAbajo"]), 0.45)
     racimo = _racimo_leido(leido, avisos)
     if racimo is not None:
         # Los globos por racimo que vio la foto mandan sobre los de la densidad.

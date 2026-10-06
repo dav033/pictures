@@ -1108,3 +1108,37 @@ def test_un_remate_estrella_en_columna_organica_avisa_y_no_corona() -> None:
     armado, avisos = _columna_organica_con_remate({"tipo": "estrella"})
     assert armado["corona"]["activa"] is False
     assert any("estrella" in aviso for aviso in avisos)
+
+
+def test_columna_organica_deja_racimos_irregulares_y_reparte_globos_grandes() -> None:
+    from app.armado_columna_organica import EstructuraColumnaOrganica, armado_resuelto
+
+    armado, _ = _columna_organica_con_remate(None)
+    volumen = cast(dict[str, float], armado["volumen"])
+    tamanos = cast(dict[str, Any], armado["tamanos"])
+    assert 0.55 <= volumen["irregularidad"] <= 0.8
+    assert 0.55 <= volumen["salientes"] <= 1
+    assert tamanos["grandesAbajo"] <= 0.45
+
+    entrada = EstructuraColumnaOrganica(es_columna=True, materiales=["#ffffff", "#777777"])
+    primera = armado_resuelto(entrada, armado)
+    segunda = armado_resuelto(entrada, armado)
+    globos = cast(list[dict[str, Any]], primera["globos"])
+    assert [(g["x"], g["y"], g["r"], g["tamano"]) for g in globos] == [
+        (g["x"], g["y"], g["r"], g["tamano"])
+        for g in cast(list[dict[str, Any]], segunda["globos"])
+    ]
+    y_max = max(float(g["y"]) for g in globos)
+    franjas = [
+        [g for g in globos if inferior * y_max <= float(g["y"]) < superior * y_max]
+        for inferior, superior in zip([i / 10 for i in range(10)], [i / 10 for i in range(1, 11)], strict=True)
+    ]
+    anchos = [
+        max(float(g["x"]) + float(g["r"]) for g in franja)
+        - min(float(g["x"]) - float(g["r"]) for g in franja)
+        for franja in franjas
+        if franja
+    ]
+    assert max(anchos) - min(anchos) > 0.1, "el grosor cambia a lo largo de la columna"
+    altos = [g for g in globos if float(g["y"]) > y_max * 0.55]
+    assert any(int(g["tamano"]) >= 18 for g in altos), "globos grandes aparecen también sobre la mitad"

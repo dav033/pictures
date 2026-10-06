@@ -92,6 +92,17 @@ assert.ok(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gris ball
 assert.deepEqual(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gray balloons"), []);
 
 const canonicalLabel = "round latex balloon in gold with a Reflex high-shine finish";
+const columnaOrganica = scene([element({ id: "ORGANICA", name: "Columna orgánica", type: "columna", placement: "lateral_izquierdo" })]);
+const textoColumnaOrganica = compileLoraCaption({
+  sceneSpec: columnaOrganica,
+  visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
+  dialect: "base",
+  officialStructures: new Map([["ORGANICA", "columna_asimetrica"]]),
+}).prompt;
+assert.match(textoColumnaOrganica, /organic balloon column/i);
+assert.match(textoColumnaOrganica, /uneven, deep silhouette and large balloons interspersed/i);
+assert.doesNotMatch(textoColumnaOrganica, /\btubes?\b|rigid balloon column/i);
+
 const canonicalSpec = scene([element({ id: "CANONICAL", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]);
 const canonicalPresence = compileLoraCaption({
   sceneSpec: canonicalSpec,

@@ -311,6 +311,14 @@ def test_los_colores_son_los_del_plan_en_ingles_nunca_en_espanol() -> None:
         assert espanol not in lora.lower(), (espanol, lora)
 
 
+def test_el_texto_pide_silueta_organica_con_tamanos_y_burbujas_visibles() -> None:
+    gemini, _ = frases(armado())
+
+    for pista in ("irregular", "bulges", "notches", "18- and 24-inch", "5-inch", "confetti bubbles"):
+        assert pista in gemini, (pista, gemini)
+    assert "smooth or uniform" in gemini
+
+
 def test_un_indice_de_material_que_el_plan_no_tiene_se_descarta_en_vez_de_inventarse() -> None:
     sin_tercero = armado()
     sin_tercero["colores"] = {

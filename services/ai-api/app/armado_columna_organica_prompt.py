@@ -253,7 +253,7 @@ def frases_columna_organica(
     punta = _numero(resuelto.get("grosor_punta_m", _flotante(volumen, "grosorCimaM")))
 
     cabeza = [
-        f"a balloon column about {alto} m tall, about {base} m thick at the base"
+        f"an organic balloon cluster arrangement about {alto} m tall, about {base} m thick at the base"
         f" and {punta} m at the top, {_SILUETA_GEMINI[silueta]}",
         *_linea_gemini(forma),
     ]
@@ -272,9 +272,11 @@ def frases_columna_organica(
         + ", in mixed sizes, chained from the floor up to the tip.",
         *reparto_gemini,
         corona_gemini,
-        "Keep the clusters packed tightly against each other so the column reads as one continuous"
-        " organic piece with no gaps, made only of round latex balloons: no ribbons, streamers,"
-        " twisted bands or fabric.",
+        "Build an irregular, deep silhouette from overlapping balloon clusters, with rounded bulges and"
+        " small inward notches; vary the width along its rise, broad at the foot and bends. Distribute"
+        " the large 18- and 24-inch balloons through the clusters, with small 5-inch fillers between them."
+        " Clear confetti bubbles keep their transparent shells visible. Keep the outline asymmetrical and"
+        " clustered, not smooth or uniform, made only of round latex balloons; no ribbons or fabric.",
     ]
     sueltos = resuelto.get("sueltos")
     if isinstance(sueltos, int) and not isinstance(sueltos, bool) and sueltos > 0:

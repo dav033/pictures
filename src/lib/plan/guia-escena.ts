@@ -114,6 +114,8 @@ export const DiscoGuiaEscenaSchema = z.object({
   y_m: z.number().min(-1).max(100),
   r_m: z.number().positive().max(5),
   hex: z.string().regex(/^#[0-9a-f]{6}$/),
+  /** Cáscara transparente; confeti visible se pinta dentro sin alterar el conteo del plan. */
+  apariencia: z.enum(["burbuja", "burbuja_confeti"]).optional(),
 }).strict();
 
 export const FUENTES_GUIA_ESCENA = ["motor", "dibujo"] as const;
