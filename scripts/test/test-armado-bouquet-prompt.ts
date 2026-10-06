@@ -5,14 +5,13 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
-import { LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor, type LoraVisualClause } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
+import { LORA_PROMPT_MAX_LENGTH, translateLoraColor, type LoraVisualClause } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
-import { ensureLoraTriggers } from "@/lib/ia/kagutsuchi/sempertex-lora";
+
 import { CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
 import { tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
 import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_ASSEMBLY_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, piezasDeLosArmados } from "@/lib/ia/uzume/lora-gemini-composition";
 import { armadoDeElemento, frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { ArmadoBouquetResueltoSchema, type ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
 import { verificarCoherenciaPrompt, verificarColoresCaptionLora } from "@/lib/plan/coherencia";
 import {
@@ -21,7 +20,7 @@ import {
   BOUQUET_SINTETICO,
   BOUQUET_VECTOR_15,
   captionCanonico,
-  captionLegacyDePlan,
+  captionBaseDePlan,
   casosSinArmado,
   escenaBouquet,
   escenaDePlan,
@@ -87,8 +86,8 @@ function clausulaDe(clauses: readonly LoraVisualClause[], elementId: string): Lo
   return clausula;
 }
 
-function preflight(sceneSpec: SceneSpec, resultado: { clauses: LoraVisualClause[]; prompt: string }, prompt = resultado.prompt, maxLength?: number, trigger = "eventdecor_style_v2") {
-  return preflightLoraPrompt({ sceneSpec, clauses: resultado.clauses, prompt, triggers: [trigger], vocabulary: PRODUCT_VOCABULARY, maxLength });
+function preflight(sceneSpec: SceneSpec, resultado: { clauses: LoraVisualClause[]; prompt: string }, prompt = resultado.prompt, maxLength?: number) {
+  return preflightLoraPrompt({ sceneSpec, clauses: resultado.clauses, prompt, maxLength });
 }
 
 function lineaQueEmpieza(prompt: string, inicio: string): string {
@@ -128,7 +127,7 @@ function sinArmadoByteAByte(): void {
   const canonico = captionCanonico(escenaBouquet(BOUQUET_80));
   assert.deepEqual(candadosDeComposicion(canonico.clauses), [false, false]);
   assert.ok(canonico.clauses.every((clause) => !("armadoBouquet" in clause)));
-  console.log(`[PASS] sin armado (ausente o vacío) los ${casosSinArmado().length} prompts con bouquets son byte a byte los de antes`);
+  console.log(`[PASS] Gemini sin armado (ausente o vacío): ${casosSinArmado().length} prompts con bouquets conservan la instantánea`);
 }
 
 // ---------------------------------------------------------------------------
@@ -221,11 +220,10 @@ function geminiNumerosYGrupos(): void {
 // ---------------------------------------------------------------------------
 
 function loraCanonicoConArmado(): void {
-  for (const [trigger, dialecto] of [["eventdecor_style_v3", "product_v007"], ["eventdecor_style_v2", "scene_v004"]] as const) {
     const escena = escenaBouquet(BOUQUET_80);
     const centro = armado("numeros-centro");
-    const resultado = captionCanonico(escena, frasesSinteticas("numeros-centro"), trigger);
-    const caso = `${dialecto}: ${resultado.prompt}`;
+    const resultado = captionCanonico(escena, frasesSinteticas("numeros-centro"));
+    const caso = resultado.prompt;
     assert.equal(resultado.legacy, false, caso);
     assert.deepEqual(resultado.unresolved_products, [], caso);
     // Los números de 32" del catálogo tienen talla en el vocabulario (16 IN / 32 IN).
@@ -236,24 +234,16 @@ function loraCanonicoConArmado(): void {
     assert.equal(vecesEn(resultado.prompt, centro.prompt_lora), 1, caso);
     // Un solo bouquet nombrado: la frase de Python es un modificador, no otro sustantivo.
     assert.equal(vecesEn(resultado.prompt, "balloon bouquet"), 1, caso);
-    const sujetos = (JSON.parse(resultado.jsonPrompt) as { subjects: Array<{ description: string; color_pattern?: string }> }).subjects;
-    const sujeto = sujetos.find((subject) => subject.color_pattern === centro.prompt_lora);
-    assert.ok(sujeto, resultado.jsonPrompt);
-    assert.doesNotMatch(sujeto.description, /mixed organically/, sujeto.description);
     assert.ok(resultado.prompt.length <= LORA_PROMPT_MAX_LENGTH, `${resultado.prompt.length}`);
-    const texto = ensureLoraTriggers(resultado.prompt, [{ path: "armado", trigger, scale: 1 }]);
-    const reporte = preflight(escena, resultado, texto, undefined, trigger);
+    const texto = resultado.prompt;
+    const reporte = preflight(escena, resultado, texto);
     assert.equal(reporte.ok, true, `${caso}: ${reporte.errors.join("; ")}`);
-    const json = ensureLoraTriggers(resultado.jsonPrompt, [{ path: "armado", trigger, scale: 1 }]);
-    const reporteJson = preflight(escena, resultado, json, LORA_JSON_PROMPT_MAX_LENGTH, trigger);
-    assert.equal(reporteJson.ok, true, `${caso} JSON: ${reporteJson.errors.join("; ")}`);
-    assert.deepEqual(findLoraPromptLanguageLeaks(`${texto} ${json}`), [], caso);
+    assert.deepEqual(findLoraPromptLanguageLeaks(texto), [], caso);
     // La compactación nunca toca la frase del armado.
-    const alterado = preflight(escena, resultado, texto.replace("staggered heights", "different heights"), undefined, trigger);
+    const alterado = preflight(escena, resultado, texto.replace("staggered heights", "different heights"));
     assert.equal(alterado.ok, false);
     assert.match(alterado.errors.join("; "), /patrón de color ausente o alterado: EST_02_BOUQUET/);
-  }
-  console.log("[PASS] LoRA canónico: la frase del armado sigue a los materiales una vez, sin otro \"balloon bouquet\" ni \"mixed organically\", y pasa idioma y preflight en v007 y v004");
+  console.log("[PASS] FLUX base: la frase del armado sigue a los materiales una vez y pasa idioma y preflight");
 }
 
 function loraGruposEInstancias(): void {
@@ -284,19 +274,19 @@ function loraLegacyDelPlan(): void {
   const fijado = vector15([armado15]);
   const frases = frasesDeEstructuras(fijado.plan)!;
   const escena = escenaDePlan(fijado);
-  for (const dialect of ["product_v007", "scene_v004"] as const) {
-    const caption = captionLegacyDePlan(fijado, dialect, frases);
+  {
+    const caption = captionBaseDePlan(fijado, frases);
     const clausula = clausulaDe(caption.clauses, BOUQUET_VECTOR_15);
     assert.equal(clausula.colorPattern, armado15.prompt_lora);
     // "a compact balloon bouquet" / "a grand balloon bouquet": la escala la da el armado, no el rol.
     assert.equal(clausula.scale, undefined);
     assert.equal(vecesEn(caption.prompt, armado15.prompt_lora), 1, caption.prompt);
     const reporte = preflight(escena, caption);
-    assert.equal(reporte.ok, true, `${dialect}: ${reporte.errors.join("; ")}`);
+    assert.equal(reporte.ok, true, reporte.errors.join("; "));
     const colores = verificarColoresCaptionLora(fijado.plan, escenaParaCoherencia(escena, frases), { clausulas: caption.clauses, traducirColor: translateLoraColor });
     assert.equal(colores.ok, true, colores.errores.join("; "));
   }
-  const sinArmado = captionLegacyDePlan(vector15(), "product_v007");
+  const sinArmado = captionBaseDePlan(vector15());
   assert.equal(clausulaDe(sinArmado.clauses, BOUQUET_VECTOR_15).scale, "compact", "sin armado el acento conserva su escala");
   console.log("[PASS] LoRA legacy: el armado del plan entra en la cláusula del bouquet sin escala inventada, con coherencia de colores y preflight");
 }

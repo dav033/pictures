@@ -236,7 +236,7 @@ async function main(): Promise<void> {
     };
     if (color.sinLinea.length) process.stdout.write(`· SIN LINEA [${color.sinLinea.join(",")}] `);
 
-    const compilado = compilarCaption(spec, identidad.trigger);
+    const compilado = compilarCaption(spec);
     caso.caption = compilado.caption;
     caso.preflight = compilado.preflight;
 

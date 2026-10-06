@@ -21,10 +21,8 @@ import { GROUPING_ONLY_CONTEXT, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/
 import { LORA_PRESENTATION_INSTRUCTION } from "../../src/lib/ia/uzume/lora-gemini-composition";
 import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
-import { ensureLoraTriggers } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
-import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
 
-const TRIGGER = "eventdecor_style_v2";
+
 type Elemento = SceneSpec["elements"][number];
 type Tipo = "arco" | "columna" | "semiarco";
 type Ubicacion = "arco_central" | "lateral_izquierdo" | "lateral_derecho";
@@ -68,15 +66,13 @@ function compilar(elementos: Elemento[]): { prompt: string; ok: boolean; errores
   const compilacion = compileProductPrompt({
     sceneSpec: spec,
     visualContext: GROUPING_ONLY_CONTEXT,
-    vocabulary: PRODUCT_VOCABULARY,
     sizeConfirmations,
-    trigger: TRIGGER,
     maxLength: LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length,
     ambientDecor: [],
-    officialStructures: new Map<string, string>(),
-  });
-  const prompt = ensureLoraTriggers(compilacion.prompt, [{ path: "test", trigger: TRIGGER, scale: 0.8 }]);
-  const reporte = preflightLoraPrompt({ sceneSpec: spec, clauses: compilacion.clauses, prompt, triggers: [TRIGGER], vocabulary: PRODUCT_VOCABULARY });
+    officialStructures: new Map<string, string>()
+});
+  const prompt = compilacion.prompt;
+  const reporte = preflightLoraPrompt({ sceneSpec: spec, clauses: compilacion.clauses, prompt });
   return { prompt, ok: reporte.ok, errores: reporte.errors };
 }
 

@@ -15,8 +15,7 @@ import { BASE_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia
 import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
-import { ensureLoraTriggers } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
-import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
+
 
 type Elemento = SceneSpec["elements"][number];
 type Tipo = "arco" | "semiarco" | "guirnalda" | "columna" | "pared" | "centro_mesa" | "backdrop" | "kit" | "accesorio";
@@ -34,6 +33,7 @@ const PRODUCTO_POR_COLOR: Readonly<Record<string, string>> = {
 };
 
 const TAMANOS_ESTRUCTURA = ["R-5", "R-9", "R-12", "R-18"];
+const TITULOS_CATALOGO = new Map(Object.entries(PRODUCTO_POR_COLOR).map(([color, productId]) => [productId, `B2b Globo Latex Redondo ${color}`]));
 
 function elemento(id: string, nombre: string, tipo: Tipo, ubicacion: Ubicacion, rol: Rol, colores: string[], grupo?: string): Elemento {
   const productIds = colores.map((color) => PRODUCTO_POR_COLOR[color]!);
@@ -142,14 +142,14 @@ const ACENTOS: ReadonlyArray<(p: string[]) => Elemento[]> = [
   ]);
   const sinPlan = { ...suelta, metadata: { ...suelta.metadata, plan_hash: undefined } } as SceneSpec;
   const contextoSuelto = buildVisualContext({ userRequest: "globos blancos y dorados" });
-  const compilada = compileProductPrompt({ sceneSpec: sinPlan, visualContext: contextoSuelto, vocabulary: PRODUCT_VOCABULARY });
-  const reporteSinPlan = preflightLoraPrompt({ sceneSpec: sinPlan, clauses: compilada.clauses, prompt: compilada.prompt, vocabulary: PRODUCT_VOCABULARY });
+  const compilada = compileProductPrompt({ sceneSpec: sinPlan, visualContext: contextoSuelto });
+  const reporteSinPlan = preflightLoraPrompt({ sceneSpec: sinPlan, clauses: compilada.clauses, prompt: compilada.prompt });
   assert.equal(reporteSinPlan.ok, false);
   assert.equal(reporteSinPlan.requiresPlanSemantics, true, reporteSinPlan.errors.join("; "));
 
   // La misma escena bajo un plan aprobado es un defecto de mapeo, no "pide una propuesta".
-  const conPlan = compileProductPrompt({ sceneSpec: suelta, visualContext: contextoSuelto, vocabulary: PRODUCT_VOCABULARY });
-  const reporteConPlan = preflightLoraPrompt({ sceneSpec: suelta, clauses: conPlan.clauses, prompt: conPlan.prompt, vocabulary: PRODUCT_VOCABULARY });
+  const conPlan = compileProductPrompt({ sceneSpec: suelta, visualContext: contextoSuelto });
+  const reporteConPlan = preflightLoraPrompt({ sceneSpec: suelta, clauses: conPlan.clauses, prompt: conPlan.prompt });
   assert.equal(reporteConPlan.ok, false);
   assert.equal(reporteConPlan.requiresPlanSemantics, false);
   console.log("ok - selección suelta sin plan → requiresPlanSemantics; con plan_hash no");
@@ -158,11 +158,7 @@ const ACENTOS: ReadonlyArray<(p: string[]) => Elemento[]> = [
 type Fallo = { escena: string; errores: string[]; longitud: number; prompt: string };
 
 const detalle = process.argv.includes("--detalle");
-// El trigger real lo antepone ensureLoraTriggers después de compilar (igual
-// que /api/generate). Se prueban el trigger de estilo y uno de estructura largo.
-// Sin trigger es el modelo base (dialecto `base`): no se antepone nada y el
-// preflight lo revisa con su propio presupuesto.
-const TRIGGERS: ReadonlyArray<string | undefined> = ["eventdecor_style_v2", "eventdecor_structure_v12", undefined];
+// FLUX base usa un único caption, sin prefijo entrenado.
 let maxLongitudBase = 0;
 let total = 0;
 let compactadas = 0;
@@ -171,7 +167,7 @@ const fallos: Fallo[] = [];
 const conteoErrores = new Map<string, number>();
 
 /** Compila una escena igual que /api/generate y devuelve el prompt efectivo y sus errores de preflight. */
-function evaluarEscena(elementos: Elemento[], paleta: string[], evento: (typeof EVENTOS)[number], trigger: string | undefined) {
+function evaluarEscena(elementos: Elemento[], paleta: string[], evento: (typeof EVENTOS)[number]) {
   const spec = escena(elementos);
   const contexto = buildVisualContext({
     brief: { tipo_evento: evento.tipo_evento, estilo: evento.estilo, colores: paleta, espacio: evento.espacio },
@@ -183,11 +179,9 @@ function evaluarEscena(elementos: Elemento[], paleta: string[], evento: (typeof 
     const tamanos = indice === 0 ? TAMANOS_ESTRUCTURA : ["R-12"];
     return (el.catalog_product_ids ?? []).flatMap((productId) => tamanos.map((sizeCode) => ({ elementId: el.element_id, productId, sizeCode })));
   });
-  const resultado = compileProductPrompt({ sceneSpec: spec, visualContext: contexto, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations, trigger });
-  const prompt = trigger ? ensureLoraTriggers(resultado.prompt, [{ path: "barrido", trigger, scale: 1 }]) : resultado.prompt;
-  const reporte = trigger
-    ? preflightLoraPrompt({ sceneSpec: spec, clauses: resultado.clauses, prompt, triggers: [trigger], vocabulary: PRODUCT_VOCABULARY })
-    : preflightLoraPrompt({ sceneSpec: spec, clauses: resultado.clauses, prompt, vocabulary: PRODUCT_VOCABULARY, dialect: "base" });
+  const resultado = compileProductPrompt({ sceneSpec: spec, visualContext: contexto, sizeConfirmations, productCatalogTitles: TITULOS_CATALOGO });
+  const prompt = resultado.prompt;
+  const reporte = preflightLoraPrompt({ sceneSpec: spec, clauses: resultado.clauses, prompt });
   const errores = [
     ...reporte.errors,
     ...(resultado.unresolved_products.length ? [`productos sin resolver: ${resultado.unresolved_products.length}`] : []),
@@ -200,19 +194,18 @@ const combinaciones = FOCALES.flatMap((focal, iFocal) =>
     ACENTOS.flatMap((acento, iAcento) =>
       PALETAS.flatMap((paleta, iPaleta) =>
         EVENTOS.flatMap((evento) =>
-          TRIGGERS.map((trigger) => ({
-            nombre: `focal${iFocal}-soporte${iSoporte}-acento${iAcento}-paleta${iPaleta}-${evento.tipo_evento}-${trigger ?? "base"}`,
+          [{
+            nombre: `focal${iFocal}-soporte${iSoporte}-acento${iAcento}-paleta${iPaleta}-${evento.tipo_evento}`,
             elementos: [...focal(paleta), ...soporte(paleta), ...acento(paleta)],
             paleta,
             evento,
-            trigger,
-          })))))));
+          }])))));
 
 for (const combinacion of combinaciones) {
-  const { prompt, errores, compactada } = evaluarEscena(combinacion.elementos, combinacion.paleta, combinacion.evento, combinacion.trigger);
+  const { prompt, errores, compactada } = evaluarEscena(combinacion.elementos, combinacion.paleta, combinacion.evento);
   total += 1;
-  if (combinacion.trigger) maxLongitud = Math.max(maxLongitud, prompt.length);
-  else maxLongitudBase = Math.max(maxLongitudBase, prompt.length);
+  maxLongitud = Math.max(maxLongitud, prompt.length);
+  maxLongitudBase = Math.max(maxLongitudBase, prompt.length);
   if (compactada) compactadas += 1;
   if (!errores.length) continue;
   fallos.push({ escena: combinacion.nombre, errores, longitud: prompt.length, prompt });
@@ -228,6 +221,6 @@ if (detalle) {
   for (const fallo of fallos.slice(0, 5)) console.log(`\n[${fallo.escena}] (${fallo.longitud})\n  ${fallo.errores.join("\n  ")}\n  ${fallo.prompt}`);
 }
 
-assert.equal(total, FOCALES.length * SOPORTES.length * ACENTOS.length * PALETAS.length * EVENTOS.length * TRIGGERS.length);
+assert.equal(total, FOCALES.length * SOPORTES.length * ACENTOS.length * PALETAS.length * EVENTOS.length);
 assert.equal(fallos.length, 0, `${fallos.length} escenas no pasan el preflight; primera: ${fallos[0]?.escena} → ${fallos[0]?.errores.join("; ")}`);
 console.log("LoRA preflight barrido: OK");

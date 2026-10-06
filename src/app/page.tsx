@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Lock, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ETIQUETA_FORMATO_PROMPT, esSeleccionFormatoPrompt, FORMATO_PROMPT_AUTOMATICO, OPCIONES_FORMATO_PROMPT, promptFormatParaGenerar, type SeleccionFormatoPrompt } from "@/lib/lora/formato-prompt-cliente";
 import { CREATIVIDAD_POR_DEFECTO, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import { DecoracionCard } from "@/components/DecoracionCard";
 import { Lightbox } from "@/components/Lightbox";
@@ -515,9 +514,6 @@ export default function Page() {
   const ultimoIntentoGeneracionRef = useRef<{ override: GenerarOverride } | null>(null);
   const [proveedor, setProveedor] = useState<ProveedorId>("gemini");
   const [selectorIA, setSelectorIA] = useState<SelectorIA>("lora");
-  // Formato del prompt LoRA: automático (lo resuelve el servidor por el trigger
-  // y no se envía), texto (entrenado), JSON o ambos (dos imágenes para comparar).
-  const [formatoPromptLora, setFormatoPromptLora] = useState<SeleccionFormatoPrompt>(FORMATO_PROMPT_AUTOMATICO);
   // Calibración de creatividad 0–5 (src/lib/ia/escena/creatividad.ts): la leen el
   // chat (diseño) y la generación (prompt LoRA). El ref evita cierres viejos
   // en los callbacks que arman las peticiones.
@@ -1305,7 +1301,6 @@ export default function Page() {
             // El servidor ya no acepta una llamada LoRA sin modo resuelto
             // (PLAN-COMPOSICION-RICA-V001.md §1.1/§9.2: no hay fallback
             loraMode: usarLoraEnIntento ? loraModeRef.current ?? undefined : undefined,
-            promptFormat: promptFormatParaGenerar(formatoPromptLora, usarLoraEnIntento),
             creatividad: creatividadRef.current,
             // Propuestas ancladas usan los adjuntos del mensaje exacto. Los
             // envíos nuevos usan el compositor actual.
@@ -1821,23 +1816,6 @@ export default function Page() {
                 <SelectItem value="lora">{NOMBRE_SELECTOR.lora}</SelectItem>
               </SelectContent>
             </Select>
-            {selectorIA === "lora" && (
-              <>
-                <label htmlFor="formato-prompt-lora" className="sr-only">Formato del prompt LoRA</label>
-                <Select value={formatoPromptLora} onValueChange={(v) => { if (esSeleccionFormatoPrompt(v)) setFormatoPromptLora(v); }}>
-                  <SelectTrigger id="formato-prompt-lora" title="Automático: el servidor elige el formato según el estilo LoRA. Texto: prompt entrenado. JSON: prompt estructurado. Ambos: dos imágenes con la misma semilla (doble costo).">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {OPCIONES_FORMATO_PROMPT.map((formato) => (
-                      <SelectItem key={formato} value={formato}>
-                        {ETIQUETA_FORMATO_PROMPT[formato]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            )}
           </>
         }
       />

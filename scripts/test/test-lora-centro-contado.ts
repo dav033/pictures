@@ -11,7 +11,6 @@ import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
 import { GROUPING_ONLY_CONTEXT, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { FUENTE_PLAN } from "../../src/lib/plan/blueprint";
-import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
 
 type Elemento = SceneSpec["elements"][number];
 
@@ -47,12 +46,11 @@ function caption(elemento: Elemento): string {
   return compileProductPrompt({
     sceneSpec: spec,
     visualContext: GROUPING_ONLY_CONTEXT,
-    vocabulary: PRODUCT_VOCABULARY,
     sizeConfirmations: [],
     maxLength: LORA_PROMPT_MAX_LENGTH,
     ambientDecor: [],
-    officialStructures: new Map<string, string>(),
-  }).prompt;
+    officialStructures: new Map<string, string>()
+}).prompt;
 }
 
 // Un globo del plan: se nombra como un solo globo, nunca como racimo.

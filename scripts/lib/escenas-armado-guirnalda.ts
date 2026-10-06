@@ -31,10 +31,9 @@ import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { compileProductPrompt, type ElementSizeConfirmation } from "@/lib/ia/kagutsuchi/lora-product-runtime";
 import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
 import type { FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
-import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { MaterialEstimateSchema } from "@/lib/materiales/estimacion";
 import { planResueltoDesdePython } from "@/lib/plan/python-mapper";
-import { CONTEXTO_CUMPLE, captionLegacyDePlan, promptGeminiDePlan, textoLora } from "./escenas-armado-bouquet";
+import { CONTEXTO_CUMPLE, promptGeminiDePlan } from "./escenas-armado-bouquet";
 import type { PlanFijadoDeFixture } from "./planes-fijados";
 
 export const GUIRNALDA_PLAN = "EST_01_GUIRNALDA";
@@ -159,17 +158,21 @@ export function tallasGuirnalda(escena: SceneSpec): ElementSizeConfirmation[] {
 }
 
 /** Caption canónico con el vocabulario v007, como en route.ts. Sin trigger el runtime compila el dialecto `base` (modelo sin LoRA); estos casos fijan el v007, que es el que el trigger v3 selecciona con la misma longitud que el v2. */
-export function captionCanonicoGuirnalda(escena: SceneSpec, frases?: readonly FraseDeEstructura[], trigger = "eventdecor_style_v3", maxLength?: number) {
+export function captionCanonicoGuirnalda(escena: SceneSpec, frases?: readonly FraseDeEstructura[], maxLength?: number) {
+  const productCatalogTitles = new Map<string, string>();
+  for (const productId of escena.elements.flatMap((element) => element.catalog_product_ids ?? [])) {
+    const color = escena.elements.find((element) => element.catalog_product_ids?.includes(productId))?.resolved_colors[0] ?? "globos";
+    productCatalogTitles.set(productId, `B2b Globo Latex Redondo ${color}`);
+  }
   return compileProductPrompt({
     sceneSpec: escena,
     visualContext: CONTEXTO_CUMPLE,
-    vocabulary: PRODUCT_VOCABULARY,
     sizeConfirmations: tallasGuirnalda(escena),
-    trigger,
+    productCatalogTitles,
     maxLength,
     officialStructures: ESTRUCTURAS_OFICIALES_GUIRNALDA,
-    colorPatterns: frases,
-  });
+    colorPatterns: frases
+});
 }
 
 /** Gemini para la escena sintética (sin estimado de materiales ni bloque de tamaños). */
@@ -187,26 +190,13 @@ export function casosSinArmado(frases: (plan: PlanFijadoDeFixture["plan"]) => re
     const fijado = planGuirnalda(nombre);
     return promptGeminiDePlan(fijado, frases(fijado.plan));
   };
-  const legacy = (nombre: string, dialecto: "product_v007" | "scene_v004") => () => {
-    const fijado = planGuirnalda(nombre);
-    return textoLora(captionLegacyDePlan(fijado, dialecto, frases(fijado.plan)));
-  };
   return [
     { nombre: "gemini/pared", generar: gemini("pared-sin-armado") },
     { nombre: "gemini/piso", generar: gemini("piso-sin-armado") },
     { nombre: "gemini/mesa", generar: gemini("mesa-sin-armado") },
     { nombre: "gemini/clasica-patron", generar: gemini("clasica-patron-sin-armado") },
     { nombre: "gemini/repetida", generar: gemini("repetida-sin-armado") },
-    { nombre: "lora-legacy-v007/pared", generar: legacy("pared-sin-armado", "product_v007") },
-    { nombre: "lora-legacy-v004/pared", generar: legacy("pared-sin-armado", "scene_v004") },
-    { nombre: "lora-legacy-v004/piso", generar: legacy("piso-sin-armado", "scene_v004") },
-    { nombre: "lora-legacy-v007/clasica-patron", generar: legacy("clasica-patron-sin-armado", "product_v007") },
     { nombre: "gemini-sintetico/pared", generar: () => promptGeminiGuirnalda(escenaGuirnalda()) },
     { nombre: "gemini-sintetico/piso", generar: () => promptGeminiGuirnalda(escenaGuirnalda({ placement: "piso_frontal" })) },
-    { nombre: "lora-canonico-v007/pared", generar: () => textoLora(captionCanonicoGuirnalda(escenaGuirnalda())) },
-    { nombre: "lora-canonico-v004/pared", generar: () => textoLora(captionCanonicoGuirnalda(escenaGuirnalda(), undefined, "eventdecor_style_v2")) },
-    { nombre: "lora-canonico-v007/piso", generar: () => textoLora(captionCanonicoGuirnalda(escenaGuirnalda({ placement: "piso_frontal" }))) },
-    { nombre: "lora-canonico-v004/mesa", generar: () => textoLora(captionCanonicoGuirnalda(escenaGuirnalda({ placement: "sobre_mesa_principal" }), undefined, "eventdecor_style_v2")) },
-    { nombre: "lora-canonico-v007/repetida", generar: () => textoLora(captionCanonicoGuirnalda(escenaGuirnalda({ repeticiones: 2 }))) },
   ];
 }

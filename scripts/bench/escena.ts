@@ -3,7 +3,7 @@ import { GROUPING_ONLY_CONTEXT, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/
 import { LORA_PRESENTATION_INSTRUCTION } from "../../src/lib/ia/uzume/lora-gemini-composition";
 import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
-import { ensureLoraTriggers } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
+
 import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
 import { clasificarColores } from "../../src/lib/rag/taxonomy/v2";
 import type { PistaCaption, PistaPreflight } from "./tipos";
@@ -146,7 +146,7 @@ export type CaptionCompilado = {
 };
 
 /** Compila el caption con EXACTAMENTE los ajustes del modo híbrido (`route.ts:1066-1080`). */
-export function compilarCaption(spec: SceneSpec, trigger: string): CaptionCompilado {
+export function compilarCaption(spec: SceneSpec): CaptionCompilado {
   const sizeConfirmations: ElementSizeConfirmation[] = spec.elements.flatMap((el) =>
     (el.catalog_product_ids ?? []).flatMap((productId) => TAMANOS.map((sizeCode) => ({ elementId: el.element_id, productId, sizeCode }))),
   );
@@ -154,15 +154,13 @@ export function compilarCaption(spec: SceneSpec, trigger: string): CaptionCompil
   const compilacion = compileProductPrompt({
     sceneSpec: spec,
     visualContext: GROUPING_ONLY_CONTEXT,
-    vocabulary: PRODUCT_VOCABULARY,
     sizeConfirmations,
-    trigger,
     maxLength: techo,
     ambientDecor: [],
-    officialStructures: new Map<string, string>(),
-  });
-  const texto = ensureLoraTriggers(compilacion.prompt, [{ path: "bench", trigger, scale: 0.8 }]);
-  const reporte = preflightLoraPrompt({ sceneSpec: spec, clauses: compilacion.clauses, prompt: texto, triggers: [trigger], vocabulary: PRODUCT_VOCABULARY });
+    officialStructures: new Map<string, string>()
+});
+  const texto = compilacion.prompt;
+  const reporte = preflightLoraPrompt({ sceneSpec: spec, clauses: compilacion.clauses, prompt: texto });
 
   const tallasOmitidas = [...new Set(
     compilacion.diagnostics

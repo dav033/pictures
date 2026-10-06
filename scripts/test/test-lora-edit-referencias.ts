@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { buildLoraEditPrompt, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { descripcionProductoParaImagen, nombreProductoParaImagen } from "../../src/lib/ia/uzume/producto-para-imagen";
-import { LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { GEMINI_COMPOSITION_HARD_LOCK, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "../../src/lib/ia/uzume/lora-gemini-composition";
 import type { ImageInput } from "../../src/lib/ia/nucleo/tipos";
 
@@ -60,7 +60,7 @@ assert.equal(buildLoraEditPrompt(CAPTION, []), CAPTION);
 const dosProductos = buildLoraEditPrompt(CAPTION, [referenciasSucias[1]!, { ...referenciasSucias[1]!, id: "CATALOG_02" }]);
 assert.equal((dosProductos.match(/Input image \d+ \(@image\d+\): product identity only/g) ?? []).length, 2, dosProductos);
 // Cabe sin recorte incluso con los cuatro roles que activan /edit.
-const cuatroRoles = buildLoraEditPrompt("x".repeat(LORA_JSON_PROMPT_MAX_LENGTH), [
+const cuatroRoles = buildLoraEditPrompt("x".repeat(LORA_PROMPT_MAX_LENGTH), [
   img("venue_base", 1, "V"),
   img("composition_reference", 2, "R1"),
   img("catalog_product_reference", 3, "P1"),

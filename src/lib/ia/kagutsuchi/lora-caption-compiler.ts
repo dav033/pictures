@@ -13,36 +13,19 @@ import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtique
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
 
-/**
- * Budget for the experimental JSON prompt variant (trigger included). The
- * 750 bound below is the caption regime of the text prompt; a JSON object
- * with the same facts cannot fit it. The JSON variant is only sent when the
- * user selects it, and is compared against the text variant.
- */
-export const LORA_JSON_PROMPT_MAX_LENGTH = 1800;
-
-/**
- * Hard character budget for a LoRA prompt, trigger included. It is the same
- * bound the dataset caption contract enforces (`/api/lora/datasets/preview`
- * accepts captions up to 750 characters): the production LoRA was trained on
- * captions of at most 513 characters (lora-dataset-v004-154, median 344), so
- * prompts beyond this leave the caption regime the model was validated on.
- * It is not a tokenizer limit; the compiler compacts to fit it and the
- * preflight rejects anything that still does not.
- */
-export const LORA_PROMPT_MAX_LENGTH = 750;
-
-/**
- * Budget of the `base` dialect (FLUX.2 without a LoRA). There is no training
- * caption regime to stay inside: the bound only keeps the decoration first and
- * stops the tail from diluting it. FLUX.2 reads far longer prompts; 1000
- * characters fit the sweep's worst scene with every size and color spelled
- * out, and the same compaction steps apply beyond it.
- */
+/** Límite común de texto que mantiene primero la decoración. */
+export const LORA_PROMPT_MAX_LENGTH = 1000;
 export const BASE_PROMPT_MAX_LENGTH = 1000;
-
-/** Trigger written by the compiler; callers replace it via `ensureLoraTriggers`. */
-const CAPTION_TRIGGER = "eventdecor_style_v2";
+const UBICACIONES_SEMIARCO_BASE: Partial<Record<LoraPlacement, string>> = {
+  fondo_pared: "at one side of the rear wall",
+  arco_central: "off to one side of center",
+  entrada: "at one side of the doorway",
+};
+const UBICACIONES_GUIRNALDA_BASE: Partial<Record<LoraPlacement, string>> = {
+  fondo_pared: "running along the rear wall",
+  arco_central: "running across the middle of the scene",
+  entrada: "running along the entrance doorway",
+};
 
 /** Alias legacy que aún aparece en nombres de escenas antiguas. */
 type CaptionStructureType = LoraStructureType | "bouquet";
@@ -67,12 +50,6 @@ export type ProductConceptClauseInput = {
    */
   colorName?: string;
   /**
-   * Same product in the scene-caption vocabulary of the v004 dataset
-   * ("glossy chrome gold" + "balloons"). Only simple solid balloons carry it;
-   * other products keep their canonical label in every dialect.
-   */
-  sceneTerms?: { descriptor: string; noun: string };
-  /**
    * Same product in the plain wording of the `base` dialect (see
    * src/lib/lora/vocabulario-base.ts). Without it the base dialect renders the
    * canonical label, cleaned of commercial names.
@@ -80,30 +57,6 @@ export type ProductConceptClauseInput = {
   baseTerms?: TerminosBase;
 };
 
-/**
- * Caption vocabulary of the LoRA that will read the prompt. A LoRA follows the
- * wording it was trained on:
- * - `product_v007`: captions of lora-dataset-v007-ordenes (trigger
- *   eventdecor_style_v3): full product labels, inch sizes, fixed placements.
- * - `scene_v004`: captions of lora-dataset-v004-154 (trigger
- *   eventdecor_style_v2, run lora-run-v004-1000): "an organic balloon garland
- *   arch of large and small matte white and glossy chrome gold balloons ...,
- *   set against a plain wall and tiled floor". None of its 154 captions
- *   contains "inch", "round latex balloon" or "stage photo area"; sending that
- *   wording to it produced incoherent compositions.
- */
-export type LoraCaptionDialect = "product_v007" | "scene_v004" | "base";
-
-/**
- * Dialect for the trigger of the resolved LoRA. No trigger means no LoRA: the
- * base FLUX.2 model reads the prompt and never saw either corpus, so it gets
- * the plain `base` wording. Unknown triggers keep the product wording.
- */
-export function captionDialectForTrigger(trigger: string | undefined): LoraCaptionDialect {
-  const value = trigger?.trim();
-  if (!value) return "base";
-  return value === "eventdecor_style_v2" ? "scene_v004" : "product_v007";
-}
 
 export type LoraVisualClause = {
   elementIds: string[];
@@ -192,9 +145,7 @@ export type LoraCaptionCompilation = {
    * reported as canonical — callers that need product fidelity (see
    * lora-product-runtime.ts) must check this flag explicitly.
    */
-  usedProductVocabulary: boolean;
-  /** Same scene as a structured JSON prompt (full detail, no text budget compaction). */
-  jsonPrompt: string;
+  usedCatalogProducts: boolean;
   /**
    * Index of the render step that produced `prompt` (0 = full rendering).
    * Higher steps are deterministic compactions applied only because the full
@@ -234,26 +185,6 @@ const STRUCTURE_NOUNS: Record<CaptionStructureType, string> = {
   kit: "balloon decoration kit",
   accesorio: "decorative accessory",
   escultura: "balloon sculpture",
-};
-
-const PLACEMENT_PHRASES: Record<LoraPlacement, string> = {
-  entrada: "framing the venue entrance",
-  arco_central: "centered around the stage photo area",
-  sobre_mesa_principal: "placed on the main table",
-  lateral_izquierdo: "standing on the left side",
-  lateral_derecho: "standing on the right side",
-  fondo_pared: "installed against the rear wall",
-  piso_frontal: "grounded across the front of the stage",
-  mesas_invitados: "distributed across the guest tables",
-  techo: "suspended overhead from the ceiling",
-  zona_central: "in the central decoration zone",
-  fachada: "against the venue facade",
-  pared_lateral: "against the side wall",
-  alrededor_mobiliario: "around the existing furniture",
-  vegetacion: "within the approved vegetation area",
-  techo_multipunto: "suspended overhead at multiple ceiling points",
-  recorrido_suelo: "along the approved floor path",
-  esquina: "in the architectural corner",
 };
 
 const EVENT_WORDS: Record<string, string> = {
@@ -972,26 +903,19 @@ type CaptionRenderStep = {
    * Object type and every approved color stay.
    */
   shortLabels: boolean;
-  /**
-   * scene_v004 only, after `shortLabels`: drop the "set in/against <venue>"
-   * setting too. `dropEnvironment` keeps it, because it is what tells a garden
-   * from a hall; product_v007 has no such setting, so this step renders like
-   * the one before it.
-   */
-  dropSetting: boolean;
 };
 
 const CAPTION_RENDER_STEPS: readonly CaptionRenderStep[] = [
-  { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
-  { referenceRepeatedConcepts: true, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: false, shortLabels: false, dropSetting: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: false, dropSetting: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true, dropSetting: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true, dropSetting: true },
+  { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
+  { referenceRepeatedConcepts: true, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: false, shortLabels: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true },
 ];
 
 /** "round foil balloon in fuchsia with a metallic sheen hearts pattern" -> "round foil balloon in fuchsia". */
@@ -1002,63 +926,8 @@ function shortProductLabel(label: string): string {
 
 type CaptionRenderState = {
   step: CaptionRenderStep;
-  dialect: LoraCaptionDialect;
   /** Concepts already described in full earlier in the caption being rendered. */
   describedConceptIds: Set<string>;
-};
-
-const SCENE_V004_NOUNS: Partial<Record<CaptionStructureType, string>> = {
-  arco: "organic balloon garland arch",
-  // "arch" made the v004 LoRA close two half-arches into one full arch; the
-  // dataset wording for a one-sided piece is a garland that rises and curves.
-  semiarco: "one-sided curved organic balloon garland",
-  guirnalda: "organic balloon garland",
-  columna: "balloon column",
-  pared: "balloon wall installation",
-  centro_mesa: "small balloon cluster centerpiece",
-  bouquet: "balloon bouquet",
-};
-
-const SCENE_V004_PLACEMENTS: Partial<Record<LoraPlacement, string>> = {
-  entrada: "framing the entrance doorway",
-  arco_central: "as the central focal piece",
-  sobre_mesa_principal: "placed on the main table",
-  fondo_pared: "against the rear wall",
-  piso_frontal: "resting on the floor in front",
-  mesas_invitados: "on the guest tables",
-  techo: "hanging from the ceiling",
-};
-
-/**
- * A half-arch away from the sides: "against the rear wall" drew it as a full
- * arch or frame (tropical plan, 2026-09-14), so its one-sided shape is part of
- * the placement. Kept short for the 750-character budget.
- */
-const SCENE_V004_ONE_SIDED_PLACEMENTS: Partial<Record<LoraPlacement, string>> = {
-  fondo_pared: "at one side of the rear wall",
-  arco_central: "off to one side of center",
-  entrada: "at one side of the doorway",
-};
-
-/**
- * Lo mismo para la guirnalda, que es una TIRA y no un portal. En el vocabulario de v004 un arco de verdad
- * es «organic balloon garland arch» (regla 4 de `scripts/lora/recaption-v004.ts`), así que «an organic
- * balloon garland ... against the rear wall» es la frase del arco a una palabra, sin nada que diga que
- * corre a lo largo: el LoRA la cerró en un arco de pie con dos patas en el piso (2026-10-03).
- *
- * No es una hipótesis. Es la misma observación que la decisión 28 de ADR-0032 ya había anotado en
- * `services/ai-api/app/armado_guirnalda.py`: «"against the wall" a secas, con la cola "grounded supports",
- * salió como un arco de pie con patas», y por eso allí el soporte `pared` dice «mounted flat high on the
- * wall». Aquella frase solo viaja con el armado de ADR-0032, que está detrás de una bandera apagada; esta
- * tabla le da la forma a la guirnalda que no lo lleva.
- *
- * Solo donde la ubicación por sí sola se puede leer como un portal. «resting on the floor in front» ya no
- * puede, y «hanging from the ceiling» tampoco.
- */
-const SCENE_V004_GARLAND_PLACEMENTS: Partial<Record<LoraPlacement, string>> = {
-  fondo_pared: "running along the rear wall",
-  arco_central: "running across the middle of the scene",
-  entrada: "running along the entrance doorway",
 };
 
 /**
@@ -1068,73 +937,6 @@ const SCENE_V004_GARLAND_PLACEMENTS: Partial<Record<LoraPlacement, string>> = {
  * small"; the absolute thresholds only describe a single-diameter piece.
  * Before this, a 5" + 12" mix read entirely "small" and 12" + 18" entirely
  * "large", because 10"-15" matched neither threshold.
- */
-function sceneSizeWords(sizes: string[]): string {
-  const diameters = sizes.map(sizeValue).filter(Number.isFinite);
-  if (new Set(diameters).size >= 2) return "large and small";
-  const large = diameters.some((value) => value >= 16);
-  const small = diameters.some((value) => value <= 9);
-  if (large) return "large";
-  if (small) return "small";
-  return "";
-}
-
-/**
- * Scene counterpart of `shortProductLabel`: "glossy chrome gold" -> "gold".
- * The finish goes; a foil balloon keeps its material ("foil gold") the way the
- * short product label keeps its object.
- */
-function shortSceneDescriptor(descriptor: string, colorName: string | undefined): string {
-  if (!colorName || !descriptor.endsWith(` ${colorName}`)) return descriptor;
-  return /\bfoil\b/.test(descriptor) ? `foil ${colorName}` : colorName;
-}
-
-/**
- * "of large and small matte dusty rose and glossy chrome gold balloons", in the
- * v004 caption wording. Returns undefined when any product of the clause has
- * no scene terms, so the canonical label is used instead.
- *
- * Follows the same render step as `buildCanonicalPhrase`: once
- * `referenceRepeatedConcepts` is on, a concept already described earlier in
- * the caption is referred to by its color ("in matching white and silver"),
- * so every approved color stays while the repeated material wording goes;
- * `shortLabels` drops the finish words.
- */
-function sceneMaterialPhrase(entries: ProductConceptClauseInput[], render: CaptionRenderState): string | undefined {
-  if (!entries.every((entry) => entry.sceneTerms)) return undefined;
-  const byConcept = new Map<string, { terms: { descriptor: string; noun: string }; colorName?: string; sizes: string[] }>();
-  for (const entry of entries) {
-    const existing = byConcept.get(entry.conceptId);
-    byConcept.set(entry.conceptId, { terms: entry.sceneTerms!, colorName: existing?.colorName ?? entry.colorName, sizes: [...(existing?.sizes ?? []), ...(entry.sizeCodes ?? [])] });
-  }
-  const byNoun = new Map<string, { descriptors: string[]; sizes: string[] }>();
-  const references: string[] = [];
-  for (const conceptId of [...byConcept.keys()].sort()) {
-    const { terms, colorName, sizes } = byConcept.get(conceptId)!;
-    if (render.step.referenceRepeatedConcepts && colorName && render.describedConceptIds.has(conceptId)) {
-      if (!references.includes(colorName)) references.push(colorName);
-      continue;
-    }
-    render.describedConceptIds.add(conceptId);
-    const descriptor = render.step.shortLabels ? shortSceneDescriptor(terms.descriptor, colorName) : terms.descriptor;
-    const group = byNoun.get(terms.noun) ?? { descriptors: [], sizes: [] };
-    if (!group.descriptors.includes(descriptor)) group.descriptors.push(descriptor);
-    group.sizes.push(...sizes);
-    byNoun.set(terms.noun, group);
-  }
-  const parts = [...byNoun.entries()].map(([noun, group]) => {
-    const sizeWords = render.step.sizes === "none" ? "" : sceneSizeWords(group.sizes);
-    return [sizeWords, joinNatural(group.descriptors), noun].filter(Boolean).join(" ");
-  });
-  const matching = references.length ? `matching ${joinNatural(references)}` : "";
-  if (!parts.length) return `in ${matching}`;
-  return matching ? `of ${joinNatural(parts)} with ${matching}` : `of ${joinNatural(parts)}`;
-}
-
-/**
- * Product shades that belong to a broader approved plan color. The plan color
- * is attached to the shade itself ("dusty rose pink"), so it describes that
- * balloon only.
  */
 const SHADE_FAMILIES: Record<string, readonly string[]> = {
   pink: ["dusty rose", "blush cream", "blush", "mauve", "raspberry"],
@@ -1149,11 +951,6 @@ const SHADE_FAMILIES: Record<string, readonly string[]> = {
   beige: ["sand"],
 };
 
-/** Base-dialect shades for plan colors that `SHADE_FAMILIES` leaves unmatched; kept apart so the trained dialects keep their bytes. */
-const BASE_SHADE_FAMILIES: Record<string, readonly string[]> = {
-  cream: ["ivory", "off-white"],
-};
-
 /**
  * A canonical label names the product's own shade ("dusty rose"), which can
  * differ from the approved plan color it was chosen for ("rosado" -> pink).
@@ -1162,36 +959,16 @@ const BASE_SHADE_FAMILIES: Record<string, readonly string[]> = {
  * by "installed against the rear wall"), so the color is attached to the
  * matching shade; only an unmatched color is kept as a parenthetical.
  */
-function withApprovedColorTones(material: string, colors: string[], dialect?: LoraCaptionDialect): string {
+function withApprovedColorTones(material: string, colors: string[]): string {
   let result = material;
   const unmatched: string[] = [];
   for (const color of colors) {
     if (result.toLowerCase().includes(color.toLowerCase())) continue;
     const shade = (SHADE_FAMILIES[color.toLowerCase()] ?? []).find((candidate) => new RegExp(`\\b${candidate}\\b`, "i").test(result));
-    if (shade) {
-      // Sin bandera `g`: solo la PRIMERA aparición del tono. La palabra del tono
-      // puede repetirse siendo el acabado de OTRO material — con dos materiales
-      // perlados, "pearl" sale dos veces y el global convertía el blush en
-      // "pearl white pink" (2026-09-30). El tono se ata a un color, no a todos.
-      result = result.replace(new RegExp(`\\b${shade}\\b`, "i"), (match) => `${match} ${color}`);
-    } else {
-      unmatched.push(color);
-    }
+    if (shade) result = result.replace(new RegExp(`\\b${shade}\\b`, "i"), (match) => `${match} ${color}`);
+    else unmatched.push(color);
   }
-  if (!unmatched.length) return result;
-  if (dialect === "base") {
-    // The base wording names a cream product by what it looks like ("warm
-    // ivory off-white"); the approved color is attached to that shade first.
-    const remaining = unmatched.filter((color) => {
-      const shade = (BASE_SHADE_FAMILIES[color.toLowerCase()] ?? []).find((candidate) => new RegExp(`\\b${candidate}\\b`, "i").test(result));
-      if (shade) result = result.replace(new RegExp(`\\b${shade}\\b`, "i"), (match) => `${match} ${color}`);
-      return !shade;
-    });
-    // The base model reads a parenthetical as an aside detached from its noun;
-    // the color stays inside the clause it belongs to.
-    return remaining.length ? `${result}, accented in ${joinNatural(remaining)}` : result;
-  }
-  return `${result} (${joinNatural(unmatched)} tones)`;
+  return unmatched.length ? `${result}, accented in ${joinNatural(unmatched)}` : result;
 }
 
 /**
@@ -1206,80 +983,6 @@ function withApprovedColorTones(material: string, colors: string[], dialect?: Lo
  *
  * No hace falta ningún dato nuevo para decidir cuál va: los propios códigos de
  * talla confirmados de la cláusula ya lo dicen.
- */
-function fraseRelacionTamanos(entries: ProductConceptClauseInput[], mode: CaptionRenderStep["sizes"]): string {
-  if (mode === "none") return "";
-  const tallas = new Set<string>();
-  for (const entry of entries) for (const code of entry.sizeCodes ?? []) tallas.add(code);
-  // Solo la mitad que añade información. El corpus también escribe «all at a
-  // single N-inch size», pero lo hace EN LUGAR de nombrar la talla por concepto;
-  // este compilador ya la pone entre paréntesis en cada uno, así que añadir el
-  // resumen la diría dos veces: «... (18-inch), all at a single 18-inch size».
-  return tallas.size > 1 ? "mixed organically rather than graded" : "";
-}
-
-function colorFinishPhrase(clause: LoraVisualClause, render?: CaptionRenderState): string {
-  if (clause.canonicalPhrase) {
-    const scenePhrase = render?.dialect === "scene_v004" && clause.canonicalEntries?.length
-      ? sceneMaterialPhrase(clause.canonicalEntries, render)
-      : undefined;
-    const phrase = scenePhrase ?? (clause.canonicalEntries?.length && render
-      ? buildCanonicalPhrase(clause.canonicalEntries, render).phrase
-      : clause.canonicalPhrase);
-    // La relación de tamaños va detrás de la lista de materiales, que es donde
-    // el corpus la pone. Solo en el dialecto de producto: `scene_v004` tiene su
-    // propia gramática y mezclar las dos sería inventar un tercer registro.
-    // Con patrón de color no va: "mixed organically" contradiría la frase de
-    // Python que sigue a los materiales (ADR-0028 §12).
-    const relacion = !scenePhrase && !clause.colorPattern && clause.canonicalEntries?.length ? fraseRelacionTamanos(clause.canonicalEntries, render?.step.sizes ?? "all") : "";
-    const conRelacion = relacion ? `${phrase}, ${relacion}` : phrase;
-    return withApprovedColorTones(conRelacion, clause.colors);
-  }
-  const color = clause.colors.length ? `in ${joinNatural(clause.colors)}` : "";
-  // En singular, que es como lo escribe el corpus: **`finishes` en plural aparece CERO veces en las 345
-  // captions**, y `finish` 42 («with a Pastel Matte finish», «solid Fashion finish»). Era una construccion
-  // entera fuera de su distribucion en el camino de respaldo, el que corre cuando la pieza no trae la
-  // etiqueta canonica del producto.
-  //
-  // Con dos acabados o mas el corpus no dice nada en esta posicion: los nombra dentro de cada material
-  // («matte Fashion white ... and high-shine Reflex gold ...»), que es el otro camino de esta funcion. Asi
-  // que aqui se listan y se deja el singular: inventar una forma plural que el corpus no tiene seria repetir
-  // el fallo, y la cura de verdad es que la pieza llegue con su etiqueta canonica.
-  const finish = clause.finishes.length ? `with a ${joinNatural(clause.finishes)} finish` : "";
-  return [color, finish].filter(Boolean).join(" ");
-}
-
-/**
- * Sustantivo del dialecto de producto con el adjetivo de la variante oficial.
- *
- * **Cada adjetivo solo se usa donde el corpus lo usa**, medido sobre sus 345 captions
- * (`data/staging/lora-v007`): `asymmetrical` aparece 14 veces y **las 14 en un medio arco**
- * (`an asymmetrical balloon half-arch`); `dense`, una vez y en una pared (`dense balloon wall`); `airy`, cero.
- *
- * Ponerlo donde el corpus no lo pone no es un matiz que se pierde: es una instrucción que el modelo sí
- * entiende, y la entiende como la pieza con la que la aprendió. Una columna orgánica pedida como
- * «asymmetrical balloon column» salía dibujada doblándose como un medio arco (2026-10-03). Lo que esos
- * adjetivos querían decir —que la pieza mezcla diámetros— ya lo dice `fraseRelacionTamanos` con la frase del
- * propio corpus, `mixed organically rather than graded`, que aparece 218 veces.
- */
-function productDialectNoun(clause: LoraVisualClause): string {
-  const official = clause.officialStructure;
-  if (!official) return clause.noun;
-  if (official.id === "bouquet" || official.id === "figura" || official.id === "aro_circular" || official.id === "techo_globos" || official.id === "racimo_pared") return official.sustantivoEn;
-  const variant = official.forma === "asimetrica" && official.tipoBase === "semiarco" ? "asymmetrical"
-    : official.id === "pared_densa" ? "dense"
-      : "";
-  return variant && !clause.noun.includes(variant) ? `${variant} ${clause.noun}` : clause.noun;
-}
-
-/**
- * Material phrase of the `base` dialect, from each product's `baseTerms`
- * (src/lib/lora/vocabulario-base.ts): "made of mixed small 5-inch and large
- * 18-inch mirror-like chrome gold and matte white latex balloons". Balloons
- * sharing a noun share one size list; a non-balloon product is named by its
- * cleaned label ("with a gold metallic foil backdrop mural ..."). Follows the
- * same render steps as the other dialects: a concept already described is
- * referred to by its color, `shortLabels` drops the finish.
  */
 function baseMaterialParts(entries: ProductConceptClauseInput[], render: CaptionRenderState): { balloons: string[]; pieces: string[]; references: string[] } {
   const byConcept = new Map<string, { terms: TerminosBase; colorName?: string; sizes: string[] }>();
@@ -1369,7 +1072,7 @@ function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderSta
   } else if (!parts && !clause.productDescriptors.length) {
     material = baseLegacyMaterial(clause);
   }
-  material = material ? materialCentroContado(withApprovedColorTones(material, clause.colors, "base"), clause) : material;
+  material = material ? materialCentroContado(withApprovedColorTones(material, clause.colors), clause) : material;
   const descriptorText = clause.physicalForm?.descripcion_perceptual_en ?? (!parts ? clause.productDescriptors[0] : undefined);
   const descriptor = descriptorText ? limpiarEtiqueta(descriptorText) : undefined;
   const renderedCount = clause.visibleCount ?? clause.count;
@@ -1386,8 +1089,8 @@ function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderSta
   const conArmado = Boolean(clause.armadoGuirnalda ?? clause.armadoGuirnaldaOrganica);
   const placementPhrase = clause.placement === "lateral_izquierdo" ? "standing apart on the left"
     : clause.placement === "lateral_derecho" ? "standing apart on the right"
-      : (clause.structureType === "semiarco" ? SCENE_V004_ONE_SIDED_PLACEMENTS[clause.placement] : undefined)
-        ?? (clause.structureType === "guirnalda" && !conArmado ? SCENE_V004_GARLAND_PLACEMENTS[clause.placement] : undefined)
+      : (clause.structureType === "semiarco" ? UBICACIONES_SEMIARCO_BASE[clause.placement] : undefined)
+        ?? (clause.structureType === "guirnalda" && !conArmado ? UBICACIONES_GUIRNALDA_BASE[clause.placement] : undefined)
         ?? UBICACIONES_BASE[clause.placement];
   if (clause.structureType === "backdrop") return `${colored} ${clause.relation ? `${placementPhrase}, ${clause.relation}` : placementPhrase}`;
   if (renderedCount > 1 && clause.placement === "lateral_izquierdo" && (clause.bilateral || clause.relation?.startsWith("flanking"))) {
@@ -1401,86 +1104,8 @@ function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderSta
   return `${colored} ${placementPhrase}`;
 }
 
-function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState): string {
-  if (render?.dialect === "base") return renderBaseClauseText(clause, render);
-  const hasCanonicalProduct = Boolean(clause.canonicalPhrase);
-  const renderedCount = clause.visibleCount ?? clause.count;
-  const contado = sustantivoCentroContado(clause);
-  const qualifier = hasCanonicalProduct || contado
-    ? undefined
-    : clause.structureType === "centro_mesa"
-    ? "low coordinated"
-    : [clause.scale].filter(Boolean).join(", ");
-  const descriptor = clause.physicalForm?.descripcion_perceptual_en
-    ?? (!hasCanonicalProduct ? clause.productDescriptors[0] : undefined);
-  const sceneDialect = render?.dialect === "scene_v004";
-  const baseNoun = contado ?? (sceneDialect
-    ? clause.officialStructure?.sustantivoEn ?? SCENE_V004_NOUNS[clause.structureType] ?? clause.noun
-    : productDialectNoun(clause));
-  const sizedNoun = clause.heightQualifier ? `${clause.heightQualifier} ${baseNoun}` : baseNoun;
-  // v004 wording: a product without balloon scene terms (a foil pennant
-  // garland, a sign) has no "of ... balloons" phrase; its bare label used to be
-  // glued to the structure noun ("a balloon sculpture figure metallized foil
-  // pennant garland ..."). A non-structure piece is named by its product; a
-  // balloon structure keeps its noun and says what it carries ("with ...").
-  const bareSceneLabel = sceneDialect && hasCanonicalProduct && Boolean(clause.canonicalEntries?.length) && !clause.canonicalEntries!.every((entry) => entry.sceneTerms);
-  const productIsThePiece = bareSceneLabel && !clause.officialStructure && ["kit", "accesorio"].includes(clause.structureType);
-  // The product label is the only name of such a piece: a compacted reference
-  // ("an in matching fuchsia") would leave the structure unnamed.
-  const materialRender = productIsThePiece && render ? { ...render, step: { ...render.step, referenceRepeatedConcepts: false } } : render;
-  const rawMaterial = clause.productDescriptors.length && !hasCanonicalProduct ? "" : colorFinishPhrase(clause, materialRender);
-  const noun = productIsThePiece ? rawMaterial : qualifier ? `${qualifier} ${sizedNoun}` : sizedNoun;
-  // A compacted reference already reads "in matching white" ("with in matching" was ungrammatical).
-  const materialPhrase = productIsThePiece ? "" : bareSceneLabel && rawMaterial && !rawMaterial.startsWith("in matching ") ? `with ${rawMaterial}` : rawMaterial;
-  // Python's color pattern goes right after the material phrase, in the same
-  // clause and verbatim (ADR-0028 §12); without one this is the material phrase.
-  const material = [materialPhrase ? materialCentroContado(materialPhrase, clause) : materialPhrase, clause.colorPattern].filter(Boolean).join(" ");
-  const article = /^[aeiou]/i.test(noun) && !/^one\b/i.test(noun) ? "an" : "a";
-  const core = descriptor
-    ? renderedCount === 1 ? descriptor : `${numberWord(renderedCount)} ${descriptor}`
-    : renderedCount === 1 ? `${article} ${noun}` : `${numberWord(renderedCount)} ${pluralize(noun)}`;
-  const colored = material ? `${core} ${material}` : core;
-  // A lone side structure is drawn as a separate piece, not as a leg of the focal arch.
-  // A half-arch elsewhere ("against the rear wall") was drawn as a full arch or
-  // frame: its one-sided shape must be part of the placement.
-  const oneSidedPlacement = clause.structureType === "semiarco" ? SCENE_V004_ONE_SIDED_PLACEMENTS[clause.placement] : undefined;
-  // La forma de la guirnalda viaja en su ubicación **solo cuando nadie más la dice**. Si la pieza trae el
-  // armado de ADR-0032 o el del motor orgánico (ADR-0034), esa frase manda y ya la posiciona: la escribió
-  // Python mirando la línea real y dice mucho más ("mounted flat high on the wall, curving gently upward
-  // along the top, both ends free"). Repetirla aquí dejaba la cola «in clusters of four running along the
-  // rear wall», que cuelga el participio del racimo.
-  const conArmado = Boolean(clause.armadoGuirnalda ?? clause.armadoGuirnaldaOrganica);
-  const garlandPlacement = clause.structureType === "guirnalda" && !conArmado
-    ? SCENE_V004_GARLAND_PLACEMENTS[clause.placement]
-    : undefined;
-  const scenePlacement = clause.placement === "lateral_izquierdo" ? "standing apart on the left"
-    : clause.placement === "lateral_derecho" ? "standing apart on the right"
-      : oneSidedPlacement ?? garlandPlacement ?? SCENE_V004_PLACEMENTS[clause.placement];
-  const placementPhrase = sceneDialect ? scenePlacement ?? PLACEMENT_PHRASES[clause.placement] : PLACEMENT_PHRASES[clause.placement];
-
-  if (clause.structureType === "backdrop") {
-    const placement = clause.relation ? `${placementPhrase}, ${clause.relation}` : placementPhrase;
-    if (sceneDialect) return material ? `${core} ${material} ${placement}` : `${core} ${placement}`;
-    return material ? `${core} ${placement} ${material}` : `${core} ${placement}`;
-  }
-
-  // La pareja espejo se nombra por los dos lados aunque no flanquee nada. Sin la
-  // rama `clause.bilateral`, un plan cuyas únicas estructuras son las dos
-  // laterales caía en "standing apart on the left" (las dos a la izquierda) y el
-  // preflight lo rechazaba: la cláusula fusionada ES la focal, y `resolveRelations`
-  // descarta la focal antes de asignarle `flanking`, así que nunca tenía relación.
-  if (renderedCount > 1 && clause.placement === "lateral_izquierdo" && (clause.bilateral || clause.relation?.startsWith("flanking"))) {
-    const matching = hasCanonicalProduct ? "" : " matching one another,";
-    // Un grupo con más de un par ("cuatro columnas, dos a cada lado") no puede
-    // decir "one on the left and one on the right": el conteo no cuadraría.
-    const reparto = renderedCount > 2 && renderedCount % 2 === 0
-      ? `${numberWord(renderedCount / 2)} standing on each side`
-      : "one standing on the left and one on the right";
-    return `${colored},${matching} ${reparto}${huecoEntrePar(clause)}${clause.relation ? `, ${clause.relation}` : ""}`;
-  }
-  if (clause.relation && clause.structureType === "centro_mesa") return `${colored} ${placementPhrase} ${clause.relation}`;
-  if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}`;
-  return `${colored} ${placementPhrase}`;
+function renderClauseText(clause: LoraVisualClause, render: CaptionRenderState): string {
+  return renderBaseClauseText(clause, render);
 }
 
 function buildEventPhrase(context: VisualContext): string | undefined {
@@ -1564,24 +1189,8 @@ function compactEnvironmentCue(cue: string): string {
  * Every v004 caption ends in "set against <wall> and <floor>" (154/154). The
  * venue cue becomes that setting; event and lighting cues follow it.
  * `dropEnvironment` removes those other cues but keeps the setting; only the
- * last step (`dropSetting`) removes it, when not even short labels fit with it.
+ * la compactación conserva el entorno cuando el prompt aún cabe.
  */
-function sceneSettingCues(context: VisualContext, eventPhrase: string | undefined, step: CaptionRenderStep): string[] {
-  if (step.dropSetting) return [];
-  const cues = dedupeEnvironment(context, eventPhrase);
-  const venueCue = cues.find((cue) => cue === matchVenueCue(context));
-  const others = cues.filter((cue) => cue !== venueCue).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue);
-  const venue = venueCue ? compactEnvironmentCue(venueCue).replace(/^(?:recognizable|clearly)\s+/i, "") : undefined;
-  const setting = venue
-    ? `set in ${/^[aeiou]/i.test(venue) ? "an" : "a"} ${venue}`
-    : "set against a plain wall and floor";
-  return step.dropEnvironment ? [setting] : [setting, ...others];
-}
-
-function matchVenueCue(context: VisualContext): string | undefined {
-  return buildLoraEnvironmentCues({ ...context, lightingKind: "unspecified", eventCue: undefined })[0];
-}
-
 type CaptionParts = {
   /** One rendered phrase per clause, focal first. */
   subjects: string[];
@@ -1626,22 +1235,19 @@ function soloGuirnaldasEnAlto(clauses: readonly LoraVisualClause[]): boolean {
   });
 }
 
-function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, dialect: LoraCaptionDialect = "product_v007", ambientDecor: readonly string[] = [], creativeCues: readonly string[] = []): string {
-  const parts = buildCaptionParts(sceneSpec, context, clauses, step, dialect, ambientDecor, creativeCues);
-  // No trigger: nothing replaces it, and a base model would read it as a word.
-  // Two plain sentences: the decoration, then the setting and the photograph.
-  if (dialect === "base") return `${capitalized(parts.structureSentence)}. ${capitalized(parts.tail.join(", "))}.`;
-  return `${CAPTION_TRIGGER}, ${parts.structureSentence}. ${parts.tail.join(", ")}.`;
+function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, ambientDecor: readonly string[] = [], creativeCues: readonly string[] = []): string {
+  const parts = buildCaptionParts(sceneSpec, context, clauses, step, ambientDecor, creativeCues);
+  return `${capitalized(parts.structureSentence)}. ${capitalized(parts.tail.join(", "))}.`;
 }
 
 function capitalized(text: string): string {
   return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
 
-function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[], step: CaptionRenderStep, dialect: LoraCaptionDialect, ambientDecor: readonly string[], creativeCues: readonly string[] = []): CaptionParts {
+function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[], step: CaptionRenderStep, ambientDecor: readonly string[], creativeCues: readonly string[] = []): CaptionParts {
   resolveRelations(sceneSpec, clauses);
   assignHeightQualifiers(clauses);
-  const render: CaptionRenderState = { step, dialect, describedConceptIds: new Set<string>() };
+  const render: CaptionRenderState = { step, describedConceptIds: new Set<string>() };
   const clauseText = (clause: LoraVisualClause) => renderClauseText(clause, render);
   const focal = clauses[0];
   const hasCanonicalSemantics = sceneSpec.elements.every((element) => Boolean(element.visual_semantics));
@@ -1674,14 +1280,10 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
   const tail = [
     eventPhrase,
     step.minimalTail ? undefined : buildStylePhrase(context),
-    // Creativity cues (creatividad.ts) are the first thing compaction drops:
-    // they must never displace a structure, placement or color.
     ...(step.minimalTail ? [] : creativeCues),
     globalPalette,
-    ...(dialect === "scene_v004"
-      ? sceneSettingCues(context, eventPhrase, step)
-      : step.dropEnvironment ? [] : dedupeEnvironment(context, eventPhrase).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue)),
-    dialect === "base" ? CIERRE_FOTOGRAFICO_BASE : "wide photorealistic event photograph",
+    ...(step.dropEnvironment ? [] : dedupeEnvironment(context, eventPhrase).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue)),
+    CIERRE_FOTOGRAFICO_BASE,
     step.minimalTail ? undefined : enAlto ? "natural depth" : hasCanonicalProducts ? "natural depth, grounded supports" : "natural depth, believable floor contact and supports",
   ].filter((part): part is string => Boolean(part));
   return {
@@ -1692,27 +1294,6 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
     colors: [...new Set(clauses.flatMap((clause) => clause.colors))],
     enAlto,
   };
-}
-
-/**
- * The same approved scene as a JSON object, for FLUX.2 structured prompting.
- * It carries exactly the rendered subjects, placements, relations, colors and
- * setting of the text caption (so preflight checks the same facts); only the
- * container changes. A patterned subject also carries its pattern, verbatim,
- * as `color_pattern`. The LoRA trigger is prepended by `ensureLoraTriggers`.
- */
-function buildJsonPrompt(parts: CaptionParts, ambientDecor: readonly string[]): string {
-  return JSON.stringify({
-    scene: parts.tail.filter((part) => !/photograph|natural depth|grounded supports|floor contact/i.test(part)).join(", "),
-    subjects: parts.subjects.map((description, index) => {
-      const colorPattern = parts.subjectPatterns[index];
-      return { role: index === 0 ? "focal decoration" : "supporting decoration", description, ...(colorPattern ? { color_pattern: colorPattern } : {}) };
-    }),
-    ...(ambientDecor.length ? { styling: [...ambientDecor] } : {}),
-    color_palette: parts.colors,
-    style: "wide photorealistic event photograph",
-    composition: `every listed decoration appears once as a separate physical piece, natural depth${parts.enAlto ? "" : ", grounded supports"}`,
-  });
 }
 
 /**
@@ -1733,15 +1314,8 @@ export function compileLoraCaption(input: {
    * the exact legacy color/finish rendering used by every existing caller.
    */
   productConcepts?: ProductConceptClauseInput[];
-  /**
-   * Trigger that will replace the compiler's own via `ensureLoraTriggers`.
-   * Only used to account for its length against the budget.
-   */
-  trigger?: string;
-  /** Defaults to `LORA_PROMPT_MAX_LENGTH`. */
+  /** Límite de caracteres del caption base. */
   maxLength?: number;
-  /** Wording of the LoRA that reads the prompt; defaults to `product_v007`. */
-  dialect?: LoraCaptionDialect;
   /** `estructura_oficial` per plan `estructura_id`, from the approved plan. */
   officialStructures?: ReadonlyMap<string, string>;
   /**
@@ -1770,15 +1344,10 @@ export function compileLoraCaption(input: {
       }, new Map<string, ProductConceptClauseInput[]>())
     : undefined;
   const clauses = groupClauses(input.sceneSpec, productConceptsByElementId, input.officialStructures, input.colorPatterns);
-  const triggerLengthDelta = (input.trigger?.trim().length ?? CAPTION_TRIGGER.length) - CAPTION_TRIGGER.length;
-  // The base dialect carries no trigger and has its own budget.
-  const budget = input.dialect === "base"
-    ? input.maxLength ?? BASE_PROMPT_MAX_LENGTH
-    : (input.maxLength ?? LORA_PROMPT_MAX_LENGTH) - Math.max(0, triggerLengthDelta);
-  // FLUX base no entiende líneas comerciales ni triggers: se quitan al construir el texto.
+  const budget = input.maxLength ?? BASE_PROMPT_MAX_LENGTH;
+  // El compilador elimina líneas comerciales antes de validar el texto.
   const palabrasQuitadas = new Set<string>();
   const limpiar = (texto: string): string => {
-    if (input.dialect !== "base") return texto;
     const limpio = limpiarTextoBase(texto);
     for (const palabra of limpio.quitadas) palabrasQuitadas.add(palabra);
     return limpio.texto;
@@ -1789,19 +1358,15 @@ export function compileLoraCaption(input: {
   // preflight rejects it: the compiler never truncates structures, colors or a
   // color pattern (no step touches the pattern; the tail and setting go first).
   for (const [index, step] of CAPTION_RENDER_STEPS.entries()) {
-    // product_v007 has no setting to drop: its last step would repeat the previous one.
-    if (step.dropSetting && input.dialect !== "scene_v004") break;
-    prompt = limpiar(buildCaption(input.sceneSpec, input.visualContext, clauses, step, input.dialect, input.ambientDecor, input.creativeCues));
+    prompt = limpiar(buildCaption(input.sceneSpec, input.visualContext, clauses, step, input.ambientDecor, input.creativeCues));
     compactionStep = index;
     if (prompt.length <= budget) break;
   }
-  const jsonParts = buildCaptionParts(input.sceneSpec, input.visualContext, clauses, CAPTION_RENDER_STEPS[0]!, input.dialect ?? "product_v007", input.ambientDecor ?? [], input.creativeCues ?? []);
   return {
     prompt,
     clauses,
     compilerVersion: LORA_CAPTION_COMPILER_VERSION,
-    usedProductVocabulary: clauses.some((clause) => Boolean(clause.canonicalPhrase)),
-    jsonPrompt: limpiar(buildJsonPrompt(jsonParts, input.ambientDecor ?? [])),
+    usedCatalogProducts: clauses.some((clause) => Boolean(clause.canonicalPhrase)),
     compactionStep,
     palabrasQuitadas: [...palabrasQuitadas],
   };
