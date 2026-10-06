@@ -13,7 +13,7 @@ export function FotoDecoracion({ decoracion, sizes }: { decoracion: DecoracionSe
   }
   return <>
     <IlustracionGlobos colores={decoracion.paleta ?? ["#f7a8c4", "#c7a6d8", "#f6f3ee"]} titulo={decoracion.titulo} />
-    <span className="absolute bottom-2 right-2 rounded-full bg-white/85 px-2 py-0.5 text-[0.65rem] font-medium text-[#5b4a6b]">Ilustración de colores</span>
+    <span className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-white/85 px-2 py-0.5 text-[0.65rem] font-medium text-[#5b4a6b]">Ilustración de colores</span>
   </>;
 }
 

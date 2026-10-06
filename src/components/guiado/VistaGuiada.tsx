@@ -13,6 +13,7 @@ import { PasoAPaso } from "./PasoAPaso";
 import { PreguntaUso } from "./PreguntaUso";
 import { RespuestasRapidas, separarOpciones } from "./RespuestasRapidas";
 import { TarjetaEleccion } from "./TarjetaEleccion";
+import { TarjetasProveedores } from "./TarjetasProveedores";
 import { useModoVista } from "@/lib/estado/modo-vista";
 import { DecoracionSempertexSchema, ProveedorSempertexSchema, type DecoracionSempertex, type ProveedorSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
@@ -224,6 +225,20 @@ export function VistaGuiada() {
     void enviar(textos[opcion]);
   }
 
+  // Los registros son de ejemplo: la solicitud se explica en la conversación, sin fingir que se envió a alguien.
+  function solicitarProveedor(proveedor: ProveedorSempertex): void {
+    const decorador = proveedor.tipo === "decorador_happia" || proveedor.tipo === "mbp";
+    const idea = seleccionada ? ` con tu idea **${seleccionada.titulo}**` : "";
+    const respuesta = decorador
+      ? `¡Perfecto! En la versión final, **${proveedor.nombre}** recibirá tu solicitud${idea} y te contactará para cotizar el montaje. Por ahora es un decorador de ejemplo. ¿Qué más te gustaría hacer?`
+      : `¡Perfecto! En la versión final verás aquí la dirección y el horario de **${proveedor.nombre}**. Por ahora es un distribuidor de ejemplo. ¿Qué más te gustaría hacer?`;
+    setMensajes((actuales) => [
+      ...actuales,
+      { id: nuevoId(), role: "user", content: decorador ? `Quiero cotizar con ${proveedor.nombre}.` : `Quiero comprar en ${proveedor.nombre}.` },
+      { id: nuevoId(), role: "assistant", content: respuesta, widgets: seleccionada ? [{ tipo: "opciones" }] : [] },
+    ]);
+  }
+
   function elegirUso(valor: Uso): void { setUso(valor); void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor }); }
 
   function renderWidget(widget: Widget, activo: boolean, clave: string) {
@@ -241,7 +256,7 @@ export function VistaGuiada() {
       case "pasos":
         return <PasoAPaso key={clave} decoracion={widget.decoracion} />;
       case "proveedores":
-        return <ListaProveedores key={clave} proveedores={widget.proveedores} />;
+        return <TarjetasProveedores key={clave} proveedores={widget.proveedores} activo={activo && !cargando} onSolicitar={solicitarProveedor} />;
       case "comprar":
         return <ComprarMateriales key={clave} decoracion={widget.decoracion} onDistribuidor={() => void enviar("Busca un distribuidor de globos Sempertex cerca de mí.")} />;
     }
@@ -301,16 +316,6 @@ function Escribiendo() {
   return <span className="inline-flex items-center gap-1 py-2" aria-label="El asistente está escribiendo">
     {[0, 150, 300].map((retraso) => <span key={retraso} className="size-2 animate-bounce rounded-full bg-texto-secundario/60" style={{ animationDelay: `${retraso}ms` }} />)}
   </span>;
-}
-
-function ListaProveedores({ proveedores }: { proveedores: readonly ProveedorSempertex[] }) {
-  if (!proveedores.length) return <p className="mt-3 rounded-2xl bg-superficie p-4 text-sm text-texto-secundario">Todavía no tengo proveedores registrados en esa zona.</p>;
-  return <div className="mt-3 grid gap-3 sm:grid-cols-2" aria-label="Proveedores">
-    {proveedores.map((proveedor) => <a key={proveedor.id} href={proveedor.url} target="_blank" rel="noreferrer" className="rounded-2xl border border-borde-suave bg-superficie p-4 transition-colors hover:border-acento">
-      <span className="flex items-center justify-between gap-2"><span className="font-medium">{proveedor.nombre}</span>{proveedor.origen === "ejemplo" && <span className="rounded-full bg-acento-suave px-2 py-0.5 text-[0.7rem] font-semibold text-acento">Ejemplo</span>}</span>
-      <span className="mt-1 block text-sm text-texto-secundario">{proveedor.zona.ciudad}</span>
-    </a>)}
-  </div>;
 }
 
 function decoracionDeLaConversacion(mensajes: readonly Mensaje[], id: string): DecoracionSempertex | null {
