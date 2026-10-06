@@ -112,14 +112,21 @@ export function buscarDecoracionesSempertex(entrada: { evento?: string; edad?: n
 export const decoracionesSempertex: DecoracionSempertex[] = decoracionesRaw.map((dato) => DecoracionSempertexSchema.parse(dato));
 export const proveedoresSempertex: ProveedorSempertex[] = proveedoresRaw.map((dato) => ProveedorSempertexSchema.parse(dato));
 
+// Hoy toda la biblioteca y el directorio son ejemplos marcados «Ejemplo» (decisión del dueño, SEGUIMIENTO §4.5). Ocultarlos en
+// producción dejaba la vista guiada sin ninguna idea («no tenemos este tipo de decoración» para todo, 2026-10-06). Se ocultan
+// solo cuando haya datos reales y se active BIBLIOTECA_OCULTAR_EJEMPLOS=true en producción.
+function ocultarEjemplos(): boolean {
+  return resolveRuntimeCommercialEnvironment() === "production" && process.env.BIBLIOTECA_OCULTAR_EJEMPLOS === "true";
+}
+
 export function bibliotecaVisible(): DecoracionSempertex[] {
-  return resolveRuntimeCommercialEnvironment() === "production"
+  return ocultarEjemplos()
     ? decoracionesSempertex.filter((decoracion) => decoracion.origen !== "ejemplo")
     : decoracionesSempertex;
 }
 
 export function proveedoresVisibles(): ProveedorSempertex[] {
-  return resolveRuntimeCommercialEnvironment() === "production"
+  return ocultarEjemplos()
     ? proveedoresSempertex.filter((proveedor) => proveedor.origen !== "ejemplo")
     : proveedoresSempertex;
 }
