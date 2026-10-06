@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { guiaParaEstructura, GuiaArmadoSchema } from "./guias-armado";
 
 const PlanMinimoSchema = z.object({
   plan: z.object({
     concepto: z.object({ titulo: z.string().optional() }).passthrough(),
     estructuras: z.array(z.object({
-      estructura_id: z.string(), nombre: z.string(), tipo: z.string(), repeticiones: z.number().int().positive(),
+      estructura_id: z.string(), nombre: z.string(), tipo: z.string(), estructura_oficial: z.string().optional(), repeticiones: z.number().int().positive(),
       medidas: z.object({ ancho_m: z.number().optional(), alto_m: z.number().optional(), largo_m: z.number().optional() }).passthrough(),
     }).passthrough()),
   }).passthrough(),
@@ -18,7 +19,9 @@ export type PasoPlanGuiado = { orden: number; texto: string; globos?: string };
 export type GloboPlanGuiado = { color: string; tamano: string; cantidad: number };
 
 /** Presenta cantidades ya resueltas por Python. Esta función nunca calcula consumo. */
-export function generarPasosPlan(planGuardado: unknown): { pasos: PasoPlanGuiado[]; globos: GloboPlanGuiado[]; total: number } {
+export type GuiaPiezaPlan = { estructura_id: string; nombre: string; medidas: { ancho_m?: number; alto_m?: number; largo_m?: number }; globos: GloboPlanGuiado[]; guia: z.infer<typeof GuiaArmadoSchema> };
+
+export function generarPasosPlan(planGuardado: unknown): { pasos: PasoPlanGuiado[]; globos: GloboPlanGuiado[]; total: number; guias: GuiaPiezaPlan[] } {
   const plan = PlanMinimoSchema.parse(planGuardado);
   const grupos = new Map<string, GloboPlanGuiado>();
   for (const estructura of plan.estructuras) for (const linea of estructura.lineas) {
@@ -31,6 +34,22 @@ export function generarPasosPlan(planGuardado: unknown): { pasos: PasoPlanGuiado
   }
   const globos = [...grupos.values()];
   const total = globos.reduce((suma, item) => suma + item.cantidad, 0);
+  const guias: GuiaPiezaPlan[] = plan.plan.estructuras.flatMap((pieza) => {
+    const oficial = pieza.estructura_oficial ?? idOficialPorTipo(pieza.tipo, pieza.nombre);
+    const guia = guiaParaEstructura(oficial);
+    const lineas = plan.estructuras.find((item) => item.estructura_id === pieza.estructura_id)?.lineas ?? [];
+    if (!guia) return [];
+    const cantidades = new Map<string, GloboPlanGuiado>();
+    for (const linea of lineas) {
+      const color = linea.color?.trim() || "color indicado en el plan";
+      const tamano = linea.diam_pulg ? `${linea.diam_pulg}\"` : linea.tamano_codigo ? `${linea.tamano_codigo.replace(/^R-/i, "")}\"` : "tamaño indicado";
+      const clave = `${color.toLocaleLowerCase("es")}\u0000${tamano}`;
+      const previo = cantidades.get(clave);
+      if (previo) previo.cantidad += linea.unidades;
+      else cantidades.set(clave, { color, tamano, cantidad: linea.unidades });
+    }
+    return [{ estructura_id: pieza.estructura_id, nombre: pieza.nombre, medidas: pieza.medidas, globos: [...cantidades.values()], guia }];
+  });
   const listaGlobos = globos.map((item) => `${item.cantidad} globos ${item.color} de ${item.tamano}`).join(", ");
   const pasos: PasoPlanGuiado[] = [{ orden: 1, texto: `Prepara el soporte y los materiales del plan. En total son ${total} globos: ${listaGlobos}.`, globos: listaGlobos }];
   pasos.push({ orden: 2, texto: `Infla cada globo al tamaño indicado y separa los grupos por color y medida: ${listaGlobos}.`, globos: listaGlobos });
@@ -43,7 +62,23 @@ export function generarPasosPlan(planGuardado: unknown): { pasos: PasoPlanGuiado
   }
   pasos.push({ orden: pasos.length + 1, texto: `Monta las piezas en el orden del plan y en sus ubicaciones indicadas; fija cada estructura a su soporte antes de continuar.` });
   pasos.push({ orden: pasos.length + 1, texto: "Ajusta los amarres, oculta soportes y remata la decoración. Revisa estabilidad y que las piezas queden en la posición prevista." });
-  return { pasos, globos, total };
+  return { pasos, globos, total, guias };
+}
+
+function idOficialPorTipo(tipo: string, nombre: string): string {
+  const texto = `${tipo} ${nombre}`.toLocaleLowerCase("es");
+  if (texto.includes("semiarco")) return "semiarco";
+  if (texto.includes("columna")) return "columna";
+  if (texto.includes("pared")) return "pared_densa";
+  if (texto.includes("guirnalda")) return "guirnalda";
+  if (texto.includes("bouquet")) return "bouquet";
+  if (texto.includes("mesa")) return "centro_mesa";
+  if (texto.includes("techo")) return "techo_globos";
+  if (texto.includes("aro")) return "aro_circular";
+  if (texto.includes("arco")) return "arco";
+  if (texto.includes("figura") || tipo === "escultura") return "figura";
+  if (texto.includes("racimo")) return "racimo_pared";
+  return "";
 }
 
 function detalleArmado(pieza: Record<string, unknown>): string {

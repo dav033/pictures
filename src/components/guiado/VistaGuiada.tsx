@@ -25,6 +25,9 @@ import { ESTRUCTURAS_OFICIALES } from "@/lib/plan/estructuras-oficiales";
 import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
+import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
+import { GraficaMotorGuiada } from "./GraficaMotorGuiada";
+import { BarraTamanos, tramosPorTamano } from "@/components/plan/BarraTamanos";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 
 /**
@@ -68,7 +71,7 @@ const SALUDO = "¡Hola! Te hago unas preguntas cortas y te muestro decoraciones 
 const OPCIONES_SALUDO = ["Cumpleaños", "Baby shower", "Boda", "XV años", "Bautizo o comunión", "Otra celebración"] as const;
 
 /** Widgets que ya hacen la pregunta: con ellos, los botones «Opciones:» del texto sobran (salían duplicados). */
-const WIDGETS_QUE_PREGUNTAN = new Set<Widget["tipo"]>(["decoraciones", "opciones", "uso", "propuesta", "plan"]);
+const WIDGETS_QUE_PREGUNTAN = new Set<Widget["tipo"]>(["decoraciones", "opciones", "uso", "propuesta", "plan", "pregunta-propuesta"]);
 
 export function VistaGuiada() {
   const { modo, cambiar } = useModoVista();
@@ -88,6 +91,10 @@ export function VistaGuiada() {
   const entradaRef = useRef<HTMLInputElement>(null);
   const finRef = useRef<HTMLDivElement>(null);
   const turnoRef = useRef(0);
+  const mensajesRef = useRef(mensajes);
+  const aceptarPropuestaRef = useRef<((propuesta: z.infer<typeof PropuestaComposicionSchema>) => Promise<void>) | null>(null);
+
+  useEffect(() => { mensajesRef.current = mensajes; }, [mensajes]);
   const fotosDePlanesRef = useRef(new Map<string, { base64: string; mime: string }>());
 
   const indiceActivo = useMemo(() => {
@@ -99,7 +106,7 @@ export function VistaGuiada() {
     if (cargando) return [];
     if (!mensajes.length) return [...OPCIONES_SALUDO];
     if (ultimo?.role !== "assistant" || ultimo.widgets?.some((widget) => WIDGETS_QUE_PREGUNTAN.has(widget.tipo))) return [];
-    return separarOpciones(ultimo.content).opciones;
+    return [...separarOpciones(ultimo.content).opciones, "Propónme algo"];
   }, [mensajes.length, ultimo, cargando]);
   const hayEjemplos = useMemo(() => mensajes.some((mensaje) => mensaje.widgets?.some((widget) => (widget.tipo === "decoraciones" && widget.decoraciones.some((decoracion) => decoracion.origen === "ejemplo")) || ("decoracion" in widget && widget.decoracion.origen === "ejemplo"))), [mensajes]);
   const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? [brief.evento, brief.edad ? `${brief.edad} años` : null, /^por[ _-]?definir$/i.test(brief.tematica.trim()) ? null : brief.tematica].filter(Boolean).map((parte) => conMayuscula(String(parte))).join(" · ") : null;
@@ -134,6 +141,11 @@ export function VistaGuiada() {
   const enviar = useCallback(async (texto: string, opcionesEnvio?: { uso?: Uso; reintentar?: boolean }) => {
     const limpio = texto.trim();
     if (!limpio || cargando) return;
+    if (/^(?:oye,?\s*)?(?:prop[oó]nme algo|qu[eé] me recomiendas armar\??|arma t[uú] algo\.?)[.!?]*$/i.test(limpio)) {
+      const visibles = [...mensajes, { id: nuevoId(), role: "user" as const, content: limpio }, { id: nuevoId(), role: "assistant" as const, content: "¿Quieres una decoración completa (varias piezas) o una pieza individual?", widgets: [{ tipo: "pregunta-propuesta" as const, alcance: "tipo" as const }] }];
+      setMensajes(visibles); setEntrada(""); setError(null);
+      return;
+    }
     const contenido = limpio.slice(0, 6000);
     const turno = ++turnoRef.current;
     const historial = prepararHistorialGuiado(mensajes, `${contenido}${foto ? "\nAdjunté una foto de inspiración." : ""}`, opcionesEnvio?.reintentar);
@@ -177,6 +189,7 @@ export function VistaGuiada() {
       const decoder = new TextDecoder();
       let buffer = "";
       let textoFinal = "";
+      let propuestaParaPlan: z.infer<typeof PropuestaComposicionSchema> | null = null;
       const reemplazarUltimo = (cambio: Partial<Mensaje>) => setMensajes((actuales) => actuales.map((mensaje, indice) => indice === actuales.length - 1 ? { ...mensaje, ...cambio } : mensaje));
       while (true) {
         const { done, value } = await reader.read();
@@ -214,12 +227,15 @@ export function VistaGuiada() {
             // Después del precio o de los pasos, el cliente sigue teniendo las otras opciones a mano (comprar, decorador...).
             if (elegida && widgets.some((widget) => widget.tipo === "cotizacion" || widget.tipo === "pasos") && !widgets.some((widget) => widget.tipo === "opciones")) widgets.push({ tipo: "opciones" });
             if (datos.proveedores) widgets.push({ tipo: "proveedores", proveedores: datos.proveedores });
-            if (datos.propuesta) widgets.push({ tipo: "propuesta", propuesta: datos.propuesta });
-            reemplazarUltimo({ content: textoFinal, ...(widgets.length ? { widgets } : {}) });
-            if (!textoFinal.trim() && !widgets.length) setMensajes((actuales) => actuales.slice(0, -1));
+            const resolverAhora = Boolean(datos.propuesta && /prop[oó]n|arma t[uú]|qu[eé] me recomiendas armar/i.test(contenido));
+            if (datos.propuesta && !resolverAhora) widgets.push({ tipo: "propuesta", propuesta: datos.propuesta });
+            if (resolverAhora) propuestaParaPlan = datos.propuesta!;
+            reemplazarUltimo({ content: resolverAhora ? "Estoy preparando tu plan…" : textoFinal, ...(widgets.length ? { widgets } : {}) });
+            if (!resolverAhora && !textoFinal.trim() && !widgets.length) setMensajes((actuales) => actuales.slice(0, -1));
           }
         }
       }
+      if (propuestaParaPlan && turno === turnoRef.current) await aceptarPropuestaRef.current?.(propuestaParaPlan);
       if (turno === turnoRef.current) setFoto(null);
     } catch (cause) {
       if (turno !== turnoRef.current) return;
@@ -233,9 +249,10 @@ export function VistaGuiada() {
   const aceptarPropuesta = useCallback(async (propuesta: z.infer<typeof PropuestaComposicionSchema>) => {
     if (cargando) return;
     const piezas = propuesta.piezas.map((pieza) => `${pieza.cantidad} ${pieza.nombre ?? pieza.estructura}`).join(", ");
-    const instruccion = `Me gusta, armémosla. Diseña exactamente esta composición usando estructuras oficiales: ${piezas}. Paleta Sempertex: ${propuesta.colores.join(", ")}. Contexto: ${brief.evento ?? "celebración"}${brief.edad ? `, ${brief.edad} años` : ""}, ${brief.tematica ?? "sin temática definida"}.`;
-    const historial = prepararHistorialGuiado(mensajes, instruccion);
-    const visibles = [...mensajes, { id: nuevoId(), role: "user" as const, content: "Me gusta, armémosla." }, { id: nuevoId(), role: "assistant" as const, content: "Estoy preparando tu plan…" }];
+    const instruccion = `Resuelve ahora, sin pedir aceptación, el plan exacto de esta composición con Python: ${piezas}. Paleta Sempertex: ${propuesta.colores.join(", ")}. Contexto: ${brief.evento ?? "celebración"}${brief.edad ? `, ${brief.edad} años` : ""}, ${brief.tematica ?? "sin temática definida"}.`;
+    const actuales = mensajesRef.current.filter((mensaje) => mensaje.content.trim() || mensaje.widgets?.length);
+    const historial = prepararHistorialGuiado(actuales, instruccion);
+    const visibles = [...actuales, { id: nuevoId(), role: "assistant" as const, content: "Estoy preparando tu plan…" }];
     setMensajes(visibles); setCargando(true); setError(null);
     const turno = ++turnoRef.current;
     try {
@@ -263,7 +280,8 @@ export function VistaGuiada() {
       setError(cause instanceof Error ? cause.message : "No pude preparar el plan.");
       setMensajes((actuales) => actuales.slice(0, -1));
     } finally { if (turno === turnoRef.current) setCargando(false); }
-  }, [brief, cargando, mensajes]);
+  }, [brief, cargando]);
+  useEffect(() => { aceptarPropuestaRef.current = aceptarPropuesta; }, [aceptarPropuesta]);
 
   const aceptarPlanFoto = useCallback(async (referencia: z.infer<typeof ReferenceBlueprintV2Schema>) => {
     if (cargando) return;
@@ -370,7 +388,7 @@ export function VistaGuiada() {
   function renderWidget(widget: Widget, activo: boolean, clave: string, mensajeId: string) {
     switch (widget.tipo) {
       case "decoraciones":
-        return <CarruselDecoraciones key={clave} decoraciones={widget.decoraciones} activo={activo && !cargando} elegidaId={seleccionada?.id ?? null} onElegir={elegirDecoracion} onNinguna={() => void enviar("Ninguna me convence. Quiero ver otras ideas o mostrarte una foto de inspiración.")} />;
+        return <CarruselDecoraciones key={clave} decoraciones={widget.decoraciones} activo={activo && !cargando} elegidaId={seleccionada?.id ?? null} onElegir={elegirDecoracion} onNinguna={() => void enviar("Ninguna me convence. Propónme algo distinto o puedo mostrarte una foto de inspiración.")} />;
       case "seleccion":
         return <TarjetaEleccion key={clave} decoracion={widget.decoracion} />;
       case "opciones":
@@ -382,7 +400,9 @@ export function VistaGuiada() {
       case "pasos":
         return <PasoAPaso key={clave} decoracion={widget.decoracion} />;
       case "pasos-plan":
-        return <section key={clave} className="mt-4 rounded-2xl border border-borde-suave bg-superficie p-5 shadow-sm" aria-label="Guía paso a paso del plan"><h3 className="font-semibold">Aprender a hacerlo</h3><ol className="mt-4 space-y-4">{widget.pasos.map((paso) => <li key={paso.orden} className="flex gap-3 text-sm leading-6"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-acento text-xs font-bold text-white">{paso.orden}</span><span className="pt-0.5">{paso.texto}{paso.globos && <span className="mt-1 block text-xs text-texto-secundario">Globos: {paso.globos}</span>}</span></li>)}</ol></section>;
+        return <section key={clave} className="mt-4 rounded-2xl border border-borde-suave bg-superficie p-4 shadow-sm" aria-label="Guía aproximada para aprender a hacerlo"><h3 className="font-semibold">Guía aproximada</h3><p className="mt-1 text-xs text-texto-secundario">Pasos orientativos combinados con las cantidades de tu plan.</p><div className="mt-4 space-y-4">{widget.guias.map((item) => <article key={item.estructura_id} className="rounded-xl border border-borde-suave p-3"><h4 className="font-semibold">{item.nombre}{item.medidas.ancho_m && item.medidas.alto_m ? ` · ${item.medidas.ancho_m} × ${item.medidas.alto_m} m` : item.medidas.largo_m ? ` · ${item.medidas.largo_m} m` : ""}</h4><p className="mt-2 text-xs text-texto-secundario">Materiales del plan: {item.globos.map((globo) => `${globo.cantidad} ${globo.color}, ${globo.tamano}`).join(" · ") || "sin globos contados"}</p><p className="mt-2 text-xs">{item.guia.dificultad} · {item.guia.tiempo_aprox}</p><p className="mt-3 text-sm font-medium">Herramientas y materiales base</p><ul className="ml-5 mt-1 list-disc space-y-1 text-sm">{[...item.guia.herramientas, ...item.guia.materiales_base].map((texto, i) => <li key={i}>{texto}</li>)}</ul><ol className="mt-3 space-y-3">{item.guia.pasos.map((paso, i) => <li key={i} className="text-sm"><strong>{i + 1}. {paso.titulo}.</strong> {paso.detalle}</li>)}</ol><details className="mt-3 text-sm"><summary className="cursor-pointer font-medium">Reglas aproximadas y consejos</summary><ul className="ml-5 mt-2 list-disc space-y-1">{[...item.guia.reglas_aproximadas, ...item.guia.consejos].map((texto, i) => <li key={i}>{texto}</li>)}</ul></details><details className="mt-2 text-sm"><summary className="cursor-pointer font-medium">Fuentes</summary><ul className="ml-5 mt-2 list-disc">{item.guia.fuentes.map((fuente) => <li key={fuente.url}><a className="text-acento underline" href={fuente.url} target="_blank" rel="noreferrer">{fuente.titulo}</a></li>)}</ul></details></article>)}</div><ol className="mt-4 space-y-3">{widget.pasos.map((paso) => <li key={paso.orden} className="flex gap-3 text-sm leading-6"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-acento text-xs font-bold text-white">{paso.orden}</span><span className="pt-0.5">{paso.texto}{paso.globos && <span className="mt-1 block text-xs text-texto-secundario">Globos: {paso.globos}</span>}</span></li>)}</ol></section>;
+      case "pregunta-propuesta":
+        return <div key={clave} className="mt-3 flex flex-wrap gap-2">{widget.alcance === "tipo" ? <><button type="button" className="rounded-xl border border-borde-suave px-3 py-2 text-sm" onClick={() => void enviar("Propónme algo para una decoración completa con varias piezas.")}>Decoración completa</button><button type="button" className="rounded-xl border border-borde-suave px-3 py-2 text-sm" onClick={() => setMensajes((actuales) => [...actuales, { id: nuevoId(), role: "assistant", content: "¿Qué pieza individual prefieres?", widgets: [{ tipo: "pregunta-propuesta", alcance: "pieza" }] }])}>Pieza individual</button></> : <>{["Arco orgánico", "Columna", "Guirnalda", "Semiarco", "Pared de globos", "Bouquet", "La que tú quieras"].map((pieza) => <button key={pieza} type="button" className="rounded-xl border border-borde-suave px-3 py-2 text-sm" onClick={() => void enviar(`Propónme una pieza individual: ${pieza}.`)}>{pieza}</button>)}</>}</div>;
       case "proveedores":
         return <TarjetasProveedores key={clave} proveedores={widget.proveedores} activo={activo && !cargando} onSolicitar={solicitarProveedor} />;
       case "comprar":
@@ -393,7 +413,7 @@ export function VistaGuiada() {
           <p className="mt-2 text-sm text-texto-secundario">{widget.propuesta.frase}</p>
           <ul className="mt-3 space-y-2">{widget.propuesta.piezas.map((pieza, indice) => <li key={`${pieza.estructura}-${indice}`} className="flex items-center gap-2 text-sm"><CircleDot className="size-4 text-acento" aria-hidden />{pieza.cantidad > 1 ? `${pieza.cantidad} ` : ""}{pieza.nombre ?? ESTRUCTURAS_OFICIALES[pieza.estructura].nombre}</li>)}</ul>
           <div className="mt-3 flex items-center gap-2" aria-label={`Colores: ${widget.propuesta.colores.join(", ")}`}>{widget.propuesta.colores.map((color) => <span key={color} title={color} className="size-5 rounded-full border border-borde-suave" style={{ backgroundColor: HEX_COLORES_V2[color] }} />)}<span className="text-xs text-texto-secundario">{widget.propuesta.colores.join(", ")}</span></div>
-          {activo && <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={cargando} onClick={() => void aceptarPropuesta(widget.propuesta)} className="rounded-xl bg-acento px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Me gusta, armémosla</button><button type="button" disabled={cargando} onClick={() => { setEntrada("Quiero cambiar algo: "); document.querySelector<HTMLInputElement>('input[aria-label="Escribe tu mensaje"]')?.focus(); }} className="rounded-xl border border-borde-suave px-4 py-2 text-sm font-semibold disabled:opacity-50">Cambiar algo</button></div>}
+          {activo && cargando && <p className="mt-3 text-xs text-texto-secundario">Estoy convirtiendo esta idea en un plan con cantidades.</p>}
         </article>;
       case "plan": {
         const piezas = widget.plan.plan.estructuras;
@@ -403,12 +423,13 @@ export function VistaGuiada() {
         const colores = [...new Set(desglose.globos.map((globo) => globo.color))];
         return <article key={clave} className="mt-3 rounded-2xl border border-borde-suave bg-superficie p-4 shadow-sm"><h3 className="font-semibold">Tu plan</h3>
           <p className="mt-2 text-sm">{cantidadPiezas} {cantidadPiezas === 1 ? "pieza" : "piezas"}: {piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} ` : ""}${pieza.nombre}`).join(", ")}</p>
-          <ul className="mt-3 space-y-2">{piezas.map((pieza) => <li key={pieza.estructura_id} className="text-sm"><span className="font-medium">{pieza.nombre}</span>{pieza.medidas.ancho_m && pieza.medidas.alto_m ? ` · ${pieza.medidas.ancho_m} por ${pieza.medidas.alto_m} metros` : ""}</li>)}</ul>
+          <ul className="mt-3 space-y-3">{piezas.map((pieza) => { const grafica = desglose.guias.find((item) => item.estructura_id === pieza.estructura_id); const idOficial = ESTRUCTURAS_OFICIALES_IDS.includes((pieza.estructura_oficial ?? "") as typeof ESTRUCTURAS_OFICIALES_IDS[number]) ? pieza.estructura_oficial as typeof ESTRUCTURAS_OFICIALES_IDS[number] : null; const tamanos = tramosPorTamano(grafica?.globos.flatMap((globo) => { const pulgadas = Number.parseFloat(globo.tamano); return Number.isFinite(pulgadas) ? [{ pulgadas, unidades: globo.cantidad }] : []; }) ?? []); const mezclaReal = widget.plan.estructuras.find((resuelta) => resuelta.estructura_id === pieza.estructura_id)?.mezcla_real; return <li key={pieza.estructura_id} className="flex min-w-0 gap-3 rounded-xl bg-fondo p-3"><span className="grid size-12 shrink-0 place-items-center rounded-lg bg-acento-suave text-acento"><GraficaMotorGuiada plan={widget.plan.plan} pieza={pieza} mezclaReal={mezclaReal} id={idOficial ?? "arco"} nombre={pieza.nombre} /></span><div className="min-w-0 flex-1"><span className="font-medium">{pieza.nombre}</span><p className="text-xs text-texto-secundario">{pieza.medidas.ancho_m && pieza.medidas.alto_m ? `${pieza.medidas.ancho_m} m de ancho por ${pieza.medidas.alto_m} m de alto` : pieza.medidas.largo_m ? `${pieza.medidas.largo_m} m de largo` : "Medida según el plan"}</p>{tamanos.length > 0 && <BarraTamanos tramos={tamanos} className="mt-2" />}{grafica && <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">{grafica.globos.map((globo) => <li key={`${globo.color}-${globo.tamano}`} className="inline-flex items-center gap-1"><span className="size-2.5 rounded-full border border-borde-suave" style={{ backgroundColor: HEX_COLORES_V2[globo.color as keyof typeof HEX_COLORES_V2] ?? "#999" }} />{globo.color}: {globo.cantidad}</li>)}</ul>}</div></li>; })}</ul>
           <p className="mt-3 text-sm font-medium">${desglose.total} globos en total</p>
-          <ul className="mt-1 space-y-1 text-sm text-texto-secundario">{desglose.globos.map((globo) => <li key={`${globo.color}-${globo.tamano}`}>{globo.cantidad} globos {globo.color} de {globo.tamano}</li>)}</ul>
+          <details className="mt-2 text-sm"><summary className="cursor-pointer font-medium">Ver detalle</summary><ul className="mt-2 space-y-1 text-texto-secundario">{desglose.globos.map((globo) => <li key={`${globo.color}-${globo.tamano}`}>{globo.cantidad} globos {globo.color} de {globo.tamano}</li>)}</ul><div className="mt-3 space-y-2">{desglose.guias.map((item) => <details key={item.estructura_id}><summary className="cursor-pointer">Tallas y guía técnica: {item.nombre}</summary><p className="mt-1 text-xs text-texto-secundario">{item.globos.map((globo) => `${globo.cantidad} ${globo.color} de ${globo.tamano}`).join(" · ")}</p><ul className="ml-5 mt-1 list-disc text-xs text-texto-secundario">{item.guia.reglas_aproximadas.map((regla, i) => <li key={i}>{regla}</li>)}</ul></details>)}</div></details>
           {widget.imagen && <div className="mt-4"><img src={widget.imagen} alt="Imagen referencial generada con IA" className="w-full rounded-xl"/><p className="mt-2 text-xs text-texto-secundario">Imagen referencial generada con IA</p></div>}
-          {activo && <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={imagenCargando} onClick={() => void verComoQuedaria(widget.plan, mensajeId, widget.fotoInspiracion)} className="rounded-xl bg-acento px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{imagenCargando ? "Dibujando…" : widget.errorImagen ? "Reintentar imagen" : "Ver cómo quedaría"}</button>{widget.cotizacion && <><button type="button" onClick={() => setUso("personal")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear personal</button><button type="button" onClick={() => setUso("negocio")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear negocio</button></>}<button type="button" onClick={() => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, widgets: (mensaje.widgets ?? []).map((item) => item.tipo === "plan" ? { ...item, compraAbierta: true } : item) } : mensaje))} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Comprar</button><button type="button" onClick={() => setMensajes((actuales) => [...actuales, { id: nuevoId(), role: "assistant", content: "Aquí tienes el paso a paso para armar tu plan.", widgets: [{ tipo: "pasos-plan", pasos }] }])} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Aprender a hacerlo</button><button type="button" onClick={() => void enviar(`Quiero contratar un decorador para ${piezas.map((pieza) => pieza.nombre).join(", ")} en ${brief.evento ?? "mi celebración"}.`)} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Contratar decorador</button></div>}
+          {activo && <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={imagenCargando} onClick={() => void verComoQuedaria(widget.plan, mensajeId, widget.fotoInspiracion)} className="rounded-xl bg-acento px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{imagenCargando ? "Dibujando…" : widget.errorImagen ? "Reintentar imagen" : "Ver cómo quedaría"}</button>{widget.cotizacion && <><button type="button" onClick={() => setUso("personal")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear personal</button><button type="button" onClick={() => setUso("negocio")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear negocio</button></>}<button type="button" onClick={() => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, widgets: (mensaje.widgets ?? []).map((item) => item.tipo === "plan" ? { ...item, compraAbierta: true } : item) } : mensaje))} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Comprar</button><button type="button" onClick={() => setMensajes((actuales) => [...actuales, { id: nuevoId(), role: "assistant", content: "Aquí tienes una guía aproximada para armar tu plan.", widgets: [{ tipo: "pasos-plan", pasos, guias: desglose.guias }] }])} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Aprender a hacerlo</button><button type="button" onClick={() => void enviar(`Quiero contratar un decorador para ${piezas.map((pieza) => pieza.nombre).join(", ")} en ${brief.evento ?? "mi celebración"}.`)} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Contratar decorador</button></div>}
           {widget.compraAbierta && widget.cotizacion && <ComprarMateriales decoracion={decoracionDePlan(widget.plan, widget.cotizacion, brief)} onDistribuidor={() => void enviar(`Busca un distribuidor de Sempertex cerca de mí para ${colores.join(", ")}.`)} />}
+          {activo && <button type="button" className="mt-2 rounded-xl border border-borde-suave px-3 py-2 text-sm" onClick={() => { setEntrada("Quiero cambiar algo: "); document.querySelector<HTMLInputElement>('input[aria-label="Escribe tu mensaje"]')?.focus(); }}>Cambiar algo por chat</button>}
           {widget.cotizacion && uso && <CostosMateriales cotizacion={widget.cotizacion} uso={uso} clave={`plan-${widget.plan.plan_hash}`} onProveedores={() => void enviar("Busca un proveedor cerca de mí para cotizar estos materiales.")} mensajePendiente="Todavía no tengo el precio de estos materiales." />}
         </article>;
       }
@@ -452,7 +473,6 @@ export function VistaGuiada() {
         </div>
       </div>
       <form className="mx-auto w-full max-w-3xl px-4 pb-4 pt-2 sm:px-6" onSubmit={(event) => { event.preventDefault(); void enviar(entrada); }}>
-        <div className="mb-2 flex justify-end"><button type="button" disabled={cargando || !hidratado} onClick={() => void enviar("Propónme algo") } className="inline-flex items-center gap-2 rounded-full border border-acento/30 bg-acento-suave px-3 py-1.5 text-sm font-semibold text-acento disabled:opacity-50"><Sparkles className="size-4" aria-hidden />Propónme algo</button></div>
         <div className="flex items-center gap-2 rounded-2xl border border-borde-suave bg-superficie p-2 shadow-sm focus-within:ring-2 focus-within:ring-acento/30">
           <input ref={entradaRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => setFoto(event.target.files?.[0] ?? null)} />
           <button type="button" aria-label="Adjuntar foto de inspiración" title="Adjuntar foto de inspiración" className="rounded-xl p-2 text-texto-secundario hover:bg-fondo" onClick={() => entradaRef.current?.click()}><ImagePlus className="size-5" /></button>
