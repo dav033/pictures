@@ -40,11 +40,23 @@ def test_variant_colors_win_over_the_product_family_colors() -> None:
 
 def test_without_variant_colors_the_product_colors_stay() -> None:
     """25 round latex products have no variant colors: an empty list is uncoverable."""
-    assert _variant_real_colors("Globo Latex Redondo Fashion Merlot", (), ("rojo", "burdeos")) == (
-        "rojo",
-        "burdeos",
+    assert _variant_real_colors("Globo Latex Redondo Fashion Rosado", (), ("rosado", "fucsia")) == (
+        "rosado",
+        "fucsia",
     )
     assert _variant_real_colors("Globo Latex Redondo Fashion Gris", (), ("plateado",)) == ("gris",)
+
+
+def test_wine_is_not_red() -> None:
+    """CASE-006 (2026-10-05): the live catalog files the four wine products as "rojo" (the Shopify family).
+
+    The photo's burgundy material became "rojo" and left the plan. Mirror of ``TITULO_VINO`` in
+    ``src/lib/plan/colores-producto.ts``. (This test used to pin Fashion Merlot as ("rojo", "burdeos").)
+    """
+    assert _product_colors("B2b Globo Latex Redondo Metal Vinotinto", ("rojo",)) == ("burdeos",)
+    assert _product_colors("B2b Globo Latex Redondo Fashion Merlot", ("rojo", "burdeos")) == ("burdeos",)
+    assert _variant_real_colors("B2b Globo Latex Tubito Fashion Merlot", (), ("rojo",)) == ("burdeos",)
+    assert _product_colors("B2b Globo Latex Redondo Fashion Rojo", ("rojo",)) == ("rojo",)
 
 
 def test_line_color_uses_the_single_real_color_of_the_variant() -> None:
@@ -60,13 +72,20 @@ def test_line_color_uses_the_single_real_color_of_the_variant() -> None:
 
 
 def test_line_color_keeps_the_requested_color_when_the_variant_has_several() -> None:
-    title = "Globo Latex Redondo Fashion Merlot"
-    merlot = _candidate(
-        title, _variant_real_colors(title, (), ("rojo", "burdeos")), ("rojo", "burdeos")
+    # Era Fashion Merlot ("rojo", "burdeos"); desde el 2026-10-05 el vino tiene un solo color real
+    # (``test_wine_is_not_red``), así que el ejemplo de variante con varios colores es otro.
+    title = "Globo Latex Redondo Fashion Rosado"
+    rosado = _candidate(
+        title, _variant_real_colors(title, (), ("rosado", "fucsia")), ("rosado", "fucsia")
     )
-    assert _line_color(merlot, "burdeos") == "burdeos"
-    assert _line_color(merlot, "rojo") == "rojo"
-    assert _line_color(merlot, None) == "rojo"
+    assert _line_color(rosado, "fucsia") == "fucsia"
+    assert _line_color(rosado, "rosado") == "rosado"
+    assert _line_color(rosado, None) == "rosado"
+    merlot_title = "Globo Latex Redondo Fashion Merlot"
+    merlot = _candidate(
+        merlot_title, _variant_real_colors(merlot_title, (), ("rojo",)), ("rojo",)
+    )
+    assert _line_color(merlot, "rojo") == "burdeos", "el vino se cotiza burdeos aunque el plan diga rojo"
 
 
 def test_grey_title_replaces_derived_silver() -> None:

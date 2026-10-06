@@ -285,9 +285,15 @@ async function main(): Promise<void> {
     elemento("REF_01_E03", { tipo: "columna", ubicacion: "lateral_derecho", lectura: { ...trepadora, confianza: 0.3 } }),
     elemento("REF_01_E04", { tipo: "columna", ubicacion: "lateral_derecho", lectura: { ...trepadora, forma: "recta" } }),
     elemento("REF_01_E05", { tipo: "columna", ubicacion: "lateral_derecho" }),
+    // CASE-002 (2026-10-06): columna orgánica inclinada junto a un nicho, leída «una curva suave» sobre él. Es la
+    // columna inclinada que el análisis ya dijo (`top_overhang: slight`), no un semiarco: salían dos ganchos.
+    elemento("REF_01_E06", { tipo: "columna", ubicacion: "lateral_izquierdo", lectura: { ...trepadora, forma: "curva", confianza: 0.9 } }),
+    elemento("REF_01_E07", { tipo: "columna", ubicacion: "lateral_derecho", lectura: { ...trepadora, forma: "arco_caido" } }),
+    // CASE-004: la misma curva suave en una pieza que NO toca el suelo y trepa por el respaldo es un semiarco.
+    { ...elemento("REF_01_E08", { tipo: "columna", ubicacion: "lateral_derecho", lectura: { ...trepadora, forma: "curva" } }), appearance: { ...elemento("REF_01_E08", { lectura: { ...trepadora, forma: "curva" } }).appearance, shape: "tall dense asymmetrical column, on the right, slight top overhang, raised off the floor" } },
   ]);
   const reclasificado = reclasificarColumnasConGuirnalda(columnas);
-  assert.deepEqual(reclasificado.elements.map((item) => item.visual_semantics?.structure_type), ["semiarco", "columna", "columna", "columna", "columna"], "solo la apoyada, confiable y no recta");
+  assert.deepEqual(reclasificado.elements.map((item) => item.visual_semantics?.structure_type), ["semiarco", "columna", "columna", "columna", "columna", "columna", "semiarco", "semiarco"], "solo la apoyada, confiable y que se dobla por encima o trepa sin tocar el suelo");
   assert.equal(reclasificado.elements[0]!.visual_semantics?.placement, "lateral_izquierdo", "el lado se queda");
   assert.equal(reclasificado.elements[0]!.appearance.shape, "tall dense asymmetrical half-arch, on the left", "la forma visible ya no dice columna");
   assert.equal(ReferenceBlueprintV2Schema.safeParse(reclasificado).success, true);

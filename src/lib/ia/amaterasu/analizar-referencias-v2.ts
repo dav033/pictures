@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "@/lib/ia/nucleo/tipos";
 import type { Producto } from "@/lib/types";
-import { enriquecerConDominancia } from "./dominancia-referencia";
+import { conProporcionDeFotos, enriquecerConDominancia } from "./dominancia-referencia";
 import { featureEnabled, referenceAnalysisCacheEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { bytesDeBase64 } from "@sempertex/agente-core";
 import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
@@ -22,8 +22,16 @@ import {
   STRUCTURE_RULES_V14_CANDIDATE,
   STRUCTURE_RULES_V15_CANDIDATE,
   STRUCTURE_RULES_V16,
+  STRUCTURE_RULES_V18_CANDIDATE,
+  STRUCTURE_RULES_V19_CANDIDATE,
+  STRUCTURE_RULE_V19B_ORDEN_COLOR,
+  inclinacionObservada,
   VARIANTE_LECTURA_UNICA,
   VARIANTE_PRODUCCION,
+  VARIANTE_V18_CANDIDATA,
+  VARIANTE_V19_CANDIDATA,
+  VARIANTE_V19B_CANDIDATA,
+  varianteConLecturas,
   type VarianteReconocedor,
   tieneElementosAprobados,
   tieneEstructurasDeGlobos,
@@ -240,7 +248,7 @@ const TOOL_LECTURA_UNICA: Herramienta = (() => {
 
 /** La herramienta del inventario para una variante. */
 function toolDeVariante(variante: VarianteReconocedor): Herramienta {
-  return variante === VARIANTE_LECTURA_UNICA ? TOOL_LECTURA_UNICA : TOOL;
+  return varianteConLecturas(variante) ? TOOL_LECTURA_UNICA : TOOL;
 }
 
 const cache = new Map<string, AnalisisV2Resultado>();
@@ -339,7 +347,7 @@ const PARAMETROS_INVENTARIO = { temperatura: 0, maxTokens: 6000 } as const;
 const PARAMETROS_INVENTARIO_LECTURA_UNICA = { temperatura: 0, maxTokens: 14000 } as const;
 
 function parametrosInventario(variante: VarianteReconocedor): { temperatura: number; maxTokens: number } {
-  return variante === VARIANTE_LECTURA_UNICA ? PARAMETROS_INVENTARIO_LECTURA_UNICA : PARAMETROS_INVENTARIO;
+  return varianteConLecturas(variante) ? PARAMETROS_INVENTARIO_LECTURA_UNICA : PARAMETROS_INVENTARIO;
 }
 
 /**
@@ -494,8 +502,12 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
         shape: candidate.shape,
         composition: candidate.composition,
         // Lo que el análisis ya sabe de la forma y nadie usaba: hacia dónde se va
-        // la pieza y cuánto. Recta (0) no viaja: es el valor de partida del motor.
-        ...(candidate.structure && candidate.structure.inclina !== 0 ? { inclinacion: candidate.structure.inclina } : {}),
+        // la pieza y cuánto. Una pieza que la foto muestra recta SÍ viaja (0): el
+        // motor de la columna asimétrica no arranca recta sino con su plantilla
+        // inclinada, así que "recta observada" y "sin dato" no pueden confundirse.
+        // Solo cuenta como observada cuando el modelo contestó `top_overhang: none`;
+        // un `inclina` en 0 por falta de dirección (vuelo leve sin lado) sigue sin viajar.
+        ...(inclinacionObservada(candidate.structure) !== undefined ? { inclinacion: inclinacionObservada(candidate.structure) } : {}),
       },
       relationships: candidate.relationships.filter((relation) => relation.target_element_id !== "unknown"),
       uncertainties: candidate.uncertainties,
@@ -588,7 +600,13 @@ export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: Analysis
   // Each variant appends its rules to the base text, so every variant's prompt and hash stay byte-identical.
   // `v17-lectura-unica` lleva el texto de v16 delante del suyo: la frontera
   // bouquet/centro de mesa que midio ADR-0029 no cambia al anadir las lecturas.
-  const extra = variante === "v14-candidato" ? `\n${STRUCTURE_RULES_V14_CANDIDATE}` : variante === "v15-candidato" ? `\n${STRUCTURE_RULES_V15_CANDIDATE}` : variante === "v16" ? `\n${STRUCTURE_RULES_V16}` : variante === VARIANTE_LECTURA_UNICA ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}` : "";
+  const extra = variante === "v14-candidato" ? `\n${STRUCTURE_RULES_V14_CANDIDATE}` : variante === "v15-candidato" ? `\n${STRUCTURE_RULES_V15_CANDIDATE}` : variante === "v16" ? `\n${STRUCTURE_RULES_V16}` : variante === VARIANTE_LECTURA_UNICA ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}`
+    // v18 (candidata) = v17 byte a byte y sus reglas DETRÁS: el texto de v17 sigue siendo prefijo.
+    : variante === VARIANTE_V18_CANDIDATA ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}\n${STRUCTURE_RULES_V18_CANDIDATE}`
+    // v19 (candidata) = v18 byte a byte y sus reglas DETRÁS: el texto de v18 sigue siendo prefijo.
+    : variante === VARIANTE_V19_CANDIDATA ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}\n${STRUCTURE_RULES_V18_CANDIDATE}\n${STRUCTURE_RULES_V19_CANDIDATE}`
+    // v19b (candidata) = v18 byte a byte y solo la regla del orden de color detrás.
+    : variante === VARIANTE_V19B_CANDIDATA ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}\n${STRUCTURE_RULES_V18_CANDIDATE}\n${STRUCTURE_RULE_V19B_ORDEN_COLOR}` : "";
   const inventorySystem = (mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM) + extra;
   // En modo perceptual nunca se manda el catálogo al modelo: no hay nada
   // válido que pueda elegir, y mandarlo solo lo tentaría a inventar un id.
@@ -730,7 +748,8 @@ async function ejecutarAnalisis(input: {
   // La dominancia se mide sobre los píxeles, no sobre el orden en que el modelo
   // escribió los nombres (fase 2.1). Detrás de bandera hasta que el benchmark
   // muestre la mejora.
-  const blueprint = featureEnabled("MEASURED_COLOR_DOMINANCE_V1") ? await enriquecerConDominancia(armado, referencias) : armado;
+  const conDominancia = featureEnabled("MEASURED_COLOR_DOMINANCE_V1") ? await enriquecerConDominancia(armado, referencias) : armado;
+  const blueprint = await conProporcionDeFotos(conDominancia, referencias);
   return {
     blueprint,
     ...(Object.keys(lecturasCrudas).length ? { lecturasCrudas } : {}),

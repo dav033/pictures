@@ -77,7 +77,7 @@ import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, mezclasAdmisiblesEstructura, productosDelAjuste, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
+import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, busquedasDeAcabado, mezclasAdmisiblesEstructura, productosDelAjuste, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
 import { aplicarReferenciasMedidas, busquedasDeReferencias, familiaDeTitulo } from "@/lib/plan/referencias-medidas";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, accionEstimacionInconsistente, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
@@ -630,6 +630,29 @@ export function pistasGuirnaldaDelPlan(plan: Pick<PlanDecoracion, "estructuras">
   return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
 }
 
+/** Desde qué parte de globos grandes y gigantes contados la foto contradice «chicos con pocos grandes». */
+export const PARTE_GRANDES_CONTRADICE = 0.4;
+
+/**
+ * Los tamaños que la foto leyó en una pieza, reconciliando sus dos lecturas (UI-4, 2026-10-05).
+ *
+ * `tamanos_leidos` es una categoría y casi siempre dice «chicos_con_pocos_grandes» (46 de 48 piezas de la
+ * línea base): no discrimina. El conteo de la MISMA pieza trae el reparto por tamaño en cifras, y en la
+ * columna dorada del CASE-001 de images-judge medía 0,4-0,5 de grandes y gigantes (el resto de casos, 0,15-0,3)
+ * mientras la categoría decía «pocos grandes»: la pieza se compraba con un 7 % de 18"/24" y es casi toda de
+ * globos grandes. Cuando las dos lecturas se contradicen así —un 40 % o más de grandes con confianza de al
+ * menos 0,5—, manda la cifra y la pieza es «grandes_con_pocos_chicos». En cualquier otro caso, la categoría
+ * tal cual: esto solo resuelve una contradicción, no reinterpreta la lectura.
+ */
+export function tamanosDeLaFoto(apariencia: ReferenceBlueprintV2["elements"][number]["appearance"]): typeof apariencia.tamanos_leidos {
+  const leido = apariencia.tamanos_leidos;
+  if (leido !== "chicos_con_pocos_grandes") return leido;
+  const conteo = apariencia.conteo;
+  if (!conteo || conteo.confianza < 0.5) return leido;
+  const grandes = conteo.por_tamano.filter((item) => item.clase === "grande" || item.clase === "gigante").reduce((suma, item) => suma + item.proporcion, 0);
+  return grandes >= PARTE_GRANDES_CONTRADICE ? "grandes_con_pocos_chicos" : leido;
+}
+
 /**
  * Los tamaños de globo que la foto leyó en las piezas que materializan un elemento de la referencia. Misma
  * fuente y misma regla que `pistasRemateDelPlan`, y por la misma razón que esa existe aparte de
@@ -643,7 +666,7 @@ export function pistasTamanosDelPlan(plan: Pick<PlanDecoracion, "estructuras">, 
   for (const estructura of plan.estructuras) {
     const elementId = estructura.referencia_element_id;
     const elemento = elementId ? elementos.get(elementId) : undefined;
-    const leido = elemento?.appearance.tamanos_leidos;
+    const leido = elemento ? tamanosDeLaFoto(elemento.appearance) : undefined;
     if (!elementId || !leido || pistas.has(elementId)) continue;
     // La confianza del patrón no juzga los tamaños —como no juzga el remate—, pero cuando la hay es la
     // única medida de cuánto se vio la pieza, así que se reaprovecha; sin patrón, la lectura se da por buena.
@@ -676,7 +699,10 @@ export function pistasRemateDelPlan(plan: Pick<PlanDecoracion, "estructuras">, b
 /**
  * Hacia dónde se va cada pieza y cuánto, leído de la foto (fracción de su alto,
  * negativo a la izquierda). Misma fuente y misma regla que `pistasArmadoDelPlan`.
- * Una pieza recta no viaja: su `inclinacion` es 0 y el motor ya arranca recto.
+ * Una pieza recta solo viaja si es columna: la columna asimétrica arranca con su
+ * plantilla inclinada (25 % del alto) cuando no recibe nada, así que "la foto la
+ * muestra recta" se envía como 0 y el motor la deja recta. En las demás piezas el
+ * 0 sigue sin viajar: no hay un valor de partida inclinado que contradecir.
  */
 export function pistasInclinacionDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): { referencia_element_id: string; inclinacion: number }[] {
   if (!blueprint) return [];
@@ -685,7 +711,8 @@ export function pistasInclinacionDelPlan(plan: Pick<PlanDecoracion, "estructuras
   for (const estructura of plan.estructuras) {
     const elementId = estructura.referencia_element_id;
     const inclinacion = elementId ? elementos.get(elementId)?.appearance.inclinacion : undefined;
-    if (!elementId || inclinacion === undefined || inclinacion === 0 || pistas.has(elementId)) continue;
+    if (!elementId || inclinacion === undefined || pistas.has(elementId)) continue;
+    if (inclinacion === 0 && estructura.tipo !== "columna") continue;
     pistas.set(elementId, { referencia_element_id: elementId, inclinacion });
   }
   return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
@@ -904,8 +931,23 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // Satin Rosado»). La búsqueda del modelo por color devuelve primero la línea Fashion, y sin el producto
     // en el turno nadie podía comprarlo (2026-10-04: columnas de rosa pastel compradas en Reflex Fucsia). Un
     // color que el cliente pidió manda sobre la foto, como en el resto de la auditoría de color.
+    // Lo mismo para el ACABADO que la foto muestra de un color (UI-2c, 2026-10-05): si el turno no trae ese
+    // color en ese acabado, `aplicarAcabadoReferencia` solo podía avisar. El modelo junta los colores en una
+    // frase («plateado reflex rosado gris») y el «reflex» del plateado le traía un Reflex Rosado a una foto
+    // pastel (CASE-002 de images-judge). Se mira sobre el plan ya canonizado y cubierto, que es el que juzga
+    // la regla; un acabado que el cliente pidió manda sobre la foto.
     const fotoManda = estado.restriccionesUsuario.colores.length === 0;
-    const busquedasReferencia = fotoManda ? busquedasDeReferencias(parseado.data, estado.referenceBlueprint, disponibilidadDelTurno(estado.ragCandidatos ?? [])) : [];
+    const disponibilidadPrevia = disponibilidadDelTurno(estado.ragCandidatos ?? []);
+    const busquedasAcabado = estado.restriccionesUsuario.acabados.length === 0
+      ? (() => {
+        const previo = ajustarCoberturaPlan(canonizarColoresPlan(parseado.data).plan, disponibilidadPrevia).plan;
+        return busquedasDeAcabado(previo, acabadosObservadosDeMateriales(previo.estructuras, estado.referenceBlueprint), disponibilidadPrevia);
+      })()
+      : [];
+    const busquedasReferencia = [...new Set([
+      ...(fotoManda ? busquedasDeReferencias(parseado.data, estado.referenceBlueprint, disponibilidadPrevia) : []),
+      ...busquedasAcabado,
+    ])];
     if (busquedasReferencia.length > 0) {
       const respuestas = await Promise.all(busquedasReferencia.map((frase) => buscarCatalogoRag(ragPool, frase, {
         focusedQueries: [frase],

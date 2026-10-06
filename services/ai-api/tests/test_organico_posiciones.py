@@ -192,7 +192,9 @@ ANTES: dict[str, tuple[str, int]] = {
     "A1": ("02f83ae5e0c4a4c1", 263),
     "A2": ("6fa4462deba0a64b", 101),
     "C1": ("33e253ae9a817a81", 89),
-    "S1": ("be5e4fc2f92f15d2", 61),
+    # Cambiado a propósito el 2026-10-05 (UI-1c): el medio arco sin lectura de inclinación se corta en
+    # `CORTE_MEDIO_ARCO_FUERTE` (0,60) en vez del 0,68 de su forma lista. Antes: ("be5e4fc2f92f15d2", 61).
+    "S1": ("1a3dd48c6ffaee87", 58),
 }
 
 SIN_LECTURA = [

@@ -101,6 +101,8 @@ const PAREJA = ["rosado", "plateado"];
   ]);
   assert.ok(r.ok, `dos semiarcos sin foco deben pasar el preflight; errores: ${r.errores.join("; ")}`);
   assert.match(r.prompt, /one standing on the left and one on the right/, "la pareja de semiarcos debe nombrar los dos lados");
+  // Auditoría de huérfanas (2026-10-05, CASE-005): sin pieza entre ellas, FLUX cerraba el par en un solo arco.
+  assert.match(r.prompt, /one on the right, with open space between them/, "el par sin foco dice que queda separado");
 }
 
 // 3) Pareja con arco central: la relación "flanking" no se pierde con el arreglo.

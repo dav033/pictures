@@ -18,6 +18,8 @@ from typing import Any, cast
 import pytest
 
 from app.armado_estructura import (
+    CORTE_MEDIO_ARCO_FUERTE,
+    CORTE_MEDIO_ARCO_LEVE,
     FORMA_COLUMNA_ASIMETRICA,
     FORMA_SEMIARCO,
     FORMA_SEMIARCO_ASIMETRICO,
@@ -80,6 +82,20 @@ def completado(estructura: dict[str, object]) -> dict[str, Any]:
     return cast(dict[str, Any], completar(peticion)["armados"][0])
 
 
+def completado_con_inclinacion(estructura: dict[str, object], inclinacion: float) -> dict[str, Any]:
+    """Como `completado`, con la lectura de la foto de hacia dónde se va la pieza (fracción de su alto)."""
+    peticion = ArmadoEstructuraRequest.model_validate(
+        {
+            "context": CONTEXTO,
+            "schema_version": "omoikane-armado-estructura.v1",
+            "accion": "completar",
+            "plan": plan(estructura),
+            "inclinaciones": [{"referencia_element_id": "REF_01_E01", "inclinacion": inclinacion}],
+        }
+    )
+    return cast(dict[str, Any], completar(peticion)["armados"][0])
+
+
 def armada(estructura: dict[str, object]) -> dict[str, object]:
     """La pieza con el armado que la confirmación le escribe, como queda en el plan."""
     salida = completado(estructura)
@@ -109,16 +125,18 @@ def test_el_semiarco_organico_derecho_del_caso_real_es_medio_arco_de_un_lado_con
     salida = completado(real)
     assert salida["clave"] == "armado_arco_organico"
     forma = cast(dict[str, Any], salida["armado"]["forma"])
-    # De un solo lado: el corte del medio arco corto, volteado a la derecha, con la pata gruesa de «medio-pila».
-    assert forma["corte"] == _FORMA[FORMA_SEMIARCO].forma["corte"] < 1
+    # De un solo lado, volteado a la derecha, con la pata gruesa de «medio-pila». El corte ya no es el 0,68 de la
+    # forma lista (un bastón con la punta colgando un tercio del alto): sin lectura de la foto, el moderado (UI-1c).
+    assert forma["corte"] == CORTE_MEDIO_ARCO_FUERTE < _FORMA[FORMA_SEMIARCO].forma["corte"] < 1
     assert forma["espejo"] is True
     # El lado pesado se voltea con la pieza (2026-10-05): sin voltear, el de la izquierda caía en la punta libre
     # de un semiarco derecho y el texto de la imagen decía «más grueso a la izquierda», donde no hay pie.
     assert forma["carga"] == -_FORMA[FORMA_SEMIARCO_ASIMETRICO].forma["carga"]
-    # Las medidas son las del plan: el alto tal cual y el ancho del arco completo, el mínimo del motor (1,5 m),
-    # que es el que más se acerca a los 1,2 m que se ven; no los 3,68 × 2,61 m de un arco entero.
+    # Las medidas son las del plan: el alto tal cual y el ancho del arco completo que, cortado, deja los 1,2 m
+    # que se ven; no los 3,68 × 2,61 m de un arco entero. Con el corte moderado (UI-1c) ese ancho ya no es el
+    # mínimo del motor (1,5 m, con el que la pieza de corte 0,68 se quedaba): se encuentra uno que llega.
     assert forma["altoM"] == 2.2
-    assert forma["anchoM"] == 1.5
+    assert 1.5 <= forma["anchoM"] < 2.0
     del_motor = pieza_del_motor_resuelta(armada(real))
     assert del_motor is not None
     resuelto = del_motor[1]
@@ -224,6 +242,91 @@ def test_la_columna_asimetrica_es_organica_e_inclinada(mezcla: str) -> None:
     assert abs(forma["inclinacionM"] - esperado) < 1e-9
     recta = completado(pieza("columna", "columna", {"alto_m": 1.8}, mezcla="organica_fina"))
     assert recta["armado"]["forma"]["inclinacionM"] == 0.0
+
+
+def test_un_semiarco_sin_medidas_se_arma_con_las_medidas_que_el_plan_le_pone() -> None:
+    """CASE-004 de images-judge: el armado y el resumen no pueden tener medidas distintas.
+
+    El armado se construye antes de que la resolución complete las medidas por defecto. Sin ``medidas`` el motor
+    usaba la plantilla de la forma lista (un semiarco de 3,4 × 2,5 m) y el plan mostraba 1,2 × 2,2 m: la curva
+    dibujada no era la de la pieza. Ahora una pieza sin medidas se arma exactamente como con las que el plan le pone.
+    """
+    sin_medidas = cast(dict[str, Any], completado(pieza("semiarco", "semiarco", {}))["armado"]["forma"])
+    con_las_del_plan = cast(
+        dict[str, Any],
+        completado(pieza("semiarco", "semiarco", {"ancho_m": 1.2, "alto_m": 2.2}))["armado"]["forma"],
+    )
+    assert sin_medidas == con_las_del_plan
+    assert sin_medidas["altoM"] == 2.2, "el alto es el del plan, no el de la plantilla del motor"
+    lista = _FORMA[FORMA_SEMIARCO]
+    assert sin_medidas["anchoM"] != lista.forma["anchoM"], "el ancho se ajusta a las medidas, no es el de la plantilla"
+
+
+def test_las_medidas_que_el_modelo_si_escribio_no_se_pisan_con_las_del_plan() -> None:
+    propias = cast(
+        dict[str, Any],
+        completado(pieza("semiarco", "semiarco", {"ancho_m": 1.8, "alto_m": 2.0}))["armado"]["forma"],
+    )
+    por_defecto = cast(dict[str, Any], completado(pieza("semiarco", "semiarco", {}))["armado"]["forma"])
+    assert propias["altoM"] == 2.0
+    assert propias != por_defecto
+
+
+def test_la_columna_asimetrica_que_la_foto_muestra_recta_sale_recta() -> None:
+    """CASE-001 de images-judge: «recta observada» (0) no es «sin dato» (ausente).
+
+    Sin lectura la asimétrica se tuerce lo que su forma lista (25 % del alto); con un 0 de la foto, no.
+    """
+    base = pieza(
+        "columna", "columna_asimetrica", {"alto_m": 1.8}, mezcla="organica_fina", referencia_element_id="REF_01_E01"
+    )
+    sin_lectura = cast(dict[str, Any], completado(base)["armado"]["forma"])
+    assert sin_lectura["inclinacionM"] == pytest.approx(1.8 * 0.6 / 2.4)
+    recta = cast(dict[str, Any], completado_con_inclinacion(base, 0.0)["armado"]["forma"])
+    assert recta["inclinacionM"] == 0.0
+    inclinada = cast(dict[str, Any], completado_con_inclinacion(base, 0.22)["armado"]["forma"])
+    assert inclinada["inclinacionM"] == pytest.approx(1.8 * 0.22)
+    hacia_la_izquierda = cast(dict[str, Any], completado_con_inclinacion(base, -0.22)["armado"]["forma"])
+    assert hacia_la_izquierda["inclinacionM"] == pytest.approx(-1.8 * 0.22)
+
+
+def test_el_medio_arco_solo_cuelga_la_punta_si_la_foto_vio_un_vuelo_fuerte() -> None:
+    """UI-1c (observación del usuario sobre las guías de FLUX): los semiarcos salían como bastones.
+
+    Todo medio arco tomaba el corte 0,68 de su forma lista y la punta caía un tercio del alto pasada la cima,
+    aunque la foto dijera que la pieza apenas dobla la punta. Leve: la punta se queda en la cima. Fuerte o sin
+    lectura: una caída moderada. El ancho visible sigue siendo el del plan.
+    """
+    base = pieza("semiarco", "semiarco_asimetrico", {"ancho_m": 1.2, "alto_m": 2.2}, referencia_element_id="REF_01_E01")
+    leve = cast(dict[str, Any], completado_con_inclinacion(base, 0.22)["armado"]["forma"])
+    fuerte = cast(dict[str, Any], completado_con_inclinacion(base, -0.45)["armado"]["forma"])
+    sin_lectura = cast(dict[str, Any], completado(base)["armado"]["forma"])
+    assert leve["corte"] == CORTE_MEDIO_ARCO_LEVE
+    assert fuerte["corte"] == sin_lectura["corte"] == CORTE_MEDIO_ARCO_FUERTE
+    assert CORTE_MEDIO_ARCO_LEVE < CORTE_MEDIO_ARCO_FUERTE < _FORMA[FORMA_SEMIARCO].forma["corte"]
+    assert leve["anchoM"] != _FORMA[FORMA_SEMIARCO_ASIMETRICO].forma["anchoM"], "el ancho se busca con el corte nuevo"
+
+
+@pytest.mark.parametrize("mezcla", ["organica_gruesa", "solo_grandes"])
+def test_una_columna_de_globos_grandes_los_reparte_y_no_se_afila(mezcla: str) -> None:
+    """CASE-001 de images-judge (UI-4): la columna dorada es casi toda de globos grandes y de ancho casi constante.
+
+    La forma lista y el estilo «lleno» mandaban el 80 % de los grandes al pie y afilaban la punta a 0,7 m sobre
+    1,1 m; la guía de escena que sigue FLUX salía cónica. Con una mezcla de grandes, los grandes van por todo el
+    cuerpo y la punta conserva casi todo el grosor. Una mezcla de chicos sigue como antes.
+    """
+    grandes = cast(
+        dict[str, Any],
+        completado(pieza("columna", "columna_asimetrica", {"alto_m": 2.2}, mezcla=mezcla, densidad="lujosa"))["armado"],
+    )
+    assert grandes["tamanos"]["grandesAbajo"] <= 0.4
+    assert grandes["volumen"]["grosorCimaM"] >= 0.85 * grandes["volumen"]["grosorPatasM"] - 1e-9
+    chicos = cast(
+        dict[str, Any],
+        completado(pieza("columna", "columna_asimetrica", {"alto_m": 2.2}, mezcla="organica_fina", densidad="lujosa"))["armado"],
+    )
+    assert chicos["tamanos"]["grandesAbajo"] > 0.4, "una columna de chicos conserva su plantilla"
+    assert chicos["volumen"]["grosorCimaM"] < 0.85 * chicos["volumen"]["grosorPatasM"]
 
 
 @pytest.mark.parametrize(

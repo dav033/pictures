@@ -10,7 +10,7 @@ import { bloqueColoresExactos } from "../../src/lib/ia/uzume/build-image-prompt"
 import { compileProductPrompt } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
-import { referenciaDelCatalogo } from "../../src/lib/plan/referencia-sempertex";
+import { referenciaDelCatalogo, referenciaDelTitulo } from "../../src/lib/plan/referencia-sempertex";
 import { colorDeReferencia } from "../../src/lib/lora/vocabulario-base";
 
 // 1. La referencia que se compra.
@@ -33,6 +33,22 @@ assert.match(filas[2]!, /Sempertex 570/, "el mismo color con otro acabado es otr
 assert.match(bloque, /never write any of these codes in the image/);
 assert.equal(bloqueColoresExactos({ material_estimate: { balloons: [linea("champagne", "mate", 0)] } } as never), "", "sin referencias no hay bloque");
 console.log("[PASS] bloque de colores exactos: una vez por color, en orden, con Pantone y el globo inflado");
+
+// 2b. UI-2d (CASE-005/007 de images-judge): el tono lo dice el producto comprado, no el color grueso.
+const azulRey = referenciaDelCatalogo("azul rey", "fashion");
+assert.ok(azulRey && azulRey.codigo !== referenciaDelCatalogo("azul", "fashion")!.codigo, "«azul» a secas es otra referencia (la 040)");
+assert.equal(referenciaDelTitulo("B2b Globo Latex Redondo Fashion Azul Rey", "fashion")?.codigo, azulRey!.codigo);
+assert.equal(referenciaDelTitulo("Globo Latex Redondo Fashion Azul", "fashion")?.codigo, referenciaDelCatalogo("azul", "fashion")!.codigo, "sin tono, la del color");
+assert.equal(referenciaDelTitulo("Globo Duo Azul Rey Rosado", "fashion"), null, "dos tonos: ninguno");
+assert.equal(referenciaDelTitulo(undefined, "fashion"), null);
+const conTitulos = bloqueColoresExactos(
+  { material_estimate: { balloons: [linea("azul", "fashion", 0), linea("azul", "fashion", 1)] } } as never,
+  new Map([["p0", "B2b Globo Latex Redondo Fashion Azul Rey"], ["p1", "B2b Globo Latex Redondo Fashion Azul"]]),
+);
+assert.equal(conTitulos.split("\n").length, 3, `dos tonos de azul, dos líneas: ${conTitulos}`);
+assert.match(conTitulos, new RegExp(`Sempertex ${azulRey!.codigo} `), conTitulos);
+assert.equal(bloqueColoresExactos({ material_estimate: { balloons: [linea("azul", "fashion", 0)] } } as never), bloqueColoresExactos({ material_estimate: { balloons: [linea("azul", "fashion", 0)] } } as never, new Map()), "sin títulos, el bloque de siempre");
+console.log("[PASS] colores exactos: el tono del producto comprado manda sobre el color grueso");
 
 // 3. El caption base: el color de la lámina, matizado por el globo medido, y ninguna cifra.
 assert.equal(colorDeReferencia(referenciaDelCatalogo("dorado", "reflex")!), "gold", "sin «chrome»: el acabado se escribe aparte");

@@ -1,6 +1,6 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { referenciaDelCatalogo } from "@/lib/plan/referencia-sempertex";
+import { referenciaDelCatalogo, referenciaDelTitulo } from "@/lib/plan/referencia-sempertex";
 import { acabadoEnIngles, armadoDeElemento, armadoGuirnaldaDeElemento, describirMezclaDeColor, frasePatronColor, idDeEstructura, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
 import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, fraseInstanciaConArmadoGuirnalda, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado, type AnfitrionaEnPrompt } from "./armado-en-prompt";
 import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
@@ -69,7 +69,28 @@ export type ImagePromptInput = {
    * prompt es byte a byte el de siempre.
    */
   colorPatterns?: readonly FraseDeEstructura[];
+  /**
+   * presentationMode (`politica.catalogoCerrado`, R23): añade a MUST NOT INCLUDE la exclusión de
+   * todo lo que Sempertex no vende. La decide `modo-presentacion.ts`, no este archivo. Ausente o
+   * `false`, el prompt es byte a byte el de siempre.
+   */
+  catalogoCerrado?: boolean;
+  /**
+   * El título de cada producto que el plan resuelto compra, por `product_id`. Con él, los colores exactos
+   * salen del tono que se compra («Fashion Azul Rey») y no de la primera referencia del color grueso
+   * («azul» → 040, cian). Ausente, el bloque es el de siempre.
+   */
+  titulosProducto?: ReadonlyMap<string, string>;
 };
+
+/**
+ * Exclusion line of the closed catalog (presentationMode, R23). The wording lists what the
+ * 2026-10-05 session saw appear (pennant banners, toy cars) plus the generic categories; it never
+ * names a product, a size or a color, so `verificarCoherenciaPrompt` has nothing to match.
+ */
+function exclusionCatalogoCerrado(hayEscenografia: boolean): string {
+  return `\n- CLOSED CATALOG: show only the approved balloon products. Do not add anything Sempertex does not sell: no pennant or bunting banners, paper or fabric garlands, toys or toy vehicles, figurines, themed props, furniture, signage, lettering or invented accessories${hayEscenografia ? ", other than the PRESERVED SCENE CONTEXT kept from the customer's own photo" : ""}.`;
+}
 
 /**
  * Element name for the image model without its measurement parenthetical. The
@@ -591,17 +612,21 @@ function armadoClause(element: SceneSpec["elements"][number], colorPatterns?: re
  * color que no es un nombre de la lámina no sale (no se inventa una referencia); los neutros no tienen
  * Pantone en la tabla y salen sin él. Gemini lee cifras; el caption de FLUX no lleva ninguna.
  */
-export function bloqueColoresExactos(sceneSpec: Pick<SceneSpec, "material_estimate">): string {
+export function bloqueColoresExactos(sceneSpec: Pick<SceneSpec, "material_estimate">, titulosProducto?: ReadonlyMap<string, string>): string {
   const vistos = new Set<string>();
   const lineas: string[] = [];
   for (const linea of sceneSpec.material_estimate?.balloons ?? []) {
     if (!linea.color || linea.design_quantity <= 0) continue;
     const acabado = acabadoEnIngles(linea.finish);
     const clave = `${linea.color.trim()}${acabado ? `, ${acabado}` : ""}`;
-    if (vistos.has(clave.toLowerCase())) continue;
-    const referencia = referenciaDelCatalogo(linea.color, linea.finish);
+    // El tono del producto comprado manda sobre el color grueso de la línea (UI-2d, CASE-005/007).
+    const titulo = linea.product_id ? titulosProducto?.get(linea.product_id) : undefined;
+    const referencia = referenciaDelTitulo(titulo, linea.finish) ?? referenciaDelCatalogo(linea.color, linea.finish);
     if (!referencia) continue;
-    vistos.add(clave.toLowerCase());
+    // Dos tonos de un mismo color grueso (Azul Rey y Azul Naval) son dos líneas.
+    const vista = `${clave.toLowerCase()}|${referencia.codigo}`;
+    if (vistos.has(vista)) continue;
+    vistos.add(vista);
     lineas.push(`- ${clave}: Sempertex ${referencia.codigo} ${referencia.nombreCompleto}, ${referencia.acabado} finish${referencia.pms ? `, PANTONE ${referencia.pms}` : ""}, inflated balloon color ${referencia.hexGlobo}.`);
   }
   if (!lineas.length) return "";
@@ -627,7 +652,7 @@ function eventAuthorityContract(context?: VisualContext, styling: readonly Ambie
  */
 export const FINAL_OUTPUT_REMINDER = "OUTPUT REMINDER: everything above is invisible control metadata. Return one clean photograph of the decorated venue with zero visible text: no captions, labels, name tags, size or count notes, dimension lines, or info cards.";
 
-export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures, correctiveInstruction, scenography = [], colorPatterns }: ImagePromptInput): string {
+export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures, correctiveInstruction, scenography = [], colorPatterns, catalogoCerrado = false, titulosProducto }: ImagePromptInput): string {
   // Keep prompt construction useful for lightweight visual eval fixtures that
   // provide only approved elements. Production callers still pass the full
   // server-validated SceneSpec.
@@ -654,7 +679,7 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
     : "- No physical decoration instances are approved.";
   const physicalCardinality = cardinalityContract(sceneSpec, officialStructures, colorPatterns);
   const colorVariety = colorVarietyContract(sceneSpec, colorPatterns);
-  const coloresExactos = bloqueColoresExactos(sceneSpec);
+  const coloresExactos = bloqueColoresExactos(sceneSpec, titulosProducto);
   const eventAuthority = eventAuthorityContract(visualContext, styling);
   const referenceCapacityNotice = droppedCatalogReferenceCount > 0
     ? `CATALOG REFERENCE CAPACITY: ${droppedCatalogReferenceCount} catalog photo(s) could not be attached (provider input limit reached or photo unavailable). Use the complete catalog metadata and quantities in AUTOMATIC_SCENE_SPEC for those lines; do not invent a substitute product, omit the line, or treat the missing photo as permission to change its color/material.`
@@ -774,7 +799,7 @@ PHOTOREALISTIC INTEGRATION
 ${list(sceneSpec.positive_prompt.photorealistic_integration)}
 
 MUST NOT INCLUDE
-- No decorative object absent from the automatic element allowlist${scenography.length ? ", other than the PRESERVED SCENE CONTEXT kept from the customer's own photo" : ""}.
+- No decorative object absent from the automatic element allowlist${scenography.length ? ", other than the PRESERVED SCENE CONTEXT kept from the customer's own photo" : ""}.${catalogoCerrado ? exclusionCatalogoCerrado(scenography.length > 0) : ""}
 ${list(sceneSpec.negative_prompt.forbidden_elements)}
 
 FORBIDDEN VENUE CHANGES

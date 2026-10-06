@@ -115,7 +115,7 @@ DISEÑO DE LA DECORACIÓN (activo)
 - NUNCA CALCULES NI ESTIMES CANTIDADES TÚ: las cantidades y los tamaños que le menciones al cliente salen solo de estructuras[].total_unidades y estructuras[].tamanos de la última respuesta ok:true de confirmar_plan_decoracion; mientras no tengas una, no le des números de globos.
 - Si el cliente pidió un tamaño, color o acabado explícito, consérvalo como restricción obligatoria del plan; no lo sustituyas en silencio. Registra el acabado en materiales[].acabado. Si no hay cobertura exacta, confirmar_plan_decoracion debe bloquearlo o devolver la sustitución declarada.
 - Si no hay medidas, confirma el plan igual: el sistema usa medidas por defecto y las muestra como supuesto explícito.
-- Las piezas sin geometría sí llevan cantidades: Bouquet y Figura (que se arman con tipo kit), y también kit, backdrop y accesorio, necesitan variant_id en cada material y unidades_declaradas (el total de globos, o de piezas si es un kit empaquetado, sumando las repeticiones). Ejemplos: ${EJEMPLO_UNIDADES_DECLARADAS}.
+- Las piezas sin geometría sí llevan cantidades: Bouquet, Figura y Racimo de pared (que se arman con tipo kit), y también kit, backdrop y accesorio, necesitan variant_id en cada material y unidades_declaradas (el total de globos, o de piezas si es un kit empaquetado, sumando las repeticiones). Ejemplos: ${EJEMPLO_UNIDADES_DECLARADAS}.
 - Una decoración lleva globos: salvo que el cliente pida explícitamente solo accesorios o "sin globos", incluye al menos una estructura de globos. Serpentinas, velas, banderolas y demás accesorios solo acompañan. Si la búsqueda por ocasión no devuelve globos, vuelve a buscar globos por color sin exigir la ocasión.
 - Si confirmar_plan_decoracion devuelve ok:false por SIN_COBERTURA, el plan no quedó confirmado: busca productos que cubran los tamaños faltantes o usa una mezcla compatible y vuelve a confirmar. Nunca anuncies que la imagen se está generando tras ese error.
 - Si confirmar_plan_decoracion devuelve ok:false por PRESUPUESTO_EXCEDIDO, el plan NO quedó confirmado y NO es aprobable: la herramienta ya lo descartó. Es un error tuyo de diseño, no una decisión que se le traslada al cliente. Antes de escribirle, REDISEÑA y vuelve a llamar a la herramienta: quita la estructura de menor valor (empezando por acentos y rellenos), baja repeticiones, reduce el número de colores distintos —cada color extra es otro paquete cerrado— o aplica una de las "alternativas" que devuelve la respuesta. Reintenta hasta que quepa.
@@ -196,7 +196,13 @@ function coloresDeLaPieza(apariencia: ReferenceBlueprintV2["elements"][number]["
     }
     const suyas = referencias.filter((referencia) => colorDeReferencia(referencia.nombre) === item.color);
     if (suyas.length) {
-      const globos = suyas.map((referencia) => `${referencia.nombre_completo}${referencia.familia_fiable ? "" : " (familia aproximada)"} → busca "globo latex redondo ${referencia.nombre_completo}"`);
+      // Una familia que la foto no confirmó NO se nombra como producto: el modelo la compraba tal cual
+      // («pastel pink» + 7 % de píxeles rosados → Reflex Rosado cromado que la foto no tiene, CASE-002 de
+      // images-judge, 3 de 3 planes). Sin familia confiable solo viaja el color; el acabado lo decide la
+      // etiqueta del analizador, no una medición aproximada.
+      const globos = suyas.map((referencia) => referencia.familia_fiable
+        ? `${referencia.nombre_completo} → busca "globo latex redondo ${referencia.nombre_completo}"`
+        : `${referencia.nombre} (familia sin confirmar: no impongas acabado) → busca "globo latex redondo ${referencia.nombre}"`);
       detalles.push(`${suyas.length > 1 ? "globos Sempertex medidos" : "globo Sempertex medido"}: ${globos.join(" y ")}`);
     }
     return `${item.color}${item.acabado ? ` ${item.acabado}` : ""} (${detalles.join("; ")})`;

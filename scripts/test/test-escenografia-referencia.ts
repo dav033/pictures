@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
-import { applySceneryVisibility, sceneryFromReference } from "@/lib/ia/referencia/reference-structure";
+import { ambientDecorName, applySceneryVisibility, elementosMaterializados, nombreConSuColor, sceneryFromReference } from "@/lib/ia/referencia/reference-structure";
 import { buildApprovedSceneSpec, sceneSpecHash, type SceneryElement, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
 import { escenografiaCliente } from "@/lib/plan/presentacion-cliente";
@@ -68,7 +68,8 @@ const referencia = ReferenceBlueprintV2Schema.parse({
     elementoReferencia("REF_01_E01", "right balloon half arch", "balloon_structure", {
       visual_semantics: { structure_type: "semiarco", placement: "lateral_derecho", design_role: "focal", repetition_group: "REF_01_E01", density: "media" },
     }),
-    elementoReferencia("REF_01_E02", "wooden bench", "furniture"),
+    // Un banco que se ve madera (el color manda sobre el material desde el 2026-10-06: `nombreConSuColor`).
+    elementoReferencia("REF_01_E02", "wooden bench", "furniture", { appearance: { observed_colors: ["natural oak"], resolved_colors: [], color_policy: "adapt_to_event_palette", material: "wood", shape: "bench", composition: "single uniform material" } }),
     elementoReferencia("REF_01_E03", "white roses", "floral", { reference_bbox: { x: 0.7, y: 0.6, width: 0.2, height: 0.2 } }),
     elementoReferencia("REF_01_E04", "warm string lights", "lighting", { reference_bbox: { x: 0.05, y: 0.05, width: 0.9, height: 0.2 } }),
     // Un letrero nunca entra: el modelo de imagen inventaría tipografía.
@@ -126,6 +127,44 @@ const escenografia = sceneryFromReference(referencia, MATERIALIZADOS);
   const inventado = applySceneryVisibility(sceneryFromReference(referencia, MATERIALIZADOS), new Map([["REF_01_E99", true]]));
   assert.equal(inventado.length, 3);
   ok("interruptor: chips por categoría en español; un id desconocido nunca añade un elemento");
+}
+
+// 2b. El fondo de la foto (auditoría de propiedades huérfanas, 2026-10-05): antes no era escenografía y, sin un
+// backdrop en el plan, se perdía por los dos lados y FLUX pintaba un fondo de estudio. Con un backdrop en el plan,
+// el de la foto ya lo construye el plan y no se duplica.
+{
+  const conFondo = ReferenceBlueprintV2Schema.parse({
+    ...referencia,
+    elements: [...referencia.elements, elementoReferencia("REF_01_E07", "gender reveal backdrop panels", "backdrop", { reference_bbox: { x: 0.2, y: 0.4, width: 0.6, height: 0.5 } })],
+  });
+  const sinBackdrop = elementosMaterializados(conFondo, [{ tipo: "semiarco", referencia_element_id: "REF_01_E01" }]);
+  assert.deepEqual([...sinBackdrop], ["REF_01_E01"]);
+  const escenografia = sceneryFromReference(conFondo, sinBackdrop);
+  assert.ok(escenografia.some((item) => item.elementId === "REF_01_E07" && item.name === "gender reveal backdrop panels"), "el fondo de la foto entra como escenografía");
+  assert.ok(escenografiaCliente(conFondo, sinBackdrop).some((chip) => chip.etiqueta === "Fondo" && chip.elementIds.includes("REF_01_E07")), "y el cliente lo ve como chip «Fondo»");
+  const conBackdrop = elementosMaterializados(conFondo, [{ tipo: "semiarco", referencia_element_id: "REF_01_E01" }, { tipo: "backdrop" }]);
+  assert.ok(conBackdrop.has("REF_01_E07"), "con un backdrop en el plan, el fondo de la foto ya está construido");
+  assert.ok(!sceneryFromReference(conFondo, conBackdrop).some((item) => item.elementId === "REF_01_E07"), "y no se dibuja dos veces");
+  ok("fondo: entra como escenografía salvo que el plan construya su propio backdrop");
+}
+
+// 2c. Nombres en snake_case (Fase 7, 2026-10-06): el panel de fondo se descartaba por no ser «inglés plano», y un
+// letrero en snake_case no tiene límite de palabra antes de «sign».
+{
+  assert.equal(ambientDecorName("navy_arched_backdrop_panel"), "navy arched backdrop panel");
+  assert.equal(ambientDecorName("congrats_grad_neon_sign"), undefined, "un letrero sigue fuera aunque venga en snake_case");
+  assert.equal(ambientDecorName("floor_balloon_cluster_right"), undefined, "los globos nunca son escenografía");
+  ok("nombres snake_case: el fondo entra, el letrero y los globos no");
+}
+
+// 2d. Madera pintada (CASE-002, 2026-10-06): «arch wooden backdrop wall» de lavanda claro salía como un portón de
+// madera natural. El color que se ve manda sobre el material; la madera que se ve madera se queda.
+{
+  assert.equal(nombreConSuColor("arch wooden backdrop wall", ["light lavender", "pastel pink"]), "light lavender arch backdrop wall");
+  assert.equal(nombreConSuColor("wooden table", ["walnut brown"]), "wooden table", "madera que se ve madera");
+  assert.equal(nombreConSuColor("wooden table", []), "wooden table", "sin colores, el nombre se queda");
+  assert.equal(nombreConSuColor("white pleated wall curtain", ["white"]), "white pleated wall curtain", "sin madera, nada que cambiar");
+  ok("escenografía de madera pintada: se nombra por el color que se ve");
 }
 
 const escenografiaParaEscena: SceneryElement[] = sceneryFromReference(referencia, MATERIALIZADOS).map((item) => ({

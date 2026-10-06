@@ -34,8 +34,9 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from typing import cast
 
-from app.arco.tipos import TAMANO_ESTANDAR, TAMANOS_GLOBO
+from app.arco.tipos import INFLADO_PULG, TAMANO_ESTANDAR, TAMANOS_GLOBO
 from app.color_catalogo import ACABADO_MOTOR_POR_FAMILIA, referencia_de
+from app.conteo_foto import es_centro_contado
 from app.generated_models import contract_schema
 from app.motores.canonico import hex_de
 from app.organico.tipos import Acabado
@@ -403,6 +404,51 @@ def globos_de(
     return cast(list[GloboOrg], globos)
 
 
+#: Cuánto se solapan dos globos vecinos de un centro contado, en fracción de la suma de sus radios.
+_SOLAPE_CENTRO_CONTADO = 0.9
+
+
+def globos_de_centro_contado(
+    estructura: Mapping[str, object], mezcla_real: Sequence[Mapping[str, object]]
+) -> list[GloboOrg] | None:
+    """Los globos de un centro de mesa **contado** (``conteo_foto.es_centro_contado``): exactamente los que se
+    compran, cada uno de su tamaño, en fila sobre la mesa. ``None`` si la pieza no es un centro contado.
+
+    Excepción deliberada a «los dibujos no cuentan» (encabezado): el centro de forma ``base`` pinta siempre unos
+    16 globos, y un centro de **un** globo burbuja leído en la foto (CASE-006, UI-6) llegaba a la guía de escena
+    como un racimo que FLUX copiaba (auditoría de propiedades huérfanas, 2026-10-05). Los tamaños son los de
+    ``mezcla_real`` (la resolución, sin recalcular), del mayor al menor, y los colores los de los materiales por
+    peso, en turno. Solo para la guía: el esquema de la tarjeta (``dibujo_de``) sigue siendo el del repo dueño.
+    """
+    if not es_centro_contado(estructura):
+        return None
+    datos = datos_de(estructura, mezcla_real)
+    colores = datos["colores"]
+    tamanos = sorted(
+        (tamano for tamano, unidades in datos["mezcla"].items() for _ in range(int(unidades))), reverse=True
+    )
+    if not colores or not tamanos:
+        return None
+    radios = [float(INFLADO_PULG[tamano] * 0.0254 / 2) for tamano in tamanos]
+    xs = [0.0]
+    for anterior, radio in zip(radios, radios[1:], strict=False):
+        xs.append(xs[-1] + (anterior + radio) * _SOLAPE_CENTRO_CONTADO)
+    centro = xs[-1] / 2
+    return [
+        GloboOrg(
+            x=x - centro,
+            y=radio,
+            r=radio,
+            capa=1,
+            nominal=tamano,
+            color=colores[i % len(colores)]["hex"],
+            acabado=colores[i % len(colores)]["acabado"],
+            indice=i % len(colores),
+        )
+        for i, (x, radio, tamano) in enumerate(zip(xs, radios, tamanos, strict=True))
+    ]
+
+
 def globos_y_estructura_de(
     estructura: Mapping[str, object], mezcla_real: Sequence[Mapping[str, object]]
 ) -> tuple[list[GloboOrg], list[ElementoDibujo]] | None:
@@ -411,9 +457,14 @@ def globos_y_estructura_de(
     Hoy solo lo anotan el aro (su anillo de metal, su poste con su base, el forro del aro «con fondo» y la tela
     de la media luna) y el mini aro del centro de mesa (anillo y poste), en metros y en el marco de los globos.
     Las demás piezas devuelven la lista vacía. Un solo dibujo para las dos cosas: la guía no dibuja dos veces.
+
+    Un centro de mesa contado lleva sus globos contados (``globos_de_centro_contado``) y nada más.
     """
     if dibujante_de(estructura) is None or not datos_de(estructura, mezcla_real)["colores"]:
         return None
+    contados = globos_de_centro_contado(estructura, mezcla_real)
+    if contados is not None:
+        return contados, []
     _dibujo, globos, elementos = con_globos_y_estructura(
         lambda: cast(Dibujo, dibujo_de(estructura, mezcla_real))
     )
@@ -433,6 +484,7 @@ __all__ = [
     "dibujo_de",
     "forma_de",
     "globos_de",
+    "globos_de_centro_contado",
     "globos_y_estructura_de",
     "mezcla_de",
     "patron_de",

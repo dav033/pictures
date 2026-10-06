@@ -1107,3 +1107,34 @@ async def test_conteos_referencia_queda_fuera_del_hash() -> None:
     assert resolved["plan_hash"] == hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     segunda = await _resolver_geometrico(cast(dict[str, object], resolved["plan"]))
     assert segunda["plan_hash"] == resolved["plan_hash"]
+
+
+def _como_javascript(valor: object) -> object:
+    """Lo que devuelve JSON.parse en JavaScript: 2.0 llega como 2."""
+    if isinstance(valor, float) and valor.is_integer():
+        return int(valor)
+    if isinstance(valor, dict):
+        return {clave: _como_javascript(v) for clave, v in valor.items()}
+    if isinstance(valor, list):
+        return [_como_javascript(v) for v in valor]
+    return valor
+
+
+@pytest.mark.anyio
+async def test_el_hash_sobrevive_al_viaje_por_javascript() -> None:
+    """CASE-008 de images-judge (2026-10-05): «Plan hash does not match» al generar.
+
+    El conteo de la foto pasa las medidas a float (`ancho_m: 2.0`); JavaScript devuelve el plan con `2`, y el
+    plan re-resuelto al generar firmaba «2» donde el confirmado firmó «2.0». El hash firma ahora los números
+    como los escribe JSON en los dos lados.
+    """
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(_guirnalda(medidas={"largo_m": 3, "ancho_m": 2})),
+        completar_conteos=True,
+        pistas_conteo=[_conteo(globos_visibles=120, estimado_total=250)],
+    )
+    plan = cast(dict[str, object], resolved["plan"])
+    medidas = cast(dict[str, object], cast(list[dict[str, object]], plan["estructuras"])[0]["medidas"])
+    assert any(isinstance(v, float) and v.is_integer() for v in medidas.values()), medidas
+    segunda = await _resolver_geometrico(cast(dict[str, object], _como_javascript(plan)))
+    assert segunda["plan_hash"] == resolved["plan_hash"]

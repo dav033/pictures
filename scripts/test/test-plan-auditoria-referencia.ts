@@ -624,6 +624,37 @@ async function main(): Promise<void> {
   assert.ok(conVariante.ajustes.some((ajuste) => ajuste.tipo === "acabado_material" && ajuste.antes === "satin"), JSON.stringify(conVariante.ajustes));
   ok("acabado de la foto: se compra el observado cuando el catálogo lo ofrece en ese color, y se avisa cuando no");
 
+  // UI-2c: cuando el turno no trae el color en el acabado de la foto, el servidor lo busca antes de juzgar, y
+  // solo entonces: con el producto ya en el turno, o con una variante fijada, la búsqueda no se usaría.
+  const { busquedasDeAcabado } = await import("../../src/lib/plan/cobertura-materiales");
+  assert.deepEqual(
+    busquedasDeAcabado(planPared, esperadoPared, disponibilidadDelTurno([oroRosaReflex, oroReflex, blancoFashion])),
+    ["globo latex redondo satin dorado rosa"],
+    "falta el dorado rosa perlado: se pide ese color en ese acabado, y nada para lo que ya cumple",
+  );
+  assert.deepEqual(busquedasDeAcabado(planPared, esperadoPared, disponibilidadDelTurno([oroRosaReflex, oroRosaSatin, oroReflex, blancoFashion])), [], "el turno ya lo trae: no se busca");
+  assert.deepEqual(
+    busquedasDeAcabado(planDe(pared(materialesReales.map((material) => (material.product_id === "P-ORO-ROSA" ? { ...material, variant_id: "V-P-ORO-ROSA-12" } : material)))), esperadoPared, disponibilidadDelTurno([oroRosaReflex, oroReflex, blancoFashion])),
+    [],
+    "una variante fijada nombra ese producto: la regla 2 no la cambiaría, así que no se busca",
+  );
+  // CASE-002 de images-judge: «chrome silver» y «pastel pink»; el modelo compró Reflex Rosado.
+  const semiarcoPastel = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Balloon half arch", "balloon_structure", ["chrome silver", "pastel pink"])]);
+  const planPastel = pared([materialPared("P-PLATA", "plateado", 0.5, "principal"), materialPared("P-ROSADO-REFLEX", "rosado", 0.5, "secundario")]);
+  const esperadoPastel = acabadosObservadosDeMateriales([planPastel], semiarcoPastel);
+  assert.deepEqual(esperadoPastel.map((item) => [item.product_id, item.acabado]), [["P-PLATA", "reflex"], ["P-ROSADO-REFLEX", "mate"]], "«pastel» es un acabado mate de la foto");
+  const plataReflex = globoConAcabado("P-PLATA", "plateado", ["reflex"]);
+  const rosadoReflex = globoConAcabado("P-ROSADO-REFLEX", "rosado", ["reflex"]);
+  assert.deepEqual(
+    busquedasDeAcabado(planDe(planPastel), esperadoPastel, disponibilidadDelTurno([plataReflex, rosadoReflex])),
+    ["globo latex redondo mate rosado"],
+    "el rosado pastel comprado en Reflex se busca en mate; el plateado cromado ya cumple",
+  );
+  const rosadoPastelMate = globoConAcabado("P-ROSADO-PASTEL", "rosado", ["mate"]);
+  const pastelCumplido = aplicarAcabadoReferencia(planDe(planPastel), esperadoPastel, disponibilidadDelTurno([plataReflex, rosadoReflex, rosadoPastelMate]));
+  assert.deepEqual(pastelCumplido.plan.estructuras[0]!.materiales.map((material) => material.product_id), ["P-PLATA", "P-ROSADO-PASTEL"], "con el mate en el turno, la puerta compra el pastel");
+  ok("UI-2c: el servidor busca el color en el acabado de la foto cuando el turno no lo trae");
+
   // El turno completo: el plan firmado compra el perlado, y cuando no se pudo el
   // cliente se entera por el mismo canal de siempre.
   const { estado: estadoSatin, confirmar: confirmarSatin } = herramienta("Quiero algo así para mi matrimonio", [oroRosaReflex, oroRosaSatin, oroReflex, blancoFashion, fucsiaReflex], paredFoto, 0);

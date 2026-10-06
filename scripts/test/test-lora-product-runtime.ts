@@ -15,7 +15,7 @@ import { compileLoraCaption, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH
 import { resolveLoraPromptFormat } from "../../src/lib/ia/kagutsuchi/lora-prompt-format";
 import { ReferenceBlueprintV2Schema } from "../../src/lib/ia/referencia/reference-blueprint";
 import { ambientDecorFromReference, ambientDecorName, parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../../src/lib/ia/referencia/reference-structure";
-import { compileProductPrompt as compileProductPromptRuntime, sizeConfirmationsFromMaterialLines, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
+import { aliasesDeProducto, compileProductPrompt as compileProductPromptRuntime, sizeConfirmationsFromMaterialLines, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/lora-product-runtime";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "../../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
@@ -985,6 +985,17 @@ console.log("18. Reference structures, relative heights, styling and JSON prompt
   assert.equal(resolveLoraPromptFormat("json", "eventdecor_style_v2", true), "json", "un formato pedido explícitamente sigue mandando sobre la guía");
   assert.equal(resolveLoraPromptFormat(undefined, "eventdecor_style_v2", false), "json", "sin guía, el defecto del trigger no cambia");
   pass("prompt format defaults by trigger (style_v2 json, others texto), la guía fuerza texto, explicit wins, unknown values are rejected");
+}
+
+// Auditoría de propiedades huérfanas (2026-10-06): el catálogo entrega el SKU original ("B2B-20017228") y el
+// vocabulario indexa el canónico; Fashion Coral Tropical, sin alias de título, tumbaba la generación entera.
+{
+  const aliases = aliasesDeProducto({ id: "46594359918887", catalogSku: "B2B-20017228", familiaId: "8634310426919" });
+  assert.deepEqual(aliases, ["B2B-20017228", "20017228", "8634310426919"]);
+  const coral = resolveProductConcept({ productId: aliases[1] }, PRODUCT_VOCABULARY);
+  assert.equal(coral.status === "resolved" ? coral.concept.concept_id : coral.status, "balloon.round.latex.fashion.coral");
+  assert.deepEqual(aliasesDeProducto({ id: "V1" }), [], "sin SKU ni familia, ningún alias");
+  pass("aliasesDeProducto: el SKU canónico resuelve la identidad que el original no resolvía");
 }
 
 console.log(`\nAll ${passCount} assertions passed.`);

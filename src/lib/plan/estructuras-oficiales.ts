@@ -56,6 +56,8 @@ export const ESTRUCTURAS_OFICIALES_IDS = [
   "guirnalda", "centro_mesa", "bouquet", "figura",
   // Sugeridas y aprobadas: se construyen con los mismos tipos base.
   "aro_circular", "techo_globos",
+  // Aprobada por el dueño el 2026-10-06 (F7-3): un racimo fijado a la pared no es un bouquet.
+  "racimo_pared",
 ] as const;
 export type EstructuraOficialId = (typeof ESTRUCTURAS_OFICIALES_IDS)[number];
 
@@ -148,6 +150,9 @@ export const ESTRUCTURAS_OFICIALES: Readonly<Record<EstructuraOficialId, Estruct
   figura: { id: "figura", nombre: "Figura con globos", descripcion: "Figura armada con globos (animal, número, personaje).", tipoBase: "kit", tiposAdmitidos: ["kit", "escultura"], forma: "libre", sustantivoEn: "balloon sculpture figure", unidadesMinimasPorInstancia: 20 },
   aro_circular: { id: "aro_circular", nombre: "Aro circular", descripcion: "Marco redondo cubierto de globos.", tipoBase: "arco", tiposAdmitidos: ["arco"], forma: "circular", sustantivoEn: "circular balloon hoop", geometria: { eje: "circunferencia" } },
   techo_globos: { id: "techo_globos", nombre: "Techo de globos", descripcion: "Globos suspendidos que cubren el techo.", tipoBase: "guirnalda", tiposAdmitidos: ["guirnalda"], forma: "libre", ubicacion: "techo", sustantivoEn: "ceiling balloon installation" },
+  // F7-3 (2026-10-06): el análisis veía un `cluster` separado del suelo y el chat solo tenía «bouquet», que FLUX
+  // pinta con helio y cintas. El corpus del LoRA dice «balloon cluster» (33) y «cluster of … mounted on the wall».
+  racimo_pared: { id: "racimo_pared", nombre: "Racimo de pared", descripcion: "Grupo orgánico de globos de varios tamaños fijado a la pared, sin base, sin peso y sin cintas.", tipoBase: "kit", tiposAdmitidos: ["kit"], forma: "libre", sustantivoEn: "balloon cluster mounted on the wall", unidadesMinimasPorInstancia: 8 },
 };
 
 function normalizar(texto: string | undefined): string {
@@ -205,6 +210,7 @@ export function identificarEstructuraOficial(estructura: EstructuraPlanLigera): 
   const noDensa = estructura.densidad === "sencilla" || /\bno dens|\bliger|\bairy\b/.test(nombre);
   const densa = estructura.densidad === "lujosa" || (/\bdens[ao]\b/.test(nombre) && !/\bno dens/.test(nombre));
   const oficial = (id: EstructuraOficialId) => ESTRUCTURAS_OFICIALES[id];
+  if (/\bracimo de pared|\bracimo_pared|\bwall cluster/.test(nombre)) return oficial("racimo_pared");
   if (/\bbouquet|\bramillete/.test(nombre)) return oficial("bouquet");
   if (/\bfigura|\bescultura|\bsculpture/.test(nombre) || estructura.tipo === "escultura") return oficial("figura");
   if (estructura.ubicacion === "techo" || /\btecho de globos|\bcielo de globos/.test(nombre)) {
@@ -321,7 +327,8 @@ export const GUIA_ESTRUCTURAS_OFICIALES = `
 ESTRUCTURAS OFICIALES
 Solo diseña con estas estructuras. En confirmar_plan_decoracion pon en cada estructura estructura_oficial con el id indicado, el tipo indicado, una densidad admitida cuando se indique, y empieza el nombre con su etiqueta oficial (ej. "Semiarco orgánico derecho"):
 ${Object.values(ESTRUCTURAS_OFICIALES).map((estructura) => `- ${estructura.nombre} (estructura_oficial ${estructura.id}): tipo ${estructura.tipoBase}${estructura.densidades ? `, densidad ${estructura.densidades.join(" o ")}` : ""}${estructura.ubicacion ? `, ubicación ${estructura.ubicacion}` : ""}. ${estructura.descripcion}`).join("\n")}
-- Bouquet y Figura con globos no tienen geometría calculada: indica variant_id y unidades_declaradas. unidades_declaradas es el total de globos de la pieza sumando sus repeticiones (no el número de figuras): al menos ${Object.values(ESTRUCTURAS_OFICIALES).filter((estructura) => estructura.unidadesMinimasPorInstancia).map((estructura) => `${estructura.unidadesMinimasPorInstancia} globos por ${estructura.nombre}`).join(" y ")} y nunca menos unidades que materiales.
+- Racimo de pared frente a bouquet: un grupo de globos de varios tamaños fijado a la pared, sin base, sin peso y sin cintas (la foto lo describe como «cluster» separado del suelo) es un Racimo de pared, nunca un bouquet.
+- Bouquet, Figura con globos y Racimo de pared no tienen geometría calculada: indica variant_id y unidades_declaradas. unidades_declaradas es el total de globos de la pieza sumando sus repeticiones (no el número de figuras): al menos ${Object.values(ESTRUCTURAS_OFICIALES).filter((estructura) => estructura.unidadesMinimasPorInstancia).map((estructura) => `${estructura.unidadesMinimasPorInstancia} globos por ${estructura.nombre}`).join(" y ")} y nunca menos unidades que materiales.
 - Orgánica significa un contorno irregular o un lado más cargado, que se adapta al espacio o imita formas de la naturaleza; dos piezas separadas de alturas distintas son dos estructuras, no una orgánica.`;
 
 /**

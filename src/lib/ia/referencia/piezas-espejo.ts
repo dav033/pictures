@@ -146,7 +146,10 @@ export function unificarPiezasEspejo(blueprint: ReferenceBlueprintV2): Reference
     const formaIzquierda = modelo === izquierda ? izquierda.appearance.shape : enEspejo(derecha.appearance.shape);
     const formaDerecha = modelo === derecha ? derecha.appearance.shape : enEspejo(izquierda.appearance.shape);
     // Cada una hacia el centro de la foto: la izquierda se va a la derecha (+) y la derecha a la izquierda (−).
-    const inclinacion = (signo: 1 | -1) => (vuelo > 0 ? { inclinacion: Math.min(1, signo * vuelo) } : {});
+    // Si la foto mostró las dos rectas (0 observado), la pareja sigue recta: perder ese 0 devolvería a la
+    // columna asimétrica su inclinación de plantilla.
+    const rectaObservada = izquierda.appearance.inclinacion === 0 && derecha.appearance.inclinacion === 0;
+    const inclinacion = (signo: 1 | -1) => (vuelo > 0 ? { inclinacion: Math.min(1, signo * vuelo) } : rectaObservada ? { inclinacion: 0 } : {});
     const unificar = (elemento: Elemento, forma: string, signo: 1 | -1, otra: Elemento): Elemento => {
       const { inclinacion: _anterior, ...apariencia } = elemento.appearance;
       void _anterior;

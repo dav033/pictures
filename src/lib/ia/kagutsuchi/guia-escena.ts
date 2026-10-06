@@ -68,6 +68,8 @@ function apoyoDe(estructura: EstructuraPlan): ApoyoGuia {
   // Una guirnalda va en la pared (centrada en su caja), salvo la que el plan tiende en el piso: esa se apoya abajo
   // en su caja, como cualquier pieza de piso. Antes toda guirnalda se centraba y la de piso quedaba flotando.
   if (estructura.tipo === "guirnalda") return UBICACIONES_PISO_GUIRNALDA.has(estructura.ubicacion) ? "piso" : "pared";
+  // El racimo de pared va fijado a la pared, centrado en su caja; no se apoya en el piso (F7-3, 2026-10-06).
+  if (oficial === "racimo_pared") return "pared";
   return "piso";
 }
 
@@ -102,6 +104,23 @@ function cajasDeLaFoto(elemento: ElementoFoto, n: number, elementos: readonly El
     .sort((a, b) => centroX(a) - centroX(b) || a.y - b.y);
 }
 
+/**
+ * Si la guía voltea esta instancia sobre el dibujo que entrega Python.
+ *
+ * Un semiarco apunta la punta hacia el centro de la escena: el de una caja a la derecha se curva hacia la izquierda.
+ * El dibujo de Python de un semiarco ya viene volteado cuando el plan lo declara `lateral_derecho` (`espejo` de
+ * `_pieza_del_plan`, armado_estructura.py), así que aquí se voltea solo lo que falta. Antes se volteaba toda copia
+ * a la derecha sin mirar eso: un par declarado `lateral_derecho` con dos repeticiones salía con las dos puntas hacia
+ * fuera, y un semiarco solo cuya caja estaba a la derecha sin esa ubicación apuntaba fuera de la escena (auditoría
+ * de propiedades huérfanas: el lado que la foto muestra no llegaba a la guía, 2026-10-05). Las demás piezas, como
+ * siempre: solo se voltea la copia derecha de un grupo.
+ */
+function espejoDeInstancia(estructura: EstructuraPlan, n: number, caja: ReferenceBBox): boolean {
+  if (estructura.tipo !== "semiarco") return n > 1 && centroX(caja) > 0.5;
+  const pythonYaVolteo = estructura.ubicacion === "lateral_derecho";
+  return (centroX(caja) > 0.5) !== pythonYaVolteo;
+}
+
 /** Cada instancia de cada pieza del plan con su caja en el encuadre. */
 export function instanciasDeEscena(estructuras: readonly EstructuraPlan[], foto: ReferenceBlueprintV2 | undefined): InstanciaGuia[] {
   const elementos = foto?.elements ?? [];
@@ -123,12 +142,82 @@ export function instanciasDeEscena(estructuras: readonly EstructuraPlan[], foto:
         instancia: indice + 1,
         caja,
         fuente: indice < deLaFoto.length ? "foto" : "plan",
-        espejo: n > 1 && centroX(caja) > 0.5,
-        apoyo: apoyoDe(estructura),
+        espejo: espejoDeInstancia(estructura, n, caja),
+        apoyo: elemento && aroColgadoEnLaFoto(elemento) ? "pared" : apoyoDe(estructura),
       });
     }
   }
   return instancias;
+}
+
+/**
+ * Si el elemento de la foto es un aro colgado de la pared: un `arco` en `fondo_pared`, que solo produce
+ * `placementFor` para un `hoop` con `grounded` false (el arco de pie siempre va a `arco_central`). Se lee de la
+ * foto y no de la ubicación del plan, porque un aro de pie contra la pared del fondo también puede estar en
+ * `fondo_pared`. De pie, con poste, subía la franja de piso hasta la mitad del lienzo (CASE-007, 2026-10-06).
+ */
+export function aroColgadoEnLaFoto(elemento: ElementoFoto): boolean {
+  return elemento.visual_semantics?.structure_type === "arco" && elemento.visual_semantics.placement === "fondo_pared";
+}
+
+/** Lo que queda libre alrededor de la decoración al reencuadrarla, en fracción de cada lado del lienzo. */
+export const MARGEN_ENCUADRE = 0.06;
+
+/**
+ * La proporción (ancho/alto) de la foto de donde salen las cajas: la de la imagen de los elementos que el plan
+ * materializa, si todos vienen de la misma y el blueprint la trae. Si no, `undefined`.
+ */
+export function proporcionDeLaFoto(estructuras: readonly EstructuraPlan[], foto: ReferenceBlueprintV2 | undefined): number | undefined {
+  if (!foto) return undefined;
+  const porId = new Map(foto.elements.map((elemento) => [elemento.element_id, elemento.source_image_id] as const));
+  const imagenes = new Set(estructuras.map(referenciaDe).flatMap((id) => (id && porId.has(id) ? [porId.get(id)!] : [])));
+  if (imagenes.size !== 1) return undefined;
+  const [imagen] = imagenes;
+  return foto.source_images.find((fuente) => fuente.image_id === imagen)?.aspect_ratio;
+}
+
+/**
+ * Pasa las cajas de fracciones de la FOTO a fracciones del LIENZO, encuadrando la decoración.
+ *
+ * Las cajas de la foto son fracciones de una imagen que casi nunca tiene la forma del lienzo (una foto vertical de
+ * teléfono y un lienzo 3:2), y la decoración suele ocupar una parte de ella. Copiarlas tal cual estiraba la
+ * escena en horizontal (dos piezas pegadas en la foto salían separadas por un hueco) y dejaba las piezas
+ * diminutas al pie de un lienzo vacío: FLUX las pintaba así (CASE-005, auditoría de propiedades huérfanas,
+ * 2026-10-05). Aquí se lleva todo a unidades de la foto real (alto 1, ancho `proporcionFoto`), se toma el
+ * rectángulo que abarca todas las cajas y se encaja con UNA sola escala, sin deformar, dentro del lienzo menos
+ * `MARGEN_ENCUADRE`: posiciones, huecos y tamaños relativos quedan como en la foto. Centrado en horizontal; en
+ * vertical, al pie si algo se apoya en el piso, arriba si todo cuelga del techo, al medio si hay de los dos.
+ *
+ * Sin proporción conocida (blueprints anteriores) se toma la del lienzo: solo se encuadra. Sin ninguna caja de
+ * la foto no se toca nada: las del plan ya están pensadas para el lienzo.
+ */
+export function reencuadrar(instancias: readonly InstanciaGuia[], proporcionFoto: number | undefined, lienzo: { ancho: number; alto: number }): InstanciaGuia[] {
+  if (!instancias.some((instancia) => instancia.fuente === "foto")) return [...instancias];
+  const proporcion = proporcionFoto ?? lienzo.ancho / lienzo.alto;
+  const izquierda = Math.min(...instancias.map((i) => i.caja.x)) * proporcion;
+  const derecha = Math.max(...instancias.map((i) => i.caja.x + i.caja.width)) * proporcion;
+  const arriba = Math.min(...instancias.map((i) => i.caja.y));
+  const abajo = Math.max(...instancias.map((i) => i.caja.y + i.caja.height));
+  if (!(derecha > izquierda && abajo > arriba)) return [...instancias];
+  const margenX = lienzo.ancho * MARGEN_ENCUADRE;
+  const margenY = lienzo.alto * MARGEN_ENCUADRE;
+  // Píxeles del lienzo por unidad de foto: una sola escala para las dos direcciones.
+  const escala = Math.min((lienzo.ancho - 2 * margenX) / (derecha - izquierda), (lienzo.alto - 2 * margenY) / (abajo - arriba));
+  const altoRegion = (abajo - arriba) * escala;
+  const desdeX = (lienzo.ancho - (derecha - izquierda) * escala) / 2 - izquierda * escala;
+  const hayPiso = instancias.some((i) => i.apoyo !== "techo");
+  const hayTecho = instancias.some((i) => i.apoyo === "techo");
+  const topeRegion = hayPiso && !hayTecho ? lienzo.alto - margenY - altoRegion : hayTecho && !hayPiso ? margenY : (lienzo.alto - altoRegion) / 2;
+  const desdeY = topeRegion - arriba * escala;
+  return instancias.map((instancia) => ({
+    ...instancia,
+    caja: {
+      x: (instancia.caja.x * proporcion * escala + desdeX) / lienzo.ancho,
+      y: (instancia.caja.y * escala + desdeY) / lienzo.alto,
+      width: (instancia.caja.width * proporcion * escala) / lienzo.ancho,
+      height: (instancia.caja.height * escala) / lienzo.alto,
+    },
+  }));
 }
 
 const HEX = /^#[0-9a-f]{6}$/;

@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import { getGeminiClient } from "@/lib/gemini";
 import { DIMENSIONES_EMBEDDING, MODELO_EMBEDDING, embeberTexto } from "../embeddings";
 import { canonicalizeSku } from "../catalog/canonicalize";
+import { patronTituloDeColorSql } from "@/lib/plan/colores-producto";
 import { fusionarRankingsLocal, type RrfBranch, type RrfContribution } from "./rrf";
 import type {
   BranchStatus,
@@ -346,14 +347,23 @@ function construirFiltroDuro(
   }
   if (filtros?.colores?.length) {
     params.push(filtros.colores);
+    const indiceColores = params.length;
+    // A color the catalog files under another family is also found by its title (`coloresRealesProducto`):
+    // the wine balloons are stored as "rojo" (2026-10-05).
+    const patrones = [...new Set(filtros.colores.flatMap((color) => patronTituloDeColorSql(color) ?? []))];
+    let porTitulo = "";
+    if (patrones.length) {
+      params.push(patrones.join("|"));
+      porTitulo = `\n      OR ${aliases.product}.title ~* $${params.length}`;
+    }
     // Prefer variant evidence. Unknown variants may inherit only a singleton
     // product color; a multi-color product must not let an arbitrary sibling
     // satisfy the requested color.
     condiciones.push(`(
-      (cardinality(${aliases.variant}.derived_colors) > 0 AND ${aliases.variant}.derived_colors && $${params.length}::text[])
+      (cardinality(${aliases.variant}.derived_colors) > 0 AND ${aliases.variant}.derived_colors && $${indiceColores}::text[])
       OR (cardinality(${aliases.variant}.derived_colors) = 0
           AND jsonb_array_length(${aliases.product}.derived->'colors') = 1
-          AND ${aliases.product}.derived->'colors' ?| $${params.length}::text[])
+          AND ${aliases.product}.derived->'colors' ?| $${indiceColores}::text[])${porTitulo}
     )`);
   }
   if (filtros?.acabados?.length) {

@@ -178,12 +178,28 @@ const GEOMETRICOS = new Set(["arco", "semiarco", "guirnalda", "columna", "pared"
 
 type Estructura = PlanDecoracion["estructuras"][number];
 
-/** ¿Este producto es la referencia? Mismo color y, si la foto decidió la familia, misma familia. Un transparente es transparente en cualquier línea. */
-function cumple(producto: DisponibilidadProducto, referencia: ReferenciaMedida): boolean {
+/**
+ * ¿Este producto es la referencia? Mismo color y, si la foto decidió la familia, misma familia. Un transparente es transparente en cualquier línea.
+ *
+ * Con la familia medida sin confirmar (`familia_fiable` falso) ya no vale cualquier línea: si el analizador dijo
+ * el acabado de ESE color («chrome silver» → reflex, «pastel pink» → mate), el producto tiene que ser de una
+ * familia de ese acabado. Antes valía cualquiera y el primer producto rosado del turno —un Reflex que el modelo
+ * trajo arrastrando el «reflex» de otro color— quedaba como «la referencia» (CASE-002 de images-judge).
+ */
+function cumple(producto: DisponibilidadProducto, referencia: ReferenciaMedida, acabadoFoto?: string): boolean {
   const color = colorDeReferencia(referencia.nombre);
   if (!producto.coloresVariante.map(plegar).includes(color)) return false;
-  if (color === "transparente" || !referencia.familia_fiable) return true;
+  if (color === "transparente") return true;
+  if (!referencia.familia_fiable) return familiaCompatibleConLaFoto(producto, acabadoFoto);
   return familiaDeTitulo(producto.titulo) === referencia.familia;
+}
+
+/** Sin acabado dicho por el analizador para ese color, cualquier familia; con él, solo las de ese acabado. */
+function familiaCompatibleConLaFoto(producto: DisponibilidadProducto, acabadoFoto: string | undefined): boolean {
+  const permitidas = acabadoFoto ? FAMILIAS_DEL_ACABADO[acabadoFoto] : undefined;
+  if (!permitidas) return true;
+  const familia = familiaDeTitulo(producto.titulo);
+  return familia !== null && permitidas.includes(familia);
 }
 
 /** El primer producto liso del turno que es la referencia; el orden de la búsqueda decide, para que un reintento elija lo mismo. */
@@ -191,11 +207,12 @@ function productoDeReferencia(
   estructura: Pick<Estructura, "tipo" | "mezcla">,
   referencia: ReferenciaMedida,
   disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
+  acabadoFoto?: string,
 ): string | undefined {
   for (const [productId, producto] of disponibilidad) {
     if (producto.categoria !== "globo_latex" || familiaDeTitulo(producto.titulo) === null) continue;
     if (GEOMETRICOS.has(estructura.tipo) && !producto.mezclas.includes(estructura.mezcla)) continue;
-    if (cumple(producto, referencia)) return productId;
+    if (cumple(producto, referencia, acabadoFoto)) return productId;
   }
   return undefined;
 }
@@ -236,13 +253,28 @@ export function busquedasDeReferencias(
 ): string[] {
   const busquedas: string[] = [];
   for (const estructura of plan.estructuras) {
+    const elemento = elementoDeEstructura(estructura, blueprint);
+    const acabadosDeLaFoto = elemento ? coloresDelAnalizador(elemento.appearance) : new Map<string, string | undefined>();
     for (const referencia of referenciasDeEstructura(estructura, blueprint)) {
-      if (productoDeReferencia(estructura, referencia, disponibilidad)) continue;
-      const frase = `globo latex redondo ${plegar(referencia.nombre_completo)}`;
+      const acabadoFoto = acabadosDeLaFoto.get(colorDeReferencia(referencia.nombre));
+      if (productoDeReferencia(estructura, referencia, disponibilidad, acabadoFoto)) continue;
+      const frase = fraseDeBusqueda(referencia, acabadoFoto);
       if (!busquedas.includes(frase)) busquedas.push(frase);
     }
   }
   return busquedas.slice(0, maximo);
+}
+
+/**
+ * Cómo se pide el globo de una referencia medida. Con la familia confirmada, por su nombre completo («Satin
+ * Rosado»). Sin confirmar NO se nombra la familia que la medición adivinó: se pide el color, más el acabado que
+ * dijo el analizador si lo dijo. Pedir «Reflex Rosado» por una familia aproximada dejaba ese Reflex como único
+ * rosado del turno, y el plan terminaba comprándolo aunque la foto fuera pastel (CASE-002 de images-judge).
+ */
+function fraseDeBusqueda(referencia: ReferenciaMedida, acabadoFoto: string | undefined): string {
+  if (referencia.familia_fiable) return `globo latex redondo ${plegar(referencia.nombre_completo)}`;
+  const palabraDeAcabado = acabadoFoto === "reflex" ? "reflex " : acabadoFoto === "satin" ? "satin " : "";
+  return `globo latex redondo ${palabraDeAcabado}${plegar(referencia.nombre)}`;
 }
 
 function hexDe(color: string, acabado: string | null | undefined): string | undefined {
@@ -288,11 +320,12 @@ export function aplicarReferenciasMedidas(
     if (referencias.length === 0 || estructura.variant_overrides?.length) return estructura;
     const elemento = elementoDeEstructura(estructura, blueprint);
     const nombradosPorElAnalizador = elemento ? coloresDelAnalizador(elemento.appearance) : new Map<string, string | undefined>();
+    const acabadoDeLaFoto = (referencia: ReferenciaMedida) => nombradosPorElAnalizador.get(colorDeReferencia(referencia.nombre));
     const usadas = new Set<string>();
     const decision = estructura.materiales.map((material) => {
       const producto = disponibilidad.get(material.product_id);
       if (!producto || producto.categoria !== "globo_latex") return { material, referencia: undefined as ReferenciaMedida | undefined, ok: true };
-      const exacta = referencias.find((referencia) => !usadas.has(referencia.codigo) && cumple(producto, referencia));
+      const exacta = referencias.find((referencia) => !usadas.has(referencia.codigo) && cumple(producto, referencia, acabadoDeLaFoto(referencia)));
       if (exacta) {
         usadas.add(exacta.codigo);
         return { material, referencia: exacta, ok: true };
@@ -306,7 +339,7 @@ export function aplicarReferenciasMedidas(
     for (const [indice, { material, ok }] of decision.entries()) {
       if (ok || material.variant_id) continue;
       const mismoColor = referencias.find((referencia) => !usadas.has(referencia.codigo) && colorDeReferencia(referencia.nombre) === plegar(material.color ?? ""));
-      if (mismoColor && productoDeReferencia(estructura, mismoColor, disponibilidad)) {
+      if (mismoColor && productoDeReferencia(estructura, mismoColor, disponibilidad, acabadoDeLaFoto(mismoColor))) {
         usadas.add(mismoColor.codigo);
         elegida.set(indice, mismoColor);
       }
@@ -321,7 +354,7 @@ export function aplicarReferenciasMedidas(
       // esto, las burbujas transparentes de una columna rosa y plata se cambiaban por otro rosa (2026-10-04).
       if (plegar(material.color ?? "") === "transparente") continue;
       const hexActual = hexDe(plegar(material.color ?? ""), material.acabado);
-      const libres = referencias.filter((referencia) => !usadas.has(referencia.codigo) && productoDeReferencia(estructura, referencia, disponibilidad));
+      const libres = referencias.filter((referencia) => !usadas.has(referencia.codigo) && productoDeReferencia(estructura, referencia, disponibilidad, acabadoDeLaFoto(referencia)));
       const masCercana = hexActual
         ? libres.map((referencia) => ({ referencia, distancia: distanciaHex(hexActual, referenciaPorCodigo(referencia.codigo)?.hexGlobo ?? hexActual) })).sort((a, b) => a.distancia - b.distancia)[0]?.referencia
         : libres[0];
@@ -332,7 +365,7 @@ export function aplicarReferenciasMedidas(
     const materiales = decision.map(({ material }, indice) => {
       const masCercana = elegida.get(indice);
       if (!masCercana) return material;
-      const reemplazo = productoDeReferencia(estructura, masCercana, disponibilidad);
+      const reemplazo = productoDeReferencia(estructura, masCercana, disponibilidad, acabadoDeLaFoto(masCercana));
       if (!reemplazo || reemplazo === material.product_id) return material;
       const nuevo = disponibilidad.get(reemplazo)!;
       const color = colorDeReferencia(masCercana.nombre);

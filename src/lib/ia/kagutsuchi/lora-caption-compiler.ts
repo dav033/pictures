@@ -5,6 +5,7 @@ import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, Vis
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { SOPORTES_CON_CAIDA_GUIRNALDA, type SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
+import { FUENTE_PLAN } from "@/lib/plan/blueprint";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, armadoGuirnaldaOrganicaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separate-side-pieces";
 import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "@/lib/lora/vocabulario-base";
@@ -108,6 +109,12 @@ export type LoraVisualClause = {
   structureType: CaptionStructureType;
   noun: string;
   count: number;
+  /**
+   * Balloons of a centerpiece of 1 to `MAX_GLOBOS_CENTRO_NOMBRADOS`, from the plan's material units
+   * (`quantity`). Without it "small balloon cluster centerpiece" drew a cluster where the plan buys one
+   * balloon (CASE-006, UI-6; auditoría de propiedades huérfanas, 2026-10-05).
+   */
+  globosCentro?: number;
   colors: string[];
   finishes: string[];
   scale?: string;
@@ -533,6 +540,18 @@ function numberWord(count: number): string {
   return NUMBER_WORDS[count] ?? String(count);
 }
 
+/**
+ * Lo que separa un par en espejo de semiarcos o columnas: el espacio abierto entre las dos piezas. El caption decía
+ * «matching one another, one on the left and one on the right» y nada de lo que queda entre ellas, y FLUX las
+ * cerraba en un solo arco (CASE-005 de images-judge, 2026-10-05; auditoría de propiedades huérfanas: la
+ * separación se determinaba en la guía y no llegaba al texto). Un arco o una guirnalda no se parten, y un par que
+ * flanquea un arco central ya tiene la pieza que los separa: en esos casos, sin cambio.
+ */
+function huecoEntrePar(clause: { structureType?: string; relation?: string }): string {
+  if (clause.relation) return "";
+  return clause.structureType === "semiarco" || clause.structureType === "columna" ? ", with open space between them" : "";
+}
+
 function scaleFor(items: SemanticElement[]): string | undefined {
   if (items.length > 1) return undefined;
   if (items[0]?.semantics.structure_type === "centro_mesa") return undefined;
@@ -713,11 +732,19 @@ function createClause(
   const visibleCount = quantitySemantics === "physical_instances"
     ? Math.max(1, first.element.quantity.min)
     : gruposBouquet > 1 ? items.length * gruposBouquet : undefined;
+  // Only a plan element: its `quantity` is the balloons the plan buys. A reference-only scene may carry pieces there.
+  const globosCentro = first.semantics.structure_type === "centro_mesa" && quantitySemantics === "material_units"
+    && items.every((item) => item.element.source_image_id === FUENTE_PLAN)
+    && items.every((item) => item.element.quantity.max === first.element.quantity.max)
+    && first.element.quantity.max >= 1 && first.element.quantity.max <= MAX_GLOBOS_CENTRO_NOMBRADOS
+    ? first.element.quantity.max
+    : undefined;
   return {
     elementIds,
     structureType: first.semantics.structure_type,
     noun: STRUCTURE_NOUNS[first.semantics.structure_type],
     count: items.length,
+    ...(globosCentro !== undefined ? { globosCentro } : {}),
     colors: uniqueEnglish(items.flatMap((item) => item.element.resolved_colors), translateLoraColor),
     finishes: sinAcabadoRepetido(uniqueEnglish(items.flatMap((item) => item.element.resolved_finishes ?? []), englishFinish)),
     scale: scaleFor(items),
@@ -1235,7 +1262,7 @@ function colorFinishPhrase(clause: LoraVisualClause, render?: CaptionRenderState
 function productDialectNoun(clause: LoraVisualClause): string {
   const official = clause.officialStructure;
   if (!official) return clause.noun;
-  if (official.id === "bouquet" || official.id === "figura" || official.id === "aro_circular" || official.id === "techo_globos") return official.sustantivoEn;
+  if (official.id === "bouquet" || official.id === "figura" || official.id === "aro_circular" || official.id === "techo_globos" || official.id === "racimo_pared") return official.sustantivoEn;
   const variant = official.forma === "asimetrica" && official.tipoBase === "semiarco" ? "asymmetrical"
     : official.id === "pared_densa" ? "dense"
       : "";
@@ -1304,11 +1331,26 @@ function baseLegacyMaterial(clause: LoraVisualClause): string {
  * verbatim) in plain English for a general text-to-image model. It never
  * emits a trigger, a commercial line name, a parenthetical list or a `;`.
  */
+/** Up to this many balloons a centerpiece is named by its count (`globosCentro`); the same cap as Python's
+ * `conteo_foto.MAX_GLOBOS_CENTRO_CONTADO`, below which the plan buys a centerpiece balloon by balloon. */
+const MAX_GLOBOS_CENTRO_NOMBRADOS = 3;
+
+/** «single-balloon centerpiece», «two-balloon centerpiece»: the noun of a counted centerpiece, or `undefined`. */
+function sustantivoCentroContado(clause: LoraVisualClause): string | undefined {
+  if (clause.globosCentro === undefined) return undefined;
+  return clause.globosCentro === 1 ? "single-balloon centerpiece" : `${numberWord(clause.globosCentro)}-balloon centerpiece`;
+}
+
+/** The material of a one-balloon centerpiece names one balloon («made of a translucent clear latex balloon»). */
+function materialCentroContado(material: string, clause: LoraVisualClause): string {
+  return clause.globosCentro === 1 ? material.replace(/\bmade of (?!a |an |one )/, "made of one ").replace(/\bballoons\b/, "balloon") : material;
+}
+
 function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderState): string {
   const entries = clause.canonicalEntries ?? [];
   const parts = clause.canonicalPhrase && entries.length ? baseMaterialParts(entries, render) : undefined;
   const official = clause.officialStructure?.sustantivoEn;
-  const baseNoun = official ?? SUSTANTIVOS_ESTRUCTURA_BASE[clause.structureType as keyof typeof SUSTANTIVOS_ESTRUCTURA_BASE] ?? clause.noun;
+  const baseNoun = sustantivoCentroContado(clause) ?? official ?? SUSTANTIVOS_ESTRUCTURA_BASE[clause.structureType as keyof typeof SUSTANTIVOS_ESTRUCTURA_BASE] ?? clause.noun;
   // A product that is itself the piece (a foil banner, a printed mural) names the clause.
   const productIsThePiece = Boolean(parts && !parts.balloons.length && parts.pieces.length && !clause.officialStructure && ["kit", "accesorio"].includes(clause.structureType));
   const sizedNoun = clause.heightQualifier ? `${clause.heightQualifier} ${baseNoun}` : baseNoun;
@@ -1324,7 +1366,7 @@ function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderSta
   } else if (!parts && !clause.productDescriptors.length) {
     material = baseLegacyMaterial(clause);
   }
-  material = material ? withApprovedColorTones(material, clause.colors, "base") : material;
+  material = material ? materialCentroContado(withApprovedColorTones(material, clause.colors, "base"), clause) : material;
   const descriptorText = clause.physicalForm?.descripcion_perceptual_en ?? (!parts ? clause.productDescriptors[0] : undefined);
   const descriptor = descriptorText ? limpiarEtiqueta(descriptorText) : undefined;
   const renderedCount = clause.visibleCount ?? clause.count;
@@ -1349,7 +1391,7 @@ function renderBaseClauseText(clause: LoraVisualClause, render: CaptionRenderSta
     const reparto = renderedCount > 2 && renderedCount % 2 === 0
       ? `${numberWord(renderedCount / 2)} standing on each side`
       : "one standing on the left and one on the right";
-    return `${colored}, matching one another, ${reparto}${clause.relation ? `, ${clause.relation}` : ""}`;
+    return `${colored}, matching one another, ${reparto}${huecoEntrePar(clause)}${clause.relation ? `, ${clause.relation}` : ""}`;
   }
   if (clause.relation && clause.structureType === "centro_mesa") return `${colored} ${placementPhrase} ${clause.relation}`;
   if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}`;
@@ -1360,7 +1402,8 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
   if (render?.dialect === "base") return renderBaseClauseText(clause, render);
   const hasCanonicalProduct = Boolean(clause.canonicalPhrase);
   const renderedCount = clause.visibleCount ?? clause.count;
-  const qualifier = hasCanonicalProduct
+  const contado = sustantivoCentroContado(clause);
+  const qualifier = hasCanonicalProduct || contado
     ? undefined
     : clause.structureType === "centro_mesa"
     ? "low coordinated"
@@ -1368,9 +1411,9 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
   const descriptor = clause.physicalForm?.descripcion_perceptual_en
     ?? (!hasCanonicalProduct ? clause.productDescriptors[0] : undefined);
   const sceneDialect = render?.dialect === "scene_v004";
-  const baseNoun = sceneDialect
+  const baseNoun = contado ?? (sceneDialect
     ? clause.officialStructure?.sustantivoEn ?? SCENE_V004_NOUNS[clause.structureType] ?? clause.noun
-    : productDialectNoun(clause);
+    : productDialectNoun(clause));
   const sizedNoun = clause.heightQualifier ? `${clause.heightQualifier} ${baseNoun}` : baseNoun;
   // v004 wording: a product without balloon scene terms (a foil pennant
   // garland, a sign) has no "of ... balloons" phrase; its bare label used to be
@@ -1388,7 +1431,7 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
   const materialPhrase = productIsThePiece ? "" : bareSceneLabel && rawMaterial && !rawMaterial.startsWith("in matching ") ? `with ${rawMaterial}` : rawMaterial;
   // Python's color pattern goes right after the material phrase, in the same
   // clause and verbatim (ADR-0028 §12); without one this is the material phrase.
-  const material = [materialPhrase, clause.colorPattern].filter(Boolean).join(" ");
+  const material = [materialPhrase ? materialCentroContado(materialPhrase, clause) : materialPhrase, clause.colorPattern].filter(Boolean).join(" ");
   const article = /^[aeiou]/i.test(noun) && !/^one\b/i.test(noun) ? "an" : "a";
   const core = descriptor
     ? renderedCount === 1 ? descriptor : `${numberWord(renderedCount)} ${descriptor}`
@@ -1430,7 +1473,7 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
     const reparto = renderedCount > 2 && renderedCount % 2 === 0
       ? `${numberWord(renderedCount / 2)} standing on each side`
       : "one standing on the left and one on the right";
-    return `${colored},${matching} ${reparto}${clause.relation ? `, ${clause.relation}` : ""}`;
+    return `${colored},${matching} ${reparto}${huecoEntrePar(clause)}${clause.relation ? `, ${clause.relation}` : ""}`;
   }
   if (clause.relation && clause.structureType === "centro_mesa") return `${colored} ${placementPhrase} ${clause.relation}`;
   if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}`;

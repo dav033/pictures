@@ -345,3 +345,21 @@ def test_el_contrato_admite_las_formas_del_bouquet_y_la_guia_las_publica() -> No
         assert pieza["trazos"] and pieza["rellenos"]
     with pytest.raises(PlanResolutionError):
         validar_plan(_plan(_bouquet(forma="mini-aro")))
+
+
+def test_el_aro_colgado_en_la_pared_no_lleva_poste_ni_base() -> None:
+    """CASE-007 (2026-10-06): un ``hoop`` que la foto muestra colgado llega con ``mezclas[].colgada``.
+
+    En la guía cuelga de la pared: su marco sí, el poste y la base que lo ponían de pie no, y publica el anclaje
+    ``pared``. De pie subía la franja de piso hasta la mitad del lienzo. El aro de pie sigue con los tres.
+    """
+    pieza = pieza_de_guia(_aro("organico"), MEZCLA, {"colgada": True})
+    assert not isinstance(pieza, str)
+    colgado = cast(dict[str, Any], pieza)
+    assert colgado["anclaje"] == "pared"
+    assert colgado.get("trazos"), "el marco del aro se sigue viendo"
+    assert all(min(t.get("y1_m", 1), t.get("y2_m", 1)) > 1e-6 for t in colgado["trazos"] if t["forma"] == "linea"), "sin poste"
+    assert not [r for r in colgado.get("rellenos", []) if r["forma"] == "elipse" and r["cy_m"] <= 1e-6], "sin base"
+    de_pie = _guia(_aro("organico"))  # también en `fondo_pared` (el de la prueba): sin la foto, de pie
+    assert "anclaje" not in de_pie
+    assert any(t["forma"] == "linea" for t in de_pie["trazos"]), "el aro de pie conserva su poste"

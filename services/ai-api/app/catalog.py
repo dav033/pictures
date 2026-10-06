@@ -22,6 +22,7 @@ import asyncpg
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, StrictInt, field_validator
 
 from app.operational_models import OperationalRequest
+from app.colores_titulo import patron_titulo_sql
 from app.postgres_store import validate_database_url
 from app.generated_models import (
     CatalogColorsResult,
@@ -1127,11 +1128,17 @@ def _base_query(
     if colors:
         params.append(_normalized_values(colors))
         position = len(params)
+        # A color only a title says (app.colores_titulo) is also found by the title.
+        patrones = sorted({p for p in (patron_titulo_sql(color) for color in colors) if p is not None})
+        por_titulo = ""
+        if patrones:
+            params.append("|".join(patrones))
+            por_titulo = f" OR p.title ~* ${len(params)}"
         clauses.append(
             "((cardinality(v.derived_colors) > 0 AND v.derived_colors && "
             f"${position}::text[]) OR (cardinality(v.derived_colors) = 0 "
             "AND jsonb_array_length(p.derived->'colors') = 1 "
-            f"AND p.derived->'colors' ?| ${position}::text[]))"
+            f"AND p.derived->'colors' ?| ${position}::text[]){por_titulo})"
         )
 
     variant_ids = [variant_id for entry in operation.allowlist for variant_id in entry.variant_ids]
@@ -1241,6 +1248,30 @@ async def _resolve_colors(
         color = row.get("color")
         if isinstance(color, str) and color.strip():
             present.add(color.strip().lower())
+    # A color only a title says (the wine balloons are filed as "rojo", app.colores_titulo) is present when a
+    # product with that title is: without it "burdeos" was replaced by another hue (CASE-006, 2026-10-05).
+    for requested in normalized_requested:
+        patron = patron_titulo_sql(requested)
+        if requested in present or patron is None:
+            continue
+        hay = await connection.fetchval(
+            """
+            SELECT EXISTS (
+              SELECT 1
+                FROM catalog_variants v
+                JOIN catalog_products p ON p.product_id = v.product_id
+               WHERE p.status = 'ACTIVE'
+                 AND p.source_snapshot_id = $1
+                 AND v.source_snapshot_id = $1
+                 AND p.available = TRUE
+                 AND v.available = TRUE
+                 AND p.title ~* $2)
+            """,
+            snapshot_id,
+            patron,
+        )
+        if hay:
+            present.add(requested)
     resolved: list[str] = []
     substitutions: list[dict[str, str]] = []
     seen_substitutions: set[str] = set()

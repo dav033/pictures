@@ -151,9 +151,12 @@ export async function listLoraModeOptions(pool: Pool = getRagPool()): Promise<Lo
  * `loras: []` and no trigger. It never reads the registry, so it works with no
  * slot row and does not depend on the state of any trained LoRA.
  */
-export async function resolveLoraMode(mode: LoraModeSlug, pool: Pool = getRagPool()): Promise<ResolvedLoraApplication[]> {
+export async function resolveLoraMode(mode: LoraModeSlug, poolDado?: Pool): Promise<ResolvedLoraApplication[]> {
   const parsedMode = LoraModeSlugSchema.parse(mode);
+  // Antes de tocar la base de datos: el pool por defecto se evaluaba en la firma y el modo base fallaba sin
+  // `DATABASE_URL` aunque no la usa.
   if (parsedMode === LORA_BASE_MODE) return [];
+  const pool = poolDado ?? getRagPool();
   const option = (await listLoraModeOptions(pool)).find((candidate) => candidate.slug === parsedMode);
   if (!option) throw new Error(`LORA_MODE_NOT_FOUND: ${parsedMode}`);
   if (!option.enabled) throw new Error(`LORA_MODE_DISABLED: ${parsedMode}`);

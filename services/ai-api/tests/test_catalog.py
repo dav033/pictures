@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from contextlib import AbstractAsyncContextManager
 from decimal import Decimal
@@ -282,7 +283,11 @@ class FakeColorResolutionConnection:
         self.candidate_rows = candidate_rows
         self.fetch_calls: list[tuple[str, tuple[object, ...]]] = []
 
-    async def fetchval(self, _query: str, *args: object) -> object:
+    async def fetchval(self, query: str, *args: object) -> object:
+        if "p.title ~*" in query:
+            # The title rule of a color the catalog files under another family (app.colores_titulo).
+            patron = re.compile(str(args[1]).replace(r"\y", r"\b"), re.IGNORECASE)
+            return any(patron.search(str(row.get("title", ""))) for row in self.candidate_rows)
         return args[0] if args else "products_catalog:test"
 
     async def fetch(self, query: str, *args: object) -> list[dict[str, object]]:
@@ -359,6 +364,26 @@ async def test_catalog_search_resolves_a_color_the_snapshot_lacks_to_the_nearest
     _presence_query, _presence_args = pool.connection.fetch_calls[0]
     _main_query, main_args = pool.connection.fetch_calls[1]
     assert main_args[1] == ["rojo"]
+
+
+@pytest.mark.anyio
+async def test_catalog_search_finds_burgundy_by_the_wine_title() -> None:
+    """CASE-006 (2026-10-05): the live catalog files Fashion Merlot as "rojo". A "burdeos" request is present
+    through the title (app.colores_titulo): no substitution to another hue, and the main query also matches the
+    title."""
+    merlot = {**_red_balloon_row("rojo"), "product_id": "P-MERLOT", "title": "Globo Latex Redondo Fashion Merlot"}
+    pool = FakeColorResolutionPool(present_colors=["rojo"], candidate_rows=[merlot])
+    store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
+
+    result = await store.search(
+        _request(message="globo latex burdeos", filters={"available": True, "colors": ["burdeos"]})
+    )
+
+    assert result["color_substitutions"] == []
+    _main_query, main_args = pool.connection.fetch_calls[1]
+    assert main_args[1] == ["burdeos"]
+    assert "p.title ~*" in _main_query
+    assert any(isinstance(arg, str) and "merlot" in arg for arg in main_args)
 
 
 @pytest.mark.anyio

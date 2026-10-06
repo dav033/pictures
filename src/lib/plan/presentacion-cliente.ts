@@ -145,6 +145,7 @@ const GRAMATICA_OFICIAL: Readonly<Record<EstructuraOficialId, { genero: Genero; 
   figura: { genero: "f", plural: "figuras con globos" },
   aro_circular: { genero: "m", plural: "aros circulares" },
   techo_globos: { genero: "m", plural: "techos de globos" },
+  racimo_pared: { genero: "m", plural: "racimos de pared" },
 };
 
 const CARDINALES = ["", "", "dos", "tres", "cuatro", "cinco", "seis"];
@@ -538,6 +539,8 @@ const AMBIENTACION_POR_CATEGORIA: Readonly<Record<string, string>> = {
   furniture: "Mobiliario",
   plinth: "Bases",
   tableware: "Mesa de postres",
+  backdrop: "Fondo",
+  panel: "Fondo",
 };
 
 function etiquetaAmbientacion(nombre: string, categoria: string): string {

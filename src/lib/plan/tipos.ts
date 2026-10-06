@@ -38,6 +38,20 @@ import { PatronColorV1Schema } from "./patron-color";
 export const TIPOS_ESTRUCTURA = TIPOS_ESTRUCTURA_1_0;
 export const UBICACIONES = UBICACIONES_1_0;
 
+/**
+ * ¿Los globos de esta pieza los calcula la geometría (banda × eje) o son unidades declaradas?
+ *
+ * Un `centro_mesa` con `unidades_declaradas` es un centro de pocos globos CONTADOS (UI-6, 2026-10-05): el
+ * conteo de la foto (`conteo_foto.py`, dueño de la cifra) lo declara cuando la foto cuenta exactamente 1 a 3
+ * globos, porque la fórmula de banda no baja de unos 3 y un solo globo burbuja salía como 3 a 22 (CASE-006 de
+ * images-judge). Entonces se compra como un kit: unidades declaradas y `variant_id` por material. Python
+ * aplica la misma regla (`conteo_foto.es_geometrica`).
+ */
+export function esCuentaGeometrica(value: { tipo: string; unidades_declaradas?: number }): boolean {
+  if (!(TIPOS_ESTRUCTURA_GEOMETRICOS as readonly string[]).includes(value.tipo)) return false;
+  return !(value.tipo === "centro_mesa" && value.unidades_declaradas !== undefined);
+}
+
 export const ROLES_MATERIAL = ["principal", "secundario", "acento"] as const;
 export const ROLES_ESCENA = ["focal", "soporte", "relleno", "acento", "servicio"] as const;
 export const DENSIDADES = ["sencilla", "media", "lujosa"] as const;
@@ -172,7 +186,7 @@ const EstructuraPlanSchema = z.object({
   if (Math.abs(participacion - 1) > 0.001) {
     ctx.addIssue({ code: "custom", path: ["materiales"], message: "Las participaciones deben sumar 1 (±0,001)." });
   }
-  const geometrica = (TIPOS_ESTRUCTURA_GEOMETRICOS as readonly string[]).includes(value.tipo);
+  const geometrica = esCuentaGeometrica(value);
   if (geometrica && value.unidades_declaradas !== undefined) {
     ctx.addIssue({ code: "custom", path: ["unidades_declaradas"], message: "Las estructuras geométricas no declaran unidades; las calcula el backend." });
   }
@@ -453,7 +467,7 @@ export const EstructuraPlan1_1Schema = z.object({
     if (value.materiales.some((material) => material.unidades_por_instancia !== undefined || material.parte_ids !== undefined)) {
       ctx.addIssue({ code: "custom", path: ["materiales"], message: "unidades_por_instancia y parte_ids son exclusivos de escultura." });
     }
-    const geometrica = (TIPOS_ESTRUCTURA_GEOMETRICOS as readonly string[]).includes(value.tipo);
+    const geometrica = esCuentaGeometrica(value);
     if (value.materiales.some((material) => material.participacion === undefined)) {
       ctx.addIssue({ code: "custom", path: ["materiales"], message: "Toda estructura no escultórica requiere participacion por material." });
     } else {

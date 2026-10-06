@@ -44,6 +44,8 @@ const CODIGOS_POR_PREFIJO: Readonly<Record<string, UiErrorCodeV1>> = {
   REFERENCE_IMAGE_DIMENSIONS: "ADJUNTO_INVALIDO",
   REFERENCE_TOO_MANY_IMAGES: "ADJUNTO_INVALIDO",
   REFERENCE_NO_IMAGES: "ADJUNTO_INVALIDO",
+  // presentationMode (R16): sin foto de referencia ni decoración del catálogo no se crea la imagen.
+  MODO_PRESENTACION_SIN_REFERENCIA: "ADJUNTO_INVALIDO",
 };
 
 /**
@@ -70,6 +72,7 @@ const MENSAJE_ADJUNTO_POR_ORIGEN: Readonly<Record<string, string>> = {
   REFERENCE_IMAGE_DIMENSIONS: "La foto es muy pequeña o tiene unas medidas que no puedo usar. Prueba con otra imagen.",
   REFERENCE_TOO_MANY_IMAGES: "Puedes adjuntar hasta tres fotos de referencia a la vez.",
   REFERENCE_NO_IMAGES: "Adjunta al menos una foto de referencia.",
+  MODO_PRESENTACION_SIN_REFERENCIA: "Para crear la imagen necesito una foto de referencia de la decoración que te gusta. Adjúntala y lo intentamos de nuevo.",
 };
 
 /**

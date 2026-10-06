@@ -21,6 +21,7 @@ import { PasosAsistente } from "@/components/propuesta";
 import { useSeleccion } from "@/lib/estado/seleccion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { Imagen, PeticionImagen } from "@/lib/ia/nucleo/tipos";
+import { ASPECTOS_SOPORTADOS, aspectoMasCercano } from "@/lib/ia/nucleo/aspecto";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { LoraModeSlug } from "@/lib/lora/schema";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
@@ -315,26 +316,9 @@ async function consumirSSE(
 // Debe coincidir con LIMITE_REFERENCIAS_CLIENTE en src/app/api/generate/route.ts.
 const LIMITE_REFERENCIAS_CLIENTE = 3;
 
-const ASPECTOS_SOPORTADOS: { valor: PeticionImagen["aspecto"]; razon: number }[] = [
-  { valor: "3:2", razon: 3 / 2 },
-  { valor: "1:1", razon: 1 },
-  { valor: "2:3", razon: 2 / 3 },
-  { valor: "16:9", razon: 16 / 9 },
-];
-
 /** Mapea una proporción real (ancho/alto) al aspecto soportado más cercano, comparando razones en escala logarítmica (así 3:2 y 2:3 no se confunden solo por estar "cerca" en valor absoluto). */
 function aspectoDe(ancho: number, alto: number): PeticionImagen["aspecto"] {
-  const razon = ancho / alto;
-  let mejor = ASPECTOS_SOPORTADOS[0];
-  let mejorDistancia = Infinity;
-  for (const candidato of ASPECTOS_SOPORTADOS) {
-    const distancia = Math.abs(Math.log(razon / candidato.razon));
-    if (distancia < mejorDistancia) {
-      mejorDistancia = distancia;
-      mejor = candidato;
-    }
-  }
-  return mejor.valor;
+  return aspectoMasCercano(ancho / alto);
 }
 
 const TAMANO_MAX_ARCHIVO = 20 * 1024 * 1024; // 20MB crudos — generoso para fotos de celular, evita colgar canvas con archivos absurdos.
@@ -1874,7 +1858,7 @@ export default function Page() {
               <div style={{ order: 0 }}>
                 <h2 className="inicio-titulo entra">¿Qué vamos a decorar?</h2>
                 <p className="inicio-subtitulo entra" style={{ animationDelay: "0.1s" }}>
-                  Cuéntame tu idea o muéstrame una foto de una decoración que te guste.
+                  Cuéntame qué quieres hacer o muéstrame una foto de una decoración que te guste.
                 </p>
               </div>
             )}

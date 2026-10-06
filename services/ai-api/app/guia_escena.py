@@ -591,6 +591,24 @@ def _forma_por_lo_comprado(
     return {**estructura, "forma": _FORMA_LINKS}
 
 
+def _aro_colgado(estructura: Mapping[str, object], datos: Mapping[str, object] | None) -> bool:
+    """Un aro circular que la foto muestra colgado de la pared (``mezclas[].colgada``, de ``hoop`` con
+    ``grounded`` false). Cuelga sin el poste ni la base con que el dibujo lo pone de pie (CASE-007, 2026-10-06).
+
+    Lo dice la foto, no la ubicación del plan: un aro de pie contra la pared del fondo también va en ``fondo_pared``.
+    """
+    return _texto(estructura.get("estructura_oficial")) == "aro_circular" and (datos or {}).get("colgada") is True
+
+
+def _toca_el_piso(elemento: ElementoDibujo) -> bool:
+    """El poste y la base del aro: lo único del dibujo que llega al piso (``y`` = 0)."""
+    if isinstance(elemento, LineaDibujo):
+        return bool(min(float(elemento.y1), float(elemento.y2)) <= 1e-6)
+    if isinstance(elemento, ElipseDibujo):
+        return bool(float(elemento.cy) <= 1e-6)
+    return False
+
+
 def pieza_de_guia(
     estructura: Mapping[str, object],
     mezcla_real: Sequence[Mapping[str, object]],
@@ -620,6 +638,9 @@ def pieza_de_guia(
     estructura = _forma_por_lo_comprado(estructura, datos)
     dibujado = globos_y_estructura_de(estructura, mezcla_real)
     del_dibujo, estructura_visible = dibujado if dibujado is not None else ([], [])
+    colgado = _aro_colgado(estructura, datos)
+    if colgado:
+        estructura_visible = [e for e in estructura_visible if not _toca_el_piso(e)]
     if not del_dibujo:
         contexto = contexto_de_pieza(estructura, {**(datos or {}), "mezcla_real": mezcla_real})
         de_pieza = pieza_de_plugin(estructura, colores, contexto)
@@ -644,7 +665,9 @@ def pieza_de_guia(
         _Globo(g.x, g.y, g.r, tinta_a_globo.get(str(g.color).lower(), str(g.color).lower()))
         for g in sorted(del_dibujo, key=lambda g: g.capa)
     ]
-    return _pieza(estructura_id, "dibujo", globos, elementos=estructura_visible)
+    return _pieza(
+        estructura_id, "dibujo", globos, anclaje="pared" if colgado else None, elementos=estructura_visible
+    )
 
 
 def guia_escena(request: PlanGuiaEscenaRequest) -> dict[str, object]:

@@ -64,7 +64,8 @@ async function main(): Promise<void> {
   const { perfilCreatividad } = await import("../../src/lib/ia/escena/creatividad");
   assert.doesNotMatch(modoPlan, /Nunca mandes tamaños de globo, cantidades de globos/);
   assert.match(modoPlan, /estructuras con geometría \(arco, semiarco, guirnalda, columna, pared, centro de mesa\) no mandes variant_id, tamaños de globo ni cantidades/);
-  assert.match(modoPlan, /Bouquet y Figura \(que se arman con tipo kit\), y también kit, backdrop y accesorio, necesitan variant_id en cada material y unidades_declaradas/);
+  // El racimo de pared (2026-10-06) se arma igual que el bouquet y la figura: tipo kit, sin geometría.
+  assert.match(modoPlan, /Bouquet, Figura y Racimo de pared \(que se arman con tipo kit\), y también kit, backdrop y accesorio, necesitan variant_id en cada material y unidades_declaradas/);
   // El mínimo tiene un solo dueño: la tabla de estructuras oficiales.
   const esperado = Object.values(ESTRUCTURAS_OFICIALES)
     .flatMap((estructura) => estructura.unidadesMinimasPorInstancia === undefined

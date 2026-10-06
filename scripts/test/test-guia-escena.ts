@@ -28,7 +28,7 @@ import { labDeRgb } from "@/lib/rag/catalog/similitud-color";
 import { LORA_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { datosDePiezas, guiaEscenaParaGeneracion, prepararGuiaEscena } from "@/lib/ia/kagutsuchi/preparar-guia-escena";
-import { buildLoraEditPrompt, ensureLoraTriggers, generarConSempertexLora, imageSizeFor, NOTA_GUIA_ESCENA, reservaNotaGuiaEscena, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { buildLoraEditPrompt, ensureLoraTriggers, generarConSempertexLora, imageSizeFor, NOTA_GUIA_ESCENA, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA, notaGuiaEscena, reservaNotaGuiaEscena, type ImagenGuiaLora } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { llamarPythonPlanGuiaEscena, PYTHON_PLAN_GUIA_ESCENA_PATH, PYTHON_PLAN_GUIA_ESCENA_SCOPE } from "@/lib/ia/nucleo/python-adapter";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
@@ -397,10 +397,11 @@ async function testCaminoDeGeneracion(): Promise<void> {
     const enviado = JSON.stringify(capturada.cuerpo);
     assert.ok(!enviado.includes(FOTO_REFERENCIA), "ningún byte de la foto de referencia sale hacia fal");
     assert.ok(!enviado.includes(Buffer.from("FOTO-DE-PRODUCTO").toString("base64")));
-    // El caption primero y la nota después.
-    assert.ok(cuerpo.prompt.endsWith(`\n\n${NOTA_GUIA_ESCENA}`), "la nota va al final");
-    assert.ok(cuerpo.prompt.indexOf(guia.compilacion.prompt.replace(/^eventdecor_[a-z0-9]+_v\d+\s*,\s*/i, "").slice(0, 40)) < cuerpo.prompt.indexOf(NOTA_GUIA_ESCENA), "el caption va antes de la nota");
-    assert.equal(cuerpo.prompt.startsWith(NOTA_GUIA_ESCENA), false);
+    // El caption primero y la nota después; la nota es la que corresponde a lo que la guía dibuja.
+    const nota = notaGuiaEscena(guia.imagenes![0]!.conEstructura);
+    assert.ok(cuerpo.prompt.endsWith(`\n\n${nota}`), "la nota va al final");
+    assert.ok(cuerpo.prompt.indexOf(guia.compilacion.prompt.replace(/^eventdecor_[a-z0-9]+_v\d+\s*,\s*/i, "").slice(0, 40)) < cuerpo.prompt.indexOf(nota), "el caption va antes de la nota");
+    assert.equal(cuerpo.prompt.startsWith(nota), false);
     if (!loras.length) assert.doesNotMatch(cuerpo.prompt, /eventdecor_/, "el modo base no lleva trigger");
   }
   console.log("[PASS] /edit recibe solo la guía (modo base y entrenado), ningún byte de la foto, y la nota sigue al caption");
@@ -409,7 +410,15 @@ async function testCaminoDeGeneracion(): Promise<void> {
   const final = ensureLoraTriggers(buildLoraEditPrompt(ensureLoraTriggers(guia.compilacion.prompt, [LORA_DE_PRUEBA]), guia.imagenes), [LORA_DE_PRUEBA]);
   assert.ok(final.length <= LORA_PROMPT_MAX_LENGTH, `el prompt con la nota mide ${final.length}`);
   assert.deepEqual([...findLoraPromptLanguageLeaks(final), ...findLoraPromptProductLeaks(final, PRODUCT_VOCABULARY)], []);
-  assert.ok(reservaNotaGuiaEscena() === NOTA_GUIA_ESCENA.length + 2);
+  assert.ok(reservaNotaGuiaEscena() === Math.max(NOTA_GUIA_ESCENA.length, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA.length) + 2);
+  // CASE-005 de images-judge: sin aro, poste ni cintas dibujados, la nota no le sugiere a FLUX un aro con marco y
+  // poste (unía dos piezas separadas en un arco), y dice que las piezas separadas siguen separadas.
+  assert.match(notaGuiaEscena(true), /metal hoop frame and stand/);
+  assert.doesNotMatch(notaGuiaEscena(false), /hoop|stand/);
+  assert.match(notaGuiaEscena(false), /pieces drawn apart stay apart/);
+  assert.equal(notaGuiaEscena(undefined), NOTA_GUIA_ESCENA, "sin dato, la nota de siempre");
+  const sinEstructura = buildLoraEditPrompt("caption", [{ ...guia.imagenes![0]!, conEstructura: false }]);
+  assert.ok(sinEstructura.endsWith(NOTA_GUIA_ESCENA_SIN_ESTRUCTURA));
   assert.throws(() => buildLoraEditPrompt("caption", [...(guia.imagenes ?? []), referencia]), /LORA_GUIA_INVALIDA/, "la guía de escena viaja sola");
   console.log("[PASS] el prompt con la nota cabe en el presupuesto, pasa el preflight y la guía no admite compañía");
 

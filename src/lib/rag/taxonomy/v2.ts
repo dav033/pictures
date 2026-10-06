@@ -237,7 +237,7 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   { value: "nude", aliases: ["nude", "piel"] },
   // Wine shades in Spanish and English. Multi-word aliases ("rojo vino", "wine
   // red") are longer than "rojo"/"red" at the same span, so they stay one color.
-  { value: "burdeos", aliases: ["burdeos", "vino", "borgona", "burgundy", "rojo vino", "vino tinto", "vinotinto", "granate", "marsala", "wine", "wine red", "maroon", "bordeaux", "oxblood"] },
+  { value: "burdeos", aliases: ["burdeos", "vino", "borgona", "burgundy", "rojo vino", "vino tinto", "vinotinto", "granate", "marsala", "wine", "wine red", "maroon", "bordeaux", "oxblood", "merlot"] },
 ];
 
 /**

@@ -152,12 +152,15 @@ async function main(): Promise<void> {
       ],
     } as unknown as PlanDecoracion;
     const conColores = aplicarColoresReferencia(plan, foto);
-    // El plateado (cuarto color de las columnas) va a las columnas; el burdeos de las sillas, que ninguna
-    // pieza materializa, sigue yendo a la primera como antes (E2E 2026-09-15).
+    // El plateado (cuarto color de las columnas) va a las columnas. El burdeos de las sillas YA NO va a la
+    // primera pieza: un color que solo aporta el escenario no es decoración (decisión del 2026-10-05 escrita
+    // en `aplicarColoresReferencia`, restricciones.ts). Esta expectativa decía lo contrario desde antes de esa
+    // decisión y la prueba fallaba sola; se corrigió la expectativa, no el código (2026-10-05, noche).
     assert.deepEqual(conColores.estructuras.map((estructura) => [estructura.estructura_id, estructura.colores_referencia]), [
-      ["ARCO", ["rosado", "blanco", "burdeos"]],
+      ["ARCO", ["rosado", "blanco"]],
       ["COLUMNAS", ["dorado", "negro", "blanco", "plateado"]],
     ]);
+    assert.ok(!conColores.estructuras.some((estructura) => estructura.colores_referencia?.includes("burdeos")), "el color de las sillas no se le pide a ninguna pieza");
     const avisoColumnas = colores.sustitucionesColorReferencia("COLUMNAS", conColores.estructuras[1]!.colores_referencia!, ["dorado", "negro", "blanco"]);
     assert.deepEqual(avisoColumnas.map((item) => item.pedido), ["plateado"]);
     // Si dos piezas lo muestran y ninguna lo compra, las dos lo avisan: a las dos les falta.

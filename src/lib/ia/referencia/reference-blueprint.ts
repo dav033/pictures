@@ -259,6 +259,12 @@ const SourceImageSchema = z
   .object({
     image_id: texto(40),
     approved_roles: z.array(ReferenceRoleSchema).min(1).max(6),
+    /**
+     * Ancho entre alto de la foto como se ve (orientación EXIF aplicada). Las `reference_bbox` son fracciones de
+     * ESTA foto: sin su proporción, la guía de escena las estiraba sobre un lienzo de otra forma. Opcional: los
+     * blueprints anteriores no la traen.
+     */
+    aspect_ratio: z.number().min(0.1).max(10).optional(),
   })
   .strict();
 

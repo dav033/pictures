@@ -81,6 +81,31 @@ MEJORA_MINIMA_MEZCLA = 0.15
 MAX_UNIDADES_DECLARADAS = 999
 MAX_MEDIDA_M = 100.0
 TIPOS_GEOMETRICOS = frozenset({"arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"})
+#: Un centro de mesa cuya foto cuenta EXACTAMENTE esto o menos se compra por globos contados (UI-6).
+MAX_GLOBOS_CENTRO_CONTADO = 3
+
+
+def es_centro_contado(estructura: Mapping[str, object]) -> bool:
+    """Un centro de mesa de pocos globos contados: ``unidades_declaradas`` en vez de banda × eje.
+
+    La fórmula de banda (``plan._total_globos``) no baja de unos 3 globos, así que un único globo
+    burbuja leído en la foto («1, exacto») salía como 3 a 22 (CASE-006 de images-judge). Lo declara
+    ``_centro_contado``; el plan lo compra como un kit (unidades y ``variant_id`` por material).
+    Misma regla en TypeScript: ``esCuentaGeometrica`` (``src/lib/plan/tipos.ts``).
+    """
+    unidades = estructura.get("unidades_declaradas")
+    return (
+        estructura.get("tipo") == "centro_mesa"
+        and isinstance(unidades, int)
+        and not isinstance(unidades, bool)
+        and unidades > 0
+    )
+
+
+def es_geometrica(estructura: Mapping[str, object]) -> bool:
+    """¿Cuenta sus globos la geometría? Todas las de ``TIPOS_GEOMETRICOS`` salvo el centro contado."""
+    return estructura.get("tipo") in TIPOS_GEOMETRICOS and not es_centro_contado(estructura)
+
 
 _NOMBRE_MEZCLA = {
     "clasica": "clásica",
@@ -480,6 +505,9 @@ class PuertoPlan:
     densidades_admitidas: Callable[[Mapping[str, object]], Sequence[str]] = lambda _e: DENSIDADES
     #: Las medidas de la estructura son del cliente (revisión 33): el conteo no las mueve.
     medidas_del_cliente: Callable[[Mapping[str, object]], bool] = lambda _e: False
+    #: Las variantes redondas que el turno permite comprar de un producto: ``(variant_id, pulgadas)``.
+    #: Sin catálogo (la estimación) no hay ninguna, y un centro de mesa no pasa a globos contados.
+    variantes_redondas: Callable[[str], Sequence[tuple[str, float]]] = lambda _p: ()
 
 
 @dataclass
@@ -1050,11 +1078,134 @@ def buscar_ajuste(
     )
 
 
+def _clase_leida(lectura: Mapping[str, object]) -> str | None:
+    """La clase de tamaño que más pesa en ``por_tamano`` (empate: la mayor), o ``None`` sin reparto."""
+    reparto = [
+        item
+        for item in cast(Sequence[object], lectura.get("por_tamano") or [])
+        if isinstance(item, Mapping)
+        and item.get("clase") in CLASES_TAMANO_NIVEL
+        and isinstance(item.get("proporcion"), (int, float))
+    ]
+    if not reparto:
+        return None
+    clases = list(CLASES_TAMANO_NIVEL)
+    mayor = max(
+        reparto,
+        key=lambda item: (float(cast(float, item["proporcion"])), clases.index(str(item["clase"]))),
+    )
+    return str(mayor["clase"])
+
+
+def _variante_de_clase(variantes: Sequence[tuple[str, float]], clase: str | None) -> str | None:
+    """La variante que compra un globo de esa clase.
+
+    La mayor de la clase (un globo solo es el que destaca); si el producto no tiene ninguna de esa
+    clase, la más cercana a su rango; sin clase leída, la mayor. Empates por ``variant_id`` para
+    que dos resoluciones elijan lo mismo.
+    """
+    if not variantes:
+        return None
+    if clase is None:
+        return max(variantes, key=lambda v: (v[1], v[0]))[0]
+    minimo, maximo = CLASES_TAMANO_NIVEL[clase]
+    de_la_clase = [v for v in variantes if minimo <= v[1] <= maximo]
+    if de_la_clase:
+        return max(de_la_clase, key=lambda v: (v[1], v[0]))[0]
+    return min(variantes, key=lambda v: (max(minimo - v[1], v[1] - maximo), -v[1], v[0]))[0]
+
+
+def _centro_contado(
+    estructura: Mapping[str, object],
+    lectura: Mapping[str, object],
+    cuenta: Cuenta,
+    puerto: PuertoPlan,
+) -> _Resultado | None:
+    """Un centro de mesa que la foto cuenta EXACTAMENTE en 1 a 3 globos se compra por globos (UI-6).
+
+    La geometría no puede: la banda × eje de ``plan._total_globos`` no baja de unos 3 globos y
+    ``_geometrica`` acababa en ``sin_ajuste_posible`` con 14 globos, o ajustaba a 3 o a 22, ante una
+    foto que dice «1 globo, exacto» con confianza 0,9 (CASE-006 de images-judge, 3 de 3 corridas).
+
+    La pieza pasa a ``unidades_declaradas`` = cuenta × repeticiones, cada material con la variante
+    redonda del tamaño que la foto leyó (``_variante_de_clase``). Con más materiales que globos se
+    quedan los que más pesan (el principal primero): cada material comprado es al menos un globo.
+    El patrón de color deja de aplicar (no hay racimos). ``None`` cuando no es un caso de esto o el
+    turno no trae una variante para algún material: entonces decide la geometría, como antes.
+    """
+    if not cuenta.exacto or not 1 <= cuenta.globos <= MAX_GLOBOS_CENTRO_CONTADO:
+        return None
+    if es_centro_contado(estructura) and _globos_actuales(estructura, puerto) == cuenta.globos:
+        # Una segunda resolución del mismo plan es punto fijo: no se reelige nada.
+        actual = cuenta.globos
+        return _Resultado(dict(estructura), "coincide", actual, actual, actual, [], "El plan ya sigue la foto.")
+    materiales = [dict(m) for m in cast(Sequence[Mapping[str, object]], estructura.get("materiales") or [])]
+    if not materiales:
+        return None
+
+    def peso(indice: int) -> tuple[bool, float, int]:
+        material = materiales[indice]
+        participacion = material.get("participacion")
+        return (
+            material.get("rol_material") != "principal",
+            -float(participacion) if isinstance(participacion, (int, float)) else 0.0,
+            indice,
+        )
+
+    quedan = sorted(sorted(range(len(materiales)), key=peso)[: cuenta.globos])
+    clase = _clase_leida(lectura)
+    elegidos: list[dict[str, object]] = []
+    for indice in quedan:
+        material = materiales[indice]
+        variante = _variante_de_clase(puerto.variantes_redondas(str(material.get("product_id") or "")), clase)
+        if variante is None:
+            return None
+        elegidos.append({**material, "variant_id": variante})
+    suma = sum(
+        float(cast(float, m["participacion"])) for m in elegidos if isinstance(m.get("participacion"), (int, float))
+    )
+    for material in elegidos:
+        parte = material.get("participacion")
+        material["participacion"] = (
+            round(float(cast(float, parte)) / suma, 4)
+            if suma > 0 and isinstance(parte, (int, float))
+            else round(1 / len(elegidos), 4)
+        )
+    # Las participaciones suman 1 (±0,001): el redondeo se lo queda el primero.
+    elegidos[0]["participacion"] = round(1 - sum(float(cast(float, m["participacion"])) for m in elegidos[1:]), 4)
+    if not any(m.get("rol_material") == "principal" for m in elegidos):
+        elegidos[0]["rol_material"] = "principal"
+    reps = max(1, cast(int, estructura.get("repeticiones") or 1))
+    antes = _globos_actuales(estructura, puerto)
+    item = {k: v for k, v in estructura.items() if k != "patron_color"}
+    item["materiales"] = elegidos
+    item["unidades_declaradas"] = cuenta.globos * reps
+    nombre = _nombre_de_pieza(estructura)
+    quitados = len(materiales) - len(elegidos)
+    supuesto = acotar_supuesto(
+        nombre,
+        f"la foto muestra {cuenta.globos} {'globo' if cuenta.globos == 1 else 'globos'} por pieza, contados uno a uno:"
+        f" se compran {cuenta.globos * reps} en vez de {antes * reps}"
+        + (f" y se dejan fuera {quitados} {'color' if quitados == 1 else 'colores'} que no caben" if quitados else "")
+        + ".",
+    )
+    return _Resultado(
+        item,
+        "ajustado",
+        cuenta.globos,
+        antes,
+        cuenta.globos,
+        [{"campo": "unidades_declaradas", "antes": antes * reps, "despues": cuenta.globos * reps}],
+        "La cuenta exacta de la foto manda: un centro de mesa de pocos globos se compra por globos, no por banda.",
+        supuesto,
+    )
+
+
 def _globos_actuales(estructura: Mapping[str, object], puerto: PuertoPlan) -> int:
-    """Globos por pieza del plan tal como está (kits: lo declarado entre las repeticiones)."""
-    if estructura.get("tipo") in TIPOS_GEOMETRICOS:
+    """Globos por pieza del plan tal como está (kits y centros contados: lo declarado entre las repeticiones)."""
+    if es_geometrica(estructura):
         return puerto.contar(estructura)
-    if estructura.get("tipo") == "kit":
+    if estructura.get("tipo") == "kit" or es_centro_contado(estructura):
         reps = max(1, cast(int, estructura.get("repeticiones") or 1))
         return round(cast(int, estructura.get("unidades_declaradas") or 0) / reps)
     return 0
@@ -1166,6 +1317,23 @@ def aplicar(
                 armados.pop(str(elemento), None)
             elif confiable and lectura_armado is not None:
                 armados[str(elemento)] = dict(lectura_armado)
+        elif tipo == "centro_mesa" and (
+            contado := _centro_contado(estructura, lectura, cuenta, puerto)
+        ) is not None:
+            resultado = contado
+        elif es_centro_contado(estructura):
+            # Ya se compra por globos y esta cuenta no es de pocos globos exactos: la geometría no
+            # aplica a una pieza declarada, así que se queda como está y se dice.
+            actual = _globos_actuales(estructura, puerto)
+            resultado = _Resultado(
+                estructura,
+                "sin_ajuste_posible",
+                cuenta.globos,
+                actual,
+                actual,
+                [],
+                "Un centro de mesa de globos contados solo sigue una cuenta exacta de pocos globos.",
+            )
         elif tipo in TIPOS_GEOMETRICOS:
             resultado = _geometrica(
                 estructura,
@@ -1220,6 +1388,7 @@ def aplicar(
 
 __all__ = [
     "ALTURA_REFERENCIA_M",
+    "MAX_GLOBOS_CENTRO_CONTADO",
     "Ajuste",
     "Cuenta",
     "Opcion",
@@ -1230,6 +1399,8 @@ __all__ = [
     "cuenta_usable",
     "dentro_de_tolerancia",
     "eje_libre",
+    "es_centro_contado",
+    "es_geometrica",
     "elegir_opcion",
     "medidas_desde_referencia",
     "mezcla_de_la_foto",

@@ -22,6 +22,7 @@ const GLOBOS: Readonly<Record<EstructuraOficialId, ReadonlyArray<readonly [numbe
   figura: [[15.5, 8, 3.4], [15.5, 15.5, 4.2], [10, 14, 1.8], [21, 14, 1.8]],
   aro_circular: [[15.5, 4, 2.2], [22.5, 7, 2.2], [25.5, 13.5, 2.2], [22.5, 20, 2.2], [15.5, 23, 2.2], [8.5, 20, 2.2], [5.5, 13.5, 2.2], [8.5, 7, 2.2]],
   techo_globos: [[6, 6, 2.2], [12, 7.5, 2.4], [18, 6, 2.2], [24, 7.5, 2.4]],
+  racimo_pared: [[13, 10, 3.6], [19.5, 9, 2.4], [18, 15, 3], [11.5, 16.5, 2], [23, 13.5, 1.6], [15, 20.5, 1.8]],
 };
 
 /** `espejo` voltea la silueta: un semiarco a la derecha se curva hacia la izquierda. */

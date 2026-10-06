@@ -80,6 +80,7 @@ from app.patron_color import TIPO_REJILLA, forma_valida, para_validar
 from app.patron_color import AVISO_ESPEJO_GUIRNALDA as AVISO_ESPEJO_GUIRNALDA
 from app.patron_color import quitar_espejo_sin_u
 from app.armado_bouquet import DISPOSICIONES, VARIANTES
+from app.conteo_foto import es_geometrica
 from app.plan import (
     ComprasPorMaterial,
     PlanResolutionError,
@@ -885,7 +886,7 @@ def _editar_materiales(
         _agregar_material(estructura, edicion, color)
         return
     linea = _linea_objetivo(lineas_base, edicion.estructura_id, edicion.objetivo_variant_id)
-    if edicion.accion == "reemplazar" and estructura.get("tipo") in TIPOS_GEOMETRICOS:
+    if edicion.accion == "reemplazar" and es_geometrica(estructura):
         # Una pieza geométrica no cambia su receta de colores: el reemplazo vive
         # en variant_overrides. Por eso no se busca el material de la línea: una
         # pieza ya editada puede tener un color que no está en `materiales`.
@@ -1074,7 +1075,7 @@ def _ajustar_patron(
         return _rehacer_patron(plan, indice, AVISO_PATRON_QUITAR)
     if tiene_patron:
         return _agregar_al_patron(plan, indice, _parte_agregada(edicion))
-    if completar_patrones and materiales_antes == 1 and estructura.get("tipo") in TIPOS_GEOMETRICOS:
+    if completar_patrones and materiales_antes == 1 and es_geometrica(estructura):
         preset = sugerir_patron_para_estructura(plan, str(estructura["estructura_id"]))
         if preset is not None:
             estructura["patron_color"] = preset

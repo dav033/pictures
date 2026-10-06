@@ -22,7 +22,7 @@ from app.armado_estructura import (
     ArmadoEstructuraRequest,
     resolver_armado_estructura,
 )
-from app.armado_estructura import FORMA_SEMIARCO
+from app.armado_estructura import CORTE_MEDIO_ARCO_FUERTE, FORMA_SEMIARCO
 from app.organico.formas import FORMAS_LISTAS
 
 CONTEXTO: dict[str, object] = {
@@ -220,7 +220,8 @@ def test_un_semiarco_sale_con_el_arco_organico_y_cortado() -> None:
     # su carga y su volumen también (copiar solo el corte dejaba el volumen del arco completo).
     assert FORMA_SEMIARCO == "medio-corto", "la de la ficha «medio arco» del clasificador"
     lista = next(f for f in FORMAS_LISTAS if f.id == FORMA_SEMIARCO)
-    assert forma["corte"] == _CORTE[FORMA_SEMIARCO]
+    # El corte lo decide la lectura de la foto y nunca pasa del de la forma lista (UI-1c); sin lectura, el moderado.
+    assert forma["corte"] == min(_CORTE[FORMA_SEMIARCO], CORTE_MEDIO_ARCO_FUERTE)
     assert forma["carga"] == lista.forma["carga"]
     assert cast(dict[str, Any], armado["volumen"]) == dict(lista.volumen)
     # Sin ubicación a la derecha, sin espejo: la pata a la izquierda.

@@ -3,6 +3,7 @@ import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
 import { leerLecturaUnica } from "@/lib/ia/amaterasu/lectura-unica";
 import { leerLecturasDeFoto } from "@/lib/ia/amaterasu/lecturas-foto";
 import { medirColoresSempertex } from "@/lib/ia/amaterasu/color-sempertex";
+import { conColoresDesdeElPie } from "@/lib/ia/amaterasu/dominancia-referencia";
 import type { AnalisisColorSempertex } from "@/lib/plan/analisis-color";
 import { chatDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
@@ -14,7 +15,7 @@ import {
   PATRON_REFERENCIA_PYTHON_ENABLED,
   REFERENCE_ANALYSIS_PYTHON_ENABLED,
 } from "@/lib/ia/nucleo/feature-flags";
-import { VARIANTE_LECTURA_UNICA } from "@/lib/ia/referencia/reference-structure";
+import { VARIANTE_RUTA_ANALISIS } from "@/lib/ia/referencia/reference-structure";
 import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
 import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
@@ -45,11 +46,12 @@ export async function POST(request: Request) {
     // cada elemento mediante buscar_catalogo_rag contra PostgreSQL validado.
     // `sin_cache` es el "Reintentar" de la UI: pide un análisis nuevo.
     // Una sola IA mira la foto: con la bandera encendida, el análisis devuelve
-    // también las cuatro lecturas (variante `v17-lectura-unica`) y no hay
-    // ninguna llamada de visión más. Apagada, v16 y las cuatro de siempre.
+    // también las cuatro lecturas (variante `VARIANTE_RUTA_ANALISIS`: v18, que es
+    // v17 más las fronteras de UI-3) y no hay ninguna llamada de visión más.
+    // Apagada, v16 y las cuatro de siempre.
     const analisis = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal, {
       forzarNuevoAnalisis: body.sinCache,
-      ...(LECTURA_UNICA_REFERENCIA_ENABLED ? { variante: VARIANTE_LECTURA_UNICA } : {}),
+      ...(LECTURA_UNICA_REFERENCIA_ENABLED ? { variante: VARIANTE_RUTA_ANALISIS } : {}),
     });
     // ADR-0028 §11: el patrón de color de cada estructura lo lee Python en una
     // llamada aparte (el prompt del análisis sigue congelado). Un fallo deja el
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
     // ADR-0032 (E4): el armado de cada guirnalda es la cuarta, y con ella la
     // ubicación de las guirnaldas se refina con su lectura y los muebles.
     const lectura = { requestId, correlationId, signal: request.signal, vencimiento, sinCache: body.sinCache };
-    const blueprint = LECTURA_UNICA_REFERENCIA_ENABLED
+    const leido = LECTURA_UNICA_REFERENCIA_ENABLED
       // Lo que ya leyó el análisis: solo se valida en Python y se reparte por
       // elemento. Las cuatro banderas de arriba no se leen en este camino.
       ? await leerLecturaUnica(analisis.blueprint, analisis.lecturasCrudas, references, lectura)
@@ -73,6 +75,10 @@ export async function POST(request: Request) {
         conteo: CONTEO_REFERENCIA_PYTHON_ENABLED,
         guirnalda: GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
       });
+    // El orden de los colores de cada columna o semiarco, del pie a la punta, lo deciden los píxeles y no el
+    // orden en que el modelo los listó (`orden-color-pie.ts`, 2026-10-06). Después de la lectura: ella trae
+    // `patron_color` y decide columna o semiarco.
+    const blueprint = featureEnabled("MEASURED_COLOR_DOMINANCE_V1") ? await conColoresDesdeElPie(leido, references) : leido;
     /**
      * Los colores de cada pieza, medidos sobre los píxeles de su croquis y cruzados con una referencia del
      * catálogo Sempertex (su código y su Pantone). Va **fuera** del blueprint a propósito: no entra en ningún

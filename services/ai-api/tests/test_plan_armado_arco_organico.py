@@ -25,7 +25,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.armado_estructura import FORMA_SEMIARCO
+from app.armado_estructura import CORTE_MEDIO_ARCO_FUERTE, FORMA_SEMIARCO
 from app.main import Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
 from app.organico.formas import FORMAS_LISTAS
@@ -352,5 +352,10 @@ def test_la_vista_previa_tambien_dibuja_un_semiarco() -> None:
     # Y la receta de un semiarco sale cortada, con el mismo corte que la del plan (`armado_estructura`, forma
     # lista `FORMA_SEMIARCO`). Antes esta ruta devolvía el arco completo (corte 1) y el editor la usa para
     # «Volver a la receta»: guardarla convertía el medio arco en un arco entero (2026-10-04, editor de armado).
-    corte_del_plan = next(f.forma["corte"] for f in FORMAS_LISTAS if f.id == FORMA_SEMIARCO)
+    # Desde UI-1c (2026-10-05) el plan corta el medio arco sin inclinación leída en `CORTE_MEDIO_ARCO_FUERTE`,
+    # por debajo del corte de la forma lista: la vista previa tiene que dar el mismo.
+    corte_del_plan = min(
+        float(next(f.forma["corte"] for f in FORMAS_LISTAS if f.id == FORMA_SEMIARCO)),
+        CORTE_MEDIO_ARCO_FUERTE,
+    )
     assert resultado["armado"]["forma"]["corte"] == corte_del_plan < 1

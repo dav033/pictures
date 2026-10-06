@@ -92,6 +92,8 @@ export const PlanGuiaEscenaRequestV1Schema = z.object({
    * - `leyenda` (opcional): la leyenda del armado resuelto del bouquet; manda sobre `lineas`.
    * - `aspecto_caja` (opcional): alto sobre ancho de la caja de la foto donde va la pieza, en píxeles de la
    *   guía. La figura sin silueta conocida (un animal, un personaje) dibuja su óvalo con esta proporción.
+   * - `colgada` (opcional, 2026-10-06): la foto muestra la pieza colgada de la pared (un aro: `hoop` con
+   *   `grounded` false). Python la dibuja sin el poste ni la base que la ponían de pie y la ancla a la pared.
    */
   mezclas: z.array(z.object({
     estructura_id: idSchema,
@@ -99,6 +101,7 @@ export const PlanGuiaEscenaRequestV1Schema = z.object({
     lineas: z.array(LineaCatalogoGuiaSchema).max(MAX_LINEAS_MEZCLA).optional(),
     leyenda: z.array(LeyendaGuiaSchema).max(MAX_MATERIALES_PIEZA).optional(),
     aspecto_caja: z.number().min(GUIA_ESCENA_ASPECTO_CAJA.min).max(GUIA_ESCENA_ASPECTO_CAJA.max).optional(),
+    colgada: z.literal(true).optional(),
   }).strict()).max(GUIA_ESCENA_MAX_PIEZAS).optional(),
 }).strict();
 

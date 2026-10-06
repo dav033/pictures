@@ -138,6 +138,10 @@ const ACABADO_DE_ETIQUETA: ReadonlyArray<readonly [RegExp, string]> = [
   [/\b(pearl|pearlescent|pearly|perlad[oa]|nacarad[oa])\b/i, "satin"],
   [/\b(satin|satinad[oa])\b/i, "satin"],
   [/\b(matte|matt|mate)\b/i, "mate"],
+  // «pastel pink» nombra una familia pastel (Pastel Mate / Pastel Dusk), no un Reflex: es un dato de acabado
+  // de la foto como «matte». Sin esto el color quedaba «sin acabado» y la medición aproximada (7-12 % de
+  // píxeles rosados) le imponía un Reflex Rosado cromado a una foto pastel (CASE-002 de images-judge).
+  [/\bpastel\b/i, "mate"],
 ];
 
 export function acabadoDeEtiqueta(etiqueta: string): string | undefined {

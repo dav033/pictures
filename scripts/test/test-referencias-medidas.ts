@@ -81,7 +81,9 @@ assert.equal(conReferenciasMedidas(blueprint, null), blueprint, "sin análisis, 
 // la orden de «comprar exactamente estos», que contradecía lo que hace el servidor.
 const prompt = serializeReferenceBlueprint(conMedidas);
 assert.doesNotMatch(prompt, /GLOBOS REALES MEDIDOS|compra exactamente estos/);
-assert.match(prompt, /colores de la pieza: rosado \(visto como "pastel pink"; globos Sempertex medidos: Satín Rosado → busca "globo latex redondo Satín Rosado" y Pastel Mate Rosado \(familia aproximada\) → busca "globo latex redondo Pastel Mate Rosado"\)/);
+// Cambio deliberado (2026-10-05, CASE-002 de images-judge): «pastel pink» nombra una familia pastel, así que su
+// color lleva acabado «mate» (antes quedaba sin acabado) y la familia Pastel Mate Rosado deja de ser «aproximada».
+assert.match(prompt, /colores de la pieza: rosado mate \(visto como "pastel pink"; globos Sempertex medidos: Satín Rosado → busca "globo latex redondo Satín Rosado" y Pastel Mate Rosado → busca "globo latex redondo Pastel Mate Rosado"\)/);
 assert.match(prompt, /plateado reflex \(visto como "chrome silver"; globo Sempertex medido: Reflex Plata → busca "globo latex redondo Reflex Plata"\)/);
 assert.match(prompt, /lila satin \(visto como "pearl lilac"; globo Sempertex medido: Satín Lila → busca "globo latex redondo Satín Lila"\)/);
 assert.doesNotMatch(prompt, /Cristal Transparente/, "ni nombrado ni por encima del 8 %: no se pide");
@@ -127,6 +129,52 @@ assert.deepEqual(busquedas, ["globo latex redondo satin rosado", "globo latex re
 assert.deepEqual(aplicarReferenciasMedidas(plan, conMedidas, sinExactos).ajustes, [], "sin el producto exacto, el material se queda (nunca se quita)");
 assert.deepEqual(busquedasDeReferencias(plan, blueprint, disponibilidad), [], "sin referencias medidas no se busca nada");
 console.log("[PASS] el servidor busca el producto exacto que le falta al turno, y no toca lo que no puede reemplazar");
+
+// 4a. CASE-002 de images-judge (2026-10-05): una referencia medida con la familia SIN confirmar (7-12 % de píxeles
+// rosados, «Reflex Rosado» aproximado) no puede imponer un Reflex a una foto que dice «pastel pink».
+{
+  const rosadoAproximado = {
+    version: "analisis-color-sempertex.v1",
+    piezas: [{
+      ...analisis.piezas[0]!,
+      colores: [{ hex: "#d68aa0", parte: 0.12, pixeles: 120, cruce: cruce("909", "Reflex Rosado", { familias: [] }) }],
+    }],
+  } as AnalisisColorSempertex;
+  const sinAcabado = structuredClone(blueprint);
+  sinAcabado.elements[0]!.appearance.observed_colors = ["pink"];
+  const conRosado = conReferenciasMedidas(sinAcabado, rosadoAproximado);
+  const referenciaRosada = conRosado.elements[0]!.appearance.referencias_medidas?.[0];
+  assert.equal(referenciaRosada?.familia_fiable, false, "la medición sola no confirma la familia");
+
+  // El prompt: solo el color, y la orden de no imponer acabado. Nunca el producto de una familia adivinada.
+  const textoRosado = serializeReferenceBlueprint(conRosado);
+  assert.match(textoRosado, /Rosado \(familia sin confirmar: no impongas acabado\) → busca "globo latex redondo Rosado"/);
+  assert.doesNotMatch(textoRosado, /Reflex Rosado/, "una familia adivinada no se nombra como producto");
+
+  // La búsqueda del servidor: por color. Pedir «Reflex Rosado» dejaba ese Reflex como único rosado del turno.
+  const soloReflex = new Map<string, DisponibilidadProducto>([["p-reflex-rosado", producto("B2b Globo Latex Redondo Reflex Rosado", ["rosado"], ["reflex"])]]);
+  const sinRosados = new Map<string, DisponibilidadProducto>();
+  const planRosado = { estructuras: [{ ...plan.estructuras[0]!, materiales: [material("p-reflex-rosado", "rosado", "reflex", 1)] }] } as unknown as PlanDecoracion;
+  assert.deepEqual(busquedasDeReferencias(planRosado, conRosado, sinRosados), ["globo latex redondo rosado"], "familia sin confirmar: se pide el color, no «Reflex Rosado»");
+  // Sin acabado dicho por el analizador, el Reflex que el modelo ya compró sigue valiendo: no hay evidencia en contra.
+  assert.equal(aplicarReferenciasMedidas(planRosado, conRosado, soloReflex).ajustes.length, 0, "sin acabado observado no se corrige lo que el modelo eligió");
+
+  // Con «pastel pink» el analizador SÍ dijo el acabado (no brillante): el Reflex deja de ser «la referencia» y la
+  // compra pasa al producto pastel del mismo color, con el aviso de que cambió de línea.
+  const pastel = structuredClone(blueprint);
+  pastel.elements[0]!.appearance.observed_colors = ["pastel pink"];
+  const conPastel = conReferenciasMedidas(pastel, rosadoAproximado);
+  const conAmbos = new Map<string, DisponibilidadProducto>([
+    ["p-reflex-rosado", producto("B2b Globo Latex Redondo Reflex Rosado", ["rosado"], ["reflex"])],
+    ["p-pastel-rosado", producto("B2b Globo Latex Redondo Pastel Mate Rosado", ["rosado"], ["mate"])],
+  ]);
+  const corregidoPastel = aplicarReferenciasMedidas(planRosado, conPastel, conAmbos);
+  assert.equal(corregidoPastel.plan.estructuras[0]!.materiales[0]!.product_id, "p-pastel-rosado", "foto pastel: el Reflex Rosado se cambia por el pastel del mismo color");
+  assert.deepEqual(corregidoPastel.ajustes.map((a) => a.tipo), ["acabado_referencia"]);
+  // Y la búsqueda del servidor para esa foto pide el color sin imponer una familia Reflex.
+  assert.deepEqual(busquedasDeReferencias(planRosado, conPastel, soloReflex), ["globo latex redondo rosado"], "foto pastel con solo un Reflex en el turno: se busca el rosado, no el Reflex");
+  console.log("[PASS] CASE-002: una familia sin confirmar no impone un Reflex a una foto pastel (prompt, búsqueda y compra)");
+}
 
 // 4b. La pared no es un globo (2026-10-05): un neutro medido que el analizador no nombró no entra, y la regla 3
 // ya no puede cambiar por él un color que la foto sí tiene.

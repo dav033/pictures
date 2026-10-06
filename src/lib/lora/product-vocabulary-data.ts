@@ -581,6 +581,31 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
     status: "active",
     vocabulary_version: VOCABULARY_VERSION,
   },
+  // 2026-10-06: el comentario de arriba daba el nude por dibujable a través de otros conceptos, pero la línea B2B
+  // (B2B-20019949/51/54/56) no resolvía identidad y la ruta rechazaba la imagen (LORA_PRODUCT_VOCABULARY_FAILED):
+  // CASE-003 y la foto 5 de la Fase 7, cuando el chat elige el nude pastel para un crema o un beige.
+  {
+    concept_id: "balloon.round.latex.pastel_matte.nude",
+    canonical_label: "round latex balloon in pastel matte nude",
+    catalog_titles: ["B2b Globo Latex Redondo Pastel Mate Nude"],
+    visual: {
+      family: "Pastel Matte",
+      shape: "round",
+      material: "latex",
+      color: "nude",
+      finish: "pastel matte",
+      pattern: { kind: "solid" },
+    },
+    aliases: {
+      es: ["globo redondo pastel mate nude", "globo latex redondo pastel mate nude"],
+      en: ["round pastel matte nude balloon", "pastel matte nude balloon"],
+      contextual: [],
+    },
+    catalog_product_ids: ["20019949", "20019951", "20019954", "20019956"],
+    sizes: { separate: true, allowed_codes: ["R-5", "R-9", "R-12", "R-18"] },
+    status: "active",
+    vocabulary_version: VOCABULARY_VERSION,
+  },
   {
     concept_id: "balloon.round.latex.pastel_dusk.laurel_green",
     canonical_label: "round latex balloon in dusk laurel green",

@@ -213,6 +213,10 @@
             "type": "number",
             "minimum": 0.05,
             "maximum": 20
+          },
+          "colgada": {
+            "type": "boolean",
+            "const": true
           }
         },
         "required": [

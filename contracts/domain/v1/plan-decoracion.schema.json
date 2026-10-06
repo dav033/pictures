@@ -308,7 +308,8 @@
               "bouquet",
               "figura",
               "aro_circular",
-              "techo_globos"
+              "techo_globos",
+              "racimo_pared"
             ]
           },
           "forma": {
@@ -3148,6 +3149,27 @@
           },
           {
             "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "racimo_pared"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "kit"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
               "required": [
                 "forma"
               ]
@@ -3757,6 +3779,27 @@
           },
           {
             "if": {
+              "properties": {
+                "estructura_oficial": {
+                  "const": "racimo_pared"
+                }
+              },
+              "required": [
+                "estructura_oficial"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tipo": {
+                  "enum": [
+                    "kit"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
               "required": [
                 "forma"
               ]
@@ -4321,7 +4364,8 @@
     "bouquet": "libre",
     "figura": "libre",
     "aro_circular": "circular",
-    "techo_globos": "libre"
+    "techo_globos": "libre",
+    "racimo_pared": "libre"
   },
   "x-formas-sin-motor": [
     "circular",

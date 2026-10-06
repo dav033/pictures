@@ -43,6 +43,7 @@ from app.plan import (
     contar_pieza,
     pieza_del_motor_resuelta,
 )
+from app.armado_estructura import globos_del_remate
 from tests.guirnalda_datos import (
     GUIRNALDA,
     estructura_del_plan,
@@ -287,7 +288,9 @@ def conteo_del_motor(
     poder comparar con lo que la pieza resuelta compró.
     """
     totales: dict[tuple[float, str], int] = {}
-    for entrada in cast(list[dict[str, Any]], resuelto_motor["conteo"]):
+    # El remate de la columna también se compra desde el 2026-10-06 (`plan._conteo_del_motor`).
+    remate = cast(dict[str, Any], resuelto_motor.get("remate") or {})
+    for entrada in [*cast(list[dict[str, Any]], resuelto_motor["conteo"]), *cast(list[dict[str, Any]], remate.get("globos") or [])]:
         nominal = entrada.get("tamano")
         diametro = float(cast(float, nominal)) if nominal is not None else 12.0
         clave = (diametro, colores[int(entrada["material"])])
@@ -729,10 +732,11 @@ async def test_lo_que_no_es_un_arco_clasico_de_patron_sigue_en_su_camino() -> No
 
 @pytest.mark.anyio
 async def test_una_columna_con_armado_cuenta_los_globos_que_el_motor_coloco() -> None:
-    """El eje es la altura total del motor, remate incluido; el conteo, sin remate.
+    """El eje es la altura total del motor, remate incluido; la compra, también con su remate.
 
-    El remate es un globo aparte que la hoja de armado describe en su ``remate``,
-    y por eso no está en el conteo del motor ni en lo que la pieza compra.
+    El remate es un globo aparte que la hoja de armado describe en su ``remate``. Hasta el 2026-10-06 no se
+    compraba: el globo de 24" se describía en el prompt y la puerta de coherencia («diámetro no cotizado»)
+    dejaba sin imagen a toda columna clásica (Fase 7). Ahora se compra.
     """
     armado = armado_columna()
     del_motor = armado_columna_resuelto(
@@ -742,7 +746,8 @@ async def test_una_columna_con_armado_cuenta_los_globos_que_el_motor_coloco() ->
     pieza = estructura(resuelto, COLUMNA)
 
     assert pieza["eje_m"] == round(cast(float, del_motor["alto_total_m"]), 2)
-    assert pieza["total_unidades"] == len(cast(list[object], del_motor["globos"]))
+    assert pieza["total_unidades"] == len(cast(list[object], del_motor["globos"])) + globos_del_remate(del_motor)
+    assert globos_del_remate(del_motor) == 1, "el remate por defecto es un globo"
     assert unidades_por_tamano_y_color(pieza) == conteo_del_motor(del_motor, COLORES_COLUMNA)
     assert pieza["eje_m"] != 1.6 and pieza["total_unidades"] != 31
 
@@ -763,7 +768,8 @@ async def test_una_columna_por_capas_reparte_cada_tamano_como_el_motor() -> None
     pieza = estructura(await resolver(plan(columna(armado_columna=armado))), COLUMNA)
     comprado = unidades_por_tamano_y_color(pieza)
     assert comprado == conteo_del_motor(del_motor, COLORES_COLUMNA)
-    assert {diametro for diametro, _color in comprado} == {12.0, 18.0}
+    # 12 y 18 de las capas; 24, el globo de remate por defecto (se compra desde el 2026-10-06).
+    assert {diametro for diametro, _color in comprado} == {12.0, 18.0, 24.0}
 
 
 @pytest.mark.anyio

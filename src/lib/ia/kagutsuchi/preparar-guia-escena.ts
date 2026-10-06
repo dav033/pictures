@@ -5,7 +5,7 @@ import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-bluepri
 import { GUIA_ESCENA_ASPECTO_CAJA, type PlanGuiaEscenaRequestV1, type PlanGuiaEscenaResultV1 } from "@/lib/plan/guia-escena";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { costeEntradasUsdEstimado, elegirCaptionConGuia, tamanoGuia } from "./guia-estructura";
-import { instanciasDeEscena, svgGuiaEscena, type InstanciaGuia } from "./guia-escena";
+import { instanciasDeEscena, proporcionDeLaFoto, reencuadrar, svgGuiaEscena, type InstanciaGuia } from "./guia-escena";
 import { rasterizarSvg } from "./rasterizar-guia";
 import { imageSizeFor, reservaNotaGuiaEscena, type ImagenGuiaLora } from "./sempertex-lora";
 
@@ -37,6 +37,8 @@ export function datosDePiezas(plan: PlanResuelto, instancias: readonly Instancia
   return plan.estructuras.map((estructura) => {
     const caja = instancias.find((instancia) => instancia.estructura_id === estructura.estructura_id && instancia.fuente === "foto")?.caja;
     const aspecto = caja ? (caja.height * tamano.alto) / (caja.width * tamano.ancho) : undefined;
+    // Un arco que se apoya en la pared es un aro que la foto muestra colgado (`aroColgadoEnLaFoto`).
+    const colgada = estructura.tipo === "arco" && instancias.some((instancia) => instancia.estructura_id === estructura.estructura_id && instancia.apoyo === "pared");
     const leyenda = leyendas.get(estructura.estructura_id);
     return {
       estructura_id: estructura.estructura_id,
@@ -53,6 +55,7 @@ export function datosDePiezas(plan: PlanResuelto, instancias: readonly Instancia
       })),
       ...(leyenda ? { leyenda: leyenda.map((entrada) => ({ material: entrada.material, tipo_globo: entrada.tipo_globo, tamano_pulg: entrada.tamano_pulg, digito: entrada.digito })) } : {}),
       ...(aspecto !== undefined && Number.isFinite(aspecto) ? { aspecto_caja: Math.min(GUIA_ESCENA_ASPECTO_CAJA.max, Math.max(GUIA_ESCENA_ASPECTO_CAJA.min, aspecto)) } : {}),
+      ...(colgada ? { colgada: true as const } : {}),
     };
   });
 }
@@ -91,15 +94,20 @@ export async function prepararGuiaEscena(entrada: {
   pedirDiscos: (plan: PlanResuelto["plan"], mezclas: readonly MezclaDePieza[]) => Promise<PlanGuiaEscenaResultV1>;
 }): Promise<GuiaEscenaPreparada> {
   const { plan } = entrada;
-  const instancias = instanciasDeEscena(plan.plan.estructuras, entrada.foto);
   const tamano = tamanoGuia(imageSizeFor(entrada.aspecto));
+  // Las cajas de la foto pasan al lienzo con la forma de la foto y la decoración encuadrada (`reencuadrar`).
+  const instancias = reencuadrar(instanciasDeEscena(plan.plan.estructuras, entrada.foto), proporcionDeLaFoto(plan.plan.estructuras, entrada.foto), tamano);
   const discos = await entrada.pedirDiscos(plan.plan, datosDePiezas(plan, instancias, tamano));
   if (!discos.piezas.length) throw new Error("GUIA_ESCENA_INVALIDA: ninguna pieza del plan tiene motor ni dibujo.");
   const png = await rasterizarSvg(svgGuiaEscena(discos.piezas, instancias, tamano), tamano);
   const conPieza = new Set(discos.piezas.map((pieza) => pieza.estructura_id));
   const colocadas = instancias.filter((instancia) => conPieza.has(instancia.estructura_id));
   return {
-    imagen: { id: "SCENE_GUIDE", role: "scene_guide", base64: png.toString("base64"), mime: "image/png" },
+    imagen: {
+      id: "SCENE_GUIDE", role: "scene_guide", base64: png.toString("base64"), mime: "image/png",
+      // La nota que acompaña a la guía nombra el aro y su poste solo si la guía los dibuja (`notaGuiaEscena`).
+      conEstructura: discos.piezas.some((pieza) => Boolean(pieza.trazos?.length || pieza.rellenos?.length)),
+    },
     sha256: createHash("sha256").update(png).digest("hex"),
     bytes: png.byteLength,
     piezas: discos.piezas.length,

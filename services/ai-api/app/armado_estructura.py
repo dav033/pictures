@@ -48,6 +48,7 @@ kilobytes por pieza.
 
 from __future__ import annotations
 
+import math
 from typing import Annotated, Any, Literal, Mapping, Sequence, cast
 
 from pydantic import Field, field_validator, model_validator
@@ -130,6 +131,7 @@ from app.organico.espina import crear_espina
 from app.organico.formas import FORMAS_LISTAS
 from app.organico.limites import ANCHO_MAX as ARCO_ORGANICO_ANCHO_MAX
 from app.organico.limites import ANCHO_MIN as ARCO_ORGANICO_ANCHO_MIN
+from app.organico.limites import GROSOR_MIN as GROSOR_MIN_ORGANICO
 from app.organico.limites import sanear as sanear_arco_organico
 from app.organico.tipos import ACABADOS, REPARTOS, TAMANOS_GLOBO
 from app.organico.tipos import ESTILOS as ESTILOS_ARCO_ORGANICO
@@ -144,6 +146,7 @@ from app.plan import (
     OFICIALES_SIN_MOTOR,
     PistaPatron,
     PlanResolutionError,
+    completar_medidas,
     proporciones_de_mezcla,
 )
 
@@ -242,6 +245,14 @@ _ESTILO_COLUMNA_POR_DENSIDAD = {
     densidad: next(estilo for estilo in ESTILOS_COL if estilo.id == ident)
     for densidad, ident in (("sencilla", "ligero"), ("lujosa", "lleno"))
 }
+
+#: Las mezclas cuyo cuerpo son globos grandes (`x-reglas-mezclas`): una columna así no los amontona en el pie
+#: ni se afila (``_armado_columna_organica``, UI-4).
+MEZCLAS_DE_GRANDES = frozenset({"organica_gruesa", "solo_grandes"})
+#: Cuánto de los grandes va abajo, como mucho, en una columna de grandes (la forma lista trae 0,8).
+GRANDES_ABAJO_CON_GRANDES = 0.4
+#: La punta de una columna de grandes conserva al menos esta parte del grosor de su base.
+PUNTA_MINIMA_CON_GRANDES = 0.85
 
 #: Los globos por capa de la columna **clásica** por densidad: «cuartetos de 4 (lo normal), de 5 (más gruesa y
 #: redonda) y de 3 (delgada)» (``clasificador-decoraciones/docs/investigacion-columnas.md``, «Cómo se construye»
@@ -424,6 +435,9 @@ class InclinacionPistaFoto(ContractModel):
     Es una **fracción de su alto** con signo: negativo a la izquierda, positivo a la derecha. Sale de lo que el
     análisis ya contesta (`curves_toward` y `top_overhang`) y el motor orgánico sabe usarla: la columna tiene
     `forma.inclinacionM` en metros y la guirnalda `pendienteM` y `carga`. Hasta ahora todas salían rectas.
+
+    Un ``0`` es un dato («la foto la muestra recta») y ausente es «sin dato»: la columna asimétrica, sin pista,
+    arranca con la inclinación de su forma lista, así que solo el ``0`` explícito la deja recta.
     """
 
     referencia_element_id: Identificador
@@ -538,7 +552,8 @@ class ArmadoEstructuraRequest(OperationalRequest):
     #: columna no esté en esta lista es «no se ve su punta» y deja el remate del motor; estar con
     #: ``tipo: "ninguno"`` es «su punta no lleva nada».
     remates: list[RematePistaFoto] = Field(default_factory=list, max_length=16)
-    #: Hacia dónde se va cada pieza y cuánto (ADR-0039). Una pieza recta no viaja: el motor ya arranca recto.
+    #: Hacia dónde se va cada pieza y cuánto (ADR-0039). Una columna que la foto muestra recta viaja como 0: la
+    #: asimétrica no arranca recta sino con su plantilla inclinada. En las demás piezas el 0 no viaja.
     inclinaciones: list[InclinacionPistaFoto] = Field(default_factory=list, max_length=16)
     #: Cómo se curva la línea de cada guirnalda (ADR-0032, decisión 28). Sin esto todas salen planas.
     curvas: list[CurvaPistaFoto] = Field(default_factory=list, max_length=16)
@@ -1747,6 +1762,14 @@ def _armado_columna_organica(
     if racimo is not None:
         # Los globos por racimo que vio la foto mandan sobre los de la densidad.
         volumen["racimo"] = racimo
+    if pieza.mezcla in MEZCLAS_DE_GRANDES:
+        # Una columna hecha sobre todo de globos grandes los lleva por todo el cuerpo, no amontonados en la base,
+        # y su punta tiene que poder alojarlos: no se afila como una de globos chicos. La forma lista y el estilo
+        # «lleno» mandaban el 80 % de los grandes abajo y pasaban de 1,1 m de base a 0,7 m de punta; la columna
+        # dorada del CASE-001 de images-judge (casi toda de dorados grandes, de ancho casi constante) se dibujaba
+        # cónica y con los grandes en el pie, y la guía de escena es lo que sigue FLUX (UI-4, 2026-10-05).
+        tamanos["grandesAbajo"] = min(float(tamanos.get("grandesAbajo", GRANDES_ABAJO_CON_GRANDES)), GRANDES_ABAJO_CON_GRANDES)
+        volumen["grosorCimaM"] = max(float(volumen["grosorCimaM"]), round(PUNTA_MINIMA_CON_GRANDES * float(volumen["grosorPatasM"]), 3))
     alto = pieza.alto_m or float(forma["altoM"])
     forma["altoM"] = alto
     if inclinacion is None and lista is not None:
@@ -1820,7 +1843,14 @@ def _ancho_visible_del_medio(cfg: Mapping[str, Any], ancho_completo: float) -> f
     Pasa por el ``sanear`` del motor (que acota el grosor al ancho) y por su línea guía con las fases neutras
     de ``estimar_globos``: es la banda que el motor recorre, con medio grosor a cada lado de cada punto.
     """
-    prueba = cast(Any, {**cfg, "forma": {**cfg["forma"], "anchoM": ancho_completo}})
+    forma = {**cfg["forma"], "anchoM": ancho_completo}
+    if forma.get("espejo"):
+        # Un medio arco volteado es su gemelo sin voltear (`_armado_arco_organico` voltea `carga` con él): se mide
+        # ese. Medido volteado, el grosor caía en otro sitio del corte y el par izquierdo/derecho del mismo plan
+        # salía con anchos distintos (1,542 frente a 1,556 m) en cuanto la bisección dejó de topar con el mínimo
+        # del motor (corte del medio arco de UI-1c, 2026-10-05).
+        forma = {**forma, "espejo": False, "carga": -float(forma.get("carga", 0.0))}
+    prueba = cast(Any, {**cfg, "forma": forma})
     saneado, _cambios = sanear_arco_organico(prueba)
     espina = crear_espina(saneado, [0.5] * 8)
     largo = espina.largo or 1.0
@@ -1859,12 +1889,92 @@ def _ancho_del_arco_completo(
     return round((bajo + alto) / 2, 3)
 
 
+#: Hasta dónde se corta el arco completo para hacer un medio arco, según lo que la foto vio (UI-1c).
+#: Con 0,68 (la forma lista) la pieza pasa la cima y la punta cae un 34 % del alto: un bastón. Medido con el
+#: motor (alto 2,2 m): 0,55 deja la punta en la cima (cae un 8 %), 0,60 la deja caer un 18 %.
+CORTE_MEDIO_ARCO_LEVE = 0.55
+CORTE_MEDIO_ARCO_FUERTE = 0.60
+#: Desde qué vuelo leído (fracción del alto) la punta de un medio arco se deja caer tras la cima.
+VUELO_FUERTE = 0.3
+
+
+#: La curva de un medio arco en escuadra: una superelipse casi rectangular (``organico/espina.py``: ``p = 2 /
+#: curva``; la forma lista «puerta» usa 3,2 para un marco de puerta), para que la cima corra recta sobre el fondo.
+#: Es el máximo del contrato (``armado-arco-organico.ts``: ``curva`` de 1,7 a 3,4).
+CURVA_EN_ESCUADRA = 3.4
+#: Dónde se corta pasada la cima: cuando la línea baja del 85 % de su alto. Con ``curva`` 3,4 la esquina sigue
+#: siendo redonda y solo la mitad central de la cima pasa del 97 %; al 85 % la cima cubre ~92 % del ancho y la
+#: punta termina en la esquina lejana sin bajar por el otro lado.
+_MARGEN_ESQUINA = 0.85
+#: Grosor máximo de la banda en escuadra, en fracción del ancho de la pieza (la guirnalda de la foto 5: ~0,3).
+GROSOR_EN_ESCUADRA = 0.3
+
+
+def _cruza_por_arriba(lectura_linea: Mapping[str, object] | None) -> bool:
+    """Si la foto vio la pieza enmarcando un fondo desde arriba (``u_invertida`` sobre una pared o una estructura).
+
+    Foto 5 de la Fase 7 (2026-10-06): la guirnalda sube por la derecha del panel y lo cruza entero por arriba hasta la
+    esquina izquierda, en L invertida. La lectura lo dijo («u_invertida», pared, 0,95), pero el medio arco salía con
+    la curva redonda y el corte 0,60 de siempre: un bastón estrecho cuya punta cae enseguida, y FLUX lo cerraba en U.
+    """
+    if lectura_linea is None or lectura_linea.get("forma") != "u_invertida":
+        return False
+    confianza = lectura_linea.get("confianza")
+    soporte = lectura_linea.get("soporte")
+    return isinstance(confianza, (int, float)) and confianza >= 0.5 and soporte in ("pared", "sobre_estructura")
+
+
+def _corte_hasta_la_esquina(forma: Mapping[str, Any], volumen: Mapping[str, Any]) -> float:
+    """El corte que deja la pieza en la esquina lejana de una escuadra, antes de que baje por el otro lado.
+
+    Recorre la misma línea guía que ``organico/espina.crear_espina`` (superelipse con ``p = 2 / curva`` y la cima
+    corrida por ``cima``, sin la ondulación) y corta donde, pasada la cima, la línea vuelve a bajar del
+    ``_MARGEN_ESQUINA`` de su alto: con la esquina aún redondeada (``curva`` 3,4), suponerla cuadrada dejaba la
+    punta cayendo. Acotado a lo que el motor admite (``corte`` de 0,55 a 1).
+    """
+    a = max(0.2, (float(forma["anchoM"]) - float(volumen["grosorPatasM"])) / 2)
+    hs = max(0.3, float(forma["altoM"]) - float(volumen["grosorCimaM"]) / 2)
+    p = 2 / float(forma["curva"])
+    gamma = math.log(float(forma["cima"])) / math.log(0.5)
+    puntos: list[tuple[float, float]] = []
+    pasos = 400
+    for i in range(pasos + 1):
+        th = math.pi * (1 - i / pasos)
+        c, s = math.cos(th), math.sin(th)
+        u = (math.copysign(abs(c) ** p, c) + 1) / 2
+        puntos.append((a * (2 * u**gamma - 1), hs * abs(s) ** p))
+    largos = [0.0]
+    for (x0, y0), (x1, y1) in zip(puntos, puntos[1:], strict=False):
+        largos.append(largos[-1] + math.hypot(x1 - x0, y1 - y0))
+    cumbre = max(range(len(puntos)), key=lambda i: puntos[i][1])
+    corte = next(
+        (largos[i] / largos[-1] for i in range(cumbre, len(puntos)) if puntos[i][1] < _MARGEN_ESQUINA * hs),
+        1.0,
+    )
+    return round(_acotar(corte, 0.55, 0.95), 3)
+
+
+def _corte_del_medio_arco(inclinacion: float | None) -> float:
+    """El corte de un medio arco: la punta solo cae pasada la cima cuando la foto vio un vuelo fuerte.
+
+    El usuario lo vio en las guías de FLUX (2026-10-05): los semiarcos de los CASE-002, 003 y 005 de
+    images-judge, que en la foto suben y apenas doblan la punta hacia el centro, se dibujaban como bastones con la
+    punta colgando un tercio del alto, porque todo medio arco tomaba el corte 0,68 de su forma lista, dijera lo
+    que dijera la foto. Una lectura leve (``slight``, 0,22) deja la punta en la cima; una fuerte o ninguna, una
+    caída moderada. Nunca más que la forma lista.
+    """
+    if inclinacion is not None and abs(inclinacion) < VUELO_FUERTE:
+        return CORTE_MEDIO_ARCO_LEVE
+    return CORTE_MEDIO_ARCO_FUERTE
+
+
 def _armado_arco_organico(
     pieza: PiezaArmado,
     avisos: list[str],
     leido: RepartoLeido | None = None,
     inclinacion: float | None = None,
     medio: bool = False,
+    en_escuadra: bool = False,
 ) -> dict[str, Any]:
     """Un ``armado-arco-organico.v1`` con la receta del motor y el ancho, el alto y los colores de la pieza.
 
@@ -1894,7 +2004,7 @@ def _armado_arco_organico(
         # «medio-corto» y el asimétrico la pata gruesa de «medio-pila» con el mismo corte (``FORMA_SEMIARCO``).
         lista = _FORMA_LISTA_ARCO[FORMA_SEMIARCO_ASIMETRICO if pieza.asimetrica else FORMA_SEMIARCO]
         forma = {**forma, **lista.forma}
-        forma["corte"] = min(float(forma["corte"]), _CORTE_DE_FORMA[FORMA_SEMIARCO])
+        forma["corte"] = min(float(forma["corte"]), _CORTE_DE_FORMA[FORMA_SEMIARCO], _corte_del_medio_arco(inclinacion))
         # El lado: el que la tarjeta ya dibuja (`IconoEstructura`, `ubicacion === "lateral_derecho"`). Sin
         # espejo la pata queda a la izquierda y la punta se va a la derecha.
         forma["espejo"] = pieza.espejo
@@ -1931,7 +2041,23 @@ def _armado_arco_organico(
         volumen["racimo"] = racimo
     if pieza.alto_m:
         forma["altoM"] = pieza.alto_m
-    if pieza.ancho_m and medio:
+    if medio and en_escuadra:
+        # En L invertida (``_cruza_por_arriba``): cima recta y la punta en la esquina lejana. Cortada en la esquina,
+        # la pieza que se ve mide el arco completo de ancho, así que `anchoM` es el del plan sin buscar.
+        forma["curva"] = CURVA_EN_ESCUADRA
+        # Dentro de lo que el motor arma (``organico/limites.py``): ancho mínimo y alto hasta 1,8 veces el ancho.
+        ancho = max(float(pieza.ancho_m or forma["anchoM"]), ARCO_ORGANICO_ANCHO_MIN, float(forma["altoM"]) / 1.8)
+        ancho = math.ceil(ancho * 100) / 100
+        if pieza.ancho_m and ancho > pieza.ancho_m + 1e-9:
+            avisos.append(f"El ancho de la pieza en L se acoto a {ancho:g} m: el motor no arma una escuadra mas estrecha para ese alto.")
+        forma["anchoM"] = ancho
+        # Una banda que enmarca un fondo, no la pila de un medio arco: con el grosor de «medio-pila» (1,15 m) una
+        # pieza de 1,6 m de ancho se quedaba en 45 cm de cima y la L no se veía.
+        tope = max(GROSOR_MIN_ORGANICO, round(GROSOR_EN_ESCUADRA * ancho, 3))
+        volumen["grosorPatasM"] = min(float(volumen["grosorPatasM"]), tope)
+        volumen["grosorCimaM"] = min(float(volumen["grosorCimaM"]), tope)
+        forma["corte"] = _corte_hasta_la_esquina(forma, volumen)
+    elif pieza.ancho_m and medio:
         # El ancho de un semiarco en el plan es lo que mide **la pieza que se ve** (de la pata a la punta), y el
         # `anchoM` del motor es el del arco completo antes de cortarlo: se busca el que deja ese ancho.
         forma["anchoM"] = _ancho_del_arco_completo(
@@ -2029,7 +2155,10 @@ def _receta(
     # Sin esto, un medio arco del plan caía al patrón del arco clásico por el número de colores.
     if pieza.tipo == "semiarco":
         del_reparto = reparto_del_motor("arco_organico", pista, de_la_pieza, avisos, medio=True)
-        armado = _armado_arco_organico(pieza, avisos, del_reparto, inclinacion, medio=True)
+        en_escuadra = _cruza_por_arriba(lectura_linea)
+        armado = _armado_arco_organico(pieza, avisos, del_reparto, inclinacion, medio=True, en_escuadra=en_escuadra)
+        if en_escuadra:
+            armado["origen"] = "referencia"
         if del_reparto is not None:
             armado["origen"] = "referencia"
         return armado
@@ -2218,10 +2347,16 @@ def _resumen_arco(resuelto: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def globos_del_remate(resuelto: Mapping[str, Any]) -> int:
+    """Los globos del remate de una columna resuelta (``remate.globos``): se colocan y se compran (``plan.py``)."""
+    globos = cast(Mapping[str, Any], resuelto.get("remate") or {}).get("globos") or []
+    return sum(int(globo.get("cantidad") or 0) for globo in cast(Sequence[Mapping[str, Any]], globos) if globo.get("tamano"))
+
+
 def _resumen_columna(resuelto: Mapping[str, Any]) -> dict[str, Any]:
-    """Lo que el modelo necesita saber de la columna resuelta."""
+    """Lo que el modelo necesita saber de la columna resuelta. El total cuenta su remate, como la compra."""
     return {
-        "total_globos": len(cast(Sequence[object], resuelto["globos"])),
+        "total_globos": len(cast(Sequence[object], resuelto["globos"])) + globos_del_remate(resuelto),
         "capas": resuelto["capas"],
         "alto_cuerpo_m": resuelto["alto_cuerpo_m"],
         "alto_total_m": resuelto["alto_total_m"],
@@ -2578,11 +2713,13 @@ def completar(request: ArmadoEstructuraRequest) -> dict[str, Any]:
     único momento en el que se sabe cuántos materiales tiene y, por tanto, si un índice existe. Lo que no se
     sostiene se reemplaza por la receta con su motivo, nunca se cuela.
     """
-    plan = cast("dict[str, Any]", request.plan)
+    # Las medidas por defecto se completan ANTES de armar, con la misma función que usará la resolución: una pieza
+    # sin `medidas` se armaba con la plantilla del motor (un semiarco de 3,4 × 2,5 m) y el plan mostraba 1,2 × 2,2.
+    plan = cast("dict[str, Any]", completar_medidas(cast("dict[str, Any]", request.plan)))
     estructuras = plan.get("estructuras")
     if not isinstance(estructuras, Sequence) or isinstance(estructuras, (str, bytes)):
         raise PlanResolutionError("invalid_plan", 422)
-    propuestos = {propuesto.estructura_id: propuesto for propuesto in (request.armados or [])}
+    propuestos ={propuesto.estructura_id: propuesto for propuesto in (request.armados or [])}
     # Una pista por elemento de la referencia: la aplica cada estructura que materializa ese elemento, que es
     # la misma regla que `pistas_patron` en la resolución (ADR-0028 §7).
     pistas = {

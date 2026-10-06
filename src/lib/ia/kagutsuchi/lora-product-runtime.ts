@@ -16,6 +16,7 @@ import {
   type ProductVocabulary,
 } from "@/lib/lora/product-vocabulary";
 import { aDescriptorPerceptual } from "@/lib/lora/descriptor-perceptual";
+import { canonicalizeSku } from "@/lib/rag/catalog/canonicalize";
 import { colorVisibleDelCatalogo, leerTituloCatalogo, terminosBaseDeConcepto, terminosBaseDeTitulo, type TerminosBase } from "@/lib/lora/vocabulario-base";
 import type { FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
@@ -105,6 +106,18 @@ export type ProductPromptRuntimeResult = ProductPromptCompilation & {
 };
 
 /**
+ * The ids a resolved product is also known by in the vocabulary (`productIdAliases` of `compileProductPrompt`):
+ * its catalog SKU, **canonical** too, and its family product id. The vocabulary indexes canonical SKUs
+ * ("20017228") and the catalog hands the original one ("B2B-20017228"), so a product whose title had no alias
+ * (Fashion Coral Tropical) never resolved and the whole generation failed with LORA_PRODUCT_VOCABULARY_FAILED
+ * (CASE-004, -007, -008; auditoría de propiedades huérfanas, 2026-10-06).
+ */
+export function aliasesDeProducto(producto: { id: string; catalogSku?: string; familiaId?: string }): string[] {
+  const canonico = producto.catalogSku ? canonicalizeSku(producto.catalogSku) : undefined;
+  return [...new Set([producto.catalogSku, canonico, producto.familiaId])].filter((id): id is string => Boolean(id && id !== producto.id));
+}
+
+/**
  * Builds size confirmations from the material estimate lines of an approved
  * scene. The exact selected variant owns the size; a family match is used
  * only when every candidate sibling shares one size code, so a line is never
@@ -180,7 +193,19 @@ function resolveElement(
 
   for (const productId of productIds) {
     if (!productId.trim()) {
-      unresolved.push({ product_id: productId, reason: "invalid" });
+      if (dialect !== "base") unresolved.push({ product_id: productId, reason: "invalid" });
+      continue;
+    }
+    if (dialect === "base") {
+      // FLUX base, sin LoRA (2026-10-06, decisión del dueño): el vocabulario de productos del LoRA no decide
+      // nada. Cada producto se describe con datos del catálogo —su título y el color y acabado de su referencia
+      // Sempertex (`conColorDelCatalogo`)—; uno que el catálogo no permite describir se omite del texto y
+      // queda en el diagnóstico, nunca bloquea la imagen ni arrastra a los demás de la pieza.
+      const catalogTitleValue = productCatalogTitles.get(productId);
+      const catalogTitles = catalogTitleValue === undefined ? [] : Array.isArray(catalogTitleValue) ? catalogTitleValue : [catalogTitleValue];
+      const fromCatalog = baseEntryFromCatalog(element, productId, catalogTitles, sizesByProductId);
+      if (fromCatalog) entries.push({ ...fromCatalog, baseTerms: conColorDelCatalogo(productId, fromCatalog.baseTerms) });
+      else diagnostics.push(`element ${element.element_id}: product ${productId} has no catalog title the base model can describe; left out of the caption`);
       continue;
     }
     const directResult = resolveProductConcept({ productId }, vocabulary, indexes);
@@ -234,25 +259,17 @@ function resolveElement(
         sizeCodes: confirmedSizes.length ? confirmedSizes : undefined,
         colorName: referenceColorName(result.concept.visual.color),
         sceneTerms: sceneTermsFor(result.concept),
-        ...(dialect === "base" ? { baseTerms: conColorDelCatalogo(productId, terminosBaseDeConcepto(result.concept)) } : {}),
       });
     } else if (result.status === "ambiguous") {
       unresolved.push({ product_id: productId, reason: "ambiguous" });
     } else {
-      // The base model needs no training dataset, only a description: a
-      // product outside the vocabulary is described from its own catalog
-      // title. Never in the trained dialects, whose LoRA only knows its corpus.
-      const fromCatalog = dialect === "base" ? baseEntryFromCatalog(element, productId, catalogTitles, sizesByProductId) : undefined;
-      if (fromCatalog) {
-        entries.push({ ...fromCatalog, baseTerms: conColorDelCatalogo(productId, fromCatalog.baseTerms) });
-        diagnostics.push(`element ${element.element_id}: product ${productId} has no vocabulary concept; described from its catalog title for the base model`);
-      } else {
-        unresolved.push({ product_id: productId, reason: "unknown" });
-      }
+      // Los dialectos entrenados solo conocen su corpus: un producto fuera del vocabulario no se describe. El
+      // modelo base ya salió arriba, descrito desde el catálogo.
+      unresolved.push({ product_id: productId, reason: "unknown" });
     }
   }
 
-  if (productIds.length > 0 && entries.length !== productIds.length) {
+  if (dialect !== "base" && productIds.length > 0 && entries.length !== productIds.length) {
     // Partial resolution: keep every unresolved entry visible in diagnostics
     // but discard the resolved entries so this element falls back to the
     // legacy color/finish rendering as a whole, never a mixed half-canonical
@@ -395,10 +412,12 @@ export function compileProductPrompt(input: {
   /** `plan_resuelto.patrones_color` and `armados_bouquet`, passed through untouched: the compiler inserts each applied `prompt_lora` verbatim (ADR-0028 §12, ADR-0030). */
   colorPatterns?: readonly FraseDeEstructura[];
 }): ProductPromptRuntimeResult {
-  const vocabulary = input.vocabulary ?? [];
+  // En el modelo base (sin trigger) el vocabulario no se consulta: ver `resolveElement`.
+  const esBase = captionDialectForTrigger(input.trigger) === "base";
+  const vocabulary = esBase ? [] : input.vocabulary ?? [];
   const activeConcept = vocabulary.find((concept) => concept.status === "active");
 
-  if (!activeConcept) {
+  if (!activeConcept && !esBase) {
     const legacy = compileLoraCaption({ sceneSpec: input.sceneSpec, visualContext: input.visualContext, trigger: input.trigger, maxLength: input.maxLength, dialect: captionDialectForTrigger(input.trigger), ambientDecor: input.ambientDecor, officialStructures: input.officialStructures, creativeCues: input.creativeCues, colorPatterns: input.colorPatterns });
     return {
       prompt: legacy.prompt,
@@ -471,9 +490,12 @@ export function compileProductPrompt(input: {
     diagnostics.push(`prompt compacted to render step ${compilation.compactionStep} to fit the LoRA prompt budget; every structure, placement, relation and color is kept`);
   }
 
-  // A base-dialect entry described from a catalog title is not a vocabulary
-  // concept: without at least one real concept the result stays legacy.
-  const legacy = !compilation.usedProductVocabulary || resolvedConceptIds.size === 0;
+  // En los dialectos entrenados, una entrada descrita por su título no es un concepto del vocabulario: sin al
+  // menos uno real el resultado es legacy. En el base no hay vocabulario: legacy solo si ningún producto se
+  // pudo describir desde el catálogo.
+  const legacy = esBase
+    ? productConcepts.length === 0 || !compilation.usedProductVocabulary
+    : !compilation.usedProductVocabulary || resolvedConceptIds.size === 0;
   if (legacy) {
     diagnostics.push(
       "legacy fallback: no catalog-backed element in this scene resolved a canonical concept; colors/finishes rendered generically, no product identity claimed",
@@ -485,10 +507,10 @@ export function compileProductPrompt(input: {
     resolved_concepts: [...resolvedConceptIds].sort(),
     unresolved_products: unresolved,
     dropped_sizes: droppedSizes,
-    vocabulary_version: activeConcept.vocabulary_version,
+    vocabulary_version: activeConcept?.vocabulary_version ?? VOCABULARY_VERSION,
     compiler_version: LORA_PRODUCT_RUNTIME_VERSION,
     legacy,
-    legacyReason: legacy ? "no catalog-backed element resolved a canonical concept" : undefined,
+    legacyReason: legacy ? (esBase ? "no product could be described from its catalog title" : "no catalog-backed element resolved a canonical concept") : undefined,
     captionCompilerVersion: compilation.compilerVersion,
     clauses: compilation.clauses,
     jsonPrompt: compilation.jsonPrompt,

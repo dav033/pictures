@@ -19,6 +19,9 @@ import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 
+/** La "foto" de los elementos que salen del plan: sus `quantity` son los globos que el plan compra (material_units). */
+export const FUENTE_PLAN = "PLAN_SOURCE";
+
 function plegarColor(color: string): string {
   return color.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
 }
@@ -106,7 +109,7 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
       const nombre = repeticiones > 1 ? `${nombreBase} #${index + 1} de ${repeticiones}` : nombreBase;
       return {
       element_id: elementId,
-      source_image_id: "PLAN_SOURCE",
+      source_image_id: FUENTE_PLAN,
       name: nombre.slice(0, 160),
       category: ["backdrop"].includes(declarada.tipo) ? "backdrop" as const : ["kit", "accesorio"].includes(declarada.tipo) ? "other" as const : "balloon_structure" as const,
       scene_role: declarada.tipo === "backdrop" ? "backdrop" as const : declarada.rol_escena === "focal" ? "midground" as const : "foreground" as const,
@@ -153,7 +156,7 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
   });
   return ReferenceBlueprintV2Schema.parse({
     schema_version: "2.0",
-    source_images: [{ image_id: "PLAN_SOURCE", approved_roles: ["composition_reference"] }],
+    source_images: [{ image_id: FUENTE_PLAN, approved_roles: ["composition_reference"] }],
     elements,
     composition: {
       focal_point: plan.plan.estructuras.find((estructura) => estructura.rol_escena === "focal")?.nombre ?? "central installation",

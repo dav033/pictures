@@ -108,6 +108,7 @@ from app.armado_guirnalda import racimo_y_forma as racimo_y_forma_de_armado
 from app.armado_guirnalda import sugerir_armado as sugerir_armado_guirnalda
 from app.armado_guirnalda import validar as validar_armado_guirnalda
 from app.catalog import purchase_color_for_unsold
+from app.colores_titulo import WINE_TITLE
 from app import conteo_foto
 from app.patron_de_la_foto import mezcla_del_motor
 from app.supuestos import agregar_supuesto, supuesto
@@ -154,7 +155,8 @@ MAX_SAFE_INTEGER = 9_007_199_254_740_991
 MAX_PLAN_LORA_VARIANTS = 2048
 
 _EXTERIOR = re.compile(r"jard[ií]n|exterior|terraza|playa|patio|campo", re.IGNORECASE)
-_GEOMETRIC_TYPES = {"arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"}
+# Which structures count their balloons by geometry: ``conteo_foto.es_geometrica`` (one owner; a
+# centerpiece of a few counted balloons declares units instead, UI-6).
 _DENSITY_LAMBDA = {"sencilla": 2.8, "media": 3.6, "lujosa": 4.5}
 # Mix table, standard diameters, substitution cap and mandatory-size grammar.
 # Owned by src/lib/plan/mezclas.ts and exported into the plan-decoracion.v1
@@ -730,6 +732,8 @@ def _valid_image(value: object) -> str | None:
 
 _GREY_TITLE = re.compile(r"\bgris\b")
 _SILVER_TITLE = re.compile(r"\b(?:plata|plateado|plateada|silver)\b")
+#: Mirror of ``TITULO_VINO`` (``src/lib/plan/colores-producto.ts``); owner: ``app.colores_titulo``.
+_WINE_TITLE = WINE_TITLE
 
 
 def _product_colors(title: str, colors: Sequence[str]) -> tuple[str, ...]:
@@ -738,9 +742,18 @@ def _product_colors(title: str, colors: Sequence[str]) -> tuple[str, ...]:
     The derived catalog colors file grey balloons under "plateado" (Fashion
     Gris), but grey is not silver: a product whose title names "gris" and not
     silver has "gris" instead of "plateado" (E2E 2026-09-15, ejemplo-07).
+
+    Wine is not red either: the live catalog files Fashion Merlot and Metal
+    Vinotinto as "rojo", so a product whose title names a wine shade has
+    "burdeos" instead of "rojo" (CASE-006, 2026-10-05).
     """
-    folded = tuple(dict.fromkeys(_normalize(color) for color in colors if _normalize(color)))
     folded_title = _normalize(title)
+    crudos = tuple(dict.fromkeys(_normalize(color) for color in colors if _normalize(color)))
+    folded = (
+        tuple(dict.fromkeys("burdeos" if color == "rojo" else color for color in crudos))
+        if _WINE_TITLE.search(folded_title)
+        else crudos
+    )
     if not _GREY_TITLE.search(folded_title) or _SILVER_TITLE.search(folded_title):
         return folded
     return tuple(dict.fromkeys(("gris", *(color for color in folded if color != "plateado"))))
@@ -870,6 +883,24 @@ def _complete_measures(raw_plan: Mapping[str, object]) -> dict[str, object]:
     return plan
 
 
+def completar_medidas(raw_plan: Mapping[str, object]) -> dict[str, object]:
+    """El plan con las medidas por defecto de cada estructura que no trae las suyas.
+
+    Es ``_complete_measures`` publicado para que el armado del motor arme con **las mismas medidas** que el plan
+    va a mostrar y a cobrar. Hasta hoy el armado se construía ANTES de que la resolución las completara: una
+    pieza sin ``medidas`` se armaba con la plantilla del motor (un semiarco de 3,4 × 2,5 m) mientras el resumen
+    decía 1,2 × 2,2 m, y el dibujo salía con la curva de la plantilla y no la de la pieza (CASE-004 de
+    images-judge). Las medidas tienen un solo dueño, este módulo.
+
+    Tolera un plan sin ``espacio`` (los llamadores internos del armado pasan planes mínimos): sin tipo de espacio
+    se asumen las medidas de interior, que es lo que ``_complete_measures`` hace con un espacio vacío.
+    """
+    plan = dict(raw_plan)
+    if not isinstance(plan.get("espacio"), Mapping):
+        plan["espacio"] = {}
+    return _complete_measures(plan)
+
+
 def proporciones_de_mezcla(mezcla: str) -> tuple[tuple[int, float], ...] | None:
     """Qué proporción de cada diámetro pide una mezcla del plan, o ``None`` si no es una de ellas.
 
@@ -928,7 +959,7 @@ def _pattern_context(
     """What ``patron_color`` needs from one structure of a completed plan."""
     tipo = _text(structure.get("tipo")) or ""
     total, single_size = 0, False
-    if tipo in _GEOMETRIC_TYPES:
+    if conteo_foto.es_geometrica(structure):
         _axis, total, proportions, _unplaced = _structure_count(plan, structure)
         single_size = len(proportions) == 1
     measures = _mapping(structure.get("medidas"))
@@ -1254,7 +1285,7 @@ def _assign_mixes(plan: dict[str, object], tamanos: Sequence[Mapping[str, object
     # corría detrás de `completar_patrones`, que es la primera resolución y nunca la segunda.
     traia = len(assumptions)
     for structure in cast(list[dict[str, object]], plan["estructuras"]):
-        if _text(structure.get("tipo")) not in _GEOMETRIC_TYPES:
+        if not conteo_foto.es_geometrica(structure):
             continue
         element_id = _text(structure.get("referencia_element_id"))
         hint = next(
@@ -2342,10 +2373,15 @@ def _conteo_del_motor(structure: Mapping[str, object]) -> _ConteoDelMotor | None
     decide el material del plan, no el armado. El armado dice cómo se ve la
     pieza; el plan, qué producto la paga.
 
-    Lo que **no** entra son los globos que el motor no cuenta: el remate de la
-    columna, que es un globo aparte descrito en su ``remate``, y el follaje y
-    las flores de la guirnalda, que no están en el catálogo de globos y viajan
-    en ``armados_guirnalda_organica[].adornos`` para que nadie los olvide.
+    El remate de la columna **sí** entra: el motor lo publica aparte
+    (``remate.globos``, material y tamaño de cada globo) y es un globo que se
+    coloca y se compra. Antes no se sumaba: el globo de 24" que corona toda
+    columna clásica se dibujaba y se describía («24-inch») pero no se cotizaba, y
+    la puerta de coherencia (``verificarCoherenciaPrompt``, «diámetro no
+    cotizado») dejaba sin imagen a todo plan con una columna clásica (Fase 7,
+    2026-10-06). Lo que sigue sin entrar es el follaje y las flores de la
+    guirnalda, que no están en el catálogo de globos y viajan en
+    ``armados_guirnalda_organica[].adornos`` para que nadie los olvide.
     """
     entrada = _armado_del_motor(structure)
     if entrada is None:
@@ -2361,6 +2397,14 @@ def _conteo_del_motor(structure: Mapping[str, object]) -> _ConteoDelMotor | None
             _integer(linea.get("material")) or 0,
         )
         por_celda[celda] = por_celda.get(celda, 0) + (_integer(linea.get("cantidad")) or 0)
+    # El remate de la columna clásica: sus globos con su tamaño. Solo ella: la guirnalda publica otro `remate`.
+    if tipo == "columna":
+        for globo in _mappings(_mapping(resuelto.get("remate")).get("globos")):
+            tamano = _integer(globo.get("tamano"))
+            cantidad = _integer(globo.get("cantidad")) or 0
+            if tamano and cantidad > 0:
+                celda = (tamano, _integer(globo.get("material")) or 0)
+                por_celda[celda] = por_celda.get(celda, 0) + cantidad
     return _ConteoDelMotor(
         eje_m=_number(resuelto.get(_ARMADOS_DEL_MOTOR[tipo][1])) or 0.0,
         # Por tamaño y, dentro de cada tamaño, por material: el mismo orden de
@@ -3174,7 +3218,9 @@ def _resolve_structures(
         # lines buy (``_color_warnings``).
         designed = [0 for _material in materials]
         delivered = [0 for _material in materials]
-        if structure_type in _GEOMETRIC_TYPES:
+        # A centerpiece of a few counted balloons buys declared units, like a kit (UI-6).
+        geometric = conteo_foto.es_geometrica(raw_structure)
+        if geometric:
             axis, demands, unplaced_sizes = _despiece_with_plan_sizes(plan, raw_structure)
             # The customer's size restriction belongs to the whole plan, not to
             # one structure: a mandatory size this mix cannot place stays as a
@@ -3329,7 +3375,7 @@ def _resolve_structures(
                 designed,
                 delivered,
                 covered=len(uncovered) == before_missing,
-                balloons=structure_type in _GEOMETRIC_TYPES,
+                balloons=geometric,
             )
         )
         raw_assumptions = plan.get("supuestos", [])
@@ -4069,7 +4115,11 @@ def _build_resolved(
         "total_cop": total_cop,
     }
     canonical = json.dumps(
-        {"plan": plan, "snapshot": snapshot},
+        # El plan cruza JavaScript entre confirmar y generar, y JavaScript no distingue 2.0 de 2: sin esto, un
+        # plan cuyo conteo dejó `ancho_m: 2.0` se firmaba con «2.0» y volvía de /api/generate como «2», y el hash
+        # ya no coincidía («Plan hash does not match», CASE-008 de images-judge, 2026-10-05). El snapshot no
+        # cruza esa frontera (sale del catálogo en los dos lados) y no se toca.
+        {"plan": _numeros_como_en_json(plan), "snapshot": snapshot},
         ensure_ascii=False,
         separators=(",", ":"),
         sort_keys=True,
@@ -4296,7 +4346,7 @@ def _add_silhouette(
     rejection degrades to the grid with its reason instead of becoming a 422.
     """
     tipo = _text(structure.get("tipo")) or ""
-    if tipo not in _GEOMETRIC_TYPES:
+    if not conteo_foto.es_geometrica(structure):
         item["sin_silueta"] = "tipo_sin_silueta"
         return
     celdas = item.get("celdas")
@@ -5179,6 +5229,9 @@ def _aplicar_conteos(
         densidades_admitidas=_admitted_densities,
         medidas_del_cliente=lambda structure: (_text(structure.get("estructura_id")) or "")
         in customer_measures,
+        variantes_redondas=lambda product_id: _round_variants(
+            product_id, candidates_by_product, allowlist
+        ),
     )
     # The size reading owns the mix (``_assign_mixes``, and the motor arms with it): the count's
     # per-size split, which also sees a column's crown, does not move it again.
@@ -5200,6 +5253,40 @@ def _aplicar_conteos(
         adjusted = _garland_assemblies_after_count(adjusted, counts, request.pistas_guirnalda)
         _validate_plan(adjusted)
     return adjusted, hints, counts
+
+
+def _numeros_como_en_json(valor: object) -> object:
+    """El mismo valor con cada float entero (2.0) escrito como entero (2), como lo deja JavaScript.
+
+    Es la forma con la que ``plan_hash`` firma el plan: un número no puede cambiar el hash según qué lado de la
+    frontera lo escribió. ``bool`` es subclase de ``int`` y no es un float, así que no se toca.
+    """
+    if isinstance(valor, float) and valor.is_integer():
+        return int(valor)
+    if isinstance(valor, Mapping):
+        return {clave: _numeros_como_en_json(v) for clave, v in valor.items()}
+    if isinstance(valor, list):
+        return [_numeros_como_en_json(v) for v in valor]
+    return valor
+
+
+def _round_variants(
+    product_id: str,
+    candidates_by_product: Mapping[str, Sequence[Candidate]],
+    allowlist: Mapping[str, set[str]],
+) -> tuple[tuple[str, float], ...]:
+    """The round variants of a product this turn may buy, as ``(variant_id, inches)``, sorted."""
+    allowed = allowlist.get(product_id, set())
+    return tuple(
+        sorted(
+            (candidate.variant_id, float(candidate.diameter_inches))
+            for candidate in candidates_by_product.get(product_id, ())
+            if candidate.variant_id in allowed
+            and candidate.diameter_inches is not None
+            and candidate.diameter_inches > 0
+            and candidate.shape == "redondo"
+        )
+    )
 
 
 def _counted_with_read_geometry(
@@ -5349,7 +5436,7 @@ def compras_de_estructura(
         completed = _mappings(measured.get("estructuras"))[
             _structure_index(measured, estructura_id)
         ]
-        if _text(completed.get("tipo")) not in _GEOMETRIC_TYPES:
+        if not conteo_foto.es_geometrica(completed):
             return {}
         _axis, demands, _unplaced = _despiece_with_plan_sizes(measured, completed)
     except PlanResolutionError:

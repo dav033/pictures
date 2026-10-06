@@ -1,10 +1,10 @@
 import type { Pool } from "pg";
-import { coloresRealesProducto } from "@/lib/plan/colores-producto";
+import { FAMILIA_ARCHIVADA, coloresRealesProducto } from "@/lib/plan/colores-producto";
 import type { ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { colorCatalogoMasCercano } from "@/lib/rag/catalog/similitud-color";
 
 type FilaGloboColor = { product_id: string; titulo: string; color: string; diametros?: unknown };
-type FilaColorPresente = { color: string };
+type FilaColorPresente = { color: string; titulo?: string | null };
 
 const MAX_PRODUCTOS_POR_COLOR = 3;
 
@@ -22,7 +22,7 @@ async function coloresPresentesEnElPool(
   catalogSnapshotId: string | null,
 ): Promise<string[]> {
   const { rows } = await pool.query<FilaColorPresente>(
-    `SELECT DISTINCT color
+    `SELECT DISTINCT color, p.title AS titulo
        FROM catalog_variants v
        JOIN catalog_products p ON p.product_id = v.product_id
       CROSS JOIN LATERAL unnest(
@@ -41,7 +41,9 @@ async function coloresPresentesEnElPool(
         AND ($2::text IS NULL OR (p.source_snapshot_id = $2 AND v.source_snapshot_id = $2))`,
     [variantIds, catalogSnapshotId],
   );
-  return [...new Set(rows.map((fila) => fila.color).filter((color): color is string => typeof color === "string" && color.length > 0))];
+  // The real color, not the stored family: the wine balloons are filed as "rojo" and grey ones as "plateado"
+  // (`coloresRealesProducto`); reading the stored one told the model "burdeos" was not sold (CASE-006, 2026-10-05).
+  return [...new Set(rows.flatMap((fila) => (typeof fila.color === "string" && fila.color.length > 0 ? coloresRealesProducto(fila.titulo ?? null, [fila.color]) : [])))];
 }
 
 /**
@@ -86,6 +88,9 @@ export async function buscarGlobosPorColor(
   if (resueltos.size === 0) return resultado;
 
   const aConsultar = [...new Set(resueltos.values())];
+  const buscadosReales = new Set(aConsultar);
+  // A title-corrected color is stored under its family: ask for both, keep by real color below.
+  const almacenados = [...new Set(aConsultar.flatMap((color) => [color, ...(FAMILIA_ARCHIVADA[color] ? [FAMILIA_ARCHIVADA[color]] : [])]))];
   const { rows } = await pool.query<FilaGloboColor>(
     `SELECT color, product_id, titulo, diametros
        FROM (
@@ -111,18 +116,22 @@ export async function buscarGlobosPorColor(
       -- (2026-10-05 photo tests): the shortest title is the plainest balloon.
       ORDER BY color, total_colores, length(titulo), titulo, product_id
       LIMIT 200`,
-    [aConsultar, variantIds, catalogSnapshotId],
+    [almacenados, variantIds, catalogSnapshotId],
   );
   const porColor = new Map<string, ProductoColorDisponible[]>();
   for (const fila of rows) {
     if (typeof fila.color !== "string" || typeof fila.product_id !== "string" || typeof fila.titulo !== "string") continue;
-    // Grey balloons are filed under "plateado" in the derived colors (colores-producto.ts).
-    if (!coloresRealesProducto(fila.titulo, [fila.color]).includes(fila.color)) continue;
-    const lista = porColor.get(fila.color) ?? [];
-    // Unknown sizes stay unknown (never "no sizes"): the color is then claimable as before.
-    const diametros = Array.isArray(fila.diametros) ? fila.diametros.map(Number).filter(Number.isFinite) : undefined;
-    if (lista.length < MAX_PRODUCTOS_POR_COLOR) lista.push({ product_id: fila.product_id, titulo: fila.titulo, en_busqueda: false, ...(diametros ? { diametros } : {}) });
-    porColor.set(fila.color, lista);
+    // Grey balloons are filed under "plateado" and wine ones under "rojo" (colores-producto.ts): a row counts for
+    // its real color, and only for a color that was asked for.
+    for (const real of coloresRealesProducto(fila.titulo, [fila.color])) {
+      if (!buscadosReales.has(real)) continue;
+      const lista = porColor.get(real) ?? [];
+      if (lista.some((producto) => producto.product_id === fila.product_id)) continue;
+      // Unknown sizes stay unknown (never "no sizes"): the color is then claimable as before.
+      const diametros = Array.isArray(fila.diametros) ? fila.diametros.map(Number).filter(Number.isFinite) : undefined;
+      if (lista.length < MAX_PRODUCTOS_POR_COLOR) lista.push({ product_id: fila.product_id, titulo: fila.titulo, en_busqueda: false, ...(diametros ? { diametros } : {}) });
+      porColor.set(real, lista);
+    }
   }
   for (const [pedido, resuelto] of resueltos) {
     const productos = porColor.get(resuelto);

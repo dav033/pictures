@@ -327,6 +327,10 @@ async function main(): Promise<void> {
   assert.deepEqual(coloresRealesProducto("B2b Globo Latex Redondo Reflex Plata", ["plateado"]), ["plateado"]);
   assert.deepEqual(coloresRealesProducto("Globo Silk Nuevo Gris Medianoche", ["negro"]), ["gris", "negro"]);
   assert.deepEqual(coloresRealesProducto("Globo Gris Plata Duo", ["plateado"]), ["plateado"], "a title naming silver keeps it");
+  // Wine is not red (CASE-006, 2026-10-05): the live catalog files Merlot and Vinotinto as "rojo".
+  assert.deepEqual(coloresRealesProducto("B2b Globo Latex Redondo Metal Vinotinto", ["rojo"]), ["burdeos"]);
+  assert.deepEqual(coloresRealesProducto("B2b Globo Latex Redondo Fashion Merlot", ["rojo", "burdeos"]), ["burdeos"]);
+  assert.deepEqual(coloresRealesProducto("B2b Globo Latex Redondo Fashion Rojo", ["rojo"]), ["rojo"], "a red balloon stays red");
   // The model wrote "plateado" for Fashion Gris (ejemplo-07): the material and its line are grey.
   const marco = turno({ colores: ["chrome silver", "grey", "white"], candidatos: ["P-PLATA", "P-GRIS"] });
   const grisComoPlata = await marco.confirmar(plan("clasica", [["P-PLATA", "plateado", 0.6], ["P-GRIS", "plateado", 0.4]]));
@@ -337,6 +341,23 @@ async function main(): Promise<void> {
   assert.ok((grisComoPlata.avisos_cliente as string[]).some((aviso) => /muestra blanco/.test(aviso)));
   const plataComoGris = await buscarGlobosPorColor({ query: async () => ({ rows: [{ color: "plateado", product_id: "P-GRIS", titulo: "B2b Globo Latex Redondo Fashion Gris", diametros: [5, 12] }, { color: "plateado", product_id: "P-PLATA", titulo: "B2b Globo Latex Redondo Reflex Plata", diametros: [12] }] }) } as unknown as Pool, ["plateado"]);
   assert.deepEqual(plataComoGris.get("plateado")?.map((producto) => producto.product_id), ["P-PLATA"], "the color lookup does not offer grey as silver");
+  // Wine (CASE-006, 2026-10-05): the catalog stores Merlot as "rojo". The photo's "burdeos" must exist in the pool
+  // and be served by Merlot, and a red request must not get Merlot.
+  const filasVino = [
+    { color: "rojo", product_id: "P-MERLOT", titulo: "B2b Globo Latex Redondo Fashion Merlot", diametros: [5, 12] },
+    { color: "rojo", product_id: "P-ROJO", titulo: "B2b Globo Latex Redondo Fashion Rojo", diametros: [12] },
+  ];
+  const pedidosVino: unknown[][] = [];
+  const poolVino = { query: async (sql: string, params: unknown[] = []) => {
+    pedidosVino.push(params);
+    if (/SELECT DISTINCT color/.test(sql)) return { rows: filasVino.map((fila) => ({ color: fila.color, titulo: fila.titulo })) };
+    const pedidos = params[0] as string[];
+    return { rows: filasVino.filter((fila) => pedidos.includes(fila.color)) };
+  } } as unknown as Pool;
+  const vino = await buscarGlobosPorColor(poolVino, ["burdeos", "rojo"]);
+  assert.deepEqual(vino.get("burdeos")?.map((producto) => producto.product_id), ["P-MERLOT"], "burdeos is served by Merlot, filed as rojo");
+  assert.deepEqual(vino.get("rojo")?.map((producto) => producto.product_id), ["P-ROJO"], "red is not served by Merlot");
+  assert.ok((pedidosVino[1]?.[0] as string[]).includes("rojo"), "the lookup asks for the family burdeos is filed under");
   ok("D4: gris ≠ plateado en candidatos, líneas, avisos y búsqueda de colores");
 
   // ---------------------------------------------------------------------------

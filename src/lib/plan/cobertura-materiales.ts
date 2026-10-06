@@ -1,6 +1,6 @@
 import type { Mezcla } from "@/lib/plan/mezclas";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
-import type { PlanDecoracion } from "./tipos";
+import { esCuentaGeometrica, type PlanDecoracion } from "./tipos";
 
 /**
  * Size coverage of a plan's materials before it reaches the resolver.
@@ -306,6 +306,49 @@ function buscarProductoConAcabado(
   return undefined;
 }
 
+/** La palabra con que el catálogo titula cada acabado («Pastel Mate Rosado», «Reflex Plata», «Satin Rosado»). */
+const PALABRA_DE_ACABADO: Readonly<Record<string, string>> = { reflex: "reflex", satin: "satin", mate: "mate" };
+
+/**
+ * Lo que el servidor tiene que buscar para que `aplicarAcabadoReferencia` pueda cumplir su regla 2: la frase
+ * del color en el acabado de la foto («globo latex redondo mate rosado») para cada material que hoy cae en la
+ * regla 3 (el turno no trae ese color en ese acabado). Mismas condiciones que la regla 2, así que una búsqueda
+ * solo se pide cuando su resultado se puede usar.
+ *
+ * Sin esto, el acabado de la foto dependía de que la búsqueda del MODELO lo hubiera traído: el modelo junta
+ * los colores en una sola frase («plateado reflex rosado gris»), el «reflex» del plateado arrastra al rosado y
+ * el primer rosado del turno es un Reflex (CASE-002 de images-judge, 3 de 3 planes). Es el mismo remedio que
+ * `busquedasDeReferencias` (referencias-medidas.ts) para los globos medidos.
+ *
+ * Pura: sin proveedor, HTTP, base de datos ni entorno.
+ */
+export function busquedasDeAcabado(
+  plan: Pick<PlanDecoracion, "estructuras">,
+  esperados: ReadonlyArray<{ estructura_id: string; product_id: string; acabado: string }>,
+  disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
+  maximo = 4,
+): string[] {
+  const busquedas: string[] = [];
+  for (const estructura of plan.estructuras) {
+    if (estructura.variant_overrides?.length) continue;
+    const acabadoEsperado = new Map(esperados.filter((item) => item.estructura_id === estructura.estructura_id).map((item) => [item.product_id, item.acabado]));
+    for (const material of estructura.materiales) {
+      const observado = acabadoEsperado.get(material.product_id);
+      const producto = observado ? disponibilidad.get(material.product_id) : undefined;
+      const color = plegar(material.color ?? "");
+      if (!observado || !producto || !color || material.variant_id) continue;
+      if (producto.categoria !== CATEGORIA_CON_ACABADO || producto.acabados.length === 0) continue;
+      if (acabadoQueCumple(observado, producto.acabados)) continue;
+      if (buscarProductoConAcabado(estructura, producto, color, observado, disponibilidad)) continue;
+      const palabra = PALABRA_DE_ACABADO[plegar(observado)];
+      if (!palabra) continue;
+      const frase = `globo latex redondo ${palabra} ${color}`;
+      if (!busquedas.includes(frase)) busquedas.push(frase);
+    }
+  }
+  return busquedas.slice(0, maximo);
+}
+
 /**
  * Notices for the customer about the adjustments the server makes before
  * resolving. Without them the model describes a finish or a color the quote
@@ -419,7 +462,8 @@ export function ajustarCoberturaPlan(
       return { ...material, color: colores[0]! };
     });
     const estructura = { ...estructuraOriginal, materiales };
-    if (!GEOMETRICOS.has(estructura.tipo) || tamanosObligatorios) return estructura;
+    // Un centro de mesa de globos contados (UI-6) compra variantes fijas: no tiene mezcla que cubrir.
+    if (!esCuentaGeometrica(estructura) || tamanosObligatorios) return estructura;
     const productos = materiales.map((material) => disponibilidad.get(material.product_id));
     if (productos.some((producto) => !producto)) return estructura;
     const cubre = (indice: number, mezcla: Mezcla) => productos[indice]!.mezclas.includes(mezcla);

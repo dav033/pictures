@@ -29,6 +29,7 @@ from app.main import Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
 from app.plan import PlanResolutionError
 from app.plan_edicion import Edicion, LineaBase, LineasBaseEstructura, PlanEditado, editar_plan
+from app.armado_estructura import globos_del_remate
 from tests.guirnalda_datos import arco, guirnalda, lineas, material, plan, resolver
 
 SECRET = "c" * 32
@@ -401,7 +402,8 @@ def test_el_plan_editado_se_resuelve_con_el_conteo_las_medidas_y_el_hash_del_arm
     )
     estructura = cast(list[dict[str, object]], despues["estructuras"])[0]
     # La cuenta es la del motor, no la estimación de antes, y las medidas del plan son las de la columna armada.
-    assert estructura["total_unidades"] == conteo
+    # Desde el 2026-10-06 su remate también se compra (`plan._conteo_del_motor`).
+    assert estructura["total_unidades"] == conteo + globos_del_remate(resuelta)
     declaradas = cast(
         dict[str, float], _pieza(cast(dict[str, object], despues["plan"]), COLUMNA)["medidas"]
     )

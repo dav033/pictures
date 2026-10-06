@@ -42,6 +42,7 @@ import {
   tamanosCliente,
   ubicacionCortaCliente,
 } from "@/lib/plan/presentacion-cliente";
+import { elementosMaterializados } from "@/lib/ia/referencia/reference-structure";
 import { DetalleEstructura } from "@/components/plan/DetalleEstructura";
 import { DialogoCotizacion, gruposCotizacionPlan } from "@/components/plan/DialogoCotizacion";
 import { BarraTamanos, tramosPorTamano } from "@/components/plan/BarraTamanos";
@@ -451,7 +452,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   // imagen, el cliente la enciende o la apaga, y nunca se cotiza — no toca el
   // plan, los materiales ni `plan_hash`.
   const escenografia = referenceBlueprint
-    ? escenografiaCliente(referenceBlueprint, new Set(plan.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id))))
+    ? escenografiaCliente(referenceBlueprint, elementosMaterializados(referenceBlueprint, plan.plan.estructuras))
     : [];
   // El chip se apaga entero: sus elementos entran y salen juntos.
   const escenografiaApagadaSet = new Set(escenografiaApagada);

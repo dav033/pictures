@@ -428,6 +428,23 @@ export function referenciaDelCatalogo(tono: string, acabado: string | null): Ref
 }
 
 /**
+ * La referencia que nombra el TÍTULO del producto que se compra, o `null` si no nombra un solo tono de la
+ * lámina. Es `referencia_del_titulo` de `services/ai-api/app/color_catalogo.py` (la guía de escena ya la usa):
+ * el color del material es la familia («azul») y la familia cae en su primera referencia, el Azul 040, un
+ * cian; el producto dice el tono («Fashion Azul Rey»). Con el color grueso, el prompt de Gemini pedía
+ * `#01b2e8` para unas piezas azul rey (CASE-005 y CASE-007 de images-judge). Se busca el nombre más largo de
+ * la lámina que el título dice con palabras enteras; con dos tonos distintos, ninguno.
+ */
+export function referenciaDelTitulo(titulo: string | null | undefined, acabado: string | null): ReferenciaSempertex | null {
+  if (!titulo) return null;
+  const plegado = ` ${plegarNombre(titulo).replace(/[^a-z0-9]+/g, " ").trim()} `;
+  const dichos = [...CODIGOS_POR_NOMBRE_ES.keys()].filter((nombre) => plegado.includes(` ${nombre} `));
+  // «azul» va dentro de «azul rey»: el nombre que otro más largo contiene no es otro tono.
+  const tonos = dichos.filter((nombre) => !dichos.some((otro) => otro !== nombre && ` ${otro} `.includes(` ${nombre} `)));
+  return tonos.length === 1 ? referenciaDelCatalogo(tonos[0]!, acabado) : null;
+}
+
+/**
  * Las palabras de acabado que aparecen dentro de un nombre en inglés. No son colores: el acabado se decide
  * aparte, por familia (`acabado-observado.ts`), y dejarlas en el índice haría que «matte white» y «matte
  * green» se parecieran por la palabra «matte».

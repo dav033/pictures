@@ -159,6 +159,8 @@ def test_una_pieza_con_motor_o_sin_forma_fija_no_se_dibuja_aqui() -> None:
     # El bouquet tiene su propio armado y la figura no tiene forma fija.
     assert dibujante_de(_pieza("E", "kit", "bouquet")) is None
     assert dibujante_de(_pieza("E", "kit", "figura")) is None
+    # El racimo de pared lo dibuja su plugin de la guía (``guia_piezas.racimo_pared``).
+    assert dibujante_de(_pieza("E", "kit", "racimo_pared")) is None
 
 
 def test_un_plan_sin_estructura_oficial_cae_en_su_tipo() -> None:

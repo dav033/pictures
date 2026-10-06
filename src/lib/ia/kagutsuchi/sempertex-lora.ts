@@ -59,7 +59,12 @@ export type SempertexLoraOptions = {
  * porque nunca pasan por Gemini, por `buildInputs` ni por el prompt de escena.
  */
 export type RolGuiaLora = "structure_guide" | "color_chart" | "scene_guide";
-export type ImagenGuiaLora = Imagen & { id: string; role: RolGuiaLora };
+export type ImagenGuiaLora = Imagen & {
+  id: string;
+  role: RolGuiaLora;
+  /** Solo la guía de escena: si dibuja algo que no es globo (aro, poste, cintas). Decide qué nota la acompaña. */
+  conEstructura?: boolean;
+};
 export type ImagenEditLora = ImageInput | ImagenGuiaLora;
 
 function esImagenGuia(imagen: ImagenEditLora): imagen is ImagenGuiaLora {
@@ -430,9 +435,23 @@ function promptConGuia(prompt: string, references: readonly ImagenEditLora[]): s
  */
 export const NOTA_GUIA_ESCENA = "The first input image (@image1) is a flat layout map of this balloon decoration, not a photo: follow its shapes, positions, relative sizes and colors; thin darker rims only mark where each balloon ends; thin lines and flat shapes are the real metal hoop frame and stand, ribbons or weight. Produce a real photograph of real latex balloons with real light, shadows and depth; never reproduce the flat map, circles drawn as a diagram, outlines, its background color or any marks.";
 
+/**
+ * La nota cuando la guía NO dibuja ninguna estructura que no sea globo (ni aro, ni poste, ni cintas). La de
+ * siempre nombraba «the real metal hoop frame and stand» en todo plan, hubiera aro o no, y FLUX unía dos piezas
+ * separadas con un aro metálico en un solo arco (CASE-005 de images-judge, 2026-10-05; auditoría de propiedades
+ * huérfanas, frontera motor → FLUX). Sin estructura dibujada, lo que se dice en su lugar es que las piezas que el
+ * mapa dibuja separadas siguen separadas. No es más larga que la de siempre: la reserva del presupuesto no cambia.
+ */
+export const NOTA_GUIA_ESCENA_SIN_ESTRUCTURA = "The first input image (@image1) is a flat layout map of this balloon decoration, not a photo: follow its shapes, positions, relative sizes and colors; thin darker rims only mark where each balloon ends; pieces drawn apart stay apart, with open space between them and no frame, pole or arch joining them. Produce a real photograph of real latex balloons with real light, shadows and depth; never reproduce the flat map, circles drawn as a diagram, outlines, its background color or any marks.";
+
+/** La nota que corresponde a la guía: con aro, poste o cintas dibujados, la que los nombra; sin ellos, la otra. */
+export function notaGuiaEscena(conEstructura: boolean | undefined): string {
+  return conEstructura === false ? NOTA_GUIA_ESCENA_SIN_ESTRUCTURA : NOTA_GUIA_ESCENA;
+}
+
 /** Caracteres que la nota de la guía de escena ocupa en el prompt: se descuentan del presupuesto del caption. */
 export function reservaNotaGuiaEscena(): number {
-  return NOTA_GUIA_ESCENA.length + 2;
+  return Math.max(NOTA_GUIA_ESCENA.length, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA.length) + 2;
 }
 
 /**
@@ -446,7 +465,7 @@ function promptConGuiaEscena(prompt: string, references: readonly ImagenEditLora
   if (references.length !== 1 || references[0]!.role !== "scene_guide") {
     throw new Error("LORA_GUIA_INVALIDA: la guía de escena viaja sola, como única imagen de /edit.");
   }
-  return `${prompt.trim()}\n\n${NOTA_GUIA_ESCENA}`;
+  return `${prompt.trim()}\n\n${notaGuiaEscena(references[0]!.conEstructura)}`;
 }
 
 /** Bounded to the range the creativity levels use; anything else keeps the historical 3.5. */

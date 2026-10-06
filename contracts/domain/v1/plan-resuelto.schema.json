@@ -317,7 +317,8 @@
                       "bouquet",
                       "figura",
                       "aro_circular",
-                      "techo_globos"
+                      "techo_globos",
+                      "racimo_pared"
                     ]
                   },
                   "forma": {
@@ -3157,6 +3158,27 @@
                   },
                   {
                     "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "racimo_pared"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
                       "required": [
                         "forma"
                       ]
@@ -3759,6 +3781,27 @@
                           "enum": [
                             "techo",
                             "techo_multipunto"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "racimo_pared"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit"
                           ]
                         }
                       }
@@ -4854,7 +4897,8 @@
                       "bouquet",
                       "figura",
                       "aro_circular",
-                      "techo_globos"
+                      "techo_globos",
+                      "racimo_pared"
                     ]
                   },
                   "forma": {
@@ -7695,6 +7739,27 @@
                   },
                   {
                     "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "racimo_pared"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
                       "required": [
                         "forma"
                       ]
@@ -8297,6 +8362,27 @@
                           "enum": [
                             "techo",
                             "techo_multipunto"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "racimo_pared"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit"
                           ]
                         }
                       }

@@ -42,6 +42,7 @@ const POR_OFICIAL: Readonly<Record<EstructuraOficialId, NombrePieza>> = {
   figura: { sustantivo: "figura", genero: "f" },
   aro_circular: { sustantivo: "aro", genero: "m" },
   techo_globos: { sustantivo: "techo", genero: "m" },
+  racimo_pared: { sustantivo: "racimo", genero: "m" },
 };
 
 /** Respaldo por `tipo` para una pieza sin estructura oficial (un plan viejo o una pieza libre). */

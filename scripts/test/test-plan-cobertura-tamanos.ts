@@ -342,7 +342,9 @@ async function main(): Promise<void> {
   const { coloresRealesVariante } = await import("../../src/lib/plan/colores-producto");
   const { disponibilidadDelTurno } = await import("../../src/lib/ia/herramientas/convergencia-plan");
   assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Violeta", ["violeta"], ["violeta", "morado"]), ["violeta"]);
-  assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Merlot", [], ["rojo", "burdeos"]), ["rojo", "burdeos"], "sin colores de variante se conserva el conjunto del producto, nunca vacío");
+  // Era Fashion Merlot ["rojo", "burdeos"]; desde el 2026-10-05 el vino tiene un solo color real (CASE-006).
+  assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Rosado", [], ["rosado", "fucsia"]), ["rosado", "fucsia"], "sin colores de variante se conserva el conjunto del producto, nunca vacío");
+  assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Merlot", [], ["rojo", "burdeos"]), ["burdeos"], "el vino no es rojo");
   assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Gris", [], ["plateado"]), ["gris"], "la corrección de gris sigue aplicando");
 
   const violeta: ProductoCandidato = {

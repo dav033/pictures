@@ -35,3 +35,13 @@ export async function decodificarPixeles(imagen: Buffer): Promise<MuestraPixeles
     .toBuffer({ resolveWithObject: true });
   return { ancho: info.width, alto: info.height, rgb: new Uint8Array(data.buffer, data.byteOffset, data.byteLength) };
 }
+
+/**
+ * Ancho entre alto de la foto COMO SE VE: con la orientación EXIF 5 a 8 (girada 90°) los lados guardados se
+ * cruzan, por lo mismo que `decodificarPixeles` aplica `rotate()`. Solo lee la cabecera; `undefined` si no la hay.
+ */
+export async function proporcionDeImagen(imagen: Buffer): Promise<number | undefined> {
+  const { width, height, orientation } = await sharp(imagen).metadata();
+  if (!width || !height) return undefined;
+  return orientation !== undefined && orientation >= 5 ? height / width : width / height;
+}

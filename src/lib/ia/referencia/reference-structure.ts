@@ -83,7 +83,7 @@ For every element return composition_relevance: essential (defines the compositi
  * uses; the others stay selectable for evaluation only. "v13" is the base text
  * alone (production until ADR-0029); the rest append their rules to it.
  */
-export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "v16", "v17-lectura-unica"] as const;
+export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "v16", "v17-lectura-unica", "v18-candidato", "v19-candidato", "v19b-candidato"] as const;
 /**
  * `v17-lectura-unica` (candidata): v16 tal cual **más** las cuatro lecturas de
  * la foto dentro del mismo análisis (`lectura-unica.ts`). Es la única variante
@@ -93,6 +93,39 @@ export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "
  */
 export const VARIANTE_LECTURA_UNICA: VarianteReconocedor = "v17-lectura-unica";
 export type VarianteReconocedor = (typeof VARIANTES_RECONOCEDOR)[number];
+/**
+ * `v18-candidato` (UI-3, 2026-10-05; solo evaluación): v17 tal cual —texto de v16 y lecturas— **más**
+ * `STRUCTURE_RULES_V18_CANDIDATE`. Nace de la línea base de images-judge: dos semiarcos en espejo leídos como
+ * una sola pieza (CASE-002, 8 de 8), una columna leída como guirnalda (CASE-005, 5 de 5 en v17), una pieza
+ * colgante leída como columna (CASE-003) y un aro ralo leído `medium`/`dense` (CASE-007, 8 de 8). Promoverla
+ * es decisión de una persona tras medirla contra la línea base (AGENTS.md).
+ */
+export const VARIANTE_V18_CANDIDATA: VarianteReconocedor = "v18-candidato";
+/**
+ * `v19-candidato` (2026-10-06; evaluación aprobada por el dueño, que también aprobó promoverla si cumple el
+ * criterio del anexo E): v18 tal cual **más** `STRUCTURE_RULES_V19_CANDIDATE`. Nace de la validación final: el
+ * orden de los bloques de color de un semiarco salía desde la punta o desde el pie según la corrida (CASE-002) y
+ * el motor pone el primer color en el pie; una pared de globos se leía guirnalda (CASE-007) y un racimo de pared,
+ * bouquet de helio (foto 3 de la Fase 7). El aro colgado no necesitó regla: la lectura ya decía `grounded` false.
+ */
+export const VARIANTE_V19_CANDIDATA: VarianteReconocedor = "v19-candidato";
+/**
+ * `v19b-candidato` (2026-10-06): v18 **más solo** la regla del orden de color (`STRUCTURE_RULE_V19B_ORDEN_COLOR`).
+ * v19 entera no cumplió el criterio (anexo E): el orden mejoró en CASE-002 (pie primero 4/6 frente a 1/6) pero sus
+ * reglas de pared y racimo bajaron el tipo de 33/48 a 29/48 (CASE-007 de 3/6 a 1/6).
+ */
+export const VARIANTE_V19B_CANDIDATA: VarianteReconocedor = "v19b-candidato";
+/**
+ * La variante que usa la ruta `/api/references/analyze` con `LECTURA_UNICA_REFERENCIA_ENABLED`. Promovida a v18
+ * el 2026-10-05 por decisión del dueño, sobre la línea base sin etiquetas de images-judge (tipo 33/48 frente a
+ * 29/48 de v17, n = 6; riesgo conocido: CASE-004 1/6 frente a 3/6). Volver atrás es poner aquí
+ * `VARIANTE_LECTURA_UNICA`: el esquema de la herramienta y el validador de Python son los mismos.
+ */
+export const VARIANTE_RUTA_ANALISIS: VarianteReconocedor = VARIANTE_V18_CANDIDATA;
+/** Las variantes que piden las cuatro lecturas de la foto (esquema de herramienta con `lecturas`). */
+export function varianteConLecturas(variante: VarianteReconocedor): boolean {
+  return variante === VARIANTE_LECTURA_UNICA || variante === VARIANTE_V18_CANDIDATA || variante === VARIANTE_V19_CANDIDATA || variante === VARIANTE_V19B_CANDIDATA;
+}
 /** ADR-0029: v16 separates bouquet from centerpiece (89 % vs 80 % on 105 photos). */
 export const VARIANTE_PRODUCCION: VarianteReconocedor = "v16";
 
@@ -138,6 +171,30 @@ export const STRUCTURE_RULES_V16 = `Clarification for compact balloon arrangemen
 - When unsure between the two, prefer centerpiece for a small piece with visible gaps or few balloons, and bouquet for a large dense piece.
 - column = a slim freestanding pillar of stacked balloons that stands directly on the floor and reaches roughly the height of a standing adult or more; it may carry a foil balloon on top. A piece that sits on a table or furniture, or a short, wide piece built around a base with toppers, is a centerpiece or bouquet, not a column, even if it is taller than it is wide.`;
 
+/**
+ * v18 candidate (solo evaluación, ver `VARIANTE_V18_CANDIDATA`). Cada regla es una frontera entre dos tipos que
+ * la línea base confundió, escrita para cualquier foto y no para un caso: no nombra colores, lugares ni
+ * cantidades de un caso concreto.
+ */
+export const STRUCTURE_RULES_V18_CANDIDATE = `Clarifications for vertical and framing pieces (they override the definitions above when they conflict):
+- Before returning one arch, follow the balloons over the top. Return arch only when they run unbroken from one foot, over the top, down to the other foot. Two pieces that rise from the floor on both sides of an opening, a niche, a doorway, a backdrop or a table and bend toward each other are two half_arch elements, one left and one right, with mirrors_element naming each other, whenever their tops do not join into one continuous run, even when the gap between the tops is small or the photo frames both together. Never draw one bounding box around two such pieces.
+- Decide garland against column and half_arch by the axis the piece runs along. A garland runs along a surface horizontally or diagonally, or drapes in a swag. A piece standing on the floor that runs mostly upward, clearly taller than it is wide, is a column (top above its base) or a half_arch (top bending sideways), even when it is organic, lumpy, irregular or leans against a wall or backdrop; never call it a garland.
+- A run of balloons that hangs down from above or climbs the edge of a backdrop, frame or wall without standing on the floor or on its own base is not a column: it is a half_arch when it bends over the top edge, otherwise a garland. Return grounded false for it and keep its real direction: a piece that runs mostly up and down stays vertical.
+- density of a hoop or any frame covered with balloons: airy when the bare ring or frame shows between the balloons or the balloons cover less than about half of it; medium when the balloons cover most of it with small gaps; dense only when the frame is completely hidden.`;
+
+/**
+ * v19 candidate (ver `VARIANTE_V19_CANDIDATA`). Mismas reglas de escritura que v18: fronteras generales, sin
+ * colores, lugares ni cantidades de un caso.
+ */
+export const STRUCTURE_RULES_V19_CANDIDATE = `Clarifications for color order and wall pieces (they override the definitions above when they conflict):
+- For a half_arch or a column, the start of the piece is its foot on the floor: list the colors, weights and stops of lecturas.patron_color from the foot upward to the top, never from the top down.
+- Balloons that cover a wall as a flat or lumpy surface, much wider than a single run of clusters, are a balloon_wall, not a garland, even when the surface is organic or irregular.
+- A loose group of balloons fixed against a wall, with no base, no weight and no ribbons, is a cluster, not a bouquet.`;
+
+/** v19b candidate: solo la regla de orden de color de v19, con el mismo texto. */
+export const STRUCTURE_RULE_V19B_ORDEN_COLOR = `Clarification for color order (it overrides the definitions above when they conflict):
+- For a half_arch or a column, the start of the piece is its foot on the floor: list the colors, weights and stops of lecturas.patron_color from the foot upward to the top, never from the top down.`;
+
 function oneOf<T extends readonly string[]>(values: T, value: unknown): T[number] | undefined {
   const text = typeof value === "string" ? value.trim().toLowerCase().replace(/[\s-]+/g, "_") : "";
   return (values as readonly string[]).includes(text) ? text as T[number] : undefined;
@@ -158,6 +215,22 @@ function inclinacionDe(
 ): number {
   if (hacia === "none" || !vuelo) return 0;
   return (hacia === "left" ? -1 : 1) * INCLINACION_POR_VUELO[vuelo];
+}
+
+/**
+ * Lo que la foto DIJO de la inclinación de la pieza, o `undefined` si no dijo nada.
+ *
+ * `inclina` vale 0 por dos motivos distintos: la foto muestra la pieza recta, o
+ * el modelo no dio dirección (vuelo leve sin lado, pieza que no es vertical).
+ * Solo lo primero es un dato: el modelo contestó `top_overhang: none` (menos del
+ * 10 % de la altura). El motor de la columna asimétrica arranca inclinado si no
+ * recibe nada, así que "recta observada" tiene que viajar como 0 y "sin dato"
+ * como ausencia.
+ */
+export function inclinacionObservada(estructura: Pick<DetectedStructure, "inclina" | "topOverhang"> | undefined): number | undefined {
+  if (!estructura) return undefined;
+  if (estructura.inclina !== 0) return estructura.inclina;
+  return estructura.topOverhang === "none" ? 0 : undefined;
 }
 
 /** Validates the model's `structure` object; anything malformed is discarded, never guessed. */
@@ -223,6 +296,11 @@ function placementFor(structure: DetectedStructure, bbox: ReferenceBBox): LoraPl
   const lowOnFloor = bbox.y + bbox.height >= 0.75 && bbox.height <= 0.35;
   if (structure.type === "garland" && lowOnFloor) return "piso_frontal";
   if (structure.type === "bouquet" || structure.type === "sculpture") return structure.position === "left" ? "lateral_izquierdo" : structure.position === "right" ? "lateral_derecho" : "piso_frontal";
+  // A hoop the photo shows hanging (grounded false) is mounted on the wall, not standing on a stand: the
+  // analysis read it right (CASE-007, 6 of 6 runs) and the placement dropped it, so the scene guide drew it
+  // on a pole and raised the floor line to mid-canvas (2026-10-06). `reubicarAros` puts it back in the
+  // center when the photo's wall is already taken by a backdrop or another piece.
+  if (structure.type === "hoop" && !structure.grounded) return "fondo_pared";
   // A balloon arch (or hoop) is a freestanding piece: equivalent photos came
   // back as "against the back wall" or "in the center" depending on whether
   // the model called it full_width.
@@ -307,7 +385,9 @@ const CATEGORIAS_DE_FONDO: ReadonlySet<string> = new Set(["backdrop", "curtain",
  * aprobada en `fondo_pared` (o un backdrop) no recibe otra: el plan admite una
  * sola. Devuelve el mismo objeto si nada cambia; nunca modifica el recibido.
  */
-export function reubicarGuirnaldas(blueprint: ReferenceBlueprintV2): ReferenceBlueprintV2 {
+export function reubicarGuirnaldas(entrada: ReferenceBlueprintV2): ReferenceBlueprintV2 {
+  // Primero los aros colgados: si se quedan en la pared, la guirnalda tiene que ver ese fondo ocupado.
+  const blueprint = reubicarAros(entrada);
   const muebles = new Map<string, MuebleEnFoto[]>();
   const fondoOcupado = new Set<string>();
   for (const elemento of blueprint.elements) {
@@ -334,13 +414,43 @@ export function reubicarGuirnaldas(blueprint: ReferenceBlueprintV2): ReferenceBl
   return cambio ? { ...blueprint, elements } : blueprint;
 }
 
+/**
+ * El aro colgado (`placementFor`: un `hoop` con `grounded` false va a `fondo_pared`) vuelve a `arco_central`
+ * cuando su foto ya tiene el fondo ocupado: un backdrop, una cortina, un panel u otra pieza en `fondo_pared`.
+ * El plan admite una sola estructura en `fondo_pared` (`tipos.ts`). Un `arco` en `fondo_pared` solo puede
+ * venir de esa regla: el arco de pie siempre va a `arco_central`. Devuelve el mismo objeto si nada cambia.
+ */
+export function reubicarAros(blueprint: ReferenceBlueprintV2): ReferenceBlueprintV2 {
+  const esAroColgado = (elemento: ReferenceBlueprintV2["elements"][number]) =>
+    elemento.approved && elemento.visual_semantics?.structure_type === "arco" && elemento.visual_semantics.placement === "fondo_pared";
+  let cambio = false;
+  const elements = blueprint.elements.map((elemento) => {
+    if (!esAroColgado(elemento)) return elemento;
+    const otroFondo = blueprint.elements.some((otro) => otro !== elemento && otro.approved && otro.source_image_id === elemento.source_image_id
+      && (CATEGORIAS_DE_FONDO.has(otro.category) || otro.visual_semantics?.placement === "fondo_pared"));
+    if (!otroFondo) return elemento;
+    cambio = true;
+    return { ...elemento, visual_semantics: { ...elemento.visual_semantics!, placement: "arco_central" as const } };
+  });
+  return cambio ? { ...blueprint, elements } : blueprint;
+}
+
 /** Soportes de una guirnalda que la apoyan en algo: una columna se sostiene sola en el piso o en una mesa. */
 const SOPORTES_APOYADOS: ReadonlySet<string> = new Set(["pared", "colgada", "sobre_estructura"]);
+/**
+ * Las formas de la lectura que dicen que la pieza se DOBLA por encima de algo («u_invertida»: enmarca desde
+ * arriba con los dos lados cayendo) o cuelga entre anclajes («arco_caido»). «curva» es «one gentle curve»
+ * (`lectura-unica.ts`) y «ondulada» sube y baja: las dos describen también una columna orgánica que se inclina
+ * o tiene el contorno irregular, que es justo lo que el análisis ya dijo con `top_overhang: slight` («a leaning or
+ * lumpy column»). CASE-002 (2026-10-06): dos columnas orgánicas inclinadas ~12° junto a un nicho, leídas
+ * «curva, sobre_estructura», salían semiarcos y la imagen pintaba dos ganchos.
+ */
+const FORMAS_QUE_SE_DOBLAN: ReadonlySet<string> = new Set(["u_invertida", "arco_caido"]);
 
 /**
  * El blueprint con cada "columna" que en realidad es un semiarco: una pieza que la misma lectura de la foto
  * describe como guirnalda (`appearance.armado_guirnalda` confiable) apoyada en una pared o en otra pieza y que
- * no va recta. El análisis le pone el tipo por la silueta, y una guirnalda que trepa por un lado de un panel y
+ * se dobla por encima de algo (`FORMAS_QUE_SE_DOBLAN`). El análisis le pone el tipo por la silueta, y una guirnalda que trepa por un lado de un panel y
  * se curva por arriba se ve alta y estrecha: la foto 3 de las pruebas del 2026-10-05 salió "columna" con su
  * lectura de guirnalda en U invertida sobre el panel (0,92), y el plan la armó, compró y dibujó como una columna
  * inclinada. La misma pieza al otro lado (foto 4) salió "semiarco". La lectura de guirnalda solo se pide para
@@ -354,7 +464,12 @@ export function reclasificarColumnasConGuirnalda(blueprint: ReferenceBlueprintV2
     const semantica = elemento.visual_semantics;
     const lectura = elemento.appearance.armado_guirnalda;
     if (!elemento.approved || elemento.category !== "balloon_structure" || semantica?.structure_type !== "columna") return elemento;
-    if (!lectura || lectura.confianza < 0.5 || !SOPORTES_APOYADOS.has(lectura.soporte) || lectura.forma === "recta") return elemento;
+    if (!lectura || lectura.confianza < 0.5 || !SOPORTES_APOYADOS.has(lectura.soporte)) return elemento;
+    // Una curva suave es una columna inclinada si nace del suelo (CASE-002); si la pieza no toca el suelo y trepa
+    // por un respaldo, es el semiarco que describe la regla v18 (CASE-004: con columna la imagen empeoró de 38 a 27
+    // en el juez). El apoyo viaja en la forma visible, que escribe `shapeDescription` a partir de `grounded`.
+    const separadaDelSuelo = /\braised off the floor\b/i.test(elemento.appearance.shape);
+    if (!FORMAS_QUE_SE_DOBLAN.has(lectura.forma) && !(lectura.forma === "curva" && separadaDelSuelo)) return elemento;
     cambio = true;
     return {
       ...elemento,
@@ -422,13 +537,33 @@ export function ambientDecorName(raw: string): string | undefined {
   const name = raw
     .toLowerCase()
     .replace(/\([^)]*\)/g, " ")
-    .replace(/[,;/]+/g, " ")
+    // The analysis sometimes names elements in snake_case ("navy_arched_backdrop_panel"): an identifier, not a
+    // non-English name. Rejecting it dropped the photo's backdrop panel (Fase 7, 2026-10-06).
+    .replace(/[,;/_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/^(?:a|an|the|some) /, "");
   // Balloons are never ambient styling: they are quoted plan structures.
-  if (!/^[a-z][a-z -]{2,48}$/.test(name) || NON_RENDERABLE_TEXT.test(raw) || SPANISH_WORDS.test(name) || /\bballoons?\b/.test(name)) return undefined;
+  // Signage is checked on the normalized name too: in "congrats_grad_neon_sign" `\bsign\b` has no word boundary.
+  if (!/^[a-z][a-z -]{2,48}$/.test(name) || NON_RENDERABLE_TEXT.test(raw) || NON_RENDERABLE_TEXT.test(name) || SPANISH_WORDS.test(name) || /\bballoons?\b/.test(name)) return undefined;
   return name;
+}
+
+const MATERIAL_MADERA = /\b(?:wooden|wood)\b/;
+const TONO_MADERA = /\b(?:wood|wooden|brown|oak|walnut|natural|tan|honey|teak|mahogany|chestnut|timber)\b/i;
+const COLOR_LEGIBLE = /^[a-z][a-z -]{2,24}$/;
+
+/**
+ * El nombre de una pieza de escenografía con el color que se VE en vez del material (2026-10-06). El análisis
+ * llama «arch wooden backdrop wall» a un panel de madera pintado de lavanda claro (CASE-002) y FLUX pintaba madera
+ * natural: un portón que la foto no tiene. Si ningún color observado es un tono de madera, «wooden» se cambia por
+ * el primer color observado. Con un tono de madera, o sin colores, el nombre se queda igual.
+ */
+export function nombreConSuColor(nombre: string, observados: readonly string[]): string {
+  if (!MATERIAL_MADERA.test(nombre) || observados.some((color) => TONO_MADERA.test(color))) return nombre;
+  const color = observados.map((c) => c.trim().toLowerCase()).find((c) => COLOR_LEGIBLE.test(c) && !NON_RENDERABLE_TEXT.test(c));
+  if (!color) return nombre;
+  return `${color} ${nombre.replace(MATERIAL_MADERA, " ").replace(/\s+/g, " ").trim()}`;
 }
 
 export type AmbientDecorItem = { elementId: string; name: string };
@@ -449,9 +584,34 @@ export type AmbientDecorItem = { elementId: string; name: string };
  * que impide que el modelo se invente productos.
  * ------------------------------------------------------------------------- */
 
-/** Categorías de escenografía: lo que se ve en la foto y el catálogo no vende. */
-const SCENERY_EXTRA_CATEGORIES = ["curtain", "drape"] as const;
+/**
+ * Categorías de escenografía: lo que se ve en la foto y el plan no construye. El fondo (`backdrop`, `panel`) entra
+ * también: el plan puede construir un backdrop, pero cuando no lo hace el de la foto se perdía por los dos lados
+ * —ni se cotizaba ni se dibujaba— y FLUX ponía la decoración sobre un fondo de estudio (CASE-002, -003 y -005,
+ * auditoría de propiedades huérfanas, 2026-10-05). Si el plan lleva su propio backdrop, `elementosMaterializados`
+ * marca los fondos de la foto como construidos y no se duplican.
+ */
+const SCENERY_EXTRA_CATEGORIES = ["curtain", "drape", "backdrop", "panel"] as const;
 export const SCENERY_CATEGORIES: ReadonlySet<string> = new Set([...AMBIENT_CATEGORIES, ...SCENERY_EXTRA_CATEGORIES]);
+
+/** Categorías del fondo de la foto que un backdrop del plan sustituye. */
+const CATEGORIAS_FONDO_CONSTRUIBLE: ReadonlySet<string> = new Set(["backdrop", "panel"]);
+
+/**
+ * Los elementos de la foto que el plan ya construye y que, por eso, no vuelven como escenografía: los que alguna
+ * estructura materializa (`referencia_element_id`) y, si el plan lleva un backdrop, todos los fondos de la foto
+ * (el plan admite uno solo en `fondo_pared`, `tipos.ts`). Única regla para `/api/generate` y para la tarjeta.
+ */
+export function elementosMaterializados(
+  blueprint: ReferenceBlueprintV2,
+  estructuras: ReadonlyArray<{ tipo: string; referencia_element_id?: string }>,
+): Set<string> {
+  const ids = new Set(estructuras.flatMap((estructura) => (estructura.referencia_element_id ? [estructura.referencia_element_id] : [])));
+  if (estructuras.some((estructura) => estructura.tipo === "backdrop")) {
+    for (const elemento of blueprint.elements) if (CATEGORIAS_FONDO_CONSTRUIBLE.has(elemento.category)) ids.add(elemento.element_id);
+  }
+  return ids;
+}
 
 /** Cuántas piezas de escenografía como máximo llegan al prompt y a la tarjeta. */
 export const SCENERY_LIMIT = 6;
@@ -509,7 +669,8 @@ export function sceneryFromReference(
       && !materializedElementIds.has(element.element_id))
     .sort((a, b) => b.detection_confidence - a.detection_confidence || b.reference_bbox.width * b.reference_bbox.height - a.reference_bbox.width * a.reference_bbox.height);
   for (const element of candidates) {
-    const name = ambientDecorName(element.name);
+    const leido = ambientDecorName(element.name);
+    const name = leido ? nombreConSuColor(leido, element.appearance.observed_colors) : undefined;
     if (!name || seen.has(name)) continue;
     seen.add(name);
     items.push({

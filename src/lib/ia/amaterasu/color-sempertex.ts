@@ -9,6 +9,7 @@ import {
   type ColorDePieza,
 } from "@/lib/plan/analisis-color";
 import { decodificarPixeles } from "./decodificar-pixeles";
+import { equilibrarMuestra } from "@/lib/plan/balance-blancos";
 import type { MuestraPixeles } from "@/lib/plan/dominancia-color";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
@@ -154,7 +155,8 @@ export async function medirColoresSempertex(
     // Una sola decodificación por foto aunque tenga ocho piezas.
     if (porImagen.has(imagen.id)) continue;
     try {
-      porImagen.set(imagen.id, await decodificarPixeles(Buffer.from(imagen.base64, "base64")));
+      // En luz blanca: el cruce compara contra globos fotografiados así (`balance-blancos.ts`).
+      porImagen.set(imagen.id, equilibrarMuestra(await decodificarPixeles(Buffer.from(imagen.base64, "base64")), blueprint.elements, imagen.id).muestra);
     } catch (error) {
       console.warn("[color-sempertex] no se pudo decodificar una referencia", {
         image_id: imagen.id,
