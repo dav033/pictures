@@ -122,7 +122,7 @@ generador de imagen con Gemini en TS o Python. Gemini se queda solo para analiza
 
 - **Etapa 4 hecha (2026-10-06, rama `etapa4-borrado`)**: se retiraron las rutas, componentes y página de administración LoRA; el registro, modos entrenados, datasets, artefactos y vocabularios de producto; scripts LoRA y utilidades de selección/curación/descarga/empaquetado del dataset de entrenamiento con sus entradas de `package.json` y pruebas. El diff total elimina unas 25,6 mil líneas, principalmente datos de vocabulario y código de administración. `vocabulario-base.ts` y `descriptor-perceptual.ts` se movieron a `src/lib/ia/kagutsuchi/`. Se limpiaron contratos y configuración; `package.json` conserva CRLF. Permanecen las piezas FLUX base para etapa 5 (incluidos los seis archivos Kagutsuchi), el adaptador Python opcional `app/kagutsuchi/lora.py`/`LORA_GENERATION_PYTHON_ENABLED` porque sirve ese transporte base, la lectura de snapshots para compatibilidad y tablas/migraciones de base de datos para etapa 6. No se tocaron `data/staging/` ni las migraciones. Verificado secuencialmente: `npx tsc --noEmit` OK; `npm run -s lint` OK (19 avisos preexistentes); export domain con `--check` OK (36 schemas); pruebas puntuales base de runtime, texto, UI error, guía de escena, edición y FLUX revisión OK; pytest del modelo generado 3/3 y Ruff OK. Sin llamadas pagadas ni imágenes.
 
-### 3.2 Inventario de lo que queda (mapeado el 2026-10-06)
+### 3.2 Inventario previo a la etapa 4 (mapeado el 2026-10-06; lo de «solo entrenamiento/administración» ya se borró, ver §3.1)
 Bloqueos o rarezas que siguen corriendo en base:
 - `src/lib/ia/kagutsuchi/lora-prompt-preflight.ts:273-277` rechaza prompts con `Reflex|Fashion|Silk|Crystal|Pastel`, ®/™ o `eventdecor_*`
   → `LORA_PREFLIGHT_FAILED` (`route.ts` ~1266). Mejor: quitar esas palabras al construir el texto (`vocabulario-base.ts`
@@ -169,17 +169,15 @@ Tamaño:
    edición); quitar `training_*`, `unlimited`, `loraSelection`, `NEXT_PUBLIC_LORA_MODE`, el selector del cliente y
    `usarLora`/`loraMode` del contrato de `/api/generate` (siempre FLUX base); quitar la allowlist de dataset y `lora_variant_ids`
    (contrato, en el orden de §2). Quitar `ensureLoraTriggers`, triggers y los dialectos `scene_v004`/`product_v007` del compilador.
-4. **Borrar** el código de entrenamiento/admin, `src/lib/lora/*` que ya no se importe, el vocabulario y sus datos, `scripts/lora/*`,
+4. **[HECHA y fusionada, merge 99cf2dd]** **Borrar** el código de entrenamiento/admin, `src/lib/lora/*` que ya no se importe, el vocabulario y sus datos, `scripts/lora/*`,
    las pruebas `test-lora-*` de dialectos entrenados y sus entradas en `package.json`. Mover `vocabulario-base.ts` y
    `descriptor-perceptual.ts` a `src/lib/ia/kagutsuchi/` (o `src/lib/flux/`).
 5. **Renombrar** `sempertex-lora.ts` → `flux.ts`, `lora-caption-compiler.ts` → `caption-flux.ts`, etc., y `fal-ai/flux-2/lora/edit` →
    `fal-ai/flux-2/edit` si fal lo admite con las mismas entradas (comprobar con 1 imagen y tope).
 6. `data/staging` y tablas `lora_*`: solo con confirmación explícita del dueño.
-   Etapa 4 hecha en rama (2026-10-06 tarde): `etapa4-borrado`, worktree `Downloads/e3l`, commits 9514139..973cd2a: 132 archivos,
-   −25 583 líneas (administración, APIs `/api/lora/*`, modos entrenados, vocabularios, utilidades de dataset, scripts y pruebas de
-   entrenamiento); `vocabulario-base.ts` y `descriptor-perceptual.ts` movidos a `src/lib/ia/kagutsuchi/`; sin tocar `data/staging`,
-   migraciones ni tablas. tsc, lint (0 errores), export de contratos (36), pruebas del camino base, pytest 3/3, ruff. SIN fusionar:
-   en revisión adversarial (camino FLUX base, chat, vista guiada, scripts de package.json colgantes).
+   Etapa 4 fusionada (2026-10-06 tarde, merge 99cf2dd; marca de vuelta atrás `antes-etapa4-medidas`): revisión adversarial sin
+   bloqueantes (204 scripts de package.json válidos, camino FLUX, chat y vista guiada OK); se quitaron además un diagnóstico roto
+   (`evaluacion/validacion-fase4/diag-coral.ts`) y las variables `LORA_ARTIFACT_ROOT`/`LORA_SNAPSHOT_*` sin lectores. Siguiente: etapa 5.
 Tras cada etapa: `tsc`, `eslint` de lo tocado, pruebas puntuales y 1-2 imágenes FLUX de control (001 y 002), juzgadas con Codex.
 
 ## 4. Misión de fidelidad foto → imagen (estado al 2026-10-06)
@@ -300,7 +298,7 @@ en azul»: Azul Rey $13.974 + Blanco $13.037 + impreso bebé $24.143 = $51.154 c
 del catálogo, enlace al kit en sempertex.com sin el prefijo `b2b-`, distribuidor cercano); `darkreader-lock` (la extensión Dark
 Reader del equipo del dueño repintaba la app). Recorrido en el navegador verificado: espacio (ilustración), baby shower niño →
 elegir → comprar → costear personal. Hasta la presentación NO se fusionan en la principal las
-ramas de motor (colores `fix/sombra-no-es-color`, medidas `fix/medidas-de-la-foto`, forma `fix/forma-organica-002`) ni la etapa 4
+ramas de motor (colores `fix/sombra-no-es-color`, forma `fix/forma-organica-002`; medidas y etapa 4 ya fusionadas tras revisión)
 sin revisión adversarial y prueba (el dueño pidió el 2026-10-06 seguir también con esas mejoras, no solo con el chat).
 Tarde del 2026-10-06 (verificado en el navegador): tras «Aprender» salen las 4 opciones; el modelo no habla de «la pantalla»;
 «Contratar decorador» pregunta la ciudad con botones (Bogotá/Medellín/Cali/Barranquilla) y muestra tarjetas de ejemplo (2 decoradores
