@@ -218,9 +218,33 @@ mostrar decoraciones Sempertex ya hechas de esa temática (¿te gusta? sí/no) �
 estilo Balloon Pro) → si no: pedir foto de inspiración (con foto, el mismo flujo; sin foto, decoradores). Precio solo si el usuario lo
 pide, tras preguntar negocio/personal (negocio: todo «Ajustar mi precio», costo editable; personal: solo materiales a precio
 e-commerce y botón visible «Cotiza con un proveedor cerca de ti»). Sin fila de tarjetas de estructuras. Texto de inicio «Cuéntame qué
-quieres hacer»; fotos de inicio de Sempertex. Decisiones del dueño: **en esta vista no se genera imagen**; la biblioteca de
-decoraciones y los directorios se construyen con **ejemplos marcados** hasta que lleguen los datos reales.
-Estado: mapeo de la UI en curso (workflow `mapa-ui-vista-guiada`); se implementa tras integrar la rama D (que toca `page.tsx`).
+quieres hacer»; fotos de inicio de Sempertex. Decisiones del dueño: **en esta vista no se genera imagen**; directorios y contenidos
+didácticos permanecen como **ejemplos marcados**. Las fichas de decoración ahora enlazan fotos/variantes de catálogo, con temática,
+edad, cantidades y pasos etiquetados como ejemplo (ver segunda pasada abajo).
+Estado: implementada en la rama `feat/asistente-guiado`; la ruta clásica permanece sin cambios.
+
+### Segunda pasada: coste con catálogo real (decisión del dueño, 2026-10-06)
+
+La demo mantiene `origen: ejemplo`, insignia **Ejemplo** y aviso. Fichas mezclan referencias comerciales reales con propuesta
+didáctica: las fotos son del CDN de Shopify de kits E-DECORS; temática, edades, cantidades, piezas y pasos son ejemplos. Los kits
+no incluyen desglose de globos, así que la cotización usa globos R-12 reales del catálogo, a 50 por paquete. `plan.py` calcula
+paquetes, sobrantes, IVA y total; el uso negocio/personal solo cambia el flujo de la vista, no inventa otro precio.
+
+Snapshot consultado en `catalog_products`/`catalog_variants`: `products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42`,
+publicado 2026-09-11. Moneda COP; productos activos, variantes disponibles y precio vigente en ese snapshot.
+
+| ID demo | Kit real enlazado (tipo, SKU/variantId, precio kit) | Globo real: SKU/variantId, precio paquete | Cantidades de ejemplo |
+|---|---|---|---|
+| `ej-cumpleanos-estrellas` | B2b E-Decor Amor, `E-DECORS`, `B2B-AMOR1` / `46594287763751`, $381.474 | Rosewood `B2B-20019705` / `50030991311143`, $13.037; Durazno `B2B-20000770` / `46594211053863`, $13.037; Blanco `B2B-20000723` / `46594221343015`, $13.037 | 40 + 20 + 20; 3 paquetes x50, total personal $39.111 |
+| `ej-baby-shower-jardin` | B2b E-Decor Niño Bigotes, `E-DECORS`, `B2B-BIGOTE1` / `46594284093735`, $394.632 | Rosado `B2B-20000726` / `46594235826471`, $13.037; Blanco `B2B-20000723` / `46594221343015`, $13.037; Eucalipto `B2B-20014540` / `46594222784807`, $13.037 | 36 + 18 + 18; 3 paquetes x50, total personal $39.111 |
+| `ej-fiesta-arco-color` | B2b E-Decor Colombia, `E-DECORS`, `B2B-COLOMBIA1` / `46594282520871`, $324.318 | Rojo `B2B-20000732` / `46594236416295`, $13.037; Amarillo `B2B-20000737` / `46594231992615`, $13.974; Azul Rey `B2B-20000761` / `46594232582439`, $13.974 | 36 + 18 + 18; 3 paquetes x50, total personal $40.985 |
+
+Fotos/CDN y procedencia: [Amor, guirnalda](https://cdn.shopify.com/s/files/1/0825/6100/7911/products/GarlandAmor_d1c90f67-c295-4731-9a4c-e0a0dcee0d58.jpg?v=1694793280),
+[Niño Bigotes, arco](https://cdn.shopify.com/s/files/1/0825/6100/7911/products/Arco-BigoteSurt_168203a7-3560-4ceb-a115-f5b6fcecedd3.jpg?v=1694793272),
+[Colombia, arco](https://cdn.shopify.com/s/files/1/0825/6100/7911/products/ArcoIndependenciaColombia_d98c16ba-e3d9-4cad-ad25-896af4cfd0d0.jpg?v=1694793268).
+Cada registro conserva CDN en `fotos[0].url` y `fotos[0].fuente`, handle real del producto en `shopifyHandle`, IDs/SKU reales en
+`materiales`, y notas que separan paquete/precio de cantidad ilustrativa. Precios son foto del snapshot, el servicio consulta el
+catálogo publicado al cotizar.
 
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.

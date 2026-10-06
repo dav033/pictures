@@ -555,6 +555,7 @@ class ListaMaterialesOperationalRequest(OperationalRequest):
 
     @model_validator(mode="after")
     def validar_contrato_exportado(self) -> "ListaMaterialesOperationalRequest":
+        validar_variant_ids_unicos([linea.variant_id for linea in self.materiales])
         ListaMaterialesPayload.model_validate(
             {
                 "schema_version": self.schema_version,
@@ -562,6 +563,11 @@ class ListaMaterialesOperationalRequest(OperationalRequest):
             }
         )
         return self
+
+
+def validar_variant_ids_unicos(variant_ids: Sequence[str]) -> None:
+    if len(set(variant_ids)) != len(variant_ids):
+        raise ValueError("variant_id debe ser único en materiales")
 
 
 class PlanResolutionRequest(OperationalRequest):

@@ -6,7 +6,7 @@ from typing import Mapping, Sequence, cast
 import pytest
 
 from app.generated_models import ListaMaterialesRequest
-from app.plan import CatalogMaterialQuoteStore, PlanResolutionError, cotizar_lista_materiales
+from app.plan import CatalogMaterialQuoteStore, PlanResolutionError, cotizar_lista_materiales, validar_variant_ids_unicos
 
 
 class CatalogoFalso:
@@ -52,3 +52,8 @@ def test_rechaza_variante_que_no_esta_en_el_catalogo_actual() -> None:
     )
     with pytest.raises(PlanResolutionError, match="material_no_disponible"):
         asyncio.run(cotizar_lista_materiales(solicitud, cast(CatalogMaterialQuoteStore, CatalogoFalso([]))))
+
+
+def test_rechaza_variant_id_duplicado_como_entrada_invalida() -> None:
+    with pytest.raises(ValueError, match="variant_id debe ser único"):
+        validar_variant_ids_unicos(["v-a", "v-a"])

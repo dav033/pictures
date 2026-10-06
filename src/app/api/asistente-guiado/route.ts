@@ -11,6 +11,7 @@ import { ListaMaterialesRequestSchema } from "@/lib/ia/contracts/asistente-guiad
 import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
 import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
+import { decoracionCotizableCoincide, normalizarCiudad, protegerHerramientas } from "@/lib/ia/guiado/utilidades";
 
 export const maxDuration = 75;
 
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
   }
   const { messages } = parsed.data;
   const usoConfirmado = parsed.data.estadoGuiado?.uso;
+  const decoracionConfirmada = parsed.data.estadoGuiado?.decoracionId;
   const proveedores = bibliotecaVisible();
   const directorio = proveedoresVisibles();
   const datos: Record<string, unknown> = { ...(Object.keys(parsed.data.brief).length ? { brief: parsed.data.brief } : {}) };
@@ -99,18 +101,18 @@ export async function POST(request: Request) {
       },
       buscar_proveedores: async (args: Record<string, unknown>) => {
         const entrada = ArgsSchema.parse(args);
-        const encontrados = directorio.filter((item) => item.tipo === entrada.tipo && item.zona.ciudad.toLocaleLowerCase("es") === (entrada.ciudad ?? "").toLocaleLowerCase("es"));
+        const encontrados = directorio.filter((item) => item.tipo === entrada.tipo && normalizarCiudad(item.zona.ciudad) === normalizarCiudad(entrada.ciudad ?? ""));
         datos.proveedores = encontrados;
         return { proveedores: encontrados, aviso: "Los registros actuales son ejemplos, no contactos reales." };
       },
       costear_decoracion: async (args: Record<string, unknown>) => {
         const entrada = ArgsSchema.parse(args);
-        if (!usoConfirmado || entrada.uso !== usoConfirmado || !entrada.decoracionId || !proveedores.some((item) => item.id === entrada.decoracionId)) return { ok: false, motivo: "uso_o_decoracion_no_validado_por_el_cliente" };
+        if (!usoConfirmado || entrada.uso !== usoConfirmado || !decoracionCotizableCoincide(decoracionConfirmada, entrada.decoracionId) || !proveedores.some((item) => item.id === entrada.decoracionId)) return { ok: false, motivo: "uso_o_decoracion_no_validado_por_el_cliente" };
         datos.uso = usoConfirmado;
         const decoracion = proveedores.find((item) => item.id === entrada.decoracionId);
-        if (!decoracion || decoracion.origen === "ejemplo" || decoracion.materiales.length === 0) {
+        if (!decoracion || decoracion.materiales.length === 0) {
           datos.cotizacion = null;
-          return { ok: false, motivo: "costeo_pendiente_datos_de_catalogo", aviso: "Esta decoración de ejemplo todavía no tiene variantes reales asociadas; no inventes un precio." };
+          return { ok: false, motivo: "costeo_pendiente_datos_de_catalogo", aviso: "Esta decoración todavía no tiene variantes reales asociadas; no inventes un precio." };
         }
         const entradaCotizacion = ListaMaterialesRequestSchema.parse({ schema_version: "lista-materiales.v1", materiales: decoracion.materiales.map((material) => ({ variant_id: material.variantId, cantidad: material.cantidad })) });
         const cotizada = await llamarPythonListaMateriales({ entrada: entradaCotizacion, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: request.signal });
@@ -119,10 +121,11 @@ export async function POST(request: Request) {
           total: cotizada.total, mermaPorcentaje: 0, incluyeIva: true, complementosSoportados: false,
         };
         datos.cotizacion = cotizacion;
-        return { cotizacion, incluyeIva: true, uso: usoConfirmado, aviso: "Precio e-commerce. No incluye montaje." };
+        return { cotizacion, incluyeIva: true, uso: usoConfirmado, aviso: decoracion.origen === "ejemplo" ? "Variantes y precios consultados del catálogo actual. Temática, cantidades y pasos son de ejemplo; no incluye montaje." : "Precio e-commerce. No incluye montaje." };
       },
     };
-    const generador = ejecutarConversacionStream({ chat, sistema: PROMPT_GUIADO, historial, herramientas, registro, vueltasMax: 8, herramientasSoloLectura: new Set(["buscar_decoraciones_sempertex", "pasos_decoracion", "buscar_proveedores"]), signal: request.signal, telemetria: { flujo: "armador_decoracion", requestId, correlationId: requestId, superficie: "/api/asistente-guiado", promptVersion: "asistente-guiado.v1" } });
+    const registroProtegido = protegerHerramientas(registro);
+    const generador = ejecutarConversacionStream({ chat, sistema: PROMPT_GUIADO, historial, herramientas, registro: registroProtegido, vueltasMax: 8, herramientasSoloLectura: new Set(["buscar_decoraciones_sempertex", "pasos_decoracion", "buscar_proveedores"]), signal: request.signal, telemetria: { flujo: "armador_decoracion", requestId, correlationId: requestId, superficie: "/api/asistente-guiado", promptVersion: "asistente-guiado.v1" } });
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const encoder = new TextEncoder();
