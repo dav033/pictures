@@ -129,8 +129,8 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
     await page.getByTestId("aprobar-generar-plan").click();
     await page.locator("img[alt^='Visualización']").first().waitFor({ timeout: 30_000 });
     await page.waitForTimeout(500);
-    const cuerpo = (cuerposGenerate[0] ?? {}) as { usarLora?: unknown; loraMode?: unknown };
-    check(t("sin adjuntos usa LoRA con modo"), cuerpo.usarLora === true && typeof cuerpo.loraMode === "string");
+    const cuerpo = (cuerposGenerate[0] ?? {}) as Record<string, unknown>;
+    check(t("sin adjuntos envía contrato FLUX actual"), typeof cuerpo.plan === "object" && cuerpo.plan !== null && !Object.hasOwn(cuerpo, "usarLora") && !Object.hasOwn(cuerpo, "loraMode"));
     check(t("el modal del prompt no se abre solo"), (await page.getByRole("dialog").count()) === 0);
     check(t("sin 'Generada con' ni 'Ver prompt usado'"), !(await hay(page.getByText("Ver prompt usado"))) && !(await hay(page.getByText(/Generada con/))));
   }

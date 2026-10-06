@@ -4353,15 +4353,6 @@
       "minLength": 1,
       "maxLength": 160
     },
-    "lora_variant_ids": {
-      "maxItems": 2048,
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 160
-      }
-    },
     "completar_patrones": {
       "type": "boolean"
     },

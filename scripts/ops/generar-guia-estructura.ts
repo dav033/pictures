@@ -43,7 +43,7 @@ async function main(): Promise<void> {
   if (!process.argv.includes("--confirm-spend") && !process.argv.includes("--dry-run")) process.argv.push("--dry-run");
   const outDir = directorioSalida(flag("out", ""), identidad.artifactId);
 
-  const { celdas, guias } = await prepararCorridaGuia({ trigger: identidad.trigger, escala, semillas });
+  const { celdas, guias } = await prepararCorridaGuia({ escala, semillas });
   for (const guia of guias) {
     console.log(`\n== ${guia.caso} (guía ${guia.guia.bytes} bytes, sha256 ${guia.guia.sha256.slice(0, 12)}, colores ${guia.guia.colores.join(" ")}, ${guia.conCarta ? "con carta" : "sin carta: no cabía"})`);
     console.log(`sin (${guia.promptSin.length}): ${guia.promptSin}`);

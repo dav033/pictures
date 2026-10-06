@@ -2,7 +2,6 @@ import "server-only";
 import { llamarPythonPlanResolution } from "@/lib/ia/nucleo/python-adapter";
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import { canonizarColoresPlan } from "./colores-catalogo";
 import type { EntradaAllowlistPlan } from "./aprobacion";
@@ -41,7 +40,6 @@ export type EntradaResolucionPlan = {
   /** Allowlist del mismo turno, tal como quedó firmada en el contexto del plan. */
   allowlist: readonly EntradaAllowlistPlan[];
   catalogSnapshotId: string;
-  loraAllowlist?: CatalogAllowlist | null;
   /**
    * Solo al confirmar un plan (ADR-0028 §7): Python le asigna un patrón de color
    * a cada estructura que no lo tiene, desde la pista de la foto o su preset.
@@ -95,12 +93,6 @@ export type EntradaResolucionPlan = {
 };
 
 export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<ResolucionPlan> {
-  // Python lee una `lora_variant_ids` vacía como "sin restricción", mientras que
-  // un modo LoRA que no cubre ninguna variante tiene que fallar en cerrado.
-  if (entrada.loraAllowlist && entrada.loraAllowlist.variantIds.length === 0) {
-    throw new Error("LORA_DATASET_ALLOWLIST_REJECTED: el modo LoRA no cubre variantes");
-  }
-
   // Los colores se canonizan AQUÍ y no en cada llamador (fase 2.7). De los tres
   // que entran por esta puerta, solo `registro-herramientas` canonizaba: la
   // generación y la edición mandaban a Python lo que el modelo hubiera escrito
@@ -117,7 +109,6 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       plan,
       allowlist: entrada.allowlist.map((item) => ({ product_id: item.product_id, variant_ids: [...item.variant_ids] })),
       catalogSnapshotId: entrada.catalogSnapshotId,
-      ...(entrada.loraAllowlist ? { loraVariantIds: [...entrada.loraAllowlist.variantIds] } : {}),
       ...(entrada.completarPatrones === undefined ? {} : { completarPatrones: entrada.completarPatrones }),
       ...(entrada.pistasPatron === undefined ? {} : { pistasPatron: [...entrada.pistasPatron] }),
       ...(entrada.pistasTamanos === undefined ? {} : { pistasTamanos: [...entrada.pistasTamanos] }),

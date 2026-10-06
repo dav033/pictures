@@ -45,7 +45,6 @@ async def _resolve_vector(name: str) -> dict[str, object]:
             "plan": vector["plan"],
             "allowlist": vector["allowlist"],
             "catalog_snapshot_id": vector["catalog_snapshot_id"],
-            "lora_variant_ids": [],
         }
     )
 

@@ -237,9 +237,8 @@ export type LoraActiveTrainingReferenceCounts = {
  * corre sobre otro dataset (hoy v004) con coverage distinta.
  *
  * El conteo por variante se agrega por familia visual (product_id + forma +
- * diam_pulg, IGNORANDO el tamaño de paquete) — el mismo criterio que
- * `resolveLoraModeDatasetAllowlist`: el globo que el LoRA vio no cambia
- * porque se haya empacado distinto.
+ * diam_pulg, IGNORANDO el tamaño de paquete): variantes de distinto empaque
+ * representan la misma familia visual.
  */
 export async function readActiveLoraTrainingReferenceCounts(
   mode: unknown,

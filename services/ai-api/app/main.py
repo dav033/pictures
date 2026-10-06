@@ -122,12 +122,6 @@ from app.recommendations import (
     CatalogRecommendationsRequest,
 )
 from app.selection import CatalogSelectionError, CatalogSelectionRequest
-from app.uzume.interaction import (
-    IMAGE_GENERATE_SCOPE,
-    ImageGenerateError,
-    ImageGenerateRequest,
-    crear_interaccion_gemini,
-)
 from app.operational_store import InMemoryOperationalStore, StoredHttpResponse
 from app.exclusion_motores import ACCIONES_DE_MOTOR, correr_motor
 from app.plan_worker import run_plan_cpu
@@ -136,9 +130,14 @@ from app.operational_models import ContractModel, OperationalRequest
 from app.plan import _plan_cost_optimizer_enabled
 from app.plan import (
     CatalogPlanStore,
+    CatalogMaterialQuoteStore,
+    LISTA_MATERIALES_SCOPE,
+    ListaMaterialesOperationalRequest,
+    ListaMaterialesPayload,
     PLAN_RESOLUTION_SCOPE,
     PlanResolutionError,
     PlanResolutionRequest,
+    cotizar_lista_materiales,
     resolve_plan,
 )
 from app.armado_bouquet import DISPOSICIONES as DISPOSICIONES_BOUQUET
@@ -344,7 +343,6 @@ BouquetReferenciaHandler = Callable[[BouquetReferenciaRequest], Awaitable[dict[s
 ConteoReferenciaHandler = Callable[[ConteoReferenciaRequest], Awaitable[dict[str, object]]]
 GuirnaldaReferenciaHandler = Callable[[GuirnaldaReferenciaRequest], Awaitable[dict[str, object]]]
 LecturaUnicaHandler = Callable[[LecturaUnicaRequest], Awaitable[dict[str, object]]]
-ImageGenerateHandler = Callable[[ImageGenerateRequest], Awaitable[dict[str, object]]]
 LoraGenerateHandler = Callable[[LoraGenerateRequest], Awaitable[dict[str, object]]]
 # Not awaited: it validates what can fail before the stream opens (raising an
 # HTTPException) and returns the event generator the boundary drains.
@@ -554,14 +552,6 @@ async def _default_patron_referencia_handler(payload: PatronReferenciaRequest) -
         if error.provider_detail is not None:
             details["provider_detail"] = error.provider_detail
         raise _error(error.code, error.status_code, details or None) from None
-    return {"payload": result}
-
-
-async def _default_image_generate_handler(payload: ImageGenerateRequest) -> dict[str, object]:
-    try:
-        result = await crear_interaccion_gemini(payload)
-    except ImageGenerateError as error:
-        raise _error(error.code, error.status_code) from None
     return {"payload": result}
 
 
@@ -1308,7 +1298,6 @@ def create_app(
     intent_parse_handler: IntentParseHandler | None = None,
     happie_generate_handler: HappieGenerateHandler | None = None,
     reference_turn_handler: ReferenceTurnHandler | None = None,
-    image_generate_handler: ImageGenerateHandler | None = None,
     lora_generate_handler: LoraGenerateHandler | None = None,
     chat_turn_stream_handler: ChatTurnStreamHandler | None = None,
     patron_referencia_handler: PatronReferenciaHandler | None = None,
@@ -1412,7 +1401,6 @@ def create_app(
         guirnalda_referencia_handler or _default_guirnalda_referencia_handler
     )
     lectura_unica_handler_fn = lectura_unica_handler or _default_lectura_unica_handler
-    image_generate_handler_fn = image_generate_handler or _default_image_generate_handler
     lora_generate_handler_fn = lora_generate_handler or _default_lora_generate_handler
     chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
 
@@ -1966,6 +1954,34 @@ def create_app(
             handler=handler,
         )
 
+    @application.post("/internal/v1/plan/lista-materiales")
+    async def plan_lista_materiales(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = request.app.state.catalog_store
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, ListaMaterialesOperationalRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await cotizar_lista_materiales(
+                    ListaMaterialesPayload.model_validate({
+                        "schema_version": payload.schema_version,
+                        "materiales": [linea.model_dump() for linea in payload.materiales],
+                    }),
+                    cast(CatalogMaterialQuoteStore, catalog),
+                )
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.lista_materiales",
+            model=ListaMaterialesOperationalRequest,
+            scope=LISTA_MATERIALES_SCOPE,
+            handler=handler,
+        )
+
     @application.post("/internal/v1/ia/intent-parse")
     async def ia_intent_parse(request: Request) -> Response:
         return await _handle_operational_request(
@@ -2057,17 +2073,6 @@ def create_app(
             model=LecturaUnicaRequest,
             scope=LECTURA_UNICA_SCOPE,
             handler=cast(OperationalHandler, lectura_unica_handler_fn),
-            max_body_bytes=current_settings.max_body_bytes_imagenes,
-        )
-
-    @application.post("/internal/v1/ia/image-generate")
-    async def ia_image_generate(request: Request) -> Response:
-        return await _handle_operational_request(
-            request,
-            operation="ia.image_generate",
-            model=ImageGenerateRequest,
-            scope=IMAGE_GENERATE_SCOPE,
-            handler=cast(OperationalHandler, image_generate_handler_fn),
             max_body_bytes=current_settings.max_body_bytes_imagenes,
         )
 

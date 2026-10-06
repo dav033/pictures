@@ -2,7 +2,6 @@ import type { Brief } from "@/lib/types";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { ClaseTamanoNivel } from "@/lib/plan/armado-bouquet";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
-import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { EJEMPLO_UNIDADES_DECLARADAS, GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { coloresConAcabadoReferencia } from "@/lib/plan/colores-referencia";
 import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/escena/creatividad";
@@ -434,14 +433,9 @@ function hayConteoUsable(blueprint: ReferenceBlueprintV2 | undefined): boolean {
   return Boolean(blueprint?.elements.some((element) => element.approved && objetivoDelConteo(element.appearance.conteo) !== null));
 }
 
-export function construirSistema(opts: { ragEnabled: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2; catalogAllowlist?: CatalogAllowlist; catalogoLoraNoDisponible?: boolean; creatividad?: NivelCreatividad; sugerenciaEscena?: SugerenciaEscena }): string {
+export function construirSistema(opts: { ragEnabled: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2; creatividad?: NivelCreatividad; sugerenciaEscena?: SugerenciaEscena }): string {
   const contexto =
     opts.brief && Object.keys(opts.brief).length ? `\n\nDatos del evento que ya conoces: ${JSON.stringify(opts.brief)}` : "";
-  const alcanceCatalogo = opts.catalogoLoraNoDisponible
-    ? `\n\nCATÁLOGO NO DISPONIBLE EN ESTE MODO\nEl pool de productos del modo LoRA activo no está disponible ahora. Conversa con normalidad y recoge los datos del evento, pero no busques productos, no menciones precios ni confirmes selecciones o planes: las herramientas de catálogo lo rechazarán. Nunca digas que no hay inventario, productos o stock (sería falso): si el cliente pide productos, explícale que hay un problema técnico temporal para mostrar el catálogo en este modo.`
-    : opts.catalogAllowlist
-      ? `\n\nALCANCE RESTRINGIDO DEL CATÁLOGO\nEn este modo solo puedes recuperar, mencionar y seleccionar productos/variantes del pool de entrenamiento activo. El backend filtra cada búsqueda; si algo no aparece, trátalo como no disponible para este modo y no lo inventes.`
-      : "";
   return (
     SYSTEM_PROMPT_BASE +
     BLOQUE_SELECCION +
@@ -454,7 +448,6 @@ export function construirSistema(opts: { ragEnabled: boolean; brief?: Brief; ref
     // catálogo RAG.
     (opts.ragEnabled && opts.referenceBlueprint ? bloqueReferencia(opts.referenceBlueprint) : "") +
     (opts.ragEnabled ? bloqueCreatividad(opts.creatividad, opts.sugerenciaEscena) : "") +
-    alcanceCatalogo +
     contexto
   );
 }

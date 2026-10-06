@@ -103,6 +103,23 @@ generador de imagen con Gemini en TS o Python. Gemini se queda solo para analiza
   (`limiteConGuiaEscena` en `route.ts`); el tope duro de fal sigue en 2500. Pendiente: sin guía, el caption con frases de Python aún
   puede pasar de 1000 (probar a quitar esas frases antes de fallar). Verificado: tsc, eslint, `test-guia-escena`.
 
+- **Etapa 3, superficies B+D integradas (2026-10-06, merge `4d96ab7`, rama `etapa3-d`)**: `/api/generate` genera SIEMPRE con FLUX base
+  (`loras: []`; `/edit` cuando hay imagen de entrada, texto→imagen sin ella, porque fal exige `image_urls` en `/edit`); cualquier
+  `proveedor` de imagen o campo retirado (`usarLora`, `loraMode`, `loraSelection`) → `IMAGEN_SOLO_FLUX`; revisión: el resultado previo
+  va como @image1 y la foto del espacio como @image2; el texto de revisión pasa por `limpiarTextoBase`, se traduce al inglés con
+  Gemini de TEXTO (`revision-flux.ts`, falla cerrado) y el preflight mira el prompt final. Quitados: generación Gemini pura,
+  composición FLUX→Gemini, `REFERENCIA_EN_ETAPA1_V1`, adaptadores `uzume/imagen*.ts`, `GEMINI_IMAGE_MODEL`, endpoint Python
+  `/image-generate`, generación del laboratorio (responde 410), selector LoRA del cliente, acción `generar_estilo_estandar`. Revisión
+  adversarial previa (3 fallos confirmados, corregidos). Verificado tras el merge: tsc, eslint, edit-referencias, flux-revision,
+  ui-error-contract, guia-escena, texto-base, product-runtime; `/api/generate` responde. Sin imagen de control todavía.
+
+- **Etapa 3, superficie C integrada (2026-10-06, merge `1809196`, rama `etapa3-c`)**: sin `lora_variant_ids` ni allowlist de dataset en
+  contratos, Python (`plan.py`, `catalog.py`, `recommendations.py`), adaptador, chat, edición y `/api/generate`; sin cambio de
+  comportamiento (en base ya era null). Revisión adversarial: 2 bloqueantes corregidos (SQL de `fetch_plan_rows` con un placeholder de
+  más → ningún plan se habría resuelto; esquema de vectores dorados). Vector 05 `expected` actualizado a mano (catálogo completo,
+  V-RED-12-UNSEEN, 5000 COP). Verificado tras el merge: tsc, eslint, `contracts:export:domain --check` (36), invariantes-plan (32
+  vectores), ui-error-contract, python-adapter, catalog-allowlist, flux-revision, pytest regresión allowlist + placeholders (5).
+
 ### 3.2 Inventario de lo que queda (mapeado el 2026-10-06)
 Bloqueos o rarezas que siguen corriendo en base:
 - `src/lib/ia/kagutsuchi/lora-prompt-preflight.ts:273-277` rechaza prompts con `Reflex|Fashion|Silk|Crystal|Pastel`, ®/™ o `eventdecor_*`
@@ -192,18 +209,81 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
 003 ahora genera (Codex 38/28). Media 43→52.
 
 ### 4.4 Pendiente de fidelidad (en orden)
-1. **Ancho/alto de las piezas laterales**: el chat inventa medidas (F7-5 ocupa el 83 % del ancho de la foto y el chat pide 1,2 m; el 002 a
+1. **Ancho/alto de las piezas laterales** (rama `fix/medidas-de-la-foto`, worktree `Downloads/e3f`, commit 9522591, SIN fusionar; caso
+   2026-10-06: columna de la foto del dueño ≈1,36 × 0,73 m y el plan pide 1,8 m de alto y 1,04 m de base). Tras la revisión adversarial
+   (7 fallos corregidos) su informe dice que la columna del dueño pasa de 1,8 a **2,2 m** (empeora: debería bajar a ≈1,36) y CASE-002
+   de 1,8 a 2,2 m: revisar antes de fusionar (¿ancla en la altura estándar de 2,2 m en vez de en el semiarco?). El chat inventa medidas (F7-5 ocupa el 83 % del ancho de la foto y el chat pide 1,2 m; el 002 a
    veces 1,8 m de alto cuando llega al techo; 003 cruza demasiado por arriba). Propiedad huérfana: proporción de la caja de la foto.
-2. **Una sombra no es un color** (2026-10-06, foto del dueño rosa empolvado/crema sin marrón → la lista Sempertex mostraba «Fashion
-   Chocolate 076»): `medirColoresSempertex` cruza cada grupo ≥6 % con la referencia más cercana sin preguntarse si es la cara en
-   sombra de otro color medido (#7a443d en la columna, 7 %, abajo). En curso en la rama `fix/sombra-no-es-color` (worktree
-   `Downloads/e3e`, Codex): juntar la sombra con su color si el analizador no nombró ese color oscuro; verificar antes/después en
-   las 13 fotos sin coste.
+2. **Colores de la foto del dueño 2026-10-06** (semiarco + columna orgánicos en rosa empolvado mate, crema, perla rosa claro y
+   burbujas transparentes; foto en `Downloads/WhatsApp Image 2026-10-06 at 9.58.10 AM.jpeg`, datos en
+   `informes-calidad/dueno-2026-10-06/`). Salió: «Fashion Chocolate 076» en la lista (no hay marrón); el plan compra «Rosado mate»
+   (rosa bebé) en vez de Palo de Rosa 010; la columna lleva 83/127 (65 %) de «Oro rosa cromado» y FLUX pinta bolas cobre oscuro.
+   Hipótesis: H1 la sombra del rosa (#7a443d) se cruza como color propio; H2 los tonos medios del rosa empolvado (#c6a29a, #b47f77)
+   caen junto al Dorado Rosa y la dominancia le da casi la mitad; H3 «rosado» elige 609 (los brillos) y no 010, que se midió y nadie
+   usa; H4 el «dorado rosa» de la foto es perla claro, no cromado. Rama `fix/sombra-no-es-color` (worktree `Downloads/e3e`):
+   1.ª pasada (US$0,11) confirmó H1 (sombra/café 11,6 % en la columna) y H2 (#b47f77 → 968 Dorado Rosa; ahora 010) y que la caja del
+   semiarco incluía el panel marfil del fondo; la dominancia mide dentro del croquis y solo en tonos nombrados. NO fusionada: la columna
+   pasó a «rosado 100 %» (pierde el crema visible), el semiarco mide crema 69 %/rosado 23 % y 010 se mide pero no se compra (H3). En
+   curso 2.ª pasada (tope US$0,10). Caso nuevo del dueño (2026-10-06 11:35, CASE-002 en vivo): el analizador nombró plateado, rosado y
+   blanco (patrón «bloques»), pero el plan compró plateado 126, rosado 64, **gris 38** y transparente 26: el blanco bajo luz lila se
+   midió gris y FLUX pinta el pie gris oscuro. Condición para fusionar colores: en ese caso deben salir blanco + plata + rosa y nada
+   de gris. Pendiente aparte: las burbujas transparentes grandes con globitos dentro no existen en el plan.
+   Pendiente aparte: `test-guia-estructura.ts` ya falla en la rama principal (espera `#f2a7c3`, sale `#f8a3bc` en guirnalda-pared).
 3. **Tonos en el texto de FLUX**: «satin pearlescent pink» sale coral; «pastel matte nude» sale rosa melocotón; plata cromada sale oscura.
-4. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
-5. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
-6. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
-7. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
+4. **Forma de las columnas orgánicas de CASE-002** (dueño 2026-10-06: «la forma no coincide para nada, el original es más intrincado y
+   complejo»): original del suelo al techo curvándose arriba sobre el arco, voluminoso (≈25-30 % del ancho), silueta irregular con
+   racimos, muchas bolas de 18-24" entre relleno de 5" y burbujas transparentes con confeti; generada: tubo delgado (≈12 %), regular,
+   2/3 del alto, dos franjas de color. La forma la dicta la guía (motor Python de discos) + las medidas. Encolado en rama
+   `fix/forma-organica-002` (worktree `Downloads/e3i`) tras fusionar `fix/medidas-de-la-foto`; tope US$0,40, juez Codex.
+5. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
+6. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
+7. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
+8. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).
+
+## 4.5 Vista nueva «Asistente guiado» (pedida por el dueño el 2026-10-06)
+
+Fuente: `Downloads/CUSTOMER JOURNEY MAP.pptx` (perfiles profesional/emprendedor/principiante; pruebas del 5-oct; guion del focus
+group). Vista conmutable desde la navbar, sin romper la clásica. Comportamiento de la IA: preguntar evento, edad y temática →
+mostrar decoraciones Sempertex ya hechas de esa temática (¿te gusta? sí/no) → si sí: referencias y materiales, y 4 opciones
+(contratar decorador HAPPIA/MBP de la zona, costear materiales, comprar en e-commerce o distribuidor cercano, aprender paso a paso al
+estilo Balloon Pro) → si no: pedir foto de inspiración (con foto, el mismo flujo; sin foto, decoradores). Precio solo si el usuario lo
+pide, tras preguntar negocio/personal (negocio: todo «Ajustar mi precio», costo editable; personal: solo materiales a precio
+e-commerce y botón visible «Cotiza con un proveedor cerca de ti»). Sin fila de tarjetas de estructuras. Texto de inicio «Cuéntame qué
+quieres hacer»; fotos de inicio de Sempertex. Decisiones del dueño: **en esta vista no se genera imagen**; la biblioteca de
+decoraciones y los directorios se construyen con **ejemplos marcados** hasta que lleguen los datos reales.
+Diseño (workflow `mapa-ui-vista-guiada`, 2026-10-06): ruta propia `/asistente` + API propia `/api/asistente-guiado` (contrato
+`asistente-guiado-v1`, prompt y herramientas propias en `src/lib/ia/guiado/`: guardar_brief_guiado, buscar_decoraciones_sempertex,
+ofrecer_opciones, preguntar_uso, costear_decoracion, pasos_decoracion, buscar_proveedores), biblioteca `src/lib/biblioteca-sempertex/`
+(Zod, unión por `origen`, ejemplos `ej-` ocultos en producción), conmutador «Clásica / Guiada» con `<Link>` en `CabeceraApp`
+(preferencia en localStorage `demo-decoracion:vista-app`), `page.tsx` sin cambios. El costeo lo cotiza Python (regla de §2), nunca TS.
+Reutiliza `TarjetaCotizacion` (personal) y `CotizacionProfesional` (negocio). En curso: rama `feat/asistente-guiado`
+(worktree `Downloads/e3g`, Codex). La prueba de un turno real con el LLM la hago yo al final. Python cotiza con la operación nueva
+`plan.lista_materiales`. Dueño (2026-10-06): sí a enlazar 3-4 decoraciones de ejemplo a kits/variantes REALES (E-DECORS, Fiestas
+prediseñadas) para que el costeo de la demo muestre precios; siguen marcadas «Ejemplo» (segunda pasada encolada).
+
+**Integrada (2026-10-06, merge de `feat/asistente-guiado`)**: ruta `/asistente`, conmutador «Clásica / Guiada» en la navbar, API
+`/api/asistente-guiado`, biblioteca con 3 decoraciones de ejemplo enlazadas a kits E-DECORS reales (Amor, Niño Bigotes, Colombia; fotos
+de Shopify; variantes R-12 reales del snapshot publicado el 11-sep-2026; temática, edad, cantidades y pasos son de ejemplo), costeo por
+`plan.lista_materiales` en Python (p. ej. «Cumpleaños entre estrellas»: 3 variantes ×50, $39.111 COP personal y negocio).
+Revisión adversarial: 3 fallos confirmados corregidos (uso en el mismo POST, errores de herramienta devueltos al modelo, precio ligado
+a la decoración elegida) + menores. Turno real con el LLM (2026-10-06, 2 llamadas Gemini): guardar_brief_guiado (cumpleaños, 6, estrellas) →
+buscar_decoraciones_sempertex → 2 decoraciones; la primera respuesta citaba ids internos («ej-…»): regla 9 del prompt, verificado sin
+ids. Pendiente: datos reales de decoraciones y proveedores, verificación visual del dueño.
+
+**Rediseño de experiencia para la presentación del 2026-10-07 (prioridad absoluta del dueño)**: el asistente abre la conversación
+(saludo fijo + «¿Qué vas a celebrar?» con botones; una pregunta por turno con línea «Opciones:» que la interfaz convierte en botones);
+cada respuesta lleva sus piezas en orden (ideas, elección, 4 opciones con iconos, negocio/personal, precio, pasos, proveedores) y las
+anteriores quedan como historia; desplazamiento automático; indicador de escritura; identidad del asistente; materiales en palabras
+de cliente. El servidor costea y muestra pasos con la decoración y el uso elegidos en la interfaz (el modelo no ve ids y fallaba 3
+veces antes de costear). Recorrido completo verificado en el navegador (cumpleaños → 4-6 años → princesas → elegir → costear →
+personal → $39.111). Integrados (2026-10-06 tarde): biblioteca de 14 temáticas con kits y variantes reales y búsqueda honesta (exacta/cercana,
+sello «Parecida»); fotos de los 5 kits servidas desde `public/biblioteca-sempertex/kits/` (800 px) y, cuando la foto no representa
+la decoración, ilustración de globos en su paleta rotulada «Ilustración de colores»; precio por color sin jerga (p. ej. «Bienvenida
+en azul»: Azul Rey $13.974 + Blanco $13.037 + impreso bebé $24.143 = $51.154 con IVA); «Comprar» al instante (globos con su foto
+del catálogo, enlace al kit en sempertex.com sin el prefijo `b2b-`, distribuidor cercano); `darkreader-lock` (la extensión Dark
+Reader del equipo del dueño repintaba la app). Recorrido en el navegador verificado: espacio (ilustración), baby shower niño →
+elegir → comprar → costear personal. Hasta la presentación NO se fusionan en la principal las
+ramas de motor (colores `fix/sombra-no-es-color`, medidas `fix/medidas-de-la-foto`, forma `fix/forma-organica-002`) ni la etapa 4.
 
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.

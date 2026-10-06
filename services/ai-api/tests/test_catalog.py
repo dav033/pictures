@@ -659,6 +659,19 @@ async def test_catalog_operations_pin_the_requested_published_snapshot() -> None
 
 
 @pytest.mark.anyio
+async def test_fetch_plan_rows_placeholders_match_arguments() -> None:
+    pool = FakeSelectionPool()
+    store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
+
+    await store.fetch_plan_rows("products_catalog:plan", ["P-1"], ["V-1"])
+
+    query, args = pool.connection.fetch_calls[-1]
+    placeholders = {int(value) for value in re.findall(r"\$(\d+)", query)}
+    assert placeholders == set(range(1, len(args) + 1))
+    assert args == (["P-1"], ["V-1"], "products_catalog:plan")
+
+
+@pytest.mark.anyio
 async def test_catalog_search_reports_ambiguous_sku_before_applying_filters() -> None:
     pool = FakeSkuPool(
         [
@@ -1027,7 +1040,7 @@ async def test_catalog_recommendations_apply_commercial_predicates_before_limit(
     connection = FakeRecommendationConnection(reference=_reference())
 
     await _recommendation_store(connection).recommend(
-        _recommendation_request(lora_variant_ids=["var-b", "var-a"], limit=40)
+        _recommendation_request(limit=40)
     )
 
     reference_query, reference_args = connection.fetch_calls[0]
@@ -1052,12 +1065,10 @@ async def test_catalog_recommendations_apply_commercial_predicates_before_limit(
         "v.codigo_tamano = $3::text",
         "v.forma = $4::text",
         "(p.product_id = $5::text OR p.derived->>'category' = $6::text)",
-        "v.variant_id = ANY($7::text[])",
-        "LIMIT $8",
+        "LIMIT $7",
     ):
         assert predicate in sql, predicate
     assert "diam_pulg =" not in sql
-    assert sql.index("v.variant_id = ANY($7::text[])") < sql.index("LIMIT $8")
     assert args == (
         RECOMMENDATION_SNAPSHOT,
         "var-rojo-12",
@@ -1065,7 +1076,6 @@ async def test_catalog_recommendations_apply_commercial_predicates_before_limit(
         "redondo",
         "prod-rojo",
         "globo_latex",
-        ["var-a", "var-b"],
         40,
     )
 
@@ -1141,9 +1151,7 @@ async def test_catalog_recommendations_report_missing_snapshot_and_reference() -
 
 def test_catalog_recommendations_request_is_strict_and_bounded() -> None:
     with pytest.raises(ValidationError):
-        _recommendation_request(lora_variant_ids=[])
-    with pytest.raises(ValidationError):
-        _recommendation_request(lora_variant_ids=["var-a", "var-a"])
+        _recommendation_request(**{("lora_" + "variant_ids"): ["var-a"]})
     with pytest.raises(ValidationError):
         _recommendation_request(limit=101)
     with pytest.raises(ValidationError):

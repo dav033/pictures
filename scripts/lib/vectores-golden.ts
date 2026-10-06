@@ -2,7 +2,7 @@
  * Lectura de los vectores golden de
  * `contracts/domain/v1/golden/plan-resolution`.
  *
- * Los 31 vectores son el cerrojo de regresión del resolutor, y desde el paso 5
+ * Los 32 vectores son el cerrojo de regresión del resolutor, y desde el paso 5
  * del ADR-0023 ese resolutor sólo existe en Python: quien los recorre para
  * comparar conteos es `services/ai-api/tests/test_plan_parity.py`. Aquí queda
  * lo que el lado TypeScript sigue necesitando de ellos: cargarlos y leer su
@@ -23,8 +23,6 @@ import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { MaterialEstimateSchema, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { PLAN_RESUELTO_CONTRACT_VERSION, PlanResolutionResultV1Schema, PlanResueltoV1Schema } from "@/lib/ia/contracts/domain-v1";
 import { planResueltoDesdePython } from "@/lib/plan/python-mapper";
-import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
-import { crearCatalogAllowlist } from "@/lib/rag/retrieval/allowlist";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 
 export const CatalogRowSchema = z.object({
@@ -75,7 +73,6 @@ export const GoldenVectorSchema = z.object({
   catalog_snapshot_id: z.string().min(1),
   catalog_rows: z.array(CatalogRowSchema),
   allowlist: z.array(AllowlistEntrySchema),
-  lora_variant_ids: z.array(z.string().min(1)).min(1).nullable(),
   plan: z.record(z.string(), z.unknown()),
   expected: ExpectedSchema.optional(),
   expected_python: PlanResolutionResultV1Schema.optional(),
@@ -289,15 +286,3 @@ export function planFijadoDesdeVector(nombre: string): PlanFijado {
   return planFijadoDeVector(loadVector(nombre));
 }
 
-export function loraAllowlist(vector: GoldenVector): CatalogAllowlist | null {
-  // Solo `variantIds` decide la cobertura real del dataset (ver resolver.ts).
-  // El dueño de cada variante sale de las filas del catálogo del vector, igual
-  // que en producción sale de filas reales unidas por product_id.
-  if (!vector.lora_variant_ids) return null;
-  const duenoPorVariante = new Map(vector.catalog_rows.map((row) => [row.variant_id, row.product_id]));
-  return crearCatalogAllowlist(vector.lora_variant_ids.map((variantId) => {
-    const productId = duenoPorVariante.get(variantId);
-    assert.ok(productId, `${vector.name}: la variante LoRA ${variantId} no está en catalog_rows`);
-    return { productId, variantId };
-  }));
-}

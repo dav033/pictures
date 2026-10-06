@@ -61,7 +61,7 @@ function contextoGeneracion(input: { brief?: Brief; userRequest?: string; plan?:
   return buildVisualContext({ brief: completarEscenaConPlan(input), userRequest: input.userRequest });
 }
 function promptLora(context: ReturnType<typeof buildVisualContext>): string {
-  return compileLoraCaption({ sceneSpec: escena, visualContext: context, dialect: "scene_v004" }).prompt;
+  return compileLoraCaption({ sceneSpec: escena, visualContext: context }).prompt;
 }
 
 const GARDEN_CUE = /outdoor garden setting/;

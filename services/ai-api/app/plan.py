@@ -51,6 +51,8 @@ from pydantic import ConfigDict, Field, ValidationError, field_validator, model_
 
 from app.generated_models import (
     contract_schema,
+    ListaMaterialesRequest as ListaMaterialesPayload,
+    ListaMaterialesResult,
     MaterialEstimate,
     PlanDecoracion,
     PlanResolutionResult,
@@ -142,6 +144,7 @@ from app.silueta_patron import (
 
 
 PLAN_RESOLUTION_SCOPE = "plan.resolve"
+LISTA_MATERIALES_SCOPE = "plan.lista_materiales"
 PLAN_RESOLUTION_REQUEST_VERSION = "plan-resolution.v1"
 PLAN_RESOLUTION_RESULT_VERSION = "plan-resolution-result.v1"
 PLAN_RESOLVED_VERSION = "plan-resuelto.v1"
@@ -152,7 +155,6 @@ MAX_SAFE_INTEGER = 9_007_199_254_740_991
 # Mirrors PLAN_RESOLUTION_MAX_LORA_VARIANTS (domain-v1.ts) and the recommendations
 # bound: the same LoRA dataset pool reaches both. 2048 ids x 17 bytes (14-digit
 # id, quotes, comma) is about 34.8 KB of the 64 KB body limit; 4096 would not fit.
-MAX_PLAN_LORA_VARIANTS = 2048
 
 _EXTERIOR = re.compile(r"jard[ií]n|exterior|terraza|playa|patio|campo", re.IGNORECASE)
 # Which structures count their balloons by geometry: ``conteo_foto.es_geometrica`` (one owner; a
@@ -328,7 +330,6 @@ class CatalogPlanStore(Protocol):
         snapshot_id: str,
         product_ids: Sequence[str],
         variant_ids: Sequence[str],
-        lora_variant_ids: Sequence[str] = (),
     ) -> Sequence[Mapping[str, object]]: ...
 
     async def fetch_catalog_identity(
@@ -344,7 +345,6 @@ class CatalogPlanStore(Protocol):
         deliberately ignored so ownership checks do not depend on stock.
         """
         ...
-
 
 class PlanResolutionError(Exception):
     """Stable domain error translated by the HTTP boundary.
@@ -545,6 +545,32 @@ class PistaTamanos(ContractModel):
     confianza: float = Field(ge=0, le=1)
 
 
+class ListaMaterialesLinea(ContractModel):
+    variant_id: str = Field(min_length=1, max_length=160)
+    cantidad: int = Field(gt=0, le=100_000)
+
+
+class ListaMaterialesOperationalRequest(OperationalRequest):
+    schema_version: Literal["lista-materiales.v1"]
+    materiales: list[ListaMaterialesLinea] = Field(min_length=1, max_length=256)
+
+    @model_validator(mode="after")
+    def validar_contrato_exportado(self) -> "ListaMaterialesOperationalRequest":
+        validar_variant_ids_unicos([linea.variant_id for linea in self.materiales])
+        ListaMaterialesPayload.model_validate(
+            {
+                "schema_version": self.schema_version,
+                "materiales": [linea.model_dump() for linea in self.materiales],
+            }
+        )
+        return self
+
+
+def validar_variant_ids_unicos(variant_ids: Sequence[str]) -> None:
+    if len(set(variant_ids)) != len(variant_ids):
+        raise ValueError("variant_id debe ser único en materiales")
+
+
 class PlanResolutionRequest(OperationalRequest):
     """Strict request carried inside the operational envelope."""
 
@@ -552,7 +578,6 @@ class PlanResolutionRequest(OperationalRequest):
     plan: dict[str, object]
     allowlist: list[PlanAllowlistEntry] = Field(max_length=256)
     catalog_snapshot_id: str = Field(min_length=1, max_length=160)
-    lora_variant_ids: list[str] = Field(default_factory=list, max_length=MAX_PLAN_LORA_VARIANTS)
     # ADR-0028 §7: Next asks for patterns once, when the plan is confirmed.
     # Later re-resolutions keep what the plan already declares.
     completar_patrones: bool = Field(default=False, strict=True)
@@ -613,16 +638,6 @@ class PlanResolutionRequest(OperationalRequest):
         if not value:
             raise ValueError("catalog_snapshot_id must not be blank")
         return value
-
-    @field_validator("lora_variant_ids")
-    @classmethod
-    def normalize_lora_variant_ids(cls, values: list[str]) -> list[str]:
-        normalized = [value.strip() for value in values]
-        if any(not value for value in normalized):
-            raise ValueError("lora_variant_ids must not contain blanks")
-        if len(normalized) != len(set(normalized)):
-            raise ValueError("lora_variant_ids must be unique")
-        return normalized
 
     @model_validator(mode="after")
     def validate_plan_and_allowlist(self) -> "PlanResolutionRequest":
@@ -4799,7 +4814,6 @@ async def resolve_plan(
         snapshot_id,
         product_ids,
         variant_ids,
-        request.lora_variant_ids,
     )
     result: dict[str, object] = await run_plan_cpu(
         _resolution_result, request, raw_plan, snapshot_id, rows, completion_warnings
@@ -5182,8 +5196,6 @@ def _resolution_result(
     for row in rows:
         candidate = _candidate(row, snapshot_id)
         if candidate is None:
-            continue
-        if request.lora_variant_ids and candidate.variant_id not in set(request.lora_variant_ids):
             continue
         candidates_by_product.setdefault(candidate.product_id, []).append(candidate)
         candidate_by_variant[candidate.variant_id] = candidate
@@ -6409,11 +6421,71 @@ def validar_armado_guirnalda_sin_catalogo(
     vista_previa_de_armado_guirnalda(plan, estructura_id, armado)
 
 
+LISTA_MATERIALES_RESULT_VERSION = "lista-materiales-result.v1"
+
+
+class CatalogMaterialQuoteStore(Protocol):
+    async def fetch_current_material_rows(
+        self, variant_ids: Sequence[str]
+    ) -> Sequence[Mapping[str, object]]: ...
+
+
+async def cotizar_lista_materiales(
+    request: ListaMaterialesPayload, catalog: CatalogMaterialQuoteStore
+) -> dict[str, object]:
+    """Cotiza variantes fijas; precio, paquetes cerrados e IVA viven aquí."""
+    payload = ListaMaterialesPayload.model_validate(request)
+    lineas_solicitadas = cast(list[dict[str, object]], payload.materiales)
+    ids = [cast(str, linea["variant_id"]) for linea in lineas_solicitadas]
+    filas = await catalog.fetch_current_material_rows(ids)
+    por_id = {cast(str, fila["variant_id"]): fila for fila in filas}
+    if len(por_id) != len(ids):
+        raise PlanResolutionError("material_no_disponible", 422)
+    lineas: list[dict[str, object]] = []
+    total = 0
+    for solicitada in lineas_solicitadas:
+        variant_id = cast(str, solicitada["variant_id"])
+        cantidad = cast(int, solicitada["cantidad"])
+        fila = por_id[variant_id]
+        unidades = _integer(fila.get("unidades_paq"))
+        precio = _price(fila.get("precio"))
+        if unidades is None or unidades <= 0 or precio is None or precio <= 0:
+            raise PlanResolutionError("material_no_disponible", 422)
+        paquetes = math.ceil(cantidad / unidades)
+        subtotal = paquetes * precio
+        if subtotal > MAX_SAFE_INTEGER - total:
+            raise PlanResolutionError("cotizacion_fuera_de_rango", 422)
+        total += subtotal
+        lineas.append(
+            {
+                "variant_id": variant_id,
+                "nombre": str(fila.get("nombre") or variant_id),
+                "cantidad_necesaria": cantidad,
+                "unidades_paquete": unidades,
+                "paquetes": paquetes,
+                "precio_paquete": precio,
+                "subtotal": subtotal,
+                "sobrante": paquetes * unidades - cantidad,
+            }
+        )
+    resultado = {
+        "operation_schema_version": LISTA_MATERIALES_RESULT_VERSION,
+        "currency": "COP",
+        "incluye_iva": True,
+        "lineas": lineas,
+        "total": total,
+    }
+    return ListaMaterialesResult.model_validate(resultado).model_dump()
+
+
 __all__ = [
     "armado_arco_de_patron",
     "armado_arco_de_receta",
     "pieza_del_motor_resuelta",
     "CatalogPlanStore",
+    "CatalogMaterialQuoteStore",
+    "ListaMaterialesPayload",
+    "LISTA_MATERIALES_RESULT_VERSION",
     "ComprasPorMaterial",
     "MERMA",
     "PLAN_RESOLUTION_SCOPE",
@@ -6429,6 +6501,7 @@ __all__ = [
     "compras_de_estructura",
     "con_medidas_por_defecto",
     "contar_pieza",
+    "cotizar_lista_materiales",
     "contexto_bouquet_de_globos",
     "modos_admitidos_de_estructura",
     "opciones_de_armado",

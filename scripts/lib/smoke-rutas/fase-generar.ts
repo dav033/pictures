@@ -10,15 +10,14 @@ import { prefijo, resumen, tokenRedactado, type Reporte } from "./reporte";
 import { allowlistSinVariante, contextoVerificado, firmaManipulada, refirmar, SNAPSHOT_FALSO } from "./token";
 
 /**
- * P4: /api/generate. The LORA_MODE_REQUIRED gate proves Python re-resolution,
- * hash binding, token verification and the CLIENT_APPROVED audit ran without a
- * paid call. Then, only with --paid-image, one real Gemini generation.
+ * P4: /api/generate. Revalida aprobación, hash, snapshot y allowlist antes
+ * de cualquier llamada pagada. Con --paid-image permite una prueba de FLUX.
  */
 
 export const RUTA_GENERAR = "/api/generate";
 const TIMEOUT_IMAGEN_MS = 300_000;
 
-export function cuerpoGenerar(plan: PlanSmoke, opciones: { usarLora: boolean }): Record<string, unknown> {
+export function cuerpoGenerar(plan: PlanSmoke, opciones: { incluirCampoRetirado?: boolean; escenaAlterada?: boolean } = {}): Record<string, unknown> {
   return {
     productIds: [],
     ragVariantIds: plan.compras.map((compra) => compra.variant_id),
@@ -26,7 +25,8 @@ export function cuerpoGenerar(plan: PlanSmoke, opciones: { usarLora: boolean }):
     planHash: plan.plan_hash,
     brief: {},
     solicitudUsuario: "Smoke local: columna de globos redondos blancos",
-    usarLora: opciones.usarLora,
+    ...(opciones.incluirCampoRetirado ? { usarLora: true } : {}),
+    ...(opciones.escenaAlterada ? { sceneSpecHash: "f".repeat(64) } : {}),
     aspecto: "3:2",
   };
 }
@@ -44,19 +44,22 @@ function errorEmpiezaCon(respuesta: RespuestaHttp, texto: string): boolean {
 
 export async function faseGenerar(ctx: Contexto, plan: PlanSmoke): Promise<void> {
   const reporte: Reporte = ctx.reporte;
+  const gate = await llamarGenerar(ctx, "P4.generate contrato retirado", cuerpoGenerar(plan, { incluirCampoRetirado: true }));
+  reporte.check("P4.generate rechaza campos retirados con IMAGEN_SOLO_FLUX", gate.status === 409 && errorEmpiezaCon(gate, "IMAGEN_SOLO_FLUX:"), detalleRespuesta(gate, 250));
+
   const contexto = contextoVerificado(plan.approval_token);
   reporte.exigir("P4.contexto token", contexto !== null, "token del plan final verificable");
-  const conPlan = (planEnviado: PlanSmoke) => cuerpoGenerar(planEnviado, { usarLora: true });
-
+  if (!contexto) return;
+  const conPlan = (planEnviado: PlanSmoke) => cuerpoGenerar(planEnviado, { escenaAlterada: true });
   const desde = new Date(Date.now() - 1_000);
-  const gate = await llamarGenerar(ctx, "P4.generate gate LoRA", conPlan(plan));
-  reporte.check("P4.generate usarLora sin loraMode → 409 LORA_MODE_REQUIRED (tras revalidar)", gate.status === 409 && errorEmpiezaCon(gate, "LORA_MODE_REQUIRED:"), detalleRespuesta(gate, 250));
+  const validacion = await llamarGenerar(ctx, "P4.generate revalidación de aprobación", conPlan(plan));
+  reporte.check("P4.generate aprueba plan_hash antes de detenerse en sceneSpecHash", validacion.status === 400 && errorEmpiezaCon(validacion, "Scene specification hash does not match"), detalleRespuesta(validacion, 250));
   const aprobadas = await esperarAuditoria(ctx.pool, { requestId: contexto.requestId, planHash: plan.plan_hash, estados: ["CLIENT_APPROVED"], desde });
   reporte.check("P4.audit CLIENT_APPROVED con plan_hash", aprobadas.length > 0, `filas=${aprobadas.length} request_id=${contexto.requestId} plan_hash=${prefijo(plan.plan_hash)}`);
   const aprobadasAntes = aprobadas.length;
 
   const compra = plan.compras[0]!;
-  const sinVariante = await llamarGenerar(ctx, "P4.generate allowlist sin variante comprada", conPlan({ ...plan, approval_token: refirmar(contexto, { allowlist: allowlistSinVariante(contexto.allowlist, compra.variant_id) }) }));
+  const sinVariante = await llamarGenerar(ctx, "P4.generate allowlist sin variante", conPlan({ ...plan, approval_token: refirmar(contexto, { allowlist: allowlistSinVariante(contexto.allowlist, compra.variant_id) }) }));
   reporte.check("P4.diferencial allowlist sin variante → 400 hash mismatch", sinVariante.status === 400 && errorEmpiezaCon(sinVariante, "Plan hash does not match the validated server plan."), detalleRespuesta(sinVariante, 250));
 
   const hashAlterado = "f".repeat(64);
@@ -84,11 +87,11 @@ async function generacionPagada(ctx: Contexto, plan: PlanSmoke): Promise<void> {
   const reporte: Reporte = ctx.reporte;
   const inicio = new Date();
   const inicioMs = Date.now();
-  const respuesta = await llamarGenerar(ctx, "P4.generate PAGADA", cuerpoGenerar(plan, { usarLora: false }), TIMEOUT_IMAGEN_MS);
+  const respuesta = await llamarGenerar(ctx, "P4.generate FLUX PAGADA", cuerpoGenerar(plan), TIMEOUT_IMAGEN_MS);
   const segundos = Math.round((Date.now() - inicioMs) / 1000);
   const json = esRegistro(respuesta.json) ? respuesta.json : {};
   const planDevuelto = esRegistro(json.plan) ? campoTexto(json.plan, "plan_hash") : undefined;
-  reporte.info(`P4.generate PAGADA status=${respuesta.status} duración=${segundos}s proveedor=${campoTexto(json, "proveedor") ?? "-"} plan_hash_devuelto=${prefijo(planDevuelto)}`);
+  reporte.info(`P4.generate FLUX status=${respuesta.status} duración=${segundos}s motor=${campoTexto(json, "motorImagen") ?? "-"} plan_hash_devuelto=${prefijo(planDevuelto)}`);
 
   if (respuesta.status === 200) {
     reporte.check("P4.generate pagada → 200", typeof json.imagen === "string" && json.imagen.startsWith("data:image/"), "imagen data URL presente");
