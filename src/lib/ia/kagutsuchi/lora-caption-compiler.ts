@@ -8,6 +8,7 @@ import { SOPORTES_CON_CAIDA_GUIRNALDA, type SoporteGuirnalda } from "@/lib/plan/
 import { FUENTE_PLAN } from "@/lib/plan/blueprint";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, armadoGuirnaldaOrganicaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separate-side-pieces";
+import { limpiarTextoBase } from "./texto-base";
 import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "@/lib/lora/vocabulario-base";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
@@ -200,6 +201,8 @@ export type LoraCaptionCompilation = {
    * rendering exceeded `LORA_PROMPT_MAX_LENGTH`; see `CAPTION_RENDER_STEPS`.
    */
   compactionStep: number;
+  /** Palabras solo-LoRA que `limpiarTextoBase` quitó del texto base (vacío fuera de base o si no había). */
+  palabrasQuitadas: string[];
 };
 
 type SemanticElement = {
@@ -1772,6 +1775,14 @@ export function compileLoraCaption(input: {
   const budget = input.dialect === "base"
     ? input.maxLength ?? BASE_PROMPT_MAX_LENGTH
     : (input.maxLength ?? LORA_PROMPT_MAX_LENGTH) - Math.max(0, triggerLengthDelta);
+  // FLUX base no entiende líneas comerciales ni triggers: se quitan al construir el texto.
+  const palabrasQuitadas = new Set<string>();
+  const limpiar = (texto: string): string => {
+    if (input.dialect !== "base") return texto;
+    const limpio = limpiarTextoBase(texto);
+    for (const palabra of limpio.quitadas) palabrasQuitadas.add(palabra);
+    return limpio.texto;
+  };
   let prompt = "";
   let compactionStep = 0;
   // If no step fits, the most compact rendering is returned unchanged and the
@@ -1780,7 +1791,7 @@ export function compileLoraCaption(input: {
   for (const [index, step] of CAPTION_RENDER_STEPS.entries()) {
     // product_v007 has no setting to drop: its last step would repeat the previous one.
     if (step.dropSetting && input.dialect !== "scene_v004") break;
-    prompt = buildCaption(input.sceneSpec, input.visualContext, clauses, step, input.dialect, input.ambientDecor, input.creativeCues);
+    prompt = limpiar(buildCaption(input.sceneSpec, input.visualContext, clauses, step, input.dialect, input.ambientDecor, input.creativeCues));
     compactionStep = index;
     if (prompt.length <= budget) break;
   }
@@ -1790,8 +1801,9 @@ export function compileLoraCaption(input: {
     clauses,
     compilerVersion: LORA_CAPTION_COMPILER_VERSION,
     usedProductVocabulary: clauses.some((clause) => Boolean(clause.canonicalPhrase)),
-    jsonPrompt: buildJsonPrompt(jsonParts, input.ambientDecor ?? []),
+    jsonPrompt: limpiar(buildJsonPrompt(jsonParts, input.ambientDecor ?? [])),
     compactionStep,
+    palabrasQuitadas: [...palabrasQuitadas],
   };
 }
 

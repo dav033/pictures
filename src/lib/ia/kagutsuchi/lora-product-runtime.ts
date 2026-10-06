@@ -17,7 +17,7 @@ import {
 } from "@/lib/lora/product-vocabulary";
 import { aDescriptorPerceptual } from "@/lib/lora/descriptor-perceptual";
 import { canonicalizeSku } from "@/lib/rag/catalog/canonicalize";
-import { colorVisibleDelCatalogo, leerTituloCatalogo, terminosBaseDeConcepto, terminosBaseDeTitulo, type TerminosBase } from "@/lib/lora/vocabulario-base";
+import { colorVisibleDelCatalogo, leerTituloCatalogo, terminosBaseDeTitulo, type TerminosBase } from "@/lib/lora/vocabulario-base";
 import type { FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
 /**
@@ -486,6 +486,9 @@ export function compileProductPrompt(input: {
     creativeCues: input.creativeCues,
     colorPatterns: input.colorPatterns,
   });
+  if (compilation.palabrasQuitadas.length) {
+    diagnostics.push(`palabras solo-LoRA quitadas del texto base: ${compilation.palabrasQuitadas.join(", ")}`);
+  }
   if (compilation.compactionStep > 0) {
     diagnostics.push(`prompt compacted to render step ${compilation.compactionStep} to fit the LoRA prompt budget; every structure, placement, relation and color is kept`);
   }

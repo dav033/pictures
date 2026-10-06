@@ -36,6 +36,16 @@ const PRODUCTO_POR_COLOR: Readonly<Record<string, string>> = {
   crema: "10467043344577",
 };
 
+// En base el vocabulario no decide nada (2026-10-06): cada producto se describe desde su título de catálogo.
+const TITULO_POR_PRODUCTO: ReadonlyMap<string, string> = new Map([
+  [PRODUCTO_POR_COLOR.dorado!, "B2b Globo Latex Redondo Reflex Dorado"],
+  [PRODUCTO_POR_COLOR.plateado!, "B2b Globo Latex Redondo Reflex Plata"],
+  [PRODUCTO_POR_COLOR.rosado!, "B2b Globo Latex Redondo Fashion Rosado"],
+  [PRODUCTO_POR_COLOR.blanco!, "B2b Globo Latex Redondo Fashion Blanco"],
+  [PRODUCTO_POR_COLOR.fucsia!, "B2b Globo Latex Redondo Fashion Fucsia"],
+  [PRODUCTO_POR_COLOR.crema!, "B2b Globo Latex Redondo Silk Crema"],
+]);
+
 function elemento(id: string, tipo: string, ubicacion: string, rol: string, colores: string[], grupo?: string, productIds = colores.map((color) => PRODUCTO_POR_COLOR[color]!)): Elemento {
   return {
     element_id: id,
@@ -97,7 +107,7 @@ const TAMANOS = ["R-5", "R-9", "R-12", "R-18"];
 /** Paso de compactación desde el que el caption deja de decir el acabado (`shortLabels`). */
 const PASO_SIN_ACABADO = 8;
 
-function compilar(elementos: Elemento[], paleta: string[], evento: (typeof EVENTOS)[number], titulos?: ReadonlyMap<string, string>) {
+function compilar(elementos: Elemento[], paleta: string[], evento: (typeof EVENTOS)[number], titulos: ReadonlyMap<string, string> = TITULO_POR_PRODUCTO) {
   const spec = escena(elementos);
   const contexto = buildVisualContext({
     brief: { tipo_evento: evento.tipo_evento, estilo: evento.estilo, colores: paleta, espacio: evento.espacio },
@@ -178,9 +188,10 @@ pass(`barrido base: ${total} escenas sin trigger, sin nombres comerciales, sin �
   assert.match(resultado.prompt, /mirror-like chrome silver heart-shaped latex balloons/, resultado.prompt);
   assert.match(resultado.prompt, /small 5-inch/, resultado.prompt);
   assert.doesNotMatch(resultado.prompt, COMERCIALES, resultado.prompt);
-  assert.ok(resultado.diagnostics.some((linea) => linea.includes("described from its catalog title")), resultado.diagnostics.join(" | "));
-  // Sin concepto real del vocabulario no se afirma identidad de producto.
-  assert.equal(resultado.legacy, true);
+  // Describir desde el catálogo es el camino normal de base: ningún producto queda fuera.
+  assert.ok(!resultado.diagnostics.some((linea) => linea.includes("left out of the caption")), resultado.diagnostics.join(" | "));
+  // En base el vocabulario no decide (2026-10-06): un producto descrito desde el catálogo ya no es legacy.
+  assert.equal(resultado.legacy, false);
   assert.equal(preflightLoraPrompt({ sceneSpec: spec, clauses: resultado.clauses, prompt: resultado.prompt, dialect: "base" }).ok, true);
 
   // Los dialectos entrenados siguen sin conocer ese producto: su LoRA no lo vio.

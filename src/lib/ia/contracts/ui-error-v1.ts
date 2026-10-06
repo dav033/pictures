@@ -57,7 +57,7 @@ export type AccionUiV1 = z.infer<typeof AccionUiV1Schema>;
 export const DetallesDevV1Schema = z.object({
   /** Mensaje técnico original. Nunca incluye stack traces ni configuración. */
   mensaje: z.string().min(1).max(2000),
-  /** Código técnico de origen (p. ej. LORA_PREFLIGHT_FAILED, AI_TIMEOUT). */
+  /** Código técnico de origen (p. ej. FLUX_PREFLIGHT_FAILED, AI_TIMEOUT). */
   codigo_origen: z.string().min(1).max(120).optional(),
   causa: z.string().min(1).max(120).optional(),
 }).strict();

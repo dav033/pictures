@@ -56,12 +56,12 @@ caso("cada código tiene entrada de catálogo válida y sin jerga", () => {
 
 caso("construirUiErrorV1 produce un sobre versionado y estricto", () => {
   const requestId = randomUUID();
-  const ui = construirUiErrorV1("ESTILO_NO_PREPARADO", { mensaje: "LORA_PREFLIGHT_FAILED: longitud 845 supera límite 750", codigoOrigen: "LORA_PREFLIGHT_FAILED", requestId });
+  const ui = construirUiErrorV1("ESTILO_NO_PREPARADO", { mensaje: "FLUX_PREFLIGHT_FAILED: longitud 845 supera límite 750", codigoOrigen: "FLUX_PREFLIGHT_FAILED", requestId });
   assert.equal(ui.schema_version, UI_ERROR_CONTRACT_VERSION);
   assert.equal(ui.request_id, requestId);
   assert.equal(ui.accion_sugerida, "reintentar");
   assert.deepEqual(ui.acciones_alternativas, ["generar_estilo_estandar"]);
-  assert.equal(ui.detalles_dev.codigo_origen, "LORA_PREFLIGHT_FAILED");
+  assert.equal(ui.detalles_dev.codigo_origen, "FLUX_PREFLIGHT_FAILED");
   assert.doesNotMatch(ui.mensaje_usuario, /LORA|límite|845/);
   assert.throws(() => UiErrorV1Schema.parse({ ...ui, extra: true }), ZodError);
   assert.throws(() => UiErrorV1Schema.parse({ ...ui, schema_version: "ui-error.v2" }), ZodError);
@@ -77,7 +77,7 @@ caso("detalles_dev se acota y un mensaje vacío no rompe el contrato", () => {
 caso("leerUiErrorV1 acepta solo sobres válidos", () => {
   const ui = construirUiErrorV1("TIEMPO_AGOTADO", { mensaje: "timeout" });
   assert.deepEqual(leerUiErrorV1({ error: "x", ui_error: ui }), ui);
-  assert.equal(leerUiErrorV1({ error: "LORA_PREFLIGHT_FAILED: x" }), null);
+  assert.equal(leerUiErrorV1({ error: "FLUX_PREFLIGHT_FAILED: x" }), null);
   assert.equal(leerUiErrorV1({ ui_error: { code: "ERROR_INTERNO" } }), null);
   assert.equal(leerUiErrorV1(null), null);
   assert.equal(leerUiErrorV1("texto"), null);
@@ -98,14 +98,15 @@ caso("todos los códigos del chat (error.v1) tienen traducción explícita", () 
 // Mensajes reales que hoy lanza /api/generate (src/app/api/generate/route.ts),
 // src/lib/rag/generate-products.ts y /api/references/analyze.
 const MENSAJES_REALES: ReadonlyArray<readonly [string, string]> = [
-  ["LORA_PREFLIGHT_FAILED: cobertura de colores 2/3; longitud 845 supera límite 750", "ESTILO_NO_PREPARADO"],
-  ["LORA_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (globos)", "ESTILO_NO_PREPARADO"],
+  ["FLUX_PREFLIGHT_FAILED: cobertura de colores 2/3; longitud 845 supera límite 750", "ESTILO_NO_PREPARADO"],
+  ["FLUX_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (globos)", "ESTILO_NO_PREPARADO"],
+  ["FLUX_EDIT_PREFLIGHT_FAILED: el prompt texto enviado al proveedor mide 2600 y supera el límite 2500", "ESTILO_NO_PREPARADO"],
   ["LORA_MODE_REQUIRED: no se pudo resolver un artifact LoRA registrado para esta generación.", "ESTILO_NO_PREPARADO"],
   ["LORA_MODE_INVALID: modo LoRA inválido.", "ESTILO_NO_PREPARADO"],
   ["LORA_SELECTION_INVALID: selecciona un artifact producto o estructura válido.", "ESTILO_NO_PREPARADO"],
   ["LORA_MODE_SELECTION_CONFLICT: usa un modo o una selección manual, no ambos.", "ESTILO_NO_PREPARADO"],
   ["LORA_ARTIFACT_NOT_READY: training_1", "ESTILO_NO_PREPARADO"],
-  ["LORA_PLAN_REQUIRED: 3 tipo(s) sin visual_semantics del plan, inferido(s) por nombre (balloon decoration kit)", "ESTILO_REQUIERE_PROPUESTA"],
+  ["FLUX_PLAN_REQUIRED: 3 tipo(s) sin visual_semantics del plan, inferido(s) por nombre (balloon decoration kit)", "ESTILO_REQUIERE_PROPUESTA"],
   ["LORA_PRODUCT_VOCABULARY_FAILED: no se pudo resolver identidad canónica para 123.", "ESTILO_SIN_PRODUCTOS"],
   ["LORA_DATASET_ALLOWLIST_REJECTED: 4455, 6677", "ESTILO_SIN_PRODUCTOS"],
   ["APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.", "APROBACION_REQUERIDA"],
@@ -135,16 +136,16 @@ caso("mensajes reales de generación se clasifican con código estable", () => {
     assert.equal(clasificarErrorServidor(new Error(mensaje)).code, esperado, mensaje);
     const ui = traducirErrorServidor(new Error(mensaje));
     assert.equal(ui.detalles_dev.mensaje, mensaje);
-    assert.doesNotMatch(ui.mensaje_usuario, /LORA_|EST_\d|hash|\d{3,}/);
+    assert.doesNotMatch(ui.mensaje_usuario, /LORA_|FLUX_|EST_\d|hash|\d{3,}/);
   }
 });
 
 // Todos los prefijos LORA_* que lanza src/ (inventario 2026-09-14).
 const CODIGOS_LORA_ESTILO = [
   "LORA_APPLICATION_REQUIRED", "LORA_ARTIFACT_NOT_APPROVED", "LORA_ARTIFACT_NOT_FOUND", "LORA_DATASET_ALLOWLIST_EMPTY",
-  "LORA_DATASET_CATALOG_UNLINKED", "LORA_EVALUATION_REQUIRED", "LORA_INCOMPATIBLE", "LORA_LANGUAGE_FAILED", "LORA_MODE_DISABLED",
+  "LORA_DATASET_CATALOG_UNLINKED", "LORA_EVALUATION_REQUIRED", "LORA_INCOMPATIBLE", "LORA_MODE_DISABLED",
   "LORA_MODE_INVALID", "LORA_MODE_NOT_CONFIGURED", "LORA_MODE_NOT_FOUND", "LORA_MODE_NOT_READY", "LORA_MODE_REQUIRED",
-  "LORA_MODE_SELECTION_CONFLICT", "LORA_MULTI_UNSUPPORTED", "LORA_PREFLIGHT_FAILED", "LORA_PROVIDER_URL_MISSING",
+  "LORA_MODE_SELECTION_CONFLICT", "LORA_MULTI_UNSUPPORTED", "LORA_PROVIDER_URL_MISSING",
   "LORA_REGISTRY_UNAVAILABLE", "LORA_RUN_NOT_COMPLETED", "LORA_SELECTION_INVALID", "LORA_SPECIALIZATION_MISMATCH",
   "LORA_VOCABULARY_ALLOWLIST_EMPTY",
 ];

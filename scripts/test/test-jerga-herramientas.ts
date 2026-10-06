@@ -45,7 +45,7 @@ async function main(): Promise<void> {
   // 1. Detector.
   for (const sucio of [
     "El plan falló por SIN_COBERTURA en el arco.",
-    "LORA_PREFLIGHT_FAILED: longitud 845",
+    "FLUX_PREFLIGHT_FAILED: longitud 845",
     "Usé el SKU 12345 para el arco.",
     "Faltan globos para EST_01_ARCO:R-12.",
     "La cortina REF_01_E02 queda fuera.",

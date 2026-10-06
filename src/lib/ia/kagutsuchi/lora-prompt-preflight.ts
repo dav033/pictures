@@ -2,6 +2,7 @@ import type { SceneSpec } from "../escena/scene-spec";
 import type { LoraCaptionDialect, LoraVisualClause } from "./lora-caption-compiler";
 import { BASE_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "./lora-caption-compiler";
 import type { ProductVocabulary } from "@/lib/lora/product-vocabulary";
+import { palabrasSoloLora } from "./texto-base";
 
 export type LoraPromptPreflightReport = {
   ok: boolean;
@@ -264,20 +265,9 @@ export function preflightLoraPrompt(input: {
   };
 }
 
-/**
- * Words only a trained LoRA understands. A base model reads a product-line
- * name ("Reflex", "Fashion") as a brand or a word to write, and a trigger as
- * plain text. Case-sensitive on purpose: these are capitalized line names, not
- * the ordinary adjectives the base vocabulary may use.
- */
-const BASE_FORBIDDEN: ReadonlyArray<readonly [RegExp, string]> = [
-  [/\beventdecor_\w+/i, "trigger de LoRA"],
-  [/\b(?:Reflex|Fashion|Silk|Crystal|Pastel)\b/, "nombre de línea comercial"],
-  [/®|™|Link-O-Loon/i, "marca registrada"],
-];
-
 function basePromptErrors(prompt: string, clauses: readonly LoraVisualClause[], warnings: string[]): string[] {
-  const errors = BASE_FORBIDDEN.filter(([pattern]) => pattern.test(prompt)).map(([, label]) => `prompt base con ${label}`);
+  // El compilador ya quita estas palabras (`limpiarTextoBase`): aquí son un invariante.
+  const errors = palabrasSoloLora(prompt).map((etiqueta) => `prompt base con ${etiqueta}`);
   // Python's pattern phrases travel verbatim (ADR-0028 §12); only the
   // compiler's own wording is held to the plain-sentence shape.
   const ownWording = clauses.reduce((text, clause) => clause.colorPattern ? text.split(clause.colorPattern).join(" ") : text, prompt);

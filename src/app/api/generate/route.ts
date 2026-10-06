@@ -1258,10 +1258,10 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         : loraPreflight;
     const loraLanguageLeaks = findLoraPromptLanguageLeaks(effectiveJsonPrompt ? `${loraPrompt} ${effectiveJsonPrompt}` : loraPrompt);
     if (usarLora && loraLanguageLeaks.length) {
-      throw new Error(`LORA_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (${loraLanguageLeaks.join(", ")})`);
+      throw new Error(`FLUX_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (${loraLanguageLeaks.join(", ")})`);
     }
     if (jsonPreflight && !jsonPreflight.ok) {
-      throw new Error(`LORA_PREFLIGHT_FAILED: prompt JSON — ${jsonPreflight.errors.join("; ")}`);
+      throw new Error(`FLUX_PREFLIGHT_FAILED: prompt JSON — ${jsonPreflight.errors.join("; ")}`);
     }
     // El caption del LoRA nunca pasa por verificarCoherenciaPrompt (no lleva
     // diámetros ni nombres del plan), así que sus colores por estructura se
@@ -1273,7 +1273,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     if (usarLora && (usarComposicionLoraGemini || includesTextPrompt(promptFormat)) && !loraPreflightParaGenerar.ok) {
       // Sin semánticas canónicas del plan (selección suelta sin propuesta
       // aprobada) ninguna compactación ni reintento produce un prompt válido.
-      const codigo = loraPreflightParaGenerar.requiresPlanSemantics ? "LORA_PLAN_REQUIRED" : "LORA_PREFLIGHT_FAILED";
+      const codigo = loraPreflightParaGenerar.requiresPlanSemantics ? "FLUX_PLAN_REQUIRED" : "FLUX_PREFLIGHT_FAILED";
       throw new Error(`${codigo}: ${loraPreflightParaGenerar.errors.join("; ")}`);
     }
     // Fase 4, opción B: en modo híbrido la etapa 1 recibía CERO imágenes, así que
@@ -1304,9 +1304,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         if (!prompt) continue;
         const promptFinal = buildLoraEditPrompt(prompt, referenciasEdit);
         const fugas = [...findLoraPromptLanguageLeaks(promptFinal), ...findLoraPromptProductLeaks(promptFinal, vocabularioDelModo)];
-        if (fugas.length) throw new Error(`LORA_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor filtra ${fugas.join(", ")}`);
+        if (fugas.length) throw new Error(`FLUX_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor filtra ${fugas.join(", ")}`);
         if (promptFinal.length > LORA_EDIT_PROMPT_MAX_LENGTH) {
-          throw new Error(`LORA_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor mide ${promptFinal.length} y supera el límite ${LORA_EDIT_PROMPT_MAX_LENGTH}`);
+          throw new Error(`FLUX_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor mide ${promptFinal.length} y supera el límite ${LORA_EDIT_PROMPT_MAX_LENGTH}`);
         }
       }
     }

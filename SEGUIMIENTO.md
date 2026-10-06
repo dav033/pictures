@@ -84,8 +84,15 @@ productos no debe afectar en nada al comportamiento ni tomar ninguna decisión.
 - `src/lib/lora/mode-resolver.ts`: `resolveLoraMode` sale en `base` antes de tocar la base de datos.
 - `src/lib/lora/product-vocabulary-data.ts`: se añadió antes el concepto `pastel_matte.nude` (B2B-20019949/51/54/56). Con el vocabulario
   fuera del camino base ya no hace falta; se irá con el vocabulario.
-- `npx tsc --noEmit` = 0. **Pendiente de correr**: `eslint` de esos tres archivos y `scripts/test/test-lora-product-runtime.ts`
-  (puede tener aserciones del comportamiento viejo en base que haya que actualizar).
+- `npx tsc --noEmit` = 0; `eslint` limpio; `test-lora-product-runtime` 55/55. `test-lora-vocabulario-base` se adaptó a la etapa 1
+  (la barrida da títulos de catálogo; un producto descrito desde el catálogo ya no es `legacy`).
+- **Etapa 2 hecha** (2026-10-06): `src/lib/ia/kagutsuchi/texto-base.ts` (`limpiarTextoBase`, `palabrasSoloLora`): el compilador quita
+  del texto base Reflex/Fashion/Silk, Crystal/Pastel delante de un título, ®/™, `eventdecor_*` y Link-O-Loon→«linking», y lo deja en
+  `palabrasQuitadas` + diagnóstico del runtime; el preflight usa la misma lista como invariante. Errores renombrados:
+  `FLUX_PREFLIGHT_FAILED`, `FLUX_PLAN_REQUIRED`, `FLUX_LANGUAGE_FAILED`, `FLUX_EDIT_PREFLIGHT_FAILED` (traductor de errores y pruebas al
+  día). Prueba nueva `test-texto-base.ts` (`ia:test-texto-base`, en `plan:test`). Verificado: tsc, eslint, texto-base, ui-error-contract,
+  jerga, product-runtime, vocabulario-base, caption-compiler, preflight-barrido (5 760 escenas), caption-bilateral. Sin imagen de control
+  todavía (se hará al cerrar la etapa 3, que toca más el camino).
 
 ### 3.2 Inventario de lo que queda (mapeado el 2026-10-06)
 Bloqueos o rarezas que siguen corriendo en base:
