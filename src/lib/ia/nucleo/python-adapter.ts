@@ -388,6 +388,7 @@ export type PythonAdapterErrorCode =
   | "PYTHON_PAYLOAD_TOO_LARGE"
   | "PYTHON_INVALID_RESPONSE"
   | "PYTHON_BUSY"
+  | "PYTHON_INTERNAL_ERROR"
   | "PYTHON_UNAVAILABLE";
 
 const ERROR_MESSAGES: Record<PythonAdapterErrorCode, string> = {
@@ -406,6 +407,7 @@ const ERROR_MESSAGES: Record<PythonAdapterErrorCode, string> = {
   PYTHON_PAYLOAD_TOO_LARGE: "La solicitud supera el tamaño máximo permitido.",
   PYTHON_INVALID_RESPONSE: "El backend Python devolvió una respuesta inválida.",
   PYTHON_BUSY: "El backend Python está ocupado y no aceptó el trabajo.",
+  PYTHON_INTERNAL_ERROR: "El backend Python devolvió un error interno.",
   PYTHON_UNAVAILABLE: "No se pudo contactar al backend Python.",
 };
 
@@ -724,6 +726,7 @@ function mapUpstreamError(
   if (status === 503 && code === "auth_unavailable") {
     return upstream("PYTHON_AUTH_UNAVAILABLE", 503);
   }
+  if (status === 500) return upstream("PYTHON_INTERNAL_ERROR", 502);
   if (status === 409) {
     if (code === "replay" || code === "nonce_replay" || code === "idempotency_replay") {
       return upstream("PYTHON_REPLAY", 409);

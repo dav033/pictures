@@ -1243,8 +1243,15 @@ async def _handle_operational_request(
                 details=details,
             )
         raise
-    except Exception as error:
-        del error
+    except Exception:
+        logger.exception(
+            "operational endpoint failed",
+            extra={
+                "request_id": request.state.request_id,
+                "correlation_id": request.state.correlation_id,
+                "operation": operation,
+            },
+        )
         if idempotency_key is not None:
             await _store_failure(
                 request,
@@ -1433,9 +1440,14 @@ def create_app(
 
     @application.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exception: Exception) -> JSONResponse:
-        del exception
         request.app.state.metrics.increment("errors.internal_error")
-        logger.error("unhandled request error", extra={"request_id": request.state.request_id})
+        logger.exception(
+            "unhandled request error",
+            extra={
+                "request_id": request.state.request_id,
+                "correlation_id": request.state.correlation_id,
+            },
+        )
         return _error_response(request, 500, "internal_error")
 
     @application.get("/healthz")
