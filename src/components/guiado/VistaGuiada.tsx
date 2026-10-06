@@ -175,6 +175,8 @@ export function VistaGuiada() {
               widgets.push({ tipo: "cotizacion", cotizacion: valida ? valida.data : null, uso: usoCotizado, decoracion: elegida });
             }
             if (datos.pasos && elegida) widgets.push({ tipo: "pasos", decoracion: elegida });
+            // Después del precio, el cliente sigue teniendo las otras opciones a mano (comprar, aprender, decorador).
+            if (elegida && widgets.some((widget) => widget.tipo === "cotizacion") && !widgets.some((widget) => widget.tipo === "opciones")) widgets.push({ tipo: "opciones" });
             if (datos.proveedores) widgets.push({ tipo: "proveedores", proveedores: datos.proveedores });
             reemplazarUltimo({ content: textoFinal, ...(widgets.length ? { widgets } : {}) });
             if (!textoFinal.trim() && !widgets.length) setMensajes((actuales) => actuales.slice(0, -1));
