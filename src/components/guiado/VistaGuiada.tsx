@@ -262,7 +262,8 @@ export function VistaGuiada() {
     }
   }
 
-  return <main className="app-shell">
+  // Alto fijo también en celular: el compositor queda siempre a la vista y solo se desplaza la conversación.
+  return <main className="app-shell h-dvh">
     <CabeceraApp contexto={contexto} modoVista={modo} onModoVista={cambiar} onLimpiar={vaciar} limpiarDeshabilitado={!mensajes.length} totalSeleccion={0} />
     <section className="flex min-h-0 flex-1 flex-col" aria-label="Asistente guiado">
       <div className="flex-1 overflow-y-auto">
