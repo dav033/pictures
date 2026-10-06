@@ -216,17 +216,14 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
 003 ahora genera (Codex 38/28). Media 43→52.
 
 ### 4.4 Pendiente de fidelidad (en orden)
-1. **Ancho/alto de las piezas laterales** (rama `fix/medidas-de-la-foto`, worktree `Downloads/e3f`, commit 9522591, SIN fusionar; caso
-   2026-10-06: columna de la foto del dueño ≈1,36 × 0,73 m y el plan pide 1,8 m de alto y 1,04 m de base). Tras la revisión adversarial
-   (7 fallos corregidos) su informe dice que la columna del dueño pasa de 1,8 a **2,2 m** (empeora: debería bajar a ≈1,36) y CASE-002
-   de 1,8 a 2,2 m: revisar antes de fusionar (¿ancla en la altura estándar de 2,2 m en vez de en el semiarco?). El chat inventa medidas (F7-5 ocupa el 83 % del ancho de la foto y el chat pide 1,2 m; el 002 a
-   veces 1,8 m de alto cuando llega al techo; 003 cruza demasiado por arriba). Propiedad huérfana: proporción de la caja de la foto.
-   3.ª pasada (2026-10-06 tarde, commit 83f1f14 + merge de la principal 1505ac7, US$0): la escala ya no se ancla en la altura
-   estándar; prioriza medidas del cliente y semiarcos; caja que toca el borde conserva la medida del motor con aviso; el grosor de la
-   columna orgánica sale de la caja sin cortar. Dueño 1,35 × 0,72 m; CASE-002 1,8 m (caja cortada arriba); F7-5 sin cambio.
-   pytest 11/11, tsc, ruff, contracts:check. Revisión adversarial: 3 fallos (medida explícita del cliente ignorada en el armado,
-   `aspect_ratio` ausente supuesto 1.0, `pared_organica` fuera) → corregidos en 4e0b8de (pytest 14/14); segunda revisión en curso
-   (incluye comprobar por qué la proporción medida de la foto del dueño sale 1,0).
+1. **Ancho/alto de las piezas laterales — FUSIONADO (2026-10-06 tarde, rama `fix/medidas-de-la-foto`, commits 83f1f14 + 4e0b8de)**.
+   La escala sale de la medida del cliente, luego del semiarco u otra estructura estándar; nunca de la altura estándar de una columna
+   ni de 2,2 m arbitrarios. Caja cortada por un borde: conserva la medida del motor y avisa. Sin proporción fiable de la foto: no
+   ancla ni deriva. La medida explícita del cliente manda también en el armado. `pared_organica` entra en el cálculo (bouquet y
+   racimo_pared no, son kits). Columna orgánica: grosor desde la caja. Dueño (foto 1200×1200) 1,35 × 0,72 m (a mano ≈1,36 × 0,73);
+   CASE-002 1,8 m conservado (caja cortada arriba, $51.703); F7-5 2,2 m ($197.211). Dos revisiones adversariales (3 fallos
+   corregidos; la segunda sin bloqueantes, cada prueba nueva falla sin el arreglo). pytest 14/14, pruebas TS, tsc, ruff.
+   Pendiente: el chat aún puede inventar medidas en el texto (F7-5 1,2 m cuando ocupa el 83 % del ancho; 003 cruza por arriba).
 2. **Colores de la foto del dueño 2026-10-06** (semiarco + columna orgánicos en rosa empolvado mate, crema, perla rosa claro y
    burbujas transparentes; foto en `Downloads/WhatsApp Image 2026-10-06 at 9.58.10 AM.jpeg`, datos en
    `informes-calidad/dueno-2026-10-06/`). Salió: «Fashion Chocolate 076» en la lista (no hay marrón); el plan compra «Rosado mate»
@@ -255,7 +252,7 @@ F7-1 57→69 · F7-2 82→90 · F7-3 25→20 (antes del racimo de pared) · F7-4
    racimos, muchas bolas de 18-24" entre relleno de 5" y burbujas transparentes con confeti; generada: tubo delgado (≈12 %), regular,
    2/3 del alto, dos franjas de color. La forma la dicta la guía (motor Python de discos) + las medidas. Encolado en rama
    `fix/forma-organica-002` (worktree `Downloads/e3i`) tras fusionar `fix/medidas-de-la-foto`; tope US$0,40, juez Codex.
-5. **Grosor de la columna orgánica** (siempre 1,1 m de base; debería salir de la proporción de la caja).
+5. **Grosor de la columna orgánica:** corregido en tercera pasada; `grosorPatasM` deriva de la proporción de su caja cuando no está cortada.
 6. **Tamaños del racimo de pared** (el chat compra una sola talla; la lectura por tamaños no llega al kit).
 7. **Cobertura de colores del chat** (004 sin blanco; acabado: respetar el que vio el analizador por color).
 8. 007 (pared pastel con monstruos), 008 (pared con cintas leída como techo), 006 (cobre que no está en la foto).

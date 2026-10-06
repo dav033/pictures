@@ -5043,6 +5043,83 @@
         "additionalProperties": false
       }
     },
+    "pistas_geometria": {
+      "maxItems": 16,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "referencia_element_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "source_image_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "caja": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false
+          },
+          "aspect_ratio": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10
+          },
+          "confianza": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "referencia_element_id",
+          "source_image_id",
+          "caja",
+          "confianza"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "medidas_cliente_de": {
+      "maxItems": 16,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    },
     "completar_conteos_de": {
       "maxItems": 8,
       "type": "array",
