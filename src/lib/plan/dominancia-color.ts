@@ -186,24 +186,6 @@ export function coloresPorDominancia(medicion: MedicionDominancia, maximo: numbe
 const PARTICIPACION_MINIMA_ELEMENTO = 0.03;
 
 /**
- * Cuántas veces más concentrado tiene que estar un color DENTRO de la caja que
- * fuera para contar como color de la decoración y no del sitio.
- *
- * 1,5 sale del fallo que lo motivó, no de la intuición: en la primera corrida
- * medida, `gris` salió dominante en tres de las cuatro fotos de referencia con
- * 32-48 %, y el QA visual cayó de 2/4 a 1/4. Ese gris es la pared del estudio.
- * La caja de un elemento es un RECTÁNGULO alrededor de un arco, y la mayor
- * parte de ese rectángulo es fondo visible entre y alrededor de los globos, así
- * que restringir a la caja era necesario pero no suficiente.
- *
- * Un fondo está igual de presente dentro que fuera de la caja (razón ≈ 1); un
- * globo rosa está dentro y no fuera (razón alta). Eso lo distingue sin tener que
- * suponer que la decoración es saturada — suponerlo mataría los globos blancos,
- * plateados y negros, que el catálogo sí vende.
- */
-export const ENRIQUECIMIENTO_MINIMO = 1.5;
-
-/**
  * Fracción de imagen por encima de la cual la caja no deja "fuera" suficiente
  * para comparar. Con el elemento ocupando casi todo el encuadre no hay fondo
  * contra el que contrastar y el filtro se apaga en vez de inventarse un número.

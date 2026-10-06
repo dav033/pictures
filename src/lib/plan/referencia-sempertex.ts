@@ -538,6 +538,11 @@ const CABEZAS_EN: ReadonlyMap<string, string[]> = (() => {
  */
 export function codigosPorPalabras(etiqueta: string): string[] {
   const palabras = etiqueta.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  // El analizador y colores-referencia comparten la familia «crema», aunque la
+  // tabla la escriba como cream/ivory/off-white y algunas etiquetas inviertan palabras.
+  if (/^(?:cream|crema|ivory|off white|white cream|cream white|white ivory|ivory white)$/.test(palabras.join(" "))) {
+    return [...(CABEZAS_EN.get("cream") ?? [])];
+  }
   const cabeza = palabras[palabras.length - 1];
   const base = cabeza ? CABEZAS_EN.get(cabeza) : undefined;
   if (!base) return [];

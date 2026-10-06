@@ -228,7 +228,7 @@ async function main(): Promise<void> {
   assert.deepEqual(coloresDominantesReferencia(["wine red", "silver grey"]), ["burdeos", "plateado"]);
   assert.deepEqual(coloresDominantesReferencia(["salmon pink", "champagne gold", "ivory white"]), ["coral", "champagne", "crema"]);
   assert.deepEqual(coloresDominantesReferencia(["white and gold", "royal blue/silver"]), ["blanco", "dorado", "azul"], "a label that joins colors keeps each of them");
-  assert.deepEqual(coloresDominantesReferencia(["transparent with gold confetti"]), ["transparente", "dorado"]);
+  assert.deepEqual(coloresDominantesReferencia(["transparent with gold confetti"]), ["transparente"]);
   assert.deepEqual(coloresDominantesReferencia(["charcoal grey", "rose gold"]), ["gris", "dorado rosa"]);
   assert.deepEqual(sustitucionesColorReferencia("EST_01", coloresDominantesReferencia(["mint green"]), ["menta"]), [], "a mint photo quoted in mint loses nothing");
   const faltantes = sustitucionesColorReferencia("EST_02_COLUMNA", ["cafe", "azul", "plateado"], ["lila", "lila", "Plateado"]);
@@ -739,8 +739,8 @@ async function main(): Promise<void> {
   assert.deepEqual(coloresDominantesReferencia(["blush+gold"]), ["rosado", "dorado"]);
   // Transparency is a finish: "clear pink" is the Cristal line in pink, and
   // claiming transparente as well would demand a material the photo never had.
-  assert.deepEqual(coloresDominantesReferencia(["clear pink"]), ["rosado"]);
-  assert.deepEqual(coloresDominantesReferencia(["crystal blue"]), ["azul"]);
+  assert.deepEqual(coloresDominantesReferencia(["clear pink"]), ["rosado", "transparente"]);
+  assert.deepEqual(coloresDominantesReferencia(["crystal blue"]), ["azul", "transparente"]);
   assert.deepEqual(coloresDominantesReferencia(["clear"]), ["transparente"], "a lone clear is still the color transparente");
   assert.deepEqual(coloresDominantesReferencia(["transparent"]), ["transparente"]);
   assert.deepEqual(coloresDominantesReferencia(["hot pink", "neon pink"]), ["fucsia"], "the catalog sells these as fucsia, not rosado");
@@ -751,9 +751,9 @@ async function main(): Promise<void> {
   // wrong balloon, and the substitution notice is not worth a wrong purchase.
   for (const etiqueta of ["copper", "bronze", "taupe", "terracotta"]) assert.deepEqual(coloresDominantesReferencia([etiqueta]), [], `photo label ${etiqueta}`);
   // A Cristal Rosado material quoted as "rosado" covers a "clear pink" photo.
-  assert.deepEqual(sustitucionesColorReferencia("EST_01_ARCO", coloresDominantesReferencia(["clear pink"]), ["rosado"]), []);
+  assert.deepEqual(sustitucionesColorReferencia("EST_01_ARCO", coloresDominantesReferencia(["clear pink"]), ["rosado", "transparente"]), []);
   const { coloresFotoParaBusqueda } = await import("../../src/lib/plan/colores-referencia");
-  assert.deepEqual(coloresFotoParaBusqueda(blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Clear pink arch", "balloon_structure", ["clear pink", "navy"])])), ["rosado", "azul"]);
+  assert.deepEqual(coloresFotoParaBusqueda(blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Clear pink arch", "balloon_structure", ["clear pink", "navy"])])), ["rosado", "transparente", "azul"]);
   ok("colores de la foto: puntuación, cristal con tono, fucsia y tonos en inglés de una palabra");
 
   // ---------------------------------------------------------------------------

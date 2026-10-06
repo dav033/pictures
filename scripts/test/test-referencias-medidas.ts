@@ -15,6 +15,24 @@ import { serializeReferenceBlueprint } from "../../src/lib/ia/omoikane/prompt-si
 import { detectarJergaInterna } from "../../src/lib/ia/omoikane/jerga-interna";
 import { coloresDominantesReferencia } from "../../src/lib/plan/colores-referencia";
 
+// CASE-002 archivado v6: balance de blancos + medida regional clasificaron blanco;
+// «matte light grey» ya no mantiene Fashion Gris 081 como referencia usable.
+{
+  const apariencia = {
+    observed_colors: ["pearl pink", "chrome silver", "matte light grey", "clear"],
+    measured_colors: [{ color: "plateado", share: 0.6454 }, { color: "crema", share: 0.1524 }, { color: "blanco", share: 0.1327 }, { color: "rosado", share: 0.0695 }],
+    referencias_medidas: [
+      { codigo: "609", familia: "pastelMate", nombre: "Rosado", nombre_completo: "Pastel Mate Rosado", parte: 0.4942, familia_fiable: false },
+      { codigo: "981", familia: "reflex", nombre: "Plata", nombre_completo: "Reflex Plata", parte: 0.1703, familia_fiable: true },
+      { codigo: "081", familia: "fashion", nombre: "Gris", nombre_completo: "Fashion Gris", parte: 0.107, familia_fiable: true },
+    ],
+  } as unknown as ReferenceBlueprintV2["elements"][number]["appearance"];
+  assert.deepEqual(referenciasUsables(apariencia).map((referencia) => referencia.codigo), ["609", "981"]);
+  assert.ok(coloresDominantesReferencia(apariencia).includes("blanco"));
+  assert.ok(!coloresDominantesReferencia(apariencia).includes("gris"));
+  console.log("[PASS] CASE-002 archivado: rosado 609 + plata 981; gris 081 filtrado");
+}
+
 // 1. La familia de un producto, leída de su título; los impresos y surtidos no son una referencia.
 const titulos: Array<[string, string | null]> = [
   ["B2b Globo Latex Redondo Satin Rosado", "satin"],

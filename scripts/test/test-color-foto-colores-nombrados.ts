@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { medirDominanciaElemento, type MuestraPixeles } from "../../src/lib/plan/dominancia-color";
 import { zonaDeCroquis } from "../../src/lib/plan/croquis-zona";
 import { coloresDominantesReferencia, coloresNombradosReferencia, coloresObservadosElemento } from "../../src/lib/plan/colores-referencia";
-import { codigosPorPalabras, cruzarColor } from "../../src/lib/plan/referencia-sempertex";
+import { codigosPorPalabras, cruzarColor, referenciaPorCodigo } from "../../src/lib/plan/referencia-sempertex";
 
 function muestraDeFranjas(franjas: readonly { color: readonly [number, number, number]; parte: number }[]): MuestraPixeles {
   const ancho = 100;
@@ -32,9 +32,44 @@ const medida = medirDominanciaElemento(
 );
 assert.deepEqual(medida.dominantes.map(({ color }) => color), ["rosado", "crema"]);
 assert.ok(medida.dominantes[0]!.participacion > medida.dominantes[1]!.participacion);
-for (const etiqueta of ["cream white", "white cream"]) {
+for (const etiqueta of ["cream", "ivory", "off white", "off-white", "cream white", "white cream"]) {
   assert.equal(coloresNombradosReferencia({ observed_colors: [etiqueta] })[0]?.color, "crema", etiqueta);
 }
+assert.deepEqual(coloresDominantesReferencia(["clear pink"]), ["rosado", "transparente"], "el tono de Cristal conserva acabado transparente");
+assert.deepEqual(coloresDominantesReferencia(["clear gold confetti"]), ["transparente"], "el oro del confeti no se compra como látex");
+for (const [etiqueta, codigo, caso] of [["navy blue", "044", "F7-5"], ["chrome gold", "970", "001"]] as const) {
+  const codigos = codigosPorPalabras(etiqueta);
+  const referencia = referenciaPorCodigo(codigo);
+  assert.ok(codigos.includes(codigo), `${caso}: ${etiqueta} incluye ${codigo}`);
+  assert.ok(referencia, `${caso}: existe referencia ${codigo}`);
+  assert.equal(cruzarColor(referencia.hexGlobo, { permitidas: codigos, nombradas: codigos }).candidatas[0]?.codigo, codigo, `${caso}: el color medido confirma ${codigo}`);
+}
+assert.deepEqual(codigosPorPalabras("clear gold confetti"), [], "F7-5: el oro del confeti no abre código de globo");
+for (const etiqueta of ["cream", "crema", "ivory", "off white", "off-white", "white cream", "cream white"]) {
+  const codigos = codigosPorPalabras(etiqueta);
+  assert.ok(codigos.includes("107"), `${etiqueta} conserva Sempertex Crema 107`);
+  assert.equal(cruzarColor("#ede3dc", { permitidas: codigos, nombradas: codigos }).candidatas[0]?.codigo, "107", `${etiqueta} devuelve referencia medida`);
+}
+
+// CASE-002 archivado v6: región corregida con balance de blancos clasificó 13,27 % como blanco;
+// «matte light grey» solo se conserva como blanco con esa evidencia de alta claridad y bajo croma.
+const case002Archivado = {
+  observed_colors: ["pearl pink", "chrome silver", "matte light grey", "clear"],
+  measured_colors: [
+    { color: "plateado", share: 0.6454 },
+    { color: "crema", share: 0.1524 },
+    { color: "blanco", share: 0.1327 },
+    { color: "rosado", share: 0.0695 },
+  ],
+};
+const coloresCase002 = coloresDominantesReferencia(case002Archivado);
+assert.ok(coloresCase002.includes("blanco"), `CASE-002 incluye blanco: ${coloresCase002}`);
+assert.ok(!coloresCase002.includes("gris"), `CASE-002 no habilita gris: ${coloresCase002}`);
+assert.deepEqual(
+  coloresDominantesReferencia({ observed_colors: ["matte dark grey"], measured_colors: [{ color: "gris", share: 0.78 }, { color: "rosado", share: 0.22 }] }),
+  ["gris"],
+  "gris real medido se respeta",
+);
 const mascaraColumnaDerecha = zonaDeCroquis("columna", undefined, "lateral_derecho", 0.59).dentro;
 assert.ok(mascaraColumnaDerecha(0.9, 0.5));
 assert.ok(!mascaraColumnaDerecha(0.5, 0.5));

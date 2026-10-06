@@ -62,7 +62,7 @@ const SINONIMOS_FOTO: ReadonlyArray<readonly [RegExp, string]> = [
   // The analyzer sometimes reverses these two-word labels. Preserve ivory/cream
   // instead of letting the generic white classifier win on the first word.
   [/\b(?:white\s+(?:cream|ivory)|(?:cream|ivory)\s+white)\b/g, "crema"],
-  [/\boff white\b/g, "crema"],
+  [/\boff[- ]white\b/g, "crema"],
   [/\b(?:lilac|lavender|mauve)\b/g, "lila"],
   [/\bviolet\b/g, "violeta"],
   [/\b(?:maroon|wine|bordeaux|oxblood)\b/g, "burdeos"],
@@ -82,6 +82,8 @@ const GRIS = /\b(?:gr[ae]y|graphite|charcoal|gris|grafito)\b/;
  * several hues. Alone it is the color "transparente".
  */
 const TRANSPARENCIA = /\b(?:clear|transparent|transparente|transparentes|crystal|cristal)\b/g;
+/** El color del confeti describe el relleno, no el látex que se compra. */
+const CONTENIDO_CONFETI = /\b(?:confetti|confetti-filled|rellen[oa]s? de confeti)\b/;
 
 /** Punctuation that joins several colors in one label ("white/gold"); the fold turns it into a space, so it has to be split first. */
 const SEPARADOR_PUNTUACION = /[,;/&+]/;
@@ -104,11 +106,13 @@ const SEPARADOR_AMBIGUO = /\s*\b(?:or|o|u)\b\s*/;
  * "silver grey") keeps its first, more specific word, so it does not report a
  * second color the photo never had.
  */
-function coloresDeParte(parte: string): string[] {
+function coloresDeParte(parte: string, apariencia?: AparienciaColor): string[] {
   let texto = parte;
   for (const [patron, color] of SINONIMOS_FOTO) texto = texto.replace(patron, color);
+  const confeti = CONTENIDO_CONFETI.test(texto);
   const sinTransparencia = texto.replace(TRANSPARENCIA, " ");
   const transparente = sinTransparencia !== texto;
+  if (confeti) return transparente ? [TRANSPARENTE] : [];
   texto = sinTransparencia;
   const clasificacion = clasificarColores(texto);
   const utiles = clasificacion.values.filter((color) => color !== "multicolor");
@@ -117,10 +121,17 @@ function coloresDeParte(parte: string): string[] {
   // la foto; el resultado era que la mitad de las veces se compraba el otro. Si
   // no decidió, no decidimos por él: entran los dos y la foto —o el cliente— lo
   // desempata.
-  if (clasificacion.status === "ambiguous" && utiles.length > 1) return utiles;
+  if (clasificacion.status === "ambiguous" && utiles.length > 1) return transparente ? [...utiles, TRANSPARENTE] : utiles;
   const conocido = clasificacion.status === "unknown" ? undefined : utiles[0];
-  const unico = conocido ?? (GRIS.test(texto) ? "gris" : transparente ? "transparente" : undefined);
-  return unico ? [unico] : [];
+  const nombrado = conocido ?? (GRIS.test(texto) ? "gris" : undefined);
+  // `blanco` aquí sale de píxeles de la región tras balance de blancos: la clasificación LAB ya ponderó
+  // luminosidad y croma. Exigir 12 % y ausencia total de gris evita convertir un gris real por una chispa blanca.
+  const muyClaroEnBlanco = nombrado === "gris"
+    && /\b(?:light|pale|very light)\b/.test(texto)
+    && (apariencia?.measured_colors ?? []).some((medido) => medido.color === "blanco" && medido.share >= 0.12)
+    && !(apariencia?.measured_colors ?? []).some((medido) => medido.color === "gris");
+  const tono = muyClaroEnBlanco ? "blanco" : nombrado;
+  return [...(tono ? [tono] : []), ...(transparente ? [TRANSPARENTE] : [])];
 }
 
 /**
@@ -193,7 +204,7 @@ function conAcabadoDeEtiqueta(entrada: AparienciaColor, colores: readonly string
   const porColor = new Map<string, ColorObservadoConAcabado>();
   for (const etiqueta of entrada.observed_colors) {
     const acabado = acabadoDeEtiqueta(etiqueta);
-    for (const color of coloresDeEtiqueta(etiqueta)) {
+    for (const color of coloresDeEtiqueta(etiqueta, entrada)) {
       if (!porColor.has(color)) porColor.set(color, { color, etiqueta, ...(acabado ? { acabado } : {}) });
     }
   }
@@ -203,13 +214,13 @@ function conAcabadoDeEtiqueta(entrada: AparienciaColor, colores: readonly string
 }
 
 /** Catalog-vocabulary colors of one observed label, in reading order. */
-function coloresDeEtiqueta(etiqueta: string): string[] {
+function coloresDeEtiqueta(etiqueta: string, apariencia?: AparienciaColor): string[] {
   const colores: string[] = [];
   for (const bruto of etiqueta.split(SEPARADOR_PUNTUACION)) {
     for (const parte of plegarTexto(bruto).split(SEPARADOR_COLORES)) {
       // Una parte ambigua aporta TODAS sus alternativas: si el analizador no
       // eligió, elegir por él acierta la mitad de las veces.
-      for (const alternativa of parte.split(SEPARADOR_AMBIGUO)) colores.push(...coloresDeParte(alternativa));
+      for (const alternativa of parte.split(SEPARADOR_AMBIGUO)) colores.push(...coloresDeParte(alternativa, apariencia));
     }
   }
   return colores;
@@ -219,7 +230,7 @@ function coloresDeEtiqueta(etiqueta: string): string[] {
 function coloresObservados(apariencia: AparienciaColor): string[] {
   const colores: string[] = [];
   for (const etiqueta of apariencia.observed_colors) {
-    for (const color of coloresDeEtiqueta(etiqueta)) {
+    for (const color of coloresDeEtiqueta(etiqueta, apariencia)) {
       if (!colores.includes(color)) colores.push(color);
     }
   }
