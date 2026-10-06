@@ -4,6 +4,17 @@ import { zonaDeCroquis } from "../../src/lib/plan/croquis-zona";
 import { coloresDominantesReferencia, coloresNombradosReferencia, coloresObservadosElemento } from "../../src/lib/plan/colores-referencia";
 import { codigosPorPalabras, cruzarColor, referenciaPorCodigo } from "../../src/lib/plan/referencia-sempertex";
 
+// Los tonos salmón de una foto deben cruzar a Coral Tropical, no a Naranja Cobrizo.
+assert.equal(referenciaPorCodigo("059")?.hexGlobo.toLowerCase(), "#f58a84");
+for (const hex of ["#e97f79", "#ee938f"]) {
+  assert.equal(cruzarColor(hex).candidatas[0]?.codigo, "059", `${hex} debe cruzar a Coral Tropical`);
+  assert.equal(
+    cruzarColor(hex, { nombradas: ["062"] }).candidatas[0]?.codigo,
+    "059",
+    `${hex}: una etiqueta 062 que discrepa no debe desplazar los píxeles de coral`,
+  );
+}
+
 function muestraDeFranjas(franjas: readonly { color: readonly [number, number, number]; parte: number }[]): MuestraPixeles {
   const ancho = 100;
   const alto = 20;

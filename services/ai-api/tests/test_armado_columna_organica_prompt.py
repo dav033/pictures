@@ -311,10 +311,48 @@ def test_los_colores_son_los_del_plan_en_ingles_nunca_en_espanol() -> None:
         assert espanol not in lora.lower(), (espanol, lora)
 
 
+def test_el_acento_pequeno_se_nombra_como_pocas_bolas_pequenas_en_caption_y_guia() -> None:
+    pedido = armado(
+        colores={
+            "paleta": [
+                {"material": 0, "peso": 85, "acabado": "mate", "rol": "normal"},
+                {"material": 1, "peso": 10, "acabado": "mate", "rol": "normal"},
+                {"material": 2, "peso": 5, "acabado": "cromado", "rol": "acento"},
+            ]
+        }
+    )
+    _gemini, caption = frases(pedido)
+    assert "a few small silver accent balloons" in caption, caption
+
+
+def test_el_plateado_de_case002_sigue_visible_si_no_es_acento_menor() -> None:
+    pedido = armado(
+        colores={
+            "paleta": [
+                {"material": 0, "peso": 40, "acabado": "mate", "rol": "normal"},
+                {"material": 1, "peso": 40, "acabado": "mate", "rol": "normal"},
+                {"material": 2, "peso": 20, "acabado": "cromado", "rol": "acento"},
+            ],
+            "reparto": "azar",
+            "mezcla": 0.5,
+        }
+    )
+    _gemini, caption = frases(pedido)
+    assert "silver" in caption
+    assert "small silver accent" not in caption
+
+
 def test_el_texto_pide_silueta_organica_con_tamanos_y_burbujas_visibles() -> None:
     gemini, _ = frases(armado())
 
-    for pista in ("irregular", "bulges", "notches", "18- and 24-inch", "5-inch", "confetti bubbles"):
+    for pista in (
+        "irregular",
+        "bulges",
+        "notches",
+        "18- and 24-inch",
+        "5-inch",
+        "confetti bubbles",
+    ):
         assert pista in gemini, (pista, gemini)
     assert "smooth or uniform" in gemini
 

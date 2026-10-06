@@ -257,8 +257,8 @@ def frases_columna_organica(
         f" and {punta} m at the top, {_SILUETA_GEMINI[silueta]}",
         *_linea_gemini(forma),
     ]
-    # Dónde va cada color, solo para Gemini: el fragmento LoRA no repite la paleta (``_colores_gemini``).
-    reparto_gemini, _reparto_lora = frases_del_reparto(
+    # La paleta ya va en el caption canónico; conservar en FLUX solo la jerarquía y el reparto de acentos.
+    reparto_gemini, reparto_lora = frases_del_reparto(
         colores,
         materiales,
         eje_gemini="from the base to the top",
@@ -286,6 +286,8 @@ def frases_columna_organica(
     # El orden es el de la guirnalda: silueta, línea, racimo y cómo acaba arriba. La punta va al final, pegada a lo
     # último que se lee: es lo que la LoRA se inventaba.
     lora = f"{_SILUETA_LORA[silueta]}{_linea_lora(forma)}, in clusters of {racimo_en}{corona_lora}"
+    if reparto_lora:
+        lora += f", {reparto_lora}"
     return " ".join(frases), _ascii_sin_cifras(lora)
 
 

@@ -234,13 +234,24 @@ def frases_del_reparto(
         )
         clausulas.append("each cluster one solid color")
     if acentos:
-        frases.append(
-            f"Scatter single {lista_en([gemini(i) for i in acentos])} balloons over the whole {pieza_en} as"
-            " accents, never two of them touching."
-        )
-        clausulas.append(
-            f"with scattered single {lista_en([lora(i) for i in acentos])} accent balloons"
-        )
+        paleta = cast(Sequence[Mapping[str, object]], colores.get("paleta") or [])
+        pocos = all(_flotante(paleta[i], "peso") <= 10 for i in acentos if i < len(paleta))
+        if pocos:
+            frases.append(
+                f"Scatter a few small {lista_en([gemini(i) for i in acentos])} balloons over the whole {pieza_en} as"
+                " accents, never two of them touching."
+            )
+            clausulas.append(
+                f"with a few small {lista_en([lora(i) for i in acentos])} accent balloons scattered throughout"
+            )
+        else:
+            frases.append(
+                f"Scatter single {lista_en([gemini(i) for i in acentos])} balloons over the whole {pieza_en} as"
+                " accents, never two of them touching."
+            )
+            clausulas.append(
+                f"with scattered single {lista_en([lora(i) for i in acentos])} accent balloons"
+            )
     return frases, ", ".join(clausulas)
 
 

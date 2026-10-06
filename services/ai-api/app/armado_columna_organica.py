@@ -193,7 +193,7 @@ def _config_desde_armado(
     colores: Sequence[str],
     tono_corona: str,
     desperdicio: float = DESPERDICIO_POR_DEFECTO,
-) -> tuple[ConfigCol, list[str]]:
+) -> tuple[ConfigCol, list[str], list[int]]:
     """El diseño del motor a partir del armado, con los tonos que se le quiera dar a la paleta y a la punta.
 
     El desperdicio entra aquí porque ``calcular_compra`` lo lee de ``cfg.real``: es el único sitio donde el motor lo
@@ -201,6 +201,10 @@ def _config_desde_armado(
     """
     paleta = cast(Sequence[Mapping[str, object]], _mapa(armado, "colores")["paleta"])
     corona = _mapa(armado, "corona")
+    materiales_por_color = [
+        _entero(color.get("material"), "material_invalido", "Un color del armado no es un indice.")
+        for color in paleta
+    ]
     inicial = config_inicial()
     crudo: dict[str, object] = {
         "forma": {**inicial["forma"], **dict(_mapa(armado, "forma"))},
@@ -233,7 +237,61 @@ def _config_desde_armado(
         },
     }
     cfg, cambios = normalizar_config_con_cambios(crudo)
-    return cfg, list(cambios)
+    # Un acento disperso no debe heredar las tallas grandes de la mezcla general:
+    # unos pocos R18/R24 ocupan mucha área y dominan tanto el montaje como la guía.
+    # Fijamos colores por talla en el mismo motor que cuenta y cotiza. Se conserva
+    # la cuota global de cada color y la mezcla global de tallas; los acentos pasan
+    # a las tallas <= R12, repartidos allí proporcionalmente.
+    colores_cfg = cast(dict[str, object], cfg["colores"])
+    lista = cast(list[dict[str, object]], colores_cfg["lista"])
+    materiales_por_capa = list(materiales_por_color)
+    acentos = [i for i, color in enumerate(lista) if color.get("rol") == "acento"]
+    base = [i for i in range(len(lista)) if i not in acentos]
+    tamanos = cast(Mapping[int, float], cast(Mapping[str, object], cfg["tamanos"])["mezcla"])
+    fraccion_pequena = sum(float(tamanos.get(t, 0)) for t in (5, 9, 12))
+    total_tamanos = sum(float(tamanos.get(t, 0)) for t in TAMANOS_GLOBO)
+    pesos = [max(0.0, float(color.get("peso", 0))) for color in lista]
+    total_pesos = sum(pesos)
+    peso_acento = sum(pesos[i] for i in acentos)
+    peso_base = total_pesos - peso_acento
+    fraccion_acento = peso_acento / total_pesos if total_pesos else 0.0
+    if (
+        acentos
+        and base
+        and peso_base > 0
+        and total_tamanos > 0
+        and 0 < fraccion_pequena < total_tamanos
+        and 0 < fraccion_acento < fraccion_pequena / total_tamanos
+    ):
+        capas: list[dict[str, object]] = []
+        materiales_expandidos: list[int] = []
+        tamanos_por_capa: list[int] = []
+        share_pequeno = fraccion_pequena / total_tamanos
+        for tamano in TAMANOS_GLOBO:
+            if float(tamanos.get(tamano, 0)) <= 0:
+                continue
+            permitido_acento = tamano <= 12
+            for indice, color in enumerate(lista):
+                if indice in acentos and not permitido_acento:
+                    continue
+                if indice in acentos:
+                    cuota_local = pesos[indice] / (total_pesos * share_pequeno)
+                elif permitido_acento:
+                    cuota_local = (
+                        (1 - fraccion_acento / share_pequeno) * pesos[indice] / peso_base
+                    )
+                else:
+                    cuota_local = pesos[indice] / peso_base
+                if cuota_local <= 0:
+                    continue
+                capas.append({**color, "peso": cuota_local * 100})
+                tamanos_por_capa.append(tamano)
+                materiales_expandidos.append(materiales_por_color[indice])
+        if capas:
+            colores_cfg["lista"] = capas
+            colores_cfg["tamanoDe"] = tamanos_por_capa
+            materiales_por_capa = materiales_expandidos
+    return cfg, list(cambios), materiales_por_capa
 
 
 def armado_resuelto(
@@ -256,7 +314,9 @@ def armado_resuelto(
     material_corona = int(cast(int, _mapa(armado, "corona")["material"]))
     tono_corona = estructura.materiales[material_corona]
 
-    cfg, cambios = _config_desde_armado(armado, tonos, tono_corona, desperdicio)
+    cfg, cambios, materiales_por_color = _config_desde_armado(
+        armado, tonos, tono_corona, desperdicio
+    )
     estimados = estimar_globos(cfg)
     if estimados > MAX_GLOBOS_ESTIMADOS:
         raise ArmadoInvalido(
@@ -281,7 +341,10 @@ def armado_resuelto(
         """Del lugar en la paleta del motor al material de la estructura; el globo de la punta (−1), a su material."""
         if indice < 0:
             return material_corona
-        return materiales[indice] if indice < len(materiales) else -1
+        color_indice = (
+            materiales_por_color[indice] if indice < len(materiales_por_color) else indice
+        )
+        return color_indice if 0 <= color_indice < len(estructura.materiales) else -1
 
     return {
         "version": VERSION,
