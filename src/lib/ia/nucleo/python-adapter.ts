@@ -1584,6 +1584,7 @@ export interface PythonPlanResolutionInput {
   completarConteos?: boolean;
   pistasConteo?: PistaConteo[];
   pistasGeometria?: PistaGeometria[];
+  medidasClienteDe?: string[];
   completarConteosDe?: string[];
   /** With `completarConteos`: the customer gave measures, so the structures' declared measures stay (ADR-0031). */
   medidasDelCliente?: boolean;
@@ -3393,6 +3394,7 @@ export async function llamarPythonPlanResolution(
     completarConteos,
     pistasConteo,
     pistasGeometria,
+    medidasClienteDe,
     completarConteosDe,
     medidasDelCliente,
     ...rest
@@ -3414,6 +3416,7 @@ export async function llamarPythonPlanResolution(
     ...(completarConteos === undefined ? {} : { completar_conteos: completarConteos }),
     ...(pistasConteo === undefined ? {} : { pistas_conteo: pistasConteo }),
     ...(pistasGeometria === undefined ? {} : { pistas_geometria: pistasGeometria }),
+    ...(medidasClienteDe === undefined ? {} : { medidas_cliente_de: medidasClienteDe }),
     ...(completarConteosDe === undefined ? {} : { completar_conteos_de: completarConteosDe }),
     ...(medidasDelCliente === undefined ? {} : { medidas_del_cliente: medidasDelCliente }),
   };

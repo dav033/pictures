@@ -5063,6 +5063,11 @@
             "minLength": 1,
             "maxLength": 80
           },
+          "source_image_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
           "caja": {
             "type": "object",
             "properties": {
@@ -5108,10 +5113,20 @@
         },
         "required": [
           "referencia_element_id",
+          "source_image_id",
           "caja",
           "confianza"
         ],
         "additionalProperties": false
+      }
+    },
+    "medidas_cliente_de": {
+      "maxItems": 16,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
       }
     },
     "completar_conteos_de": {

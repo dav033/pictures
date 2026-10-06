@@ -562,6 +562,8 @@ export const PlanResolutionRequestV1Schema = z.object({
   pistas_conteo: z.array(PistaConteoSchema).max(16).optional(),
   /** Cajas aprobadas de la foto; Python decide su escala física. */
   pistas_geometria: z.array(PistaGeometriaSchema).max(16).optional(),
+  /** Ids de piezas cuya medida física señaló el cliente en su mensaje. */
+  medidas_cliente_de: z.array(idSchema).max(16).optional(),
   /**
    * Tras una edición: solo estas estructuras se ajustan (la de la mezcla
    * editada, o ninguna); las demás con pista conservan su lectura sin cambios.

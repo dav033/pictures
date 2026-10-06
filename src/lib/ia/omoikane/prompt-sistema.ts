@@ -311,7 +311,7 @@ function conteoLeido(conteo: ConteoDelElemento): string {
     : ` Si la pieza es un kit (bouquet, figura, racimo), declara unidades_declaradas ${cantidad} por pieza (sumando repeticiones): manda sobre el total de un armado leído.`;
   // Sin medidas del cliente, unas inventadas (0,5 m) centraban la ventana del
   // eje lejos de la foto (ADR-0031, enmienda 2026-09-28): que las deje vacías.
-  return `; conteo leído en la foto: ${cuenta}${racimos}.${kit} Si es una estructura geométrica no calcules globos ni le pongas medidas que el cliente no dio (manda medidas vacío): al confirmar, Python ajusta densidad y medidas a esa cuenta`;
+  return `; conteo leído en la foto: ${cuenta}${racimos}.${kit} Si es una estructura geométrica no calcules globos ni le pongas medidas que el cliente no dio (manda medidas vacío): al confirmar, Python ajusta densidad a esa cuenta. Si hay caja de referencia, su escala física queda fija desde la medida ancla del cliente o la referencia estándar; cualquier total estimado antes de confirmar es provisional y no se lo anuncies como total final`;
 }
 
 /**
@@ -385,7 +385,7 @@ Composición general: foco visual "${blueprint.composition.focal_point}"; densid
 Paleta observada en toda la foto (incluye el local: paredes, piso y muebles; no es la lista de colores de ninguna pieza): ${blueprint.palette.observed.join(", ") || "no determinable"}.
 Elementos detectados:
 ${serializeReferenceBlueprint(blueprint)}
-Las posiciones (x/y/w/h) son proporciones DENTRO de la imagen de referencia, no coordenadas del render final. Python usa las cajas para derivar alto, ancho y grosor relativos de las piezas: no inventes medidas físicas mirando la foto. Si el cliente dio una medida explícita, envíala en medidas; esa medida prevalece y Python escala las demás piezas desde ella.`;
+Las posiciones (x/y/w/h) son proporciones DENTRO de su imagen de referencia, no coordenadas del render final. Python deriva las dimensiones con una escala uniforme por foto: no inventes medidas físicas mirando la foto. Una caja cortada por cualquier borde no sirve para medir. En una columna inclinada, el ancho de la caja incluye la inclinación: no lo uses como grosor; deja que el motor conserve o decida ese grosor. Si el cliente dio una medida para una pieza concreta, envíala en las medidas de esa pieza y nombra esa pieza; prevalece y Python escala las demás piezas de esa misma foto desde ella.`;
 }
 
 /** Design rule of the creativity level; the default level adds nothing (see creatividad.ts). */
@@ -426,7 +426,7 @@ ARMADO DEL ARCO, LA COLUMNA Y LA GUIRNALDA
 export const BLOQUE_ESTIMAR_CONTEO = `
 
 ACERCAR LA PROPUESTA AL CONTEO DE LA FOTO
-- Cuando una pieza trae "conteo leído en la foto", antes de armar_estructura y de confirmar_plan_decoracion llama estimar_conteo_globos con 2 o 3 candidatos de esa pieza (cambia medidas, densidad o mezcla) y elige el que deja total_vigente dentro de la tolerancia del objetivo (brecha.dentro_de_tolerancia) y sin avisos en puerta_fisica.
+- Cuando una pieza trae "conteo leído en la foto", antes de armar_estructura y de confirmar_plan_decoracion llama estimar_conteo_globos con 2 o 3 candidatos de esa pieza (cambia densidad o mezcla; medidas solo si no hay caja de referencia) y elige el que deja total_vigente dentro de la tolerancia del objetivo (brecha.dentro_de_tolerancia) y sin avisos en puerta_fisica. Con caja de referencia, Python conserva la escala y ajusta densidad para el conteo: trata el total estimado como provisional y no se lo anuncies al cliente.
 - Es una consulta: no cambia el plan ni cobra nada. Una pieza que ya trae armado del motor se cuenta con él y su densidad, su mezcla y sus medidas NO cambian el total (lo dice su nota): para acercarla usa la sugerencia, que mueve los mandos del armado.
 - El número que le dices al cliente sale SIEMPRE de confirmar_plan_decoracion, nunca de esta estimación.`;
 

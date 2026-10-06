@@ -20,9 +20,10 @@ invoca con ``_aplicar_conteos`` antes de completar los armados.
   trae respecto de una persona, una puerta o una mesa), dichas como "largo
   equivalente", nunca como medidas tomadas. Si ni así alcanza y la pieza tiene
   un solo eje libre (guirnalda: largo; columna: alto), la cantidad de la foto
-  decide ese eje (enmienda del 2026-09-28: unas medidas que el cliente no dio no
+  decide ese eje (enmienda del 2026-09-28: unas medidas físicas que no se fijaron
   pueden dejar la pieza en una fracción de la foto). Con ``espacio.fuente:
-  cliente`` o ``medidas_del_cliente`` las medidas no se tocan. Nunca fuera de la
+  cliente``, ``medidas_del_cliente`` o una caja geométrica aprobada las medidas no
+  se tocan. Nunca fuera de la
   puerta física.
 
 Lo que este módulo necesita del plan (contar globos, la puerta física, la
@@ -503,7 +504,7 @@ class PuertoPlan:
     #: Las densidades que admite la estructura oficial de la pieza (revisión 2):
     #: la tabla es de ``estructuras-oficiales.ts`` y llega por el contrato.
     densidades_admitidas: Callable[[Mapping[str, object]], Sequence[str]] = lambda _e: DENSIDADES
-    #: Las medidas de la estructura son del cliente (revisión 33): el conteo no las mueve.
+    #: Medidas fijas por cliente, foto o edición: el conteo no las mueve.
     medidas_del_cliente: Callable[[Mapping[str, object]], bool] = lambda _e: False
     #: Las variantes redondas que el turno permite comprar de un producto: ``(variant_id, pulgadas)``.
     #: Sin catálogo (la estimación) no hay ninguna, y un centro de mesa no pasa a globos contados.
@@ -968,7 +969,7 @@ def _geometrica(
             densidad,
             _opciones(estructura, mezcla_objetivo, centro, factores, puerto),
         )
-    # 3) Enmienda del 2026-09-28: las medidas no son del cliente y la ventana no
+    # 3) Enmienda del 2026-09-28: las medidas no son fijas y la ventana no
     #    alcanza (su centro puede ser un largo que el chat puso sin dato): la
     #    cantidad de la foto decide el eje libre, si la pieza tiene uno solo.
     desde_conteo = False
@@ -980,7 +981,7 @@ def _geometrica(
     if elegida is None:
         if medidas_fijas:
             motivo = (
-                "Con las medidas fijas (del cliente o tras una edición) ninguna densidad"
+                "Con las medidas físicas fijas (cliente, foto o edición) ninguna densidad"
                 " alcanza la cuenta de la foto."
             )
         elif eje_libre(tipo, medidas) is None:
@@ -1016,7 +1017,7 @@ def _geometrica(
     )
     medidas_movidas = any(str(cambio["campo"]).endswith("_m") for cambio in cambios)
     motivo = (
-        "Las medidas no son del cliente y ±35 % no alcanzaba: la cantidad de la foto decide"
+        "La ventana de ±35 % no alcanzaba: la cantidad de la foto decide"
         " el eje. Es un largo equivalente a la foto, no una medida tomada."
         if desde_conteo and medidas_movidas
         else "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
@@ -1339,7 +1340,7 @@ def aplicar(
                 estructura,
                 lectura,
                 cuenta,
-                # Del cliente (espacio o estructura) o tras una edición: la foto
+                # Del cliente (espacio o estructura), la caja de foto o una edición: el conteo
                 # solo ajusta densidad (revisión 33).
                 medidas_fijas=medidas_fijas
                 or puerto.medidas_del_cliente(estructura)
