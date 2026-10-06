@@ -321,7 +321,9 @@ export function coloresDominantesReferencia(apariencia: AparienciaColor | readon
  *
  * No filtra al catálogo: esto es lo que se le enseña al cliente como "los
  * colores de tu foto", y un `gris` que el catálogo no vende tiene que aparecer
- * para poder reportarse como perdido, no desaparecer. Hasta el 2026-10-05 eran
+ * para poder reportarse como perdido, no desaparecer. La medición solo ordena
+ * y pesa nombres del analizador; luz coloreada no añade tonos comprables.
+ * Hasta el 2026-10-05 eran
  * los colores medidos crudos, sin mirar las etiquetas: la madera de una mesa o
  * la pared que caían en la caja de una pieza llegaban al cliente como color de
  * su foto y volvían como aviso de "esta pieza no lo lleva".
@@ -393,17 +395,15 @@ export function coloresElementoReferencia(blueprint: Pick<ReferenceBlueprintV2, 
  * el plan compra existe en la foto. Acotarla aquí acusaría de invención al
  * cuarto color de una foto que sí lo tiene.
  *
- * Por lo mismo sigue contando lo medido que nadie nombró, al revés que los
- * dominantes (`coloresNombradosOrdenados`): aquí se decide QUITAR un globo del
- * plan, y para quitarlo hace falta que ni las etiquetas ni los píxeles lo vean.
- * Que un color medido no pida cupo no prueba que la foto no lo tenga.
+ * Solo cuenta colores nombrados por el analizador, igual que los dominantes:
+ * gris/lila medidos por la luz no habilitan compras ni evitan que se quite del
+ * plan un globo de color no nombrado.
  */
 export function coloresObservadosElemento(apariencia: AparienciaColor): string[] {
-  const colores = coloresObservados(apariencia);
-  for (const entrada of apariencia.measured_colors ?? []) {
-    if (!colores.includes(entrada.color)) colores.push(entrada.color);
-  }
-  return colores;
+  // Los píxeles ordenan y ponderan tonos nombrados, pero no pueden inventar
+  // uno. En particular, luz lila sobre globos blancos puede medirse gris/lila;
+  // esos valores no deben volver al plan como colores comprables.
+  return coloresObservados(apariencia);
 }
 
 export type MaterialColorInventado = { estructura_id: string; product_id: string; color: string };

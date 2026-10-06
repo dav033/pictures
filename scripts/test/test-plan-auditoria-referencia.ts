@@ -438,7 +438,7 @@ async function main(): Promise<void> {
   // invención al cuarto color de una foto que sí lo tiene.
   assert.deepEqual(coloresObservadosElemento({ observed_colors: etiquetasPared }), ["rosado", "dorado", "blanco"]);
   assert.deepEqual(coloresObservadosElemento({ observed_colors: ["white, gold, silver, pink"] }), ["blanco", "dorado", "plateado", "rosado"], "los cuatro, aunque solo tres sean dominantes");
-  assert.deepEqual(coloresObservadosElemento({ observed_colors: ["chrome gold"], measured_colors: [{ color: "rosado", share: 0.4 }] }), ["dorado", "rosado"], "un tono medido en píxeles también está en la foto");
+  assert.deepEqual(coloresObservadosElemento({ observed_colors: ["chrome gold"], measured_colors: [{ color: "rosado", share: 0.4 }] }), ["dorado"], "una medida sin etiqueta no habilita compra de otro tono");
 
   const materialPared = (productId: string, color: string, participacion: number, rol: "principal" | "secundario") => ({ product_id: productId, color, participacion, rol_material: rol });
   const pared = (materiales: ReturnType<typeof materialPared>[], elementId: string | null = "REF_01_E01") => ({

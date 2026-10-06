@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { medirDominanciaElemento, type MuestraPixeles } from "../../src/lib/plan/dominancia-color";
 import { zonaDeCroquis } from "../../src/lib/plan/croquis-zona";
-import { coloresNombradosReferencia } from "../../src/lib/plan/colores-referencia";
+import { coloresDominantesReferencia, coloresNombradosReferencia, coloresObservadosElemento } from "../../src/lib/plan/colores-referencia";
 import { codigosPorPalabras, cruzarColor } from "../../src/lib/plan/referencia-sempertex";
 
 function muestraDeFranjas(franjas: readonly { color: readonly [number, number, number]; parte: number }[]): MuestraPixeles {
@@ -100,4 +100,27 @@ assert.ok(cruce.candidatas.length > 0);
 assert.ok(cruce.candidatas.every(({ codigo }) => rosadosNombrados.includes(codigo)));
 assert.equal(cruce.candidatas[0]!.codigo, "010", "tono medio empolvado elige Palo de Rosa entre referencias rosas");
 
-console.log("[PASS] píxeles solo reparten colores nombrados; rosa empolvado elige 010 y no Dorado Rosa");
+// CASE-002 en vivo: el analizador nombró rosa, plata y blanco; la iluminación
+// lila midió algunos píxeles blancos como gris/lila. La medición puede ordenar
+// los nombres, pero jamás abrir compra para tonos que el analizador no nombró.
+const aparienciaCase002 = {
+  observed_colors: ["pearl pink", "chrome silver", "white", "clear"],
+  measured_colors: [
+    { color: "gris", share: 0.48 },
+    { color: "lila", share: 0.32 },
+    { color: "rosado", share: 0.12 },
+    { color: "plateado", share: 0.08 },
+  ],
+};
+assert.deepEqual(
+  coloresDominantesReferencia(aparienciaCase002).sort(),
+  ["blanco", "plateado", "rosado", "transparente"].sort(),
+  "CASE-002 conserva blanco nombrado y no compra gris/lila medidos por la luz",
+);
+assert.deepEqual(
+  coloresObservadosElemento(aparienciaCase002).sort(),
+  ["blanco", "plateado", "rosado", "transparente"].sort(),
+  "un tono medido pero no nombrado no habilita material",
+);
+
+console.log("[PASS] CASE-002 compra blanco, plata, rosa y transparente; gris/lila no nombrados quedan fuera");
