@@ -153,7 +153,7 @@ async function construirPlanesGuardados(): Promise<void> {
         if (!lectura && (tipo === "bouquet" || tipo === "centro_mesa")) { descartadas.push(`${elemento.element_id}: sin conteo para pieza de unidades declaradas`); continue; }
         const coloresBase = (elemento.appearance.measured_colors ?? [])
           .map((color) => ({ color: colorCatalogo(color.color ?? ""), share: color.share }))
-          .filter((color) => color.color !== undefined && porColor.has(color.color))
+          .filter((color): color is { color: string; share: number } => color.color !== undefined && porColor.has(color.color))
           .sort((a, b) => b.share - a.share)
           .slice(0, 3);
         const coloresUnicos = [...new Map(coloresBase.map((color) => [color.color, color])).values()];
@@ -173,7 +173,7 @@ async function construirPlanesGuardados(): Promise<void> {
           estructura_id: estructuraId, nombre: ficha.nombre, tipo: ficha.tipo, estructura_oficial: ficha.oficial,
           rol_escena: indicePieza === 1 ? "focal" : "soporte", ubicacion: ficha.ubicacion,
           medidas: ficha.medidas, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales,
-          ...(tipo === "bouquet" || tipo === "centro_mesa" ? { unidades_declaradas: lectura.exacto ? Math.max(5, lectura.globos_visibles) : 12 } : {}),
+          ...(tipo === "bouquet" || tipo === "centro_mesa" ? { unidades_declaradas: lectura ? (lectura.exacto ? Math.max(5, lectura.globos_visibles) : 12) : 12 } : {}),
           referencia_element_id: elemento.element_id,
           colores_referencia: coloresUnicos.map((item) => item.color),
           porque: `Recreación de referencia ${elemento.element_id}, con color y forma observados.`,

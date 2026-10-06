@@ -16,6 +16,7 @@ import { presentacionMaterialGuiado } from "@/lib/ia/guiado/presentacion-materia
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { normalizarPropuestaComposicion } from "@/lib/ia/guiado/propuesta-composicion";
+import { esquemaHerramientaPropuesta } from "@/lib/ia/guiado/esquema-herramienta-propuesta";
 
 export const maxDuration = 75;
 
@@ -65,6 +66,8 @@ export async function POST(request: Request) {
     return NextResponse.json(envelopeHttp(requestId, "INVALID_INPUT", message, false), { status: 400, headers });
   }
   const { messages } = parsed.data;
+  const ultimoUsuario = [...messages].reverse().find((mensaje) => mensaje.role === "user")?.content.toLocaleLowerCase("es") ?? "";
+  const alcancePropuesta = /decoraci[oó]n completa/.test(ultimoUsuario) ? "completa" : /pieza individual/.test(ultimoUsuario) ? "individual" : null;
   const usoConfirmado = parsed.data.estadoGuiado?.uso;
   const decoracionConfirmada = parsed.data.estadoGuiado?.decoracionId;
   const proveedores = bibliotecaVisible();
@@ -158,9 +161,15 @@ export async function POST(request: Request) {
       elegida ? `Decoración elegida por el cliente en la interfaz: «${elegida.titulo}».` : "El cliente todavía no eligió una decoración.",
       usoConfirmado ? `Uso elegido: ${usoConfirmado === "negocio" ? "para su negocio" : "uso personal"}.` : "El cliente todavía no eligió si es para negocio o uso personal.",
     ].join(" ");
+    const herramientasTurno = alcancePropuesta ? herramientas.map((herramienta): Herramienta => {
+      if (herramienta.nombre !== "proponer_composicion") return herramienta;
+      const esquema = esquemaHerramientaPropuesta(herramienta.esquema, alcancePropuesta);
+      const { description, ...campos } = esquema;
+      return { ...herramienta, descripcion: `${String(description)} Usa ids oficiales y colores permitidos.`, esquema: campos };
+    }) : herramientas;
     const generador = ejecutarConversacionStream({ chat, sistema: `${PROMPT_GUIADO}
 
-Estado confirmado (no lo leas en voz alta): ${estadoConfirmado}`, historial, herramientas, registro: registroProtegido, vueltasMax: 8, herramientasSoloLectura: new Set(["buscar_decoraciones_sempertex", "pasos_decoracion", "buscar_proveedores"]), signal: request.signal, telemetria: { flujo: "armador_decoracion", requestId, correlationId: requestId, superficie: "/api/asistente-guiado", promptVersion: "asistente-guiado.v1" } });
+    Estado confirmado (no lo leas en voz alta): ${estadoConfirmado}`, historial, herramientas: herramientasTurno, registro: registroProtegido, vueltasMax: 8, herramientasSoloLectura: new Set(["buscar_decoraciones_sempertex", "pasos_decoracion", "buscar_proveedores"]), signal: request.signal, telemetria: { flujo: "armador_decoracion", requestId, correlationId: requestId, superficie: "/api/asistente-guiado", promptVersion: "asistente-guiado.v1" } });
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const encoder = new TextEncoder();
