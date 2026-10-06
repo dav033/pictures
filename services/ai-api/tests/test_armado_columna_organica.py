@@ -200,6 +200,25 @@ def test_cada_globo_vuelve_a_su_material_y_el_de_la_punta_al_suyo() -> None:
     assert len(punta) == 1 and punta[0]["material"] == 1
 
 
+def test_los_colores_de_acento_de_columna_organica_quedan_en_tallas_pequenas() -> None:
+    pedido = armado(
+        tamanos={**SIN_24, "mezcla": {"5": 25, "9": 20, "12": 48, "18": 4, "24": 3}},
+        colores={
+            **armado()["colores"],
+            **paleta(
+                {"material": 0, "peso": 85, "acabado": "mate", "rol": "normal"},
+                {"material": 1, "peso": 10, "acabado": "mate", "rol": "normal"},
+                {"material": 2, "peso": 5, "acabado": "cromado", "rol": "acento"},
+            ),
+        },
+    )
+    resuelto = armado_resuelto(columna("#f08080", "#ffffff", "#c0c0c0"), pedido)
+    acentos = [globo for globo in resuelto["globos"] if globo["material"] == 2]
+    assert acentos
+    assert {globo["tamano"] for globo in acentos} <= {5, 9, 12}
+    assert len(acentos) / len(resuelto["globos"]) == pytest.approx(0.05, abs=0.01)
+
+
 def test_el_globo_grande_de_la_punta_se_pone_y_se_quita() -> None:
     sin_24 = SIN_24
     con_punta = armado_resuelto(

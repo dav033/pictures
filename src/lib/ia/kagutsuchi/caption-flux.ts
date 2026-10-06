@@ -11,7 +11,7 @@ import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separa
 import { limpiarTextoBase } from "./texto-base";
 import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
 
-export const FLUX_CAPTION_COMPILER_VERSION = "lora-caption-v2.9-perceptual-color-organic-column" as const;
+export const FLUX_CAPTION_COMPILER_VERSION = "flux-caption-v2.10-perceptual-accent" as const;
 
 /** Límite común de texto que mantiene primero la decoración. */
 export const FLUX_PROMPT_MAX_LENGTH = 1000;

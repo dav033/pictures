@@ -102,6 +102,20 @@ assert.match(textoColumnaOrganica, /organic balloon column/i);
 assert.match(textoColumnaOrganica, /uneven, deep silhouette and large balloons interspersed/i);
 assert.doesNotMatch(textoColumnaOrganica, /\btubes?\b|rigid balloon column/i);
 
+const columnaConAcentoPlata = compileFluxCaption({
+  sceneSpec: scene([element({ id: "REFLEX_ACCENT", name: "Columna orgánica", type: "columna", placement: "lateral_derecho" })]),
+  visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
+  colorPatterns: [{ estructura_id: "REFLEX_ACCENT", aplicado: true, prompt_gemini: "", prompt_lora: "with a few small silver accent balloons scattered throughout" }],
+}).prompt;
+assert.match(columnaConAcentoPlata, /a few small silver accent balloons/i, columnaConAcentoPlata);
+
+const plataDominante = compileFluxCaption({
+  sceneSpec: scene([element({ id: "CASE002_SILVER", name: "Columna orgánica", type: "columna", placement: "lateral_derecho" })]),
+  visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }),
+  colorPatterns: [{ estructura_id: "CASE002_SILVER", aplicado: true, prompt_gemini: "", prompt_lora: "with silver balloons across the structure" }],
+}).prompt;
+assert.match(plataDominante, /silver balloons across the structure/i, plataDominante);
+
 const canonicalSpec = scene([element({ id: "CANONICAL", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]);
 const canonicalPresence = compileFluxCaption({
   sceneSpec: canonicalSpec,
@@ -325,7 +339,8 @@ assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin
     assert.doesNotMatch(prompt, palabra, `el respaldo del acabado filtró el término comercial «${termino}»: ${prompt}`);
   }
   // Y lo que sí dice es lo mismo que dice el camino principal para ese acabado.
-  assert.match(prompt, /mirror-like chrome/i, prompt);
+  assert.match(prompt, /reflective chrome/i, prompt);
+  assert.doesNotMatch(prompt, /reflecting the room/i, prompt);
 }
 
 console.log("LoRA caption compiler: OK");

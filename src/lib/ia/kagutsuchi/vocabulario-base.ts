@@ -92,8 +92,8 @@ export type TerminosBase =
  * de `ACABADO_EN` («high-shine chrome») y las palabras de `FINISH_WORDS` del compilador («soft pearlescent»).
  *
  * Por qué cada frase:
- * - `mirror-like chrome reflecting the room`: «glossy» o «high-shine» a secas salen como plástico brillante;
- *   nombrar el reflejo ancla el Reflex al entorno.
+ * - `reflective chrome`: distingue el acabado espejo de un mate, sin invitar al modelo a convertir la pieza
+ *   entera en un conjunto de espejos ni a reflejar el salón en cada globo.
  * - `shiny metallic foil`: el foil es una lámina metálica arrugada en los bordes, distinta del látex; sin
  *   «foil» el modelo la pinta como un globo de látex cromado.
  * - `muted dusty matte` y `soft matte`: los tonos apagados y pálidos. «pastel» no se usa: es nombre de línea
@@ -110,7 +110,7 @@ const ACABADO_VISIBLE: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bpastel dusk\b|\bmuted\b|\bdusty\b/i, "muted dusty matte"],
   [/\bpastel\b|\bsoft matte\b/i, "soft matte"],
   [/\bfoil\b|\bmetalli[sz]ed\b|\bmetalizad[oa]s?\b/i, "shiny metallic foil"],
-  [/\breflex\b|\bchrome\b|\bcromad[oa]\b|\bhigh-shine\b|\bhigh-gloss\b|\bglossy\b/i, "mirror-like chrome reflecting the room"],
+  [/\breflex\b|\bchrome\b|\bcromad[oa]\b|\bhigh-shine\b|\bhigh-gloss\b|\bglossy\b/i, "reflective chrome"],
   [/\bsilk\b|\bseda\b|\bsatin\b|\bsatinad[oa]\b|\bpearl\w*\b|\bperlad[oa]s?\b|\bnacar\w*\b/i, "satin pearlescent"],
   [/\bcrystal\b|\bcristal\b|\btranslucent\b|\btransparente?s?\b/i, "translucent"],
   [/\bneon\b|\bfluorescent\b/i, "fluorescent"],
@@ -153,7 +153,7 @@ export function acabadoVisible(texto: string | undefined): string {
   if (!limpio) return "";
   const ingles = ACABADO_EN[limpio] ?? FAMILIAS_SIN_ACABADO_EN[limpio] ?? limpio;
   if (/\bmixed\b/.test(ingles)) {
-    // «mixed matte and glossy chrome finishes» → «mixed matte and mirror-like chrome»: cada acabado de la
+    // «mixed matte and glossy chrome finishes» → «mixed matte and reflective chrome»: cada acabado de la
     // mezcla con su palabra visible, sin repetir y sin la palabra «finishes».
     const partes = ingles.replace(/^mixed\s+/, "").replace(/\bfinish(?:es)?\b/g, "").split(/,|\band\b|\bwith\b|\bor\b/)
       .map((parte) => acabadoSimple(parte.trim()))
