@@ -985,15 +985,22 @@ def _medir_desde_cajas(
         return {} if alto_motor is None else {"alto_m": alto_motor}
 
     def sincronizar_armados(
-        estructura: dict[str, object], alto: float, ancho: float | None, id_estructura: str
+        estructura: dict[str, object],
+        alto: float,
+        ancho: float | None,
+        id_estructura: str,
+        grosor_base_m: float | None = None,
     ) -> None:
         organica = estructura.get("armado_columna_organica")
         if isinstance(organica, Mapping):
             armado = dict(organica)
             forma = dict(mapa_opcional(armado.get("forma")))
             volumen = dict(mapa_opcional(armado.get("volumen")))
-            base = _number(volumen.get("grosorPatasM")) or 0.6
+            base_original = _number(volumen.get("grosorPatasM")) or 0.6
+            base = grosor_base_m if grosor_base_m is not None else base_original
             punta = _number(volumen.get("grosorCimaM")) or 0.45
+            if grosor_base_m is not None:
+                punta *= base / base_original
             base_tope = min(1.6, math.floor(alto / 0.85 * 20 + 1e-9) / 20)
             base_ajustada = min(base_tope, max(0.35, base))
             punta_minima = max(0.35, math.ceil(base_ajustada * 0.35 * 20 - 1e-9) / 20)
@@ -1011,7 +1018,10 @@ def _medir_desde_cajas(
             armado["forma"] = forma
             armado["volumen"] = volumen
             estructura["armado_columna_organica"] = armado
-            avisos.append(f"Conservé el grosor de {id_estructura}: la caja puede incluir su inclinación.")
+            if grosor_base_m is None:
+                avisos.append(f"Conservé el grosor de {id_estructura}: la caja puede incluir su inclinación.")
+            else:
+                avisos.append(f"Derivé el grosor de {id_estructura} de la proporción de su caja de foto.")
         armado_arco_organico = estructura.get("armado_arco_organico")
         if isinstance(armado_arco_organico, Mapping) and isinstance(armado_arco_organico.get("forma"), Mapping):
             armado = dict(armado_arco_organico)
@@ -1122,7 +1132,22 @@ def _medir_desde_cajas(
     for source_image_id, piezas_foto in por_foto.items():
         con_medida = [pieza for pieza in piezas_foto if _number(pieza[2].get("alto_m")) or _number(pieza[2].get("ancho_m"))]
         cliente = [pieza for pieza in con_medida if _text(pieza[0].get("estructura_id")) in medidas_cliente]
-        candidatas = cliente or con_medida
+        # La columna suele traer una altura estándar de motor, pero no sirve como
+        # referencia de escala: el tamaño real de esa misma pieza es lo que buscamos.
+        # Priorizar medida explícita; después, semiarco/arco con medida estándar; por
+        # último, otras piezas no columna. Nunca inventar escala desde una columna sola.
+        semiarcos = [pieza for pieza in con_medida if _text(pieza[0].get("tipo")) == "semiarco"]
+        arcos = [
+            pieza
+            for pieza in con_medida
+            if _text(pieza[0].get("tipo")) in {"arco", "arco_organico"}
+        ]
+        otras_piezas = [
+            pieza
+            for pieza in con_medida
+            if _text(pieza[0].get("tipo")) not in {"columna", "columna_organica"}
+        ]
+        candidatas = cliente or semiarcos or arcos or otras_piezas
         if candidatas:
             ancla = min(candidatas, key=puntuacion_ancla)
             alto_m = _number(ancla[2].get("alto_m"))
@@ -1135,10 +1160,9 @@ def _medir_desde_cajas(
             escalas[source_image_id] = escala
             avisos_escala.append(f"Escala de la foto {source_image_id} anclada en {ancla[0].get('estructura_id')}.")
         else:
-            ancla = max(piezas_foto, key=lambda pieza: _number(pieza[1].get("height")) or 0.0)
-            escala = 2.2 / (_number(ancla[1].get("height")) or 1.0)
-            escalas[source_image_id] = escala
-            avisos_escala.append(f"Escala de la foto {source_image_id} estimada con altura estándar de 2,2 m en {ancla[0].get('estructura_id')}.")
+            avisos_escala.append(
+                f"No hay pieza de referencia fiable para escalar la foto {source_image_id}; conservé las medidas del motor."
+            )
     asumidos: list[str] = []
 
     nuevas_estructuras: list[dict[str, object]] = []
@@ -1151,10 +1175,13 @@ def _medir_desde_cajas(
             continue
         _, caja, medidas_originales, pista = pieza
         id_estructura = _text(estructura.get("estructura_id")) or referencia or "pieza"
+        source_image_id = _text(pista.get("source_image_id")) or ""
+        if source_image_id not in escalas:
+            nuevas_estructuras.append(estructura)
+            continue
         ancho_caja = _number(caja.get("width")) or 0.0
         alto_caja = _number(caja.get("height")) or 0.0
         aspecto_foto = _number(pista.get("aspect_ratio")) or 1.0
-        source_image_id = _text(pista.get("source_image_id")) or ""
         alto_estimado = alto_caja * escalas[source_image_id]
         ancho_estimado = ancho_caja * aspecto_foto * escalas[source_image_id]
         medidas = dict(medidas_originales)
@@ -1202,7 +1229,14 @@ def _medir_desde_cajas(
 
         if es_columna_organica and not isinstance(estructura.get("armado_columna_organica"), Mapping):
             avisos.append(f"Grosor de {id_estructura} queda al motor: la caja puede incluir su inclinación.")
-        sincronizar_armados(estructura, alto_final, ancho_final if dimensiones_ancho else None, id_estructura)
+        grosor_base = ancho_estimado if es_columna_organica else None
+        sincronizar_armados(
+            estructura,
+            alto_final,
+            ancho_final if dimensiones_ancho else None,
+            id_estructura,
+            grosor_base_m=grosor_base,
+        )
 
         cambio = (
             anterior_alto is not None and abs(anterior_alto - alto_final) >= 0.05

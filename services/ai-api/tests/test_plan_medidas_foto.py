@@ -28,10 +28,10 @@ def test_una_escala_isotropica_reescala_medidas_y_armado_organico() -> None:
     arco, columna = resultado["estructuras"]
     assert columna["medidas"]["alto_m"] == 1.6
     assert columna["armado_columna_organica"]["forma"]["altoM"] == 1.6
-    assert columna["armado_columna_organica"]["volumen"]["grosorPatasM"] == 0.6
+    assert columna["armado_columna_organica"]["volumen"]["grosorPatasM"] == 0.53
     assert "ancho_m" not in columna["medidas"]
     assert arco["medidas"] == {"ancho_m": 1.2, "alto_m": 2.4}
-    assert any("Conservé el grosor" in aviso for aviso in avisos)
+    assert any("Derivé el grosor" in aviso for aviso in avisos)
 
 
 def test_medida_cliente_por_pieza_es_ancla_sin_bandera_de_conteo() -> None:
@@ -72,7 +72,55 @@ def test_cada_foto_calcula_su_escala_sin_heredar_la_de_otra() -> None:
     resultado, _ = _medir_desde_cajas(plan, pistas, medidas_del_cliente=False)
 
     assert resultado["estructuras"][0]["medidas"]["alto_m"] == 2.4
-    assert resultado["estructuras"][1]["medidas"]["alto_m"] == 2.2
+    assert resultado["estructuras"][1]["medidas"] == {}
+
+
+def test_semiarco_estandar_escala_columna_isotropicamente_y_deriva_grosor() -> None:
+    plan = {"supuestos": [], "estructuras": [
+        {"estructura_id": "semiarco", "tipo": "semiarco", "referencia_element_id": "s", "medidas": {"alto_m": 2.2}},
+        {
+            "estructura_id": "columna", "tipo": "columna_organica", "referencia_element_id": "c",
+            "medidas": {"alto_m": 1.8},
+            "armado_columna_organica": {
+                "forma": {"altoM": 1.8},
+                "volumen": {"grosorPatasM": 1.1, "grosorCimaM": 0.55},
+            },
+        },
+    ]}
+    pistas = [
+        _pista("s", {"x": 0.05, "y": 0.1, "width": 0.35, "height": 0.7}),
+        _pista("c", {"x": 0.6, "y": 0.2, "width": 0.23, "height": 0.43}),
+    ]
+
+    resultado, avisos = _medir_desde_cajas(plan, pistas, medidas_del_cliente=False)
+
+    columna = resultado["estructuras"][1]
+    assert columna["medidas"]["alto_m"] == 1.35
+    assert columna["armado_columna_organica"]["forma"]["altoM"] == 1.35
+    assert columna["armado_columna_organica"]["volumen"]["grosorPatasM"] == 0.72
+    assert "ancho_m" not in columna["medidas"]
+    assert any("Derivé el grosor de columna" in aviso for aviso in avisos)
+
+
+def test_columna_que_toca_techo_conserva_medida_motor_y_avisa() -> None:
+    plan = {"supuestos": [], "estructuras": [
+        {
+            "estructura_id": "columna", "tipo": "columna_organica", "referencia_element_id": "c",
+            "medidas": {},
+            "armado_columna_organica": {
+                "forma": {"altoM": 2.2},
+                "volumen": {"grosorPatasM": 1.1, "grosorCimaM": 0.55},
+            },
+        },
+    ]}
+    pistas = [_pista("c", {"x": 0.62, "y": 0.0, "width": 0.3, "height": 1.0})]
+
+    resultado, avisos = _medir_desde_cajas(plan, pistas, medidas_del_cliente=False)
+
+    columna = resultado["estructuras"][0]
+    assert columna["medidas"]["alto_m"] == 2.2
+    assert columna["armado_columna_organica"]["forma"]["altoM"] == 2.2
+    assert any("borde superior" in aviso for aviso in avisos)
 
 
 def test_escala_separa_imagenes_y_actualiza_armados_clasicos() -> None:
