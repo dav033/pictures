@@ -348,6 +348,17 @@ preguntaban edad y traían baby shower/XV por color, «fiesta de empresa» → i
 curso (Codex e3v): «Propónme algo» → propuesta de piezas → plan DENTRO de la guiada → imagen FLUX; «Aprender a hacerlo» = pasos del
 plan; foto con piezas → plan de la foto (cuántos y cuáles globos) → flujo normal con imagen.
 
+**Más tarde (2026-10-06 ~16:45), integrado en la rama local:** biblioteca real con las 20 fotos del dueño (`Downloads/hola`,
+11 temáticas, análisis y planes congelados en `data/biblioteca-real/analisis/`, fotos ≤800 px en
+`public/biblioteca-sempertex/referencias/`, licencia «referencia_web_sin_licencia»; segunda pasada en curso: elegía impresos
+Infinity para colores lisos/metálicos y perdía colores); «Propónme algo» (propuesta → plan dentro de la guiada → imagen) y
+«Aprender a hacerlo» con pasos del plan + plan desde la foto; colores vivos y hex del globo en el texto de FLUX (011 «vivid pink
+(#E04B87)», 040 «vivid cyan blue (#01B2E8)»; sin hex en cromados); acentos cromados con poco peso en tallas ≤12" y «a few small
+accent» (no dominan la imagen). Guías de armado por estructura investigadas en internet (14 estructuras, 64 fuentes; workflow
+`guias-armado-globos`) → tercera pasada en curso: entrada por chat, pregunta «completa o individual», plan con la gráfica de armado
+y guía aproximada con fuentes. Pendiente: 3 errores de `tsc` en `scripts/biblioteca/construir-biblioteca-real.ts` (los corrige la
+segunda pasada de la biblioteca).
+
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
 - Pendientes: taxonomía 12 o 18 clases (las 5 que AGENTS.md daba por retiradas: `arco_no_denso`, `columna_no_densa`, `pared_densa`,
