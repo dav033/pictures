@@ -34,6 +34,10 @@ Pedidos (marcar ✅ solo con verificación independiente):
 6. [ ] Los chips «Otros colores · Agregar una pieza · Hacerla más grande · Hacerla más sencilla» deben estar DENTRO del editor.
 7. [ ] En el editor: escoger un color y REEMPLAZARLO por completo por otra referencia de globo del catálogo; también agregar/poner otros colores desde el catálogo.
 8. [ ] Integrar la GRÁFICA DEL CLÁSICO en «Tu plan» (y editable).
+Workflows lanzados para esta lista (22:40): ritmo `wf_450d728a-c0d` (comparador), `wf_3624874a-cd1` (probador), `wf_4c3627ea-928`
+(verificador); `wf_ab26d084-638` (lector de fotos + banco de calidad con las 10 fotos de ejemplo); `wf_965af056-88e` (auditoría de las
+31 decoraciones); `wf_d5965d36-c4e` (paridad del motor). EN COLA: `scratchpad/wf-editor.js` (pedidos 4-7) cuando terminen A/B del
+encargo grande (`wf_de9b969f-a93`) y el de granel (`wf_1833d72e-28f`). Script de ritmo: `scratchpad/wf-ritmo.js` con args {tipo, latido}.
 Pedidos anteriores de esta noche aún abiertos: piezas individuales; imagen fiel a las piezas (dos columnas ≠ arco); tabla de «Ver detalle»; idea amplia con productos Sempertex; «Agregar al plan»; materiales con imágenes de globos; lectura de foto detallada; globos a granel para negocio; auditoría de las 31 decoraciones contra su foto (remates > 12"); arreglos de «Ajustar mi plan» (añadir color/quitar pieza no deben cambiar el resto).
 
 ## ⏯ ESTADO PARA RETOMAR (2026-10-06 ~21:30, antes del /compact)
