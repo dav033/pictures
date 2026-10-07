@@ -5,15 +5,19 @@ import Link from "next/link";
 import { ArrowLeft, Rows3, Circle, Anchor } from "lucide-react";
 import { FORMATOS_GLOBO, NOMBRE_FAMILIA, coloresDelFormato, formatoPorId, infladoValido, type FormatoGlobo } from "@/lib/globos3d/formatos";
 import { MODULOS, armarModulo, materialesModulo, moduloPorId, type TipoModulo } from "@/lib/globos3d/modulos";
+import { PATRONES_COLUMNA, armarColumna, type PatronColumna } from "@/lib/globos3d/columnas";
 import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
 import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena } from "./escena-globos";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 
+/** Formatos de la columna de cuartetos: redondos de 5" a 18". */
+const FORMATOS_COLUMNA = ["R-5", "R-9", "R-12", "R-18"] as const;
+
 /** Formatos con los que se arman módulos: redondos de 5" a 24" y Link-O-Loon 6 y 12. */
 const FORMATOS_MODULO = ["R-5", "R-9", "R-12", "R-18", "R-24", "LOL-6", "LOL-12"] as const;
 
-type Modo = "globo" | "modulo";
+type Modo = "globo" | "modulo" | "columna";
 
 const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
 const ACTIVO = "bg-acento text-sobre-acento ring-acento";
@@ -44,6 +48,10 @@ export function Taller3D() {
   const [coloresModulo, setColoresModulo] = useState<string[]>(["009", "009", "009", "009", "009", "009"]);
   const [ranura, setRanura] = useState<number | null>(null);
   const [verAnclas, setVerAnclas] = useState(true);
+  // Columna (los colores de la espiralada de Sempertex: Amarillo y Fucsia opuestos, Azul Caribe y Verde Lima opuestos)
+  const [patron, setPatron] = useState<PatronColumna>("espiral");
+  const [alturaCm, setAlturaCm] = useState(180);
+  const [coloresColumna, setColoresColumna] = useState<string[]>(["020", "038", "012", "031"]);
 
   // La escena se crea una vez (three.js se carga solo en el navegador).
   useEffect(() => {
@@ -72,6 +80,8 @@ export function Taller3D() {
 
   const inflado = infladoValido(formato, infladoCm);
   const armado = useMemo(() => armarModulo(modulo, formato, inflado), [modulo, formato, inflado]);
+  const datosPatron = PATRONES_COLUMNA.find((p) => p.id === patron) ?? PATRONES_COLUMNA[1]!;
+  const columna = useMemo(() => armarColumna({ formato, infladoCm: inflado, alturaCm, patron, colores: coloresColumna.slice(0, datosPatron.colores) }), [formato, inflado, alturaCm, patron, coloresColumna, datosPatron.colores]);
   const refModulo = (i: number): ReferenciaSempertex | undefined => {
     const c = coloresModulo[i] ?? codigo;
     return colores.find((x) => x.codigo === c) ?? color;
@@ -81,7 +91,13 @@ export function Taller3D() {
   useEffect(() => {
     const escena = escenaRef.current;
     if (!listo || !escena || !color) return;
-    if (modo === "modulo") {
+    if (modo === "columna") {
+      const globos: GloboColocadoEnEscena[] = columna.globos.map((g) => {
+        const ref = colores.find((x) => x.codigo === g.codigo) ?? color;
+        return { formato, infladoCm: inflado, hex: ref.hexGlobo, familia: ref.familia, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
+      });
+      escena.mostrarModulo(globos, []);
+    } else if (modo === "modulo") {
       const globos: GloboColocadoEnEscena[] = armado.globos.map((g) => {
         const ref = colores.find((x) => x.codigo === coloresModulo[g.indice]) ?? color;
         return { formato, infladoCm: inflado, hex: ref.hexGlobo, familia: ref.familia, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
@@ -94,7 +110,7 @@ export function Taller3D() {
     } else {
       escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
-  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas]);
+  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna]);
 
   function elegirFormato(f: FormatoGlobo) {
     setFormatoId(f.id);
@@ -102,16 +118,23 @@ export function Taller3D() {
     const disponibles = coloresDelFormato(f.id);
     if (!disponibles.some((c) => c.codigo === codigo)) setCodigo(disponibles[0]?.codigo ?? codigo);
     setColoresModulo((actual) => actual.map((c) => (disponibles.some((d) => d.codigo === c) ? c : disponibles[0]?.codigo ?? c)));
+    setColoresColumna((actual) => actual.map((c) => (disponibles.some((d) => d.codigo === c) ? c : disponibles[0]?.codigo ?? c)));
     setVista("uno");
   }
 
   function cambiarModo(nuevo: Modo) {
     setModo(nuevo);
     if (nuevo === "modulo" && !FORMATOS_MODULO.includes(formato.id as (typeof FORMATOS_MODULO)[number])) elegirFormato(formatoPorId("R-12")!);
+    if (nuevo === "columna" && !FORMATOS_COLUMNA.includes(formato.id as (typeof FORMATOS_COLUMNA)[number])) elegirFormato(formatoPorId("R-12")!);
+    setRanura(null);
   }
 
   function elegirColor(nuevo: string) {
     setCodigo(nuevo);
+    if (modo === "columna") {
+      setColoresColumna((actual) => (ranura === null ? actual.map(() => nuevo) : actual.map((c, i) => (i === ranura ? nuevo : c))));
+      return;
+    }
     if (modo !== "modulo") return;
     // Con una ranura elegida cambia solo ese globo; sin ranura, todo el módulo queda de ese color.
     setColoresModulo((actual) => (ranura === null ? actual.map(() => nuevo) : actual.map((c, i) => (i === ranura ? nuevo : c))));
@@ -124,7 +147,9 @@ export function Taller3D() {
   }, [colores]);
 
   const materiales = materialesModulo(coloresModulo.slice(0, modulo.globos));
-  const formatosVisibles = modo === "modulo" ? FORMATOS_GLOBO.filter((f) => FORMATOS_MODULO.includes(f.id as (typeof FORMATOS_MODULO)[number])) : FORMATOS_GLOBO;
+  const formatosVisibles = modo === "modulo"
+    ? FORMATOS_GLOBO.filter((f) => FORMATOS_MODULO.includes(f.id as (typeof FORMATOS_MODULO)[number]))
+    : modo === "columna" ? FORMATOS_GLOBO.filter((f) => FORMATOS_COLUMNA.includes(f.id as (typeof FORMATOS_COLUMNA)[number])) : FORMATOS_GLOBO;
   const seleccionado = (i: number) => (modo === "modulo" ? coloresModulo[i] : codigo);
 
   return (
@@ -141,7 +166,7 @@ export function Taller3D() {
       </header>
 
       <div role="tablist" aria-label="Qué modelar" className="inline-flex w-fit gap-1 rounded-full bg-superficie p-1 ring-1 ring-borde">
-        {([["globo", "Globos"], ["modulo", "Módulos"]] as const).map(([valor, etiqueta]) => (
+        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"]] as const).map(([valor, etiqueta]) => (
           <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => cambiarModo(valor)}
             className={`min-h-10 rounded-full px-5 text-sm font-medium ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
             {etiqueta}
@@ -166,12 +191,45 @@ export function Taller3D() {
             </section>
           )}
 
+          {modo === "columna" && (
+            <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
+              <h2 className="mb-2 text-sm font-semibold text-texto">Columna de cuartetos</h2>
+              <div className="grid grid-cols-2 gap-1.5">
+                {PATRONES_COLUMNA.map((p) => (
+                  <button key={p.id} type="button" onClick={() => { setPatron(p.id); setRanura(null); }} aria-pressed={p.id === patron}
+                    className={`${BOTON} ${p.id === patron ? ACTIVO : INACTIVO}`}>{p.nombre}</button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-texto-suave">{datosPatron.descripcion}</p>
+              <label htmlFor="altura" className="mt-3 flex items-baseline justify-between text-sm font-semibold text-texto">
+                Altura <span className="font-mono text-xs font-normal text-texto-suave">{(alturaCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {columna.niveles} cuartetos</span>
+              </label>
+              <input id="altura" type="range" min={40} max={260} step={5} value={alturaCm} onChange={(e) => setAlturaCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
+              {datosPatron.colores > 1 && (
+                <>
+                  <p className="mb-2 mt-3 text-xs text-texto-suave">{ranura === null ? "Toca un color de abajo para toda la columna, o elige un puesto para cambiar solo ese." : `Elige el color ${ranura + 1}.`}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {Array.from({ length: datosPatron.colores }, (_, i) => {
+                      const ref = colores.find((x) => x.codigo === coloresColumna[i]);
+                      return (
+                        <button key={i} type="button" onClick={() => setRanura(ranura === i ? null : i)} aria-pressed={ranura === i}
+                          aria-label={`Color ${i + 1}: ${ref?.nombreCompleto ?? ""}`} title={`Color ${i + 1}: ${ref?.nombreCompleto ?? ""}`}
+                          className={`grid size-10 place-items-center rounded-full font-mono text-xs ring-2 ring-offset-2 ring-offset-superficie ${ranura === i ? "ring-acento" : "ring-borde"}`}
+                          style={{ background: ref?.hexGlobo, color: "rgba(0,0,0,.55)" }}>{i + 1}</button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+
           <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-            <h2 className="mb-2 text-sm font-semibold text-texto">{modo === "modulo" ? "Globo del módulo" : "Formato"}</h2>
+            <h2 className="mb-2 text-sm font-semibold text-texto">{modo === "modulo" ? "Globo del módulo" : modo === "columna" ? "Globo de los cuartetos" : "Formato"}</h2>
             <div className="grid grid-cols-3 gap-1.5">
               {formatosVisibles.map((f) => (
-                <button key={f.id} type="button" onClick={() => elegirFormato(f)} aria-pressed={(modo === "modulo" || vista === "uno") && f.id === formato.id}
-                  className={`${BOTON} ${(modo === "modulo" || vista === "uno") && f.id === formato.id ? ACTIVO : INACTIVO}`}>
+                <button key={f.id} type="button" onClick={() => elegirFormato(f)} aria-pressed={(modo !== "globo" || vista === "uno") && f.id === formato.id}
+                  className={`${BOTON} ${(modo !== "globo" || vista === "uno") && f.id === formato.id ? ACTIVO : INACTIVO}`}>
                   {f.id}
                 </button>
               ))}
@@ -185,7 +243,7 @@ export function Taller3D() {
             )}
           </section>
 
-          {(modo === "modulo" || vista === "uno") && (
+          {(modo !== "globo" || vista === "uno") && (
             <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
               <label htmlFor="inflado" className="flex items-baseline justify-between text-sm font-semibold text-texto">
                 Inflado <span className="font-mono text-xs font-normal text-texto-suave">{formatoCm(inflado)} de {formatoCm(formato.diametroMaxCm)} máx.</span>
@@ -231,7 +289,9 @@ export function Taller3D() {
                   <p className="mb-1 font-mono text-[0.7rem] uppercase tracking-wider text-texto-suave">{NOMBRE_FAMILIA[familia] ?? familia}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {lista.map((c) => {
-                      const marcado = modo === "modulo" ? (ranura === null ? coloresModulo.slice(0, modulo.globos).every((x) => x === c.codigo) : seleccionado(ranura) === c.codigo) : c.codigo === color?.codigo;
+                      const marcado = modo === "columna"
+                        ? (ranura === null ? coloresColumna.slice(0, datosPatron.colores).every((x) => x === c.codigo) : coloresColumna[ranura] === c.codigo)
+                        : modo === "modulo" ? (ranura === null ? coloresModulo.slice(0, modulo.globos).every((x) => x === c.codigo) : seleccionado(ranura) === c.codigo) : c.codigo === color?.codigo;
                       return (
                         <button key={c.codigo} type="button" onClick={() => elegirColor(c.codigo)} aria-pressed={marcado}
                           title={`${c.nombreCompleto} ${c.codigo}`} aria-label={`${c.nombreCompleto} ${c.codigo}`}
@@ -253,7 +313,18 @@ export function Taller3D() {
             {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-texto">{error}</p>}
             {color && (
               <div className="pointer-events-none absolute left-3 top-3 max-w-[80%] rounded-xl bg-superficie/90 px-3 py-2 text-sm shadow-sm ring-1 ring-borde backdrop-blur">
-                {modo === "modulo" ? (
+                {modo === "columna" ? (
+                  <>
+                    <p className="font-semibold text-texto">Columna {datosPatron.nombre.toLowerCase()} de {formato.id} a {formatoCm(inflado)}</p>
+                    <p className="font-mono text-xs text-texto-suave">{(columna.alturaCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {columna.niveles} cuartetos · {columna.globos.length} globos</p>
+                    <ul className="mt-1 text-xs text-texto">
+                      {columna.materiales.map((m) => {
+                        const ref = referenciaPorCodigo(m.codigo);
+                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
+                      })}
+                    </ul>
+                  </>
+                ) : modo === "modulo" ? (
                   <>
                     <p className="font-semibold text-texto">{modulo.nombre} de {formato.id} a {formatoCm(inflado)}</p>
                     <p className="font-mono text-xs text-texto-suave">{modulo.globos} globos · {formatoCm(armado.anchoCm)} de ancho</p>
