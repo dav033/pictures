@@ -31,7 +31,7 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 | `wf_965af056-88e` auditoría | 31 decoraciones contra su foto: productos Sempertex reales, remates > 12" | decoraciones.json, data/biblioteca-real |
 | ritmo | comparador (84), probador (84), verificador (84), usabilidad (85): solo informan | scratchpad/ritmo/*.md |
 
-**TOPE: máximo 6 agentes a la vez** (pedido del dueño ~22:45, RAM a ~1 GB disponible). Se detuvieron los de solo lectura: ritmo
+**TOPE DE CONCURRENCIA: máximo 6 agentes corriendo a la vez** (no limita cuántos se lanzan: lo demás se encola) (pedido del dueño ~22:45, RAM a ~1 GB disponible). Se detuvieron los de solo lectura: ritmo
 (comparador/probador/verificador/usabilidad 84-85) y la auditoría de la biblioteca (sus borradores quedan en
 `scratchpad/auditoria-biblioteca/aud2-r*.txt`). Siguen 7 que editan código (A, E, D, B2, granel, paridad, lector); no se lanza nada
 nuevo hasta bajar de 6. B terminó (gráfica del clásico en cada pieza + «Modificar esta pieza» + tabla de «Ver detalle»).
