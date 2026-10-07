@@ -455,7 +455,7 @@ async function testCaminoDeGeneracion(): Promise<void> {
   assert.ok(reservaNotaGuiaEscena() >= Math.max(...[1, 2, 3, 4, 5, 6].flatMap((n) => [notaGuiaEscena(true, n).length, notaGuiaEscena(false, n).length])) + 2, "la reserva cubre la nota con su conteo");
   // Ronda de fútbol (semiarco + 2 columnas, guía sin foto): FLUX dibujó una cuarta pieza. La nota dice, en positivo,
   // que el mapa muestra todas las piezas de globo de la escena y cuántas son; sin número, la nota de siempre.
-  assert.match(notaGuiaEscena(false, 3), /not a photo\. The map shows every balloon piece in the scene: exactly three pieces, nothing else made of balloons\. Keep exactly the shape/);
+  assert.match(notaGuiaEscena(false, 3), /not a photo\. The map shows every balloon piece in the scene: exactly three pieces, nothing else made of balloons, no arched backdrop. Keep exactly the shape/);
   assert.match(notaGuiaEscena(true, 1), /exactly one piece, nothing else/);
   assert.equal(notaGuiaEscena(false, 7), NOTA_GUIA_ESCENA_SIN_ESTRUCTURA);
   assert.equal(guia.imagenes![0]!.piezas, guia.resumen?.cajas?.length, "la nota cuenta las piezas que el mapa coloca");
