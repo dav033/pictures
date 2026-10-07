@@ -2,7 +2,8 @@ import { ejecutarConversacionStream } from "@sempertex/agente-core";
 import type { Herramienta, Mensaje } from "@sempertex/agente-core";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { bibliotecaVisible, buscarDecoracionesSempertex, normalizarBusqueda, proveedoresVisibles } from "@/lib/biblioteca-sempertex/biblioteca";
+import { bibliotecaVisible, buscarDecoracionesSempertex, normalizarBusqueda, proveedoresVisibles, tematicasDisponibles } from "@/lib/biblioteca-sempertex/biblioteca";
+import { sanearOpcionesCatalogo } from "@/lib/ia/guiado/opciones-catalogo";
 import { AsistenteGuiadoRequestSchema, CotizacionGuiadaSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
@@ -284,7 +285,11 @@ export async function POST(request: Request) {
             if (deadline.signal.aborted) break;
             if (evento.tipo === "texto") mandar("texto", { delta: evento.delta });
             else if (evento.tipo === "herramienta") mandar("herramienta", { nombre: evento.nombre, estado: evento.estado, ok: evento.ok });
-            else mandar("fin", { reply: evento.resultado.texto, brief: {}, proveedor: evento.resultado.proveedor, modelo: evento.resultado.modelo, result: datos });
+            else {
+              // Fuera de un plan a medida, las «Opciones:» de estilo solo pueden nombrar temáticas con decoraciones.
+              const reply = planActual || alcancePropuesta || datos.propuesta ? evento.resultado.texto : sanearOpcionesCatalogo(evento.resultado.texto, tematicasDisponibles(briefVigente().evento));
+              mandar("fin", { reply, brief: {}, proveedor: evento.resultado.proveedor, modelo: evento.resultado.modelo, result: datos });
+            }
           }
           if (deadline.wasDeadlineExceeded() && !request.signal.aborted) mandar("error", { error: "Tardé más de la cuenta en responder. Inténtalo de nuevo.", code: "AI_TIMEOUT", retryable: true });
           controller.close();
