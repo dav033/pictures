@@ -18,7 +18,8 @@ export type FeatureFlag =
   | "CONTEO_REFERENCIA_V1"
   | "ANALISIS_COLOR_SEMPERTEX_V1"
   | "GUIA_ESTRUCTURA_V1"
-  | "GUIA_ESCENA_V1";
+  | "GUIA_ESCENA_V1"
+  | "GUIA_ESCENA_SIN_FOTO_V1";
 
 /**
  * Valor por defecto de cada bandera: **el mismo en local y en producción**.
@@ -46,6 +47,15 @@ export type FeatureFlag =
  * `/edit` UNA imagen plana con los globos de todas las piezas del plan (dibujados por el motor) colocados donde
  * la foto tiene cada pieza, en lugar de la foto, que nunca sale hacia fal. Una imagen de entrada más
  * (~US$ 0,021 estimados por generación). `false` vuelve a la generación solo con texto.
+ *
+ * `GUIA_ESCENA_SIN_FOTO_V1` (2026-10-07, «¿O sea FLUX también debería recibir el gráfico?»): la misma guía para los
+ * planes SIN foto (de texto o de una idea del catálogo), con cada pieza a su escala real en metros
+ * (`instanciasAEscala`) y la receta del motor en las piezas sin armado (la que enseña la gráfica del plan). Necesita
+ * `GUIA_ESCENA_V1` encendida. **Encendida por defecto**: en la comparación real del 2026-10-07 (FLUX base, la misma
+ * semilla con y sin guía; semiarco del dueño, semiarco + 2 columnas de fútbol, guirnalda de 2,4 m) la guía dejó cada
+ * pieza con su forma y su escala (la guirnalda de 2,4 m dejó de salir de pared a pared, las columnas con su degradado
+ * y su remate plano) sin empobrecer el entorno ni dar aspecto de dibujo. Coste: una imagen de entrada más
+ * (~US$ 0,021 estimados) y unos segundos más (`/edit` y, en una pieza orgánica sin armado, su receta).
  *
  * Lo que hace cada una está en su ADR (ARMADO_ARCO_COLUMNA_V1 → ADR-0034,
  * ESTIMAR_CONTEO_V1 → ADR-0038, PATRONES_COLOR_V1 → ADR-0028,
@@ -232,6 +242,7 @@ const BANDERAS: readonly FeatureFlag[] = [
   "ANALISIS_COLOR_SEMPERTEX_V1",
   "GUIA_ESTRUCTURA_V1",
   "GUIA_ESCENA_V1",
+  "GUIA_ESCENA_SIN_FOTO_V1",
 ] as const satisfies readonly FeatureFlag[];
 
 /**

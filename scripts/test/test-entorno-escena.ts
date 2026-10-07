@@ -9,12 +9,17 @@
  * utilería, luz, detalle de piso, encuadre 3/4 con profundidad de campo y la guarda «the only balloons are the pieces
  * described») DESPUÉS de la decoración, con su forma compacta reservada en todos los pasos de presupuesto.
  *
- * Cuatro casos con la MISMA cadena que /api/generate (`scripts/lib/caption-de-cuerpo-generate.ts`) o con la entrada
- * guardada de ej06, sin red ni coste (US$0):
+ * Ronda 2 («la composición sigue pobre»): una sola composición para todos los eventos, la luz dramática de la hora
+ * del evento con el salón e invitados desenfocados DETRÁS de las piezas, la mesa temática iluminada a un lado, la
+ * guarda con el número de piezas y el encuadre 3/4 como PRIMERA frase del caption.
+ *
+ * Cinco casos con la MISMA cadena que /api/generate (`scripts/lib/caption-de-cuerpo-generate.ts`) o con la entrada
+ * guardada de ej06 o del dueño, sin red ni coste (US$0):
  *   1. cumpleaños infantil (safari) con semiarco + 2 columnas;
  *   2. boda con arco orgánico de 3 m en un jardín al atardecer (lo que dijo el cliente);
  *   3. guirnalda de 2,4 m sobre la mesa principal (baby shower);
- *   4. ej06 (tres piezas del motor orgánico) y su variante de ocho colores.
+ *   4. ej06 (tres piezas del motor orgánico) y su variante de ocho colores;
+ *   5. el caso del dueño (guiada-20261007-070255-dzwwhq: fútbol, arco asimétrico + 2 columnas).
  *
  *   npx tsx --conditions=react-server scripts/test/test-entorno-escena.ts [--imprimir]
  */
@@ -22,7 +27,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { PLAN_RESUELTO_CONTRACT_VERSION } from "@/lib/ia/contracts/domain-v1";
-import { avisoNoCotizadoEntorno, entornoDeEscena, eventoDelContexto, fraseEntorno, type EntornoEscena } from "@/lib/ia/escena/entorno-escena";
+import { avisoNoCotizadoEntorno, ENCUADRE_ESCENA, entornoDeEscena, eventoDelContexto, fraseEntorno, tonoLuzParaPaleta, type EntornoEscena } from "@/lib/ia/escena/entorno-escena";
 import { buildVisualContext, type VisualContext } from "@/lib/ia/escena/visual-context";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { BASE_PROMPT_MAX_LENGTH } from "@/lib/ia/kagutsuchi/caption-flux";
@@ -51,13 +56,22 @@ async function caso(nombre: string, prueba: () => Promise<void> | void): Promise
 const COLORES_EN = [...new Set(Object.values(PALETA_COLORES_EN_V2).flatMap((color) => color.split(" ")))];
 const PALABRA_DE_COLOR = new RegExp(`\\b(?:${COLORES_EN.join("|")}|golden|silver|ivory|pastel)\\b`, "i");
 
-/** La parte del caption que es el entorno: desde el escenario hasta el final. */
-function textoDelEntorno(prompt: string, entorno: EntornoEscena): string {
-  const bajo = prompt.toLowerCase();
-  const inicio = [entorno.escenario, entorno.escenarioCorto].map((escenario) => bajo.indexOf(`. ${escenario.toLowerCase()}`)).find((indice) => indice >= 0);
-  assert.ok(inicio !== undefined && inicio > 0, `el entorno «${entorno.escenarioCorto}» está en el caption y va DESPUÉS de la decoración\n${prompt}`);
+/** La guarda de globos del entorno, con el número de piezas o sin él. */
+const GUARDA = /the only balloons (?:are the (?:(?:two|three|four|five|six) )?pieces described|in the scene)/;
+
+/**
+ * La parte del caption que es el entorno: desde la frase de la guarda de globos (la del entorno) hasta el final (la
+ * frase abre por el lugar, la hora o la luz, así que se busca la frase que termina en la guarda).
+ */
+function textoDelEntorno(prompt: string): string {
+  const guarda = prompt.search(GUARDA);
+  const inicio = guarda < 0 ? -1 : prompt.lastIndexOf(". ", guarda);
+  assert.ok(inicio > 0, `el entorno está en el caption y va DESPUÉS de la decoración\n${prompt}`);
   return prompt.slice(inicio + 2);
 }
+
+/** Lo que la ronda 2 exige al entorno con escenografía propia: dice qué hay DETRÁS de las piezas (o a sus lados). */
+const DETRAS_DE_LAS_PIEZAS = /(?:far behind|at both sides of) the pieces/;
 
 /**
  * Con el límite de antes (1000; hoy es 1500, 6628c49) el caption también cabe y pasa el preflight; el entorno compacto o
@@ -72,19 +86,26 @@ function cabeEn1000(nombre: string, prompt: string, sceneSpec: SceneSpec, clause
     if (IMPRIMIR) console.log(`     ${nombre} a 1000 [${prompt.length}]: sin entorno (red de seguridad)`);
     return;
   }
-  assert.match(textoDelEntorno(prompt, entorno), /the only balloons (?:are the pieces described|in the scene)/, `${nombre} a 1000: la guarda sigue`);
-  if (IMPRIMIR) console.log(`     ${nombre} a 1000 [${prompt.length}]: …${textoDelEntorno(prompt, entorno)}`);
+  assert.match(textoDelEntorno(prompt), GUARDA, `${nombre} a 1000: la guarda sigue`);
+  // El encuadre se va solo con la forma mínima del entorno (el último paso, sin cierre fotográfico), nunca antes.
+  if (entorno.conEncuadre && !prompt.startsWith(`${ENCUADRE_ESCENA}. `)) assert.ok(textoDelEntorno(prompt).length <= 141, `${nombre} a 1000: sin encuadre solo con el entorno mínimo\n${prompt}`);
+  if (IMPRIMIR) console.log(`     ${nombre} a 1000 [${prompt.length}]: …${textoDelEntorno(prompt)}`);
 }
 
-/** Lo que todo caption con entorno cumple: cabe, preflight verde, entorno después de la decoración, guarda, encuadre. */
+/** Lo que todo caption con entorno cumple: cabe, preflight verde, encuadre primero, entorno después de la decoración, guarda. */
 function comunes(nombre: string, prompt: string, preflight: { ok: boolean; errors: string[] }, entorno: EntornoEscena | undefined): string {
   assert.ok(entorno, `${nombre}: hay entorno`);
   assert.ok(prompt.length <= BASE_PROMPT_MAX_LENGTH, `${nombre}: cabe en ${BASE_PROMPT_MAX_LENGTH} (mide ${prompt.length})\n${prompt}`);
   assert.equal(preflight.ok, true, `${nombre}: preflight ${preflight.errors.join("; ")}\n${prompt}`);
   assert.deepEqual(findFluxPromptLanguageLeaks(prompt), [], `${nombre}: sin español`);
-  const delEntorno = textoDelEntorno(prompt, entorno);
-  assert.match(delEntorno, /the only balloons (?:are the pieces described|in the scene)/, `${nombre}: la guarda de globos`);
-  assert.match(delEntorno, /eye-level three-quarter (?:view|angle)/i, `${nombre}: el encuadre 3/4`);
+  const delEntorno = textoDelEntorno(prompt);
+  assert.match(delEntorno, GUARDA, `${nombre}: la guarda de globos`);
+  // El encuadre 3/4 es la PRIMERA frase (en la cola FLUX.2 no lo leía), y solo está ahí.
+  assert.ok(prompt.startsWith(`${ENCUADRE_ESCENA}. `), `${nombre}: el encuadre abre el caption\n${prompt}`);
+  assert.equal(prompt.split(ENCUADRE_ESCENA).length, 2, `${nombre}: un solo encuadre`);
+  assert.doesNotMatch(prompt, /three-quarter angle|lit from the front/i, `${nombre}: ni el encuadre viejo de la cola ni la luz de flash`);
+  if (entorno.conEscenografiaPropia) assert.match(delEntorno, DETRAS_DE_LAS_PIEZAS, `${nombre}: el entorno dice qué hay detrás de las piezas\n${delEntorno}`);
+  assert.doesNotMatch(prompt, /plain wall/, `${nombre}: nada de pared lisa`);
   assert.doesNotMatch(entornoSinCierre(delEntorno), PALABRA_DE_COLOR, `${nombre}: el entorno no nombra colores`);
   assert.doesNotMatch(prompt, /\bplain (?:white )?(?:studio )?background\b|\bstudio\b/i, `${nombre}: nada de estudio`);
   return delEntorno;
@@ -148,7 +169,7 @@ async function main(): Promise<void> {
     assert.equal(evento({}), "fiesta");
   });
 
-  await caso("sin entorno con foto del espacio, sobre una imagen previa o si pide fondo liso; sin utilería en niveles 0-1 o con escenografía de la foto", () => {
+  await caso("sin entorno con foto del espacio, sobre una imagen previa o si pide fondo liso; sin utilería en niveles 0-1 o con escenografía de la foto; sin encuadre con la guía de escena", () => {
     const contexto = buildVisualContext({ brief: { tipo_evento: "cumpleaños" }, userRequest: "Cumpleaños de mi hija de 5 años" });
     assert.equal(entornoDeEscena({ contexto, nivel: 2, modo: "edit_venue" }), undefined);
     assert.equal(entornoDeEscena({ contexto, nivel: 2, modo: "revise_current_result" }), undefined);
@@ -156,40 +177,98 @@ async function main(): Promise<void> {
     const fiel = entornoDeEscena({ contexto, nivel: 0, modo: "text_to_image" })!;
     assert.equal(fiel.mesa, undefined);
     assert.deepEqual(fiel.extras, []);
-    assert.equal(avisoNoCotizadoEntorno(fiel), undefined, "sin objetos añadidos, sin aviso del entorno");
+    // Nivel 0: sin la utilería del evento, pero con la luz y el salón detrás (nunca paño liso), que se avisan.
+    assert.equal(avisoNoCotizadoEntorno(fiel), "La iluminación, las luces y las mesas de invitados de la vista previa son ambientación: no están incluidos en la cotización.");
+    assert.equal(fraseEntorno(fiel, "compacto").escena, "At night, warm amber uplighting, string light bokeh, blurred guests far behind the pieces, the only balloons are the pieces described");
     const conFoto = entornoDeEscena({ contexto, nivel: 2, modo: "text_to_image", conEscenografiaDeFoto: true })!;
     assert.equal(conFoto.mesa, undefined, "la mesa de la foto es la mesa: no se pone otra");
+    assert.equal(conFoto.conEscenografiaPropia, false, "ni luces colgadas, ni invitados: la escenografía de la foto es el fondo");
+    assert.equal(avisoNoCotizadoEntorno(conFoto), undefined, "sin objetos añadidos, sin aviso del entorno");
+    for (const detalle of ["completo", "medio", "compacto", "minimo"] as const) {
+      const escena = fraseEntorno(conFoto, detalle).escena;
+      assert.doesNotMatch(escena, /fabric|curtain|guests|table|rug|string lights?/, `con escenografía de la foto, la ${detalle} no pone objetos propios: ${escena}`);
+    }
     const audaz = entornoDeEscena({ contexto, nivel: 2, modo: "text_to_image" })!;
     assert.equal(audaz.evento, "cumple_infantil");
     assert.ok(audaz.mesa && audaz.extras.length >= 2 && audaz.detalle, "nivel 2: mesa, utilería y detalle");
+    assert.equal(fraseEntorno(audaz, "compacto").encuadre, ENCUADRE_ESCENA);
+    // Con la guía de escena el mapa fija el punto de vista: la misma escena, sin encuadre.
+    const conGuia = entornoDeEscena({ contexto, nivel: 2, modo: "text_to_image", conGuiaDeEscena: true })!;
+    for (const detalle of ["completo", "medio", "compacto", "minimo"] as const) {
+      assert.equal(fraseEntorno(conGuia, detalle).encuadre, undefined, `con guía, sin encuadre (${detalle})`);
+      assert.equal(fraseEntorno(conGuia, detalle).escena, fraseEntorno(audaz, detalle).escena, `con guía, la misma escena (${detalle})`);
+    }
+    assert.equal(fraseEntorno(audaz, "minimo").encuadre, undefined, "la forma mínima va sin encuadre");
   });
 
-  await caso("forma compacta: 150-220 caracteres con encuadre, en todos los eventos y lugares", () => {
+  await caso("hora y luz: la del cliente manda; sin hora, de noche (al atardecer los eventos de día); de día, luz natural; tono que no compite", () => {
+    const entorno = (brief: Record<string, string>) => entornoDeEscena({ contexto: buildVisualContext({ brief, userRequest: brief.tipo_evento }), nivel: 2, modo: "text_to_image" })!;
+    assert.equal(entorno({ tipo_evento: "cumpleaños" }).momento, "noche");
+    assert.equal(entorno({ tipo_evento: "boda", espacio: "jardín" }).momento, "noche");
+    assert.equal(entorno({ tipo_evento: "baby shower" }).momento, "atardecer", "evento de día: al atardecer");
+    assert.equal(entorno({ tipo_evento: "bautizo" }).origen.momento, "evento");
+    const deDia = entorno({ tipo_evento: "boda", espacio: "jardín", momento_dia: "día" });
+    assert.equal(deDia.momento, "dia");
+    assert.equal(deDia.origen.momento, "cliente");
+    for (const detalle of ["completo", "medio", "compacto", "minimo"] as const) {
+      const escena = fraseEntorno(deDia, detalle).escena;
+      assert.doesNotMatch(escena, /\bnight\b|\bdusk\b|uplighting|bokeh|lamps/, `de día no hay noche ni uplighting (${detalle}): ${escena}`);
+    }
+    assert.match(fraseEntorno(deDia, "compacto").escena, /^A lush garden, bright daylight, string lights overhead, blurred guests far behind the pieces, a sweetheart table with a wedding cake at one side, /);
+    assert.match(fraseEntorno(entorno({ tipo_evento: "boda", espacio: "salón", momento_dia: "noche" }), "medio").escena, /^An event hall set for a wedding at night: the walls washed in warm amber uplighting, /);
+    assert.match(fraseEntorno(entorno({ tipo_evento: "boda", espacio: "jardín", momento_dia: "atardecer" }), "compacto").escena, /^A lush garden at dusk, warm amber uplighting, /);
+    // La cena romántica no tiene invitados al fondo: mesas con velas.
+    assert.match(fraseEntorno(entorno({ tipo_evento: "san valentín" }), "compacto").escena, /blurred candlelit tables far behind the pieces/);
+    // La luz del fondo no compite con los globos: ámbar salvo con colores ámbar (dorado, amarillo, naranja…).
+    assert.equal(tonoLuzParaPaleta(["verde", "negro", "blanco"]), "warm amber");
+    assert.equal(tonoLuzParaPaleta(["rosado", "dorado rosa"]), "cool-toned");
+    assert.equal(tonoLuzParaPaleta(["amarillo", "azul"]), "cool-toned");
+  });
+
+  await caso("formas: compacta de 120-260 caracteres con el encuadre, todas dicen qué hay detrás de las piezas, la guarda cuenta las piezas", () => {
     const eventos = ["cumpleaños infantil de 4 años", "cumpleaños de 40 años", "boda", "XV años", "baby shower", "revelación de género", "bautizo", "graduación", "fiesta de empresa", "halloween", "navidad", "san valentín", "día de la madre", "fiesta"];
     const lugares = [undefined, "jardín", "salón", "terraza", "playa", "hotel", "casa", "piscina del conjunto"];
     const momentos = [undefined, "noche", "atardecer", "día"];
-    for (const evento of eventos) for (const espacio of lugares) for (const momento of momentos) {
+    const largos: number[] = [];
+    for (const evento of eventos) for (const espacio of lugares) for (const momento of momentos) for (const opciones of [{}, { enAlto: true }, { mesaPrincipal: true }, { piezas: 3 }]) {
       const contexto = buildVisualContext({ brief: { tipo_evento: evento, ...(espacio ? { espacio } : {}), ...(momento ? { momento_dia: momento } : {}) }, userRequest: evento });
       const entorno = entornoDeEscena({ contexto, nivel: 2, modo: "text_to_image" })!;
-      const compacta = fraseEntorno(entorno, "compacto");
-      // Lo que ocupa en el caption: «<escena>. <encuadre>, » antes del cierre fotográfico.
-      const largo = `${compacta.escena}. ${compacta.camara}, `.length;
-      assert.ok(largo >= 140 && largo <= 225,`${evento} / ${espacio ?? "-"} / ${momento ?? "-"}: compacta de ${largo}\n${compacta.escena}. ${compacta.camara}`);
-      const completa = fraseEntorno(entorno, "completo");
-      const minima = fraseEntorno(entorno, "minimo");
-      for (const texto of [compacta.escena, completa.escena, minima.escena, completa.camara ?? ""]) {
+      const nombre = `${JSON.stringify(opciones)} ${evento} / ${espacio ?? "-"} / ${momento ?? "-"}`;
+      const compacta = fraseEntorno(entorno, "compacto", opciones);
+      // Lo que ocupa en el caption: «<encuadre>. » antes de la decoración y «<escena>. » después.
+      const largo = `${compacta.encuadre}. ${compacta.escena}. `.length;
+      largos.push(largo);
+      assert.ok(largo >= 120 && largo <= 260, `${nombre}: compacta de ${largo}\n${compacta.encuadre}. ${compacta.escena}`);
+      const completa = fraseEntorno(entorno, "completo", opciones);
+      const media = fraseEntorno(entorno, "medio", opciones);
+      const minima = fraseEntorno(entorno, "minimo", opciones);
+      for (const texto of [compacta.escena, media.escena, completa.escena, minima.escena, ENCUADRE_ESCENA]) {
         assert.deepEqual(findFluxPromptLanguageLeaks(texto), [], `sin español: ${texto}`);
         assert.doesNotMatch(texto, PALABRA_DE_COLOR, `sin colores: ${texto}`);
-        assert.doesNotMatch(texto, /\b(?:sign|signage|text|letters?|banner|logo|arch(?:es)?|frame|garland|column|backdrop)\b/i, `ni letreros ni estructuras: ${texto}`);
+        assert.doesNotMatch(texto, /\b(?:sign|signage|text|letters?|banner|logo|arch(?:es)?|frame|garland|column|backdrop|plain|curtain|fabric|wall)\b/i, `ni letreros, ni estructuras, ni nada liso detrás: ${texto}`);
       }
+      for (const [forma, texto] of [["completa", completa.escena], ["media", media.escena], ["compacta", compacta.escena], ["mínima", minima.escena]] as const) {
+        assert.match(texto, DETRAS_DE_LAS_PIEZAS, `${nombre}: la ${forma} dice qué hay detrás de las piezas\n${texto}`);
+        assert.match(texto, GUARDA, `${nombre}: la ${forma} lleva la guarda`);
+        if ("piezas" in opciones) assert.match(texto, /\bthree (?:described balloon )?pieces\b/, `${nombre}: la ${forma} cuenta las piezas`);
+        else assert.doesNotMatch(texto, /\b(?:two|three|four|five|six) (?:described balloon )?pieces\b/, `${nombre}: sin número si no se pudo contar`);
+      }
+      for (const forma of [completa, media, compacta]) assert.equal(forma.encuadre, ENCUADRE_ESCENA, `${nombre}: el encuadre`);
+      // Lo que dijo el cliente no se pierde en la compacta: su lugar abre la frase y su hora la acompaña.
+      if (entorno.lugarCliente) assert.ok(compacta.escena.toLowerCase().includes(entorno.lugarCliente.toLowerCase()), `${nombre}: el lugar del cliente en la compacta\n${compacta.escena}`);
+      const hora = { noche: /\bat night\b/i, atardecer: /\bat dusk\b/i, dia: /\bdaylight\b/i }[entorno.momento];
+      for (const texto of [compacta.escena, media.escena, completa.escena, minima.escena]) if (entorno.momento !== "dia" || texto !== minima.escena) assert.match(texto, hora, `${nombre}: la hora (${entorno.momento})\n${texto}`);
+      if ("enAlto" in opciones) assert.doesNotMatch(`${compacta.escena} ${media.escena} ${completa.escena}`, /far behind the pieces|continuing far behind/, `${nombre}: piezas colgadas, el salón a sus lados`);
+      if ("mesaPrincipal" in opciones && entorno.mesa) assert.match(compacta.escena, /\bthe (?:lit )?main table set with\b/, `${nombre}: la mesa es la principal`);
       assert.ok(minima.escena.length <= 140, `mínima corta: ${minima.escena}`);
       assert.ok(avisoNoCotizadoEntorno(entorno)?.endsWith("no están incluidos en la cotización."), "aviso de lo que añade");
     }
+    if (IMPRIMIR) console.log(`     compacta con encuadre: ${Math.min(...largos)}-${Math.max(...largos)} caracteres`);
   });
 
   await caso("aviso: el del entorno nombra lo añadido; sin entorno, el de siempre", () => {
     const entorno = entornoDeEscena({ contexto: buildVisualContext({ brief: { tipo_evento: "cumpleaños" }, userRequest: "cumpleaños de mi hijo de 6 años" }), nivel: 2, modo: "text_to_image" });
-    assert.equal(avisoNoCotizadoDeImagen(ambienteDeFiesta("ninguno"), [], entorno), "La mesa de postres, la torta, los dulces, los regalos, las luces y el confeti de la vista previa son ambientación: no están incluidos en la cotización.");
+    assert.equal(avisoNoCotizadoDeImagen(ambienteDeFiesta("ninguno"), [], entorno), "La mesa de postres, la torta, los dulces, los regalos, las luces, el confeti, la iluminación y las mesas de invitados de la vista previa son ambientación: no están incluidos en la cotización.");
     assert.match(avisoNoCotizadoDeImagen(ambienteDeFiesta("ninguno"), [{ name: "mesa" }], undefined) ?? "", /conserva elementos de tu foto/);
     assert.equal(avisoNoCotizadoDeImagen(ambienteDeFiesta("ninguno"), [], undefined), undefined);
   });
@@ -207,12 +286,17 @@ async function main(): Promise<void> {
     informe.push({ caso: "1. cumpleaños infantil, semiarco + 2 columnas", antes, despues: despues.prompt });
     const entorno = despues.entrada.entorno!;
     const delEntorno = comunes("cumpleaños", despues.prompt, despues.preflight, entorno);
-    assert.match(delEntorno, /^A lively kids' (?:birthday )?party room(?: with tall windows and guest tables in the background)?: a dessert table (?:in the foreground )?with a jungle safari themed birthday cake/, delEntorno);
+    // Sin hora: de noche, con la luz del fondo en tono frío (rojo y dorado compiten con el ámbar), el salón con
+    // invitados detrás de las piezas, la mesa temática iluminada a un lado y la guarda con las tres piezas.
+    assert.equal(entorno.momento, "noche");
+    assert.match(delEntorno, /^(?:A lively kids' party room at night: the walls washed in cool-toned uplighting|At night, cool-toned uplighting), /, delEntorno);
+    assert.match(delEntorno, /blurred guests (?:and tables )?far behind the pieces/, delEntorno);
+    assert.match(delEntorno, /(?:a lit dessert table with a jungle safari themed birthday cake at one side|at one side a dessert table with a jungle safari themed birthday cake)/, delEntorno);
+    assert.match(delEntorno, /the only balloons are the three pieces described|the three described balloon pieces/, delEntorno);
     assert.doesNotMatch(despues.prompt, /plain wall/, "con entorno, el hueco entre piezas no es «de pared lisa»");
-    assert.match(delEntorno, /wrapped gifts/);
     assert.doesNotMatch(despues.prompt, /celebration atmosphere/, "la pista suelta del evento la sustituye el entorno");
     // La decoración intacta: las tres piezas, la punta libre del semiarco, las torres sueltas, las tres piezas.
-    assert.match(despues.prompt, /^An asymmetrical one-sided curved organic balloon garland/);
+    assert.ok(despues.prompt.startsWith(`${ENCUADRE_ESCENA}. An asymmetrical one-sided curved organic balloon garland`), despues.prompt);
     assert.match(despues.prompt, /two organic balloon columns/);
     assert.match(despues.prompt, /tip ending in mid-air/);
     assert.match(despues.prompt, /each (?:a separate|its own) freestanding tower/);
@@ -235,9 +319,14 @@ async function main(): Promise<void> {
     assert.equal(entorno.origen.lugar, "cliente");
     assert.equal(entorno.origen.momento, "cliente");
     const delEntorno = comunes("boda", despues.prompt, despues.preflight, entorno);
-    assert.match(delEntorno, /^A lush garden (?:with trees and open sky )?set for a wedding(?: reception)?: a sweetheart table (?:in the foreground )?with (?:fine linens and )?a (?:tiered )?wedding cake/, delEntorno);
-    assert.match(delEntorno, /warm sunset (?:sky )?light/);
-    assert.ok(despues.prompt.startsWith("An organic balloon garland arch, 3 m / 10 ft wide and 2.5 m / 8 ft tall with about 145 balloons, made of "), despues.prompt);
+    // El jardín y el atardecer que dijo el cliente: el jardín sigue detrás de las piezas con invitados, la mesa de los
+    // novios iluminada a un lado. Un solo arco: la guarda sin número.
+    assert.equal(entorno.momento, "atardecer");
+    assert.match(delEntorno, /^A lush garden (?:with trees and open sky set for a wedding reception, at dusk: |set for a wedding at dusk: |at dusk, )/, delEntorno);
+    assert.match(delEntorno, /(?:the grounds continuing far behind the pieces with softly blurred guests and tables|blurred guests (?:and tables )?far behind the pieces)/, delEntorno);
+    assert.match(delEntorno, /(?:at one side a sweetheart table with fine linens and a tiered wedding cake|a lit sweetheart table with a wedding cake at one side)/, delEntorno);
+    assert.doesNotMatch(delEntorno, /\b(?:two|three) (?:described balloon )?pieces\b/, "una pieza: sin número");
+    assert.ok(despues.prompt.startsWith(`${ENCUADRE_ESCENA}. An organic balloon garland arch, 3 m / 10 ft wide and 2.5 m / 8 ft tall with about 145 balloons, made of `), despues.prompt);
     assert.match(despues.prompt, /[Ee]very balloon at most 12-inch/);
   });
 
@@ -252,9 +341,15 @@ async function main(): Promise<void> {
     informe.push({ caso: "3. guirnalda de 2,4 m sobre mesa (baby shower)", antes, despues: despues.prompt });
     const entorno = despues.entrada.entorno!;
     const delEntorno = comunes("guirnalda", despues.prompt, despues.preflight, entorno);
-    assert.match(delEntorno, /^(?:A bright, airy baby shower lounge(?: with tall windows and potted plants)?|An airy baby shower lounge): the main table set (?:as a dessert table )?with a tiered cake/, delEntorno);
-    assert.doesNotMatch(despues.prompt, /a dessert table/, "una sola mesa: la principal, no una segunda");
-    assert.ok(despues.prompt.startsWith("A small organic balloon garland, 2.4 m / 8 ft long with about 37 balloons, made of "), despues.prompt);
+    // Evento de día sin hora: al atardecer. La guirnalda cuelga de la pared: el salón se abre a sus lados (no detrás).
+    assert.equal(entorno.momento, "atardecer");
+    assert.match(delEntorno, /^(?:A bright, airy baby shower lounge with tall windows and potted plants, at dusk|An airy baby shower lounge at dusk|At dusk)[,:] /, delEntorno);
+    assert.match(delEntorno, /the (?:lit )?main table set with a tiered cake/, delEntorno);
+    assert.match(delEntorno, /at both sides of the pieces/, delEntorno);
+    assert.doesNotMatch(delEntorno, /far behind the pieces/, "pieza colgada: nada detrás de la pared");
+    // Antes la expresión llevaba dos caracteres de retroceso (0x08) en vez de «\b» y nunca podía fallar.
+    assert.doesNotMatch(despues.prompt, /\ba dessert table\b/, "una sola mesa: la principal, no una segunda");
+    assert.ok(despues.prompt.startsWith(`${ENCUADRE_ESCENA}. A small organic balloon garland, 2.4 m / 8 ft long with about 37 balloons, made of `), despues.prompt);
     assert.match(despues.prompt, /hung horizontally on the rear wall above the main table/);
     assert.match(despues.prompt, /One single horizontal strip spanning only part of the wall, both ends hanging free in mid-air, every balloon at most 18-inch, about beach-ball size\./);
     assert.match(despues.prompt, /medium shot showing the whole decoration/i);
@@ -313,6 +408,28 @@ async function main(): Promise<void> {
     comunes("ej06 ocho colores", despues.prompt, despues.preflight, entorno);
     assert.equal(despues.preflight.colors.represented, despues.preflight.colors.expected, "todos los colores");
     for (const hex of ["F2B6C8", "01B2E8", "F7F7F5", "8AC85B", "F6E702", "B698C1", "E75D1D", "E44A80"]) assert.equal((despues.prompt.match(new RegExp(`#${hex}`, "g")) ?? []).length, 1, `#${hex} una vez\n${despues.prompt}`);
+  });
+
+  // ── 5. El caso del dueño (guiada-20261007-070255-dzwwhq): la composición ganadora cabe y la decoración no cambia ───
+  await caso("5. dueño (fútbol, arco asimétrico + 2 columnas): encuadre primero, noche con invitados detrás y la MISMA decoración, entera", async () => {
+    type FixtureDueno = { cuerpo: CuerpoGenerateGuardado; python: RespuestaResolvePython };
+    const fijado = JSON.parse(readFileSync(path.join(RAIZ, "scripts", "test", "fixtures", "plan-guiada-dzwwhq-futbol.json"), "utf8")) as FixtureDueno;
+    const r = await captionDeCuerpoGenerate(fijado.cuerpo, fijado.python);
+    const entorno = r.entrada.entorno!;
+    informe.push({ caso: "5. dueño (fútbol)", antes: compileProductPrompt({ ...r.entrada, entorno: undefined }).prompt, despues: r.prompt });
+    const delEntorno = comunes("dueño", r.prompt, r.preflight, entorno);
+    assert.equal(entorno.momento, "noche", "sin hora: de noche");
+    assert.equal(entorno.tonoLuz, "warm amber", "verde, negro y blanco no compiten con el ámbar");
+    // La escena entera de la ronda 2 cabe en 1500 sin quitarle nada a la decoración.
+    assert.equal(delEntorno, "At night, warm amber uplighting, string light bokeh, blurred guests far behind the pieces, a lit dessert table with a soccer themed birthday cake at one side, the only balloons are the three pieces described. Professional event photograph, realistic latex balloons with natural reflections, sharp detail, natural depth, grounded supports.");
+    // La decoración: entre el encuadre y el entorno, con su escala, tallas, patrón y colores; la misma con y sin encuadre.
+    const decoracion = r.prompt.slice(`${ENCUADRE_ESCENA}. `.length, r.prompt.length - delEntorno.length);
+    for (const exigido of [/^An asymmetrical organic balloon garland arch, 3 m wide, about 269 balloons, made of mixed small 5-inch to extra-large 24-inch /, /two balloon columns, each 2 m tall, about 36 balloons/, /in an ordered gradient up the column from green at the base to white at the top/, /ending flush at its top ring, the last ring of balloons level and bare on top/, /flanking the main arch, each its own freestanding tower\. $/, /standing on the floor on its left leg/]) assert.match(decoracion, exigido, String(exigido));
+    for (const hex of ["#43B88E", "#000000", "#FFFFFF"]) assert.ok(decoracion.includes(hex), hex);
+    assert.equal(r.preflight.structures.represented, r.preflight.structures.expected, "las tres piezas");
+    assert.equal(r.preflight.colors.represented, r.preflight.colors.expected, "los tres colores");
+    const sinEncuadre = compileProductPrompt({ ...r.entrada, entorno: { ...entorno, conEncuadre: false } }).prompt;
+    assert.ok(sinEncuadre.startsWith(decoracion), "el encuadre no le quita nada a la decoración");
   });
 
   if (IMPRIMIR) {

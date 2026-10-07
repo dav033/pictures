@@ -434,8 +434,14 @@ function promptConGuia(prompt: string, references: readonly ImagenEditFlux[]): s
  * `trazos` y `rellenos` de `plan-guia-escena-result.v1`), y que nada del mapa (su fondo, sus círculos como dibujo,
  * sus bordes, marcas) pase a la foto. En inglés plano y sin ids. Una frase más larga sobre la estructura no cupo:
  * la nota se descuenta del presupuesto del caption y el caso de prueba se quedaba sin guía.
+ *
+ * 2026-10-07 (la guía también para los planes sin foto, «¿O sea FLUX también debería recibir el gráfico?»): la nota
+ * pide mantener EXACTAMENTE la forma, la posición, el tamaño y los colores de cada pieza, y dice que el fondo liso y
+ * la franja de piso del mapa son solo marcadores: en su lugar va el entorno completo del evento que describe el
+ * caption (`entorno-escena.ts`), llenando el encuadre alrededor de los globos. Sin esa frase, `/edit` conserva lo que
+ * ve y la escena salía con una pared lisa: la guía no puede dejar la escena pobre.
  */
-export const NOTA_GUIA_ESCENA = "The first input image (@image1) is a flat layout map of this balloon decoration, not a photo: follow its shapes, positions, relative sizes and colors; thin darker rims only mark where each balloon ends; thin lines and flat shapes are the real metal hoop frame and stand, ribbons or weight. Produce a real photograph of real latex balloons with real light, shadows and depth; never reproduce the flat map, circles drawn as a diagram, outlines, its background color or any marks.";
+export const NOTA_GUIA_ESCENA = "The first input image (@image1) is a flat layout map of this balloon decoration, not a photo: keep exactly the shape, position, size and colors of every balloon piece in it; thin darker rims only mark where each balloon ends; thin lines and flat shapes are the real metal hoop frame and stand, ribbons or weight. Turn every disc into a real latex balloon with real light, shadows and depth. The map's plain background and floor strip are only placeholders: replace them with the complete event setting described above, filling the whole frame around the balloons. Never reproduce the flat map, circles drawn as a diagram, outlines, its background color or any marks.";
 
 /**
  * La nota cuando la guía NO dibuja ninguna estructura que no sea globo (ni aro, ni poste, ni cintas). La de
@@ -444,7 +450,7 @@ export const NOTA_GUIA_ESCENA = "The first input image (@image1) is a flat layou
  * huérfanas, frontera motor → FLUX). Sin estructura dibujada, lo que se dice en su lugar es que las piezas que el
  * mapa dibuja separadas siguen separadas. No es más larga que la de siempre: la reserva del presupuesto no cambia.
  */
-export const NOTA_GUIA_ESCENA_SIN_ESTRUCTURA = "The first input image (@image1) is a flat layout map of this balloon decoration, not a photo: follow its shapes, positions, relative sizes and colors; thin darker rims only mark where each balloon ends; pieces drawn apart stay apart, with open space between them and no frame, pole or arch joining them. Produce a real photograph of real latex balloons with real light, shadows and depth; never reproduce the flat map, circles drawn as a diagram, outlines, its background color or any marks.";
+export const NOTA_GUIA_ESCENA_SIN_ESTRUCTURA = "The first input image (@image1) is a flat layout map of this balloon decoration, not a photo: keep exactly the shape, position, size and colors of every balloon piece in it; thin darker rims only mark where each balloon ends; pieces drawn apart stay apart, with open space between them and no frame, pole or arch joining them. Turn every disc into a real latex balloon with real light, shadows and depth. The map's plain background and floor strip are only placeholders: replace them with the complete event setting described above, filling the whole frame around the balloons. Never reproduce the flat map, circles drawn as a diagram, outlines, its background color or any marks.";
 
 /** La nota que corresponde a la guía: con aro, poste o cintas dibujados, la que los nombra; sin ellos, la otra. */
 export function notaGuiaEscena(conEstructura: boolean | undefined): string {

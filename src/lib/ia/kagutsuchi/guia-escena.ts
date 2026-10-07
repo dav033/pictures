@@ -1,7 +1,7 @@
 import type { ReferenceBlueprintV2, ReferenceBBox } from "@/lib/ia/referencia/reference-blueprint";
 import type { AnclajeGuiaEscena, PiezaGuiaEscena, RellenoGuiaEscena, TrazoGuiaEscena } from "@/lib/plan/guia-escena";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
+import { cajasDeEstructuras, esParLateral } from "@/lib/plan/ubicaciones";
 import { labDeRgb } from "@/lib/rag/catalog/similitud-color";
 import { FONDO_GUIA, PISO_GUIA } from "./guia-estructura";
 
@@ -15,6 +15,9 @@ import { FONDO_GUIA, PISO_GUIA } from "./guia-estructura";
  * - La caja es la `reference_bbox` del elemento de la foto que la pieza materializa
  *   (`estructuras[].referencia_element_id`). Una pieza repetida toma las cajas de los elementos de la foto de su
  *   mismo grupo, de izquierda a derecha; lo que falte sale de `cajasDeEstructuras`, la geometría del plan.
+ * - Sin foto (`GUIA_ESCENA_SIN_FOTO_V1`: un plan de texto o de una idea del catálogo), cada pieza va a su escala
+ *   REAL en metros sobre un lienzo que enseña un trozo de salón con una sola escala para todas
+ *   (`instanciasAEscala`): la ubicación del plan solo dice la zona (izquierda, centro, derecha, techo).
  * - Cómo se sostiene cada pieza lo dice la ubicación del plan (`apoyoDe`: piso, techo o pared), salvo que Python
  *   publique su `anclaje`, que manda. Una pieza `flotante` (un bouquet de helio) tiene su caja en la foto con la
  *   pesa en el piso: se encaja contando su `elevacion_m` y sus globos quedan esa altura por encima del fondo de la
@@ -224,6 +227,174 @@ export function reencuadrar(instancias: readonly InstanciaGuia[], proporcionFoto
       height: (instancia.caja.height * escala) / lienzo.alto,
     },
   }));
+}
+
+// --- Sin foto: cada pieza a su escala real en metros ------------------------------------------------------------
+
+/**
+ * La escena de una guía SIN foto de referencia (plan de texto o de una idea del catálogo, 2026-10-07: «¿O sea FLUX
+ * también debería recibir el gráfico?»). Un lienzo que representa un trozo de salón con UNA sola escala en
+ * píxeles por metro para todas las piezas: un semiarco de 2,9 m se ve alto y una guirnalda de 2,4 m ocupa menos de
+ * la mitad del ancho, en vez de estirarse a la caja de su ubicación (`cajasDeEstructuras`, pensadas para el
+ * encuadre de una escena: la de `fondo_pared` mide el 88 % del ancho, y una guirnalda encajada ahí salía de pared a
+ * pared, el caso xkkihw).
+ *
+ * - `anchoVisibleMinimoM`: el lienzo enseña al menos este ancho de pared: es la referencia de tamaño (con 5,5 m y un
+ *   lienzo 3:2 caben ~3,1 m de alto sobre el piso, el de un salón). Si las piezas no caben, se enseña más pared.
+ * - `piso`: la línea del piso, en fracción del alto. Siempre la misma, haya o no piezas de piso.
+ * - `huecoEntrePiezasM`: aire entre dos piezas vecinas (piezas sueltas, nunca unidas); `huecoCentralM`: entre un par
+ *   de piezas a los lados cuando no hay nada en el centro (el ancho de una mesa o una puerta).
+ * - `alturaMesaM`: las piezas de mesa (`sobre_mesa_principal`, `mesas_invitados`) se apoyan a esa altura.
+ * - `alturaCentroParedM`: el centro de una pieza colgada en la pared (una guirnalda sobre la mesa principal).
+ * - `techoMaximo`: lo más que baja una pieza de techo, en fracción del alto.
+ */
+export const ESCENA_SIN_FOTO = {
+  anchoVisibleMinimoM: 5.5,
+  margenLateralM: 0.4,
+  margenSuperiorM: 0.3,
+  huecoEntrePiezasM: 0.6,
+  huecoCentralM: 2,
+  piso: 0.86,
+  alturaMesaM: 0.76,
+  alturaCentroParedM: 1.9,
+  techoMaximo: 0.34,
+} as const;
+
+type ZonaEscena = "izquierda" | "centro" | "derecha" | "techo";
+
+const UBICACIONES_IZQUIERDA: ReadonlySet<string> = new Set(["lateral_izquierdo", "pared_lateral", "esquina", "vegetacion", "entrada"]);
+const UBICACIONES_DE_MESA: ReadonlySet<string> = new Set(["sobre_mesa_principal", "mesas_invitados"]);
+
+/** La zona del lienzo de cada instancia: el lado lo da la ubicación del plan, y un par lateral va uno a cada lado. */
+function zonaDeInstancia(estructura: EstructuraPlan, indice: number, n: number): ZonaEscena {
+  if (UBICACIONES_TECHO.has(estructura.ubicacion)) return "techo";
+  // El mismo reparto que `cajasDeEstructuras`: un par lateral, o un número par de piezas en la entrada, la flanquea.
+  const flanquea = esParLateral(estructura) || (estructura.ubicacion === "entrada" && n % 2 === 0);
+  if (flanquea) return indice % 2 === 0 ? "izquierda" : "derecha";
+  if (estructura.ubicacion === "lateral_derecho") return "derecha";
+  return UBICACIONES_IZQUIERDA.has(estructura.ubicacion) ? "izquierda" : "centro";
+}
+
+/** Lo que la composición a escala lee de cada pieza que Python dibujó. */
+export type PiezaAEscala = Pick<PiezaGuiaEscena, "estructura_id" | "ancho_m" | "alto_m" | "anclaje" | "elevacion_m">;
+
+export type EscenaAEscala = {
+  instancias: InstanciaGuia[];
+  /** La línea del piso, en fracción del alto: `ESCENA_SIN_FOTO.piso`. */
+  lineaPiso: number;
+  /** Píxeles del lienzo por metro, la misma para todas las piezas. */
+  pxPorMetro: number;
+  /** Lo que enseña el lienzo, en metros: el ancho de pared y el alto sobre el piso. */
+  anchoVisibleM: number;
+  altoVisibleM: number;
+};
+
+type Colocada = { estructura: EstructuraPlan; pieza: PiezaAEscala; indice: number; n: number; zona: ZonaEscena; apoyo: ApoyoGuia };
+
+/** Lo que mide una fila de piezas puestas una junto a otra, con su hueco. */
+function anchoDeFila(fila: readonly Colocada[]): number {
+  return fila.reduce((suma, item) => suma + item.pieza.ancho_m, 0) + Math.max(0, fila.length - 1) * ESCENA_SIN_FOTO.huecoEntrePiezasM;
+}
+
+/** Cuánto sube la pieza sobre el piso, en metros, según cómo se sostiene. */
+function cimaSobrePiso(item: Colocada): number {
+  const { pieza, apoyo } = item;
+  if (apoyo === "flotante") return pieza.alto_m + Math.max(0, pieza.elevacion_m ?? 0);
+  if (apoyo === "pared") return Math.max(pieza.alto_m, ESCENA_SIN_FOTO.alturaCentroParedM + pieza.alto_m / 2);
+  return pieza.alto_m + (UBICACIONES_DE_MESA.has(item.estructura.ubicacion) ? ESCENA_SIN_FOTO.alturaMesaM : 0);
+}
+
+/**
+ * Las instancias de una guía SIN foto, cada una en una caja que la encaja exactamente a la escala común
+ * (`encaje` da la misma escala a todas): la ubicación del plan dice la zona (izquierda, centro, derecha o techo), las
+ * piezas pareja van una a cada lado, el centro queda centrado y los lados lo flanquean con `huecoEntrePiezasM`; sin
+ * centro, un par se separa `huecoCentralM` y una pieza sola de un lado se arrima a su margen. En vertical, cómo se
+ * sostiene (`anclaje` de Python o `apoyoDe`): en el piso (o en la mesa), colgada en la pared, flotando sobre su pesa
+ * o colgando del techo.
+ *
+ * Puro y determinista. Una estructura sin pieza dibujada no tiene instancia: va solo con texto.
+ */
+export function instanciasAEscala(estructuras: readonly EstructuraPlan[], piezas: readonly PiezaAEscala[], tamano: { ancho: number; alto: number }): EscenaAEscala {
+  const porId = new Map(piezas.map((pieza) => [pieza.estructura_id, pieza] as const));
+  const colocadas: Colocada[] = [];
+  for (const estructura of [...estructuras].sort((a, b) => a.estructura_id.localeCompare(b.estructura_id))) {
+    const pieza = porId.get(estructura.estructura_id);
+    if (!pieza || !(pieza.ancho_m > 0) || !(pieza.alto_m > 0)) continue;
+    const n = Math.max(1, estructura.repeticiones);
+    for (let indice = 0; indice < n; indice += 1) {
+      colocadas.push({ estructura, pieza, indice, n, zona: zonaDeInstancia(estructura, indice, n), apoyo: pieza.anclaje ?? apoyoDe(estructura) });
+    }
+  }
+  const { ancho, alto } = tamano;
+  const pisoPx = alto * ESCENA_SIN_FOTO.piso;
+  const izquierda = colocadas.filter((item) => item.zona === "izquierda");
+  const centro = colocadas.filter((item) => item.zona === "centro");
+  const derecha = colocadas.filter((item) => item.zona === "derecha");
+  const techo = colocadas.filter((item) => item.zona === "techo");
+  const anchoIzquierda = anchoDeFila(izquierda);
+  const anchoCentro = anchoDeFila(centro);
+  const anchoDerecha = anchoDeFila(derecha);
+  const hueco = ESCENA_SIN_FOTO.huecoEntrePiezasM;
+  // Lo que ocupa la fila del piso, simétrica alrededor del centro del lienzo si hay centro o un par de lados.
+  const mitad = centro.length
+    ? anchoCentro / 2 + Math.max(anchoIzquierda ? hueco + anchoIzquierda : 0, anchoDerecha ? hueco + anchoDerecha : 0)
+    : izquierda.length && derecha.length
+      ? ESCENA_SIN_FOTO.huecoCentralM / 2 + Math.max(anchoIzquierda, anchoDerecha)
+      : (anchoIzquierda + anchoDerecha) / 2;
+  const anchoNecesario = Math.max(2 * mitad, anchoDeFila(techo)) + 2 * ESCENA_SIN_FOTO.margenLateralM;
+  const anchoVisible = Math.max(ESCENA_SIN_FOTO.anchoVisibleMinimoM, anchoNecesario);
+  const delPiso = colocadas.filter((item) => item.zona !== "techo");
+  const altoNecesario = Math.max(0, ...delPiso.map(cimaSobrePiso)) + ESCENA_SIN_FOTO.margenSuperiorM;
+  const altoTecho = Math.max(0, ...techo.map((item) => item.pieza.alto_m));
+  const escala = Math.min(
+    ancho / anchoVisible,
+    delPiso.length ? pisoPx / altoNecesario : Number.POSITIVE_INFINITY,
+    altoTecho > 0 ? (alto * ESCENA_SIN_FOTO.techoMaximo) / altoTecho : Number.POSITIVE_INFINITY,
+  );
+  if (!Number.isFinite(escala) || escala <= 0) throw new Error("GUIA_ESCENA_INVALIDA: la escena sin foto no tiene una escala válida.");
+  const anchoVisibleFinal = ancho / escala;
+  const margen = ESCENA_SIN_FOTO.margenLateralM;
+  // Dónde empieza cada fila, en metros desde el centro del lienzo.
+  const inicioCentro = -anchoCentro / 2;
+  const inicioIzquierda = centro.length
+    ? inicioCentro - hueco - anchoIzquierda
+    : derecha.length ? -ESCENA_SIN_FOTO.huecoCentralM / 2 - anchoIzquierda : -anchoVisibleFinal / 2 + margen;
+  const inicioDerecha = centro.length
+    ? anchoCentro / 2 + hueco
+    : izquierda.length ? ESCENA_SIN_FOTO.huecoCentralM / 2 : anchoVisibleFinal / 2 - margen - anchoDerecha;
+  const inicioTecho = -anchoDeFila(techo) / 2;
+  const instancias: InstanciaGuia[] = [];
+  const colocar = (fila: readonly Colocada[], inicio: number) => {
+    let x = inicio;
+    for (const item of fila) {
+      const { pieza, estructura, apoyo } = item;
+      const anchoPx = pieza.ancho_m * escala;
+      const elevacion = apoyo === "flotante" ? Math.max(0, pieza.elevacion_m ?? 0) : 0;
+      const altoPx = (pieza.alto_m + elevacion) * escala;
+      let arriba: number;
+      if (item.zona === "techo") arriba = 0;
+      else if (apoyo === "pared") arriba = Math.min(pisoPx - altoPx, Math.max(0, pisoPx - ESCENA_SIN_FOTO.alturaCentroParedM * escala - altoPx / 2));
+      else arriba = pisoPx - altoPx - (apoyo === "piso" && UBICACIONES_DE_MESA.has(estructura.ubicacion) ? ESCENA_SIN_FOTO.alturaMesaM * escala : 0);
+      const caja: ReferenceBBox = { x: (ancho / 2 + x * escala) / ancho, y: arriba / alto, width: anchoPx / ancho, height: altoPx / alto };
+      instancias.push({
+        estructura_id: estructura.estructura_id,
+        instancia: item.indice + 1,
+        caja,
+        fuente: "plan",
+        toca_techo: false,
+        organica: estructura.tipo === "columna" && estructura.mezcla === "organica_fina",
+        espejo: espejoDeInstancia(estructura, item.n, caja),
+        apoyo,
+      });
+      x += pieza.ancho_m + hueco;
+    }
+  };
+  colocar(izquierda, inicioIzquierda);
+  colocar(centro, inicioCentro);
+  colocar(derecha, inicioDerecha);
+  colocar(techo, inicioTecho);
+  instancias.sort((a, b) => a.estructura_id.localeCompare(b.estructura_id) || a.instancia - b.instancia);
+  return { instancias, lineaPiso: ESCENA_SIN_FOTO.piso, pxPorMetro: escala, anchoVisibleM: anchoVisibleFinal, altoVisibleM: pisoPx / escala };
 }
 
 const HEX = /^#[0-9a-f]{6}$/;
@@ -491,8 +662,11 @@ function svgDeRelleno(relleno: RellenoPx, borde: string, grosor: number): string
  * Lo que no es globo (`rellenos` y `trazos`: el forro y el marco de un aro, la pesa y las cintas de un bouquet)
  * va detrás de los discos de su pieza, en el mismo encaje: plano, de su color, el relleno con el borde de su tono
  * y el trazo oscurecido si no se lee contra el fondo. Una pieza que no los trae se pinta exactamente como antes.
+ *
+ * `opciones.lineaPiso` fija la línea del piso (fracción del alto) en vez de deducirla de las piezas: la escena sin
+ * foto (`instanciasAEscala`) la tiene siempre en el mismo sitio, también con una pieza apoyada en una mesa.
  */
-export function svgGuiaEscena(piezas: readonly PiezaGuiaEscena[], instancias: readonly InstanciaGuia[], tamano: { ancho: number; alto: number }): string {
+export function svgGuiaEscena(piezas: readonly PiezaGuiaEscena[], instancias: readonly InstanciaGuia[], tamano: { ancho: number; alto: number }, opciones: { lineaPiso?: number } = {}): string {
   const { ancho, alto } = tamano;
   const porId = new Map(piezas.map((pieza) => [pieza.estructura_id, pieza] as const));
   // El anclaje que publica Python manda sobre el que se dedujo de la ubicación del plan.
@@ -500,7 +674,7 @@ export function svgGuiaEscena(piezas: readonly PiezaGuiaEscena[], instancias: re
     .filter((instancia) => porId.has(instancia.estructura_id))
     .map((instancia) => ({ ...instancia, apoyo: porId.get(instancia.estructura_id)!.anclaje ?? instancia.apoyo }));
   if (!dibujables.length) throw new Error("GUIA_ESCENA_INVALIDA: ninguna pieza del plan tiene globos que dibujar.");
-  const piso = redondear(alto * lineaDePiso(dibujables));
+  const piso = redondear(alto * (opciones.lineaPiso ?? lineaDePiso(dibujables)));
   const pintables: PintablePx[] = [];
   const grosorTrazoMinimo = (GROSOR_TRAZO_MINIMO_1024 * ancho) / 1024;
   const ordenadas = [...dibujables].sort((a, b) => fondo(a.caja) - fondo(b.caja) || centroX(a.caja) - centroX(b.caja) || a.estructura_id.localeCompare(b.estructura_id) || a.instancia - b.instancia);
@@ -581,10 +755,12 @@ export function svgGuiaEscena(piezas: readonly PiezaGuiaEscena[], instancias: re
 /**
  * Cuándo la generación lleva guía de escena: bandera encendida, FLUX directo (modo base o entrenado, sin el
  * híbrido con foto del espacio), sin resultado previo (esa ya es la base de `/edit`), con `/edit` disponible, el
- * caption en texto y un plan que salió de una foto de referencia (alguna estructura la materializa).
+ * caption en texto y un plan que salió de una foto de referencia (alguna estructura la materializa) o, con
+ * `sinFoto` (`GUIA_ESCENA_SIN_FOTO_V1`), cualquier plan: sin foto cada pieza va a su escala real
+ * (`instanciasAEscala`).
  */
-export function generacionAdmiteGuiaEscena(entrada: { bandera: boolean; usarFlux: boolean; hibrido: boolean; fotoEspacio: boolean; resultadoPrevio: boolean; editApagado: boolean; formatoTexto: boolean; conReferencia: boolean }): boolean {
-  return entrada.bandera && entrada.usarFlux && !entrada.hibrido && !entrada.fotoEspacio && !entrada.resultadoPrevio && !entrada.editApagado && entrada.formatoTexto && entrada.conReferencia;
+export function generacionAdmiteGuiaEscena(entrada: { bandera: boolean; usarFlux: boolean; hibrido: boolean; fotoEspacio: boolean; resultadoPrevio: boolean; editApagado: boolean; formatoTexto: boolean; conReferencia: boolean; sinFoto?: boolean }): boolean {
+  return entrada.bandera && entrada.usarFlux && !entrada.hibrido && !entrada.fotoEspacio && !entrada.resultadoPrevio && !entrada.editApagado && entrada.formatoTexto && (entrada.conReferencia || entrada.sinFoto === true);
 }
 
 /** Si alguna estructura del plan materializa un elemento de una foto de referencia. */

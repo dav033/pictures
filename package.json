@@ -69,7 +69,7 @@
     "ia:test-ambiente-fiesta": "tsx --conditions=react-server --test src/lib/ia/uzume/ambiente-fiesta.test.ts",
     "ia:test-guia-estructura": "tsx --conditions=react-server scripts/test/test-guia-estructura.ts",
     "ia:test-guia-estructura-python": "tsx --conditions=react-server scripts/test/test-guia-estructura-python.ts",
-    "ia:test-guia-escena": "tsx --conditions=react-server scripts/test/test-guia-escena.ts && tsx --conditions=react-server scripts/test/test-guia-escena-python.ts && tsx --conditions=react-server scripts/test/test-guia-escena-estructura.ts",
+    "ia:test-guia-escena": "tsx --conditions=react-server scripts/test/test-guia-escena.ts && tsx --conditions=react-server scripts/test/test-guia-escena-python.ts && tsx --conditions=react-server scripts/test/test-guia-escena-estructura.ts && tsx --conditions=react-server scripts/test/test-guia-escena-sin-foto.ts",
     "plan:test-color-fases2": "tsx --conditions=react-server scripts/test/test-color-referencia-fases2.ts",
     "plan:test-color-foto-etiquetas": "tsx --conditions=react-server scripts/test/test-color-foto-etiquetas-mandan.ts",
     "plan:test-notas-reparto": "tsx --conditions=react-server scripts/test/test-notas-reparto.ts",

@@ -25,6 +25,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { captionDeCuerpoGenerate, type CuerpoGenerateGuardado } from "../lib/caption-de-cuerpo-generate";
+import { ENCUADRE_ESCENA, entornoDeEscena } from "../../src/lib/ia/escena/entorno-escena";
 import { BASE_PROMPT_MAX_LENGTH } from "../../src/lib/ia/kagutsuchi/caption-flux";
 import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/kagutsuchi/producto-flux";
 import { preflightFluxPrompt } from "../../src/lib/ia/kagutsuchi/preflight-flux";
@@ -73,6 +74,15 @@ function comunes(nombre: string, r: { prompt: string; preflight: { ok: boolean; 
   assert.doesNotMatch(r.prompt, /,\s*\(#|#[0-9A-F]{6}(?!\))/i, `${nombre}: ningún hex suelto`);
 }
 
+/**
+ * La decoración del caption: lo que sigue al encuadre del entorno, que abre todo caption con entorno (ronda 2 del
+ * entorno, 2026-10-07: al final FLUX.2 no lo leía). Sujeto y escala van justo después.
+ */
+function decoracion(prompt: string): string {
+  assert.ok(prompt.startsWith(`${ENCUADRE_ESCENA}. `), `el encuadre abre el caption\n${prompt}`);
+  return prompt.slice(`${ENCUADRE_ESCENA}. `.length);
+}
+
 /** Tallas en pulgadas que nombra el caption. */
 function tallasDelTexto(texto: string): number[] {
   return [...new Set([...texto.matchAll(/\b(\d+)-inch\b/g)].map((coincidencia) => Number(coincidencia[1])))].sort((a, b) => a - b);
@@ -98,11 +108,11 @@ async function main(): Promise<void> {
     // el entorno del evento (entorno-escena.ts), que con 1500 va completo después de la decoración.
     const viejo = await captionDePlan("real-18-sddefault.plan.json", { idea: "deco-real-18-sddefault", maxLength: 1000 });
     assert.ok(viejo.prompt.length <= 1000 && viejo.preflight.ok, `la guirnalda cabe también en el límite viejo de 1000 (mide ${viejo.prompt.length})`);
-    assert.ok(viejo.prompt.startsWith("A small organic balloon garland, 2.4 m / 8 ft long with about 37 balloons, made of "), `con 1000, la escala entera\n${viejo.prompt}`);
+    assert.ok(decoracion(viejo.prompt).startsWith("A small organic balloon garland, 2.4 m / 8 ft long with about 37 balloons, made of "), `con 1000, la escala entera\n${viejo.prompt}`);
     assert.match(viejo.prompt, /One single horizontal strip spanning only part of the wall, both ends hanging free in mid-air, every balloon at most 18-inch, about beach-ball size\./);
     assert.notEqual(r.prompt, PROMPT_PRODUCCION_ANTES);
-    // Sujeto + escala primero.
-    assert.ok(r.prompt.startsWith("A small organic balloon garland, 2.4 m / 8 ft long with about 37 balloons, made of "), r.prompt);
+    // Sujeto + escala primero (después del encuadre).
+    assert.ok(decoracion(r.prompt).startsWith("A small organic balloon garland, 2.4 m / 8 ft long with about 37 balloons, made of "), r.prompt);
     assert.doesNotMatch(r.prompt, /\bgrand\b|\blarge organic\b/, "una guirnalda de 37 globos no es «grand»");
     // Colocación realista con un objeto de tamaño conocido, sin estirarla de pared a pared.
     assert.match(r.prompt, /hung horizontally on the rear wall above the main table/);
@@ -116,7 +126,8 @@ async function main(): Promise<void> {
     // Hex pegado a su color; plano medio en una escena pequeña.
     assert.match(r.prompt, /light pink \(#E6CFD6\)/);
     assert.match(r.prompt, /white \(#FFFFFF\)/);
-    assert.match(r.prompt, /medium shot showing the whole decoration/);
+    // Abre la cola fotográfica (el encuadre 3/4 ya no va en ella): con mayúscula.
+    assert.match(r.prompt, /\. Medium shot showing the whole decoration, /);
   });
 
   await caso("paridad: la escala sale del plan, igual con el brief y la solicitud de cualquier vista", async () => {
@@ -131,7 +142,10 @@ async function main(): Promise<void> {
   await caso("con la foto del espacio la cámara y los muebles ya están: ni mesa inventada ni plano medio", async () => {
     const r = await captionDePlan("real-18-sddefault.plan.json", { idea: "deco-real-18-sddefault" });
     const sceneSpec = { ...r.sceneSpec, generation_mode: "edit_venue" as const, venue: { ...r.sceneSpec.venue, source_image_id: "VENUE_01" } };
-    const c = compileProductPrompt({ ...r.entrada, sceneSpec });
+    // Como la ruta: con la foto del espacio no hay entorno inventado (ni escena, ni encuadre).
+    const entorno = entornoDeEscena({ contexto: r.entrada.visualContext, nivel: 2, modo: sceneSpec.generation_mode });
+    assert.equal(entorno, undefined);
+    const c = compileProductPrompt({ ...r.entrada, sceneSpec, entorno });
     comunes("guirnalda en la foto", { prompt: c.prompt, preflight: preflightFluxPrompt({ sceneSpec, clauses: c.clauses, prompt: c.prompt }) });
     assert.ok(c.prompt.startsWith("A small organic balloon garland, 2.4 m / 8 ft long with about 37 balloons, "), c.prompt);
     assert.match(c.prompt, /hung horizontally on the rear wall\. One single horizontal strip spanning only part of the wall/);
@@ -141,7 +155,7 @@ async function main(): Promise<void> {
   await caso("guirnalda larga (120 globos, 5,5 m): sin «small», corre a lo largo de la pared, tope de 12″", async () => {
     const r = await captionDePlan("real-11-images-26.plan.json");
     comunes("guirnalda larga", r);
-    assert.ok(r.prompt.startsWith("An organic balloon garland, 5.5 m / 18 ft long with about 120 balloons, made of "), r.prompt);
+    assert.ok(decoracion(r.prompt).startsWith("An organic balloon garland, 5.5 m / 18 ft long with about 120 balloons, made of "), r.prompt);
     assert.match(r.prompt, /running along the rear wall/);
     assert.match(r.prompt, /One single horizontal strip, both ends hanging free in mid-air, every balloon at most 12-inch, about head size\./);
     assert.doesNotMatch(r.prompt, /spanning only part of the wall|medium shot|\bsmall organic\b/);
@@ -150,7 +164,7 @@ async function main(): Promise<void> {
   await caso("columnas orgánicas (2 m, 39 y 48 globos): altura y globos de cada una, sin «large»; con 24″ no se acota", async () => {
     const r = await captionDePlan("real-07-eb12910e210c94b6184d025127acce95.plan.json");
     comunes("columnas", r);
-    assert.match(r.prompt, /^An organic balloon column, 2 m(?: \/ 7 ft)? tall,? (?:with )?about 39 balloons, made of /);
+    assert.match(decoracion(r.prompt), /^An organic balloon column, 2 m(?: \/ 7 ft)? tall,? (?:with )?about 39 balloons, made of /);
     assert.match(r.prompt, /an organic balloon column, 2 m(?: \/ 7 ft)? tall,? (?:with )?about 48 balloons, made of /);
     assert.doesNotMatch(r.prompt, /\b(?:grand|large) organic\b/);
     assert.doesNotMatch(r.prompt, /every balloon at most/, "el plan compra globos de 24″");
@@ -160,7 +174,7 @@ async function main(): Promise<void> {
   await caso("arco de 3 m (145 globos de 12″): ancho y alto en m / ft, globos, tope de 12″, sin «grand»", async () => {
     const r = await captionDePlan("real-01-305.plan.json", { medidas: { ancho_m: 3, alto_m: 2.5 } });
     comunes("arco", r);
-    assert.ok(r.prompt.startsWith("An organic balloon garland arch, 3 m / 10 ft wide and 2.5 m / 8 ft tall with about 145 balloons, made of "), r.prompt);
+    assert.ok(decoracion(r.prompt).startsWith("An organic balloon garland arch, 3 m / 10 ft wide and 2.5 m / 8 ft tall with about 145 balloons, made of "), r.prompt);
     assert.match(r.prompt, /Every balloon at most 12-inch, about head size\./);
     assert.deepEqual(tallasDelTexto(r.prompt), [12]);
     assert.doesNotMatch(r.prompt, /\bgrand\b|horizontal strip/);

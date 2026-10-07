@@ -28,7 +28,7 @@ import { buildFluxEditPrompt, generarConSempertexFlux, FLUX_EDIT_PROMPT_MAX_LENG
 import { costeEntradasUsdEstimado, elegirCaptionConGuia, generacionAdmiteGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { prepararGuiaEstructura } from "@/lib/ia/kagutsuchi/rasterizar-guia";
 import { generacionAdmiteGuiaEscena, planConReferencia } from "@/lib/ia/kagutsuchi/guia-escena";
-import { guiaEscenaParaGeneracion } from "@/lib/ia/kagutsuchi/preparar-guia-escena";
+import { guiaEscenaParaGeneracion, recetasDelMotorPython } from "@/lib/ia/kagutsuchi/preparar-guia-escena";
 import { bloqueoPorGeneracionSinReferencia, CODIGO_GENERACION_SIN_REFERENCIA, leerPoliticaDePresentacion, nivelAmbienteConPolitica, nivelCreatividadConPolitica } from "@/lib/presentacion/modo-presentacion";
 import { FluxRevisionTranslationError, traducirRevisionParaFlux } from "@/lib/ia/kagutsuchi/revision-flux";
 
@@ -1040,12 +1040,31 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const ambiente = featureEnabled("AMBIENTE_FIESTA_V1") ? ambienteDeFiesta(nivelAmbienteConPolitica(nivelAmbienteDe(body.ambiente), politicaPresentacion)) : ambienteDeFiesta("ninguno");
     const ambientDecor = escenografiaVisible.map((item) => item.name).slice(0, 3);
     const visualContextFlux = visualContext;
+    // Guía de escena (GUIA_ESCENA_V1, encendida): FLUX recibe por `/edit` UNA imagen con los globos de todas las
+    // piezas, dibujados por el motor en Python (la receta del motor en las piezas sin armado: lo que enseña la
+    // gráfica del plan). Con un plan que salió de una foto, cada pieza donde la foto tiene la suya (la foto del
+    // cliente nunca sale hacia fal); sin foto (GUIA_ESCENA_SIN_FOTO_V1: un plan de texto o de una idea), cada pieza
+    // a su escala real en metros según su ubicación. Si la guía no se puede construir o su nota no cabe, se genera
+    // sin ella y la respuesta lo dice (`guiaEscena.usada: false`, `motivo`). Misma ruta y mismo constructor para la
+    // clásica y la guiada. Sustituye a la guía de estructura cuando aplica.
+    const admiteGuiaEscena = Boolean(planResuelto && resolvedFluxApplications && generacionAdmiteGuiaEscena({
+      bandera: featureEnabled("GUIA_ESCENA_V1"),
+      usarFlux: true,
+      hibrido: false,
+      fotoEspacio: Boolean(venue),
+      resultadoPrevio: Boolean(previous),
+      editApagado: false,
+      formatoTexto: true,
+      conReferencia: planConReferencia(planResuelto.plan.estructuras),
+      sinFoto: featureEnabled("GUIA_ESCENA_SIN_FOTO_V1"),
+    }));
     // El ENTORNO del evento (2026-10-07, «composiciones más audaces… del entorno»): escenario, utilería, luz y encuadre
     // de lo que dijo el cliente (evento, lugar, momento, temática) o, si no dijo nada, el de su evento; nunca pared
     // vacía. Solo texto a imagen: con foto del espacio o sobre una imagen previa la escena ya existe. Lo que añade se
     // avisa como no cotizado (`avisoNoCotizado`), igual en la clásica y en la guiada (mismo cuerpo, misma ruta).
-    const entorno = entornoDeEscena({ contexto: visualContextFlux, nivel: creatividad.nivel, modo: transformedSceneSpec.generation_mode, conEscenografiaDeFoto: ambientDecor.length > 0 });
-    decidir("regla:entorno_escena", "entorno del evento que acompaña a la decoración en el caption de FLUX", entorno ?? null, { entrada: { modo: transformedSceneSpec.generation_mode, nivel: creatividad.nivel, evento: visualContextFlux.eventType ?? null, lugar: visualContextFlux.venue ?? null, momento: visualContextFlux.timeOfDay ?? null, estilo: visualContextFlux.style ?? null, escenografiaDeFoto: ambientDecor.length } });
+    // Con la guía de escena el punto de vista es el del mapa: el entorno va sin su encuadre 3/4 (`conGuiaDeEscena`).
+    const entorno = entornoDeEscena({ contexto: visualContextFlux, nivel: creatividad.nivel, modo: transformedSceneSpec.generation_mode, conEscenografiaDeFoto: ambientDecor.length > 0, conGuiaDeEscena: admiteGuiaEscena });
+    decidir("regla:entorno_escena", "entorno del evento que acompaña a la decoración en el caption de FLUX", entorno ?? null, { entrada: { modo: transformedSceneSpec.generation_mode, nivel: creatividad.nivel, evento: visualContextFlux.eventType ?? null, lugar: visualContextFlux.venue ?? null, momento: visualContextFlux.timeOfDay ?? null, estilo: visualContextFlux.style ?? null, escenografiaDeFoto: ambientDecor.length, conGuiaDeEscena: admiteGuiaEscena } });
     const compilarCaptionCon = (maxLength: number | undefined, frases: typeof colorPatterns) => compileProductPrompt({
       sceneSpec: transformedSceneSpec,
       visualContext: visualContextFlux,
@@ -1065,21 +1084,6 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // cabían, la guía se caía y el caption sin guía (frases de Python incluidas) fallaba en 1152 (2026-10-06,
     // FLUX_PREFLIGHT_FAILED). El tope duro del prompt que recibe fal sigue siendo FLUX_EDIT_PROMPT_MAX_LENGTH.
     const limiteConGuiaEscena = BASE_PROMPT_MAX_LENGTH + reservaNotaGuiaEscena();
-    // Guía de escena (GUIA_ESCENA_V1, encendida): el plan salió de una foto de referencia, así que FLUX recibe
-    // por `/edit` UNA imagen con los globos de todas las piezas, dibujados por el motor en Python y colocados
-    // donde la foto tiene cada una. La foto del cliente nunca sale hacia fal. Si la guía no se puede construir
-    // o su nota no cabe, se genera sin ella y la respuesta lo dice (`guiaEscena.usada: false`, `motivo`).
-    // Con foto de referencia sustituye a la guía de estructura, que queda para los planes sin foto.
-    const admiteGuiaEscena = Boolean(planResuelto && resolvedFluxApplications && generacionAdmiteGuiaEscena({
-      bandera: featureEnabled("GUIA_ESCENA_V1"),
-      usarFlux: true,
-      hibrido: false,
-      fotoEspacio: Boolean(venue),
-      resultadoPrevio: Boolean(previous),
-      editApagado: false,
-      formatoTexto: true,
-      conReferencia: planConReferencia(planResuelto.plan.estructuras),
-    }));
     const guiaEscena = planResuelto && resolvedFluxApplications
       ? await guiaEscenaParaGeneracion<ReturnType<typeof compilarCaption>>({
           admite: admiteGuiaEscena,
@@ -1093,6 +1097,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
             correlationId: generationCorrelationId,
             parentSignal: request.signal,
           })).resultado,
+          completarRecetas: recetasDelMotorPython({ requestId: generationRequestId, correlationId: generationCorrelationId, signal: request.signal }),
           maximo: limiteConGuiaEscena,
           compilar: compilarCaption,
           // Con guía, la forma y los colores de cada pieza los dibuja el mapa: las frases de Python de forma y
@@ -1115,6 +1120,18 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       // Solo el hash y metadatos: ni la guía ni la foto van a registros. El coste es ESTIMADO.
       console.info("[generate] guía de escena", { requestId: generationRequestId, ...guiaEscena.resumen });
     }
+    // Auditoría de IA: qué piezas dibujó la guía, cuáles fueron solo con texto (`omitidas`, con su motivo) y la caja
+    // de cada una en el lienzo; sin la guía ni la foto, solo metadatos y su hash.
+    decidir("regla:guia_escena", "guía de escena que acompaña a FLUX por /edit (piezas dibujadas, omitidas y su caja)", guiaEscena.resumen ?? null, {
+      entrada: {
+        admite: admiteGuiaEscena,
+        conReferencia: Boolean(planResuelto && planConReferencia(planResuelto.plan.estructuras)),
+        sinFoto: featureEnabled("GUIA_ESCENA_SIN_FOTO_V1"),
+        fotoEspacio: Boolean(venue),
+        resultadoPrevio: Boolean(previous),
+        estructuras: planResuelto?.plan.estructuras.map((estructura) => ({ id: estructura.estructura_id, tipo: estructura.tipo, ubicacion: estructura.ubicacion, repeticiones: estructura.repeticiones })) ?? [],
+      },
+    });
     // ADR-0033, detrás de GUIA_ESTRUCTURA_V1 (apagada): sin foto del espacio y
     // con una sola estructura con armado o patrón, el LoRA recibe por `/edit` el
     // mapa de color plano de esa estructura y su carta. Las notas de la guía

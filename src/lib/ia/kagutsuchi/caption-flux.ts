@@ -12,7 +12,7 @@ import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separa
 import { limpiarTextoBase } from "./texto-base";
 import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, ENCUADRE_ESCENA_PEQUENA_BASE, fraseTallasBase, limpiarEtiqueta, medidaBase, rosaDelante, SUSTANTIVOS_ESTRUCTURA_BASE, topeTallaBase, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
 
-export const FLUX_CAPTION_COMPILER_VERSION = "flux-caption-v2.13-entorno-evento" as const;
+export const FLUX_CAPTION_COMPILER_VERSION = "flux-caption-v2.14-encuadre-y-luz-en-capas" as const;
 
 /** Límite común de texto que mantiene primero la decoración. */
 export const FLUX_PROMPT_MAX_LENGTH = 1500;
@@ -548,15 +548,24 @@ const FLANQUEA_ARCO = "flanking the main arch";
  *
  * Un semiarco solo, junto a otras piezas de pie (`standsApart`, de `piezasDePieSueltas`), dice que sube desde su
  * propia base y termina en una punta libre en el aire: con «curved garland … flanking» y dos columnas, FLUX tendía
- * la guirnalda de una columna a la otra y cerraba un arco completo (prueba real del 2026-10-07). Una sola pieza
- * suelta, sin cambio.
+ * la guirnalda de una columna a la otra y cerraba un arco completo (prueba real del 2026-10-07).
+ *
+ * Un semiarco SOLO en la escena (sin otras piezas de pie ni relación) también dice su forma: una sola pata que sube
+ * del piso en un lado, se curva y termina en el aire, con piso libre bajo la punta. Caso del dueño
+ * (guiada-20261007-071126-x7w4dx, «Semiarco» orgánico de 2,46 × 2,91 m): con solo «A one-sided curved organic
+ * balloon garland … at one side of the rear wall», FLUX dibujó un arco completo de dos patas. Es el respaldo en texto
+ * de la guía de escena (que dibuja la pieza del motor) y lo único que llega cuando no hay guía.
  *
  * `corta` (paso de compactación `compactSeparation`): lo mismo con la mitad de caracteres, antes de perder tallas o
  * entorno. Las formas largas son las verificadas con FLUX real.
  */
 function piezasSueltas(clause: { structureType?: string; relation?: string; standsApart?: boolean }, piezas: number, corta = false): string {
   if (piezas < 2) {
-    if (clause.structureType !== "semiarco" || !clause.standsApart) return "";
+    if (clause.structureType !== "semiarco") return "";
+    if (!clause.standsApart) {
+      if (clause.relation) return "";
+      return corta ? ", one leg on the floor, its tip in mid-air" : ", a single leg rising from the floor at one side and curving over, its tip ending in mid-air with bare floor beneath it";
+    }
     return corta ? ", its tip ending in mid-air" : ", rising from its own base on the floor and curving over to one side, its tip ending in mid-air";
   }
   if (clause.structureType === "columna") {
@@ -1133,7 +1142,7 @@ type CaptionRenderStep = {
   /**
    * Cuánto del ENTORNO del evento (`entorno-escena.ts`) va en este paso, si el paso lo fija: el completo en los
    * primeros (solo se quita redundancia de la decoración), el mínimo en el último. Si no lo fija, el medio mientras el
-   * paso no compacta el entorno (`compactEnvironment`) y el compacto (≈150-220 caracteres, el hueco que el presupuesto
+   * paso no compacta el entorno (`compactEnvironment`) y el compacto (≈180-250 caracteres, el hueco que el presupuesto
    * le reserva) desde ahí: sobrevive a toda la compactación de la decoración. Sin entorno en la entrada no cambia nada.
    */
   entorno?: Exclude<DetalleEntorno, "compacto" | "medio">;
@@ -1612,6 +1621,8 @@ type CaptionParts = {
   scaleSentence?: string;
   /** El entorno del evento (`entorno-escena.ts`), después de la decoración y antes de la cola fotográfica. */
   entornoSentence?: string;
+  /** El encuadre del entorno (`ENCUADRE_ESCENA`): la PRIMERA frase del caption, antes de la decoración. */
+  encuadreSentence?: string;
   tail: string[];
   colors: string[];
   /** Every piece is a garland on the wall or hanging (`soloGuirnaldasEnAlto`): no "grounded supports". */
@@ -1709,15 +1720,40 @@ function soloGuirnaldasEnAlto(clauses: readonly FluxVisualClause[]): boolean {
   });
 }
 
+/**
+ * Piezas que se cuentan solas en la imagen: las de pie (arco, semiarco, columna). Una guirnalda en el piso o en la
+ * pared ya no es «de pie», y la frase de piezas sueltas la deja fuera de su cuenta («Two separate pieces…» con un
+ * semiarco, una columna y una guirnalda al frente, ej06): contarla daría dos números distintos en el mismo caption.
+ */
+const PIEZAS_CONTABLES: ReadonlySet<CaptionStructureType> = new Set<CaptionStructureType>(["arco", "semiarco", "columna"]);
+
+/**
+ * Cuántas piezas sueltas tiene la decoración, para la guarda del entorno («the only balloons are the three pieces
+ * described»): ronda 2 del caso del dueño (arco + 2 columnas, guiada-20261007-070255-dzwwhq), dos de tres imágenes
+ * dibujaron una columna de más, y con un arco la frase de piezas de pie sueltas (`piezasDePieSueltas`) no aplica. Solo
+ * si todas son estructuras de globo de pie, ninguna montada sobre otra (sin relación, o flanqueando o enmarcando), y
+ * son de 2 a 6; si no, `undefined` y la guarda va sin número.
+ */
+function piezasContadas(clauses: readonly FluxVisualClause[]): number | undefined {
+  const contables = clauses.every((clause) => clause.elementKind === "balloon_structure"
+    && PIEZAS_CONTABLES.has(clause.structureType)
+    && (!clause.relation || /^(?:flanking|framing)\b/.test(clause.relation)));
+  if (!contables) return undefined;
+  const total = clauses.reduce((suma, clause) => suma + (clause.visibleCount ?? clause.count), 0);
+  return total >= 2 && total <= 6 ? total : undefined;
+}
+
 function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, ambientDecor: readonly string[] = [], creativeCues: readonly string[] = [], entorno?: EntornoEscena): string {
   const parts = buildCaptionParts(sceneSpec, context, clauses, step, ambientDecor, creativeCues, entorno);
   const piezas = parts.pieceCountSentence ? `${parts.pieceCountSentence}. ` : "";
   const escala = parts.scaleSentence ? `${capitalized(parts.scaleSentence)}. ` : "";
-  // Decoración primero (sujeto y escala); el entorno del evento después, y la cola fotográfica al final.
+  // El encuadre del entorno abre el caption (FLUX.2 lee primero lo primero: al final se ignoraba); después la decoración
+  // (sujeto y escala), el entorno del evento y la cola fotográfica al final.
+  const encuadre = parts.encuadreSentence ? `${parts.encuadreSentence}. ` : "";
   const escena = parts.entornoSentence ? `${capitalized(parts.entornoSentence)}. ` : "";
   // Sin cola (`sinCierre` sin evento): la frase acaba en las piezas, sin un «.» suelto.
   const cola = parts.tail.length ? `${capitalized(parts.tail.join(", "))}.` : "";
-  return `${capitalized(parts.structureSentence)}. ${piezas}${escala}${escena}${cola}`.trimEnd();
+  return `${encuadre}${capitalized(parts.structureSentence)}. ${piezas}${escala}${escena}${cola}`.trimEnd();
 }
 
 function capitalized(text: string): string {
@@ -1759,18 +1795,18 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
     : undefined;
   // El entorno del evento (si lo hay) sustituye las pistas sueltas de lugar, luz y evento: las dice todas juntas, con su
   // utilería y su encuadre. Su mesa es la «main table» que ya nombre la decoración, no una segunda.
-  const frasesEntorno = entorno && !step.sinEntorno ? fraseEntorno(entorno, step.entorno ?? (step.compactEnvironment ? "compacto" : "medio"), { mesaPrincipal: /\bmain table\b/i.test(structureSentence) }) : undefined;
+  // Dice qué hay DETRÁS de las piezas (el salón con invitados); con todas colgadas (`enAlto`), a sus lados. Su guarda
+  // de globos dice cuántas piezas son, si se pueden contar (`piezasContadas`).
+  const enAlto = soloGuirnaldasEnAlto(clauses);
+  const frasesEntorno = entorno && !step.sinEntorno ? fraseEntorno(entorno, step.entorno ?? (step.compactEnvironment ? "compacto" : "medio"), { mesaPrincipal: /\bmain table\b/i.test(structureSentence), enAlto, piezas: piezasContadas(clauses) }) : undefined;
   const eventPhrase = frasesEntorno || context.eventCue ? undefined : buildEventPhrase(context);
   const hasCanonicalProducts = clauses.some((clause) => Boolean(clause.canonicalPhrase));
-  const enAlto = soloGuirnaldasEnAlto(clauses);
   const tail = [
     eventPhrase,
     step.minimalTail ? undefined : buildStylePhrase(context),
     ...(step.minimalTail ? [] : creativeCues),
     globalPalette,
     ...(frasesEntorno || step.dropEnvironment ? [] : dedupeEnvironment(context, eventPhrase).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue)),
-    // El encuadre del entorno (ángulo 3/4 a la altura de los ojos, profundidad de campo) abre la cola fotográfica.
-    frasesEntorno?.camara,
     // Una escena pequeña se encuadra en plano medio: la pieza se ve de su tamaño junto a la mesa o la pared.
     step.sinCierre || !textoAImagen || !escenaPequena(clauses) ? undefined : ENCUADRE_ESCENA_PEQUENA_BASE,
     step.sinCierre ? undefined : CIERRE_FOTOGRAFICO_BASE,
@@ -1784,6 +1820,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
     ...(pieceCountSentence ? { pieceCountSentence } : {}),
     ...(scaleSentence ? { scaleSentence } : {}),
     ...(frasesEntorno ? { entornoSentence: frasesEntorno.escena } : {}),
+    ...(frasesEntorno?.encuadre ? { encuadreSentence: frasesEntorno.encuadre } : {}),
     tail,
     colors: [...new Set(clauses.flatMap((clause) => clause.colors))],
     enAlto,

@@ -418,7 +418,9 @@ async function testCaminoDeGeneracion(): Promise<void> {
   const guia = await guiaEscenaParaGeneracion({ admite: true, plan, foto: EJEMPLO_01, aspecto: "3:2", pedirDiscos, maximo: FLUX_PROMPT_MAX_LENGTH, compilar, cabe, largo: (c) => c.prompt.length });
   assert.equal(pedidos.length, 1);
   assert.ok(guia.imagenes && guia.compilacion && guia.resumen);
-  assert.deepEqual(guia.resumen, { usada: true, guia_sha256: guia.preparada!.sha256, piezas: 1, discos: 4, omitidas: [{ estructura_id: "EST_09_BOUQUET", motivo: "sin_dibujo" }], cajas_de_la_foto: 2, cajas_del_plan: 0, coste_entradas_extra_usd_estimado: 0.021 });
+  // `composicion` y `cajas` (2026-10-07): lo que `regla:guia_escena` registra de cada pieza dibujada.
+  assert.deepEqual(guia.resumen, { usada: true, guia_sha256: guia.preparada!.sha256, piezas: 1, discos: 4, omitidas: [{ estructura_id: "EST_09_BOUQUET", motivo: "sin_dibujo" }], cajas_de_la_foto: 2, cajas_del_plan: 0, composicion: "foto", cajas: guia.preparada!.cajas, coste_entradas_extra_usd_estimado: 0.021 });
+  assert.deepEqual(guia.preparada!.cajas.map((caja) => [caja.estructura_id, caja.instancia, caja.fuente, caja.espejo]), [["EST_01_COLUMNAS", 1, "foto", false], ["EST_01_COLUMNAS", 2, "foto", true]]);
   assert.equal(guia.imagenes.length, 1);
   assert.equal(guia.imagenes[0]!.role, "scene_guide");
   const png = await sharp(Buffer.from(guia.imagenes[0]!.base64, "base64")).metadata();
