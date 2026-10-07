@@ -1038,7 +1038,15 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // vocabulario del interruptor es cerrado (`ambiente-fiesta.ts`): un modelo
     // puede elegir de la lista, nunca ampliarla.
     const ambiente = featureEnabled("AMBIENTE_FIESTA_V1") ? ambienteDeFiesta(nivelAmbienteConPolitica(nivelAmbienteDe(body.ambiente), politicaPresentacion)) : ambienteDeFiesta("ninguno");
-    const ambientDecor = escenografiaVisible.map((item) => item.name).slice(0, 3);
+    // El follaje tejido en la guirnalda (monstera, palma, hojas) es pequeño y disperso: ordenado por confianza y área
+    // quedaba fuera de los 3 primeros detrás del panel, y FLUX dibujaba la guirnalda pelada (medio arco, 2026-10-07).
+    // Si los tres primeros no lo tienen, el primer follaje toma el tercer puesto. Sigue siendo escenografía: no se cotiza.
+    const nombresEscenografia = escenografiaVisible.map((item) => item.name);
+    const esFollaje = (item: SceneryItem): boolean => item.category === "floral" || /\b(?:leaf|leaves|foliage|greenery|monstera|palms?|ferns?|eucalyptus|ivy)\b/.test(item.name);
+    const primerFollaje = escenografiaVisible.find(esFollaje);
+    const ambientDecor = primerFollaje && !nombresEscenografia.slice(0, 3).includes(primerFollaje.name)
+      ? [...nombresEscenografia.slice(0, 2), primerFollaje.name]
+      : nombresEscenografia.slice(0, 3);
     const visualContextFlux = visualContext;
     // Guía de escena (GUIA_ESCENA_V1, encendida): FLUX recibe por `/edit` UNA imagen con los globos de todas las
     // piezas, dibujados por el motor en Python (la receta del motor en las piezas sin armado: lo que enseña la

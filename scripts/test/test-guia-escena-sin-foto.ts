@@ -302,7 +302,7 @@ async function main(): Promise<void> {
       { plan_resuelto: { schema_version: "plan-resuelto.v1", ...guardado.plan_resuelto, plan }, material_estimate: guardado.material_estimate },
     );
     assert.match(r.prompt, /one-sided curved organic balloon garland/);
-    assert.match(r.prompt, /a single leg rising from the floor at one side and curving over, its tip ending in mid-air with bare floor beneath it/, r.prompt);
+    assert.match(r.prompt, /a single leg rising from the floor at one side, curving over and sweeping across the entire top of the backdrop to the far side, its tip ending in mid-air at the opposite upper corner with bare floor beneath it/, r.prompt);
     assert.doesNotMatch(r.prompt, /\barch\b/i, "nunca la palabra arch sin arco en el plan");
     assert.equal(r.preflight.ok, true, r.preflight.errors.join("; "));
   });

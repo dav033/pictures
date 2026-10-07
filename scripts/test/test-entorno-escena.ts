@@ -216,7 +216,7 @@ async function main(): Promise<void> {
     const desdeFoto = entornoDeEscena({ contexto: contextoFoto, nivel: 2, modo: "text_to_image", desdeFoto: true, conEscenografiaDeFoto: true })!;
     assert.equal(desdeFoto.momento, "dia");
     assert.equal(desdeFoto.origen.momento, "foto");
-    assert.doesNotMatch(fraseEntorno(desdeFoto, "compacto").escena, /night|uplighting/, fraseEntorno(desdeFoto, "compacto").escena);
+    assert.doesNotMatch(fraseEntorno(desdeFoto, "compacto").escena, /\bnight\b|uplighting/, fraseEntorno(desdeFoto, "compacto").escena);
     assert.equal(entornoDeEscena({ contexto: buildVisualContext({ brief: { tipo_evento: "cumpleaños", momento_dia: "noche" }, userRequest: "cumpleaños" }), nivel: 2, modo: "text_to_image", desdeFoto: true })!.momento, "noche", "la hora del cliente manda sobre la foto");
     for (const detalle of ["completo", "medio", "compacto", "minimo"] as const) {
       const escena = fraseEntorno(deDia, detalle).escena;

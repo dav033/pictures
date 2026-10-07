@@ -564,7 +564,7 @@ function piezasSueltas(clause: { structureType?: string; relation?: string; stan
     if (clause.structureType !== "semiarco") return "";
     if (!clause.standsApart) {
       if (clause.relation) return "";
-      return corta ? ", one leg on the floor, its tip in mid-air" : ", a single leg rising from the floor at one side and curving over, its tip ending in mid-air with bare floor beneath it";
+      return corta ? ", one leg on the floor, sweeping across the full top, its tip in mid-air" : ", a single leg rising from the floor at one side, curving over and sweeping across the entire top of the backdrop to the far side, its tip ending in mid-air at the opposite upper corner with bare floor beneath it";
     }
     return corta ? ", its tip ending in mid-air" : ", rising from its own base on the floor and curving over to one side, its tip ending in mid-air";
   }
