@@ -6,12 +6,15 @@ import { z } from "zod";
 import { conRegistro } from "@/lib/registro/servidor";
 
 const Directorio = join(tmpdir(), "demo-decoracion-guiada");
+const GUARDAR_EN_SERVIDOR: boolean = false;
 const ImagenSchema = z.object({ imagen: z.string().regex(/^data:image\/(png|jpeg|webp);base64,/).max(24_000_000) }).strict();
 
 // Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
 export const POST = conRegistro("/api/guiada-imagen", atenderPOST, { vista: "guiada" });
 
 async function atenderPOST(request: Request) {
+  // Pedido del dueño (2026-10-07): nada se guarda en el servidor; la guiada guarda sus imágenes en el navegador.
+  if (!GUARDAR_EN_SERVIDOR) return Response.json({ error: "Las imágenes se guardan en tu navegador." }, { status: 410 });
   let cuerpo: unknown;
   try { cuerpo = await request.json(); } catch { return Response.json({ error: "La imagen no tiene formato válido." }, { status: 400 }); }
   const validado = ImagenSchema.safeParse(cuerpo);

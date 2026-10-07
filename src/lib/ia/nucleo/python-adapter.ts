@@ -449,13 +449,31 @@ const RETRYABLE_CODES = new Set<PythonAdapterErrorCode>([
  * el editor de la guirnalda).
  *
  * Reintentar es seguro: la reserva se toma ANTES de encolar, así que un 429 garantiza que el trabajo no
- * corrió, y un dibujo no tiene efecto que duplicar. La espera es corta a propósito —un trabajo del motor
- * tarda unos cientos de milisegundos, no el segundo del `Retry-After`— y el presupuesto total lo acota el
- * `deadline_ms` de la llamada, que no se reinicia entre intentos.
+ * corrió, y un dibujo no tiene efecto que duplicar.
+ *
+ * La espera crece (`esperaMotorOcupado`): empieza corta —muchos trabajos del motor tardan unos cientos de
+ * milisegundos— y sube hasta ~1,6 s, con la mitad al azar para que dos sesiones que chocaron no vuelvan a chocar
+ * en el mismo instante. Probador 141, I-7: con 3 reintentos de 120 ms (720 ms en total) y trabajos de 200 a
+ * 2900 ms, bastaban 2 o 3 sesiones a la vez para que un 429 llegara al navegador. Ahora se espera el cupo hasta
+ * `PRESUPUESTO_ESPERA_OCUPADO_MS` en total, nunca más allá del `deadline_ms` de la llamada (que no se reinicia
+ * entre intentos) ni de un corte del llamante.
  */
-const REINTENTOS_MOTOR_OCUPADO = 3;
-const ESPERA_MOTOR_OCUPADO_MS = 120;
+const PRESUPUESTO_ESPERA_OCUPADO_MS = 8_000;
+const ESPERA_OCUPADO_BASE_MS = 150;
+const ESPERA_OCUPADO_TOPE_MS = 1_600;
 const CODIGO_MOTOR_OCUPADO = "motor_ocupado";
+
+/**
+ * Cuánto esperar el cupo de los motores antes del intento `intento + 1` (el primero es el 0): exponencial desde
+ * `ESPERA_OCUPADO_BASE_MS` con tope `ESPERA_OCUPADO_TOPE_MS`; la mitad es fija y la otra mitad, al azar (jitter).
+ */
+export function esperaMotorOcupado(intento: number, azar: () => number = Math.random): number {
+  const techo = Math.min(ESPERA_OCUPADO_TOPE_MS, ESPERA_OCUPADO_BASE_MS * 2 ** Math.max(0, intento));
+  return Math.round(techo / 2 + (techo / 2) * Math.min(1, Math.max(0, azar())));
+}
+
+/** Lo más que se espera el cupo de los motores en una llamada (para pruebas y diagnóstico). */
+export const PRESUPUESTO_MOTOR_OCUPADO_MS = PRESUPUESTO_ESPERA_OCUPADO_MS;
 
 const responseSchema = z.object({
   schema_version: z.literal("operational.v1"),
@@ -910,7 +928,7 @@ async function abrirPeticionPython(
   }
 }
 
-/** `true` si el fallo es el cupo global de los motores, que se reintenta (ver `REINTENTOS_MOTOR_OCUPADO`). */
+/** `true` si el fallo es el cupo global de los motores, que se reintenta (ver `esperaMotorOcupado`). */
 function esMotorOcupado(error: unknown): boolean {
   return isPythonAdapterError(error) && error.code === "PYTHON_BUSY" && error.domainCode === CODIGO_MOTOR_OCUPADO;
 }
@@ -932,12 +950,17 @@ async function llamarPythonOperacion(
   // El presupuesto es el de la llamada entera, no el de cada intento: `abrirPeticionPython` crea un deadline
   // nuevo por intento, así que sin esto tres reintentos triplicarían el plazo que pidió el llamante.
   const limite = Date.now() + normalizeDeadlineMs(input.deadlineMs);
+  let esperado = 0;
   for (let intento = 0; ; intento += 1) {
     try {
       return await unaOperacionPython(path, defaultScope, input);
     } catch (error) {
-      if (!esMotorOcupado(error) || intento >= REINTENTOS_MOTOR_OCUPADO || Date.now() >= limite) throw error;
-      await esperar(ESPERA_MOTOR_OCUPADO_MS * (intento + 1), input.parentSignal);
+      if (!esMotorOcupado(error) || input.parentSignal?.aborted) throw error;
+      const espera = esperaMotorOcupado(intento);
+      // Ni más de ~8 s esperando el cupo, ni más allá del plazo de la llamada: entonces sale el 429 con su código.
+      if (esperado + espera > PRESUPUESTO_ESPERA_OCUPADO_MS || Date.now() + espera >= limite) throw error;
+      esperado += espera;
+      await esperar(espera, input.parentSignal);
     }
   }
 }

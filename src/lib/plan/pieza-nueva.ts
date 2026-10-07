@@ -1,5 +1,6 @@
 import { esEstructuraOficialId, ESTRUCTURAS_OFICIALES, type EstructuraOficialId } from "./estructuras-oficiales";
 import { FEMENINAS, MAX_PIEZAS_PLAN, PIEZAS_CON_LADO } from "./piezas-individuales";
+import { lineasPorMaterial, type LineaDeMaterial } from "./material-de-linea";
 import { PlanDecoracionSchema, type EstructuraPlan, type MaterialPlan, type PlanDecoracion, type Ubicacion } from "./tipos";
 
 /**
@@ -145,6 +146,8 @@ export type PiezaNuevaArmada =
     materiales: Array<{ product_id: string; color: string | null; participacion: number }>;
     /** Piezas de antes que cambiaron solo de nombre (la «Columna» que pasa a «Columna izquierda» junto a la nueva). */
     renombradas: Array<{ estructura_id: string; antes: string; despues: string }>;
+    /** Colores que la pieza nueva lleva en el globo que COMPRA el plan y no en el que declara (`productoComprado`). */
+    comprados: ProductoComprado[];
   }
   | { ok: false; motivo: "tope_piezas" | "ubicacion_ocupada" | "sin_colores" | "esquema"; detalle: string };
 
@@ -158,25 +161,62 @@ function repartir(pesos: readonly number[]): number[] {
   return partes;
 }
 
+/** Las líneas que Python resolvió en cada pieza del plan firmado (`base.estructuras[].lineas`): lo que de verdad compra. */
+export type ComprasDelPlan = ReadonlyArray<{ estructura_id: string; lineas: ReadonlyArray<LineaDeMaterial & { unidades?: unknown }> }>;
+
 /**
- * Los materiales de la pieza nueva con los colores del plan: por color, el producto que llevan más piezas (el mismo
- * globo que ya se compra) y su parte media en las piezas del plan. Con `pedidos` (el cliente dijo colores): solo esas
- * familias del plan y los globos nuevos, en partes iguales. Como mucho seis (`MaterialPlanSchema`).
+ * El producto que COMPRA el material `indice` de una pieza, que no siempre es el que declara: una idea con
+ * `variant_overrides` declara el lila como Pastel Mate Lila y lo compra como Pastel Dusk Lavanda (probador 141, I-3: la
+ * guirnalda sumada por chat salía en otro lila que las columnas). Con las líneas resueltas, el producto con más globos
+ * de las líneas de ese material (`lineasPorMaterial`, la misma lectura que el editor, la leyenda y la imagen); sin
+ * ellas, el de la sustitución que reemplaza la variante del material; si no, el declarado.
  */
-export function materialesDelPlan(plan: PlanDecoracion, pedidos: { colores: readonly string[]; nuevos: ReadonlyArray<{ product_id: string; color: string }> } | null = null): MaterialPlan[] {
+export function productoComprado(estructura: Pick<EstructuraPlan, "materiales" | "variant_overrides">, indice: number, lineas?: ReadonlyArray<LineaDeMaterial & { unidades?: unknown }>): string {
+  const material = estructura.materiales[indice];
+  if (!material) return "";
+  if (lineas?.length) {
+    const porProducto = new Map<string, number>();
+    for (const linea of lineasPorMaterial(estructura, lineas)[indice] ?? []) {
+      porProducto.set(linea.product_id, (porProducto.get(linea.product_id) ?? 0) + (typeof linea.unidades === "number" ? linea.unidades : 0));
+    }
+    const mayor = [...porProducto].sort((a, b) => b[1] - a[1] || Number(b[0] === material.product_id) - Number(a[0] === material.product_id))[0];
+    if (mayor && mayor[1] > 0) return mayor[0];
+  }
+  const sustituto = material.variant_id ? (estructura.variant_overrides ?? []).find((item) => item.objetivo_variant_id === material.variant_id) : undefined;
+  return sustituto?.product_id ?? material.product_id;
+}
+
+/** Un color cuyo globo comprado no es el declarado (para el registro de la pieza nueva). */
+export type ProductoComprado = { color: string; declarado: string; comprado: string };
+
+/**
+ * Los materiales de la pieza nueva con los colores del plan: por color, el producto que COMPRAN más piezas (el mismo
+ * globo que ya se compra, `productoComprado`) y su parte media en las piezas del plan. Con `pedidos` (el cliente dijo
+ * colores): solo esas familias del plan y los globos nuevos, en partes iguales. Como mucho seis (`MaterialPlanSchema`).
+ */
+export function materialesDelPlan(plan: PlanDecoracion, pedidos: { colores: readonly string[]; nuevos: ReadonlyArray<{ product_id: string; color: string }> } | null = null, compras?: ComprasDelPlan): MaterialPlan[] {
+  return materialesComprados(plan, pedidos, compras).materiales;
+}
+
+function materialesComprados(plan: PlanDecoracion, pedidos: { colores: readonly string[]; nuevos: ReadonlyArray<{ product_id: string; color: string }> } | null, compras: ComprasDelPlan | undefined): { materiales: MaterialPlan[]; comprados: ProductoComprado[] } {
   const soloColores = pedidos ? pedidos.colores : undefined;
   const nuevos = pedidos?.nuevos ?? [];
   type Acumulado = { color: string; productos: Map<string, { veces: number; acabado?: string }>; parte: number; piezas: number; orden: number };
   const porColor = new Map<string, Acumulado>();
+  const comprados: ProductoComprado[] = [];
   let orden = 0;
   for (const estructura of plan.estructuras) {
     const total = estructura.materiales.reduce((suma, material) => suma + material.participacion, 0) || 1;
-    for (const material of estructura.materiales) {
+    const lineas = compras?.find((pieza) => pieza.estructura_id === estructura.estructura_id)?.lineas;
+    for (const [indice, material] of estructura.materiales.entries()) {
       const clave = normal(material.color) || `producto:${material.product_id}`;
       const actual: Acumulado = porColor.get(clave) ?? { color: normal(material.color), productos: new Map<string, { veces: number; acabado?: string }>(), parte: 0, piezas: 0, orden: orden++ };
-      const producto: { veces: number; acabado?: string } = actual.productos.get(material.product_id) ?? { veces: 0, ...(material.acabado ? { acabado: material.acabado } : {}) };
+      const comprado = productoComprado(estructura, indice, lineas) || material.product_id;
+      // El acabado declarado es del producto declarado: con otro globo comprado no se arrastra.
+      const producto: { veces: number; acabado?: string } = actual.productos.get(comprado) ?? { veces: 0, ...(material.acabado && comprado === material.product_id ? { acabado: material.acabado } : {}) };
+      if (comprado !== material.product_id && !comprados.some((item) => item.declarado === material.product_id && item.comprado === comprado)) comprados.push({ color: normal(material.color), declarado: material.product_id, comprado });
       producto.veces += 1;
-      actual.productos.set(material.product_id, producto);
+      actual.productos.set(comprado, producto);
       actual.parte += material.participacion / total;
       actual.piezas += 1;
       porColor.set(clave, actual);
@@ -194,13 +234,15 @@ export function materialesDelPlan(plan: PlanDecoracion, pedidos: { colores: read
     ...nuevos.filter((nuevo) => !delPlan.some((item) => item.color === normal(nuevo.color) && item.productos.has(nuevo.product_id))).map((nuevo) => ({ product_id: nuevo.product_id, color: normal(nuevo.color), peso: 1 })),
   ].slice(0, 6);
   const partes = repartir(filas.map((fila) => fila.peso));
-  return filas.map((fila, indice): MaterialPlan => ({
+  const materiales = filas.map((fila, indice): MaterialPlan => ({
     product_id: fila.product_id,
     ...(fila.color ? { color: fila.color } : {}),
     ...(fila.acabado ? { acabado: fila.acabado } : {}),
     participacion: partes[indice]!,
     rol_material: indice === 0 ? "principal" : "secundario",
   }));
+  // Solo los que la pieza nueva lleva de verdad.
+  return { materiales, comprados: comprados.filter((item) => materiales.some((material) => material.product_id === item.comprado && normal(material.color) === item.color)) };
 }
 
 /** `EST_04_GUIRNALDA`: el número que sigue y la oficial, sin repetir un id del plan. */
@@ -285,9 +327,10 @@ function opuestos(a: Ubicacion, b: Ubicacion): boolean {
 
 /**
  * El plan con la pieza nueva al final y las de antes intactas (solo puede cambiar el nombre de una «Columna» que pasa a
- * «Columna izquierda»). No cuenta nada: Python resuelve el plan entero.
+ * «Columna izquierda»). No cuenta nada: Python resuelve el plan entero. `compras`: las líneas que Python resolvió en el
+ * plan firmado, para que la pieza nueva lleve el globo que el plan COMPRA de cada color (`productoComprado`).
  */
-export function planConPiezaNueva(plan: PlanDecoracion, pedida: PiezaNuevaEntrada): PiezaNuevaArmada {
+export function planConPiezaNueva(plan: PlanDecoracion, pedida: PiezaNuevaEntrada, compras?: ComprasDelPlan): PiezaNuevaArmada {
   if (plan.estructuras.length >= MAX_PIEZAS_PLAN) return { ok: false, motivo: "tope_piezas", detalle: `el plan ya tiene ${plan.estructuras.length} piezas (máximo ${MAX_PIEZAS_PLAN})` };
   const oficial = pedida.estructura;
   const ubicacion = ubicacionDePieza(pedida.ubicacion, oficial, plan.estructuras.map((estructura) => estructura.ubicacion));
@@ -301,6 +344,7 @@ export function planConPiezaNueva(plan: PlanDecoracion, pedida: PiezaNuevaEntrad
   const { nombre, renombrar } = nombresAlSumar(plan, oficial, ubicacion);
   let nueva: EstructuraPlan;
   let plantilla: "copia" | "plan" | "estandar";
+  let comprados: ProductoComprado[] = [];
   if (modelo && !conColores && !medidasPedidas && !pedida.organica) {
     // 1. Copia exacta (con su armado y sus productos), en espejo si va al lado opuesto. No materializa ningún
     // elemento de la foto: es una pieza que pidió el cliente.
@@ -310,7 +354,9 @@ export function planConPiezaNueva(plan: PlanDecoracion, pedida: PiezaNuevaEntrad
     nueva = opuestos(modelo.ubicacion, ubicacion) ? enEspejo(copia) : copia;
     plantilla = "copia";
   } else {
-    const materiales = materialesDelPlan(plan, conColores ? { colores: pedida.colores ?? [], nuevos: pedida.materialesNuevos ?? [] } : null);
+    const conCompra = materialesComprados(plan, conColores ? { colores: pedida.colores ?? [], nuevos: pedida.materialesNuevos ?? [] } : null, compras);
+    const materiales = conCompra.materiales;
+    comprados = conCompra.comprados;
     if (!materiales.length) return { ok: false, motivo: "sin_colores", detalle: `ningún material del plan es de ${(pedida.colores ?? []).join(", ")}` };
     const oficialInfo = ESTRUCTURAS_OFICIALES[oficial];
     const densidad = modelo?.densidad ?? oficialInfo.densidades?.[0] ?? "media";
@@ -347,7 +393,7 @@ export function planConPiezaNueva(plan: PlanDecoracion, pedida: PiezaNuevaEntrad
   const valido = PlanDecoracionSchema.safeParse(candidato);
   if (!valido.success) return { ok: false, motivo: "esquema", detalle: valido.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ").slice(0, 400) };
   return {
-    ok: true, plan: valido.data, nueva: id, nombre, ubicacion, medidas: { ...nueva.medidas }, plantilla, renombradas,
+    ok: true, plan: valido.data, nueva: id, nombre, ubicacion, medidas: { ...nueva.medidas }, plantilla, renombradas, comprados,
     materiales: nueva.materiales.map((material) => ({ product_id: material.product_id, color: material.color ?? null, participacion: material.participacion })),
   };
 }

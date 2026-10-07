@@ -262,7 +262,9 @@ export async function agregarPiezaPlan(input: Entrada & { pieza: Omit<PiezaNueva
     if (!admitidas.colores.some((color) => normal(color) === normal(globo.color))) throw new PlanEditError(422, "Ese globo no es del color que pediste. Prueba con otro color.");
     materialesNuevos.push({ product_id: globo.productId, color: normal(globo.color) });
   }
-  const armada = planConPiezaNueva(input.base.plan, { ...input.pieza, ...(materialesNuevos.length ? { materialesNuevos } : {}) });
+  // Con las líneas que Python resolvió: la pieza nueva lleva el globo que el plan COMPRA de cada color (con los
+  // `variant_overrides` de una idea, el lila es Pastel Dusk Lavanda y no el Pastel Mate Lila declarado; probador 141, I-3).
+  const armada = planConPiezaNueva(input.base.plan, { ...input.pieza, ...(materialesNuevos.length ? { materialesNuevos } : {}) }, input.base.estructuras);
   const entrada = { plan_hash: input.base.plan_hash, pieza: input.pieza, globos: (input.globos ?? []).map((globo) => ({ color: globo.color, product_id: globo.productId, variantes: globo.variantIds.length })), piezasAntes: input.base.plan.estructuras.map((estructura) => ({ id: estructura.estructura_id, nombre: estructura.nombre, ubicacion: estructura.ubicacion })) };
   if (!armada.ok) {
     decidir("regla:agregar_pieza", "sumar una pieza al plan por chat sin tocar las demás", { aplicado: false, motivo: armada.motivo, detalle: armada.detalle }, { entrada });
@@ -286,7 +288,7 @@ export async function agregarPiezaPlan(input: Entrada & { pieza: Omit<PiezaNueva
   const aplicado = intactas && globosNueva > 0 && sinCobertura.length === 0;
   decidir("regla:agregar_pieza", "sumar una pieza al plan por chat sin tocar las demás (Python la cuenta y firma)", {
     aplicado, nueva: armada.nueva, nombre: armada.nombre, ubicacion: armada.ubicacion, medidas: armada.medidas, plantilla: armada.plantilla, materiales: armada.materiales,
-    renombradas: armada.renombradas, mezclaClasica, intactas, cambiadas: intactas ? [] : piezasCambiadas(input.base, resuelto), globosNueva, sinCobertura,
+    renombradas: armada.renombradas, productosComprados: armada.comprados, mezclaClasica, intactas, cambiadas: intactas ? [] : piezasCambiadas(input.base, resuelto), globosNueva, sinCobertura,
   }, { entrada, ...(mezclaClasica ? { motivo: "el catálogo no cubría la mezcla orgánica de la pieza nueva: se resolvió con la mezcla clásica" } : {}) });
   if (!intactas) throw new PlanEditError(422, "No pude sumar esa pieza sin cambiar las que ya tienes. Tu plan sigue como estaba.");
   if (!globosNueva || sinCobertura.length) throw new PlanEditError(422, "El catálogo de tu plan no tiene esos colores en los tamaños que lleva esa pieza. Prueba con otros colores.");

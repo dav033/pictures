@@ -117,6 +117,8 @@ export async function planDesdeIdea({ ideaId, base, signal }: Entrada): Promise<
     sustituciones: resuelto.sustituciones,
     sinCobertura: resuelto.sin_cobertura,
     sinTallasDeIdea: conTallasDeIdea && !tallasDeIdea,
+    // De qué color es la talla que falta: el producto pedido que no se pudo comprar (probador 141, I-5).
+    coloresDeProducto: Object.fromEntries(resuelto.plan.estructuras.flatMap((estructura) => estructura.materiales.flatMap((material) => (material.color ? [[material.product_id, material.color] as const] : [])))),
   });
   decidir("regla:plan_desde_idea_resuelto", "Python resolvió el plan de la idea; si no es exacto, lo que ve el cliente", {
     plan_hash: resuelto.plan_hash, globos, globosIdea: guardado.globos, globosDeIdeaEnPlan, exacto, avisos,

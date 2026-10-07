@@ -96,7 +96,9 @@ export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPi
   const bloqueado = ocupado || ajuste.guardando;
   const [seleccion, setSeleccion] = useState<Seleccion | null>(null);
   const [sesionSelector, setSesionSelector] = useState(0);
-  const [aLasDos, setALasDos] = useState(true);
+  // null = lo que toca por defecto: marcado solo si la pieza y su pareja son hoy iguales (`pareja.iguales`). Una vez que
+  // el cliente lo toca, manda lo suyo.
+  const [aLasDos, setALasDos] = useState<boolean | null>(null);
   const [aLasDosSelector, setALasDosSelector] = useState(true);
   const [pistaColores, setPistaColores] = useState(false);
   const coloresRef = useRef<HTMLElement>(null);
@@ -186,7 +188,7 @@ export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPi
               pieza={pieza}
               ajuste={ajuste}
               bloqueado={bloqueado}
-              aLasDos={aLasDos}
+              aLasDos={aLasDos ?? Boolean(pieza.pareja?.iguales)}
               onALasDos={setALasDos}
               ayudaCantidad={posicion === piezaConAyudaCantidad}
               onCambiar={(color) => abrirSelector({ modo: "cambiar", color: color.color, etiqueta: color.etiqueta, productId: color.productId, estructuraId: pieza.estructuraId, pareja: pieza.pareja, fuera: new Set([`${color.productId}|${color.color}`]) })}
@@ -208,7 +210,7 @@ export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPi
         ventas={ventas}
         conImpresos={conImpresos}
         fuera={seleccion?.fuera ?? new Set()}
-        {...(seleccion?.modo === "cambiar" && seleccion.pareja ? { extra: <InterruptorPareja activo={aLasDosSelector} onCambio={setALasDosSelector} pareja={seleccion.pareja.titulo} /> } : {})}
+        {...(seleccion?.modo === "cambiar" && seleccion.pareja ? { extra: <InterruptorPareja activo={aLasDosSelector} onCambio={setALasDosSelector} pareja={seleccion.pareja.titulo} nota="el mismo globo en las dos" /> } : {})}
         onElegir={elegirGlobo}
         onCerrar={() => setSeleccion(null)}
       />
@@ -351,14 +353,18 @@ function BotonCambiar({ etiqueta, deshabilitado, onClick }: { etiqueta: string; 
   );
 }
 
-function InterruptorPareja({ activo, onCambio, pareja }: { activo: boolean; onCambio: (valor: boolean) => void; pareja: string }) {
+/**
+ * «Hacer lo mismo en la otra». `nota`: lo que pasa con la pareja, que solo es «quedan iguales» si hoy lo son (con
+ * cifras distintas la pareja recibe la misma diferencia, no la misma cifra; probador 141).
+ */
+function InterruptorPareja({ activo, onCambio, pareja, nota = "quedan iguales" }: { activo: boolean; onCambio: (valor: boolean) => void; pareja: string; nota?: string }) {
   return (
     <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl bg-acento-suave/60 px-3 py-1.5 text-sm text-texto">
       <input type="checkbox" checked={activo} onChange={(evento) => onCambio(evento.target.checked)} className="peer sr-only" />
       <span aria-hidden className={`relative h-6 w-10 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-acento/50 ${activo ? "bg-acento" : "bg-borde"}`}>
         <motion.span className="absolute top-0.5 size-5 rounded-full bg-superficie shadow" animate={{ left: activo ? 18 : 2 }} transition={RESORTE} />
       </span>
-      <span className="min-w-0">Hacer lo mismo en <span className="font-medium">{pareja.toLocaleLowerCase("es")}</span> <span className="text-texto-suave">(quedan iguales)</span></span>
+      <span className="min-w-0">Hacer lo mismo en <span className="font-medium">{pareja.toLocaleLowerCase("es")}</span> <span className="text-texto-suave">({nota})</span></span>
     </label>
   );
 }
@@ -409,7 +415,7 @@ function BloquePieza({ plan, pieza, ajuste, bloqueado, aLasDos, onALasDos, onCam
           </motion.div>
         )}
       </AnimatePresence>
-      {pieza.pareja && <div className="mb-2"><InterruptorPareja activo={aLasDos} onCambio={onALasDos} pareja={pieza.pareja.titulo} /></div>}
+      {pieza.pareja && <div className="mb-2"><InterruptorPareja activo={aLasDos} onCambio={onALasDos} pareja={pieza.pareja.titulo} nota={pieza.pareja.iguales ? "quedan iguales" : "hoy no son iguales: cambia lo mismo"} /></div>}
 
       <BarraColores colores={pieza.colores} cargando={recalculando} />
       <ul className="mt-2 space-y-1.5" aria-label={`Colores de ${pieza.titulo}`}>

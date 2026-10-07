@@ -93,7 +93,7 @@ import { ArgsEstimarConteoGlobosSchema, erroresDeEstimacion, objetivoDeLaFoto, s
 import { AJUSTAR_PLAN_DECORACION, ESTIMAR_CONTEO_GLOBOS, HERRAMIENTAS_ARMADO_MOTOR, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "../referencia/reference-blueprint";
 import type { Herramienta } from "../nucleo/tipos";
-import { aplicarFloresDeFoto } from "@/lib/plan/flores-pieza";
+import { aplicarFloresDeFoto, avisosClienteFloresDeFoto } from "@/lib/plan/flores-pieza";
 import { z } from "zod";
 
 /**
@@ -1564,14 +1564,24 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // Flores de globo de la foto (flores-pieza.ts): la pieza que materializa un elemento donde la lectura vio flores las
     // lleva como adorno, con sus propios globos (el pétalo perlado sale del perlado de la pieza). Después de cobertura,
     // acabados y piezas individuales, así que los productos ya son los finales; Python cuenta y cotiza sus globos.
-    const floresFoto = aplicarFloresDeFoto(planCanonico, estado.referenceBlueprint);
+    // Solo globos redondos: un metalizado del color del centro dejaba la flor en `sin_cobertura` y la confirmación
+    // rechazaba el plan entero sin que el modelo pudiera corregirlo. La allowlist del turno es la de estas búsquedas,
+    // así que `ragCandidatos` conoce la forma de cada producto del plan.
+    const formaFlor = new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato.variantes.some((variante) => variante.forma === "redondo" && (variante.diamPulg ?? 0) > 0) ? "redondo" as const : "otra" as const]));
+    const floresFoto = aplicarFloresDeFoto(planCanonico, estado.referenceBlueprint, (productId) => formaFlor.get(productId));
     if (floresFoto.aplicadas.length || floresFoto.omitidas.length) {
       const conFlores = floresFoto.aplicadas.length ? PlanDecoracionSchema.safeParse(floresFoto.plan) : null;
       if (conFlores?.success) planCanonico = conFlores.data;
+      // La tarjeta de la lectura ya le prometió esas flores al cliente: las que no salen (o salen sin su centro) se le
+      // dicen por `avisos_cliente`, como los colores de la foto que la propuesta no lleva.
+      const avisosFlores = conFlores && !conFlores.success
+        ? []
+        : avisosClienteFloresDeFoto(floresFoto, new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre])));
+      avisosConvergencia.push(...avisosFlores);
       decidir("regla:flores_de_foto", "flores de globo de la foto como adorno de su pieza", conFlores && !conFlores.success
         ? { aplicado: false, errores: conFlores.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`) }
-        : { aplicado: floresFoto.aplicadas.length > 0, aplicadas: floresFoto.aplicadas, omitidas: floresFoto.omitidas }, {
-        motivo: "la lectura vio flores de globo en la pieza; se arman con los globos de esa pieza",
+        : { aplicado: floresFoto.aplicadas.length > 0, aplicadas: floresFoto.aplicadas, omitidas: floresFoto.omitidas, avisos_cliente: avisosFlores }, {
+        motivo: "la lectura vio flores de globo en la pieza; se arman con los globos redondos del plan (los de esa pieza primero)",
       });
     }
     try {

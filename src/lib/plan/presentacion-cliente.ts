@@ -401,15 +401,42 @@ export function resumenPlanCliente(estructuras: readonly EstructuraParaDescribir
 }
 
 /**
- * Una frase por par pedido/entregado, agrupando las estructuras afectadas.
- * Antes: "⚠ EST_01_SEMIARCO: R-18 → R-12" repetido por instancia.
+ * «R-18», «R18», «18», «18″», «18in» → «18»: la misma talla escrita de otra forma es la MISMA sustitución (probador
+ * 141, I-2: una edición que devolvía la talla escrita distinto partía un mismo hecho en dos frases).
+ */
+export function tallaNormal(codigo: string): string {
+  const numero = /(\d+(?:[.,]\d+)?)/.exec(codigo)?.[1];
+  return numero ? String(Number(numero.replace(",", "."))) : codigo.trim().toLocaleLowerCase("es");
+}
+
+/**
+ * El color de una sustitución de talla, tal como lo escribe Python en su motivo (`plan.py`, `_line`: «La whitelist no
+ * tiene R-24; se usó el diámetro más cercano disponible para lila.»). Null si no lo dice («el producto»). Probador
+ * 141, I-5: «18″ por 24″ y 24″ por 18″» sin color se leía como una contradicción.
+ */
+export function colorDeSustitucionTalla(motivo: string | undefined): string | null {
+  const color = /disponible para (.+?)\.?\s*$/i.exec(motivo ?? "")?.[1]?.trim();
+  return color && !/^el producto$/i.test(color) ? color : null;
+}
+
+/** «en lila», «en lila ni en dorado», «en rosado, lila ni dorado»: después de «no hay globos de 24 pulgadas». */
+function enColores(colores: readonly string[]): string {
+  if (!colores.length) return "en ese color";
+  if (colores.length === 1) return `en ${colores[0]}`;
+  if (colores.length === 2) return `en ${colores[0]} ni en ${colores[1]}`;
+  return `en ${colores.slice(0, -1).join(", ")} ni ${colores.at(-1)}`;
+}
+
+/**
+ * Una frase por par pedido/entregado (tallas normalizadas), agrupando las estructuras afectadas y nombrando el color de
+ * cada cambio. Antes: "⚠ EST_01_SEMIARCO: R-18 → R-12" repetido por instancia.
  * `descripciones` va de `estructura_id` a "el semiarco orgánico a la derecha".
  */
 export function sustitucionesCliente(
   sustituciones: ReadonlyArray<{ estructura_id: string; pedido: string; entregado: string; motivo?: string }>,
   descripciones: ReadonlyMap<string, string>,
 ): string[] {
-  const grupos = new Map<string, { pedido: string; entregado: string; estructuras: string[] }>();
+  const grupos = new Map<string, { pedido: string; entregado: string; estructuras: string[]; colores: string[] }>();
   // Photo colors a structure does not carry: collected per structure, so the
   // customer reads one sentence that names the piece instead of one "esta
   // pieza no lo lleva" per color (2026-09-24: four lines for two columns).
@@ -429,15 +456,17 @@ export function sustitucionesCliente(
       colorPorEstructura.set(item.estructura_id, actual);
       continue;
     }
-    const clave = `${item.pedido}|${item.entregado}`;
-    const grupo = grupos.get(clave) ?? { pedido: item.pedido, entregado: item.entregado, estructuras: [] };
+    const clave = `${tallaNormal(item.pedido)}|${tallaNormal(item.entregado)}`;
+    const grupo = grupos.get(clave) ?? { pedido: item.pedido, entregado: item.entregado, estructuras: [], colores: [] };
     const descripcion = descripciones.get(item.estructura_id) ?? "la decoración";
     if (!grupo.estructuras.includes(descripcion)) grupo.estructuras.push(descripcion);
+    const color = colorDeSustitucionTalla(item.motivo);
+    if (color && !grupo.colores.includes(nombreColorCliente(color))) grupo.colores.push(nombreColorCliente(color));
     grupos.set(clave, grupo);
   }
   return [
     ...[...grupos.values()].map((grupo) =>
-      `Para ${unirNatural(grupo.estructuras)} no hay globos de ${pulgadasCliente(grupo.pedido)} en ese color; usamos globos de ${pulgadasCliente(grupo.entregado)}.`),
+      `Para ${unirNatural(grupo.estructuras)} no hay globos de ${pulgadasCliente(grupo.pedido)} ${enColores(grupo.colores)}; usamos globos de ${pulgadasCliente(grupo.entregado)}.`),
     ...coloresFaltantesCliente(colorPorEstructura, descripciones),
     ...sinVenta,
   ];
@@ -465,19 +494,28 @@ function coloresFaltantesCliente(
   });
 }
 
+/**
+ * Los tamaños que no hay, una frase por talla (normalizada) con las piezas y, si se sabe (`colorDeProducto`, del
+ * `product_id` que no se pudo comprar), de qué color: «Todavía no tenemos globos de 24 pulgadas en dorado para la
+ * columna derecha.» (probador 141, I-5: sin el color se contradecía con la talla sustituida de otro color).
+ */
 export function faltantesCliente(
-  sinCobertura: ReadonlyArray<{ estructura_id: string; tamano: string }>,
+  sinCobertura: ReadonlyArray<{ estructura_id: string; tamano: string; product_id?: string }>,
   descripciones: ReadonlyMap<string, string>,
+  colorDeProducto?: ReadonlyMap<string, string>,
 ): string[] {
-  const grupos = new Map<string, string[]>();
+  const grupos = new Map<string, { tamano: string; estructuras: string[]; colores: string[] }>();
   for (const item of sinCobertura) {
-    const estructuras = grupos.get(item.tamano) ?? [];
+    const clave = tallaNormal(item.tamano);
+    const grupo = grupos.get(clave) ?? { tamano: item.tamano, estructuras: [], colores: [] };
     const descripcion = descripciones.get(item.estructura_id) ?? "la decoración";
-    if (!estructuras.includes(descripcion)) estructuras.push(descripcion);
-    grupos.set(item.tamano, estructuras);
+    if (!grupo.estructuras.includes(descripcion)) grupo.estructuras.push(descripcion);
+    const color = item.product_id ? colorDeProducto?.get(item.product_id) : undefined;
+    if (color && !grupo.colores.includes(nombreColorCliente(color))) grupo.colores.push(nombreColorCliente(color));
+    grupos.set(clave, grupo);
   }
-  return [...grupos.entries()].map(([tamano, estructuras]) =>
-    `Todavía no tenemos globos de ${pulgadasCliente(tamano)} para ${unirNatural(estructuras)}.`);
+  return [...grupos.values()].map(({ tamano, estructuras, colores }) =>
+    `Todavía no tenemos globos de ${pulgadasCliente(tamano)}${colores.length ? ` en ${unirNatural(colores)}` : ""} para ${unirNatural(estructuras)}.`);
 }
 
 const SUPUESTO_MEDIDAS = /^medidas asumidas para ([a-z_]+):\s*(.+?)\s*—\s*(.+)$/i;

@@ -160,6 +160,8 @@ export function fraseFloresFlux(
  */
 export const FloresLeidasSchema = z.object({
   cantidad: z.number().int().min(1).max(MAX_FLORES_PIEZA),
+  /** Globos-pétalo de UNA flor que contó la lectura; sin él, `PETALOS_FLOR_POR_DEFECTO`. */
+  petalos: z.number().int().min(MIN_PETALOS_FLOR).max(MAX_PETALOS_FLOR).optional(),
   color_petalo: z.string().trim().min(1).max(40),
   color_centro: z.string().trim().min(1).max(40).optional(),
   confianza: z.number().min(0).max(1),
@@ -177,8 +179,13 @@ export function floresLeidasDeCrudo(crudo: unknown): FloresLeidas | null {
   if (!crudo || typeof crudo !== "object") return null;
   const valor = crudo as Record<string, unknown>;
   const cantidad = typeof valor.cantidad === "number" && Number.isFinite(valor.cantidad) ? Math.round(valor.cantidad) : NaN;
+  // Los pétalos se acotan como la cantidad («8 pétalos» sigue siendo una flor llena); ilegibles, la flor sigue sin ellos.
+  const petalos = typeof valor.petalos === "number" && Number.isFinite(valor.petalos)
+    ? Math.min(MAX_PETALOS_FLOR, Math.max(MIN_PETALOS_FLOR, Math.round(valor.petalos)))
+    : null;
   const leidas = FloresLeidasSchema.safeParse({
     cantidad: Number.isFinite(cantidad) ? Math.min(MAX_FLORES_PIEZA, cantidad) : cantidad,
+    ...(petalos === null ? {} : { petalos }),
     color_petalo: valor.color_petalo,
     ...(typeof valor.color_centro === "string" && valor.color_centro.trim() ? { color_centro: valor.color_centro } : {}),
     confianza: valor.confianza,
@@ -194,11 +201,36 @@ function colorCanonico(color: string | undefined): string {
   return clasificarColores(plegado).values[0] ?? plegado;
 }
 
-/** El material de la pieza de ese color, o `null`. */
-function materialDeColor(materiales: readonly MaterialPieza[], color: string): MaterialPieza | null {
+/**
+ * Lo que se sabe de la forma de un producto del plan: `"redondo"` (tiene un globo redondo con diámetro, el único con que
+ * Python arma una flor: `flores_pieza.elegir_talla`), `"otra"` (un metalizado, una letra, un kit: Python lo deja en
+ * `sin_cobertura` y la confirmación rechaza el plan entero) o `undefined` (no se sabe).
+ */
+export type FormaProducto = (productId: string) => "redondo" | "otra" | undefined;
+
+/**
+ * El primer material de ese color que puede ser un globo de flor, o `null`. Con `forma`, nunca uno que no es redondo y,
+ * antes que uno de forma desconocida, uno redondo; sin ella, el primero del color.
+ */
+function materialDeColor(materiales: readonly MaterialPieza[], color: string, forma?: FormaProducto): MaterialPieza | null {
   const buscado = colorCanonico(color);
   if (!buscado) return null;
-  return materiales.find((material) => colorCanonico(material.color) === buscado) ?? null;
+  const delColor = materiales.filter((material) => colorCanonico(material.color) === buscado && forma?.(material.product_id) !== "otra");
+  return delColor.find((material) => forma?.(material.product_id) === "redondo") ?? delColor[0] ?? null;
+}
+
+/**
+ * La forma de cada producto según las líneas del CUERPO de un plan ya resuelto (las de las flores no cuentan): redondo
+ * si alguna de sus líneas es un globo redondo con diámetro, «otra» si tiene líneas y ninguna lo es.
+ */
+export function formaDeLineas(estructuras: ReadonlyArray<{ lineas: ReadonlyArray<Record<string, unknown>> }>): FormaProducto {
+  const formas = new Map<string, "redondo" | "otra">();
+  for (const linea of estructuras.flatMap((estructura) => estructura.lineas)) {
+    if (esLineaDeFlor(linea) || typeof linea.product_id !== "string") continue;
+    const redondo = linea.forma === "redondo" && typeof linea.diam_pulg === "number" && linea.diam_pulg > 0;
+    if (redondo || !formas.has(linea.product_id)) formas.set(linea.product_id, redondo ? "redondo" : "otra");
+  }
+  return (productId) => formas.get(productId);
 }
 
 function materialFlor(material: MaterialPieza, color: string | undefined): MaterialFlor {
@@ -207,18 +239,21 @@ function materialFlor(material: MaterialPieza, color: string | undefined): Mater
 }
 
 /**
- * Las flores de la foto como adorno de la pieza: los pétalos con el globo de la pieza del color que se leyó (el mismo
- * producto, así que el mismo acabado: un pétalo perlado sale del perlado de la pieza, no de un mate) y el centro con el
- * de su color, si la pieza lo lleva. Sin un globo de la pieza del color de los pétalos no se inventa ninguno: `null`, y
- * quien llama lo deja dicho. Por debajo de `CONFIANZA_MINIMA_FLORES`, tampoco.
+ * Las flores de la foto como adorno de la pieza: los pétalos con el globo del color que se leyó (el mismo producto, así
+ * que el mismo acabado: un pétalo perlado sale del perlado de la pieza, no de un mate), el centro con el de su color y
+ * los pétalos que contó la lectura. `materiales` va en orden de preferencia (los de la pieza primero; quien llama puede
+ * sumar los de las otras piezas del plan, que también están en la allowlist firmada). Sin un globo del color de los
+ * pétalos no se inventa ninguno: `null`, y quien llama lo deja dicho. Por debajo de `CONFIANZA_MINIMA_FLORES`, tampoco.
+ * Con `forma`, nunca un producto que no es un globo redondo (un metalizado dorado no es el centro de una flor).
  */
-export function floresDesdeLectura(materiales: readonly MaterialPieza[], leidas: FloresLeidas): FloresPieza | null {
+export function floresDesdeLectura(materiales: readonly MaterialPieza[], leidas: FloresLeidas, forma?: FormaProducto): FloresPieza | null {
   if (leidas.confianza < CONFIANZA_MINIMA_FLORES) return null;
-  const petalo = materialDeColor(materiales, leidas.color_petalo);
+  const petalo = materialDeColor(materiales, leidas.color_petalo, forma);
   if (!petalo) return null;
-  const centro = leidas.color_centro ? materialDeColor(materiales, leidas.color_centro) : null;
+  const centro = leidas.color_centro ? materialDeColor(materiales, leidas.color_centro, forma) : null;
   return {
     cantidad: leidas.cantidad,
+    ...(leidas.petalos ? { petalos: leidas.petalos } : {}),
     petalo: materialFlor(petalo, leidas.color_petalo),
     ...(centro && centro.product_id !== petalo.product_id ? { centro: materialFlor(centro, leidas.color_centro) } : {}),
   };
@@ -245,22 +280,26 @@ export function floresDeIdea(materiales: readonly MaterialPieza[], idea: FloresI
 
 type BlueprintConFlores ={ elements: ReadonlyArray<{ element_id: string; approved: boolean; appearance: { flores?: FloresLeidas | undefined } }> } | undefined;
 
-/** Qué hizo `aplicarFloresDeFoto` con cada pieza: para el registro de la decisión. */
+/** Qué hizo `aplicarFloresDeFoto` con cada pieza: para el registro de la decisión y el aviso al cliente. */
 export type FloresDeFoto<P> = {
   plan: P;
-  aplicadas: Array<{ estructura_id: string; referencia: string; flores: FloresPieza }>;
-  /** La foto vio flores y la pieza no lleva un globo del color de sus pétalos (o la lectura no era fiable). */
+  /** `centro_omitido`: el color del centro que leyó la foto y que ningún globo del plan tiene (la flor va sin centro). */
+  aplicadas: Array<{ estructura_id: string; referencia: string; flores: FloresPieza; centro_omitido?: string }>;
+  /** La foto vio flores y ningún globo redondo del plan es del color de sus pétalos (o la lectura no era fiable). */
   omitidas: Array<{ estructura_id: string; referencia: string; leidas: FloresLeidas; motivo: string }>;
 };
 
 /**
  * Al confirmar un plan con foto: cada pieza que materializa un elemento en el que la lectura vio flores de globo las
- * lleva como adorno (`floresDesdeLectura`). Una pieza que ya trae `flores` (las puso el decorador o la biblioteca) no se
- * toca. Puro; quien llama valida el plan y registra la decisión.
+ * lleva como adorno (`floresDesdeLectura`), con los globos de la pieza o, si la pieza no lleva ese color, los de otra
+ * pieza del plan (como el chat, `edicionFloresDePedido`). Una pieza que ya trae `flores` (las puso el decorador o la
+ * biblioteca) no se toca. `forma` (la del catálogo de cada producto) deja fuera lo que no es un globo redondo. Puro;
+ * quien llama valida el plan, registra la decisión y le dice al cliente lo que no salió (`avisosClienteFloresDeFoto`).
  */
 export function aplicarFloresDeFoto<P extends { estructuras: ReadonlyArray<{ estructura_id: string; referencia_element_id?: string | undefined; materiales: readonly MaterialPieza[]; flores?: FloresPieza | undefined }> }>(
   plan: P,
   blueprint: BlueprintConFlores,
+  forma?: FormaProducto,
 ): FloresDeFoto<P> {
   const aplicadas: FloresDeFoto<P>["aplicadas"] = [];
   const omitidas: FloresDeFoto<P>["omitidas"] = [];
@@ -271,20 +310,74 @@ export function aplicarFloresDeFoto<P extends { estructuras: ReadonlyArray<{ est
     const referencia = estructura.referencia_element_id;
     const leidas = referencia ? leidasPorElemento.get(referencia) : undefined;
     if (!referencia || !leidas || estructura.flores) return estructura;
-    const flores = floresDesdeLectura(estructura.materiales, leidas);
+    const todos = [...estructura.materiales, ...plan.estructuras.filter((otra) => otra !== estructura).flatMap((otra) => otra.materiales)];
+    const flores = floresDesdeLectura(todos, leidas, forma);
     if (!flores) {
       omitidas.push({
         estructura_id: estructura.estructura_id,
         referencia,
         leidas,
-        motivo: leidas.confianza < CONFIANZA_MINIMA_FLORES ? "lectura poco fiable" : `la pieza no lleva globos ${leidas.color_petalo} para los pétalos`,
+        motivo: leidas.confianza < CONFIANZA_MINIMA_FLORES ? "lectura poco fiable" : `el plan no lleva globos ${leidas.color_petalo} redondos para los pétalos`,
       });
       return estructura;
     }
-    aplicadas.push({ estructura_id: estructura.estructura_id, referencia, flores });
+    const centroOmitido = leidas.color_centro && !flores.centro && colorCanonico(leidas.color_centro) !== colorCanonico(flores.petalo.color)
+      ? leidas.color_centro
+      : undefined;
+    aplicadas.push({ estructura_id: estructura.estructura_id, referencia, flores, ...(centroOmitido ? { centro_omitido: centroOmitido } : {}) });
     return { ...estructura, flores };
   });
   return { plan: aplicadas.length ? { ...plan, estructuras } : plan, aplicadas, omitidas };
+}
+
+/**
+ * Lo que el cliente debe saber de las flores de su foto que el plan no lleva enteras: la tarjeta de la lectura ya le
+ * prometió «con 2 flores de globo rosado» y, sin esto, el plan salía sin ellas (o sin su centro) en silencio. Solo las
+ * que la tarjeta prometió: una lectura poco fiable no se enseñó. `nombres`: el nombre de cada pieza del plan.
+ */
+export function avisosClienteFloresDeFoto(
+  floresFoto: Pick<FloresDeFoto<unknown>, "aplicadas" | "omitidas">,
+  nombres: ReadonlyMap<string, string>,
+): string[] {
+  const pieza = (estructuraId: string) => nombres.get(estructuraId) ?? estructuraId;
+  const sinFlores = floresFoto.omitidas
+    .filter((omitida) => omitida.leidas.confianza >= CONFIANZA_MINIMA_FLORES)
+    .map(({ estructura_id, leidas }) => avisoSinFlores(leidas, pieza(estructura_id)));
+  const sinCentro = floresFoto.aplicadas.flatMap(({ estructura_id, centro_omitido }) => (centro_omitido ? [avisoSinCentro(centro_omitido, pieza(estructura_id))] : []));
+  return [...sinFlores, ...sinCentro];
+}
+
+function avisoSinFlores(leidas: Pick<FloresLeidas, "cantidad" | "color_petalo">, pieza: string): string {
+  return `Tu foto tiene ${leidas.cantidad === 1 ? "una flor" : `${leidas.cantidad} flores`} de globo ${leidas.color_petalo} en «${pieza}», pero tu plan no lleva globos ${leidas.color_petalo}: va sin ${leidas.cantidad === 1 ? "esa flor" : "esas flores"} (puedes pedirlas en otro color).`;
+}
+
+function avisoSinCentro(color: string, pieza: string): string {
+  return `Las flores de «${pieza}» van sin el centro ${color} de tu foto: tu plan no lleva globos ${color}.`;
+}
+
+/**
+ * Los mismos avisos para la tarjeta de la guiada, que no enseña el texto del modelo (la tarjeta lo dice todo, así que
+ * `avisos_cliente` no le llega): la lectura de la foto contra el plan firmado. Una pieza que materializa un elemento con
+ * flores (las que la tarjeta de la lectura prometió) y va sin ellas, o sin su centro, cuando el plan no lleva globos de
+ * ese color; si los lleva, el cliente las quitó o las cambió a propósito y no se dice nada. Puro.
+ */
+export function avisosFloresFotoSinComprar(
+  blueprint: BlueprintConFlores,
+  plan: { estructuras: ReadonlyArray<{ estructura_id: string; nombre: string; referencia_element_id?: string | undefined; materiales: readonly MaterialPieza[]; flores?: FloresPieza | undefined }> } | null | undefined,
+): string[] {
+  if (!blueprint || !plan) return [];
+  const colores = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => colorCanonico(material.color))));
+  const lleva = (color: string) => colores.has(colorCanonico(color));
+  return plan.estructuras.flatMap((estructura) => {
+    const elemento = blueprint.elements.find((item) => item.approved && item.element_id === estructura.referencia_element_id);
+    const leidas = elemento?.appearance.flores;
+    if (!leidas || leidas.confianza < CONFIANZA_MINIMA_FLORES) return [];
+    if (!estructura.flores) return lleva(leidas.color_petalo) ? [] : [avisoSinFlores(leidas, estructura.nombre)];
+    const centro = leidas.color_centro;
+    return centro && !estructura.flores.centro && colorCanonico(centro) !== colorCanonico(estructura.flores.petalo.color) && !lleva(centro)
+      ? [avisoSinCentro(centro, estructura.nombre)]
+      : [];
+  });
 }
 
 // --- La regla del chat: «ponle flores» --------------------------------------------------------------------------------
@@ -338,13 +431,16 @@ type PlanConMateriales = { estructuras: ReadonlyArray<{ estructura_id: string; m
 /**
  * El pedido del chat convertido en la edición de UNA pieza, con productos que el plan ya compra (la allowlist firmada los
  * tiene): los pétalos del color pedido —de esta pieza o, si no lo lleva, de otra del plan— o, sin color, el globo
- * principal de la pieza; el centro del color pedido o, sin él, el segundo color de la pieza. Devuelve el motivo en
- * palabras de cliente cuando no se puede (ningún globo del plan es de ese color).
+ * principal de la pieza; el centro del color pedido o, sin él, el segundo color de la pieza. Con `forma` (la de las
+ * líneas del plan resuelto, `formaDeLineas`), nunca un globo que no es redondo: Python no arma una flor con un
+ * metalizado y el plan quedaba con `sin_cobertura`. Devuelve el motivo en palabras de cliente cuando no se puede
+ * (ningún globo del plan es de ese color).
  */
 export function edicionFloresDePedido(
   plan: PlanConMateriales,
   estructuraId: string,
   pedido: PedidoFlores,
+  forma?: FormaProducto,
 ): { ok: true; edicion: EdicionFloresPedida } | { ok: false; motivo: string } {
   const pieza = plan.estructuras.find((estructura) => estructura.estructura_id === estructuraId);
   if (!pieza) return { ok: false, motivo: "No encontré esa pieza en tu plan." };
@@ -353,11 +449,14 @@ export function edicionFloresDePedido(
     return { ok: true, edicion: { accion: "flores", estructura_id: estructuraId, flores: null } };
   }
   const todos = [...pieza.materiales, ...plan.estructuras.filter((estructura) => estructura !== pieza).flatMap((estructura) => estructura.materiales)];
-  const petalo = pedido.colorPetalo ? materialDeColor(todos, pedido.colorPetalo) : pieza.materiales[0] ?? null;
-  if (!petalo) return { ok: false, motivo: `Tu plan no lleva globos ${pedido.colorPetalo}; agrega primero ese color y luego las flores.` };
+  const propios = pieza.materiales.filter((material) => forma?.(material.product_id) !== "otra");
+  const petalo = pedido.colorPetalo ? materialDeColor(todos, pedido.colorPetalo, forma) : propios[0] ?? null;
+  if (!petalo) {
+    return { ok: false, motivo: pedido.colorPetalo ? `Tu plan no lleva globos ${pedido.colorPetalo}; agrega primero ese color y luego las flores.` : "Esa pieza no lleva globos redondos para armar flores; dime de qué color las quieres." };
+  }
   const centro = pedido.colorCentro
-    ? materialDeColor(todos, pedido.colorCentro)
-    : pieza.materiales.find((material) => colorCanonico(material.color) !== colorCanonico(petalo.color)) ?? null;
+    ? materialDeColor(todos, pedido.colorCentro, forma)
+    : propios.find((material) => colorCanonico(material.color) !== colorCanonico(petalo.color)) ?? null;
   if (pedido.colorCentro && !centro) return { ok: false, motivo: `Tu plan no lleva globos ${pedido.colorCentro} para el centro; agrega primero ese color.` };
   const anterior = pieza.flores;
   const flores: FloresPieza = {

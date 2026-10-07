@@ -32,6 +32,10 @@ export function AjustesPropuesta({ ajustes, className = "" }: { ajustes: readonl
   const ordenados = [...ajustes].sort((a, b) => Number(b.tipo === "faltante") - Number(a.tipo === "faltante"));
   const visibles = abierto ? ordenados : ordenados.slice(0, VISIBLES);
   const ocultos = ordenados.length - visibles.length;
+  // Con otro conjunto de ajustes (el plan cambió) la lista se reemplaza en el acto: antes las frases del plan anterior
+  // salían animadas y, en una pestaña en segundo plano (sin fotogramas), se quedaban junto a las nuevas — insignia 3 y
+  // lista 5, «…y la guirnalda» después de quitarla (probador 141, I-2). La animación de salida queda solo para «Ver menos».
+  const firma = ordenados.map((ajuste) => `${ajuste.tipo}:${ajuste.texto}`).join("\u0001");
   return (
     <section
       data-testid="plan-avisos"
@@ -43,7 +47,7 @@ export function AjustesPropuesta({ ajustes, className = "" }: { ajustes: readonl
         Ajustes que hice
         <span className="rounded-full bg-acento-suave px-1.5 text-[11px] font-semibold tabular-nums text-acento">{ajustes.length}</span>
       </p>
-      <ul className="mt-2 space-y-1.5">
+      <ul key={firma} className="mt-2 space-y-1.5">
         <AnimatePresence initial={false}>
           {visibles.map((ajuste) => {
             const Icono = ICONO[ajuste.tipo];

@@ -62,12 +62,13 @@ async function main(): Promise<void> {
     sinTallasDeIdea: false,
   });
   assert.equal(ajustada.exacto, false);
+  // Probador 141, I-5: una sola frase, sin tallas sueltas (el detalle, con su color y su pieza, va en «Ajustes que hice»).
   assert.deepEqual(ajustada.avisos, [
-    "Ajustamos 2 tamaños que no había: 36″ por 24″ y 5″ por 9″.",
+    "El catálogo no tiene algunos tamaños de la idea: usé los más cercanos (el detalle está en «Ajustes que hice»).",
     "La idea lleva 87 globos; en tu plan salen 85.",
   ], "solo lo de las piezas de la idea, en palabras de cliente (la pieza que ya estaba no cuenta)");
-  assert.deepEqual(avisosPlanDeIdea({ globosIdea: 40, globosDeIdeaEnPlan: 40, nuevas: ["EST_04"], sustituciones: [], sinCobertura: [{ estructura_id: "EST_04", tamano: "R-36" }], sinTallasDeIdea: true }).avisos, [
-    "No hay globos de 36″ disponibles ahora; la idea va sin ellos.",
+  assert.deepEqual(avisosPlanDeIdea({ globosIdea: 40, globosDeIdeaEnPlan: 40, nuevas: ["EST_04"], sustituciones: [], sinCobertura: [{ estructura_id: "EST_04", tamano: "R-36", product_id: "P" }], sinTallasDeIdea: true, coloresDeProducto: { P: "dorado" } }).avisos, [
+    "El catálogo no tiene algunos tamaños de la idea en dorado: va sin ellos (el detalle está en «Ajustes que hice»).",
     "Para no cambiar las piezas que ya tenías, la idea se armó con otros tamaños.",
   ]);
   assert.deepEqual(avisosPlanDeIdea({ globosIdea: 10, globosDeIdeaEnPlan: 10, nuevas: ["EST_01"], sustituciones: [{ estructura_id: "EST_01", pedido: "gris", entregado: "plateado" }], sinCobertura: [], sinTallasDeIdea: false }).avisos, ["Cambiamos un color que no había: gris por plateado."]);

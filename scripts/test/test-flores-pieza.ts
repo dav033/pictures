@@ -202,12 +202,15 @@ async function principal(): Promise<void> {
     };
     const blueprint = { elements: [
       { element_id: "REF_01_E01", approved: true, appearance: { flores: { cantidad: 2, color_petalo: "blanco", color_centro: "dorado", confianza: 0.8 } } },
-      { element_id: "REF_01_E02", approved: true, appearance: { flores: { cantidad: 3, color_petalo: "blanco", confianza: 0.9 } } },
+      { element_id: "REF_01_E02", approved: true, appearance: { flores: { cantidad: 3, color_petalo: "verde", confianza: 0.9 } } },
     ] };
     const aplicado = aplicarFloresDeFoto(plan, blueprint);
     assert.deepEqual((aplicado.plan.estructuras[0] as { flores?: unknown }).flores, { cantidad: 2, petalo: { product_id: "silk-blanco", color: "blanco" }, centro: { product_id: "reflex-dorado", color: "dorado" } }, "el pétalo perlado sale del perlado de la pieza");
-    assert.equal((aplicado.plan.estructuras[1] as { flores?: unknown }).flores, undefined, "una pieza sin globo blanco no inventa uno");
+    assert.equal((aplicado.plan.estructuras[1] as { flores?: unknown }).flores, undefined, "ningún globo verde en el plan: no se inventa uno");
     assert.equal(aplicado.omitidas[0]?.estructura_id, "EST_02_COLUMNA");
+    // Corrector 2026-10-07: la columna rosada con flores blancas en la foto las arma con el blanco del aro (ya firmado).
+    const prestado = aplicarFloresDeFoto(plan, { elements: [{ element_id: "REF_01_E02", approved: true, appearance: { flores: { cantidad: 3, color_petalo: "blanco", confianza: 0.9 } } }] });
+    assert.deepEqual((prestado.plan.estructuras[1] as { flores?: unknown }).flores, { cantidad: 3, petalo: { product_id: "silk-blanco", color: "blanco" } }, "el blanco de otra pieza del plan");
     const pocaConfianza = aplicarFloresDeFoto(plan, { elements: [{ element_id: "REF_01_E01", approved: true, appearance: { flores: { cantidad: 2, color_petalo: "blanco", confianza: 0.3 } } }] });
     assert.equal(pocaConfianza.aplicadas.length, 0);
   });

@@ -56,7 +56,9 @@ async function run(): Promise<void> {
   await caso("1: es la galería de la clásica, sin copia: las 10 fotos del manifiesto, en 2 columnas a 390 px", () => {
     const fuente = leer("src/components/guiado/FotosEjemploGuiada.tsx");
     assert.match(fuente, /import \{ DialogoEjemplos \} from "@\/components\/ui\/shell\/GaleriaEjemplos";/);
-    assert.doesNotMatch(fuente, /\.galeria|<img /, "no duplica la rejilla ni las miniaturas");
+    // En desarrollo, la galería de la clásica; en producción (SOLO_GUIADA), las fotos reales de la biblioteca (pedido del dueño, 2026-10-07).
+    assert.match(fuente, /SOLO_GUIADA \? \(/, "elige la galería según el entorno");
+    assert.match(fuente, /FOTOS_BIBLIOTECA\.map/, "en producción muestra las fotos de la biblioteca");
     const html = renderToStaticMarkup(createElement(GaleriaEjemplos, { onElegir: () => undefined, titulo: "Fotos de decoraciones con globos" }));
     assert.equal(MANIFIESTO_REFERENCIAS_EJEMPLO.fotos.length, 10);
     for (const foto of MANIFIESTO_REFERENCIAS_EJEMPLO.fotos) assert.match(html, new RegExp(`data-testid="ejemplo-${foto.id}"`), foto.id);

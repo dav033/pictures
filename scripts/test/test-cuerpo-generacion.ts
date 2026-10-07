@@ -240,7 +240,12 @@ caso("las dos vistas llaman a /api/generate con el constructor compartido", () =
   const guiada = readFileSync(path.join(process.cwd(), "src/components/guiado/VistaGuiada.tsx"), "utf8");
   assert.match(clasica, /body: JSON\.stringify\(cuerpoGeneracion\(\{/);
   assert.match(guiada, /const cuerpo = cuerpoGeneracion\(\{[\s\S]{0,400}blueprint: widget\.fotoInspiracion \? lecturaDelPlan\(/);
-  assert.match(guiada, /fetch\("\/api\/generate", \{[\s\S]{0,160}body: JSON\.stringify\(cuerpo\)/);
+  // La guiada manda ese mismo cuerpo por `pedirImagenConRecuperacion` (recuperación ante cortes, 2026-10-07), que lo
+  // serializa tal cual: el id de cada intento viaja en una cabecera, nunca en el cuerpo (test-espera-imagen, 3a).
+  assert.match(guiada, /pedirImagenConRecuperacion\(\{\s*cuerpo,/);
+  const pedir = readFileSync(path.join(process.cwd(), "src/lib/generacion/pedir-imagen.ts"), "utf8");
+  assert.match(pedir, /const cuerpo = JSON\.stringify\(opciones\.cuerpo\);/);
+  assert.match(pedir, /dep\.fetch\("\/api\/generate", \{[\s\S]{0,200}body: cuerpo,/);
   assert.match(guiada, /registrarAccion\("imagen\.pedir", \{ mensajeId, cuerpo: resumenCuerpoGeneracion\(cuerpo\) \}\)/);
 });
 

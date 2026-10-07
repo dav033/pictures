@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { RotateCcw, Sparkles } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { DUR, EASE_SALIDA } from "./animacion/movimiento";
 
 /** En qué va la preparación del plan; «reintentando» cuando el primer intento falló y se repite solo. */
@@ -88,33 +88,6 @@ export function EsqueletoPlan({ etapa }: { etapa: EtapaPlan }) {
         <div className="brillo-carga h-6 w-32 rounded-md" />
       </div>
       <p className="mt-4 text-xs text-texto-suave">Esto suele tardar unos 20 segundos.</p>
-    </div>
-  );
-}
-
-/** Mientras se dibuja «Ver cómo quedaría»: el hueco de la imagen, con lo que está pasando dicho en palabras. */
-export function EsqueletoImagen() {
-  const reducido = useReducedMotion();
-  return (
-    <div role="status" aria-live="polite" className="brillo-carga relative grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-xl">
-      <div className="flex flex-col items-center gap-2 px-4 text-center">
-        <motion.span
-          className="grid size-11 place-items-center rounded-full bg-superficie/80 text-acento"
-          animate={reducido ? undefined : { scale: [1, 1.12, 1], opacity: [0.8, 1, 0.8] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Sparkles className="size-5" aria-hidden />
-        </motion.span>
-        <p className="text-sm font-medium text-texto">Dibujando tu decoración… unos segundos</p>
-      </div>
-      <div className="absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-superficie-2" aria-hidden>
-        <motion.div
-          className="h-full w-1/2 bg-acento"
-          initial={{ x: "-100%" }}
-          animate={reducido ? { x: "50%" } : { x: ["-100%", "200%"] }}
-          transition={reducido ? { duration: 0 } : { duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import type { CandidatoDelServidor } from "@/components/plan/ajuste/ajuste-propu
 import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { LUGAR_EN_PALABRAS, piezaIndefinida, piezasDelPedido, type PedidoEdicionPlan, type PiezaNuevaChat } from "@/lib/ia/guiado/edicion-plan-chat";
 import { esEstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
-import { edicionFloresDePedido } from "@/lib/plan/flores-pieza";
+import { edicionFloresDePedido, formaDeLineas } from "@/lib/plan/flores-pieza";
 import { FalloPlanEditar, mensajeErrorRespuesta, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { campoPrincipal, type UbicacionPiezaNueva } from "@/lib/plan/pieza-nueva";
 import { esGloboDelTono, tonoDelTitulo } from "@/lib/plan/tonos-color";
@@ -447,7 +447,8 @@ export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicio
       const destino = ids.length ? ids : base.plan.estructuras.map((estructura) => estructura.estructura_id);
       const motivos: string[] = [];
       for (const id of destino) {
-        const armada = edicionFloresDePedido(actual.plan.plan, id, { tipo: "flores", quitar: pedido.quitar, cantidad: pedido.cantidad, colorPetalo: pedido.colorPetalo, colorCentro: pedido.colorCentro });
+        // Con la forma de cada globo según las líneas resueltas: una flor nunca sale de un metalizado del mismo color.
+        const armada = edicionFloresDePedido(actual.plan.plan, id, { tipo: "flores", quitar: pedido.quitar, cantidad: pedido.cantidad, colorPetalo: pedido.colorPetalo, colorCentro: pedido.colorCentro }, formaDeLineas(actual.plan.estructuras));
         if (!armada.ok) {
           motivos.push(armada.motivo);
           continue;
@@ -522,7 +523,8 @@ function descripcionDe(base: PlanGuiado, pedido: PedidoEdicionPlan, hechos: read
     case "renombrar_pieza": return `${piezas(ids)} ahora se llama «${pedido.nombre}»`;
     default: break;
   }
-  if (hechos.length === 1) return describirCambio(base, hechos[0]!);
+  // Con el plan que resolvió Python: lo que quedó en cada pieza, no la cifra pedida (probador 141).
+  if (hechos.length === 1) return describirCambio(base, hechos[0]!, resultado.despues);
   switch (pedido.tipo) {
     case "agregar_color": return `con ${listaNatural(hechos.flatMap((cambio) => (cambio.tipo === "agregar-color" ? [cambio.globo?.nombre ?? colorCliente(cambio.color)] : [])))}`;
     case "quitar_color": return `sin ${nombreColor(pedido.color)} en ${piezas(hechos.flatMap((cambio) => ("estructuraId" in cambio ? [cambio.estructuraId] : [])))}`;

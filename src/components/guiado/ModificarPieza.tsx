@@ -214,6 +214,9 @@ function ColumnaOrganicaEditando({ inicial, origen, armado, pieza, leyenda, nomb
   const editor = useEditorColumnaOrganica({ armadoEnPlan: armado, pieza, inicial, onGuardar, ocupado, onCerrar });
   const vigente = vistaVigente(editor.panel);
   const delPlanVivo = useAvisoDelPlan(delPlan, origen, vigente ? globosColumnaOrganica(vigente) : null, editor.hayCambios, leyenda);
+  // Sin tocar nada, «Así queda» dice las medidas de la tarjeta (las del plan), no el contorno que mide el motor
+  // (probador 141: 0,76 m de ancho frente a 0,55 m en la tarjeta).
+  const medidasPlan = editor.hayCambios ? undefined : pieza.plan.estructuras.find((estructura) => estructura.estructura_id === pieza.estructuraId)?.medidas;
   return (
     <PanelColumnaOrganica
       estado={editor.panel}
@@ -221,6 +224,7 @@ function ColumnaOrganicaEditando({ inicial, origen, armado, pieza, leyenda, nomb
       nombrePieza={nombre}
       repeticiones={repeticiones}
       onReintentar={editor.vista.reintentar}
+      {...(medidasPlan ? { medidasPlan } : {})}
       pie={<>{delPlanVivo.aviso}<EditorColumnaOrganica borrador={editor.borrador} vista={editor.vista} leyenda={leyenda} guardar={editor.guardar} guardando={editor.guardando} errorGuardado={editor.errorGuardado} planCambio={editor.planCambio} coloresCambiaron={editor.coloresCambiaron} hayCambios={editor.hayCambios} onCambiar={editor.cambiar} onGuardar={editor.pedirGuardar} onDescartar={editor.descartar} onRestablecer={editor.restablecer} onReintentar={editor.vista.reintentar} onSeguirConMiBorrador={editor.seguirConMiBorrador} onUsarColumnaDeLaPropuesta={editor.usarColumnaDeLaPropuesta} onReceta={editor.pedirReceta} /></>}
     />
   );

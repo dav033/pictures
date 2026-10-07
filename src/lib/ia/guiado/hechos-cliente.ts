@@ -121,6 +121,35 @@ export function estructuraDeTexto(texto: string): EstructuraCliente | null {
   return null;
 }
 
+/** Las piezas distintas que nombra el texto, sin contar dos veces la misma frase («medio arco» no es también «arco»). */
+export function piezasNombradas(texto: string): EstructuraOficialId[] {
+  let resto = normalizarBusqueda(texto);
+  const ids: EstructuraOficialId[] = [];
+  for (const pieza of PIEZAS_TEXTO) {
+    const patron = new RegExp(pieza.patron.source, "g");
+    resto = resto.replace(patron, (frase) => {
+      const id = pieza.id(frase);
+      if (!ids.includes(id)) ids.push(id);
+      return " ".repeat(frase.length);
+    });
+  }
+  return ids;
+}
+
+/**
+ * Un pedido completo de UNA pieza en un solo mensaje: la pieza y su medida («un cliente me pide un arco orgánico de unos
+ * 3 metros en blanco y dorado para una boda»). Con eso la guiada va directo a la propuesta de esa pieza (probador 141,
+ * I-6: antes respondía con 4 ideas de la biblioteca que no eran arcos orgánicos y solo «Propónme algo» armaba el
+ * plan). Null si nombra varias piezas distintas, ninguna o no dice la medida: entonces se pregunta o se buscan ideas.
+ */
+export function pedidoCompletoDePieza(texto: string): { estructura: EstructuraCliente; medida: MedidaCliente } | null {
+  if (!texto.trim() || esMensajeDeInterfaz(texto) || pedidoDeIdeas(texto)) return null;
+  const estructura = estructuraDeTexto(texto);
+  const medida = medidaDeTexto(texto);
+  if (!estructura || !medida || piezasNombradas(texto).length !== 1) return null;
+  return { estructura, medida };
+}
+
 const BOTON_PIEZA_RE = /^Propónme una pieza individual:\s*(.+?)\.?$/;
 
 /**

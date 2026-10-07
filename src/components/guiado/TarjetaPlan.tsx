@@ -9,7 +9,7 @@ import type { CotizacionPlanGuiadoSchema, PlanGuiadoSchema } from "@/lib/ia/cont
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
 import { ComprarMateriales } from "./ComprarMateriales";
 import { CostosMateriales } from "./CostosMateriales";
-import { EsqueletoImagen } from "./Esqueletos";
+import { EsperaImagen } from "./EsperaImagen";
 import { FilaPieza } from "./FilaPieza";
 import { GraficaMotorGuiada } from "./GraficaMotorGuiada";
 import { ModificarPieza, piezaModificable } from "./ModificarPieza";
@@ -80,6 +80,8 @@ type Props = {
   onSugerencia?: (texto: string) => void;
   /** Un cambio pedido por chat se está haciendo sobre este plan (edicion-chat-guiada.ts): el mismo esqueleto que un ajuste. */
   recalculandoPorChat?: boolean;
+  /** Plan de una foto: acabados que la foto muestra y el plan no compra (`acabados-foto-plan.ts`), en «Ajustes que hice». */
+  avisosFoto?: readonly string[];
 };
 
 function sinAjuste(): void {}
@@ -145,7 +147,12 @@ export function TarjetaPlan(props: Props) {
   // (`avisoColoresFoto`). Solo los de la paleta del plan: con «Otros colores» la foto ya no manda. Tras un ajuste, no.
   const avisoColores = useMemo(() => (ajustes?.length ? null : avisoColoresFoto(plan, plan.plan.concepto.paleta.length ? { soloEstos: plan.plan.concepto.paleta } : {})), [plan, ajustes]);
   // «Ajustes que hice»: lo que Python sustituyó o supuso, en palabras de cliente, como en la clásica (comparador 100, I5).
-  const ajustesPython = useMemo(() => ajustesDePython(plan, { sinColoresDeFoto: Boolean(avisoColores) }), [plan, avisoColores]);
+  // Con lo que la foto muestra y el plan no compra (un acabado), dicho con discreción (probador 141).
+  const avisosFoto = props.avisosFoto;
+  const ajustesPython = useMemo(() => [
+    ...ajustesDePython(plan, { sinColoresDeFoto: Boolean(avisoColores) }),
+    ...(avisosFoto ?? []).map((texto) => ({ tipo: "color" as const, texto })),
+  ], [plan, avisoColores, avisosFoto]);
 
   return (
     <motion.article
@@ -298,7 +305,22 @@ export function TarjetaPlan(props: Props) {
         {(estadoImagen === "cargando" || (estadoImagen === "lista" && imagen) || estadoImagen === "error") && (
           <motion.div key="imagen" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: EASE_SALIDA }} className="overflow-hidden">
             <div className="pt-3">
-              {estadoImagen === "cargando" && <EsqueletoImagen />}
+              {/* Como la clásica mientras genera: un lienzo con los colores y las piezas de ESTE plan (sus dibujos del
+                  motor, los mismos de las filas, ya en caché), globos y frases que cambian. */}
+              {estadoImagen === "cargando" && (
+                <EsperaImagen
+                  colores={[...new Set([...tonosPorPieza.values()].flat())].concat(paleta.map((color) => hexColor(color)))}
+                  piezas={piezasVista.map((vista, indice) => {
+                    const pieza = piezas[indice]!;
+                    const mezclaReal = plan.estructuras.find((resuelta) => resuelta.estructura_id === pieza.estructura_id)?.mezcla_real;
+                    return {
+                      id: vista.id,
+                      nombre: pieza.nombre,
+                      dibujo: <GraficaMotorGuiada plan={plan.plan} version={plan.plan_hash} pieza={pieza} mezclaReal={mezclaReal} colores={tonosPorPieza.get(pieza.estructura_id)} id={vista.oficial ?? "arco"} nombre={pieza.nombre} />,
+                    };
+                  })}
+                />
+              )}
               {estadoImagen === "lista" && imagen && (
                 <>
                   <button type="button" onClick={() => setLightbox(true)} aria-label="Ver la imagen en grande" className="block w-full overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50">
@@ -317,7 +339,13 @@ export function TarjetaPlan(props: Props) {
                   <Lightbox src={imagen} open={lightbox} onClose={() => setLightbox(false)} />
                 </>
               )}
-              {estadoImagen === "error" && <p className="rounded-xl bg-aviso-suave px-3 py-2 text-sm text-texto">No pude dibujarla esta vez. Tu plan sigue guardado.</p>}
+              {/* Solo tras intentar recuperar la imagen cortada y un reintento silencioso (`pedir-imagen.ts`). Sin botón
+                  propio: el principal, justo debajo, dice «Reintentar imagen»; la vista anuncia el fallo. */}
+              {estadoImagen === "error" && (
+                <p className="rounded-xl bg-aviso-suave px-3 py-2 text-sm text-texto">
+                  La imagen no alcanzó a llegar esta vez. Tu plan sigue guardado: toca «Reintentar imagen».
+                </p>
+              )}
             </div>
           </motion.div>
         )}

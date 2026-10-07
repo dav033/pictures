@@ -27,7 +27,7 @@ import { normalizarPropuestaComposicion } from "@/lib/ia/guiado/propuesta-compos
 import { recortarCantidades } from "@/lib/plan/piezas-individuales";
 import { esquemaHerramientaPropuesta, type AlcancePropuesta } from "@/lib/ia/guiado/esquema-herramienta-propuesta";
 import { textoPlanActual } from "@/lib/ia/guiado/instruccion-plan";
-import { briefConHechos, etiquetaEdadCliente, hechosDelCliente, piezaOrganicaDelBoton, propuestaConLoPedido, textoHechosCliente, usoDeTexto } from "@/lib/ia/guiado/hechos-cliente";
+import { briefConHechos, etiquetaEdadCliente, hechosDelCliente, pedidoCompletoDePieza, piezaOrganicaDelBoton, propuestaConLoPedido, textoHechosCliente, usoDeTexto } from "@/lib/ia/guiado/hechos-cliente";
 import type { BriefGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { conRegistro, contextoActual, decidir, envolverRegistroHerramientas } from "@/lib/registro";
 import { detectarEleccionIdea, detectarPedidoEdicion, fraseDelPedido, HERRAMIENTA_ELEGIR_IDEA, HERRAMIENTAS_EDICION, herramientasConEdicion, ideaDesdeHerramienta, pedidoDesdeHerramienta, textoIdeasParaModelo, textoPiezasParaModelo, type DeteccionEdicion, type HerramientaEdicion } from "@/lib/ia/guiado/edicion-plan-chat";
@@ -136,15 +136,20 @@ async function turnoGuiado(request: Request) {
   const { messages } = parsed.data;
   const estado = parsed.data.estadoGuiado;
   const ultimoUsuario = [...messages].reverse().find((mensaje) => mensaje.role === "user")?.content.trim() ?? "";
-  const piezaBoton = estado?.piezaPedida ?? piezaDeTextoBoton(ultimoUsuario);
-  const alcancePropuesta = alcanceDelTurno(estado?.alcancePropuesta, ultimoUsuario, piezaBoton);
+  const planActual = estado?.planActual;
+  const alcanceDeBoton = alcanceDelTurno(estado?.alcancePropuesta, ultimoUsuario, estado?.piezaPedida ?? piezaDeTextoBoton(ultimoUsuario));
+  // Un pedido completo de UNA pieza («un arco orgánico de unos 3 metros en blanco y dorado para una boda») va directo a
+  // su propuesta, como si hubiera tocado «Propónme algo» con esa pieza (probador 141, I-6: antes recibía 4 ideas de la
+  // biblioteca que no eran arcos orgánicos). Solo sin plan, sin idea elegida, sin foto y sin otro alcance ya decidido.
+  const pedidoDirecto = !alcanceDeBoton && !planActual && !estado?.decoracionId && !parsed.data.fotoInspiracion ? pedidoCompletoDePieza(ultimoUsuario) : null;
+  const piezaBoton = estado?.piezaPedida ?? piezaDeTextoBoton(ultimoUsuario) ?? pedidoDirecto?.estructura.id;
+  const alcancePropuesta = alcanceDeBoton ?? (pedidoDirecto ? "individual" : null);
   // Una pieza pedida solo restringe la pieza individual: en la decoración completa se ignora.
   const piezaPedida = alcancePropuesta === "individual" ? piezaBoton : undefined;
-  decidir("regla:alcance_turno_guiado", "alcance de la propuesta y pieza pedida", { alcancePropuesta, piezaPedida: piezaPedida ?? null }, {
+  decidir("regla:alcance_turno_guiado", "alcance de la propuesta y pieza pedida", { alcancePropuesta, piezaPedida: piezaPedida ?? null, pedidoDirecto: pedidoDirecto ? { pieza: pedidoDirecto.estructura.texto, medida: pedidoDirecto.medida.texto } : null }, {
     entrada: { alcanceDeclarado: estado?.alcancePropuesta ?? null, piezaDeclarada: estado?.piezaPedida ?? null, piezaBoton: piezaBoton ?? null, ultimoUsuario },
-    motivo: estado?.alcancePropuesta ? "lo declaró la interfaz" : alcancePropuesta ? "texto exacto de un botón" : "turno libre (sin alcance)",
+    motivo: estado?.alcancePropuesta ? "lo declaró la interfaz" : alcanceDeBoton ? "texto exacto de un botón" : pedidoDirecto ? "el cliente pidió una pieza con su medida: va directo a su propuesta (sin ideas de la biblioteca)" : "turno libre (sin alcance)",
   });
-  const planActual = estado?.planActual;
   // Lo que el cliente ya dijo, leído sin modelo (hechos-cliente.ts): evento, uso, medida, pieza, lugar, momento y
   // presupuesto. Usabilidad 97: «Soy decorador… arco orgánico de unos 3 metros… para una boda… cotizarle» perdía todo
   // menos los colores, y el uso se preguntaba otra vez aunque ya lo hubiera dicho o elegido.
@@ -496,7 +501,9 @@ async function turnoGuiado(request: Request) {
     decidir("regla:herramientas_turno", "herramientas que el modelo tiene en este turno", herramientasTurno.map((herramienta) => herramienta.nombre), {
       motivo: ideasCambio.length ? "cambio de temática: el servidor ya guardó el brief y buscó las ideas" : ideasPedidas.length ? "pidió ver ideas: el servidor ya las buscó y el plan no cambia" : alcancePropuesta ? `alcance «${alcancePropuesta}»: solo propuesta y brief` : edicionPuntual ? `cambio puntual del plan (${deteccionEdicion.estado}): solo herramientas de edición` : deteccionEdicion.estado === "consulta" ? "pregunta por su plan: sin herramientas" : eleccionIdea ? "eligió una idea con palabras: solo elegir_idea" : decoracionConfirmada ? "hay una idea elegida" : "sin idea elegida: sin herramientas de decoración",
     });
-    const instruccionTurno = alcancePropuesta
+    const instruccionTurno = pedidoDirecto && alcancePropuesta === "individual"
+      ? `\n\nEN ESTE TURNO el cliente ya pidió UNA pieza con su medida («${pedidoDirecto.estructura.texto}», «${pedidoDirecto.medida.texto}»): llama proponer_composicion ahora con esa pieza, en los colores que dijo (si no dijo colores, unos que combinen con su evento). No busques ideas en la biblioteca ni le preguntes nada más.`
+      : alcancePropuesta
       ? `\n\nEN ESTE TURNO el cliente eligió ${alcancePropuesta === "completa" ? "una decoración completa (2-3 piezas)" : `una pieza individual${piezaPedida ? `: ${ESTRUCTURAS_OFICIALES[piezaPedida].nombre.toLocaleLowerCase("es")}` : ""}`}: llama proponer_composicion ahora y no busques ideas en la biblioteca.`
       : deteccionEdicion.estado === "edicion"
         ? `\n\nEN ESTE TURNO el cliente pidió un cambio puntual de su plan (${fraseDelPedido(deteccionEdicion.pedido)}): llama ${deteccionEdicion.herramienta} y responde con UNA frase corta que diga qué cambias. No rehagas el plan.`

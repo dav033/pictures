@@ -29,7 +29,7 @@ import {
   MODOS_PATRON_COLOR,
   TAMANOS_LEIDOS,
 } from "@/lib/plan/patron-color";
-import { MAX_FLORES_PIEZA } from "@/lib/plan/flores-pieza";
+import { MAX_FLORES_PIEZA, MAX_PETALOS_FLOR, MIN_PETALOS_FLOR } from "@/lib/plan/flores-pieza";
 import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 
 /**
@@ -237,6 +237,7 @@ export const LECTURA_UNICA_TOOL_SCHEMA = {
       required: ["cantidad", "color_petalo", "confianza"],
       properties: {
         cantidad: { type: "integer", minimum: 1, maximum: MAX_FLORES_PIEZA },
+        petalos: { type: "integer", minimum: MIN_PETALOS_FLOR, maximum: MAX_PETALOS_FLOR },
         color_petalo: COLOR,
         color_centro: COLOR,
         confianza: CONFIANZA,
@@ -297,4 +298,4 @@ racimos_visibles: the clusters you can see from one end to the other. unidad_rac
 relleno: the small balloons tucked between the clusters, with their main color and the share of the garland's balloons they make up (0 to 0.5); omit it when there are none.
 remates: balloons clearly bigger than the cluster balloons, or foil or bubble balloons, placed on the garland: clase "latex", "metalizado" or "burbuja", their color, and posicion "extremo_izq", "extremo_der", "centro" or "cada_n" (repeated along the garland). At most 6; empty when there are none.
 
-\`lecturas.flores\` — only when the piece carries BALLOON FLOWERS: daisy-like flowers made of balloons, several petal balloons of one color around a center balloon of another color, fixed on the piece as an ornament (on an arch, a hoop, a column, a garland or a wall). Real flowers, paper flowers, foil flower balloons and a flower motif drawn by the color layout itself (the "flor" pattern) are not balloon flowers. cantidad = the balloon flowers on ONE piece. color_petalo = the catalog color of the petals; color_centro = the catalog color of the center balloon, omitted when you cannot see it or it is the same color as the petals. Omit the whole reading when the piece has no balloon flowers.`;
+\`lecturas.flores\` — only when the piece carries BALLOON FLOWERS: daisy-like flowers made of balloons, several petal balloons of one color around a center balloon of another color, fixed on the piece as an ornament (on an arch, a hoop, a column, a garland or a wall). Real flowers, paper flowers, foil flower balloons and a flower motif drawn by the color layout itself (the "flor" pattern) are not balloon flowers. cantidad = the balloon flowers on ONE piece. petalos = the petal balloons around the center of ONE flower (${MIN_PETALOS_FLOR} to ${MAX_PETALOS_FLOR}), omitted when you cannot count them. color_petalo = the catalog color of the petals; color_centro = the catalog color of the center balloon, omitted when you cannot see it or it is the same color as the petals. Omit the whole reading when the piece has no balloon flowers.`;

@@ -1100,6 +1100,11 @@
                         "minimum": 1,
                         "maximum": 24
                       },
+                      "petalos": {
+                        "type": "integer",
+                        "minimum": 3,
+                        "maximum": 6
+                      },
                       "color_petalo": {
                         "type": "string",
                         "minLength": 1,

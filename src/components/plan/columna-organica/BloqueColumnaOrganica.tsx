@@ -71,6 +71,12 @@ type PropsPanel = Omit<Props, "armado" | "pieza" | "onGuardar" | "ocupado"> & {
   onReintentar: () => void;
   accion?: ReactNode;
   pie?: ReactNode;
+  /**
+   * Las medidas que dice el plan de la pieza, para mostrarlas mientras no se toque nada: el dibujo se parece al plan
+   * pero el motor mide su contorno (con la inclinación), y «Así queda» decía 0,76 m de ancho junto a una tarjeta de
+   * 0,55 m (probador 141). Con un cambio, manda lo que midió el motor.
+   */
+  medidasPlan?: { alto_m?: number | undefined; ancho_m?: number | undefined };
 };
 
 const botonReintentar = "ui-button-secondary ui-pressable min-h-11 px-3 py-1.5 text-xs";
@@ -251,11 +257,11 @@ function ColumnaEnEdicion({ armado, pieza, inicial, leyenda, nombrePieza, repeti
 }
 
 /** Presentación: lo que se ve en cada estado (cargando, vacío, error y la columna dibujada). */
-export function PanelColumnaOrganica({ estado, leyenda, nombrePieza, repeticiones, onReintentar, accion, pie }: PropsPanel) {
+export function PanelColumnaOrganica({ estado, leyenda, nombrePieza, repeticiones, onReintentar, accion, pie, medidasPlan }: PropsPanel) {
   return (
     <section aria-label="Armado de la columna" data-testid="bloque-armado-columna-organica" data-fase={estado.fase} className="@container rounded-2xl bg-superficie-suave p-3 ring-1 ring-borde-suave ring-inset">
       {estado.fase === "listo" ? (
-        <ColumnaDibujada estado={estado} leyenda={leyenda} nombrePieza={nombrePieza} repeticiones={repeticiones} onReintentar={onReintentar} accion={accion} pie={pie} />
+        <ColumnaDibujada estado={estado} leyenda={leyenda} nombrePieza={nombrePieza} repeticiones={repeticiones} onReintentar={onReintentar} accion={accion} pie={pie} {...(medidasPlan ? { medidasPlan } : {})} />
       ) : (
         <div className="space-y-2">
           <p className="text-[13px] font-semibold text-texto">Armado de la columna</p>
@@ -287,7 +293,7 @@ export function PanelColumnaOrganica({ estado, leyenda, nombrePieza, repeticione
 }
 
 /** La columna con su dibujo al lado de lo que el motor resolvió. */
-function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReintentar, accion, pie }: {
+function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReintentar, accion, pie, medidasPlan }: {
   estado: Listo;
   leyenda: readonly ColorLeyenda[];
   nombrePieza: string;
@@ -295,6 +301,7 @@ function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReinten
   onReintentar: () => void;
   accion?: ReactNode;
   pie?: ReactNode;
+  medidasPlan?: { alto_m?: number | undefined; ancho_m?: number | undefined };
 }) {
   const { vista, actualizando, fallo, vencido = false } = estado;
   // Un dibujo que no es el del armado a la vista (el nuevo está en camino o no se pudo dibujar) se ve apagado:
@@ -304,8 +311,8 @@ function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReinten
   // Las medidas reales de la columna armada, no las declaradas: el motor ajusta lo que no cabe y lo cuenta en `avisos`.
   const cliente = useVozCliente();
   const medidas: Array<{ termino: string; valor: string }> = [
-    { termino: "Alto", valor: metrosCliente(columna.alto_m) },
-    { termino: "Ancho", valor: metrosCliente(columna.ancho_m) },
+    { termino: "Alto", valor: metrosCliente(medidasPlan?.alto_m ?? columna.alto_m) },
+    { termino: "Ancho", valor: metrosCliente(medidasPlan?.ancho_m ?? columna.ancho_m) },
     { termino: "Grosor en la base", valor: metrosCliente(columna.grosor_base_m) },
     { termino: "Grosor en la punta", valor: metrosCliente(columna.grosor_punta_m) },
     ...(cliente ? [] : [{ termino: "Globos por metro", valor: conDecimal.format(columna.globos_por_metro) }]),

@@ -4,7 +4,7 @@ import { ESTRUCTURAS_OFICIALES, esEstructuraOficialId } from "@/lib/plan/estruct
 import { clienteDioMedidasEspacio, estructurasMedidasPorCliente } from "@/lib/plan/medidas-defecto";
 import { TIPOS_ESTRUCTURA, type TipoEstructura } from "@/lib/plan/tipos";
 import { FEMENINAS } from "@/lib/plan/piezas-individuales";
-import { faltantesCliente, supuestoCliente, sustitucionesCliente } from "@/lib/plan/presentacion-cliente";
+import { faltantesCliente, supuestoCliente, sustitucionesCliente, tallaNormal } from "@/lib/plan/presentacion-cliente";
 
 function esTipoEstructura(valor: string): valor is TipoEstructura {
   return (TIPOS_ESTRUCTURA as readonly string[]).includes(valor);
@@ -29,7 +29,7 @@ const PlanConAvisosSchema = z.object({
     supuestos: z.array(z.string()).optional(),
   }).passthrough(),
   sustituciones: z.array(z.object({ estructura_id: z.string(), pedido: z.string(), entregado: z.string(), motivo: z.string().optional() }).passthrough()).optional(),
-  sin_cobertura: z.array(z.object({ estructura_id: z.string(), tamano: z.string() }).passthrough()).optional(),
+  sin_cobertura: z.array(z.object({ estructura_id: z.string(), tamano: z.string(), product_id: z.string().optional() }).passthrough()).optional(),
   advertencias: z.array(z.string()).optional(),
   /** Las palabras del cliente con que se pidió el plan (`solicitudCliente` → `original_request`). */
   original_request: z.string().optional(),
@@ -88,11 +88,30 @@ function conteosFotoCliente(plan: unknown, nombres: ReadonlyMap<string, string>)
   if (!leidos.success) return [];
   return leidos.data.flatMap((conteo) => {
     const foto = conteo.globos_foto;
-    if (foto === null || conteo.decision === "coincide" || conteo.decision === "no_confiable") return [];
+    // Una pieza que ya no está en el plan no tiene nada que decir (probador 141, I-2).
+    if (foto === null || conteo.decision === "coincide" || conteo.decision === "no_confiable" || !nombres.has(conteo.estructura_id)) return [];
     if (foto - conteo.globos_despues <= Math.max(2, foto * TOLERANCIA_CONTEO)) return [];
     const nombre = nombres.get(conteo.estructura_id) ?? "la decoración";
     return [`En la foto, ${nombre} lleva unos ${foto} globos; en tu plan lleva ${conteo.globos_despues} con las medidas que tomé de la foto. Si la quieres igual de llena, pídela más grande.`];
   });
+}
+
+/**
+ * El color de cada producto que declara el plan (`materiales[].product_id` → `color`): `sin_cobertura` nombra el
+ * producto pedido que no se pudo comprar y así el aviso dice de qué color es la talla que falta. Leído sin romper nada:
+ * un material sin color o con otra forma no cuenta.
+ */
+function colorDeProductoDelPlan(estructuras: ReadonlyArray<Record<string, unknown>>): Map<string, string> {
+  const colores = new Map<string, string>();
+  for (const estructura of estructuras) {
+    const materiales = Array.isArray(estructura.materiales) ? (estructura.materiales as unknown[]) : [];
+    for (const material of materiales) {
+      if (typeof material !== "object" || material === null) continue;
+      const { product_id: producto, color } = material as { product_id?: unknown; color?: unknown };
+      if (typeof producto === "string" && typeof color === "string" && color.trim() && !colores.has(producto)) colores.set(producto, color.trim());
+    }
+  }
+  return colores;
 }
 
 function unicos<T>(items: readonly T[], clave: (item: T) => string): T[] {
@@ -109,6 +128,9 @@ function conMayuscula(texto: string): string {
  * quedó sin globos, un reparto de colores distinto al pedido y lo que la foto mostraba y el patrón no pudo seguir.
  */
 function advertenciaCliente(aviso: string, nombres: ReadonlyMap<string, string>): string | null {
+  // La advertencia de una pieza que ya no está en el plan no sale (probador 141, I-2).
+  const pieza = /^(?:color_sin_globos|reparto_distinto|pista_patron_incompleta):([^:]+):/.exec(aviso)?.[1];
+  if (pieza !== undefined && !nombres.has(pieza)) return null;
   const sinGlobos = /^color_sin_globos:([^:]+):([^:]+):/.exec(aviso);
   if (sinGlobos) return `${conMayuscula(nombres.get(sinGlobos[1]!) ?? "la decoración")} no lleva ${sinGlobos[2]!.trim()}: no alcanzan sus globos para todos sus colores.`;
   const reparto = /^reparto_distinto:([^:]+):[^:]*: el plan declara [^;]+; lo que se compra es ([^(]+?)\s*(?:\(|\.?$)/.exec(aviso);
@@ -132,8 +154,11 @@ export function ajustesDePython(plan: unknown, opciones: { sinColoresDeFoto?: bo
     const nombre = (estructura.nombre ?? "la pieza").trim().toLocaleLowerCase("es");
     return [estructura.estructura_id, /^(?:el|la|los|las) /.test(nombre) ? nombre : `${oficial && FEMENINAS.has(oficial) ? "la" : "el"} ${nombre}`] as const;
   }));
-  const sust = unicos(sustituciones, (item) => `${item.estructura_id}|${item.pedido}|${item.entregado}|${item.motivo ?? ""}`).map((item) => ({ ...item, motivo: item.motivo ?? "" }));
-  const faltan = unicos(sinCobertura, (item) => `${item.estructura_id}|${item.tamano}`);
+  // Solo lo de las piezas que SIGUEN en el plan (probador 141, I-2: tras «quita la guirnalda» seguía «…y la guirnalda»):
+  // un aviso de una pieza que ya no está es una propiedad huérfana. Las tallas se comparan normalizadas («R-18» = «18»).
+  const vigentes = new Set(declarado.estructuras.map((estructura) => estructura.estructura_id));
+  const sust = unicos(sustituciones.filter((item) => vigentes.has(item.estructura_id)), (item) => `${item.estructura_id}|${tallaNormal(item.pedido)}|${tallaNormal(item.entregado)}|${item.motivo ?? ""}`).map((item) => ({ ...item, motivo: item.motivo ?? "" }));
+  const faltan = unicos(sinCobertura.filter((item) => vigentes.has(item.estructura_id)), (item) => `${item.estructura_id}|${item.product_id ?? ""}|${tallaNormal(item.tamano)}`);
   // Las piezas que el cliente midió con sus palabras: su supuesto de medidas no dice «no me diste el tamaño».
   const medidasDelCliente = tiposMedidosPorCliente(declarado.estructuras, leido.data.original_request);
   const supuesto = (texto: string): string => {
@@ -143,7 +168,7 @@ export function ajustesDePython(plan: unknown, opciones: { sinColoresDeFoto?: bo
     return medidas ? supuestoConMedidaDelCliente(supuestoCliente(texto), medidas.length === 1 ? nombres.get(medidas[0]!) : undefined) : supuestoCliente(texto);
   };
   const ajustes: AjusteGuiado[] = [
-    ...faltantesCliente(faltan, nombres).map((texto): AjusteGuiado => ({ tipo: "faltante", texto })),
+    ...faltantesCliente(faltan, nombres, colorDeProductoDelPlan(declarado.estructuras)).map((texto): AjusteGuiado => ({ tipo: "faltante", texto })),
     ...(opciones.sinColoresDeFoto ? [] : sustitucionesCliente(sust.filter(esSustitucionDeColor), nombres).map((texto): AjusteGuiado => ({ tipo: "color", texto }))),
     ...sustitucionesCliente(sust.filter((item) => !esSustitucionDeColor(item)), nombres).map((texto): AjusteGuiado => ({ tipo: "tamano", texto })),
     ...[...new Set(declarado.supuestos ?? [])].map((texto): AjusteGuiado => ({ tipo: "supuesto", texto: supuesto(texto) })),

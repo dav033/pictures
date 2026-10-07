@@ -741,9 +741,12 @@ export function sustitucionesColorReferencia(
     });
 }
 
-/** Size substitutions carry a size code ("R-12"); color substitutions carry a color. */
+/**
+ * Size substitutions carry a size code ("R-12", also written "R12", "12" or "12″"); color substitutions carry a color.
+ * Probador 141, I-2: a size written without "R-" was read as a photo color ("La foto de referencia muestra 18").
+ */
 export function esSustitucionDeColor(sustitucion: { pedido: string }): boolean {
-  return !/^R-\d/i.test(sustitucion.pedido.trim());
+  return !/^(?:R-?\s*)?\d/i.test(sustitucion.pedido.trim());
 }
 
 /** A catalog product that offers a photo color, and whether this turn's search already returned it. */

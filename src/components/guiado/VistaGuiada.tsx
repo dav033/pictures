@@ -19,6 +19,9 @@ import { estadoAgregarIdea, ideasQueSiguenEnPlan, propuestaAgregarIdea } from ".
 import { pedirPlanDeIdea } from "./plan-exacto-idea";
 import { TarjetasProveedores } from "./TarjetasProveedores";
 import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
+import { acabadosFotoSinComprar } from "./acabados-foto-plan";
+import { avisosFloresFotoSinComprar } from "@/lib/plan/flores-pieza";
+import { lecturaFoto } from "./lectura-foto";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
@@ -63,10 +66,14 @@ import { lecturaSinRemateGrande, tieneRemateGrande } from "@/lib/ia/guiado/remat
 import { ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 import { cuerpoGeneracion, fuentesDelPlan, resumenCuerpoGeneracion } from "@/lib/generacion/cuerpo-generacion";
+// De /api/generate interesan la imagen y su aviso de lo no cotizado (el plan que devuelve no trae approval_token y el de
+// la tarjeta sí): `ImagenGeneradaSchema` vive ahora en pedir-imagen.ts, con la recuperación ante cortes.
+import { ErrorImagen, pedirImagenConRecuperacion } from "@/lib/generacion/pedir-imagen";
 import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, vaciarConversacionGuiada, type EstadoParaInstantanea } from "./registro-guiado";
 import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, camposInvalidos, clasificarIncompatible, hayVersionNueva, idParaReintento, turnoSinRespuesta } from "./version-pagina";
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
+import { borrarImagenesNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
 
 /**
  * Vista guiada (/asistente). Cada pieza (ideas, plan, proveedores…) va PEGADA al mensaje que la trajo; solo las del
@@ -151,11 +158,6 @@ const ResultadoSchema = z.object({
   accionPlan: z.string().optional(),
 }).passthrough();
 const AccionModeloSchema = z.enum(["ver", "costear", "comprar", "aprender", "contratar"]);
-/**
- * De /api/generate interesan la imagen y su aviso de lo no cotizado (mesa, torta, luces del entorno del evento): el plan
- * que devuelve no trae approval_token y el de la tarjeta sí.
- */
-const ImagenGeneradaSchema = z.object({ imagen: z.string().regex(/^data:image\/(?:png|jpeg|webp);base64,/), avisoNoCotizado: z.string().trim().min(1).max(300).optional().catch(undefined) }).passthrough();
 
 const LIMITE_TURNO_MS = 75_000;
 const LIMITE_PLAN_MS = 75_000;
@@ -214,6 +216,12 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const [imagenEnCurso, setImagenEnCurso] = useState<string | null>(null);
   /** Imágenes ya pagadas, en memoria, por id del mensaje del plan: se ven en el acto aunque guardarlas falle. */
   const [imagenesLocales, setImagenesLocales] = useState<Readonly<Record<string, string>>>({});
+  // Las imágenes guardadas en este navegador vuelven tras una recarga (el servidor no guarda ninguna).
+  useEffect(() => {
+    void leerImagenesNavegador().then((guardadas) => {
+      if (Object.keys(guardadas).length) setImagenesLocales((actuales) => ({ ...guardadas, ...actuales }));
+    });
+  }, []);
   const [etapaPlan, setEtapaPlan] = useState<Readonly<Record<string, EtapaPlan>>>({});
   const [foto, setFoto] = useState<File | null>(null);
   const [analizandoFoto, setAnalizandoFoto] = useState(false);
@@ -440,6 +448,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     flujoRef.current = null;
     fotosRef.current.clear();
     setMensajes([]); setBrief({}); setSeleccionada(null); setUso(null); setFoto(null); setFallo(null); setEntrada("");
+    void borrarImagenesNavegador();
     setImagenEnCurso(null); setImagenesLocales({}); setEtapaPlan({}); setAnalizandoFoto(false); setTransmitiendoId(null);
     setPlaceholderForzado(null); setSugerenciasCambio(null); setAnuncio(""); setEditandoPlanId(null); setAgregandoId(null);
     marcarCargando(false);
@@ -1119,9 +1128,9 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     setImagenEnCurso(mensajeId);
     setFallo(null);
     actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: false }));
+    // Solo cancela desde fuera (empezar de nuevo); el tope de tiempo va por intento dentro de `pedirImagenConRecuperacion`.
     const control = new AbortController();
     imagenControlRef.current = control;
-    const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_IMAGEN_MS);
     const plan = widget.plan;
     try {
       const referencia = widget.fotoInspiracion ? fotosRef.current.get(mensajeId) : undefined;
@@ -1139,32 +1148,33 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
         blueprint: widget.fotoInspiracion ? lecturaDelPlan(mensajes, mensajeId)?.blueprint : undefined,
       });
       registrarAccion("imagen.pedir", { mensajeId, cuerpo: resumenCuerpoGeneracion(cuerpo) });
-      const respuesta = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cuerpo),
-        signal: control.signal,
+      // Producción, 2026-10-07: el servidor hizo la imagen pero en el móvil la respuesta se cortó («NetworkError») y se
+      // vio un error. Cada intento lleva su id; ante un corte se pregunta primero si el servidor ya la tiene (sin pagar
+      // otra) y, solo si no, un reintento silencioso. Cada paso queda en la auditoría.
+      const salida = await pedirImagenConRecuperacion({
+        cuerpo,
+        planHash: plan.plan_hash,
+        senal: control.signal,
+        limiteIntentoMs: LIMITE_IMAGEN_MS,
+        alEvento: (evento, datos) => registrarAccion(evento, { mensajeId, ...datos }),
       });
-      if (!respuesta.ok) throw new Error(`/api/generate respondió con estado ${respuesta.status}.`);
-      const salida = ImagenGeneradaSchema.parse(await respuesta.json() as unknown);
       if (sesion !== sesionRef.current) return;
+      if (salida.via !== "directa") registrarAccion("imagen.llego_tras_corte", { mensajeId, via: salida.via, intentos: salida.intentos });
       // Se ve en el acto; el plan de la tarjeta (con su approval_token) no se toca.
       setImagenesLocales((actuales) => ({ ...actuales, [mensajeId]: salida.imagen }));
       // Como en la clásica: lo que la imagen muestra y no se cotiza (el entorno del evento) se dice junto a la imagen.
       actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: false, hechas: conHecha(actual.hechas, "ver"), avisoImagen: salida.avisoNoCotizado }));
       setAnuncio("La imagen de tu decoración está lista");
-      void guardarImagen(salida.imagen).then((url) => {
-        if (url && sesion === sesionRef.current) actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, imagen: url }));
-      });
+      // Solo en el navegador (IndexedDB), nunca en el servidor: así una recarga la vuelve a mostrar.
+      void guardarImagenNavegador(mensajeId, salida.imagen);
     } catch (causa) {
       if (sesion !== sesionRef.current) return;
-      registrarFallo("imagen.fallo", causa, { mensajeId, plan_hash: plan.plan_hash });
+      registrarFallo("imagen.fallo", causa, { mensajeId, plan_hash: plan.plan_hash, clase: causa instanceof ErrorImagen ? causa.clase : null });
       console.warn("[asistente-guiado] no se pudo dibujar la decoración", causa);
-      // Sin tarjeta de error aparte: la del plan ya dice «No pude dibujarla esta vez» y su botón principal es «Reintentar imagen».
+      // Sin tarjeta de error aparte: la del plan dice que la imagen no alcanzó a llegar y su botón principal es «Reintentar imagen».
       actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: true }));
-      setAnuncio("No pude dibujar la imagen");
+      setAnuncio("La imagen no alcanzó a llegar. Puedes reintentarla");
     } finally {
-      window.clearTimeout(reloj);
       if (imagenControlRef.current === control) imagenControlRef.current = null;
       if (imagenEnCursoRef.current === mensajeId) { imagenEnCursoRef.current = null; setImagenEnCurso(null); }
     }
@@ -1654,6 +1664,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
             onDistribuidor={() => preguntarCiudad("ciudad-distribuidor", "Quiero comprar con un distribuidor cerca")}
             {...(widget.ajustes?.length ? { ajustes: widget.ajustes } : {})}
             recalculandoPorChat={editandoPlanId === mensajeId}
+            {...(widget.fotoInspiracion ? { avisosFoto: avisosFotoDelPlan(mensajes, mensajeId, widget.plan) } : {})}
             {...(vigente ? {
               onPlanAjustado: (nuevo: PlanGuiado, cotizacionNueva: unknown, ajuste: AjustePublicado) => { ajustarPlan(mensajeId, nuevo, cotizacionNueva, ajuste); },
               // Los cambios rápidos que rehace el asistente, desde «Ajustar mi plan» (los mismos de antes como chips).
@@ -1876,6 +1887,14 @@ function lecturaDelPlan(lista: readonly Mensaje[], mensajeId: string): Mensaje["
   return mensajeLecturaDelPlan(lista, mensajeId)?.referencia;
 }
 
+/** Los acabados que la foto del plan muestra y el plan no compra («La foto muestra rosa satinado; …»), probador 141. */
+function avisosFotoDelPlan(lista: readonly Mensaje[], mensajeId: string, plan: PlanGuiado): string[] {
+  const referencia = lecturaDelPlan(lista, mensajeId);
+  // Y las flores de globo que la lectura prometió y el plan no lleva (o sin su centro): la tarjeta no enseña el texto
+  // del modelo, así que `avisos_cliente` no llega aquí (`flores-pieza.ts`).
+  return referencia ? [...acabadosFotoSinComprar(lecturaFoto(referencia.blueprint), plan), ...avisosFloresFotoSinComprar(referencia.blueprint, plan.plan)] : [];
+}
+
 type FotoDelPlan = {
   referenciaId: string;
   blueprint: NonNullable<Mensaje["referencia"]>["blueprint"];
@@ -2042,18 +2061,6 @@ async function analizarFoto(imagen: FotoInspiracion, senalTurno: AbortSignal): P
   } finally {
     window.clearTimeout(reloj);
     senalTurno.removeEventListener("abort", cortar);
-  }
-}
-
-/** Guarda la imagen para esta sesión; si falla, la imagen sigue viéndose desde memoria. */
-async function guardarImagen(imagen: string): Promise<string | null> {
-  try {
-    const respuesta = await fetch("/api/guiada-imagen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imagen }) });
-    if (!respuesta.ok) throw new Error(`/api/guiada-imagen respondió con estado ${respuesta.status}.`);
-    return z.object({ url: z.string().startsWith("/api/guiada-imagen/") }).strict().parse(await respuesta.json() as unknown).url;
-  } catch (causa) {
-    console.warn("[asistente-guiado] la imagen se ve en esta sesión, pero no se pudo guardar.", causa);
-    return null;
   }
 }
 

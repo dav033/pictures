@@ -129,14 +129,31 @@ function esperar(ms: number): Promise<void> {
  */
 type Resultado = { grafica: GraficaMotor | null; reintentable: boolean };
 
+/** Intentos de un dibujo mientras el motor responde 429 (ocupado): el primero y hasta tres más. */
+export const INTENTOS_MOTOR_OCUPADO = 4;
+const ESPERA_OCUPADO_TOPE_MS = 4_000;
+
+/**
+ * Cuánto esperar antes del intento `intento + 1` tras un 429: el `Retry-After` del servidor (o 1 s), doblado en cada
+ * intento hasta 4 s, con ±25 % al azar para que dos pestañas no vuelvan a coincidir. Probador 141, I-7: con UNA sola
+ * espera, tres sesiones a la vez dejaban el dibujo en su icono de fallo; ahora la pieza sigue «dibujándose» (el brillo
+ * de carga, sin error) mientras espera turno.
+ */
+export function esperaTrasOcupado(intento: number, retryAfter: string | null, azar: () => number = Math.random): number {
+  const segundos = Number(retryAfter);
+  const base = Number.isFinite(segundos) && segundos > 0 ? Math.min(segundos, 5) * 1000 : 1000;
+  const espera = Math.min(ESPERA_OCUPADO_TOPE_MS, base * 2 ** Math.max(0, intento));
+  return Math.round(espera * (0.75 + 0.5 * Math.min(1, Math.max(0, azar()))));
+}
+
 async function pedirUna(ruta: string, cuerpo: string): Promise<Resultado> {
-  for (let intento = 0; intento < 2; intento += 1) {
+  for (let intento = 0; intento < INTENTOS_MOTOR_OCUPADO; intento += 1) {
     contadores.pedidas += 1;
     const respuesta = await pedirRed(ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: cuerpo });
-    // El motor atiende pocos dibujos a la vez (429 con `Retry-After`): uno más tarde, una sola vez.
-    if (respuesta.status === 429 && intento === 0) {
-      const segundos = Number(respuesta.headers.get("retry-after"));
-      await esperar(Number.isFinite(segundos) && segundos > 0 ? Math.min(segundos, 5) * 1000 : 1200);
+    // El motor atiende un dibujo a la vez (429 con `Retry-After`): se espera turno, cada vez un poco más, sin mostrar
+    // ningún error (la gráfica sigue en «cargando»). Solo el último 429 cuenta como fallo pasajero.
+    if (respuesta.status === 429 && intento < INTENTOS_MOTOR_OCUPADO - 1) {
+      await esperar(esperaTrasOcupado(intento, respuesta.headers.get("retry-after")));
       continue;
     }
     if (!respuesta.ok) return { grafica: null, reintentable: respuesta.status === 429 || respuesta.status === 408 || respuesta.status >= 500 };

@@ -9,6 +9,7 @@ import { ArmadoColumnaV1Schema, type ArmadoColumnaV1 } from "@/lib/plan/armado-c
 import { ArmadoGuirnaldaOrganicaV1Schema, type ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
 import { PARTICIPACION_MINIMA_REPARTO, type EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import { ESTRUCTURAS_OFICIALES_IDS, OFICIALES_SIN_MOTOR, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { esLineaDeFlor } from "@/lib/plan/flores-pieza";
 import { indiceMaterialPropio, lineasPorMaterial } from "@/lib/plan/material-de-linea";
 import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
@@ -143,9 +144,25 @@ export type PiezaAjustable = {
   globos: number;
   /** Medidas que se pueden escribir (las de la tarjeta). */
   medidas: MedidaEditable[];
-  /** La pieza pareja (columna izquierda ↔ derecha): sus cambios se ofrecen «a las dos». */
-  pareja: { estructuraId: string; titulo: string } | null;
+  /**
+   * La pieza pareja (columna izquierda ↔ derecha): sus cambios se ofrecen «a las dos». `iguales`: las dos llevan hoy los
+   * mismos globos de cada color y las mismas medidas; solo entonces «Hacer lo mismo» viene marcado y «quedan iguales»
+   * es verdad (probador 141: columnas de 39 y 48 globos lo traían marcado y la pareja recibía la diferencia).
+   */
+  pareja: { estructuraId: string; titulo: string; iguales: boolean } | null;
 };
+
+/** Las dos piezas llevan los mismos globos de cada color y las mismas medidas (con el plan que resolvió Python). */
+export function parejaIgual(plan: PlanGuiado, una: EstructuraPlan, otra: EstructuraPlan): boolean {
+  const porColor = (estructura: EstructuraPlan): string => {
+    const globos = globosPorMaterial(plan, estructura);
+    const suma = new Map<string, number>();
+    estructura.materiales.forEach((material, indice) => suma.set(normal(material.color), (suma.get(normal(material.color)) ?? 0) + (globos[indice] ?? 0)));
+    return [...suma].sort(([a], [b]) => a.localeCompare(b)).map(([color, unidades]) => `${color}:${unidades}`).join(",");
+  };
+  const medidas = (estructura: EstructuraPlan): string => JSON.stringify([estructura.medidas.ancho_m ?? null, estructura.medidas.alto_m ?? null, estructura.medidas.largo_m ?? null, estructura.repeticiones]);
+  return porColor(una) === porColor(otra) && medidas(una) === medidas(otra);
+}
 
 const LineaSchema = z.object({
   product_id: z.string(),
@@ -266,9 +283,11 @@ export function piezasAjustables(plan: PlanGuiado): PiezaAjustable[] {
     const { modo, motivo } = modoColoresDe(estructura, motor);
     const porMaterial = lineasDeCadaMaterial(estructura, lineasDe(plan, estructura.estructura_id));
     const globos = porMaterial.map((propias) => propias.reduce((suma, linea) => suma + linea.unidades, 0));
+    // El rango de la cifra se calcula sobre el cuerpo y se enseña con las flores de cada color (`conteoPorMaterial`).
+    const { flores, cuerpo } = conteoPorMaterial(plan, estructura);
     const porcentajes = aPorcentajes(globos);
     const total = globos.reduce((suma, valor) => suma + valor, 0);
-    const conCantidad = (modo === "paleta" || modo === "reparto") && estructura.materiales.length > 1 && total > 0;
+    const conCantidad = (modo === "paleta" || modo === "reparto") && estructura.materiales.length > 1 && cuerpo.reduce((suma, valor) => suma + valor, 0) > 0;
     const colores = estructura.materiales.map((material, indice): ColorPieza => {
       const color = material.color ?? "otro color";
       const propias = porMaterial[indice] ?? [];
@@ -277,7 +296,7 @@ export function piezasAjustables(plan: PlanGuiado): PiezaAjustable[] {
       const comoSeCompra = { titulo, acabado: material.acabado ?? null };
       const porTamano = new Map<number, number>();
       for (const linea of propias) if (linea.diam_pulg) porTamano.set(linea.diam_pulg, (porTamano.get(linea.diam_pulg) ?? 0) + linea.unidades);
-      const rango = conCantidad ? rangoCantidad(modo, total, estructura.materiales.length) : null;
+      const rango = conCantidad ? rangoConFlores(modo, cuerpo, flores[indice] ?? 0) : null;
       return {
         indice,
         color,
@@ -309,7 +328,7 @@ export function piezasAjustables(plan: PlanGuiado): PiezaAjustable[] {
       puedeQuitarPieza: planSinPieza(plan.plan, estructura.estructura_id) !== null,
       globos: total,
       medidas: medidasEditables(plan, estructura.estructura_id),
-      pareja: pareja ? { estructuraId: pareja.estructura_id, titulo: pareja.nombre } : null,
+      pareja: pareja ? { estructuraId: pareja.estructura_id, titulo: pareja.nombre, iguales: parejaIgual(plan, estructura, pareja) } : null,
     };
   });
 }
@@ -325,9 +344,29 @@ function rangoCantidad(modo: ModoColores, total: number, colores: number): { min
   return { minimo: piso, maximo: Math.max(piso, total - piso * (colores - 1)) };
 }
 
-/** Globos por material de la pieza, de las líneas que resolvió Python. */
+/** Globos por material de la pieza, de las líneas que resolvió Python (con los de sus flores, como los ve la tarjeta). */
 function globosPorMaterial(plan: PlanGuiado, estructura: EstructuraPlan): number[] {
-  return lineasDeCadaMaterial(estructura, lineasDe(plan, estructura.estructura_id)).map((propias) => propias.reduce((suma, linea) => suma + linea.unidades, 0));
+  return conteoPorMaterial(plan, estructura).globos;
+}
+
+/**
+ * Los globos de cada material como los ve el cliente (`globos`, con los de las flores de la pieza, como en la tarjeta) y
+ * los de su CUERPO (`cuerpo`), que es lo único que mueve el reparto: las flores (`flores-pieza.ts`) son un adorno que
+ * Python cuenta aparte. Sin esta resta, «que lleve 46 blancos» en el aro de la idea con flores dejaba 52 (verificador
+ * del corrector, 2026-10-07): la parte se calculaba sobre 108 globos y Python la aplicaba a los 94 del cuerpo.
+ */
+function conteoPorMaterial(plan: PlanGuiado, estructura: EstructuraPlan): { globos: number[]; flores: number[]; cuerpo: number[] } {
+  const porMaterial = lineasDeCadaMaterial(estructura, lineasDe(plan, estructura.estructura_id));
+  const suma = (lineas: readonly Linea[]) => lineas.reduce((total, linea) => total + linea.unidades, 0);
+  const globos = porMaterial.map(suma);
+  const flores = porMaterial.map((propias) => suma(propias.filter(esLineaDeFlor)));
+  return { globos, flores, cuerpo: globos.map((valor, indice) => valor - (flores[indice] ?? 0)) };
+}
+
+/** El rango de `rangoCantidad` sobre el cuerpo, en la cifra que ve el cliente (con las flores de ese color). */
+function rangoConFlores(modo: ModoColores, cuerpo: readonly number[], flores: number): { minimo: number; maximo: number } {
+  const rango = rangoCantidad(modo, cuerpo.reduce((suma, valor) => suma + valor, 0), cuerpo.length);
+  return { minimo: rango.minimo + flores, maximo: rango.maximo + flores };
 }
 
 /**
@@ -361,16 +400,17 @@ export function edicionCantidad(plan: PlanGuiado, estructuraId: string, indice: 
   const motor = motorDe(estructura);
   const { modo } = modoColoresDe(estructura, motor);
   if (modo !== "paleta" && modo !== "reparto") return null;
-  const globos = globosPorMaterial(plan, estructura);
-  const total = globos.reduce((suma, valor) => suma + valor, 0);
-  const rango = rangoCantidad(modo, total, globos.length);
+  // La cifra que pide el cliente es la que ve (con las flores de ese color); el reparto se calcula sobre el cuerpo.
+  const { flores, cuerpo } = conteoPorMaterial(plan, estructura);
+  const deFlores = flores[indice] ?? 0;
+  const rango = rangoConFlores(modo, cuerpo, deFlores);
   if (Math.round(objetivo) < rango.minimo || Math.round(objetivo) > rango.maximo) return null;
-  const partes = partesParaCantidad(globos, indice, objetivo);
+  const partes = partesParaCantidad(cuerpo, indice, objetivo - deFlores);
   if (!partes) return null;
   if (modo === "reparto") {
     // Un color sin globos en las líneas de Python es una línea que no se sabe leer, no un color vacío: repartir sobre
     // ese 0 lo dejaría en el piso sin que nadie lo pidiera. No se pide nada y `motivoSinCantidad` lo dice.
-    if (globos.some((valor) => valor <= 0)) return null;
+    if (cuerpo.some((valor) => valor <= 0)) return null;
     // Un color que quedaría por debajo del piso del reparto se queda en el piso y el color pedido toma lo que sobra
     // (como «+»/«−», `partesConObjetivo`): así el máximo que ofrece `rangoCantidad` se puede pedir de verdad (antes,
     // 35 rosados de 39 dejaban el dorado en 4 % y la edición salía null).
@@ -416,22 +456,26 @@ export function motivoSinCantidad(plan: PlanGuiado, estructuraId: string, indice
   if (!estructura || !material) return "No encontré ese color en la pieza. Tu plan sigue como estaba.";
   const { modo, motivo } = modoColoresDe(estructura, motorDe(estructura));
   if (modo !== "paleta" && modo !== "reparto") return `${motivo ?? "En esta pieza cada color lleva su parte."} Aquí no se escribe la cifra: usa «+» o «−», «Cambiar» o «Quitar».`;
-  const globos = globosPorMaterial(plan, estructura);
+  // Las mismas cuentas que `edicionCantidad`: la cifra con las flores de ese color, el reparto sobre el cuerpo.
+  const { globos, flores, cuerpo } = conteoPorMaterial(plan, estructura);
   const total = globos.reduce((suma, valor) => suma + valor, 0);
   const color = material.color ?? "ese color";
-  const sinCifra = estructura.materiales.findIndex((_, posicion) => (globos[posicion] ?? 0) <= 0);
+  const sinCifra = estructura.materiales.findIndex((_, posicion) => (cuerpo[posicion] ?? 0) <= 0);
   if (total <= 0 || globos.length < 2 || sinCifra >= 0) {
     const cual = sinCifra >= 0 ? colorEnPlural(colorCliente(estructura.materiales[sinCifra]?.color ?? "ese color")) : "cada color";
     return `No pude leer cuántos globos ${sinCifra >= 0 ? cual : `de ${cual}`} lleva esta pieza, así que no puedo repartir esa cifra. Tu plan sigue como estaba; prueba con «+» o «−».`;
   }
   const deseada = Math.round(objetivo);
   if (deseada === globos[indice]) return `Esta pieza ya lleva ${globosDeColorEnTexto(deseada, color)}.`;
-  const rango = rangoCantidad(modo, total, globos.length);
+  const deFlores = flores[indice] ?? 0;
+  const rango = rangoConFlores(modo, cuerpo, deFlores);
+  const piso = rango.minimo - deFlores;
+  const conFlores = deFlores > 0 ? `, más ${globosEnTexto(deFlores)} de sus flores` : "";
   if (deseada < 1) return `Para que no lleve ${colorEnPlural(colorCliente(color))}, quita el color con «Quitar».`;
-  if (deseada < rango.minimo) return `Esta pieza lleva ${globosEnTexto(total)}: cada color necesita al menos ${rango.minimo}. Para ninguno, quita el color con «Quitar».`;
+  if (deseada < rango.minimo) return `Esta pieza lleva ${globosEnTexto(total)}: cada color necesita al menos ${piso}${conFlores}. Para ninguno, quita el color con «Quitar».`;
   if (deseada > rango.maximo) {
     const otros = globos.length - 1;
-    return `Esta pieza lleva ${globosEnTexto(total)}: este color puede llevar hasta ${rango.maximo}, porque ${otros === 1 ? "el otro color necesita" : `cada uno de los otros ${otros} colores necesita`} al menos ${rango.minimo}. Para más globos, agranda la pieza.`;
+    return `Esta pieza lleva ${globosEnTexto(total)}: este color puede llevar hasta ${rango.maximo}, porque ${otros === 1 ? "el otro color necesita" : `cada uno de los otros ${otros} colores necesita`} al menos ${piso}. Para más globos, agranda la pieza.`;
   }
   if (modo === "reparto") return `Con ${deseada} otro color de la pieza se quedaría casi sin globos (menos del 5 %). Prueba con una cifra más cercana a ${globos[indice] ?? 0}.`;
   return `Esa cifra cambia muy poco el reparto de la pieza. Prueba con una diferencia algo mayor que ${Math.abs(deseada - (globos[indice] ?? 0))}.`;
@@ -876,7 +920,7 @@ export function globosDeColorEnTexto(cantidad: number, color: string): string {
  * «más rosado en el semiarco orgánico», «sin la columna»: la línea corta del historial («Ajusté: …») y de los avisos.
  * Sin verbo en primera persona, para que se lea igual en «Listo: …» y en «Último ajuste: …».
  */
-export function describirCambio(plan: PlanGuiado, cambio: CambioPlan): string {
+export function describirCambio(plan: PlanGuiado, cambio: CambioPlan, nuevo?: PlanGuiado): string {
   if (cambio.tipo === "agregar-color") return `con ${cambio.globo?.nombre ?? colorCliente(cambio.color)}${cambio.estructuraIds?.length ? ` en ${cambio.estructuraIds.map((id) => piezaConPareja(plan, id, false)).join(" y ")}` : ""}`;
   if (cambio.tipo === "tamano-todo") return cambio.direccion > 0 ? "todas las piezas un poco más grandes" : "todas las piezas un poco más pequeñas";
   if (cambio.tipo === "reemplazar-color") {
@@ -889,7 +933,17 @@ export function describirCambio(plan: PlanGuiado, cambio: CambioPlan): string {
   const colorDe = (indice: number) => colorCliente(estructura?.materiales[indice]?.color ?? "ese color");
   switch (cambio.tipo) {
     case "protagonismo": return `${cambio.direccion > 0 ? "más" : "menos"} ${colorDe(cambio.indice)} en ${pieza}`;
-    case "cantidad": return `${globosDeColorEnTexto(Math.round(cambio.objetivo), estructura?.materiales[cambio.indice]?.color ?? "ese color")} en ${pieza}`;
+    case "cantidad": {
+      const color = estructura?.materiales[cambio.indice]?.color ?? "ese color";
+      if (!nuevo) return `${globosDeColorEnTexto(Math.round(cambio.objetivo), color)} en ${pieza}`;
+      // Con el plan que resolvió Python, lo que quedó en CADA pieza (probador 141: «24 globos rosados en la columna
+      // derecha y la izquierda» cuando la izquierda quedó con 20: la pareja recibe la diferencia, no la cifra).
+      const propia = globosDeColor(nuevo, cambio.estructuraId, color) || Math.round(cambio.objetivo);
+      const pareja = conPareja ? parejaDe(plan, cambio.estructuraId) : null;
+      const dePareja = pareja ? globosDeColor(nuevo, pareja.estructura_id, color) : null;
+      if (!pareja || dePareja === null || dePareja === propia) return `${globosDeColorEnTexto(propia, color)} en ${pieza}`;
+      return `${globosDeColorEnTexto(propia, color)} en ${piezaConPareja(plan, cambio.estructuraId, false)} y ${dePareja} en ${piezaConArticulo(pareja)}`;
+    }
     case "tamano": return `${pieza} ${cambio.direccion > 0 ? ((estructura?.repeticiones ?? 1) > 1 || conPareja ? "más grandes" : "más grande") : "de menor tamaño"}`;
     case "medidas": {
       const medidas = medidasCortas({ ...(estructura?.medidas ?? {}), ...cambio.medidas });
@@ -937,7 +991,9 @@ export function confirmacionDelCambio(plan: PlanGuiado, cambio: CambioPlan, piez
     const pedido = Math.round(cambio.objetivo);
     const pieza = piezaConArticulo(plan.plan.estructuras.find((item) => item.estructura_id === cambio.estructuraId) ?? { estructura_oficial: undefined, nombre: "pieza", repeticiones: 1 });
     const pareja = cambio.pareja ? parejaDe(plan, cambio.estructuraId) : null;
-    const tambien = pareja ? ` (y lo mismo en ${piezaConArticulo(pareja)})` : "";
+    // La pareja recibe la MISMA diferencia, no la misma cifra: se dice lo que quedó en ella (probador 141).
+    const dePareja = pareja ? globosDeColor(nuevo, pareja.estructura_id, color) : 0;
+    const tambien = !pareja ? "" : dePareja && dePareja !== (quedo || pedido) ? ` y ${piezaConArticulo(pareja)}, ${globosDeColorEnTexto(dePareja, color)}` : ` (y lo mismo en ${piezaConArticulo(pareja)})`;
     if (quedo && quedo !== pedido) return `Listo: ${pieza} lleva ${globosDeColorEnTexto(quedo, color)}${tambien}; pediste ${pedido} y al armarla globo a globo quedó así. Los demás colores tomaron la diferencia y la medida no cambió.`;
     return `Listo: ${pieza} lleva ${globosDeColorEnTexto(pedido, color)}${tambien}. Los demás colores tomaron la diferencia y la medida no cambió.`;
   }

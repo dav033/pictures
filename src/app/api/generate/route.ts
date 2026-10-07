@@ -67,8 +67,45 @@ import {
   type DesignMaterialEstimate,
 } from "@/lib/materiales/estimacion";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
+import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
+import {
+  conLimite,
+  guardarImagenLista,
+  marcarImagenEnCurso,
+  marcarImagenFallida,
+  PlanHashImagenSchema,
+  solicitudImagenDe,
+  type ConsultorPg,
+  type ResultadoEscritura,
+} from "@/lib/generacion/imagen-recuperable";
 
 export const maxDuration = 120;
+
+/** Lo que se necesita para guardar la imagen de esta solicitud y recuperarla tras un corte (`imagen-recuperable.ts`). */
+type Recuperable = { db: ConsultorPg; solicitudId: string; planHash: string };
+
+/**
+ * Solo con `x-solicitud-imagen` (la guiada la manda por intento) y un `plan_hash` con forma válida; sin Postgres
+ * configurado no hay dónde guardar y la generación sigue igual. El hash es el que mandó el cliente: es el que él
+ * tendrá a mano para preguntar (en producción coincide con el re-resuelto, que se verifica más abajo).
+ */
+const GUARDAR_IMAGENES_EN_SERVIDOR: boolean = false;
+
+function abrirRecuperable(solicitudId: string | null, planHash: unknown): Recuperable | null {
+  // Pedido del dueño (2026-10-07): el servidor no guarda imágenes; la guiada las guarda en el navegador (IndexedDB).
+  // Sin almacén, ante un corte la vista hace un único reintento silencioso.
+  if (GUARDAR_IMAGENES_EN_SERVIDOR !== true) return null;
+  if (!solicitudId) return null;
+  const hash = PlanHashImagenSchema.safeParse(planHash);
+  if (!hash.success) return null;
+  try {
+    return { db: getRagPool(), solicitudId, planHash: hash.data };
+  } catch {
+    return null;
+  }
+}
+
+const ESCRITURA_VENCIDA: ResultadoEscritura = { ok: false, error: "la base no respondió a tiempo" };
 
 type Body = {
   productIds?: string[];
@@ -492,6 +529,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     ? correlationHeader
     : generationRequestId;
   const contextoTelemetria = { requestId: generationRequestId, correlationId: generationCorrelationId, superficie: "/api/generate" };
+  const solicitudImagen = solicitudImagenDe(request.headers);
+  let recuperable: Recuperable | null = null;
+  let marcaEnCurso: Promise<ResultadoEscritura> | null = null;
   try {
     const body = await request.json() as Body;
     const camposRetirados = ["usarLora", "loraMode", "loraSelection", "promptFormat", "seed", "previousInteractionId", "interactionId"];
@@ -508,6 +548,21 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // por el resolutor, y mantenía viva una segunda implementación de las
     // reglas de conteo.
     if (!body.plan) throw new Error("APROBACION_REQUERIDA: la imagen se genera desde una propuesta aprobada.");
+    // Si la respuesta se corta en el camino (móvil, 2026-10-07), el navegador pregunta por esta solicitud antes de
+    // pedir otra imagen: aquí queda «en curso» y, al terminar, la imagen guardada (`imagen-recuperable.ts`).
+    recuperable = abrirRecuperable(solicitudImagen, body.plan.plan_hash);
+    if (solicitudImagen) {
+      decidir("regla:imagen_recuperable", "la imagen de esta solicitud se guarda para recuperarla si la respuesta se corta", recuperable ? "activa" : "sin_almacen", {
+        entrada: { solicitudId: solicitudImagen, planHash: typeof body.plan.plan_hash === "string" ? body.plan.plan_hash : null },
+      });
+    }
+    if (recuperable) {
+      const marca = recuperable;
+      marcaEnCurso = marcarImagenEnCurso(marca.db, marca).then((resultado) => {
+        if (!resultado.ok) decidir("regla:imagen_recuperable_en_curso", "no se pudo anotar la solicitud en curso", "no_anotada", { entrada: { solicitudId: marca.solicitudId }, motivo: resultado.error });
+        return resultado;
+      });
+    }
     const planDeclarativo = PlanDecoracionSchema.parse(body.plan.plan);
     const contextoPlan = abrirContextoPlan(body.plan.approval_token);
     if (!contextoPlan) {
@@ -951,7 +1006,8 @@ async function generar(request: Request, generationRequestId: string): Promise<R
           tallas_del_estimado_python: [...new Set(materialEstimate.balloons.flatMap((linea) => linea.size_inches === null ? [] : [linea.size_inches]))],
           tallas_del_prompt: [...(providerPrompt.matchAll(/(\d+(?:\.\d+)?)-inch/g))].map((match) => Number(match[1])),
         });
-        throw new Error(`El prompt no coincide con el plan resuelto: ${coherencia.errores.join("; ")}`);
+        // Nunca deja sin imagen (pedido del dueño, 2026-10-07): se dibuja y queda registrado lo que no cuadró.
+        decidir("regla:coherencia_prompt_aviso", "el prompt no coincide del todo con el plan resuelto; se dibuja igual", { errores: coherencia.errores }, { entrada: { planHash: planResuelto.plan_hash } });
       }
     }
     // The quote is finalized before the paid provider call. The image receives
@@ -1144,7 +1200,8 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     }
     if (planResuelto) {
       const coherenciaFlux = verificarColoresCaptionFlux(planResuelto, escenaParaCoherencia, { clausulas: fluxCompilation.clauses, traducirColor: translateFluxColor });
-      if (!coherenciaFlux.ok) throw new Error(`El caption FLUX no coincide con el plan resuelto: ${coherenciaFlux.errores.join("; ")}`);
+      // Nunca deja sin imagen: p. ej. un color que la idea compra con otro producto (variant_overrides) «falta» por nombre.
+      if (!coherenciaFlux.ok) decidir("regla:coherencia_caption_aviso", "el caption FLUX no coincide del todo con el plan resuelto; se dibuja igual", { errores: coherenciaFlux.errores }, { entrada: { planHash: planResuelto.plan_hash } });
     }
     const revisionFlux = revisionInstruction?.trim()
       ? await traducirRevisionParaFlux(revisionInstruction, async (texto) => {
@@ -1207,16 +1264,43 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const etiquetaFlux = "FLUX base";
     const promptsRespuesta = { [etiquetaFlux]: promptFlux };
     const promptRespuesta = promptFlux;
+    // El PNG de FLUX (~2,8 MB, ~3,8 MB en base64) viaja como JPEG de calidad alta (~200-400 KB) a las dos vistas: en el
+    // móvil la respuesta pesada se cortaba (2026-10-07). Misma resolución; si no se puede aligerar, va como llegó.
+    const imagenViaje = await aligerarImagenGenerada(imagen);
+    decidir("regla:imagen_liviana", "formato y peso con que viaja la imagen al navegador", {
+      resultado: imagenViaje.resultado,
+      mime: imagenViaje.mime,
+      kbAntes: Math.round(imagenViaje.bytesAntes / 1024),
+      kbDespues: Math.round(imagenViaje.bytesDespues / 1024),
+      ancho: imagenViaje.ancho,
+      alto: imagenViaje.alto,
+    }, { entrada: { mimeFlux: imagen.mime }, ...(imagenViaje.detalle ? { motivo: imagenViaje.detalle } : {}) });
+    const avisoNoCotizado = avisoNoCotizadoDeImagen(ambiente, escenografiaVisible, entorno);
+    if (recuperable) {
+      // Antes de responder: si la respuesta no llega al navegador, la imagen ya está donde él la va a buscar.
+      const guardado = await conLimite(guardarImagenLista(recuperable.db, { ...recuperable, mime: imagenViaje.mime, bytes: imagenViaje.bytes, avisoNoCotizado }), 5_000, ESCRITURA_VENCIDA);
+      decidir("regla:imagen_recuperable_guardada", "la imagen quedó guardada para recuperarla si la respuesta se corta", guardado.ok ? "guardada" : "no_guardada", {
+        entrada: { solicitudId: recuperable.solicitudId, kb: Math.round(imagenViaje.bytesDespues / 1024) },
+        ...(guardado.ok ? {} : { motivo: guardado.error }),
+      });
+    }
     return Response.json({
-      imagen: `data:${imagen.mime};base64,${imagen.base64}`,
+      imagen: `data:${imagenViaje.mime};base64,${imagenViaje.base64}`,
       motorImagen: "flux",
       plan: planResuelto,
       cotizacion,
       prompt: promptRespuesta,
       prompts: promptsRespuesta,
-      avisoNoCotizado: avisoNoCotizadoDeImagen(ambiente, escenografiaVisible, entorno),
+      avisoNoCotizado,
     });
   } catch (error) {
+    if (recuperable) {
+      // Quien pregunte por esta solicitud ya no espera: no hubo imagen (y no se pagó otra).
+      const fallida = recuperable;
+      await marcaEnCurso?.catch(() => undefined);
+      const marcada = await conLimite(marcarImagenFallida(fallida.db, fallida), 3_000, ESCRITURA_VENCIDA);
+      if (!marcada.ok) decidir("regla:imagen_recuperable_fallida", "no se pudo anotar que la solicitud falló", "no_anotada", { entrada: { solicitudId: fallida.solicitudId }, motivo: marcada.error });
+    }
     // Los campos legacy (`error`, `causa`, sobre operational.v1) se conservan:
     // el smoke los compara. `ui_error` (ui-error.v1) es lo que ve el cliente.
     const uiError = traducirErrorServidor(error, generationRequestId);

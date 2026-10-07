@@ -149,7 +149,7 @@ const individual = PlanGuiadoSchema.parse({ ...plan, plan: separado, estructuras
 assert.equal(parejaDe(individual, IZQUIERDA)?.estructura_id, DERECHA, "la columna izquierda tiene pareja: la derecha");
 assert.equal(parejaDe(individual, DERECHA)?.estructura_id, IZQUIERDA);
 assert.equal(parejaDe(individual, SEMIARCO), null, "el semiarco no tiene pareja");
-assert.deepEqual(piezasAjustables(individual)[1]!.pareja, { estructuraId: DERECHA, titulo: "Columna derecha" });
+assert.deepEqual(piezasAjustables(individual)[1]!.pareja, { estructuraId: DERECHA, titulo: "Columna derecha", iguales: true }, "las dos columnas llevan lo mismo: «Hacer lo mismo» viene marcado");
 assert.deepEqual(piezasDelCambio(individual, { tipo: "tamano", estructuraId: IZQUIERDA, direccion: 1, pareja: true }), [IZQUIERDA, DERECHA], "con «a las dos», las dos esperan el plan nuevo");
 assert.equal(describirCambio(individual, { tipo: "tamano", estructuraId: IZQUIERDA, direccion: 1, pareja: true }), "la columna izquierda y la columna derecha más grandes");
 

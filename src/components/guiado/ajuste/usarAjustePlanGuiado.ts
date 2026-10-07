@@ -86,9 +86,11 @@ export function useAjustePlanGuiado({ plan, onPlanAjustado }: Entrada) {
         buscar: buscarColor,
         alDescartarColor: (color) => { if (montadoRef.current) setDescartados((actuales) => [...actuales, color]); },
       });
-      onPlanAjustadoRef.current(nuevo.plan, nuevo.cotizacion, { descripcion, baseHash: base.plan_hash });
+      // «Último ajuste» dice lo que quedó en cada pieza (con el plan de Python), no la cifra pedida.
+      const hecho = describirCambio(base, cambio, nuevo.plan);
+      onPlanAjustadoRef.current(nuevo.plan, nuevo.cotizacion, { descripcion: hecho, baseHash: base.plan_hash });
       const confirmacion = confirmacionDelCambio(base, cambio, nuevo.piezas, nuevo.plan);
-      registrarAjuste("ajuste.listo", { tipo: cambio.tipo, descripcion, confirmacion, plan_hash_base: base.plan_hash, plan_hash: nuevo.plan.plan_hash, ms: Math.round(performance.now() - inicio), ...(nuevo.piezas ? { piezas: nuevo.piezas } : {}) });
+      registrarAjuste("ajuste.listo", { tipo: cambio.tipo, descripcion: hecho, pedido: descripcion, confirmacion, plan_hash_base: base.plan_hash, plan_hash: nuevo.plan.plan_hash, ms: Math.round(performance.now() - inicio), ...(nuevo.piezas ? { piezas: nuevo.piezas } : {}) });
       if (montadoRef.current) setEstado({ fase: "quieto", ultimo: confirmacion });
     } catch (error) {
       const mensaje = mensajeAjuste(error);

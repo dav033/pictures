@@ -1,8 +1,12 @@
 "use client";
 
+import * as Dialog from "@radix-ui/react-dialog";
 import { useRef, useState } from "react";
-import { Images } from "lucide-react";
+import { Check, Images, X } from "lucide-react";
+import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
 import { DialogoEjemplos } from "@/components/ui/shell/GaleriaEjemplos";
+import { SOLO_GUIADA } from "@/lib/solo-guiada";
+import { FOTOS_BIBLIOTECA, type FotoBiblioteca } from "./fotos-biblioteca";
 import { archivoDeFotoEjemplo, type FotoEjemplo } from "@/lib/referencias-ejemplo/manifiesto";
 
 export const TEXTO_FOTOS_EJEMPLO = "o prueba con una de nuestras fotos";
@@ -36,7 +40,7 @@ type Props = {
    */
   onFoto: (archivo: File) => void;
   onRegistrar: (evento: string, datos?: Record<string, unknown>) => void;
-  onFallo: (foto: FotoEjemplo, causa: unknown) => void;
+  onFallo: (foto: { id: string; titulo: string }, causa: unknown) => void;
 };
 
 /**
@@ -67,6 +71,23 @@ export function FotosEjemploGuiada({ deshabilitado, fotoActual, onFoto, onRegist
     }
   }
 
+  /** Producción: una foto real de la biblioteca entra igual que una subida (mismo `File`, misma validación y lectura). */
+  async function elegirBiblioteca(foto: FotoBiblioteca): Promise<void> {
+    if (cargando) return;
+    onRegistrar("foto.biblioteca.elegir", { id: foto.id, titulo: foto.titulo });
+    setAbierto(false);
+    setCargando(true);
+    try {
+      const [archivo] = await Promise.all([archivoDeFotoBiblioteca(foto), focoDevuelto(botonRef.current)]);
+      setElegida({ id: foto.id, archivo });
+      onFoto(archivo);
+    } catch (causa) {
+      onFallo(foto, causa);
+    } finally {
+      setCargando(false);
+    }
+  }
+
   return (
     <>
       <button
@@ -83,6 +104,15 @@ export function FotosEjemploGuiada({ deshabilitado, fotoActual, onFoto, onRegist
         <Images className="size-4 shrink-0" aria-hidden />
         <span className="min-w-0">{cargando ? "Cargando la foto…" : TEXTO_FOTOS_EJEMPLO}</span>
       </button>
+      {SOLO_GUIADA ? (
+        <DialogoBiblioteca
+          abierto={abierto}
+          onCerrar={() => { onRegistrar("foto.ejemplos.cerrar"); setAbierto(false); }}
+          onElegir={(foto) => void elegirBiblioteca(foto)}
+          elegidaId={elegida && elegida.archivo === fotoActual ? elegida.id : null}
+          deshabilitado={deshabilitado || cargando}
+        />
+      ) : (
       <DialogoEjemplos
         abierto={abierto}
         onCerrar={() => { onRegistrar("foto.ejemplos.cerrar"); setAbierto(false); }}
@@ -90,6 +120,75 @@ export function FotosEjemploGuiada({ deshabilitado, fotoActual, onFoto, onRegist
         elegidaId={elegida && elegida.archivo === fotoActual ? elegida.id : null}
         deshabilitado={deshabilitado || cargando}
       />
+      )}
     </>
+  );
+}
+
+async function archivoDeFotoBiblioteca(foto: FotoBiblioteca): Promise<File> {
+  const respuesta = await fetch(foto.url);
+  if (!respuesta.ok) throw new Error(`No se pudo cargar la foto «${foto.titulo}».`);
+  const blob = await respuesta.blob();
+  const nombre = foto.url.slice(foto.url.lastIndexOf("/") + 1) || `${foto.id}.jpg`;
+  return new File([blob], nombre, { type: blob.type || "image/jpeg" });
+}
+
+/**
+ * Producción (`SOLO_GUIADA`): las fotos reales de la biblioteca Sempertex en lugar de las 10 de ejemplo de la clásica
+ * (pedido del dueño, 2026-10-07). Mismo aspecto que `DialogoEjemplos`.
+ */
+function DialogoBiblioteca({ abierto, onCerrar, onElegir, elegidaId, deshabilitado }: { abierto: boolean; onCerrar: () => void; onElegir: (foto: FotoBiblioteca) => void; elegidaId: string | null; deshabilitado: boolean }) {
+  const focoRetorno = useFocoDeRetorno();
+  return (
+    <Dialog.Root open={abierto} onOpenChange={(valor) => { if (!valor) onCerrar(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="hoja-fondo" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          {...focoRetorno}
+          className="fixed left-1/2 top-1/2 z-[41] max-h-[calc(100dvh-2rem)] w-[min(52rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[1.25rem] border border-borde-suave bg-superficie p-5 shadow-[0_24px_60px_var(--sombra)] outline-none"
+          data-testid="galeria-biblioteca"
+        >
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <Dialog.Title className="text-base font-semibold">Elige una de nuestras decoraciones</Dialog.Title>
+            <Dialog.Close className="ui-icon-button" aria-label="Cerrar">
+              <X className="size-4" aria-hidden="true" />
+            </Dialog.Close>
+          </div>
+          <ul className="galeria mt-3.5" role="list">
+            {FOTOS_BIBLIOTECA.map((foto, indice) => {
+              const marcada = foto.id === elegidaId;
+              return (
+                <li key={foto.id} className="min-w-0">
+                  <button
+                    type="button"
+                    aria-pressed={marcada}
+                    disabled={deshabilitado}
+                    onClick={() => onElegir(foto)}
+                    className="galeria-item w-full disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ animationDelay: `${0.2 + indice * 0.04}s` }}
+                    data-testid={`biblioteca-${foto.id}`}
+                  >
+                    <span className="galeria-foto block">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- fotos estáticas de la biblioteca en public/ */}
+                      <img src={foto.url} alt="" width={360} height={360} loading="lazy" decoding="async" />
+                      {marcada && (
+                        <span className="galeria-check" aria-hidden="true">
+                          <Check className="size-3" strokeWidth={3} />
+                        </span>
+                      )}
+                    </span>
+                    <span className="block min-w-0">
+                      <span className="block text-[0.8125rem] font-medium leading-tight">{foto.titulo}</span>
+                      <span className="mt-0.5 block text-xs text-texto-suave">{foto.evento}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

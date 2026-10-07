@@ -399,7 +399,7 @@ export function lecturaFoto(blueprint: Blueprint): LecturaFoto | null {
     // Las flores de globo que la lectura vio sobre la pieza (flores-pieza.ts): el plan las arma con sus globos.
     const flores = elemento.appearance.flores;
     if (flores && flores.confianza >= CONFIANZA_MINIMA_FLORES) {
-      detalles.push(`con ${flores.cantidad === 1 ? "una flor" : `${flores.cantidad} flores`} de globo ${flores.color_petalo}${flores.color_centro ? ` y centro ${flores.color_centro}` : ""}`);
+      detalles.push(`con ${flores.cantidad === 1 ? "una flor" : `${flores.cantidad} flores`} de globo ${flores.color_petalo}${flores.petalos ? ` de ${flores.petalos} pétalos` : ""}${flores.color_centro ? ` y centro ${flores.color_centro}` : ""}`);
     }
     const globos = globosDe(elemento);
     const { tamanos, frase } = tamanosDe(elemento);
