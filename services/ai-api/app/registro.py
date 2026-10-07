@@ -481,8 +481,11 @@ def carpeta_archivo() -> Path | None:
         return Path(elegida)
     if "pytest" in sys.modules or Path("/.dockerenv").exists():
         return None
-    raiz = Path(__file__).resolve().parents[3]
-    registros = raiz / "data" / "registros"
+    # En la imagen (`/app/app/registro.py`) no hay repositorio encima: BuildKit no crea `/.dockerenv` al construir.
+    padres = Path(__file__).resolve().parents
+    if len(padres) < 4:
+        return None
+    registros = padres[3] / "data" / "registros"
     return registros / "python" if registros.is_dir() else None
 
 
