@@ -116,7 +116,9 @@ const ImagenGeneradaSchema = z.object({ imagen: z.string().regex(/^data:image\/(
 const LIMITE_TURNO_MS = 75_000;
 const LIMITE_PLAN_MS = 75_000;
 const LIMITE_IMAGEN_MS = 90_000;
-const LIMITE_FOTO_MS = 12_000;
+// La lectura tarda ~12 s en local y más en Vercel (arranque en frío + Python del VPS): con 12 s se cortaba siempre en
+// producción, la guiada seguía sin la foto y adivinaba las piezas («un arco» donde había dos columnas; 2026-10-06).
+const LIMITE_FOTO_MS = 60_000;
 
 /** El saludo es fijo, sale al instante y no viaja en el historial: el prompt guiado sabe que ya se hizo. */
 const SALUDO = "¡Hola! Te hago unas preguntas cortas y te muestro decoraciones Sempertex que encajen con tu celebración.\n\n**¿Qué vas a celebrar?**";
@@ -1267,7 +1269,7 @@ async function pedirPlanChat(cuerpo: Record<string, unknown>, signal: AbortSigna
   return { plan, cotizacion, reply };
 }
 
-/** Lee la foto con /api/references/analyze; null si no se pudo o tardó más de 12 s (se sigue sin la lectura). */
+/** Lee la foto con /api/references/analyze; null si no se pudo o tardó más de 60 s (se sigue sin la lectura). */
 async function analizarFoto(imagen: FotoInspiracion, senalTurno: AbortSignal): Promise<z.infer<typeof ReferenciaSchema> | null> {
   const control = new AbortController();
   const cortar = () => control.abort();
