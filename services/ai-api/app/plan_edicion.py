@@ -478,6 +478,19 @@ class EdicionForma(_Estricto):
     forma: str | None = Field(min_length=1, max_length=MAX_LARGO_FORMA)
 
 
+class EdicionFlores(_Estricto):
+    """Pone (o, con ``None``, quita) las flores de globo de una pieza (``flores-pieza.ts``, 2026-10-07).
+
+    Aquí solo se valida la forma del mensaje; el adorno se valida con el plan entero (``_validar_plan``, el contrato
+    de ``flores``) y sus globos los cuenta y cotiza la resolución que sigue (``app/flores_pieza.py``). Cualquier pieza
+    las admite: no toca materiales, armados ni patrones, así que una pieza armada por un motor conserva su armado.
+    """
+
+    accion: Literal["flores"]
+    estructura_id: Identificador
+    flores: dict[str, object] | None
+
+
 EdicionPlan = (
     EdicionMaterial
     | EdicionReparto
@@ -492,6 +505,7 @@ EdicionPlan = (
     | EdicionArmadoArcoOrganico
     | EdicionForma
     | EdicionPropiedades
+    | EdicionFlores
 )
 Edicion = Annotated[EdicionPlan, Field(discriminator="accion")]
 
@@ -1429,6 +1443,11 @@ def editar_plan(
         )
     elif isinstance(edicion, EdicionForma):
         _fijar_forma(estructura, edicion)
+    elif isinstance(edicion, EdicionFlores):
+        if edicion.flores is None:
+            estructura.pop("flores", None)
+        else:
+            estructura["flores"] = copy.deepcopy(edicion.flores)
     elif isinstance(edicion, EdicionPropiedades):
         if "forma" in edicion.model_fields_set:
             _fijar_forma(
@@ -1480,6 +1499,8 @@ def editar_plan(
             EdicionArmadoArcoOrganico,
             # La forma elegida no es un armado y no toca globos: una guirnalda armada la conserva igual.
             EdicionForma,
+            # Las flores tampoco: son un adorno encima de la pieza, el armado de la guirnalda sigue cabiendo.
+            EdicionFlores,
         ),
     ):
         avisos += _revisar_armado_guirnalda(

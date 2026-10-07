@@ -112,6 +112,14 @@ from app.armado_guirnalda import validar as validar_armado_guirnalda
 from app.catalog import purchase_color_for_unsold
 from app.colores_titulo import WINE_TITLE
 from app import conteo_foto
+from app.flores_pieza import (
+    ADORNO_FLOR,
+    PULGADAS_FLOR,
+    elegir_talla,
+    es_linea_de_flor,
+    lineas_del_cuerpo,
+    partes_de_flores,
+)
 from app.patron_de_la_foto import mezcla_del_motor
 from app.supuestos import agregar_supuesto, supuesto
 from app.merma import MERMA as _MERMA_COMPARTIDA
@@ -1898,6 +1906,14 @@ def _ids_for_plan(
                 product_ids.add(product_id)
             if variant_id:
                 variant_ids.add(variant_id)
+        # Los globos de las flores de la pieza (adorno): sus productos también se leen del catálogo.
+        flores = structure.get("flores")
+        if isinstance(flores, Mapping):
+            for parte in ("petalo", "centro"):
+                material = flores.get(parte)
+                product_id = _text(material.get("product_id")) if isinstance(material, Mapping) else None
+                if product_id:
+                    product_ids.add(product_id)
     allowlist_variants = {variant for entry in allowlist for variant in entry.variant_ids}
     return sorted(product_ids), sorted(variant_ids | allowlist_variants)
 
@@ -2478,9 +2494,10 @@ def _physical_warnings(
         extent = (_number(structure.get("eje_m")) or 0.0) * repeticiones
         if extent <= 0:
             continue
+        # Solo el cuerpo: las flores (adorno) van encima de la banda y no son globos por metro de la pieza.
         balloons = sum(
             _integer(line.get("unidades")) or 0
-            for line in _mappings(structure.get("lineas"))
+            for line in lineas_del_cuerpo(_mappings(structure.get("lineas")))
             if _number(line.get("diam_pulg")) is not None
         )
         if balloons <= 0:
@@ -3422,7 +3439,9 @@ def _reference_color_substitutions(
     return substitutions
 
 
-def _mix_real(lines: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+def _mix_real(all_lines: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+    # La mezcla real es la del cuerpo de la pieza: los globos de sus flores (adorno) no cambian cómo está armada.
+    lines = lineas_del_cuerpo(all_lines)
     total = sum(_integer(line.get("unidades")) or 0 for line in lines)
     grouped: dict[tuple[object, object], dict[str, object]] = {}
     for line in lines:
@@ -3709,6 +3728,98 @@ def _color_warnings(
     return warnings
 
 
+def _flower_lines(
+    structure: Mapping[str, object],
+    candidates_by_product: Mapping[str, Sequence[Candidate]],
+    candidate_by_variant: Mapping[str, Candidate],
+    allowlist: Mapping[str, set[str]],
+) -> tuple[list[dict[str, object]], list[dict[str, object]], list[str]]:
+    """Las líneas de las flores de globo de una pieza (``flores``), lo que no se pudo cubrir y sus avisos.
+
+    Cuántos globos lleva cada parte lo dice ``flores_pieza.partes_de_flores`` (por pieza y por repeticiones) y qué
+    variante los sirve ``flores_pieza.elegir_talla``: R-5 del producto que el plan nombra, dentro de la allowlist; sin
+    R-5, la talla redonda más cercana del mismo producto con ``flores_talla_sustituida`` (y la sustitución en la línea,
+    como cualquier otra), y sin ninguna, ``sin_cobertura`` y ``flores_sin_cobertura``. Cada decisión queda en el
+    registro (``_decidir``).
+    """
+    flores = structure.get("flores")
+    if not isinstance(flores, Mapping):
+        return [], [], []
+    structure_id = _text(structure.get("estructura_id")) or ""
+    name = _text(structure.get("nombre")) or structure_id
+    repeats = max(1, _integer(structure.get("repeticiones")) or 1)
+    lines: list[dict[str, object]] = []
+    uncovered: list[dict[str, object]] = []
+    warnings: list[str] = []
+    decided: list[dict[str, object]] = []
+    for parte in partes_de_flores(flores, repeats):
+        requested_candidate = candidate_by_variant.get(parte.product_id)
+        canonical_product = (
+            parte.product_id
+            if parte.product_id in candidates_by_product
+            else requested_candidate.product_id
+            if requested_candidate is not None
+            else parte.product_id
+        )
+        permitted = allowlist.get(canonical_product) or allowlist.get(parte.product_id) or set()
+        options = [
+            candidate
+            for candidate in candidates_by_product.get(canonical_product, ())
+            if candidate.variant_id in permitted
+        ]
+        talla = elegir_talla(
+            options,
+            parte.color,
+            parte.unidades,
+            lambda candidate, quantity: _package_cost(candidate, quantity),
+            _normalize,
+        )
+        if talla is None:
+            uncovered.append(
+                {
+                    "estructura_id": structure_id,
+                    "product_id": parte.product_id,
+                    "tamano": f"R-{_format_number(PULGADAS_FLOR)}",
+                }
+            )
+            warnings.append(
+                f"flores_sin_cobertura:{structure_id}: {name}: el catálogo no tiene globos redondos de"
+                f" {parte.color or 'ese producto'} para {'los pétalos' if parte.parte == 'petalo' else 'el centro'}"
+                " de las flores; no se compran."
+            )
+            decided.append({"parte": parte.parte, "product_id": parte.product_id, "variant_id": None})
+            continue
+        line = _line(
+            structure_id, talla.candidato, parte.unidades, parte.color, PULGADAS_FLOR
+        )
+        line["adorno"] = ADORNO_FLOR
+        lines.append(line)
+        if not talla.exacta:
+            warnings.append(
+                f"flores_talla_sustituida:{structure_id}: {name}: no hay R-{_format_number(PULGADAS_FLOR)}"
+                f" de {parte.color or 'ese globo'} en el catálogo; las flores van con"
+                f" {talla.candidato.size_code or 'la talla más cercana'}."
+            )
+        decided.append(
+            {
+                "parte": parte.parte,
+                "product_id": parte.product_id,
+                "variant_id": talla.candidato.variant_id,
+                "talla": talla.candidato.size_code,
+                "exacta": talla.exacta,
+                "unidades": parte.unidades,
+            }
+        )
+    _decidir(
+        "plan.flores",
+        "globos y talla de las flores de una pieza",
+        {"estructura_id": structure_id, "partes": decided},
+        "flores_pieza.partes_de_flores (por pieza y repeticiones) y elegir_talla (R-5 o la más cercana)",
+        entrada={"flores": dict(flores), "repeticiones": repeats},
+    )
+    return lines, uncovered, warnings
+
+
 def _resolve_structures(
     plan: Mapping[str, object],
     candidates_by_product: Mapping[str, Sequence[Candidate]],
@@ -3911,6 +4022,19 @@ def _resolve_structures(
                 balloons=geometric,
             )
         )
+        # Flores de globo (adorno, ``app/flores_pieza.py``): sus líneas van con las del cuerpo para comprarse por
+        # paquete con ellas, marcadas para que la mezcla real, la densidad y la puerta física no las cuenten.
+        flower_lines, flower_uncovered, flower_warnings = _flower_lines(
+            raw_structure, candidates_by_product, candidate_by_variant, allowlist
+        )
+        lines.extend(flower_lines)
+        uncovered.extend(flower_uncovered)
+        warnings.extend(flower_warnings)
+        for flower_line in flower_lines:
+            flower_substitution = flower_line.get("sustitucion")
+            if isinstance(flower_substitution, dict):
+                substitutions.append({"estructura_id": structure_id, **flower_substitution})
+        total_units = sum(_integer(line.get("unidades")) or 0 for line in lines)
         raw_assumptions = plan.get("supuestos", [])
         assumptions = (
             [
@@ -4039,6 +4163,8 @@ def _reoptimize_presentations(
                     _number(line.get("diam_pulg")),
                 )
                 rebuilt["sustitucion"] = line.get("sustitucion")
+                if es_linea_de_flor(line):
+                    rebuilt["adorno"] = ADORNO_FLOR
                 new_lines.append(rebuilt)
                 purchase["capacidad"] = int(cast(int, purchase["capacidad"])) - assigned
                 remaining -= assigned
@@ -4314,7 +4440,7 @@ def _plan_density(
     for structure in structures:
         balloons[str(structure.get("estructura_id"))] = sum(
             _integer(line.get("unidades")) or 0
-            for line in _mappings(structure.get("lineas"))
+            for line in lineas_del_cuerpo(_mappings(structure.get("lineas")))
             if _number(line.get("diam_pulg")) is not None
         )
     dominant = inputs[0]
@@ -6052,7 +6178,8 @@ def compras_de_estructura(
         _axis, demands, _unplaced = _despiece_with_plan_sizes(measured, completed)
     except PlanResolutionError:
         return {}
-    return _read_back_purchases(completed, demands, lineas)
+    # Las líneas de las flores (adorno) no son de ninguna demanda del cuerpo: se leerían como «línea sobrante».
+    return _read_back_purchases(completed, demands, lineas_del_cuerpo(lineas))
 
 
 @dataclass(frozen=True, slots=True)
@@ -6594,7 +6721,7 @@ def _armados_guirnalda_resueltos(
 ) -> list[dict[str, object]]:
     """``armados_guirnalda``: one per structure that carries an assembly."""
     lines = {
-        _text(structure.get("estructura_id")): _mappings(structure.get("lineas"))
+        _text(structure.get("estructura_id")): lineas_del_cuerpo(_mappings(structure.get("lineas")))
         for structure in resolved_structures
     }
     resolved: list[dict[str, object]] = []

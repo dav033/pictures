@@ -2748,6 +2748,64 @@
                       "aspecto"
                     ],
                     "additionalProperties": false
+                  },
+                  "flores": {
+                    "type": "object",
+                    "properties": {
+                      "cantidad": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 24
+                      },
+                      "petalos": {
+                        "type": "integer",
+                        "minimum": 3,
+                        "maximum": 6
+                      },
+                      "petalo": {
+                        "type": "object",
+                        "properties": {
+                          "product_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 160
+                          },
+                          "color": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          }
+                        },
+                        "required": [
+                          "product_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "centro": {
+                        "type": "object",
+                        "properties": {
+                          "product_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 160
+                          },
+                          "color": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          }
+                        },
+                        "required": [
+                          "product_id"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "cantidad",
+                      "petalo"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -7328,6 +7386,64 @@
                       "aspecto"
                     ],
                     "additionalProperties": false
+                  },
+                  "flores": {
+                    "type": "object",
+                    "properties": {
+                      "cantidad": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 24
+                      },
+                      "petalos": {
+                        "type": "integer",
+                        "minimum": 3,
+                        "maximum": 6
+                      },
+                      "petalo": {
+                        "type": "object",
+                        "properties": {
+                          "product_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 160
+                          },
+                          "color": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          }
+                        },
+                        "required": [
+                          "product_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "centro": {
+                        "type": "object",
+                        "properties": {
+                          "product_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 160
+                          },
+                          "color": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          }
+                        },
+                        "required": [
+                          "product_id"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "cantidad",
+                      "petalo"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -9340,6 +9456,12 @@
                     "type": "null"
                   }
                 ]
+              },
+              "adorno": {
+                "type": "string",
+                "enum": [
+                  "flor"
+                ]
               }
             },
             "required": [
@@ -9691,6 +9813,12 @@
                     {
                       "type": "null"
                     }
+                  ]
+                },
+                "adorno": {
+                  "type": "string",
+                  "enum": [
+                    "flor"
                   ]
                 }
               },
