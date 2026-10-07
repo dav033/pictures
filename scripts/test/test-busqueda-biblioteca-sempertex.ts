@@ -57,4 +57,42 @@ const graduacion = buscarDecoracionesSempertex({ evento: "graduación", tematica
 const comparables = graduacion.map((idea) => normalizarBusqueda(idea.titulo).split(" ").filter((palabra) => palabra !== "en" && palabra !== "de").join(" "));
 assert.equal(new Set(comparables).size, comparables.length, `Sin títulos duplicados: ${graduacion.map((idea) => idea.titulo).join(" | ")}`);
 
+// Fotos oficiales de Sempertex (deco-real-21…31): cada temática nueva se encuentra por su evento y por sus palabras.
+const ids = (ideas: ReturnType<typeof buscarDecoracionesSempertex>, coincidencia?: "exacta" | "cercana") => ideas.filter((idea) => !coincidencia || idea.coincidencia === coincidencia).map((idea) => idea.id);
+const temporada: Array<[{ evento: string; edad?: number; tematica: string }, RegExp]> = [
+  [{ evento: "Halloween", tematica: "halloween" }, /deco-real-23-sombrero-bruja/],
+  [{ evento: "fiesta", tematica: "noche de brujas" }, /deco-real-23-sombrero-bruja/],
+  [{ evento: "San Valentín", tematica: "romántico" }, /deco-real-22-guirnalda-san-valentin/],
+  [{ evento: "amor y amistad", tematica: "corazones rojos" }, /deco-real-22-guirnalda-san-valentin/],
+  [{ evento: "Día de la Madre", tematica: "coral" }, /deco-real-25-guirnalda-dia-de-la-madre/],
+  [{ evento: "Navidad", tematica: "verde y dorado" }, /deco-real-27-aro-navideno/],
+  [{ evento: "novena", tematica: "navideña" }, /deco-real-27-aro-navideno/],
+  [{ evento: "cumpleaños", edad: 8, tematica: "fútbol" }, /deco-real-3[01]-/],
+];
+for (const [consulta, patron] of temporada) {
+  const ideas = buscarDecoracionesSempertex(consulta);
+  assert.ok(ideas[0]?.coincidencia === "exacta" && ids(ideas, "exacta").some((id) => patron.test(id)), `${JSON.stringify(consulta)}: la idea de su temporada es exacta (${ids(ideas).join(" | ")}).`);
+}
+const flores = ids(buscarDecoracionesSempertex({ evento: "cumpleaños", edad: 5, tematica: "flores" }), "exacta");
+assert.ok(["deco-real-21-", "deco-real-26-", "deco-real-29-"].every((prefijo) => flores.some((id) => id.startsWith(prefijo))), `Flores: arreglos de globos para modelar (${flores.join(" | ")}).`);
+const madre = ids(buscarDecoracionesSempertex({ evento: "Día de la Madre", tematica: "flores" }), "exacta");
+assert.ok(madre.some((id) => id.startsWith("deco-real-25-")) && madre.some((id) => id.startsWith("deco-real-21-")), `Día de la Madre con flores: la guirnalda y los arreglos (${madre.join(" | ")}).`);
+assert.ok(ids(buscarDecoracionesSempertex({ evento: "boda", tematica: "blanco y dorado" }), "exacta").some((id) => id.startsWith("deco-real-28-")), "Blanco y dorado: el aro blanco, dorado y nude.");
+// Una idea de motivo (temporada o fútbol) no aparece si el cliente no nombra el motivo.
+const MOTIVO = /deco-real-(?:22|23|25|27|30|31)-/;
+for (const consulta of [{ evento: "cumpleaños", edad: 35, tematica: "negro y dorado" }, { evento: "graduación", tematica: "elegante blanco y negro" }, { evento: "graduación", tematica: "blanco y negro" }, { evento: "Fiesta de divorcio", tematica: "divertido, negro y fucsia" }, { evento: "cumpleaños", edad: 6, tematica: "Infantil naranja y negro" }, { evento: "boda", tematica: "romántico rosa y dorado" }]) {
+  const ideas = buscarDecoracionesSempertex(consulta);
+  assert.ok(!ideas.some((idea) => MOTIVO.test(idea.id)), `${JSON.stringify(consulta)}: sin ideas de un motivo no pedido (${ids(ideas).join(" | ")}).`);
+}
+// Toda temática que se ofrece, elegida tal cual, muestra sus decoraciones (las de motivo también: su temática lo nombra).
+for (const tematica of tematicasDisponibles()) {
+  const evento = bibliotecaVisible().find((decoracion) => decoracion.tematica === tematica)!.eventos[0]!;
+  const ideas = buscarDecoracionesSempertex({ evento, tematica });
+  assert.ok(ideas.some((idea) => idea.tematica === tematica && idea.coincidencia === "exacta"), `«${tematica}» (${evento}): la temática ofrecida encuentra sus decoraciones (${ids(ideas).join(" | ")}).`);
+}
+for (const [evento, patron] of [["Halloween", /halloween/i], ["San Valentín", /san valent/i], ["Día de la Madre", /madre/i], ["Navidad", /navidad/i], ["Amor y amistad", /san valent/i], ["novena", /navidad/i]] as const) {
+  assert.ok(tematicasDisponibles(evento).some((tematica) => patron.test(tematica)), `${evento}: su temática se ofrece (${tematicasDisponibles(evento).join(" | ")}).`);
+}
+assert.ok(!tematicasDisponibles("cumpleaños").some((tematica) => /navidad|san valent|madre/i.test(tematica)), `Cumpleaños: sin temáticas de otra temporada (${tematicasDisponibles("cumpleaños").join(" | ")}).`);
+
 console.log("test-busqueda-biblioteca-sempertex: solo decoraciones reales, temáticas con decoración, exactas y cercanas correctas.");

@@ -2,7 +2,22 @@ import { z } from "zod";
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 
 const FotoSchema = z.object({ url: z.union([z.url(), z.string().regex(/^\/[\w./-]+$/)]), fuente: z.string().trim().min(1), licencia: z.enum(["sempertex_propia", "pexels", "ejemplo_sin_licencia", "referencia_web_sin_licencia"]) }).strict();
-const MaterialSchema = z.object({ variantId: z.string().min(1), sku: z.string().nullable(), cantidad: z.number().int().positive(), nota: z.string().optional() }).strict();
+/**
+ * De dónde sale la cantidad de un material: «plan_python» (la resolvió el plan de Python para la pieza), «estimado_foto»
+ * (contada a mano sobre la foto, porque Python no modela esa parte: flores, esculturas, impresos sueltos…) o
+ * «plan_python_y_foto» (suma de las dos). Sin el campo, la cantidad viene del plan de Python (biblioteca hecha por script).
+ */
+export const ORIGENES_CANTIDAD = ["plan_python", "estimado_foto", "plan_python_y_foto"] as const;
+const MaterialSchema = z.object({
+  variantId: z.string().min(1), sku: z.string().nullable(), cantidad: z.number().int().positive(),
+  /** «Producto del catálogo — variante · código de tamaño · color en palabras de cliente»: de aquí sale el nombre que ve el cliente. */
+  nota: z.string().optional(),
+  origenCantidad: z.enum(ORIGENES_CANTIDAD).optional(),
+  /** Cómo se llegó a la cantidad («estimado a partir de la foto: 12 flores negras de 5 pétalos»). Trazabilidad; no se muestra. */
+  detalleCantidad: z.string().trim().min(1).optional(),
+}).strict().refine((material) => material.origenCantidad === undefined || material.origenCantidad === "plan_python" || /estimado a partir de la foto/i.test(material.detalleCantidad ?? ""), {
+  message: "Una cantidad contada en la foto lo dice en detalleCantidad («estimado a partir de la foto…»).",
+});
 const PasoSchema = z.object({ orden: z.number().int().positive(), texto: z.string().min(1), foto: z.string().optional(), videoSeg: z.number().positive().optional() }).strict();
 const BaseSchema = z.object({
   id: z.string().regex(/^(deco|ej)-[a-z0-9-]+$/),
@@ -38,4 +53,5 @@ export const ProveedorSempertexSchema = z.discriminatedUnion("origen", [
 ]);
 
 export type DecoracionSempertex = z.infer<typeof DecoracionSempertexSchema>;
+export type OrigenCantidad = (typeof ORIGENES_CANTIDAD)[number];
 export type ProveedorSempertex = z.infer<typeof ProveedorSempertexSchema>;

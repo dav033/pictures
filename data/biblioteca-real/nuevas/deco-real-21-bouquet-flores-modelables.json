@@ -1,0 +1,138 @@
+{
+  "id": "deco-real-21-bouquet-flores-modelables",
+  "titulo": "Arreglo de flores con globos para modelar",
+  "tematica": "Flores naranja, rosa y durazno",
+  "eventos": [
+    "Día de la Madre",
+    "Cumpleaños",
+    "Fiesta de primavera"
+  ],
+  "edad": {
+    "min": 1,
+    "max": 80
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-21-bouquet-flores-modelables.jpg",
+      "fuente": "sempertex-01.jpg",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "bouquet",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594294776103",
+      "sku": "B2B-20001236",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Tubito Fashion Naranja — T260 / PAQUETE X 20 · T260 · naranja",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (2 para los 4 pétalos de la flor grande y 3 para las flores pequeñas naranjas)"
+    },
+    {
+      "variantId": "46594279702823",
+      "sku": "B2B-20001205",
+      "cantidad": 4,
+      "nota": "B2b Globo Latex Tubito Fashion Fucsia — T260 / PAQUETE X 20 · T260 · fucsia",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (pétalos de las dos flores fucsia y el centro de la flor naranja)"
+    },
+    {
+      "variantId": "47466190864679",
+      "sku": "B2B-20017750",
+      "cantidad": 3,
+      "nota": "B2b Globo Latex Tubito Pastel Mate Rosado — T260 / PAQUETE X 20 · T260 · rosa claro",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (pétalos de las flores rosa claro)"
+    },
+    {
+      "variantId": "46594301690151",
+      "sku": "B2B-20014543",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Tubito Fashion Eucalipto — T260 / PAQUETE X 20 · T260 · verde eucalipto",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (3 tallos y hojas de la base)"
+    },
+    {
+      "variantId": "46594234351911",
+      "sku": "B2B-20000442",
+      "cantidad": 18,
+      "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-5 / PAQUETE X 20 · R-5 · fucsia",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (unas 16 bolitas de la «frambuesa» de la punta y centros de flor)"
+    },
+    {
+      "variantId": "46594260795687",
+      "sku": "B2B-20012262",
+      "cantidad": 11,
+      "nota": "B2b Globo Latex Redondo Pastel Mate Rosado — R-5 / PAQUETE X 20 · R-5 · rosa claro",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (botones de la rama izquierda y centro de la flor grande)"
+    },
+    {
+      "variantId": "46594210890023",
+      "sku": "B2B-20000482",
+      "cantidad": 11,
+      "nota": "B2b Globo Latex Redondo Fashion Durazno — R-5 / PAQUETE X 20 · R-5 · durazno",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (botones de la rama derecha)"
+    },
+    {
+      "variantId": "46594210955559",
+      "sku": "B2B-20000619",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Redondo Fashion Durazno — R-9 / PAQUETE X 12 · R-9 · durazno",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (4 dentro de los pétalos de la flor grande y 4 de relleno bajo ella)"
+    },
+    {
+      "variantId": "46594234417447",
+      "sku": "B2B-20000579",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-9 / PAQUETE X 12 · R-9 · fucsia",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (relleno bajo la flor grande)"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Prepara una maceta o base pesada (por ejemplo con arena o un bloque de espuma floral dentro) para que el arreglo no se vuelque."
+    },
+    {
+      "orden": 2,
+      "texto": "Infla los globos para modelar verdes dejando una punta sin inflar, tuércelos para hacer tres tallos y clávalos en la base: uno al centro y dos abiertos hacia los lados."
+    },
+    {
+      "orden": 3,
+      "texto": "Arma la flor grande: con dos globos para modelar naranjas forma cuatro lazos grandes, mete en cada lazo un globo durazno de 9 pulgadas y pon en el centro un globo rosa claro pequeño."
+    },
+    {
+      "orden": 4,
+      "texto": "Haz las flores pequeñas torciendo los globos para modelar fucsia, rosa claro y naranja en pétalos, y une en el centro de cada una un globito de otro color."
+    },
+    {
+      "orden": 5,
+      "texto": "Forma la «frambuesa» de la punta juntando unos 16 globitos fucsia de 5 pulgadas, y amarra los globitos rosa claro y durazno de dos en dos a lo largo de las ramas laterales."
+    },
+    {
+      "orden": 6,
+      "texto": "Fija la flor grande al frente, rellena abajo con las flores pequeñas y los globos durazno sueltos, y revisa que todo quede firme antes de entregarlo."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#e8a274",
+    "#fb7b08",
+    "#f85173",
+    "#fcd0d1",
+    "#b3a47d"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

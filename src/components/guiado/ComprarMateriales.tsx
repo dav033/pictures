@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ExternalLink, MapPin } from "lucide-react";
 import { z } from "zod";
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
-import { nombreMaterial } from "./TarjetaEleccion";
+import { AVISO_CONTADA_EN_FOTO, cantidadContadaEnFoto, nombreMaterial, textoCantidad } from "./TarjetaEleccion";
 
 const TIENDA = "https://www.sempertex.com";
 const ImagenesSchema = z.object({ imagenes: z.record(z.string(), z.string()) }).strict();
@@ -42,9 +42,10 @@ export function ComprarMateriales({ decoracion, onDistribuidor }: { decoracion: 
           {imagenes[material.variantId] ? <Image src={imagenes[material.variantId]!} alt="" fill sizes="44px" unoptimized loading="eager" className="object-contain" /> : <span className="size-5 rounded-full bg-acento-suave" />}
         </span>
         <span className="flex-1 text-sm">{nombreMaterial(material.nota) ?? "Globos"}</span>
-        <span className="text-sm font-semibold tabular-nums">{material.cantidad}</span>
+        <span className="text-sm font-semibold tabular-nums">{textoCantidad(material)}</span>
       </li>)}
     </ul>
+    {decoracion.materiales.some(cantidadContadaEnFoto) && <p className="mt-2 text-xs text-texto-suave">{AVISO_CONTADA_EN_FOTO}</p>}
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
       <a href={enlace} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-acento px-4 py-3 text-sm font-semibold text-sobre-acento transition-colors hover:bg-acento-hover">
         <ExternalLink className="size-4" aria-hidden />{kit ? "Ver el kit en la tienda en línea" : "Ir a la tienda en línea"}

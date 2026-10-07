@@ -1,0 +1,363 @@
+{
+  "id": "nueva-sempertex-09",
+  "fuente": "sempertex-09.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-29-arco-link-o-loon-fucsia-tulipanes.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "214e001c-6961-45f6-88f9-1fd9737b4bed",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1.2982
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "Pink Balloon Arch with Flowers",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Continuous arch of pink balloons with stacked bases, small cream balloon string trim, and twisted balloon flower bouquet accent on the right foot.",
+          "reference_bbox": {
+            "x": 0.118,
+            "y": 0.047,
+            "width": 0.735,
+            "height": 0.9109999999999999
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "bright pink",
+              "cream",
+              "yellow",
+              "green"
+            ],
+            "measured_colors": [
+              {
+                "color": "crema",
+                "share": 0.6328
+              },
+              {
+                "color": "rosado",
+                "share": 0.1559
+              },
+              {
+                "color": "amarillo",
+                "share": 0.039
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall asymmetrical arch, spanning the full width, standing on the floor",
+            "composition": "80% bright pink balloons forming the arch and base clusters, 10% cream small balloons forming string details and bow, 10% yellow and green twisting balloons forming flower bouquet accents on the right.",
+            "conteo": {
+              "globos_visibles": 55,
+              "exacto": false,
+              "estimado_total": 70,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.35
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.15
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "armado_guirnalda": {
+              "soporte": "piso",
+              "forma": "u_invertida",
+              "puntos_de_anclaje": 2,
+              "sentido_curva": null,
+              "flecha_relativa": null,
+              "desnivel_relativo": 0.209,
+              "racimos_visibles": 25,
+              "colores_por_racimo": [
+                "rosado",
+                "crema"
+              ],
+              "relleno": null,
+              "remates": [],
+              "confianza": 0.9
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "107",
+                "familia": "pastelDusk",
+                "nombre": "Crema",
+                "nombre_completo": "Pastel Dusk Crema",
+                "parte": 0.62,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "arco",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "media"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary decorative focus of the image.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "Pink balloon arch decorated with small cream beaded garland and flower accents",
+        "density": "moderate",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "pink",
+          "cream",
+          "yellow",
+          "green"
+        ],
+        "priority": [
+          "pink",
+          "cream",
+          "yellow",
+          "green"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "785591087b4964bbcfa5ef346488aa8cfee8a5cb69458d8135138324616602bd",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 740,
+            "height": 570
+          },
+          "processed": {
+            "width": 740,
+            "height": 570
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "arco",
+          "croquis": {
+            "forma": "anillo de arco",
+            "parteDeLaCaja": 0.4697
+          },
+          "pixeles": {
+            "medidos": 66542,
+            "deLaCaja": 135720
+          },
+          "colores": [
+            {
+              "hex": "#ffffff",
+              "parte": 0.62,
+              "pixeles": 41258,
+              "cruce": {
+                "hex": "#ffffff",
+                "candidatas": [
+                  {
+                    "codigo": "107",
+                    "nombre": "Crema",
+                    "nombreCompleto": "Pastel Dusk Crema",
+                    "nombreEn": "dusty pastel cream",
+                    "pms": "663",
+                    "acabado": "pastel dusk matte",
+                    "hexGlobo": "#ede3dc",
+                    "deltaE": 10.5,
+                    "distancia": 9.7,
+                    "tono": 127.6,
+                    "razonCroma": 0
+                  },
+                  {
+                    "codigo": "873",
+                    "nombre": "Perla Crema",
+                    "nombreCompleto": "Silk Perla Crema",
+                    "nombreEn": "pearlescent cream",
+                    "pms": "420",
+                    "acabado": "pearlescent satin",
+                    "hexGlobo": "#d8d3c8",
+                    "deltaE": 16.5,
+                    "distancia": 13.7,
+                    "tono": 155,
+                    "razonCroma": 0
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#fc82ab",
+              "parte": 0.1631,
+              "pixeles": 10851,
+              "cruce": {
+                "hex": "#fc82ab",
+                "candidatas": [
+                  {
+                    "codigo": "412",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Satín Fucsia",
+                    "nombreEn": "satin pink",
+                    "pms": "699",
+                    "acabado": "satin",
+                    "hexGlobo": "#e581a4",
+                    "deltaE": 9,
+                    "distancia": 3.6,
+                    "tono": 1.9,
+                    "razonCroma": 1.2
+                  },
+                  {
+                    "codigo": "212",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Neón Fucsia",
+                    "nombreEn": "neon hot pink",
+                    "pms": "226",
+                    "acabado": "bright matte",
+                    "hexGlobo": "#ea5190",
+                    "deltaE": 17.8,
+                    "distancia": 7.6,
+                    "tono": 1.8,
+                    "razonCroma": 0.8
+                  },
+                  {
+                    "codigo": "011",
+                    "nombre": "Rosa",
+                    "nombreCompleto": "Fashion Rosa",
+                    "nombreEn": "matte pink",
+                    "pms": "204",
+                    "acabado": "matte",
+                    "hexGlobo": "#e04b87",
+                    "deltaE": 18.7,
+                    "distancia": 8.1,
+                    "tono": 0.8,
+                    "razonCroma": 0.8
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#ee456f",
+              "parte": 0.1369,
+              "pixeles": 9111,
+              "cruce": {
+                "hex": "#ee456f",
+                "candidatas": [
+                  {
+                    "codigo": "012",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Fashion Fucsia",
+                    "nombreEn": "matte hot pink",
+                    "pms": "205",
+                    "acabado": "matte",
+                    "hexGlobo": "#e44a80",
+                    "deltaE": 11.7,
+                    "distancia": 9.6,
+                    "tono": 9.3,
+                    "razonCroma": 1.1
+                  },
+                  {
+                    "codigo": "512",
+                    "nombre": "Fucsia",
+                    "nombreCompleto": "Metal Fucsia",
+                    "nombreEn": "metallic hot pink",
+                    "pms": "219",
+                    "acabado": "metallic sheen",
+                    "hexGlobo": "#e3437f",
+                    "deltaE": 12.5,
+                    "distancia": 11.2,
+                    "tono": 10.3,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "011",
+                    "nombre": "Rosa",
+                    "nombreCompleto": "Fashion Rosa",
+                    "nombreEn": "matte pink",
+                    "pms": "204",
+                    "acabado": "matte",
+                    "hexGlobo": "#e04b87",
+                    "deltaE": 16.5,
+                    "distancia": 14.1,
+                    "tono": 13.6,
+                    "razonCroma": 1.1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Se dejaron fuera 2 colores que ocupaban menos del 6 % de la pieza (reflejos, bordes o fondo)."
+          ]
+        }
+      ]
+    }
+  }
+}

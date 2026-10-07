@@ -2833,5 +2833,1558 @@
     ],
     "fotoRepresentativa": true,
     "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-21-bouquet-flores-modelables",
+    "titulo": "Arreglo de flores con globos para modelar",
+    "tematica": "Flores naranja, rosa y durazno",
+    "eventos": [
+      "Día de la Madre",
+      "Cumpleaños",
+      "Fiesta de primavera"
+    ],
+    "edad": {
+      "min": 1,
+      "max": 80
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-21-bouquet-flores-modelables.jpg",
+        "fuente": "sempertex-01.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "bouquet",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594294776103",
+        "sku": "B2B-20001236",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Tubito Fashion Naranja — T260 / PAQUETE X 20 · T260 · naranja",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (2 para los 4 pétalos de la flor grande y 3 para las flores pequeñas naranjas)"
+      },
+      {
+        "variantId": "46594279702823",
+        "sku": "B2B-20001205",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Tubito Fashion Fucsia — T260 / PAQUETE X 20 · T260 · fucsia",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (pétalos de las dos flores fucsia y el centro de la flor naranja)"
+      },
+      {
+        "variantId": "47466190864679",
+        "sku": "B2B-20017750",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Tubito Pastel Mate Rosado — T260 / PAQUETE X 20 · T260 · rosa claro",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (pétalos de las flores rosa claro)"
+      },
+      {
+        "variantId": "46594301690151",
+        "sku": "B2B-20014543",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Tubito Fashion Eucalipto — T260 / PAQUETE X 20 · T260 · verde eucalipto",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (3 tallos y hojas de la base)"
+      },
+      {
+        "variantId": "46594234351911",
+        "sku": "B2B-20000442",
+        "cantidad": 18,
+        "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-5 / PAQUETE X 20 · R-5 · fucsia",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (unas 16 bolitas de la «frambuesa» de la punta y centros de flor)"
+      },
+      {
+        "variantId": "46594260795687",
+        "sku": "B2B-20012262",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Rosado — R-5 / PAQUETE X 20 · R-5 · rosa claro",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (botones de la rama izquierda y centro de la flor grande)"
+      },
+      {
+        "variantId": "46594210890023",
+        "sku": "B2B-20000482",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Fashion Durazno — R-5 / PAQUETE X 20 · R-5 · durazno",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (botones de la rama derecha)"
+      },
+      {
+        "variantId": "46594210955559",
+        "sku": "B2B-20000619",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Durazno — R-9 / PAQUETE X 12 · R-9 · durazno",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (4 dentro de los pétalos de la flor grande y 4 de relleno bajo ella)"
+      },
+      {
+        "variantId": "46594234417447",
+        "sku": "B2B-20000579",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-9 / PAQUETE X 12 · R-9 · fucsia",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (relleno bajo la flor grande)"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Prepara una maceta o base pesada (por ejemplo con arena o un bloque de espuma floral dentro) para que el arreglo no se vuelque."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos para modelar verdes dejando una punta sin inflar, tuércelos para hacer tres tallos y clávalos en la base: uno al centro y dos abiertos hacia los lados."
+      },
+      {
+        "orden": 3,
+        "texto": "Arma la flor grande: con dos globos para modelar naranjas forma cuatro lazos grandes, mete en cada lazo un globo durazno de 9 pulgadas y pon en el centro un globo rosa claro pequeño."
+      },
+      {
+        "orden": 4,
+        "texto": "Haz las flores pequeñas torciendo los globos para modelar fucsia, rosa claro y naranja en pétalos, y une en el centro de cada una un globito de otro color."
+      },
+      {
+        "orden": 5,
+        "texto": "Forma la «frambuesa» de la punta juntando unos 16 globitos fucsia de 5 pulgadas, y amarra los globitos rosa claro y durazno de dos en dos a lo largo de las ramas laterales."
+      },
+      {
+        "orden": 6,
+        "texto": "Fija la flor grande al frente, rellena abajo con las flores pequeñas y los globos durazno sueltos, y revisa que todo quede firme antes de entregarlo."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#e8a274",
+      "#fb7b08",
+      "#f85173",
+      "#fcd0d1",
+      "#b3a47d"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-22-guirnalda-san-valentin",
+    "titulo": "Guirnalda de San Valentín «Te amo»",
+    "tematica": "San Valentín rosa, rojo y blanco",
+    "eventos": [
+      "San Valentín",
+      "Amor y Amistad",
+      "Aniversario"
+    ],
+    "edad": {
+      "min": 16,
+      "max": 70
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-22-guirnalda-san-valentin.jpg",
+        "fuente": "sempertex-02.png",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "guirnalda",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594236416295",
+        "sku": "B2B-20000732",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "46594342453543",
+        "sku": "B2B-20017131",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-12 / PAQUETE X 50 · R-12 · rosa claro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "49475778216231",
+        "sku": "B2B-20019344",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-12 / PAQUETE X 50 · R-12 · blanco perlado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "50030991311143",
+        "sku": "B2B-20019705",
+        "cantidad": 33,
+        "nota": "B2b Globo Fashion Rosa — R-12 / PAQUETE X 50 · R-12 · rosa fuerte",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "49733988450599",
+        "sku": "B2B-30005722",
+        "cantidad": 2,
+        "nota": "B2b Globo Metalizado Love — 18 IN / PAQUETE X 1 · 18 IN · «LOVE» rojo y blanco",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (dos globos metalizados LOVE arriba)"
+      },
+      {
+        "variantId": "50244465492263",
+        "sku": "B2B-20020336",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Fashion Te Amo Corazones Divertidos — CORAZON 12 / PAQUETE X 12 · C-12 · rojo con «Te amo»",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (corazón rojo de la izquierda; el estampado del catálogo no es idéntico al de la foto)"
+      },
+      {
+        "variantId": "47230947655975",
+        "sku": "B2B-20001347",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Corazon Fashion Rosado — CORAZON 12 / PAQUETE X 12 · C-12 · rosa claro",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (corazón rosa de la derecha; en el catálogo no hay corazón de látex rosa con «Te amo», alternativa: Globo Metalizado Corazón Te Amo Rosa 18 IN (49859131179303))"
+      },
+      {
+        "variantId": "46594168389927",
+        "sku": "B2B-30000995",
+        "cantidad": 1,
+        "nota": "B2b Cortina Metalica Roja — PAQUETE X 1 · rojo",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (cortina de tiras bajo la guirnalda; no es globo)"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Fija en la pared una tira para guirnalda de unos 2 metros con ganchos o cinta de montaje, y cuelga debajo la cortina metálica roja."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos de 12 pulgadas a tamaños distintos (algunos bien llenos y otros a medio inflar) para que la guirnalda se vea natural."
+      },
+      {
+        "orden": 3,
+        "texto": "Ata los globos por parejas y luego en grupos de cuatro del mismo tono, y sujétalos a la tira: rosa fuerte en los extremos, blanco perlado al centro, rojo hacia la izquierda y rosa claro hacia la derecha, como en la foto."
+      },
+      {
+        "orden": 4,
+        "texto": "Con los globos rosa fuerte más pequeños forma una tira que cuelgue por debajo de la guirnalda, sobre la cortina."
+      },
+      {
+        "orden": 5,
+        "texto": "Coloca arriba los dos globos metalizados «LOVE» y pega los corazones entre los grupos: el rojo «Te amo» a la izquierda y el rosa a la derecha."
+      },
+      {
+        "orden": 6,
+        "texto": "Rellena los huecos que queden, revisa que todo esté firme y acomoda la forma antes de la celebración."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#ccc7c7",
+      "#cb4a74",
+      "#a92942",
+      "#c78e97",
+      "#ba0c12"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-23-sombrero-bruja-halloween",
+    "titulo": "Sombrero de bruja con calabazas",
+    "tematica": "Halloween negro, plata y naranja",
+    "eventos": [
+      "Halloween",
+      "Fiesta de disfraces",
+      "Cumpleaños"
+    ],
+    "edad": {
+      "min": 3,
+      "max": 60
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-23-sombrero-bruja-halloween.jpg",
+        "fuente": "sempertex-03.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "figura",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594267676967",
+        "sku": "B2B-20014159",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 12 · R-12 · plateado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (8 para los dos pisos bajos del cono y 4 de la base)"
+      },
+      {
+        "variantId": "46594267840807",
+        "sku": "B2B-20017756",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-9 / PAQUETE X 20 · R-9 · plateado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (dos pisos medios del cono)"
+      },
+      {
+        "variantId": "46594267611431",
+        "sku": "B2B-20014244",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 20 · R-5 · plateado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (piso alto y punta del cono)"
+      },
+      {
+        "variantId": "46594235171111",
+        "sku": "B2B-20000779",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 12 · R-12 · negro",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (anillo del ala del sombrero)"
+      },
+      {
+        "variantId": "46594234974503",
+        "sku": "B2B-20000491",
+        "cantidad": 10,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-5 / PAQUETE X 12 · R-5 · negro",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (relleno del ala)"
+      },
+      {
+        "variantId": "47318128263463",
+        "sku": "B2B-20018023",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Naranja Cobrizo — R-12 / PAQUETE X 12 · R-12 · naranja cobrizo",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (banda del sombrero)"
+      },
+      {
+        "variantId": "47318128165159",
+        "sku": "B2B-20018016",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Naranja Cobrizo — R-5 / PAQUETE X 20 · R-5 · naranja cobrizo",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (bolitas de la banda; 4 visibles, se asume lo mismo atrás)"
+      },
+      {
+        "variantId": "47318128427303",
+        "sku": "B2B-20018030",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Naranja Cobrizo — R-24 / PAQUETE X 3 · R-24 · naranja cobrizo",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (calabaza grande de la izquierda)"
+      },
+      {
+        "variantId": "47318128361767",
+        "sku": "B2B-20018027",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Naranja Cobrizo — R-18 / PAQUETE X 6 · R-18 · naranja cobrizo",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (calabaza mediana de la derecha)"
+      },
+      {
+        "variantId": "47318266118439",
+        "sku": "B2B-20018032",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Tubito Fashion Naranja Cobrizo — T260 / PAQUETE X 20 · T260 · naranja cobrizo",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (borde ondulado del ala)"
+      },
+      {
+        "variantId": "46594290975015",
+        "sku": "B2B-20016802",
+        "cantidad": 50,
+        "nota": "B2b Globo Latex Redondo Reflex Champaña — R-5 / PAQUETE X 50 · R-5 · champaña",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (tronco de unos 12 pisos de cuatro y remates junto a las calabazas)"
+      },
+      {
+        "variantId": "47466190471463",
+        "sku": "B2B-20017570",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Tubito Reflex Champaña — T260 / PAQUETE X 20 · T260 · champaña",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (hebilla, 2 tallos con lazo y 2 para las líneas de las calabazas)"
+      },
+      {
+        "variantId": "46594302181671",
+        "sku": "B2B-20016826",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Latte — R-12 / PAQUETE X 12 · R-12 · café con leche",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (2 visibles sobre la base; se asumen 2 atrás)"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma la base: pon un peso o base de columna en el piso y fija cuatro globos plateados de 12 pulgadas en cruz; encima coloca cuatro globos color café con leche."
+      },
+      {
+        "orden": 2,
+        "texto": "Sube el tronco con un tubo o varilla al centro: ve armando grupos de cuatro globos champaña pequeños de 5 pulgadas, girándolos un poco en cada piso, hasta unos 60 cm."
+      },
+      {
+        "orden": 3,
+        "texto": "Haz el ala: forma un anillo con los globos negros de 12 pulgadas, rellena los huecos con los negros pequeños y bordéalo con globos para modelar naranja cobrizo haciendo ondas."
+      },
+      {
+        "orden": 4,
+        "texto": "Arma la banda con cuatro globos naranja cobrizo de 12 pulgadas y sus bolitas pequeñas, y haz la hebilla doblando en cuadrado un globo para modelar champaña."
+      },
+      {
+        "orden": 5,
+        "texto": "Levanta el cono con grupos de cuatro globos plateados: primero de 12, luego de 9 y al final de 5 pulgadas, y termina con un solo globo en la punta."
+      },
+      {
+        "orden": 6,
+        "texto": "Para las calabazas infla un globo naranja cobrizo de 24 pulgadas y otro de 18, marca los gajos con globos para modelar champaña delgados, hazles un tallo con lazo y fíjalas a cada lado del tronco."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#1b1515",
+      "#5b5b5d",
+      "#8c3917",
+      "#7e6d53",
+      "#a0815e"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-24-guirnalda-verde-salvia-flores",
+    "titulo": "Guirnalda verde salvia con flores naranjas",
+    "tematica": "Primavera verde salvia y naranja",
+    "eventos": [
+      "Cumpleaños",
+      "Baby shower",
+      "Boda",
+      "Fiesta de primavera"
+    ],
+    "edad": {
+      "min": 0,
+      "max": 80
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-24-guirnalda-verde-salvia-flores.jpg",
+        "fuente": "sempertex-04.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "guirnalda",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594222784807",
+        "sku": "B2B-20014540",
+        "cantidad": 51,
+        "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-12 / PAQUETE X 50 · R-12 · verde eucalipto",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-04.plan.json]"
+      },
+      {
+        "variantId": "49778969379111",
+        "sku": "B2B-20019374",
+        "cantidad": 39,
+        "nota": "B2b Globo Latex Link-O-Loon® Pastel Dusk Té Verde — LOL 6 / PAQUETE X 50 · LOL6 · verde té",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (8 colgantes de 4 a 6 eslabones)"
+      },
+      {
+        "variantId": "46594264629543",
+        "sku": "B2B-20014169",
+        "cantidad": 63,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (dos racimos de unos 14 y unos 35 en el centro de la flor grande)"
+      },
+      {
+        "variantId": "46594264858919",
+        "sku": "B2B-20017754",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (centro de la flor pequeña)"
+      },
+      {
+        "variantId": "46594228617511",
+        "sku": "B2B-20000771",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 12 · R-12 · naranja",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (pétalos de la flor grande; podrían ser corazones de 12 pulgadas)"
+      },
+      {
+        "variantId": "46594294776103",
+        "sku": "B2B-20001236",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Tubito Fashion Naranja — T260 / PAQUETE X 20 · T260 · naranja",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (pétalos de la flor pequeña)"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Fija en la pared una tira para guirnalda de unos 2 metros con ganchos o cinta de montaje."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos verde eucalipto de 12 pulgadas a tamaños un poco distintos, átalos por parejas y luego en grupos de cuatro, y sujétalos a la tira formando una banda gruesa."
+      },
+      {
+        "orden": 3,
+        "texto": "Haz los colgantes: infla los globos de cadena (Link-O-Loon®) verde té de 6 pulgadas, únelos uno tras otro en tiras de 4 a 6 y cuélgalos bajo la guirnalda a distintos largos."
+      },
+      {
+        "orden": 4,
+        "texto": "Arma dos racimos de unos 14 globos dorados de 5 pulgadas y pégalos sobre la guirnalda, uno a cada lado de la flor pequeña."
+      },
+      {
+        "orden": 5,
+        "texto": "Para la flor grande da forma de pétalo a ocho globos naranja de 12 pulgadas, únelos en círculo, llena el centro con unos 35 globos dorados pequeños y fíjala en el extremo derecho."
+      },
+      {
+        "orden": 6,
+        "texto": "Tuerce dos globos para modelar naranja en seis pétalos con un globo dorado de 9 pulgadas al centro, colócala a la izquierda y revisa que todo quede firme."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#9ac49d",
+      "#959d5f",
+      "#f05d07",
+      "#c9b277"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-25-guirnalda-dia-de-la-madre",
+    "titulo": "Guirnalda diagonal para el Día de la Madre",
+    "tematica": "Día de la Madre coral, vino y perla",
+    "eventos": [
+      "Día de la Madre"
+    ],
+    "edad": {
+      "min": 18,
+      "max": 90
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-25-guirnalda-dia-de-la-madre.jpg",
+        "fuente": "sempertex-05.png",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "guirnalda",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594308768039",
+        "sku": "B2B-20000826",
+        "cantidad": 18,
+        "nota": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50 · R-12 · blanco perla",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-05.plan.json]"
+      },
+      {
+        "variantId": "46594359886119",
+        "sku": "B2B-20017232",
+        "cantidad": 23,
+        "nota": "B2b Globo Latex Redondo Fashion Coral Tropical — R-12 / PAQUETE X 50 · R-12 · coral",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-05.plan.json]"
+      },
+      {
+        "variantId": "49778969248039",
+        "sku": "B2B-20018727",
+        "cantidad": 23,
+        "nota": "B2b Globo Latex Redondo Infinity® Feliz Dia Mama Floral Fashion Surtido — R-12 / PAQUETE X 50 · R-12 · vino con «Feliz día Mamá»",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python; del surtido se usan los vino [data/biblioteca-real/analisis/nueva-sempertex-05.plan.json]"
+      },
+      {
+        "variantId": "46594260926759",
+        "sku": "B2B-20012385",
+        "cantidad": 42,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Rosado — R-5 / PAQUETE X 50 · R-5 · rosado pastel",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (pétalos: 7 flores de 6 pétalos)"
+      },
+      {
+        "variantId": "46594437808423",
+        "sku": "B2B-20000447",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Merlot — R-5 / PAQUETE X 20 · R-5 · vino",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (centro de las 7 flores)"
+      },
+      {
+        "variantId": "46594283766055",
+        "sku": "B2B-20014179",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Tubito Reflex Dorado — T260 / PAQUETE X 20 · T260 · dorado cromado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (espiral dorada: 5 tramos visibles de punta a punta)"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Fija en la pared, en diagonal, una tira para guirnalda de unos 2,4 metros con ganchos o cinta de montaje."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos coral, los blancos perlados y los impresos «Feliz día Mamá» de 12 pulgadas; átalos de a dos y luego en grupos de cuatro, mezclando los colores."
+      },
+      {
+        "orden": 3,
+        "texto": "Sujeta los grupos a la tira formando una banda gruesa: pon el coral y los impresos hacia los bordes y deja los perlados por el centro."
+      },
+      {
+        "orden": 4,
+        "texto": "Haz siete flores: infla seis globos rosados pequeños de 5 pulgadas para los pétalos, únelos en círculo y pon al centro un globo vino pequeño."
+      },
+      {
+        "orden": 5,
+        "texto": "Pega las flores sobre los globos perlados, repartidas a lo largo de la guirnalda."
+      },
+      {
+        "orden": 6,
+        "texto": "Infla los globos para modelar dorados, enróllalos en espiral sobre la guirnalda de punta a punta y revisa que todo quede firme."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#ec7169",
+      "#af2027",
+      "#ecb2ae",
+      "#b4925b",
+      "#e1cfc5"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-26-escultura-mono-y-flores",
+    "titulo": "Escultura de moño con flores pastel",
+    "tematica": "Flores y moño en tonos pastel perlados",
+    "eventos": [
+      "Cumpleaños",
+      "Día de la Madre",
+      "Baby shower",
+      "Fiesta de primavera"
+    ],
+    "edad": {
+      "min": 1,
+      "max": 80
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-26-escultura-mono-y-flores.jpg",
+        "fuente": "sempertex-06.png",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "figura",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "48718444626215",
+        "sku": "B2B-20018556",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Tubito Silk Verde Menta — T260 / PAQUETE X 20 · T260 · verde menta",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (tallos, hojas y base del capullo)"
+      },
+      {
+        "variantId": "48414513234215",
+        "sku": "B2B-20018408",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Tubito Pastel Mate Durazno Malibu — T260 / PAQUETE X 20 · T260 · durazno",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (unos 10 pétalos de lazo de la flor grande)"
+      },
+      {
+        "variantId": "48718444527911",
+        "sku": "B2B-20018518",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Tubito Silk Rosa Primaveral — T260 / PAQUETE X 20 · T260 · rosa perlado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (1 para el capullo y 2 para las cintas del moño; en la foto las cintas se ven más gruesas que un globo para modelar común)"
+      },
+      {
+        "variantId": "48718444101927",
+        "sku": "B2B-20018537",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Tubito Silk Amatista — T260 / PAQUETE X 20 · T260 · lila amatista",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (8 pétalos de la flor lila)"
+      },
+      {
+        "variantId": "46594252112167",
+        "sku": "B2B-20012284",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Verde — R-5 / PAQUETE X 20 · R-5 · verde menta",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (centro de las dos flores)"
+      },
+      {
+        "variantId": "48718442823975",
+        "sku": "B2B-20018513",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Silk Rosa Primaveral — R-18 / PAQUETE X 6 · R-18 · rosa perlado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (las dos alas del moño)"
+      },
+      {
+        "variantId": "48718443381031",
+        "sku": "B2B-20018503",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Silk Rosa Primaveral — R-5 / PAQUETE X 50 · R-5 · rosa perlado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (nudo del moño)"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Prepara una base con peso y una varilla o tubo al centro de unos 80 cm; ahí se sujeta toda la figura, que mide alrededor de 1,2 metros."
+      },
+      {
+        "orden": 2,
+        "texto": "Arma los tallos: infla los globos para modelar verde menta, dóblalos en tallos y hojas y amárralos a la varilla."
+      },
+      {
+        "orden": 3,
+        "texto": "Haz la flor grande: infla tres globos para modelar color durazno, dóblalos en lazos para formar unos diez pétalos y pon al centro un globo verde menta de 5 pulgadas."
+      },
+      {
+        "orden": 4,
+        "texto": "Haz la flor lila: tuerce un globo para modelar amatista en ocho pétalos cortos y pon al centro el otro globo verde menta pequeño."
+      },
+      {
+        "orden": 5,
+        "texto": "Para el capullo, dobla un globo para modelar rosa en varios lazos juntos y ciérralo abajo con un trozo verde."
+      },
+      {
+        "orden": 6,
+        "texto": "Arma el moño con dos globos rosa de 18 pulgadas atados por el cuello, un globo rosa pequeño como nudo y dos globos para modelar rosa como cintas; fíjalo al frente, sobre los tallos."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#ae958f",
+      "#ebd2a0",
+      "#95c3a7",
+      "#857597"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-27-aro-navideno-verde-salvia",
+    "titulo": "Aro navideño verde salvia con copos de nieve",
+    "tematica": "Navidad verde salvia, perla y dorado",
+    "eventos": [
+      "Navidad",
+      "Novena navideña",
+      "Fiesta de fin de año"
+    ],
+    "edad": {
+      "min": 0,
+      "max": 90
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-27-aro-navideno-verde-salvia.jpg",
+        "fuente": "sempertex-07.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "aro_circular",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594222620967",
+        "sku": "B2B-20014541",
+        "cantidad": 32,
+        "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-5 / PAQUETE X 20 · R-5 · verde eucalipto",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+      },
+      {
+        "variantId": "46594222686503",
+        "sku": "B2B-20014545",
+        "cantidad": 27,
+        "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-9 / PAQUETE X 12 · R-9 · verde eucalipto",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+      },
+      {
+        "variantId": "46594222752039",
+        "sku": "B2B-20014539",
+        "cantidad": 36,
+        "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-12 / PAQUETE X 12 · R-12 · verde eucalipto",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+      },
+      {
+        "variantId": "46594222784807",
+        "sku": "B2B-20014540",
+        "cantidad": 45,
+        "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-12 / PAQUETE X 50 · R-12 · verde eucalipto",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+      },
+      {
+        "variantId": "46594222817575",
+        "sku": "B2B-20016060",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-18 / PAQUETE X 6 · R-18 · verde eucalipto",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+      },
+      {
+        "variantId": "46594222883111",
+        "sku": "B2B-20014547",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-24 / PAQUETE X 3 · R-24 · verde eucalipto",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-07.plan.json]"
+      },
+      {
+        "variantId": "46594306179367",
+        "sku": "B2B-20009540",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Infinity® Copos De Nieve Cristal Y Satin Surtido — R-12 / PAQUETE X 12 · R-12 · con copos de nieve",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (4 esferas impresas; en la foto se ven 2 azul grisáceo y 2 plata perlado, el surtido del catálogo trae transparente y azul satinado)"
+      },
+      {
+        "variantId": "48718442758439",
+        "sku": "B2B-20018494",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Silk Perla Crema — R-18 / PAQUETE X 6 · R-18 · champaña perlado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (esfera grande junto a la cuerda dorada)"
+      },
+      {
+        "variantId": "48718443249959",
+        "sku": "B2B-20018559",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Silk Azul Ártico — R-5 / PAQUETE X 20 · R-5 · azul ártico",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (esferas pequeñas azules)"
+      },
+      {
+        "variantId": "48718443348263",
+        "sku": "B2B-20018483",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Silk Perla Crema — R-5 / PAQUETE X 20 · R-5 · champaña perlado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (esferas pequeñas champaña)"
+      },
+      {
+        "variantId": "46594221080871",
+        "sku": "B2B-20000435",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 12 · R-5 · blanco",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (esferas pequeñas blancas)"
+      },
+      {
+        "variantId": "46594308505895",
+        "sku": "B2B-20000520",
+        "cantidad": 39,
+        "nota": "B2b Globo Latex Redondo Satin Perla — R-5 / PAQUETE X 50 · R-5 · blanco perla",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (3 copos de nieve de unos 13 globos cada uno: 7 al centro y 6 en las puntas)"
+      },
+      {
+        "variantId": "46594304409895",
+        "sku": "B2B-20001194",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Tubito Satin Perla — T160 / PAQUETE X 50 · T160 · blanco perla",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (bolitas de los brazos de los tres copos)"
+      },
+      {
+        "variantId": "46594283766055",
+        "sku": "B2B-20014179",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Tubito Reflex Dorado — T260 / PAQUETE X 20 · T260 · dorado cromado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (6 para la cuerda trenzada del tramo libre del aro y 5 para las 14 tapitas de las esferas)"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Consigue un aro metálico de unos 2 metros de diámetro y fíjalo bien a la pared o a una base firme."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos verde eucalipto en varios tamaños (5, 9, 12, 18 y 24 pulgadas), únelos en grupos y cubre unas dos terceras partes del aro, con más volumen abajo."
+      },
+      {
+        "orden": 3,
+        "texto": "En el tramo del aro que queda libre, enrolla globos para modelar dorados torcidos entre sí, como una cuerda."
+      },
+      {
+        "orden": 4,
+        "texto": "Haz las esferas: a los globos de copos de nieve, al globo perlado grande y a los pequeños azules, champaña y blancos ponles una tapita hecha con un trozo de globo para modelar dorado, y pégalos sobre la guirnalda."
+      },
+      {
+        "orden": 5,
+        "texto": "Arma tres copos de nieve con globos perlados pequeños de 5 pulgadas y bolitas de globo para modelar perlado, y cuélgalos dentro del aro."
+      },
+      {
+        "orden": 6,
+        "texto": "Revisa que todo quede firme y que no queden huecos grandes antes de la celebración."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#82a796",
+      "#d3d4cf",
+      "#afaa99",
+      "#8098a8",
+      "#998c6a"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-28-aro-blanco-dorado-y-nude",
+    "titulo": "Aro de globos blanco, dorado y nude con flores",
+    "tematica": "Blanco, dorado y nude",
+    "eventos": [
+      "Boda",
+      "Bautizo",
+      "Cumpleaños",
+      "Baby shower"
+    ],
+    "edad": {
+      "min": 0,
+      "max": 80
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-28-aro-blanco-dorado-y-nude.jpg",
+        "fuente": "sempertex-08.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "aro_circular",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594264596775",
+        "sku": "B2B-20014242",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 20 · R-5 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "46594264858919",
+        "sku": "B2B-20017754",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "46594264695079",
+        "sku": "B2B-20014156",
+        "cantidad": 18,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "46594264727847",
+        "sku": "B2B-20015523",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6 · R-18 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "46594264793383",
+        "sku": "B2B-20014725",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-24 / PAQUETE X 3 · R-24 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "46594302411047",
+        "sku": "B2B-20016823",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Fashion Latte — R-5 / PAQUETE X 50 · R-5 · nude",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "47466211836199",
+        "sku": "B2B-20017533",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Latte — R-9 / PAQUETE X 50 · R-9 · nude",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "46594302247207",
+        "sku": "B2B-20016827",
+        "cantidad": 13,
+        "nota": "B2b Globo Latex Redondo Fashion Latte — R-12 / PAQUETE X 50 · R-12 · nude",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "46594302312743",
+        "sku": "B2B-20016830",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Latte — R-18 / PAQUETE X 6 · R-18 · nude",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "49475778085159",
+        "sku": "B2B-20019336",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 20 · R-5 · blanco nácar",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "49475778052391",
+        "sku": "B2B-20019341",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-9 / PAQUETE X 50 · R-9 · blanco nácar",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "49475778216231",
+        "sku": "B2B-20019344",
+        "cantidad": 20,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-12 / PAQUETE X 50 · R-12 · blanco nácar",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "49475778019623",
+        "sku": "B2B-20019347",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6 · R-18 · blanco nácar",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "49475777954087",
+        "sku": "B2B-20019351",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-24 / PAQUETE X 3 · R-24 · blanco nácar",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "46594308702503",
+        "sku": "B2B-20000824",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 12 · R-12 · blanco perla",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (pétalos: 2 flores de 6 pétalos)"
+      },
+      {
+        "variantId": "49475778740519",
+        "sku": "B2B-20019334",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Tubito Silk Dorado — T260 / PAQUETE X 20 · T260 · dorado claro",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (contorno de cada pétalo)"
+      },
+      {
+        "variantId": "49475778576679",
+        "sku": "B2B-20019320",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Silk Dorado — R-9 / PAQUETE X 12 · R-9 · dorado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (centro de las 2 flores)"
+      },
+      {
+        "variantId": "46594283766055",
+        "sku": "B2B-20014179",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Tubito Reflex Dorado — T260 / PAQUETE X 20 · T260 · dorado cromado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (bolitas alrededor del centro, 1 por flor)"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Fija un aro metálico de unos 2 metros de diámetro en la pared o sobre una base estable."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos blanco nácar, dorados y nude en varios tamaños (5, 9, 12, 18 y 24 pulgadas) y átalos en grupos mezclando los tres colores."
+      },
+      {
+        "orden": 3,
+        "texto": "Cubre todo el aro con los grupos: mete los globos pequeños en los huecos y deja los más grandes en la parte de abajo."
+      },
+      {
+        "orden": 4,
+        "texto": "Haz dos flores grandes: rodea cada globo perlado de 12 pulgadas con un globo para modelar dorado claro para formar seis pétalos y únelos en círculo."
+      },
+      {
+        "orden": 5,
+        "texto": "Pon al centro de cada flor un globo dorado de 9 pulgadas rodeado de bolitas hechas con un globo para modelar dorado."
+      },
+      {
+        "orden": 6,
+        "texto": "Fija una flor arriba a la derecha y otra abajo a la izquierda, y revisa que el aro quede parejo y firme."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#e0dfd7",
+      "#81744e",
+      "#9c7e4f"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-29-arco-link-o-loon-fucsia-tulipanes",
+    "titulo": "Arco de eslabones fucsia con ramo de tulipanes",
+    "tematica": "Fucsia con flores amarillas",
+    "eventos": [
+      "Cumpleaños",
+      "Día de la Madre",
+      "Baby shower"
+    ],
+    "edad": {
+      "min": 0,
+      "max": 60
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-29-arco-link-o-loon-fucsia-tulipanes.jpg",
+        "fuente": "sempertex-09.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "arco",
+        "cantidad": 1
+      },
+      {
+        "estructura": "bouquet",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594234614055",
+        "sku": "B2B-20000729",
+        "cantidad": 30,
+        "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 50 · R-12 · fucsia",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "30 de bases (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-09.plan.json]"
+      },
+      {
+        "variantId": "46594172027175",
+        "sku": "B2B-20001068",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Link-O-Loon® Fashion Fucsia — LOL 12 / PAQUETE X 20 · LOL12 · fucsia",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (contado uno a uno): 11 eslabones contados en la foto (5 por lado y 1 arriba; el último de la derecha queda detrás de los tulipanes)"
+      },
+      {
+        "variantId": "46594234384679",
+        "sku": "B2B-20000443",
+        "cantidad": 24,
+        "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-5 / PAQUETE X 50 · R-5 · fucsia",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: 2 globitos en cada una de las 10 uniones y en los 2 extremos"
+      },
+      {
+        "variantId": "47466217046311",
+        "sku": "B2B-20017804",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Tubito Pastel Dusk Crema — T160 / PAQUETE X 50 · T160 · crema",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: unas 110 perlas de 1 pulgada a lo largo del arco, unas 30 por tubito"
+      },
+      {
+        "variantId": "46594251620647",
+        "sku": "B2B-20012273",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Amarillo — R-5 / PAQUETE X 20 · R-5 · amarillo pastel",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: 4 tríos en la base izquierda (3 a la vista y 1 atrás)"
+      },
+      {
+        "variantId": "46594294317351",
+        "sku": "B2B-20001210",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Tubito Fashion Amarillo — T260 / PAQUETE X 20 · T260 · amarillo",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (contado uno a uno): 6 tulipanes contados en la foto, 1 globo para modelar por flor"
+      },
+      {
+        "variantId": "46594301690151",
+        "sku": "B2B-20014543",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Tubito Fashion Eucalipto — T260 / PAQUETE X 20 · T260 · verde eucalipto",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: 1 globo para modelar por tallo con sus hojas"
+      },
+      {
+        "variantId": "47466192535847",
+        "sku": "B2B-20018054",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Tubito Pastel Mate Amarillo — T260 / PAQUETE X 20 · T260 · amarillo pastel",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: 1 globo para modelar para el moño"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma las dos bases: infla 30 globos fucsia de 12 pulgadas, átalos de cuatro en cuatro y apila tres o cuatro pisos sobre un peso en cada lado."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los 11 globos eslabón fucsia del mismo tamaño y únelos uno detrás de otro para formar la cadena del arco."
+      },
+      {
+        "orden": 3,
+        "texto": "Sujeta cada punta de la cadena a una base y dale forma de arco. En cada unión entre eslabones ata dos globos fucsia de 5 pulgadas, uno a cada lado."
+      },
+      {
+        "orden": 4,
+        "texto": "Infla los globos para modelar crema delgados, retuércelos en bolitas pequeñas como un collar de perlas y pásalo por todo el arco, de una base a la otra."
+      },
+      {
+        "orden": 5,
+        "texto": "Decora la base izquierda con grupitos de tres globos amarillo pastel de 5 pulgadas."
+      },
+      {
+        "orden": 6,
+        "texto": "Con los globos para modelar haz seis tulipanes amarillos con sus tallos y hojas en verde eucalipto; átalos en ramo con un moño amarillo pastel y apóyalo en la base derecha. Revisa que el arco quede firme y parejo antes de recibir a tus invitados."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#f76d95",
+      "#e94870",
+      "#f6e5c8",
+      "#848d58",
+      "#f6e20c"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-30-columna-balon-futbol",
+    "titulo": "Columna de fútbol con balón en la punta",
+    "tematica": "Fútbol verde lima, negro y blanco",
+    "eventos": [
+      "Cumpleaños",
+      "Fiesta de fútbol",
+      "Celebración deportiva"
+    ],
+    "edad": {
+      "min": 3,
+      "max": 40
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-30-columna-balon-futbol.jpg",
+        "fuente": "sempertex-10.jpg",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "columna",
+        "cantidad": 1
+      },
+      {
+        "estructura": "figura",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594213118247",
+        "sku": "B2B-20000462",
+        "cantidad": 10,
+        "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50 · R-5 · verde lima",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "10 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+      },
+      {
+        "variantId": "46594213314855",
+        "sku": "B2B-20000748",
+        "cantidad": 27,
+        "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-12 / PAQUETE X 50 · R-12 · verde lima",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "27 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+      },
+      {
+        "variantId": "46594221146407",
+        "sku": "B2B-20000437",
+        "cantidad": 26,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+        "origenCantidad": "plan_python_y_foto",
+        "detalleCantidad": "2 de columna (plan resuelto por Python) + 24 de balón, estimado a partir de la foto: globitos blancos de relleno entre flores y hexágonos (11 a la vista) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+      },
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 25,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco",
+        "origenCantidad": "plan_python_y_foto",
+        "detalleCantidad": "5 de columna (plan resuelto por Python) + 20 de balón, estimado a partir de la foto: 1 globo blanco algo menos inflado en cada uno de los 20 hexágonos [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+      },
+      {
+        "variantId": "46594235040039",
+        "sku": "B2B-20000493",
+        "cantidad": 65,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-5 / PAQUETE X 50 · R-5 · negro",
+        "origenCantidad": "plan_python_y_foto",
+        "detalleCantidad": "5 de columna (plan resuelto por Python) + 60 de balón, estimado a partir de la foto: 12 flores negras de 5 pétalos (los pentágonos del balón) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+      },
+      {
+        "variantId": "46594235269415",
+        "sku": "B2B-20000781",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "11 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Fija una base pesada y arma un soporte vertical de unos 2 metros para el cuerpo de la columna."
+      },
+      {
+        "orden": 2,
+        "texto": "Infla los globos verde lima, negros y blancos de 12 pulgadas y los chicos de 5 pulgadas, y arma racimos de cuatro."
+      },
+      {
+        "orden": 3,
+        "texto": "Monta los racimos desde la base: un tramo verde lima abajo, en el medio verde lima de un lado y negro del otro, y arriba otro tramo verde lima. Entre tramo y tramo pon un cuello de globos chicos negros, blancos y verde lima."
+      },
+      {
+        "orden": 4,
+        "texto": "Para el balón, infla 60 globos negros de 5 pulgadas y átalos de cinco en cinco por el cuello: te quedan 12 flores negras."
+      },
+      {
+        "orden": 5,
+        "texto": "Une las flores negras con 20 globos blancos de 12 pulgadas un poco menos inflados, de modo que cada flor quede rodeada de blanco, y rellena los huecos con globos blancos de 5 pulgadas hasta cerrar la bola."
+      },
+      {
+        "orden": 6,
+        "texto": "Fija el balón en la punta de la columna y revisa que todo quede firme antes de la fiesta."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#54cc04",
+      "#222725",
+      "#e1e4e3",
+      "#7ddc11"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
+  },
+  {
+    "id": "deco-real-31-arco-futbol-balones-gigantes",
+    "titulo": "Arco de fútbol con balones gigantes",
+    "tematica": "Fútbol verde lima, negro y blanco",
+    "eventos": [
+      "Cumpleaños",
+      "Fiesta de fútbol",
+      "Celebración deportiva"
+    ],
+    "edad": {
+      "min": 3,
+      "max": 40
+    },
+    "fotos": [
+      {
+        "url": "/biblioteca-sempertex/referencias/deco-real-31-arco-futbol-balones-gigantes.jpg",
+        "fuente": "sempertex-11.png",
+        "licencia": "referencia_web_sin_licencia"
+      }
+    ],
+    "video": null,
+    "piezas": [
+      {
+        "estructura": "arco_asimetrico",
+        "cantidad": 1
+      }
+    ],
+    "materiales": [
+      {
+        "variantId": "46594213118247",
+        "sku": "B2B-20000462",
+        "cantidad": 13,
+        "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50 · R-5 · verde lima",
+        "origenCantidad": "plan_python_y_foto",
+        "detalleCantidad": "7 de lado orgánico (plan resuelto por Python) + 6 de pata izquierda, estimado a partir de la foto: 2 grupitos de tres entre los balones gigantes [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+      },
+      {
+        "variantId": "46594213314855",
+        "sku": "B2B-20000748",
+        "cantidad": 28,
+        "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-12 / PAQUETE X 50 · R-12 · verde lima",
+        "origenCantidad": "plan_python_y_foto",
+        "detalleCantidad": "20 de lado orgánico (plan resuelto por Python) + 8 de base de la pata izquierda, estimado a partir de la foto: 2 grupos de cuatro [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+      },
+      {
+        "variantId": "46594221146407",
+        "sku": "B2B-20000437",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de lado orgánico (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+      },
+      {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 17,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "17 de lado orgánico (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+      },
+      {
+        "variantId": "46594235040039",
+        "sku": "B2B-20000493",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-5 / PAQUETE X 50 · R-5 · negro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de lado orgánico (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+      },
+      {
+        "variantId": "46594235269415",
+        "sku": "B2B-20000781",
+        "cantidad": 17,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "17 de lado orgánico (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-11.plan.json]"
+      },
+      {
+        "variantId": "51021065683239",
+        "sku": "B2B-20020823",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Infinity® Balón De Futbol Fashion Blanco — R-24 / PAQUETE X 3 · R-24 · blanco con balón de fútbol",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (contado uno a uno): 3 balones gigantes contados en la foto (pata izquierda)"
+      },
+      {
+        "variantId": "51128339235111",
+        "sku": "B2B-20020874",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Infinity® Futbol Tricolor Fashion Blanco — R-12 / PAQUETE X 12 · R-12 · blanco con balones de fútbol",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: 7 impresos a la vista y 1 detrás"
+      }
+    ],
+    "pasos": [
+      {
+        "orden": 1,
+        "texto": "Arma la estructura del arco y fíjala al piso con dos bases pesadas."
+      },
+      {
+        "orden": 2,
+        "texto": "Pata izquierda: haz una base con dos grupos de cuatro globos verde lima de 12 pulgadas y apila encima los tres balones de fútbol gigantes de 24 pulgadas, con un grupito de tres globos verde lima de 5 pulgadas entre balón y balón."
+      },
+      {
+        "orden": 3,
+        "texto": "Lado derecho: infla globos de 12 y de 5 pulgadas en verde lima, negro y blanco, y arma racimos de varios tamaños."
+      },
+      {
+        "orden": 4,
+        "texto": "Cubre la parte de arriba con verde lima, sigue hacia abajo con negro y termina en el piso con blanco, en bloques de color como en la foto."
+      },
+      {
+        "orden": 5,
+        "texto": "Reparte los globos impresos con balones de fútbol en el borde de arriba y entre el negro y el blanco."
+      },
+      {
+        "orden": 6,
+        "texto": "Rellena los huecos con globos chicos y revisa que todo quede firme antes de la fiesta."
+      }
+    ],
+    "shopifyHandle": null,
+    "paleta": [
+      "#e5e6de",
+      "#7ce207",
+      "#1a1f18",
+      "#bbf75f"
+    ],
+    "fotoRepresentativa": true,
+    "origen": "referencia_real"
   }
 ]

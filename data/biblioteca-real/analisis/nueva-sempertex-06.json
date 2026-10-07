@@ -1,0 +1,381 @@
+{
+  "id": "nueva-sempertex-06",
+  "fuente": "sempertex-06.png",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-26-escultura-mono-y-flores.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "2f681915-7ef4-4ec8-aa16-0962d028f99a",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "balloon bouquet sculpture",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "A complex standing balloon bouquet sculpture featuring twisted balloon flowers, stems, and a large metallic bow base on a black background.",
+          "reference_bbox": {
+            "x": 0.169,
+            "y": 0.047,
+            "width": 0.618,
+            "height": 0.938
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "pastel yellow",
+              "light green",
+              "chrome purple",
+              "chrome rose gold",
+              "chrome silver"
+            ],
+            "measured_colors": [
+              {
+                "color": "dorado rosa",
+                "share": 0.3602
+              },
+              {
+                "color": "plateado",
+                "share": 0.2698
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex balloon",
+            "shape": "tall dense asymmetrical bouquet, on the center, standing on the floor",
+            "composition": "Pastel yellow balloon flower, purple balloon flower, metallic rose bow, green balloon stems and leaves, and silver accents arranged into a bouquet shape.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "amarillo",
+                "rosado",
+                "morado",
+                "verde",
+                "plateado"
+              ],
+              "pesos": [
+                30,
+                25,
+                20,
+                15,
+                10
+              ],
+              "confianza": 0.9
+            },
+            "tamanos_leidos": "chicos_con_pocos_grandes",
+            "armado_bouquet": {
+              "variante": "base_aire",
+              "niveles": [
+                {
+                  "unidad": "suelto",
+                  "colores": [
+                    "amarillo",
+                    "menta"
+                  ],
+                  "cantidad": 1,
+                  "clase_tamano": "grande"
+                },
+                {
+                  "unidad": "suelto",
+                  "colores": [
+                    "morado",
+                    "menta"
+                  ],
+                  "cantidad": 1,
+                  "clase_tamano": "mediano"
+                },
+                {
+                  "unidad": "suelto",
+                  "colores": [
+                    "rosado",
+                    "plateado"
+                  ],
+                  "cantidad": 1,
+                  "clase_tamano": "grande"
+                }
+              ],
+              "confianza": 0.92,
+              "total_globos": 6,
+              "avisos": [
+                "disposición sin números; se omitió"
+              ]
+            },
+            "conteo": {
+              "globos_visibles": 25,
+              "exacto": false,
+              "estimado_total": null,
+              "racimos": null,
+              "globos_por_racimo": 1,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.3
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.4
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.3
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.9
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "981",
+                "familia": "reflex",
+                "nombre": "Plata",
+                "nombre_completo": "Reflex Plata",
+                "parte": 0.648,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "021",
+                "familia": "fashion",
+                "nombre": "Amarillo Miel",
+                "nombre_completo": "Fashion Amarillo Miel",
+                "parte": 0.1828,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "630",
+                "familia": "pastelMate",
+                "nombre": "Verde",
+                "nombre_completo": "Pastel Mate Verde",
+                "parte": 0.1693,
+                "familia_fiable": true
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "kit",
+            "placement": "piso_frontal",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary subject of the image, custom balloon sculpture bouquet.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "balloon bouquet arrangement of flowers with a bow",
+        "density": "dense",
+        "symmetry": "asymmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "pastel yellow",
+          "light green",
+          "chrome purple",
+          "chrome rose gold",
+          "chrome silver",
+          "black"
+        ],
+        "priority": [
+          "pastel yellow",
+          "light green",
+          "chrome purple",
+          "chrome rose gold",
+          "chrome silver",
+          "black"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "1ad2a0dafdb7921cf9de60d58cb3cb70a53a84a84366e6f5dd6e8f647bde3a33",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 1000,
+            "height": 1000
+          },
+          "processed": {
+            "width": 800,
+            "height": 800
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "kit",
+          "croquis": {
+            "forma": "elipse alta",
+            "parteDeLaCaja": 0.6304
+          },
+          "pixeles": {
+            "medidos": 97264,
+            "deLaCaja": 152477
+          },
+          "colores": [
+            {
+              "hex": "#ae9692",
+              "parte": 0.648,
+              "pixeles": 63024,
+              "cruce": {
+                "hex": "#ae9692",
+                "candidatas": [
+                  {
+                    "codigo": "981",
+                    "nombre": "Plata",
+                    "nombreCompleto": "Reflex Plata",
+                    "nombreEn": "chrome silver",
+                    "pms": "877",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#a7a8aa",
+                    "deltaE": 11.5,
+                    "distancia": 11.1,
+                    "tono": 121.7,
+                    "razonCroma": 8.5
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#eace96",
+              "parte": 0.1828,
+              "pixeles": 17775,
+              "cruce": {
+                "hex": "#eace96",
+                "candidatas": [
+                  {
+                    "codigo": "021",
+                    "nombre": "Amarillo Miel",
+                    "nombreCompleto": "Fashion Amarillo Miel",
+                    "nombreEn": "golden yellow",
+                    "pms": "7408",
+                    "acabado": "matte",
+                    "hexGlobo": "#f4c505",
+                    "deltaE": 50.9,
+                    "distancia": 6.5,
+                    "tono": 1.7,
+                    "razonCroma": 0.4
+                  },
+                  {
+                    "codigo": "023",
+                    "nombre": "Mostaza",
+                    "nombreCompleto": "Fashion Mostaza",
+                    "nombreEn": "mustard yellow",
+                    "pms": "7555",
+                    "acabado": "matte",
+                    "hexGlobo": "#ddaa1d",
+                    "deltaE": 41.4,
+                    "distancia": 9.6,
+                    "tono": 2.2,
+                    "razonCroma": 0.4
+                  },
+                  {
+                    "codigo": "020",
+                    "nombre": "Amarillo",
+                    "nombreCompleto": "Fashion Amarillo",
+                    "nombreEn": "matte yellow",
+                    "pms": "108",
+                    "acabado": "matte",
+                    "hexGlobo": "#f6e702",
+                    "deltaE": 59.9,
+                    "distancia": 20,
+                    "tono": 12.3,
+                    "razonCroma": 0.4
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#d1d1cc",
+              "parte": 0.1693,
+              "pixeles": 16465,
+              "cruce": {
+                "hex": "#d1d1cc",
+                "candidatas": [
+                  {
+                    "codigo": "630",
+                    "nombre": "Verde",
+                    "nombreCompleto": "Pastel Mate Verde",
+                    "nombreEn": "pale green",
+                    "pms": "621",
+                    "acabado": "matte",
+                    "hexGlobo": "#d4e0d4",
+                    "deltaE": 7.1,
+                    "distancia": 7.2,
+                    "tono": 34.2,
+                    "razonCroma": 0.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "2 colores eran el mismo globo visto con otra luz y se juntaron con el suyo."
+          ]
+        }
+      ]
+    }
+  }
+}

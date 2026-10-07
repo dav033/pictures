@@ -1,0 +1,114 @@
+{
+  "id": "deco-real-24-guirnalda-verde-salvia-flores",
+  "titulo": "Guirnalda verde salvia con flores naranjas",
+  "tematica": "Primavera verde salvia y naranja",
+  "eventos": [
+    "Cumpleaños",
+    "Baby shower",
+    "Boda",
+    "Fiesta de primavera"
+  ],
+  "edad": {
+    "min": 0,
+    "max": 80
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-24-guirnalda-verde-salvia-flores.jpg",
+      "fuente": "sempertex-04.jpg",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "guirnalda",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594222784807",
+      "sku": "B2B-20014540",
+      "cantidad": 51,
+      "nota": "B2b Globo Latex Redondo Fashion Eucalipto — R-12 / PAQUETE X 50 · R-12 · verde eucalipto",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-04.plan.json]"
+    },
+    {
+      "variantId": "49778969379111",
+      "sku": "B2B-20019374",
+      "cantidad": 39,
+      "nota": "B2b Globo Latex Link-O-Loon® Pastel Dusk Té Verde — LOL 6 / PAQUETE X 50 · LOL6 · verde té",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (8 colgantes de 4 a 6 eslabones)"
+    },
+    {
+      "variantId": "46594264629543",
+      "sku": "B2B-20014169",
+      "cantidad": 63,
+      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (dos racimos de unos 14 y unos 35 en el centro de la flor grande)"
+    },
+    {
+      "variantId": "46594264858919",
+      "sku": "B2B-20017754",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (centro de la flor pequeña)"
+    },
+    {
+      "variantId": "46594228617511",
+      "sku": "B2B-20000771",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 12 · R-12 · naranja",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (pétalos de la flor grande; podrían ser corazones de 12 pulgadas)"
+    },
+    {
+      "variantId": "46594294776103",
+      "sku": "B2B-20001236",
+      "cantidad": 2,
+      "nota": "B2b Globo Latex Tubito Fashion Naranja — T260 / PAQUETE X 20 · T260 · naranja",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (pétalos de la flor pequeña)"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Fija en la pared una tira para guirnalda de unos 2 metros con ganchos o cinta de montaje."
+    },
+    {
+      "orden": 2,
+      "texto": "Infla los globos verde eucalipto de 12 pulgadas a tamaños un poco distintos, átalos por parejas y luego en grupos de cuatro, y sujétalos a la tira formando una banda gruesa."
+    },
+    {
+      "orden": 3,
+      "texto": "Haz los colgantes: infla los globos de cadena (Link-O-Loon®) verde té de 6 pulgadas, únelos uno tras otro en tiras de 4 a 6 y cuélgalos bajo la guirnalda a distintos largos."
+    },
+    {
+      "orden": 4,
+      "texto": "Arma dos racimos de unos 14 globos dorados de 5 pulgadas y pégalos sobre la guirnalda, uno a cada lado de la flor pequeña."
+    },
+    {
+      "orden": 5,
+      "texto": "Para la flor grande da forma de pétalo a ocho globos naranja de 12 pulgadas, únelos en círculo, llena el centro con unos 35 globos dorados pequeños y fíjala en el extremo derecho."
+    },
+    {
+      "orden": 6,
+      "texto": "Tuerce dos globos para modelar naranja en seis pétalos con un globo dorado de 9 pulgadas al centro, colócala a la izquierda y revisa que todo quede firme."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#9ac49d",
+    "#959d5f",
+    "#f05d07",
+    "#c9b277"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

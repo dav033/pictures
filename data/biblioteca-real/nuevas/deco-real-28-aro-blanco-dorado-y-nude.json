@@ -1,0 +1,209 @@
+{
+  "id": "deco-real-28-aro-blanco-dorado-y-nude",
+  "titulo": "Aro de globos blanco, dorado y nude con flores",
+  "tematica": "Blanco, dorado y nude",
+  "eventos": [
+    "Boda",
+    "Bautizo",
+    "Cumpleaños",
+    "Baby shower"
+  ],
+  "edad": {
+    "min": 0,
+    "max": 80
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-28-aro-blanco-dorado-y-nude.jpg",
+      "fuente": "sempertex-08.jpg",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "aro_circular",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594264596775",
+      "sku": "B2B-20014242",
+      "cantidad": 7,
+      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 20 · R-5 · dorado cromado",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "46594264858919",
+      "sku": "B2B-20017754",
+      "cantidad": 6,
+      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado cromado",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "46594264695079",
+      "sku": "B2B-20014156",
+      "cantidad": 18,
+      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado cromado",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "46594264727847",
+      "sku": "B2B-20015523",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6 · R-18 · dorado cromado",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "46594264793383",
+      "sku": "B2B-20014725",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-24 / PAQUETE X 3 · R-24 · dorado cromado",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "46594302411047",
+      "sku": "B2B-20016823",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Redondo Fashion Latte — R-5 / PAQUETE X 50 · R-5 · nude",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "47466211836199",
+      "sku": "B2B-20017533",
+      "cantidad": 4,
+      "nota": "B2b Globo Latex Redondo Fashion Latte — R-9 / PAQUETE X 50 · R-9 · nude",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "46594302247207",
+      "sku": "B2B-20016827",
+      "cantidad": 13,
+      "nota": "B2b Globo Latex Redondo Fashion Latte — R-12 / PAQUETE X 50 · R-12 · nude",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "46594302312743",
+      "sku": "B2B-20016830",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Fashion Latte — R-18 / PAQUETE X 6 · R-18 · nude",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "49475778085159",
+      "sku": "B2B-20019336",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 20 · R-5 · blanco nácar",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "49475778052391",
+      "sku": "B2B-20019341",
+      "cantidad": 7,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-9 / PAQUETE X 50 · R-9 · blanco nácar",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "49475778216231",
+      "sku": "B2B-20019344",
+      "cantidad": 20,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-12 / PAQUETE X 50 · R-12 · blanco nácar",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "49475778019623",
+      "sku": "B2B-20019347",
+      "cantidad": 2,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6 · R-18 · blanco nácar",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "49475777954087",
+      "sku": "B2B-20019351",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-24 / PAQUETE X 3 · R-24 · blanco nácar",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "46594308702503",
+      "sku": "B2B-20000824",
+      "cantidad": 12,
+      "nota": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 12 · R-12 · blanco perla",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (pétalos: 2 flores de 6 pétalos)"
+    },
+    {
+      "variantId": "49475778740519",
+      "sku": "B2B-20019334",
+      "cantidad": 12,
+      "nota": "B2b Globo Latex Tubito Silk Dorado — T260 / PAQUETE X 20 · T260 · dorado claro",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (contorno de cada pétalo)"
+    },
+    {
+      "variantId": "49475778576679",
+      "sku": "B2B-20019320",
+      "cantidad": 2,
+      "nota": "B2b Globo Latex Redondo Silk Dorado — R-9 / PAQUETE X 12 · R-9 · dorado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (centro de las 2 flores)"
+    },
+    {
+      "variantId": "46594283766055",
+      "sku": "B2B-20014179",
+      "cantidad": 2,
+      "nota": "B2b Globo Latex Tubito Reflex Dorado — T260 / PAQUETE X 20 · T260 · dorado cromado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (bolitas alrededor del centro, 1 por flor)"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Fija un aro metálico de unos 2 metros de diámetro en la pared o sobre una base estable."
+    },
+    {
+      "orden": 2,
+      "texto": "Infla los globos blanco nácar, dorados y nude en varios tamaños (5, 9, 12, 18 y 24 pulgadas) y átalos en grupos mezclando los tres colores."
+    },
+    {
+      "orden": 3,
+      "texto": "Cubre todo el aro con los grupos: mete los globos pequeños en los huecos y deja los más grandes en la parte de abajo."
+    },
+    {
+      "orden": 4,
+      "texto": "Haz dos flores grandes: rodea cada globo perlado de 12 pulgadas con un globo para modelar dorado claro para formar seis pétalos y únelos en círculo."
+    },
+    {
+      "orden": 5,
+      "texto": "Pon al centro de cada flor un globo dorado de 9 pulgadas rodeado de bolitas hechas con un globo para modelar dorado."
+    },
+    {
+      "orden": 6,
+      "texto": "Fija una flor arriba a la derecha y otra abajo a la izquierda, y revisa que el aro quede parejo y firme."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#e0dfd7",
+    "#81744e",
+    "#9c7e4f"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

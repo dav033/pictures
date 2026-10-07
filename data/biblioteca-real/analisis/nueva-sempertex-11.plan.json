@@ -1,0 +1,1266 @@
+{
+  "estado": "resuelto",
+  "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "plan_declarado": {
+    "plan_version": "1.0",
+    "plan_id": "ab1d78aa-9cfa-5877-9e2a-c9ecf28ead92",
+    "concepto": {
+      "titulo": "nueva-sempertex-11",
+      "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+      "paleta": [
+        "verde",
+        "negro",
+        "blanco"
+      ],
+      "estilo": "orgánico"
+    },
+    "espacio": {
+      "tipo": "fondo de celebración",
+      "fuente": "foto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "nombre": "Lado orgánico del arco (verde lima, negro y blanco)",
+        "tipo": "semiarco",
+        "rol_escena": "focal",
+        "ubicacion": "arco_central",
+        "medidas": {
+          "ancho_m": 1.7,
+          "alto_m": 2.4
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "organica_fina",
+        "materiales": [
+          {
+            "product_id": "8634233684263",
+            "color": "verde",
+            "participacion": 0.36,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634239516967",
+            "color": "negro",
+            "participacion": 0.32,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634235781415",
+            "color": "blanco",
+            "participacion": 0.32,
+            "rol_material": "secundario"
+          }
+        ],
+        "porque": "La banda orgánica de la referencia REF_01_E01: sube por la derecha y cruza arriba; la pata de balones gigantes va aparte.",
+        "referencia_element_id": "REF_01_E01",
+        "estructura_oficial": "semiarco_asimetrico",
+        "colores_referencia": [
+          "verde",
+          "negro",
+          "blanco"
+        ]
+      }
+    ],
+    "supuestos": [
+      "Arco de unos 2,4 m de alto y 2,2 m de ancho medido con el impreso de 12 pulgadas como escala.",
+      "La pata de tres balones gigantes, su base y los impresos de fútbol se cuentan en la foto aparte."
+    ],
+    "restricciones": {
+      "estructuras": [],
+      "colores": [],
+      "tamanos": [
+        {
+          "valor": "R-5",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-5",
+          "polaridad": "obligatorio"
+        },
+        {
+          "valor": "R-12",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-12",
+          "polaridad": "obligatorio"
+        }
+      ],
+      "acabados": []
+    },
+    "referencia_omitida": []
+  },
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "ab1d78aa-9cfa-5877-9e2a-c9ecf28ead92",
+      "concepto": {
+        "titulo": "nueva-sempertex-11",
+        "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
+        "paleta": [
+          "verde",
+          "negro",
+          "blanco"
+        ],
+        "estilo": "orgánico"
+      },
+      "espacio": {
+        "tipo": "fondo de celebración",
+        "fuente": "foto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_SEMIARCO",
+          "nombre": "Lado orgánico del arco (verde lima, negro y blanco)",
+          "tipo": "semiarco",
+          "rol_escena": "focal",
+          "ubicacion": "arco_central",
+          "medidas": {
+            "ancho_m": 2.06,
+            "alto_m": 2.9
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "organica_fina",
+          "materiales": [
+            {
+              "product_id": "8634233684263",
+              "color": "verde",
+              "participacion": 0.36,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634239516967",
+              "color": "negro",
+              "participacion": 0.32,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634235781415",
+              "color": "blanco",
+              "participacion": 0.32,
+              "rol_material": "secundario"
+            }
+          ],
+          "porque": "La banda orgánica de la referencia REF_01_E01: sube por la derecha y cruza arriba; la pata de balones gigantes va aparte.",
+          "referencia_element_id": "REF_01_E01",
+          "estructura_oficial": "semiarco_asimetrico",
+          "colores_referencia": [
+            "verde",
+            "negro",
+            "blanco"
+          ]
+        }
+      ],
+      "supuestos": [
+        "Arco de unos 2,4 m de alto y 2,2 m de ancho medido con el impreso de 12 pulgadas como escala.",
+        "La pata de tres balones gigantes, su base y los impresos de fútbol se cuentan en la foto aparte.",
+        "Lado orgánico del arco (verde lima, neg…: la foto muestra unos 88 globos y el plan tenía 50; densidad media → lujosa, ancho 1,7 → 2,06 m y alto 2,4 → 2,9 m equivalentes a la foto (no medidos): quedó en 75."
+      ],
+      "restricciones": {
+        "estructuras": [],
+        "colores": [],
+        "tamanos": [
+          {
+            "valor": "R-5",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-5",
+            "polaridad": "obligatorio"
+          },
+          {
+            "valor": "R-12",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-12",
+            "polaridad": "obligatorio"
+          }
+        ],
+        "acabados": []
+      },
+      "referencia_omitida": []
+    },
+    "plan_hash": "f5feccfdfebc48d9485a6a29f602c927e20f5913ac86bebec30f6a295fc73dc8",
+    "request_id": "f471913b-a84e-5d29-b9b4-6601da30d6e0",
+    "compras": [
+      {
+        "variant_id": "46594213118247",
+        "product_id": "8634233684263",
+        "sku": "B2B-20000462",
+        "sku_original": "B2B-20000462",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594213118247",
+        "inventory_quantity": 995507,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "verde",
+        "unidades_necesarias": 7,
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "unidades_con_merma": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 863,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 43,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Verde_Lima_-_Lima_Green_031.jpg?v=1763138870"
+      },
+      {
+        "variant_id": "46594213314855",
+        "product_id": "8634233684263",
+        "sku": "B2B-20000748",
+        "sku_original": "B2B-20000748",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594213314855",
+        "inventory_quantity": 988314,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Verde Lima — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "verde",
+        "unidades_necesarias": 20,
+        "design_quantity": 20,
+        "waste_reserve": 0,
+        "required_quantity": 20,
+        "unidades_con_merma": 20,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 20,
+        "leftover_inventory": 30,
+        "consumption_cost": 5215,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 30,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Verde_Lima_-_Lima_Green_031.jpg?v=1763138870"
+      },
+      {
+        "variant_id": "46594221146407",
+        "product_id": "8634235781415",
+        "sku": "B2B-20000437",
+        "sku_original": "B2B-20000437",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594221146407",
+        "inventory_quantity": 975222,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "blanco",
+        "unidades_necesarias": 7,
+        "design_quantity": 7,
+        "waste_reserve": 6,
+        "required_quantity": 13,
+        "unidades_con_merma": 13,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 37,
+        "consumption_cost": 1603,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 43,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+      },
+      {
+        "variant_id": "46594221343015",
+        "product_id": "8634235781415",
+        "sku": "B2B-20000723",
+        "sku_original": "B2B-20000723",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+        "inventory_quantity": 930449,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "blanco",
+        "unidades_necesarias": 17,
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "unidades_con_merma": 17,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 4433,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 33,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+      },
+      {
+        "variant_id": "46594235040039",
+        "product_id": "8634239516967",
+        "sku": "B2B-20000493",
+        "sku_original": "B2B-20000493",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594235040039",
+        "inventory_quantity": 982550,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Negro — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "negro",
+        "unidades_necesarias": 7,
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "unidades_con_merma": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 863,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 43,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093"
+      },
+      {
+        "variant_id": "46594235269415",
+        "product_id": "8634239516967",
+        "sku": "B2B-20000781",
+        "sku_original": "B2B-20000781",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594235269415",
+        "inventory_quantity": 957375,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "negro",
+        "unidades_necesarias": 17,
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "unidades_con_merma": 17,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 4433,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 33,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093"
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-5": 21,
+        "R-12": 54
+      },
+      "total_unidades": 75,
+      "total_cop": 57603,
+      "design_quantity": 75,
+      "target_waste_reserve": 6,
+      "covered_waste_reserve": 6,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 225,
+      "purchase_cost": 57603,
+      "consumption_cost": 17410,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:46594213118247",
+      "sobrante_alto:46594213314855",
+      "sobrante_alto:46594221146407",
+      "sobrante_alto:46594221343015",
+      "sobrante_alto:46594235040039",
+      "sobrante_alto:46594235269415"
+    ],
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "nombre": "Lado orgánico del arco (verde lima, negro y blanco)",
+        "tipo": "semiarco",
+        "ubicacion": "arco_central",
+        "repeticiones": 1,
+        "eje_m": 3.92,
+        "total_unidades": 75,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634233684263",
+            "variant_id": "46594213118247",
+            "sku": "B2B-20000462",
+            "sku_original": "B2B-20000462",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594213118247",
+            "inventory_quantity": 995507,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 7,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Verde_Lima_-_Lima_Green_031.jpg?v=1763138870",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634239516967",
+            "variant_id": "46594235040039",
+            "sku": "B2B-20000493",
+            "sku_original": "B2B-20000493",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235040039",
+            "inventory_quantity": 982550,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Negro — R-5 / PAQUETE X 50",
+            "color": "negro",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 7,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634235781415",
+            "variant_id": "46594221146407",
+            "sku": "B2B-20000437",
+            "sku_original": "B2B-20000437",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594221146407",
+            "inventory_quantity": 975222,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 7,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634233684263",
+            "variant_id": "46594213314855",
+            "sku": "B2B-20000748",
+            "sku_original": "B2B-20000748",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594213314855",
+            "inventory_quantity": 988314,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Verde Lima — R-12 / PAQUETE X 50",
+            "color": "verde",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 20,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Verde_Lima_-_Lima_Green_031.jpg?v=1763138870",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634239516967",
+            "variant_id": "46594235269415",
+            "sku": "B2B-20000781",
+            "sku_original": "B2B-20000781",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235269415",
+            "inventory_quantity": 957375,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+            "color": "negro",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 17,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634235781415",
+            "variant_id": "46594221343015",
+            "sku": "B2B-20000723",
+            "sku_original": "B2B-20000723",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594221343015",
+            "inventory_quantity": 930449,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 17,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 54,
+            "pct": 72
+          },
+          {
+            "diam_pulg": 5,
+            "forma": "redondo",
+            "unidades": 21,
+            "pct": 28
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "consumo_cop": 16669
+      }
+    ],
+    "conteos_referencia": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "referencia_element_id": "REF_01_E01",
+        "decision": "ajustado",
+        "lectura": {
+          "globos_visibles": 76,
+          "exacto": false,
+          "estimado_total": 88,
+          "racimos": null,
+          "globos_por_racimo": null,
+          "por_tamano": [
+            {
+              "clase": "chico",
+              "proporcion": 0.55
+            },
+            {
+              "clase": "mediano",
+              "proporcion": 0.45
+            }
+          ],
+          "largo_relativo": null,
+          "alto_relativo": null,
+          "confianza": 0.75
+        },
+        "globos_foto": 88,
+        "globos_antes": 50,
+        "globos_despues": 75,
+        "cambios": [
+          {
+            "campo": "densidad",
+            "antes": "media",
+            "despues": "lujosa"
+          },
+          {
+            "campo": "ancho_m",
+            "antes": 1.7,
+            "despues": 2.06
+          },
+          {
+            "campo": "alto_m",
+            "antes": 2.4,
+            "despues": 2.9
+          }
+        ],
+        "motivo": "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "semiarco",
+      "shape": "organica_fina",
+      "dimensions_m": {
+        "width": 2.06,
+        "height": 2.9,
+        "length": null
+      },
+      "installation_length_m": 3.92,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "large",
+      "cluster_count": 1
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634233684263",
+        "variant_id": "46594213118247",
+        "color": "verde",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634239516967",
+        "variant_id": "46594235040039",
+        "color": "negro",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634235781415",
+        "variant_id": "46594221146407",
+        "color": "blanco",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634233684263",
+        "variant_id": "46594213314855",
+        "color": "verde",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 20,
+        "waste_reserve": 0,
+        "required_quantity": 20,
+        "waste_adjusted_quantity": 20
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634239516967",
+        "variant_id": "46594235269415",
+        "color": "negro",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "color": "blanco",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "8634233684263",
+        "variant_id": "46594213118247",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 863,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 43,
+        "potential_surplus": 43
+      },
+      {
+        "product_id": "8634233684263",
+        "variant_id": "46594213314855",
+        "design_quantity": 20,
+        "waste_reserve": 0,
+        "required_quantity": 20,
+        "waste_adjusted_quantity": 20,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 20,
+        "leftover_inventory": 30,
+        "consumption_cost": 5215,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 30,
+        "potential_surplus": 30
+      },
+      {
+        "product_id": "8634235781415",
+        "variant_id": "46594221146407",
+        "design_quantity": 7,
+        "waste_reserve": 6,
+        "required_quantity": 13,
+        "waste_adjusted_quantity": 13,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 37,
+        "consumption_cost": 1603,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 37,
+        "potential_surplus": 43
+      },
+      {
+        "product_id": "8634235781415",
+        "variant_id": "46594221343015",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 4433,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 33,
+        "potential_surplus": 33
+      },
+      {
+        "product_id": "8634239516967",
+        "variant_id": "46594235040039",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 863,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 43,
+        "potential_surplus": 43
+      },
+      {
+        "product_id": "8634239516967",
+        "variant_id": "46594235269415",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 4433,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 33,
+        "potential_surplus": 33
+      }
+    ],
+    "totals": {
+      "design_quantity": 75,
+      "target_waste_reserve": 6,
+      "covered_waste_reserve": 6,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 225,
+      "required_quantity": 81,
+      "consumption_cost": 17410,
+      "purchase_cost": 57603,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 81,
+      "purchase_quantity": 300,
+      "operational_surplus": 219,
+      "potential_surplus": 225
+    },
+    "warnings": [
+      "sobrante_alto:46594213118247",
+      "sobrante_alto:46594213314855",
+      "sobrante_alto:46594221146407",
+      "sobrante_alto:46594221343015",
+      "sobrante_alto:46594235040039",
+      "sobrante_alto:46594235269415"
+    ]
+  },
+  "quote": {
+    "lineas": [
+      {
+        "id": "46594213118247",
+        "productId": "8634233684263",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "verde",
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
+        "wasteReserve": 0,
+        "requiredQuantity": 7,
+        "purchaseQuantity": 50,
+        "used": 7,
+        "leftoverInventory": 43,
+        "consumptionCost": 863,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594213118247",
+        "nombre": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "id": "46594213314855",
+        "productId": "8634233684263",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "verde",
+        "cantidadNecesaria": 20,
+        "designQuantity": 20,
+        "wasteReserve": 0,
+        "requiredQuantity": 20,
+        "purchaseQuantity": 50,
+        "used": 20,
+        "leftoverInventory": 30,
+        "consumptionCost": 5215,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594213314855",
+        "nombre": "B2b Globo Latex Redondo Fashion Verde Lima — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 30
+      },
+      {
+        "id": "46594221146407",
+        "productId": "8634235781415",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
+        "wasteReserve": 6,
+        "requiredQuantity": 13,
+        "purchaseQuantity": 50,
+        "used": 7,
+        "leftoverInventory": 37,
+        "consumptionCost": 1603,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594221146407",
+        "nombre": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "id": "46594221343015",
+        "productId": "8634235781415",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 17,
+        "designQuantity": 17,
+        "wasteReserve": 0,
+        "requiredQuantity": 17,
+        "purchaseQuantity": 50,
+        "used": 17,
+        "leftoverInventory": 33,
+        "consumptionCost": 4433,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594221343015",
+        "nombre": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 33
+      },
+      {
+        "id": "46594235040039",
+        "productId": "8634239516967",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "negro",
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
+        "wasteReserve": 0,
+        "requiredQuantity": 7,
+        "purchaseQuantity": 50,
+        "used": 7,
+        "leftoverInventory": 43,
+        "consumptionCost": 863,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594235040039",
+        "nombre": "B2b Globo Latex Redondo Fashion Negro — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "id": "46594235269415",
+        "productId": "8634239516967",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "negro",
+        "cantidadNecesaria": 17,
+        "designQuantity": 17,
+        "wasteReserve": 0,
+        "requiredQuantity": 17,
+        "purchaseQuantity": 50,
+        "used": 17,
+        "leftoverInventory": 33,
+        "consumptionCost": 4433,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594235269415",
+        "nombre": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 33
+      }
+    ],
+    "total": 57603,
+    "mermaPorcentaje": 8,
+    "purchaseCost": 57603,
+    "consumptionCost": 17410,
+    "targetWasteReserve": 6,
+    "coveredWasteReserve": 6,
+    "leftoverInventory": 219,
+    "incluyeIva": true,
+    "complementosSoportados": false,
+    "plan_hash": "f5feccfdfebc48d9485a6a29f602c927e20f5913ac86bebec30f6a295fc73dc8"
+  },
+  "lista_materiales": {
+    "operation_schema_version": "lista-materiales-result.v1",
+    "currency": "COP",
+    "incluye_iva": true,
+    "lineas": [
+      {
+        "variant_id": "46594213118247",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "variant_id": "46594213314855",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 20,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 30
+      },
+      {
+        "variant_id": "46594221146407",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "variant_id": "46594221343015",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 17,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 33
+      },
+      {
+        "variant_id": "46594235040039",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 43
+      },
+      {
+        "variant_id": "46594235269415",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 17,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 33
+      }
+    ],
+    "total": 57603
+  },
+  "descartadas": [
+    "Pata izquierda de tres balones de fútbol de 24 pulgadas con su base: contada en la foto.",
+    "Globos impresos de fútbol de 12 pulgadas: contados en la foto.",
+    "La lectura del análisis (52 visibles, 65 estimados) cubre el arco entero y se queda corta frente al conteo con zoom; se usa una pista acotada a la banda orgánica."
+  ],
+  "pista_conteo": {
+    "usada": true,
+    "origen": "Conteo en la foto acotado a la banda orgánica (sin impresos ni pata de balones gigantes): 76 globos visibles (25 lima, 28 negros, 23 blancos); con los de atrás, unos 88.",
+    "lectura_del_analisis": {
+      "globos_visibles": 52,
+      "exacto": false,
+      "estimado_total": 65,
+      "racimos": 13,
+      "globos_por_racimo": 4,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.3
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.4
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.3
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.88
+    }
+  }
+}

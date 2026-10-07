@@ -1,0 +1,117 @@
+{
+  "id": "deco-real-30-columna-balon-futbol",
+  "titulo": "Columna de fútbol con balón en la punta",
+  "tematica": "Fútbol verde lima, negro y blanco",
+  "eventos": [
+    "Cumpleaños",
+    "Fiesta de fútbol",
+    "Celebración deportiva"
+  ],
+  "edad": {
+    "min": 3,
+    "max": 40
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-30-columna-balon-futbol.jpg",
+      "fuente": "sempertex-10.jpg",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "columna",
+      "cantidad": 1
+    },
+    {
+      "estructura": "figura",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594213118247",
+      "sku": "B2B-20000462",
+      "cantidad": 10,
+      "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50 · R-5 · verde lima",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "10 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+    },
+    {
+      "variantId": "46594213314855",
+      "sku": "B2B-20000748",
+      "cantidad": 27,
+      "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-12 / PAQUETE X 50 · R-12 · verde lima",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "27 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+    },
+    {
+      "variantId": "46594221146407",
+      "sku": "B2B-20000437",
+      "cantidad": 26,
+      "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+      "origenCantidad": "plan_python_y_foto",
+      "detalleCantidad": "2 de columna (plan resuelto por Python) + 24 de balón, estimado a partir de la foto: globitos blancos de relleno entre flores y hexágonos (11 a la vista) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+    },
+    {
+      "variantId": "46594221343015",
+      "sku": "B2B-20000723",
+      "cantidad": 25,
+      "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco",
+      "origenCantidad": "plan_python_y_foto",
+      "detalleCantidad": "5 de columna (plan resuelto por Python) + 20 de balón, estimado a partir de la foto: 1 globo blanco algo menos inflado en cada uno de los 20 hexágonos [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+    },
+    {
+      "variantId": "46594235040039",
+      "sku": "B2B-20000493",
+      "cantidad": 65,
+      "nota": "B2b Globo Latex Redondo Fashion Negro — R-5 / PAQUETE X 50 · R-5 · negro",
+      "origenCantidad": "plan_python_y_foto",
+      "detalleCantidad": "5 de columna (plan resuelto por Python) + 60 de balón, estimado a partir de la foto: 12 flores negras de 5 pétalos (los pentágonos del balón) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+    },
+    {
+      "variantId": "46594235269415",
+      "sku": "B2B-20000781",
+      "cantidad": 11,
+      "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "11 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/nueva-sempertex-10.plan.json]"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Fija una base pesada y arma un soporte vertical de unos 2 metros para el cuerpo de la columna."
+    },
+    {
+      "orden": 2,
+      "texto": "Infla los globos verde lima, negros y blancos de 12 pulgadas y los chicos de 5 pulgadas, y arma racimos de cuatro."
+    },
+    {
+      "orden": 3,
+      "texto": "Monta los racimos desde la base: un tramo verde lima abajo, en el medio verde lima de un lado y negro del otro, y arriba otro tramo verde lima. Entre tramo y tramo pon un cuello de globos chicos negros, blancos y verde lima."
+    },
+    {
+      "orden": 4,
+      "texto": "Para el balón, infla 60 globos negros de 5 pulgadas y átalos de cinco en cinco por el cuello: te quedan 12 flores negras."
+    },
+    {
+      "orden": 5,
+      "texto": "Une las flores negras con 20 globos blancos de 12 pulgadas un poco menos inflados, de modo que cada flor quede rodeada de blanco, y rellena los huecos con globos blancos de 5 pulgadas hasta cerrar la bola."
+    },
+    {
+      "orden": 6,
+      "texto": "Fija el balón en la punta de la columna y revisa que todo quede firme antes de la fiesta."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#54cc04",
+    "#222725",
+    "#e1e4e3",
+    "#7ddc11"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

@@ -1,0 +1,122 @@
+{
+  "id": "deco-real-26-escultura-mono-y-flores",
+  "titulo": "Escultura de moño con flores pastel",
+  "tematica": "Flores y moño en tonos pastel perlados",
+  "eventos": [
+    "Cumpleaños",
+    "Día de la Madre",
+    "Baby shower",
+    "Fiesta de primavera"
+  ],
+  "edad": {
+    "min": 1,
+    "max": 80
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-26-escultura-mono-y-flores.jpg",
+      "fuente": "sempertex-06.png",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "figura",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "48718444626215",
+      "sku": "B2B-20018556",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Tubito Silk Verde Menta — T260 / PAQUETE X 20 · T260 · verde menta",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (tallos, hojas y base del capullo)"
+    },
+    {
+      "variantId": "48414513234215",
+      "sku": "B2B-20018408",
+      "cantidad": 3,
+      "nota": "B2b Globo Latex Tubito Pastel Mate Durazno Malibu — T260 / PAQUETE X 20 · T260 · durazno",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (unos 10 pétalos de lazo de la flor grande)"
+    },
+    {
+      "variantId": "48718444527911",
+      "sku": "B2B-20018518",
+      "cantidad": 3,
+      "nota": "B2b Globo Latex Tubito Silk Rosa Primaveral — T260 / PAQUETE X 20 · T260 · rosa perlado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (1 para el capullo y 2 para las cintas del moño; en la foto las cintas se ven más gruesas que un globo para modelar común)"
+    },
+    {
+      "variantId": "48718444101927",
+      "sku": "B2B-20018537",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Tubito Silk Amatista — T260 / PAQUETE X 20 · T260 · lila amatista",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (8 pétalos de la flor lila)"
+    },
+    {
+      "variantId": "46594252112167",
+      "sku": "B2B-20012284",
+      "cantidad": 2,
+      "nota": "B2b Globo Latex Redondo Pastel Mate Verde — R-5 / PAQUETE X 20 · R-5 · verde menta",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (centro de las dos flores)"
+    },
+    {
+      "variantId": "48718442823975",
+      "sku": "B2B-20018513",
+      "cantidad": 2,
+      "nota": "B2b Globo Latex Redondo Silk Rosa Primaveral — R-18 / PAQUETE X 6 · R-18 · rosa perlado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (las dos alas del moño)"
+    },
+    {
+      "variantId": "48718443381031",
+      "sku": "B2B-20018503",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Silk Rosa Primaveral — R-5 / PAQUETE X 50 · R-5 · rosa perlado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (nudo del moño)"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Prepara una base con peso y una varilla o tubo al centro de unos 80 cm; ahí se sujeta toda la figura, que mide alrededor de 1,2 metros."
+    },
+    {
+      "orden": 2,
+      "texto": "Arma los tallos: infla los globos para modelar verde menta, dóblalos en tallos y hojas y amárralos a la varilla."
+    },
+    {
+      "orden": 3,
+      "texto": "Haz la flor grande: infla tres globos para modelar color durazno, dóblalos en lazos para formar unos diez pétalos y pon al centro un globo verde menta de 5 pulgadas."
+    },
+    {
+      "orden": 4,
+      "texto": "Haz la flor lila: tuerce un globo para modelar amatista en ocho pétalos cortos y pon al centro el otro globo verde menta pequeño."
+    },
+    {
+      "orden": 5,
+      "texto": "Para el capullo, dobla un globo para modelar rosa en varios lazos juntos y ciérralo abajo con un trozo verde."
+    },
+    {
+      "orden": 6,
+      "texto": "Arma el moño con dos globos rosa de 18 pulgadas atados por el cuello, un globo rosa pequeño como nudo y dos globos para modelar rosa como cintas; fíjalo al frente, sobre los tallos."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#ae958f",
+    "#ebd2a0",
+    "#95c3a7",
+    "#857597"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

@@ -5,10 +5,16 @@ import { sanearOpcionesCatalogo } from "@/lib/ia/guiado/opciones-catalogo";
 const tematicas = tematicasDisponibles();
 const opcionesDe = (texto: string) => (texto.trimEnd().split("\n").at(-1) ?? "").replace(/^Opciones:\s*/, "").split(" | ");
 
-// «Dorado y blanco» no existe en el catálogo: se quita; «Rosa y dorado» sí existe y se queda.
-const mixto = opcionesDe(sanearOpcionesCatalogo("¿Qué colores te gustan?\nOpciones: Dorado y blanco | Rosa y dorado | Azul y plateado | Otra idea", tematicas));
-assert.ok(!mixto.includes("Dorado y blanco"), `Sin «Dorado y blanco»: ${mixto.join(" | ")}`);
-assert.ok(mixto.includes("Rosa y dorado") && mixto.includes("Azul y plateado") && mixto.includes("Otra idea"), mixto.join(" | "));
+// «Rojo y dorado» no existe en el catálogo: se quita; «Rosa y dorado» sí existe y se queda. «Dorado y blanco» ya existe
+// desde que está el aro blanco, dorado y nude de Sempertex (2026-10-06), así que se ofrece.
+const mixto = opcionesDe(sanearOpcionesCatalogo("¿Qué colores te gustan?\nOpciones: Rojo y dorado | Rosa y dorado | Azul y plateado | Dorado y blanco | Otra idea", tematicas));
+assert.ok(!mixto.includes("Rojo y dorado"), `Sin «Rojo y dorado»: ${mixto.join(" | ")}`);
+assert.ok(mixto.includes("Rosa y dorado") && mixto.includes("Azul y plateado") && mixto.includes("Dorado y blanco") && mixto.includes("Otra idea"), mixto.join(" | "));
+
+// Temporadas: solo las que tienen decoración, y en sus colores («Navidad roja» no existe; la verde salvia sí).
+const temporadas = opcionesDe(sanearOpcionesCatalogo("¿Qué temática?\nOpciones: Navidad roja y dorada | Navidad verde salvia, perla y dorado | San Valentín rosa, rojo y blanco | Día de las madres | Halloween morado | Aro navideño verde salvia | Otra temática", tematicas));
+assert.ok(!temporadas.includes("Navidad roja y dorada") && !temporadas.includes("Halloween morado"), `Sin temporadas inventadas: ${temporadas.join(" | ")}`);
+assert.ok(["Navidad verde salvia, perla y dorado", "San Valentín rosa, rojo y blanco", "Día de las madres", "Aro navideño verde salvia", "Otra temática"].every((opcion) => temporadas.includes(opcion)), temporadas.join(" | "));
 
 // Temáticas inventadas: se sustituyen por las del catálogo.
 const inventadas = opcionesDe(sanearOpcionesCatalogo("¿Qué temática?\nOpciones: Videojuegos | Superhéroes | Princesas | Otra temática", tematicas));

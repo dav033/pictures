@@ -1,0 +1,130 @@
+{
+  "id": "deco-real-22-guirnalda-san-valentin",
+  "titulo": "Guirnalda de San Valentín «Te amo»",
+  "tematica": "San Valentín rosa, rojo y blanco",
+  "eventos": [
+    "San Valentín",
+    "Amor y Amistad",
+    "Aniversario"
+  ],
+  "edad": {
+    "min": 16,
+    "max": 70
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-22-guirnalda-san-valentin.jpg",
+      "fuente": "sempertex-02.png",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "guirnalda",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594236416295",
+      "sku": "B2B-20000732",
+      "cantidad": 7,
+      "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "46594342453543",
+      "sku": "B2B-20017131",
+      "cantidad": 12,
+      "nota": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-12 / PAQUETE X 50 · R-12 · rosa claro",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "49475778216231",
+      "sku": "B2B-20019344",
+      "cantidad": 12,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-12 / PAQUETE X 50 · R-12 · blanco perlado",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "50030991311143",
+      "sku": "B2B-20019705",
+      "cantidad": 33,
+      "nota": "B2b Globo Fashion Rosa — R-12 / PAQUETE X 50 · R-12 · rosa fuerte",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "49733988450599",
+      "sku": "B2B-30005722",
+      "cantidad": 2,
+      "nota": "B2b Globo Metalizado Love — 18 IN / PAQUETE X 1 · 18 IN · «LOVE» rojo y blanco",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (dos globos metalizados LOVE arriba)"
+    },
+    {
+      "variantId": "50244465492263",
+      "sku": "B2B-20020336",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Fashion Te Amo Corazones Divertidos — CORAZON 12 / PAQUETE X 12 · C-12 · rojo con «Te amo»",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (corazón rojo de la izquierda; el estampado del catálogo no es idéntico al de la foto)"
+    },
+    {
+      "variantId": "47230947655975",
+      "sku": "B2B-20001347",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Corazon Fashion Rosado — CORAZON 12 / PAQUETE X 12 · C-12 · rosa claro",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (corazón rosa de la derecha; en el catálogo no hay corazón de látex rosa con «Te amo», alternativa: Globo Metalizado Corazón Te Amo Rosa 18 IN (49859131179303))"
+    },
+    {
+      "variantId": "46594168389927",
+      "sku": "B2B-30000995",
+      "cantidad": 1,
+      "nota": "B2b Cortina Metalica Roja — PAQUETE X 1 · rojo",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (cortina de tiras bajo la guirnalda; no es globo)"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Fija en la pared una tira para guirnalda de unos 2 metros con ganchos o cinta de montaje, y cuelga debajo la cortina metálica roja."
+    },
+    {
+      "orden": 2,
+      "texto": "Infla los globos de 12 pulgadas a tamaños distintos (algunos bien llenos y otros a medio inflar) para que la guirnalda se vea natural."
+    },
+    {
+      "orden": 3,
+      "texto": "Ata los globos por parejas y luego en grupos de cuatro del mismo tono, y sujétalos a la tira: rosa fuerte en los extremos, blanco perlado al centro, rojo hacia la izquierda y rosa claro hacia la derecha, como en la foto."
+    },
+    {
+      "orden": 4,
+      "texto": "Con los globos rosa fuerte más pequeños forma una tira que cuelgue por debajo de la guirnalda, sobre la cortina."
+    },
+    {
+      "orden": 5,
+      "texto": "Coloca arriba los dos globos metalizados «LOVE» y pega los corazones entre los grupos: el rojo «Te amo» a la izquierda y el rosa a la derecha."
+    },
+    {
+      "orden": 6,
+      "texto": "Rellena los huecos que queden, revisa que todo esté firme y acomoda la forma antes de la celebración."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#ccc7c7",
+    "#cb4a74",
+    "#a92942",
+    "#c78e97",
+    "#ba0c12"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

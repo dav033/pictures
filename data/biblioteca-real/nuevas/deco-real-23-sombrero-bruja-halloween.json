@@ -1,0 +1,170 @@
+{
+  "id": "deco-real-23-sombrero-bruja-halloween",
+  "titulo": "Sombrero de bruja con calabazas",
+  "tematica": "Halloween negro, plata y naranja",
+  "eventos": [
+    "Halloween",
+    "Fiesta de disfraces",
+    "Cumpleaños"
+  ],
+  "edad": {
+    "min": 3,
+    "max": 60
+  },
+  "fotos": [
+    {
+      "url": "/biblioteca-sempertex/referencias/deco-real-23-sombrero-bruja-halloween.jpg",
+      "fuente": "sempertex-03.jpg",
+      "licencia": "referencia_web_sin_licencia"
+    }
+  ],
+  "video": null,
+  "piezas": [
+    {
+      "estructura": "figura",
+      "cantidad": 1
+    }
+  ],
+  "materiales": [
+    {
+      "variantId": "46594267676967",
+      "sku": "B2B-20014159",
+      "cantidad": 12,
+      "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 12 · R-12 · plateado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (8 para los dos pisos bajos del cono y 4 de la base)"
+    },
+    {
+      "variantId": "46594267840807",
+      "sku": "B2B-20017756",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Redondo Reflex Plata — R-9 / PAQUETE X 20 · R-9 · plateado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (dos pisos medios del cono)"
+    },
+    {
+      "variantId": "46594267611431",
+      "sku": "B2B-20014244",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 20 · R-5 · plateado",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (piso alto y punta del cono)"
+    },
+    {
+      "variantId": "46594235171111",
+      "sku": "B2B-20000779",
+      "cantidad": 12,
+      "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 12 · R-12 · negro",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (anillo del ala del sombrero)"
+    },
+    {
+      "variantId": "46594234974503",
+      "sku": "B2B-20000491",
+      "cantidad": 10,
+      "nota": "B2b Globo Latex Redondo Fashion Negro — R-5 / PAQUETE X 12 · R-5 · negro",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (relleno del ala)"
+    },
+    {
+      "variantId": "47318128263463",
+      "sku": "B2B-20018023",
+      "cantidad": 4,
+      "nota": "B2b Globo Latex Redondo Fashion Naranja Cobrizo — R-12 / PAQUETE X 12 · R-12 · naranja cobrizo",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (banda del sombrero)"
+    },
+    {
+      "variantId": "47318128165159",
+      "sku": "B2B-20018016",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Redondo Fashion Naranja Cobrizo — R-5 / PAQUETE X 20 · R-5 · naranja cobrizo",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (bolitas de la banda; 4 visibles, se asume lo mismo atrás)"
+    },
+    {
+      "variantId": "47318128427303",
+      "sku": "B2B-20018030",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Fashion Naranja Cobrizo — R-24 / PAQUETE X 3 · R-24 · naranja cobrizo",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (calabaza grande de la izquierda)"
+    },
+    {
+      "variantId": "47318128361767",
+      "sku": "B2B-20018027",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Fashion Naranja Cobrizo — R-18 / PAQUETE X 6 · R-18 · naranja cobrizo",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (calabaza mediana de la derecha)"
+    },
+    {
+      "variantId": "47318266118439",
+      "sku": "B2B-20018032",
+      "cantidad": 4,
+      "nota": "B2b Globo Latex Tubito Fashion Naranja Cobrizo — T260 / PAQUETE X 20 · T260 · naranja cobrizo",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (borde ondulado del ala)"
+    },
+    {
+      "variantId": "46594290975015",
+      "sku": "B2B-20016802",
+      "cantidad": 50,
+      "nota": "B2b Globo Latex Redondo Reflex Champaña — R-5 / PAQUETE X 50 · R-5 · champaña",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (tronco de unos 12 pisos de cuatro y remates junto a las calabazas)"
+    },
+    {
+      "variantId": "47466190471463",
+      "sku": "B2B-20017570",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Tubito Reflex Champaña — T260 / PAQUETE X 20 · T260 · champaña",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (hebilla, 2 tallos con lazo y 2 para las líneas de las calabazas)"
+    },
+    {
+      "variantId": "46594302181671",
+      "sku": "B2B-20016826",
+      "cantidad": 4,
+      "nota": "B2b Globo Latex Redondo Fashion Latte — R-12 / PAQUETE X 12 · R-12 · café con leche",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (2 visibles sobre la base; se asumen 2 atrás)"
+    }
+  ],
+  "pasos": [
+    {
+      "orden": 1,
+      "texto": "Arma la base: pon un peso o base de columna en el piso y fija cuatro globos plateados de 12 pulgadas en cruz; encima coloca cuatro globos color café con leche."
+    },
+    {
+      "orden": 2,
+      "texto": "Sube el tronco con un tubo o varilla al centro: ve armando grupos de cuatro globos champaña pequeños de 5 pulgadas, girándolos un poco en cada piso, hasta unos 60 cm."
+    },
+    {
+      "orden": 3,
+      "texto": "Haz el ala: forma un anillo con los globos negros de 12 pulgadas, rellena los huecos con los negros pequeños y bordéalo con globos para modelar naranja cobrizo haciendo ondas."
+    },
+    {
+      "orden": 4,
+      "texto": "Arma la banda con cuatro globos naranja cobrizo de 12 pulgadas y sus bolitas pequeñas, y haz la hebilla doblando en cuadrado un globo para modelar champaña."
+    },
+    {
+      "orden": 5,
+      "texto": "Levanta el cono con grupos de cuatro globos plateados: primero de 12, luego de 9 y al final de 5 pulgadas, y termina con un solo globo en la punta."
+    },
+    {
+      "orden": 6,
+      "texto": "Para las calabazas infla un globo naranja cobrizo de 24 pulgadas y otro de 18, marca los gajos con globos para modelar champaña delgados, hazles un tallo con lazo y fíjalas a cada lado del tronco."
+    }
+  ],
+  "shopifyHandle": null,
+  "paleta": [
+    "#1b1515",
+    "#5b5b5d",
+    "#8c3917",
+    "#7e6d53",
+    "#a0815e"
+  ],
+  "fotoRepresentativa": true,
+  "origen": "referencia_real"
+}

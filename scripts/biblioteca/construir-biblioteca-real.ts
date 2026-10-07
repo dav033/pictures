@@ -22,6 +22,14 @@ import type { PistaConteo } from "../../src/lib/plan/conteo-referencia";
 const ENTRADA = process.env.BIBLIOTECA_REAL_ENTRADA ?? "C:/Users/davidt/Downloads/hola";
 const DATOS = path.join(process.cwd(), "data", "biblioteca-real");
 const ANALISIS = path.join(DATOS, "analisis");
+/**
+ * Decoraciones curadas a mano sobre fotos oficiales de Sempertex (deco-real-21…31, 2026-10-06): sus análisis viven en
+ * analisis/nueva-*.json y sus cantidades mezclan el plan de Python con conteos sobre la foto (origenCantidad). Este
+ * script no las re-resuelve (su heurística es solo R-12) y al publicar las conserva tal cual desde aquí.
+ */
+const CURADAS = path.join(DATOS, "nuevas");
+/** Solo los análisis que este script generó («real-NN-…»); los «nueva-*» son de las curadas. */
+const DEL_SCRIPT = /^real-\d{2}-/;
 const FOTOS = path.join(process.cwd(), "public", "biblioteca-sempertex", "referencias");
 const EXTENSIONES = new Set([".jpg", ".jpeg", ".webp", ".avif", ".gif"]);
 
@@ -219,7 +227,7 @@ async function construirPlanesGuardados(): Promise<void> {
       porColor.set(color, [...(porColor.get(color) ?? []), fila]);
     }
     const { readdir: leerDirectorio } = await import("node:fs/promises");
-    const archivos = (await leerDirectorio(ANALISIS)).filter((nombre) => nombre.endsWith(".json") && !nombre.endsWith(".plan.json")).sort();
+    const archivos = (await leerDirectorio(ANALISIS)).filter((nombre) => DEL_SCRIPT.test(nombre) && nombre.endsWith(".json") && !nombre.endsWith(".plan.json")).sort();
     for (const archivo of archivos) {
       const raw = record(JSON.parse(await readFile(path.join(ANALISIS, archivo), "utf8")) as unknown);
       const respuesta = record(raw.respuesta);
@@ -341,7 +349,7 @@ function pasosDe(tipo: string, patron: string): Array<{ orden: number; texto: st
 async function publicarBibliotecaReal(): Promise<void> {
   const { writeFile: guardar } = await import("node:fs/promises");
   const salida: unknown[] = [];
-  const archivos = (await readdir(ANALISIS)).filter((nombre) => nombre.endsWith(".plan.json")).sort();
+  const archivos = (await readdir(ANALISIS)).filter((nombre) => DEL_SCRIPT.test(nombre) && nombre.endsWith(".plan.json")).sort();
   for (const archivo of archivos) {
     const planCrudo = record(JSON.parse(await readFile(path.join(ANALISIS, archivo), "utf8")) as unknown);
     if (planCrudo.estado !== "resuelto") continue;
@@ -414,8 +422,11 @@ async function publicarBibliotecaReal(): Promise<void> {
   const destino = path.join(process.cwd(), "src", "lib", "biblioteca-sempertex", "decoraciones.json");
   const existentes: unknown = JSON.parse(await readFile(destino, "utf8"));
   const otros = Array.isArray(existentes) ? existentes.filter((dato) => record(dato).origen !== "referencia_real") : [];
-  await guardar(destino, `${JSON.stringify([...otros, ...salida], null, 2)}\n`);
-  console.log(`Publicadas ${salida.length} decoraciones reales; ${otros.length} entradas previas preservadas.`);
+  const curadas = existsSync(CURADAS)
+    ? await Promise.all((await readdir(CURADAS)).filter((nombre) => nombre.endsWith(".json")).sort().map(async (nombre) => DecoracionSempertexSchema.parse(JSON.parse(await readFile(path.join(CURADAS, nombre), "utf8")) as unknown)))
+    : [];
+  await guardar(destino, `${JSON.stringify([...otros, ...salida, ...curadas], null, 2)}\n`);
+  console.log(`Publicadas ${salida.length} decoraciones reales y ${curadas.length} curadas; ${otros.length} entradas previas preservadas.`);
 }
 
 async function main(): Promise<void> {

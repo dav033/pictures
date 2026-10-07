@@ -20,8 +20,9 @@ export function TarjetaEleccion({ decoracion }: { decoracion: DecoracionSemperte
       </div>
       {piezas.length > 0 && <p className="mt-1 text-sm text-texto-suave">{piezas.join(" · ")}</p>}
       {decoracion.materiales.length > 0 && <ul className="mt-3 space-y-1.5 text-sm">
-        {decoracion.materiales.map((material) => <li key={material.variantId} className="flex gap-2"><span className="font-semibold tabular-nums">{material.cantidad}</span><span>{minusculaInicial(nombreMaterial(material.nota) ?? "globos")}</span></li>)}
+        {decoracion.materiales.map((material) => <li key={material.variantId} className="flex gap-2"><span className="font-semibold tabular-nums">{textoCantidad(material)}</span><span>{minusculaInicial(nombreMaterial(material.nota) ?? "globos")}</span></li>)}
       </ul>}
+      {decoracion.materiales.some(cantidadContadaEnFoto) && <p className="mt-2 text-xs text-texto-suave">{AVISO_CONTADA_EN_FOTO}</p>}
     </div>
   </section>;
 }
@@ -56,6 +57,20 @@ export function nombreMaterial(nota: string | undefined): string | null {
   const base = /\bR-\d+\s+\p{L}/u.test(primeraParte) ? presentacionMaterialGuiado(nota).nombre : primeraParte;
   return nombreGlobosCliente({ nombre: base });
 }
+
+type MaterialDecoracion = DecoracionSempertex["materiales"][number];
+
+/** La cantidad (o parte de ella) se contó a mano en la foto: se dice aproximada, no se presenta como exacta. */
+export function cantidadContadaEnFoto(material: MaterialDecoracion): boolean {
+  return material.origenCantidad === "estimado_foto" || material.origenCantidad === "plan_python_y_foto";
+}
+
+/** «≈18» si se contó en la foto; «18» si la resolvió el plan. */
+export function textoCantidad(material: MaterialDecoracion): string {
+  return `${cantidadContadaEnFoto(material) ? "≈" : ""}${material.cantidad}`;
+}
+
+export const AVISO_CONTADA_EN_FOTO = "≈ contado en la foto: cantidad aproximada.";
 
 function minusculaInicial(texto: string): string {
   return texto.charAt(0).toLocaleLowerCase("es") + texto.slice(1);

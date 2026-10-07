@@ -1,0 +1,386 @@
+{
+  "id": "nueva-sempertex-10",
+  "fuente": "sempertex-10.jpg",
+  "imagen_local": "/biblioteca-sempertex/referencias/deco-real-30-columna-balon-futbol.jpg",
+  "status": 200,
+  "respuesta": {
+    "request_id": "59e46654-b83e-4308-9368-43e9d6d19331",
+    "blueprint": {
+      "schema_version": "2.0",
+      "source_images": [
+        {
+          "image_id": "REF_01",
+          "approved_roles": [
+            "composition_reference",
+            "element_reference",
+            "palette_reference"
+          ],
+          "aspect_ratio": 1.2982
+        }
+      ],
+      "elements": [
+        {
+          "element_id": "REF_01_E01",
+          "source_image_id": "REF_01",
+          "name": "balloon column with patterned topper sphere",
+          "category": "balloon_structure",
+          "scene_role": "midground",
+          "detection_confidence": 0.98,
+          "visible_evidence": "Tall freestanding balloon column structure with lime green, black, and white stacked latex balloons topped by a complex patterned black and white spherical balloon arrangement.",
+          "reference_bbox": {
+            "x": 0.389,
+            "y": 0.076,
+            "width": 0.242,
+            "height": 0.901
+          },
+          "depth_layer": 2,
+          "include_policy": "include",
+          "approved": true,
+          "source_type": "reference_only",
+          "quantity": {
+            "mode": "exact",
+            "min": 1,
+            "max": 1
+          },
+          "appearance": {
+            "observed_colors": [
+              "lime green",
+              "matte black",
+              "white"
+            ],
+            "measured_colors": [
+              {
+                "color": "blanco",
+                "share": 0.4521
+              },
+              {
+                "color": "negro",
+                "share": 0.2092
+              }
+            ],
+            "resolved_colors": [],
+            "color_policy": "adapt_to_event_palette",
+            "material": "latex",
+            "shape": "tall dense column, on the center, no top overhang, standing on the floor",
+            "composition": "40% lime green round balloons, 30% black round balloons, 15% white round balloons arranged in a tall structured column topped with a patterned black-and-white spherical sphere unit.",
+            "patron_color": {
+              "modo": "aleatorio",
+              "colores": [
+                "negro",
+                "blanco",
+                "verde"
+              ],
+              "pesos": [
+                35,
+                25,
+                40
+              ],
+              "confianza": 0.9
+            },
+            "remate_columna": {
+              "tipo": "globo",
+              "color": "negro"
+            },
+            "tamanos_leidos": "un_solo_tamano",
+            "inclinacion": 0,
+            "conteo": {
+              "globos_visibles": 75,
+              "exacto": false,
+              "estimado_total": 120,
+              "racimos": null,
+              "globos_por_racimo": null,
+              "por_tamano": [
+                {
+                  "clase": "chico",
+                  "proporcion": 0.4
+                },
+                {
+                  "clase": "mediano",
+                  "proporcion": 0.5
+                },
+                {
+                  "clase": "grande",
+                  "proporcion": 0.1
+                }
+              ],
+              "largo_relativo": null,
+              "alto_relativo": null,
+              "confianza": 0.85
+            },
+            "referencias_medidas": [
+              {
+                "codigo": "005",
+                "familia": "fashion",
+                "nombre": "Blanco",
+                "nombre_completo": "Fashion Blanco",
+                "parte": 0.3637,
+                "familia_fiable": false
+              },
+              {
+                "codigo": "031",
+                "familia": "fashion",
+                "nombre": "Verde Lima",
+                "nombre_completo": "Fashion Verde Lima",
+                "parte": 0.2606,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "080",
+                "familia": "fashion",
+                "nombre": "Negro",
+                "nombre_completo": "Fashion Negro",
+                "parte": 0.2214,
+                "familia_fiable": true
+              },
+              {
+                "codigo": "405",
+                "familia": "satin",
+                "nombre": "Blanco",
+                "nombre_completo": "Satín Blanco",
+                "parte": 0.1121,
+                "familia_fiable": false
+              }
+            ]
+          },
+          "relationships": [],
+          "visual_semantics": {
+            "structure_type": "columna",
+            "placement": "arco_central",
+            "design_role": "focal",
+            "repetition_group": "REF_01_E01",
+            "density": "lujosa"
+          },
+          "quantity_semantics": "physical_instances",
+          "uncertainties": [],
+          "model_decision": {
+            "action": "include",
+            "match_type": "none",
+            "reason": "Primary visual subject of the scene.",
+            "adaptation": "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG."
+          }
+        }
+      ],
+      "composition": {
+        "focal_point": "black and white orb balloon topper atop a green and black spiraled balloon column",
+        "density": "dense",
+        "symmetry": "symmetric",
+        "negative_space": [
+          "areas not occupied by approved elements"
+        ]
+      },
+      "palette": {
+        "observed": [
+          "lime green",
+          "black",
+          "white"
+        ],
+        "priority": [
+          "lime green",
+          "black",
+          "white"
+        ]
+      },
+      "unresolved_decisions": []
+    },
+    "tieneEstructurasDeGlobos": true,
+    "tieneElementos": true,
+    "metadata": {
+      "passes": [
+        "inventory"
+      ],
+      "cached": false,
+      "cache_key": "91e73337089b37bbece670759960a7a7aba9fe5cecf8dfc0c16e93e3953d2ec6",
+      "system_prompt_hash": "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5",
+      "requires_review": false,
+      "unresolved_count": 0,
+      "default_approval_rule": "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog.",
+      "image_dimensions": [
+        {
+          "image_id": "REF_01",
+          "original": {
+            "width": 740,
+            "height": 570
+          },
+          "processed": {
+            "width": 740,
+            "height": 570
+          }
+        }
+      ]
+    },
+    "proveedor": "gemini",
+    "analisis_color": {
+      "version": "analisis-color-sempertex.v1",
+      "piezas": [
+        {
+          "elementId": "REF_01_E01",
+          "tipo": "columna",
+          "croquis": {
+            "forma": "franja vertical",
+            "parteDeLaCaja": 0.8213
+          },
+          "pixeles": {
+            "medidos": 37064,
+            "deLaCaja": 44500
+          },
+          "colores": [
+            {
+              "hex": "#ffffff",
+              "parte": 0.3637,
+              "pixeles": 13479,
+              "cruce": {
+                "hex": "#ffffff",
+                "candidatas": [
+                  {
+                    "codigo": "005",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Fashion Blanco",
+                    "nombreEn": "matte white",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#ffffff",
+                    "deltaE": 0,
+                    "distancia": 0,
+                    "tono": 0,
+                    "razonCroma": 1
+                  },
+                  {
+                    "codigo": "405",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Satín Blanco",
+                    "nombreEn": "satin white",
+                    "pms": null,
+                    "acabado": "satin",
+                    "hexGlobo": "#f7f7f5",
+                    "deltaE": 3,
+                    "distancia": 2.4,
+                    "tono": 173.2,
+                    "razonCroma": 0
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#5dd304",
+              "parte": 0.2606,
+              "pixeles": 9660,
+              "cruce": {
+                "hex": "#5dd304",
+                "candidatas": [
+                  {
+                    "codigo": "031",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Fashion Verde Lima",
+                    "nombreEn": "matte lime green",
+                    "pms": "375",
+                    "acabado": "matte",
+                    "hexGlobo": "#8ac85b",
+                    "deltaE": 34.9,
+                    "distancia": 11.2,
+                    "tono": 1.2,
+                    "razonCroma": 1.6
+                  },
+                  {
+                    "codigo": "931",
+                    "nombre": "Verde Lima",
+                    "nombreCompleto": "Reflex Verde Lima",
+                    "nombreEn": "chrome lime green",
+                    "pms": "10517",
+                    "acabado": "glossy chrome",
+                    "hexGlobo": "#83a35a",
+                    "deltaE": 56.1,
+                    "distancia": 43.2,
+                    "tono": 5.4,
+                    "razonCroma": 2.3
+                  }
+                ],
+                "porNombre": true,
+                "neutro": false,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#222624",
+              "parte": 0.2214,
+              "pixeles": 8207,
+              "cruce": {
+                "hex": "#222624",
+                "candidatas": [
+                  {
+                    "codigo": "080",
+                    "nombre": "Negro",
+                    "nombreCompleto": "Fashion Negro",
+                    "nombreEn": "matte black",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#000000",
+                    "deltaE": 14.9,
+                    "distancia": 9.8,
+                    "tono": 163,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": false,
+                "sinReferencia": false,
+                "familias": []
+              }
+            },
+            {
+              "hex": "#c5cdbf",
+              "parte": 0.1121,
+              "pixeles": 4154,
+              "cruce": {
+                "hex": "#c5cdbf",
+                "candidatas": [
+                  {
+                    "codigo": "405",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Satín Blanco",
+                    "nombreEn": "satin white",
+                    "pms": null,
+                    "acabado": "satin",
+                    "hexGlobo": "#f7f7f5",
+                    "deltaE": 17.2,
+                    "distancia": 14.9,
+                    "tono": 21.2,
+                    "razonCroma": 7.9
+                  },
+                  {
+                    "codigo": "005",
+                    "nombre": "Blanco",
+                    "nombreCompleto": "Fashion Blanco",
+                    "nombreEn": "matte white",
+                    "pms": null,
+                    "acabado": "matte",
+                    "hexGlobo": "#ffffff",
+                    "deltaE": 20.2,
+                    "distancia": 17.3,
+                    "tono": 165.6,
+                    "razonCroma": 1
+                  }
+                ],
+                "porNombre": true,
+                "neutro": true,
+                "ambigua": true,
+                "sinReferencia": false,
+                "familias": []
+              }
+            }
+          ],
+          "avisos": [
+            "Se dejó fuera un color que ocupaba menos del 6 % de la pieza (un reflejo, un borde o parte del fondo)."
+          ]
+        }
+      ]
+    }
+  }
+}

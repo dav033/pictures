@@ -13,11 +13,17 @@ const PALABRAS_DE_ESTILO = [
   "cromado", "metalizado", "princesa", "princesas", "dinosaurio", "dinosaurios", "superheroe", "superheroes", "videojuego",
   "videojuegos", "unicornio", "unicornios", "espacio", "safari", "selva", "futbol", "frozen", "sirena", "sirenas", "tropical",
   "elegante", "romantico", "romantica", "infantil", "colorida", "colorido", "halloween",
+  // Temporadas y estilos de la biblioteca real (2026-10-06): «Navidad roja» no se ofrece si solo hay Navidad verde salvia.
+  "navidad", "navideno", "navidena", "valentin", "madre", "madres", "mama", "flores", "flor", "primavera", "salvia", "lima",
+  "nude", "perla", "perlado", "perlados", "durazno", "vino",
 ];
+
+/** Formas de una misma palabra de estilo que la raíz no junta («navideño» es «Navidad»; «mamá», «Día de la Madre»). */
+const CANONICA: Readonly<Record<string, string>> = { navideno: "navidad", navidena: "navidad", madres: "madre", mama: "madre" };
 
 function palabrasDeEstilo(texto: string): string[] {
   const palabras = normalizarBusqueda(texto).split(/[^a-z0-9]+/).filter(Boolean);
-  return palabras.filter((palabra) => PALABRAS_DE_ESTILO.includes(palabra));
+  return palabras.filter((palabra) => PALABRAS_DE_ESTILO.includes(palabra)).map((palabra) => CANONICA[palabra] ?? palabra);
 }
 
 const raiz = (palabra: string) => palabra.replace(/(?:as|os|a|o|es|s)$/, "");

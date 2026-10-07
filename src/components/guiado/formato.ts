@@ -66,30 +66,59 @@ export function colorCliente(color: string | undefined | null): string {
 type LineaNombrable = { nombre?: string; tamano?: string; color?: string };
 
 /**
- * Color en palabras de cliente que la biblioteca real anota al final de cada material:
+ * Color en palabras de cliente que la biblioteca real anota al final de cada material, tras el código de tamaño
+ * (R-12 redondo, T260 para modelar, LOL6 eslabón, C-12 corazón, 18 IN metalizado):
  * «B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado» → «rosado».
  */
-const ETIQUETA_COLOR = /·\s*R-?\d{1,2}\s*·\s*([^·]+?)\s*$/i;
+const ETIQUETA_COLOR = /·\s*(?:R-?\d{1,2}|T\d{3}|LOL\s?\d{1,2}|C-?\d{1,2}|\d{1,2}\s*IN)\s*·\s*([^·]+?)\s*$/i;
 
-/** Partes de una línea de catálogo: si es un globo, su color y sus pulgadas; si no, el producto sin ruido. */
-export function partesLinea(linea: LineaNombrable): { esGlobo: boolean; color: string; pulgadas: string | null; producto: string } {
+/** La etiqueta de color de la biblioteca, en minúscula salvo lo impreso entre comillas: «vino con «Feliz día Mamá»». */
+function etiquetaCliente(etiqueta: string): string {
+  const limpia = etiqueta.trim();
+  return COLOR_CLIENTE[limpia.toLocaleLowerCase("es")]
+    ?? limpia.split(/(«[^»]*»)/).map((parte) => parte.startsWith("«") ? parte : parte.toLocaleLowerCase("es")).join("");
+}
+
+/** Globos que no son redondos y el cliente nombra por su forma: «para modelar», «de eslabón», «de corazón», «metalizado». */
+export type FormaGlobo = "modelar" | "eslabon" | "corazon" | "metalizado";
+
+function formaGlobo(original: string, producto: string): FormaGlobo | null {
+  if (/\btubito\b/i.test(producto)) return "modelar";
+  if (/link-o-loon/i.test(producto)) return "eslabon";
+  if (/\bcoraz[oó]n\b/i.test(producto) || /\bCORAZ[OÓ]N\s+\d/i.test(original)) return "corazon";
+  if (/\bmetalizado\b/i.test(producto)) return "metalizado";
+  return null;
+}
+
+/** Pulgadas que el código del catálogo dice para los globos no redondos: «LOL 6», «CORAZON 12», «18 IN». El 260 de un globo para modelar no son pulgadas. */
+function pulgadasDeForma(original: string, forma: FormaGlobo | null): string | null {
+  if (forma === "eslabon") return /\bLOL\s?(\d{1,2})\b/i.exec(original)?.[1] ?? null;
+  if (forma === "corazon") return /\bCORAZ[OÓ]N\s+(\d{1,2})\b/i.exec(original)?.[1] ?? /\bC-(\d{1,2})\b/.exec(original)?.[1] ?? null;
+  if (forma === "metalizado") return /\b(\d{1,2})\s*IN\b/.exec(original)?.[1] ?? null;
+  return null;
+}
+
+/** Partes de una línea de catálogo: si es un globo, su color, sus pulgadas y su forma; si no, el producto sin ruido. */
+export function partesLinea(linea: LineaNombrable): { esGlobo: boolean; color: string; pulgadas: string | null; producto: string; forma: FormaGlobo | null } {
   const original = (linea.nombre ?? "").trim();
   const sinPaquete = original
     .replace(/^\s*b2b\s+/i, "")
     .replace(/\s*[—–]\s.*$/, "")
     .replace(/\s*\/?\s*paquete\b.*$/i, "")
     .trim();
-  const pulgadas = pulgadasDe(original) ?? pulgadasDe(linea.tamano);
+  const forma = formaGlobo(original, sinPaquete);
+  const pulgadas = forma === "modelar" ? null : pulgadasDeForma(original, forma) ?? pulgadasDe(original) ?? pulgadasDe(linea.tamano);
   const esGlobo = !original || /\bglobos?\b/i.test(original) || /\bR-?\d{1,2}\b/i.test(original);
-  if (!esGlobo) return { esGlobo, color: "", pulgadas, producto: sinPaquete || original };
+  if (!esGlobo) return { esGlobo, color: "", pulgadas, producto: sinPaquete || original, forma: null };
   // La etiqueta de la biblioteca ya es el color del cliente: «Reflex Plata» → «plateado», «Azul Naval» → «azul marino».
   const etiqueta = ETIQUETA_COLOR.exec(original)?.[1];
-  if (etiqueta) return { esGlobo, color: colorCliente(etiqueta), pulgadas, producto: "" };
+  if (etiqueta) return { esGlobo, color: etiquetaCliente(etiqueta), pulgadas, producto: "", forma };
   const resto = sinPaquete
     .replace(/\bx\s*\d+\b.*$/i, "")
     .replace(/\bR-?\d{1,2}\b/gi, " ")
     .replace(/\d{1,2}(?:[.,]\d)?\s*(?:"|”|''|pulgadas?|pulg\.?)/gi, " ")
-    .replace(/\b(?:globos?|l[aá]tex|latex|redondos?|fashion|unidades?|und)\b/gi, " ")
+    .replace(/\b(?:globos?|l[aá]tex|latex|redondos?|fashion|unidades?|und|tubitos?|metalizados?|coraz[oó]n)\b/gi, " ")
+    .replace(/link-o-loon®?/gi, " ")
     .replace(/[,;].*$/, "")
     .replace(/\s+/g, " ")
     .trim()
@@ -98,7 +127,13 @@ export function partesLinea(linea: LineaNombrable): { esGlobo: boolean; color: s
     // Idempotente: un nombre ya limpio («Globo blanco de 12"») deja «blanco de» al quitarle el tamaño.
     .replace(/\s+de$/i, "")
     .trim();
-  return { esGlobo, color: colorCliente(resto || linea.color), pulgadas, producto: "" };
+  return { esGlobo, color: colorCliente(resto || linea.color), pulgadas, producto: "", forma };
+}
+
+/** «para modelar» va después del color («Globos naranja para modelar»); las demás formas, antes («Globos de corazón rojo»). */
+function conForma(base: string, color: string, forma: FormaGlobo | null, plural: boolean): string {
+  const delante = forma === "eslabon" ? " de eslabón" : forma === "corazon" ? " de corazón" : forma === "metalizado" ? (plural ? " metalizados" : " metalizado") : "";
+  return `${base}${delante}${color ? ` ${color}` : ""}${forma === "modelar" ? " para modelar" : ""}`;
 }
 
 /**
@@ -109,14 +144,14 @@ export function partesLinea(linea: LineaNombrable): { esGlobo: boolean; color: s
 export function nombreLineaCliente(linea: LineaNombrable): string {
   const partes = partesLinea(linea);
   if (!partes.esGlobo) return partes.producto || "Material";
-  return `Globo${partes.color ? ` ${partes.color}` : ""}${partes.pulgadas ? ` de ${partes.pulgadas}"` : ""}`;
+  return `${conForma("Globo", partes.color, partes.forma, false)}${partes.pulgadas ? ` de ${partes.pulgadas}"` : ""}`;
 }
 
-/** Igual que nombreLineaCliente, en plural: «Globos blancos de 12"». */
+/** Igual que nombreLineaCliente, en plural: «Globos blancos de 12"», «Globos naranja para modelar». */
 export function nombreGlobosCliente(linea: LineaNombrable): string {
   const partes = partesLinea(linea);
   if (!partes.esGlobo) return partes.producto || "Material";
-  return `Globos${partes.color ? ` ${colorEnPlural(partes.color)}` : ""}${partes.pulgadas ? ` de ${partes.pulgadas}"` : ""}`;
+  return `${conForma("Globos", partes.color ? colorEnPlural(partes.color) : "", partes.forma, true)}${partes.pulgadas ? ` de ${partes.pulgadas}"` : ""}`;
 }
 
 /** Acabado de un globo del catálogo dicho al cliente («Reflex» → «cromado»); «Fashion» es el liso de siempre. */

@@ -106,7 +106,8 @@ for (const [id, esperados] of [
   for (const nombre of esperados) assert.ok(texto.includes(nombre), `${id}: falta la fila «${nombre}» en ${texto}`);
   for (const material of idea.materiales) {
     const linea = cotizacionReal.lineas.find((item) => item.varianteId === material.variantId)!;
-    assert.ok(texto.includes(`Usas ${linea.cantidadNecesaria} globos`), `${id}: falta la cantidad ${linea.cantidadNecesaria}`);
+    // Con 1 se dice en singular («Usas 1 globo»); antes salía «Usas 1 globos».
+    assert.ok(texto.includes(`Usas ${linea.cantidadNecesaria} ${linea.cantidadNecesaria === 1 ? "globo " : "globos"}`), `${id}: falta la cantidad ${linea.cantidadNecesaria}`);
   }
   for (const jerga of ["Globo de de", "R-12", "PAQUETE", "B2b", "Reflex", "Satin", "Fashion", "· rosado"]) assert.equal(texto.includes(jerga), false, `${id}: no debe mostrar «${jerga}»`);
   // La tarjeta de la idea dice los mismos colores que su precio.
@@ -118,6 +119,27 @@ for (const [id, esperados] of [
   // Negocio: el nombre del catálogo, limpio (sin paquete ni etiqueta).
   for (const linea of cotizacionReal.lineas) assert.match(linea.nombre, /^Globo de látex 12" [A-ZÁÉÍÓÚ][^·/]*$/, `${id}: nombre de negocio limpio: ${linea.nombre}`);
   resumenReales.push(`${id.slice(0, 12)}: ${[...texto.matchAll(/Globo [^<]*?de 12"/g)].map((m) => m[0]).join(", ")}`);
+}
+
+// Ideas curadas de las fotos de Sempertex: globos metalizados, de corazón, de eslabón y para modelar, y una cortina.
+// Cada variante es una fila con su nombre de cliente, sin códigos del catálogo.
+for (const [id, esperados] of [
+  ["deco-real-22-guirnalda-san-valentin", ["Globo metalizado «LOVE» rojo y blanco de 18\"", "Globo de corazón rojo con «Te amo» de 12\"", "Globo rosa fuerte de 12\"", "Cortina Metalica Roja"]],
+  ["deco-real-29-arco-link-o-loon-fucsia-tulipanes", ["Globo de eslabón fucsia de 12\"", "Globo amarillo para modelar", "Globo fucsia de 5\""]],
+] as const) {
+  const idea = visibles.find((item) => item.id === id);
+  assert.ok(idea, `La idea ${id} debe estar visible en la biblioteca.`);
+  const cotizacionReal = cotizarEnPython(idea, id);
+  assert.equal(cotizacionReal.lineas.length, idea.materiales.length, `${id}: Python cotiza una línea por variante`);
+  const marcado = renderToStaticMarkup(createElement(CotizacionPersonalGuiada, { cotizacion: cotizacionReal, decoracion: idea }));
+  const texto = textoDe(marcado);
+  assert.equal([...marcado.matchAll(/<li[\s>]/g)].length, idea.materiales.length, `${id}: una fila por variante`);
+  for (const nombre of esperados) assert.ok(texto.includes(nombre), `${id}: falta la fila «${nombre}» en ${texto}`);
+  for (const jerga of ["R-12", "T260", "LOL", "PAQUETE", "B2b", "Tubito", "Link-O-Loon"]) assert.equal(texto.includes(jerga), false, `${id}: no debe mostrar «${jerga}»`);
+  assert.ok(!/(?<!\d)1 globos/.test(texto), `${id}: 1 globo en singular`);
+  if (id === "deco-real-22-guirnalda-san-valentin") assert.ok(texto.includes("Usas 1 unidad ·"), `${id}: la cortina se cuenta en unidades`);
+  for (const linea of cotizacionReal.lineas) assert.ok(!/paquete|·/i.test(linea.nombre) && linea.nombre !== "Globo de látex", `${id}: nombre de negocio limpio: ${linea.nombre}`);
+  resumenReales.push(`${id.slice(10, 26)}: ${cotizacionReal.lineas.length} filas`);
 }
 
 // Dos variantes del mismo color de cliente (Reflex y Metal dorado) siguen en filas distintas y se distinguen por acabado.

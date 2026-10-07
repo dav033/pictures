@@ -20,7 +20,13 @@ const sinonimosTematicos: string[][] = [
   ["espacio", "estrella", "estrellas", "planeta", "planetas", "galaxia"],
   ["safari", "selva", "jungla", "animal", "animales"],
   ["tropical", "hawaiano", "hawaiana", "hawai", "verano", "playa", "palmera", "palmeras"],
-  ["futbol", "deporte", "deportes", "partido", "campeonato"],
+  ["futbol", "deporte", "deportes", "partido", "campeonato", "balon", "balones"],
+  ["san valentin", "amor y amistad", "amor", "te amo", "enamorados", "dia de los enamorados", "corazones"],
+  ["halloween", "noche de brujas", "bruja", "brujas", "calabaza", "calabazas", "terror", "disfraces"],
+  ["navidad", "navideno", "navidena", "novena", "novena navidena", "nochebuena", "fin de ano", "ano nuevo"],
+  ["dia de la madre", "dia de las madres", "dia de la mama", "dia de mama", "feliz dia mama"],
+  ["flores", "flor", "floral", "primavera", "jardin", "tulipanes", "margaritas"],
+  ["blanco dorado y nude", "nude", "blanco y dorado", "dorado y blanco"],
   ["boda", "matrimonio", "casamiento"],
   ["xv", "quince", "quinceanos", "quinceanera", "15 anos"],
   ["bautizo", "bautismo", "comunion", "primera comunion"],
@@ -35,6 +41,10 @@ const sinonimosEvento: string[][] = [
   ["boda", "matrimonio", "casamiento"],
   ["xv", "quince", "quinceanos", "quinceanera", "15 anos"],
   ["bautizo", "bautismo", "comunion", "primera comunion"],
+  ["san valentin", "amor y amistad", "dia de los enamorados", "enamorados"],
+  ["halloween", "noche de brujas", "fiesta de disfraces", "disfraces"],
+  ["navidad", "novena", "nochebuena", "fin de ano", "ano nuevo"],
+  ["dia de la madre", "dia de las madres", "dia de la mama", "dia de mama"],
 ];
 // Las temáticas sin decoración propia (princesas, videojuegos…) se resuelven por sus colores típicos hacia las del catálogo.
 const sinonimosColor: string[][] = [
@@ -42,9 +52,11 @@ const sinonimosColor: string[][] = [
   ["dorado", "oro", "princesa", "princesas", "corona", "reina", "realeza"],
   ["azul", "celeste", "frozen", "hielo", "nieve", "invierno", "espacio", "galaxia", "estrella", "estrellas", "planeta", "planetas", "mar", "marinero", "sirena", "sirenas"],
   ["plateado", "plata", "espacio", "galaxia", "estrella", "estrellas", "robot", "robots"],
-  ["verde", "selva", "tropical", "dinosaurio", "dinosaurios", "safari", "jungla"],
-  ["negro", "negra", "halloween", "brujas", "terror"], ["naranja", "halloween", "calabaza"],
-  ["blanco", "blanca", "perla", "frozen", "nieve"],
+  ["verde", "selva", "tropical", "dinosaurio", "dinosaurios", "safari", "jungla", "salvia", "eucalipto", "lima", "menta"],
+  ["negro", "negra", "halloween", "brujas", "terror"], ["naranja", "halloween", "calabaza", "durazno", "cobrizo", "coral"],
+  ["rojo", "roja", "vino", "corazones", "san valentin"],
+  ["nude", "beige", "latte", "cafe con leche", "champana", "champagne", "crema"],
+  ["blanco", "blanca", "perla", "perlado", "nacar", "frozen", "nieve"],
   ["lila", "morado", "violeta", "purpura", "unicornio", "unicornios", "hada", "hadas", "sirena", "sirenas"],
   ["arcoiris", "multicolor", "colores vivos", "vivos", "neon", "carnaval", "festivo", "festivos", "alegre", "alegres", "colorido", "colorida", "coloridos", "videojuego", "videojuegos", "gamer", "superheroe", "superheroes", "heroe", "heroes", "circo", "payaso", "fiesta infantil"],
 ];
@@ -83,14 +95,40 @@ function esDeEventoPropio(decoracion: DecoracionSempertex): boolean {
   return decoracion.eventos.some((evento) => contieneAlguno(normalizarBusqueda(evento), EVENTOS_PROPIOS));
 }
 
+/**
+ * Ideas de motivo (una temporada o el fútbol): solo se ofrecen si el cliente nombra el motivo en el evento o en la
+ * temática. Un sombrero de bruja o un balón no son «parecidos» para un cumpleaños negro y dorado o una graduación en
+ * blanco y negro (dueño, 2026-10-06: «hay algunas que claramente no son blanco y negro»). La temática de cada idea de
+ * motivo lo nombra («Halloween negro, plata y naranja»), así que elegirla en las opciones siempre la encuentra.
+ */
+const MOTIVOS: string[][] = [
+  ["halloween", "noche de brujas", "bruja", "brujas", "calabaza", "calabazas"],
+  ["navidad", "navideno", "navidena", "novena", "nochebuena", "fin de ano"],
+  ["san valentin", "amor y amistad", "enamorados", "te amo", "aniversario"],
+  ["dia de la madre", "dia de las madres", "dia de la mama", "dia de mama", "feliz dia mama"],
+  ["futbol", "balon", "balones", "deporte", "deportes", "deportiva", "deportivo", "partido", "campeonato", "mundial"],
+];
+
+function motivoDe(decoracion: DecoracionSempertex): string[] | undefined {
+  const texto = normalizarBusqueda(`${decoracion.titulo} ${decoracion.tematica}`);
+  return MOTIVOS.find((grupo) => contieneAlguno(texto, grupo));
+}
+
+/** Quita las ideas de un motivo que el cliente no nombró. */
+function sinMotivosAjenos(catalogo: DecoracionSempertex[], entrada: { evento?: string; tematica?: string }): DecoracionSempertex[] {
+  const consulta = normalizarBusqueda(`${entrada.evento ?? ""} ${entrada.tematica ?? ""}`);
+  return catalogo.filter((decoracion) => { const motivo = motivoDe(decoracion); return !motivo || contieneAlguno(consulta, motivo); });
+}
+
 function puntajeEdad(edad: number | undefined, decoracion: DecoracionSempertex): number {
   if (edad === undefined || decoracion.edad === null) return 1;
   return edad >= decoracion.edad.min && edad <= decoracion.edad.max ? 2 : -4;
 }
 
-export function buscarDecoracionesSempertex(entradaCruda: { evento?: string; edad?: number; tematica?: string }, catalogo: DecoracionSempertex[] = bibliotecaVisible()): CoincidenciaDecoracion[] {
+export function buscarDecoracionesSempertex(entradaCruda: { evento?: string; edad?: number; tematica?: string }, catalogoCompleto: DecoracionSempertex[] = bibliotecaVisible()): CoincidenciaDecoracion[] {
   // El asistente guarda edad 0 cuando no la sabe (boda, graduación…): 0 es «sin edad», no un bebé de 0 años.
   const entrada = { ...entradaCruda, edad: entradaCruda.edad && entradaCruda.edad > 0 ? entradaCruda.edad : undefined };
+  const catalogo = sinMotivosAjenos(catalogoCompleto, entrada);
   const temaConsulta = normalizarBusqueda(entrada.tematica ?? "");
   const esBabyShower = contieneAlguno(normalizarBusqueda(entrada.evento ?? ""), ["baby shower", "bienvenida de bebe"]);
   // «niño»/«niña» en «cumpleaños de mi niño de 7» no es un baby shower: esos grupos solo cuentan si el evento lo es.
@@ -118,7 +156,9 @@ export function buscarDecoracionesSempertex(entradaCruda: { evento?: string; eda
   }
   const puntajes = catalogo.map((decoracion) => {
     const textoTema = normalizarBusqueda(`${decoracion.titulo} ${decoracion.tematica} ${decoracion.id}`);
-    const fuerzaExacta = gruposConsultados.filter((grupo) => contieneAlguno(textoTema, grupo)).length;
+    // Una idea de motivo que sigue en el catálogo es del motivo que el cliente nombró («San Valentín», «Navidad»): es
+    // exacta aunque pida otro estilo («romántico»), en vez de quedar detrás de ideas de boda o de cumpleaños.
+    const fuerzaExacta = gruposConsultados.filter((grupo) => contieneAlguno(textoTema, grupo)).length || (motivoDe(decoracion) ? 1 : 0);
     const coincideGeneroBebe = !generoBebe || contieneAlguno(textoTema, generoBebe === "nina" ? ["nina", "girl"] : generoBebe === "nino" ? ["nino", "boy"] : ["neutro", "neutra", "unisex"]);
     const exacta = fuerzaExacta > 0 && coincideGeneroBebe;
     const temaEvento = normalizarBusqueda(`${decoracion.titulo} ${decoracion.tematica} ${decoracion.eventos.join(" ")}`);
