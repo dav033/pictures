@@ -22,9 +22,10 @@ invoca con ``_aplicar_conteos`` antes de completar los armados.
   un solo eje libre (guirnalda: largo; columna: alto), la cantidad de la foto
   decide ese eje (enmienda del 2026-09-28: unas medidas físicas que no se fijaron
   pueden dejar la pieza en una fracción de la foto). Con ``espacio.fuente:
-  cliente``, ``medidas_del_cliente`` o una caja geométrica aprobada las medidas no
-  se tocan. Nunca fuera de la
-  puerta física.
+  cliente``, ``medidas_del_cliente`` o una caja geométrica que de verdad ancló la
+  escala de su foto las medidas no se tocan (una caja cortada o sin escala no fija
+  nada). Nunca fuera de la puerta física. Una pieza que ya trae su armado del motor
+  no se ajusta: el armado fija la cantidad, como el de un bouquet.
 
 Lo que este módulo necesita del plan (contar globos, la puerta física, la
 cobertura de una mezcla, el contexto de un bouquet) llega en ``PuertoPlan``: así
@@ -509,6 +510,9 @@ class PuertoPlan:
     #: Las variantes redondas que el turno permite comprar de un producto: ``(variant_id, pulgadas)``.
     #: Sin catálogo (la estimación) no hay ninguna, y un centro de mesa no pasa a globos contados.
     variantes_redondas: Callable[[str], Sequence[tuple[str, float]]] = lambda _p: ()
+    #: La pieza trae su armado del motor (``plan._armado_del_motor``), que la cuenta colocando cada globo:
+    #: ni su densidad, ni su mezcla ni sus medidas mueven ese total (``_con_armado_del_motor``).
+    cuenta_el_motor: Callable[[Mapping[str, object]], bool] = lambda _e: False
 
 
 @dataclass
@@ -1029,6 +1033,33 @@ def _geometrica(
     )
 
 
+def _con_armado_del_motor(
+    estructura: dict[str, object], cuenta: Cuenta, puerto: PuertoPlan
+) -> _Resultado:
+    """Una pieza geométrica que ya trae su armado del motor: el armado fija la cantidad, como el de un bouquet.
+
+    El motor coloca cada globo y no lee la densidad, la mezcla ni las medidas del plan, así que ningún mando
+    que este módulo mueve cambia su total. Probarlos solo dejaba un motivo falso («medidas físicas fijas»,
+    «ningún largo alcanza…») o una mezcla cambiada en el plan que nada de lo que se compra seguía. Lo que acerca
+    una pieza así a la foto son los mandos de su armado (``estimar_conteo``), no el conteo al confirmar.
+    """
+    antes = puerto.contar(estructura)
+    if dentro_de_tolerancia(cuenta.globos, antes):
+        return _Resultado(
+            estructura, "coincide", cuenta.globos, antes, antes, [], "El plan ya sigue la foto."
+        )
+    return _Resultado(
+        estructura,
+        "sin_aplicar",
+        cuenta.globos,
+        antes,
+        antes,
+        [],
+        f"La pieza trae armado del motor, que fija la cantidad ({antes} globos por pieza): ni la"
+        " densidad, ni la mezcla ni las medidas del plan la mueven.",
+    )
+
+
 @dataclass(frozen=True)
 class Ajuste:
     """Lo que la búsqueda geométrica halla para una pieza y una cuenta, sin tocar ningún plan.
@@ -1335,6 +1366,8 @@ def aplicar(
                 [],
                 "Un centro de mesa de globos contados solo sigue una cuenta exacta de pocos globos.",
             )
+        elif tipo in TIPOS_GEOMETRICOS and puerto.cuenta_el_motor(estructura):
+            resultado = _con_armado_del_motor(estructura, cuenta, puerto)
         elif tipo in TIPOS_GEOMETRICOS:
             resultado = _geometrica(
                 estructura,

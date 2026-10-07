@@ -117,6 +117,7 @@ from app.supuestos import agregar_supuesto, supuesto
 from app.merma import MERMA as _MERMA_COMPARTIDA
 from app.operational_models import ContractModel, OperationalRequest
 from app.plan_worker import run_plan_cpu
+from app.registro import registrar_evento
 from app.patron_color import (
     CONFIANZA_MINIMA_PISTA,
     EstructuraPatron,
@@ -874,7 +875,77 @@ def _normalize_space_source(space: Mapping[str, object]) -> dict[str, object]:
     return normalized
 
 
-def _complete_measures(raw_plan: Mapping[str, object]) -> dict[str, object]:
+_NOMBRE_MEDIDA = {"ancho_m": "ancho", "alto_m": "alto", "largo_m": "largo"}
+
+
+def _metros_es(valor: float) -> str:
+    """Una medida como la lee el cliente: coma decimal y sin ceros de más (2.4 → «2,4»)."""
+    return f"{valor:.2f}".rstrip("0").rstrip(".").replace(".", ",")
+
+
+def _supuesto_de_medidas(
+    structure: Mapping[str, object],
+    structure_type: str,
+    measures: Mapping[str, object],
+    missing: Sequence[str],
+    declared: Mapping[str, object] | None,
+) -> str:
+    """El supuesto de las medidas que el plan asumió para una pieza: solo las que faltaban.
+
+    Sin ninguna medida, el de siempre («medidas asumidas para arco: 3 m × 2.4 m — no nos diste…»), que Next
+    pone en palabras del cliente (``supuestoCliente``). Con alguna medida, dice cuál asumió y de dónde salen
+    las otras: «Arco: usé un alto estándar de 2,4 m; el ancho de 3 m es el que pediste.» Hasta el 2026-10-07
+    bastaba que faltara una para escribir el de siempre con las dos, y el cliente leía «no me diste el tamaño»
+    justo después de pedir «un arco de 3 metros» (S3 del comparador 130). Una medida dada es «la que
+    pediste» si es la que el plan declaró (``declared``, las medidas antes de medir la foto; sin él, todas las
+    del plan) y «sale de la foto» si la escribió la escala de la foto (``_medir_desde_cajas``).
+    """
+    given = [
+        key
+        for key in ("ancho_m", "alto_m", "largo_m")
+        if key not in missing and _number(measures.get(key)) is not None
+    ]
+    if not given:
+        values = [
+            str(measures[key]) + " m" for key in ("ancho_m", "alto_m", "largo_m") if key in measures
+        ]
+        return f"medidas asumidas para {structure_type}: {' × '.join(values)} — no nos diste el tamaño del espacio"
+
+    def as_said(keys: Sequence[str]) -> str:
+        return " y ".join(
+            f"el {_NOMBRE_MEDIDA[key]} de {_metros_es(cast(float, _number(measures.get(key))))} m"
+            for key in keys
+        )
+
+    def from_plan(key: str) -> bool:
+        return declared is None or _number(declared.get(key)) == _number(measures.get(key))
+
+    assumed = " y ".join(
+        f"un {_NOMBRE_MEDIDA[key]} estándar de {_metros_es(cast(float, _number(measures.get(key))))} m"
+        for key in missing
+    )
+    parts = [f"usé {assumed}"]
+    asked = [key for key in given if from_plan(key)]
+    photo = [key for key in given if not from_plan(key)]
+    if asked:
+        parts.append(f"{as_said(asked)} {'es el que pediste' if len(asked) == 1 else 'son los que pediste'}")
+    if photo:
+        parts.append(f"{as_said(photo)} {'sale de la foto' if len(photo) == 1 else 'salen de la foto'}")
+    name = _text(structure.get("nombre")) or structure_type.replace("_", " ").capitalize()
+    return cast(str, supuesto(name, "; ".join(parts) + "."))
+
+
+def _complete_measures(
+    raw_plan: Mapping[str, object],
+    *,
+    declaradas: Mapping[str, Mapping[str, object]] | None = None,
+) -> dict[str, object]:
+    """El plan con las medidas por defecto de cada pieza que no las trae, y un supuesto por pieza que lo dice.
+
+    ``declaradas``: las medidas de cada pieza (por ``estructura_id``) tal como el plan las declaró, antes de
+    que la foto escribiera las suyas; dicen en el supuesto qué medida pidió el cliente y cuál salió de la foto
+    (``_supuesto_de_medidas``). Sin él, toda medida que el plan trae es la que pidió.
+    """
     plan = {key: value for key, value in raw_plan.items()}
     space = _normalize_space_source(_mapping(plan.get("espacio")))
     plan["espacio"] = space
@@ -896,13 +967,13 @@ def _complete_measures(raw_plan: Mapping[str, object]) -> dict[str, object]:
         measures = {**defaults, **dict(raw_measures)}
         missing = [key for key in defaults if raw_measures.get(key) is None]
         if missing:
-            values = [
-                str(measures[key]) + " m"
-                for key in ("ancho_m", "alto_m", "largo_m")
-                if key in measures
-            ]
+            declared = (
+                None
+                if declaradas is None
+                else declaradas.get(_text(structure.get("estructura_id")) or "", {})
+            )
             assumptions.append(
-                f"medidas asumidas para {structure_type}: {' × '.join(values)} — no nos diste el tamaño del espacio"
+                _supuesto_de_medidas(structure, structure_type, measures, missing, declared)
             )
         structure["medidas"] = measures
         structures.append(structure)
@@ -946,8 +1017,14 @@ def _medir_desde_cajas(
     *,
     medidas_del_cliente: bool,
     medidas_cliente_de: Sequence[str] = (),
+    anclados: set[str] | None = None,
 ) -> tuple[dict[str, object], list[str]]:
-    """Deriva medidas con una escala isotrópica por foto aprobada."""
+    """Deriva medidas con una escala isotrópica por foto aprobada.
+
+    ``anclados`` recoge el ``estructura_id`` de cada pieza cuya caja **sí** se usó: la de una foto con escala,
+    que es el ancla o sale de ella. Una caja cortada por un borde, poco confiable o en una foto sin pieza que dé
+    escala no ancla ni deriva nada y no entra (``_ids_medidas_fijas_en_conteo``).
+    """
     plan = dict(raw_plan)
     if not pistas:
         return plan, []
@@ -1217,6 +1294,9 @@ def _medir_desde_cajas(
         if source_image_id not in escalas:
             nuevas_estructuras.append(estructura)
             continue
+        anclado = _text(estructura.get("estructura_id"))
+        if anclados is not None and anclado:
+            anclados.add(anclado)
         ancho_caja = _number(caja.get("width")) or 0.0
         alto_caja = _number(caja.get("height")) or 0.0
         aspecto_foto = _number(pista.get("aspect_ratio"))
@@ -1341,7 +1421,24 @@ def _complete_plan(
     )
     if avisos is not None:
         avisos.extend(avisos_geometria)
-    plan = _complete_measures(plan)
+    declaradas = {
+        _text(estructura.get("estructura_id")) or "": (
+            medidas if isinstance(medidas := estructura.get("medidas"), Mapping) else {}
+        )
+        for estructura in _mappings(raw_plan.get("estructuras"))
+    }
+    antes = {s for s in cast(list[object], plan.get("supuestos") or []) if isinstance(s, str)}
+    plan = _complete_measures(plan, declaradas=declaradas)
+    asumidas = [s for s in cast(list[str], plan["supuestos"]) if s not in antes]
+    if asumidas:
+        _decidir(
+            "regla:medidas_por_defecto",
+            "qué medidas de cada pieza se asumen porque el plan no las trae",
+            asumidas,
+            "_DEFAULT_MEASURES: solo las que faltan; las que el plan trae son las que pidió el cliente y las"
+            " que escribió la escala de la foto salen de ella",
+            entrada={"medidas_declaradas": declaradas},
+        )
     # Los tamaños no esperan a ``completar_patrones``: no son una disposición de color (ver
     # ``pistas_tamanos``). Siguen yendo ANTES de ``_assign_patterns`` porque la rejilla de un patrón se
     # dimensiona desde la mezcla.
@@ -5630,19 +5727,31 @@ def _ids_medidas_fijas_en_conteo(
     medidas_cliente_de: Sequence[str] | None,
     medidas_del_cliente: bool,
 ) -> set[str]:
+    """Las piezas cuyas medidas no mueve el conteo de la foto: las que dio el cliente y las que su caja ancló.
+
+    Una pista de geometría no fija nada por existir: Next la manda para toda pieza con referencia. Solo fija la
+    pieza cuya caja ``_medir_desde_cajas`` usó de verdad (``anclados``), con las mismas entradas con las que
+    ``_complete_plan`` midió el plan. Una caja cortada por un borde, poco confiable o en una foto sin pieza que
+    dé escala deja medidas supuestas, y esas sí las puede mover el conteo dentro de la puerta física. Hasta el
+    2026-10-07 bastaba la pista: las dos columnas de la foto de ejemplo 01 (caja cortada arriba y ninguna pieza
+    que escale) se quedaban en 44 globos con unos 75 en la foto, «con las medidas físicas fijas», con la altura
+    estándar de 1,8 m (S1 del comparador 130).
+    """
     ids_por_referencia = {
         _text(pista.get("referencia_element_id"))
         for pista in pistas_geometria
         if _text(pista.get("referencia_element_id"))
     }
-    ids_geometria = {
-        _text(estructura.get("estructura_id")) or ""
-        for estructura in _mappings(plan.get("estructuras"))
-        if _text(estructura.get("referencia_element_id")) in ids_por_referencia
-        and _text(estructura.get("tipo")) in {"semiarco", "arco", "arco_organico", "columna", "columna_organica", "pared"}
-    }
     if medidas_cliente_de is not None or ids_por_referencia:
-        return set(medidas_cliente_de or ()) | ids_geometria
+        anclados: set[str] = set()
+        _medir_desde_cajas(
+            plan,
+            pistas_geometria,
+            medidas_del_cliente=medidas_del_cliente,
+            medidas_cliente_de=medidas_cliente_de or (),
+            anclados=anclados,
+        )
+        return set(medidas_cliente_de or ()) | anclados
     # Compatibilidad con llamadas anteriores al contrato por pieza.
     return (
         {
@@ -5691,6 +5800,7 @@ def _aplicar_conteos(
         variantes_redondas=lambda product_id: _round_variants(
             product_id, candidates_by_product, allowlist
         ),
+        cuenta_el_motor=lambda structure: _armado_del_motor(structure) is not None,
     )
     # The size reading owns the mix (``_assign_mixes``, and the motor arms with it): the count's
     # per-size split, which also sees a column's crown, does not move it again.
@@ -5711,7 +5821,49 @@ def _aplicar_conteos(
     if any(count["decision"] == "ajustado" for count in counts):
         adjusted = _garland_assemblies_after_count(adjusted, counts, request.pistas_guirnalda)
         _validate_plan(adjusted)
+    if counts:
+        _decidir(
+            "regla:conteo_referencia",
+            "qué hace el plan con los globos que cuenta la foto en cada pieza",
+            [
+                {
+                    "estructura_id": count["estructura_id"],
+                    "decision": count["decision"],
+                    "globos_foto": count["globos_foto"],
+                    "globos_antes": count["globos_antes"],
+                    "globos_despues": count["globos_despues"],
+                    "motivo": count["motivo"],
+                }
+                for count in counts
+            ],
+            "conteo_foto.aplicar: las medidas solo quedan fijas si las dio el cliente o si la caja de la foto"
+            " ancló de verdad la escala; una pieza con armado del motor la cuenta su armado",
+            entrada={
+                "medidas_fijas": sorted(medidas_fijas),
+                "medidas_cliente_de": request.medidas_cliente_de,
+                "piezas_con_pista_de_geometria": sorted(
+                    {
+                        _text(pista.get("referencia_element_id")) or ""
+                        for pista in request.pistas_geometria
+                    }
+                ),
+            },
+        )
     return adjusted, hints, counts
+
+
+def _decidir(
+    quien: str, que: str, resultado: object, motivo: str, *, entrada: object = None
+) -> None:
+    """Una decisión de la resolución en el registro del servicio (``app/registro.py``, evento ``decision``).
+
+    Con la forma del ``decidir`` de Next (``quien``, ``que``, ``resultado``, ``motivo``, ``entrada``), para que
+    la línea de tiempo de una conversación las lea igual. El registro nunca lanza: si falla se pierde la línea.
+    """
+    datos: dict[str, object] = {"quien": quien, "que": que, "resultado": resultado, "motivo": motivo}
+    if entrada is not None:
+        datos["entrada"] = entrada
+    registrar_evento("decision", datos=datos)
 
 
 def _numeros_como_en_json(valor: object) -> object:

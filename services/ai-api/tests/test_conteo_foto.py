@@ -818,7 +818,8 @@ async def test_con_medidas_del_cliente_el_conteo_no_toca_ni_un_largo_chico(
     assert _estructura(resolved)["medidas"] == {"largo_m": 0.5}
     [conteo] = _conteos(resolved)
     assert conteo["decision"] == "sin_ajuste_posible"
-    assert "medidas fijas" in cast(str, conteo["motivo"])
+    # El motivo dice «medidas físicas fijas» desde 9522591; esta aserción buscaba aún «medidas fijas».
+    assert "medidas físicas fijas" in cast(str, conteo["motivo"])
 
 
 @pytest.mark.anyio
@@ -862,6 +863,181 @@ async def test_un_arco_tiene_dos_medidas_y_se_queda_en_la_ventana() -> None:
     [conteo] = _conteos(resolved)
     assert conteo["decision"] == "sin_ajuste_posible"
     assert "±35 %" in cast(str, conteo["motivo"])
+
+
+# --- Comparador 130, S1: una pista de geometría que no ancla no fija las medidas ---------------
+#
+# La foto de ejemplo 01: dos columnas orgánicas, unos 75 y 85 globos contados. Next manda una pista de
+# geometría para toda pieza con referencia; la de la columna izquierda está cortada por arriba y ninguna
+# pieza de la foto da escala, así que la altura de 1,8 m es la estándar. Hasta el 2026-10-07 la pista
+# bastaba para fijarla y el plan se quedaba en 44 por columna «con las medidas físicas fijas».
+
+#: La caja de la columna izquierda de ej01 tal como la manda Next: cortada por el borde superior.
+CAJA_EJ01_IZQUIERDA = {
+    "referencia_element_id": "REF_01_E03",
+    "source_image_id": "REF_01",
+    "caja": {"x": 0.018, "y": 0, "width": 0.35, "height": 0.885},
+    "aspect_ratio": 1.5,
+    "confianza": 0.97,
+}
+CAJA_EJ01_DERECHA = {
+    **CAJA_EJ01_IZQUIERDA,
+    "referencia_element_id": "REF_01_E04",
+    "caja": {"x": 0.535, "y": 0, "width": 0.321, "height": 0.875},
+}
+#: La lectura revisada de ej01 (``lecturas-ejemplos.json``), la misma en la clásica y en la guiada.
+CONTEO_EJ01_IZQUIERDA = _conteo(
+    referencia_element_id="REF_01_E03",
+    globos_visibles=42,
+    estimado_total=75,
+    racimos=18,
+    globos_por_racimo=4,
+    por_tamano=[
+        {"clase": "chico", "proporcion": 0.25},
+        {"clase": "mediano", "proporcion": 0.5},
+        {"clase": "grande", "proporcion": 0.25},
+    ],
+    confianza=0.9,
+)
+CONTEO_EJ01_DERECHA = {
+    **CONTEO_EJ01_IZQUIERDA,
+    "referencia_element_id": "REF_01_E04",
+    "globos_visibles": 48,
+    "estimado_total": 85,
+    "racimos": 20,
+}
+
+
+def _columnas_ej01(**extra: object) -> dict[str, object]:
+    """La pieza que confirma la clásica para ej01: una columna asimétrica ×2, lujosa y sin medidas."""
+    return {
+        **_guirnalda(),
+        "estructura_id": "EST_01_COLUMNAS",
+        "nombre": "Columna orgánica lateral",
+        "tipo": "columna",
+        "estructura_oficial": "columna_asimetrica",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {},
+        "repeticiones": 2,
+        "densidad": "lujosa",
+        "referencia_element_id": "REF_01_E03",
+        **extra,
+    }
+
+
+def _receta_del_motor(estructura: Mapping[str, object]) -> dict[str, object]:
+    """El armado que Next escribe con ``ARMADO_ARCO_COLUMNA_V1``, pedido a su propia puerta (``completar``)."""
+    from app.armado_estructura import ArmadoEstructuraRequest, resolver_armado_estructura
+    from tests.test_plan_armado_motor import CONTEXTO
+
+    [armado] = cast(
+        list[dict[str, object]],
+        resolver_armado_estructura(
+            ArmadoEstructuraRequest.model_validate(
+                {
+                    "context": CONTEXTO,
+                    "schema_version": "omoikane-armado-estructura.v1",
+                    "accion": "completar",
+                    "plan": _plan_geometrico(dict(estructura), fuente="foto"),
+                }
+            )
+        )["armados"],
+    )
+    return {str(armado["clave"]): armado["armado"]}
+
+
+async def _confirmar_ej01(
+    *estructuras: dict[str, object],
+    conteos: Sequence[dict[str, object]] = (CONTEO_EJ01_IZQUIERDA,),
+    cajas: Sequence[dict[str, object]] = (CAJA_EJ01_IZQUIERDA,),
+    medidas_cliente_de: Sequence[str] = (),
+) -> dict[str, object]:
+    return await _resolver_geometrico(
+        _plan_geometrico(*estructuras, fuente="foto"),
+        completar_conteos=True,
+        pistas_conteo=list(conteos),
+        pistas_geometria=list(cajas),
+        medidas_cliente_de=list(medidas_cliente_de),
+    )
+
+
+@pytest.mark.anyio
+async def test_s1_ej01_la_altura_estandar_no_es_fija_y_el_plan_llega_a_la_foto() -> None:
+    resolved = await _confirmar_ej01(_columnas_ej01())
+    [conteo] = _conteos(resolved)
+    motivo = cast(str, conteo["motivo"])
+    assert conteo["decision"] == "ajustado", motivo
+    assert "medidas físicas fijas" not in motivo
+    assert conteo["globos_antes"] == 44, "lo que salía en las dos vistas"
+    despues = cast(int, conteo["globos_despues"])
+    assert abs(despues - 75) <= 0.15 * 75, "dentro de la tolerancia del conteo"
+    alto = cast(dict[str, float], _estructura(resolved)["medidas"])["alto_m"]
+    assert alto > 1.8
+    assert conteo["cambios"] == [{"campo": "alto_m", "antes": 1.8, "despues": alto}]
+    # Las dos columnas se cobran con la cantidad de la foto, dentro de la puerta física.
+    assert cast(list[dict[str, object]], resolved["estructuras"])[0]["total_unidades"] == 2 * despues
+    assert any("m equivalente a la foto (no medido)" in s for s in _supuestos(resolved))
+    assert not [
+        a for a in cast(list[str], resolved["advertencias"]) if a.startswith("puerta_fisica:")
+    ]
+
+
+@pytest.mark.anyio
+async def test_s1_ej01_en_la_guiada_cada_columna_sigue_su_propia_cuenta() -> None:
+    # La guiada confirma dos piezas sueltas, cada una con su caja (las dos cortadas por arriba) y su cuenta.
+    izquierda = _columnas_ej01(estructura_id="EST_01_IZQUIERDA", repeticiones=1)
+    derecha = _columnas_ej01(
+        estructura_id="EST_02_DERECHA",
+        repeticiones=1,
+        referencia_element_id="REF_01_E04",
+        ubicacion="lateral_derecho",
+    )
+    resolved = await _confirmar_ej01(
+        izquierda,
+        derecha,
+        conteos=(CONTEO_EJ01_IZQUIERDA, CONTEO_EJ01_DERECHA),
+        cajas=(CAJA_EJ01_IZQUIERDA, CAJA_EJ01_DERECHA),
+    )
+    por_pieza = {str(c["estructura_id"]): c for c in _conteos(resolved)}
+    for estructura_id, foto in (("EST_01_IZQUIERDA", 75), ("EST_02_DERECHA", 85)):
+        conteo = por_pieza[estructura_id]
+        assert conteo["decision"] == "ajustado", conteo["motivo"]
+        assert abs(cast(int, conteo["globos_despues"]) - foto) <= 0.15 * foto
+
+
+@pytest.mark.anyio
+async def test_s1_la_medida_que_dio_el_cliente_sigue_fija_aunque_su_caja_no_ancle() -> None:
+    resolved = await _confirmar_ej01(
+        _columnas_ej01(medidas={"alto_m": 1.8}), medidas_cliente_de=["EST_01_COLUMNAS"]
+    )
+    [conteo] = _conteos(resolved)
+    assert conteo["decision"] == "sin_ajuste_posible"
+    assert "medidas físicas fijas" in cast(str, conteo["motivo"])
+    assert _estructura(resolved)["medidas"] == {"alto_m": 1.8}
+    assert (conteo["globos_antes"], conteo["globos_despues"], conteo["cambios"]) == (44, 44, [])
+
+
+@pytest.mark.anyio
+async def test_s1_con_la_receta_del_motor_el_armado_fija_la_cantidad_y_lo_dice() -> None:
+    # Con ARMADO_ARCO_COLUMNA_V1 la columna llega con su armado del motor, que coloca cada globo y no lee
+    # la densidad, la mezcla ni las medidas del plan: el conteo no tiene mando que mover y no inventa otro
+    # motivo («medidas físicas fijas», «ningún largo…») ni cambia una mezcla que nada compra.
+    columnas = _columnas_ej01()
+    con_armado = {**columnas, **_receta_del_motor(columnas)}
+    assert "armado_columna_organica" in con_armado
+    resolved = await _confirmar_ej01(con_armado)
+    [conteo] = _conteos(resolved)
+    motor = cast(int, conteo["globos_antes"])
+    assert conteo["decision"] == "sin_aplicar"
+    assert "armado del motor" in cast(str, conteo["motivo"])
+    assert (conteo["globos_despues"], conteo["cambios"]) == (motor, [])
+    estructura = _estructura(resolved)
+    assert (estructura["densidad"], estructura["mezcla"]) == ("lujosa", "organica_fina")
+    assert cast(list[dict[str, object]], resolved["estructuras"])[0]["total_unidades"] == 2 * motor
+    assert not any(s.startswith("Columna orgánica lateral: la foto") for s in _supuestos(resolved))
+    # Si la foto cuenta lo que el motor coloca, coincide, como sin armado.
+    igual = await _confirmar_ej01(con_armado, conteos=({**CONTEO_EJ01_IZQUIERDA, "estimado_total": motor},))
+    assert [c["decision"] for c in _conteos(igual)] == ["coincide"]
 
 
 def _puerto_lineal(por_metro: Mapping[str, float], largo_maximo: float) -> PuertoPlan:
