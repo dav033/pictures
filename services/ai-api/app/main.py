@@ -142,6 +142,7 @@ from app.plan import (
 )
 from app.armado_bouquet import DISPOSICIONES as DISPOSICIONES_BOUQUET
 from app.cotizacion_profesional import (
+    CABECERA_MODOS_MATERIALES,
     COTIZACION_PROFESIONAL_SCOPE,
     CotizacionProfesionalRequest,
     cotizar_profesional,
@@ -1989,11 +1990,15 @@ def create_app(
     async def plan_cotizacion_profesional(request: Request) -> Response:
         # The professional decorator's costs on top of the plan's materials:
         # pure arithmetic on what the decorator typed, no catalog, no side
-        # effect, outside plan_hash.
+        # effect, outside plan_hash. A client that sends x-cotizacion-modos
+        # learns that this Python also quotes loose balloons (granel) before
+        # it ever sends a field an older Python would reject.
+        anunciar_modos = CABECERA_MODOS_MATERIALES in request.headers
+
         async def handler(payload: OperationalRequest) -> dict[str, object]:
             if not isinstance(payload, CotizacionProfesionalRequest):
                 raise _error("invalid_request", 422)
-            return {"payload": cotizar_profesional(payload)}
+            return {"payload": cotizar_profesional(payload, anunciar_modos=anunciar_modos)}
 
         return await _handle_operational_request(
             request,

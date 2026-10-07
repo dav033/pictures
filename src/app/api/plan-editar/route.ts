@@ -18,6 +18,7 @@ import {
 } from "@/lib/plan/aplicar-edicion";
 import { BasePlanSchema, EdicionArmadoArcoOrganicoSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionFormaSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionPropiedadesSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
 import { conRegistro } from "@/lib/registro/servidor";
+import { agregarColorPlan, quitarPiezaPlan } from "@/lib/plan/ajuste-plan-entero";
 
 /** Candidates a search returns when the caller does not say (what the inline editor always got). */
 const LIMITE_BUSQUEDA_PREDETERMINADO = 8;
@@ -69,6 +70,16 @@ const BodySchema = z.discriminatedUnion("modo", [
     approval_token: z.string().min(1).max(256 * 1024).optional(),
   }).strict(),
   z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1) }).strict(),
+  // «Ajustar mi plan» de la guiada (ajuste-plan-entero.ts): quitar UNA pieza o añadir un color sin modelo; Python
+  // vuelve a resolver y a firmar, y lo demás queda igual.
+  z.object({ modo: z.literal("quitar_pieza"), base: BasePlanSchema, estructura_id: z.string().regex(/^EST_\d{2}_[A-Z_]+$/) }).strict(),
+  z.object({
+    modo: z.literal("agregar_color"),
+    base: BasePlanSchema,
+    color: z.string().trim().min(1).max(40),
+    product_id: z.string().trim().min(1).max(160),
+    variant_ids: z.array(z.string().trim().min(1).max(160)).min(1).max(24).refine((ids) => new Set(ids).size === ids.length),
+  }).strict(),
   z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoArcoOrganicoSchema, EdicionFormaSchema, EdicionPropiedadesSchema]) }).strict(),
 ]);
 
@@ -171,6 +182,15 @@ async function atenderPOST(request: Request) {
         signal: request.signal,
       });
       return Response.json({ candidatos }, { headers: cabeceras });
+    }
+
+    if (body.modo === "quitar_pieza") {
+      const { plan: resuelto, cotizacion } = await quitarPiezaPlan({ base: body.base, estructuraId: body.estructura_id, pool, signal: request.signal });
+      return Response.json({ plan: resuelto, cotizacion }, { headers: cabeceras });
+    }
+    if (body.modo === "agregar_color") {
+      const { plan: resuelto, cotizacion, piezas } = await agregarColorPlan({ base: body.base, color: body.color, productId: body.product_id, variantIds: body.variant_ids, pool, signal: request.signal });
+      return Response.json({ plan: resuelto, cotizacion, piezas }, { headers: cabeceras });
     }
 
     // The signed-approval / re-resolution / admission logic lives in

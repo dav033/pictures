@@ -1,0 +1,612 @@
+{
+ "_origen": "registro guiada-20261006-212136-dgkw9b (2026-10-06 21:33): plan confirmado con EST_02_COLUMNA repeticiones 2 en la entrada. Sin token.",
+ "plan": {
+  "plan_version": "1.0",
+  "plan_id": "749097e8-f6b7-40b8-be45-b292cbcb99b5",
+  "concepto": {
+   "titulo": "Decoración Festiva Combinada",
+   "descripcion": "Decoración elegante con semiarco orgánico y columnas laterales en azul, plateado, blanco y rosado.",
+   "paleta": [
+    "azul",
+    "plateado",
+    "blanco",
+    "rosado"
+   ]
+  },
+  "espacio": {
+   "tipo": "salón",
+   "fuente": "supuesto"
+  },
+  "estructuras": [
+   {
+    "estructura_id": "EST_01_SEMIARCO_ASIMETRICO",
+    "nombre": "Semiarco orgánico",
+    "tipo": "semiarco",
+    "rol_escena": "focal",
+    "ubicacion": "fondo_pared",
+    "medidas": {
+     "ancho_m": 1.5,
+     "alto_m": 2.2
+    },
+    "repeticiones": 1,
+    "densidad": "media",
+    "mezcla": "organica_fina",
+    "materiales": [
+     {
+      "product_id": "8634239385895",
+      "color": "azul",
+      "participacion": 0.25,
+      "rol_material": "principal"
+     },
+     {
+      "product_id": "8634257211687",
+      "color": "plateado",
+      "participacion": 0.25,
+      "rol_material": "secundario"
+     },
+     {
+      "product_id": "8634235781415",
+      "color": "blanco",
+      "participacion": 0.25,
+      "rol_material": "secundario"
+     },
+     {
+      "product_id": "8634239844647",
+      "color": "rosado",
+      "participacion": 0.25,
+      "rol_material": "secundario"
+     }
+    ],
+    "porque": "Servirá como marco principal para tus fotos.",
+    "estructura_oficial": "semiarco_asimetrico",
+    "armado_arco_organico": {
+     "version": "armado-arco-organico.v1",
+     "origen": "sugerido",
+     "forma": {
+      "anchoM": 2.16,
+      "altoM": 2.2,
+      "cima": 0.4,
+      "curva": 2.1,
+      "ondulacion": 0.35,
+      "carga": -0.7,
+      "corte": 0.6,
+      "espejo": false,
+      "suelo": true
+     },
+     "volumen": {
+      "grosorPatasM": 1.15,
+      "grosorCimaM": 0.6,
+      "irregularidad": 0.4,
+      "relleno": 0.68,
+      "racimo": 4,
+      "salientes": 0.4
+     },
+     "tamanos": {
+      "mezcla": {
+       "5": 21,
+       "9": 18,
+       "12": 54,
+       "18": 5,
+       "24": 2,
+       "36": 0
+      },
+      "grandesAbajo": 0.9,
+      "inflado": 1,
+      "variacion": 0.12
+     },
+     "colores": {
+      "paleta": [
+       {
+        "material": 0,
+        "peso": 25,
+        "acabado": "mate",
+        "rol": "normal"
+       },
+       {
+        "material": 1,
+        "peso": 25,
+        "acabado": "mate",
+        "rol": "normal"
+       },
+       {
+        "material": 2,
+        "peso": 25,
+        "acabado": "mate",
+        "rol": "normal"
+       },
+       {
+        "material": 3,
+        "peso": 25,
+        "acabado": "mate",
+        "rol": "normal"
+       }
+      ],
+      "reparto": "azar",
+      "mezcla": 0.5
+     },
+     "adornos": {
+      "follaje": 0.8,
+      "flores": 0
+     },
+     "aspecto": {
+      "brillo": 0.6,
+      "sombra": 0.2,
+      "contorno": 0.8,
+      "profundidad": 0.5,
+      "semilla": 21
+     }
+    }
+   },
+   {
+    "estructura_id": "EST_02_COLUMNA",
+    "nombre": "Columna de globos",
+    "tipo": "columna",
+    "rol_escena": "soporte",
+    "ubicacion": "entrada",
+    "medidas": {
+     "alto_m": 2
+    },
+    "repeticiones": 2,
+    "densidad": "media",
+    "mezcla": "clasica",
+    "materiales": [
+     {
+      "product_id": "8634239385895",
+      "color": "azul",
+      "participacion": 0.25,
+      "rol_material": "principal"
+     },
+     {
+      "product_id": "8634257211687",
+      "color": "plateado",
+      "participacion": 0.25,
+      "rol_material": "secundario"
+     },
+     {
+      "product_id": "8634235781415",
+      "color": "blanco",
+      "participacion": 0.25,
+      "rol_material": "secundario"
+     },
+     {
+      "product_id": "8634239844647",
+      "color": "rosado",
+      "participacion": 0.25,
+      "rol_material": "secundario"
+     }
+    ],
+    "porque": "Delimitará los laterales del montaje.",
+    "estructura_oficial": "columna",
+    "armado_columna": {
+     "version": "armado-columna.v1",
+     "origen": "sugerido",
+     "modo": "altura",
+     "patron": "ombre",
+     "opciones": {
+      "suavidad": 0.6,
+      "invertir": 0
+     },
+     "cuerpo": {
+      "alto_m": 2,
+      "globos_capa": 4,
+      "abajo": 12,
+      "arriba": 12,
+      "escalonado": true,
+      "base": true
+     },
+     "inflado": {
+      "inflado": 1,
+      "tamano": 1.14,
+      "compresion": 0.8,
+      "variacion_tam": 0,
+      "variacion_tono": 0.03,
+      "desorden": 0,
+      "semilla": 7
+     },
+     "remate": {
+      "tipo": "ninguno",
+      "tamano": 24,
+      "cantidad": 5,
+      "foil_m": 0.7,
+      "material": 0
+     },
+     "capas": [],
+     "materiales": [
+      0,
+      1,
+      2,
+      3
+     ]
+    }
+   }
+  ],
+  "supuestos": [],
+  "restricciones": {
+   "estructuras": [],
+   "colores": [
+    {
+     "valor": "plateado",
+     "procedencia": "explicito",
+     "texto_original": "…ra_oficial: columna; estructura_id: EST_02_COLUMNA; repeticiones: 2)\nColores: usa EXACTAMENTE estos colores: azul, plateado, blanco, rosado; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color. Todos de…",
+     "polaridad": "obligatorio"
+    },
+    {
+     "valor": "rosa",
+     "procedencia": "explicito",
+     "texto_original": "…na; estructura_id: EST_02_COLUMNA; repeticiones: 2)\nColores: usa EXACTAMENTE estos colores: azul, plateado, blanco, rosado; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color. Todos deben aparecer en e…",
+     "polaridad": "obligatorio"
+    },
+    {
+     "valor": "blanco",
+     "procedencia": "explicito",
+     "texto_original": "…l: columna; estructura_id: EST_02_COLUMNA; repeticiones: 2)\nColores: usa EXACTAMENTE estos colores: azul, plateado, blanco, rosado; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color. Todos deben apare…",
+     "polaridad": "obligatorio"
+    },
+    {
+     "valor": "azul",
+     "procedencia": "explicito",
+     "texto_original": "…estructura_oficial: columna; estructura_id: EST_02_COLUMNA; repeticiones: 2)\nColores: usa EXACTAMENTE estos colores: azul, plateado, blanco, rosado; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color.…",
+     "polaridad": "obligatorio"
+    }
+   ],
+   "tamanos": [],
+   "acabados": []
+  },
+  "referencia_omitida": []
+ },
+ "plan_hash": "ae80b25df13fef19a482867fa6f732bc373251c9ae9812a5b59cc60d6272c8bf",
+ "approval_token": "token-de-prueba",
+ "estructuras": [
+  {
+   "estructura_id": "EST_01_SEMIARCO_ASIMETRICO",
+   "lineas": [
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233631015",
+     "color": "azul",
+     "diam_pulg": 5,
+     "tamano_codigo": "R-5",
+     "unidades": 5,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Azul — R-5 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634257211687",
+     "variant_id": "46594267611431",
+     "color": "plateado",
+     "diam_pulg": 5,
+     "tamano_codigo": "R-5",
+     "unidades": 4,
+     "acabado": "reflex",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 20"
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221080871",
+     "color": "blanco",
+     "diam_pulg": 5,
+     "tamano_codigo": "R-5",
+     "unidades": 3,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235564327",
+     "color": "rosado",
+     "diam_pulg": 5,
+     "tamano_codigo": "R-5",
+     "unidades": 4,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233762087",
+     "color": "azul",
+     "diam_pulg": 9,
+     "tamano_codigo": "R-9",
+     "unidades": 3,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Azul — R-9 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634257211687",
+     "variant_id": "46594267840807",
+     "color": "plateado",
+     "diam_pulg": 9,
+     "tamano_codigo": "R-9",
+     "unidades": 5,
+     "acabado": "reflex",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Reflex Plata — R-9 / PAQUETE X 20"
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221179175",
+     "color": "blanco",
+     "diam_pulg": 9,
+     "tamano_codigo": "R-9",
+     "unidades": 8,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-9 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235662631",
+     "color": "rosado",
+     "diam_pulg": 9,
+     "tamano_codigo": "R-9",
+     "unidades": 7,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233860391",
+     "color": "azul",
+     "diam_pulg": 12,
+     "tamano_codigo": "R-12",
+     "unidades": 12,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634257211687",
+     "variant_id": "46594267676967",
+     "color": "plateado",
+     "diam_pulg": 12,
+     "tamano_codigo": "R-12",
+     "unidades": 8,
+     "acabado": "reflex",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221277479",
+     "color": "blanco",
+     "diam_pulg": 12,
+     "tamano_codigo": "R-12",
+     "unidades": 8,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235760935",
+     "color": "rosado",
+     "diam_pulg": 12,
+     "tamano_codigo": "R-12",
+     "unidades": 7,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634257211687",
+     "variant_id": "46594267742503",
+     "color": "plateado",
+     "diam_pulg": 18,
+     "tamano_codigo": "R-18",
+     "unidades": 3,
+     "acabado": "reflex",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6"
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235859239",
+     "color": "rosado",
+     "diam_pulg": 18,
+     "tamano_codigo": "R-18",
+     "unidades": 1,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-18 / PAQUETE X 6"
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221539623",
+     "color": "blanco",
+     "diam_pulg": 24,
+     "tamano_codigo": "R-24",
+     "unidades": 1,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-24 / PAQUETE X 3"
+    }
+   ]
+  },
+  {
+   "estructura_id": "EST_02_COLUMNA",
+   "lineas": [
+    {
+     "product_id": "8634239385895",
+     "variant_id": "46594233893159",
+     "color": "azul",
+     "diam_pulg": 12,
+     "tamano_codigo": "R-12",
+     "unidades": 20,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 20"
+    },
+    {
+     "product_id": "8634257211687",
+     "variant_id": "46594267676967",
+     "color": "plateado",
+     "diam_pulg": 12,
+     "tamano_codigo": "R-12",
+     "unidades": 16,
+     "acabado": "reflex",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634235781415",
+     "variant_id": "46594221277479",
+     "color": "blanco",
+     "diam_pulg": 12,
+     "tamano_codigo": "R-12",
+     "unidades": 16,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235760935",
+     "color": "rosado",
+     "diam_pulg": 12,
+     "tamano_codigo": "R-12",
+     "unidades": 5,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 12"
+    },
+    {
+     "product_id": "8634239844647",
+     "variant_id": "46594235793703",
+     "color": "rosado",
+     "diam_pulg": 12,
+     "tamano_codigo": "R-12",
+     "unidades": 15,
+     "acabado": "fashion",
+     "forma": "redondo",
+     "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 20"
+    }
+   ]
+  }
+ ],
+ "compras": [
+  {
+   "product_id": "8634235781415",
+   "variant_id": "46594221080871",
+   "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 12",
+   "paquetes": 1,
+   "subtotal": 1826
+  },
+  {
+   "product_id": "8634235781415",
+   "variant_id": "46594221179175",
+   "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-9 / PAQUETE X 12",
+   "paquetes": 1,
+   "subtotal": 2427
+  },
+  {
+   "product_id": "8634235781415",
+   "variant_id": "46594221277479",
+   "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 12",
+   "paquetes": 2,
+   "subtotal": 7926
+  },
+  {
+   "product_id": "8634235781415",
+   "variant_id": "46594221539623",
+   "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-24 / PAQUETE X 3",
+   "paquetes": 1,
+   "subtotal": 10124
+  },
+  {
+   "product_id": "8634239385895",
+   "variant_id": "46594233631015",
+   "titulo": "B2b Globo Latex Redondo Fashion Azul — R-5 / PAQUETE X 12",
+   "paquetes": 1,
+   "subtotal": 1826
+  },
+  {
+   "product_id": "8634239385895",
+   "variant_id": "46594233762087",
+   "titulo": "B2b Globo Latex Redondo Fashion Azul — R-9 / PAQUETE X 12",
+   "paquetes": 1,
+   "subtotal": 2427
+  },
+  {
+   "product_id": "8634239385895",
+   "variant_id": "46594233860391",
+   "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 12",
+   "paquetes": 1,
+   "subtotal": 3963
+  },
+  {
+   "product_id": "8634239385895",
+   "variant_id": "46594233893159",
+   "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 20",
+   "paquetes": 1,
+   "subtotal": 6029
+  },
+  {
+   "product_id": "8634239844647",
+   "variant_id": "46594235564327",
+   "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 12",
+   "paquetes": 1,
+   "subtotal": 1826
+  },
+  {
+   "product_id": "8634239844647",
+   "variant_id": "46594235662631",
+   "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 12",
+   "paquetes": 1,
+   "subtotal": 2427
+  },
+  {
+   "product_id": "8634239844647",
+   "variant_id": "46594235760935",
+   "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 12",
+   "paquetes": 1,
+   "subtotal": 3963
+  },
+  {
+   "product_id": "8634239844647",
+   "variant_id": "46594235793703",
+   "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 20",
+   "paquetes": 1,
+   "subtotal": 6029
+  },
+  {
+   "product_id": "8634239844647",
+   "variant_id": "46594235859239",
+   "titulo": "B2b Globo Latex Redondo Fashion Rosado — R-18 / PAQUETE X 6",
+   "paquetes": 1,
+   "subtotal": 7199
+  },
+  {
+   "product_id": "8634257211687",
+   "variant_id": "46594267611431",
+   "titulo": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 20",
+   "paquetes": 1,
+   "subtotal": 6014
+  },
+  {
+   "product_id": "8634257211687",
+   "variant_id": "46594267676967",
+   "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 12",
+   "paquetes": 2,
+   "subtotal": 17664
+  },
+  {
+   "product_id": "8634257211687",
+   "variant_id": "46594267742503",
+   "titulo": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6",
+   "paquetes": 1,
+   "subtotal": 17704
+  },
+  {
+   "product_id": "8634257211687",
+   "variant_id": "46594267840807",
+   "titulo": "B2b Globo Latex Redondo Reflex Plata — R-9 / PAQUETE X 20",
+   "paquetes": 1,
+   "subtotal": 8832
+  }
+ ]
+}

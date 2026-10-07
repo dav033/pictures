@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { esEstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 import { guiaParaEstructura, GuiaArmadoSchema } from "./guias-armado";
 
 const PlanMinimoSchema = z.object({
@@ -73,17 +75,43 @@ export function generarPasosPlan(planGuardado: unknown): { pasos: PasoPlanGuiado
   const listaGlobos = textoGlobos(globos);
   const pasos: PasoPlanGuiado[] = [{ orden: 1, texto: `Prepara el soporte y los materiales. En total son ${total} globos: ${listaGlobos}.`, globos: listaGlobos }];
   pasos.push({ orden: 2, texto: "Infla cada globo a su tamaño y sepáralos por color y tamaño antes de empezar a armar." });
-  for (const pieza of plan.plan.estructuras) {
+  const detalles = plan.plan.estructuras.map((pieza) => {
     const globosDeEsta = globosDePieza(pieza.estructura_id);
     const tamanos = [...new Set(globosDeEsta.map((globo) => globo.tamano).filter((tamano) => tamano.endsWith('"')))].sort((a, b) => Number.parseFloat(a) - Number.parseFloat(b));
-    const armado = detalleArmado(pieza, tamanos);
     const medidas = [pieza.medidas.ancho_m && `${metros(pieza.medidas.ancho_m)} m de ancho`, pieza.medidas.alto_m && `${metros(pieza.medidas.alto_m)} m de alto`, pieza.medidas.largo_m && `${metros(pieza.medidas.largo_m)} m de largo`].filter(Boolean).join(" por ");
-    const globosPieza = textoGlobos(globosDeEsta);
+    return { pieza, armado: detalleArmado(pieza, tamanos), medidas, globosPieza: textoGlobos(globosDeEsta) };
+  });
+  // Piezas individuales iguales y seguidas («Columna izquierda» y «Columna derecha», mismas medidas y mismos globos que
+  // resolvió Python) van en un solo paso: «Arma la Columna izquierda y la Columna derecha, iguales…».
+  for (let indice = 0; indice < detalles.length;) {
+    const actual = detalles[indice]!;
+    let fin = indice + 1;
+    while (fin < detalles.length && esGemela(actual, detalles[fin]!)) fin += 1;
+    const grupo = detalles.slice(indice, fin);
+    indice = fin;
+    if (grupo.length > 1) {
+      const oficial = actual.pieza.estructura_oficial;
+      const femenina = esEstructuraOficialId(oficial) && FEMENINAS.has(oficial);
+      const nombres = grupo.map(({ pieza }) => `${femenina ? "la" : "el"} ${pieza.nombre}`);
+      const cada = femenina ? "cada una" : "cada uno";
+      pasos.push({ orden: pasos.length + 1, texto: `Arma ${listaTamanos(nombres)}, iguales${actual.medidas ? `, de ${actual.medidas} ${cada}` : ""}. ${actual.armado}`, ...(actual.globosPieza ? { globos: `${actual.globosPieza} (para ${cada})` } : {}) });
+      continue;
+    }
+    const { pieza, armado, medidas, globosPieza } = actual;
     pasos.push({ orden: pasos.length + 1, texto: `Arma ${pieza.nombre}${pieza.repeticiones > 1 ? ` (${pieza.repeticiones} piezas)` : ""}${medidas ? `, de ${medidas}` : ""}. ${armado}`, ...(globosPieza ? { globos: globosPieza } : {}) });
   }
   pasos.push({ orden: pasos.length + 1, texto: "Monta las piezas en su lugar y fija cada una a su soporte antes de seguir con la siguiente." });
   pasos.push({ orden: pasos.length + 1, texto: "Ajusta los amarres, oculta los soportes y revisa que todo quede firme y en su sitio." });
   return { pasos, globos, total, guias };
+}
+
+type DetallePieza = { pieza: { estructura_oficial?: string | undefined; repeticiones: number; medidas: Record<string, unknown> }; armado: string; medidas: string; globosPieza: string };
+
+/** Dos piezas individuales iguales: misma oficial, una sola cada una, mismas medidas, mismo armado y mismos globos. */
+function esGemela(a: DetallePieza, b: DetallePieza): boolean {
+  return Boolean(a.pieza.estructura_oficial) && a.pieza.estructura_oficial === b.pieza.estructura_oficial
+    && a.pieza.repeticiones === 1 && b.pieza.repeticiones === 1
+    && a.medidas === b.medidas && a.armado === b.armado && a.globosPieza === b.globosPieza;
 }
 
 /** Medida para el cliente, con coma decimal: 1,5 (nunca «1.5»). */

@@ -74,14 +74,30 @@ export function useSeguirFinal({ contenedorRef, contenidoRef, umbral = 120, umbr
     const contenido = contenidoRef.current;
     if (!contenedor || !contenido || typeof ResizeObserver === "undefined") return;
     let alto = contenido.offsetHeight;
+    // El último mensaje y su alto: «Ver lo nuevo» es para lo que llega AL FINAL de la conversación (un mensaje nuevo o
+    // el último que sigue escribiéndose), no para una tarjeta que cambia donde el cliente la está mirando.
+    const ultimoMensaje = () => {
+      const mensajes = contenido.querySelectorAll<HTMLElement>("[data-mensaje-id]");
+      return mensajes.length ? mensajes[mensajes.length - 1]! : null;
+    };
+    let ultimoId = ultimoMensaje()?.dataset.mensajeId ?? null;
+    let altoUltimo = ultimoMensaje()?.offsetHeight ?? 0;
     const observador = new ResizeObserver(() => {
       const nuevo = contenido.offsetHeight;
       const crecio = nuevo > alto + 1;
       alto = nuevo;
+      const ultimo = ultimoMensaje();
+      const id = ultimo?.dataset.mensajeId ?? null;
+      const altoActual = ultimo?.offsetHeight ?? 0;
+      const cambioAlFinal = id !== ultimoId || altoActual > altoUltimo + 1;
+      ultimoId = id;
+      altoUltimo = altoActual;
       if (!crecio) return;
       if (destinoRef.current === "mensaje" && performance.now() < suspendidoHastaRef.current) return;
-      if (pegadoRef.current) contenedor.scrollTo({ top: contenedor.scrollHeight, behavior: "auto" });
-      else setHayNuevo(true);
+      if (pegadoRef.current) { contenedor.scrollTo({ top: contenedor.scrollHeight, behavior: "auto" }); return; }
+      // Releyendo arriba: solo se avisa si lo que creció es el final y empieza por debajo de lo que se ve. Un ajuste en
+      // «Ajustar mi plan» hace crecer la tarjeta que el cliente tiene delante: la píldora tapaba sus botones (390 px).
+      if (cambioAlFinal && ultimo && ultimo.getBoundingClientRect().top >= contenedor.getBoundingClientRect().bottom - 48) setHayNuevo(true);
     });
     observador.observe(contenido);
     return () => observador.disconnect();

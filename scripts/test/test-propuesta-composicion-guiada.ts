@@ -19,5 +19,10 @@ assert.equal(frase([{ estructura: "figura", cantidad: 1 }, { estructura: "centro
 assert.equal(WidgetGuiadoSchema.safeParse({ tipo: "propuesta", propuesta }).success, true);
 assert.equal(WidgetGuiadoSchema.safeParse({ tipo: "propuesta", propuesta, sku: "interno" }).success, false);
 assert.equal(PropuestaComposicionSchema.safeParse({ frase: "", colores: ["rosa magenta inventado"], piezas: [{ estructura: "pieza_falsa", cantidad: 1 }] }).success, false);
-assert.equal(PropuestaComposicionSchema.safeParse({ frase: "Idea", colores: ["rosado"], piezas: [{ estructura: "arco", cantidad: 1 }, { estructura: "columna", cantidad: 1 }, { estructura: "guirnalda", cantidad: 1 }, { estructura: "bouquet", cantidad: 1 }] }).success, false);
-console.log("test-propuesta-composicion-guiada: solo estructuras oficiales, colores permitidos y 1-3 piezas");
+// Hasta 8 piezas (el tope del plan: «Ajustar mi plan» y «Agregar al plan» la arman con piezas individuales); 9 no.
+const pieza = (estructura: string) => ({ estructura, cantidad: 1 });
+assert.equal(PropuestaComposicionSchema.safeParse({ frase: "Idea", colores: ["rosado"], piezas: [pieza("arco"), pieza("columna"), pieza("guirnalda"), pieza("bouquet")] }).success, true);
+assert.equal(PropuestaComposicionSchema.safeParse({ frase: "Idea", colores: ["rosado"], piezas: Array.from({ length: 9 }, () => pieza("centro_mesa")) }).success, false);
+assert.equal(PropuestaComposicionSchema.safeParse({ frase: "Idea", colores: ["rosado"], piezas: [{ ...pieza("columna"), ubicacion: "lateral_derecho" }] }).success, true, "una pieza puede traer su lado");
+assert.equal(PropuestaComposicionSchema.safeParse({ frase: "Idea", colores: ["rosado"], piezas: [{ ...pieza("columna"), ubicacion: "techo" }] }).success, false, "solo izquierda o derecha");
+console.log("test-propuesta-composicion-guiada: solo estructuras oficiales, colores permitidos y 1-8 piezas");

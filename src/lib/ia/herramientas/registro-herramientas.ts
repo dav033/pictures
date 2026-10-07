@@ -13,6 +13,8 @@ import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { type ItemRechazado, type ItemValidado } from "@/lib/rag/chat/validar";
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, type HechosPeticionPlan } from "@/lib/rag/observability/log";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
+import { separarEstructurasRepetidas } from "@/lib/plan/piezas-individuales";
+import { decidir } from "@/lib/registro/servidor";
 import type { PistaArmado } from "@/lib/plan/armado-bouquet";
 import type { PistaRemate } from "@/lib/plan/armado-columna";
 import type { PistaGuirnalda } from "@/lib/plan/armado-guirnalda";
@@ -812,6 +814,11 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
   creatividad?: NivelCreatividad;
   /** Request facts for plan_audit_log columns (Plan A §A0.1); observability only. */
   hechosPeticion?: Omit<HechosPeticionPlan, "rechazosTurno" | "claseRechazo">;
+  /**
+   * Vista guiada (chat-v1 `piezasIndividuales`): cada pieza es individual. `confirmar_plan_decoracion` separa toda
+   * estructura con repeticiones N en N piezas con nombre propio antes de resolver con Python (piezas-individuales.ts).
+   */
+  piezasIndividuales?: boolean;
 } = {}): RegistroHerramientas {
   const ragPool = options.pool ?? getRagPool();
   // Every plan audit row of this turn carries the request facts and the
@@ -1055,6 +1062,31 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           : "Corrige el número de estructuras (respeta el rango de CREATIVIDAD DEL DISEÑO si está presente) o los colores del plan antes de confirmar; no anuncies ni generes una imagen.",
         mensaje_cliente: mensajeClienteRestricciones(erroresDeContrato),
       };
+    }
+    // Piezas SIEMPRE individuales en la guiada (regla del dueño, 2026-10-06): una estructura con repeticiones N pasa a
+    // N piezas («Columna izquierda» y «Columna derecha») ANTES de resolver; Python cuenta N piezas de 1 en vez de 1 de N.
+    // Va después de los validadores de rango y de restricciones, que cuentan lo que escribió el modelo, así que no
+    // aparecen rechazos nuevos; la cobertura de la foto, las unidades, los armados y Python ya ven piezas individuales.
+    if (options.piezasIndividuales) {
+      const separado = separarEstructurasRepetidas(planCanonico, estado.referenceBlueprint);
+      const deLaEntrada = planCanonico.estructuras.map((estructura) => ({ id: estructura.estructura_id, oficial: estructura.estructura_oficial ?? null, repeticiones: estructura.repeticiones, ubicacion: estructura.ubicacion, nombre: estructura.nombre, referencia: estructura.referencia_element_id ?? null }));
+      const cambia = separado.separadas.length > 0 || separado.renombradas.length > 0;
+      const valido = cambia ? PlanDecoracionSchema.safeParse(separado.plan) : null;
+      if (valido?.success) {
+        // Cada copia materializa su propio elemento de la foto: sus colores son los de ese elemento.
+        planCanonico = separado.separadas.length ? aplicarColoresReferencia(valido.data, estado.referenceBlueprint) : valido.data;
+        for (const { origen, nuevas } of separado.separadas) {
+          const armado = estado.armadosEstructura?.get(origen);
+          if (armado) for (const id of nuevas) estado.armadosEstructura!.set(id, armado);
+        }
+      }
+      // Se registra siempre (también «sin cambios»: el modelo ya escribió piezas individuales con su nombre).
+      decidir("regla:piezas_individuales", "piezas individuales: separar repeticiones y nombrar cada pieza", valido && !valido.success
+        ? { aplicado: false, errores: valido.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`) }
+        : { aplicado: cambia, separadas: separado.separadas, renombradas: separado.renombradas, sinSeparar: separado.sinSeparar }, {
+        entrada: { estructuras: deLaEntrada },
+        ...(valido && !valido.success ? { motivo: "el plan separado no pasa el esquema: se resuelve como lo escribió el modelo" } : cambia ? {} : { motivo: "sin cambios: cada pieza ya era individual y con su nombre" }),
+      });
     }
     // Number figures spell the customer's number (numeros-pedidos.ts, E2E 2026-09-15 D4).
     const erroresDeNumero = validarNumerosPedidos(planCanonico, new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato])), numerosPedidos(estado.solicitudOriginal));

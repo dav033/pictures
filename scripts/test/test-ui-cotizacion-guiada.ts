@@ -61,7 +61,8 @@ const html = renderToStaticMarkup(createElement(CotizacionPersonalGuiada, { coti
 const textoHTML = html.replaceAll("&quot;", "\"").replaceAll(/\s+/g, " ");
 const htmlNegocioCerrado = renderToStaticMarkup(createElement(CotizacionProfesional, { cotizacion, clave: "guiado-ej-demo-cotizacion" }));
 const borradorAbierto = JSON.stringify({ costos: { mano_de_obra: [{ id: "m1", descripcion: "Montaje", costo: "5000", cantidad: "1" }], equipos_transporte: [], indirectos: [] }, precios: {}, utilidad: "" });
-Object.defineProperty(globalThis, "window", { configurable: true, value: { sessionStorage: { getItem: () => borradorAbierto } } });
+// Los escuchas vacíos: con un `window` presente, motion (la lista de materiales anima) cree estar en el navegador.
+Object.defineProperty(globalThis, "window", { configurable: true, value: { sessionStorage: { getItem: () => borradorAbierto }, addEventListener: () => undefined, removeEventListener: () => undefined } });
 const htmlNegocioAbierto = renderToStaticMarkup(createElement(CotizacionProfesional, { cotizacion, clave: "guiado-ej-demo-cotizacion" }));
 const textoNegocio = htmlNegocioAbierto.replaceAll("&quot;", "\"").replaceAll(/\s+/g, " ");
 
@@ -79,9 +80,11 @@ for (const texto of [
   "te sobran 70 para reponer los que se revienten",
 ]) assert.ok(textoHTML.includes(texto), `Falta texto visible: ${texto}`);
 for (const jerga of ["R-12", "variante", "Incluye 0% de reserva"]) assert.equal(textoHTML.includes(jerga), false, `No debe mostrar: ${jerga}`);
-assert.match(html, /background-color:#f2a7c3/);
-assert.match(html, /background-color:#f28c28/);
-assert.match(html, /background-color:#ffffff/);
+// Cada fila con su globo dibujado en su color (sin foto de catálogo en estas líneas): el color va en el degradado.
+assert.match(html, /stop-color="#f2a7c3"/);
+assert.match(html, /stop-color="#f28c28"/);
+assert.match(html, /stop-color="#ffffff"/);
+assert.equal((html.match(/<svg[^>]*viewBox="0 0 100 100"/g) ?? []).length, cotizacion.lineas.length, "un globo por material");
 assert.ok(htmlNegocioCerrado.includes("Ajustar mi precio"));
 assert.ok(textoNegocio.includes("Ocultar ajustes"));
 for (const nombre of ["Palo de rosa", "Durazno", "Blanco"]) assert.ok(textoNegocio.includes(`Globo de látex 12\" ${nombre}`));

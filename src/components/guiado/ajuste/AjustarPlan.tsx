@@ -11,9 +11,9 @@ import {
   coloresDelPlanVista,
   etiquetaColor,
   hexDeColor,
+  cambiaTodasLasPiezas,
   piezaDelCambio,
   piezasAjustables,
-  rehaceElPlan,
   type CambioPlan,
   type ColorPieza,
   type PiezaAjustable,
@@ -47,7 +47,20 @@ export function CifraAnimada({ valor, sufijo = "" }: { valor: number; sufijo?: s
 /** Este bloque (una pieza, o `null` para los colores del plan) espera el plan nuevo. */
 function recalculandoEn(estado: EstadoAjuste, estructuraId: string | null): boolean {
   if (estado.fase !== "guardando") return false;
-  return rehaceElPlan(estado.cambio) || piezaDelCambio(estado.cambio) === estructuraId;
+  return cambiaTodasLasPiezas(estado.cambio) || piezaDelCambio(estado.cambio) === estructuraId;
+}
+
+/** Un color casi negro (o muy oscuro): en tema oscuro su tramo se pierde contra el fondo y necesita su propio borde. */
+function esOscuro(hex: string): boolean {
+  const valor = /^#([0-9a-f]{6})$/i.exec(hex)?.[1];
+  if (!valor) return false;
+  const [r, g, b] = [0, 2, 4].map((inicio) => Number.parseInt(valor.slice(inicio, inicio + 2), 16) / 255) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.16;
+}
+
+/** Borde del punto de color: uno claro para los colores oscuros, que en tema oscuro casi no se veían. */
+function anilloDe(hex: string): string {
+  return esOscuro(hex) ? "ring-1 ring-texto/45" : "ring-1 ring-borde";
 }
 
 /**
@@ -73,7 +86,7 @@ export function AjustarPlan({ plan, ajuste, ocupado }: Props) {
           className="flex items-start gap-2 rounded-xl bg-exito-suave px-3 py-2 text-sm text-texto"
         >
           <Check className="mt-0.5 size-4 shrink-0 text-exito" aria-hidden />
-          <span>Listo: {estado.ultimo}.</span>
+          <span>{estado.ultimo}</span>
         </motion.p>
       )}
 
@@ -130,7 +143,7 @@ function ColoresDelPlan({ plan, ajuste, bloqueado }: { plan: PlanGuiado; ajuste:
               transition={{ duration: DUR.media, ease: EASE_SALIDA }}
               className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-superficie px-2.5 text-sm text-texto ring-1 ring-borde-suave ring-inset"
             >
-              <span className="size-3.5 rounded-full ring-1 ring-borde" style={{ backgroundColor: color.fondo }} aria-hidden />
+              <span className={`size-3.5 rounded-full ${anilloDe(color.fondo)}`} style={{ backgroundColor: color.fondo }} aria-hidden />
               {color.etiqueta}
               <span className="font-semibold tabular-nums">{recalculando ? <span className="brillo-carga inline-block h-3.5 w-8 rounded align-middle" aria-hidden /> : <CifraAnimada valor={color.porcentaje} sufijo=" %" />}</span>
             </motion.li>
@@ -151,7 +164,7 @@ function ColoresDelPlan({ plan, ajuste, bloqueado }: { plan: PlanGuiado; ajuste:
           </button>
           <PanelPlegable abierto={abierto}>
             <div className="pb-1">
-              <p className="mb-2 text-xs text-texto-suave">Rehago tu plan con el color nuevo; tarda unos segundos.</p>
+              <p className="mb-2 text-xs text-texto-suave">Lo añado a tus piezas sin cambiar sus tamaños; tarda unos segundos.</p>
               {catalogo.fase === "cargando" || catalogo.fase === "nada" ? (
                 <div className="flex flex-wrap gap-1.5" aria-label="Cargando colores">
                   {Array.from({ length: 6 }, (_, indice) => <span key={indice} className="brillo-carga h-11 w-24 rounded-full" aria-hidden />)}
@@ -176,7 +189,7 @@ function ColoresDelPlan({ plan, ajuste, bloqueado }: { plan: PlanGuiado; ajuste:
                           onClick={() => { setAbierto(false); void ajuste.aplicar({ tipo: "agregar-color", color: valor }); }}
                           className="inline-flex min-h-11 items-center gap-2 rounded-full border border-borde bg-superficie px-3 text-sm text-texto transition-colors hover:border-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/40 disabled:opacity-50"
                         >
-                          <span className="size-4 rounded-full ring-1 ring-borde" style={{ backgroundColor: hexDeColor(valor) }} aria-hidden />
+                          <span className={`size-4 rounded-full ${anilloDe(hexDeColor(valor))}`} style={{ backgroundColor: hexDeColor(valor) }} aria-hidden />
                           {etiquetaColor(valor)}
                         </motion.button>
                       </li>
@@ -203,12 +216,42 @@ function ColoresDelPlan({ plan, ajuste, bloqueado }: { plan: PlanGuiado; ajuste:
 function BloquePieza({ pieza, ajuste, bloqueado }: { pieza: PiezaAjustable; ajuste: AjustePlanGuiado; bloqueado: boolean }) {
   const recalculando = recalculandoEn(ajuste.estado, pieza.estructuraId);
   const aplicar = (cambio: CambioPlan) => void ajuste.aplicar(cambio);
+  const [confirmando, setConfirmando] = useState(false);
   return (
     <>
       <div className="flex min-h-11 items-center gap-2">
         <h4 className="min-w-0 flex-1 truncate font-medium text-texto">{pieza.titulo}</h4>
-        {pieza.puedeQuitarPieza && <QuitarPieza deshabilitado={bloqueado} onQuitar={() => aplicar({ tipo: "quitar-pieza", estructuraId: pieza.estructuraId })} />}
+        {pieza.puedeQuitarPieza && !confirmando && (
+          <button type="button" disabled={bloqueado} onClick={() => setConfirmando(true)} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm text-texto-suave transition-colors hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/40 disabled:opacity-50">
+            <Trash2 className="size-4" aria-hidden />Quitar pieza
+          </button>
+        )}
       </div>
+      {/* «Quitar pieza» pide un segundo toque y dice qué pasa: solo se va esta pieza, lo demás queda igual. */}
+      <AnimatePresence initial={false}>
+        {confirmando && (
+          <motion.div
+            key="confirmar"
+            role="group"
+            aria-label={`Quitar ${pieza.conArticulo}`}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: DUR.corta, ease: EASE_SALIDA }}
+            className="overflow-hidden"
+          >
+            <div className="mb-1 mt-0.5 rounded-xl bg-error-suave px-3 py-2.5">
+              <p className="text-sm text-texto">Quito {pieza.conArticulo}; lo demás queda igual.</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button type="button" disabled={bloqueado} onClick={() => { setConfirmando(false); aplicar({ tipo: "quitar-pieza", estructuraId: pieza.estructuraId }); }} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-error px-3.5 text-sm font-semibold text-fondo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/50 disabled:opacity-60">
+                  <Trash2 className="size-4" aria-hidden />Sí, quitarla
+                </button>
+                <button type="button" onClick={() => setConfirmando(false)} className="min-h-11 rounded-xl px-3 text-sm font-medium text-texto-suave hover:text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/40">No, dejarla</button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <BarraColores colores={pieza.colores} cargando={recalculando} />
       <ul className="mt-2 space-y-1.5" aria-label={`Colores de ${pieza.titulo}`}>
@@ -264,7 +307,7 @@ function EstadoDelBloque({ ajuste, estructuraId, bloqueado }: { ajuste: AjustePl
           className="mt-2 flex items-center gap-2 overflow-hidden text-sm text-texto-suave"
         >
           <LoaderCircle className="size-4 shrink-0 animate-spin text-acento" aria-hidden />
-          {rehaceElPlan(estado.cambio) ? `Rehaciendo tu plan ${estado.descripcion}. Tarda unos segundos…` : `Calculando: ${estado.descripcion}…`}
+          {estado.aviso}
         </motion.p>
       )}
       {propio && estado.fase === "error" && (
@@ -298,11 +341,12 @@ function BarraColores({ colores, cargando }: { colores: ReadonlyArray<Pick<Color
   if (cargando) return <span className="brillo-carga mt-1 block h-2.5 rounded-full" aria-hidden />;
   if (total <= 0) return null;
   return (
-    <div className="mt-1 flex h-2.5 gap-px overflow-hidden rounded-full bg-borde-suave ring-1 ring-borde-suave" aria-hidden>
+    <div className="mt-1 flex h-2.5 gap-px overflow-hidden rounded-full bg-borde-suave ring-1 ring-borde" aria-hidden>
       {colores.map((color, posicion) => (
         <motion.span
           key={`${posicion}-${color.color}`}
-          className="h-full"
+          // Un tramo negro se perdía contra la tarjeta en tema oscuro: lleva su propio borde claro.
+          className={`h-full ${esOscuro(color.fondo) ? "ring-1 ring-inset ring-texto/40" : ""}`}
           style={{ backgroundColor: color.fondo }}
           initial={false}
           animate={{ width: `${color.porcentaje}%` }}
@@ -320,7 +364,7 @@ function FilaColor({ color, pieza, cargando, bloqueado, onCambio }: { color: Col
   return (
     <div className="flex min-h-12 flex-wrap items-center gap-x-2 gap-y-0.5 rounded-xl bg-superficie py-1 pl-2.5 pr-1 ring-1 ring-borde-suave ring-inset">
       <span className="flex min-w-[8.5rem] flex-1 items-center gap-2">
-        <span className="size-4 shrink-0 rounded-full ring-1 ring-borde" style={{ backgroundColor: color.fondo }} aria-hidden />
+        <span className={`size-4 shrink-0 rounded-full ${anilloDe(color.fondo)}`} style={{ backgroundColor: color.fondo }} aria-hidden />
         <span className="min-w-0 flex-1 truncate text-sm text-texto">{color.etiqueta}</span>
         <span className="w-11 shrink-0 text-right text-sm font-semibold tabular-nums text-texto">
           {cargando ? <span className="brillo-carga ml-auto block h-4 w-9 rounded" aria-hidden /> : <CifraAnimada valor={color.porcentaje} sufijo=" %" />}
@@ -338,27 +382,6 @@ function FilaColor({ color, pieza, cargando, bloqueado, onCambio }: { color: Col
         )}
       </span>
     </div>
-  );
-}
-
-/** «Quitar pieza» pide un segundo toque: rehace todo el plan. */
-function QuitarPieza({ deshabilitado, onQuitar }: { deshabilitado: boolean; onQuitar: () => void }) {
-  const [confirmando, setConfirmando] = useState(false);
-  // Sin `mode="wait"`: la confirmación aparece en el acto aunque la salida del botón no haya terminado.
-  return (
-    <>
-      {confirmando ? (
-        <motion.span key="confirmar" initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: DUR.corta }} className="flex shrink-0 items-center gap-1">
-          <span className="text-xs text-texto-suave">¿Quitarla?</span>
-          <button type="button" disabled={deshabilitado} onClick={() => { setConfirmando(false); onQuitar(); }} className="min-h-11 rounded-lg bg-error px-3 text-sm font-semibold text-fondo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/50 disabled:opacity-60">Sí</button>
-          <button type="button" onClick={() => setConfirmando(false)} className="min-h-11 rounded-lg px-2.5 text-sm font-medium text-texto-suave hover:text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/40">No</button>
-        </motion.span>
-      ) : (
-        <motion.button key="quitar" type="button" disabled={deshabilitado} onClick={() => setConfirmando(true)} initial={false} animate={{ opacity: 1 }} transition={{ duration: DUR.corta }} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm text-texto-suave transition-colors hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/40 disabled:opacity-50">
-          <Trash2 className="size-4" aria-hidden />Quitar pieza
-        </motion.button>
-      )}
-    </>
   );
 }
 

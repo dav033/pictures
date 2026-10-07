@@ -49,7 +49,7 @@ export function abrirContextoExigido(token: string): ContextoPlan {
 }
 
 /** A candidate approval token/plan_hash pair, verified enough to open its context. */
-function contextoBaseExigido(base: BasePlan): { aprobacion: { requestId: string; expiresAt: number }; contexto: ContextoPlan } {
+export function contextoBaseExigido(base: BasePlan): { aprobacion: { requestId: string; expiresAt: number }; contexto: ContextoPlan } {
   const aprobacion = verificarTokenAprobacion(base.approval_token, base.plan_hash);
   if (!aprobacion) throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
   const contexto = abrirContextoExigido(base.approval_token);
@@ -190,7 +190,7 @@ type ConteosDeLaEdicion = { pistas: PistaConteo[]; ajustar: string[]; medidasDel
  * edición no tiene el texto del cliente): con ella, las medidas que el cliente
  * dio siguen fijas frente a la foto (revisión 33).
  */
-export function conteosDeLaEdicion(base: BasePlan, edicion: EdicionPlan, medidasDelCliente = false): ConteosDeLaEdicion | undefined {
+export function conteosDeLaEdicion(base: BasePlan, edicion: Pick<EdicionPlan, "accion" | "estructura_id"> | null, medidasDelCliente = false): ConteosDeLaEdicion | undefined {
   if (!featureEnabled("CONTEO_REFERENCIA_V1")) return undefined;
   const conteos = z.array(ConteoAplicadoSchema).max(32).safeParse((base as Record<string, unknown>).conteos_referencia);
   if (!conteos.success || conteos.data.length === 0) return undefined;
@@ -198,8 +198,9 @@ export function conteosDeLaEdicion(base: BasePlan, edicion: EdicionPlan, medidas
   for (const conteo of conteos.data) {
     if (!pistas.has(conteo.referencia_element_id)) pistas.set(conteo.referencia_element_id, { referencia_element_id: conteo.referencia_element_id, ...conteo.lectura });
   }
-  const editada = conteos.data.some((conteo) => conteo.estructura_id === edicion.estructura_id);
-  return { pistas: [...pistas.values()].slice(0, 16), ajustar: edicion.accion === "mezcla" && editada ? [edicion.estructura_id] : [], medidasDelCliente };
+  // Sin edición (quitar una pieza o añadir un color: `ajuste-plan-entero.ts`) los conteos viajan y no se ajusta ninguna.
+  const editada = edicion !== null && conteos.data.some((conteo) => conteo.estructura_id === edicion.estructura_id);
+  return { pistas: [...pistas.values()].slice(0, 16), ajustar: edicion !== null && edicion.accion === "mezcla" && editada ? [edicion.estructura_id] : [], medidasDelCliente };
 }
 
 /**

@@ -12,7 +12,7 @@ import { guidanceScaleSeguro } from "../../src/lib/ia/kagutsuchi/flux";
 import { ReferenceBlueprintV2Schema } from "../../src/lib/ia/referencia/reference-blueprint";
 import { validarEstructurasFueraDeReferencia, validarRangoCreatividad } from "../../src/lib/plan/restricciones";
 import { PlanDecoracionSchema } from "../../src/lib/plan/tipos";
-import { compileFluxCaption } from "../../src/lib/ia/kagutsuchi/caption-flux";
+import { BASE_PROMPT_MAX_LENGTH, compileFluxCaption } from "../../src/lib/ia/kagutsuchi/caption-flux";
 import { findFluxPromptLanguageLeaks } from "../../src/lib/ia/kagutsuchi/preflight-flux";
 import { buildVisualContext } from "../../src/lib/ia/escena/visual-context";
 import type { SceneSpec } from "../../src/lib/ia/escena/scene-spec";
@@ -140,7 +140,9 @@ const sinPistas = compileFluxCaption({ sceneSpec: escena, visualContext: context
 assert.equal(compilar(2).prompt, sinPistas.prompt, "level 2 prompt is unchanged");
 const libre = compilar(5);
 for (const pista of perfilCreatividad(5).pistasPrompt) assert.ok(libre.prompt.includes(pista), pista);
-assert.ok(libre.prompt.length <= 750);
+// El tope es el del caption base (1000): el viejo 750 era del dialecto LoRA. Con semiarco + columna, la escena
+// cuenta sus piezas sueltas y el hueco entre ellas (`piezasDePieSueltas`, 2026-10-07).
+assert.ok(libre.prompt.length <= BASE_PROMPT_MAX_LENGTH, `largo ${libre.prompt.length}`);
 assert.deepEqual(findFluxPromptLanguageLeaks(libre.prompt), []);
 const ajustado = compilar(5, sinPistas.prompt.length);
 assert.doesNotMatch(ajustado.prompt, /rich layered styling|cinematic|editorial/, "cues are dropped before anything else when the budget is tight");

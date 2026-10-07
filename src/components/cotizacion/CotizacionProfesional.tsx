@@ -24,8 +24,12 @@ import { esCancelacion } from "@/lib/plan/peticion-plan-editar";
 import { CampoGanancia } from "./CampoGanancia";
 import { EncabezadoPrecio } from "./EncabezadoPrecio";
 import { PreciosMateriales } from "./PreciosMateriales";
+import { fichasDeCotizacion } from "@/components/guiado/ficha-globo";
 import { ResumenPrecio } from "./ResumenPrecio";
 import { SeccionGastos } from "./SeccionGastos";
+import { MaterialesGranel } from "./MaterialesGranel";
+import { ModoMateriales } from "./ModoMateriales";
+import { useGranel } from "./useGranel";
 
 /** Espera tras la última tecla antes de pedirle los totales a Python. */
 const ESPERA_CALCULO_MS = 400;
@@ -108,9 +112,20 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
   const [quitada, setQuitada] = useState<{ seccion: SeccionCosto; fila: FilaQuitada } | null>(null);
   const [foco, setFoco] = useState<string | null>(null);
   const { materiales, sinPrecio } = useMemo(() => materialesDesdeCotizacion(cotizacion), [cotizacion]);
+  // Cómo se ve cada globo (foto, color, tamaño): solo para pintar la lista; no viaja a Python.
+  const fichas = useMemo(() => fichasDeCotizacion(cotizacion.lineas), [cotizacion]);
   const leido = useMemo(() => leerBorrador(borrador, materiales), [borrador, materiales]);
+  // Globos a granel: solo si el último Python que respondió lo anunció (a uno anterior se le manda lo de siempre).
+  const granel = useGranel({
+    clave,
+    cotizacion,
+    materiales,
+    borrador,
+    leido,
+    datos: calculo.estado === "listo" ? calculo.resultado.datos : calculo.estado === "vacio" ? null : calculo.previo?.datos ?? null,
+  });
   // Lo que se envía y las filas que lo forman, como texto: solo un cambio ahí vuelve a calcular.
-  const envio = leido.entrada ? JSON.stringify({ entrada: leido.entrada, enviadas: leido.enviadas }) : null;
+  const envio = granel.envio ? JSON.stringify(granel.envio) : null;
   const ultimoResultado = useRef<Resultado | null>(null);
 
   useEffect(() => {
@@ -155,7 +170,7 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
   const resultado = calculo.estado === "listo" ? calculo.resultado : calculo.estado === "vacio" ? null : calculo.previo;
   const datos = resultado?.datos ?? null;
   const estadoCalculo: EstadoCalculo = calculo.estado;
-  const vigencia = vigenciaDe({ estado: estadoCalculo, hayResultado: resultado !== null, hayErroresEscritos: leido.entrada === null });
+  const vigencia = vigenciaDe({ estado: estadoCalculo, hayResultado: resultado !== null, hayErroresEscritos: granel.envio === null });
   const atenuar = esNoVigente(vigencia);
   const leyenda = leyendaDelPrecio({
     vigencia,
@@ -223,6 +238,34 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
         onReintentar={reintentar}
       />
 
+      {granel.disponible && (
+        <ModoMateriales
+          clave={clave}
+          modo={granel.modo}
+          onModo={granel.cambiarModo}
+          totalPaquetes={datos?.materiales.total_paquetes_cop ?? null}
+          totalGranel={datos?.materiales.granel?.total_cop ?? null}
+          globos={datos?.materiales.granel ? { plan: datos.materiales.granel.unidades_plan, extra: datos.materiales.granel.unidades_extra, sobrante: datos.materiales.granel.sobrante_paquetes } : null}
+          atenuar={atenuar}
+        />
+      )}
+      {granel.disponible && granel.modo === "granel" && granel.unidades && granel.leido && (
+        <MaterialesGranel
+          clave={clave}
+          materiales={materiales}
+          unidades={granel.unidades}
+          fichas={fichas}
+          borrador={granel.borrador}
+          leido={granel.leido}
+          lineaDe={(variantId) => materialPorVariante.get(variantId) ?? null}
+          resumen={datos?.materiales.granel ?? null}
+          totalPaquetes={datos?.materiales.total_paquetes_cop ?? null}
+          atenuar={atenuar}
+          onPrecio={granel.cambiarPrecio}
+          onExtra={granel.cambiarExtra}
+        />
+      )}
+
       {abierta && (
         <div id={idPanel} className="grid gap-6 border-t border-borde-suave px-4 pb-5 pt-2 @xl:px-5.5 @3xl:grid-cols-[minmax(0,1fr)_17rem]">
           <div className="min-w-0">
@@ -249,16 +292,18 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
               />
             ))}
 
-            <PreciosMateriales
+            {/* A granel, los paquetes no entran al precio: su lista (y su total) se ve solo por paquete. */}
+            {granel.modo === "paquete" && <PreciosMateriales
               clave={clave}
               materiales={materiales}
               precios={borrador.precios}
               errores={leido.erroresPrecio}
               atenuar={atenuar}
               subtotalDe={(variantId) => materialPorVariante.get(variantId)?.subtotal_cop ?? null}
-              total={datos ? datos.materiales.total_cop : null}
+              total={datos ? datos.materiales.total_paquetes_cop ?? datos.materiales.total_cop : null}
               onPrecio={cambiarPrecio}
-            />
+              fichas={fichas}
+            />}
             <p className="mt-4 text-xs text-texto-suave">Tus cambios se guardan solos mientras esta pestaña siga abierta.</p>
           </div>
 

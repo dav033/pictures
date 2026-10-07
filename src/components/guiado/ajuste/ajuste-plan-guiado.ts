@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { PropuestaComposicionSchema, type PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import type { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { piezaEnPalabras } from "@/lib/ia/guiado/propuesta-composicion";
+import { planAdmiteColorNuevo, planSinPieza } from "@/lib/plan/ajuste-estructural";
 import { ArmadoArcoOrganicoV1Schema, type ArmadoArcoOrganicoV1 } from "@/lib/plan/armado-arco-organico";
 import { ArmadoArcoV1Schema, type ArmadoArcoV1 } from "@/lib/plan/armado-arco";
 import { ArmadoColumnaOrganicaV1Schema, type ArmadoColumnaOrganicaV1 } from "@/lib/plan/armado-columna-organica";
@@ -8,6 +9,7 @@ import { ArmadoColumnaV1Schema, type ArmadoColumnaV1 } from "@/lib/plan/armado-c
 import { ArmadoGuirnaldaOrganicaV1Schema, type ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
 import { PARTICIPACION_MINIMA_REPARTO, type EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import { ESTRUCTURAS_OFICIALES_IDS, OFICIALES_SIN_MOTOR, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 import { HEX_COLORES_V2, PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import type { CandidatoDelServidor, ColorCatalogo } from "@/components/plan/ajuste/ajuste-propuesta";
 import { colorCliente, colorEnPlural, conMayuscula } from "../formato";
@@ -26,7 +28,6 @@ import { colorCliente, colorEnPlural, conMayuscula } from "../formato";
 export type PlanGuiado = z.infer<typeof PlanGuiadoSchema>;
 type EstructuraPlan = PlanGuiado["plan"]["estructuras"][number];
 type MaterialPlan = EstructuraPlan["materiales"][number];
-export type PropuestaGuiada = z.infer<typeof PropuestaComposicionSchema>;
 
 /** Cuánto cambia la parte de un color con cada toque de «+» o «−» (10 puntos). */
 export const PASO_PROTAGONISMO = 0.1;
@@ -120,8 +121,10 @@ export type TamanoPieza = { texto: string; puedeAgrandar: boolean; puedeAchicar:
 
 export type PiezaAjustable = {
   estructuraId: string;
-  /** «Semiarco orgánico», «2 × Columna». */
+  /** «Semiarco orgánico», «Columna derecha» (un plan viejo con repeticiones: «2 × Columna»). */
   titulo: string;
+  /** «el semiarco orgánico», «la columna derecha»: para decir qué se quita. */
+  conArticulo: string;
   modoColores: ModoColores;
   /** Por qué no se reparten los colores (solo con `fijo`). */
   motivoFijo: string | null;
@@ -186,12 +189,19 @@ function idOficial(valor: unknown): EstructuraOficialId | null {
   return typeof valor === "string" && (ESTRUCTURAS_OFICIALES_IDS as readonly string[]).includes(valor) ? valor as EstructuraOficialId : null;
 }
 
-/** «el semiarco orgánico», «la columna», «las dos columnas»; sin pieza oficial, «la pieza Arco principal». */
+/** Nombre individual que pone el servidor («Columna izquierda», «Centro de mesa con globos 2»): ver piezas-individuales.ts. */
+const NOMBRE_INDIVIDUAL = /\s(?:izquierd[ao]|derech[ao]|\d+)$/i;
+
+/**
+ * «el semiarco orgánico», «la columna derecha», «las dos columnas» (un plan viejo con repeticiones); sin pieza
+ * oficial, «la pieza Arco principal». Una pieza individual se nombra por su nombre: así «Quitar» dice cuál.
+ */
 export function piezaConArticulo(estructura: Pick<EstructuraPlan, "estructura_oficial" | "nombre" | "repeticiones">): string {
   const oficial = idOficial(estructura.estructura_oficial);
   if (!oficial) return `la pieza ${estructura.nombre}`;
+  const femenina = FEMENINAS.has(oficial);
+  if (estructura.repeticiones <= 1 && NOMBRE_INDIVIDUAL.test(estructura.nombre.trim())) return `${femenina ? "la" : "el"} ${estructura.nombre.trim().toLocaleLowerCase("es")}`;
   const singular = piezaEnPalabras(oficial, 1);
-  const femenina = singular.startsWith("una ");
   if (estructura.repeticiones <= 1) return `${femenina ? "la" : "el"} ${singular.replace(/^una? /, "")}`;
   return `${femenina ? "las" : "los"} ${piezaEnPalabras(oficial, estructura.repeticiones)}`;
 }
@@ -235,7 +245,6 @@ function modoColoresDe(estructura: EstructuraPlan, motor: Motor | null): { modo:
 /** Lo que el panel muestra de cada pieza, con qué se puede tocar. */
 export function piezasAjustables(plan: PlanGuiado): PiezaAjustable[] {
   const estructuras = plan.plan.estructuras;
-  const propuestasSinPieza = new Map(estructuras.map((estructura) => [estructura.estructura_id, propuestaSinPieza(plan, estructura.estructura_id) !== null]));
   return estructuras.map((estructura) => {
     const motor = motorDe(estructura);
     const { modo, motivo } = modoColoresDe(estructura, motor);
@@ -262,11 +271,12 @@ export function piezasAjustables(plan: PlanGuiado): PiezaAjustable[] {
     return {
       estructuraId: estructura.estructura_id,
       titulo: `${estructura.repeticiones > 1 ? `${estructura.repeticiones} × ` : ""}${estructura.nombre}`,
+      conArticulo: piezaConArticulo(estructura),
       modoColores: modo,
       motivoFijo: motivo,
       colores,
       tamano: medidas && (agrandar || achicar) ? { texto: medidas, puedeAgrandar: agrandar, puedeAchicar: achicar } : null,
-      puedeQuitarPieza: propuestasSinPieza.get(estructura.estructura_id) ?? false,
+      puedeQuitarPieza: planSinPieza(plan.plan, estructura.estructura_id) !== null,
     };
   });
 }
@@ -459,7 +469,8 @@ export function edicionQuitarColor(plan: PlanGuiado, estructuraId: string, indic
   return linea ? { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id } : null;
 }
 
-export type GloboElegido = { productId: string; variantId: string; color: string };
+/** El globo liso elegido: su variante preferida (12″) y TODAS las de ese color, para que cada pieza tenga sus tamaños. */
+export type GloboElegido = { productId: string; variantId: string; variantIds: string[]; color: string };
 
 const PREFERENCIA_ACABADO: ReadonlyArray<RegExp> = [/fashion/i, /pastel|mate/i, /satin|sat[ií]n/i];
 
@@ -480,7 +491,7 @@ export function elegirGloboLiso(candidatos: readonly CandidatoDelServidor[], col
       const posicion = PREFERENCIA_ACABADO.findIndex((patron) => patron.test(titulo));
       return posicion < 0 ? PREFERENCIA_ACABADO.length : posicion;
     })();
-    return [{ rango, eleccion: { productId: candidato.productId, variantId: preferida.variantId, color: preferida.colores[0]! } }];
+    return [{ rango, eleccion: { productId: candidato.productId, variantId: preferida.variantId, variantIds: variantes.map((variante) => variante.variantId).slice(0, 24), color: preferida.colores[0]! } }];
   });
   opciones.sort((a, b) => a.rango - b.rango);
   return opciones[0]?.eleccion ?? null;
@@ -507,43 +518,14 @@ export function coloresDelPlan(plan: PlanGuiado): string[] {
 /** Tope de colores de una propuesta de la guiada (`PropuestaComposicionSchema`). */
 export const MAX_COLORES_PLAN = 5;
 
-// --- Rehacer el plan: quitar una pieza o añadir un color ----------------------------------------------------------
-
-function propuestaDe(estructuras: readonly EstructuraPlan[], colores: readonly string[], frase: string): PropuestaGuiada | null {
-  if (!estructuras.length) return null;
-  const piezas = estructuras.map((estructura) => {
-    const oficial = idOficial(estructura.estructura_oficial);
-    return oficial ? { estructura: oficial, cantidad: Math.min(12, Math.max(1, estructura.repeticiones)), nombre: estructura.nombre.slice(0, 120) } : null;
-  });
-  if (piezas.some((pieza) => pieza === null)) return null;
-  const paleta = new Set<string>(PALETA_COLORES_V2);
-  const propuesta = PropuestaComposicionSchema.safeParse({ frase: frase.slice(0, 360), colores: [...new Set(colores.map(normal))].filter((color) => paleta.has(color)), piezas });
-  return propuesta.success ? propuesta.data : null;
-}
+// --- Quitar una pieza o añadir un color (sin modelo: `ajuste-plan-entero.ts` en el servidor) -----------------------
 
 /**
- * Ninguna edición de `/api/plan-editar` quita una pieza entera: se rehace el plan con las piezas que quedan y sus
- * colores, por la misma ruta con que la guiada arma un plan (`instruccionPlanGuiado` con el plan anterior). Null si
- * no queda ninguna pieza o lo que queda no cabe en una propuesta (más de tres piezas, una pieza sin oficial).
+ * Se puede añadir un color si el plan tiene menos de cinco y alguna pieza lo admite. El color entra en la paleta de
+ * cada pieza con todas sus medidas intactas (`planConColor`); Python vuelve a resolver y a firmar.
  */
-export function propuestaSinPieza(plan: PlanGuiado, estructuraId: string): PropuestaGuiada | null {
-  const quitada = plan.plan.estructuras.find((estructura) => estructura.estructura_id === estructuraId);
-  const restantes = plan.plan.estructuras.filter((estructura) => estructura.estructura_id !== estructuraId);
-  if (!quitada) return null;
-  const colores = [...new Set(restantes.flatMap((estructura) => estructura.materiales.map((material) => normal(material.color))))].slice(0, MAX_COLORES_PLAN);
-  return propuestaDe(restantes, colores, `Tu decoración sin ${piezaConArticulo(quitada)}.`);
-}
-
-/**
- * Añadir un color al plan también lo rehace por la ruta del plan guiado, con las mismas piezas y el color nuevo en la
- * paleta. `agregar` de `/api/plan-editar` admite UNA variante (un tamaño) del globo nuevo, y una pieza orgánica mezcla
- * cuatro o cinco tamaños: Python rechaza el armado por falta de globos («el catálogo no vende los globos que ese arco
- * necesita»). Al rehacerlo, el catálogo se busca entero para ese color. Null si el plan ya lleva cinco colores.
- */
-export function propuestaConColor(plan: PlanGuiado, color: string): PropuestaGuiada | null {
-  const colores = coloresDelPlan(plan);
-  if (colores.includes(normal(color)) || colores.length >= MAX_COLORES_PLAN) return null;
-  return propuestaDe(plan.plan.estructuras, [...colores, color], `Tu decoración con ${colorCliente(color)}.`);
+export function admiteColorNuevo(plan: PlanGuiado): boolean {
+  return coloresDelPlan(plan).length < MAX_COLORES_PLAN && planAdmiteColorNuevo(plan.plan);
 }
 
 export type ColorDelPlan = { color: string; etiqueta: string; fondo: string; porcentaje: number };
@@ -557,10 +539,6 @@ export function coloresDelPlanVista(plan: PlanGuiado): ColorDelPlan[] {
   return colores.map((color, indice) => ({ color, etiqueta: etiquetaColor(color), fondo: hexDeColor(color), porcentaje: porcentajes[indice] ?? 0 }));
 }
 
-/** Se puede añadir un color si el plan tiene menos de cinco y se puede rehacer con sus piezas. */
-export function admiteColorNuevo(plan: PlanGuiado): boolean {
-  return coloresDelPlan(plan).length < MAX_COLORES_PLAN && propuestaDe(plan.plan.estructuras, coloresDelPlan(plan), "Tu decoración.") !== null;
-}
 
 // --- Lo que se dice del cambio ------------------------------------------------------------------------------------
 
@@ -572,9 +550,9 @@ export type CambioPlan =
   | { tipo: "agregar-color"; color: string }
   | { tipo: "quitar-pieza"; estructuraId: string };
 
-/** Los cambios que rehacen el plan entero (modelo + Python) en vez de una edición de Python: tardan más. */
-export function rehaceElPlan(cambio: CambioPlan): boolean {
-  return cambio.tipo === "agregar-color" || cambio.tipo === "quitar-pieza";
+/** El cambio toca todas las piezas (añadir un color): todas esperan el plan nuevo. Los demás tocan una sola. */
+export function cambiaTodasLasPiezas(cambio: CambioPlan): boolean {
+  return cambio.tipo === "agregar-color";
 }
 
 /** La pieza que toca el cambio, o null si es del plan entero. */
@@ -597,6 +575,38 @@ export function describirCambio(plan: PlanGuiado, cambio: CambioPlan): string {
     case "quitar-color": return `sin ${colorDe(cambio.indice)} en ${pieza}`;
     case "quitar-pieza": return `sin ${pieza}`;
   }
+}
+
+/**
+ * Lo que se ve mientras el cambio se calcula: dice qué pasa y qué NO cambia («Quito la columna derecha; lo demás queda
+ * igual…»). Ningún ajuste pasa por el modelo: todos tardan unos segundos, lo que tarda Python.
+ */
+export function avisoEnCurso(plan: PlanGuiado, cambio: CambioPlan): string {
+  if (cambio.tipo === "agregar-color") return `Añado ${colorCliente(cambio.color)} a tus piezas; sus tamaños quedan igual…`;
+  if (cambio.tipo === "quitar-pieza") {
+    const estructura = plan.plan.estructuras.find((item) => item.estructura_id === cambio.estructuraId);
+    return `Quito ${estructura ? piezaConArticulo(estructura) : "la pieza"}; lo demás queda igual…`;
+  }
+  return `Calculando: ${describirCambio(plan, cambio)}…`;
+}
+
+/**
+ * La confirmación del cambio hecho, con lo que se conservó: «Quité la columna derecha; lo demás quedó igual.».
+ * `piezasConColor`: las piezas que recibieron el color nuevo (el servidor puede dejar fuera alguna que el catálogo no
+ * cubre o que no admite otro color).
+ */
+export function confirmacionDelCambio(plan: PlanGuiado, cambio: CambioPlan, piezasConColor?: readonly string[]): string {
+  if (cambio.tipo === "agregar-color") {
+    const total = plan.plan.estructuras.length;
+    const con = piezasConColor?.length ?? total;
+    const donde = con >= total ? "a tus piezas" : `a ${con} de tus ${total} piezas`;
+    return `Listo: añadí ${colorCliente(cambio.color)} ${donde}; sus tamaños quedaron igual.`;
+  }
+  if (cambio.tipo === "quitar-pieza") {
+    const estructura = plan.plan.estructuras.find((item) => item.estructura_id === cambio.estructuraId);
+    return `Listo: quité ${estructura ? piezaConArticulo(estructura) : "la pieza"}; lo demás quedó igual.`;
+  }
+  return `Listo: ${describirCambio(plan, cambio)}.`;
 }
 
 /** El mensaje del plan en el historial: el resumen de siempre y los últimos ajustes, para que el chat sepa qué hay. */

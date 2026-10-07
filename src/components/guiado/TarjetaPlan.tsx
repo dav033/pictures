@@ -3,24 +3,26 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
 import { Calculator, Check, ChevronDown, GraduationCap, MapPin, PenLine, ShoppingBag, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
-import { z } from "zod";
+import type { z } from "zod";
 import { Lightbox } from "@/components/Lightbox";
-import { BarraTamanos, tramosPorTamano } from "@/components/plan/BarraTamanos";
 import type { CotizacionPlanGuiadoSchema, PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
-import { ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
-import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { ComprarMateriales } from "./ComprarMateriales";
 import { CostosMateriales } from "./CostosMateriales";
 import { EsqueletoImagen } from "./Esqueletos";
+import { FilaPieza } from "./FilaPieza";
 import { GraficaMotorGuiada } from "./GraficaMotorGuiada";
+import { ModificarPieza, piezaModificable } from "./ModificarPieza";
+import { leyendaDePieza } from "./motor-pieza";
 import { PanelPlegable } from "./Plegable";
+import { hexColor, piezasVistaDePlan } from "./piezas-vista";
+import { BotonVerDetalle, DetalleGlobos } from "./TablaGlobosPieza";
 import { decoracionDePlan, type ContextoCompra } from "./plan-compra";
-import { colorCliente, medidasEnPalabras, textoGlobos } from "./formato";
+import { colorCliente } from "./formato";
 import { DUR, EASE_REBOTE, EASE_SALIDA, RESORTE, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
-import { AjustarPlan, CifraAnimada } from "./ajuste/AjustarPlan";
-import { useAjustePlanGuiado, type AjustePublicado, type ResultadoRehacer } from "./ajuste/usarAjustePlanGuiado";
-import type { PropuestaGuiada } from "./ajuste/ajuste-plan-guiado";
+import { AjustarPlan } from "./ajuste/AjustarPlan";
+import { useAjustePlanGuiado, type AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
+import { listaNatural } from "@/lib/ia/guiado/propuesta-composicion";
 
 export type AccionPlan = "ver" | "costear" | "comprar" | "aprender" | "contratar" | "cambiar";
 export type EstadoImagen = "nada" | "cargando" | "lista" | "error";
@@ -59,52 +61,30 @@ type Props = {
    * anteriores) no hay panel. `baseHash` es el plan sobre el que se hizo el ajuste.
    */
   onPlanAjustado?: (plan: PlanGuiado, cotizacion: unknown, ajuste: AjustePublicado) => void;
-  /** Quitar una pieza o añadir un color: rehace el plan por la ruta del plan guiado. */
-  rehacerPlan?: (propuesta: PropuestaGuiada) => Promise<ResultadoRehacer>;
   /** Ajustes ya hechos sobre esta tarjeta; el último se ve bajo el total. */
   ajustes?: readonly string[];
 };
 
 function sinAjuste(): void {}
 
-const LineaPlanSchema = z.object({ color: z.string().nullish(), diam_pulg: z.number().nullish(), tamano_codigo: z.string().nullish(), unidades: z.number() }).passthrough();
-
-/** Globos de una pieza tal como los resolvió Python, agrupados por color y por tamaño (solo para mostrarlos). */
-function globosDePieza(plan: PlanGuiado, estructuraId: string): { porColor: Array<{ color: string; cantidad: number }>; porTamano: Array<{ pulgadas: number | null; unidades: number }> } {
-  const lineas = plan.estructuras.find((estructura) => estructura.estructura_id === estructuraId)?.lineas ?? [];
-  const porColor = new Map<string, number>();
-  const porTamano: Array<{ pulgadas: number | null; unidades: number }> = [];
-  for (const linea of lineas) {
-    const leida = LineaPlanSchema.safeParse(linea);
-    if (!leida.success) continue;
-    const color = leida.data.color?.trim() || "otro color";
-    porColor.set(color, (porColor.get(color) ?? 0) + leida.data.unidades);
-    const codigo = leida.data.tamano_codigo ? Number.parseFloat(leida.data.tamano_codigo.replace(/^R-?/i, "")) : Number.NaN;
-    porTamano.push({ pulgadas: leida.data.diam_pulg ?? (Number.isFinite(codigo) ? codigo : null), unidades: leida.data.unidades });
-  }
-  return { porColor: [...porColor.entries()].map(([color, cantidad]) => ({ color, cantidad })), porTamano };
-}
-
-function hexDe(color: string): string | undefined {
-  if (color.startsWith("#")) return color;
-  return HEX_COLORES_V2[color.toLocaleLowerCase("es") as keyof typeof HEX_COLORES_V2];
-}
-
-function idOficial(valor: unknown): EstructuraOficialId | null {
-  return typeof valor === "string" && (ESTRUCTURAS_OFICIALES_IDS as readonly string[]).includes(valor) ? valor as EstructuraOficialId : null;
-}
-
 /**
  * «Tu plan»: lo que lleva la decoración (piezas, medidas, mezcla de tamaños, globos por color, total) y qué hacer
  * con él, con una acción principal clara («Ver cómo quedaría») y el resto a mano. Las cantidades son de Python.
  */
 export function TarjetaPlan(props: Props) {
-  const { plan, cotizacion, imagen, estadoImagen, usoCosteo, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, rehacerPlan, ajustes } = props;
+  const { plan, cotizacion, imagen, estadoImagen, usoCosteo, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes } = props;
   const ultimoAjuste = ajustes?.at(-1);
   const reducido = useReducedMotion();
   const desglose = useMemo(() => generarPasosPlan(plan), [plan]);
   const piezas = plan.plan.estructuras;
+  // Las piezas con sus globos por color y tamaño, tal como los resolvió Python (filas y «Ver detalle»).
+  const piezasVista = useMemo(() => piezasVistaDePlan(plan), [plan]);
+  // Los tonos Sempertex de cada pieza (uno por material): con ellos pinta el motor, como en la clásica.
+  const tonosPorPieza = useMemo(() => new Map(piezas.map((pieza) => [pieza.estructura_id, leyendaDePieza(plan, pieza.estructura_id).map((color) => color.hex)])), [plan, piezas]);
   const [detalleAbierto, setDetalleAbierto] = useState(false);
+  const idDetalle = useId();
+  /** La pieza abierta en «Modificar» (su gráfica grande con los mandos del editor de la clásica). */
+  const [modificando, setModificando] = useState<string | null>(null);
   const [costeoVisible, setCosteoVisible] = useState<boolean | null>(null);
   const [lightbox, setLightbox] = useState(false);
   const [ajusteAbierto, setAjusteAbierto] = useState(false);
@@ -113,7 +93,7 @@ export function TarjetaPlan(props: Props) {
   // Al terminar de abrir «Ajustar mi plan», el panel queda a la vista desde su comienzo: la conversación, pegada al
   // final, lo empujaba hacia arriba mientras se desplegaba y lo primero que se veía eran sus últimos mandos.
   const mostrarAjuste = () => filaAjusteRef.current?.scrollIntoView({ block: "start", behavior: reducido ? "auto" : "smooth" });
-  const ajuste = useAjustePlanGuiado({ plan, onPlanAjustado: onPlanAjustado ?? sinAjuste, ...(rehacerPlan ? { rehacerPlan } : {}) });
+  const ajuste = useAjustePlanGuiado({ plan, onPlanAjustado: onPlanAjustado ?? sinAjuste });
   // Mientras Python rehace el plan, el total y los colores muestran su esqueleto y las acciones esperan.
   const recalculando = ajuste.guardando;
   const ajustable = vigente && Boolean(onPlanAjustado);
@@ -155,7 +135,7 @@ export function TarjetaPlan(props: Props) {
                   title={colorCliente(color)}
                   variants={{ oculto: { scale: 0 }, visible: { scale: 1, transition: { duration: 0.35, ease: EASE_REBOTE } } }}
                   className="-ml-1.5 size-5 rounded-full ring-2 ring-superficie"
-                  style={{ backgroundColor: hexDe(color) ?? "#9ca3af" }}
+                  style={{ backgroundColor: hexColor(color) }}
                 />
               ))}
             </motion.span>
@@ -169,7 +149,7 @@ export function TarjetaPlan(props: Props) {
           {totalAnterior !== undefined && !recalculando && <PastillaDiferencia key={plan.plan_hash} diferencia={desglose.total - totalAnterior} />}
         </div>
         <p className="mt-0.5 text-sm text-texto-suave">
-          {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0)} {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0) === 1 ? "pieza" : "piezas"}: {piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} × ` : ""}${pieza.nombre}`).join(", ")}
+          {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0)} {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0) === 1 ? "pieza" : "piezas"}: {listaNatural(piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} × ` : ""}${pieza.nombre}`))}
         </p>
         {/* Sin salida animada: el ajuste nuevo reemplaza al anterior en el acto, nunca se ven dos. */}
         {ultimoAjuste && (
@@ -188,49 +168,49 @@ export function TarjetaPlan(props: Props) {
 
       {/* Piezas */}
       <motion.ul variants={hijoEscalonado} className="mt-4 space-y-2.5">
-        {piezas.map((pieza, indice) => {
-          const globos = globosDePieza(plan, pieza.estructura_id);
-          const tramos = tramosPorTamano(globos.porTamano);
-          const medidas = medidasEnPalabras(pieza.medidas);
+        {piezasVista.map((vista, indice) => {
+          const pieza = piezas[indice]!;
           const mezclaReal = plan.estructuras.find((resuelta) => resuelta.estructura_id === pieza.estructura_id)?.mezcla_real;
+          // «Modificar» abre la gráfica grande con los mandos del editor de la clásica; solo en el plan vigente.
+          const modificable = ajustable && piezaModificable(plan, pieza.estructura_id);
+          const abrir = modificable && !bloqueado ? () => setModificando(pieza.estructura_id) : undefined;
           return (
-            <li key={pieza.estructura_id} className="grid grid-cols-[5rem_1fr] gap-3 rounded-2xl bg-superficie-suave p-3 sm:grid-cols-[6rem_1fr]">
-              <span className="grid size-20 place-items-center overflow-hidden rounded-xl bg-superficie-2 p-1.5 text-acento sm:size-24">
-                <GraficaMotorGuiada plan={plan.plan} pieza={pieza} mezclaReal={mezclaReal} id={idOficial(pieza.estructura_oficial) ?? "arco"} nombre={pieza.nombre} />
-              </span>
-              <div className="min-w-0">
-                <p className="font-medium leading-snug text-texto">{pieza.repeticiones > 1 ? `${pieza.repeticiones} × ` : ""}{pieza.nombre}</p>
-                <p className="text-xs text-texto-suave">{medidas ?? "Medida según el espacio"}</p>
-                {tramos.length > 0 && <BarraTamanos tramos={tramos} retraso={0.25 + indice * 0.12} className="mt-2" descripcion={`Globos de ${tramos.map((tramo) => tramo.pulgadas).join(", ")} pulgadas`} />}
-                {recalculando ? (
-                  <span className="mt-2 flex flex-wrap gap-1.5" aria-hidden>
-                    {(globos.porColor.length ? globos.porColor : [{ color: "", cantidad: 0 }]).map((globo, posicion) => <span key={`${globo.color}-${posicion}`} className="brillo-carga h-5 w-20 rounded-full" />)}
-                  </span>
-                ) : globos.porColor.length > 0 && (
-                  <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Globos por color">
-                    <AnimatePresence initial={false}>
-                      {globos.porColor.map((globo) => (
-                        <motion.li
-                          key={globo.color}
-                          layout="position"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          transition={{ duration: DUR.media, ease: EASE_REBOTE }}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-superficie px-2 py-0.5 text-xs text-texto tabular-nums ring-1 ring-borde-suave"
-                        >
-                          <span className="size-3 rounded-full ring-1 ring-borde" style={{ backgroundColor: hexDe(globo.color) ?? "#9ca3af" }} aria-hidden />
-                          {colorCliente(globo.color)} <CifraAnimada valor={globo.cantidad} />
-                        </motion.li>
-                      ))}
-                    </AnimatePresence>
-                  </ul>
-                )}
-              </div>
-            </li>
+            <FilaPieza
+              key={vista.id}
+              pieza={vista}
+              indice={indice}
+              recalculando={recalculando}
+              dibujo={<GraficaMotorGuiada plan={plan.plan} pieza={pieza} mezclaReal={mezclaReal} colores={tonosPorPieza.get(pieza.estructura_id)} id={vista.oficial ?? "arco"} nombre={pieza.nombre} />}
+              {...(abrir ? { onModificar: abrir } : {})}
+              {...(modificable ? {
+                accion: (
+                  <motion.button
+                    type="button"
+                    disabled={!abrir}
+                    onClick={abrir}
+                    whileTap={abrir ? { scale: 0.97 } : undefined}
+                    transition={RESORTE}
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-acento/40 bg-superficie px-3 text-sm font-semibold text-acento transition-colors hover:border-acento hover:bg-acento-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50"
+                  >
+                    <PenLine className="size-4" aria-hidden />
+                    Modificar {pieza.repeticiones > 1 ? "estas piezas" : "esta pieza"}
+                  </motion.button>
+                ),
+              } : {})}
+            />
           );
         })}
       </motion.ul>
+      {ajustable && (
+        <ModificarPieza
+          plan={plan}
+          estructuraId={modificando}
+          onCerrar={() => setModificando(null)}
+          onPlanAjustado={onPlanAjustado ?? sinAjuste}
+          onIrAAjustar={() => { setModificando(null); setAjusteAbierto(true); }}
+          ocupado={ocupado || estadoImagen === "cargando" || recalculando}
+        />
+      )}
 
       {/* Ajustar mi plan y ver detalle */}
       <motion.div variants={hijoEscalonado} className="mt-2">
@@ -250,34 +230,17 @@ export function TarjetaPlan(props: Props) {
               <motion.span animate={{ rotate: ajusteAbierto ? 180 : 0 }} transition={{ duration: DUR.corta }} className="inline-flex"><ChevronDown className="size-4" aria-hidden /></motion.span>
             </motion.button>
           )}
-          <button
-            type="button"
-            aria-expanded={detalleAbierto}
-            onClick={() => setDetalleAbierto((valor) => !valor)}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-sm font-medium text-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50"
-          >
-            {detalleAbierto ? "Ocultar detalle" : "Ver detalle"}
-            <motion.span animate={{ rotate: detalleAbierto ? 180 : 0 }} transition={{ duration: DUR.corta }} className="inline-flex"><ChevronDown className="size-4" aria-hidden /></motion.span>
-          </button>
+          <BotonVerDetalle abierto={detalleAbierto} onClick={() => setDetalleAbierto((valor) => !valor)} controls={idDetalle} />
         </div>
         {ajustable && (
           <PanelPlegable abierto={ajusteAbierto} id={idAjuste} alAbrir={mostrarAjuste}>
             <AjustarPlan plan={plan} ajuste={ajuste} ocupado={ocupado || estadoImagen === "cargando"} />
           </PanelPlegable>
         )}
-        <PanelPlegable abierto={detalleAbierto}>
-          <div className="space-y-3 pb-1 pt-1 text-sm">
-            <ul className="space-y-1 text-texto">
-              {desglose.globos.map((globo) => <li key={`${globo.color}-${globo.tamano}`}>{textoGlobos(globo.cantidad, globo.color, globo.tamano)}</li>)}
-            </ul>
-            {desglose.guias.length > 0 && (
-              <div>
-                <p className="font-medium text-texto">Tamaños por pieza</p>
-                <ul className="mt-1 space-y-1 text-texto-suave">
-                  {desglose.guias.map((item) => <li key={item.estructura_id}><span className="text-texto">{item.nombre}:</span> {item.globos.map((globo) => textoGlobos(globo.cantidad, globo.color, globo.tamano)).join(", ")}</li>)}
-                </ul>
-              </div>
-            )}
+        <PanelPlegable abierto={detalleAbierto} id={idDetalle}>
+          {/* Mientras Python rehace el plan la tabla se atenúa, y sus cifras animan hasta las nuevas al llegar. */}
+          <div aria-busy={recalculando || undefined} className={`transition-opacity ${recalculando ? "opacity-50" : ""}`}>
+            <DetalleGlobos piezas={piezasVista} total={desglose.total} />
           </div>
         </PanelPlegable>
       </motion.div>

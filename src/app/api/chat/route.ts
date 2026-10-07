@@ -296,6 +296,7 @@ async function atenderPOST(request: Request) {
     referenceBlueprint,
     creatividad,
     planVigente,
+    ...(body.piezasIndividuales ? { piezasIndividuales: true } : {}),
     signal: deadline.signal,
     hechosPeticion: { tieneFotoEspacio: Boolean(fotoEspacio), tieneImagenesReferencia: (imagenesReferencia?.length ?? 0) > 0 },
     onLlamada: (nombre) => {

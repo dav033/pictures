@@ -284,6 +284,7 @@ async function probarPantalla(): Promise<void> {
   const { EncabezadoPrecio } = await import("../../src/components/cotizacion/EncabezadoPrecio");
   const { SeccionGastos } = await import("../../src/components/cotizacion/SeccionGastos");
   const { PreciosMateriales } = await import("../../src/components/cotizacion/PreciosMateriales");
+  const { fichaGlobo } = await import("../../src/components/guiado/ficha-globo");
   const { ResumenPrecio } = await import("../../src/components/cotizacion/ResumenPrecio");
   const v = await import("../../src/lib/cotizacion/vigencia");
   const b = await import("../../src/lib/cotizacion/borrador-profesional");
@@ -364,17 +365,26 @@ async function probarPantalla(): Promise<void> {
     return renderToStaticMarkup(h(PreciosMateriales, { clave: "k", materiales: [MATERIAL], precios, errores: leido.erroresPrecio, atenuar: false, subtotalDe: () => null, total: null, onPrecio: sinAccion }));
   };
   const vaciado = materiales({ v1: "" });
-  assert.match(vaciado, /1 paquete · falta el precio/, "la fila ya no dice «precio tuyo»");
+  // Cada fila: «1 paquete de 12» (los globos por paquete salen del nombre de catálogo) y, debajo, el estado del precio.
+  assert.match(vaciado, /1 paquete de 12<\/span><span[^>]*text-error[^>]*>falta el precio/, "la fila ya no dice «precio tuyo»");
   assert.doesNotMatch(vaciado, /tu precio/);
   assert.match(vaciado, /aria-invalid="true"[^>]*aria-errormessage="precio-k-v1-error"/);
   assert.match(vaciado, /Escribe el precio por paquete o vuelve al de catálogo/);
   assert.match(vaciado, /aria-label="Volver al precio de catálogo de Globo Latex Redondo Fashion Blanco de 5 pulgadas"/, "el botón para volver al catálogo sigue ahí");
   assert.match(vaciado, /<details[^>]*open=""/, "con un precio a medias el desplegable no lo esconde");
   const propio = materiales({ v1: "15.000" });
-  assert.match(propio, /1 paquete · tu precio/);
+  assert.match(propio, /1 paquete de 12<\/span><span[^>]*>tu precio/);
   assert.doesNotMatch(propio, /<details[^>]*open=""/, "sin errores sigue plegado");
   const catalogo = materiales({});
-  assert.match(catalogo, /1 paquete · precio de catálogo/);
+  assert.match(catalogo, /1 paquete de 12<\/span><span[^>]*>precio de catálogo/);
+  // El globo se ve (dibujo con su color, o la foto del catálogo) y se dice qué producto Sempertex es y su tamaño.
+  assert.match(catalogo, /<svg[^>]*viewBox="0 0 100 100"/, "cada producto con su globo dibujado");
+  assert.match(catalogo, />Fashion Blanco<\/p>/, "el producto Sempertex, sin «B2b» ni paquete");
+  assert.match(catalogo, />Sempertex Fashion<\/span>/);
+  assert.match(catalogo, />5″<\/span>/, "el tamaño en un chip");
+  const conFoto = renderToStaticMarkup(h(PreciosMateriales, { clave: "k", materiales: [MATERIAL], precios: {}, errores: {}, atenuar: false, subtotalDe: () => 16900, total: 16900, onPrecio: sinAccion, fichas: { v1: { ...fichaGlobo({ nombre: MATERIAL.descripcion, foto: "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R5_Blanco.jpg?v=1" }) } } }));
+  assert.match(conFoto, /<img[^>]*src="https:\/\/cdn\.shopify\.com\/s\/files\/1\/0825\/6100\/7911\/files\/R5_Blanco\.jpg\?v=1&amp;width=160"/, "con foto del catálogo, la foto (a tamaño de miniatura)");
+  assert.match(conFoto, /\$\s16\.900/, "el subtotal de Python se ve");
   assert.doesNotMatch(catalogo, /Volver al precio de catálogo/, "nada que deshacer");
   assert.match(catalogo, /Globo Latex Redondo Fashion Blanco de 5 pulgadas/, "nombre con su tamaño");
   assert.doesNotMatch(vaciado + propio + catalogo, JERGA_VISIBLE);
@@ -407,7 +417,8 @@ async function probarFormularioCompleto(): Promise<void> {
   const conAlmacenamiento = (guardado: unknown) => {
     const g = globalThis as { window?: unknown };
     const previo = g.window;
-    g.window = { sessionStorage: { getItem: () => (guardado === null ? null : JSON.stringify(guardado)), setItem: () => undefined, removeItem: () => undefined } };
+    // Los escuchas vacíos: con un `window` presente, motion (la lista de materiales anima) cree estar en el navegador.
+    g.window = { sessionStorage: { getItem: () => (guardado === null ? null : JSON.stringify(guardado)), setItem: () => undefined, removeItem: () => undefined }, addEventListener: () => undefined, removeEventListener: () => undefined };
     return () => { g.window = previo; };
   };
   const pintar = (props: { cotizacion: never; clave: string }) => renderToStaticMarkup(h(CotizacionProfesional, props));

@@ -2,12 +2,25 @@ import { z } from "zod";
 import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 import { BasePlanSchema } from "@/lib/plan/edicion-esquemas";
+import { MAX_PIEZAS_PLAN } from "@/lib/plan/piezas-individuales";
 
 export const ASISTENTE_GUIADO_VERSION = "asistente-guiado.v1" as const;
 const BriefGuiadoSchema = z.object({ evento: z.string().trim().min(1).max(120).optional(), edad: z.number().int().min(0).max(120).optional(), tematica: z.string().trim().min(1).max(160).optional() }).strict();
 /** Plan que el cliente tiene a la vista: viaja en cada turno para que «Cambiar algo» conserve lo que no pidió cambiar. */
+/** El lado de una pieza individual («Columna izquierda»): lo conserva al rehacer el plan. */
+const LateralSchema = z.enum(["lateral_izquierdo", "lateral_derecho"]);
+const MedidasPiezaSchema = z.object({ ancho_m: z.number().positive().max(100).optional(), alto_m: z.number().positive().max(100).optional(), largo_m: z.number().positive().max(100).optional() }).strict();
 export const PlanActualGuiadoSchema = z.object({
-  piezas: z.array(z.object({ estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS), cantidad: z.number().int().min(1).max(12), nombre: z.string().max(120).optional() }).strict()).min(1).max(6),
+  // Piezas individuales (hasta 8, el tope del plan). `medidas` y `participacion` (de los globos que Python resolvió) viajan
+  // para que «Cambiar algo» conserve el tamaño y la proporción de colores de lo que el cliente no pidió cambiar.
+  piezas: z.array(z.object({
+    estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS),
+    cantidad: z.number().int().min(1).max(12),
+    nombre: z.string().max(120).optional(),
+    ubicacion: LateralSchema.optional(),
+    medidas: MedidasPiezaSchema.optional(),
+    participacion: z.array(z.object({ color: z.string().trim().min(1).max(40), parte: z.number().min(0).max(1) }).strict()).max(6).optional(),
+  }).strict()).min(1).max(MAX_PIEZAS_PLAN),
   colores: z.array(z.string().trim().min(1).max(40)).min(1).max(8),
   totalGlobos: z.number().int().nonnegative().optional(),
   resumen: z.string().max(400).optional(),
@@ -61,7 +74,9 @@ export const CotizacionGuiadaSchema = z.object({
 export const PropuestaComposicionSchema = z.object({
   frase: z.string().trim().min(1).max(360),
   colores: z.array(z.enum(PALETA_COLORES_V2)).min(1).max(5),
-  piezas: z.array(z.object({ estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS), cantidad: z.number().int().min(1).max(12), nombre: z.string().min(1).max(120).optional() }).strict()).min(1).max(3),
+  // Hasta 8 (el tope del plan): «Ajustar mi plan» y «Agregar al plan» la arman con piezas individuales. `ubicacion` no la
+  // manda el modelo (su esquema no la tiene): la pone quien arma la propuesta desde un plan con lados.
+  piezas: z.array(z.object({ estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS), cantidad: z.number().int().min(1).max(12), nombre: z.string().min(1).max(120).optional(), ubicacion: LateralSchema.optional() }).strict()).min(1).max(MAX_PIEZAS_PLAN),
 }).strict();
 export const PlanGuiadoSchema = BasePlanSchema;
 export const CotizacionPlanGuiadoSchema = z.object({

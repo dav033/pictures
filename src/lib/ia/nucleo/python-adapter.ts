@@ -116,7 +116,7 @@ import { LimitesColumnaSchema, OpcionesArmadoColumnaSchema, type LimitesColumna,
 import { LecturaConteoSchema, type PistaConteo } from "@/lib/plan/conteo-referencia";
 import type { PistaGeometria } from "@/lib/plan/geometria-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
-import { CotizacionProfesionalResultadoSchema, type CotizacionProfesionalResultado, type EntradaCotizacionProfesional } from "@/lib/cotizacion/profesional";
+import { CABECERA_MODOS_MATERIALES, CotizacionProfesionalResultadoSchema, type CotizacionProfesionalResultado, type EntradaCotizacionProfesional } from "@/lib/cotizacion/profesional";
 import {
   MODOS_PATRON_COLOR,
   ModoAdmitidoSchema,
@@ -626,6 +626,11 @@ export interface PythonOperationInput {
   scopes?: readonly string[];
   /** Overrides PYTHON_MAX_BODY_BYTES for one call (Amaterasu's reference images). */
   maxBodyBytes?: number;
+  /**
+   * Extra headers outside the HMAC signature (it covers method, path, body, scopes, time and nonce), e.g. a
+   * capability question an older Python simply ignores. They never replace the signed or transport headers.
+   */
+  cabeceras?: Readonly<Record<string, string>>;
   parentSignal?: AbortSignal;
   env?: AdapterEnvironment;
   fetchImpl?: typeof fetch;
@@ -861,6 +866,9 @@ async function abrirPeticionPython(
       "x-internal-scopes": signature.scopes.join(","),
     });
     if (input.idempotencyKey) headers.set("idempotency-key", input.idempotencyKey);
+    for (const [nombre, valor] of Object.entries(input.cabeceras ?? {})) {
+      if (!headers.has(nombre)) headers.set(nombre, valor);
+    }
     // Conversación y vista de la petición en curso (src/lib/registro): el Python las pone en cada línea de su
     // registro. Fuera de la firma HMAC (que solo cubre método, ruta, cuerpo, scopes, hora y nonce).
     try {
@@ -4037,13 +4045,18 @@ export async function llamarPythonCotizacionProfesional(input: PythonCotizacionP
     payload: operationBody,
     operationBody,
     scopes: [PYTHON_COTIZACION_PROFESIONAL_SCOPE],
+    // Asks Python which material modes it quotes: the one that knows loose balloons (granel) answers
+    // `modos_materiales`; an older one ignores the header and answers exactly as before.
+    cabeceras: { [CABECERA_MODOS_MATERIALES]: "granel" },
   });
   const parsed = CotizacionProfesionalResultadoSchema.safeParse(response.payload);
-  // The answer is about the lines asked for, in the same order.
+  const conGranel = entrada.materiales.some((linea) => linea.granel);
+  // The answer is about the lines asked for, in the same order, and in the mode asked for.
   if (
     !parsed.success
     || parsed.data.materiales.lineas.length !== entrada.materiales.length
     || parsed.data.materiales.lineas.some((linea, indice) => linea.variant_id !== entrada.materiales[indice]!.variant_id)
+    || (conGranel && (parsed.data.materiales.modo !== (entrada.modo_materiales ?? "paquete") || parsed.data.materiales.lineas.some((linea) => !linea.granel)))
   ) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }

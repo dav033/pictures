@@ -44,6 +44,7 @@ import {
   NonCommercialSourceRejectedError,
   type CommercialUsageIntent,
 } from "@/lib/generacion/provenance";
+import { resumenCuerpoGeneracion } from "@/lib/generacion/cuerpo-generacion";
 import type { Brief, Producto } from "@/lib/types";
 import { getRagPool } from "@/lib/rag/db";
 import { advertenciasPuertaFisica } from "@/lib/plan/mezclas";
@@ -497,6 +498,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       throw new Error("IMAGEN_SOLO_FLUX: la generación solo admite FLUX base y el contrato actual.");
     }
     validarImagenesEntrada(body);
+    // Las dos vistas arman este cuerpo con `cuerpoGeneracion`; el resumen (sin base64) deja comparar en los registros
+    // qué mandó cada una (x-vista) para la misma foto: blueprint, aspecto, creatividad, productos.
+    decidir("regla:cuerpo_generacion", "qué trajo el cuerpo de /api/generate (resumen, sin imágenes)", resumenCuerpoGeneracion(body));
     // Toda imagen sale de una propuesta aprobada (ADR-0023, paso 1). La rama
     // heredada que estimaba y cotizaba en TypeScript a partir de piezas
     // elegidas a mano se retiró: era el único camino de la app que no pasaba

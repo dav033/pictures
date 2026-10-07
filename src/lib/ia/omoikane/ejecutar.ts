@@ -169,6 +169,8 @@ export async function ejecutarConversacion(opts: {
   hechosPeticion?: HechosRegistro;
   /** Plan+token the browser echoed as its current proposal (chat-v1 `planVigente`, §7). */
   planVigente?: BasePlan;
+  /** Vista guiada (chat-v1 `piezasIndividuales`): confirmar separa las estructuras repetidas en piezas individuales. */
+  piezasIndividuales?: boolean;
 }): Promise<ResultadoConversacion> {
   const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint, opts.planVigente);
   const resultado = await core({
@@ -177,7 +179,7 @@ export async function ejecutarConversacion(opts: {
     historial: opts.historial,
     herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
     // Auditado: cada herramienta deja argumentos, resultado, ok, ms o el error con su pila.
-    registro: envolverRegistroHerramientas(crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, hechosPeticion: hechosDelTurno(opts) })),
+    registro: envolverRegistroHerramientas(crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, hechosPeticion: hechosDelTurno(opts), ...(opts.piezasIndividuales ? { piezasIndividuales: true } : {}) })),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     onLlamada: opts.onLlamada,
@@ -212,6 +214,8 @@ export async function* ejecutarConversacionStream(opts: {
   hechosPeticion?: HechosRegistro;
   /** Plan+token the browser echoed as its current proposal (chat-v1 `planVigente`, §7). */
   planVigente?: BasePlan;
+  /** Vista guiada (chat-v1 `piezasIndividuales`): confirmar separa las estructuras repetidas en piezas individuales. */
+  piezasIndividuales?: boolean;
 }): AsyncGenerator<EventoConversacion> {
   const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint, opts.planVigente);
   const generador = coreStream({
@@ -220,7 +224,7 @@ export async function* ejecutarConversacionStream(opts: {
     historial: opts.historial,
     herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
     // Auditado: cada herramienta deja argumentos, resultado, ok, ms o el error con su pila.
-    registro: envolverRegistroHerramientas(crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad, hechosPeticion: hechosDelTurno(opts) })),
+    registro: envolverRegistroHerramientas(crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad, hechosPeticion: hechosDelTurno(opts), ...(opts.piezasIndividuales ? { piezasIndividuales: true } : {}) })),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),

@@ -18,7 +18,7 @@ import { TarjetasProveedores } from "./TarjetasProveedores";
 import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
-import type { AjustePublicado, ResultadoRehacer } from "./ajuste/usarAjustePlanGuiado";
+import type { AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
 import { TarjetaPropuesta } from "./TarjetaPropuesta";
 import { TarjetaError } from "./TarjetaError";
 import { PreguntaPropuesta } from "./PreguntaPropuesta";
@@ -44,6 +44,9 @@ import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
 import { briefChatGuiado, defectoPlanGuiado, instruccionPlanFoto, instruccionPlanGuiado, planActualDesdePlan, resumenPlanGuiado } from "@/lib/ia/guiado/instruccion-plan";
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
+import { cuerpoGeneracion, fuentesDelPlan, resumenCuerpoGeneracion } from "@/lib/generacion/cuerpo-generacion";
+import { MENSAJE_SOLO_REFERENCIAS } from "@/lib/estado/mensaje-foto-referencia";
+import { CREATIVIDAD_POR_DEFECTO } from "@/lib/ia/escena/creatividad";
 import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, vaciarConversacionGuiada, type EstadoParaInstantanea } from "./registro-guiado";
 
 /**
@@ -122,6 +125,8 @@ const LIMITE_IMAGEN_MS = 90_000;
 // La lectura tarda 12-27 s en local y más en Vercel (va por el Python del VPS): con 12 s se cortaba siempre en
 // producción, la guiada seguía sin la foto y adivinaba las piezas («un arco» donde había dos columnas; 2026-10-06).
 const LIMITE_FOTO_MS = 100_000;
+/** Lo único que el plan con foto añade al texto de la clásica (`aceptarPlanFoto`): la guiada necesita el plan confirmado en este turno. */
+const CONFIRMAR_PLAN_FOTO = "Confirma el plan con confirmar_plan_decoracion en este mismo turno, sin preguntarme nada.";
 
 /** El saludo es fijo, sale al instante y no viaja en el historial: el prompt guiado sabe que ya se hizo. */
 const SALUDO = "¡Hola! Te hago unas preguntas cortas y te muestro decoraciones Sempertex que encajen con tu celebración.\n\n**¿Qué vas a celebrar?**";
@@ -653,7 +658,7 @@ export function VistaGuiada() {
    * viaja en el historial, dice el ajuste («Ajusté: más rosado…») para que «Cambiar algo» parta de lo que se ve. Solo
    * se publica sobre el plan en que se hizo: si entretanto llegó otro, el ajuste no lo pisa.
    */
-  function ajustarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, { descripcion, baseHash, rehecho }: AjustePublicado): void {
+  function ajustarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, { descripcion, baseHash }: AjustePublicado): void {
     const vigente = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
     if (!vigente || vigente.reemplazado || vigente.plan.plan_hash !== baseHash) return;
     const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacionCruda);
@@ -663,8 +668,8 @@ export function VistaGuiada() {
     setMensajes((actuales) => actuales.map((mensaje) => {
       const actual = mensaje.id === mensajeId ? planDelMensaje(mensaje) : undefined;
       if (!actual || actual.reemplazado || actual.plan.plan_hash !== baseHash) return mensaje;
-      // Un plan rehecho entero ya no lleva los ajustes de antes: el historial no los menciona.
-      const ajustes = [...(rehecho ? [] : actual.ajustes ?? []), descripcion.slice(0, 160)].slice(-4);
+      // Ningún ajuste rehace el plan con el modelo (quitar una pieza o añadir un color tampoco): los de antes siguen en él.
+      const ajustes = [...(actual.ajustes ?? []), descripcion.slice(0, 160)].slice(-4);
       const nuevo: WidgetPlan = {
         tipo: "plan", plan, pasos: armado.pasos, ajustes, totalAnterior: totalDePlan(actual.plan),
         ...(cotizacion ? { cotizacion } : {}),
@@ -680,29 +685,6 @@ export function VistaGuiada() {
     setAnuncio(`Listo: ${descripcion}. Tu plan tiene ${totalDePlan(plan)} globos.`);
   }
 
-  /**
-   * Quitar una pieza o añadir un color desde «Ajustar mi plan». Python no tiene una edición que quite una pieza entera, y
-   * `agregar` admite un solo tamaño del globo nuevo (una pieza orgánica mezcla cuatro o cinco), así que el plan se rehace
-   * con la propuesta nueva por la misma ruta que «Cambiar algo» (`instruccionPlanGuiado` con el plan anterior). La
-   * tarjeta no cambia hasta que llega el plan nuevo: si falla, sigue como estaba.
-   */
-  async function rehacerPlan(mensajeId: string, propuesta: Propuesta): Promise<ResultadoRehacer> {
-    if (cargandoRef.current) return { error: "Espera a que termine lo que estoy haciendo y vuelve a intentarlo." };
-    const widget = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
-    const planAnterior = widget ? planActualDesdePlan(widget.plan) ?? undefined : undefined;
-    limpiarAvisos();
-    const armar = (reintento: boolean) => ({
-      schema_version: "chat.v1",
-      messages: [{ role: "user", content: instruccionPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}) }) }],
-      brief: briefChatGuiado(propuesta.colores),
-    });
-    const resultado = await ejecutarPlan(mensajeId, armar, false);
-    if (resultado.estado === "obsoleto") { quitarEtapa(mensajeId); return { error: "Otro cambio se adelantó. Tu plan sigue como estaba." }; }
-    terminarPlan(resultado.turno, mensajeId);
-    if (resultado.estado === "ok") return { plan: resultado.plan, cotizacion: resultado.cotizacion };
-    return { error: resultado.estado === "detenido" ? "Detuviste el cambio. Tu plan sigue como estaba." : "No pude rehacer tu plan con ese cambio. Tu plan sigue como estaba." };
-  }
-
   async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado }): Promise<void> {
     if (cargandoRef.current && !opciones.desdeTurno) return;
     const { mensajeId, planAnterior } = opciones;
@@ -714,6 +696,8 @@ export function VistaGuiada() {
       schema_version: "chat.v1",
       messages: [{ role: "user", content: instruccionPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}) }) }],
       brief: briefChatGuiado(propuesta.colores),
+      // Piezas SIEMPRE individuales: el servidor separa cualquier estructura repetida y nombra cada pieza.
+      piezasIndividuales: true,
     });
     const resultado = await ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento));
     if (resultado.estado === "obsoleto") return;
@@ -752,10 +736,18 @@ export function VistaGuiada() {
     const colores = referencia.colores.map((color) => color.nombre);
     const armar = (reintento: boolean) => ({
       schema_version: "chat.v1",
-      messages: [{ role: "user", content: instruccionPlanFoto({ reintento, colores }) }],
+      // Primer intento: el MISMO texto que manda la clásica con una foto sola (`MENSAJE_SOLO_REFERENCIAS`), y el plan sale
+      // de la lectura como en la clásica. Con «usa EXACTAMENTE estos colores» la guiada perdía el transparente y el cromado
+      // de la foto (2026-10-06). A propósito distinto: la guiada no conversa la aprobación, así que pide confirmar ya; los
+      // colores que el cliente vio van solo en el brief, como dato. El reintento (plan sin confirmar o defectuoso) usa la
+      // instrucción guiada con esos colores.
+      messages: [{ role: "user", content: reintento ? instruccionPlanFoto({ reintento, colores }) : `${MENSAJE_SOLO_REFERENCIAS}\n${CONFIRMAR_PLAN_FOTO}` }],
       brief: briefChatGuiado(colores),
+      creatividad: CREATIVIDAD_POR_DEFECTO,
       ...(imagen ? { imagenesReferencia: [imagen] } : {}),
       referenceBlueprint: referencia.blueprint,
+      // Dos columnas de la foto son dos piezas: el servidor separa la pareja en espejo («Columna izquierda» y «derecha»).
+      piezasIndividuales: true,
     });
     const resultado = await ejecutarPlan(idPlan, armar, false);
     if (resultado.estado === "obsoleto") return;
@@ -788,10 +780,23 @@ export function VistaGuiada() {
     const plan = widget.plan;
     try {
       const referencia = widget.fotoInspiracion ? fotosRef.current.get(mensajeId) : undefined;
+      // El mismo cuerpo que manda la clásica al aprobar (`cuerpoGeneracion`): productos y paquetes del plan, creatividad por
+      // defecto y, si el plan salió de una foto, su lectura (blueprint). Sin la lectura el servidor no tenía la escenografía,
+      // las cajas de cada pieza ni el encuadre de la foto, y FLUX unía las dos columnas en un arco (2026-10-06).
+      // A propósito distinto de la clásica: el brief es el de esta conversación y la solicitud la descripción del plan.
+      const cuerpo = cuerpoGeneracion({
+        plan,
+        ...fuentesDelPlan(plan),
+        brief: { tipo_evento: brief.evento, colores: plan.plan.concepto.paleta, estilo: brief.tematica },
+        solicitudUsuario: plan.plan.concepto.descripcion,
+        imagenesReferencia: referencia ? [referencia] : [],
+        blueprint: widget.fotoInspiracion ? lecturaDelPlan(mensajes, mensajeId)?.blueprint : undefined,
+      });
+      registrarAccion("imagen.pedir", { mensajeId, cuerpo: resumenCuerpoGeneracion(cuerpo) });
       const respuesta = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, planHash: plan.plan_hash, brief: { tipo_evento: brief.evento, colores: plan.plan.concepto.paleta, estilo: brief.tematica }, solicitudUsuario: plan.plan.concepto.descripcion, ...(referencia ? { imagenesReferencia: [referencia] } : {}) }),
+        body: JSON.stringify(cuerpo),
         signal: control.signal,
       });
       if (!respuesta.ok) throw new Error(`/api/generate respondió con estado ${respuesta.status}.`);
@@ -1096,7 +1101,6 @@ export function VistaGuiada() {
             {...(widget.ajustes?.length ? { ajustes: widget.ajustes } : {})}
             {...(vigente ? {
               onPlanAjustado: (nuevo: PlanGuiado, cotizacionNueva: unknown, ajuste: AjustePublicado) => ajustarPlan(mensajeId, nuevo, cotizacionNueva, ajuste),
-              rehacerPlan: (propuesta: Propuesta) => rehacerPlan(mensajeId, propuesta),
             } : {})}
           />
         </div>;
@@ -1275,6 +1279,16 @@ function planDelMensaje(mensaje: Mensaje | undefined): WidgetPlan | undefined {
 function ultimoIndiceConReferencia(lista: readonly Mensaje[]): number {
   for (let indice = lista.length - 1; indice >= 0; indice -= 1) if (lista[indice]!.referencia) return indice;
   return -1;
+}
+
+/**
+ * La lectura de la foto de la que salió el plan de `mensajeId`: la última foto leída ANTES de ese mensaje («Sí, armémoslo»
+ * siempre deja el plan después de su lectura). Vive en el mensaje guardado, así que sobrevive a recargar aunque la foto no.
+ */
+function lecturaDelPlan(lista: readonly Mensaje[], mensajeId: string): Mensaje["referencia"] {
+  const indicePlan = lista.findIndex((mensaje) => mensaje.id === mensajeId);
+  for (let indice = indicePlan - 1; indice >= 0; indice -= 1) if (lista[indice]!.referencia) return lista[indice]!.referencia;
+  return undefined;
 }
 
 function totalDePlan(plan: PlanGuiado): number {

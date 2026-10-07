@@ -1,10 +1,7 @@
 import { PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { ESTRUCTURAS_OFICIALES, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
-
-/** Género gramatical de cada pieza oficial, para el artículo de la frase («un arco», «una columna»). */
-const FEMENINAS: ReadonlySet<EstructuraOficialId> = new Set<EstructuraOficialId>([
-  "columna", "columna_asimetrica", "columna_no_densa", "pared_densa", "pared_no_densa", "pared_organica", "guirnalda", "figura",
-]);
+// Género gramatical de cada pieza oficial («un arco», «una columna»): uno solo para la frase y los nombres individuales.
+import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 
 const PLURALES: Record<EstructuraOficialId, string> = {
   arco: "arcos", arco_asimetrico: "arcos orgánicos", arco_no_denso: "arcos no densos", semiarco: "semiarcos", semiarco_asimetrico: "semiarcos orgánicos",

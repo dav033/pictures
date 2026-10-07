@@ -21,6 +21,7 @@ import { pasosParaCliente } from "@/lib/ia/guiado/pasos-cliente";
 import { ESTRUCTURAS_OFICIALES, ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { normalizarPropuestaComposicion } from "@/lib/ia/guiado/propuesta-composicion";
+import { recortarCantidades } from "@/lib/plan/piezas-individuales";
 import { esquemaHerramientaPropuesta, type AlcancePropuesta } from "@/lib/ia/guiado/esquema-herramienta-propuesta";
 import { textoPlanActual } from "@/lib/ia/guiado/instruccion-plan";
 import { conRegistro, contextoActual, decidir, envolverRegistroHerramientas } from "@/lib/registro";
@@ -200,8 +201,10 @@ async function turnoGuiado(request: Request) {
         const piezas = alcancePropuesta === "individual"
           ? [{ estructura: piezaPedida ?? base.piezas[0]!.estructura, cantidad: 1 }]
           : alcancePropuesta === "completa" ? base.piezas.map((pieza) => ({ ...pieza, cantidad: Math.min(pieza.cantidad, 4) })) : base.piezas;
-        const validada = normalizarPropuestaComposicion({ ...base, piezas });
-        decidir("regla:propuesta_normalizada", "propuesta del modelo ajustada al alcance y al catálogo oficial", validada, { entrada: { propuestaModelo: base, alcancePropuesta, piezaPedida: piezaPedida ?? null, piezasTrasAlcance: piezas } });
+        // Cada pieza del plan es individual y un plan lleva como mucho 8 (MAX_PIEZAS_PLAN): la suma se acota aquí, a la vista.
+        const acotadas = recortarCantidades(piezas);
+        const validada = normalizarPropuestaComposicion({ ...base, piezas: acotadas.piezas });
+        decidir("regla:propuesta_normalizada", "propuesta del modelo ajustada al alcance y al catálogo oficial", validada, { entrada: { propuestaModelo: base, alcancePropuesta, piezaPedida: piezaPedida ?? null, piezasTrasAlcance: piezas, piezasRecortadas: acotadas.recortadas } });
         datos.propuesta = validada;
         return { propuesta: validada, aviso: "Las piezas y colores vienen del catálogo oficial. Responde con una sola frase («Te preparo el plan con las cantidades exactas.»): la interfaz arma el plan en seguida." };
       },

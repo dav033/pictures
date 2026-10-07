@@ -4,22 +4,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { esCancelacion, mensajeFalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { armarBusqueda, type ColorCatalogo } from "@/components/plan/ajuste/ajuste-propuesta";
 import { pedirBusqueda, pedirColoresCatalogo } from "@/components/plan/ajuste/cliente-explorador";
-import { coloresParaAgregar, describirCambio, rehaceElPlan, type CambioPlan, type PlanGuiado, type PropuestaGuiada } from "./ajuste-plan-guiado";
-import { aplicarEnServidor, ejecutarCambio, mensajeAjuste, type ResultadoRehacer } from "./ejecutar-ajuste";
-
-export type { ResultadoRehacer } from "./ejecutar-ajuste";
+import { coloresParaAgregar, confirmacionDelCambio, describirCambio, avisoEnCurso, type CambioPlan, type PlanGuiado } from "./ajuste-plan-guiado";
+import { agregarColorEnServidor, aplicarEnServidor, ejecutarCambio, mensajeAjuste, quitarPiezaEnServidor } from "./ejecutar-ajuste";
 
 export type EstadoAjuste =
   | { fase: "quieto"; ultimo: string | null }
-  | { fase: "guardando"; cambio: CambioPlan; descripcion: string }
+  | { fase: "guardando"; cambio: CambioPlan; descripcion: string; aviso: string }
   | { fase: "error"; cambio: CambioPlan; mensaje: string };
 
 /**
- * Lo que acompaña a un plan ajustado. `baseHash`: el plan sobre el que se hizo (si ya no es el vigente, no se
- * publica). `rehecho`: el plan se rehízo entero (quitar una pieza, añadir un color), así que los ajustes de antes ya
- * no están en él.
+ * Lo que acompaña a un plan ajustado. `descripcion`: la línea corta del historial («sin la columna derecha»).
+ * `baseHash`: el plan sobre el que se hizo (si ya no es el vigente, no se publica).
  */
-export type AjustePublicado = { descripcion: string; baseHash: string; rehecho: boolean };
+export type AjustePublicado = { descripcion: string; baseHash: string };
 
 export type ColoresCatalogo = { fase: "nada" | "cargando" } | { fase: "error"; mensaje: string } | { fase: "listo"; colores: readonly ColorCatalogo[] };
 
@@ -27,8 +24,6 @@ type Entrada = {
   plan: PlanGuiado;
   /** Publica el plan nuevo en la misma tarjeta. */
   onPlanAjustado: (plan: PlanGuiado, cotizacion: unknown, ajuste: AjustePublicado) => void;
-  /** Quitar una pieza o añadir un color rehace el plan con el modelo y Python (ninguna edición de Python lo hace). */
-  rehacerPlan?: (propuesta: PropuestaGuiada) => Promise<ResultadoRehacer>;
 };
 
 /** Globos de un color para añadirlo: la búsqueda del explorador de la clásica, con su memoria en el navegador. */
@@ -38,21 +33,21 @@ async function buscarColor(color: string, approvalToken: string) {
 }
 
 /**
- * Estado de «Ajustar mi plan»: un cambio a la vez, cada uno rehecho por Python sobre el plan firmado que se ve.
- * Mientras uno está en camino los mandos se apagan (la tarjeta muestra el esqueleto); si falla, el plan no se toca
- * y «Reintentar» repite ESE cambio.
+ * Estado de «Ajustar mi plan»: un cambio a la vez, cada uno rehecho por Python sobre el plan firmado que se ve (ninguno
+ * pasa por el modelo). Mientras uno está en camino los mandos se apagan (la tarjeta muestra el esqueleto); si falla,
+ * el plan no se toca y «Reintentar» repite ESE cambio.
  */
-export function useAjustePlanGuiado({ plan, onPlanAjustado, rehacerPlan }: Entrada) {
+export function useAjustePlanGuiado({ plan, onPlanAjustado }: Entrada) {
   const [estado, setEstado] = useState<EstadoAjuste>({ fase: "quieto", ultimo: null });
   const [catalogo, setCatalogo] = useState<ColoresCatalogo>({ fase: "nada" });
   const [descartados, setDescartados] = useState<readonly string[]>([]);
   const planRef = useRef(plan);
   const montadoRef = useRef(true);
   const enCursoRef = useRef(false);
-  const callbacksRef = useRef({ onPlanAjustado, rehacerPlan });
+  const onPlanAjustadoRef = useRef(onPlanAjustado);
 
   useEffect(() => { planRef.current = plan; }, [plan]);
-  useEffect(() => { callbacksRef.current = { onPlanAjustado, rehacerPlan }; }, [onPlanAjustado, rehacerPlan]);
+  useEffect(() => { onPlanAjustadoRef.current = onPlanAjustado; }, [onPlanAjustado]);
   useEffect(() => {
     montadoRef.current = true;
     return () => { montadoRef.current = false; };
@@ -63,17 +58,17 @@ export function useAjustePlanGuiado({ plan, onPlanAjustado, rehacerPlan }: Entra
     enCursoRef.current = true;
     const base = planRef.current;
     const descripcion = describirCambio(base, cambio);
-    setEstado({ fase: "guardando", cambio, descripcion });
+    setEstado({ fase: "guardando", cambio, descripcion, aviso: avisoEnCurso(base, cambio) });
     try {
-      const rehacer = callbacksRef.current.rehacerPlan;
       const nuevo = await ejecutarCambio(cambio, base, {
         aplicar: (sobre, edicion) => aplicarEnServidor(sobre, edicion),
+        quitarPieza: (sobre, estructuraId) => quitarPiezaEnServidor(sobre, estructuraId),
+        agregarColor: (sobre, globo) => agregarColorEnServidor(sobre, globo),
         buscar: buscarColor,
-        ...(rehacer ? { rehacerPlan: rehacer } : {}),
         alDescartarColor: (color) => { if (montadoRef.current) setDescartados((actuales) => [...actuales, color]); },
       });
-      callbacksRef.current.onPlanAjustado(nuevo.plan, nuevo.cotizacion, { descripcion, baseHash: base.plan_hash, rehecho: rehaceElPlan(cambio) });
-      if (montadoRef.current) setEstado({ fase: "quieto", ultimo: descripcion });
+      onPlanAjustadoRef.current(nuevo.plan, nuevo.cotizacion, { descripcion, baseHash: base.plan_hash });
+      if (montadoRef.current) setEstado({ fase: "quieto", ultimo: confirmacionDelCambio(base, cambio, nuevo.piezas) });
     } catch (error) {
       if (!esCancelacion(error)) console.warn("[asistente-guiado] no se pudo ajustar el plan", { cambio: cambio.tipo, error });
       if (montadoRef.current) setEstado({ fase: "error", cambio, mensaje: mensajeAjuste(error) });

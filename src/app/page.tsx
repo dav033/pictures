@@ -27,6 +27,8 @@ import type { ItemRechazado, ItemValidado } from "@/lib/rag/chat/validar";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
+import { cuerpoGeneracion } from "@/lib/generacion/cuerpo-generacion";
+import { MENSAJE_SOLO_REFERENCIAS } from "@/lib/estado/mensaje-foto-referencia";
 
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1, leerUiErrorV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
@@ -919,7 +921,7 @@ export default function Page() {
       const hayEstilo = imagenesReferencia.length > 0;
       if (hayEspacio && hayEstilo) limpio = "Adjunto una foto de mi espacio y unas imágenes de referencia de estilo.";
       else if (hayEspacio) limpio = "Adjunto una foto del espacio donde quiero la decoración.";
-      else if (hayEstilo) limpio = "Adjunto imágenes de referencia del estilo que busco.";
+      else if (hayEstilo) limpio = MENSAJE_SOLO_REFERENCIAS;
       else return;
     }
     solicitudUsuarioRef.current = limpio;
@@ -1241,31 +1243,27 @@ export default function Page() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controlador.signal,
-          body: JSON.stringify({
-            productIds: idsCatalogo,
-            ragVariantIds: ragVariantIdsAUsar.length ? ragVariantIdsAUsar : undefined,
+          // El mismo constructor que usa la vista guiada (`cuerpo-generacion.ts`): las dos mandan los mismos campos.
+          body: JSON.stringify(cuerpoGeneracion({
             plan: override?.plan,
-            planHash: override?.plan?.plan_hash,
-            manualProducts: productosManuales.length ? productosManuales : undefined,
+            productIds: idsCatalogo,
+            ragVariantIds: ragVariantIdsAUsar,
+            manualProducts: productosManuales,
             productQuantities: paquetesAUsar,
             brief: briefAUsar,
             solicitudUsuario,
-            instruccion: (override?.instruccion ?? ajuste.trim()) || undefined,
+            instruccion: override?.instruccion ?? ajuste.trim(),
             creatividad: creatividadRef.current,
             // Propuestas ancladas usan los adjuntos del mensaje exacto. Los
             // envíos nuevos usan el compositor actual.
-            fotoEspacio: fotoEspacioParaGenerar
-              ? { base64: fotoEspacioParaGenerar.base64, mime: fotoEspacioParaGenerar.mime }
-              : undefined,
+            fotoEspacio: fotoEspacioParaGenerar,
             // El panel y el chat analizan las referencias, pero el adaptador
             // LoRA también las necesita cuando usa /edit: el blueprint lleva
             // la composición de forma textual y los píxeles aportan la
             // relación visual que el modelo no puede reconstruir solo con el
             // plan. `/api/generate` limita y etiqueta estas imágenes antes de
             // enviarlas al proveedor.
-            imagenesReferencia: imagenesReferenciaParaGenerar.length
-              ? imagenesReferenciaParaGenerar
-              : undefined,
+            imagenesReferencia: imagenesReferenciaParaGenerar,
             ...contextoDeGeneracion({
               anclado: Boolean(adjuntosAnclados),
               blueprintDelMensaje: mensajes.find((mensaje) => mensaje.id === override.anchorMessageId)?.referenceBlueprint,
@@ -1276,16 +1274,9 @@ export default function Page() {
             }),
             // Escenografía que el cliente apagó. Solo cambia lo que dibuja la
             // imagen: el servidor no la cotiza ni la mete en el plan.
-            escenografia: escenografiaApagadaRef.current.length
-              ? escenografiaApagadaRef.current.map((elementId) => ({ element_id: elementId, visible: false }))
-              : undefined,
-            previousGeneratedImage:
-              (override?.instruccion ?? ajuste.trim()) && ultimaImagenGenerada
-                ? ultimaImagenGenerada
-                : undefined,
-            // Sin imagen previa no hay nada que ajustar: el servidor también lo ignora.
-            revisionInstruction: ultimaImagenGenerada ? (override?.instruccion ?? ajuste.trim()) || undefined : undefined,
-          }),
+            escenografiaApagada: escenografiaApagadaRef.current,
+            imagenPrevia: ultimaImagenGenerada,
+          })),
         });
         const data = await res.json();
 

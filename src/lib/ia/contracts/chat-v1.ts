@@ -67,6 +67,12 @@ export const ChatRequestV1Schema = z.object({
    * src/lib/ia/herramientas/registro-herramientas.ts).
    */
   planVigente: BasePlanSchema.optional(),
+  /**
+   * La vista guiada: cada pieza del plan es individual («Columna izquierda» y «Columna derecha», nunca «2 × Columna»).
+   * Con ella `confirmar_plan_decoracion` separa cualquier estructura repetida antes de resolver con Python
+   * (`separarEstructurasRepetidas`). Aditivo: sin ella, la vista clásica sigue igual. Python no lee esta petición.
+   */
+  piezasIndividuales: z.literal(true).optional(),
 }).strict();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -88,6 +94,7 @@ export function parseChatRequestV1(input: unknown): ChatRequestV1 {
     referenceBlueprint: input.referenceBlueprint ?? undefined,
     creatividad: input.creatividad ?? undefined,
     planVigente: input.planVigente ?? undefined,
+    piezasIndividuales: input.piezasIndividuales ?? undefined,
   });
 }
 

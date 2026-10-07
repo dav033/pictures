@@ -5,8 +5,11 @@ import type { EdicionPlan } from "../../src/lib/plan/edicion-esquemas";
 import type { CandidatoDelServidor } from "../../src/components/plan/ajuste/ajuste-propuesta";
 import {
   admiteColorNuevo,
+  avisoEnCurso,
+  cambiaTodasLasPiezas,
   coloresDelPlanVista,
   coloresParaAgregar,
+  confirmacionDelCambio,
   contenidoPlanAjustado,
   describirCambio,
   edicionProtagonismo,
@@ -15,17 +18,20 @@ import {
   elegirGloboLiso,
   piezaConArticulo,
   piezasAjustables,
-  propuestaConColor,
-  propuestaSinPieza,
+  type GloboElegido,
   type PlanGuiado,
 } from "../../src/components/guiado/ajuste/ajuste-plan-guiado";
-import { FalloPlanEditar } from "../../src/lib/plan/peticion-plan-editar";
+import { CATALOGO_ERRORES_UI_V1 } from "../../src/lib/ia/contracts/ui-error-v1";
+import { separarEstructurasRepetidas } from "../../src/lib/plan/piezas-individuales";
+import { FalloPlanEditar, MENSAJE_EDICION_LENTA } from "../../src/lib/plan/peticion-plan-editar";
 import { ejecutarCambio, mensajeAjuste, type DependenciasAjuste } from "../../src/components/guiado/ajuste/ejecutar-ajuste";
 
 /**
  * «Ajustar mi plan» de la vista guiada, sin red ni modelo: el plan de prueba copia la forma de uno real de la guiada
  * (2026-10-06: semiarco orgánico con su armado del motor y dos columnas con patrón ombré) y le suma una pared sin
- * armado para la edición `repartir`. Ninguna prueba llama a Python ni a Gemini.
+ * armado para la edición `repartir`. Ninguna prueba llama a Python ni a Gemini. «Quitar pieza» y «Añadir un color»
+ * ya no rehacen el plan con el modelo: van al servidor (`quitar_pieza`, `agregar_color`) y aquí se prueban con dobles.
+ * Las dos columnas del plan viejo vienen con repeticiones 2; las piezas individuales se prueban con el mismo plan separado.
  */
 
 const HASH = "a".repeat(64);
@@ -159,7 +165,7 @@ const candidatos: CandidatoDelServidor[] = [
     { variantId: "fas18", titulo: "R-18", disponible: false, codigoTamano: "R-18", diamPulg: 18, forma: "redondo", colores: ["rosado"] },
   ] },
 ];
-assert.deepEqual(elegirGloboLiso(candidatos, "rosado", "fashion"), { productId: "fas", variantId: "fas12", color: "rosado" }, "liso, del acabado de la pieza y de 12″; nunca el impreso");
+assert.deepEqual(elegirGloboLiso(candidatos, "rosado", "fashion"), { productId: "fas", variantId: "fas12", variantIds: ["fas5", "fas12"], color: "rosado" }, "liso, del acabado de la pieza y de 12″, con todos sus tamaños disponibles; nunca el impreso");
 assert.equal(elegirGloboLiso(candidatos.slice(0, 1), "rosado", "fashion"), null, "un impreso no cuenta como liso");
 assert.deepEqual(
   coloresParaAgregar([{ valor: "multicolor", total: 300 }, { valor: "rosado", total: 99 }, { valor: "azul", total: 132 }, { valor: "dorado", total: 130 }, { valor: "coral", total: 0 }], ["azul"]),
@@ -170,18 +176,29 @@ assert.deepEqual(
 // --- Los colores del plan ---
 assert.deepEqual(coloresDelPlanVista(plan).map((color) => [color.etiqueta, color.porcentaje]), [["Azul", 37], ["Plateado", 31], ["Blanco", 32]], "la parte de cada color en todo el plan");
 assert.equal(admiteColorNuevo(plan), true);
-const conRosado = propuestaConColor(plan, "rosado");
-assert.deepEqual(conRosado?.colores, ["azul", "plateado", "blanco", "rosado"], "añadir un color rehace el plan con la paleta de siempre y el color nuevo");
-assert.deepEqual(conRosado?.piezas.map((pieza) => [pieza.estructura, pieza.cantidad]), [["semiarco_asimetrico", 1], ["columna", 2], ["columna", 1]], "con las mismas piezas");
-assert.equal(propuestaConColor(plan, "azul"), null, "un color que ya está no se añade");
 
 // --- Quitar una pieza ---
-const sinColumnas = propuestaSinPieza(plan, COLUMNA);
-assert.deepEqual(sinColumnas?.piezas.map((pieza) => [pieza.estructura, pieza.cantidad]), [["semiarco_asimetrico", 1], ["columna", 1]]);
-assert.deepEqual(sinColumnas?.colores, ["azul", "plateado", "blanco"]);
 const unaPieza = PlanGuiadoSchema.parse({ ...plan, plan: { ...plan.plan, estructuras: [plan.plan.estructuras[0]!] }, estructuras: [plan.estructuras[0]!] });
-assert.equal(propuestaSinPieza(unaPieza, SEMIARCO), null, "la última pieza no se quita");
-assert.equal(piezasAjustables(unaPieza)[0]!.puedeQuitarPieza, false);
+assert.equal(piezasAjustables(unaPieza)[0]!.puedeQuitarPieza, false, "la última pieza no se quita");
+
+// --- Piezas individuales: «Columna izquierda» y «Columna derecha» (el mismo plan, separado por el servidor) ---
+// (Sin la pared, que también es una columna oficial: con tres columnas los nombres van numerados.)
+const separado = separarEstructurasRepetidas({ ...plan.plan, estructuras: plan.plan.estructuras.slice(0, 2) }).plan;
+const individual = PlanGuiadoSchema.parse({ ...plan, plan: separado, estructuras: [...plan.estructuras.slice(0, 2), { ...plan.estructuras[1]!, estructura_id: "EST_02_COLUMNA_B" }] });
+const DERECHA = "EST_02_COLUMNA_B";
+assert.deepEqual(piezasAjustables(individual).map((pieza) => pieza.titulo), ["Semiarco orgánico", "Columna izquierda", "Columna derecha"]);
+assert.deepEqual(separarEstructurasRepetidas(plan.plan).plan.estructuras.map((estructura) => estructura.nombre), ["Semiarco orgánico", "Columna 1", "Columna 2", "Columna 3"], "tres columnas: numeradas");
+assert.equal(piezaConArticulo(individual.plan.estructuras[2]!), "la columna derecha");
+assert.equal(piezasAjustables(individual)[2]!.conArticulo, "la columna derecha");
+assert.equal(describirCambio(individual, { tipo: "quitar-pieza", estructuraId: DERECHA }), "sin la columna derecha");
+assert.equal(avisoEnCurso(individual, { tipo: "quitar-pieza", estructuraId: DERECHA }), "Quito la columna derecha; lo demás queda igual…");
+assert.equal(confirmacionDelCambio(individual, { tipo: "quitar-pieza", estructuraId: DERECHA }), "Listo: quité la columna derecha; lo demás quedó igual.");
+assert.equal(avisoEnCurso(individual, { tipo: "agregar-color", color: "rosado" }), "Añado rosado a tus piezas; sus tamaños quedan igual…");
+assert.equal(confirmacionDelCambio(individual, { tipo: "agregar-color", color: "rosado" }, [SEMIARCO, COLUMNA]), "Listo: añadí rosado a 2 de tus 3 piezas; sus tamaños quedaron igual.");
+assert.equal(confirmacionDelCambio(individual, { tipo: "agregar-color", color: "rosado" }), "Listo: añadí rosado a tus piezas; sus tamaños quedaron igual.");
+assert.equal(confirmacionDelCambio(individual, { tipo: "protagonismo", estructuraId: SEMIARCO, indice: 0, direccion: 1 }), "Listo: más azul en el semiarco orgánico.");
+assert.equal(cambiaTodasLasPiezas({ tipo: "agregar-color", color: "rosado" }), true);
+assert.equal(cambiaTodasLasPiezas({ tipo: "quitar-pieza", estructuraId: DERECHA }), false, "quitar una pieza solo espera en esa pieza");
 
 // --- Lo que se dice ---
 assert.equal(piezaConArticulo(plan.plan.estructuras[1]!), "las dos columnas");
@@ -195,6 +212,8 @@ const textos = [...piezas.flatMap((pieza) => [pieza.titulo, pieza.motivoFijo ?? 
 assert.ok(!/EST_|variant|product|sku|armado|motor|R-\d/i.test(textos), `sin jerga: ${textos}`);
 assert.equal(mensajeAjuste(new FalloPlanEditar("El catálogo no vende los globos que ese arco necesita (R-5). Elige otro tamaño de globo o cambia los colores: así no se puede guardar.")), "No pude hacer ese cambio en esta pieza. Tu plan sigue como estaba; prueba con otro ajuste.", "la jerga del servidor no llega al cliente");
 assert.equal(mensajeAjuste(new FalloPlanEditar("Revisa tu conexión a internet.")), "Revisa tu conexión a internet.");
+assert.equal(mensajeAjuste(new FalloPlanEditar(CATALOGO_ERRORES_UI_V1.SIN_CONEXION.mensaje_usuario)), "No pude conectarme para hacer ese cambio. Tu plan sigue como estaba; revisa tu conexión y vuelve a intentarlo.", "la voz de la guiada: «No pude…», y el plan sigue igual");
+assert.match(mensajeAjuste(new FalloPlanEditar(MENSAJE_EDICION_LENTA)), /^Ese cambio tardó demasiado.*Tu plan sigue como estaba/);
 
 // --- El widget guarda los ajustes ---
 assert.ok(WidgetGuiadoSchema.safeParse({ tipo: "plan", plan, ajustes: ["más azul en el semiarco orgánico"] }).success);
@@ -202,17 +221,21 @@ assert.ok(WidgetGuiadoSchema.safeParse({ tipo: "plan", plan, ajustes: ["más azu
 // --- Cómo se lleva a cabo (dobles sin coste) ---
 async function probarEjecucion(): Promise<void> {
   const pedidas: EdicionPlan[] = [];
-  const propuestas: unknown[] = [];
+  const quitadas: string[] = [];
+  const globos: GloboElegido[] = [];
   const dependencias: DependenciasAjuste = {
     aplicar: async (base, edicion) => { pedidas.push(edicion); return { plan: base, cotizacion: null }; },
+    quitarPieza: async (_base, estructuraId) => { quitadas.push(estructuraId); return { plan: unaPieza, cotizacion: null }; },
+    agregarColor: async (base, globo) => { globos.push(globo); return { plan: base, cotizacion: null, piezas: [SEMIARCO] }; },
     buscar: async () => candidatos,
-    rehacerPlan: async (propuesta) => { propuestas.push(propuesta); return { plan: unaPieza, cotizacion: null }; },
   };
   await ejecutarCambio({ tipo: "protagonismo", estructuraId: SEMIARCO, indice: 0, direccion: 1 }, plan, dependencias);
   assert.deepEqual(pedidas.map((edicion) => edicion.accion), ["armado_arco_organico"], "un toque es UNA edición de Python");
 
-  await ejecutarCambio({ tipo: "agregar-color", color: "rosado" }, plan, dependencias);
-  assert.deepEqual(propuestas, [conRosado], "con globo liso, añadir un color rehace el plan");
+  const conColor = await ejecutarCambio({ tipo: "agregar-color", color: "rosado" }, plan, dependencias);
+  assert.deepEqual(globos, [{ productId: "fas", variantId: "fas12", variantIds: ["fas5", "fas12"], color: "rosado" }], "con globo liso, el color va al servidor con todos sus tamaños (sin modelo)");
+  assert.deepEqual(conColor.piezas, [SEMIARCO], "el servidor dice qué piezas lo recibieron");
+  await assert.rejects(ejecutarCambio({ tipo: "agregar-color", color: "azul" }, plan, dependencias), /ya lleva ese color/);
 
   const descartados: string[] = [];
   await assert.rejects(
@@ -220,12 +243,14 @@ async function probarEjecucion(): Promise<void> {
     /No encontré globos lisos rosados disponibles/,
   );
   assert.deepEqual(descartados, ["rosado"], "un color sin globo liso deja de ofrecerse");
-  assert.equal(propuestas.length, 1, "y no se gasta un plan en él");
+  assert.equal(globos.length, 1, "y no se pide nada al servidor");
 
-  const rehecho = await ejecutarCambio({ tipo: "quitar-pieza", estructuraId: COLUMNA }, plan, dependencias);
-  assert.equal(rehecho.plan, unaPieza);
-  assert.deepEqual(propuestas.at(-1), sinColumnas);
-  await assert.rejects(ejecutarCambio({ tipo: "quitar-pieza", estructuraId: COLUMNA }, plan, { ...dependencias, rehacerPlan: async () => ({ error: "No pude rehacer tu plan con ese cambio." }) }), /No pude rehacer/);
+  const sinDerecha = await ejecutarCambio({ tipo: "quitar-pieza", estructuraId: DERECHA }, individual, dependencias);
+  assert.equal(sinDerecha.plan, unaPieza);
+  assert.deepEqual(quitadas, [DERECHA], "quitar la columna derecha pide quitar SOLO esa pieza");
+  await assert.rejects(ejecutarCambio({ tipo: "quitar-pieza", estructuraId: SEMIARCO }, unaPieza, dependencias), /al menos una/, "la última pieza no se pide quitar");
+  assert.deepEqual(quitadas, [DERECHA]);
+  await assert.rejects(ejecutarCambio({ tipo: "quitar-pieza", estructuraId: COLUMNA }, plan, { ...dependencias, quitarPieza: async () => { throw new FalloPlanEditar("No pude hacer ese cambio. Tu plan sigue como estaba."); } }), /sigue como estaba/);
   await assert.rejects(ejecutarCambio({ tipo: "protagonismo", estructuraId: PARED, indice: 0, direccion: 1 }, casiTodo, dependencias), /límite/);
   await assert.rejects(ejecutarCambio({ tipo: "tamano", estructuraId: SEMIARCO, direccion: 1 }, plan, { ...dependencias, aplicar: async () => { throw new FalloPlanEditar("Sin conexión."); } }), /Sin conexión/, "si Python falla, el error sube y el plan que se ve no cambia");
 }

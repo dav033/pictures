@@ -11,7 +11,7 @@ import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separa
 import { limpiarTextoBase } from "./texto-base";
 import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
 
-export const FLUX_CAPTION_COMPILER_VERSION = "flux-caption-v2.10-perceptual-accent" as const;
+export const FLUX_CAPTION_COMPILER_VERSION = "flux-caption-v2.11-piezas-sueltas" as const;
 
 /** Límite común de texto que mantiene primero la decoración. */
 export const FLUX_PROMPT_MAX_LENGTH = 1000;
@@ -108,6 +108,8 @@ export type FluxVisualClause = {
   heightM?: number;
   /** Set while rendering when vertical structures differ clearly in height. */
   heightQualifier?: "shorter" | "taller";
+  /** Set while rendering (`piezasDePieSueltas`): a lone half-arch among other standing pieces ends in a free tip. */
+  standsApart?: boolean;
   /** Official structure (variant such as asymmetrical or airy) recognized from the plan; see estructuras-oficiales.ts. */
   officialStructure?: EstructuraOficial;
   /**
@@ -486,6 +488,44 @@ function huecoEntrePar(clause: { structureType?: string; relation?: string }): s
   return clause.structureType === "semiarco" || clause.structureType === "columna" ? ", with open space between them" : "";
 }
 
+/** La relación de las piezas que flanquean un arco que SÍ está en el plan (`focusDescription` de un `arco`). */
+const FLANQUEA_ARCO = "flanking the main arch";
+
+/**
+ * Varias columnas o semiarcos en una misma cláusula son N piezas sueltas, cada una con su base y su remate, y nada
+ * las une por arriba. «With open space between them» no bastaba: un arco también deja hueco entre sus dos patas.
+ * Caso real del dueño (2026-10-07, guiada-20261006-215048-bnrhtj): «2 × Columna orgánica» de 1,8 m sin guía de
+ * escena (Python no dibuja una columna sin armado: `sin_dibujo`) → el caption decía «two organic balloon columns
+ * …, one standing on the left and one on the right, with open space between them» y FLUX pintó UN arco orgánico
+ * unido por arriba. Las columnas que flanquean un arco del plan no pueden decir que nada las une por arriba (el arco
+ * pasa entre ellas): se dice que cada una es su propia torre, aparte del arco.
+ *
+ * Un semiarco solo, junto a otras piezas de pie (`standsApart`, de `piezasDePieSueltas`), dice que sube desde su
+ * propia base y termina en una punta libre en el aire: con «curved garland … flanking» y dos columnas, FLUX tendía
+ * la guirnalda de una columna a la otra y cerraba un arco completo (prueba real del 2026-10-07). Una sola pieza
+ * suelta, sin cambio.
+ *
+ * `corta` (paso de compactación `compactSeparation`): lo mismo con la mitad de caracteres, antes de perder tallas o
+ * entorno. Las formas largas son las verificadas con FLUX real.
+ */
+function piezasSueltas(clause: { structureType?: string; relation?: string; standsApart?: boolean }, piezas: number, corta = false): string {
+  if (piezas < 2) {
+    if (clause.structureType !== "semiarco" || !clause.standsApart) return "";
+    return corta ? ", its tip ending in mid-air" : ", rising from its own base on the floor and curving over to one side, its tip ending in mid-air";
+  }
+  if (clause.structureType === "columna") {
+    if (clause.relation === FLANQUEA_ARCO) return corta ? ", each its own freestanding tower" : ", each a separate freestanding tower on its own base on the floor, standing apart from the arch";
+    return corta
+      ? ", each its own freestanding tower, nothing joining them overhead"
+      : ", each a separate freestanding tower rising from its own base on the floor to its own rounded top, with nothing joining them overhead";
+  }
+  if (clause.structureType === "semiarco") {
+    if (clause.relation === FLANQUEA_ARCO) return corta ? ", each its own piece" : ", each a separate piece on its own base on the floor, standing apart from the arch";
+    return corta ? ", their tips never meeting" : ", each a separate piece whose curved tip never meets the other, with nothing joining them overhead";
+  }
+  return "";
+}
+
 function scaleFor(items: SemanticElement[]): string | undefined {
   if (items.length > 1) return undefined;
   if (items[0]?.semantics.structure_type === "centro_mesa") return undefined;
@@ -791,18 +831,66 @@ const FRASE_PIEZAS_SEPARADAS: Record<SeparateSidePieces<FluxVisualClause>["kind"
  * columnas a la copia y no al dueño, así que el caption pedía el hueco y el prompt de imagen no.
  * `test-image-qa-piezas-separadas.ts`, que compara los dos, es lo que lo detectó.
  */
-function separatePiecesPhrase(clauses: FluxVisualClause[]): string | undefined {
+function separatePiecesPhrase(clauses: FluxVisualClause[], corta = false): string | undefined {
   const pieces = findSeparateSidePieces(clauses);
-  return pieces && FRASE_PIEZAS_SEPARADAS[pieces.kind];
+  if (!pieces) return undefined;
+  // Sin arco en el plan, nada pasa por encima del hueco (`piezasSueltas`); con arco, el arco sí pasa entre ellas.
+  const sinArco = !clauses.some((clause) => clause.structureType === "arco");
+  return `${FRASE_PIEZAS_SEPARADAS[pieces.kind]}${sinArco && !corta ? " and nothing joining them overhead" : ""}`;
+}
+
+/** Con cuántas piezas y cómo se nombran en la frase de piezas sueltas («the curved garland and the two columns»). */
+function nombrePiezasDePie(tipo: "semiarco" | "columna", piezas: number): string {
+  const sustantivo = tipo === "semiarco" ? "curved garland" : "column";
+  return piezas === 1 ? `the ${sustantivo}` : `the ${numberWord(piezas)} ${pluralize(sustantivo)}`;
+}
+
+/**
+ * N piezas de pie del plan (columnas y semiarcos) son N piezas en la imagen: una frase de escena las cuenta y pide el
+ * hueco de pared entre cada una y la siguiente, y marca el semiarco suelto (`standsApart`) para que diga su punta
+ * libre. Determinista: sale de las cláusulas, que salen del plan.
+ *
+ * Por qué. Prueba real del 2026-10-07 (FLUX base, semilla 20261007): «a … one-sided curved organic balloon garland …
+ * at one side of the rear wall, two organic balloon columns …, flanking the curved garland, each a separate
+ * freestanding tower …, with nothing joining them overhead» salió como UN arco completo: la guirnalda tendida de
+ * una columna a la otra. FLUX.2 no admite negativos («no arch» no sirve), así que se dice en positivo cuántas piezas
+ * hay y qué se ve entre ellas.
+ *
+ * Solo sin arco en el plan (con un arco, las piezas lo flanquean y el arco sí pasa entre ellas) y con al menos dos
+ * piezas de pie. Un solo par de columnas en una cláusula ya lo dice `piezasSueltas` (verificado con la semilla del
+ * caso del dueño): sin frase extra, su caption no cambia.
+ */
+function piezasDePieSueltas(clauses: FluxVisualClause[], corta = false): string | undefined {
+  for (const clause of clauses) clause.standsApart = undefined;
+  if (clauses.some((clause) => clause.structureType === "arco")) return undefined;
+  const dePie = clauses.filter((clause) => clause.structureType === "semiarco" || clause.structureType === "columna");
+  const cuantas = (tipo: "semiarco" | "columna") => dePie.filter((clause) => clause.structureType === tipo).reduce((suma, clause) => suma + (clause.visibleCount ?? clause.count), 0);
+  const semiarcos = cuantas("semiarco");
+  const columnas = cuantas("columna");
+  const total = semiarcos + columnas;
+  if (total < 2 || (dePie.length < 2 && semiarcos === 0)) return undefined;
+  for (const clause of dePie) if (clause.structureType === "semiarco") clause.standsApart = true;
+  const nombres = joinNatural([
+    ...(semiarcos ? [nombrePiezasDePie("semiarco", semiarcos)] : []),
+    ...(columnas ? [nombrePiezasDePie("columna", columnas)] : []),
+  ]);
+  if (corta) return `${capitalized(numberWord(total))} separate pieces with wide gaps of plain wall between them`;
+  return `${capitalized(nombres)} are ${numberWord(total)} separate pieces standing on the floor, with a wide empty gap of plain wall between each piece and the next`;
 }
 
 function findFocalClause(clauses: FluxVisualClause[]): FluxVisualClause | undefined {
   return clauses.find((clause) => clause.salience === 100) ?? clauses[0];
 }
 
+/**
+ * Cómo se nombra la pieza focal desde las que la flanquean. Solo un `arco` del plan es «the main arch»: un semiarco
+ * se nombraba igual y el caption pedía un arco que el plan no tiene («semiarco + 2 columnas … flanking the main
+ * arch», 2026-10-07); un aro circular (tipo `arco`) tampoco es un arco.
+ */
 function focusDescription(clause: FluxVisualClause | undefined): string {
   if (!clause) return "the main arrangement";
-  if (["arco", "semiarco"].includes(clause.structureType)) return "the main arch";
+  if (clause.structureType === "arco") return clause.officialStructure?.id === "aro_circular" ? "the balloon hoop" : "the main arch";
+  if (clause.structureType === "semiarco") return "the curved garland";
   return "the main arrangement";
 }
 
@@ -905,19 +993,25 @@ type CaptionRenderStep = {
    * Object type and every approved color stay.
    */
   shortLabels: boolean;
+  /**
+   * Las frases de piezas sueltas (`piezasSueltas`, `piezasDePieSueltas`) en su forma corta. Va antes de perder
+   * tallas o entorno: dicen lo mismo (cada pieza suelta, cuántas son, el hueco) con la mitad de caracteres.
+   */
+  compactSeparation: boolean;
 };
 
 const CAPTION_RENDER_STEPS: readonly CaptionRenderStep[] = [
-  { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true },
+  { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false },
+  { referenceRepeatedConcepts: true, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: true },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: true },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: true },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: true },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: false, shortLabels: false, compactSeparation: true },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: false, compactSeparation: true },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true, compactSeparation: true },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true, compactSeparation: true },
 ];
 
 /** "round foil balloon in fuchsia with a metallic sheen hearts pattern" -> "round foil balloon in fuchsia". */
@@ -1097,15 +1191,17 @@ function renderBaseClauseText(clause: FluxVisualClause, render: CaptionRenderSta
         ?? (clause.structureType === "guirnalda" && !conArmado ? UBICACIONES_GUIRNALDA_BASE[clause.placement] : undefined)
         ?? UBICACIONES_BASE[clause.placement];
   if (clause.structureType === "backdrop") return `${colored} ${clause.relation ? `${placementPhrase}, ${clause.relation}` : placementPhrase}`;
+  // N columnas o semiarcos son N piezas sueltas: cada una con su base y su remate (`piezasSueltas`).
+  const sueltas = piezasSueltas(clause, renderedCount, render.step.compactSeparation);
   if (renderedCount > 1 && clause.placement === "lateral_izquierdo" && (clause.bilateral || clause.relation?.startsWith("flanking"))) {
     const reparto = renderedCount > 2 && renderedCount % 2 === 0
       ? `${numberWord(renderedCount / 2)} standing on each side`
       : "one standing on the left and one on the right";
-    return `${colored}, matching one another, ${reparto}${huecoEntrePar(clause)}${clause.relation ? `, ${clause.relation}` : ""}`;
+    return `${colored}, matching one another, ${reparto}${huecoEntrePar(clause)}${clause.relation ? `, ${clause.relation}` : ""}${sueltas}`;
   }
   if (clause.relation && clause.structureType === "centro_mesa") return `${colored} ${placementPhrase} ${clause.relation}`;
-  if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}`;
-  return `${colored} ${placementPhrase}`;
+  if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}${sueltas}`;
+  return `${colored} ${placementPhrase}${sueltas}`;
 }
 
 function renderClauseText(clause: FluxVisualClause, render: CaptionRenderState): string {
@@ -1201,6 +1297,8 @@ type CaptionParts = {
   /** Color pattern of the clause behind each subject (same order), when it has one. */
   subjectPatterns: Array<string | undefined>;
   structureSentence: string;
+  /** How many separate standing pieces the scene has and the gap between them (`piezasDePieSueltas`), when it applies. */
+  pieceCountSentence?: string;
   tail: string[];
   colors: string[];
   /** Every piece is a garland on the wall or hanging (`soloGuirnaldasEnAlto`): no "grounded supports". */
@@ -1241,7 +1339,8 @@ function soloGuirnaldasEnAlto(clauses: readonly FluxVisualClause[]): boolean {
 
 function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, ambientDecor: readonly string[] = [], creativeCues: readonly string[] = []): string {
   const parts = buildCaptionParts(sceneSpec, context, clauses, step, ambientDecor, creativeCues);
-  return `${capitalized(parts.structureSentence)}. ${capitalized(parts.tail.join(", "))}.`;
+  const piezas = parts.pieceCountSentence ? `${parts.pieceCountSentence}. ` : "";
+  return `${capitalized(parts.structureSentence)}. ${piezas}${capitalized(parts.tail.join(", "))}.`;
 }
 
 function capitalized(text: string): string {
@@ -1251,6 +1350,8 @@ function capitalized(text: string): string {
 function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep, ambientDecor: readonly string[], creativeCues: readonly string[] = []): CaptionParts {
   resolveRelations(sceneSpec, clauses);
   assignHeightQualifiers(clauses);
+  // Antes de redactar: marca el semiarco suelto (`standsApart`), que su cláusula lee.
+  const pieceCountSentence = piezasDePieSueltas(clauses, step.compactSeparation);
   const render: CaptionRenderState = { step, describedConceptIds: new Set<string>() };
   const clauseText = (clause: FluxVisualClause) => renderClauseText(clause, render);
   const focal = clauses[0];
@@ -1269,7 +1370,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
   const structureParts = [firstClause, ...supportText];
   let structureSentence = structureParts.join(", ");
   if (accentText.length) structureSentence += `, with ${accentText.join(", ")}`;
-  const separation = separatePiecesPhrase(clauses);
+  const separation = separatePiecesPhrase(clauses, step.compactSeparation);
   if (separation) structureSentence += `, ${separation}`;
   // Styling from the reference that is not sold (lights, foliage): rendered, never quoted.
   if (ambientDecor.length) structureSentence += `, styled with ${joinNatural([...ambientDecor])}`;
@@ -1294,6 +1395,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
     subjects: [firstClause, ...supportText, ...accentText],
     subjectPatterns: [focal, ...supports, ...accents].map((clause) => clause?.colorPattern),
     structureSentence,
+    ...(pieceCountSentence ? { pieceCountSentence } : {}),
     tail,
     colors: [...new Set(clauses.flatMap((clause) => clause.colors))],
     enAlto,

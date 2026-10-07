@@ -4915,6 +4915,10 @@
         "compras"
       ],
       "additionalProperties": {}
+    },
+    "piezasIndividuales": {
+      "type": "boolean",
+      "const": true
     }
   },
   "required": [

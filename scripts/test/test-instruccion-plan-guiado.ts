@@ -24,8 +24,11 @@ const propuesta = normalizarPropuestaComposicion({ frase: "x", colores: ["azul",
 
 // (b) instrucción del plan
 const instruccion = instruccionPlanGuiado(propuesta);
-assert.ok(instruccion.includes("1 × Arco orgánico (estructura_oficial: arco_asimetrico; estructura_id: EST_01_ARCO_ASIMETRICO; repeticiones: 1)"), instruccion);
-assert.ok(instruccion.includes("2 × Columna (estructura_oficial: columna; estructura_id: EST_02_COLUMNA; repeticiones: 2)"));
+// Piezas SIEMPRE individuales: una línea por pieza con repeticiones 1, su id y su lado (antes «2 × Columna … repeticiones: 2»).
+assert.ok(instruccion.includes("- Arco orgánico (estructura_oficial: arco_asimetrico; estructura_id: EST_01_ARCO_ASIMETRICO; repeticiones: 1)"), instruccion);
+assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_02_COLUMNA; ubicacion: lateral_izquierdo; repeticiones: 1)"), instruccion);
+assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_03_COLUMNA; ubicacion: lateral_derecho; repeticiones: 1)"), instruccion);
+assert.ok(!/repeticiones: 2|\d × /.test(instruccion), "nunca una estructura repetida");
 assert.ok(instruccion.includes("Todos deben aparecer en el plan."));
 assert.ok(instruccion.includes("usa EXACTAMENTE estos colores: azul, blanco, dorado; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color"));
 assert.ok(/Arco orgánico mezcla al menos 3 tamaños \(por ejemplo 5", 12" y 18"\) en la pieza/.test(instruccion), "pieza orgánica exige mezcla de tamaños");
@@ -45,6 +48,9 @@ const planAnterior = planActualDesdePlan(planBoda)!;
 const cambio = instruccionPlanGuiado(propuesta, { planAnterior });
 assert.ok(cambio.includes("el plan nuevo lleva SOLO las piezas de esta lista"), cambio);
 assert.ok(!cambio.includes("Tu plan:") && !/columnas/.test(cambio), "no describe el plan anterior: /api/chat leería sus cantidades como restricciones");
+// Sí conserva las medidas y el reparto de cada pieza que sigue (el plan anterior las trae), sin activar restricciones.
+assert.ok(cambio.includes("- Arco orgánico (estructura_oficial: arco_asimetrico; estructura_id: EST_01_ARCO_ASIMETRICO; repeticiones: 1; medidas: ancho_m 2, alto_m 2.2)"), cambio);
+assert.ok(cambio.includes("ubicacion: lateral_derecho; repeticiones: 1; medidas: alto_m 2.4)"), cambio);
 assert.ok(!/(?:\bej-|\bdeco-|sku|variant_id)/i.test(instruccion), "sin ids internos del catálogo");
 // Sin filtros duros de ocasión ni de categoría que salgan de la instrucción (el fallo del cumpleaños de princesas).
 const filtros = extraerFiltrosDurosBusqueda(instruccion, briefChatGuiado(propuesta.colores));
@@ -81,7 +87,10 @@ assert.ok(resumenPlanGuiado(muchas).length <= 400, "nunca pasa de 400 caracteres
 
 // (f) planActual
 assert.deepEqual(planAnterior, {
-  piezas: [{ estructura: "arco_asimetrico", cantidad: 1, nombre: "Arco orgánico principal" }, { estructura: "columna", cantidad: 2, nombre: "Columna elegante" }],
+  piezas: [
+    { estructura: "arco_asimetrico", cantidad: 1, nombre: "Arco orgánico principal", medidas: { ancho_m: 2, alto_m: 2.2 }, participacion: [{ color: "blanco", parte: 0.59 }, { color: "dorado", parte: 0.41 }] },
+    { estructura: "columna", cantidad: 2, nombre: "Columna elegante", medidas: { alto_m: 2.4 }, participacion: [{ color: "blanco", parte: 0.55 }, { color: "dorado", parte: 0.45 }] },
+  ],
   colores: ["blanco", "dorado"], totalGlobos: 143, resumen,
 });
 assert.equal(planActualDesdePlan({ basura: true }), null);
