@@ -14,8 +14,8 @@ import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtique
 export const FLUX_CAPTION_COMPILER_VERSION = "flux-caption-v2.11-piezas-sueltas" as const;
 
 /** Límite común de texto que mantiene primero la decoración. */
-export const FLUX_PROMPT_MAX_LENGTH = 1000;
-export const BASE_PROMPT_MAX_LENGTH = 1000;
+export const FLUX_PROMPT_MAX_LENGTH = 1500;
+export const BASE_PROMPT_MAX_LENGTH = 1500;
 const UBICACIONES_SEMIARCO_BASE: Partial<Record<FluxPlacement, string>> = {
   fondo_pared: "at one side of the rear wall",
   arco_central: "off to one side of center",
