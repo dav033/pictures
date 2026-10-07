@@ -17,6 +17,14 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 
 ## ⏯ ESTADO PARA RETOMAR (2026-10-06 ~21:30, antes del /compact)
 
+**~22:10:** «Ajustar mi plan» en `main` = `93b2c84` (tsc limpio + prueba). Su verificador NO lo aprobó del todo: «Añadir un color»
+y «Quitar pieza» rehacen con el modelo y cambian medidas/proporciones del resto → encargado al agente A del encargo grande.
+En curso: `wf_de9b969f-a93` (encargo grande: A piezas individuales + arreglos de Ajustar, E imagen fiel a las piezas, B gráfica del
+clásico editable + tabla «Ver detalle», D materiales con imágenes de globos + lectura de foto detallada, luego C «Agregar al plan» y
+B2 idea amplia con productos Sempertex; verificador + corrector); `wf_fbca93ba-86b` (opciones sin callejón: nunca «no encontré»);
+fusión de las 11 fotos (`wf_c88656d7-a4a`). Pendiente al acabar la fusión: auditoría de las 31 decoraciones contra su foto
+(`scratchpad/wf-auditoria-biblioteca.js`: productos Sempertex reales, remates más grandes que 12", colores).
+
 **Tras el compact (2026-10-06 ~21:45):** registro-2 verificado y en `main` = `350ae58` (tsc en copia limpia, test-registro 15/15,
 guardia estricta OK, opciones-catálogo, contrato guiado, pytest test_registro 10/10). La fusión de las 11 fotos YA NO está
 cancelada: el dueño pidió hacerla; corre sola en `wf_c88656d7-a4a` al terminar los curadores. Diseño del encargo del plan (solo
