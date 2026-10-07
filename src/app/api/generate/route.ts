@@ -614,7 +614,14 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       if (body.planHash && body.planHash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
       if (body.plan.plan_hash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
     }
-    if (planResuelto.sin_cobertura.length > 0) throw new Error("El plan tiene materiales sin cobertura en la selección validada; no se generó una imagen incoherente.");
+    // Un material sin cobertura (p. ej. una talla que el producto no vende) NO impide dibujar (pedido del dueño,
+    // 2026-10-07: «esto de que no se puede dibujar no puede pasar»). La imagen sale con lo que el plan sí compra; la
+    // tarjeta ya avisa lo que falta y aquí queda registrado.
+    if (planResuelto.sin_cobertura.length > 0) {
+      decidir("regla:imagen_con_faltantes", "se dibuja aunque haya materiales sin cobertura: la imagen muestra lo que el plan compra", {
+        sinCobertura: planResuelto.sin_cobertura,
+      }, { entrada: { planHash: planResuelto.plan_hash } });
+    }
     if (planResuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
       throw new Error(`PRESUPUESTO_EXCEDIDO: ${planResuelto.totales.total_cop} COP supera el techo de ${planResuelto.comercial.techo_cop} COP por ${planResuelto.comercial.delta_cop} COP.`);
     }
