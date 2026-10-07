@@ -98,6 +98,24 @@ export function buscarDecoracionesSempertex(entradaCruda: { evento?: string; eda
   const generoBebe = esBabyShower && contieneAlguno(temaConsulta, ["niña", "nina", "girl"]) ? "nina"
     : esBabyShower && contieneAlguno(temaConsulta, ["niño", "nino", "boy"]) ? "nino"
       : esBabyShower && contieneAlguno(temaConsulta, ["neutro", "neutra", "unisex"]) ? "neutro" : null;
+  // El cliente eligió una temática del catálogo («Elegante blanco y negro», que ofrecemos en las opciones): se muestran sus
+  // decoraciones aunque estén etiquetadas para otros eventos, y como parecidas solo las que tienen TODOS sus colores. Antes,
+  // para una boda, salían «negro y dorado», «rosa palo y dorado» y «XV oro rosa» porque ninguna blanco y negro era de boda
+  // (dueño, 2026-10-06: «hay algunas que claramente no son blanco y negro»).
+  const tematicaCatalogo = temaConsulta ? [...new Set(catalogo.map((decoracion) => normalizarBusqueda(decoracion.tematica)))].find((tematica) => temaConsulta === tematica || ` ${temaConsulta} `.includes(` ${tematica} `)) : undefined;
+  if (tematicaCatalogo) {
+    const gruposTema = sinonimosColor.filter((grupo) => contieneAlguno(tematicaCatalogo, grupo));
+    const deTematica = catalogo.filter((decoracion) => normalizarBusqueda(decoracion.tematica) === tematicaCatalogo)
+      .sort((a, b) => puntajeEvento(entrada.evento ?? "", b) - puntajeEvento(entrada.evento ?? "", a));
+    const conTodosSusColores = catalogo.filter((decoracion) => !deTematica.includes(decoracion) && gruposTema.length > 0
+      && puntajeEdad(entrada.edad, decoracion) >= 0
+      && gruposTema.every((grupo) => contieneAlguno(normalizarBusqueda(`${decoracion.titulo} ${decoracion.tematica}`), grupo)));
+    const vistosTema = new Set<string>();
+    return [...deTematica.map((d) => [d, "exacta"] as const), ...conTodosSusColores.map((d) => [d, "cercana"] as const)]
+      .filter(([decoracion]) => { const clave = tituloComparable(decoracion.titulo); if (vistosTema.has(clave)) return false; vistosTema.add(clave); return true; })
+      .slice(0, 6)
+      .map(([decoracion, coincidencia]) => ({ ...decoracion, titulo: tituloParaEvento(decoracion.titulo, entrada.evento), coincidencia }));
+  }
   const puntajes = catalogo.map((decoracion) => {
     const textoTema = normalizarBusqueda(`${decoracion.titulo} ${decoracion.tematica} ${decoracion.id}`);
     const fuerzaExacta = gruposConsultados.filter((grupo) => contieneAlguno(textoTema, grupo)).length;
