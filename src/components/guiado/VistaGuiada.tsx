@@ -277,16 +277,6 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   // ── Derivados ────────────────────────────────────────────────────────────────────────────────────────────────
   const planVigente = useMemo(() => buscarPlanVigente(mensajes), [mensajes]);
   const idPlanVigente = planVigente?.mensajeId ?? null;
-  // «Genera la imagen» sin plan: en cuanto aparece un plan distinto del que había, se lleva a la vista y se dibuja.
-  useEffect(() => {
-    const pendiente = imagenTrasPlanRef.current;
-    if (!pendiente || !idPlanVigente || idPlanVigente === pendiente.planPrevio) return;
-    imagenTrasPlanRef.current = null;
-    registrarAccion("plan.imagen_tras_plan", { mensajeId: idPlanVigente });
-    vistaPendienteRef.current = { tipo: "mensaje", id: idPlanVigente };
-    void verComoQuedaria(idPlanVigente);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando aparece un plan nuevo
-  }, [idPlanVigente]);
   const ultimo = mensajes.at(-1);
   const indiceActivo = useMemo(() => {
     for (let indice = mensajes.length - 1; indice >= 0; indice -= 1) if (mensajes[indice]!.role === "assistant") return indice;
@@ -1233,6 +1223,17 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       if (imagenEnCursoRef.current === mensajeId) { imagenEnCursoRef.current = null; setImagenEnCurso(null); }
     }
   }
+
+  // «Genera la imagen» sin plan: en cuanto aparece un plan distinto del que había, se lleva a la vista y se dibuja.
+  useEffect(() => {
+    const pendiente = imagenTrasPlanRef.current;
+    if (!pendiente || !idPlanVigente || idPlanVigente === pendiente.planPrevio) return;
+    imagenTrasPlanRef.current = null;
+    registrarAccion("plan.imagen_tras_plan", { mensajeId: idPlanVigente });
+    vistaPendienteRef.current = { tipo: "mensaje", id: idPlanVigente };
+    void verComoQuedaria(idPlanVigente);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando aparece un plan nuevo
+  }, [idPlanVigente]);
 
   // ── Acciones del plan (tarjeta, barra o pedidas al modelo) ───────────────────────────────────────────────────
   function accionPlan(accion: AccionPlan, mensajeId: string, origen: "tarjeta" | "barra" | "modelo" = "tarjeta"): void {
