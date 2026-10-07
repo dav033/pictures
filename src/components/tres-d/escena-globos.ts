@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { FormatoGlobo } from "@/lib/globos3d/formatos";
-import { contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/lib/globos3d/geometria";
+import { centroCuerpo, contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/lib/globos3d/geometria";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -15,30 +15,44 @@ export type GloboEnEscena = { formato: FormatoGlobo; infladoCm: number; hex: str
  * Un globo de un módulo: dónde queda su nudo y hacia dónde apunta su cuerpo (cm, y hacia arriba). `frente`, si
  * viene, es hacia dónde mira la cara de un globo plano (el corazón).
  */
-export type GloboColocadoEnEscena = GloboEnEscena & { nudo: Punto3; direccion: Punto3; frente?: Punto3 };
+export type GloboColocadoEnEscena = GloboEnEscena & { nudo: Punto3; direccion: Punto3; frente?: Punto3; confeti?: boolean };
 export type Punto3 = { x: number; y: number; z: number };
 
 /** Un tramo de tubito que sigue una curva (lazos, burbujas, colas): el eje en cm, su grosor y su color. */
 export type TuboEnEscena = { puntos: readonly Punto3[]; grosorCm: number; hex: string; familia: string; cerrado: boolean };
 
+/** Flor artificial (follaje, no es globo) en un hueco: tipo, color, tamaño, dónde y hacia dónde mira (cm). */
+export type FlorEnEscena = { tipo: "hortensia" | "rosa" | "gypsophila"; hex: string; diametroCm: number; posicion: Punto3; normal: Punto3 };
+/** Un volumen simple de la escena (el pedestal): base, radio y alto en cm. */
+export type CilindroEnEscena = { base: Punto3; radioCm: number; altoCm: number; hex: string };
+export type ExtrasEscena = { flores?: readonly FlorEnEscena[]; cilindros?: readonly CilindroEnEscena[] };
+
 export type EscenaGlobos = {
   mostrar: (globos: readonly GloboEnEscena[]) => void;
   /** Un módulo armado (pareja, trío, cuarteto…): los globos colocados, si se piden sus anclas, y los tubitos. */
-  mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos?: readonly TuboEnEscena[]) => void;
+  mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos?: readonly TuboEnEscena[], extras?: ExtrasEscena) => void;
   redimensionar: () => void;
   destruir: () => void;
 };
 
 const CM = 0.01;
 
+/**
+ * Entorno propio de los metalizados. La escena atenúa su entorno (`environmentIntensity`) para que el látex mate no se
+ * lave; un cromado que refleja ese entorno atenuado se ve casi negro. Con el mapa puesto en el material, la
+ * atenuación de la escena no le aplica y la plata se ve plata.
+ */
+let entornoMetal: THREE.Texture | null = null;
+
 /** Material de látex según la familia Sempertex. */
 function materialDe(familia: string, hex: string): THREE.MeshPhysicalMaterial {
   const color = new THREE.Color(hex);
   switch (familia) {
     case "reflex":
-      return new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 });
+      // El entorno de la escena va atenuado (el látex mate se lavaba); el cromado necesita reflejar más para verse plateado y no negro.
+      return new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05, envMap: entornoMetal, envMapIntensity: 1.3 });
     case "metal":
-      return new THREE.MeshPhysicalMaterial({ color, metalness: 0.55, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25 });
+      return new THREE.MeshPhysicalMaterial({ color, metalness: 0.55, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25, envMap: entornoMetal, envMapIntensity: 1.1 });
     case "silk":
     case "satin":
       return new THREE.MeshPhysicalMaterial({ color, metalness: 0.15, roughness: 0.32, sheen: 1, sheenColor: new THREE.Color("#ffffff"), sheenRoughness: 0.4, iridescence: 0.35, iridescenceIOR: 1.3, clearcoat: 0.7, clearcoatRoughness: 0.2 });
@@ -53,6 +67,79 @@ function materialDe(familia: string, hex: string): THREE.MeshPhysicalMaterial {
       // Fashion: látex mate con el brillo suave de la superficie estirada.
       return new THREE.MeshPhysicalMaterial({ color, roughness: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.45 });
   }
+}
+
+/** Azar determinista (cada globo o flor siempre igual entre recargas). */
+function azar(semilla: number): () => number {
+  let x = (semilla * 2654435761) >>> 0 || 1;
+  return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 100000) / 100000; };
+}
+
+/** Confeti plateado dentro de un globo de cristal: discos finos repartidos en la esfera del cuerpo (coordenadas locales). */
+function confetiDentro(centroY: number, radio: number, semilla: number): THREE.InstancedMesh {
+  const cantidad = Math.max(18, Math.round(radio / CM * 2.2));
+  const malla = new THREE.InstancedMesh(new THREE.CircleGeometry(0.65 * CM, 10), new THREE.MeshStandardMaterial({ color: 0xd9d9e0, metalness: 1, roughness: 0.25, side: THREE.DoubleSide }), cantidad);
+  const r = azar(semilla);
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  for (let i = 0; i < cantidad; i++) {
+    // Más confeti abajo (se pega por la estática al fondo y a las paredes), pero repartido por todo el globo.
+    const u = r() * 2 - 1, t = r() * Math.PI * 2, k = Math.cbrt(0.35 + 0.65 * r()) * radio * 0.86;
+    const s = Math.sqrt(1 - u * u);
+    q.setFromEuler(new THREE.Euler(r() * Math.PI, r() * Math.PI, r() * Math.PI));
+    m.compose(new THREE.Vector3(s * Math.cos(t) * k, centroY + u * k - radio * 0.08, s * Math.sin(t) * k), q, new THREE.Vector3(1, 1, 1));
+    malla.setMatrixAt(i, m);
+  }
+  return malla;
+}
+
+/** Flor artificial mirando a +Y: hortensia (bola de florecitas), rosa (capullo en capas) o gypsophila (nube de puntitos). */
+function florArtificial(f: FlorEnEscena, semilla: number): THREE.Group {
+  const grupo = new THREE.Group();
+  const color = new THREE.Color(f.hex);
+  const radio = (f.diametroCm / 2) * CM;
+  const r = azar(semilla);
+  if (f.tipo === "hortensia") {
+    const cantidad = 34;
+    // Material blanco: el color va por instancia (si el material también lo llevara, se multiplicaría y oscurecería).
+    const florecita = new THREE.InstancedMesh(new THREE.SphereGeometry(radio * 0.2, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }), cantidad);
+    const m = new THREE.Matrix4();
+    for (let i = 0; i < cantidad; i++) {
+      const u = r(), t = r() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+      const tinte = 0.85 + r() * 0.3;
+      m.makeTranslation(s * Math.cos(t) * radio * 0.8, u * radio * 0.75, s * Math.sin(t) * radio * 0.8);
+      florecita.setMatrixAt(i, m);
+      florecita.setColorAt(i, color.clone().multiplyScalar(tinte));
+    }
+    grupo.add(florecita);
+    for (let i = 0; i < 3; i++) {
+      const hoja = new THREE.Mesh(new THREE.SphereGeometry(radio * 0.45, 10, 6), new THREE.MeshStandardMaterial({ color: 0x3f6b3a, roughness: 0.7 }));
+      hoja.scale.set(1, 0.18, 0.55);
+      const a = (i / 3) * Math.PI * 2 + r();
+      hoja.position.set(Math.cos(a) * radio * 0.85, 0, Math.sin(a) * radio * 0.85);
+      hoja.rotation.y = -a;
+      grupo.add(hoja);
+    }
+  } else if (f.tipo === "rosa") {
+    const material = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+    for (let capa = 0; capa < 3; capa++) {
+      const petalo = new THREE.Mesh(new THREE.SphereGeometry(radio * (1 - capa * 0.25), 16, 10, 0, Math.PI * 2, 0, Math.PI * (0.55 + capa * 0.1)), material);
+      petalo.position.y = capa * radio * 0.18;
+      petalo.rotation.y = capa * 0.9;
+      grupo.add(petalo);
+    }
+  } else {
+    const cantidad = 40;
+    const punto = new THREE.InstancedMesh(new THREE.SphereGeometry(0.45 * CM, 6, 4), new THREE.MeshStandardMaterial({ color, roughness: 0.9 }), cantidad);
+    const m = new THREE.Matrix4();
+    for (let i = 0; i < cantidad; i++) {
+      const u = r(), t = r() * Math.PI * 2, s = Math.sqrt(1 - u * u), k = radio * (0.4 + r() * 0.6);
+      m.makeTranslation(s * Math.cos(t) * k, u * k, s * Math.sin(t) * k);
+      punto.setMatrixAt(i, m);
+    }
+    grupo.add(punto);
+  }
+  return grupo;
 }
 
 function torneado(perfil: readonly PuntoPerfil[]): THREE.LatheGeometry {
@@ -158,6 +245,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const entorno = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   escena.environment = entorno;
+  entornoMetal = entorno;
   // Menos luz de entorno: con la sala completa el látex mate se veía lavado (el rosado 009 salía casi blanco).
   escena.environmentIntensity = 0.55;
 
@@ -230,11 +318,15 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   }
 
   const ARRIBA = new THREE.Vector3(0, 1, 0);
-  function mostrarModulo(globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos: readonly TuboEnEscena[] = []) {
+  function mostrarModulo(globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos: readonly TuboEnEscena[] = [], extras: ExtrasEscena = {}) {
     for (const hijo of [...contenido.children]) { contenido.remove(hijo); liberar(hijo); }
     const modulo = new THREE.Group();
-    for (const globo of globos) {
+    for (const [indice, globo] of globos.entries()) {
       const objeto = construir(globo);
+      if (globo.confeti && globo.formato.tipo === "redondo") {
+        const centroY = (centroCuerpo("redondo", globo.infladoCm) + (globo.cuelloExtraCm ?? 0)) * CM;
+        objeto.add(confetiDentro(centroY, (globo.infladoCm / 2) * CM, indice + 1));
+      }
       const eje = new THREE.Vector3(globo.direccion.x, globo.direccion.y, globo.direccion.z).normalize();
       if (globo.frente) {
         // Globo plano: Y local = dirección del cuerpo, Z local (la cara del corazón) = frente.
@@ -253,6 +345,22 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       const objeto = tuboEnCurva(tramo, materialDe(tramo.familia, tramo.hex));
       objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
       modulo.add(objeto);
+    }
+    // Follaje (no es globo): flores artificiales mirando hacia fuera de su hueco.
+    for (const [indice, flor] of (extras.flores ?? []).entries()) {
+      const objeto = florArtificial(flor, indice + 7);
+      objeto.quaternion.setFromUnitVectors(ARRIBA, new THREE.Vector3(flor.normal.x, flor.normal.y, flor.normal.z).normalize());
+      objeto.position.set(flor.posicion.x * CM, flor.posicion.y * CM, flor.posicion.z * CM);
+      objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
+      modulo.add(objeto);
+    }
+    // Volúmenes de la escena (el pedestal).
+    for (const c of extras.cilindros ?? []) {
+      const cilindro = new THREE.Mesh(new THREE.CylinderGeometry(c.radioCm * CM, c.radioCm * CM, c.altoCm * CM, 48), new THREE.MeshStandardMaterial({ color: new THREE.Color(c.hex), roughness: 0.55 }));
+      cilindro.position.set(c.base.x * CM, (c.base.y + c.altoCm / 2) * CM, c.base.z * CM);
+      cilindro.castShadow = true;
+      cilindro.receiveShadow = true;
+      modulo.add(cilindro);
     }
     // Anclas: puntos donde se cuelga una decoración hija (una flor, un moño).
     const materialAncla = new THREE.MeshStandardMaterial({ color: 0x7c3aed, emissive: 0x7c3aed, emissiveIntensity: 0.6 });

@@ -15,6 +15,10 @@ import type { DondeDecoracion } from "./PanelFlor";
 import { PanelDecoracion, nombreDecoracion } from "./PanelDecoracion";
 import { PanelPared, PARED_INICIAL, type OpcionesPared, type TipoPared } from "./PanelPared";
 import { armarPared } from "@/lib/globos3d/paredes";
+import { armarOrganico } from "@/lib/globos3d/organico";
+import { repartirFlores } from "@/lib/globos3d/flores-artificiales";
+import { COLUMNA_QUINCE_AZUL } from "@/lib/globos3d/organico-presets";
+import { AJUSTES_QUINCE_AZUL, PanelOrganico, opcionesDeAjustes, type AjustesOrganico } from "./PanelOrganico";
 import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
 import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena, TuboEnEscena } from "./escena-globos";
 
@@ -53,7 +57,7 @@ const FORMATOS_COLUMNA = ["R-5", "R-9", "R-12", "R-18"] as const;
 /** Formatos con los que se arman módulos: redondos de 5" a 24" y Link-O-Loon 6 y 12. */
 const FORMATOS_MODULO = ["R-5", "R-9", "R-12", "R-18", "R-24", "LOL-6", "LOL-12"] as const;
 
-type Modo = "globo" | "modulo" | "columna" | "arco" | "pared" | "decoracion";
+type Modo = "globo" | "modulo" | "columna" | "arco" | "pared" | "decoracion" | "organico";
 
 const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
 const ACTIVO = "bg-acento text-sobre-acento ring-acento";
@@ -199,11 +203,31 @@ export function Taller3D() {
     cambiarModo("decoracion");
   }
 
+  // Orgánico: la columna azul de XV (motor orgánico + flores artificiales en los huecos + pedestal).
+  const [ajustesOrganico, setAjustesOrganico] = useState<AjustesOrganico>(AJUSTES_QUINCE_AZUL);
+  const organico = useMemo(() => {
+    const resultado = armarOrganico(opcionesDeAjustes(ajustesOrganico));
+    const flores = ajustesOrganico.conFlores ? repartirFlores(resultado.anclas, COLUMNA_QUINCE_AZUL.flores) : { racimos: [], materiales: [], avisos: [] };
+    return { resultado, flores };
+  }, [ajustesOrganico]);
+
   // Lo que se ve.
   useEffect(() => {
     const escena = escenaRef.current;
     if (!listo || !escena || !color) return;
-    if (modo === "pared") {
+    if (modo === "organico") {
+      const { resultado, flores } = organico;
+      const pedestal = COLUMNA_QUINCE_AZUL.escena.pedestal;
+      escena.mostrarModulo(
+        resultado.globos.map((g) => ({ ...globoAEscena(g, formato), confeti: g.confeti })),
+        [],
+        [],
+        {
+          flores: flores.racimos.flatMap((r) => r.flores.map((f) => ({ tipo: f.tipo, hex: f.hex, diametroCm: f.diametroCm, posicion: f.posicion, normal: f.normal }))),
+          cilindros: ajustesOrganico.conPedestal ? [{ base: pedestal.base, radioCm: pedestal.radioCm, altoCm: pedestal.altoCm, hex: "#f4f2ee" }] : [],
+        },
+      );
+    } else if (modo === "pared") {
       escena.mostrarModulo(paredActual.globos.map((g) => globoAEscena(g, formato)), verAnclasPared ? paredActual.anclas.map((a) => a.posicion) : []);
     } else if (modo === "decoracion") {
       escena.mostrarModulo(escenaDecoracion.globos.map((g) => globoAEscena(g, formato)), [], escenaDecoracion.tubos.map(tuboAEscena));
@@ -226,7 +250,7 @@ export function Taller3D() {
     } else {
       escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
-  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared]);
+  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared, organico, ajustesOrganico.conPedestal]);
 
   function elegirFormato(f: FormatoGlobo) {
     setFormatoId(f.id);
@@ -271,7 +295,20 @@ export function Taller3D() {
   // Ficha del visor: compacta encima del lienzo (sin listas) y completa debajo (con materiales y notas).
   const fichaVisor = color ? (
     <>
-                {modo === "pared" ? (
+                {modo === "organico" ? (
+                  <>
+                    <p className="font-semibold text-texto">Columna orgánica · {metros(organico.resultado.medidas.altoCm)} m · {organico.resultado.conteo.total} globos{organico.flores.racimos.length ? ` · ${organico.flores.racimos.length} racimos de flores` : ""}</p>
+                    <p className="font-mono text-xs text-texto-suave">{organico.resultado.conteo.porTamano.grande} grandes · {organico.resultado.conteo.porTamano.mediano} medianos · {organico.resultado.conteo.porTamano.relleno} de relleno · {organico.resultado.medidas.tramos.map((t) => `${t.nombre ?? t.id}`).join(" + ")}</p>
+                    <ListaMateriales materiales={organico.resultado.materiales.map((m) => ({ formatoId: m.formatoId, codigo: m.codigo, cantidad: m.cantidad }))} />
+                    {organico.resultado.materiales.some((m) => m.confeti) && <p className="detalle-ficha mt-1 text-[0.7rem] text-texto-suave">Los cristales llevan confeti plateado por dentro.</p>}
+                    {organico.flores.materiales.length > 0 && (
+                      <ul className="mt-2 text-xs text-texto-suave">
+                        {organico.flores.materiales.map((m) => <li key={`${m.tipo}|${m.colorId}`}>{m.cantidad} × {m.nombre} <span className="font-mono">(follaje, no cotiza como globo)</span></li>)}
+                      </ul>
+                    )}
+                    {organico.resultado.avisos.length > 0 && <p className="detalle-ficha mt-1 text-[0.7rem] text-texto-suave">{organico.resultado.avisos.join(" ")}</p>}
+                  </>
+                ) : modo === "pared" ? (
                   tipoPared === "trenzas" ? (
                     <>
                       <p className="font-semibold text-texto">Trenzas alternando {paredTrenzas.grande.formatoId} a {formatoCm(paredTrenzas.grande.infladoCm)} y {paredTrenzas.chico.formatoId} a {formatoCm(paredTrenzas.chico.infladoCm)} · {metros(paredTrenzasArmada.anchoCm)} × {metros(paredTrenzasArmada.altoCm)} m</p>
@@ -363,7 +400,7 @@ export function Taller3D() {
       </header>
 
       <div role="tablist" aria-label="Qué modelar" className="inline-flex w-fit gap-1 rounded-full bg-superficie p-1 ring-1 ring-borde">
-        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"], ["pared", "Pared"], ["decoracion", "Decoración"]] as const).map(([valor, etiqueta]) => (
+        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"], ["pared", "Pared"], ["decoracion", "Decoración"], ["organico", "Orgánico"]] as const).map(([valor, etiqueta]) => (
           <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => cambiarModo(valor)}
             className={`min-h-10 rounded-full px-5 text-sm font-medium ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
             {etiqueta}
@@ -373,7 +410,9 @@ export function Taller3D() {
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-1" aria-label="Elegir el globo">
-          {modo === "pared" ? (
+          {modo === "organico" ? (
+            <PanelOrganico valor={ajustesOrganico} onCambio={setAjustesOrganico} />
+          ) : modo === "pared" ? (
             <PanelPared tipo={tipoPared} onTipo={setTipoPared} valor={pared} onCambio={setPared} trenzas={paredTrenzas} onTrenzas={setParedTrenzas}
               verAnclas={verAnclasPared} onVerAnclas={setVerAnclasPared} anclas={paredActual.anclas.length} onCelebra={aplicarCelebra} />
           ) : modo === "decoracion" ? (
