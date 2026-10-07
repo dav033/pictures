@@ -9,6 +9,8 @@ import { PATRONES_COLUMNA, armarColumna, type PatronColumna } from "@/lib/globos
 import { FORMAS_ARCO, armarArco, type FormaArco } from "@/lib/globos3d/arcos";
 import { FLORES_PREDEFINIDAS, armarFlor, colocarEn, elegirAnclas, materialesPorFormato, type GloboDecoracion, type PropiedadesFlor, type ReglaDecoracion } from "@/lib/globos3d/decoraciones";
 import { PanelFlor, type DondeDecoracion } from "./PanelFlor";
+import { PanelPared, PARED_INICIAL, type OpcionesPared } from "./PanelPared";
+import { armarPared } from "@/lib/globos3d/paredes";
 import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
 import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena } from "./escena-globos";
 
@@ -20,7 +22,7 @@ const FORMATOS_COLUMNA = ["R-5", "R-9", "R-12", "R-18"] as const;
 /** Formatos con los que se arman módulos: redondos de 5" a 24" y Link-O-Loon 6 y 12. */
 const FORMATOS_MODULO = ["R-5", "R-9", "R-12", "R-18", "R-24", "LOL-6", "LOL-12"] as const;
 
-type Modo = "globo" | "modulo" | "columna" | "arco" | "decoracion";
+type Modo = "globo" | "modulo" | "columna" | "arco" | "pared" | "decoracion";
 
 const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
 const ACTIVO = "bg-acento text-sobre-acento ring-acento";
@@ -63,6 +65,8 @@ export function Taller3D() {
   const [flor, setFlor] = useState<PropiedadesFlor>(FLORES_PREDEFINIDAS[0]!.propiedades);
   const [donde, setDonde] = useState<DondeDecoracion>("columna");
   const [regla, setRegla] = useState<ReglaDecoracion>({ cadaNiveles: 2, caras: 2 });
+  // Pared: malla Link-O-Loon tipo flor.
+  const [pared, setPared] = useState<OpcionesPared>(PARED_INICIAL);
 
   // La escena se crea una vez (three.js se carga solo en el navegador).
   useEffect(() => {
@@ -94,6 +98,10 @@ export function Taller3D() {
   const datosPatron = PATRONES_COLUMNA.find((p) => p.id === patron) ?? PATRONES_COLUMNA[1]!;
   const arco = useMemo(() => armarArco({ formato, infladoCm: inflado, forma, anchoCm: anchoArcoCm, altoCm: altoArcoCm, patron, colores: coloresColumna.slice(0, datosPatron.colores) }), [formato, inflado, forma, anchoArcoCm, altoArcoCm, patron, coloresColumna, datosPatron.colores]);
   const florArmada = useMemo(() => armarFlor(flor), [flor]);
+  const paredArmada = useMemo(() => armarPared({
+    formato: formatoPorId(pared.formatoId)!, infladoCm: pared.infladoCm, anchoCm: pared.anchoCm, altoCm: pared.altoCm, patron: pared.patron, colores: pared.colores,
+    union: { formato: formatoPorId("R-5")!, infladoCm: pared.union.infladoCm, codigo: pared.union.codigo },
+  }), [pared]);
   const columna = useMemo(() => armarColumna({ formato, infladoCm: inflado, alturaCm, patron, colores: coloresColumna.slice(0, datosPatron.colores) }), [formato, inflado, alturaCm, patron, coloresColumna, datosPatron.colores]);
   const refModulo = (i: number): ReferenciaSempertex | undefined => {
     const c = coloresModulo[i] ?? codigo;
@@ -103,19 +111,31 @@ export function Taller3D() {
   // Decoración: la estructura elegida (o nada) y una flor en cada ancla que cumple la regla.
   const escenaDecoracion = useMemo((): GloboDecoracion[] => {
     if (donde === "sola") return florArmada.globos;
+    if (donde === "pared") {
+      const cada = Math.max(1, regla.cadaNiveles);
+      const flores = paredArmada.anclas.filter((a) => a.fila % cada === 0 && a.columna % cada === 0).flatMap((ancla) => colocarEn(florArmada.globos, ancla));
+      return [...paredArmada.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm })), ...flores];
+    }
     const estructura = donde === "arco" ? arco : columna;
     const base: GloboDecoracion[] = estructura.globos.map((g) => ({ formatoId: formato.id, infladoCm: inflado, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
     const flores = elegirAnclas(estructura.anclas, regla).flatMap((ancla) => colocarEn(florArmada.globos, ancla));
     return [...base, ...flores];
-  }, [donde, arco, columna, regla, florArmada, formato.id, inflado]);
+  }, [donde, arco, columna, paredArmada, regla, florArmada, formato.id, inflado]);
   const materialesDecoracion = useMemo(() => materialesPorFormato(escenaDecoracion), [escenaDecoracion]);
-  const floresPuestas = donde === "sola" ? 1 : elegirAnclas((donde === "arco" ? arco : columna).anclas, regla).length;
+  const floresPuestas = donde === "sola" ? 1
+    : donde === "pared" ? paredArmada.anclas.filter((a) => a.fila % Math.max(1, regla.cadaNiveles) === 0 && a.columna % Math.max(1, regla.cadaNiveles) === 0).length
+      : elegirAnclas((donde === "arco" ? arco : columna).anclas, regla).length;
 
   // Lo que se ve.
   useEffect(() => {
     const escena = escenaRef.current;
     if (!listo || !escena || !color) return;
-    if (modo === "decoracion") {
+    if (modo === "pared") {
+      escena.mostrarModulo(paredArmada.globos.map((g) => {
+        const ref = referenciaPorCodigo(g.codigo);
+        return { formato: formatoPorId(g.formatoId) ?? formato, infladoCm: g.infladoCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion", nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
+      }), []);
+    } else if (modo === "decoracion") {
       escena.mostrarModulo(escenaDecoracion.map((g) => {
         const ref = referenciaPorCodigo(g.codigo);
         return { formato: formatoPorId(g.formatoId) ?? formato, infladoCm: g.infladoCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion", nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
@@ -139,7 +159,7 @@ export function Taller3D() {
     } else {
       escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
-  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion]);
+  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredArmada]);
 
   function elegirFormato(f: FormatoGlobo) {
     setFormatoId(f.id);
@@ -195,7 +215,7 @@ export function Taller3D() {
       </header>
 
       <div role="tablist" aria-label="Qué modelar" className="inline-flex w-fit gap-1 rounded-full bg-superficie p-1 ring-1 ring-borde">
-        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"], ["decoracion", "Decoración"]] as const).map(([valor, etiqueta]) => (
+        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"], ["pared", "Pared"], ["decoracion", "Decoración"]] as const).map(([valor, etiqueta]) => (
           <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => cambiarModo(valor)}
             className={`min-h-10 rounded-full px-5 text-sm font-medium ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
             {etiqueta}
@@ -205,7 +225,9 @@ export function Taller3D() {
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-1" aria-label="Elegir el globo">
-          {modo === "decoracion" ? (
+          {modo === "pared" ? (
+            <PanelPared valor={pared} onCambio={setPared} />
+          ) : modo === "decoracion" ? (
             <PanelFlor flor={flor} onFlor={setFlor} donde={donde} onDonde={setDonde} regla={regla} onRegla={setRegla} />
           ) : (<>
           {modo === "modulo" && (
@@ -374,9 +396,20 @@ export function Taller3D() {
             {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-texto">{error}</p>}
             {color && (
               <div className="pointer-events-none absolute left-3 top-3 max-w-[80%] rounded-xl bg-superficie/90 px-3 py-2 text-sm shadow-sm ring-1 ring-borde backdrop-blur">
-                {modo === "decoracion" ? (
+                {modo === "pared" ? (
                   <>
-                    <p className="font-semibold text-texto">{donde === "sola" ? "Flor de globos" : `${floresPuestas} flores en ${donde === "arco" ? "el arco" : "la columna"}`} · {flor.petalos.cantidad} pétalos {flor.petalos.formatoId}{flor.centro ? ` + centro ${flor.centro.formatoId}` : ""}</p>
+                    <p className="font-semibold text-texto">Malla {pared.formatoId} tipo flor · {(paredArmada.anchoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} × {(paredArmada.altoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m</p>
+                    <p className="font-mono text-xs text-texto-suave">{paredArmada.eslabones} eslabones · {paredArmada.uniones} parejas de unión ({paredArmada.uniones * 2} R-5)</p>
+                    <ul className="mt-1 text-xs text-texto">
+                      {paredArmada.materiales.map((m) => {
+                        const ref = referenciaPorCodigo(m.codigo);
+                        return <li key={`${m.formatoId}|${m.codigo}`}>{m.cantidad} × {m.formatoId} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
+                      })}
+                    </ul>
+                  </>
+                ) : modo === "decoracion" ? (
+                  <>
+                    <p className="font-semibold text-texto">{donde === "sola" ? "Flor de globos" : `${floresPuestas} flores en ${donde === "arco" ? "el arco" : donde === "pared" ? "la pared" : "la columna"}`} · {flor.petalos.cantidad} pétalos {flor.petalos.formatoId}{flor.centro ? ` + centro ${flor.centro.formatoId}` : ""}</p>
                     <p className="font-mono text-xs text-texto-suave">{donde === "sola" ? `${florArmada.diametroCm} cm de ancho · ${florArmada.globos.length} globos` : `${escenaDecoracion.length} globos en total`}</p>
                     <ul className="mt-1 text-xs text-texto">
                       {materialesDecoracion.map((m) => {

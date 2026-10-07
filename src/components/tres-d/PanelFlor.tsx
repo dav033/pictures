@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { NOMBRE_FAMILIA, coloresDelFormato, formatoPorId } from "@/lib/globos3d/formatos";
 import { FLORES_PREDEFINIDAS, type ParteGlobo, type PropiedadesFlor, type ReglaDecoracion } from "@/lib/globos3d/decoraciones";
 
-export type DondeDecoracion = "sola" | "columna" | "arco";
+export type DondeDecoracion = "sola" | "columna" | "arco" | "pared";
 
 const BOTON = "min-h-10 rounded-xl px-2 text-sm ring-1 transition-colors";
 const ACTIVO = "bg-acento text-sobre-acento ring-acento";
@@ -14,7 +14,7 @@ const FORMATOS_CENTRO = ["R-5", "R-9"] as const;
 const cm = (v: number) => `${v.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 
 /** Colores oficiales que existen en ese formato, agrupados por familia (solo se ofrecen los que se fabrican). */
-function SelectorColor({ formatoId, valor, onCambio, etiqueta }: { formatoId: string; valor: string; onCambio: (codigo: string) => void; etiqueta: string }) {
+export function SelectorColor({ formatoId, valor, onCambio, etiqueta }: { formatoId: string; valor: string; onCambio: (codigo: string) => void; etiqueta: string }) {
   const grupos = useMemo(() => {
     const mapa = new Map<string, ReturnType<typeof coloresDelFormato>>();
     for (const c of coloresDelFormato(formatoId)) mapa.set(c.familia, [...(mapa.get(c.familia) ?? []), c]);
@@ -38,7 +38,7 @@ function SelectorColor({ formatoId, valor, onCambio, etiqueta }: { formatoId: st
   );
 }
 
-function Deslizador({ id, etiqueta, valor, min, max, paso, texto, onCambio }: { id: string; etiqueta: string; valor: number; min: number; max: number; paso: number; texto: string; onCambio: (v: number) => void }) {
+export function Deslizador({ id, etiqueta, valor, min, max, paso, texto, onCambio }: { id: string; etiqueta: string; valor: number; min: number; max: number; paso: number; texto: string; onCambio: (v: number) => void }) {
   return (
     <div>
       <label htmlFor={id} className="flex items-baseline justify-between text-xs font-semibold text-texto">{etiqueta}<span className="font-mono font-normal text-texto-suave">{texto}</span></label>
@@ -126,20 +126,20 @@ export function PanelFlor({ flor, onFlor, donde, onDonde, regla, onRegla }: Prop
 
       <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
         <h2 className="text-sm font-semibold text-texto">Dónde va</h2>
-        <div className="grid grid-cols-3 gap-1">
-          {([["sola", "Sola"], ["columna", "En la columna"], ["arco", "En el arco"]] as const).map(([valor, etiqueta]) => (
+        <div className="grid grid-cols-2 gap-1">
+          {([["sola", "Sola"], ["columna", "En la columna"], ["arco", "En el arco"], ["pared", "En la pared"]] as const).map(([valor, etiqueta]) => (
             <button key={valor} type="button" onClick={() => onDonde(valor)} aria-pressed={donde === valor} className={`${BOTON} ${donde === valor ? ACTIVO : INACTIVO}`}>{etiqueta}</button>
           ))}
         </div>
         {donde !== "sola" && (
           <>
-            <Deslizador id="regla-cada" etiqueta="Cada cuántos cuartetos" valor={regla.cadaNiveles} min={1} max={6} paso={1} texto={regla.cadaNiveles === 1 ? "en todos" : `1 de cada ${regla.cadaNiveles}`} onCambio={(v) => onRegla({ ...regla, cadaNiveles: v })} />
-            <div className="grid grid-cols-3 gap-1">
+            <Deslizador id="regla-cada" etiqueta={donde === "pared" ? "Cada cuántas flores de la malla" : "Cada cuántos cuartetos"} valor={regla.cadaNiveles} min={1} max={6} paso={1} texto={regla.cadaNiveles === 1 ? "en todas" : `1 de cada ${regla.cadaNiveles}`} onCambio={(v) => onRegla({ ...regla, cadaNiveles: v })} />
+            {donde !== "pared" && <div className="grid grid-cols-3 gap-1">
               {([1, 2, 4] as const).map((n) => (
                 <button key={n} type="button" onClick={() => onRegla({ ...regla, caras: n })} aria-pressed={regla.caras === n} className={`${BOTON} ${regla.caras === n ? ACTIVO : INACTIVO}`}>{n === 1 ? "1 cara" : `${n} caras`}</button>
               ))}
-            </div>
-            <p className="text-xs text-texto-suave">Las flores van en los huecos entre globos. La columna y el arco son los que armaste en sus pestañas.</p>
+            </div>}
+            <p className="text-xs text-texto-suave">{donde === "pared" ? "Las flores van en los centros de flor de la malla, al frente." : "Las flores van en los huecos entre globos."} La columna, el arco y la pared son los que armaste en sus pestañas.</p>
           </>
         )}
       </section>
