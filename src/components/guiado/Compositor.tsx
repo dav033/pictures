@@ -84,7 +84,9 @@ export function Compositor({ valor, onCambiar, onEnviar, placeholder, cargando, 
               onChange={(evento) => onCambiar(evento.target.value)}
               placeholder={placeholder}
               disabled={deshabilitado}
-              className="min-w-0 flex-1 bg-transparent px-1.5 py-2 text-base text-texto outline-none placeholder:text-texto-tenue disabled:opacity-60"
+              // compositor-input: la excepción de foco fuera de capa (globals.css) le gana a la regla global de :focus-visible,
+              // que con `outline-none` no se iba y pintaba un rectángulo dentro de la caja; el anillo lo da su focus-within.
+              className="compositor-input min-w-0 flex-1 bg-transparent px-1.5 py-2 text-base text-texto placeholder:text-texto-tenue disabled:opacity-60"
             />
             <AnimatePresence mode="popLayout" initial={false}>
               {cargando ? (

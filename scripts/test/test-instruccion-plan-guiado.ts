@@ -1,8 +1,9 @@
-// Sin red: instrucción del plan guiado, brief para chat-v1, resumen del plan y estado `planActual`.
+// Sin red: instrucción del plan guiado, brief para chat-v1, plan defectuoso, resumen del plan y estado `planActual`.
 // Plan fijo tomado del recorrido 2 (boda) de rescate/registros/2026-10-06T22-28-50-274Z/recorridos.json.
 import assert from "node:assert/strict";
 import { AsistenteGuiadoRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
-import { briefChatGuiado, instruccionPlanFoto, instruccionPlanGuiado, planActualDesdePlan, resumenPlanGuiado, textoPlanActual } from "@/lib/ia/guiado/instruccion-plan";
+import { briefChatGuiado, defectoPlanGuiado, instruccionPlanFoto, instruccionPlanGuiado, planActualDesdePlan, resumenPlanGuiado, textoPlanActual } from "@/lib/ia/guiado/instruccion-plan";
+import { extraerFiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
 import { normalizarPropuestaComposicion } from "@/lib/ia/guiado/propuesta-composicion";
 
 const planBoda = {
@@ -22,7 +23,7 @@ const planBoda = {
 const propuesta = normalizarPropuestaComposicion({ frase: "x", colores: ["azul", "blanco", "dorado"], piezas: [{ estructura: "arco_asimetrico", cantidad: 1 }, { estructura: "columna", cantidad: 2 }] });
 
 // (b) instrucción del plan
-const instruccion = instruccionPlanGuiado(propuesta, { evento: "Boda", edad: 0, tematica: "elegante" });
+const instruccion = instruccionPlanGuiado(propuesta);
 assert.ok(instruccion.includes("1 × Arco orgánico (estructura_oficial: arco_asimetrico; estructura_id: EST_01_ARCO_ASIMETRICO; repeticiones: 1)"), instruccion);
 assert.ok(instruccion.includes("2 × Columna (estructura_oficial: columna; estructura_id: EST_02_COLUMNA; repeticiones: 2)"));
 assert.ok(instruccion.includes("Todos deben aparecer en el plan."));
@@ -30,31 +31,44 @@ assert.ok(instruccion.includes("usa EXACTAMENTE estos colores: azul, blanco, dor
 assert.ok(/Arco orgánico mezcla al menos 3 tamaños \(5", 12" y 18"\)/.test(instruccion), "pieza orgánica exige mezcla de tamaños");
 assert.ok(!/Columna mezcla/.test(instruccion), "la columna clásica no está obligada a mezclar");
 assert.ok(/confirma el plan en este mismo turno/i.test(instruccion) && /no le preguntes nada/i.test(instruccion));
-assert.ok(/No pongas letras, números ni frases/.test(instruccion));
-assert.ok(instruccion.includes("Contexto: Boda, temática elegante."), "boda sin edad");
-assert.ok(!/\d+ años/.test(instruccion), "la edad solo va en cumpleaños");
+assert.ok(/solo globos lisos de un solo color: nada estampado, impreso ni con dibujos, letras, números o frases/.test(instruccion));
+assert.ok(!/l[aá]tex/i.test(instruccion), "«látex» en el texto del cliente bloquea la categoría en la búsqueda");
+// El texto del mensaje es «lo que dijo el cliente» para /api/chat: un evento ahí se vuelve filtro duro de ocasión
+// («Cumpleaños» → solo globos impresos de cumpleaños de 12"). Ni evento, ni edad, ni temática.
+assert.ok(!/Contexto|cumplea|boda|princesa|\d+ años/i.test(instruccion), instruccion);
 assert.ok(!/intento anterior/.test(instruccion));
-const cumple = instruccionPlanGuiado(propuesta, { evento: "Cumpleaños", edad: 7, tematica: "superhéroes" });
-assert.ok(cumple.includes("Cumpleaños, de 7 años, temática superhéroes"));
-const sinTematica = instruccionPlanGuiado(propuesta, { evento: "Baby shower", edad: 3, tematica: "pendiente" });
-assert.ok(!sinTematica.includes("pendiente") && !sinTematica.includes("3 años"), sinTematica);
-const reintento = instruccionPlanGuiado(propuesta, { evento: "Boda" }, { reintento: true });
-assert.ok(reintento.includes('El intento anterior no se pudo confirmar: busca cada color en 5", 12" y 18" antes de confirmar y usa solo variantes con cobertura'));
+const reintento = instruccionPlanGuiado(propuesta, { reintento: true });
+assert.ok(reintento.includes('El intento anterior no sirvió: busca cada color en 5", 12" y 18", solo globos lisos de un solo color'), reintento);
 const planAnterior = planActualDesdePlan(planBoda)!;
-const cambio = instruccionPlanGuiado(propuesta, { evento: "Boda" }, { planAnterior });
+const cambio = instruccionPlanGuiado(propuesta, { planAnterior });
 assert.ok(cambio.includes("el plan nuevo lleva SOLO las piezas de esta lista"), cambio);
 assert.ok(!cambio.includes("Tu plan:") && !/columnas/.test(cambio), "no describe el plan anterior: /api/chat leería sus cantidades como restricciones");
 assert.ok(!/(?:\bej-|\bdeco-|sku|variant_id)/i.test(instruccion), "sin ids internos del catálogo");
+// Sin filtros duros de ocasión ni de categoría que salgan de la instrucción (el fallo del cumpleaños de princesas).
+const filtros = extraerFiltrosDurosBusqueda(instruccion, briefChatGuiado(propuesta.colores));
+assert.deepEqual([filtros.ocasiones, filtros.categorias, filtros.acabados], [[], [], []], JSON.stringify(filtros));
 
-// (c) foto
+// (c) foto: los colores que la lectura le mostró al cliente
 assert.ok(/confírmalo con confirmar_plan_decoracion/.test(instruccionPlanFoto()));
-assert.ok(instruccionPlanFoto({ reintento: true }).includes("El intento anterior no se pudo confirmar"));
+assert.ok(!/usa EXACTAMENTE/.test(instruccionPlanFoto()), "sin lectura de colores no inventa la línea");
+const foto = instruccionPlanFoto({ colores: ["Dorado", "Blanco", "Azul", "Rosa"] });
+assert.ok(foto.includes("usa EXACTAMENTE estos colores: dorado, blanco, azul, rosa; no agregues otros"), foto);
+assert.ok(instruccionPlanFoto({ reintento: true }).includes("El intento anterior no sirvió"));
 
-// (d) brief para chat-v1: sin cadenas vacías (briefSchema exige min(1))
-assert.deepEqual(briefChatGuiado(propuesta, { evento: "Boda", tematica: "elegante" }), { tipo_evento: "Boda", colores: ["azul", "blanco", "dorado"], estilo: "elegante" });
-assert.deepEqual(briefChatGuiado(null, { evento: " ", tematica: "" }), {});
-assert.deepEqual(briefChatGuiado(null, { evento: "Boda", tematica: "por definir" }), { tipo_evento: "Boda" });
+// (d) brief para chat-v1: solo colores, sin cadenas vacías (briefSchema exige min(1)) ni evento o temática
+assert.deepEqual(briefChatGuiado(propuesta.colores), { colores: ["azul", "blanco", "dorado"] });
+assert.deepEqual(briefChatGuiado([" ", ""]), {});
+assert.deepEqual(briefChatGuiado(["Rosa", "rosa", "Dorado"]), { colores: ["rosa", "dorado"] });
 
+// (d2) plan defectuoso: pieza orgánica de un solo tamaño o globos que no son lisos gastan el reintento automático
+assert.match(defectoPlanGuiado(planBoda) ?? "", /Arco orgánico principal.*un solo tamaño/, "el arco orgánico de boda salió todo en 12\"");
+const planBodaMezclado = { ...planBoda, estructuras: [{ ...planBoda.estructuras[0]!, lineas: [...planBoda.estructuras[0]!.lineas, { color: "blanco", tamano_codigo: "R-5", diam_pulg: 5, unidades: 20, titulo: "Globo Fashion Blanco R-5" }] }, planBoda.estructuras[1]!] };
+assert.equal(defectoPlanGuiado(planBodaMezclado), null, "arco con 12\" y 5\" y columna clásica en un solo tamaño: sirve");
+const impreso = { ...planBodaMezclado, compras: [{ titulo: "Globo Impreso 2 Caras Copa Dorada R-12" }] };
+assert.match(defectoPlanGuiado(impreso) ?? "", /no son lisos/);
+assert.match(defectoPlanGuiado(planBodaMezclado, { lineas: [{ nombre: "Infinity® Balón De Futbol Fashion Blanco R-12" }] }) ?? "", /no son lisos/);
+assert.equal(defectoPlanGuiado(planBodaMezclado, { lineas: [{ nombre: "Globo Reflex Dorado R-12 x 50" }, { nombre: "Globo Pastel Mate Rosado R-5" }] }), null);
+assert.equal(defectoPlanGuiado({ basura: true }), null);
 // (e) resumen del plan (content del mensaje, viaja en el historial)
 const resumen = resumenPlanGuiado(planBoda);
 assert.equal(resumen, "Tu plan: 1 arco orgánico de 2 × 2,2 m y 2 columnas de 2,4 m, en blanco y dorado; 143 globos en total.");

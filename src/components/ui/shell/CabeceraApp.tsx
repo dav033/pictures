@@ -51,6 +51,8 @@ function MarcaIcono() {
 export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, onModoVista, onLimpiar, limpiarDeshabilitado, onAbrirSeleccion, totalSeleccion, barraDev, ocultarModoDev = false }: Props) {
   const pathname = usePathname();
   const esDev = modoVista === "dev";
+  // Vista guiada (pensada para el móvil): tema y menú con el blanco táctil de 44 px; la clásica conserva su cabecera compacta.
+  const tactil = pathname === "/asistente";
   const { preferencia: preferenciaTema, cambiar: cambiarTema } = useTema();
   const ICONO_TEMA = { light: <Sun className="size-4" />, dark: <Moon className="size-4" />, sistema: <Monitor className="size-4" /> } as const;
   const items: ItemMenu[] = [
@@ -95,9 +97,9 @@ export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, o
         <div className="app-acciones">
           <ConmutadorVista />
           {creatividad !== undefined && onCreatividad && <SelectorCreatividad valor={creatividad} onCambiar={onCreatividad} />}
-          <InterruptorTema />
+          <InterruptorTema className={tactil ? "size-11" : ""} />
           {!ocultarModoDev && <SwitchModoVista modo={modoVista} onCambiar={onModoVista} />}
-          <MenuApp items={items} />
+          <MenuApp items={items} {...(tactil ? { claseBoton: "ui-icon-button size-11" } : {})} />
         </div>
       </header>
       {contexto && <p className="app-contexto-movil truncate">{contexto}</p>}

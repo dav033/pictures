@@ -10,30 +10,19 @@ import { listaNatural, piezaEnPalabras } from "./propuesta-composicion";
  */
 
 type PropuestaGuiada = z.infer<typeof PropuestaComposicionSchema>;
-export type BriefPlanGuiado = { evento?: string; edad?: number; tematica?: string };
 
 /** Piezas que solo se ven orgánicas si mezclan tamaños: sin la orden explícita el plan salía todo en 12". */
 export const ESTRUCTURAS_ORGANICAS: ReadonlySet<EstructuraOficialId> = new Set<EstructuraOficialId>([
   "arco_asimetrico", "semiarco_asimetrico", "columna_asimetrica", "pared_organica", "guirnalda", "racimo_pared",
 ]);
 
-const SIN_TEMATICA = /^(?:pendiente|por[ _-]?definir|sin definir|ninguna|no s[eé])$/i;
+/** Lo que no es un globo liso (impresos, Infinity, dos caras, balones, frases) no va en una pieza del plan guiado. */
+const GLOBO_NO_LISO = /impres|estampad|2 caras|dos caras|feliz|cumplea|happy|birthday|infinity|bal[oó]n|f[uú]tbol|\bcopa\b/i;
 
-function limpio(valor: string | undefined): string | undefined {
-  const texto = valor?.trim();
-  return texto && !SIN_TEMATICA.test(texto) ? texto : undefined;
-}
+/** Orden de globos lisos. Sin la palabra «látex»: en el texto del cliente bloquea la categoría en la búsqueda del catálogo. */
+const SOLO_LISOS = "Usa solo globos lisos de un solo color: nada estampado, impreso ni con dibujos, letras, números o frases.";
 
-function esCumpleanos(evento: string | undefined): boolean {
-  return Boolean(evento && /cumple/i.test(evento.normalize("NFD").replace(/[̀-ͯ]/g, "")));
-}
-
-function contextoEvento(brief: BriefPlanGuiado): string {
-  const evento = limpio(brief.evento) ?? "una celebración";
-  const edad = esCumpleanos(brief.evento) && brief.edad && brief.edad > 0 ? `, de ${brief.edad} años` : "";
-  const tematica = limpio(brief.tematica);
-  return `${evento}${edad}${tematica ? `, temática ${tematica}` : ""}`;
-}
+const REINTENTO = 'El intento anterior no sirvió: busca cada color en 5", 12" y 18", solo globos lisos de un solo color, y usa solo variantes con cobertura antes de confirmar.';
 
 function nombreOficial(estructura: EstructuraOficialId): string {
   return ESTRUCTURAS_OFICIALES[estructura].nombre;
@@ -44,40 +33,88 @@ function estructuraId(indice: number, estructura: EstructuraOficialId): string {
   return `EST_${String(indice + 1).padStart(2, "0")}_${estructura.toUpperCase()}`;
 }
 
-export function instruccionPlanGuiado(propuesta: PropuestaGuiada, brief: BriefPlanGuiado, opciones?: { reintento?: boolean; planAnterior?: PlanActualGuiado }): string {
+function listaColores(colores: readonly string[]): string[] {
+  return [...new Set(colores.map((color) => color.trim().toLocaleLowerCase("es")).filter((color) => color.length > 0))];
+}
+
+function lineaColores(colores: readonly string[]): string {
+  return `Colores: usa EXACTAMENTE estos colores: ${colores.join(", ")}; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color. Todos deben aparecer en el plan.`;
+}
+
+/**
+ * Instrucción con la que la vista guiada pide el plan a /api/chat. NO lleva el evento ni la temática: /api/chat toma este
+ * mensaje como lo que dijo el cliente y vuelve la ocasión un filtro duro del catálogo. Con «Cumpleaños» solo quedaban globos
+ * impresos de cumpleaños (balón de fútbol, copa dorada, «feliz cumpleaños»), todos de 12", y el arco orgánico salía de un
+ * solo tamaño (verificación del 2026-10-06: 4 de 4 planes de cumpleaños). Las piezas y los colores ya están decididos, y la
+ * imagen recibe el evento y la temática por su propio brief.
+ */
+export function instruccionPlanGuiado(propuesta: PropuestaGuiada, opciones?: { reintento?: boolean; planAnterior?: PlanActualGuiado }): string {
   const piezas = propuesta.piezas.map((pieza, indice) => `- ${pieza.cantidad} × ${nombreOficial(pieza.estructura)} (estructura_oficial: ${pieza.estructura}; estructura_id: ${estructuraId(indice, pieza.estructura)}; repeticiones: ${pieza.cantidad})`);
   const organicas = [...new Set(propuesta.piezas.filter((pieza) => ESTRUCTURAS_ORGANICAS.has(pieza.estructura)).map((pieza) => nombreOficial(pieza.estructura)))];
   const lineas = [
     "Resuelve ahora el plan exacto de esta decoración con confirmar_plan_decoracion. El cliente ya la eligió: no le preguntes nada ni le pidas que la acepte; confirma el plan en este mismo turno.",
     "Piezas (usa exactamente estas, con su estructura_oficial y su estructura_id):",
     ...piezas,
-    `Colores: usa EXACTAMENTE estos colores: ${propuesta.colores.join(", ")}; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color. Todos deben aparecer en el plan.`,
+    lineaColores(listaColores(propuesta.colores)),
     ...(organicas.length ? [`Mezcla de tamaños: en ${listaNatural(organicas)} mezcla al menos 3 tamaños (5", 12" y 18") de cada color; una pieza orgánica nunca va en un solo tamaño.`] : []),
-    "No pongas letras, números ni frases de globos.",
-    `Contexto: ${contextoEvento(brief)}.`,
+    SOLO_LISOS,
     // Sin describir el plan anterior: /api/chat lee las cantidades del texto como restricciones («2 columnas») y las volvía a
     // meter en un plan que el cliente pidió sin columnas (recorrido 2, 2026-10-06).
     ...(opciones?.planAnterior ? ["Es un cambio que pidió el cliente sobre su plan anterior: el plan nuevo lleva SOLO las piezas de esta lista, ni una más."] : []),
     "Cuando el plan quede confirmado, responde al cliente con una sola frase corta, sin repetir cantidades ni precios.",
-    ...(opciones?.reintento ? ['El intento anterior no se pudo confirmar: busca cada color en 5", 12" y 18" antes de confirmar y usa solo variantes con cobertura.'] : []),
+    ...(opciones?.reintento ? [REINTENTO] : []),
   ];
   return lineas.join("\n");
 }
 
-export function instruccionPlanFoto(opciones?: { reintento?: boolean }): string {
+/**
+ * «Sí, armémoslo» con una foto. `colores` son los que la lectura le mostró al cliente («Veo un arco en dorado, blanco, azul
+ * y rosa»): sin ellos el plan seguía al análisis crudo y perdía el azul que el cliente vio y aprobó.
+ */
+export function instruccionPlanFoto(opciones?: { reintento?: boolean; colores?: readonly string[] }): string {
+  const colores = listaColores(opciones?.colores ?? []);
   return [
     "Sí, armémoslo. Prepara el plan para reproducir las piezas de globos aprobadas en la foto y sus colores, usando la lectura de referencia, y confírmalo con confirmar_plan_decoracion en este mismo turno sin preguntarme nada.",
-    "No pongas letras, números ni frases de globos. Cuando el plan quede confirmado, responde con una sola frase corta, sin repetir cantidades ni precios.",
-    ...(opciones?.reintento ? ['El intento anterior no se pudo confirmar: busca cada color en 5", 12" y 18" antes de confirmar y usa solo variantes con cobertura.'] : []),
+    ...(colores.length ? [lineaColores(colores)] : []),
+    `${SOLO_LISOS} Cuando el plan quede confirmado, responde con una sola frase corta, sin repetir cantidades ni precios.`,
+    ...(opciones?.reintento ? [REINTENTO] : []),
   ].join("\n");
 }
 
-/** Brief de chat-v1 a partir de lo que ya sabe la vista guiada. Omite cadenas vacías: el briefSchema exige min(1). */
-export function briefChatGuiado(propuesta: PropuestaGuiada | null, brief: BriefPlanGuiado): { tipo_evento?: string; colores?: string[]; estilo?: string } {
-  const tipoEvento = limpio(brief.evento);
-  const estilo = limpio(brief.tematica);
-  const colores = propuesta?.colores.map((color) => color.trim()).filter((color) => color.length > 0) ?? [];
-  return { ...(tipoEvento ? { tipo_evento: tipoEvento } : {}), ...(colores.length ? { colores } : {}), ...(estilo ? { estilo } : {}) };
+/** Brief de chat-v1 del plan: solo los colores, sin evento ni temática (ver instruccionPlanGuiado). El briefSchema exige min(1). */
+export function briefChatGuiado(colores: readonly string[]): { colores?: string[] } {
+  const lista = listaColores(colores);
+  return lista.length ? { colores: lista } : {};
+}
+
+type LineaPlanRevisada = { titulo?: string; diam_pulg?: number | null; tamano_codigo?: string | null; unidades?: number };
+type PlanRevisado = {
+  plan?: { estructuras?: Array<{ estructura_id?: string; estructura_oficial?: string; nombre?: string }> };
+  estructuras?: Array<{ estructura_id?: string; lineas?: LineaPlanRevisada[] }>;
+  compras?: Array<{ titulo?: string }>;
+};
+
+/**
+ * Por qué un plan confirmado no sirve para la vista guiada (una pieza orgánica en un solo tamaño o globos que no son lisos),
+ * o null si sirve. No toca cantidades, que son de Python: solo decide si se gasta el reintento automático en pedirlo otra vez.
+ */
+export function defectoPlanGuiado(plan: unknown, cotizacion?: unknown): string | null {
+  if (!plan || typeof plan !== "object") return null;
+  const leido = plan as PlanRevisado;
+  for (const pieza of leido.plan?.estructuras ?? []) {
+    if (!esIdOficial(pieza.estructura_oficial) || !ESTRUCTURAS_ORGANICAS.has(pieza.estructura_oficial)) continue;
+    const lineas = leido.estructuras?.find((estructura) => estructura.estructura_id === pieza.estructura_id)?.lineas ?? [];
+    const tamanos = new Set(lineas.filter((linea) => (linea.unidades ?? 1) > 0).map((linea) => linea.diam_pulg ?? linea.tamano_codigo).filter((tamano) => tamano != null));
+    if (tamanos.size < 2) return `la pieza orgánica «${pieza.nombre ?? pieza.estructura_oficial}» salió en un solo tamaño`;
+  }
+  const lineasCotizacion = (cotizacion as { lineas?: Array<{ nombre?: unknown }> } | null | undefined)?.lineas ?? [];
+  const titulos = [
+    ...(leido.estructuras ?? []).flatMap((estructura) => estructura.lineas ?? []).map((linea) => linea.titulo),
+    ...(leido.compras ?? []).map((compra) => compra.titulo),
+    ...lineasCotizacion.map((linea) => linea.nombre),
+  ].filter((titulo): titulo is string => typeof titulo === "string");
+  const noLiso = titulos.find((titulo) => GLOBO_NO_LISO.test(titulo));
+  return noLiso ? `trae globos que no son lisos («${noLiso}»)` : null;
 }
 
 function numero(valor: number): string {

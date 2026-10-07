@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Check, ChevronLeft, ChevronRight, ImagePlus, Sparkles } from "lucide-react";
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
@@ -59,6 +59,13 @@ export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir
     carril.addEventListener("scroll", medir, { passive: true });
     window.addEventListener("resize", medir);
     return () => { cancelAnimationFrame(cuadro); carril.removeEventListener("scroll", medir); window.removeEventListener("resize", medir); };
+  }, [decoraciones]);
+
+  // Sin elegida, el carril arranca en la primera tarjeta: con ideas nuevas llegaba desplazado y la cortaba por la izquierda.
+  useLayoutEffect(() => {
+    const carril = carrilRef.current;
+    if (!carril || elegidaPreviaRef.current) return;
+    carril.scrollTo({ left: 0, behavior: "instant" });
   }, [decoraciones]);
 
   // Al elegir, el carril centra la elegida (sin mover la conversación en vertical).

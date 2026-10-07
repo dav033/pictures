@@ -39,7 +39,7 @@ import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/u
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
-import { briefChatGuiado, instruccionPlanFoto, instruccionPlanGuiado, planActualDesdePlan, resumenPlanGuiado } from "@/lib/ia/guiado/instruccion-plan";
+import { briefChatGuiado, defectoPlanGuiado, instruccionPlanFoto, instruccionPlanGuiado, planActualDesdePlan, resumenPlanGuiado } from "@/lib/ia/guiado/instruccion-plan";
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 
@@ -62,9 +62,8 @@ type OpcionesEnvio = { uso?: Uso; reintentar?: boolean; alcance?: "completa" | "
 /** Qué repite «Reintentar»: se guarda la acción (no un cierre) para ejecutarla con el estado del momento del clic. */
 type AccionFallo =
   | { tipo: "turno"; texto: string; opciones: OpcionesEnvio }
-  | { tipo: "plan"; propuesta: Propuesta; mensajeId: string; brief: BriefGuiado; planAnterior?: PlanActualGuiado }
+  | { tipo: "plan"; propuesta: Propuesta; mensajeId: string; planAnterior?: PlanActualGuiado }
   | { tipo: "foto"; referenciaId: string; mensajeId: string }
-  | { tipo: "imagen"; mensajeId: string }
   | { tipo: "subir-foto" };
 type AlternativaFallo = "otros-colores" | "otra-pieza";
 type Fallo = { titulo: string; detalle?: string; etiqueta?: string; accion: AccionFallo; alternativas?: AlternativaFallo[]; mensajeId?: string };
@@ -432,7 +431,6 @@ export function VistaGuiada() {
     pedirFinal();
 
     let propuestaParaPlan: Propuesta | null = null;
-    let briefEfectivo: BriefGuiado = brief;
     let accionModelo: z.infer<typeof AccionModeloSchema> | null = null;
     let etapa: "foto" | "turno" = "turno";
     try {
@@ -477,11 +475,10 @@ export function VistaGuiada() {
         const resultado = ResultadoSchema.safeParse(evento.result ?? {});
         if (!resultado.success) throw new Error("Los datos devueltos por el asistente no son válidos.");
         const datos = resultado.data;
-        if (datos.brief) { briefEfectivo = datos.brief; setBrief(datos.brief); }
+        if (datos.brief) setBrief(datos.brief);
         if (datos.uso) setUso(datos.uso);
         const widgets: Widget[] = [];
         if (datos.decoraciones?.length) widgets.push({ tipo: "decoraciones", decoraciones: datos.decoraciones });
-        if (datos.opciones && elegida) widgets.push({ tipo: "opciones" });
         if (datos.preguntaUso && elegida) widgets.push({ tipo: "uso" });
         const usoCotizado = datos.uso ?? usoEnvio;
         if (elegida && usoCotizado && datos.cotizacion !== undefined) {
@@ -490,12 +487,12 @@ export function VistaGuiada() {
           widgets.push({ tipo: "cotizacion", cotizacion: valida ? valida.data : null, uso: usoCotizado, decoracion: elegida });
         }
         if (datos.pasos && elegida) widgets.push({ tipo: "pasos", decoracion: elegida });
-        // Después del precio o de los pasos, las otras opciones siguen a mano.
-        if (elegida && widgets.some((widget) => widget.tipo === "cotizacion" || widget.tipo === "pasos") && !widgets.some((widget) => widget.tipo === "opciones")) widgets.push({ tipo: "opciones" });
         // Sin ciudad no hay directorio vacío: el modelo pregunta la ciudad.
         if (datos.proveedores && (datos.proveedores.length || datos.ciudadProveedores)) {
           widgets.push({ tipo: "proveedores", proveedores: datos.proveedores, ...(datos.ciudadProveedores ? { ciudad: datos.ciudadProveedores } : {}), ...(datos.ciudadesDisponibles?.length ? { ciudadesDisponibles: datos.ciudadesDisponibles } : {}) });
         }
+        // Las otras opciones van SIEMPRE al final: tras una guía larga o el precio, la siguiente acción queda debajo, a mano.
+        if (elegida && (datos.opciones || widgets.some((widget) => widget.tipo === "cotizacion" || widget.tipo === "pasos"))) widgets.push({ tipo: "opciones" });
         const accion = AccionModeloSchema.safeParse(datos.accionPlan);
         if (accion.success) accionModelo = accion.data;
         const textoFinal = evento.reply.slice(0, 6000);
@@ -516,7 +513,7 @@ export function VistaGuiada() {
       window.clearTimeout(reloj);
       setTransmitiendoId(null);
       if (accionModelo && planVigente && !(accionModelo === "ver" && planVigente.widget.reemplazado)) accionPlan(accionModelo, planVigente.mensajeId, "modelo");
-      if (propuestaParaPlan) await aceptarPropuesta(propuestaParaPlan, { mensajeId: idAsistente, brief: briefEfectivo, desdeTurno: true, ...(planAnterior ? { planAnterior } : {}) });
+      if (propuestaParaPlan) await aceptarPropuesta(propuestaParaPlan, { mensajeId: idAsistente, desdeTurno: true, ...(planAnterior ? { planAnterior } : {}) });
     } catch (causa) {
       if (turno !== turnoRef.current) return;
       cancelarFlujo();
@@ -542,13 +539,18 @@ export function VistaGuiada() {
   }
 
   // ── Plan con cantidades (/api/chat) ──────────────────────────────────────────────────────────────────────────
-  /** Pide el plan a /api/chat con un reintento automático. No toca los mensajes: eso lo hace quien llama. */
+  /**
+   * Pide el plan a /api/chat con un reintento automático. No toca los mensajes: eso lo hace quien llama. Un plan confirmado
+   * pero defectuoso (pieza orgánica de un solo tamaño, globos estampados) gasta ese reintento; si el segundo no llega, se
+   * queda el primero: un plan imperfecto es mejor que un error.
+   */
   async function ejecutarPlan(mensajeId: string, armarCuerpo: (reintento: boolean) => Record<string, unknown>, soloReintento: boolean): Promise<{ turno: number } & ({ estado: "ok"; plan: PlanGuiado; cotizacion: unknown } | { estado: "detenido" | "fallo" | "obsoleto" })> {
     const turno = ++turnoRef.current;
     const control = new AbortController();
     controlRef.current = control;
     marcarCargando(true);
     fijarEtapa(mensajeId, soloReintento ? "reintentando" : "preparando");
+    let respaldo: { plan: PlanGuiado; cotizacion: unknown } | null = null;
     for (const reintento of soloReintento ? [true] : [false, true]) {
       if (reintento && !soloReintento) fijarEtapa(mensajeId, "reintentando");
       const intento = new AbortController();
@@ -565,7 +567,13 @@ export function VistaGuiada() {
         });
         if (turno !== turnoRef.current) return { turno, estado: "obsoleto" };
         const plan = PlanGuiadoSchema.safeParse(respuesta.plan);
-        if (plan.success) return { turno, estado: "ok", plan: plan.data, cotizacion: respuesta.cotizacion };
+        if (plan.success) {
+          const defecto = reintento ? null : defectoPlanGuiado(plan.data, respuesta.cotizacion);
+          if (!defecto) return { turno, estado: "ok", plan: plan.data, cotizacion: respuesta.cotizacion };
+          console.warn("[asistente-guiado] el plan no cumple la guía; se pide otra vez", { defecto });
+          respaldo = { plan: plan.data, cotizacion: respuesta.cotizacion };
+          continue;
+        }
         // La respuesta del agente clásico trae jerga: solo a la consola.
         console.warn("[asistente-guiado] el plan no llegó confirmado", { intento: reintento ? 2 : 1, respuesta: respuesta.reply.slice(0, 600) });
       } catch (causa) {
@@ -577,7 +585,7 @@ export function VistaGuiada() {
         control.signal.removeEventListener("abort", cortar);
       }
     }
-    return { turno, estado: "fallo" };
+    return respaldo ? { turno, estado: "ok", ...respaldo } : { turno, estado: "fallo" };
   }
 
   function terminarPlan(turno: number, mensajeId: string): void {
@@ -611,24 +619,23 @@ export function VistaGuiada() {
     setAnuncio("Tu plan está listo");
   }
 
-  async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; brief: BriefGuiado; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado }): Promise<void> {
+  async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado }): Promise<void> {
     if (cargandoRef.current && !opciones.desdeTurno) return;
     const { mensajeId, planAnterior } = opciones;
-    const briefPlan = opciones.brief;
     setFallo(null);
     setSeleccionada(null); setUso(null);
     actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: propuesta.frase, widgets: [{ tipo: "propuesta", propuesta, estado: "resolviendo" }] }));
     const armar = (reintento: boolean) => ({
       schema_version: "chat.v1",
-      messages: [{ role: "user", content: instruccionPlanGuiado(propuesta, briefPlan, { reintento, ...(planAnterior ? { planAnterior } : {}) }) }],
-      brief: briefChatGuiado(propuesta, briefPlan),
+      messages: [{ role: "user", content: instruccionPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}) }) }],
+      brief: briefChatGuiado(propuesta.colores),
     });
     const resultado = await ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento));
     if (resultado.estado === "obsoleto") return;
     if (resultado.estado === "ok") colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, false);
     else {
       actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: "fallo" }] }));
-      const accion: AccionFallo = { tipo: "plan", propuesta, mensajeId, brief: briefPlan, ...(planAnterior ? { planAnterior } : {}) };
+      const accion: AccionFallo = { tipo: "plan", propuesta, mensajeId, ...(planAnterior ? { planAnterior } : {}) };
       setFallo(resultado.estado === "detenido"
         ? { titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion, mensajeId }
         : { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion, alternativas: ["otros-colores", "otra-pieza"], mensajeId });
@@ -656,10 +663,11 @@ export function VistaGuiada() {
       pedirFinal();
     }
     const idPlan = mensajeId;
+    const colores = referencia.colores.map((color) => color.nombre);
     const armar = (reintento: boolean) => ({
       schema_version: "chat.v1",
-      messages: [{ role: "user", content: instruccionPlanFoto({ reintento }) }],
-      brief: briefChatGuiado(null, brief),
+      messages: [{ role: "user", content: instruccionPlanFoto({ reintento, colores }) }],
+      brief: briefChatGuiado(colores),
       ...(imagen ? { imagenesReferencia: [imagen] } : {}),
       referenceBlueprint: referencia.blueprint,
     });
@@ -713,8 +721,8 @@ export function VistaGuiada() {
     } catch (causa) {
       if (sesion !== sesionRef.current) return;
       console.warn("[asistente-guiado] no se pudo dibujar la decoración", causa);
+      // Sin tarjeta de error aparte: la del plan ya dice «No pude dibujarla esta vez» y su botón principal es «Reintentar imagen».
       actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: true }));
-      setFallo({ titulo: "No pude dibujarla esta vez", detalle: "Tu plan sigue guardado.", etiqueta: "Reintentar imagen", accion: { tipo: "imagen", mensajeId }, mensajeId });
       setAnuncio("No pude dibujar la imagen");
     } finally {
       window.clearTimeout(reloj);
@@ -905,9 +913,8 @@ export function VistaGuiada() {
   function reintentar(accion: AccionFallo): void {
     switch (accion.tipo) {
       case "turno": void enviar(accion.texto, { ...accion.opciones, reintentar: true }); return;
-      case "plan": void aceptarPropuesta(accion.propuesta, { mensajeId: accion.mensajeId, brief: accion.brief, ...(accion.planAnterior ? { planAnterior: accion.planAnterior } : {}) }); return;
+      case "plan": void aceptarPropuesta(accion.propuesta, { mensajeId: accion.mensajeId, ...(accion.planAnterior ? { planAnterior: accion.planAnterior } : {}) }); return;
       case "foto": void aceptarPlanFoto(accion.referenciaId, { mensajeId: accion.mensajeId }); return;
-      case "imagen": void verComoQuedaria(accion.mensajeId); return;
       case "subir-foto": setFallo(null); archivoRef.current?.click(); return;
     }
   }
@@ -933,7 +940,9 @@ export function VistaGuiada() {
     const mensajeId = mensaje.id;
     switch (widget.tipo) {
       case "decoraciones": {
-        const elegidaId = widget.elegidaId ?? (seleccionada && widget.decoraciones.some((decoracion) => decoracion.id === seleccionada.id) ? seleccionada.id : null);
+        // Solo la elegida EN ESTE carrusel: con «otras ideas» que repetían la ya elegida, el carrusel nuevo salía marcado y sin
+        // botones (ni «Me gusta esta» ni las salidas de abajo), un callejón sin salida.
+        const elegidaId = widget.elegidaId ?? null;
         return <CarruselDecoraciones key={clave} decoraciones={widget.decoraciones} activo={activo && !elegidaId} elegidaId={elegidaId} onElegir={(decoracion) => elegirDecoracion(decoracion, mensajeId)} onNinguna={ningunaMeConvence} onProponer={() => void enviar(PROPONME)} onSubirFoto={() => archivoRef.current?.click()} />;
       }
       case "seleccion":
@@ -1001,7 +1010,7 @@ export function VistaGuiada() {
     const falloPropio = fallo?.mensajeId === mensaje.id ? fallo
       // Tras recargar a mitad de un plan no hay fallo guardado: se deriva para que siempre haya un «Reintentar».
       : !fallo && indice === indiceActivo && propuestaFallida?.tipo === "propuesta" && !cargando
-        ? { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion: { tipo: "plan", propuesta: propuestaFallida.propuesta, mensajeId: mensaje.id, brief, ...(planVigente ? { planAnterior: planActualDesdePlan(planVigente.widget.plan) ?? undefined } : {}) }, alternativas: ["otros-colores", "otra-pieza"] } satisfies Fallo
+        ? { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion: { tipo: "plan", propuesta: propuestaFallida.propuesta, mensajeId: mensaje.id, ...(planVigente ? { planAnterior: planActualDesdePlan(planVigente.widget.plan) ?? undefined } : {}) }, alternativas: ["otros-colores", "otra-pieza"] } satisfies Fallo
         : null;
     return <>
       {texto.trim()

@@ -74,14 +74,26 @@ export function generarPasosPlan(planGuardado: unknown): { pasos: PasoPlanGuiado
   const pasos: PasoPlanGuiado[] = [{ orden: 1, texto: `Prepara el soporte y los materiales. En total son ${total} globos: ${listaGlobos}.`, globos: listaGlobos }];
   pasos.push({ orden: 2, texto: "Infla cada globo a su tamaño y sepáralos por color y tamaño antes de empezar a armar." });
   for (const pieza of plan.plan.estructuras) {
-    const armado = detalleArmado(pieza);
-    const medidas = [pieza.medidas.ancho_m && `${pieza.medidas.ancho_m} m de ancho`, pieza.medidas.alto_m && `${pieza.medidas.alto_m} m de alto`, pieza.medidas.largo_m && `${pieza.medidas.largo_m} m de largo`].filter(Boolean).join(" por ");
-    const globosPieza = textoGlobos(globosDePieza(pieza.estructura_id));
+    const globosDeEsta = globosDePieza(pieza.estructura_id);
+    const tamanos = [...new Set(globosDeEsta.map((globo) => globo.tamano).filter((tamano) => tamano.endsWith('"')))].sort((a, b) => Number.parseFloat(a) - Number.parseFloat(b));
+    const armado = detalleArmado(pieza, tamanos);
+    const medidas = [pieza.medidas.ancho_m && `${metros(pieza.medidas.ancho_m)} m de ancho`, pieza.medidas.alto_m && `${metros(pieza.medidas.alto_m)} m de alto`, pieza.medidas.largo_m && `${metros(pieza.medidas.largo_m)} m de largo`].filter(Boolean).join(" por ");
+    const globosPieza = textoGlobos(globosDeEsta);
     pasos.push({ orden: pasos.length + 1, texto: `Arma ${pieza.nombre}${pieza.repeticiones > 1 ? ` (${pieza.repeticiones} piezas)` : ""}${medidas ? `, de ${medidas}` : ""}. ${armado}`, ...(globosPieza ? { globos: globosPieza } : {}) });
   }
   pasos.push({ orden: pasos.length + 1, texto: "Monta las piezas en su lugar y fija cada una a su soporte antes de seguir con la siguiente." });
   pasos.push({ orden: pasos.length + 1, texto: "Ajusta los amarres, oculta los soportes y revisa que todo quede firme y en su sitio." });
   return { pasos, globos, total, guias };
+}
+
+/** Medida para el cliente, con coma decimal: 1,5 (nunca «1.5»). */
+function metros(valor: number): string {
+  return String(Math.round(valor * 100) / 100).replace(".", ",");
+}
+
+/** «5", 12" y 18"». */
+function listaTamanos(tamanos: readonly string[]): string {
+  return tamanos.length > 1 ? `${tamanos.slice(0, -1).join(", ")} y ${tamanos.at(-1)}` : tamanos[0] ?? "";
 }
 
 function idOficialPorTipo(tipo: string, nombre: string): string {
@@ -100,7 +112,8 @@ function idOficialPorTipo(tipo: string, nombre: string): string {
   return "";
 }
 
-function detalleArmado(pieza: Record<string, unknown>): string {
+/** `tamanos`: los de los globos de la pieza según Python ('12"'); mandan sobre la mezcla teórica del armado. */
+function detalleArmado(pieza: Record<string, unknown>, tamanos: readonly string[]): string {
   const columna = pieza.armado_columna;
   if (columna && typeof columna === "object") {
     const armado = columna as { modo?: string; patron?: string; capas?: unknown[]; remate?: { tipo?: string } };
@@ -117,8 +130,11 @@ function detalleArmado(pieza: Record<string, unknown>): string {
   if (organic && typeof organic === "object") {
     const armado = organic as { volumen?: { racimo?: number }; tamanos?: { mezcla?: Record<string, number> }; corona?: { activa?: boolean } };
     const racimo = armado.volumen?.racimo;
-    const tamanos = Object.entries(armado.tamanos?.mezcla ?? {}).filter(([, peso]) => peso > 0).map(([tamano]) => Number(tamano)).filter(Number.isFinite);
-    return [racimo ? `forma racimos de ${racimo} globos` : "forma racimos pequeños", tamanos.length ? `mezcla los tamaños (${[...new Set(tamanos)].map((n) => `${n}"`).join(", ")})` : "mezcla los tamaños que separaste antes", armado.corona?.activa ? "coloca la corona de globos" : ""]
+    const teoricos = [...new Set(Object.entries(armado.tamanos?.mezcla ?? {}).filter(([, peso]) => peso > 0).map(([tamano]) => Number(tamano)).filter(Number.isFinite))].map((n) => `${n}"`);
+    const usados = tamanos.length ? tamanos : teoricos;
+    // «Mezcla» solo con dos tamaños o más: con uno solo decía «mezcla los tamaños (12")».
+    const mezcla = usados.length > 1 ? `mezcla los tamaños (${listaTamanos(usados)})` : usados.length === 1 ? `usa los globos de ${usados[0]}` : "";
+    return [racimo ? `forma racimos de ${racimo} globos` : "forma racimos pequeños", mezcla, armado.corona?.activa ? "coloca la corona de globos" : ""]
       .filter(Boolean).join("; ").replace(/^./, (letra) => letra.toLocaleUpperCase("es")) + ".";
   }
   const guirnalda = pieza.armado_guirnalda;

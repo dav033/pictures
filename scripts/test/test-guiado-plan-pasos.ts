@@ -50,6 +50,16 @@ async function main() {
   assert.deepEqual(negro.globos, [{ color: "negro", tamano: "12\"", cantidad: 69 }, { color: "dorado", tamano: "5\"", cantidad: 10 }]);
   assert.ok(negro.pasos[0]?.texto.includes("69 globos negros de 12\""), negro.pasos[0]?.texto);
   assert.equal(negro.pasos[2]?.globos, "69 globos negros de 12\", 10 globos dorados de 5\"");
+  // «Mezcla los tamaños» solo con dos o más (los que Python resolvió), y las medidas con coma decimal.
+  const organico = (lineas: Array<{ color: string; diam_pulg: number; unidades: number }>) => generarPasosPlan({
+    plan: { concepto: {}, estructuras: [{ estructura_id: "EST_01", nombre: "Arco orgánico", tipo: "arco", estructura_oficial: "arco_asimetrico", repeticiones: 1, medidas: { ancho_m: 1.5, alto_m: 2.25 }, armado_arco_organico: { volumen: { racimo: 4 }, tamanos: { mezcla: { 5: 0.2, 12: 0.6, 18: 0.2 } } } }] },
+    estructuras: [{ estructura_id: "EST_01", lineas }],
+  }).pasos[2]!.texto;
+  const unTamano = organico([{ color: "rosado", diam_pulg: 12, unidades: 47 }, { color: "dorado", diam_pulg: 12, unidades: 36 }]);
+  assert.ok(unTamano.includes("usa los globos de 12\"") && !/mezcla/i.test(unTamano), unTamano);
+  assert.ok(unTamano.includes("de 1,5 m de ancho por 2,25 m de alto") && !/\d\.\d/.test(unTamano), unTamano);
+  const variosTamanos = organico([{ color: "rosado", diam_pulg: 18, unidades: 4 }, { color: "rosado", diam_pulg: 5, unidades: 20 }, { color: "dorado", diam_pulg: 12, unidades: 36 }]);
+  assert.ok(variosTamanos.includes("mezcla los tamaños (5\", 12\" y 18\")"), variosTamanos);
   console.log(`OK: ${OPCIONES_GUIADAS.find((opcion) => opcion.id === "aprender")?.titulo}; ${resultado.pasos.length} pasos, ${resultado.total} globos resueltos.`);
 }
 
