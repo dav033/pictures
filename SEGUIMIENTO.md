@@ -16,34 +16,33 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 95, 2026-10-06 ~23:10
+## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 100, 2026-10-06 ~23:30
 
-**En `main` (Vercel): 38b10c0** — piezas individuales («Columna izquierda/derecha»; quitar pieza/añadir color sin cambiar el resto),
-gráfica del clásico en cada pieza + «Modificar esta pieza», tabla de «Ver detalle», materiales con miniaturas de globos, lectura de
-foto detallada, imagen fiel a las piezas, paridad del cuerpo de /api/generate con la clásica, globos a granel (negocio). Antes: opciones
-sin «no encontré» (9d9243d), 11 fotos nuevas = 46 decoraciones (71a9aed), «Ajustar mi plan» (93b2c84), registro-2 (350ae58).
-**VPS atrasado en e447cfe**: el granel (Python) y el lector (si toca Python) exigen desplegarlo → avisar al dueño antes.
-**Decisión pendiente del dueño:** encender `ARMADO_ARCO_COLUMNA_V1` en producción (sin él la columna orgánica no trae armado → la guía de
-escena falla en las dos vistas; cambia la cotización).
+**En `main` (Vercel): ba7be2d** — lectura de foto fiel e igual en las dos vistas (colores/acabados/transparentes; banco 4/11 → 9/11
+fotos con todos los colores). Antes: 38b10c0 (piezas individuales, gráfica del clásico, tabla de detalle, materiales con globos,
+paridad del cuerpo de /api/generate, granel), 9d9243d, 71a9aed, 93b2c84, 350ae58.
+**VPS atrasado en e447cfe**: el granel (Python) exige desplegarlo → avisar al dueño antes. **Decisión pendiente del dueño:**
+`ARMADO_ARCO_COLUMNA_V1` en producción (sin él la columna orgánica no trae armado y la guía de escena falla).
 
-**TOPE DE CONCURRENCIA: 6 agentes a la vez** (no limita la cantidad; lo demás se encola). Corriendo ahora (6):
-| Workflow | Agente(s) | Qué hace |
+**Hecho sin subir (esperando a que terminen imagen-fiel y arreglos-p88, que tocan los mismos archivos):** C «Agregar al plan» (idea →
+piezas individuales al plan, 44 → 116 globos en la prueba) y B2 tarjeta de idea amplia con productos Sempertex + detalles-ideas.json.
+
+**TOPE DE CONCURRENCIA 6.** Corriendo (6):
+| Workflow | Agente | Qué hace |
 |---|---|---|
-| `wf_de9b969f-a93` encargo grande | C, B2 (luego verificador + corrector) | C «Agregar al plan»; B2 tarjeta de idea amplia con productos Sempertex y detalles-ideas.json |
-| `wf_ab26d084-638` | lector (luego banco) | arreglar la lectura de fotos; banco de calidad con las 10 fotos de ejemplo (clásica vs guiada, listón > 50 %) |
-| `wf_082f0093-f2d` | integrador (auditores terminados) | aplica las correcciones de las 31 decoraciones (productos Sempertex reales, remates > 12") y re-resuelve con Python |
-| `wf_a965f0c6-7c6` | imagen-fiel | rehacer el plan sin perder la foto; prompt sin hex; colores en su proporción (≤3 imágenes) |
-| `wf_6cee3065-f7f` | probador 88 | ritmo: probar la guiada (solo informa) |
+| `wf_de9b969f-a93` | verificador:1 (luego corrector) | verifica en el navegador todo el encargo grande |
+| `wf_ab26d084-638` | banco | banco de calidad: 10 fotos de ejemplo por clásica y guiada, juez, línea base (≤ US$1,50) |
+| `wf_082f0093-f2d` | integrador | aplica la auditoría de las 31 decoraciones (productos reales, remates > 12") y re-resuelve con Python |
+| `wf_a965f0c6-7c6` | imagen-fiel | rehacer sin perder la foto; prompt sin hex; colores en su proporción |
+| `wf_92643c73-23a` | arreglos-p88 | ráfagas de dibujos (motor_ocupado), brief al cambiar de idea, temáticas sin decoración, total por chat, nombres de color |
+| `wf_ec5c4863-f6a` | usabilidad:97 | ritmo (solo informa) |
 
-**Cola (por prioridad):**
-1. (LANZADO 23:05 como `wf_a965f0c6-7c6`) Arreglo de imagen: «Cambiar algo»/«Hazla más sencilla» rehacen el plan SIN la foto (pierde escenografía y forma → salió el arco con
-   cintas); en el prompt se cuelan códigos hex y el orden de colores no sigue la proporción (azul marino de más).
-2. `scratchpad/wf-editor.js`: globos libres además del %, chips dentro del editor, reemplazar/añadir colores del catálogo, inputs de
-   negocio bonitos, ayudas (tooltips 8-12) + verificador + corrector (tras C/B2, que tocan VistaGuiada/TarjetaEleccion).
-3. Ritmo atrasado: usabilidad (85, 90), verificador (84), comparador (84, 90).
+**Cola:** 1) `scratchpad/wf-editor.js` (globos libres, chips en el editor, colores del catálogo, inputs de negocio, ayudas, + jerga y
+doble scroll de «Modificar pieza» y las tres cifras de globos) — 2 agentes en paralelo; 2) ritmo atrasado: comparador (100),
+verificador (98), probador (100); 3) Python (exige VPS): cotización que repite líneas y no optimiza la mezcla de paquetes (50+20+12).
 
-**Plan siguiente:** subir a main cada frente al terminar (commit selectivo + tsc en e3-verif + pruebas); repetir el banco de calidad
-tras lector + arreglo de imagen para confirmar > 50 % bien de forma consistente; preparar el despliegue del VPS y pedir permiso.
+**Plan siguiente:** al terminar imagen-fiel + arreglos-p88 → subir C, B2 y ambos juntos (tsc en e3-verif + pruebas); al terminar el
+verificador/corrector del encargo → subir sus correcciones; lanzar el editor; repetir el banco tras los arreglos de imagen.
 <!-- ESTADO-VIVO:FIN -->
 
 ## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
