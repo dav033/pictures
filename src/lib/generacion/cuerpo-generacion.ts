@@ -94,7 +94,8 @@ export function fuentesDelPlan(plan: PlanParaGenerar): { productIds: string[]; r
  * - ajuste: `previousGeneratedImage` solo con ajuste e imagen previa; `revisionInstruction` solo con imagen previa.
  *
  * Diferencias que quedan entre vistas, a propósito: `brief` y `solicitudUsuario` son los de la conversación de cada una
- * (la escena prefiere `original_request` del plan firmado, así que la solicitud casi nunca decide nada), y la guiada no
+ * (la escena prefiere `original_request` del plan firmado, así que la solicitud casi nunca decide nada; en las dos son
+ * las palabras del cliente: la guiada las arma con `entradaImagenGuiada`, contexto-cliente.ts), y la guiada no
  * tiene foto del espacio, selector de creatividad, interruptor de escenografía ni ajustes sobre la imagen.
  */
 export function cuerpoGeneracion<P extends PlanParaGenerar, B>(entrada: EntradaCuerpoGeneracion<P, B>): CuerpoGeneracion<P, B> {

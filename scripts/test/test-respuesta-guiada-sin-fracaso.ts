@@ -85,6 +85,30 @@ assert.ok(ideasGuiadas({ evento: "baby shower", tematica: "niño" }).ideas.every
 // Las temáticas del evento con ideas son las que el estado ofrece al modelo.
 assert.ok(tematicasDisponibles("baby shower").some((tematica) => ideasRealesDeOpcion(tematica, { evento: "baby shower" }) > 0));
 
+// ── Regresión real (usabilidad 97, registro 41f332fb): la pregunta de la edad nunca se rellena con estilos ───────────
+// «¡Qué gran motivo para celebrar!» (con «motivo») volvía «de estilo» la pregunta de la edad: el saneo metía 4 estilos y el
+// recorte a 6 se comía «7 a 12 años | Adolescente | Adulto». Una mamá con una hija de 9 años se quedaba sin botón.
+const crudoEdad = "¡Qué gran motivo para celebrar! ¿Cuántos años cumple el o la festejada?\nOpciones: 1 a 3 años | 4 a 6 años | 7 a 12 años | Adolescente | Adulto";
+for (const contextoEdad of [
+  { evento: "cumpleaños", generosValidos: ["nino", "nina", "neutro"], aplicar: true, ideasEnTurno: 0 },
+  { evento: "cumpleaños", generosValidos: ["nino", "nina", "neutro"], aplicar: true, ideasEnTurno: 0, contarIdeas: () => 0 },
+  { generosValidos: ["nino", "nina"], aplicar: true, ideasEnTurno: 0 },
+] satisfies ContextoRespuesta[]) {
+  const edad = sanearRespuestaGuiada(crudoEdad, contextoEdad);
+  assert.equal(edad.texto, crudoEdad, `la pregunta de la edad queda intacta: ${edad.texto}`);
+  assert.deepEqual(opcionesDe(edad.texto), ["1 a 3 años", "4 a 6 años", "7 a 12 años", "Adolescente", "Adulto"]);
+  assert.equal(edad.opciones?.anadidas.length ?? 0, 0, "sin estilos añadidos");
+  assert.ok(edad.opciones?.evaluadas.every((evaluada) => evaluada.tipo === "flujo" && evaluada.ideas === null), "las edades no se validan contra la biblioteca");
+}
+// Aunque la pregunta no diga «años», si las opciones son edades tampoco se rellena (y una que nombra algo no es «de estilo»).
+const edadSinAnos = "¿Para quién es la fiesta? ¡Me encanta el motivo!\nOpciones: Bebé | 1 a 3 años | Adolescente | Adulto";
+assert.equal(sanearRespuestaGuiada(edadSinAnos, cumple6).texto, edadSinAnos);
+const edadPrincesa = "¿Cuántos años cumple la princesa de la casa?\nOpciones: 1 a 3 años | 4 a 6 años | 7 a 12 años";
+assert.equal(sanearRespuestaGuiada(edadPrincesa, { ...cumple6, ideasEnTurno: 0 }).texto, edadPrincesa);
+// Y una pregunta de estilo con opciones de flujo no pierde las de flujo en el recorte al rellenar.
+const estiloConFlujo = validarOpcionesReales("¿Qué temática te gusta?\nOpciones: Videojuegos | Otra idea | Tengo una foto de inspiración | No sé todavía | Sorpréndeme", { evento: "cumpleaños", edad: 6 });
+assert.ok(["Otra idea", CHIP_FOTO_GUIADA, "No sé todavía", "Sorpréndeme"].every((opcion) => opcionesDe(estiloConFlujo.texto).includes(opcion)), estiloConFlujo.texto);
+
 // ── Lo que se transmite mientras el modelo escribe ya va saneado ─────────────────────────────────────────────────────
 const filtro = new FiltroFlujoGuiado(() => babyShower(["nino", "nina"]));
 const transmitido = ["No encontré ideas ex", "actas para un estilo neutro. ¿Te gustaría probar", " con beige o blanco?\n\nOpci", "ones: Beige | Blanco"].map((delta) => filtro.empujar(delta)).join("");

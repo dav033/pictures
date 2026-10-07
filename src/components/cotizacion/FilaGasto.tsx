@@ -7,6 +7,8 @@ import { filaEnBlanco, type ErroresFila, type FilaCosto } from "@/lib/cotizacion
 import type { SeccionCosto } from "@/lib/cotizacion/profesional";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 import { DUR, EASE_SALIDA } from "@/components/guiado/animacion/movimiento";
+import { AYUDAS } from "@/components/guiado/ayudas-guiada";
+import { Ayuda } from "@/components/ui/Ayuda";
 import { MensajesDeError, useEscrituraPesos } from "./Campo";
 import { CONCEPTOS_GASTO, EJEMPLO_VALOR, faltaEnFila, pasoCantidad } from "./conceptos-gasto";
 import { CLASE_NO_VIGENTE } from "./formato";
@@ -31,6 +33,8 @@ type Props = {
   onPaso: (sentido: 1 | -1, texto: string) => void;
   onQuitar: () => void;
   onSalir: () => void;
+  /** El «?» de «Valor por unidad» (solo en la primera fila del precio). */
+  ayudaValor?: boolean;
 };
 
 const CAMPO_BASE = "h-11 rounded-lg border text-[15px] text-texto outline-none transition-colors placeholder:text-[13px] placeholder:font-normal placeholder:text-texto-tenue";
@@ -49,7 +53,7 @@ function alSiguiente(evento: KeyboardEvent<HTMLInputElement>, siguiente: string)
  * total, que es el de Python y cuenta hasta el nuevo valor. Lo que falta se
  * sugiere mientras se escribe y se marca en rojo al salir de la fila.
  */
-export function FilaGasto({ seccion, base, titulo, fila, errores, tocada, subtotal, atenuar, onCambiar, onConcepto, onPaso, onQuitar, onSalir }: Props) {
+export function FilaGasto({ seccion, base, titulo, fila, errores, tocada, subtotal, atenuar, onCambiar, onConcepto, onPaso, onQuitar, onSalir, ayudaValor = false }: Props) {
   const { ref: refCosto, eco, alCambiar: alCambiarCosto } = useEscrituraPesos(fila.costo, (texto) => onCambiar({ costo: texto }, "costo"));
   const enBlanco = filaEnBlanco(fila);
   // Un campo vacío de una fila a medias se marca al salir de la fila; uno mal escrito, en cuanto se ve.
@@ -127,7 +131,15 @@ export function FilaGasto({ seccion, base, titulo, fila, errores, tocada, subtot
 
         <div className="mt-0.5 flex items-end gap-2 px-0.5 pb-0.5">
           <div className="min-w-0 flex-1 @xl:max-w-60">
-            <label htmlFor={id("costo")} className="mb-0.5 block px-1 text-[11px] font-medium text-texto-suave">Valor por unidad</label>
+            {ayudaValor ? (
+              <span className="mb-0.5 flex items-center gap-1 px-1">
+                <label htmlFor={id("costo")} className="block text-[11px] font-medium text-texto-suave">Valor por unidad</label>
+                {/* -my-1: el icono no agranda la línea de la etiqueta (las dos casillas siguen alineadas). */}
+                <Ayuda {...AYUDAS.valorUnidad} className="-my-1" />
+              </span>
+            ) : (
+              <label htmlFor={id("costo")} className="mb-0.5 block px-1 text-[11px] font-medium text-texto-suave">Valor por unidad</label>
+            )}
             <div className="relative">
               <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[15px] font-semibold text-texto-tenue">$</span>
               <input

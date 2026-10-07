@@ -39,8 +39,8 @@ export type DependenciasAjuste = {
   aplicar: (base: PlanGuiado, edicion: EdicionPlan) => Promise<PlanFirmado>;
   /** Quita UNA pieza del plan firmado; las demás quedan como estaban. */
   quitarPieza: (base: PlanGuiado, estructuraId: string) => Promise<PlanFirmado>;
-  /** Añade un color a las piezas que lo admiten, con sus medidas intactas. */
-  agregarColor: (base: PlanGuiado, globo: GloboElegido) => Promise<PlanFirmado>;
+  /** Añade un color a las piezas que lo admiten (o solo a `estructuraIds`), con sus medidas intactas. */
+  agregarColor: (base: PlanGuiado, globo: GloboElegido, estructuraIds?: readonly string[]) => Promise<PlanFirmado>;
   /** Cambia un color por otro globo del catálogo en todas sus medidas (las demás cosas quedan igual). */
   reemplazarColor?: (base: PlanGuiado, cambio: Extract<CambioPlan, { tipo: "reemplazar-color" }>) => Promise<PlanFirmado>;
   /** Globos del catálogo de un color (búsqueda del explorador de la clásica). */
@@ -84,9 +84,9 @@ export function quitarPiezaEnServidor(base: PlanGuiado, estructuraId: string, fe
   return pedirAlServidor({ modo: "quitar_pieza", base, estructura_id: estructuraId }, fetcher);
 }
 
-/** «Añadir un color» por `/api/plan-editar` (`modo: "agregar_color"`): sin modelo. */
-export function agregarColorEnServidor(base: PlanGuiado, globo: GloboElegido, fetcher?: typeof fetch): Promise<PlanFirmado> {
-  return pedirAlServidor({ modo: "agregar_color", base, color: globo.color, product_id: globo.productId, variant_ids: globo.variantIds }, fetcher);
+/** «Añadir un color» por `/api/plan-editar` (`modo: "agregar_color"`): sin modelo. Con `estructuraIds`, solo en esas piezas. */
+export function agregarColorEnServidor(base: PlanGuiado, globo: GloboElegido, fetcher?: typeof fetch, estructuraIds?: readonly string[]): Promise<PlanFirmado> {
+  return pedirAlServidor({ modo: "agregar_color", base, color: globo.color, product_id: globo.productId, variant_ids: globo.variantIds, ...(estructuraIds?.length ? { estructura_ids: [...estructuraIds] } : {}) }, fetcher);
 }
 
 /** «Cambiar» un color por otro globo del catálogo por `/api/plan-editar` (`modo: "reemplazar_color"`): sin modelo. */
@@ -219,14 +219,15 @@ export async function ejecutarCambio(cambio: CambioPlan, base: PlanGuiado, depen
       const presentes = coloresDelPlan(base);
       const color = cambio.color.trim().toLocaleLowerCase("es");
       // Con un globo elegido, lo que no se repite es ESE globo (otro blanco, perlado, junto al de siempre sí entra).
+      const destino = cambio.estructuraIds?.length ? base.plan.estructuras.filter((estructura) => cambio.estructuraIds!.includes(estructura.estructura_id)) : base.plan.estructuras;
       const repetido = cambio.globo
-        ? base.plan.estructuras.every((estructura) => estructura.materiales.some((material) => material.product_id === cambio.globo!.productId && (material.color ?? "").toLocaleLowerCase("es") === color))
+        ? destino.every((estructura) => estructura.materiales.some((material) => material.product_id === cambio.globo!.productId && (material.color ?? "").toLocaleLowerCase("es") === color))
         : presentes.includes(color);
       if (repetido) throw new FalloPlanEditar(cambio.globo ? "Tus piezas ya llevan ese globo. Elige otro, o cambia un color con «Cambiar»." : "Tu plan ya lleva ese color. Para otro tono, usa «Cambiar» en ese color.");
       const motivo = motivoSinColorNuevo(base);
       if (motivo) throw new FalloPlanEditar(motivo);
       // El globo elegido en el catálogo va tal cual, con todos sus tamaños.
-      if (cambio.globo) return dependencias.agregarColor(base, { productId: cambio.globo.productId, variantId: cambio.globo.variantIds[0]!, variantIds: cambio.globo.variantIds, color: cambio.globo.color });
+      if (cambio.globo) return dependencias.agregarColor(base, { productId: cambio.globo.productId, variantId: cambio.globo.variantIds[0]!, variantIds: cambio.globo.variantIds, color: cambio.globo.color }, cambio.estructuraIds);
       // Sin elegir globo: que exista uno liso de ese color (una búsqueda, sin modelo), con todos sus tamaños.
       const candidatos = await dependencias.buscar(cambio.color, base.approval_token);
       const globo = elegirGloboLiso(candidatos, cambio.color, null);
@@ -234,7 +235,7 @@ export async function ejecutarCambio(cambio: CambioPlan, base: PlanGuiado, depen
         dependencias.alDescartarColor?.(cambio.color);
         throw new FalloPlanEditar(sinGloboLiso(cambio.color));
       }
-      return dependencias.agregarColor(base, globo);
+      return dependencias.agregarColor(base, globo, cambio.estructuraIds);
     }
     case "quitar-pieza":
       exigir(planSinPieza(base.plan, cambio.estructuraId), "Esa pieza no se puede quitar: tu plan necesita al menos una.");

@@ -5,7 +5,9 @@ import { motion, useReducedMotion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { IconoEstructura } from "@/components/plan/IconoEstructura";
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { Ayuda } from "@/components/ui/Ayuda";
 import { CifraAnimada } from "./ajuste/AjustarPlan";
+import { AYUDAS } from "./ayudas-guiada";
 import { DUR, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 import { GloboMiniatura } from "./GloboMiniatura";
 import { tablaGlobos, type LineaGlobo, type PiezaVista, type TablaGlobos } from "./piezas-vista";
@@ -43,7 +45,8 @@ function useDesborde(ref: RefObject<HTMLDivElement | null>): { hay: boolean; alF
   return estado;
 }
 
-export function TablaGlobosPieza({ titulo, oficial, tabla, repeticiones = 1 }: { titulo: string; oficial: EstructuraOficialId | null; tabla: TablaGlobos; repeticiones?: number }) {
+/** `ayuda`: el «?» que explica cómo se lee la tabla (solo en la primera, para no repetirlo). */
+export function TablaGlobosPieza({ titulo, oficial, tabla, repeticiones = 1, ayuda = false }: { titulo: string; oficial: EstructuraOficialId | null; tabla: TablaGlobos; repeticiones?: number; ayuda?: boolean }) {
   const idTitulo = useId();
   const caja = useRef<HTMLDivElement>(null);
   const desborde = useDesborde(caja);
@@ -55,11 +58,15 @@ export function TablaGlobosPieza({ titulo, oficial, tabla, repeticiones = 1 }: {
   if (tabla.filas.length === 0) return null;
   return (
     <section aria-labelledby={idTitulo}>
-      <h4 id={idTitulo} className="mb-1.5 flex min-w-0 items-center gap-1.5 text-sm font-medium text-texto">
-        {oficial && <IconoEstructura id={oficial} className="size-5 shrink-0 text-acento" />}
-        <span className="min-w-0 truncate">{repeticiones > 1 ? `${repeticiones} × ` : ""}{titulo}</span>
-        <span className="shrink-0 font-normal text-texto-suave">· {entero.format(tabla.total)} {tabla.total === 1 ? "globo" : "globos"}</span>
-      </h4>
+      {/* El «?» va junto al título, no dentro: el título nombra la tabla y su región. */}
+      <div className="mb-1.5 flex min-w-0 items-center gap-1.5">
+        <h4 id={idTitulo} className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-texto">
+          {oficial && <IconoEstructura id={oficial} className="size-5 shrink-0 text-acento" />}
+          <span className="min-w-0 truncate">{repeticiones > 1 ? `${repeticiones} × ` : ""}{titulo}</span>
+          <span className="shrink-0 font-normal text-texto-suave">· {entero.format(tabla.total)} {tabla.total === 1 ? "globo" : "globos"}</span>
+        </h4>
+        {ayuda && <Ayuda {...AYUDAS.tablaDetalle} />}
+      </div>
       <div className="relative">
         <div
           ref={caja}
@@ -139,7 +146,7 @@ export function DetalleGlobos({ piezas, total, nota, lineasSinPieza }: { piezas:
   }, [piezas, lineasSinPieza]);
   return (
     <div className="space-y-4 pb-1 pt-2">
-      {tablas.map((item) => <TablaGlobosPieza key={item.id} titulo={item.titulo} oficial={item.oficial} tabla={item.tabla} repeticiones={item.repeticiones} />)}
+      {tablas.map((item, posicion) => <TablaGlobosPieza key={item.id} titulo={item.titulo} oficial={item.oficial} tabla={item.tabla} repeticiones={item.repeticiones} ayuda={posicion === 0} />)}
       {tablas.length > 1 && (
         <p className="text-right text-sm font-semibold text-texto">Todo el plan: <span className="tabular-nums"><CifraAnimada valor={total} /></span> {total === 1 ? "globo" : "globos"}</p>
       )}

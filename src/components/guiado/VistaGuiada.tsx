@@ -23,6 +23,12 @@ import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
 import type { AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
+import { avisoEdicionChat, ejecutarEdicionChat } from "./ajuste/edicion-chat-guiada";
+import { agregarColorEnServidor, aplicarEnServidor, mensajeAjuste, quitarPiezaEnServidor, reemplazarColorEnServidor } from "./ajuste/ejecutar-ajuste";
+import { armarBusqueda, LIMITE_MAXIMO } from "@/components/plan/ajuste/ajuste-propuesta";
+import { pedirBusqueda } from "@/components/plan/ajuste/cliente-explorador";
+import { esCancelacion } from "@/lib/plan/peticion-plan-editar";
+import { IdeaElegidaSchema, PedidoEdicionPlanSchema, type PedidoEdicionPlan } from "@/lib/ia/guiado/edicion-plan-chat";
 import { TarjetaPropuesta } from "./TarjetaPropuesta";
 import { TarjetaError } from "./TarjetaError";
 import { PreguntaPropuesta } from "./PreguntaPropuesta";
@@ -40,7 +46,8 @@ import { useModoVista } from "@/lib/estado/modo-vista";
 import { DecoracionSempertexSchema, ProveedorSempertexSchema, type DecoracionSempertex, type ProveedorSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { CIUDADES_PROVEEDORES } from "@/lib/biblioteca-sempertex/ciudades";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
-import { CotizacionGuiadaSchema, CotizacionPlanGuiadoSchema, PlanGuiadoSchema, PropuestaComposicionSchema, type PlanActualGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { BriefGuiadoSchema, CotizacionGuiadaSchema, CotizacionPlanGuiadoSchema, IdeaVisibleGuiadaSchema, PlanGuiadoSchema, PropuestaComposicionSchema, type BriefGuiado, type IdeaVisibleGuiada, type PlanActualGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { contextoClienteGuiado, entradaImagenGuiada, type ContextoClienteGuiado } from "@/lib/ia/guiado/contexto-cliente";
 import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/utilidades";
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { prepararFotoReferencia } from "@/lib/imagen-cliente/preparar-foto";
@@ -66,7 +73,6 @@ type Widget = WidgetGuiado;
 type WidgetPlan = Extract<Widget, { tipo: "plan" }>;
 type Propuesta = z.infer<typeof PropuestaComposicionSchema>;
 type PlanGuiado = z.infer<typeof PlanGuiadoSchema>;
-type BriefGuiado = { evento?: string; edad?: number; tematica?: string };
 type Uso = "negocio" | "personal";
 type FotoInspiracion = { base64: string; mime: "image/jpeg" | "image/png" | "image/webp" };
 type PreguntaCiudad = "ciudad-decorador" | "ciudad-distribuidor";
@@ -79,6 +85,8 @@ type AccionFallo =
   | { tipo: "turno"; texto: string; opciones: OpcionesEnvio }
   | { tipo: "plan"; propuesta: Propuesta; mensajeId: string; planAnterior?: PlanActualGuiado; idea?: IdeaAgregada }
   | { tipo: "foto"; referenciaId: string; mensajeId: string; sinRemate?: boolean }
+  /** Un cambio del plan pedido por chat (`edicion-chat-guiada.ts`) que no salió: se repite ESE cambio, sin el modelo. */
+  | { tipo: "edicion"; pedido: PedidoEdicionPlan; mensajeId: string }
   | { tipo: "subir-foto" };
 type AlternativaFallo = "otros-colores" | "otra-pieza" | "idea-parecida" | "otra-foto";
 type Fallo = { titulo: string; detalle?: string; etiqueta?: string; accion: AccionFallo; alternativas?: AlternativaFallo[]; mensajeId?: string };
@@ -106,12 +114,13 @@ const CLAVE_SESION = "demo_guiado_v2";
 const MAX_MENSAJES_GUARDADOS = 80;
 const EstadoGuardadoSchema = z.object({
   mensajes: z.array(MensajeSchema).max(MAX_MENSAJES_GUARDADOS),
-  brief: z.object({ evento: z.string().optional(), edad: z.number().int().optional(), tematica: z.string().optional() }).strict().optional(),
+  // El brief entero: también lo que dijo el cliente (uso, medida, pieza, lugar…) y el rango de edad que eligió.
+  brief: BriefGuiadoSchema.optional(),
   seleccionadaId: z.string().nullable().optional(),
   uso: z.enum(["negocio", "personal"]).nullable().optional(),
 }).strict();
 const ResultadoSchema = z.object({
-  brief: z.object({ evento: z.string().min(1).max(120), edad: z.number().int().min(0).max(120), tematica: z.string().min(1).max(160) }).strict().optional(),
+  brief: BriefGuiadoSchema.optional(),
   decoraciones: z.array(DecoracionSempertexSchema).optional(),
   opciones: z.array(z.enum(["contratar", "costear", "comprar", "aprender"])).optional(),
   preguntaUso: z.boolean().optional(),
@@ -195,6 +204,8 @@ export function VistaGuiada() {
   const [anuncio, setAnuncio] = useState("");
   /** La idea que se está sumando al plan («Agregar al plan»): su botón dice «Agregando a tu plan…». */
   const [agregandoId, setAgregandoId] = useState<string | null>(null);
+  /** El plan (id de su mensaje) que se está cambiando por chat: su tarjeta muestra el esqueleto del recálculo. */
+  const [editandoPlanId, setEditandoPlanId] = useState<string | null>(null);
   const [restaurado, setRestaurado] = useState(false);
   /** Ids restaurados de la sesión: no se vuelven a animar al montar. */
   const [restaurados, setRestaurados] = useState<ReadonlySet<string>>(() => new Set());
@@ -258,7 +269,9 @@ export function VistaGuiada() {
     if (seleccionada && !planVigente) return `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}`;
     const valido = (valor: string | undefined): valor is string => Boolean(valor?.trim() && !SIN_DEFINIR.test(valor.trim()));
     const cumple = /cumple/i.test(brief.evento ?? "");
-    const partes = [valido(brief.evento) ? brief.evento : null, cumple && brief.edad ? `${brief.edad} años` : null, valido(brief.tematica) ? brief.tematica : null];
+    // El rango que eligió («4 a 6 años»), no la edad que guardó el modelo («5 años»); y el uso si es para su negocio.
+    const edad = cumple ? brief.edadTexto ?? (brief.edad ? `${brief.edad} años` : null) : null;
+    const partes = [valido(brief.evento) ? brief.evento : null, edad, valido(brief.tematica) ? brief.tematica : null, uso === "negocio" ? "Para negocio" : null];
     const visibles = partes.filter((parte): parte is string => Boolean(parte)).map(conMayuscula);
     return visibles.length ? visibles.join(" · ") : null;
   }, [brief, seleccionada, planVigente, uso]);
@@ -392,7 +405,7 @@ export function VistaGuiada() {
     fotosRef.current.clear();
     setMensajes([]); setBrief({}); setSeleccionada(null); setUso(null); setFoto(null); setFallo(null); setEntrada("");
     setImagenEnCurso(null); setImagenesLocales({}); setEtapaPlan({}); setAnalizandoFoto(false); setTransmitiendoId(null);
-    setPlaceholderForzado(null); setSugerenciasCambio(null); setAnuncio("");
+    setPlaceholderForzado(null); setSugerenciasCambio(null); setAnuncio(""); setEditandoPlanId(null);
     marcarCargando(false);
     try { sessionStorage.removeItem(CLAVE_SESION); } catch (cause) { console.warn("[asistente-guiado] no se pudo limpiar la sesión.", cause); }
     // Arriba de inmediato: con la posición del scroll de la conversación anterior, la pantalla quedaba en blanco unos 2 s
@@ -421,7 +434,8 @@ export function VistaGuiada() {
 
     // «Propónme algo» se resuelve aquí mismo: la pregunta de tipo no necesita al modelo.
     if (!archivo && PROPONME_LOCAL.test(limpio)) {
-      setSeleccionada(null); setUso(null); setEntrada("");
+      // El uso es del cliente, no de la idea: se conserva (no se le vuelve a preguntar; usabilidad 97, punto 2).
+      setSeleccionada(null); setEntrada("");
       agregar([
         { id: nuevoId(), role: "user", content: limpio },
         { id: nuevoId(), role: "assistant", content: PREGUNTA_TIPO, widgets: [{ tipo: "pregunta-propuesta", alcance: "tipo" }] },
@@ -456,12 +470,15 @@ export function VistaGuiada() {
     const usoEnvio = opciones.uso ?? uso ?? undefined;
     const planActual = planVigente ? planActualDesdePlan(planVigente.widget.plan) : null;
     const planAnterior = planActual ?? undefined;
+    // Las ideas del último carrusel, en orden: «me quedo con la primera» la elige como «Me gusta esta» (elegir_idea).
+    const ideasMostradas = ideasALaVista(mensajes);
     const estadoGuiado = {
       ...(seleccionada && !planVigente ? { decoracionId: seleccionada.id } : {}),
       ...(usoEnvio ? { uso: usoEnvio } : {}),
       ...(opciones.alcance ? { alcancePropuesta: opciones.alcance } : {}),
       ...(opciones.alcance === "individual" && opciones.pieza ? { piezaPedida: opciones.pieza } : {}),
       ...(planActual ? { planActual } : {}),
+      ...(ideasMostradas.length ? { ideasMostradas } : {}),
     };
     const elegida = seleccionada && !planVigente ? seleccionada : null;
     // Funcional: conserva lo que la acción que llamó acaba de marcar (la opción elegida en su widget).
@@ -477,7 +494,10 @@ export function VistaGuiada() {
     pedirFinal();
 
     let propuestaParaPlan: Propuesta | null = null;
+    let clienteTurno: ContextoClienteGuiado | null = null;
     let accionModelo: z.infer<typeof AccionModeloSchema> | null = null;
+    /** Un cambio puntual del plan pedido por chat: se hace con el editor al terminar el turno, sin rehacer el plan. */
+    let edicionDelTurno: PedidoEdicionPlan | null = null;
     let etapa: "foto" | "turno" = "turno";
     try {
       let imagen: FotoInspiracion | null = null;
@@ -523,7 +543,11 @@ export function VistaGuiada() {
         if (!resultado.success) throw new Error("Los datos devueltos por el asistente no son válidos.");
         const datos = resultado.data;
         if (datos.brief) setBrief(datos.brief);
-        if (datos.uso) setUso(datos.uso);
+        // El uso que dijo con sus palabras («soy decorador») o que ya eligió: «Cuánto cuesta» no lo vuelve a preguntar.
+        const usoDicho = datos.uso ?? datos.brief?.uso;
+        if (usoDicho) setUso(usoDicho);
+        // Lo que dijo el cliente, con el brief recién guardado y su mensaje de este turno (el estado aún no los tiene).
+        clienteTurno = contextoClienteGuiado(datos.brief ?? brief, [...textosDelCliente(base), contenido]);
         const widgets: Widget[] = [];
         if (datos.decoraciones?.length) widgets.push({ tipo: "decoraciones", decoraciones: datos.decoraciones });
         if (datos.preguntaUso && elegida) widgets.push({ tipo: "uso" });
@@ -546,9 +570,25 @@ export function VistaGuiada() {
         const textoFinal = accion.success && accion.data === "costear" && planVigente
           ? respuestaPrecioPlan(planVigente.widget, planVigente.widget.usoCosteo ?? uso ?? "personal")
           : evento.reply.slice(0, 6000);
-        if (datos.propuesta) {
+        // Un cambio puntual del plan (edicion-plan-chat.ts): se hace al terminar el turno con el editor; lo demás no cambia.
+        const edicion = planVigente && datos.edicionPlan !== undefined ? PedidoEdicionPlanSchema.safeParse(datos.edicionPlan) : null;
+        if (edicion?.success) edicionDelTurno = edicion.data;
+        else if (edicion) registrarFallo("plan.edicion_chat.invalida", "el pedido de edición no cumple el contrato", { edicionPlan: datos.edicionPlan }, "warn");
+        // La idea que eligió con palabras («me quedo con la primera»): lo mismo que «Me gusta esta».
+        const ideaChat = datos.ideaElegida !== undefined ? IdeaElegidaSchema.safeParse(datos.ideaElegida) : null;
+        const decoracionChat = ideaChat?.success ? decoracionDeLaConversacion(mensajes, ideaChat.data.id) : null;
+        if (ideaChat && !decoracionChat) registrarFallo("idea.elegir_chat_sin_idea", "la idea elegida por chat no está en la conversación", { ideaElegida: datos.ideaElegida }, "warn");
+        if (decoracionChat && !datos.propuesta) {
+          marcarIdeaElegida(decoracionChat, mensajeDelCarrusel(mensajes, decoracionChat.id), { origen: "chat", posicion: ideaChat?.success ? ideaChat.data.posicion : null, texto: contenido });
+          actualizarMensaje(idAsistente, (mensaje) => ({ ...mensaje, content: textoIdeaElegida(decoracionChat.titulo), widgets: [{ tipo: "seleccion", decoracion: decoracionChat }, { tipo: "opciones" }] }));
+          pedirLlegada(idAsistente);
+        } else if (edicionDelTurno) {
+          // Mientras Python rehace el plan, la frase del modelo («Cambio el azul por celeste…») o el aviso de siempre.
+          const aviso = avisoEdicionChat(edicionDelTurno);
+          actualizarMensaje(idAsistente, (mensaje) => ({ ...mensaje, content: textoFinal.trim() ? textoFinal : aviso }));
+        } else if (datos.propuesta) {
           propuestaParaPlan = datos.propuesta;
-          setSeleccionada(null); setUso(null);
+          setSeleccionada(null);
           actualizarMensaje(idAsistente, (mensaje) => ({ ...mensaje, content: datos.propuesta!.frase, widgets: [{ tipo: "propuesta", propuesta: datos.propuesta!, estado: "resolviendo" }] }));
           pedirLlegada(idAsistente);
         } else if (!textoFinal.trim() && !widgets.length) {
@@ -563,7 +603,9 @@ export function VistaGuiada() {
       window.clearTimeout(reloj);
       setTransmitiendoId(null);
       if (accionModelo && planVigente && !(accionModelo === "ver" && planVigente.widget.reemplazado)) accionPlan(accionModelo, planVigente.mensajeId, "modelo");
-      if (propuestaParaPlan) await aceptarPropuesta(propuestaParaPlan, { mensajeId: idAsistente, desdeTurno: true, ...(planAnterior ? { planAnterior } : {}) });
+      // El cambio puntual, sobre el plan que se ve y con el editor (el resto del plan queda igual); «Detener» lo corta.
+      if (edicionDelTurno && planVigente) await aplicarEdicionChat(edicionDelTurno, { planMensajeId: planVigente.mensajeId, base: planVigente.widget.plan, mensajeId: idAsistente, signal: control.signal });
+      else if (propuestaParaPlan) await aceptarPropuesta(propuestaParaPlan, { mensajeId: idAsistente, desdeTurno: true, ...(planAnterior ? { planAnterior } : {}), ...(clienteTurno ? { cliente: clienteTurno } : {}) });
     } catch (causa) {
       if (turno !== turnoRef.current) return;
       cancelarFlujo();
@@ -707,9 +749,9 @@ export function VistaGuiada() {
    * viaja en el historial, dice el ajuste («Ajusté: más rosado…») para que «Cambiar algo» parta de lo que se ve. Solo
    * se publica sobre el plan en que se hizo: si entretanto llegó otro, el ajuste no lo pisa.
    */
-  function ajustarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, { descripcion, baseHash }: AjustePublicado): void {
+  function ajustarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, { descripcion, baseHash }: AjustePublicado): boolean {
     const vigente = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
-    if (!vigente || vigente.reemplazado || vigente.plan.plan_hash !== baseHash) return;
+    if (!vigente || vigente.reemplazado || vigente.plan.plan_hash !== baseHash) return false;
     const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacionCruda);
     const cotizacion = precio.success ? { ...precio.data, lineas: precio.data.lineas.map((linea) => ({ ...linea, nombre: nombreLineaCliente(linea) })) } : undefined;
     const armado = generarPasosPlan(plan);
@@ -735,25 +777,89 @@ export function VistaGuiada() {
     }));
     setImagenesLocales((actuales) => (mensajeId in actuales ? Object.fromEntries(Object.entries(actuales).filter(([id]) => id !== mensajeId)) : actuales));
     setAnuncio(`Listo: ${descripcion}. Tu plan tiene ${totalDePlan(plan)} globos.`);
+    return true;
+  }
+
+  /**
+   * Un cambio del plan pedido POR CHAT («el azul cámbialo por celeste en las dos columnas»): lo hace el editor «Ajustar
+   * mi plan» sobre el plan firmado que se ve (`ejecutarEdicionChat` → `/api/plan-editar`, sin modelo) y la tarjeta se
+   * actualiza en su sitio con «Último ajuste: …», como un ajuste del panel. Antes el chat rehacía el plan entero con
+   * /api/chat y cambiaba título, acabados y cantidades (probador 104). Si falla, el plan no se toca y «Intentar de nuevo»
+   * repite ESE cambio.
+   */
+  async function aplicarEdicionChat(pedido: PedidoEdicionPlan, destino: { planMensajeId: string; base: PlanGuiado; mensajeId: string; signal?: AbortSignal }): Promise<void> {
+    const { planMensajeId, base, mensajeId, signal } = destino;
+    const transcurrido = cronometro();
+    registrarAccion("plan.edicion_chat.pedir", { pedido, mensajeId, planMensajeId, plan_hash: base.plan_hash });
+    setFallo(null);
+    setEditandoPlanId(planMensajeId);
+    setAnuncio(avisoEdicionChat(pedido));
+    // Las peticiones a /api/plan-editar se cortan con «Detener» (además de su propio plazo).
+    const conSenal: typeof fetch = (entrada, init) => fetch(entrada, { ...init, ...(signal ? { signal: init?.signal ? AbortSignal.any([init.signal, signal]) : signal } : {}) });
+    try {
+      const hecha = await ejecutarEdicionChat(base, pedido, {
+        aplicar: (sobre, edicion) => aplicarEnServidor(sobre, edicion, conSenal),
+        quitarPieza: (sobre, estructuraId) => quitarPiezaEnServidor(sobre, estructuraId, conSenal),
+        agregarColor: (sobre, globo, estructuraIds) => agregarColorEnServidor(sobre, globo, conSenal, estructuraIds),
+        reemplazarColor: (sobre, cambio) => reemplazarColorEnServidor(sobre, cambio, conSenal),
+        // La misma búsqueda del selector de «Cambiar»: globos lisos de esa familia en el catálogo firmado del plan.
+        buscarGlobos: async (familia, approvalToken, palabra) => (await pedirBusqueda(armarBusqueda({ texto: `globo latex redondo${palabra ? ` ${palabra}` : ""}`, colores: [familia], tamanos: [], limite: LIMITE_MAXIMO, approvalToken }), signal)).candidatos,
+      });
+      const publicado = ajustarPlan(planMensajeId, hecha.plan, hecha.cotizacion, { descripcion: hecha.descripcion, baseHash: base.plan_hash });
+      actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: publicado ? hecha.confirmacion : "Tu plan cambió mientras hacía el cambio; pídemelo otra vez sobre el plan nuevo." }));
+      registrarAccion(publicado ? "plan.edicion_chat.listo" : "plan.edicion_chat.obsoleta", {
+        tipo: pedido.tipo, descripcion: hecha.descripcion, confirmacion: hecha.confirmacion, cambios: hecha.cambios.map((cambio) => cambio.tipo),
+        globos: hecha.globos.map((elegido) => ({ product_id: elegido.globo.productId, nombre: elegido.globo.nombre, titulo: elegido.titulo, acabado: elegido.acabado, candidatos: elegido.candidatos, cubreTamanos: elegido.cubreTamanos, variantes: elegido.globo.variantIds.length })),
+        plan_hash_base: base.plan_hash, plan_hash: hecha.plan.plan_hash, ms: transcurrido(),
+      });
+    } catch (causa) {
+      const cancelado = Boolean(signal?.aborted) || esCancelacion(causa);
+      const mensaje = cancelado ? "Detuviste el cambio. Tu plan sigue como estaba." : mensajeAjuste(causa);
+      if (!cancelado) console.warn("[asistente-guiado] no se pudo hacer el cambio pedido por chat", causa);
+      registrarFallo("plan.edicion_chat.fallo", causa, { tipo: pedido.tipo, pedido, mensaje, cancelado, plan_hash: base.plan_hash, ms: transcurrido() }, "warn");
+      actualizarMensaje(mensajeId, (actual) => ({ ...actual, content: mensaje }));
+      setFallo({ titulo: cancelado ? "Detuviste el cambio" : "No pude hacer ese cambio", etiqueta: "Intentar de nuevo", accion: { tipo: "edicion", pedido, mensajeId }, mensajeId });
+      setAnuncio(mensaje);
+    } finally {
+      setEditandoPlanId(null);
+    }
+  }
+
+  /** «Intentar de nuevo» de un cambio por chat que no salió: el mismo cambio sobre el plan que se ve ahora. */
+  async function reintentarEdicion(accion: Extract<AccionFallo, { tipo: "edicion" }>): Promise<void> {
+    if (cargandoRef.current || !planVigente) return;
+    const control = new AbortController();
+    controlRef.current = control;
+    marcarCargando(true);
+    try {
+      await aplicarEdicionChat(accion.pedido, { planMensajeId: planVigente.mensajeId, base: planVigente.widget.plan, mensajeId: accion.mensajeId, signal: control.signal });
+    } finally {
+      marcarCargando(false);
+      if (controlRef.current === control) controlRef.current = null;
+    }
   }
 
   /** Resuelve la propuesta con /api/chat (Python, dueño de las cantidades). Devuelve cómo terminó; quien no lo necesita lo ignora. */
-  async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado; idea?: IdeaAgregada }): Promise<"ok" | "fallo" | "detenido" | "obsoleto" | "ocupado"> {
+  async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado; idea?: IdeaAgregada; cliente?: ContextoClienteGuiado }): Promise<"ok" | "fallo" | "detenido" | "obsoleto" | "ocupado"> {
     if (cargandoRef.current && !opciones.desdeTurno) return "ocupado";
     const { mensajeId, planAnterior, idea } = opciones;
+    // Lo que dijo el cliente (evento, lugar, momento, medida, presupuesto y sus palabras): al brief y a la instrucción del
+    // plan, y sus palabras como `original_request` (comparador 100, I2/I4). Desde un turno llega ya armado.
+    const cliente = opciones.cliente ?? contextoClienteGuiado(brief, textosDelCliente(mensajes));
     // Rehacer un plan que salió de una foto («Cambiar algo», «Hazla más sencilla», «Otros colores», «Agregar al plan»)
     // la conserva, por el mismo camino que la clásica: la foto, su lectura y cada pieza atada a su elemento de la foto.
     // Sin ella el plan nuevo perdía la escenografía y las cajas, y la imagen salía inventada (2026-10-06, ci54dg).
     const foto = planAnterior ? fotoDelPlan(mensajes, planVigente, fotosRef.current) : null;
     registrarAccion("propuesta.aceptar", {
       mensajeId, desdeTurno: Boolean(opciones.desdeTurno), reintento: Boolean(opciones.reintento), propuesta, ...(idea ? { idea: idea.id } : {}),
+      cliente: { ...cliente, solicitud: cliente.solicitud?.slice(0, 300) ?? null },
       ...(foto ? { foto: { referenciaId: foto.referenciaId, conImagen: Boolean(foto.imagen), piezasDeLaFoto: foto.referencia?.piezas.length ?? 0 } } : {}),
     });
     setFallo(null);
-    setSeleccionada(null); setUso(null);
+    setSeleccionada(null);
     actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: propuesta.frase, widgets: [{ tipo: "propuesta", propuesta, estado: "resolviendo" }] }));
     // Piezas SIEMPRE individuales y, con foto, la foto y su lectura (`cuerpoPlanGuiado`).
-    const armar = (reintento: boolean, faltantes?: readonly ColorFotoFaltante[]) => cuerpoPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}), foto, ...(faltantes?.length ? { faltantes } : {}) });
+    const armar = (reintento: boolean, faltantes?: readonly ColorFotoFaltante[]) => cuerpoPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}), foto, ...(faltantes?.length ? { faltantes } : {}), cliente });
     // Con foto, de sus colores solo se exigen los que siguen en la propuesta: «Otros colores» los cambió el cliente.
     const resultado = await ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento), propuesta.colores);
     if (resultado.estado === "obsoleto") return "obsoleto";
@@ -788,7 +894,9 @@ export function VistaGuiada() {
     const imagen = fotosRef.current.get(referenciaId);
     registrarAccion("foto.armar_plan", { referenciaId, colores: referencia.colores.map((color) => color.nombre), conFoto: Boolean(imagen), ...(opciones?.sinRemate ? { sinRemate: true } : {}) });
     limpiarAvisos();
-    setSeleccionada(null); setUso(null);
+    setSeleccionada(null);
+    // Lo que dijo el cliente: evento, lugar y momento al brief y sus palabras como `original_request` (comparador 100, I4).
+    const cliente = contextoClienteGuiado(brief, textosDelCliente(mensajes));
     let mensajeId = opciones?.mensajeId;
     if (!mensajeId) {
       mensajeId = nuevoId();
@@ -808,7 +916,8 @@ export function VistaGuiada() {
       // colores que el cliente vio van solo en el brief, como dato. El reintento (plan sin confirmar o defectuoso) usa la
       // instrucción guiada con esos colores y, si el primero perdió colores de la foto, cada uno pedido aparte.
       messages: [{ role: "user", content: reintento ? instruccionPlanFoto({ reintento, colores, ...(faltantes?.length ? { faltantes } : {}) }) : `${MENSAJE_SOLO_REFERENCIAS}\n${CONFIRMAR_PLAN_FOTO}` }],
-      brief: briefChatGuiado(colores),
+      brief: briefChatGuiado(colores, cliente),
+      ...(cliente.solicitud ? { solicitudCliente: cliente.solicitud } : {}),
       creatividad: CREATIVIDAD_POR_DEFECTO,
       ...(imagen ? { imagenesReferencia: [imagen] } : {}),
       referenceBlueprint: blueprint,
@@ -862,12 +971,13 @@ export function VistaGuiada() {
       // El mismo cuerpo que manda la clásica al aprobar (`cuerpoGeneracion`): productos y paquetes del plan, creatividad por
       // defecto y, si el plan salió de una foto, su lectura (blueprint). Sin la lectura el servidor no tenía la escenografía,
       // las cajas de cada pieza ni el encuadre de la foto, y FLUX unía las dos columnas en un arco (2026-10-06).
-      // A propósito distinto de la clásica: el brief es el de esta conversación y la solicitud la descripción del plan.
+      // Como en la clásica: el brief de esta conversación (evento, temática, lugar, momento) y las palabras del cliente como
+      // solicitud (la escena y la auditoría); antes iban la descripción que escribió la IA y un brief sin lugar ni momento
+      // (comparador 100, I4). `entradaImagenGuiada` es lo mismo que comprueba test-cuerpo-generacion.
       const cuerpo = cuerpoGeneracion({
         plan,
         ...fuentesDelPlan(plan),
-        brief: { tipo_evento: brief.evento, colores: plan.plan.concepto.paleta, estilo: brief.tematica },
-        solicitudUsuario: plan.plan.concepto.descripcion,
+        ...entradaImagenGuiada(plan, contextoClienteGuiado(brief, textosDelCliente(mensajes))),
         imagenesReferencia: referencia ? [referencia] : [],
         blueprint: widget.fotoInspiracion ? lecturaDelPlan(mensajes, mensajeId)?.blueprint : undefined,
       });
@@ -960,15 +1070,24 @@ export function VistaGuiada() {
   }
 
   // ── Acciones locales (sin modelo) ────────────────────────────────────────────────────────────────────────────
+  /**
+   * Lo que hace «Me gusta esta» con la idea: la deja elegida y marcada en su carrusel. También la usa una idea elegida
+   * con palabras («me quedo con el primero», `elegir_idea`), para que las dos cosas hagan exactamente lo mismo.
+   */
+  function marcarIdeaElegida(decoracion: DecoracionSempertex, carruselId: string | null, extra: Record<string, unknown> = {}): void {
+    registrarAccion("idea.elegir", { id: decoracion.id, titulo: decoracion.titulo, mensajeId: carruselId, usoConservado: uso, ...extra });
+    limpiarAvisos();
+    // El uso es del cliente, no de la idea: si ya lo dijo, la idea nueva se cotiza sin volver a preguntarlo.
+    setSeleccionada(decoracion);
+    if (carruselId) actualizarWidget(carruselId, "decoraciones", (widget) => ({ ...widget, elegidaId: decoracion.id }));
+  }
+
   function elegirDecoracion(decoracion: DecoracionSempertex, mensajeId: string): void {
     if (cargandoRef.current) return;
-    registrarAccion("idea.elegir", { id: decoracion.id, titulo: decoracion.titulo, mensajeId });
-    limpiarAvisos();
-    setSeleccionada(decoracion); setUso(null);
-    actualizarWidget(mensajeId, "decoraciones", (widget) => ({ ...widget, elegidaId: decoracion.id }));
+    marcarIdeaElegida(decoracion, mensajeId);
     agregar([
       { id: nuevoId(), role: "user", content: `Me gusta «${decoracion.titulo}».` },
-      { id: nuevoId(), role: "assistant", content: `¡Buena elección! Esto es lo que lleva **${decoracion.titulo}**. ¿Qué te gustaría hacer ahora?`, widgets: [{ tipo: "seleccion", decoracion }, { tipo: "opciones" }] },
+      { id: nuevoId(), role: "assistant", content: textoIdeaElegida(decoracion.titulo), widgets: [{ tipo: "seleccion", decoracion }, { tipo: "opciones" }] },
     ]);
     pedirFinal();
   }
@@ -1219,6 +1338,7 @@ export function VistaGuiada() {
       case "turno": void enviar(accion.texto, { ...accion.opciones, reintentar: true }); return;
       case "plan": void reintentarPlan(accion); return;
       case "foto": void aceptarPlanFoto(accion.referenciaId, { mensajeId: accion.mensajeId, ...(accion.sinRemate ? { sinRemate: true } : {}) }); return;
+      case "edicion": void reintentarEdicion(accion); return;
       case "subir-foto": setFallo(null); archivoRef.current?.click(); return;
     }
   }
@@ -1321,6 +1441,7 @@ export function VistaGuiada() {
             imagen={imagen}
             estadoImagen={estadoImagen}
             usoCosteo={widget.usoCosteo ?? null}
+            usoConocido={uso}
             compraAbierta={Boolean(widget.compraAbierta)}
             vigente={vigente}
             ocupado={cargando || imagenEnCurso !== null}
@@ -1328,12 +1449,18 @@ export function VistaGuiada() {
             {...(widget.totalAnterior !== undefined ? { totalAnterior: widget.totalAnterior } : {})}
             contextoCompra={brief}
             onAccion={(accion) => accionPlan(accion, mensajeId, "tarjeta")}
-            onCosteo={(valor) => { registrarAccion("plan.costeo_uso", { uso: valor, mensajeId }); actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, usoCosteo: valor, hechas: conHecha(actual.hechas, "costear") })); }}
+            onCosteo={(valor, origen) => {
+              // `origen`: «conocido» = ya lo había dicho (no se le preguntó); «elegido» o «cambio» = lo dijo aquí y pasa a ser su uso.
+              registrarAccion("plan.costeo_uso", { uso: valor, mensajeId, origen });
+              if (origen !== "conocido") setUso(valor);
+              actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, usoCosteo: valor, hechas: conHecha(actual.hechas, "costear") }));
+            }}
             onProveedores={() => preguntarCiudad("ciudad-decorador", "Quiero cotizar con un proveedor cerca")}
             onDistribuidor={() => preguntarCiudad("ciudad-distribuidor", "Quiero comprar con un distribuidor cerca")}
             {...(widget.ajustes?.length ? { ajustes: widget.ajustes } : {})}
+            recalculandoPorChat={editandoPlanId === mensajeId}
             {...(vigente ? {
-              onPlanAjustado: (nuevo: PlanGuiado, cotizacionNueva: unknown, ajuste: AjustePublicado) => ajustarPlan(mensajeId, nuevo, cotizacionNueva, ajuste),
+              onPlanAjustado: (nuevo: PlanGuiado, cotizacionNueva: unknown, ajuste: AjustePublicado) => { ajustarPlan(mensajeId, nuevo, cotizacionNueva, ajuste); },
               // Los cambios rápidos que rehace el asistente, desde «Ajustar mi plan» (los mismos de antes como chips).
               onSugerencia: (texto: string) => elegirRapida(texto),
             } : {})}
@@ -1553,6 +1680,11 @@ function fotoDelPlan(lista: readonly Mensaje[], vigente: { mensajeId: string; wi
   return { referenciaId: lectura.id, blueprint: lectura.referencia.blueprint, ...(imagen ? { imagen } : {}), referencia: referenciaDelPlan(vigente.widget.plan) };
 }
 
+/** Lo que escribió (o eligió con un botón) el cliente, en orden: de aquí salen sus palabras para el plan y la imagen. */
+function textosDelCliente(lista: readonly Mensaje[]): string[] {
+  return lista.filter((mensaje) => mensaje.role === "user").map((mensaje) => mensaje.content);
+}
+
 function totalDePlan(plan: PlanGuiado): number {
   try { return generarPasosPlan(plan).total; } catch { return 0; }
 }
@@ -1592,6 +1724,38 @@ function leerSesion(): { mensajes: Mensaje[]; brief: BriefGuiado; seleccionada: 
     console.warn("[asistente-guiado] no se pudo restaurar la conversación.", cause);
     return null;
   }
+}
+
+/** Milisegundos desde que se llama (para el registro de un cambio por chat; nunca durante el pintado). */
+function cronometro(): () => number {
+  const inicio = performance.now();
+  return () => Math.round(performance.now() - inicio);
+}
+
+/** «¡Buena elección! Esto es lo que lleva…»: lo que responde «Me gusta esta» (y elegir una idea con palabras). */
+function textoIdeaElegida(titulo: string): string {
+  return `¡Buena elección! Esto es lo que lleva **${titulo}**. ¿Qué te gustaría hacer ahora?`;
+}
+
+/** Las ideas del último carrusel de la conversación, en su orden (id y título), para `elegir_idea`. */
+function ideasALaVista(mensajes: readonly Mensaje[]): IdeaVisibleGuiada[] {
+  for (let indice = mensajes.length - 1; indice >= 0; indice -= 1) {
+    const carrusel = mensajes[indice]!.widgets?.find((widget) => widget.tipo === "decoraciones");
+    if (carrusel?.tipo !== "decoraciones") continue;
+    return carrusel.decoraciones.slice(0, 12).flatMap((decoracion) => {
+      const idea = IdeaVisibleGuiadaSchema.safeParse({ id: decoracion.id, titulo: decoracion.titulo.slice(0, 160) });
+      return idea.success ? [idea.data] : [];
+    });
+  }
+  return [];
+}
+
+/** El mensaje del último carrusel que trae esa idea (para marcarla elegida, como «Me gusta esta»). */
+function mensajeDelCarrusel(mensajes: readonly Mensaje[], id: string): string | null {
+  for (let indice = mensajes.length - 1; indice >= 0; indice -= 1) {
+    if (mensajes[indice]!.widgets?.some((widget) => widget.tipo === "decoraciones" && widget.decoraciones.some((decoracion) => decoracion.id === id))) return mensajes[indice]!.id;
+  }
+  return null;
 }
 
 function decoracionDeLaConversacion(mensajes: readonly Mensaje[], id: string): DecoracionSempertex | null {

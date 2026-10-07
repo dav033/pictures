@@ -81,7 +81,7 @@ export function useAjustePlanGuiado({ plan, onPlanAjustado }: Entrada) {
       const nuevo = await ejecutarCambio(cambio, base, {
         aplicar: (sobre, edicion) => aplicarEnServidor(sobre, edicion),
         quitarPieza: (sobre, estructuraId) => quitarPiezaEnServidor(sobre, estructuraId),
-        agregarColor: (sobre, globo) => agregarColorEnServidor(sobre, globo),
+        agregarColor: (sobre, globo, estructuraIds) => agregarColorEnServidor(sobre, globo, undefined, estructuraIds),
         reemplazarColor: (sobre, reemplazo) => reemplazarColorEnServidor(sobre, reemplazo),
         buscar: buscarColor,
         alDescartarColor: (color) => { if (montadoRef.current) setDescartados((actuales) => [...actuales, color]); },

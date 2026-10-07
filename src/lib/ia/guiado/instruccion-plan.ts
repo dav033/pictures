@@ -7,6 +7,7 @@ import { coloresFotoFaltantes, type ColorFotoFaltante } from "@/lib/plan/colores
 import { tonoClaroDe } from "@/lib/rag/taxonomy/v2";
 import { generarPasosPlan } from "./generar-pasos-plan";
 import { listaNatural, piezaEnPalabras } from "./propuesta-composicion";
+import { briefChatCliente, lineaPalabrasCliente, type ContextoClienteGuiado } from "./contexto-cliente";
 
 /**
  * Instrucciones y resúmenes con los que la vista guiada pide el plan a /api/chat y lo deja en el historial.
@@ -94,8 +95,12 @@ export function coloresFaltantesPlanGuiado(plan: unknown, opciones: { coloresPed
  * impresos de cumpleaños (balón de fútbol, copa dorada, «feliz cumpleaños»), todos de 12", y el arco orgánico salía de un
  * solo tamaño (verificación del 2026-10-06: 4 de 4 planes de cumpleaños). Las piezas y los colores ya están decididos, y la
  * imagen recibe el evento y la temática por su propio brief.
+ *
+ * `cliente` (comparador 100, I2): las palabras del cliente que importan —medida, lugar, momento, presupuesto— van en una
+ * línea propia, para que /api/chat las vea como lo que pidió (`extraerRestriccionesUsuario`: el presupuesto se vuelve
+ * techo). El evento no: va en el brief (`cuerpoPlanGuiado`). Solo en el primer plan; un cambio conserva el plan anterior.
  */
-export function instruccionPlanGuiado(propuesta: PropuestaGuiada, opciones?: { reintento?: boolean; planAnterior?: PlanActualGuiado; referencia?: ReferenciaDelPlan; faltantes?: readonly ColorFotoFaltante[] }): string {
+export function instruccionPlanGuiado(propuesta: PropuestaGuiada, opciones?: { reintento?: boolean; planAnterior?: PlanActualGuiado; referencia?: ReferenciaDelPlan; faltantes?: readonly ColorFotoFaltante[]; cliente?: ContextoClienteGuiado }): string {
   // Piezas SIEMPRE individuales: una línea por pieza, con repeticiones 1, su propio id y su lado. Antes la línea era
   // «2 × Columna (…; repeticiones: 2)»: le pedíamos UNA estructura repetida y la guiada mostraba «2 × Columna», sin
   // forma de quitar solo una (registro guiada-20261006-212136-dgkw9b). Sin nombres («Columna 1» activa
@@ -141,7 +146,10 @@ export function instruccionPlanGuiado(propuesta: PropuestaGuiada, opciones?: { r
     ];
     return `- ${nombreOficial(pieza.estructura)} (${datos.join("; ")})`;
   });
-  const organicas = [...new Set(individuales.filter((pieza) => ESTRUCTURAS_ORGANICAS.has(pieza.estructura)).map((pieza) => nombreOficial(pieza.estructura)))];
+  // «Arco orgánico» que pidió el cliente es el arco completo (`arco`): también mezcla tamaños, aunque su oficial no sea de las orgánicas.
+  const pedidasOrganicas = new Set(opciones?.cliente?.organicas ?? []);
+  const organicas = [...new Set(individuales.filter((pieza) => ESTRUCTURAS_ORGANICAS.has(pieza.estructura) || pedidasOrganicas.has(pieza.estructura)).map((pieza) => nombreOficial(pieza.estructura)))];
+  const palabrasCliente = opciones?.planAnterior ? null : lineaPalabrasCliente(opciones?.cliente, { sinMedida: medidasPropias.some(Boolean) });
   const lineas = [
     "Resuelve ahora el plan exacto de esta decoración con confirmar_plan_decoracion. El cliente ya la eligió: no le preguntes nada ni le pidas que la acepte; confirma el plan en este mismo turno.",
     "Piezas (usa exactamente estas, con su estructura_oficial, su estructura_id y su ubicacion si la trae):",
@@ -151,6 +159,7 @@ export function instruccionPlanGuiado(propuesta: PropuestaGuiada, opciones?: { r
     ...(propias.some((suyos) => suyos.length > 0) ? ["Si una pieza trae «colores de esta pieza», sus materiales llevan SOLO esos colores, todos ellos; no le pongas los colores de las otras piezas."] : []),
     ...(conservadas.size ? ["Las piezas que traen medidas o participacion ya están en el plan del cliente: usa EXACTAMENTE esas medidas en la estructura y esa participacion por color en sus materiales; no las cambies."] : []),
     ...(!conservadas.size && medidasPropias.some(Boolean) ? ["Las piezas que traen medidas son las que el cliente eligió: usa EXACTAMENTE esas medidas en la estructura; no las cambies."] : []),
+    ...(palabrasCliente ? [palabrasCliente] : []),
     lineaColores(colores),
     // «de cada color» era imposible para colores con pocos tamaños lisos (plateado): el modelo lo quitaba, la validación
     // rechazaba el plan 3 veces y la guiada mostraba «No pude terminar este plan» (producción, 2026-10-06).
@@ -175,12 +184,14 @@ export type FotoParaRehacer<B> = { blueprint: B; imagen?: { base64: string; mime
  * lleva lo mismo que la clásica en cada turno con la referencia adjunta: la foto (`imagenesReferencia`), su lectura
  * (`referenceBlueprint`) y la creatividad por defecto; la instrucción ata cada pieza a su elemento de la foto.
  */
-export function cuerpoPlanGuiado<B>(propuesta: PropuestaGuiada, opciones: { reintento: boolean; planAnterior?: PlanActualGuiado; foto?: FotoParaRehacer<B> | null; faltantes?: readonly ColorFotoFaltante[] }) {
-  const { reintento, planAnterior, foto, faltantes } = opciones;
+export function cuerpoPlanGuiado<B>(propuesta: PropuestaGuiada, opciones: { reintento: boolean; planAnterior?: PlanActualGuiado; foto?: FotoParaRehacer<B> | null; faltantes?: readonly ColorFotoFaltante[]; cliente?: ContextoClienteGuiado }) {
+  const { reintento, planAnterior, foto, faltantes, cliente } = opciones;
   return {
     schema_version: "chat.v1" as const,
-    messages: [{ role: "user" as const, content: instruccionPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}), ...(foto?.referencia ? { referencia: foto.referencia } : {}), ...(faltantes?.length ? { faltantes } : {}) }) }],
-    brief: briefChatGuiado(propuesta.colores),
+    messages: [{ role: "user" as const, content: instruccionPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}), ...(foto?.referencia ? { referencia: foto.referencia } : {}), ...(faltantes?.length ? { faltantes } : {}), ...(cliente ? { cliente } : {}) }) }],
+    brief: briefChatGuiado(propuesta.colores, cliente),
+    // Las palabras del cliente: el plan las guarda como `original_request` (la escena de la imagen) y saca de ellas la ocasión.
+    ...(cliente?.solicitud ? { solicitudCliente: cliente.solicitud } : {}),
     // Piezas SIEMPRE individuales: el servidor separa cualquier estructura repetida y nombra cada pieza.
     piezasIndividuales: true as const,
     ...(foto ? { creatividad: CREATIVIDAD_POR_DEFECTO, referenceBlueprint: foto.blueprint, ...(foto.imagen ? { imagenesReferencia: [{ base64: foto.imagen.base64, mime: foto.imagen.mime }] } : {}) } : {}),
@@ -351,10 +362,15 @@ export function instruccionPlanFoto(opciones?: { reintento?: boolean; colores?: 
   ].join("\n");
 }
 
-/** Brief de chat-v1 del plan: solo los colores, sin evento ni temática (ver instruccionPlanGuiado). El briefSchema exige min(1). */
-export function briefChatGuiado(colores: readonly string[]): { colores?: string[] } {
+/**
+ * Brief de chat-v1 del plan: los colores y, con `cliente`, el evento, el lugar y el momento que dijo el cliente. Nada de
+ * eso filtra el catálogo (`filtrosDurosDeBusqueda`: lo que solo dice el brief no es filtro); sin el evento el plan
+ * inventaba la ocasión («Fiesta» para una boda) y la imagen no tenía el ambiente. La temática no va: el modelo la leería
+ * como colores. El briefSchema exige min(1).
+ */
+export function briefChatGuiado(colores: readonly string[], cliente?: ContextoClienteGuiado): { colores?: string[]; tipo_evento?: string; espacio?: string; momento_dia?: string } {
   const lista = listaColores(colores);
-  return lista.length ? { colores: lista } : {};
+  return { ...(lista.length ? { colores: lista } : {}), ...briefChatCliente(cliente) };
 }
 
 type LineaPlanRevisada = { titulo?: string; diam_pulg?: number | null; tamano_codigo?: string | null; unidades?: number };

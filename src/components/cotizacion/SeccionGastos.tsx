@@ -41,6 +41,8 @@ type Props = {
   onAgregar: (descripcion?: string) => void;
   onQuitar: (id: string) => void;
   onDeshacer: () => void;
+  /** Esta lista lleva el «?» de «Valor por unidad» en su primera fila (una sola vez en todo el precio). */
+  ayudaValor?: boolean;
 };
 
 const ICONO_SECCION: Record<SeccionCosto, LucideIcon> = {
@@ -154,13 +156,14 @@ export function SeccionGastos(props: Props) {
       ) : (
         <ul className="mt-2.5 space-y-2" aria-label={titulo}>
           <AnimatePresence initial={false}>
-            {conDeshacerEnSuSitio(filas.map((fila) => (
+            {conDeshacerEnSuSitio(filas.map((fila, posicion) => (
               <FilaGasto
                 key={fila.id}
                 seccion={seccion}
                 base={`${seccion}-${clave}-${fila.id}`}
                 titulo={titulo}
                 fila={fila}
+                ayudaValor={Boolean(props.ayudaValor) && posicion === 0}
                 errores={errores[fila.id] ?? {}}
                 tocada={tocadas.has(fila.id)}
                 subtotal={subtotal(fila.id)}

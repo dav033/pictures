@@ -4,7 +4,9 @@ import { useId, useMemo, useState, type PointerEvent } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Images, Wand2 } from "lucide-react";
 import type { ReferenciaGuiada } from "@/lib/ia/guiado/adaptar-analisis-referencia";
+import { Ayuda } from "@/components/ui/Ayuda";
 import { EASE_REBOTE, EASE_SALIDA, RESORTE, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
+import { AYUDAS } from "./ayudas-guiada";
 import { GloboMiniatura } from "./GloboMiniatura";
 import { conMayusculaInicial } from "./color-globo";
 import { lecturaFoto, unirConY, type CajaLeida, type ColorPieza, type PiezaLeida } from "./lectura-foto";
@@ -107,6 +109,7 @@ export function ReferenciaInspiracion({ miniatura, referencia, analizando = fals
                 {piezas.length} {piezas.length === 1 ? "pieza" : "piezas"} de globos
                 {lectura.globosVisibles ? ` · ≈ ${NUMERO.format(lectura.globosVisibles)} globos a la vista` : ""}
                 {lectura.cajas.length > 0 ? " · toca una pieza para verla en la foto" : ""}
+                {piezas.length > 0 && <Ayuda {...AYUDAS.lecturaFoto} className="-my-1 ml-1" />}
               </p>
             )}
             {lectura && lectura.colores.length > 0 && (

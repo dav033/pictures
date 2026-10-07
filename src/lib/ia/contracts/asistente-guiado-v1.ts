@@ -5,7 +5,45 @@ import { BasePlanSchema } from "@/lib/plan/edicion-esquemas";
 import { MAX_PIEZAS_PLAN } from "@/lib/plan/piezas-individuales";
 
 export const ASISTENTE_GUIADO_VERSION = "asistente-guiado.v1" as const;
-const BriefGuiadoSchema = z.object({ evento: z.string().trim().min(1).max(120).optional(), edad: z.number().int().min(0).max(120).optional(), tematica: z.string().trim().min(1).max(160).optional() }).strict();
+/**
+ * Lo que el cliente ya dijo con sus palabras y el servidor guardó sin modelo (`hechos-cliente.ts`, usabilidad 97 y
+ * comparador 100): «Soy decorador… arco orgánico de unos 3 metros… para una boda… cotizarle» dejaba el brief solo con
+ * los colores, el plan de 2 × 2,2 m, la cabecera vacía y la pregunta del uso otra vez. Todo opcional: un cliente
+ * anterior que no lo manda sigue valiendo.
+ */
+const MedidaClienteSchema = z.object({
+  /** Las palabras del cliente («unos 3 metros»). */
+  texto: z.string().trim().min(1).max(80),
+  /** Medida sin eje («3 metros»): la pieza decide si es el ancho, el alto o el largo. */
+  metros: z.number().positive().max(100).optional(),
+  ancho_m: z.number().positive().max(100).optional(),
+  alto_m: z.number().positive().max(100).optional(),
+  largo_m: z.number().positive().max(100).optional(),
+}).strict();
+const EstructuraClienteSchema = z.object({
+  id: z.enum(ESTRUCTURAS_OFICIALES_IDS),
+  /** Las palabras del cliente («arco orgánico»). */
+  texto: z.string().trim().min(1).max(80),
+  /** Pidió que fuera orgánica («arco orgánico»): mezcla de tamaños aunque la oficial no sea de las orgánicas. */
+  organica: z.boolean().optional(),
+}).strict();
+export const BriefGuiadoSchema = z.object({
+  evento: z.string().trim().min(1).max(120).optional(),
+  edad: z.number().int().min(0).max(120).optional(),
+  tematica: z.string().trim().min(1).max(160).optional(),
+  /** El rango que eligió el cliente («4 a 6 años»): la cabecera lo dice tal cual, no la edad que guardó el modelo. */
+  edadTexto: z.string().trim().min(1).max(40).optional(),
+  uso: z.enum(["negocio", "personal"]).optional(),
+  medida: MedidaClienteSchema.optional(),
+  estructura: EstructuraClienteSchema.optional(),
+  /** Palabras literales del cliente: «en un jardín», «de noche», «300 mil pesos». */
+  lugar: z.string().trim().min(1).max(120).optional(),
+  momento: z.string().trim().min(1).max(60).optional(),
+  presupuesto: z.string().trim().min(1).max(80).optional(),
+}).strict();
+export type BriefGuiado = z.infer<typeof BriefGuiadoSchema>;
+export type MedidaCliente = z.infer<typeof MedidaClienteSchema>;
+export type EstructuraCliente = z.infer<typeof EstructuraClienteSchema>;
 /** Plan que el cliente tiene a la vista: viaja en cada turno para que «Cambiar algo» conserve lo que no pidió cambiar. */
 /** El lado de una pieza individual («Columna izquierda»): lo conserva al rehacer el plan. */
 const LateralSchema = z.enum(["lateral_izquierdo", "lateral_derecho"]);
@@ -26,6 +64,9 @@ export const PlanActualGuiadoSchema = z.object({
   resumen: z.string().max(400).optional(),
 }).strict();
 export type PlanActualGuiado = z.infer<typeof PlanActualGuiadoSchema>;
+/** Una idea del catálogo que el cliente tiene a la vista (el último carrusel), en su orden: «me quedo con la primera». */
+export const IdeaVisibleGuiadaSchema = z.object({ id: z.string().regex(/^(?:ej|deco)-[a-z0-9-]+$/), titulo: z.string().trim().min(1).max(160) }).strict();
+export type IdeaVisibleGuiada = z.infer<typeof IdeaVisibleGuiadaSchema>;
 // Sin .strict(): zod descarta las claves desconocidas, así un cliente anterior que todavía manda `propuesta: true` no recibe 400.
 const EstadoGuiadoSchema = z.object({
   decoracionId: z.string().regex(/^(ej|deco)-[a-z0-9-]+$/).optional(),
@@ -33,6 +74,8 @@ const EstadoGuiadoSchema = z.object({
   alcancePropuesta: z.enum(["completa", "individual"]).optional(),
   piezaPedida: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
   planActual: PlanActualGuiadoSchema.optional(),
+  /** Las ideas del último carrusel, en orden: `elegir_idea` elige entre ellas (edicion-plan-chat.ts). */
+  ideasMostradas: z.array(IdeaVisibleGuiadaSchema).max(12).optional(),
 });
 const FotoInspiracionSchema = z.object({ base64: z.string().min(1).max(8_000_000), mime: z.enum(["image/jpeg", "image/png", "image/webp"]) }).strict();
 export const AsistenteGuiadoRequestSchema = z.object({
@@ -44,7 +87,8 @@ export const AsistenteGuiadoRequestSchema = z.object({
 }).strict();
 
 export const RespuestaGuiadaSchema = z.object({
-  brief: z.object({ evento: z.string().min(1).max(120), edad: z.number().int().min(0).max(120), tematica: z.string().min(1).max(160) }).strict().optional(),
+  // Parcial: también vuelve cuando solo cambió lo que dijo el cliente (evento, uso, medida…), sin temática todavía.
+  brief: BriefGuiadoSchema.optional(),
   decoraciones: z.array(z.unknown()).optional(),
   opciones: z.array(z.enum(["contratar", "costear", "comprar", "aprender"])).optional(),
   preguntaUso: z.boolean().optional(),

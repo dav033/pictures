@@ -3,6 +3,8 @@
 import { TrendingUp } from "lucide-react";
 import { FICHAS_GANANCIA, fichaActiva } from "@/lib/cotizacion/lectura-numeros";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
+import { AYUDAS } from "@/components/guiado/ayudas-guiada";
+import { Ayuda } from "@/components/ui/Ayuda";
 import { CLASE_NO_VIGENTE } from "./formato";
 import { registrarCotizacion, useRegistroEscrito } from "./registro-cotizacion";
 
@@ -29,12 +31,15 @@ export function CampoGanancia({ clave, valor, error, ganancia = null, onValor }:
   return (
     <div className="mt-3 rounded-2xl bg-superficie p-4 ring-1 ring-borde-suave ring-inset">
       <div className="flex items-center justify-between gap-3">
-        <label htmlFor={id} className="flex items-center gap-2 text-sm font-semibold text-texto">
-          <span className="grid size-7 place-items-center rounded-lg bg-exito-suave text-exito" aria-hidden="true">
-            <TrendingUp className="size-4" />
-          </span>
-          Tu ganancia
-        </label>
+        <span className="flex items-center gap-2">
+          <label htmlFor={id} className="flex items-center gap-2 text-sm font-semibold text-texto">
+            <span className="grid size-7 place-items-center rounded-lg bg-exito-suave text-exito" aria-hidden="true">
+              <TrendingUp className="size-4" />
+            </span>
+            Tu ganancia
+          </label>
+          <Ayuda {...AYUDAS.ganancia} />
+        </span>
         {ganancia && ganancia.cop > 0 && (
           <span className={`text-right text-xs text-texto-suave ${ganancia.atenuar ? CLASE_NO_VIGENTE : ""}`}>
             Ganas{" "}

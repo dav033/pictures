@@ -297,6 +297,8 @@ async function atenderPOST(request: Request) {
     creatividad,
     planVigente,
     ...(body.piezasIndividuales ? { piezasIndividuales: true } : {}),
+    // Vista guiada: las palabras del cliente para `original_request` y la ocasión del plan (nunca filtros del catálogo).
+    ...(body.solicitudCliente ? { solicitudCliente: body.solicitudCliente } : {}),
     signal: deadline.signal,
     hechosPeticion: { tieneFotoEspacio: Boolean(fotoEspacio), tieneImagenesReferencia: (imagenesReferencia?.length ?? 0) > 0 },
     onLlamada: (nombre) => {

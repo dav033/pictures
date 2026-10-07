@@ -284,6 +284,7 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
                 key={seccion}
                 seccion={seccion}
                 clave={clave}
+                ayudaValor={seccion === SECCIONES_COSTO.find((lista) => borrador.costos[lista].length > 0)}
                 filas={borrador.costos[seccion]}
                 errores={leido.erroresFila}
                 exceso={leido.excesos[seccion]}

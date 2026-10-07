@@ -9,7 +9,9 @@ import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { presentacionMaterialGuiado } from "@/lib/ia/guiado/presentacion-material-guiado";
 import { listaNatural } from "@/lib/ia/guiado/propuesta-composicion";
 import { CifraAnimada } from "./ajuste/AjustarPlan";
+import { Ayuda } from "@/components/ui/Ayuda";
 import { BotonAgregarIdea, type AccionAgregarIdea, type DatosAgregarIdea } from "./AgregarIdea";
+import { AYUDAS } from "./ayudas-guiada";
 import { DUR, EASE_REBOTE, EASE_SALIDA, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 import { FilaPieza } from "./FilaPieza";
 import { FotoDecoracion } from "./FotoDecoracion";
@@ -95,9 +97,12 @@ function EleccionDetallada({ decoracion, detalle, agregar }: { decoracion: Decor
             </motion.span>
           )}
           {avisoFoto && (
-            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-superficie-2 px-2.5 py-1 text-xs text-texto-suave">
-              <Camera className="size-3.5 shrink-0" aria-hidden />
-              {avisoFoto}
+            <p className="mt-2 flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-superficie-2 px-2.5 py-1 text-xs text-texto-suave">
+                <Camera className="size-3.5 shrink-0" aria-hidden />
+                {avisoFoto}
+              </span>
+              <Ayuda {...AYUDAS.contadasFoto} />
             </p>
           )}
         </motion.header>
@@ -111,6 +116,7 @@ function EleccionDetallada({ decoracion, detalle, agregar }: { decoracion: Decor
               key={pieza.id}
               pieza={pieza}
               indice={indice}
+              ayudaTamanos={indice === 0}
               dibujo={<span className="grid size-full place-items-center"><IconoEstructura id={pieza.oficial ?? "arco"} className="h-3/5 w-3/5" /></span>}
             />
           ))}
@@ -195,7 +201,7 @@ function DetalleTablas({ piezas, sinPieza, tituloSinPieza, globos, estimados, to
       : null;
   return (
     <div className="space-y-4 pb-1 pt-2">
-      {tablas.map((item) => <TablaGlobosPieza key={item.id} titulo={item.titulo} oficial={item.oficial} tabla={item.tabla} repeticiones={item.repeticiones} />)}
+      {tablas.map((item, posicion) => <TablaGlobosPieza key={item.id} titulo={item.titulo} oficial={item.oficial} tabla={item.tabla} repeticiones={item.repeticiones} ayuda={posicion === 0} />)}
       {tablas.length > 1 && (
         <p className="text-right text-sm font-semibold text-texto">Toda la idea: <span className="tabular-nums"><CifraAnimada valor={globos} /></span> {globos === 1 ? "globo" : "globos"}</p>
       )}
@@ -220,7 +226,7 @@ function EleccionSencilla({ decoracion, agregar }: { decoracion: DecoracionSempe
       {decoracion.materiales.length > 0 && <ul className="mt-3 space-y-1.5 text-sm">
         {decoracion.materiales.map((material) => <li key={material.variantId} className="flex gap-2"><span className="font-semibold tabular-nums">{textoCantidad(material)}</span><span>{nombreSempertex(material.nota) ?? minusculaInicial(nombreMaterial(material.nota) ?? "globos")}</span></li>)}
       </ul>}
-      {decoracion.materiales.some(cantidadContadaEnFoto) && <p className="mt-2 text-xs text-texto-suave">{AVISO_CONTADA_EN_FOTO}</p>}
+      {decoracion.materiales.some(cantidadContadaEnFoto) && <p className="mt-2 flex items-center gap-1.5 text-xs text-texto-suave"><span>{AVISO_CONTADA_EN_FOTO}</span><Ayuda {...AYUDAS.contadasFoto} /></p>}
       {agregar && <BotonAgregarIdea {...agregar} />}
     </div>
   </section>;

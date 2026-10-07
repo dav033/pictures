@@ -73,6 +73,13 @@ export const ChatRequestV1Schema = z.object({
    * (`separarEstructurasRepetidas`). Aditivo: sin ella, la vista clásica sigue igual. Python no lee esta petición.
    */
   piezasIndividuales: z.literal(true).optional(),
+  /**
+   * La vista guiada: lo que dijo el cliente con sus palabras, porque su mensaje es una instrucción de máquina («Resuelve
+   * ahora el plan exacto…»). Solo da `original_request` (la escena de la imagen y la auditoría) y la ocasión del plan;
+   * nunca filtros del catálogo, que siguen saliendo del mensaje (comparador 100, I2/I4). Aditivo: sin él, todo igual.
+   * Python no lee esta petición.
+   */
+  solicitudCliente: z.string().trim().min(1).max(2000).optional(),
 }).strict();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -95,6 +102,7 @@ export function parseChatRequestV1(input: unknown): ChatRequestV1 {
     creatividad: input.creatividad ?? undefined,
     planVigente: input.planVigente ?? undefined,
     piezasIndividuales: input.piezasIndividuales ?? undefined,
+    solicitudCliente: input.solicitudCliente ?? undefined,
   });
 }
 

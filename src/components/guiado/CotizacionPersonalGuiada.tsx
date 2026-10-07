@@ -4,6 +4,8 @@ import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { motion } from "motion/react";
+import { Ayuda } from "@/components/ui/Ayuda";
+import { AYUDAS } from "./ayudas-guiada";
 import { acabadoCliente, conAcabado, nombreLineaCliente, partesLinea, pulgadasDe } from "./formato";
 import { BaldosaGlobo } from "./GloboMiniatura";
 import { colorSempertex } from "./color-sempertex";
@@ -88,7 +90,7 @@ export function CotizacionPersonalGuiada({ cotizacion, decoracion }: { cotizacio
           {sempertex && <p className="mt-0.5 text-xs text-texto-suave">Globos Sempertex, con la foto de cada uno</p>}
         </div>
         <p className="text-right">
-          <span className="block text-xs text-texto-suave">Total con IVA</span>
+          <span className="flex items-center justify-end gap-1 text-xs text-texto-suave">Total con IVA <Ayuda {...AYUDAS.precioPersonal} className="-my-1" /></span>
           {/* `data-precio-total`: a él va la vista cuando el cliente pregunta el precio por chat; entra resaltado y se apaga. */}
           <span data-precio-total className="relative block scroll-mt-24 text-2xl font-semibold tracking-tight tabular-nums text-texto">
             <motion.span aria-hidden className="absolute -inset-x-2 -inset-y-0.5 rounded-lg bg-acento-suave" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 1.4, delay: 0.6, ease: EASE_SALIDA }} />

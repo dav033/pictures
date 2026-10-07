@@ -781,27 +781,27 @@ export type CambioPlan =
   | { tipo: "tamano"; estructuraId: string; direccion: 1 | -1; pareja?: boolean }
   | { tipo: "medidas"; estructuraId: string; medidas: MedidasObjetivo; pareja?: boolean }
   | { tipo: "quitar-color"; estructuraId: string; indice: number; pareja?: boolean }
-  | { tipo: "agregar-color"; color: string; globo?: GloboParaPlan }
+  | { tipo: "agregar-color"; color: string; globo?: GloboParaPlan; /** Solo en estas piezas (pedido por chat: «agrégale dorado a las columnas»). */ estructuraIds?: string[] }
   | { tipo: "reemplazar-color"; color: string; productIdAnterior?: string; estructuraIds?: string[]; globo: GloboParaPlan }
   | { tipo: "tamano-todo"; direccion: 1 | -1 }
   | { tipo: "quitar-pieza"; estructuraId: string };
 
 /** El cambio toca todas las piezas (añadir o cambiar un color en todo el plan, agrandarlo entero). */
 export function cambiaTodasLasPiezas(cambio: CambioPlan): boolean {
-  return cambio.tipo === "agregar-color" || cambio.tipo === "tamano-todo" || (cambio.tipo === "reemplazar-color" && !cambio.estructuraIds?.length);
+  return (cambio.tipo === "agregar-color" && !cambio.estructuraIds?.length) || cambio.tipo === "tamano-todo" || (cambio.tipo === "reemplazar-color" && !cambio.estructuraIds?.length);
 }
 
 /** La pieza que toca el cambio (donde se ve «Calculando…»), o null si es del plan entero. */
 export function piezaDelCambio(cambio: CambioPlan): string | null {
-  if (cambio.tipo === "agregar-color" || cambio.tipo === "tamano-todo") return null;
-  if (cambio.tipo === "reemplazar-color") return cambio.estructuraIds?.[0] ?? null;
+  if (cambio.tipo === "tamano-todo") return null;
+  if (cambio.tipo === "reemplazar-color" || cambio.tipo === "agregar-color") return cambio.estructuraIds?.[0] ?? null;
   return cambio.estructuraId;
 }
 
 /** Las piezas que esperan el plan nuevo: la del cambio y, con `pareja`, también su pareja; null = todas. */
 export function piezasDelCambio(plan: PlanGuiado, cambio: CambioPlan): string[] | null {
   if (cambiaTodasLasPiezas(cambio)) return null;
-  if (cambio.tipo === "reemplazar-color") return cambio.estructuraIds ?? null;
+  if (cambio.tipo === "reemplazar-color" || cambio.tipo === "agregar-color") return cambio.estructuraIds ?? null;
   const propia = piezaDelCambio(cambio);
   if (!propia) return null;
   const pareja = "pareja" in cambio && cambio.pareja ? parejaDe(plan, propia) : null;
@@ -831,7 +831,7 @@ export function globosDeColorEnTexto(cantidad: number, color: string): string {
  * Sin verbo en primera persona, para que se lea igual en «Listo: …» y en «Último ajuste: …».
  */
 export function describirCambio(plan: PlanGuiado, cambio: CambioPlan): string {
-  if (cambio.tipo === "agregar-color") return `con ${cambio.globo?.nombre ?? colorCliente(cambio.color)}`;
+  if (cambio.tipo === "agregar-color") return `con ${cambio.globo?.nombre ?? colorCliente(cambio.color)}${cambio.estructuraIds?.length ? ` en ${cambio.estructuraIds.map((id) => piezaConPareja(plan, id, false)).join(" y ")}` : ""}`;
   if (cambio.tipo === "tamano-todo") return cambio.direccion > 0 ? "todas las piezas un poco más grandes" : "todas las piezas un poco más pequeñas";
   if (cambio.tipo === "reemplazar-color") {
     const donde = cambio.estructuraIds?.length ? ` en ${cambio.estructuraIds.map((id) => piezaConPareja(plan, id, false)).join(" y ")}` : "";

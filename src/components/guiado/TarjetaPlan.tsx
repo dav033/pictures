@@ -13,7 +13,8 @@ import { EsqueletoImagen } from "./Esqueletos";
 import { FilaPieza } from "./FilaPieza";
 import { GraficaMotorGuiada } from "./GraficaMotorGuiada";
 import { ModificarPieza, piezaModificable } from "./ModificarPieza";
-import { leyendaDePieza } from "./motor-pieza";
+import { SelectorUsoCosteo, type OrigenUsoCosteo } from "./SelectorUsoCosteo";
+import { leyendaDePieza, motorDePieza } from "./motor-pieza";
 import { PanelPlegable } from "./Plegable";
 import { hexColor, piezasVistaDePlan } from "./piezas-vista";
 import { BotonVerDetalle, DetalleGlobos } from "./TablaGlobosPieza";
@@ -24,6 +25,8 @@ import { AjustarPlan } from "./ajuste/AjustarPlan";
 import { useAjustePlanGuiado, type AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
 import { listaNatural } from "@/lib/ia/guiado/propuesta-composicion";
 import { avisoColoresFoto } from "@/lib/plan/colores-foto-plan";
+import { ajustesDePython } from "@/lib/ia/guiado/ajustes-python";
+import { AjustesPropuesta } from "@/components/plan/AjustesPropuesta";
 
 export type AccionPlan = "ver" | "costear" | "comprar" | "aprender" | "contratar" | "cambiar";
 export type EstadoImagen = "nada" | "cargando" | "lista" | "error";
@@ -52,7 +55,10 @@ type Props = {
   contextoCompra: ContextoCompra;
   /** ver, comprar, aprender, contratar, cambiar. «costear» abre aquí el selector y llega por onCosteo. */
   onAccion: (accion: Exclude<AccionPlan, "costear">) => void;
-  onCosteo: (uso: Uso) => void;
+  /** El uso del costeo: elegido aquí, el que ya se sabía (`usoConocido`) o cambiado con el enlace. */
+  onCosteo: (uso: Uso, origen: OrigenUsoCosteo) => void;
+  /** El uso que el cliente ya dijo en la conversación (idea, «soy decorador», «para mi casa»): no se vuelve a preguntar. */
+  usoConocido?: Uso | null;
   /** Sin precio: «Buscar un proveedor cerca». */
   onProveedores: () => void;
   /** «Buscar un distribuidor cerca» desde Comprar. */
@@ -69,6 +75,8 @@ type Props = {
    * DENTRO de «Ajustar mi plan» (pedido del dueño, 2026-10-06), no como chips sueltos bajo la tarjeta.
    */
   onSugerencia?: (texto: string) => void;
+  /** Un cambio pedido por chat se está haciendo sobre este plan (edicion-chat-guiada.ts): el mismo esqueleto que un ajuste. */
+  recalculandoPorChat?: boolean;
 };
 
 function sinAjuste(): void {}
@@ -78,7 +86,7 @@ function sinAjuste(): void {}
  * con él, con una acción principal clara («Ver cómo quedaría») y el resto a mano. Las cantidades son de Python.
  */
 export function TarjetaPlan(props: Props) {
-  const { plan, cotizacion, imagen, estadoImagen, usoCosteo, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
+  const { plan, cotizacion, imagen, estadoImagen, usoCosteo, usoConocido, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
   const ultimoAjuste = ajustes?.at(-1);
   const reducido = useReducedMotion();
   const desglose = useMemo(() => generarPasosPlan(plan), [plan]);
@@ -87,6 +95,8 @@ export function TarjetaPlan(props: Props) {
   const piezasVista = useMemo(() => piezasVistaDePlan(plan), [plan]);
   // Los tonos Sempertex de cada pieza (uno por material): con ellos pinta el motor, como en la clásica.
   const tonosPorPieza = useMemo(() => new Map(piezas.map((pieza) => [pieza.estructura_id, leyendaDePieza(plan, pieza.estructura_id).map((color) => color.hex)])), [plan, piezas]);
+  // El «?» del dibujo va en la primera pieza que el motor dibuja (un bouquet o una figura solo llevan su icono).
+  const piezaConAyudaDibujo = useMemo(() => piezas.findIndex((pieza) => motorDePieza(pieza) !== null), [piezas]);
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const idDetalle = useId();
   /** La pieza abierta en «Modificar» (su gráfica grande con los mandos del editor de la clásica). */
@@ -100,12 +110,21 @@ export function TarjetaPlan(props: Props) {
   // final, lo empujaba hacia arriba mientras se desplegaba y lo primero que se veía eran sus últimos mandos.
   const mostrarAjuste = () => filaAjusteRef.current?.scrollIntoView({ block: "start", behavior: reducido ? "auto" : "smooth" });
   const ajuste = useAjustePlanGuiado({ plan, onPlanAjustado: onPlanAjustado ?? sinAjuste });
-  // Mientras Python rehace el plan, el total y los colores muestran su esqueleto y las acciones esperan.
-  const recalculando = ajuste.guardando;
+  // Mientras Python rehace el plan (un ajuste del panel o un cambio pedido por chat), el total y los colores muestran su
+  // esqueleto y las acciones esperan.
+  const recalculando = ajuste.guardando || Boolean(props.recalculandoPorChat);
   const ajustable = vigente && Boolean(onPlanAjustado);
   // Las piezas que se abren con su dibujo (las arma un motor): «Cambiar la forma» desde «Ajustar mi plan».
   const modificables = useMemo(() => new Set(piezas.filter((pieza) => piezaModificable(plan, pieza.estructura_id)).map((pieza) => pieza.estructura_id)), [plan, piezas]);
   const costeoAbierto = costeoVisible ?? usoCosteo !== null;
+  // El uso de este plan o, si todavía no se costeó, el que el cliente ya dijo: no se le vuelve a preguntar.
+  const usoMostrado = usoCosteo ?? usoConocido ?? null;
+  const abrirCosteo = () => {
+    const abrir = !costeoAbierto;
+    setCosteoVisible(abrir);
+    // Abrir con el uso ya sabido es costear con él: queda registrado y la acción, hecha.
+    if (abrir && usoCosteo === null && usoConocido) onCosteo(usoConocido, "conocido");
+  };
   const bloqueado = ocupado || estadoImagen === "cargando" || recalculando;
   // Tras un ajuste, la paleta del concepto ya no dice los colores que lleva el plan: se muestran los que Python resolvió.
   const paleta = (plan.plan.concepto.paleta.length && !ajustes?.length ? plan.plan.concepto.paleta : [...new Set(desglose.globos.map((globo) => globo.color))]).slice(0, 6);
@@ -120,6 +139,8 @@ export function TarjetaPlan(props: Props) {
   // Un color de la foto que el plan no compra ni con el reintento se dice en una frase, no se pierde en silencio
   // (`avisoColoresFoto`). Solo los de la paleta del plan: con «Otros colores» la foto ya no manda. Tras un ajuste, no.
   const avisoColores = useMemo(() => (ajustes?.length ? null : avisoColoresFoto(plan, plan.plan.concepto.paleta.length ? { soloEstos: plan.plan.concepto.paleta } : {})), [plan, ajustes]);
+  // «Ajustes que hice»: lo que Python sustituyó o supuso, en palabras de cliente, como en la clásica (comparador 100, I5).
+  const ajustesPython = useMemo(() => ajustesDePython(plan, { sinColoresDeFoto: Boolean(avisoColores) }), [plan, avisoColores]);
 
   return (
     <motion.article
@@ -163,6 +184,7 @@ export function TarjetaPlan(props: Props) {
           {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0)} {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0) === 1 ? "pieza" : "piezas"}: {listaNatural(piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} × ` : ""}${pieza.nombre}`))}
         </p>
         {avisoColores && <p className="mt-1.5 rounded-xl bg-aviso-suave px-3 py-2 text-sm text-texto">{avisoColores}</p>}
+        {ajustesPython.length > 0 && <AjustesPropuesta ajustes={ajustesPython} className="mt-2" />}
         {/* Sin salida animada: el ajuste nuevo reemplaza al anterior en el acto, nunca se ven dos. */}
         {ultimoAjuste && (
           <motion.p
@@ -192,6 +214,8 @@ export function TarjetaPlan(props: Props) {
               pieza={vista}
               indice={indice}
               recalculando={recalculando}
+              ayudaDibujo={indice === piezaConAyudaDibujo}
+              ayudaTamanos={indice === 0}
               dibujo={<GraficaMotorGuiada plan={plan.plan} version={plan.plan_hash} pieza={pieza} mezclaReal={mezclaReal} colores={tonosPorPieza.get(pieza.estructura_id)} id={vista.oficial ?? "arco"} nombre={pieza.nombre} />}
               {...(abrir ? { onModificar: abrir } : {})}
               {...(modificable ? {
@@ -317,7 +341,7 @@ export function TarjetaPlan(props: Props) {
             {estadoImagen === "cargando" ? "Dibujando…" : etiquetaPrincipal}
           </motion.button>
           <div className="grid grid-cols-2 gap-2">
-            <BotonSecundario icono={<Calculator className="size-4" />} hecha={hecha("costear")} activo={costeoAbierto} deshabilitado={bloqueado} onClick={() => setCosteoVisible(!costeoAbierto)}>Cuánto cuesta</BotonSecundario>
+            <BotonSecundario icono={<Calculator className="size-4" />} hecha={hecha("costear")} activo={costeoAbierto} deshabilitado={bloqueado} onClick={abrirCosteo}>Cuánto cuesta</BotonSecundario>
             <BotonSecundario icono={<ShoppingBag className="size-4" />} hecha={hecha("comprar")} activo={compraAbierta} deshabilitado={bloqueado} onClick={() => onAccion("comprar")}>Comprar</BotonSecundario>
             <BotonSecundario icono={<GraduationCap className="size-4" />} hecha={hecha("aprender")} deshabilitado={bloqueado} onClick={() => onAccion("aprender")}>Aprender a hacerlo</BotonSecundario>
             <BotonSecundario icono={<UserRound className="size-4" />} hecha={hecha("contratar")} deshabilitado={bloqueado} onClick={() => onAccion("contratar")}>Contratar decorador</BotonSecundario>
@@ -339,31 +363,14 @@ export function TarjetaPlan(props: Props) {
       {vigente && (
         <PanelPlegable abierto={costeoAbierto}>
           <div className="pt-3">
-            <p className="mb-2 text-sm font-medium text-texto">¿Para qué es la decoración?</p>
-            <div role="radiogroup" aria-label="Para qué es la decoración" className="grid grid-cols-2 gap-1 rounded-2xl bg-superficie-2 p-1">
-              {(["personal", "negocio"] as const).map((uso) => {
-                const marcado = usoCosteo === uso;
-                return (
-                  <button
-                    key={uso}
-                    type="button"
-                    role="radio"
-                    aria-checked={marcado}
-                    disabled={ocupado}
-                    onClick={() => onCosteo(uso)}
-                    className={`relative min-h-11 rounded-xl px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-60 ${marcado ? "text-texto" : "text-texto-suave hover:text-texto"}`}
-                  >
-                    {marcado && <motion.span layoutId={`segmento-uso-${plan.plan_hash}`} transition={RESORTE} className="absolute inset-0 rounded-xl bg-superficie shadow-[0_1px_3px_var(--sombra)]" />}
-                    <span className="relative">{uso === "personal" ? "Uso personal" : "Para mi negocio"}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {/* El uso se pregunta UNA vez: si ya lo dijo (idea, «soy decorador», «para mi casa»), el precio sale directo y
+                queda un enlace discreto para cambiarlo (usabilidad 97, punto 2). */}
+            <SelectorUsoCosteo uso={usoMostrado} ocupado={ocupado} onElegir={onCosteo} />
             <AnimatePresence initial={false} mode="wait">
-              {usoCosteo && (
-                <motion.div key={usoCosteo} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: EASE_SALIDA }} className="overflow-hidden">
+              {usoMostrado && (
+                <motion.div key={usoMostrado} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: EASE_SALIDA }} className="overflow-hidden">
                   {cotizacion
-                    ? <CostosMateriales cotizacion={cotizacion} uso={usoCosteo} clave={`plan-${plan.plan_hash}`} onProveedores={onProveedores} mensajePendiente="Todavía no tengo el precio de estos materiales." />
+                    ? <CostosMateriales cotizacion={cotizacion} uso={usoMostrado} clave={`plan-${plan.plan_hash}`} onProveedores={onProveedores} mensajePendiente="Todavía no tengo el precio de estos materiales." />
                     : <SinPrecio etiqueta="Buscar un proveedor cerca" onClick={onProveedores} />}
                 </motion.div>
               )}

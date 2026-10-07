@@ -847,6 +847,12 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
    * estructura con repeticiones N en N piezas con nombre propio antes de resolver con Python (piezas-individuales.ts).
    */
   piezasIndividuales?: boolean;
+  /**
+   * Vista guiada (chat-v1 `solicitudCliente`): lo que dijo el cliente, porque su mensaje es una instrucción de máquina.
+   * Da la ocasión del plan (`concepto.ocasion`, antes «Fiesta» inventada para una boda) y su `original_request` (la
+   * escena de la imagen). Las validaciones y los filtros del catálogo siguen leyendo `solicitudOriginal`.
+   */
+  solicitudCliente?: string;
 } = {}): RegistroHerramientas {
   const ragPool = options.pool ?? getRagPool();
   // Every plan audit row of this turn carries the request facts and the
@@ -882,8 +888,16 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // C4: occasion is the customer's open label, not a closed taxonomy
     // value invented by the model. Keep model wording only when no label
     // was recoverable from the original request.
-    const eventLabel = parseEventSearchIntent(estado.solicitudOriginal).event_label;
+    // Vista guiada: la ocasión y la petición del plan salen de las palabras del cliente (`solicitudCliente`), no de la
+    // instrucción de máquina; las validaciones siguen con `eventIntent` de la solicitud del turno.
+    const eventLabel = parseEventSearchIntent(options.solicitudCliente ?? estado.solicitudOriginal).event_label;
     const eventIntent = parseEventIntent(estado.solicitudOriginal);
+    const intentoDelPlan = options.solicitudCliente ? parseEventIntent(options.solicitudCliente) : eventIntent;
+    if (options.solicitudCliente) {
+      decidir("regla:solicitud_cliente_guiada", "ocasión y petición del plan desde las palabras del cliente (no de la instrucción de máquina)", { ocasion: eventLabel, original_request: intentoDelPlan.original_request }, {
+        entrada: { solicitudCliente: options.solicitudCliente, ocasionModelo: (args as { concepto?: { ocasion?: unknown } }).concepto?.ocasion ?? null },
+      });
+    }
     // Ruido de redondeo de las participaciones y un `principal` que no es el
     // material de mayor participación se corrigen antes del esquema, para no
     // gastar un rechazo (normalizarParticipacionesPlan).
@@ -1690,7 +1704,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       };
     }
     resuelto.request_id = estado.ragRequestId;
-    enriquecerPlanResueltoEvento(resuelto, eventIntent, estado.ragEventEvidence ?? new Map(), estado.ragEventRelaxations ?? []);
+    enriquecerPlanResueltoEvento(resuelto, intentoDelPlan, estado.ragEventEvidence ?? new Map(), estado.ragEventRelaxations ?? []);
     resuelto.approval_token = crearTokenPlan({
       planHash: resuelto.plan_hash,
       requestId: estado.ragRequestId,

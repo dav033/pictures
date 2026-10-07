@@ -27,7 +27,10 @@ import { normalizarPropuestaComposicion } from "@/lib/ia/guiado/propuesta-compos
 import { recortarCantidades } from "@/lib/plan/piezas-individuales";
 import { esquemaHerramientaPropuesta, type AlcancePropuesta } from "@/lib/ia/guiado/esquema-herramienta-propuesta";
 import { textoPlanActual } from "@/lib/ia/guiado/instruccion-plan";
+import { briefConHechos, etiquetaEdadCliente, hechosDelCliente, propuestaConLoPedido, textoHechosCliente, usoDeTexto } from "@/lib/ia/guiado/hechos-cliente";
+import type { BriefGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { conRegistro, contextoActual, decidir, envolverRegistroHerramientas } from "@/lib/registro";
+import { detectarEleccionIdea, detectarPedidoEdicion, fraseDelPedido, HERRAMIENTA_ELEGIR_IDEA, HERRAMIENTAS_EDICION, herramientasConEdicion, ideaDesdeHerramienta, pedidoDesdeHerramienta, textoIdeasParaModelo, textoPiezasParaModelo, type DeteccionEdicion, type HerramientaEdicion } from "@/lib/ia/guiado/edicion-plan-chat";
 
 export const maxDuration = 75;
 
@@ -38,7 +41,7 @@ const ACCIONES_PLAN = ["ver", "costear", "comprar", "aprender", "contratar"] as 
 const herramientas: Herramienta[] = [
   { nombre: "guardar_brief_guiado", descripcion: "Guarda el evento y la temática que el cliente ya indicó; la edad solo si es un cumpleaños.", esquema: { type: "object", properties: { evento: { type: "string" }, edad: { type: "integer" }, tematica: { type: "string" } }, required: ["evento", "tematica"], additionalProperties: false } },
   { nombre: "buscar_decoraciones_sempertex", descripcion: "Busca ideas de decoración según evento y temática (y la edad solo en un cumpleaños).", esquema: { type: "object", properties: { evento: { type: "string" }, edad: { type: "integer" }, tematica: { type: "string" } }, required: ["evento", "tematica"], additionalProperties: false } },
-  { nombre: "proponer_composicion", descripcion: "Propone entre una y tres estructuras oficiales para esta celebración. Usa exclusivamente ids oficiales y colores de la paleta Sempertex permitida. Llama cuando el cliente pida que le propongas algo o cuando pida cambiar su plan o su propuesta.", esquema: { type: "object", properties: { frase: { type: "string" }, colores: { type: "array", description: "Usa el tono que dijo el cliente si es uno de los claros (celeste, rosa pastel, durazno), no su familia.", items: { type: "string", enum: [...COLORES_PROPUESTA_V2] }, minItems: 1, maxItems: 5 }, piezas: { type: "array", items: { type: "object", properties: { estructura: { type: "string", enum: [...ESTRUCTURAS_OFICIALES_IDS] }, cantidad: { type: "integer", minimum: 1, maximum: 12 } }, required: ["estructura", "cantidad"], additionalProperties: false }, minItems: 1, maxItems: 3 } }, required: ["frase", "colores", "piezas"], additionalProperties: false } },
+  { nombre: "proponer_composicion", descripcion: "Propone entre una y tres estructuras oficiales para esta celebración. Usa exclusivamente ids oficiales y colores de la paleta Sempertex permitida. Llama cuando el cliente pida que le propongas algo, o un cambio de su plan que no cabe en las herramientas de edición (otra temática, otras piezas, más sencillo).", esquema: { type: "object", properties: { frase: { type: "string" }, colores: { type: "array", description: "Usa el tono que dijo el cliente si es uno de los claros (celeste, rosa pastel, durazno), no su familia.", items: { type: "string", enum: [...COLORES_PROPUESTA_V2] }, minItems: 1, maxItems: 5 }, piezas: { type: "array", items: { type: "object", properties: { estructura: { type: "string", enum: [...ESTRUCTURAS_OFICIALES_IDS] }, cantidad: { type: "integer", minimum: 1, maximum: 12 } }, required: ["estructura", "cantidad"], additionalProperties: false }, minItems: 1, maxItems: 3 } }, required: ["frase", "colores", "piezas"], additionalProperties: false } },
   { nombre: "ofrecer_opciones", descripcion: "Ofrece las cuatro opciones para continuar con una decoración elegida.", esquema: { type: "object", properties: {}, additionalProperties: false } },
   { nombre: "preguntar_uso", descripcion: "Solicita elegir entre negocio y uso personal antes de consultar precios.", esquema: { type: "object", properties: {}, additionalProperties: false } },
   { nombre: "pasos_decoracion", descripcion: "Muestra los pasos de montaje de la decoración que el cliente eligió en la interfaz. No necesita argumentos.", esquema: { type: "object", properties: {}, additionalProperties: false } },
@@ -142,15 +145,42 @@ async function turnoGuiado(request: Request) {
     motivo: estado?.alcancePropuesta ? "lo declaró la interfaz" : alcancePropuesta ? "texto exacto de un botón" : "turno libre (sin alcance)",
   });
   const planActual = estado?.planActual;
-  const usoConfirmado = estado?.uso;
+  // Lo que el cliente ya dijo, leído sin modelo (hechos-cliente.ts): evento, uso, medida, pieza, lugar, momento y
+  // presupuesto. Usabilidad 97: «Soy decorador… arco orgánico de unos 3 metros… para una boda… cotizarle» perdía todo
+  // menos los colores, y el uso se preguntaba otra vez aunque ya lo hubiera dicho o elegido.
+  const mensajesDelCliente = messages.filter((mensaje) => mensaje.role === "user").map((mensaje) => mensaje.content);
+  const hechos = hechosDelCliente(mensajesDelCliente);
+  // El uso: lo que dice el último mensaje («es para mi negocio»), lo que ya eligió (botones) o lo que dijo antes.
+  const usoDelTurno = usoDeTexto(ultimoUsuario);
+  const usoConfirmado = usoDelTurno ?? estado?.uso ?? hechos.uso;
+  if (usoConfirmado && usoConfirmado !== estado?.uso) {
+    decidir("regla:uso_del_cliente", "uso (negocio o personal) que el cliente ya dijo con sus palabras: no se vuelve a preguntar", usoConfirmado, {
+      entrada: { usoInterfaz: estado?.uso ?? null, usoUltimoMensaje: usoDelTurno, usoConversacion: hechos.uso ?? null, ultimoUsuario },
+      motivo: usoDelTurno ? "lo dice el último mensaje" : "lo dijo antes en la conversación",
+    });
+  }
+  if (Object.keys(hechos).length) decidir("regla:hechos_cliente", "lo que el cliente ya dijo, leído sin modelo (evento, uso, medida, pieza, lugar, momento, presupuesto)", hechos, { entrada: { mensajesCliente: mensajesDelCliente.length, ultimoUsuario } });
   const decoracionConfirmada = estado?.decoracionId;
   const proveedores = bibliotecaVisible();
   const directorio = proveedoresVisibles();
+  // Editar el plan vigente y elegir una idea POR CHAT, sin rehacer nada (edicion-plan-chat.ts; probador 104: «el azul
+  // cámbialo por celeste… el resto igual» rehacía el plan entero). Las reglas leen el pedido antes que el modelo y
+  // deciden sus herramientas: con un cambio puntual solo tiene las de edición, que aplica la vista con el editor.
+  const idsVisibles = new Set(proveedores.map((item) => item.id));
+  const ideasVisibles = (estado?.ideasMostradas ?? []).filter((idea) => idsVisibles.has(idea.id));
+  const deteccionEdicion: DeteccionEdicion = planActual && !alcancePropuesta ? detectarPedidoEdicion(ultimoUsuario, planActual) : { estado: "ninguna" };
+  const edicionPuntual = deteccionEdicion.estado === "edicion" || deteccionEdicion.estado === "incompleta";
+  const eleccionIdea = !alcancePropuesta && !edicionPuntual ? detectarEleccionIdea(ultimoUsuario, ideasVisibles) : null;
+  if (planActual) decidir("regla:edicion_plan_chat", "qué pide el cliente sobre su plan vigente (reglas, antes del modelo)", deteccionEdicion, { entrada: { ultimoUsuario, piezas: textoPiezasParaModelo(planActual), colores: planActual.colores, alcancePropuesta } });
+  if (ideasVisibles.length) decidir("regla:elegir_idea_chat", "si el cliente elige con palabras una de las ideas que tiene a la vista", eleccionIdea ?? { elige: false }, { entrada: { ultimoUsuario, ideas: ideasVisibles.map((idea) => idea.titulo) } });
   // Lo que escribió el cliente, normalizado: la ciudad de buscar_proveedores tiene que salir de aquí, no del modelo.
-  const textoCliente = ` ${normalizarBusqueda(messages.filter((mensaje) => mensaje.role === "user").map((mensaje) => mensaje.content).join(" "))} `;
-  // El brief del cliente solo se usa para completar; el resultado devuelve brief únicamente cuando una herramienta lo fija.
+  const textoCliente = ` ${normalizarBusqueda(mensajesDelCliente.join(" "))} `;
+  // El brief del cliente solo se usa para completar; las herramientas fijan evento, edad y temática, y al final del turno
+  // se le suma lo que dijo el cliente (`briefConHechos`).
   const briefPrevio = parsed.data.brief;
   const datos: Record<string, unknown> = {};
+  // El uso que dijo con sus palabras vuelve a la interfaz: «Cuánto cuesta» lo abre ya elegido.
+  if (usoConfirmado && usoConfirmado !== estado?.uso) datos.uso = usoConfirmado;
   const deadline = crearDeadlineSignal(request.signal, DEADLINE_TURNO_MS);
   try {
     const id = resolverProveedor({ cookie: request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1] });
@@ -180,7 +210,27 @@ async function turnoGuiado(request: Request) {
       if (fiel.quitados.length) decidir("regla:tematica_fiel_cliente", "temática guardada con los colores que dijo el cliente", { tematica: fiel.tematica, quitados: fiel.quitados }, { entrada: { herramienta, tematicaModelo: tematica } });
       return fiel.tematica;
     };
+    /** Un cambio del plan vigente por chat: se valida contra el plan y las reglas, y la vista lo aplica con el editor. */
+    const editarPlan = async (nombre: HerramientaEdicion, args: Record<string, unknown>) => {
+      if (!planActual) return { ok: false, motivo: "sin_plan_vigente" };
+      if (datos.edicionPlan) return { ok: false, motivo: "un_cambio_por_turno", accion_requerida: "Ya hay un cambio en camino: di cuál haces y que después puede pedir el siguiente." };
+      const resultado = pedidoDesdeHerramienta(nombre, args, { plan: planActual, ultimoUsuario, deteccion: deteccionEdicion });
+      decidir("regla:edicion_plan_chat", "cambio del plan vigente pedido por chat (lo aplica la vista con el editor, sin rehacer el plan)", resultado, { entrada: { herramienta: nombre, argsModelo: args, deteccion: deteccionEdicion } });
+      if (!resultado.ok) return resultado;
+      datos.edicionPlan = resultado.pedido;
+      return { ok: true, cambio: fraseDelPedido(resultado.pedido), aviso: "La interfaz hace este cambio sobre el plan del cliente y conserva todo lo demás (título, medidas, acabados, otros colores y piezas); Python vuelve a contar los globos. Responde con UNA frase corta que diga qué cambias; no digas que ya quedó ni des cantidades ni precios." };
+    };
+    const herramientasDeEdicion = Object.fromEntries(HERRAMIENTAS_EDICION.map((nombre) => [nombre, (args: Record<string, unknown>) => editarPlan(nombre, args)]));
     const registro = {
+      ...herramientasDeEdicion,
+      [HERRAMIENTA_ELEGIR_IDEA]: async (args: Record<string, unknown>) => {
+        if (!ideasVisibles.length) return { ok: false, motivo: "sin_ideas_a_la_vista" };
+        const resultado = ideaDesdeHerramienta(args, ideasVisibles, eleccionIdea);
+        decidir("regla:elegir_idea_chat", "idea elegida por chat (la vista hace lo mismo que «Me gusta esta»)", resultado, { entrada: { argsModelo: args, deteccion: eleccionIdea } });
+        if (!resultado.ok) return resultado;
+        datos.ideaElegida = resultado.idea;
+        return { ok: true, idea: resultado.idea.titulo, aviso: "La interfaz marca esa idea como elegida y muestra lo que lleva y qué puede hacer con ella. Responde con UNA frase cálida, sin «Opciones:»." };
+      },
       guardar_brief_guiado: async (args: Record<string, unknown>) => {
         const entrada = z.object({ evento: z.string().trim().min(1).max(120), edad: z.number().int().min(0).max(120).nullish(), tematica: z.string().trim().min(1).max(160) }).strict().parse(args);
         // 0 = «sin edad» (boda, baby shower…): el contrato de salida no cambia.
@@ -222,9 +272,15 @@ async function turnoGuiado(request: Request) {
       proponer_composicion: async (args: Record<string, unknown>) => {
         const base = PropuestaComposicionSchema.parse(args);
         // El alcance que eligió el cliente manda aunque el modelo se salga del esquema del turno.
-        const piezas = alcancePropuesta === "individual"
+        const delAlcance = alcancePropuesta === "individual"
           ? [{ estructura: piezaPedida ?? base.piezas[0]!.estructura, cantidad: 1 }]
           : alcancePropuesta === "completa" ? base.piezas.map((pieza) => ({ ...pieza, cantidad: Math.min(pieza.cantidad, 4) })) : base.piezas;
+        // La pieza y la medida que pidió el cliente con sus palabras mandan sobre las del modelo («arco orgánico de unos 3
+        // metros» → `arco` de 3 m de ancho, no `arco_asimetrico` de 2 m). Solo sin plan vigente: un cambio sobre el plan
+        // conserva lo suyo (instruccion-plan.ts), y un botón de pieza individual manda sobre la pieza.
+        const pedido = planActual ? { piezas: delAlcance, cambios: [] } : propuestaConLoPedido(delAlcance, { ...(hechos.estructura ? { estructura: hechos.estructura } : {}), ...(hechos.medida ? { medida: hechos.medida } : {}) }, { individual: alcancePropuesta === "individual", conservarPieza: Boolean(piezaPedida) });
+        if (pedido.cambios.length) decidir("regla:propuesta_con_lo_pedido", "pieza y medida que pidió el cliente aplicadas a la propuesta del modelo", pedido.piezas, { entrada: { piezasModelo: delAlcance, estructura: hechos.estructura ?? null, medida: hechos.medida ?? null }, motivo: pedido.cambios.join("; ") });
+        const piezas = pedido.piezas;
         // Cada pieza del plan es individual y un plan lleva como mucho 8 (MAX_PIEZAS_PLAN): la suma se acota aquí, a la vista.
         const acotadas = recortarCantidades(piezas);
         // El tono que dijo el cliente («celeste») y no la familia que eligió el modelo («azul»): tonos-color.ts.
@@ -235,7 +291,15 @@ async function turnoGuiado(request: Request) {
         return { propuesta: validada, aviso: "Las piezas y colores vienen del catálogo oficial. Responde con una sola frase («Te preparo el plan con las cantidades exactas.»): la interfaz arma el plan en seguida." };
       },
       ofrecer_opciones: async () => { datos.opciones = ["contratar", "costear", "comprar", "aprender"]; return { opciones: datos.opciones }; },
-      preguntar_uso: async () => { datos.preguntaUso = true; return { pregunta: "¿Es para tu negocio o para uso personal?" }; },
+      preguntar_uso: async () => {
+        // Ya lo eligió o lo dijo («soy decorador», «Para uso personal»): no se le vuelve a preguntar (usabilidad 97, punto 2).
+        if (usoConfirmado) {
+          decidir("regla:uso_del_cliente", "el modelo quiso preguntar el uso, pero el cliente ya lo dijo", { pregunta: false, uso: usoConfirmado }, { entrada: { usoInterfaz: estado?.uso ?? null, usoConversacion: hechos.uso ?? null } });
+          return { ok: false, motivo: "uso_ya_elegido", uso: usoConfirmado, accion_requerida: "No preguntes el uso: llama costear_decoracion ahora." };
+        }
+        datos.preguntaUso = true;
+        return { pregunta: "¿Es para tu negocio o para uso personal?" };
+      },
       pasos_decoracion: async (args: Record<string, unknown>) => {
         const entrada = ArgsSchema.parse(args);
         const deco = proveedores.find((item) => item.id === (entrada.decoracionId ?? decoracionConfirmada));
@@ -317,7 +381,8 @@ async function turnoGuiado(request: Request) {
     // Cambio de temática a mitad (probador, 2026-10-06: «mejor cambiemos, mi hijo ahora quiere dinosaurios»): el servidor
     // guarda el brief nuevo (la cabecera lo refleja) y busca las ideas reales de la nueva temática antes de que hable el
     // modelo; en ese turno el modelo solo las presenta, sin herramientas (antes rehacía el mismo plan recoloreado).
-    const cambioTematica = alcancePropuesta ? null : detectarCambioTematica({ ultimoUsuario, tematicaPrevia: briefPrevio.tematica });
+    // Un cambio puntual del plan o elegir una idea con palabras no es cambiar de temática ni pedir ideas.
+    const cambioTematica = alcancePropuesta || edicionPuntual || eleccionIdea ? null : detectarCambioTematica({ ultimoUsuario, tematicaPrevia: briefPrevio.tematica });
     let ideasCambio: string[] = [];
     if (cambioTematica) {
       const eventoCambio = eventoTurno();
@@ -340,7 +405,7 @@ async function turnoGuiado(request: Request) {
     // «Muéstrame otras ideas con columnas» (verificador, 2026-10-06, solicitud 2c18cf03): pedir VER ideas no es cambiar el
     // plan. Antes el modelo llamaba proponer_composicion, la vista la aceptaba sola y se armaba y cobraba un plan nuevo.
     // Ahora el servidor busca las ideas reales (primero las que llevan la pieza nombrada) y el modelo solo las presenta.
-    const pedidoIdeas = alcancePropuesta || ideasCambio.length ? null : pedidoDeIdeas(ultimoUsuario);
+    const pedidoIdeas = alcancePropuesta || ideasCambio.length || edicionPuntual || eleccionIdea ? null : pedidoDeIdeas(ultimoUsuario);
     let ideasPedidas: string[] = [];
     if (pedidoIdeas) {
       const vigente = briefVigente();
@@ -379,16 +444,34 @@ async function turnoGuiado(request: Request) {
     decidir("regla:opciones_validas_turno", "géneros y estilos que llevan a decoraciones reales (los únicos que se ofrecen)", { generos, evento: eventoInicial ?? null, estilos: estilosEvento }, {
       entrada: { briefEvento: briefVigente().evento ?? null, eventoDeMensajes: eventoDeMensajes(mensajesCliente) ?? null, edad: edadInicial ?? null },
     });
+    /** El brief del turno: el de antes, lo que fijaron las herramientas y lo que dijo el cliente (sin modelo). */
+    const briefDelTurno = (): BriefGuiado => {
+      const fijado = BriefCompletoSchema.safeParse(datos.brief);
+      const { edadTexto: _edadAnterior, ...base }: BriefGuiado = { ...briefPrevio, ...(fijado.success ? fijado.data : {}) };
+      void _edadAnterior;
+      // «4 a 6 años» y no «5 años»: el rango que eligió el cliente, si es compatible con la edad que guardó el modelo.
+      const edadTexto = base.edad && /cumple/i.test(base.evento ?? "") ? etiquetaEdadCliente(base.edad, mensajesDelCliente) : undefined;
+      return briefConHechos(base, hechos, { ...(usoConfirmado ? { uso: usoConfirmado } : {}), ...(edadTexto ? { edadTexto } : {}) });
+    };
+    const hechosTexto = textoHechosCliente(briefDelTurno(), { conPlan: Boolean(planActual) });
     const estadoConfirmado = [
       elegida ? `Decoración elegida por el cliente en la interfaz: «${elegida.titulo}».` : "El cliente todavía no eligió una idea del catálogo.",
-      usoConfirmado ? `Uso elegido: ${usoConfirmado === "negocio" ? "para su negocio" : "uso personal"}.` : "El cliente todavía no eligió si es para negocio o uso personal.",
-      planActual ? `Plan vigente del cliente: ${textoPlanActual(planActual)} Si pide un cambio, llama proponer_composicion conservando todo lo que no pidió cambiar.` : "El cliente todavía no tiene un plan a medida.",
+      usoConfirmado ? `Uso elegido: ${usoConfirmado === "negocio" ? "para su negocio" : "uso personal"} (no lo vuelvas a preguntar).` : "El cliente todavía no eligió si es para negocio o uso personal.",
+      ...(hechosTexto ? [hechosTexto] : []),
+      planActual
+        ? `Plan vigente del cliente: ${textoPlanActual(planActual)} Piezas del plan (nómbralas así en las herramientas): ${textoPiezasParaModelo(planActual)}. Un cambio puntual (cambiar un color por otro, añadir o quitar un color, más o menos de un color, quitar una pieza, agrandar, achicar o poner una medida) va SOLO con las herramientas de edición, que conservan todo lo demás; proponer_composicion solo si el pedido no cabe en ellas, conservando todo lo que no pidió cambiar.`
+        : "El cliente todavía no tiene un plan a medida.",
+      ...(ideasVisibles.length ? [`Ideas del catálogo que el cliente tiene a la vista, en orden: ${textoIdeasParaModelo(ideasVisibles)}. Si elige una con palabras, llama elegir_idea.`] : []),
       `Temáticas del catálogo (las ÚNICAS que puedes ofrecer en «Opciones:» al preguntar temática, estilo o colores; elige 3-6 que encajen con el evento): ${tematicasCatalogo}.`,
       `Géneros de baby shower con decoraciones (los ÚNICOS que puedes ofrecer al preguntar el género): ${generosValidos.map((genero) => NOMBRE_GENERO[genero]).join(", ") || "ninguno (no preguntes el género: pregunta el estilo)"}${generosSin.length ? `; NO ofrezcas ${generosSin.join(" ni ")}: no hay decoraciones` : ""}.`,
       ...(eventoInicial && estilosEvento.length ? [`Estilos con decoraciones para ${eventoInicial} (ofrece solo estos al preguntar estilo o colores): ${estilosEvento.map((item) => item.tematica).join(" | ")}.`] : []),
     ].join(" ");
-    let herramientasTurno: Herramienta[] = herramientas.filter((herramienta) => decoracionConfirmada || !HERRAMIENTAS_DE_DECORACION.has(herramienta.nombre));
+    // Con el uso ya dicho, preguntar_uso no existe en el turno: el modelo no puede volver a preguntarlo.
+    let herramientasTurno: Herramienta[] = herramientas.filter((herramienta) => (decoracionConfirmada || !HERRAMIENTAS_DE_DECORACION.has(herramienta.nombre)) && !(usoConfirmado && herramienta.nombre === "preguntar_uso"));
     if (planActual) herramientasTurno = [...herramientasTurno, herramientaAccionPlan];
+    // Las de edición del plan y elegir_idea; con un cambio puntual SOLO las de edición (el modelo ya no puede rehacer el
+    // plan entero con proponer_composicion) y con una idea elegida con palabras solo elegir_idea (edicion-plan-chat.ts).
+    herramientasTurno = herramientasConEdicion({ base: herramientasTurno, plan: planActual, ideas: ideasVisibles, deteccion: deteccionEdicion, eleccion: eleccionIdea }).herramientas;
     // En el turno en que el cliente elige «completa» o «individual» solo existe la herramienta de propuesta (y la del brief):
     // con todas disponibles el modelo a veces buscaba en la biblioteca y mostraba una idea del carrusel (2026-10-06).
     if (alcancePropuesta) {
@@ -401,10 +484,16 @@ async function turnoGuiado(request: Request) {
     }
     if (ideasCambio.length || ideasPedidas.length) herramientasTurno = [];
     decidir("regla:herramientas_turno", "herramientas que el modelo tiene en este turno", herramientasTurno.map((herramienta) => herramienta.nombre), {
-      motivo: ideasCambio.length ? "cambio de temática: el servidor ya guardó el brief y buscó las ideas" : ideasPedidas.length ? "pidió ver ideas: el servidor ya las buscó y el plan no cambia" : alcancePropuesta ? `alcance «${alcancePropuesta}»: solo propuesta y brief` : decoracionConfirmada ? "hay una idea elegida" : "sin idea elegida: sin herramientas de decoración",
+      motivo: ideasCambio.length ? "cambio de temática: el servidor ya guardó el brief y buscó las ideas" : ideasPedidas.length ? "pidió ver ideas: el servidor ya las buscó y el plan no cambia" : alcancePropuesta ? `alcance «${alcancePropuesta}»: solo propuesta y brief` : edicionPuntual ? `cambio puntual del plan (${deteccionEdicion.estado}): solo herramientas de edición` : eleccionIdea ? "eligió una idea con palabras: solo elegir_idea" : decoracionConfirmada ? "hay una idea elegida" : "sin idea elegida: sin herramientas de decoración",
     });
     const instruccionTurno = alcancePropuesta
       ? `\n\nEN ESTE TURNO el cliente eligió ${alcancePropuesta === "completa" ? "una decoración completa (2-3 piezas)" : `una pieza individual${piezaPedida ? `: ${ESTRUCTURAS_OFICIALES[piezaPedida].nombre.toLocaleLowerCase("es")}` : ""}`}: llama proponer_composicion ahora y no busques ideas en la biblioteca.`
+      : deteccionEdicion.estado === "edicion"
+        ? `\n\nEN ESTE TURNO el cliente pidió un cambio puntual de su plan (${fraseDelPedido(deteccionEdicion.pedido)}): llama ${deteccionEdicion.herramienta} y responde con UNA frase corta que diga qué cambias. No rehagas el plan.`
+      : deteccionEdicion.estado === "incompleta"
+        ? `\n\nEN ESTE TURNO el cliente pidió un cambio puntual de su plan, pero falta un dato (${deteccionEdicion.motivo}): si lo deduces sin dudas llama la herramienta de edición; si no, pregúntaselo en una frase corta. No rehagas el plan.`
+      : eleccionIdea
+        ? `\n\nEN ESTE TURNO el cliente eligió la idea «${eleccionIdea.idea.titulo}» (la ${eleccionIdea.posicion}.ª que tiene a la vista): llama elegir_idea y responde con UNA frase cálida, sin «Opciones:».`
       : ideasCambio.length && cambioTematica
         ? `\n\nEN ESTE TURNO el cliente cambió la temática de «${cambioTematica.anterior}» a «${cambioTematica.nueva}»: ya guardé el cambio y la interfaz le muestra estas ideas reales del catálogo: ${ideasCambio.map((titulo) => `«${titulo}»`).join(", ")}. Responde en una o dos frases cálidas: confirma el cambio y pregúntale si alguna le gusta o si prefiere que le proponga un plan nuevo con esa temática. No llames herramientas ni enumeres los títulos.`
         : ideasPedidas.length
@@ -470,6 +559,30 @@ EN ESTE TURNO el cliente pidió ver ideas${pedidoIdeas?.palabra ? ` con ${pedido
                 entrada: { tematicasDisponibles: disponibles, evento: contexto.evento ?? null, generosValidos, textoModelo: crudo },
                 motivo: contexto.aplicar ? "solo se ofrece lo que lleva a decoraciones reales y nunca se anuncia «no encontré»" : "hay plan, propuesta o proveedores: no se tocan",
               });
+              // Respaldo: las reglas leyeron un cambio puntual completo (o la idea elegida) y el modelo no llamó su
+              // herramienta. Se aplica lo que leyeron las reglas: el cliente nunca recibe «listo» sin cambio.
+              if (deteccionEdicion.estado === "edicion" && !datos.edicionPlan && !datos.propuesta) {
+                datos.edicionPlan = deteccionEdicion.pedido;
+                reply = fraseDelPedido(deteccionEdicion.pedido);
+                decidir("regla:edicion_plan_chat", "el modelo no llamó la herramienta de edición: se aplica lo que leyeron las reglas", deteccionEdicion.pedido, { entrada: { herramienta: deteccionEdicion.herramienta, textoModelo: crudo } });
+              }
+              if (datos.edicionPlan && datos.propuesta) {
+                // Un cambio puntual no rehace el plan: la propuesta sobra.
+                decidir("regla:edicion_plan_chat", "hubo un cambio puntual y una propuesta: se queda el cambio puntual", { descartada: datos.propuesta }, { entrada: { edicion: datos.edicionPlan } });
+                delete datos.propuesta;
+              }
+              if (eleccionIdea && !datos.ideaElegida) {
+                datos.ideaElegida = { id: eleccionIdea.idea.id, titulo: eleccionIdea.idea.titulo, posicion: eleccionIdea.posicion };
+                decidir("regla:elegir_idea_chat", "el modelo no llamó elegir_idea: se elige la que leyeron las reglas", datos.ideaElegida, { entrada: { textoModelo: crudo } });
+              }
+              // El brief que vuelve lleva lo que dijo el cliente (evento, uso, medida, pieza…) y el rango de edad que eligió.
+              const briefHerramientas = datos.brief ?? null;
+              const briefFinal = briefDelTurno();
+              const huella = (brief: object) => JSON.stringify(Object.entries(brief).sort(([a], [b]) => a.localeCompare(b)));
+              if (huella(briefFinal) !== huella(briefPrevio)) {
+                datos.brief = briefFinal;
+                decidir("regla:brief_guiado", "brief que vuelve al cliente (herramientas + lo que dijo con sus palabras)", briefFinal, { entrada: { briefPrevio, briefHerramientas } });
+              }
               mandar("fin", { reply, brief: {}, proveedor: evento.resultado.proveedor, modelo: evento.resultado.modelo, result: datos });
             }
           }

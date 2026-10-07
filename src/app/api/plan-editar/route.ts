@@ -79,6 +79,8 @@ const BodySchema = z.discriminatedUnion("modo", [
     color: z.string().trim().min(1).max(40),
     product_id: z.string().trim().min(1).max(160),
     variant_ids: z.array(z.string().trim().min(1).max(160)).min(1).max(24).refine((ids) => new Set(ids).size === ids.length),
+    // Solo en estas piezas («agrégale dorado a las columnas», pedido por chat en la guiada); sin ellas, en todas.
+    estructura_ids: z.array(z.string().regex(/^EST_\d{2}_[A-Z_]+$/)).max(24).optional(),
   }).strict(),
   // «Cambiar» un color por otro globo del catálogo (ajuste-plan-entero.ts): mismo lugar, misma parte, en todas sus medidas.
   z.object({
@@ -200,7 +202,7 @@ async function atenderPOST(request: Request) {
       return Response.json({ plan: resuelto, cotizacion }, { headers: cabeceras });
     }
     if (body.modo === "agregar_color") {
-      const { plan: resuelto, cotizacion, piezas } = await agregarColorPlan({ base: body.base, color: body.color, productId: body.product_id, variantIds: body.variant_ids, pool, signal: request.signal });
+      const { plan: resuelto, cotizacion, piezas } = await agregarColorPlan({ base: body.base, color: body.color, productId: body.product_id, variantIds: body.variant_ids, ...(body.estructura_ids?.length ? { estructuraIds: body.estructura_ids } : {}), pool, signal: request.signal });
       return Response.json({ plan: resuelto, cotizacion, piezas }, { headers: cabeceras });
     }
     if (body.modo === "reemplazar_color") {

@@ -19,6 +19,7 @@ import {
 import { contextoDeGeneracion } from "../../src/lib/estado/generacion-adjuntos";
 import { CREATIVIDAD_POR_DEFECTO } from "../../src/lib/ia/escena/creatividad";
 import { MENSAJE_SOLO_REFERENCIAS } from "../../src/lib/estado/mensaje-foto-referencia";
+import { contextoClienteGuiado, entradaImagenGuiada } from "../../src/lib/ia/guiado/contexto-cliente";
 
 let fallos = 0;
 function caso(nombre: string, prueba: () => void): void {
@@ -89,13 +90,16 @@ function cuerpoClasica() {
   });
 }
 
-/** VistaGuiada → verComoQuedaria(mensajeId), con la lectura de la foto del plan (`lecturaDelPlan`). */
+/** Lo que dijo el cliente de la guiada (su brief y sus mensajes), como lo arma VistaGuiada (`contextoClienteGuiado`). */
+const mensajesGuiada = ["Cumpleaños", "4 a 6 años", "Quiero algo así en un jardín, de noche", "Me gusta «Dos columnas rosa, lila y dorado».", "Es para uso personal."];
+const clienteGuiada = contextoClienteGuiado({ evento: "Cumpleaños", edad: 5, tematica: "Rosa y plata", lugar: "en un jardín", momento: "de noche" }, mensajesGuiada);
+
+/** VistaGuiada → verComoQuedaria(mensajeId), con la lectura de la foto del plan (`lecturaDelPlan`): el MISMO código. */
 function cuerpoGuiada() {
   return cuerpoGeneracion({
     plan,
     ...fuentesDelPlan(plan),
-    brief: { tipo_evento: "Cumpleaños", colores: plan.plan.concepto.paleta, estilo: undefined },
-    solicitudUsuario: plan.plan.concepto.descripcion,
+    ...entradaImagenGuiada(plan, clienteGuiada),
     imagenesReferencia: [foto],
     blueprint,
   });
@@ -144,6 +148,20 @@ caso("la lectura de la foto viaja: blueprint, plan y productos del plan, creativ
 caso("el cuerpo de antes (producción) es justo lo que faltaba", () => {
   const faltaban = camposPresentes(cuerpoGuiada()).filter((clave) => !camposPresentes(cuerpoGuiadaAntes).includes(clave));
   assert.deepEqual(faltaban, ["blueprint", "creatividad", "productIds", "productQuantities", "ragVariantIds"]);
+});
+
+caso("comparador 100 (I4): la guiada manda el brief completo y las palabras del cliente, no la descripción de la IA", () => {
+  const guiada = cuerpoGuiada();
+  // Escena: evento, lugar y momento (antes solo colores) y la temática; la paleta del plan, como antes.
+  assert.deepEqual(guiada.brief, { tipo_evento: "Cumpleaños", colores: plan.plan.concepto.paleta, estilo: "Rosa y plata", espacio: "en un jardín", momento_dia: "de noche" });
+  // Lo que pidió el cliente, sin los textos que pone la interfaz («Me gusta «…»», «Es para uso personal.»).
+  assert.equal(guiada.solicitudUsuario, "Cumpleaños. 4 a 6 años. Quiero algo así en un jardín, de noche.");
+  assert.notEqual(guiada.solicitudUsuario, plan.plan.concepto.descripcion, "registrarPlanAudit.solicitudOriginal guarda lo que pidió el cliente");
+  // Sin palabras propias (todo fueron botones), la descripción del plan, como antes.
+  assert.equal(entradaImagenGuiada(plan, contextoClienteGuiado({}, ["Me gusta «Arco rosa».", "Sí, armémoslo."])).solicitudUsuario, plan.plan.concepto.descripcion);
+  // VistaGuiada arma el cuerpo con este mismo adaptador (no una copia).
+  const vista = readFileSync(path.join(process.cwd(), "src/components/guiado/VistaGuiada.tsx"), "utf8");
+  assert.match(vista, /\.\.\.entradaImagenGuiada\(plan, contextoClienteGuiado\(brief, textosDelCliente\(mensajes\)\)\)/);
 });
 
 caso("anclada, la clásica usa la lectura de SU mensaje y no la de la foto actual", () => {

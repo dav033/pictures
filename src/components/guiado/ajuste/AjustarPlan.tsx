@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
 import { Check, Expand, Feather, LoaderCircle, Minus, Palette, PenLine, Plus, RefreshCw, RotateCcw, Ruler, Shapes, Trash2, X } from "lucide-react";
+import { Ayuda } from "@/components/ui/Ayuda";
 import { DUR, EASE_SALIDA, RESORTE } from "../animacion/movimiento";
+import { AYUDAS } from "../ayudas-guiada";
 import {
   admiteColorNuevo,
   cambiaTodasLasPiezas,
@@ -88,6 +90,8 @@ function globoParaPlan(globo: GloboCatalogo): GloboParaPlan {
  */
 export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPieza, modificables }: Props) {
   const piezas = useMemo(() => piezasAjustables(plan), [plan]);
+  // El «?» de cantidad y % va en la primera pieza con una cifra que se escribe (una sola vez en todo el editor).
+  const piezaConAyudaCantidad = piezas.findIndex((pieza) => pieza.colores.some((color) => color.cantidad));
   const { estado } = ajuste;
   const bloqueado = ocupado || ajuste.guardando;
   const [seleccion, setSeleccion] = useState<Seleccion | null>(null);
@@ -166,7 +170,7 @@ export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPi
       </section>
 
       <AnimatePresence initial={false}>
-        {piezas.map((pieza) => (
+        {piezas.map((pieza, posicion) => (
           <motion.section
             key={pieza.estructuraId}
             layout="position"
@@ -184,6 +188,7 @@ export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPi
               bloqueado={bloqueado}
               aLasDos={aLasDos}
               onALasDos={setALasDos}
+              ayudaCantidad={posicion === piezaConAyudaCantidad}
               onCambiar={(color) => abrirSelector({ modo: "cambiar", color: color.color, etiqueta: color.etiqueta, productId: color.productId, estructuraId: pieza.estructuraId, pareja: pieza.pareja, fuera: new Set([`${color.productId}|${color.color}`]) })}
               {...(onModificarPieza && modificables?.has(pieza.estructuraId) ? { onModificar: () => onModificarPieza(pieza.estructuraId) } : {})}
             />
@@ -264,7 +269,8 @@ function ColoresDelPlan({ plan, piezas, ajuste, bloqueado, pista, onCerrarPista,
     <>
       <div className="flex min-h-11 items-center gap-2">
         <Palette className="size-4 shrink-0 text-acento" aria-hidden />
-        <h4 className="min-w-0 flex-1 font-medium text-texto">Colores de tu plan</h4>
+        <h4 className="min-w-0 font-medium text-texto">Colores de tu plan</h4>
+        <Ayuda {...AYUDAS.coloresPorcentaje} />
       </div>
       <AnimatePresence initial={false}>
         {pista && (
@@ -307,16 +313,19 @@ function ColoresDelPlan({ plan, piezas, ajuste, bloqueado, pista, onCerrarPista,
         </AnimatePresence>
       </ul>
       {admiteColorNuevo(plan) ? (
-        <motion.button
-          type="button"
-          disabled={bloqueado}
-          onClick={onAgregar}
-          whileTap={bloqueado ? undefined : { scale: 0.97 }}
-          transition={RESORTE}
-          className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-acento/50 px-3 text-sm font-semibold text-acento hover:bg-acento-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50"
-        >
-          <Plus className="size-4" aria-hidden />Añadir un color
-        </motion.button>
+        <div className="mt-2 flex items-center gap-2.5">
+          <motion.button
+            type="button"
+            disabled={bloqueado}
+            onClick={onAgregar}
+            whileTap={bloqueado ? undefined : { scale: 0.97 }}
+            transition={RESORTE}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-acento/50 px-3 text-sm font-semibold text-acento hover:bg-acento-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50"
+          >
+            <Plus className="size-4" aria-hidden />Añadir un color
+          </motion.button>
+          <Ayuda {...AYUDAS.cambiarAnadirColor} />
+        </div>
       ) : motivo ? (
         <p className="mt-2 text-xs text-texto-suave">{motivo}</p>
       ) : null}
@@ -354,7 +363,7 @@ function InterruptorPareja({ activo, onCambio, pareja }: { activo: boolean; onCa
   );
 }
 
-function BloquePieza({ plan, pieza, ajuste, bloqueado, aLasDos, onALasDos, onCambiar, onModificar }: {
+function BloquePieza({ plan, pieza, ajuste, bloqueado, aLasDos, onALasDos, onCambiar, onModificar, ayudaCantidad = false }: {
   plan: PlanGuiado;
   pieza: PiezaAjustable;
   ajuste: AjustePlanGuiado;
@@ -363,8 +372,11 @@ function BloquePieza({ plan, pieza, ajuste, bloqueado, aLasDos, onALasDos, onCam
   onALasDos: (valor: boolean) => void;
   onCambiar: (color: ColorPieza) => void;
   onModificar?: () => void;
+  /** Esta pieza lleva el «?» de cantidad y %, en su primer color con cifra escribible. */
+  ayudaCantidad?: boolean;
 }) {
   const recalculando = recalculandoEn(plan, ajuste.estado, pieza.estructuraId);
+  const colorConAyuda = ayudaCantidad ? pieza.colores.findIndex((color) => color.cantidad) : -1;
   const pareja = pieza.pareja !== null && aLasDos;
   const aplicar = (cambio: CambioPlan) => void ajuste.aplicar(cambio);
   const [confirmando, setConfirmando] = useState(false);
@@ -402,9 +414,9 @@ function BloquePieza({ plan, pieza, ajuste, bloqueado, aLasDos, onALasDos, onCam
       <BarraColores colores={pieza.colores} cargando={recalculando} />
       <ul className="mt-2 space-y-1.5" aria-label={`Colores de ${pieza.titulo}`}>
         <AnimatePresence initial={false}>
-          {pieza.colores.map((color) => (
+          {pieza.colores.map((color, posicion) => (
             <motion.li key={`${color.indice}-${color.color}`} layout="position" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96, height: 0 }} transition={{ duration: DUR.media, ease: EASE_SALIDA }}>
-              <FilaColor color={color} pieza={pieza} pareja={pareja} cargando={recalculando} bloqueado={bloqueado} onCambio={aplicar} onCambiar={() => onCambiar(color)} />
+              <FilaColor color={color} pieza={pieza} pareja={pareja} cargando={recalculando} bloqueado={bloqueado} onCambio={aplicar} onCambiar={() => onCambiar(color)} ayuda={posicion === colorConAyuda} />
             </motion.li>
           ))}
         </AnimatePresence>
@@ -479,7 +491,7 @@ function porTamanoEnTexto(color: ColorPieza): string {
   return color.tamanos.map((tamano) => `${tamano.pulgadas}″ ${tamano.unidades}`).join(" · ");
 }
 
-function FilaColor({ color, pieza, pareja, cargando, bloqueado, onCambio, onCambiar }: { color: ColorPieza; pieza: PiezaAjustable; pareja: boolean; cargando: boolean; bloqueado: boolean; onCambio: (cambio: CambioPlan) => void; onCambiar: () => void }) {
+function FilaColor({ color, pieza, pareja, cargando, bloqueado, onCambio, onCambiar, ayuda = false }: { color: ColorPieza; pieza: PiezaAjustable; pareja: boolean; cargando: boolean; bloqueado: boolean; onCambio: (cambio: CambioPlan) => void; onCambiar: () => void; ayuda?: boolean }) {
   const nombre = color.etiqueta.toLocaleLowerCase("es");
   const conPareja = pareja ? { pareja: true } : {};
   // Tres líneas que caben en 390 px: el color (con su parte y quitar), cuántos lleva (y «Cambiar») y sus tamaños.
@@ -489,6 +501,7 @@ function FilaColor({ color, pieza, pareja, cargando, bloqueado, onCambio, onCamb
         <span className={`size-4 shrink-0 rounded-full ${anilloDe(color.fondo)}`} style={{ backgroundColor: color.fondo }} aria-hidden />
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-texto" title={color.producto ?? undefined}>{color.etiqueta}</span>
         <span className="shrink-0 text-xs font-medium tabular-nums text-texto-suave">{cargando ? <span className="brillo-carga inline-block h-3.5 w-9 rounded align-middle" aria-hidden /> : <CifraAnimada valor={color.porcentaje} sufijo=" %" />}</span>
+        {ayuda && <Ayuda {...AYUDAS.cantidadPorcentaje} />}
         {color.puedeQuitar && (
           <BotonIcono etiqueta={`Quitar ${nombre}`} tenue deshabilitado={bloqueado} onClick={() => onCambio({ tipo: "quitar-color", estructuraId: pieza.estructuraId, indice: color.indice, ...conPareja })}><X className="size-4" aria-hidden /></BotonIcono>
         )}

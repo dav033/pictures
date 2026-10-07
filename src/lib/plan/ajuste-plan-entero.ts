@@ -168,7 +168,7 @@ function piezasSinCobertura(antes: PlanResuelto, despues: PlanResuelto, productI
  * gana el color con una parte del 15 %). Si el catálogo no tiene ese globo en algún tamaño que una pieza necesita,
  * esa pieza se queda sin el color y se vuelve a resolver una vez; si ninguna lo admite, no se cambia nada.
  */
-export async function agregarColorPlan(input: Entrada & { color: string; productId: string; variantIds: readonly string[] }): Promise<AplicarEdicionResultado & { piezas: string[] }> {
+export async function agregarColorPlan(input: Entrada & { color: string; productId: string; variantIds: readonly string[]; estructuraIds?: readonly string[] }): Promise<AplicarEdicionResultado & { piezas: string[] }> {
   const pool = input.pool ?? getRagPool();
   const verificado = await verificarBase(input);
   const admitidas = await admitirVariantes(verificado, input.productId, input.variantIds, input.signal);
@@ -177,7 +177,9 @@ export async function agregarColorPlan(input: Entrada & { color: string; product
   }
   const globo: GloboNuevo = { product_id: input.productId, color: normal(input.color), acabadoMotor: acabadoMotorDeTitulo(admitidas.titulo) };
   const allowlist = allowlistDesdeMapa(verificado.whitelist);
-  const primero = planConColor(input.base.plan, globo);
+  // Con piezas pedidas («a las columnas»), las demás no se tocan.
+  const elegidas = input.estructuraIds?.length ? new Set(input.estructuraIds) : undefined;
+  const primero = planConColor(input.base.plan, globo, elegidas, "el cliente no lo pidió en esta pieza");
   if (!primero.piezas.length) throw new PlanEditError(422, "Ninguna pieza de tu plan admite otro color. Quita uno de una pieza para añadir este.");
   let resolucion = await resolver(input.base, verificado, planValido(primero.plan, "No pude añadir ese color a tus piezas."), allowlist, input.signal);
   let piezas = primero.piezas;
@@ -192,7 +194,7 @@ export async function agregarColorPlan(input: Entrada & { color: string; product
     }
   }
   decidir("regla:agregar_color", "añadir un color a las piezas del plan sin tocar sus medidas", { color: globo.color, product_id: input.productId, variantes: admitidas.variantIds, acabadoMotor: globo.acabadoMotor, piezas, sinCobertura: [...faltan], omitidas: primero.omitidas }, {
-    entrada: { plan_hash: input.base.plan_hash, color: input.color, variantesPedidas: input.variantIds.length },
+    entrada: { plan_hash: input.base.plan_hash, color: input.color, variantesPedidas: input.variantIds.length, estructuras: input.estructuraIds ?? null },
   });
   return { ...firmar(verificado, resolucion, allowlist, { accion: "agregar_color", color: globo.color, product_id: input.productId, piezas }, pool), piezas };
 }

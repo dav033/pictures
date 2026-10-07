@@ -84,8 +84,28 @@ export type ContextoOpciones = {
   contarIdeas?: (opcion: string, contexto: { evento?: string; edad?: number }) => number;
 };
 
-const FLUJO_RE = /\b(?:foto|fotos|inspiracion|propon\w*|otra|otro|otras|otros|ningun\w*|no se|aun no|todavia|sorpres\w*|cualquiera|igual|si|no|negocio|personal|anos?|meses|adult[oa]s?|adolescentes?|ciudad|bogota|medellin|cali|barranquilla|cartagena|bucaramanga|pereira|manizales|ver|completa|individual|pieza|precio|comprar|armar|contratar|decorador\w*|cotiza\w*)\b/;
+const FLUJO_RE = /\b(?:foto|fotos|inspiracion|propon\w*|otra|otro|otras|otros|ningun\w*|no se|aun no|todavia|sorpre\w*|cualquiera|igual|si|no|negocio|personal|anos?|meses|adult[oa]s?|adolescentes?|ciudad|bogota|medellin|cali|barranquilla|cartagena|bucaramanga|pereira|manizales|ver|completa|individual|pieza|precio|comprar|armar|contratar|decorador\w*|cotiza\w*)\b/;
 const PREGUNTA_ESTILO_RE = /\b(?:tematica|tematicas|estilo|estilos|color|colores|tono|tonos|paleta|ambiente|combinacion|motivo|genero)\b/;
+
+/**
+ * Edades (usabilidad 97, punto 3): «¡Qué gran motivo para celebrar! ¿Cuántos años cumple…? Opciones: 1 a 3 años | 4 a 6
+ * años | 7 a 12 años | Adolescente | Adulto» salía con «Elegante blanco y negro | Infantil naranja y negro | Azul y plateado
+ * | Infantil de dinosaurios | 1 a 3 años | 4 a 6 años»: «motivo» (de «motivo para celebrar») volvía la pregunta «de estilo»,
+ * se rellenó con estilos y el recorte a 6 se comió las edades. Una mamá con una hija de 9 años no tenía botón. Las edades
+ * son opciones de flujo: nunca se validan contra la biblioteca, nunca se quitan y una pregunta de edad no se rellena.
+ */
+const OPCION_EDAD_RE = /^(?:de\s+)?\d{1,2}\s*(?:a|-|y)\s*\d{1,2}\s*(?:anos?|meses)$|^(?:\d{1,2}\s*(?:anos?|meses)(?: o mas)?|(?:mas de|mayor(?:es)? de|menos de|menor(?:es)? de)\s+\d{1,2}(?:\s*anos?)?)$|^(?:adolescentes?|adult[oa]s?|bebes?|primer ano|quinceaner[oa]s?|nin[oa]s? pequen[oa]s?)$/;
+const PREGUNTA_EDAD_RE = /\b(?:cuantos anos|que edad|edad)\b/;
+
+export function esOpcionDeEdad(opcion: string): boolean {
+  return OPCION_EDAD_RE.test(normalizarBusqueda(opcion));
+}
+
+/** Solo las oraciones que preguntan: «¡Qué gran motivo para celebrar!» no hace «de estilo» a la pregunta que sigue. */
+function textoDeLaPregunta(cuerpo: string): string {
+  const preguntas = cuerpo.split("\n").flatMap((linea) => oracionesDe(linea.trim())).filter(esPregunta);
+  return preguntas.length ? preguntas.join(" ") : cuerpo;
+}
 
 function esOpcionDeFoto(opcion: string): boolean {
   const normal = normalizarBusqueda(opcion);
@@ -94,7 +114,7 @@ function esOpcionDeFoto(opcion: string): boolean {
 
 function tipoDeOpcion(opcion: string, evento: string | undefined, preguntaDeEstilo: boolean): TipoOpcion {
   const normal = normalizarBusqueda(opcion);
-  if (FLUJO_RE.test(normal)) return "flujo";
+  if (FLUJO_RE.test(normal) || OPCION_EDAD_RE.test(normal)) return "flujo";
   const eventoOpcion = eventoDeTexto(opcion) ?? evento;
   if (nombraGeneroBebe(opcion) && (!eventoOpcion || esBabyShower(eventoOpcion))) return "genero";
   if (palabrasDeEstilo(opcion).length) return "estilo";
@@ -115,11 +135,13 @@ export function validarOpcionesReales(texto: string, contexto: ContextoOpciones)
   const coincide = OPCIONES_RE.exec((lineas.at(-1) ?? "").trim());
   if (!coincide) return { texto, evaluadas: [], quitadas: [], anadidas: [] };
   const contar = contexto.contarIdeas ?? ideasRealesDeOpcion;
-  const pregunta = lineas.slice(0, -1).join(" ");
+  const pregunta = textoDeLaPregunta(lineas.slice(0, -1).join("\n"));
   const preguntaNormal = normalizarBusqueda(pregunta);
   const contextoBaby = esBabyShower(contexto.evento) || esBabyShower(pregunta) || !contexto.evento;
-  const preguntaDeEstilo = PREGUNTA_ESTILO_RE.test(preguntaNormal) || (contextoBaby && nombraGeneroBebe(pregunta));
   const originales = coincide[2]!.split("|").map((opcion) => opcion.replace(/\*+/g, "").trim()).filter(Boolean);
+  // Una pregunta de edad (o con edades entre sus opciones) es de flujo: no se valida ni se rellena con estilos.
+  const preguntaDeEdad = PREGUNTA_EDAD_RE.test(preguntaNormal) || originales.some(esOpcionDeEdad);
+  const preguntaDeEstilo = !preguntaDeEdad && (PREGUNTA_ESTILO_RE.test(preguntaNormal) || (contextoBaby && nombraGeneroBebe(pregunta)));
   const evaluadas: OpcionEvaluada[] = originales.map((original) => {
     const opcion = esOpcionDeFoto(original) ? CHIP_FOTO_GUIADA : original;
     const tipo = tipoDeOpcion(opcion, contexto.evento, preguntaDeEstilo);
@@ -132,9 +154,11 @@ export function validarOpcionesReales(texto: string, contexto: ContextoOpciones)
   const flujo = evaluadas.filter((evaluada) => evaluada.tipo === "flujo").map((evaluada) => evaluada.opcion);
   const anadidas: Array<{ opcion: string; ideas: number }> = [];
   const habiaEstilos = evaluadas.some((evaluada) => evaluada.tipo !== "flujo");
-  if ((habiaEstilos || preguntaDeEstilo) && estilos.length < 2) {
+  // Las opciones de flujo nunca se pierden en el recorte a 6: los estilos añadidos caben en lo que dejan.
+  const cupoEstilos = Math.min(4, 6 - flujo.length);
+  if (!preguntaDeEdad && (habiaEstilos || preguntaDeEstilo) && estilos.length < 2) {
     for (const tematica of tematicasDisponibles(contexto.evento)) {
-      if (estilos.length >= 4) break;
+      if (estilos.length >= cupoEstilos) break;
       if (estilos.some((estilo) => claveOpcion(estilo) === claveOpcion(tematica))) continue;
       const ideas = contar(tematica, { evento: contexto.evento, edad: contexto.edad });
       if (ideas > 0) { estilos.push(tematica); anadidas.push({ opcion: tematica, ideas }); }
@@ -275,7 +299,8 @@ export function sanearOracion(oracion: string, contexto: ContextoRespuesta): { t
     if (generos.texto !== texto) cambios.push({ regla: "genero", antes: texto, despues: generos.texto, detalle: generos.detalle });
     texto = generos.texto;
   }
-  if (texto && esPregunta(texto)) {
+  // Una pregunta de edad no es de estilo aunque nombre algo («¿Cuántos años cumple la princesa de la casa?»).
+  if (texto && esPregunta(texto) && !PREGUNTA_EDAD_RE.test(normalizarBusqueda(texto))) {
     const imposibles = palabrasDeEstilo(texto).filter((palabra) => !estiloExisteEnCatalogo(palabra));
     if (imposibles.length) {
       cambios.push({ regla: "estilo_imposible", antes: texto, despues: PREGUNTA_ESTILO_GUIADA, detalle: imposibles });

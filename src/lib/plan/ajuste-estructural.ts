@@ -158,14 +158,15 @@ function conColor(estructura: EstructuraPlan, globo: GloboNuevo, modo: "paleta" 
 /**
  * El plan con el color nuevo en cada pieza que lo admite (todas sus medidas y su armado quedan como estaban; solo su
  * paleta, sus posiciones de color o su reparto ganan el color). `soloEn`: limita las piezas (el reintento sin las que
- * el catálogo no cubre). `piezas` vacío = ninguna pieza lo admite.
+ * el catálogo no cubre, o las piezas que pidió el cliente) y `motivoFuera` dice por qué quedan fuera las demás.
+ * `piezas` vacío = ninguna pieza lo admite.
  */
-export function planConColor(plan: PlanDecoracion, globo: GloboNuevo, soloEn?: ReadonlySet<string>): { plan: PlanDecoracion; piezas: string[]; omitidas: Array<{ estructura_id: string; motivo: string }> } {
+export function planConColor(plan: PlanDecoracion, globo: GloboNuevo, soloEn?: ReadonlySet<string>, motivoFuera = "el catálogo no tiene ese color en sus tamaños"): { plan: PlanDecoracion; piezas: string[]; omitidas: Array<{ estructura_id: string; motivo: string }> } {
   const piezas: string[] = [];
   const omitidas: Array<{ estructura_id: string; motivo: string }> = [];
   const estructuras = plan.estructuras.map((estructura) => {
     if (soloEn && !soloEn.has(estructura.estructura_id)) {
-      omitidas.push({ estructura_id: estructura.estructura_id, motivo: "el catálogo no tiene ese color en sus tamaños" });
+      omitidas.push({ estructura_id: estructura.estructura_id, motivo: motivoFuera });
       return estructura;
     }
     const entrada = entradaColorNuevo(estructura, globo.color, globo.product_id);

@@ -4,6 +4,8 @@ import { motion } from "motion/react";
 import { Balloon, Package } from "lucide-react";
 import type { ModoMateriales as Modo } from "@/lib/cotizacion/profesional";
 import { RESORTE } from "@/components/guiado/animacion/movimiento";
+import { AYUDAS } from "@/components/guiado/ayudas-guiada";
+import { Ayuda } from "@/components/ui/Ayuda";
 import { CLASE_NO_VIGENTE, importeOGuion, numero } from "./formato";
 
 type Props = {
@@ -39,7 +41,10 @@ export function ModoMateriales({ clave, modo, onModo, totalPaquetes, totalGranel
       : `Paquetes cerrados del catálogo${globos.sobrante ? `: te sobran ${numero.format(globos.sobrante)} globos` : ""}. A granel pagas solo los ${numero.format(globos.plan)} del plan.`;
   return (
     <div className="border-t border-borde-suave px-4 py-3.5 @xl:px-5.5" data-testid="modo-materiales">
-      <p id={idTitulo} className="text-xs font-medium text-texto-suave">Cómo cotizas los globos</p>
+      <div className="flex items-center gap-1.5">
+        <p id={idTitulo} className="text-xs font-medium text-texto-suave">Cómo cotizas los globos</p>
+        <Ayuda {...AYUDAS.modoGlobos} />
+      </div>
       <div role="group" aria-labelledby={idTitulo} className="mt-2 grid grid-cols-2 gap-1 rounded-2xl bg-superficie-2 p-1 ring-1 ring-borde-suave ring-inset">
         {OPCIONES.map(({ modo: opcion, titulo, Icono }) => {
           const activo = opcion === modo;
