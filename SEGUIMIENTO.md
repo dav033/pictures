@@ -64,6 +64,8 @@ Pedidos (marcar ✅ solo con verificación independiente):
 6. [ ] Los chips «Otros colores · Agregar una pieza · Hacerla más grande · Hacerla más sencilla» deben estar DENTRO del editor.
 7. [ ] En el editor: escoger un color y REEMPLAZARLO por completo por otra referencia de globo del catálogo; también agregar/poner otros colores desde el catálogo.
 8. [ ] Integrar la GRÁFICA DEL CLÁSICO en «Tu plan» (y editable).
+9. [ ] Ayudas (tooltips) que expliquen formularios, gráficas e inputs donde haga falta, «sin pasarnos» (8-12, accesibles, toque en móvil).
+10. [ ] Globos a granel para negocio (hecho en local; esperando a D para subir; exige VPS para verse en producción).
 Workflows lanzados para esta lista (22:40): ritmo `wf_450d728a-c0d` (comparador), `wf_3624874a-cd1` (probador), `wf_4c3627ea-928`
 (verificador); `wf_ab26d084-638` (lector de fotos + banco de calidad con las 10 fotos de ejemplo); `wf_965af056-88e` (auditoría de las
 31 decoraciones); `wf_d5965d36-c4e` (paridad del motor). EN COLA: `scratchpad/wf-editor.js` (pedidos 4-7) cuando terminen A/B del
