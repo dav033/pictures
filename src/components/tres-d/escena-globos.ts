@@ -11,14 +11,20 @@ import { contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/
  */
 export type GloboEnEscena = { formato: FormatoGlobo; infladoCm: number; hex: string; familia: string; cuelloExtraCm?: number };
 
-/** Un globo de un módulo: dónde queda su nudo y hacia dónde apunta su cuerpo (cm, y hacia arriba). */
-export type GloboColocadoEnEscena = GloboEnEscena & { nudo: Punto3; direccion: Punto3 };
+/**
+ * Un globo de un módulo: dónde queda su nudo y hacia dónde apunta su cuerpo (cm, y hacia arriba). `frente`, si
+ * viene, es hacia dónde mira la cara de un globo plano (el corazón).
+ */
+export type GloboColocadoEnEscena = GloboEnEscena & { nudo: Punto3; direccion: Punto3; frente?: Punto3 };
 export type Punto3 = { x: number; y: number; z: number };
+
+/** Un tramo de tubito que sigue una curva (lazos, burbujas, colas): el eje en cm, su grosor y su color. */
+export type TuboEnEscena = { puntos: readonly Punto3[]; grosorCm: number; hex: string; familia: string; cerrado: boolean };
 
 export type EscenaGlobos = {
   mostrar: (globos: readonly GloboEnEscena[]) => void;
-  /** Un módulo armado (pareja, trío, cuarteto…): los globos colocados y, si se piden, sus anclas. */
-  mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[]) => void;
+  /** Un módulo armado (pareja, trío, cuarteto…): los globos colocados, si se piden sus anclas, y los tubitos. */
+  mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos?: readonly TuboEnEscena[]) => void;
   redimensionar: () => void;
   destruir: () => void;
 };
@@ -77,6 +83,30 @@ function tubo(grosorCm: number, largoCm: number, material: THREE.Material): THRE
   grupo.add(nudo);
   // Apoyado sobre el piso.
   grupo.position.y = radio;
+  return grupo;
+}
+
+/**
+ * Tubito que sigue una curva cualquiera (un lazo, un ocho, una burbuja, una cola): tubo a lo largo de la curva
+ * con las puntas redondeadas; si es cerrado, sin puntas. A diferencia de `tubo`, la curva viene dada (cm).
+ */
+function tuboEnCurva(tramo: TuboEnEscena, material: THREE.Material): THREE.Group {
+  const grupo = new THREE.Group();
+  const radio = (tramo.grosorCm / 2) * CM;
+  const puntos = tramo.puntos.map((p) => new THREE.Vector3(p.x * CM, p.y * CM, p.z * CM));
+  if (puntos.length < 2) return grupo;
+  // Con 2 puntos la curva es una recta: se añade el punto medio para que Catmull-Rom tenga con qué trabajar.
+  if (puntos.length === 2) puntos.splice(1, 0, puntos[0]!.clone().lerp(puntos[1]!, 0.5));
+  const curva = new THREE.CatmullRomCurve3(puntos, tramo.cerrado, "centripetal");
+  const segmentos = Math.min(160, Math.max(12, puntos.length * 4));
+  grupo.add(new THREE.Mesh(new THREE.TubeGeometry(curva, segmentos, radio, 14, tramo.cerrado), material));
+  if (!tramo.cerrado) {
+    for (const t of [0, 1]) {
+      const punta = new THREE.Mesh(new THREE.SphereGeometry(radio, 16, 10), material);
+      punta.position.copy(curva.getPoint(t));
+      grupo.add(punta);
+    }
+  }
   return grupo;
 }
 
@@ -200,13 +230,27 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   }
 
   const ARRIBA = new THREE.Vector3(0, 1, 0);
-  function mostrarModulo(globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[]) {
+  function mostrarModulo(globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos: readonly TuboEnEscena[] = []) {
     for (const hijo of [...contenido.children]) { contenido.remove(hijo); liberar(hijo); }
     const modulo = new THREE.Group();
     for (const globo of globos) {
       const objeto = construir(globo);
-      objeto.quaternion.setFromUnitVectors(ARRIBA, new THREE.Vector3(globo.direccion.x, globo.direccion.y, globo.direccion.z).normalize());
+      const eje = new THREE.Vector3(globo.direccion.x, globo.direccion.y, globo.direccion.z).normalize();
+      if (globo.frente) {
+        // Globo plano: Y local = dirección del cuerpo, Z local (la cara del corazón) = frente.
+        const z = new THREE.Vector3(globo.frente.x, globo.frente.y, globo.frente.z);
+        z.addScaledVector(eje, -z.dot(eje)).normalize();
+        const x = new THREE.Vector3().crossVectors(eje, z);
+        objeto.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, eje, z));
+      } else {
+        objeto.quaternion.setFromUnitVectors(ARRIBA, eje);
+      }
       objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
+      objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
+      modulo.add(objeto);
+    }
+    for (const tramo of tubos) {
+      const objeto = tuboEnCurva(tramo, materialDe(tramo.familia, tramo.hex));
       objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
       modulo.add(objeto);
     }

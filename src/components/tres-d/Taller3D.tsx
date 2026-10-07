@@ -7,14 +7,45 @@ import { FORMATOS_GLOBO, NOMBRE_FAMILIA, coloresDelFormato, formatoPorId, inflad
 import { MODULOS, armarModulo, materialesModulo, moduloPorId, type TipoModulo } from "@/lib/globos3d/modulos";
 import { PATRONES_COLUMNA, armarColumna, type PatronColumna } from "@/lib/globos3d/columnas";
 import { FORMAS_ARCO, armarArco, type FormaArco } from "@/lib/globos3d/arcos";
-import { FLORES_PREDEFINIDAS, armarFlor, colocarEn, elegirAnclas, materialesPorFormato, type GloboDecoracion, type PropiedadesFlor, type ReglaDecoracion } from "@/lib/globos3d/decoraciones";
-import { PanelFlor, type DondeDecoracion } from "./PanelFlor";
-import { PanelPared, PARED_INICIAL, type OpcionesPared } from "./PanelPared";
+import { colocarEn, colocarTubosEn, elegirAnclas, materialesPorFormato, type GloboDecoracion, type ReglaDecoracion, type TuboDecoracion } from "@/lib/globos3d/decoraciones";
+import { armarDecoracion, decoracionPredefinida, type Decoracion, type MaterialDecoracion } from "@/lib/globos3d/figuras";
+import { CELEBRA_27, decorarPared, sumarMateriales, type MezclaDecoraciones } from "@/lib/globos3d/mezcla";
+import { PARED_TRENZAS_INICIAL, armarParedTrenzas, superficieFrontal, type OpcionesParedTrenzas } from "@/lib/globos3d/pared-trenzas";
+import type { DondeDecoracion } from "./PanelFlor";
+import { PanelDecoracion, nombreDecoracion } from "./PanelDecoracion";
+import { PanelPared, PARED_INICIAL, type OpcionesPared, type TipoPared } from "./PanelPared";
 import { armarPared } from "@/lib/globos3d/paredes";
 import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
-import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena } from "./escena-globos";
+import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena, TuboEnEscena } from "./escena-globos";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
+const metros = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
+
+/** Un globo de decoración (o de pared) tal como lo dibuja el visor: formato, color oficial y orientación. */
+function globoAEscena(g: GloboDecoracion, porDefecto: FormatoGlobo): GloboColocadoEnEscena {
+  const ref = referenciaPorCodigo(g.codigo);
+  return {
+    formato: formatoPorId(g.formatoId) ?? porDefecto, infladoCm: g.infladoCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion",
+    nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.frente ? { frente: g.frente } : {}),
+  };
+}
+
+function tuboAEscena(t: TuboDecoracion): TuboEnEscena {
+  const ref = referenciaPorCodigo(t.codigo);
+  return { puntos: t.puntos, grosorCm: t.grosorCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion", cerrado: t.cerrado };
+}
+
+/** La lista de materiales de la tarjeta del visor: cantidad × formato, nombre del color y código. */
+function ListaMateriales({ materiales }: { materiales: ReadonlyArray<MaterialDecoracion> }) {
+  return (
+    <ul className={`mt-1 text-xs text-texto ${materiales.length > 6 ? "gap-x-4 sm:columns-2" : ""}`}>
+      {materiales.map((m) => {
+        const ref = referenciaPorCodigo(m.codigo);
+        return <li key={`${m.formatoId}|${m.codigo}`} className="break-inside-avoid">{m.cantidad} × {m.formatoId} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
+      })}
+    </ul>
+  );
+}
 
 /** Formatos de la columna de cuartetos: redondos de 5" a 18". */
 const FORMATOS_COLUMNA = ["R-5", "R-9", "R-12", "R-18"] as const;
@@ -61,12 +92,19 @@ export function Taller3D() {
   const [forma, setForma] = useState<FormaArco>("redondo");
   const [anchoArcoCm, setAnchoArcoCm] = useState(300);
   const [altoArcoCm, setAltoArcoCm] = useState(240);
-  // Decoración: una flor por propiedades, sola o colgada de las anclas de la columna o del arco.
-  const [flor, setFlor] = useState<PropiedadesFlor>(FLORES_PREDEFINIDAS[0]!.propiedades);
+  // Decoración: una decoración por propiedades (flor, flor de tubito, moño, estrella, flor de corazones), sola o
+  // colgada de las anclas de la columna, del arco o de la pared; en la pared, también una mezcla de varias.
+  const [decoracion, setDecoracion] = useState<Decoracion>(() => decoracionPredefinida("flor5"));
   const [donde, setDonde] = useState<DondeDecoracion>("columna");
   const [regla, setRegla] = useState<ReglaDecoracion>({ cadaNiveles: 2, caras: 2 });
-  // Pared: malla Link-O-Loon tipo flor.
+  const [mezcla, setMezcla] = useState<MezclaDecoraciones>(CELEBRA_27.mezcla);
+  const [usarMezcla, setUsarMezcla] = useState(false);
+  const [editando, setEditando] = useState<number | null>(null);
+  // Pared: malla Link-O-Loon tipo flor o trenzas alternando tamaños.
   const [pared, setPared] = useState<OpcionesPared>(PARED_INICIAL);
+  const [tipoPared, setTipoPared] = useState<TipoPared>("malla");
+  const [paredTrenzas, setParedTrenzas] = useState<OpcionesParedTrenzas>(PARED_TRENZAS_INICIAL);
+  const [verAnclasPared, setVerAnclasPared] = useState(false);
 
   // La escena se crea una vez (three.js se carga solo en el navegador).
   useEffect(() => {
@@ -97,7 +135,15 @@ export function Taller3D() {
   const armado = useMemo(() => armarModulo(modulo, formato, inflado), [modulo, formato, inflado]);
   const datosPatron = PATRONES_COLUMNA.find((p) => p.id === patron) ?? PATRONES_COLUMNA[1]!;
   const arco = useMemo(() => armarArco({ formato, infladoCm: inflado, forma, anchoCm: anchoArcoCm, altoCm: altoArcoCm, patron, colores: coloresColumna.slice(0, datosPatron.colores) }), [formato, inflado, forma, anchoArcoCm, altoArcoCm, patron, coloresColumna, datosPatron.colores]);
-  const florArmada = useMemo(() => armarFlor(flor), [flor]);
+  const elementoEditado = editando !== null ? mezcla.elementos[editando] : undefined;
+  const decoracionEnEditor = elementoEditado?.decoracion ?? decoracion;
+  const decoracionArmada = useMemo(() => armarDecoracion(decoracionEnEditor), [decoracionEnEditor]);
+  const cambiarDecoracion = (nueva: Decoracion) => {
+    if (editando === null || !elementoEditado) { setDecoracion(nueva); return; }
+    const nombre = nombreDecoracion(nueva);
+    setMezcla({ ...mezcla, elementos: mezcla.elementos.map((e, i) => (i === editando ? { ...e, decoracion: nueva, nombre: nombre.endsWith("(editada)") ? e.nombre : nombre } : e)) });
+  };
+  const paredTrenzasArmada = useMemo(() => armarParedTrenzas(paredTrenzas), [paredTrenzas]);
   const paredArmada = useMemo(() => armarPared({
     formato: formatoPorId(pared.formatoId)!, infladoCm: pared.infladoCm, anchoCm: pared.anchoCm, altoCm: pared.altoCm, patron: pared.patron, colores: pared.colores,
     union: { formato: formatoPorId("R-5")!, infladoCm: pared.union.infladoCm, codigo: pared.union.codigo },
@@ -108,38 +154,59 @@ export function Taller3D() {
     return colores.find((x) => x.codigo === c) ?? color;
   };
 
-  // Decoración: la estructura elegida (o nada) y una flor en cada ancla que cumple la regla.
-  const escenaDecoracion = useMemo((): GloboDecoracion[] => {
-    if (donde === "sola") return florArmada.globos;
+  // Decoración: la estructura elegida (o nada) y la decoración en cada ancla que cumple la regla; en la pared,
+  // apoyada sobre la superficie y, si se pide, una mezcla de varias repartida en las anclas.
+  const paredActual = tipoPared === "trenzas" ? paredTrenzasArmada : paredArmada;
+  const superficie = useMemo(() => superficieFrontal(paredActual.globos), [paredActual]);
+  const escenaDecoracion = useMemo((): { globos: GloboDecoracion[]; tubos: TuboDecoracion[]; materiales: MaterialDecoracion[]; puestas: number; porElemento: number[] } => {
+    const armada = decoracionArmada;
+    if (donde === "sola") return { globos: armada.globos, tubos: armada.tubos, materiales: armada.materiales, puestas: 1, porElemento: [] };
     if (donde === "pared") {
+      const base: GloboDecoracion[] = paredActual.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
       const cada = Math.max(1, regla.cadaNiveles);
-      const flores = paredArmada.anclas.filter((a) => a.fila % cada === 0 && a.columna % cada === 0).flatMap((ancla) => colocarEn(florArmada.globos, ancla));
-      return [...paredArmada.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm })), ...flores];
+      // Una sola decoración: en la malla, 1 de cada N centros de flor; en las trenzas, 1 de cada N cuartetos sobre
+      // el eje de cada trenza, corriendo media vuelta en las trenzas impares para que queden en tresbolillo.
+      const decorada = usarMezcla
+        ? decorarPared({ anclas: paredActual.anclas, mezcla, superficie, limites: { minX: 0, maxX: paredActual.anchoCm, minY: 0, maxY: paredActual.altoCm } })
+        : decorarPared({
+          anclas: tipoPared === "malla"
+            ? paredArmada.anclas.filter((a) => a.fila % cada === 0 && a.columna % cada === 0)
+            : paredTrenzasArmada.anclas.filter((a) => a.tipo === "trenza" && (a.nivel + (a.columna % 2) * Math.ceil(cada / 2)) % cada === 0),
+          mezcla: { elementos: [{ nombre: nombreDecoracion(decoracionEnEditor), decoracion: decoracionEnEditor, peso: 1 }], modo: "ciclico", semilla: 0, total: 10000, separacionCm: -1e6, giroAleatorio: false },
+          superficie,
+        });
+      return { globos: [...base, ...decorada.globos], tubos: decorada.tubos, materiales: sumarMateriales(paredActual.materiales, decorada.materiales), puestas: decorada.colocaciones.length, porElemento: decorada.porElemento };
     }
     const estructura = donde === "arco" ? arco : columna;
     const base: GloboDecoracion[] = estructura.globos.map((g) => ({ formatoId: formato.id, infladoCm: inflado, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
-    const flores = elegirAnclas(estructura.anclas, regla).flatMap((ancla) => colocarEn(florArmada.globos, ancla));
-    return [...base, ...flores];
-  }, [donde, arco, columna, paredArmada, regla, florArmada, formato.id, inflado]);
-  const materialesDecoracion = useMemo(() => materialesPorFormato(escenaDecoracion), [escenaDecoracion]);
-  const floresPuestas = donde === "sola" ? 1
-    : donde === "pared" ? paredArmada.anclas.filter((a) => a.fila % Math.max(1, regla.cadaNiveles) === 0 && a.columna % Math.max(1, regla.cadaNiveles) === 0).length
-      : elegirAnclas((donde === "arco" ? arco : columna).anclas, regla).length;
+    const anclas = elegirAnclas(estructura.anclas, regla);
+    return {
+      globos: [...base, ...anclas.flatMap((ancla) => colocarEn(armada.globos, ancla))],
+      tubos: anclas.flatMap((ancla) => colocarTubosEn(armada.tubos, ancla)),
+      materiales: sumarMateriales(materialesPorFormato(base), ...anclas.map(() => armada.materiales)),
+      puestas: anclas.length, porElemento: [],
+    };
+  }, [donde, arco, columna, paredActual, paredArmada, paredTrenzasArmada, tipoPared, superficie, regla, usarMezcla, mezcla, decoracionArmada, decoracionEnEditor, formato.id, inflado]);
+
+  /** «Pared de Celebra ed. 27»: la malla de trenzas, la mezcla de la foto y la vista de decoración en la pared. */
+  function aplicarCelebra() {
+    setTipoPared("trenzas");
+    setParedTrenzas(CELEBRA_27.pared);
+    setMezcla(CELEBRA_27.mezcla);
+    setUsarMezcla(true);
+    setEditando(null);
+    setDonde("pared");
+    cambiarModo("decoracion");
+  }
 
   // Lo que se ve.
   useEffect(() => {
     const escena = escenaRef.current;
     if (!listo || !escena || !color) return;
     if (modo === "pared") {
-      escena.mostrarModulo(paredArmada.globos.map((g) => {
-        const ref = referenciaPorCodigo(g.codigo);
-        return { formato: formatoPorId(g.formatoId) ?? formato, infladoCm: g.infladoCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion", nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
-      }), []);
+      escena.mostrarModulo(paredActual.globos.map((g) => globoAEscena(g, formato)), verAnclasPared ? paredActual.anclas.map((a) => a.posicion) : []);
     } else if (modo === "decoracion") {
-      escena.mostrarModulo(escenaDecoracion.map((g) => {
-        const ref = referenciaPorCodigo(g.codigo);
-        return { formato: formatoPorId(g.formatoId) ?? formato, infladoCm: g.infladoCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion", nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
-      }), []);
+      escena.mostrarModulo(escenaDecoracion.globos.map((g) => globoAEscena(g, formato)), [], escenaDecoracion.tubos.map(tuboAEscena));
     } else if (modo === "columna" || modo === "arco") {
       const globos: GloboColocadoEnEscena[] = (modo === "arco" ? arco.globos : columna.globos).map((g) => {
         const ref = colores.find((x) => x.codigo === g.codigo) ?? color;
@@ -159,7 +226,7 @@ export function Taller3D() {
     } else {
       escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
-  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredArmada]);
+  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared]);
 
   function elegirFormato(f: FormatoGlobo) {
     setFormatoId(f.id);
@@ -226,9 +293,12 @@ export function Taller3D() {
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-1" aria-label="Elegir el globo">
           {modo === "pared" ? (
-            <PanelPared valor={pared} onCambio={setPared} />
+            <PanelPared tipo={tipoPared} onTipo={setTipoPared} valor={pared} onCambio={setPared} trenzas={paredTrenzas} onTrenzas={setParedTrenzas}
+              verAnclas={verAnclasPared} onVerAnclas={setVerAnclasPared} anclas={paredActual.anclas.length} onCelebra={aplicarCelebra} />
           ) : modo === "decoracion" ? (
-            <PanelFlor flor={flor} onFlor={setFlor} donde={donde} onDonde={setDonde} regla={regla} onRegla={setRegla} />
+            <PanelDecoracion decoracion={decoracionEnEditor} onDecoracion={cambiarDecoracion} editando={elementoEditado ? editando : null} onEditando={setEditando}
+              donde={donde} onDonde={setDonde} regla={regla} onRegla={setRegla} usarMezcla={usarMezcla} onUsarMezcla={setUsarMezcla}
+              mezcla={mezcla} onMezcla={setMezcla} tipoPared={tipoPared} puestas={escenaDecoracion.porElemento} onCelebra={aplicarCelebra} />
           ) : (<>
           {modo === "modulo" && (
             <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
@@ -397,26 +467,33 @@ export function Taller3D() {
             {color && (
               <div className="pointer-events-none absolute left-3 top-3 max-w-[80%] rounded-xl bg-superficie/90 px-3 py-2 text-sm shadow-sm ring-1 ring-borde backdrop-blur">
                 {modo === "pared" ? (
-                  <>
-                    <p className="font-semibold text-texto">Malla {pared.formatoId} tipo flor · {(paredArmada.anchoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} × {(paredArmada.altoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m</p>
-                    <p className="font-mono text-xs text-texto-suave">{paredArmada.eslabones} eslabones · {paredArmada.uniones} parejas de unión ({paredArmada.uniones * 2} R-5)</p>
-                    <ul className="mt-1 text-xs text-texto">
-                      {paredArmada.materiales.map((m) => {
-                        const ref = referenciaPorCodigo(m.codigo);
-                        return <li key={`${m.formatoId}|${m.codigo}`}>{m.cantidad} × {m.formatoId} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
-                      })}
-                    </ul>
-                  </>
+                  tipoPared === "trenzas" ? (
+                    <>
+                      <p className="font-semibold text-texto">Trenzas alternando {paredTrenzas.grande.formatoId} a {formatoCm(paredTrenzas.grande.infladoCm)} y {paredTrenzas.chico.formatoId} a {formatoCm(paredTrenzas.chico.infladoCm)} · {metros(paredTrenzasArmada.anchoCm)} × {metros(paredTrenzasArmada.altoCm)} m</p>
+                      <p className="font-mono text-xs text-texto-suave">{paredTrenzasArmada.columnas} trenzas × {paredTrenzasArmada.niveles} cuartetos ({paredTrenzasArmada.cuartetos.grande} grandes + {paredTrenzasArmada.cuartetos.chico} chicos) · {(100 / paredTrenzasArmada.pasoCm).toLocaleString("es-CO", { maximumFractionDigits: 1 })} por metro · {formatoCm(paredTrenzasArmada.anchoTrenzaCm)} por trenza</p>
+                      <ListaMateriales materiales={paredTrenzasArmada.materiales} />
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-texto">Malla {pared.formatoId} tipo flor · {metros(paredArmada.anchoCm)} × {metros(paredArmada.altoCm)} m</p>
+                      <p className="font-mono text-xs text-texto-suave">{paredArmada.eslabones} eslabones · {paredArmada.uniones} parejas de unión ({paredArmada.uniones * 2} R-5)</p>
+                      <ListaMateriales materiales={paredArmada.materiales} />
+                    </>
+                  )
                 ) : modo === "decoracion" ? (
                   <>
-                    <p className="font-semibold text-texto">{donde === "sola" ? "Flor de globos" : `${floresPuestas} flores en ${donde === "arco" ? "el arco" : donde === "pared" ? "la pared" : "la columna"}`} · {flor.petalos.cantidad} pétalos {flor.petalos.formatoId}{flor.centro ? ` + centro ${flor.centro.formatoId}` : ""}</p>
-                    <p className="font-mono text-xs text-texto-suave">{donde === "sola" ? `${florArmada.diametroCm} cm de ancho · ${florArmada.globos.length} globos` : `${escenaDecoracion.length} globos en total`}</p>
-                    <ul className="mt-1 text-xs text-texto">
-                      {materialesDecoracion.map((m) => {
-                        const ref = referenciaPorCodigo(m.codigo);
-                        return <li key={`${m.formatoId}|${m.codigo}`}>{m.cantidad} × {m.formatoId} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
-                      })}
-                    </ul>
+                    <p className="font-semibold text-texto">
+                      {donde === "sola" ? `${nombreDecoracion(decoracionEnEditor)} · ${formatoCm(decoracionArmada.diametroCm)} de ancho`
+                        : donde === "pared" ? `${tipoPared === "trenzas" ? "Pared de trenzas" : `Malla ${pared.formatoId}`} ${metros(paredActual.anchoCm)} × ${metros(paredActual.altoCm)} m · ${escenaDecoracion.puestas} ${usarMezcla ? "decoraciones" : `× ${nombreDecoracion(decoracionEnEditor)}`}`
+                          : `${escenaDecoracion.puestas} × ${nombreDecoracion(decoracionEnEditor)} en ${donde === "arco" ? "el arco" : "la columna"}`}
+                    </p>
+                    {donde === "pared" && usarMezcla && (
+                      <p className="text-xs text-texto-suave">{mezcla.elementos.map((e, i) => `${escenaDecoracion.porElemento[i] ?? 0} ${e.nombre}`).join(" · ")}</p>
+                    )}
+                    <p className="font-mono text-xs text-texto-suave">{escenaDecoracion.globos.length} globos{escenaDecoracion.tubos.length ? ` · ${escenaDecoracion.tubos.length} tramos de tubito` : ""}</p>
+                    <ListaMateriales materiales={escenaDecoracion.materiales} />
+                    {escenaDecoracion.materiales.some((m) => m.formatoId.startsWith("T-")) && <p className="mt-1 text-[0.7rem] text-texto-suave">Tubitos contados por largo (~137 cm útiles cada uno).</p>}
+                    {escenaDecoracion.materiales.some((m) => m.formatoId === "C-6") && <p className="text-[0.7rem] text-texto-suave">Corazón 6: color de Celebra ed. 27 (no está en la tabla oficial).</p>}
                   </>
                 ) : modo === "arco" ? (
                   <>

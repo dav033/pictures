@@ -6,7 +6,8 @@ import { TABLA_SEMPERTEX, type ReferenciaSempertex } from "@/lib/plan/referencia
  * Las medidas son las nominales del catálogo (la pulgada del nombre es el diámetro máximo de inflado) y el
  * inflado de decoración es el que usan los tutoriales de Sempertex (Celebra, «Conceptos y técnicas»): R-12 a
  * 25 cm, R-9 a 18 cm, R-5 a 12 cm, Link-O-Loon 12 a 25 cm, Link-O-Loon 6 a 12 cm. Todo en centímetros.
- * Los formatos salen de la tabla oficial de color (`TABLA_SEMPERTEX`): solo se ofrecen los que se fabrican.
+ * Los formatos salen de la tabla oficial de color (`TABLA_SEMPERTEX`): solo se ofrecen los que se fabrican. El
+ * Corazón 6 no está en esa tabla y se añade con los colores que documenta la revista (`COLORES_ATESTIGUADOS`).
  */
 export type TipoGlobo = "redondo" | "link" | "tubito" | "corazon";
 
@@ -41,7 +42,18 @@ export const FORMATOS_GLOBO: readonly FormatoGlobo[] = [
   { id: "T-260", tipo: "tubito", nombre: "Tubito 260", diametroMaxCm: cm(2), infladoDecoracionCm: 5, largoCm: cm(60), descripcion: "El clásico de modelar, 2\" × 60\": moños, flores y figuras." },
   { id: "T-360", tipo: "tubito", nombre: "Tubito 360", diametroMaxCm: cm(3), infladoDecoracionCm: 7.5, largoCm: cm(60), descripcion: "Tubito grueso de 3\" × 60\": tallos, arcos y estructuras de figura." },
   { id: "C-12", tipo: "corazon", nombre: "Corazón 12\"", diametroMaxCm: cm(12), infladoDecoracionCm: 28, descripcion: "Corazón de látex: San Valentín, bodas y remates." },
+  { id: "C-6", tipo: "corazon", nombre: "Corazón 6\"", diametroMaxCm: cm(6), infladoDecoracionCm: 14, descripcion: "Corazón pequeño: pétalos de flores de corazones y detalles aplicados. Solo los colores que la revista documenta." },
 ];
+
+/**
+ * Colores que una publicación de Sempertex documenta en un formato que la tabla oficial de color no trae.
+ * La tabla (`TABLA_SEMPERTEX`) la genera el repo dueño y no lista el Corazón 6; la revista Celebra ed. 27, p. 42
+ * («Malla con flores orgánicas») sí lo usa: «Corazón 6 Fashion Fucsia». Aquí solo entra lo atestiguado, con su
+ * fuente; no se supone que el Corazón 6 venga en todos los colores del C-12 ni al revés.
+ */
+export const COLORES_ATESTIGUADOS: Readonly<Record<string, ReadonlyArray<{ codigo: string; fuente: string }>>> = {
+  "C-6": [{ codigo: "012", fuente: "Celebra ed. 27, p. 42: Corazón 6 Fashion Fucsia" }],
+};
 
 export function formatoPorId(id: string): FormatoGlobo | undefined {
   return FORMATOS_GLOBO.find((formato) => formato.id === id);
@@ -49,7 +61,8 @@ export function formatoPorId(id: string): FormatoGlobo | undefined {
 
 /** Los colores Sempertex que se fabrican en ese formato, en el orden de la tabla oficial. */
 export function coloresDelFormato(id: string): ReferenciaSempertex[] {
-  return TABLA_SEMPERTEX.referencias.filter((referencia) => referencia.formatos.includes(id));
+  const atestiguados = new Set((COLORES_ATESTIGUADOS[id] ?? []).map((c) => c.codigo));
+  return TABLA_SEMPERTEX.referencias.filter((referencia) => referencia.formatos.includes(id) || atestiguados.has(referencia.codigo));
 }
 
 /** Familias de acabado de la tabla oficial, con su nombre comercial. */

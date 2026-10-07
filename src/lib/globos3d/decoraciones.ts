@@ -3,7 +3,9 @@ import { centroCuerpo, nudoCm } from "./geometria";
 import type { Vec3 } from "./modulos";
 
 /**
- * Decoraciones hijas (por ahora, flores de globos), definidas solo por propiedades y colgadas de anclas.
+ * Decoraciones hijas, definidas solo por propiedades y colgadas de anclas. Aquí está la flor de globos redondos y
+ * lo común (globos, tramos de tubito, colocación); las de tubito y corazón están en `figuras.ts` y la mezcla en
+ * `mezcla.ts`.
  *
  * - **Qué es**: `PropiedadesFlor` describe la flor (pétalos: cuántos, de qué globo, inflado, color, apertura y
  *   giro; centro: si lleva, de qué globo, inflado, color y si es uno o un trío). `armarFlor` la arma en su propio
@@ -24,9 +26,24 @@ export type PropiedadesFlor = {
     giroGrados: number;
   };
   centro: (ParteGlobo & { cantidad: 1 | 3 }) | null;
+  /**
+   * Corona opcional: un anillo de globitos entre los pétalos y el centro (la flor grande de Celebra ed. 27 lleva
+   * 6 R-5 Fucsia alrededor de un centro Reflex). Sin corona la flor es la de siempre.
+   */
+  corona?: (ParteGlobo & { cantidad: number }) | null;
 };
 
-export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number };
+/**
+ * Un globo de una decoración. `frente` solo lo usan los globos planos (el corazón): hacia dónde mira su cara;
+ * sin él, el visor deja el giro del globo sobre su eje como le salga (un redondo es igual por todos lados).
+ */
+export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; frente?: Vec3 };
+
+/**
+ * Un tramo de tubito (T-160/T-260/T-360) que sigue una curva: un lazo, una burbuja, la cola de un moño. `puntos`
+ * es la curva del eje del tubo (cm); `cerrado` la cierra sobre sí misma (el contorno de una estrella).
+ */
+export type TuboDecoracion = { formatoId: string; grosorCm: number; codigo: string; puntos: Vec3[]; cerrado: boolean };
 
 export type FlorArmada = { globos: GloboDecoracion[]; diametroCm: number; altoCm: number };
 
@@ -56,7 +73,7 @@ const normalizar = (v: Vec3): Vec3 => { const n = Math.hypot(v.x, v.y, v.z) || 1
 const tipoCuerpo = (formatoId: string) => (formatoPorId(formatoId)?.tipo === "link" ? "link" : "redondo");
 
 /** Anillo de `n` globos alrededor de +Y, inclinados `apertura`, que se tocan aplastándose un poco (como un módulo). */
-function anillo(parte: ParteGlobo, n: number, aperturaGrados: number, giroGrados: number): GloboDecoracion[] {
+export function anillo(parte: ParteGlobo, n: number, aperturaGrados: number, giroGrados: number): GloboDecoracion[] {
   const d = parte.infladoCm;
   const natural = centroCuerpo(tipoCuerpo(parte.formatoId), d);
   const amarre = nudoCm(d);
@@ -82,6 +99,8 @@ export function armarFlor(propiedades: PropiedadesFlor): FlorArmada {
   const { petalos, centro } = propiedades;
   const cantidad = Math.max(3, Math.min(8, Math.round(petalos.cantidad)));
   const globos = anillo(petalos, cantidad, petalos.aperturaGrados, petalos.giroGrados);
+  const corona = propiedades.corona;
+  if (corona && corona.cantidad >= 3) globos.push(...anillo(corona, Math.min(8, Math.round(corona.cantidad)), 35, petalos.giroGrados + 180 / corona.cantidad));
   if (centro) {
     if (centro.cantidad === 3) globos.push(...anillo(centro, 3, 55, petalos.giroGrados + 60));
     else globos.push({ formatoId: centro.formatoId, infladoCm: centro.infladoCm, codigo: centro.codigo, nudo: { x: 0, y: 0, z: 0 }, direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0 });
@@ -91,18 +110,38 @@ export function armarFlor(propiedades: PropiedadesFlor): FlorArmada {
   return { globos, diametroCm: Math.round(2 * alcance * Math.cos(rad(petalos.aperturaGrados))), altoCm: Math.round(centro ? centro.infladoCm * 1.3 : dP) };
 }
 
-/** Lleva una decoración armada (mirando a +Y) a un ancla: la gira para que mire a la normal y la traslada. */
-export function colocarEn(globos: readonly GloboDecoracion[], ancla: Ancla): GloboDecoracion[] {
-  const n = normalizar(ancla.normal);
-  // Base ortonormal con Y local = normal.
+/**
+ * El marco de un ancla: lleva un vector del espacio de la decoración (mirando a +Y) al del mundo, con Y local =
+ * normal. En una pared (normal +Z) la X local queda a la derecha y la Z local hacia arriba: por eso un moño o una
+ * estrella se arman con «arriba» en +Z. `giroRad` gira la decoración sobre su eje antes de colocarla.
+ */
+function marcoDeAncla(normal: Vec3, giroRad = 0): (v: Vec3) => Vec3 {
+  const n = normalizar(normal);
   const auxiliar: Vec3 = Math.abs(n.y) < 0.9 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 };
   const xLocal = normalizar({ x: auxiliar.y * n.z - auxiliar.z * n.y, y: auxiliar.z * n.x - auxiliar.x * n.z, z: auxiliar.x * n.y - auxiliar.y * n.x });
   const zLocal = { x: n.y * xLocal.z - n.z * xLocal.y, y: n.z * xLocal.x - n.x * xLocal.z, z: n.x * xLocal.y - n.y * xLocal.x };
-  const mundo = (v: Vec3): Vec3 => ({ x: v.x * xLocal.x + v.y * n.x + v.z * zLocal.x, y: v.x * xLocal.y + v.y * n.y + v.z * zLocal.y, z: v.x * xLocal.z + v.y * n.z + v.z * zLocal.z });
-  return globos.map((g) => {
-    const p = mundo(g.nudo);
-    return { ...g, nudo: { x: p.x + ancla.posicion.x, y: p.y + ancla.posicion.y, z: p.z + ancla.posicion.z }, direccion: mundo(g.direccion) };
-  });
+  const c = Math.cos(giroRad), s = Math.sin(giroRad);
+  return (v: Vec3): Vec3 => {
+    const x = v.x * c - v.z * s, z = v.x * s + v.z * c;
+    return { x: x * xLocal.x + v.y * n.x + z * zLocal.x, y: x * xLocal.y + v.y * n.y + z * zLocal.y, z: x * xLocal.z + v.y * n.z + z * zLocal.z };
+  };
+}
+
+const mas = (a: Vec3, b: Vec3): Vec3 => ({ x: a.x + b.x, y: a.y + b.y, z: a.z + b.z });
+
+/** Lleva una decoración armada (mirando a +Y) a un ancla: la gira para que mire a la normal y la traslada. */
+export function colocarEn(globos: readonly GloboDecoracion[], ancla: Ancla, giroRad = 0): GloboDecoracion[] {
+  const mundo = marcoDeAncla(ancla.normal, giroRad);
+  return globos.map((g) => ({
+    ...g, nudo: mas(mundo(g.nudo), ancla.posicion), direccion: mundo(g.direccion),
+    ...(g.frente ? { frente: mundo(g.frente) } : {}),
+  }));
+}
+
+/** Lo mismo para los tramos de tubito. */
+export function colocarTubosEn(tubos: readonly TuboDecoracion[], ancla: Ancla, giroRad = 0): TuboDecoracion[] {
+  const mundo = marcoDeAncla(ancla.normal, giroRad);
+  return tubos.map((t) => ({ ...t, puntos: t.puntos.map((p) => mas(mundo(p), ancla.posicion)) }));
 }
 
 /** Regla de colocación sobre una trenza (columna o arco): cada cuántos cuartetos y en cuántas caras. */
