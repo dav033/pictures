@@ -188,6 +188,15 @@ const OPCIONES_SALUDO: ReadonlyArray<{ texto: string; icono: ReactNode }> = [
 const OTRAS_CELEBRACIONES = ["Divorcio", "Graduación", "Jubilación", "Fiesta de empresa", "Aniversario"];
 const PROPONME = "Propónme algo";
 const PROPONME_LOCAL = /^(?:oye,?\s*)?(?:prop[oó]nme algo|qu[eé] me recomiendas armar\??|arma t[uú] algo\.?)[.!?]*$/i;
+/**
+ * «Genera la imagen», «hazme la foto», «quiero ver cómo quedaría» con un plan a la vista: vuelve a la tarjeta del plan y
+ * lanza «Ver cómo quedaría» sin pasar por el modelo (dueño, 2026-10-07). Se compara sin tildes; una negación no cuenta.
+ */
+const PIDE_IMAGEN_LOCAL = /\b(?:genera(?:r|me|la)?|crea(?:r|me|la)?|haz(?:me|la)?|hacer|dibuja(?:r|me|la)?|muestra(?:r|me|la)?|ensena(?:r|me|la)?|quiero ver|ver|veamos|dame)\b[^.?!]{0,40}\b(?:imagen|imagenes|foto|render|como (?:se ve|se veria|quedaria|queda))\b/;
+function pideImagenDelPlan(texto: string): boolean {
+  const plano = texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return !/\bno\b/.test(plano) && PIDE_IMAGEN_LOCAL.test(plano);
+}
 const PREGUNTA_TIPO = "¿Quieres una decoración completa (varias piezas) o una pieza individual?";
 const PLACEHOLDER_CAMBIO = "Pide un cambio: más rosa, sin columnas…";
 const PLACEHOLDER_CIUDAD = "Escribe tu ciudad…";
@@ -524,6 +533,22 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
         pedirFinal();
         return;
       }
+    }
+    // «Genera la imagen» con un plan a la vista: a la tarjeta del plan y a generar, sin modelo (dueño, 2026-10-07).
+    if (!archivo && planVigente && !opcionesEnvio.alcance && !opcionesEnvio.reintentar && pideImagenDelPlan(limpio)) {
+      setEntrada("");
+      const idPlan = planVigente.mensajeId;
+      const yaEnCurso = imagenEnCursoRef.current === idPlan;
+      const respuesta = yaEnCurso ? "Ya estoy dibujando la imagen de tu plan: aparece en su tarjeta." : "Listo, dibujo la imagen de tu plan: aparece en su tarjeta en unos 20 a 30 segundos.";
+      agregar([
+        { id: nuevoId(), role: "user", content: limpio.slice(0, 6000) },
+        { id: nuevoId(), role: "assistant", content: respuesta },
+      ]);
+      registrarAccion("plan.imagen_por_chat", { texto: limpio, mensajeId: idPlan, yaEnCurso, plan_hash: planVigente.widget.plan.plan_hash });
+      setAnuncio(respuesta);
+      pedirVista(idPlan);
+      if (!yaEnCurso) void verComoQuedaria(idPlan);
+      return;
     }
     // C · Con la lectura de una foto pendiente (sin plan armado después de ella): «¿puedes agregar una guirnalda en medio?»
     // arma el plan con las piezas de la foto MÁS la pedida, por el camino del plan con foto. Antes iba al modelo, que
