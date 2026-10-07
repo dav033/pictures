@@ -1022,10 +1022,14 @@ async def test_s1_con_la_receta_del_motor_el_armado_fija_la_cantidad_y_lo_dice()
     # Con ARMADO_ARCO_COLUMNA_V1 la columna llega con su armado del motor, que coloca cada globo y no lee
     # la densidad, la mezcla ni las medidas del plan: el conteo no tiene mando que mover y no inventa otro
     # motivo («medidas físicas fijas», «ningún largo…») ni cambia una mezcla que nada compra.
+    # Si ninguna receta del motor se acerca más a la foto (aquí, una cuenta muy por encima de la receta lujosa),
+    # la pieza se queda con la suya y se dice (probador 141, I-4: si alguna se acerca, se elige esa).
     columnas = _columnas_ej01()
     con_armado = {**columnas, **_receta_del_motor(columnas)}
     assert "armado_columna_organica" in con_armado
-    resolved = await _confirmar_ej01(con_armado)
+    resolved = await _confirmar_ej01(
+        con_armado, conteos=({**CONTEO_EJ01_IZQUIERDA, "estimado_total": 400},)
+    )
     [conteo] = _conteos(resolved)
     motor = cast(int, conteo["globos_antes"])
     assert conteo["decision"] == "sin_aplicar"
@@ -1033,11 +1037,151 @@ async def test_s1_con_la_receta_del_motor_el_armado_fija_la_cantidad_y_lo_dice()
     assert (conteo["globos_despues"], conteo["cambios"]) == (motor, [])
     estructura = _estructura(resolved)
     assert (estructura["densidad"], estructura["mezcla"]) == ("lujosa", "organica_fina")
+    assert estructura["armado_columna_organica"] == con_armado["armado_columna_organica"]
     assert cast(list[dict[str, object]], resolved["estructuras"])[0]["total_unidades"] == 2 * motor
     assert not any(s.startswith("Columna orgánica lateral: la foto") for s in _supuestos(resolved))
     # Si la foto cuenta lo que el motor coloca, coincide, como sin armado.
     igual = await _confirmar_ej01(con_armado, conteos=({**CONTEO_EJ01_IZQUIERDA, "estimado_total": motor},))
     assert [c["decision"] for c in _conteos(igual)] == ["coincide"]
+
+
+# --- Probador 141, I-4: con la receta del motor, la foto elige la receta (2026-10-07) -----------------------
+#
+# Con ARMADO_ARCO_COLUMNA_V1 encendida, la confirmación escribe en cada pieza la receta del motor de la densidad
+# que declaró el modelo («lujosa»), y el conteo de la foto ya no la movía: las dos columnas de ej01 salían con
+# 165 globos cada una (la foto cuenta unos 75 y 85). Ahora se elige la receta del motor (por densidad) más
+# cercana a la cuenta, dentro de la puerta física, conservando lo que la foto leyó del armado.
+
+
+def _guirnalda_ej01() -> dict[str, object]:
+    """La guirnalda que la guiada suma «en medio» de ej01: lujosa de 2,4 m y sin cuenta en la foto."""
+    return _guirnalda(
+        estructura_id="EST_03_GUIRNALDA",
+        nombre="Guirnalda central de globos",
+        ubicacion="arco_central",
+        medidas={"largo_m": 2.4},
+        densidad="lujosa",
+        estructura_oficial="guirnalda",
+        referencia_element_id="REF_01_E13",
+    )
+
+
+def _con_receta(estructura: dict[str, object]) -> dict[str, object]:
+    return {**estructura, **_receta_del_motor(estructura)}
+
+
+def _total_del_motor(estructura: Mapping[str, object]) -> int:
+    from app.plan import _conteo_del_motor
+
+    contado = _conteo_del_motor(estructura)
+    assert contado is not None
+    return contado.total
+
+
+@pytest.mark.anyio
+async def test_i4_ej01_con_receta_del_motor_cada_columna_sigue_su_cuenta_y_no_165() -> None:
+    izquierda = _con_receta(_columnas_ej01(estructura_id="EST_01_IZQUIERDA", repeticiones=1))
+    derecha = _con_receta(
+        _columnas_ej01(
+            estructura_id="EST_02_DERECHA",
+            repeticiones=1,
+            referencia_element_id="REF_01_E04",
+            ubicacion="lateral_derecho",
+        )
+    )
+    guirnalda = _con_receta(_guirnalda_ej01())
+    antes_guirnalda = _total_del_motor(guirnalda)
+    assert _total_del_motor(izquierda) == 165, "la receta lujosa que salía en producción"
+    resolved = await _confirmar_ej01(
+        izquierda,
+        derecha,
+        guirnalda,
+        conteos=(CONTEO_EJ01_IZQUIERDA, CONTEO_EJ01_DERECHA),
+        cajas=(CAJA_EJ01_IZQUIERDA, CAJA_EJ01_DERECHA),
+    )
+    por_pieza = {str(c["estructura_id"]): c for c in _conteos(resolved)}
+    assert set(por_pieza) == {"EST_01_IZQUIERDA", "EST_02_DERECHA"}, "la guirnalda no tiene cuenta"
+    plan = cast(dict[str, object], resolved["plan"])
+    estructuras = {
+        str(e["estructura_id"]): e for e in cast(list[dict[str, object]], plan["estructuras"])
+    }
+    totales = {
+        str(e["estructura_id"]): cast(int, e["total_unidades"])
+        for e in cast(list[dict[str, object]], resolved["estructuras"])
+    }
+    for estructura_id, foto, original in (
+        ("EST_01_IZQUIERDA", 75, izquierda),
+        ("EST_02_DERECHA", 85, derecha),
+    ):
+        conteo = por_pieza[estructura_id]
+        assert conteo["decision"] == "ajustado", conteo["motivo"]
+        assert conteo["globos_antes"] == 165
+        despues = cast(int, conteo["globos_despues"])
+        assert abs(despues - foto) <= 0.15 * foto, (estructura_id, despues)
+        assert totales[estructura_id] == despues
+        assert conteo["cambios"] == [{"campo": "densidad", "antes": "lujosa", "despues": "media"}]
+        assert "receta del motor" in cast(str, conteo["motivo"]).lower()
+        # Se queda el armado de la foto: solo cambia el volumen que decide la densidad.
+        armado = cast(dict[str, object], estructuras[estructura_id]["armado_columna_organica"])
+        leido = cast(dict[str, object], original["armado_columna_organica"])
+        assert {k: v for k, v in armado.items() if k != "volumen"} == {
+            k: v for k, v in leido.items() if k != "volumen"
+        }
+        assert armado["volumen"] != leido["volumen"]
+        assert _total_del_motor(estructuras[estructura_id]) == despues
+    # Sin cuenta de la foto, la guirnalda se queda con su receta: todo igual.
+    assert estructuras["EST_03_GUIRNALDA"]["densidad"] == "lujosa"
+    assert (
+        estructuras["EST_03_GUIRNALDA"]["armado_guirnalda_organica"]
+        == guirnalda["armado_guirnalda_organica"]
+    )
+    assert totales["EST_03_GUIRNALDA"] == antes_guirnalda
+    assert any("la foto muestra unos 75 globos y el plan tenía 165" in s for s in _supuestos(resolved))
+
+
+@pytest.mark.anyio
+async def test_i4_la_guirnalda_con_cuenta_de_la_foto_toma_la_receta_mas_cercana() -> None:
+    guirnalda = _con_receta(_guirnalda_ej01())
+    antes = _total_del_motor(guirnalda)
+    cuenta = _conteo(referencia_element_id="REF_01_E13", estimado_total=50, confianza=0.9)
+    resolved = await _confirmar_ej01(guirnalda, conteos=(cuenta,), cajas=())
+    [conteo] = _conteos(resolved)
+    assert conteo["decision"] == "ajustado", conteo["motivo"]
+    despues = cast(int, conteo["globos_despues"])
+    assert conteo["globos_antes"] == antes
+    assert abs(despues - 50) < abs(antes - 50)
+    estructura = _estructura(resolved)
+    assert estructura["densidad"] != "lujosa"
+    assert cast(list[dict[str, object]], resolved["estructuras"])[0]["total_unidades"] == despues
+    assert _total_del_motor(estructura) == despues
+
+
+@pytest.mark.anyio
+async def test_i4_sin_cuenta_fiable_la_receta_del_motor_no_cambia() -> None:
+    columna = _con_receta(_columnas_ej01())
+    resolved = await _confirmar_ej01(columna, conteos=({**CONTEO_EJ01_IZQUIERDA, "confianza": 0.3},))
+    [conteo] = _conteos(resolved)
+    assert conteo["decision"] == "no_confiable"
+    estructura = _estructura(resolved)
+    assert estructura["densidad"] == "lujosa"
+    assert estructura["armado_columna_organica"] == columna["armado_columna_organica"]
+    assert cast(list[dict[str, object]], resolved["estructuras"])[0]["total_unidades"] == 2 * 165
+
+
+@pytest.mark.anyio
+async def test_i4_tras_una_edicion_la_pieza_conserva_su_receta() -> None:
+    columna = _con_receta(_columnas_ej01())
+    resolved = await _resolver_geometrico(
+        _plan_geometrico(columna, fuente="foto"),
+        completar_conteos=True,
+        pistas_conteo=[CONTEO_EJ01_IZQUIERDA],
+        pistas_geometria=[CAJA_EJ01_IZQUIERDA],
+        completar_conteos_de=["EST_01_COLUMNAS"],
+    )
+    [conteo] = _conteos(resolved)
+    assert conteo["decision"] == "sin_aplicar"
+    assert "tras una edición" in cast(str, conteo["motivo"])
+    assert _estructura(resolved)["armado_columna_organica"] == columna["armado_columna_organica"]
 
 
 def _puerto_lineal(por_metro: Mapping[str, float], largo_maximo: float) -> PuertoPlan:

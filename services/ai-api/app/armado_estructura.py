@@ -48,6 +48,7 @@ kilobytes por pieza.
 
 from __future__ import annotations
 
+import json
 import math
 from typing import Annotated, Any, Literal, Mapping, Sequence, cast
 
@@ -2710,6 +2711,77 @@ def armado_semiarco_de_receta(estructura: Mapping[str, Any]) -> dict[str, Any] |
     return armado
 
 
+def _hojas(valor: object, ruta: tuple[str, ...] = ()) -> dict[tuple[str, ...], object]:
+    """Cada valor no-objeto de un armado por su ruta de claves (una lista es una hoja entera)."""
+    if isinstance(valor, Mapping):
+        hojas: dict[tuple[str, ...], object] = {}
+        for clave, item in cast(Mapping[str, object], valor).items():
+            hojas.update(_hojas(item, (*ruta, str(clave))))
+        return hojas
+    return {ruta: valor}
+
+
+def _con_hoja(armado: dict[str, Any], ruta: tuple[str, ...], valor: object) -> None:
+    """Escribe ``valor`` en ``ruta`` dentro de ``armado`` (copiando los objetos que atraviesa)."""
+    destino = armado
+    for clave in ruta[:-1]:
+        siguiente = destino.get(clave)
+        destino[clave] = dict(siguiente) if isinstance(siguiente, Mapping) else {}
+        destino = destino[clave]
+    destino[ruta[-1]] = valor
+
+
+def armado_con_densidad(
+    estructura: Mapping[str, Any], armado: Mapping[str, Any], densidad: str
+) -> dict[str, Any] | None:
+    """El ``armado`` guardado en la pieza con lo que la receta del motor decide por densidad puesto en ``densidad``.
+
+    Es la receta del motor de la pieza con otra densidad **sin perder lo que la foto leyó**: el patrón, la paleta,
+    el remate, la inclinación o los globos por racimo que la foto dio se quedan. Se arman dos recetas sobre la
+    misma pieza, sin lecturas, que solo difieren en la densidad (la de la pieza y ``densidad``); lo que cambia
+    entre ellas es lo que la densidad decide (hoy, el volumen: racimo, grosores y relleno del estilo
+    ligero / lleno), y eso se escribe en el armado guardado salvo donde el armado guardado ya no es la receta
+    (lo puso una lectura de la foto, que manda sobre la densidad). Lo usa el conteo de la foto al confirmar
+    (``conteo_foto._con_armado_del_motor``) para elegir la receta del motor cuya cantidad queda más cerca de la
+    foto, en vez de quedarse con la de la densidad que el modelo declaró.
+
+    ``None`` si la pieza no es de un motor, si la otra densidad la arma otro motor (otra ``version``) o si el
+    armado resultante no se sostiene. Puro y determinista.
+    """
+    if densidad not in ("sencilla", "media", "lujosa"):
+        return None
+    completa = cast(
+        Mapping[str, Any],
+        cast(Sequence[object], completar_medidas({"estructuras": [dict(estructura)]})["estructuras"])[0],
+    )
+    actual = _pieza_del_plan(completa)
+    otra = _pieza_del_plan({**completa, "densidad": densidad})
+    if actual is None or otra is None:
+        return None
+    base = _receta(actual, [])
+    nueva = _receta(otra, [])
+    version = armado.get("version")
+    if base.get("version") != version or nueva.get("version") != version:
+        return None
+    hojas_base = _hojas(base)
+    hojas_nueva = _hojas(nueva)
+    hojas_guardado = _hojas(armado)
+    resultado: dict[str, Any] = json.loads(json.dumps(armado))
+    for ruta in sorted(set(hojas_base) | set(hojas_nueva)):
+        if not ruta or ruta == ("origen",):
+            continue
+        antes, despues = hojas_base.get(ruta), hojas_nueva.get(ruta)
+        if antes == despues or ruta not in hojas_nueva:
+            continue
+        # Lo que el armado guardado no tiene como la receta lo puso la foto (o el modelo): manda sobre la densidad.
+        if hojas_guardado.get(ruta) != antes:
+            continue
+        _con_hoja(resultado, ruta, despues)
+    if _valida(otra, resultado) is not None:
+        return None
+    return resultado
+
+
 def completar(request: ArmadoEstructuraRequest) -> dict[str, Any]:
     """El armado de cada arco y cada columna del plan: el del modelo si se sostiene, y si no la receta.
 
@@ -3046,6 +3118,7 @@ __all__ = [
     "armado_arco_de_patron",
     "armado_guirnalda_de_receta",
     "armado_arco_de_receta",
+    "armado_con_densidad",
     "armar",
     "catalogo_de",
     "completar",

@@ -513,6 +513,10 @@ class PuertoPlan:
     #: La pieza trae su armado del motor (``plan._armado_del_motor``), que la cuenta colocando cada globo:
     #: ni su densidad, ni su mezcla ni sus medidas mueven ese total (``_con_armado_del_motor``).
     cuenta_el_motor: Callable[[Mapping[str, object]], bool] = lambda _e: False
+    #: Las otras recetas del motor para una pieza que trae su armado: la misma pieza con otra densidad admitida y
+    #: su armado con el volumen de esa densidad (``armado_estructura.armado_con_densidad``), sin perder lo que la
+    #: foto leyó. Con ellas el conteo elige la receta más cercana a la foto (``_con_armado_del_motor``).
+    recetas_del_motor: Callable[[Mapping[str, object]], Sequence[dict[str, object]]] = lambda _e: ()
 
 
 @dataclass
@@ -1034,29 +1038,83 @@ def _geometrica(
 
 
 def _con_armado_del_motor(
-    estructura: dict[str, object], cuenta: Cuenta, puerto: PuertoPlan
+    estructura: dict[str, object], cuenta: Cuenta, puerto: PuertoPlan, *, calibrar: bool = True
 ) -> _Resultado:
-    """Una pieza geométrica que ya trae su armado del motor: el armado fija la cantidad, como el de un bouquet.
+    """Una pieza geométrica que ya trae su armado del motor: el conteo elige la receta del motor más cercana.
 
     El motor coloca cada globo y no lee la densidad, la mezcla ni las medidas del plan, así que ningún mando
-    que este módulo mueve cambia su total. Probarlos solo dejaba un motivo falso («medidas físicas fijas»,
-    «ningún largo alcanza…») o una mezcla cambiada en el plan que nada de lo que se compra seguía. Lo que acerca
-    una pieza así a la foto son los mandos de su armado (``estimar_conteo``), no el conteo al confirmar.
+    de la fórmula cambia su total. Probarlos solo dejaba un motivo falso («medidas físicas fijas», «ningún
+    largo alcanza…») o una mezcla cambiada en el plan que nada de lo que se compra seguía.
+
+    Lo que sí mueve el total es la receta: la densidad decide el volumen del armado (racimo, grosor y relleno
+    del estilo ligero / lleno). Hasta el 2026-10-07 la pieza se quedaba con la receta de la densidad que el
+    modelo declaró aunque la foto contara otra cosa: las dos columnas de la foto de ejemplo 01 salían con la
+    receta lujosa, 165 globos cada una con unos 75 y 85 en la foto (probador 141, I-4). Ahora, fuera de la
+    tolerancia, se prueban las recetas de las otras densidades admitidas (``PuertoPlan.recetas_del_motor``,
+    que conservan lo que la foto leyó), se descartan las que no pasan la puerta física y se queda la que
+    más se acerca a la cuenta, si se acerca más que la actual. Sin ninguna mejor, la pieza se queda y se dice.
     """
     antes = puerto.contar(estructura)
     if dentro_de_tolerancia(cuenta.globos, antes):
         return _Resultado(
             estructura, "coincide", cuenta.globos, antes, antes, [], "El plan ya sigue la foto."
         )
+    if not calibrar:
+        return _Resultado(
+            estructura,
+            "sin_aplicar",
+            cuenta.globos,
+            antes,
+            antes,
+            [],
+            f"La pieza trae armado del motor, que fija la cantidad ({antes} globos por pieza): tras una"
+            " edición se conserva su receta.",
+        )
+    densidad_actual = str(estructura.get("densidad") or "media")
+    probadas: list[tuple[str, int]] = [(densidad_actual, antes)]
+    mejor: tuple[dict[str, object], int] | None = None
+    for candidata in puerto.recetas_del_motor(estructura):
+        total = puerto.contar(candidata)
+        if total <= 0 or not puerto.dentro_de_puerta(candidata, total):
+            continue
+        probadas.append((str(candidata.get("densidad") or "media"), total))
+        if abs(total - cuenta.globos) < abs((mejor[1] if mejor else antes) - cuenta.globos):
+            mejor = (candidata, total)
+    resumen = ", ".join(f"{densidad} {total}" for densidad, total in probadas)
+    if mejor is None:
+        return _Resultado(
+            estructura,
+            "sin_aplicar",
+            cuenta.globos,
+            antes,
+            antes,
+            [],
+            f"La pieza trae armado del motor, que fija la cantidad ({antes} globos por pieza), y ninguna"
+            f" receta del motor dentro de la puerta física se acerca más a la foto (recetas: {resumen}).",
+        )
+    candidata, despues = mejor
+    cambios = _cambios(estructura, candidata)
+    por_pieza = " por pieza" if cast(int, estructura.get("repeticiones") or 1) > 1 else ""
+    supuesto = acotar_supuesto(
+        _nombre_de_pieza(estructura),
+        f"la foto muestra {_unos(cuenta)} globos{por_pieza} y el plan tenía {antes}; "
+        f"{_frases_de_cambios(cambios) or 'otra receta del motor'}: quedó en {despues}.",
+    )
+    alcance = (
+        "dentro de la tolerancia"
+        if dentro_de_tolerancia(cuenta.globos, despues)
+        else "la más cercana que cabe en la puerta física"
+    )
     return _Resultado(
-        estructura,
-        "sin_aplicar",
+        candidata,
+        "ajustado",
         cuenta.globos,
         antes,
-        antes,
-        [],
-        f"La pieza trae armado del motor, que fija la cantidad ({antes} globos por pieza): ni la"
-        " densidad, ni la mezcla ni las medidas del plan la mueven.",
+        despues,
+        cambios,
+        f"Receta del motor calibrada a la foto ({alcance}): densidad {candidata.get('densidad')}, con el"
+        f" armado de la foto conservado (recetas: {resumen}).",
+        supuesto,
     )
 
 
@@ -1367,7 +1425,8 @@ def aplicar(
                 "Un centro de mesa de globos contados solo sigue una cuenta exacta de pocos globos.",
             )
         elif tipo in TIPOS_GEOMETRICOS and puerto.cuenta_el_motor(estructura):
-            resultado = _con_armado_del_motor(estructura, cuenta, puerto)
+            # Tras una edición la pieza conserva su receta: lo que el decorador cambió no lo deshace la foto.
+            resultado = _con_armado_del_motor(estructura, cuenta, puerto, calibrar=solo is None)
         elif tipo in TIPOS_GEOMETRICOS:
             resultado = _geometrica(
                 estructura,

@@ -5927,6 +5927,7 @@ def _aplicar_conteos(
             product_id, candidates_by_product, allowlist
         ),
         cuenta_el_motor=lambda structure: _armado_del_motor(structure) is not None,
+        recetas_del_motor=_recetas_del_motor_por_densidad,
     )
     # The size reading owns the mix (``_assign_mixes``, and the motor arms with it): the count's
     # per-size split, which also sees a column's crown, does not move it again.
@@ -5958,12 +5959,14 @@ def _aplicar_conteos(
                     "globos_foto": count["globos_foto"],
                     "globos_antes": count["globos_antes"],
                     "globos_despues": count["globos_despues"],
+                    "cambios": count["cambios"],
                     "motivo": count["motivo"],
                 }
                 for count in counts
             ],
             "conteo_foto.aplicar: las medidas solo quedan fijas si las dio el cliente o si la caja de la foto"
-            " ancló de verdad la escala; una pieza con armado del motor la cuenta su armado",
+            " ancló de verdad la escala; una pieza con armado del motor la cuenta su armado, y al confirmar"
+            " se queda la receta del motor (por densidad) más cercana a la foto",
             entrada={
                 "medidas_fijas": sorted(medidas_fijas),
                 "medidas_cliente_de": request.medidas_cliente_de,
@@ -5975,7 +5978,60 @@ def _aplicar_conteos(
                 ),
             },
         )
+        recalibradas = [
+            {
+                "estructura_id": count["estructura_id"],
+                "armado": entrada[0],
+                "densidad_antes": next(
+                    (c["antes"] for c in count["cambios"] if c.get("campo") == "densidad"), None
+                ),
+                "densidad_despues": structure.get("densidad"),
+                "globos_foto": count["globos_foto"],
+                "globos_antes": count["globos_antes"],
+                "globos_despues": count["globos_despues"],
+            }
+            for count in counts
+            if count["decision"] == "ajustado"
+            for structure in _mappings(adjusted.get("estructuras"))
+            if structure.get("estructura_id") == count["estructura_id"]
+            and (entrada := _armado_del_motor(structure)) is not None
+        ]
+        if recalibradas:
+            _decidir(
+                "regla:armado",
+                "qué receta del motor arma cada pieza que la foto contó",
+                recalibradas,
+                "conteo_foto._con_armado_del_motor: fuera de la tolerancia se elige, entre las densidades"
+                " admitidas, la receta del motor que más se acerca a la foto y pasa la puerta física; el"
+                " armado conserva lo que la foto leyó (armado_estructura.armado_con_densidad)",
+            )
     return adjusted, hints, counts
+
+
+def _recetas_del_motor_por_densidad(structure: Mapping[str, object]) -> list[dict[str, object]]:
+    """La pieza con cada otra densidad que admite y su armado del motor con el volumen de esa densidad.
+
+    Son las candidatas con que el conteo de la foto calibra una pieza que trae armado del motor
+    (``conteo_foto._con_armado_del_motor``). El armado lo rehace ``armado_estructura.armado_con_densidad``, que
+    conserva lo que la foto leyó; una densidad que no arma un armado válido del mismo motor no es candidata.
+    """
+    entrada = _armado_del_motor(structure)
+    if entrada is None:
+        return []
+    # Importación diferida por el mismo ciclo que ``_armado_arco_de_patron``.
+    from app.armado_estructura import armado_con_densidad
+
+    clase, armado = entrada
+    campo = _ARMADOS_DEL_MOTOR[clase][0]
+    actual = _text(structure.get("densidad")) or "media"
+    candidatas: list[dict[str, object]] = []
+    for densidad in _admitted_densities(structure):
+        if densidad == actual:
+            continue
+        otro = armado_con_densidad(structure, armado, densidad)
+        if otro is not None and otro != armado:
+            candidatas.append({**structure, "densidad": densidad, campo: otro})
+    return candidatas
 
 
 def _decidir(
