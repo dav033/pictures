@@ -21,6 +21,8 @@ import { COLUMNA_QUINCE_AZUL } from "@/lib/globos3d/organico-presets";
 import { AJUSTES_QUINCE_AZUL, PanelOrganico, opcionesDeAjustes, type AjustesOrganico } from "./PanelOrganico";
 import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
 import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena, TuboEnEscena } from "./escena-globos";
+import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
+import { GeneradorIA } from "./GeneradorIA";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 const metros = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
@@ -50,6 +52,15 @@ function ListaMateriales({ materiales }: { materiales: ReadonlyArray<MaterialDec
     </ul>
   );
 }
+
+/** Materiales con el nombre del color en inglés, para la descripción que acompaña la captura a FLUX. */
+function materialesEnIngles(materiales: ReadonlyArray<{ formatoId: string; codigo: string; cantidad: number }>) {
+  return materiales.map((m) => ({ cantidad: m.cantidad, formatoId: m.formatoId, colorEn: referenciaPorCodigo(m.codigo)?.nombreEn ?? m.codigo }));
+}
+
+const PATRON_EN: Record<PatronColumna, string> = { un_color: "single-color", dos_colores: "two-color", espiral: "spiral", salvavidas: "life-ring", zigzag: "zig-zag" };
+const FORMA_EN: Record<FormaArco, string> = { redondo: "round", parabolico: "parabolic", rectangular: "rectangular" };
+const MODULO_EN: Record<TipoModulo, string> = { pareja: "duplet", trio: "triplet", cuarteto: "quartet", quinteto: "quintet", sexteto: "sextet" };
 
 /** Formatos de la columna de cuartetos: redondos de 5" a 18". */
 const FORMATOS_COLUMNA = ["R-5", "R-9", "R-12", "R-18"] as const;
@@ -291,6 +302,29 @@ export function Taller3D() {
     ? FORMATOS_GLOBO.filter((f) => FORMATOS_MODULO.includes(f.id as (typeof FORMATOS_MODULO)[number]))
     : modo === "columna" || modo === "arco" ? FORMATOS_GLOBO.filter((f) => FORMATOS_COLUMNA.includes(f.id as (typeof FORMATOS_COLUMNA)[number])) : FORMATOS_GLOBO;
   const seleccionado = (i: number) => (modo === "modulo" ? coloresModulo[i] : codigo);
+
+  // Lo que se le cuenta a FLUX junto con la captura: la estructura y sus globos (en inglés, sin marcas).
+  const descripcionIA = useMemo(() => {
+    const m = (cm: number) => `${(cm / 100).toFixed(2).replace(/\.?0+$/, "")} m`;
+    if (modo === "organico") {
+      const r = organico.resultado;
+      return descripcionRender3d(
+        `An organic balloon column ${m(r.medidas.altoCm)} tall made of mixed-size balloons, with a balloon garland wrapping around ${ajustesOrganico.conPedestal ? "a white round pedestal" : "its base"}`,
+        materialesEnIngles(r.materiales),
+        organico.flores.racimos.length ? `${organico.flores.racimos.length} clusters of artificial hydrangea and rose flowers tucked between the balloons; clear balloons have silver confetti inside` : "",
+      );
+    }
+    if (modo === "pared") return descripcionRender3d(`A flat balloon wall ${m(paredActual.anchoCm)} wide and ${m(paredActual.altoCm)} tall, ${tipoPared === "malla" ? "a Link-O-Loon flower mesh" : "vertical braids of quartets alternating balloon sizes"}`, materialesEnIngles(paredActual.materiales));
+    if (modo === "decoracion") {
+      const base = donde === "sola" ? "A small balloon decoration piece" : donde === "pared" ? `A balloon wall ${m(paredActual.anchoCm)} wide and ${m(paredActual.altoCm)} tall` : donde === "arco" ? `A ${FORMA_EN[forma]} balloon arch ${m(anchoArcoCm)} wide` : `A balloon column ${m(columna.alturaCm)} tall`;
+      return descripcionRender3d(`${base}${donde === "sola" ? "" : ` decorated with ${escenaDecoracion.puestas} small balloon flowers and bows attached on its surface`}`, materialesEnIngles(escenaDecoracion.materiales));
+    }
+    if (modo === "columna") return descripcionRender3d(`A ${PATRON_EN[patron]} balloon column ${m(columna.alturaCm)} tall made of ${columna.niveles} stacked quartets`, materialesEnIngles(columna.materiales.map((x) => ({ ...x, formatoId: formato.id }))));
+    if (modo === "arco") return descripcionRender3d(`A ${FORMA_EN[forma]} ${PATRON_EN[patron]} balloon arch ${m(anchoArcoCm)} wide and ${m(altoArcoCm)} tall made of ${arco.niveles} quartets`, materialesEnIngles(arco.materiales.map((x) => ({ ...x, formatoId: formato.id }))));
+    if (modo === "modulo") return descripcionRender3d(`A single ${MODULO_EN[moduloId]} balloon cluster (${modulo.globos} balloons tied together at the center)`, materialesEnIngles(materiales.map((x) => ({ ...x, formatoId: formato.id }))));
+    if (vista === "todos") return descripcionRender3d(`A row of round latex balloons of every size side by side, all ${color?.nombreEn ?? ""}`, []);
+    return descripcionRender3d(`A single ${formatoEnIngles(formato.id)} latex balloon, ${color?.nombreEn ?? ""}`, []);
+  }, [modo, organico, ajustesOrganico.conPedestal, paredActual, tipoPared, donde, forma, anchoArcoCm, altoArcoCm, columna, escenaDecoracion, patron, arco, formato.id, moduloId, modulo.globos, materiales, vista, color]);
 
   // Ficha del visor: compacta encima del lienzo (sin listas) y completa debajo (con materiales y notas).
   const fichaVisor = color ? (
@@ -596,6 +630,7 @@ export function Taller3D() {
               <div className="mt-2">{fichaVisor}</div>
             </details>
           )}
+          {listo && <GeneradorIA capturar={() => escenaRef.current?.capturar() ?? null} descripcion={descripcionIA} />}
           <p className="text-xs text-texto-suave">Arrastra para girar · rueda o pellizca para acercar · medidas nominales del catálogo Sempertex; el color es el del globo inflado.</p>
         </section>
       </div>

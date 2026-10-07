@@ -32,6 +32,8 @@ export type EscenaGlobos = {
   /** Un módulo armado (pareja, trío, cuarteto…): los globos colocados, si se piden sus anclas, y los tubitos. */
   mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos?: readonly TuboEnEscena[], extras?: ExtrasEscena) => void;
   redimensionar: () => void;
+  /** Captura lo que se ve como JPEG, sin cuadrícula y con fondo claro (para la foto con IA). */
+  capturar: () => string;
   destruir: () => void;
 };
 
@@ -398,6 +400,16 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     mostrar,
     mostrarModulo,
     redimensionar,
+    capturar() {
+      // Sin cuadrícula ni piso de sombra y con fondo claro: FLUX recibe la decoración, no la escala del taller.
+      cuadricula.visible = false;
+      renderer.setClearColor(0xefedf2, 1);
+      renderer.render(escena, camara);
+      const datos = lienzo.toDataURL("image/jpeg", 0.92);
+      cuadricula.visible = true;
+      renderer.setClearColor(0x000000, 0);
+      return datos;
+    },
     destruir() {
       cancelAnimationFrame(cuadro);
       controles.dispose();
