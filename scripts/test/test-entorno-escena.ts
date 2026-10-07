@@ -210,6 +210,14 @@ async function main(): Promise<void> {
     const deDia = entorno({ tipo_evento: "boda", espacio: "jardín", momento_dia: "día" });
     assert.equal(deDia.momento, "dia");
     assert.equal(deDia.origen.momento, "cliente");
+    // Plan desde una foto: sin hora del cliente, de día como la foto (la noche con uplighting cambiaba su ambiente);
+    // con la escenografía de la foto, la escena es solo el sitio y la luz natural.
+    const contextoFoto = buildVisualContext({ brief: { tipo_evento: "cumpleaños" }, userRequest: "cumpleaños" });
+    const desdeFoto = entornoDeEscena({ contexto: contextoFoto, nivel: 2, modo: "text_to_image", desdeFoto: true, conEscenografiaDeFoto: true })!;
+    assert.equal(desdeFoto.momento, "dia");
+    assert.equal(desdeFoto.origen.momento, "foto");
+    assert.doesNotMatch(fraseEntorno(desdeFoto, "compacto").escena, /night|uplighting/, fraseEntorno(desdeFoto, "compacto").escena);
+    assert.equal(entornoDeEscena({ contexto: buildVisualContext({ brief: { tipo_evento: "cumpleaños", momento_dia: "noche" }, userRequest: "cumpleaños" }), nivel: 2, modo: "text_to_image", desdeFoto: true })!.momento, "noche", "la hora del cliente manda sobre la foto");
     for (const detalle of ["completo", "medio", "compacto", "minimo"] as const) {
       const escena = fraseEntorno(deDia, detalle).escena;
       assert.doesNotMatch(escena, /\bnight\b|\bdusk\b|uplighting|bokeh|lamps/, `de día no hay noche ni uplighting (${detalle}): ${escena}`);

@@ -408,7 +408,7 @@ export type EntornoEscena = {
   /** El encuadre 3/4 abre el caption (`ENCUADRE_ESCENA`); no con la guía de escena, cuyo mapa ya fija el punto de vista. */
   conEncuadre: boolean;
   /** De dónde salió cada dimensión: lo que dijo el cliente o el valor por defecto de su evento. */
-  origen: { evento: "cliente" | "defecto"; lugar: "cliente" | "evento"; momento: "cliente" | "evento" };
+  origen: { evento: "cliente" | "defecto"; lugar: "cliente" | "evento"; momento: "cliente" | "evento" | "foto" };
   /** «a lively kids' birthday party room…», «a lush garden with trees and open sky set for a wedding reception». */
   escenario: string;
   escenarioCorto: string;
@@ -436,6 +436,11 @@ export type EntradaEntorno = {
   conEscenografiaDeFoto?: boolean;
   /** La imagen se genera con la guía de escena (el mapa de las piezas por `/edit`): su punto de vista es el del mapa. */
   conGuiaDeEscena?: boolean;
+  /**
+   * El plan salió de una foto de referencia: sin hora del cliente, la escena va de día, con la luz natural de las fotos
+   * de decoración (2026-10-07, «la composición no es fiel»: la noche con uplighting cambiaba el ambiente de la foto).
+   */
+  desdeFoto?: boolean;
 };
 
 /**
@@ -470,11 +475,11 @@ export function entornoDeEscena(entrada: EntradaEntorno): EntornoEscena | undefi
     version: ENTORNO_ESCENA_VERSION,
     evento,
     ambito,
-    momento: momentoCliente ?? (EVENTOS_DE_DIA.has(evento) ? "atardecer" : "noche"),
+    momento: momentoCliente ?? (entrada.desdeFoto ? "dia" : EVENTOS_DE_DIA.has(evento) ? "atardecer" : "noche"),
     tonoLuz: tonoLuzParaPaleta(contexto.palette),
     conEscenografiaPropia,
     conEncuadre: !entrada.conGuiaDeEscena,
-    origen: { evento: delCliente ? "cliente" : "defecto", lugar: lugar || contexto.venueKind !== "unknown" ? "cliente" : "evento", momento: momentoCliente ? "cliente" : "evento" },
+    origen: { evento: delCliente ? "cliente" : "defecto", lugar: lugar || contexto.venueKind !== "unknown" ? "cliente" : "evento", momento: momentoCliente ? "cliente" : entrada.desdeFoto ? "foto" : "evento" },
     escenario: lugar ? `${lugar.escenario} set for ${datos.nombre}` : datos.escenario[ambito],
     escenarioCorto: lugar ? `${lugar.corto} set for ${datos.nombreCorto}` : datos.escenarioCorto[ambito],
     ...(lugar ? { lugarCliente: lugar.corto } : {}),

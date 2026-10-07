@@ -1067,8 +1067,8 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // vacía. Solo texto a imagen: con foto del espacio o sobre una imagen previa la escena ya existe. Lo que añade se
     // avisa como no cotizado (`avisoNoCotizado`), igual en la clásica y en la guiada (mismo cuerpo, misma ruta).
     // Con la guía de escena el punto de vista es el del mapa: el entorno va sin su encuadre 3/4 (`conGuiaDeEscena`).
-    const entorno = entornoDeEscena({ contexto: visualContextFlux, nivel: creatividad.nivel, modo: transformedSceneSpec.generation_mode, conEscenografiaDeFoto: ambientDecor.length > 0, conGuiaDeEscena: admiteGuiaEscena });
-    decidir("regla:entorno_escena", "entorno del evento que acompaña a la decoración en el caption de FLUX", entorno ?? null, { entrada: { modo: transformedSceneSpec.generation_mode, nivel: creatividad.nivel, evento: visualContextFlux.eventType ?? null, lugar: visualContextFlux.venue ?? null, momento: visualContextFlux.timeOfDay ?? null, estilo: visualContextFlux.style ?? null, escenografiaDeFoto: ambientDecor.length, conGuiaDeEscena: admiteGuiaEscena } });
+    const entorno = entornoDeEscena({ contexto: visualContextFlux, nivel: creatividad.nivel, modo: transformedSceneSpec.generation_mode, conEscenografiaDeFoto: ambientDecor.length > 0, conGuiaDeEscena: admiteGuiaEscena, desdeFoto: Boolean(referenciaAnalizada?.success) });
+    decidir("regla:entorno_escena", "entorno del evento que acompaña a la decoración en el caption de FLUX", entorno ?? null, { entrada: { modo: transformedSceneSpec.generation_mode, nivel: creatividad.nivel, evento: visualContextFlux.eventType ?? null, lugar: visualContextFlux.venue ?? null, momento: visualContextFlux.timeOfDay ?? null, estilo: visualContextFlux.style ?? null, escenografiaDeFoto: ambientDecor.length, conGuiaDeEscena: admiteGuiaEscena, desdeFoto: Boolean(referenciaAnalizada?.success) } });
     const compilarCaptionCon = (maxLength: number | undefined, frases: typeof colorPatterns) => compileProductPrompt({
       sceneSpec: transformedSceneSpec,
       visualContext: visualContextFlux,

@@ -464,7 +464,7 @@ const NUMEROS_GUIA = ["", "one", "two", "three", "four", "five", "six"] as const
  */
 export function fraseConteoGuiaEscena(piezas: number | undefined): string {
   if (!piezas || !Number.isInteger(piezas) || piezas < 1 || piezas >= NUMEROS_GUIA.length) return "";
-  return `The map shows every balloon piece in the scene: exactly ${NUMEROS_GUIA[piezas]} piece${piezas === 1 ? "" : "s"}, nothing else made of balloons, no arched backdrop. `;
+  return `The map shows every balloon piece in the scene: exactly ${NUMEROS_GUIA[piezas]} piece${piezas === 1 ? "" : "s"}, nothing else made of balloons. `;
 }
 
 /**
