@@ -2,7 +2,7 @@ import { ejecutarConversacionStream } from "@sempertex/agente-core";
 import type { Herramienta, Mensaje } from "@sempertex/agente-core";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { bibliotecaVisible, coloresTipicosDe, esPersonaje, normalizarBusqueda, proveedoresVisibles, tematicasDisponibles } from "@/lib/biblioteca-sempertex/biblioteca";
+import { bibliotecaVisible, coloresTipicosDe, esPersonaje, normalizarBusqueda, paletasSugeridasDe, proveedoresVisibles, tematicasDisponibles } from "@/lib/biblioteca-sempertex/biblioteca";
 import { detectarCambioTematica } from "@/lib/ia/guiado/cambio-tematica";
 import { diferenciaOpciones, sanearOpcionesCatalogo } from "@/lib/ia/guiado/opciones-catalogo";
 import { eventoDeMensajes, generosBabyShower, ideasGuiadas, ideasRealesDeOpcion, ideasYaVistas, NOMBRE_GENERO, tematicaFielAlCliente } from "@/lib/ia/guiado/ideas-guiadas";
@@ -456,7 +456,8 @@ async function turnoGuiado(request: Request) {
     const estilosEvento = eventoInicial
       ? tematicasDisponibles(eventoInicial).map((tematica) => ({ tematica, ideas: ideasRealesDeOpcion(tematica, { evento: eventoInicial, edad: edadInicial }) })).filter((item) => item.ideas > 0)
       : [];
-    decidir("regla:opciones_validas_turno", "géneros y estilos que llevan a decoraciones reales (los únicos que se ofrecen)", { generos, evento: eventoInicial ?? null, estilos: estilosEvento }, {
+    const paletasEvento = eventoInicial ? paletasSugeridasDe(eventoInicial) : [];
+    decidir("regla:opciones_validas_turno", "géneros y estilos que llevan a decoraciones reales (los únicos que se ofrecen)", { generos, evento: eventoInicial ?? null, estilos: estilosEvento, paletasSugeridas: paletasEvento }, {
       entrada: { briefEvento: briefVigente().evento ?? null, eventoDeMensajes: eventoDeMensajes(mensajesCliente) ?? null, edad: edadInicial ?? null },
     });
     /** El brief del turno: el de antes, lo que fijaron las herramientas y lo que dijo el cliente (sin modelo). */
@@ -480,6 +481,7 @@ async function turnoGuiado(request: Request) {
       `Temáticas del catálogo (las ÚNICAS que puedes ofrecer en «Opciones:» al preguntar temática, estilo o colores; elige 3-6 que encajen con el evento): ${tematicasCatalogo}.`,
       `Géneros de baby shower con decoraciones (los ÚNICOS que puedes ofrecer al preguntar el género): ${generosValidos.map((genero) => NOMBRE_GENERO[genero]).join(", ") || "ninguno (no preguntes el género: pregunta el estilo)"}${generosSin.length ? `; NO ofrezcas ${generosSin.join(" ni ")}: no hay decoraciones` : ""}.`,
       ...(eventoInicial && estilosEvento.length ? [`Estilos con decoraciones para ${eventoInicial} (ofrece solo estos al preguntar estilo o colores): ${estilosEvento.map((item) => item.tematica).join(" | ")}.`] : []),
+      ...(eventoInicial && paletasEvento.length ? [`Colores sugeridos para ${eventoInicial} (los típicos de esa celebración): ${paletasEvento.join(" | ")}. Al preguntar los colores, ofrece ESTOS primero en «Opciones:», en este orden, y «Otros colores» al final.`] : []),
     ].join(" ");
     // Con el uso ya dicho, preguntar_uso no existe en el turno: el modelo no puede volver a preguntarlo.
     let herramientasTurno: Herramienta[] = herramientas.filter((herramienta) => (decoracionConfirmada || !HERRAMIENTAS_DE_DECORACION.has(herramienta.nombre)) && !(usoConfirmado && herramienta.nombre === "preguntar_uso"));

@@ -345,6 +345,39 @@ export function tematicasDisponibles(evento?: string): string[] {
   return [...new Set((elegidas.length ? elegidas : visibles).map((decoracion) => decoracion.tematica))];
 }
 
+/**
+ * Colores sugeridos por tipo de celebración (dueño, 2026-10-07: «para los tipos de celebración debería haber unos
+ * colores más o menos predefinidos»): las paletas de la biblioteca que se ofrecen primero al preguntar los colores, de
+ * la más típica a la menos. El más específico va antes («quince» antes que «cumple»).
+ */
+const PALETAS_POR_EVENTO: ReadonlyArray<readonly [RegExp, readonly string[]]> = [
+  [/\b(?:boda|matrimonio|compromiso)\b/, ["Blanco, dorado y nude", "Romántico rosa y dorado", "Primavera verde salvia y naranja"]],
+  [/\b(?:quince|quinceanera|xv)\b|15 anos/, ["Rosa y dorado", "Lila y morado", "Rosa y lila", "Romántico rosa y dorado"]],
+  [/baby ?shower/, ["Baby shower niña", "Azul y plateado", "Flores y moño en tonos pastel perlados", "Blanco, dorado y nude"]],
+  [/revelacion|genero/, ["Rosa y lila", "Azul y plateado", "Blanco, dorado y nude"]],
+  [/\b(?:bautizo|comunion)\b/, ["Blanco, dorado y nude", "Flores y moño en tonos pastel perlados"]],
+  [/\b(?:grado|graduacion|promocion)\b/, ["Elegante negro y dorado", "Elegante blanco y negro", "Azul y plateado"]],
+  [/aniversario|san valentin|\bamor\b/, ["San Valentín rosa, rojo y blanco", "Romántico rosa y dorado", "Elegante negro y dorado"]],
+  [/empresa|corporativ|lanzamiento|inauguracion/, ["Elegante negro y dorado", "Elegante blanco y negro", "Azul y plateado"]],
+  [/navidad|diciembre/, ["Navidad verde salvia, perla y dorado"]],
+  [/halloween/, ["Halloween negro, plata y naranja"]],
+  [/\b(?:madre|mama)\b/, ["Día de la Madre coral, vino y perla", "Flores naranja, rosa y durazno"]],
+  [/cumple/, ["Infantil colorida", "Rosa y dorado", "Azul y plateado", "Elegante negro y dorado"]],
+];
+
+/**
+ * Las paletas sugeridas de un evento que tienen decoraciones para él (`tematicasDisponibles`): nunca se sugiere un color
+ * sin fotos. Vacío si el evento no tiene paletas predefinidas.
+ */
+export function paletasSugeridasDe(evento?: string): string[] {
+  const clave = evento ? normalizarBusqueda(evento) : "";
+  if (!clave) return [];
+  const fila = PALETAS_POR_EVENTO.find(([patron]) => patron.test(clave));
+  if (!fila) return [];
+  const conDecoraciones = new Set(tematicasDisponibles(evento));
+  return fila[1].filter((tematica) => conDecoraciones.has(tematica));
+}
+
 export function proveedoresVisibles(): ProveedorSempertex[] {
   return ocultarEjemplos()
     ? proveedoresSempertex.filter((proveedor) => proveedor.origen !== "ejemplo")
