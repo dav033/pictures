@@ -25,7 +25,22 @@ export type TuboEnEscena = { puntos: readonly Punto3[]; grosorCm: number; hex: s
 export type FlorEnEscena = { tipo: "hortensia" | "rosa" | "gypsophila"; hex: string; diametroCm: number; posicion: Punto3; normal: Punto3 };
 /** Un volumen simple de la escena (el pedestal): base, radio y alto en cm. */
 export type CilindroEnEscena = { base: Punto3; radioCm: number; altoCm: number; hex: string };
-export type ExtrasEscena = { flores?: readonly FlorEnEscena[]; cilindros?: readonly CilindroEnEscena[] };
+/**
+ * La sala de una escena (cm): piso en y = 0, x de −ancho/2 a +ancho/2, z de −fondo/2 a +fondo/2, techo en y = alto;
+ * la pared del fondo en z = −fondo/2 y el frente abierto. Mismo formato que `Sala` de `lib/globos3d/escena.ts`.
+ */
+export type SalaEnEscena = {
+  anchoCm: number; fondoCm: number; altoCm: number;
+  tonos: { piso: string; paredes: string; techo: string };
+  mostrar: { piso: boolean; fondo: boolean; laterales: boolean; techo: boolean };
+};
+export type CajaEnEscena = { min: Punto3; max: Punto3 };
+/**
+ * Con `sala`, lo que se muestra ya viene en coordenadas del mundo (una escena): no se apoya en el piso y se dibuja
+ * la sala. `resaltado` marca con una caja la pieza elegida (no sale en la captura). `encuadrar: false` deja la
+ * cámara donde está (al mover una pieza no se pierde el ángulo).
+ */
+export type ExtrasEscena = { flores?: readonly FlorEnEscena[]; cilindros?: readonly CilindroEnEscena[]; sala?: SalaEnEscena; resaltado?: CajaEnEscena | null; encuadrar?: boolean };
 
 export type EscenaGlobos = {
   mostrar: (globos: readonly GloboEnEscena[]) => void;
@@ -281,6 +296,11 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
 
   const contenido = new THREE.Group();
   escena.add(contenido);
+  // La sala de una escena (piso, paredes y techo) y las ayudas (la caja de la pieza elegida): fuera de `contenido`
+  // para que el encuadre y la captura se centren en los globos.
+  const sala = new THREE.Group();
+  const ayudas = new THREE.Group();
+  escena.add(sala, ayudas);
 
   function liberar(objeto: THREE.Object3D) {
     objeto.traverse((hijo) => {
@@ -290,6 +310,51 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
         for (const m of materiales) m.dispose();
       }
     });
+  }
+
+  function vaciar(grupo: THREE.Group) {
+    for (const hijo of [...grupo.children]) {
+      grupo.remove(hijo);
+      liberar(hijo);
+      if (hijo instanceof THREE.Box3Helper) { hijo.geometry.dispose(); (hijo.material as THREE.Material).dispose(); }
+    }
+  }
+
+  /**
+   * Piso, paredes y techo como planos que miran hacia dentro (`FrontSide`): desde fuera no se dibujan, así que al
+   * girar la cámara por detrás de una pared o por encima del techo, esa superficie desaparece y se ve el interior.
+   */
+  function dibujarSala(datos: SalaEnEscena | undefined) {
+    vaciar(sala);
+    vaciar(ayudas);
+    const conPiso = Boolean(datos?.mostrar.piso);
+    piso.visible = !conPiso;
+    cuadricula.visible = !datos;
+    if (!datos) return;
+    const ancho = datos.anchoCm * CM, fondo = datos.fondoCm * CM, alto = datos.altoCm * CM;
+    const plano = (w: number, h: number, hex: string, colocar: (m: THREE.Mesh) => void) => {
+      const malla = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: 0.92, metalness: 0, side: THREE.FrontSide }));
+      malla.receiveShadow = true;
+      colocar(malla);
+      sala.add(malla);
+    };
+    if (datos.mostrar.piso) plano(ancho, fondo, datos.tonos.piso, (m) => { m.rotation.x = -Math.PI / 2; m.position.y = -0.001; });
+    if (datos.mostrar.fondo) plano(ancho, alto, datos.tonos.paredes, (m) => { m.position.set(0, alto / 2, -fondo / 2); });
+    if (datos.mostrar.laterales) {
+      plano(fondo, alto, datos.tonos.paredes, (m) => { m.rotation.y = Math.PI / 2; m.position.set(-ancho / 2, alto / 2, 0); });
+      plano(fondo, alto, datos.tonos.paredes, (m) => { m.rotation.y = -Math.PI / 2; m.position.set(ancho / 2, alto / 2, 0); });
+    }
+    if (datos.mostrar.techo) plano(ancho, fondo, datos.tonos.techo, (m) => { m.rotation.x = Math.PI / 2; m.position.y = alto; });
+  }
+
+  function resaltar(caja: CajaEnEscena | null | undefined) {
+    if (!caja) return;
+    const margen = 3;
+    const box = new THREE.Box3(
+      new THREE.Vector3((caja.min.x - margen) * CM, (caja.min.y - margen) * CM, (caja.min.z - margen) * CM),
+      new THREE.Vector3((caja.max.x + margen) * CM, (caja.max.y + margen) * CM, (caja.max.z + margen) * CM),
+    );
+    ayudas.add(new THREE.Box3Helper(box, new THREE.Color(0x7c3aed)));
   }
 
   function encuadrar() {
@@ -310,6 +375,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
 
   function mostrar(globos: readonly GloboEnEscena[]) {
     for (const hijo of [...contenido.children]) { contenido.remove(hijo); liberar(hijo); }
+    dibujarSala(undefined);
     let x = 0;
     const objetos = globos.map((globo) => construir(globo));
     const separacion = 0.06;
@@ -329,6 +395,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const ARRIBA = new THREE.Vector3(0, 1, 0);
   function mostrarModulo(globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos: readonly TuboEnEscena[] = [], extras: ExtrasEscena = {}) {
     for (const hijo of [...contenido.children]) { contenido.remove(hijo); liberar(hijo); }
+    dibujarSala(extras.sala);
+    resaltar(extras.resaltado);
     const modulo = new THREE.Group();
     for (const [indice, globo] of globos.entries()) {
       const objeto = construir(globo);
@@ -379,11 +447,13 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       modulo.add(punto);
     }
     materialAncla.dispose();
-    // Apoyado sobre el piso.
-    const caja = new THREE.Box3().setFromObject(modulo);
-    modulo.position.y = -caja.min.y + 0.005;
+    // Apoyado sobre el piso (una escena ya viene en coordenadas del mundo).
+    if (!extras.sala) {
+      const caja = new THREE.Box3().setFromObject(modulo);
+      modulo.position.y = -caja.min.y + 0.005;
+    }
     contenido.add(modulo);
-    encuadrar();
+    if (extras.encuadrar !== false) encuadrar();
   }
 
   function redimensionar() {
@@ -423,7 +493,12 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       camara.updateProjectionMatrix();
       renderer.setPixelRatio(1);
       renderer.setSize(L, L, false);
+      const cuadriculaVisible = cuadricula.visible;
+      const conSala = sala.children.length > 0;
       cuadricula.visible = false;
+      ayudas.visible = false;
+      // Con sala, primero sin ella (para medir dónde queda la decoración) y luego con ella (es el fondo de la foto).
+      sala.visible = false;
       renderer.setClearColor(0x000000, 0);
       renderer.render(escena, camara);
       const cuadro = document.createElement("canvas");
@@ -431,9 +506,17 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       cuadro.height = L;
       const pincel = cuadro.getContext("2d", { willReadFrequently: true });
       pincel?.drawImage(lienzo, 0, 0);
+      const medida = pincel?.getImageData(0, 0, L, L) ?? null;
+      sala.visible = true;
+      if (conSala && pincel) {
+        renderer.render(escena, camara);
+        pincel.clearRect(0, 0, L, L);
+        pincel.drawImage(lienzo, 0, 0);
+      }
 
       // Volver al visor tal como estaba.
-      cuadricula.visible = true;
+      cuadricula.visible = cuadriculaVisible;
+      ayudas.visible = true;
       renderer.setPixelRatio(antes.ratio);
       renderer.setSize(antes.tamano.x, antes.tamano.y, false);
       camara.position.copy(antes.posicion);
@@ -446,8 +529,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
 
       // 2. Lo que de verdad se dibujó (píxeles no transparentes, sombra incluida) y su proporción.
       let x0 = L, y0 = L, x1 = 0, y1 = 0;
-      if (pincel) {
-        const { data } = pincel.getImageData(0, 0, L, L);
+      if (medida) {
+        const { data } = medida;
         for (let y = 0; y < L; y += 2) for (let x = 0; x < L; x += 2) {
           if (data[(y * L + x) * 4 + 3]! > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
         }
@@ -476,6 +559,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       cancelAnimationFrame(cuadro);
       controles.dispose();
       liberar(contenido);
+      vaciar(sala);
+      vaciar(ayudas);
       entorno.dispose();
       pmrem.dispose();
       renderer.dispose();

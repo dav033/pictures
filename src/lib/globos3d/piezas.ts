@@ -9,6 +9,8 @@ import { repartirFlores, type OpcionesFlores } from "./flores-artificiales";
 import { armarDecoracion, type Decoracion, type MaterialDecoracion } from "./figuras";
 import { materialesPorFormato, type GloboDecoracion, type TuboDecoracion } from "./decoraciones";
 import { sumarMateriales } from "./mezcla";
+import { armarTrenza } from "./trenza";
+import { opcionesArcoOrganico, recorridoGuirnalda, type OpcionesArcoOrganico, type OpcionesGuirnalda } from "./formas-escena";
 
 /**
  * Una **pieza**: cualquier cosa que sabe armar el taller, descrita solo con datos (JSON) para poder guardarla,
@@ -22,7 +24,11 @@ export type Pieza =
   | { tipo: "pared_malla"; formatoId: string; infladoCm: number; anchoCm: number; altoCm: number; patron: PatronMalla; colores: string[]; union: { infladoCm: number; codigo: string } }
   | { tipo: "pared_trenzas"; opciones: OpcionesParedTrenzas }
   | { tipo: "organico"; opciones: OpcionesOrganico; flores: OpcionesFlores | null }
-  | { tipo: "decoracion"; decoracion: Decoracion };
+  | { tipo: "decoracion"; decoracion: Decoracion }
+  /** Arco orgánico por medidas: dos semiarcos que se juntan en la clave (ver `formas-escena.ts`). */
+  | { tipo: "arco_organico"; arco: OpcionesArcoOrganico }
+  /** Guirnalda clásica: trenza de cuartetos en festón, recta o sobre una curva libre. */
+  | { tipo: "guirnalda"; guirnalda: OpcionesGuirnalda };
 
 export type TipoPieza = Pieza["tipo"];
 
@@ -98,6 +104,16 @@ export function armarPieza(pieza: Pieza): PiezaArmada {
         anclas: resultado.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })),
         materiales: sumarMateriales(resultado.materiales.map((m) => ({ formatoId: m.formatoId, codigo: m.codigo, cantidad: m.cantidad }))),
       });
+    }
+    case "arco_organico":
+      return armarPieza({ tipo: "organico", opciones: opcionesArcoOrganico(pieza.arco), flores: pieza.arco.flores });
+    case "guirnalda": {
+      const g = pieza.guirnalda;
+      const formato = formatoPorId(g.formatoId);
+      if (!formato) throw new Error(`Formato desconocido: ${g.formatoId}`);
+      const trenza = armarTrenza({ formato, infladoCm: g.infladoCm, patron: g.patron, colores: g.colores, recorrido: recorridoGuirnalda(g), reparto: "extremos" });
+      const globos: GloboDePieza[] = trenza.globos.map((x) => ({ formatoId: formato.id, infladoCm: g.infladoCm, codigo: x.codigo, nudo: x.nudo, direccion: x.direccion, cuelloExtraCm: x.cuelloExtraCm }));
+      return conCaja({ globos, tubos: [], flores: [], anclas: trenza.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })), materiales: materialesPorFormato(globos) });
     }
     case "decoracion": {
       const armada = armarDecoracion(pieza.decoracion);
