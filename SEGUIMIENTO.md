@@ -16,7 +16,7 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 110, 2026-10-07 ~00:10
+## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 115, 2026-10-07 ~00:28
 
 **En `main` (Vercel): ba7be2d**. **VPS en e447cfe** (granel exige desplegarlo; avisar). **Pendiente del dueño:** `ARMADO_ARCO_COLUMNA_V1`.
 
@@ -33,6 +33,11 @@ proporción; re-mide 6 fotos) · probador:104 · lectura-determinista (caché v2
 leídos, salida digna si no converge) · editor (globos libres, chips en el editor, colores del catálogo, «Agrandar» con medida, parejas) ·
 inputs de negocio (luego ayudas + verificador + corrector).
 
+**Novedades 110→115:** colores-claros-ideas lanzado (celeste/colores claros, boda blanco y dorado con ≥3 ideas, nombres en la
+cotización). Mi SendMessage al corrector arrancó una SEGUNDA copia del mismo agente (memoria feedback-sendmessage-workflow): esa copia
+termina B1 «Crear mi plan con esta idea» exacto (plan-de-idea.ts, plan-desde-idea.ts, /api/plan-idea, plan-exacto-idea.ts,
+planes-ideas.json + precomputar-planes-ideas.ts); la original sigue con el resto de hallazgos. En cola también `scratchpad/wf-chat-editar.js`
+(editar el plan desde el chat sin rehacerlo, elegir idea por texto) tras el editor.
 **Cola:** `scratchpad/wf-arreglos-u97.js` (plan desde idea exacta, uso sin repetir, edades 7+, datos del decorador, palabras del cliente en
 el plan y la escena, «Ajustes que hice») tras corrector:1; ritmo: usabilidad (105/110), comparador (110); banco 3× tras el commit (~US$7);
 Python/VPS: cotización con líneas repetidas y mezcla de paquetes.
