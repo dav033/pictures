@@ -1,5 +1,5 @@
 import type { Vec3 } from "./modulos";
-import { crearAzar, type AnclaHueco } from "./organico";
+import { crearAzar, type AnclaHueco, type ApoyoHueco } from "./organico";
 
 /**
  * Flores artificiales (de tela) metidas en los huecos de una estructura orgánica: son **datos, no globos**. Van
@@ -70,6 +70,52 @@ const unitario = (v: Vec3): Vec3 => {
   return { x: v.x / n, y: v.y / n, z: v.z / n };
 };
 
+const distanciaA = (p: Vec3, g: ApoyoHueco) => Math.hypot(p.x - g.centro.x, p.y - g.centro.y, p.z - g.centro.z);
+
+/** Distancia (con signo: negativa por dentro) del punto a la cara del globo más cercano, y cuál es. */
+function caraMasCercana(p: Vec3, apoyos: readonly ApoyoHueco[]): { d: number; globo: ApoyoHueco } {
+  let globo = apoyos[0]!, d = Infinity;
+  for (const g of apoyos) {
+    const h = distanciaA(p, g) - g.radioCm;
+    if (h < d) { d = h; globo = g; }
+  }
+  return { d, globo };
+}
+
+/** El punto de la cara de `g` que mira hacia `p`, `holgura` cm por fuera. */
+function sobreLaCara(p: Vec3, g: ApoyoHueco, holgura: number): Vec3 {
+  const u = unitario({ x: p.x - g.centro.x, y: p.y - g.centro.y, z: p.z - g.centro.z });
+  return { x: g.centro.x + u.x * (g.radioCm + holgura), y: g.centro.y + u.y * (g.radioCm + holgura), z: g.centro.z + u.z * (g.radioCm + holgura) };
+}
+
+/**
+ * Asienta una flor en el hueco: la hunde por la normal del ancla hasta que toca un globo (como cuando se mete el tallo
+ * entre los globos hasta que la cabeza queda apoyada); si por ahí no toca nada, se apoya en la cara del globo más
+ * cercano; y si quedó metida dentro de un globo, sale a su cara. El tallo queda a menos de 1 cm de una cara.
+ */
+function asentar(p: Vec3, n: Vec3, apoyos: readonly ApoyoHueco[]): { posicion: Vec3; cara: Vec3 } {
+  let q = p, recorrido = 0;
+  for (let i = 0; i < 40 && recorrido < 16; i++) {
+    const { d } = caraMasCercana(q, apoyos);
+    if (d <= 0.8) break;
+    const paso = Math.min(d, 3, 16 - recorrido);
+    q = { x: q.x - n.x * paso, y: q.y - n.y * paso, z: q.z - n.z * paso };
+    recorrido += paso;
+  }
+  if (caraMasCercana(q, apoyos).d > 0.8) q = sobreLaCara(p, caraMasCercana(p, apoyos).globo, 0.3);
+  for (let i = 0; i < 6; i++) {
+    let peor: ApoyoHueco | null = null, hondo = 0.5;
+    for (const g of apoyos) {
+      const dentro = g.radioCm - distanciaA(q, g);
+      if (dentro > hondo) { hondo = dentro; peor = g; }
+    }
+    if (!peor) break;
+    q = sobreLaCara(q, peor, 0.3);
+  }
+  const { globo } = caraMasCercana(q, apoyos);
+  return { posicion: q, cara: unitario({ x: q.x - globo.centro.x, y: q.y - globo.centro.y, z: q.z - globo.centro.z }) };
+}
+
 /**
  * Reparte tallos en las anclas: el total (anclas × tallos por racimo) se divide por cuotas según la proporción,
  * se baraja con la semilla y se reparte de mayor a menor flor en ronda, para que cada racimo lleve una flor grande
@@ -122,7 +168,11 @@ export function repartirFlores(anclas: readonly AnclaHueco[], opciones: Opciones
         z: ancla.posicion.z + (e1.z * Math.cos(a) + e2.z * Math.sin(a)) * radio + n.z * sale,
       };
       const inclinada = unitario({ x: n.x + (e1.x * Math.cos(a) + e2.x * Math.sin(a)) * (radio > 0 ? 0.35 : 0), y: n.y + (e1.y * Math.cos(a) + e2.y * Math.sin(a)) * (radio > 0 ? 0.35 : 0), z: n.z + (e1.z * Math.cos(a) + e2.z * Math.sin(a)) * (radio > 0 ? 0.35 : 0) });
-      return { tipo: t.tipo, colorId: t.colorId, hex: color.hex, diametroCm: flor.diametroCm, posicion, normal: inclinada };
+      if (!ancla.apoyos?.length) return { tipo: t.tipo, colorId: t.colorId, hex: color.hex, diametroCm: flor.diametroCm, posicion, normal: inclinada };
+      // Metida en el hueco hasta tocar los globos; mira entre la salida del hueco y la cara donde se apoya.
+      const asentada = asentar(posicion, n, ancla.apoyos);
+      const normal = unitario({ x: inclinada.x * 0.65 + asentada.cara.x * 0.35, y: inclinada.y * 0.65 + asentada.cara.y * 0.35, z: inclinada.z * 0.65 + asentada.cara.z * 0.35 });
+      return { tipo: t.tipo, colorId: t.colorId, hex: color.hex, diametroCm: flor.diametroCm, posicion: asentada.posicion, normal };
     });
     return { ancla: ancla.indice, posicion: ancla.posicion, normal: n, flores };
   });

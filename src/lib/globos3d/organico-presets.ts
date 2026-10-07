@@ -1,5 +1,5 @@
 import type { Vec3 } from "./modulos";
-import { armarOrganico, formaColumna, formaGuirnalda, RELLENO_TUPIDO, type Cilindro, type OpcionesOrganico, type ResultadoOrganico } from "./organico";
+import { armarOrganico, formaColumna, formaGuirnalda, RELLENO_TUPIDO, type Cilindro, type OpcionesOrganico, type PuntoMezcla, type ResultadoOrganico } from "./organico";
 import { repartirFlores, type FloresRepartidas, type OpcionesFlores } from "./flores-artificiales";
 
 /**
@@ -52,6 +52,16 @@ function guirnaldaAlPedestal(): Vec3[] {
   return puntos;
 }
 
+/**
+ * La guirnalda baja es fina (unos 40 cm de grueso) y va medio apoyada en el piso: con la mezcla general (R-12 y R-18
+ * de estructura) le caben tres o cuatro globos por vuelta y se ve a través entre ellos. En la foto lleva sobre todo
+ * R-9 y R-12, con algún R-18 donde nace, y así queda tupida.
+ */
+const MEZCLA_GUIRNALDA_BASE: readonly PuntoMezcla[] = [
+  { t: 0, pesos: { "R-18": 0.12, "R-12": 0.4, "R-9": 0.48 } },
+  { t: 1, pesos: { "R-12": 0.35, "R-9": 0.65 } },
+];
+
 const CHICO_A_MEDIANO = ["R-5", "R-9", "R-12", "R-18"] as const;
 
 export const COLUMNA_QUINCE_AZUL: PresetOrganico = {
@@ -62,7 +72,7 @@ export const COLUMNA_QUINCE_AZUL: PresetOrganico = {
     semilla: 15,
     tramos: [
       formaColumna({ altoCm: 230, radioBaseCm: 42, radioMedioCm: 36, radioPuntaCm: 27, inclinacionCm: 8, serpenteoCm: 3 }),
-      formaGuirnalda({ id: "guirnalda", nombre: "Guirnalda de base", puntos: guirnaldaAlPedestal(), radioInicioCm: 19, radioFinCm: 13 }),
+      { ...formaGuirnalda({ id: "guirnalda", nombre: "Guirnalda de base", puntos: guirnaldaAlPedestal(), radioInicioCm: 21, radioFinCm: 15, mezcla: MEZCLA_GUIRNALDA_BASE }), densidad: 1.6 },
     ],
     inflados: { "R-24": 48, "R-18": 34, "R-12": 25, "R-9": 17, "R-5": 12 },
     variacionInflado: 0.07,
@@ -90,15 +100,17 @@ export const COLUMNA_QUINCE_AZUL: PresetOrganico = {
   },
   escena: { pedestal: PEDESTAL, vista: { x: 0, y: 0, z: 1 } },
   conteoEsperado: {
-    min: 80,
-    max: 120,
+    min: 125,
+    max: 180,
     justificacion:
-      "En la foto se ven de frente unos 45 globos (~35 en la columna y ~10 en la guirnalda). La columna está exenta y por detrás " +
-      "lleva otro 40 % que no se ve: ~70–80 en la columna. La guirnalda va en el piso y pegada al pedestal, así que es media " +
-      "guirnalda: ~12–16. Total ~85–95. El motor lo confirma con la mezcla: la estructura pide ~20 globos por metro de columna " +
-      "(grandes de 48 y 34 cm abajo, R-12 a 25 cm y R-9 a 17 cm arriba; un R-12 en tresbolillo con el 12 % de aplastamiento da " +
-      "19/m, lo mismo que la trenza de cuartetos de Sempertex) y el relleno de R-9 y tríos de R-5 sube la columna a ~40/m " +
-      "(12 por pie: «estándar» del oficio). Con 20 semillas distintas sale entre 80 y 98; con la semilla 15, 88.",
+      "En la foto se ven de frente unos 45 globos grandes y medianos (~35 en la columna y ~10 en la guirnalda), y entre ellos " +
+      "el relleno chico que la deja tupida. La estructura pide ~22 globos por metro de columna (grandes de 48 y 34 cm abajo, " +
+      "R-12 a 25 cm y R-9 a 17 cm arriba) y la guirnalda, con su mezcla de R-9 y R-12, ~21 por metro. Una sola capa de globos " +
+      "que se tocan deja triángulos por donde se ve a través (cerrarlos pediría aplastarlos un 13 %, más del 12 % permitido), " +
+      "así que el relleno de R-9 y R-5 va también por dentro, contra el armazón, hasta que ningún rayo desde el eje sale sin " +
+      "tocar un globo: la columna queda en ~65 por metro (20 por pie: «lleno» del oficio, como la de la foto) y la guirnalda " +
+      "en ~20 globos. Con 40 semillas sale entre 134 y 170 (media 149); con la semilla 15, ~148. Es el conteo del 3D: la " +
+      "cotización la hace el motor del plan.",
   },
 };
 

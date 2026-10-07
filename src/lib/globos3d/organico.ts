@@ -19,13 +19,22 @@ import type { GloboColocado, Vec3 } from "./modulos";
  *    `estructuraPorCm`) y se colocan primero todos los grandes (anclas, donde los pide la mezcla) y luego los
  *    medianos, de abajo arriba, cada uno en el primer sitio libre y pegado a sus vecinos. El centro de un globo
  *    nunca se mete en el eje (va amarrado al armazón y sale hacia fuera: `profundidad`).
- * 3. **Huecos para flores.** Antes de rellenar se reservan los huecos más grandes del lado que se ve: ahí van
- *    las flores artificiales (`flores-artificiales.ts`), no globos.
- * 4. **Relleno.** Los huecos que quedan se tapan con R-9 y luego con tríos de R-5, de mayor a menor hueco, metidos
- *    tan adentro como haga falta para que no queden huecos de lado a lado.
+ *    Luego se **aprietan**: cada par cuyas caras quedan a menos de 7 cm se atrae hasta tocarse, mientras la envoltura
+ *    los sujeta; así no quedan rendijas de unos centímetros entre todos y los huecos se juntan en bolsillos.
+ * 3. **Huecos para flores.** Antes de rellenar se reservan los bolsillos más grandes de la cara que se ve (no del borde
+ *    de la silueta), repartidos entre los tramos según su largo: ahí van las flores artificiales
+ *    (`flores-artificiales.ts`), no globos. Cada ancla lleva sus globos vecinos (`apoyos`) para que las flores se
+ *    asienten contra ellos y no queden al aire.
+ * 4. **Relleno.** Los huecos que quedan se tapan con R-9 y luego con tríos de R-5, de mayor a menor hueco, y se
+ *    vuelve a apretar.
  * 5. **Relajación.** Unas pasadas atraen cada globo a la envoltura y separan los que se montan; al final ningún
  *    par se aplasta más del 12 % del diámetro del menor (`APLASTAMIENTO_MAXIMO`, el mismo criterio de los
  *    módulos de `modulos.ts`), y si alguno no se puede soltar, se quita.
+ * 5b. **Tupido.** Una capa de globos que se tocan deja triángulos por donde se ve a través (cerrarlos pediría un 13 %
+ *    de aplastamiento). Se lanzan rayos desde el eje hacia fuera y en cada uno que no toca un globo se mete un relleno
+ *    (por fuera si cabe, si no por dentro, contra el armazón) que toque a tres vecinos; el que queda tocando a menos de
+ *    tres se arrima, se acompaña con otro R-5, se cambia o, si no hace falta para tapar, se quita. Los contactos
+ *    cuentan el piso, el pedestal y el tubo del armazón (`RADIO_ARMAZON_CM`).
  * 6. **Color.** Por proporción (cuotas exactas sobre el total) y sin dos globos del mismo color pegados cuando se
  *    puede. Cada color debe fabricarse en el formato del globo: si no, se usa el más parecido de su misma familia
  *    en ese formato (y se avisa); si la familia no lo tiene, ese color no se usa en ese globo.
@@ -44,6 +53,9 @@ export const APLASTAMIENTO_MAXIMO = 0.12;
 /** Un globo de este inflado o más es «grande» (ancla de la base). */
 export const INFLADO_GRANDE_CM = 38;
 
+/** Radio del tubo del armazón (PVC de 1"), en el eje de cada tramo: los globos de dentro se apoyan en él. */
+export const RADIO_ARMAZON_CM = 1.6;
+
 export type PuntoGrosor = { t: number; radioCm: number };
 
 /** Pesos relativos por formato (`"R-12"`) en la fracción `t` del recorrido; entre dos puntos se interpola. */
@@ -61,6 +73,8 @@ export type TramoOrganico = {
   irregularidad: number;
   /** Remate redondo (media esfera de globos) al inicio o al final; sin él, el extremo queda abierto (al piso o a otro tramo). */
   tapas?: { inicio?: boolean; fin?: boolean };
+  /** Multiplica los globos de estructura de este tramo (además de `densidad` de las opciones). */
+  densidad?: number;
 };
 
 /** Relleno de huecos: se prueba en este orden; con `trios`, cada relleno intenta llevar dos compañeros. */
@@ -118,8 +132,14 @@ export type GloboOrganico = GloboColocado & {
   confeti: boolean;
 };
 
-/** Un hueco reservado para una flor: compatible con `Ancla` de `decoraciones.ts` (posición + normal). */
-export type AnclaHueco = { indice: number; tramo: string; fraccion: number; posicion: Vec3; normal: Vec3; holguraCm: number };
+/** Un globo vecino de un hueco, para apoyar en él las flores (centro del cuerpo y radio, cm). */
+export type ApoyoHueco = { centro: Vec3; radioCm: number };
+
+/**
+ * Un hueco reservado para una flor: compatible con `Ancla` de `decoraciones.ts` (posición + normal). `apoyos` son los
+ * globos que rodean el hueco (a 30 cm o menos de su boca): las flores se meten hasta tocarlos, no quedan al aire.
+ */
+export type AnclaHueco = { indice: number; tramo: string; fraccion: number; posicion: Vec3; normal: Vec3; holguraCm: number; apoyos?: readonly ApoyoHueco[] };
 
 export type MaterialOrganico = {
   formatoId: string;
@@ -504,6 +524,423 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     return restringir(suma(sup.centro, escala(sup.normal, profundidad(sup.radio, r, hundimiento))), r);
   };
 
+  /** Cuántos globos ya colocados toca un cuerpo en `c` (superficies a 1 cm o menos, contando el aplastamiento). */
+  const contactos = (c: Vec3, r: number): number => {
+    let n = 0;
+    for (const g of globos) {
+      const alcance = r + g.r + 1;
+      const dx = c.x - g.c.x, dy = c.y - g.c.y, dz = c.z - g.c.z;
+      if (dx > alcance || dx < -alcance || dy > alcance || dy < -alcance || dz > alcance || dz < -alcance) continue;
+      if (Math.sqrt(dx * dx + dy * dy + dz * dz) <= alcance) n++;
+    }
+    return n;
+  };
+
+  /** Separa los que se montan más de `factor` × 12 % (el más liviano se mueve más) y respeta huecos, piso y pedestal. */
+  const separar = (factor: number): number => {
+    let peor = 0;
+    for (let i = 0; i < globos.length; i++) {
+      const a = globos[i]!;
+      for (let j = i + 1; j < globos.length; j++) {
+        const b = globos[j]!;
+        const alcance = a.r + b.r;
+        const dx = b.c.x - a.c.x, dy = b.c.y - a.c.y, dz = b.c.z - a.c.z;
+        if (dx > alcance || dx < -alcance || dy > alcance || dy < -alcance || dz > alcance || dz < -alcance) continue;
+        const delta = vec(dx, dy, dz);
+        const dist = norma(delta);
+        const menor = Math.min(a.d, b.d);
+        const exceso = a.r + b.r - dist - LIM * factor * menor;
+        if (exceso <= 0) continue;
+        peor = Math.max(peor, (a.r + b.r - dist) / menor);
+        const u = unitario(delta, vec(1, 0, 0));
+        const ma = a.d ** 3, mb = b.d ** 3;
+        a.c = suma(a.c, escala(u, (-exceso * mb) / (ma + mb)));
+        b.c = suma(b.c, escala(u, (exceso * ma) / (ma + mb)));
+      }
+    }
+    for (const g of globos) {
+      for (const h of huecos) {
+        const delta = resta(g.c, h.c);
+        const dist = norma(delta);
+        if (dist < g.r + h.r) g.c = suma(h.c, escala(unitario(delta, h.normal), g.r + h.r));
+      }
+      g.c = restringir(g.c, g.r);
+    }
+    return peor;
+  };
+
+  /**
+   * Lleva cada globo una fracción `factor` del camino hacia su sitio en la envoltura (la cara de fuera en la envoltura,
+   * corrida por su hundimiento); en el remate, hacia el radio de la media esfera.
+   */
+  const atraerEnvoltura = (factor: number) => {
+    for (const g of globos) {
+      const tp = tramos[g.tramo]!;
+      const m = proyectar(tp, g.c);
+      g.s = m.s;
+      const rel = resta(g.c, m.p);
+      const axial = punto(rel, m.t);
+      const radial = resta(rel, escala(m.t, axial));
+      const rho = norma(radial);
+      const dir = rho > 1e-6 ? escala(radial, 1 / rho) : suma(escala(m.n, Math.cos(g.phi)), escala(m.b, Math.sin(g.phi)));
+      g.phi = Math.atan2(punto(dir, m.b), punto(dir, m.n));
+      const objetivo = profundidad(radioEnvoltura(tp, m.s, g.phi), g.r, g.hundimiento);
+      const enTapa = (m.s >= tp.largo - 1e-6 && axial > 0 && tp.def.tapas?.fin) || (m.s <= 1e-6 && axial < 0 && tp.def.tapas?.inicio);
+      if (enTapa) {
+        // Sobre la media esfera del remate: se atrae a su radio desde el extremo.
+        const dist = norma(rel);
+        g.c = suma(m.p, escala(unitario(rel, m.t), dist + (objetivo - dist) * factor));
+        g.s = m.s + axial;
+        continue;
+      }
+      g.c = suma(suma(m.p, escala(m.t, axial)), escala(dir, rho + (objetivo - rho) * factor));
+    }
+  };
+
+  /**
+   * Apretar, como cuando se amarran las tiras al armazón y se empujan unas contra otras: cada par de globos cuyas
+   * caras quedan a menos de `ALCANCE_APRIETE` se atrae hasta tocarse con un 4 % de aplastamiento, mientras la
+   * envoltura los sujeta a su sitio. Así no quedan rendijas de unos centímetros entre todos los globos: los huecos
+   * se juntan en bolsillos más grandes, donde caben el relleno y las flores.
+   */
+  const ALCANCE_APRIETE = 7;
+  const apretar = (pasadas: number) => {
+    for (let pasada = 0; pasada < pasadas; pasada++) {
+      for (let i = 0; i < globos.length; i++) {
+        const a = globos[i]!;
+        for (let j = i + 1; j < globos.length; j++) {
+          const b = globos[j]!;
+          const alcance = a.r + b.r + ALCANCE_APRIETE;
+          const dx = b.c.x - a.c.x, dy = b.c.y - a.c.y, dz = b.c.z - a.c.z;
+          if (dx > alcance || dx < -alcance || dy > alcance || dy < -alcance || dz > alcance || dz < -alcance) continue;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          if (dist >= alcance || dist < 1e-9) continue;
+          const falta = dist - a.r - b.r + 0.04 * Math.min(a.d, b.d);
+          if (falta <= 0) continue;
+          const u = vec(dx / dist, dy / dist, dz / dist);
+          const ma = a.d ** 3, mb = b.d ** 3;
+          const k = 0.3 * falta;
+          a.c = suma(a.c, escala(u, (k * mb) / (ma + mb)));
+          b.c = suma(b.c, escala(u, (-k * ma) / (ma + mb)));
+        }
+      }
+      atraerEnvoltura(0.25);
+      separar(0.85);
+    }
+  };
+
+  /** ¿La semirrecta desde `o` hacia `u` (unitario) pasa sin tocar ningún globo? */
+  const rayoLibre = (o: Vec3, u: Vec3): boolean => {
+    for (const g of globos) {
+      const ox = g.c.x - o.x, oy = g.c.y - o.y, oz = g.c.z - o.z;
+      const t = ox * u.x + oy * u.y + oz * u.z;
+      const d2 = ox * ox + oy * oy + oz * oz - t * t;
+      if (d2 <= g.r * g.r && t + Math.sqrt(g.r * g.r - d2) > 0) return false;
+    }
+    return true;
+  };
+
+  /** ¿La semirrecta choca con un pedestal antes de `alcance` cm? (Esa vista la tapa el pedestal: no cuenta.) */
+  const chocaObstaculo = (o: Vec3, u: Vec3, alcance: number): boolean => obstaculos.some((ob) => {
+    const h = Math.hypot(u.x, u.z);
+    if (h < 1e-6) return false;
+    const ux = u.x / h, uz = u.z / h, ox = o.x - ob.base.x, oz = o.z - ob.base.z;
+    const t = -(ox * ux + oz * uz);
+    const d2 = ox * ox + oz * oz - t * t;
+    if (t <= 0 || d2 >= ob.radioCm * ob.radioCm) return false;
+    const entrada = (t - Math.sqrt(ob.radioCm * ob.radioCm - d2)) / h;
+    const y = o.y + u.y * entrada;
+    return entrada < alcance && y >= ob.base.y && y <= ob.base.y + ob.altoCm;
+  });
+
+  /**
+   * En cuántos apoyos que no son globos descansa el cuerpo en `c` (a 1 cm o menos): el piso, un pedestal y el armazón
+   * del eje (el tubo al que se amarran las tiras, `RADIO_ARMAZON_CM`). Cada uno cuenta como un vecino más.
+   */
+  const apoyado = (c: Vec3, r: number, tramo?: number): number => {
+    let n = opciones.suelo && c.y - r <= 1 ? 1 : 0;
+    if (tramo !== undefined) {
+      const tp = tramos[tramo]!;
+      const m = proyectar(tp, c);
+      const rel = resta(c, m.p);
+      if (m.s > 0 && m.s < tp.largo && norma(resta(rel, escala(m.t, punto(rel, m.t)))) - r - RADIO_ARMAZON_CM <= 1) n++;
+    }
+    for (const o of obstaculos) {
+      if (c.y - r > o.base.y + o.altoCm || c.y + r < o.base.y) continue;
+      if (Math.hypot(c.x - o.base.x, c.z - o.base.z) - o.radioCm - r <= 1) n++;
+    }
+    return n;
+  };
+
+  /**
+   * Asentar los sueltos: el globo que toca a menos de tres vecinos (contando el piso y el pedestal) se arrima a sus
+   * tres más próximos hasta tocarlos con un 3 % de aplastamiento, sin pasar del 12 % con nadie, sin moverse más de
+   * un radio y sin destapar ningún rayo que solo él tapaba. Si no lo logra, se queda donde estaba.
+   */
+  const asentarSueltos = (rayos: readonly Rayo[]) => {
+    for (let i = 0; i < globos.length; i++) {
+      const g = globos[i]!;
+      globos.splice(i, 1);
+      if (contactos(g.c, g.r) + apoyado(g.c, g.r, g.tramo) < 3) {
+        let c = g.c;
+        for (let paso = 0; paso < 30; paso++) {
+          const cercanos = globos
+            .map((h) => ({ h, hueco: distancia(c, h.c) - g.r - h.r }))
+            .sort((a, b) => a.hueco - b.hueco)
+            .slice(0, 3);
+          for (const { h, hueco } of cercanos) {
+            const meta = -0.03 * Math.min(g.d, h.d);
+            if (hueco > meta) c = suma(c, escala(unitario(resta(h.c, c)), (hueco - meta) * 0.4));
+          }
+          for (const h of globos) {
+            const delta = resta(c, h.c);
+            const dist = norma(delta);
+            const exceso = g.r + h.r - dist - 0.9 * LIM * Math.min(g.d, h.d);
+            if (exceso > 0) c = suma(c, escala(unitario(delta, vec(1, 0, 0)), exceso));
+          }
+          c = restringir(c, g.r);
+        }
+        if (distancia(c, g.c) <= g.r && evaluar(c, g.d).peor <= LIM && contactos(c, g.r) + apoyado(c, g.r, g.tramo) >= 3) {
+          const movido = { c, r: g.r };
+          if (rayos.every((rayo) => !cortaRayo(g, rayo) || cortaRayo(movido, rayo) || globos.some((h) => cortaRayo(h, rayo)))) g.c = c;
+        }
+      }
+      globos.splice(i, 0, g);
+    }
+  };
+
+  /**
+   * Acompañar a los sueltos: al globo que aún toca a menos de tres, se le pone al lado otro relleno chico (el trío de
+   * R-5 de la técnica) que lo toque a él y a otro más, por dentro de la envoltura y sin pasar del 12 %. Se prueban 96
+   * direcciones alrededor del suelto y se queda la que más globos toca.
+   */
+  const acompanarSueltos = (tamanos: ReadonlyArray<{ formatoId: string; base: number }>) => {
+    const N = 96;
+    const total = globos.length;
+    for (let i = 0; i < total; i++) {
+      const g = globos[i]!;
+      if (contactos(g.c, g.r) - 1 + apoyado(g.c, g.r, g.tramo) >= 3) continue;
+      const tp = tramos[g.tramo]!;
+      let mejor: Interno | null = null, mejorN = 0;
+      for (const tam of [...tamanos].reverse()) {
+        const d = tam.base, r = d / 2;
+        // Hacia cada vecino cercano que no toca (el hueco entre los dos) y, además, direcciones repartidas en espiral
+        // (Fibonacci) sobre la esfera.
+        const direcciones = globos
+          .filter((h) => h !== g && distancia(h.c, g.c) - h.r - g.r > 1 && distancia(h.c, g.c) - h.r - g.r < 2 * r)
+          .map((h) => unitario(resta(h.c, g.c)));
+        for (let k = 0; k < N; k++) {
+          const y = 1 - (2 * (k + 0.5)) / N, rho = Math.sqrt(1 - y * y), a = k * 2.399963;
+          direcciones.push(vec(rho * Math.cos(a), y, rho * Math.sin(a)));
+        }
+        for (const u of direcciones) {
+          const c = restringir(suma(g.c, escala(u, g.r + r - 0.04 * Math.min(g.d, d))), r);
+          const m = proyectar(tp, c);
+          const rel = resta(c, m.p);
+          const radial = norma(resta(rel, escala(m.t, punto(rel, m.t))));
+          const phi = Math.atan2(punto(rel, m.b), punto(rel, m.n));
+          if (radial + r * 0.8 > radioEnvoltura(tp, m.s, phi) || radial < r * 1.05) continue;
+          if (evaluar(c, d).peor > LIM) continue;
+          const n = contactos(c, r) + apoyado(c, r, g.tramo);
+          if (n >= 3 && n > mejorN) {
+            mejorN = n;
+            mejor = { formatoId: tam.formatoId, d, r, c, tramo: g.tramo, s: m.s, phi, hundimiento: (radioEnvoltura(tp, m.s, phi) - radial) / r, inclinacion: (azar() - 0.5) * 0.4, tamano: "relleno", racimo: g.racimo };
+          }
+        }
+        if (mejor) break;
+      }
+      if (mejor) globos.push(mejor);
+    }
+  };
+
+  /**
+   * Arrima un relleno en `c` al globo más próximo que aún no toca (a 5 cm o menos), hasta tocarlo, si así no se
+   * aplasta más de la cuenta, sigue cumpliendo `valido` y toca al menos a tres. `null` si no hay cómo.
+   */
+  const arrimar = (c: Vec3, d: number, tramo: number, valido: (c: Vec3, r: number) => boolean): Vec3 | null => {
+    const r = d / 2;
+    const cercanos = globos
+      .map((g) => ({ g, hueco: distancia(c, g.c) - r - g.r }))
+      .filter((x) => x.hueco > 1 && x.hueco <= 5)
+      .sort((a, b) => a.hueco - b.hueco);
+    for (const { g, hueco } of cercanos) {
+      const c2 = restringir(suma(c, escala(unitario(resta(g.c, c)), hueco - 0.3)), r);
+      if (valido(c2, r) && evaluar(c2, d).peor <= LIM && contactos(c2, r) + apoyado(c2, r, tramo) >= 3) return c2;
+    }
+    return null;
+  };
+
+  /**
+   * Tapar fugas: el último paso del relleno de la técnica Sempertex («hasta que quede tupido»). Se lanzan rayos desde
+   * el eje de cada tramo hacia fuera (cada 3 cm del recorrido × 40 ángulos, y por el remate) y, por cada uno que
+   * sale sin tocar un globo (por ahí se ve a través), se mete un relleno en ese hueco: el mayor que quepa sin pasar del
+   * 12 % de aplastamiento, tan cerca de la envoltura como se pueda y donde más globos toque (nunca suelto: al menos
+   * dos vecinos). No se mira lo que queda a ras de piso ni lo que tapa el pedestal.
+   */
+  /** Los rellenos de mayor a menor y, al final, el más chico también a medio inflar (un R-5 a 9–10 cm), para las rendijas. */
+  const tamanosRelleno = (): Array<{ formatoId: string; base: number }> => {
+    const tamanos: Array<{ formatoId: string; base: number }> = [];
+    for (const rel of opciones.relleno) {
+      if (!formatoValido(rel.formatoId)) continue;
+      tamanos.push({ formatoId: rel.formatoId, base: infladoValido(formatoPorId(rel.formatoId)!, rel.infladoCm) });
+    }
+    tamanos.sort((a, b) => b.base - a.base);
+    const menor = tamanos[tamanos.length - 1];
+    if (menor) tamanos.push({ formatoId: menor.formatoId, base: infladoValido(formatoPorId(menor.formatoId)!, menor.base * 0.8) });
+    return tamanos;
+  };
+
+  /** Un rayo de la prueba de «se ve a través»: sale del eje (`o`) hacia fuera (`u`), hasta la envoltura (`radio`). */
+  type Rayo = { tramo: number; s: number; phi: number; o: Vec3; u: Vec3; radio: number };
+  /**
+   * Los rayos desde el eje de cada tramo hacia fuera: cada 3 cm del recorrido × 40 ángulos, y por el remate. No se
+   * miran los que van a ras de piso o hacia él, ni los que tapa el pedestal (por ahí no se ve nada).
+   */
+  const rayosDeFuga = (): Rayo[] => {
+    const rayos: Rayo[] = [];
+    tramos.forEach((tp, it) => {
+      const rango = rangoS(tp);
+      const inicio = tp.muestras[0]!;
+      // Sin remate abajo y casi vertical sobre el piso: los rayos bajan por el eje alargado hasta 10 cm del piso.
+      const bajo = !tp.def.tapas?.inicio && opciones.suelo && inicio.t.y > 0.7 ? Math.max(0, (inicio.p.y - 10) / inicio.t.y) : 0;
+      let fila = 0;
+      for (let s = rango.min - bajo + 1.5; s < rango.max; s += 3, fila++) {
+        for (let k = 0; k < 40; k++) {
+          const phi = ((k + (fila % 2) * 0.5) / 40) * Math.PI * 2;
+          let o: Vec3, u: Vec3, radio: number;
+          if (s < 0 && !tp.def.tapas?.inicio) {
+            const m = muestraEn(tp, s);
+            o = m.p;
+            u = suma(escala(m.n, Math.cos(phi)), escala(m.b, Math.sin(phi)));
+            radio = radioEnvoltura(tp, 0, phi);
+          } else {
+            const sup = superficie(tp, s, phi);
+            o = sup.centro; u = sup.normal; radio = sup.radio;
+          }
+          if (opciones.suelo && (o.y < 10 || u.y < -0.2)) continue;
+          if (chocaObstaculo(o, u, radio + 15)) continue;
+          rayos.push({ tramo: it, s, phi, o, u, radio });
+        }
+      }
+    });
+    return rayos;
+  };
+
+  /** ¿El cuerpo `g` corta el rayo? */
+  const cortaRayo = (g: { c: Vec3; r: number }, rayo: Rayo): boolean => {
+    const ox = g.c.x - rayo.o.x, oy = g.c.y - rayo.o.y, oz = g.c.z - rayo.o.z;
+    const t = ox * rayo.u.x + oy * rayo.u.y + oz * rayo.u.z;
+    const d2 = ox * ox + oy * oy + oz * oz - t * t;
+    return d2 <= g.r * g.r && t + Math.sqrt(g.r * g.r - d2) > 0;
+  };
+
+  /**
+   * Tapar fugas: el último paso del relleno de la técnica Sempertex («hasta que quede tupido»). Por cada rayo que sale
+   * sin tocar un globo (por ahí se ve a través) se mete un relleno en ese hueco: el mayor que quepa sin pasar del 12 %
+   * de aplastamiento, tan cerca de la envoltura como se pueda y donde más globos toque (nunca suelto: al menos
+   * `minimo` vecinos contando el piso y el pedestal; si toca dos, se intenta arrimar a un tercero).
+   */
+  const taparFugas = (rayos: readonly Rayo[], minimo: number) => {
+    const tamanos = tamanosRelleno();
+    if (tamanos.length === 0) return;
+    for (const rayo of rayos) {
+      if (!rayoLibre(rayo.o, rayo.u)) continue;
+      const nuevo = rellenoParaRayo(rayo, minimo, tamanos);
+      if (nuevo) globos.push(nuevo);
+    }
+  };
+
+  /**
+   * A qué distancia del eje se prueba cada relleno: de la envoltura (la cara de fuera a ras) hacia dentro, cada medio
+   * radio, hasta pegado al armazón (`r × 1,05`). Por dentro de la capa de fuera es donde un relleno tapa los
+   * triángulos que dejan tres globos que se tocan, que ningún relleno cabe a tapar desde fuera.
+   */
+  const hondurasFuga = (radio: number, r: number): number[] => {
+    const lista: number[] = [];
+    for (let h = radio - r * 0.95; h > r * 1.05; h -= r * 0.5) lista.push(h);
+    lista.push(r * 1.05);
+    return lista;
+  };
+
+  /** El mejor relleno que tapa el rayo (ver `taparFugas`), o `null` si no cabe ninguno. No lo coloca. */
+  const rellenoParaRayo = (rayo: Rayo, minimo: number, tamanos: ReadonlyArray<{ formatoId: string; base: number }>): Interno | null => {
+    const { tramo: it, s, phi, o, u, radio } = rayo;
+    // Tiene que tapar el rayo: el centro a menos de 0,9 radios de la recta, por delante del eje.
+    const tapa = (c: Vec3, r: number): boolean => {
+      const oc = resta(c, o), t = punto(oc, u);
+      return t > 0 && punto(oc, oc) - t * t <= (0.9 * r) ** 2;
+    };
+    const e1 = unitario(cruz(u, Math.abs(u.y) < 0.9 ? vec(0, 1, 0) : vec(1, 0, 0)));
+    const e2 = cruz(u, e1);
+    let mejor: Interno | null = null, mejorPuntaje = -Infinity;
+    const variacion = 1 + opciones.variacionInflado * (2 * azar() - 1);
+    for (const tam of tamanos) {
+      const d = infladoValido(formatoPorId(tam.formatoId)!, tam.base * variacion), r = d / 2;
+      for (const hondo of hondurasFuga(radio, r)) {
+        const hundimiento = (radio - hondo) / r;
+        for (const [a, b] of [[0, 0], [0.4, 0], [-0.4, 0], [0, 0.4], [0, -0.4]] as const) {
+          let c = restringir(suma(suma(o, escala(u, hondo)), suma(escala(e1, a * r), escala(e2, b * r))), r);
+          if (!tapa(c, r) || evaluar(c, d).peor > LIM) continue;
+          let n = contactos(c, r) + apoyado(c, r, it);
+          if (n < 2) continue;
+          if (n < 3) {
+            // Tocando solo dos: se arrima al vecino más próximo que aún no toca, si cabe y sigue tapando.
+            const arrimado = arrimar(c, d, it, tapa);
+            if (arrimado) { c = arrimado; n = 3; }
+          }
+          if (n < minimo) continue;
+          const puntaje = n * 4 - hundimiento * 1.5 + d * 0.15;
+          if (puntaje > mejorPuntaje) {
+            mejorPuntaje = puntaje;
+            mejor = { formatoId: tam.formatoId, d, r, c, tramo: it, s, phi, hundimiento, inclinacion: 0, tamano: "relleno", racimo: null };
+          }
+        }
+      }
+    }
+    return mejor ? { ...mejor, inclinacion: (azar() - 0.5) * 0.4 } : null;
+  };
+
+  /**
+   * Cambiar los sueltos que hacen falta: el globo que toca a menos de tres pero es el único que tapa algún rayo se
+   * prueba a cambiar por rellenos que tapen esos rayos y sí queden apretados (tocando a tres). Si no se puede, se queda.
+   */
+  const cambiarSueltos = (rayos: readonly Rayo[]) => {
+    const tamanos = tamanosRelleno();
+    for (let i = globos.length - 1; i >= 0; i--) {
+      const g = globos[i]!;
+      if (i >= globos.length || contactos(g.c, g.r) - 1 + apoyado(g.c, g.r, g.tramo) >= 3) continue;
+      const propios = rayos.filter((rayo) => cortaRayo(g, rayo) && !globos.some((h) => h !== g && cortaRayo(h, rayo)));
+      if (propios.length === 0) continue;
+      globos.splice(i, 1);
+      const puestos: Interno[] = [];
+      let todos = true;
+      for (const rayo of propios) {
+        if (!rayoLibre(rayo.o, rayo.u)) continue;
+        const nuevo = rellenoParaRayo(rayo, 3, tamanos);
+        if (!nuevo) { todos = false; break; }
+        globos.push(nuevo);
+        puestos.push(nuevo);
+      }
+      if (!todos) {
+        globos.splice(globos.length - puestos.length, puestos.length);
+        globos.splice(i, 0, g);
+      }
+    }
+  };
+
+  /**
+   * Quitar los sueltos que sobran: un relleno que al final toca a menos de tres y cuyos rayos tapa también otro globo
+   * no hace falta (en la columna de verdad no se amarra un globo que no queda apretado).
+   */
+  const quitarSueltosQueSobran = (rayos: readonly Rayo[]) => {
+    for (let i = globos.length - 1; i >= 0; i--) {
+      const g = globos[i]!;
+      if (g.tamano !== "relleno" || contactos(g.c, g.r) - 1 + apoyado(g.c, g.r, g.tramo) >= 3) continue;
+      const necesario = rayos.some((rayo) => cortaRayo(g, rayo) && !globos.some((h) => h !== g && cortaRayo(h, rayo)));
+      if (!necesario) globos.splice(i, 1);
+    }
+  };
+
   // 1. Cuántos globos de estructura de cada formato pide cada tramo, y en qué fracción del recorrido.
   type Objetivo = { formatoId: string; tramo: number; s: number };
   const objetivos = new Map<string, Objetivo[]>();
@@ -518,7 +955,7 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
       const pesos = [...mezclaEn(tp.def.mezcla, t)].filter(([id]) => formatoValido(id));
       const R = interpolarGrosor(tp.def.grosor, t);
       const consumo = pesos.reduce((acc, [id, w]) => acc + w / estructuraPorCm(nominal.get(id)!, R), 0);
-      const n = consumo > 0 ? densidad / consumo : 0;
+      const n = consumo > 0 ? (densidad * (tp.def.densidad ?? 1)) / consumo : 0;
       totalTramo += n * ds;
       for (const [id] of nominal) {
         const w = pesos.find(([x]) => x === id)?.[1] ?? 0;
@@ -563,27 +1000,33 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
       const rango = rangoS(tp);
       const desde = Math.max(rango.min, obj.s - 1.2 * d), hasta = Math.min(rango.max, obj.s + 1.2 * d);
       let mejor: Interno | null = null, mejorPuntaje = Infinity;
-      for (let s = desde + desfase; s <= hasta; s += 2.5) {
-        const lejania = grande ? Math.abs(s - obj.s) : s - desde;
-        if (lejania > mejorPuntaje) continue;
-        for (let k = 0; k < 32; k++) {
-          const phi = giro + (k / 32) * Math.PI * 2;
-          const c = enEnvoltura(tp, s, phi, r, hundimiento);
-          const { peor, holgura } = evaluar(c, d);
-          if (peor > LIM) continue;
-          // A igual altura, el más pegado a sus vecinos.
-          const puntaje = lejania + Math.min(Math.abs(holgura), 10) * 0.1;
-          if (puntaje < mejorPuntaje) {
-            mejorPuntaje = puntaje;
-            mejor = { formatoId: id, d, r, c, tramo: obj.tramo, s, phi, hundimiento, inclinacion, tamano: grande ? "grande" : "mediano", racimo: null };
+      // Si a ras de la envoltura ya no cabe (la guirnalda fina, medio apoyada en el piso), se mete un poco más adentro,
+      // como la segunda capa de una tira.
+      for (const hondura of [hundimiento, 1.5, 2]) {
+        for (let s = desde + desfase; s <= hasta; s += 2.5) {
+          const lejania = grande ? Math.abs(s - obj.s) : s - desde;
+          if (lejania > mejorPuntaje) continue;
+          for (let k = 0; k < 32; k++) {
+            const phi = giro + (k / 32) * Math.PI * 2;
+            const c = enEnvoltura(tp, s, phi, r, hondura);
+            const { peor, holgura } = evaluar(c, d);
+            if (peor > LIM) continue;
+            // A igual altura, el más pegado a sus vecinos.
+            const puntaje = lejania + Math.min(Math.abs(holgura), 10) * 0.1;
+            if (puntaje < mejorPuntaje) {
+              mejorPuntaje = puntaje;
+              mejor = { formatoId: id, d, r, c, tramo: obj.tramo, s, phi, hundimiento: hondura, inclinacion, tamano: grande ? "grande" : "mediano", racimo: null };
+            }
           }
         }
+        if (mejor) break;
       }
       if (mejor) globos.push(mejor);
       else sinCupo++;
     }
   }
   if (sinCupo > 0) avisos.push(`${sinCupo} globos de estructura no cupieron sin montarse: sus huecos los tapa el relleno.`);
+  apretar(14);
 
   // Rejilla de puntos sobre la envoltura de todos los tramos (para huecos de flores y relleno).
   type PuntoRejilla = { tramo: number; s: number; phi: number };
@@ -606,20 +1049,31 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     for (const p of rejilla) {
       const sup = superficie(tramos[p.tramo]!, p.s, p.phi);
       const normal = sup.normal;
-      if (vista && punto(normal, vista) < 0.15) continue;
+      // Solo de cara a quien mira (no en el borde de la silueta, donde la flor se vería suelta de perfil).
+      if (vista && punto(normal, vista) < 0.35) continue;
       const enSuperficie = sup.punto;
-      if (opciones.suelo && enSuperficie.y < 6) continue;
+      // A ras de piso una flor queda tirada en el suelo: solo desde 15 cm.
+      if (opciones.suelo && enSuperficie.y < 15) continue;
       if (obstaculos.some((o) => Math.hypot(enSuperficie.x - o.base.x, enSuperficie.z - o.base.z) < o.radioCm + 4 && enSuperficie.y < o.base.y + o.altoCm + 4)) continue;
       let holgura = Infinity;
       for (const g of globos) holgura = Math.min(holgura, distancia(enSuperficie, g.c) - g.r);
       if (holgura >= 4) candidatos.push({ p, superficie: enSuperficie, normal, holgura });
     }
     candidatos.sort((a, b) => b.holgura - a.holgura || a.p.tramo - b.p.tramo || a.p.s - b.p.s || a.p.phi - b.p.phi);
-    for (const cand of candidatos) {
-      if (huecos.length >= opciones.huecosFlores) break;
-      if (huecos.some((h) => distancia(h.superficie, cand.superficie) < 24)) continue;
-      const r = limitar(cand.holgura, 4, 8);
-      huecos.push({ tramo: cand.p.tramo, s: cand.p.s, c: suma(cand.superficie, escala(cand.normal, -r * 0.6)), r, superficie: cand.superficie, normal: cand.normal });
+    // Repartidos entre los tramos según su largo (la guirnalda de la base también lleva flores, como en la foto): primero
+    // cada tramo hasta su parte y, si sobran, donde haya hueco.
+    const largoTotal = tramos.reduce((acc, tp) => acc + tp.largo, 0);
+    const cupo = tramos.map((tp) => Math.ceil((opciones.huecosFlores * tp.largo) / largoTotal));
+    for (const conCupo of [true, false]) {
+      for (const cand of candidatos) {
+        if (huecos.length >= opciones.huecosFlores) break;
+        if (conCupo && huecos.filter((h) => h.tramo === cand.p.tramo).length >= cupo[cand.p.tramo]!) continue;
+        if (huecos.some((h) => distancia(h.superficie, cand.superficie) < 24)) continue;
+        // Un bolsillo poco hondo (la flor se apoya en los globos que lo rodean): detrás sigue cabiendo relleno, para que
+        // por el hueco de la flor no se vea a través.
+        const r = limitar(cand.holgura, 4, 8) * 0.8;
+        huecos.push({ tramo: cand.p.tramo, s: cand.p.s, c: suma(cand.superficie, escala(cand.normal, -r * 0.35)), r, superficie: cand.superficie, normal: cand.normal });
+      }
     }
     if (huecos.length < opciones.huecosFlores) avisos.push(`Solo quedaron ${huecos.length} huecos para flores de ${opciones.huecosFlores} pedidos.`);
   }
@@ -683,58 +1137,12 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     }
   }
 
+  apretar(10);
+
   // 5. Relajación: atracción a la envoltura y separación de los que se montan.
-  const separar = (factor: number): number => {
-    let peor = 0;
-    for (let i = 0; i < globos.length; i++) {
-      const a = globos[i]!;
-      for (let j = i + 1; j < globos.length; j++) {
-        const b = globos[j]!;
-        const delta = resta(b.c, a.c);
-        const dist = norma(delta);
-        const menor = Math.min(a.d, b.d);
-        const exceso = a.r + b.r - dist - LIM * factor * menor;
-        if (exceso <= 0) continue;
-        peor = Math.max(peor, (a.r + b.r - dist) / menor);
-        const u = unitario(delta, vec(1, 0, 0));
-        const ma = a.d ** 3, mb = b.d ** 3;
-        a.c = suma(a.c, escala(u, (-exceso * mb) / (ma + mb)));
-        b.c = suma(b.c, escala(u, (exceso * ma) / (ma + mb)));
-      }
-    }
-    for (const g of globos) {
-      for (const h of huecos) {
-        const delta = resta(g.c, h.c);
-        const dist = norma(delta);
-        if (dist < g.r + h.r) g.c = suma(h.c, escala(unitario(delta, h.normal), g.r + h.r));
-      }
-      g.c = restringir(g.c, g.r);
-    }
-    return peor;
-  };
   const pasadas = opciones.pasadasRelajacion ?? 8;
   for (let pasada = 0; pasada < pasadas; pasada++) {
-    for (const g of globos) {
-      const tp = tramos[g.tramo]!;
-      const m = proyectar(tp, g.c);
-      g.s = m.s;
-      const rel = resta(g.c, m.p);
-      const axial = punto(rel, m.t);
-      const radial = resta(rel, escala(m.t, axial));
-      const rho = norma(radial);
-      const dir = rho > 1e-6 ? escala(radial, 1 / rho) : suma(escala(m.n, Math.cos(g.phi)), escala(m.b, Math.sin(g.phi)));
-      g.phi = Math.atan2(punto(dir, m.b), punto(dir, m.n));
-      const objetivo = profundidad(radioEnvoltura(tp, m.s, g.phi), g.r, g.hundimiento);
-      const enTapa = (m.s >= tp.largo - 1e-6 && axial > 0 && tp.def.tapas?.fin) || (m.s <= 1e-6 && axial < 0 && tp.def.tapas?.inicio);
-      if (enTapa) {
-        // Sobre la media esfera del remate: se atrae a su radio desde el extremo.
-        const dist = norma(rel);
-        g.c = suma(m.p, escala(unitario(rel, m.t), dist + (objetivo - dist) * 0.35));
-        g.s = m.s + axial;
-        continue;
-      }
-      g.c = suma(suma(m.p, escala(m.t, axial)), escala(dir, rho + (objetivo - rho) * 0.35));
-    }
+    atraerEnvoltura(0.35);
     separar(0.7);
   }
   for (let pasada = 0; pasada < 60; pasada++) if (separar(0.95) === 0) break;
@@ -752,6 +1160,19 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     }
   }
   if (quitados > 0) avisos.push(`Se quitaron ${quitados} globos que no se podían soltar sin aplastarse más del 12 %.`);
+  const rayos = rayosDeFuga();
+  // Primero solo rellenos que queden apretados (tocando a tres); al final, también los que tocan a dos.
+  for (let vuelta = 0; vuelta < 2; vuelta++) {
+    taparFugas(rayos, 3);
+    asentarSueltos(rayos);
+  }
+  taparFugas(rayos, 2);
+  for (let vuelta = 0; vuelta < 2; vuelta++) {
+    asentarSueltos(rayos);
+    acompanarSueltos(tamanosRelleno());
+    quitarSueltosQueSobran(rayos);
+    cambiarSueltos(rayos);
+  }
 
   // 6. Color por cuotas, sin dos iguales pegados cuando se puede.
   const referencias = new Map<string, ReferenciaSempertex>(TABLA_SEMPERTEX.referencias.map((r) => [r.codigo, r]));
@@ -854,7 +1275,8 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     let holgura = Infinity;
     for (const g of globos) holgura = Math.min(holgura, distancia(h.c, g.c) - g.r);
     const tp = tramos[h.tramo]!;
-    return { indice, tramo: tp.def.id, fraccion: limitar(h.s / tp.largo, 0, 1), posicion: h.superficie, normal: h.normal, holguraCm: Math.round(holgura * 10) / 10 };
+    const apoyos = globos.filter((g) => distancia(h.superficie, g.c) - g.r <= 30).map((g) => ({ centro: g.c, radioCm: g.r }));
+    return { indice, tramo: tp.def.id, fraccion: limitar(h.s / tp.largo, 0, 1), posicion: h.superficie, normal: h.normal, holguraCm: Math.round(holgura * 10) / 10, apoyos };
   });
 
   // Materiales por formato + color (+ confeti, que es otro artículo).

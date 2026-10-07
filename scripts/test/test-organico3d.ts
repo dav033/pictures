@@ -7,12 +7,18 @@
  * - la réplica de la foto (`COLUMNA_QUINCE_AZUL`) mide lo pedido y cuenta lo esperado;
  * - las flores van sobre anclas de hueco válidas y salen como follaje, aparte de los globos;
  * - el cristal con confeti se marca transparente y con confeti;
- * - el armado del preset tarda menos de ~300 ms.
+ * - tupida (criterios del dueño, «se ve muy separado»): desde el eje de la columna, ≥ 97 % de los rayos chocan con un
+ *   globo (24 ángulos × cada 5 cm de alto) y ≥ 95 % en la guirnalda vista desde fuera; cada globo toca (≤ 1 cm entre
+ *   caras) a tres vecinos —globos, piso, pedestal o el tubo del armazón— salvo los remates; la holgura media con los
+ *   tres vecinos más próximos baja a menos de la mitad de la de antes (0,55 cm);
+ * - cada flor queda metida en el hueco: su tallo a ≤ 2 cm de la cara de un globo, y ningún racimo sobresale de la
+ *   envoltura más que su propio radio;
+ * - armarOrganico + repartirFlores tarda menos de 1,5 s.
  */
 import assert from "node:assert/strict";
 import { coloresDelFormato } from "../../src/lib/globos3d/formatos";
 import { FLORES_ARTIFICIALES, repartirFlores } from "../../src/lib/globos3d/flores-artificiales";
-import { APLASTAMIENTO_MAXIMO, aplastamiento, armarOrganico, estructuraPorCm, formaColumna, formaGuirnalda, formaSemiarco, mezclaEn, type GloboOrganico, type ResultadoOrganico } from "../../src/lib/globos3d/organico";
+import { APLASTAMIENTO_MAXIMO, RADIO_ARMAZON_CM, aplastamiento, armarOrganico, estructuraPorCm, formaColumna, formaGuirnalda, formaSemiarco, mezclaEn, type GloboOrganico, type ResultadoOrganico } from "../../src/lib/globos3d/organico";
 import { armarPreset, COLUMNA_QUINCE_AZUL } from "../../src/lib/globos3d/organico-presets";
 import { centroCuerpo } from "../../src/lib/globos3d/geometria";
 
@@ -75,7 +81,7 @@ const primeraMs = performance.now() - t0;
 const t1 = performance.now();
 const otraVez = armarPreset(COLUMNA_QUINCE_AZUL);
 const segundaMs = performance.now() - t1;
-assert.ok(Math.min(primeraMs, segundaMs) < 300, `el armado del preset tarda ${Math.min(primeraMs, segundaMs).toFixed(0)} ms`);
+assert.ok(Math.min(primeraMs, segundaMs) < 1500, `el armado del preset (globos + flores) tarda ${Math.min(primeraMs, segundaMs).toFixed(0)} ms`);
 
 // Determinismo.
 assert.equal(JSON.stringify(otraVez), JSON.stringify(armado), "la misma semilla da el mismo resultado");
@@ -86,9 +92,10 @@ const { organico, flores, escena } = armado;
 comprobarFisica(organico, "columna XV", escena.pedestal);
 comprobarFisica(otraSemilla, "columna XV (semilla 16)", escena.pedestal);
 
-// Conteo dentro de lo esperado (y de lo que pidió el encargo: 80-160).
+// Conteo dentro de lo esperado. Subió de ~88 a ~148 al dejarla tupida (relleno chico también por dentro, como la de la
+// foto); el tope del encargo (160) se amplía a 180 por eso. La cotización la hace el motor del plan, no este conteo.
 const { min, max } = COLUMNA_QUINCE_AZUL.conteoEsperado;
-assert.ok(min >= 80 && max <= 160);
+assert.ok(min >= 80 && max <= 180);
 assert.ok(organico.conteo.total >= min && organico.conteo.total <= max, `conteo ${organico.conteo.total} fuera de ${min}-${max}`);
 assert.ok(otraSemilla.conteo.total >= min && otraSemilla.conteo.total <= max, `conteo (semilla 16) ${otraSemilla.conteo.total} fuera de ${min}-${max}`);
 assert.equal(organico.conteo.porTamano.grande + organico.conteo.porTamano.mediano + organico.conteo.porTamano.relleno, organico.conteo.total);
@@ -178,6 +185,141 @@ for (const p of COLUMNA_QUINCE_AZUL.flores.proporcion) {
 }
 assert.deepEqual(repartirFlores(organico.anclas, COLUMNA_QUINCE_AZUL.flores), flores, "las flores también son deterministas");
 
+// --- Tupida: sin ver a través, globos apretados y flores metidas en los huecos --------------------------------
+type P3 = { x: number; y: number; z: number };
+const resta3 = (a: P3, b: P3): P3 => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z });
+const punto3 = (a: P3, b: P3) => a.x * b.x + a.y * b.y + a.z * b.z;
+const norma3 = (a: P3) => Math.hypot(a.x, a.y, a.z);
+const unitario3 = (a: P3): P3 => { const n = norma3(a) || 1; return { x: a.x / n, y: a.y / n, z: a.z / n }; };
+type Pedestal = { base: P3; radioCm: number; altoCm: number };
+
+/** ¿La semirrecta desde `o` hacia `u` (unitario) toca algún globo? */
+function chocaGlobo(o: P3, u: P3, globos: readonly GloboOrganico[]): boolean {
+  return globos.some((g) => {
+    const r = g.infladoCm / 2, oc = resta3(g.centro, o), t = punto3(oc, u), d2 = punto3(oc, oc) - t * t;
+    return d2 <= r * r && t + Math.sqrt(r * r - d2) > 0;
+  });
+}
+
+/** El punto del eje (la polilínea de control) más cercano a `p`, su tangente y si cae dentro del recorrido. */
+function ejeMasCercano(recorrido: readonly P3[], p: P3): { q: P3; t: P3; dentro: boolean } {
+  let mejor = { q: recorrido[0]!, t: unitario3(resta3(recorrido[1]!, recorrido[0]!)), dentro: false }, menor = Infinity;
+  for (let i = 1; i < recorrido.length; i++) {
+    const a = recorrido[i - 1]!, ab = resta3(recorrido[i]!, a);
+    const f = punto3(resta3(p, a), ab) / punto3(ab, ab);
+    const fc = Math.min(1, Math.max(0, f));
+    const q = { x: a.x + ab.x * fc, y: a.y + ab.y * fc, z: a.z + ab.z * fc };
+    const d = norma3(resta3(p, q));
+    if (d < menor) { menor = d; mejor = { q, t: unitario3(ab), dentro: (i > 1 || f > 0) && (i < recorrido.length - 1 || f < 1) }; }
+  }
+  return mejor;
+}
+
+/** Cobertura de la columna: rayos horizontales desde el eje, 24 ángulos cada 5 cm (de 10 cm del piso a 10 cm de la punta). */
+function coberturaColumna(r: ResultadoOrganico, recorrido: readonly P3[], alto: number): number {
+  let total = 0, tapados = 0;
+  for (let y = 10; y <= alto - 10; y += 5) {
+    const eje = ejeColumna(recorrido, y);
+    for (let k = 0; k < 24; k++) {
+      const a = (k / 24) * Math.PI * 2;
+      total++;
+      if (chocaGlobo({ x: eje.x, y, z: eje.z }, { x: Math.cos(a), y: 0, z: Math.sin(a) }, r.globos)) tapados++;
+    }
+  }
+  return tapados / total;
+}
+
+/**
+ * Cobertura de la guirnalda vista desde fuera: cada 5 cm de su eje, 24 rayos en el plano normal. No cuentan los que van
+ * hacia el piso ni los que tapa el pedestal (por ahí no se ve la guirnalda).
+ */
+function coberturaGuirnalda(r: ResultadoOrganico, recorrido: readonly P3[], pedestal: Pedestal): number {
+  let total = 0, tapados = 0;
+  for (let i = 1; i < recorrido.length; i++) {
+    const a0 = recorrido[i - 1]!, ab = resta3(recorrido[i]!, a0), largo = norma3(ab), t = unitario3(ab);
+    const ref = Math.abs(t.y) < 0.9 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 };
+    const n = unitario3({ x: t.y * ref.z - t.z * ref.y, y: t.z * ref.x - t.x * ref.z, z: t.x * ref.y - t.y * ref.x });
+    const b = { x: t.y * n.z - t.z * n.y, y: t.z * n.x - t.x * n.z, z: t.x * n.y - t.y * n.x };
+    for (let s = 0; s < largo; s += 5) {
+      const o = { x: a0.x + t.x * s, y: a0.y + t.y * s, z: a0.z + t.z * s };
+      for (let k = 0; k < 24; k++) {
+        const a = (k / 24) * Math.PI * 2;
+        const u = unitario3({ x: n.x * Math.cos(a) + b.x * Math.sin(a), y: n.y * Math.cos(a) + b.y * Math.sin(a), z: n.z * Math.cos(a) + b.z * Math.sin(a) });
+        if (u.y < -0.2) continue;
+        const h = Math.hypot(u.x, u.z);
+        if (h > 1e-6) {
+          const ox = o.x - pedestal.base.x, oz = o.z - pedestal.base.z, ux = u.x / h, uz = u.z / h;
+          const tt = -(ox * ux + oz * uz), d2 = ox * ox + oz * oz - tt * tt;
+          if (tt > 0 && d2 < pedestal.radioCm ** 2 && o.y + u.y * (tt / h) < pedestal.base.y + pedestal.altoCm) continue;
+        }
+        total++;
+        if (chocaGlobo(o, u, r.globos)) tapados++;
+      }
+    }
+  }
+  return tapados / total;
+}
+
+/** Holgura (cm, ≥ 0) media entre cada globo y sus tres vecinos más próximos. */
+function holguraMedia(r: ResultadoOrganico): number {
+  let suma = 0;
+  for (const a of r.globos) {
+    const caras = r.globos.filter((b) => b !== a).map((b) => norma3(resta3(a.centro, b.centro)) - a.infladoCm / 2 - b.infladoCm / 2).sort((x, y) => x - y);
+    suma += caras.slice(0, 3).reduce((acc, h) => acc + Math.max(0, h), 0) / 3;
+  }
+  return suma / r.globos.length;
+}
+
+/**
+ * A cuántos toca cada globo (caras a ≤ 1 cm; el aplastamiento cuenta como contacto): globos, el piso, el pedestal y el
+ * tubo del armazón de su tramo (el eje, de radio RADIO_ARMAZON_CM, al que se amarran las tiras).
+ */
+function contactos(r: ResultadoOrganico, tramos: ReadonlyArray<{ id: string; recorrido: readonly P3[] }>, pedestal: Pedestal): number[] {
+  return r.globos.map((a) => {
+    const radio = a.infladoCm / 2;
+    let n = r.globos.filter((b) => b !== a && norma3(resta3(a.centro, b.centro)) - radio - b.infladoCm / 2 <= 1).length;
+    if (a.centro.y - radio <= 1) n++;
+    if (a.centro.y - radio < pedestal.base.y + pedestal.altoCm && Math.hypot(a.centro.x - pedestal.base.x, a.centro.z - pedestal.base.z) - pedestal.radioCm - radio <= 1) n++;
+    const eje = ejeMasCercano(tramos.find((t) => t.id === a.tramo)!.recorrido, a.centro);
+    if (eje.dentro && norma3(resta3(a.centro, eje.q)) - radio - RADIO_ARMAZON_CM <= 1) n++;
+    return n;
+  });
+}
+
+const tramosXV = COLUMNA_QUINCE_AZUL.opciones.tramos;
+const tramoGuirnalda = tramosXV.find((t) => t.id === "guirnalda")!;
+const cobertura = coberturaColumna(organico, tramoColumna.recorrido, altoColumna);
+assert.ok(cobertura >= 0.97, `desde el eje de la columna solo el ${(cobertura * 100).toFixed(1)} % de los rayos toca un globo: se ve a través`);
+const coberturaG = coberturaGuirnalda(organico, tramoGuirnalda.recorrido, escena.pedestal);
+assert.ok(coberturaG >= 0.95, `la guirnalda solo tapa el ${(coberturaG * 100).toFixed(1)} % de los rayos: se ve a través`);
+const holgura = holguraMedia(organico);
+assert.ok(holgura <= 0.25, `holgura media con los tres vecinos más próximos ${holgura.toFixed(2)} cm (antes 0,55)`);
+const toques = contactos(organico, tramosXV, escena.pedestal);
+const sueltos = organico.globos.filter((g, i) => toques[i]! < 3 && g.fraccion < 0.99);
+// Uno puede quedar tocando a dos: el que cierra el borde de un bolsillo de flor (la flor lo calza). Ninguno a menos.
+assert.ok(sueltos.length <= 1 && sueltos.every((g) => toques[g.indice]! >= 2), `globos que tocan a menos de tres vecinos: ${sueltos.map((g) => `${g.indice} (${toques[g.indice]})`).join(", ")}`);
+
+// Flores metidas en el hueco: el tallo a ≤ 2 cm de la cara de un globo; el racimo no sobresale más que su radio.
+let floresAlAire = 0, peorFlor = -Infinity;
+for (const r of flores.racimos) {
+  for (const f of r.flores) {
+    const cara = Math.min(...organico.globos.map((g) => norma3(resta3(f.posicion, g.centro)) - g.infladoCm / 2));
+    peorFlor = Math.max(peorFlor, cara);
+    if (cara > 2) floresAlAire++;
+  }
+  const ancla = organico.anclas[r.ancla]!;
+  const eje = ejeMasCercano(tramosXV.find((t) => t.id === ancla.tramo)!.recorrido, r.posicion);
+  const rel = resta3(r.posicion, eje.q), axial = punto3(rel, eje.t);
+  const u = unitario3({ x: rel.x - eje.t.x * axial, y: rel.y - eje.t.y * axial, z: rel.z - eje.t.z * axial });
+  // La envoltura en esa dirección: hasta dónde llegan los globos de alrededor del racimo (caras a ≤ 15 cm de su boca).
+  const envoltura = Math.max(...organico.globos.filter((g) => norma3(resta3(g.centro, r.posicion)) - g.infladoCm / 2 <= 15).map((g) => punto3(resta3(g.centro, eje.q), u) + g.infladoCm / 2));
+  const fuera = Math.max(...r.flores.map((f) => punto3(resta3(f.posicion, eje.q), u) + f.diametroCm / 2));
+  const radioRacimo = Math.max(...r.flores.map((f) => norma3(resta3(f.posicion, r.posicion)) + f.diametroCm / 2));
+  assert.ok(fuera - envoltura <= radioRacimo, `el racimo ${r.ancla} sobresale ${(fuera - envoltura).toFixed(1)} cm de la envoltura (su radio: ${radioRacimo.toFixed(1)})`);
+}
+assert.equal(floresAlAire, 0, `${floresAlAire} flores quedaron al aire (la peor a ${peorFlor.toFixed(1)} cm de un globo)`);
+assert.ok(organico.anclas.some((a) => a.tramo === "guirnalda"), "la guirnalda de la base también lleva flores");
+
 // --- Otras formas y la regla de color por formato ----------------------------------------------------------
 const semiarco = armarOrganico({
   semilla: 7,
@@ -230,5 +372,7 @@ console.log(
   `OK test-organico3d: réplica XV ${c.total} globos (${porFormato}; ${porColor}; ${c.porTamano.grande} grandes, ${c.porTamano.mediano} medianos, ` +
   `${c.porTamano.relleno} de relleno), ${densidades}; columna ${altoColumna.toFixed(0)} cm, guirnalda ${largoGuirnalda} cm; ` +
   `diámetro medio base ${dBase.toFixed(1)} > punta ${dPunta.toFixed(1)} cm; peor aplastamiento ${(organico.medidas.peorAplastamiento * 100).toFixed(1)} %; ` +
-  `${flores.racimos.length} racimos, ${tallos} flores; ${primeraMs.toFixed(0)}/${segundaMs.toFixed(0)} ms`,
+  `${flores.racimos.length} racimos, ${tallos} flores (al aire: ${floresAlAire}, la peor a ${peorFlor.toFixed(1)} cm); cobertura columna ` +
+  `${(cobertura * 100).toFixed(1)} %, guirnalda ${(coberturaG * 100).toFixed(1)} %; holgura media ${holgura.toFixed(2)} cm; ` +
+  `${sueltos.length} tocando a menos de tres; ${primeraMs.toFixed(0)}/${segundaMs.toFixed(0)} ms`,
 );
