@@ -63,7 +63,7 @@ export function PanelDecoracion(props: Props) {
         <button type="button" onClick={onCelebra} className={`inline-flex items-center justify-center gap-2 ${BOTON} ${INACTIVO}`}>
           <Sparkles className="size-4 text-acento" aria-hidden /> Pared de Celebra ed. 27
         </button>
-        <p className="text-xs text-texto-suave">Malla de trenzas Pastel Mate Rosado alternando R-12 y R-9, con 25 flores, moño y estrella como en la foto (p. 42).</p>
+        <p className="text-xs text-texto-suave">Malla de trenzas rosada alternando R-12 y R-9, con sus 25 decoraciones cada una en su sitio de la foto (p. 42).</p>
       </section>
 
       <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
@@ -131,18 +131,19 @@ export function PanelDecoracion(props: Props) {
                     <button type="button" onClick={() => { onMezcla({ ...mezcla, elementos: mezcla.elementos.filter((_, k) => k !== i) }); onEditando(null); }} aria-label={`Quitar ${e.nombre}`} title="Quitar de la mezcla" className="grid size-8 place-items-center rounded-lg ring-1 ring-borde hover:bg-superficie-suave"><Trash2 className="size-3.5" aria-hidden /></button>
                   </span>
                 </div>
-                <Deslizador id={`peso-${i}`} etiqueta={mezcla.modo === "proporcional" ? "Peso" : "Seguidas en el ciclo"} valor={e.peso} min={0} max={10} paso={1} texto={`${e.peso}`} onCambio={(v) => ponElemento(i, { peso: v })} />
+                {mezcla.modo !== "fijo" && <Deslizador id={`peso-${i}`} etiqueta={mezcla.modo === "proporcional" ? "Peso" : "Seguidas en el ciclo"} valor={e.peso} min={0} max={10} paso={1} texto={`${e.peso}`} onCambio={(v) => ponElemento(i, { peso: v })} />}
               </li>
             ))}
           </ul>
-          <button type="button" onClick={() => onMezcla({ ...mezcla, elementos: [...mezcla.elementos, { nombre: nombreDecoracion(decoracion), decoracion, peso: 1 }] })} disabled={editando !== null}
+          <button type="button" onClick={() => onMezcla({ ...mezcla, modo: mezcla.modo === "fijo" ? "proporcional" : mezcla.modo, elementos: [...mezcla.elementos, { nombre: nombreDecoracion(decoracion), decoracion, peso: 1 }] })} disabled={editando !== null}
             className={`${BOTON} ${INACTIVO} disabled:opacity-50`}>Añadir la decoración del editor</button>
-          <div className="grid grid-cols-2 gap-1">
-            {([["proporcional", "Por proporciones"], ["ciclico", "En ciclo"]] as const).map(([valor, etiqueta]) => (
+          <div className={`grid gap-1 ${mezcla.fijas?.length ? "grid-cols-3" : "grid-cols-2"}`}>
+            {([...(mezcla.fijas?.length ? [["fijo", "Como la foto"] as const] : []), ["proporcional", "Por proporciones"], ["ciclico", "En ciclo"]] as const).map(([valor, etiqueta]) => (
               <button key={valor} type="button" onClick={() => onMezcla({ ...mezcla, modo: valor })} aria-pressed={mezcla.modo === valor} className={`${BOTON} ${mezcla.modo === valor ? ACTIVO : INACTIVO}`}>{etiqueta}</button>
             ))}
           </div>
-          <p className="text-xs text-texto-suave">{mezcla.modo === "proporcional" ? "Reparte el total según los pesos, en anclas al azar (siempre igual con la misma semilla); las grandes primero." : "Recorre las anclas de arriba abajo y pone las decoraciones en orden, una tras otra."}</p>
+          <p className="text-xs text-texto-suave">{mezcla.modo === "fijo" ? "Cada decoración en su sitio exacto de la foto. Para repartir otras o cambiar cuántas van, pasa a «Por proporciones»." : mezcla.modo === "proporcional" ? "Reparte el total según los pesos, en anclas al azar (siempre igual con la misma semilla); las grandes primero." : "Recorre las anclas de arriba abajo y pone las decoraciones en orden, una tras otra."}</p>
+          {mezcla.modo !== "fijo" && (<>
           <Deslizador id="mezcla-total" etiqueta="Total" valor={mezcla.total} min={1} max={80} paso={1} texto={`${mezcla.total} decoraciones`} onCambio={(v) => onMezcla({ ...mezcla, total: v })} />
           <Deslizador id="mezcla-separacion" etiqueta="Separación entre bordes" valor={mezcla.separacionCm} min={-15} max={30} paso={1} texto={mezcla.separacionCm < 0 ? `se pisan ${-mezcla.separacionCm} cm` : `${mezcla.separacionCm} cm`} onCambio={(v) => onMezcla({ ...mezcla, separacionCm: v })} />
           <div className="flex items-center gap-2">
@@ -153,6 +154,7 @@ export function PanelDecoracion(props: Props) {
           <label className="flex items-center gap-2 text-sm text-texto" htmlFor="mezcla-giro">
             <input id="mezcla-giro" type="checkbox" checked={mezcla.giroAleatorio} onChange={(e) => onMezcla({ ...mezcla, giroAleatorio: e.target.checked })} /> Girar las flores al azar (el moño y la estrella quedan derechos)
           </label>
+          </>)}
         </section>
       )}
     </>

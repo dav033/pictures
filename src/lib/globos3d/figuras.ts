@@ -309,8 +309,8 @@ export const DECORACIONES_PREDEFINIDAS: ReadonlyArray<{ id: string; nombre: stri
     // Los pétalos de la revista son Graffiti Rosa R-12 (impresos): aquí un R-12 Satín Fucsia liso. Medido en la
     // foto, el pétalo promedia #d26f94; el Satín Fucsia (#e581a4) es el liso más cercano y tiene el brillo
     // satinado del impreso. El dibujo del Graffiti no se modela.
-    descripcion: "Cuatro R-12 de pétalos (en la revista, Graffiti Rosa; aquí Satín Fucsia liso) con corona de 6 R-5 Fucsia y centro Reflex Dorado Rosa.",
-    decoracion: { tipo: "flor", propiedades: { petalos: { formatoId: "R-12", infladoCm: 22, codigo: "412", cantidad: 4, aperturaGrados: 4, giroGrados: 45 }, corona: { formatoId: "R-5", infladoCm: 9, codigo: "012", cantidad: 6 }, centro: { formatoId: "R-5", infladoCm: 8, codigo: "968", cantidad: 1 } } },
+    descripcion: "Cinco R-12 de pétalos (en la revista, Graffiti Rosa; aquí Satín Fucsia liso) con corona de 6 R-5 Fucsia y centro Reflex Dorado Rosa.",
+    decoracion: { tipo: "flor", propiedades: { petalos: { formatoId: "R-12", infladoCm: 22, codigo: "412", cantidad: 5, aperturaGrados: 4, giroGrados: 0 }, corona: { formatoId: "R-5", infladoCm: 9, codigo: "012", cantidad: 6 }, centro: { formatoId: "R-5", infladoCm: 8, codigo: "968", cantidad: 1 } } },
   },
   {
     id: "flor_r5_rosada", nombre: "Flor de R-5 rosada", descripcion: "Cinco R-5 Fashion Rosado con corona de R-5 Fucsia y centro Reflex Dorado Rosa.",
@@ -330,8 +330,8 @@ export const DECORACIONES_PREDEFINIDAS: ReadonlyArray<{ id: string; nombre: stri
     decoracion: { tipo: "flor_tubito", propiedades: { petalos: { formatoId: "T-260", grosorCm: 3.5, codigos: ["012", "970", "012", "009"], cantidad: 8, estilo: "burbuja", largoCm: 7, anchoCm: 3.5, aperturaGrados: 4, giroGrados: 0 }, interior: null, corona: null, centro: { formatoId: "R-5", infladoCm: 5, codigo: "012" } } },
   },
   {
-    id: "flor_lazos_rosados", nombre: "Flor de lazos fucsia", descripcion: "Cinco lazos de T-260 Fucsia con corona de 6 R-5 Reflex Dorado Rosa y centro Fashion Rosado.",
-    decoracion: { tipo: "flor_tubito", propiedades: { petalos: lazos(["012"], 5, 15, 10, 3.5, 90), interior: null, corona: { formatoId: "R-5", infladoCm: 8, codigo: "968", cantidad: 6 }, centro: { formatoId: "R-5", infladoCm: 6, codigo: "009" } } },
+    id: "flor_lazos_rosados", nombre: "Flor de lazos fucsia", descripcion: "Cinco lazos de T-260 Fucsia con corona de 5 R-5 Reflex Dorado Rosa y centro Fashion Rosado.",
+    decoracion: { tipo: "flor_tubito", propiedades: { petalos: lazos(["012"], 5, 15, 10, 3.5, 90), interior: null, corona: { formatoId: "R-5", infladoCm: 8, codigo: "968", cantidad: 5 }, centro: { formatoId: "R-5", infladoCm: 6, codigo: "009" } } },
   },
   {
     id: "mono_fucsia", nombre: "Moño fucsia", descripcion: "Moño de T-260 Fucsia: dos lazos por lado, colas y un R-5 Fashion Rosado al centro.",

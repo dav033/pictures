@@ -12,13 +12,20 @@ import type { OpcionesParedTrenzas } from "./pared-trenzas";
  *   decoraciones en ciclo (cada una tantas veces seguidas como su peso): un patrón regular.
  * En los dos, una decoración solo entra donde no se monta con las ya puestas (`separacionCm` entre bordes; si es
  * negativa, se permite que se pisen un poco) y su centro queda dentro de la pared.
+ * - «fijo»: cada decoración en su sitio exacto (`fijas`: posición relativa en la pared y giro), medido de una foto;
+ *   así una réplica queda igual a la foto aunque cambie el tamaño de la pared.
  * Unidades: cm.
  */
 export type ElementoMezcla = { nombre: string; decoracion: Decoracion; peso: number };
 
+/** Un sitio fijo: `u` de izquierda (0) a derecha (1) y `v` de abajo (0) arriba (1) de la pared; giro en grados. */
+export type ColocacionFija = { elemento: number; u: number; v: number; giroGrados: number };
+
 export type MezclaDecoraciones = {
   elementos: ElementoMezcla[];
-  modo: "proporcional" | "ciclico";
+  modo: "proporcional" | "ciclico" | "fijo";
+  /** Solo en «fijo»: dónde va cada decoración. */
+  fijas?: ColocacionFija[];
   semilla: number;
   /** Cuántas decoraciones poner en total (las que quepan). */
   total: number;
@@ -150,10 +157,21 @@ export function decorarPared(opciones: {
   superficie?: (x: number, y: number) => number;
   limites?: { minX: number; maxX: number; minY: number; maxY: number };
 }): ParedDecorada {
-  const { anclas, mezcla, superficie, limites } = opciones;
+  const { mezcla, superficie, limites } = opciones;
   const armadas: DecoracionArmada[] = mezcla.elementos.map((e) => armarDecoracion(e.decoracion));
   const piezas = armadas.map((a, i) => ({ radioCm: a.diametroCm / 2, girable: GIRABLES.has(mezcla.elementos[i]!.decoracion.tipo) }));
-  const colocaciones = repartirMezcla(anclas, piezas, mezcla, limites);
+  let anclas = opciones.anclas;
+  let colocaciones: Colocacion[];
+  if (mezcla.modo === "fijo") {
+    // Sitios medidos en la foto, relativos a la pared (si no hay límites, a lo que ocupan las anclas).
+    const xs = anclas.map((a) => a.posicion.x), ys = anclas.map((a) => a.posicion.y);
+    const caja = limites ?? { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+    const fijas = (mezcla.fijas ?? []).filter((f) => f.elemento >= 0 && f.elemento < mezcla.elementos.length);
+    anclas = fijas.map((f) => ({ posicion: { x: caja.minX + f.u * (caja.maxX - caja.minX), y: caja.minY + f.v * (caja.maxY - caja.minY), z: 0 }, normal: { x: 0, y: 0, z: 1 } }));
+    colocaciones = fijas.map((f, i) => ({ elemento: f.elemento, ancla: i, giroRad: (f.giroGrados * Math.PI) / 180 }));
+  } else {
+    colocaciones = repartirMezcla(anclas, piezas, mezcla, limites);
+  }
   const globos: GloboDecoracion[] = [];
   const tubos: TuboDecoracion[] = [];
   const listas: MaterialDecoracion[][] = [];
@@ -183,21 +201,47 @@ export function decorarPared(opciones: {
 
 /**
  * Celebra ed. 27, p. 42 («Malla con flores orgánicas»), tal como la foto:
- * - pared: trenzas de cuartetos Pastel Mate Rosado (609) alternando R-12 (grande, 25 cm) y R-9 (chico, 20 cm,
+ * - pared: trenzas de cuartetos rosados alternando R-12 (grande, 25 cm) y R-9 (chico, 20 cm,
  *   el tamaño chico del PDF de Sempertex). La revista pide 128 R-12 y 128 R-9 (64 cuartetos); la foto, casi
  *   cuadrada, se arma con 5 trenzas de 13 cuartetos (2,5 × 2,17 m): 33 grandes y 32 chicos, un cuarteto
  *   grande más que la revista (132 R-12).
  * - decoraciones contadas en la foto: 3 flores grandes de R-12 (Graffiti Rosa en la revista), 7 flores de
  *   corazones, 7 flores de burbujas, 2 flores de lazos dorados, 1 flor de lazos fucsia, 2 flores de R-5
  *   rosadas, 1 racimo dorado, 1 estrella dorada y 1 moño fucsia: 25.
+ * - cada una en su sitio de la foto (modo «fijo»): centros medidos en píxeles sobre la foto de 423 × 467 px,
+ *   con el cuerpo de la pared entre x 39–366 y y 79–393; `u` y `v` son esas medidas relativas a la pared.
  */
+const PARED_FOTO = { x0: 39, x1: 366, y0: 79, y1: 393 };
+const enFoto = (elemento: number, x: number, y: number, giroGrados = 0): ColocacionFija => ({
+  elemento,
+  u: Math.round(((x - PARED_FOTO.x0) / (PARED_FOTO.x1 - PARED_FOTO.x0)) * 1000) / 1000,
+  v: Math.round(((PARED_FOTO.y1 - y) / (PARED_FOTO.y1 - PARED_FOTO.y0)) * 1000) / 1000,
+  giroGrados,
+});
+// Índices de `elementos` del preset.
+const GRANDE = 0, CORAZONES = 1, BURBUJAS = 2, LAZOS_DORADOS = 3, LAZOS_FUCSIA = 4, R5_ROSADA = 5, RACIMO = 6, ESTRELLA = 7, MONO = 8;
+
 export const CELEBRA_27: { pared: OpcionesParedTrenzas; mezcla: MezclaDecoraciones } = {
   pared: {
     grande: { formatoId: "R-12", infladoCm: 25 }, chico: { formatoId: "R-9", infladoCm: 20 },
-    anchoCm: 230, altoCm: 215, patron: "un_color", colores: ["609"], empiezaCon: "grande",
+    anchoCm: 230, altoCm: 215, patron: "un_color",
+    // La revista dice Pastel Mate Rosado (609, #e6cfd6), pero el rosado medido en la foto (#eda0b2) está mucho más
+    // cerca del Fashion Rosado (009, #f2b6c8): va el 009 para que el render quede como la foto.
+    colores: ["009"], empiezaCon: "grande",
   },
   mezcla: {
-    modo: "proporcional", semilla: 27, total: 25, separacionCm: -4, giroAleatorio: true,
+    modo: "fijo", semilla: 27, total: 25, separacionCm: -4, giroAleatorio: false,
+    fijas: [
+      enFoto(GRANDE, 90, 140), enFoto(GRANDE, 326, 120), enFoto(GRANDE, 288, 277),
+      enFoto(CORAZONES, 265, 107), enFoto(CORAZONES, 152, 168), enFoto(CORAZONES, 218, 163), enFoto(CORAZONES, 65, 212),
+      enFoto(CORAZONES, 326, 207), enFoto(CORAZONES, 158, 355), enFoto(CORAZONES, 285, 357),
+      enFoto(BURBUJAS, 155, 112), enFoto(BURBUJAS, 107, 212), enFoto(BURBUJAS, 240, 212), enFoto(BURBUJAS, 117, 262),
+      enFoto(BURBUJAS, 218, 340), enFoto(BURBUJAS, 335, 340), enFoto(BURBUJAS, 107, 375),
+      enFoto(LAZOS_DORADOS, 205, 212), enFoto(LAZOS_DORADOS, 218, 283),
+      enFoto(LAZOS_FUCSIA, 286, 170),
+      enFoto(R5_ROSADA, 150, 262), enFoto(R5_ROSADA, 155, 320),
+      enFoto(RACIMO, 66, 265), enFoto(ESTRELLA, 198, 120), enFoto(MONO, 82, 330),
+    ],
     elementos: [
       { nombre: "Flor grande de R-12", decoracion: decoracionPredefinida("flor_graffiti"), peso: 3 },
       { nombre: "Flor de corazones", decoracion: decoracionPredefinida("flor_corazones"), peso: 7 },

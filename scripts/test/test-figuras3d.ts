@@ -127,7 +127,7 @@ assert.deepEqual(decorada.porElemento, CELEBRA_27.mezcla.elementos.map((e) => e.
 assert.deepEqual(decorarPared({ anclas: pared.anclas, mezcla: CELEBRA_27.mezcla, superficie, limites }).colocaciones, decorada.colocaciones, "réplica determinista");
 for (const m of decorada.materiales) assert.ok(existe(m.formatoId, m.codigo), `material ${m.formatoId} ${m.codigo} existe`);
 assert.equal(decorada.materiales.find((m) => m.formatoId === "C-6")?.cantidad, 7 * 5, "7 flores de corazones × 5 Corazón 6");
-assert.equal(decorada.materiales.find((m) => m.formatoId === "R-12" && m.codigo === "412")?.cantidad, 3 * 4, "3 flores grandes × 4 R-12");
+assert.equal(decorada.materiales.find((m) => m.formatoId === "R-12" && m.codigo === "412")?.cantidad, 3 * 5, "3 flores grandes × 5 R-12 (la foto)");
 // Apoyadas: ningún globo de decoración queda metido detrás del frente de la pared más de lo que cede el látex.
 for (const g of decorada.globos) {
   const l = (g.infladoCm * 0.6);
@@ -136,3 +136,14 @@ for (const g of decorada.globos) {
 }
 
 console.log(`OK test-figuras3d: ${DECORACIONES_PREDEFINIDAS.length} decoraciones predefinidas con colores reales; lazos, burbujas, moño, estrella y corazones; tubitos por largo; reparto determinista por proporciones y en ciclo; Celebra ed. 27 con ${decorada.colocaciones.length} decoraciones`);
+
+// Réplica 1 a 1: en modo «fijo», cada pieza va al sitio medido en la foto (relativo a la pared), sin azar.
+for (const [i, c] of decorada.colocaciones.entries()) {
+  const fija = CELEBRA_27.mezcla.fijas![i]!;
+  assert.equal(c.elemento, fija.elemento);
+}
+const moño = CELEBRA_27.mezcla.fijas!.find((f) => f.elemento === 8)!;
+assert.ok(moño.u < 0.25 && moño.v < 0.25, "el moño va abajo a la izquierda, como en la foto");
+const mitad = decorarPared({ anclas: pared.anclas, mezcla: CELEBRA_27.mezcla, superficie, limites: { ...limites, maxX: limites.maxX / 2 } });
+assert.equal(mitad.colocaciones.length, 25, "en una pared más angosta siguen todas, en el mismo sitio relativo");
+console.log("OK test-figuras3d: Celebra ed. 27 en sus 25 sitios de la foto");

@@ -23,6 +23,8 @@ import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/refere
 import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena, TuboEnEscena } from "./escena-globos";
 import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
 import { GeneradorIA } from "./GeneradorIA";
+import { PaletaEscena } from "./PaletaEscena";
+import { reemplazarColor } from "@/lib/globos3d/recolorear";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 const metros = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
@@ -275,6 +277,7 @@ export function Taller3D() {
 
   function cambiarModo(nuevo: Modo) {
     setModo(nuevo);
+    setAvisoColor(null);
     if (nuevo === "modulo" && !FORMATOS_MODULO.includes(formato.id as (typeof FORMATOS_MODULO)[number])) elegirFormato(formatoPorId("R-12")!);
     if ((nuevo === "columna" || nuevo === "arco" || nuevo === "decoracion") && !FORMATOS_COLUMNA.includes(formato.id as (typeof FORMATOS_COLUMNA)[number])) elegirFormato(formatoPorId("R-12")!);
     setRanura(null);
@@ -302,6 +305,49 @@ export function Taller3D() {
     ? FORMATOS_GLOBO.filter((f) => FORMATOS_MODULO.includes(f.id as (typeof FORMATOS_MODULO)[number]))
     : modo === "columna" || modo === "arco" ? FORMATOS_GLOBO.filter((f) => FORMATOS_COLUMNA.includes(f.id as (typeof FORMATOS_COLUMNA)[number])) : FORMATOS_GLOBO;
   const seleccionado = (i: number) => (modo === "modulo" ? coloresModulo[i] : codigo);
+
+  // Colores de la escena: los que usa lo que se ve, y cambiar uno en todo el montaje de una vez.
+  const [avisoColor, setAvisoColor] = useState<string | null>(null);
+  const materialesEscena = useMemo(() => {
+    const conFormato = (lista: ReadonlyArray<{ codigo: string; cantidad: number }>) => lista.map((m) => ({ formatoId: formato.id, codigo: m.codigo, cantidad: m.cantidad }));
+    if (modo === "organico") return organico.resultado.materiales;
+    if (modo === "pared") return paredActual.materiales;
+    if (modo === "decoracion") return escenaDecoracion.materiales;
+    if (modo === "columna") return conFormato(columna.materiales);
+    if (modo === "arco") return conFormato(arco.materiales);
+    if (modo === "modulo") return conFormato(materiales);
+    return [];
+  }, [modo, organico, paredActual, escenaDecoracion, columna, arco, materiales, formato.id]);
+
+  function reemplazarEnEscena(de: string, a: string) {
+    const omitidos = new Set<string>();
+    let cambios = 0;
+    const cambiar = <T,>(valor: T): T => {
+      const r = reemplazarColor(valor, de, a);
+      r.omitidos.forEach((f) => omitidos.add(f));
+      cambios += r.cambios;
+      return r.valor;
+    };
+    const enLista = (lista: string[]) => {
+      if (!lista.includes(de)) return lista;
+      if (!colores.some((c) => c.codigo === a)) { omitidos.add(formato.id); return lista; }
+      cambios += 1;
+      return lista.map((c) => (c === de ? a : c));
+    };
+    if (modo === "organico") setAjustesOrganico(cambiar(ajustesOrganico));
+    if (modo === "pared" || (modo === "decoracion" && donde === "pared")) {
+      // Solo la pared que se ve (malla o trenzas): la otra no está en la escena.
+      if (tipoPared === "malla") setPared(cambiar(pared)); else setParedTrenzas(cambiar(paredTrenzas));
+    }
+    if (modo === "decoracion") { setMezcla(cambiar(mezcla)); setDecoracion(cambiar(decoracion)); }
+    if (modo === "columna" || modo === "arco" || (modo === "decoracion" && (donde === "columna" || donde === "arco"))) setColoresColumna(enLista(coloresColumna));
+    if (modo === "modulo") setColoresModulo(enLista(coloresModulo));
+    if (codigo === de && colores.some((c) => c.codigo === a)) setCodigo(a);
+    const nombre = referenciaPorCodigo(a)?.nombreCompleto ?? a;
+    setAvisoColor(omitidos.size
+      ? `${nombre} no se fabrica en ${[...omitidos].join(", ")}: esas piezas quedan como estaban.`
+      : cambios ? null : "No había nada de ese color para cambiar.");
+  }
 
   // Lo que se le cuenta a FLUX junto con la captura: la estructura y sus globos (en inglés, sin marcas).
   const descripcionIA = useMemo(() => {
@@ -444,6 +490,7 @@ export function Taller3D() {
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-1" aria-label="Elegir el globo">
+          {modo !== "globo" && <PaletaEscena materiales={materialesEscena} onReemplazar={reemplazarEnEscena} aviso={avisoColor} />}
           {modo === "organico" ? (
             <PanelOrganico valor={ajustesOrganico} onCambio={setAjustesOrganico} />
           ) : modo === "pared" ? (

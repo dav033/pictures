@@ -73,12 +73,12 @@ for (const g of porTamano.globos) assert.equal(g.codigo, g.tamano === "grande" ?
 const porTrenza = armarParedTrenzas({ ...PARED_TRENZAS_INICIAL, patron: "columnas", colores: ["609", "009"] });
 for (const g of porTrenza.globos) assert.equal(g.codigo, g.columna % 2 === 0 ? "609" : "009");
 
-// Celebra ed. 27: R-12 (25 cm) y R-9 (20 cm) Pastel Mate Rosado, 5 trenzas × 13 cuartetos, 2,5 × 2,17 m.
+// Celebra ed. 27: R-12 (25 cm) y R-9 (20 cm) Fashion Rosado (el rosado de la foto), 5 trenzas × 13 cuartetos, 2,5 × 2,17 m.
 const celebra = armarParedTrenzas(CELEBRA_27.pared);
 assert.equal(celebra.columnas, 5);
 assert.equal(celebra.niveles, 13);
 assert.deepEqual(celebra.cuartetos, { grande: 33, chico: 32 });
-assert.deepEqual(celebra.materiales, [{ formatoId: "R-12", codigo: "609", cantidad: 132 }, { formatoId: "R-9", codigo: "609", cantidad: 128 }]);
+assert.deepEqual(celebra.materiales, [{ formatoId: "R-12", codigo: "009", cantidad: 132 }, { formatoId: "R-9", codigo: "009", cantidad: 128 }]);
 for (const m of celebra.materiales) assert.ok(coloresDelFormato(m.formatoId).some((c) => c.codigo === m.codigo), `${m.codigo} existe en ${m.formatoId}`);
 // La revista: 128 R-12 + 128 R-9 (64 cuartetos); la réplica difiere en un cuarteto grande.
 assert.ok(Math.abs(celebra.globos.length - 256) <= 4, `globos de la pared: ${celebra.globos.length} (revista: 256)`);
