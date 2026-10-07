@@ -16,32 +16,33 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO (latido 122, 2026-10-07 ~05:00) — LEER PRIMERO AL RETOMAR
+## 📋 ESTADO VIVO (latido 134, 2026-10-07 ~05:25) — LEER PRIMERO AL RETOMAR
 
-**En `main` (Vercel): b7f5cfe** — commit grande verificado (tsc limpio en e3-verif, 26 pruebas puntuales + ruff/pytest): editor
-«Ajustar mi plan» (cantidades libres por color, reemplazar/añadir globos del catálogo con selector Sempertex, chips dentro del editor,
-medidas en metros, parejas a la vez), piezas individuales (columna izquierda/derecha), quitar pieza / añadir color sin modelo, B1 plan
-exacto desde la idea (/api/plan-idea) + «Agregar al plan», B2 idea amplia, lectura determinista de las 10 fotos de ejemplo, imagen fiel,
-inputs de negocio (FilaGasto), auditoría de la biblioteca, chips con producto Sempertex, «otras ideas» sin armar plan, parejas simétricas.
-**VPS en e447cfe.** Lo nuevo de Next funciona con ese Python. Desplegar el VPS (avisando antes) solo añade: granel, regla de familia en
-el título del color (`color_catalogo.py`) y talla más cercana. **Pendiente del dueño:** `ARMADO_ARCO_COLUMNA_V1` en producción; arrancar
-el Python local :8000 (el sistema lo cerró por falta de RAM a las ~02:00; no lo arranco sin permiso).
+**En `main` (Vercel): ff92855** (verificado: tsc limpio en e3-verif + 17 pruebas puntuales; contrato chat-v1 exportado y
+`generated_models.py` regenerado). Encima de **b7f5cfe** (commit grande de la noche). ff92855 trae: ayudas «?» (12 sitios, `Ayuda.tsx`,
+`ayudas-guiada.ts`), usabilidad (`hechos-cliente.ts`: uso sin repetir, edades como opciones de flujo, decorador con medida y arco completo,
+palabras del cliente en instrucción/brief/imagen vía `solicitudCliente`, «Ajustes que hice») y editar el plan por chat sin rehacerlo
+(`edicion-plan-chat.ts`, `edicion-chat-guiada.ts`, `elegir_idea`).
+**VPS en e447cfe.** Next funciona con él; desplegarlo añade granel, talla más cercana, familia del color y auditoría de Python.
+**Decisiones del dueño pendientes:** (a) desplegar VPS ANTES de la demo; (b) `ARMADO_ARCO_COLUMNA_V1` en producción (hoy local≠prod);
+(c) arrancar Python local :8000 (caído desde ~02:00 por RAM); (d) hora de la presentación → hora de congelación de main.
 
-**02:00 límite de sesión:** se cortaron a medias calidad-banco (`wf_4b3e1978-044`, sus arreglos de talla/color ya van en b7f5cfe con
-pruebas; faltaba re-medir el banco), colores-claros-ideas (`wf_763c0859-a94`, celeste/Azul Caribe e ideas de boda en b7f5cfe; faltaban
-sondas), arreglos-u97, ayudas, verificador:2 del encargo, verificador y corrector del editor, probador:120.
+**Corriendo:** corrector:demo-133 (`wf_563b8cef-450`: `variant_overrides` rompe «Ajustar mi plan» en ideas deco-real-07/25 — BLOQUEANTE
+demo; caption FLUX de ej06 > 1000 → sin imagen; POST duplicado de dibujos de parejas → 429; avisos de plan de idea no exacto) ·
+pulido-134 (`wf_dada9c66-142`: galería de las 10 fotos de ejemplo en la guiada; botón «Arco orgánico» → arco; «Ajustar mi precio» a 390 px)
+· probador:124-prod (`wf_da0cd4d7-2ab`) · comparador:130-prod (`wf_27f800ab-6f1`).
 
-**Corriendo (`wf_28285e91-542`, 3 a la vez por RAM, sin Python):** ayudas (tooltips 8-12 sitios) ∥ usabilidad (uso sin repetir, edades
-7+, datos del decorador, palabras del cliente en plan y escena, «Ajustes que hice») ∥ chat-editar (herramientas de edición del plan
-vigente por chat + elegir_idea).
+**Verificador 127** (`scratchpad/ritmo/verificador-127.md`): ningún pedido tiene aún verificación independiente posterior a b7f5cfe en
+navegador; cadencia de usabilidad y comparador atrasada (se lanzan contra PRODUCCIÓN mientras Python local esté caído). Producción en
+frío: el primer buscador del catálogo da 504 a los 5 s → calentar antes de la demo (abrir «Cambiar» un color y «Crear mi plan» de una
+idea). Durante la demo: nada de banco ni agentes contra el VPS.
 
-**Cuando vuelva Python :8000:** verificador independiente en el navegador de todo lo de b7f5cfe + lo de `wf_28285e91-542`; reanudar
-calidad-banco y colores-claros; `precomputar-planes-ideas.ts --check --verificar`; banco 3× (~US$7, tope declarado). Ritmo: probador,
-usabilidad, comparador, verificador.
+**Después de la demo / con Python:** reanudar calidad-banco y colores-claros; `precomputar-planes-ideas.ts --check --verificar`; banco 3×
+(~US$7); restos de pulido (probador-104 #6/#7/#12-15, comparador I3/I7); `analisis-ejemplos.json` v16 muerto; auditoría Python en VPS.
 
-**Lecciones (memoria):** tope 6 agentes a la vez (concurrencia, no cantidad; hoy 3 por RAM); SendMessage a un agente de workflow vivo
-arranca una 2.ª copia; scripts de workflow editados con Python → lanzarlos en línea; tsc en e3-verif antes de cada push (los datos
-`data/processed/*` no están en e3-verif: esas pruebas, en el árbol principal).
+**Lecciones (memoria):** tope 6 agentes a la vez (concurrencia, no cantidad); SendMessage a un agente de workflow vivo arranca una 2.ª
+copia; tsc en e3-verif antes de cada push (los datos `data/processed/*` no están en e3-verif: esas pruebas, en el árbol principal); al
+cambiar chat-v1: `npm run contracts:export` + `services/ai-api/scripts/generate_models.py`; no subir `scripts/test/_sonda-celeste-real.ts`.
 <!-- ESTADO-VIVO:FIN -->
 
 ## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
