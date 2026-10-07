@@ -16,33 +16,27 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO (latido 140, 2026-10-07 ~06:35) — LEER PRIMERO AL RETOMAR
+## 📋 ESTADO VIVO (2026-10-07 ~08:20) — PRESENTACIÓN ~09:30 · CONGELACIÓN 09:00 (nada a main ni al VPS después)
 
-**En `main` (Vercel): 6628c49.** **VPS: 8922cbe** (desplegado hoy: granel, talla más cercana, familia del color, auditoría
-Python, conteo de foto S1, supuesto de medidas S3). **`ARMADO_ARCO_COLUMNA_V1=true` en Vercel producción** (decisión del dueño).
-**Python local :8000 y Next :3010 arriba** (el dueño pidió reiniciar todo lo necesario).
+**Producción:** Vercel **b69418d** · VPS **ec28cbc** · `ARMADO_ARCO_COLUMNA_V1=true` y `NEXT_PUBLIC_SOLO_GUIADA=true` (solo
+Production de Vercel: solo existe /asistente; /, /catalogo… redirigen). Python local :8000 y Next :3010 arriba.
 
-**Hoy en main:** b7f5cfe (commit grande) · ff92855 (ayudas, usabilidad, chat edita sin rehacer) · 2defb78 (registro.py no
-rompe la imagen del VPS: parents[3] en BuildKit) · e2fb267 (caption ≤ límite: arreglaba «No pude dibujarla» en la guiada con
-ARMADO encendida) · 8922cbe (Python S1/S3) · 9cf6a85 (editor con variant_overrides — bloqueante demo —, Modificar pieza
-fiel al plan, dibujos sin 429, avisos de idea no exacta, aviso de versión nueva, cotización, pulido) · 6628c49 (límite FLUX
-1500: era nuestro, no de FLUX; FLUX dev lee ~512 tokens).
+**Hoy en producción (además de lo de la noche):** CRUD del plan por chat (agregar suma, consultar, cambiar, quitar; también
+sobre la lectura de foto) · editor con globos sustituidos (variant_overrides) · «Modificar pieza» fiel al plan · avisos sin
+repetir · decorador directo a su pieza · reintentos ante «motor ocupado» · imagen: nunca sin imagen por cobertura/coherencia,
+espera animada, JPEG liviano, imágenes guardadas SOLO en el navegador (IndexedDB; el servidor no guarda imágenes), guía de
+escena con el dibujo del motor en TODOS los planes (GUIA_ESCENA_SIN_FOTO_V1: semiarco y guirnalda con su forma y escala),
+entorno de luz dramática de evento, límite del caption 1500 · flores de globo de punta a punta (Python cuenta y cotiza) ·
+conteo de foto con receta del motor (165 → 83 por columna) · galería: en producción fotos reales de la biblioteca, en
+desarrollo las 10 de ejemplo.
 
-**Pendiente de subir (en el árbol, mezclado con agentes en curso):** VistaGuiada.tsx + asistente-guiado/route.ts (galería de
-ejemplos, Empezar de nuevo, Propónme con pieza conocida, CRUD) → 3 pruebas de cableado fallan en main hasta entonces
-(test-motor-plan-probador-124, test-interfaz-probador-124, test-pulido-presentacion-guiada). caption-flux.ts: escala de
-la pieza (guirnalda ≠ arco; HECHO) mezclado con escena audaz (EN CURSO).
+**Pendiente tras la demo:** talla más cercana en planes de ideas (R-24 sin stock queda «sin cobertura»; la imagen ya no se
+corta) · pieza extra ocasional de FLUX con la guía (semiarco + 2 columnas) · encuadre 3/4 que FLUX ignora · lecturas-ejemplos
+con el prompt nuevo (flores) · banco 3× · `ver-registros.ts` descarta líneas `[ui-error]` (usar `vercel logs`).
 
-**Corriendo:** impl:crud-chat-139 (agregar pieza suma, consultar, cambiar, quitar por chat, también sobre la lectura de foto)
-· impl:flores-141 (flores de 3×R5 en cualquier estructura, Python+Next; acabado perlado fiel; exigirá VPS) ·
-impl:escena-audaz-142 (entorno del evento audaz, reserva de caracteres para la escena).
-
-**Pedidos del dueño de esta mañana:** guirnalda que sale arco (arreglado, sin subir) · CRUD por chat · flores de globo · globos
-iguales a la foto (perlado, globo Sempertex de la flor) · entorno más audaz · límite 1500 (hecho).
-
-**Lecciones:** los agentes pueden sobrescribir scripts del scratchpad (correr-pruebas.sh): el orquestador usa
-`scratchpad/orq-pruebas-e3.sh`; el despliegue del VPS imprime el fallo real ANTES del rollback (guardar el log entero, no tail);
-commit selectivo de un archivo compartido = blob con `git hash-object -w` + `git update-index --cacheinfo`.
+**Lecciones:** los agentes sobrescriben scripts del scratchpad (el orquestador usa `scratchpad/orq-pruebas-e3.sh`); commit
+selectivo por trozos (`git apply --cached` con trozos filtrados, o blob con `git hash-object -w` + `git update-index`); el
+fallo real del despliegue del VPS sale ANTES del rollback (guardar el log entero).
 <!-- ESTADO-VIVO:FIN -->
 
 ## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
