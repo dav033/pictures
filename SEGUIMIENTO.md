@@ -16,32 +16,33 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 85, 2026-10-06 ~22:35
+## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 90, 2026-10-06 ~22:55
 
-**En `main` (Vercel):** 5d9c90a. Hoy tras el compact: registro-2 (350ae58), «Ajustar mi plan» (93b2c84), opciones sin «no encontré»
-(9d9243d), 11 fotos nuevas de Sempertex = 46 decoraciones (71a9aed). **VPS atrasado en e447cfe** (no desplegar sin avisar al dueño).
+**En `main` (Vercel): 38b10c0** — piezas individuales («Columna izquierda/derecha»; quitar pieza/añadir color sin cambiar el resto),
+gráfica del clásico en cada pieza + «Modificar esta pieza», tabla de «Ver detalle», materiales con miniaturas de globos, lectura de
+foto detallada, imagen fiel a las piezas, paridad del cuerpo de /api/generate con la clásica, globos a granel (negocio). Antes: opciones
+sin «no encontré» (9d9243d), 11 fotos nuevas = 46 decoraciones (71a9aed), «Ajustar mi plan» (93b2c84), registro-2 (350ae58).
+**VPS atrasado en e447cfe**: el granel (Python) y el lector (si toca Python) exigen desplegarlo → avisar al dueño antes.
+**Decisión pendiente del dueño:** encender `ARMADO_ARCO_COLUMNA_V1` en producción (sin él la columna orgánica no trae armado → la guía de
+escena falla en las dos vistas; cambia la cotización).
 
-**En curso (workflows; cambios SIN commit en el árbol):**
-| Workflow | Qué hace | Archivos principales |
+**TOPE DE CONCURRENCIA: 6 agentes a la vez** (no limita la cantidad; lo demás se encola). Corriendo ahora (6):
+| Workflow | Agente(s) | Qué hace |
 |---|---|---|
-| `wf_de9b969f-a93` encargo grande | A piezas individuales + arreglos de «Ajustar» (no cambiar el resto); E imagen fiel a las piezas (2 columnas ≠ arco); B gráfica del clásico editable + tabla «Ver detalle»; D materiales con imágenes de globos + lectura de foto detallada; luego C «Agregar al plan», B2 idea amplia con productos Sempertex; verificador + corrector | instruccion-plan, asistente-guiado-v1, registro-herramientas, ajuste/*, kagutsuchi/*, TarjetaPlan, FilaPieza, TablaGlobosPieza, ModificarPieza, GloboMiniatura, CostosMateriales, ReferenciaInspiracion |
-| `wf_1833d72e-28f` granel | Negocio: cotizar globos sueltos a granel (por unidad) | cotizacion_profesional.py, CotizacionProfesional, PreciosMateriales |
-| `wf_d5965d36-c4e` paridad | La guiada genera con el mismo cuerpo/motor que la clásica (faltaba referenceBlueprint, productos, creatividad) | VistaGuiada (llamada a /api/generate), constructor compartido |
-| `wf_ab26d084-638` lector + banco | Arreglar la lectura de fotos; banco de calidad con las 10 fotos de ejemplo (clásica vs guiada, juez; listón > 50 % bien) | /api/references/analyze, adaptador, scripts/eval |
-| `wf_965af056-88e` auditoría | 31 decoraciones contra su foto: productos Sempertex reales, remates > 12" | decoraciones.json, data/biblioteca-real |
-| ritmo | comparador (84), probador (84), verificador (84), usabilidad (85): solo informan | scratchpad/ritmo/*.md |
+| `wf_de9b969f-a93` encargo grande | C, B2 (luego verificador + corrector) | C «Agregar al plan»; B2 tarjeta de idea amplia con productos Sempertex y detalles-ideas.json |
+| `wf_ab26d084-638` | lector (luego banco) | arreglar la lectura de fotos; banco de calidad con las 10 fotos de ejemplo (clásica vs guiada, listón > 50 %) |
+| `wf_082f0093-f2d` | 2 auditores (luego integrador) | 31 decoraciones contra su foto: productos Sempertex reales, remates > 12" |
+| `wf_6cee3065-f7f` | probador 88 | ritmo: probar la guiada (solo informa) |
 
-**TOPE DE CONCURRENCIA: máximo 6 agentes corriendo a la vez** (no limita cuántos se lanzan: lo demás se encola) (pedido del dueño ~22:45, RAM a ~1 GB disponible). Se detuvieron los de solo lectura: ritmo
-(comparador/probador/verificador/usabilidad 84-85) y la auditoría de la biblioteca (sus borradores quedan en
-`scratchpad/auditoria-biblioteca/aud2-r*.txt`). Siguen 7 que editan código (A, E, D, B2, granel, paridad, lector); no se lanza nada
-nuevo hasta bajar de 6. B terminó (gráfica del clásico en cada pieza + «Modificar esta pieza» + tabla de «Ver detalle»).
-**En cola (por prioridad, respetando el tope):** 1) `scratchpad/wf-editor.js`; 2) auditoría de la biblioteca (relanzar
-`wf-auditoria-biblioteca.js`, que puede leer los borradores); 3) agentes de ritmo cuando haya hueco. Antes en cola: `scratchpad/wf-editor.js` (globos libres además del %, chips dentro del editor, reemplazar/añadir colores del catálogo,
-inputs de negocio bonitos) cuando terminen A/B y granel.
+**Cola (por prioridad):**
+1. Arreglo de imagen: «Cambiar algo»/«Hazla más sencilla» rehacen el plan SIN la foto (pierde escenografía y forma → salió el arco con
+   cintas); en el prompt se cuelan códigos hex y el orden de colores no sigue la proporción (azul marino de más).
+2. `scratchpad/wf-editor.js`: globos libres además del %, chips dentro del editor, reemplazar/añadir colores del catálogo, inputs de
+   negocio bonitos, ayudas (tooltips 8-12) + verificador + corrector (tras C/B2, que tocan VistaGuiada/TarjetaEleccion).
+3. Ritmo atrasado: usabilidad (85, 90), verificador (84), comparador (84, 90).
 
-**Plan siguiente:** subir a main cada frente verificado (commits selectivos + tsc en e3-verif); convertir los hallazgos de los agentes de
-ritmo en encargos; repetir el banco de calidad tras paridad + lector + A/E para comprobar consistencia (> 50 % bien); luego decidir con
-el dueño el despliegue del VPS (lector y granel pueden exigirlo).
+**Plan siguiente:** subir a main cada frente al terminar (commit selectivo + tsc en e3-verif + pruebas); repetir el banco de calidad
+tras lector + arreglo de imagen para confirmar > 50 % bien de forma consistente; preparar el despliegue del VPS y pedir permiso.
 <!-- ESTADO-VIVO:FIN -->
 
 ## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
