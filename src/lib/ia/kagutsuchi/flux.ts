@@ -50,6 +50,8 @@ export type ImagenGuiaFlux = Imagen & {
   role: RolGuiaFlux;
   /** Solo la guía de escena: si dibuja algo que no es globo (aro, poste, cintas). Decide qué nota la acompaña. */
   conEstructura?: boolean;
+  /** Solo la guía de escena: cuántas piezas de globo dibuja el mapa (las colocadas). La nota dice ese número. */
+  piezas?: number;
 };
 export type ImagenEditFlux = ImageInput | ImagenGuiaFlux;
 
@@ -452,14 +454,35 @@ export const NOTA_GUIA_ESCENA = "The first input image (@image1) is a flat layou
  */
 export const NOTA_GUIA_ESCENA_SIN_ESTRUCTURA = "The first input image (@image1) is a flat layout map of this balloon decoration, not a photo: keep exactly the shape, position, size and colors of every balloon piece in it; thin darker rims only mark where each balloon ends; pieces drawn apart stay apart, with open space between them and no frame, pole or arch joining them. Turn every disc into a real latex balloon with real light, shadows and depth. The map's plain background and floor strip are only placeholders: replace them with the complete event setting described above, filling the whole frame around the balloons. Never reproduce the flat map, circles drawn as a diagram, outlines, its background color or any marks.";
 
-/** La nota que corresponde a la guía: con aro, poste o cintas dibujados, la que los nombra; sin ellos, la otra. */
-export function notaGuiaEscena(conEstructura: boolean | undefined): string {
-  return conEstructura === false ? NOTA_GUIA_ESCENA_SIN_ESTRUCTURA : NOTA_GUIA_ESCENA;
+const NUMEROS_GUIA = ["", "one", "two", "three", "four", "five", "six"] as const;
+
+/**
+ * Cuántas piezas muestra el mapa, dicho en positivo (FLUX no obedece negativos). 2026-10-07, guía sin foto, semiarco
+ * + 2 columnas de fútbol: FLUX añadió una cuarta pieza (otra columna detrás de la mesa) con el caption diciendo
+ * «the only balloons are the three pieces described»; la nota de la guía no decía que el mapa las mostraba TODAS.
+ * Solo de 1 a 6 piezas; si no, vacía y la nota va como siempre.
+ */
+export function fraseConteoGuiaEscena(piezas: number | undefined): string {
+  if (!piezas || !Number.isInteger(piezas) || piezas < 1 || piezas >= NUMEROS_GUIA.length) return "";
+  return `The map shows every balloon piece in the scene: exactly ${NUMEROS_GUIA[piezas]} piece${piezas === 1 ? "" : "s"}, nothing else made of balloons. `;
 }
+
+/**
+ * La nota que corresponde a la guía: con aro, poste o cintas dibujados, la que los nombra; sin ellos, la otra. Con
+ * `piezas`, justo después de «not a photo» dice que el mapa muestra todas las piezas y cuántas son.
+ */
+export function notaGuiaEscena(conEstructura: boolean | undefined, piezas?: number): string {
+  const nota = conEstructura === false ? NOTA_GUIA_ESCENA_SIN_ESTRUCTURA : NOTA_GUIA_ESCENA;
+  const conteo = fraseConteoGuiaEscena(piezas);
+  return conteo ? nota.replace("not a photo: keep", `not a photo. ${conteo}Keep`) : nota;
+}
+
+/** Lo más largo que la frase de cuántas piezas añade a la nota (de 1 a 6 piezas). */
+const RESERVA_CONTEO_GUIA = Math.max(...NUMEROS_GUIA.map((_, piezas) => fraseConteoGuiaEscena(piezas).length));
 
 /** Caracteres que la nota de la guía de escena ocupa en el prompt: se descuentan del presupuesto del caption. */
 export function reservaNotaGuiaEscena(): number {
-  return Math.max(NOTA_GUIA_ESCENA.length, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA.length) + 2;
+  return Math.max(NOTA_GUIA_ESCENA.length, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA.length) + RESERVA_CONTEO_GUIA + 2;
 }
 
 /**
@@ -473,7 +496,7 @@ function promptConGuiaEscena(prompt: string, references: readonly ImagenEditFlux
   if (references.length !== 1 || references[0]!.role !== "scene_guide") {
     throw new Error("FLUX_GUIA_INVALIDA: la guía de escena viaja sola, como única imagen de /edit.");
   }
-  return `${prompt.trim()}\n\n${notaGuiaEscena(references[0]!.conEstructura)}`;
+  return `${prompt.trim()}\n\n${notaGuiaEscena(references[0]!.conEstructura, references[0]!.piezas)}`;
 }
 
 /** Bounded to the range the creativity levels use; anything else keeps the historical 3.5. */

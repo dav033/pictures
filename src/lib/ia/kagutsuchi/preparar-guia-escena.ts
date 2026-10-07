@@ -208,6 +208,8 @@ export async function prepararGuiaEscena(entrada: {
       id: "SCENE_GUIDE", role: "scene_guide", base64: png.toString("base64"), mime: "image/png",
       // La nota que acompaña a la guía nombra el aro y su poste solo si la guía los dibuja (`notaGuiaEscena`).
       conEstructura: discos.piezas.some((pieza) => Boolean(pieza.trazos?.length || pieza.rellenos?.length)),
+      // Cuántas piezas dibuja el mapa (cada instancia colocada): la nota dice que son todas las de la escena.
+      piezas: colocadas.length,
     },
     sha256: createHash("sha256").update(png).digest("hex"),
     bytes: png.byteLength,

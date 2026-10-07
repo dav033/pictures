@@ -440,7 +440,7 @@ async function testCaminoDeGeneracion(): Promise<void> {
     assert.ok(!enviado.includes(FOTO_REFERENCIA), "ningún byte de la foto de referencia sale hacia fal");
     assert.ok(!enviado.includes(Buffer.from("FOTO-DE-PRODUCTO").toString("base64")));
     // El caption primero y la nota después; la nota es la que corresponde a lo que la guía dibuja.
-    const nota = notaGuiaEscena(guia.imagenes![0]!.conEstructura);
+    const nota = notaGuiaEscena(guia.imagenes![0]!.conEstructura, guia.imagenes![0]!.piezas);
     assert.ok(cuerpo.prompt.endsWith(`\n\n${nota}`), "la nota va al final");
     assert.ok(cuerpo.prompt.indexOf(guia.compilacion.prompt.replace(/^eventdecor_[a-z0-9]+_v\d+\s*,\s*/i, "").slice(0, 40)) < cuerpo.prompt.indexOf(nota), "el caption va antes de la nota");
     assert.equal(cuerpo.prompt.startsWith(nota), false);
@@ -452,7 +452,13 @@ async function testCaminoDeGeneracion(): Promise<void> {
   const final = buildFluxEditPrompt(guia.compilacion.prompt, guia.imagenes);
   assert.ok(final.length <= FLUX_PROMPT_MAX_LENGTH, `el prompt con la nota mide ${final.length}`);
   assert.deepEqual([...findFluxPromptLanguageLeaks(final), ...findFluxPromptProductLeaks(final)], []);
-  assert.ok(reservaNotaGuiaEscena() === Math.max(NOTA_GUIA_ESCENA.length, NOTA_GUIA_ESCENA_SIN_ESTRUCTURA.length) + 2);
+  assert.ok(reservaNotaGuiaEscena() >= Math.max(...[1, 2, 3, 4, 5, 6].flatMap((n) => [notaGuiaEscena(true, n).length, notaGuiaEscena(false, n).length])) + 2, "la reserva cubre la nota con su conteo");
+  // Ronda de fútbol (semiarco + 2 columnas, guía sin foto): FLUX dibujó una cuarta pieza. La nota dice, en positivo,
+  // que el mapa muestra todas las piezas de globo de la escena y cuántas son; sin número, la nota de siempre.
+  assert.match(notaGuiaEscena(false, 3), /not a photo\. The map shows every balloon piece in the scene: exactly three pieces, nothing else made of balloons\. Keep exactly the shape/);
+  assert.match(notaGuiaEscena(true, 1), /exactly one piece, nothing else/);
+  assert.equal(notaGuiaEscena(false, 7), NOTA_GUIA_ESCENA_SIN_ESTRUCTURA);
+  assert.equal(guia.imagenes![0]!.piezas, guia.resumen?.cajas?.length, "la nota cuenta las piezas que el mapa coloca");
   // CASE-005 de images-judge: sin aro, poste ni cintas dibujados, la nota no le sugiere a FLUX un aro con marco y
   // poste (unía dos piezas separadas en un arco), y dice que las piezas separadas siguen separadas.
   assert.match(notaGuiaEscena(true), /metal hoop frame and stand/);
@@ -460,7 +466,8 @@ async function testCaminoDeGeneracion(): Promise<void> {
   assert.match(notaGuiaEscena(false), /pieces drawn apart stay apart/);
   assert.equal(notaGuiaEscena(undefined), NOTA_GUIA_ESCENA, "sin dato, la nota de siempre");
   const sinEstructura = buildFluxEditPrompt("caption", [{ ...guia.imagenes![0]!, conEstructura: false }]);
-  assert.ok(sinEstructura.endsWith(NOTA_GUIA_ESCENA_SIN_ESTRUCTURA));
+  assert.ok(sinEstructura.endsWith(notaGuiaEscena(false, guia.imagenes![0]!.piezas)), "la nota sin estructura, con el número de piezas del mapa");
+  assert.ok(buildFluxEditPrompt("caption", [{ ...guia.imagenes![0]!, conEstructura: false, piezas: undefined }]).endsWith(NOTA_GUIA_ESCENA_SIN_ESTRUCTURA));
   assert.throws(() => buildFluxEditPrompt("caption", [...(guia.imagenes ?? []), referencia]), /FLUX_GUIA_INVALIDA/, "la guía de escena viaja sola");
   console.log("[PASS] el prompt con la nota cabe en el presupuesto, pasa el preflight y la guía no admite compañía");
 
