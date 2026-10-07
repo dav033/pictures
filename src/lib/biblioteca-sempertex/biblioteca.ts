@@ -36,10 +36,17 @@ const sinonimosEvento: string[][] = [
   ["xv", "quince", "quinceanos", "quinceanera", "15 anos"],
   ["bautizo", "bautismo", "comunion", "primera comunion"],
 ];
+// Las temáticas sin decoración propia (princesas, videojuegos…) se resuelven por sus colores típicos hacia las del catálogo.
 const sinonimosColor: string[][] = [
-  ["rosa", "rosado", "rosada", "fucsia"], ["dorado", "oro"], ["azul", "celeste", "frozen", "hielo", "nieve", "invierno"],
-  ["verde", "selva", "tropical"], ["negro", "negra"], ["blanco", "blanca", "perla", "frozen", "nieve"],
-  ["lila", "morado", "violeta", "purpura"], ["arcoiris", "multicolor", "colores vivos", "vivos", "neon", "carnaval", "festivo", "festivos", "alegre", "alegres", "colorido", "colorida", "coloridos"],
+  ["rosa", "rosado", "rosada", "fucsia", "princesa", "princesas", "hada", "hadas", "unicornio", "unicornios", "mariposa", "mariposas"],
+  ["dorado", "oro", "princesa", "princesas", "corona", "reina", "realeza"],
+  ["azul", "celeste", "frozen", "hielo", "nieve", "invierno", "espacio", "galaxia", "estrella", "estrellas", "planeta", "planetas", "mar", "marinero", "sirena", "sirenas"],
+  ["plateado", "plata", "espacio", "galaxia", "estrella", "estrellas", "robot", "robots"],
+  ["verde", "selva", "tropical", "dinosaurio", "dinosaurios", "safari", "jungla"],
+  ["negro", "negra", "halloween", "brujas", "terror"], ["naranja", "halloween", "calabaza"],
+  ["blanco", "blanca", "perla", "frozen", "nieve"],
+  ["lila", "morado", "violeta", "purpura", "unicornio", "unicornios", "hada", "hadas", "sirena", "sirenas"],
+  ["arcoiris", "multicolor", "colores vivos", "vivos", "neon", "carnaval", "festivo", "festivos", "alegre", "alegres", "colorido", "colorida", "coloridos", "videojuego", "videojuegos", "gamer", "superheroe", "superheroes", "heroe", "heroes", "circo", "payaso", "fiesta infantil"],
 ];
 
 function prioridadOrigen(decoracion: DecoracionSempertex): number {
@@ -168,10 +175,21 @@ function ocultarEjemplos(): boolean {
   return resolveRuntimeCommercialEnvironment() === "production" && process.env.BIBLIOTECA_OCULTAR_EJEMPLOS === "true";
 }
 
+// Dueño (2026-10-06): «sigue mostrando las decoraciones antiguas de ejemplo… solo saldrán categorías soportadas». Desde que
+// existe la biblioteca real (20 decoraciones), las de ejemplo no se muestran en ningún entorno.
 export function bibliotecaVisible(): DecoracionSempertex[] {
-  return ocultarEjemplos()
-    ? decoracionesSempertex.filter((decoracion) => decoracion.origen !== "ejemplo")
-    : decoracionesSempertex;
+  return decoracionesSempertex.filter((decoracion) => decoracion.origen !== "ejemplo");
+}
+
+/** Temáticas con al menos una decoración visible (opcionalmente de un evento): las únicas que se ofrecen al cliente. */
+export function tematicasDisponibles(evento?: string): string[] {
+  const clave = evento ? normalizarBusqueda(evento) : "";
+  const grupoEvento = clave ? sinonimosEvento.find((grupo) => grupo.some((sinonimo) => clave.includes(sinonimo))) : undefined;
+  const delEvento = (decoracion: DecoracionSempertex) => !clave
+    || decoracion.eventos.some((e) => { const n = normalizarBusqueda(e); return n.includes(clave) || clave.includes(n) || Boolean(grupoEvento?.some((s) => n.includes(s))); });
+  const visibles = bibliotecaVisible();
+  const elegidas = visibles.filter(delEvento);
+  return [...new Set((elegidas.length ? elegidas : visibles).map((decoracion) => decoracion.tematica))];
 }
 
 export function proveedoresVisibles(): ProveedorSempertex[] {

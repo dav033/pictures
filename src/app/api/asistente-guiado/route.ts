@@ -47,6 +47,17 @@ const herramientaAccionPlan: Herramienta = {
 /** Herramientas que solo tienen sentido con una idea del catálogo elegida en la interfaz. */
 const HERRAMIENTAS_DE_DECORACION: ReadonlySet<string> = new Set(["costear_decoracion", "preguntar_uso", "pasos_decoracion", "ofrecer_opciones"]);
 
+/** «Elegante negro y dorado (Cumpleaños, Graduación)» por cada temática con al menos una decoración visible. */
+function textoTematicasCatalogo(): string {
+  const eventosPorTematica = new Map<string, Set<string>>();
+  for (const decoracion of bibliotecaVisible()) {
+    const eventos = eventosPorTematica.get(decoracion.tematica) ?? new Set<string>();
+    decoracion.eventos.forEach((evento) => eventos.add(evento));
+    eventosPorTematica.set(decoracion.tematica, eventos);
+  }
+  return [...eventosPorTematica].map(([tematica, eventos]) => `${tematica} (${[...eventos].join(", ")})`).join(" | ");
+}
+
 const ArgsSchema = z.object({ evento: z.string().optional(), edad: z.number().int().optional(), tematica: z.string().optional(), decoracionId: z.string().optional(), tipo: z.enum(["decorador_happia", "mbp", "distribuidor", "ecommerce"]).optional(), ciudad: z.string().optional(), uso: z.enum(["negocio", "personal"]).optional() }).strict();
 const BriefCompletoSchema = z.object({ evento: z.string().min(1).max(120), edad: z.number().int().min(0).max(120), tematica: z.string().min(1).max(160) }).strict();
 type BriefCompleto = z.infer<typeof BriefCompletoSchema>;
@@ -241,6 +252,7 @@ export async function POST(request: Request) {
       elegida ? `Decoración elegida por el cliente en la interfaz: «${elegida.titulo}».` : "El cliente todavía no eligió una idea del catálogo.",
       usoConfirmado ? `Uso elegido: ${usoConfirmado === "negocio" ? "para su negocio" : "uso personal"}.` : "El cliente todavía no eligió si es para negocio o uso personal.",
       planActual ? `Plan vigente del cliente: ${textoPlanActual(planActual)} Si pide un cambio, llama proponer_composicion conservando todo lo que no pidió cambiar.` : "El cliente todavía no tiene un plan a medida.",
+      `Temáticas del catálogo (las ÚNICAS que puedes ofrecer en «Opciones:» al preguntar temática, estilo o colores; elige 3-6 que encajen con el evento): ${textoTematicasCatalogo()}.`,
     ].join(" ");
     let herramientasTurno: Herramienta[] = herramientas.filter((herramienta) => decoracionConfirmada || !HERRAMIENTAS_DE_DECORACION.has(herramienta.nombre));
     if (planActual) herramientasTurno = [...herramientasTurno, herramientaAccionPlan];
