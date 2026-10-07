@@ -212,3 +212,16 @@ export function iniciales(nombre: string): string {
 export function claveTexto(texto: string): string {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase("es").replace(/\s+/g, " ").trim();
 }
+
+/**
+ * La descripción de un ajuste («con Silk Dorado», «sin la columna derecha») dicha como frase completa para «Último
+ * ajuste: …» y «Listo: …»: «añadí Silk Dorado», «quité la columna derecha» (probador 124, hallazgo 10). Las demás
+ * («más rosado en el semiarco», «Reflex Plata en lugar de dorado») ya se leen bien y quedan igual. Solo presentación: lo
+ * guardado en el plan (y lo que lee el chat) no cambia.
+ */
+export function fraseAjuste(descripcion: string): string {
+  const limpia = descripcion.trim();
+  if (/^con\s/i.test(limpia)) return `añadí ${limpia.slice(4).trimStart()}`;
+  if (/^sin\s/i.test(limpia)) return `quité ${limpia.slice(4).trimStart()}`;
+  return limpia;
+}

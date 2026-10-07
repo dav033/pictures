@@ -62,12 +62,14 @@ export type Granel = {
  * entrada de siempre: así un Python anterior (que prohíbe campos de más) sigue
  * respondiendo y el conmutador no aparece.
  */
-export function useGranel({ clave, cotizacion, materiales, borrador, leido, datos }: {
+export function useGranel({ clave, cotizacion, materiales, borrador, leido, enCurso, datos }: {
   clave: string;
   cotizacion: Pick<Cotizacion, "lineas">;
   materiales: readonly LineaMaterialProfesional[];
   borrador: BorradorProfesional;
   leido: EntradaLeida;
+  /** Filas recién agregadas que todavía no se dejaron (`leerBorrador`): lo que les falta no frena el precio. */
+  enCurso?: ReadonlySet<string>;
   /** El último resultado de Python que se ve (o `null`). */
   datos: Pick<CotizacionProfesionalResultado, "modos_materiales"> | null;
 }): Granel {
@@ -85,10 +87,10 @@ export function useGranel({ clave, cotizacion, materiales, borrador, leido, dato
       return entrada ? { entrada, enviadas: leido.enviadas } : null;
     }
     // A granel los precios por paquete ni se ven: uno a medio escribir no frena el cálculo.
-    const base = leerBorrador(preciosLegibles(borrador, materiales), materiales);
+    const base = leerBorrador(preciosLegibles(borrador, materiales), materiales, enCurso ? { enCurso } : {});
     const entrada = base.entrada ? entradaConGranel(base.entrada, leidoGranel, "granel") : null;
     return entrada ? { entrada, enviadas: base.enviadas } : null;
-  }, [disponible, leidoGranel, leido, modo, borrador, materiales]);
+  }, [disponible, leidoGranel, leido, modo, borrador, materiales, enCurso]);
 
   useEffect(() => {
     guardar(clave, granel);

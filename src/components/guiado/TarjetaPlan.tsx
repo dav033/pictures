@@ -16,10 +16,11 @@ import { ModificarPieza, piezaModificable } from "./ModificarPieza";
 import { SelectorUsoCosteo, type OrigenUsoCosteo } from "./SelectorUsoCosteo";
 import { leyendaDePieza, motorDePieza } from "./motor-pieza";
 import { PanelPlegable } from "./Plegable";
-import { hexColor, piezasVistaDePlan } from "./piezas-vista";
+import { hexColor, piezasVistaDePlan, titulosDelPlan } from "./piezas-vista";
 import { BotonVerDetalle, DetalleGlobos } from "./TablaGlobosPieza";
 import { decoracionDePlan, type ContextoCompra } from "./plan-compra";
 import { colorSempertex } from "./color-sempertex";
+import { fraseAjuste } from "./formato";
 import { DUR, EASE_REBOTE, EASE_SALIDA, RESORTE, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 import { AjustarPlan } from "./ajuste/AjustarPlan";
 import { useAjustePlanGuiado, type AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
@@ -93,6 +94,8 @@ export function TarjetaPlan(props: Props) {
   const piezas = plan.plan.estructuras;
   // Las piezas con sus globos por color y tamaño, tal como los resolvió Python (filas y «Ver detalle»).
   const piezasVista = useMemo(() => piezasVistaDePlan(plan), [plan]);
+  // El globo del catálogo de cada variante: la cotización lo nombra igual que estas filas y «Ver detalle».
+  const titulos = useMemo(() => titulosDelPlan(plan), [plan]);
   // Los tonos Sempertex de cada pieza (uno por material): con ellos pinta el motor, como en la clásica.
   const tonosPorPieza = useMemo(() => new Map(piezas.map((pieza) => [pieza.estructura_id, leyendaDePieza(plan, pieza.estructura_id).map((color) => color.hex)])), [plan, piezas]);
   // El «?» del dibujo va en la primera pieza que el motor dibuja (un bouquet o una figura solo llevan su icono).
@@ -195,7 +198,7 @@ export function TarjetaPlan(props: Props) {
             className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-acento-suave px-2.5 py-1 text-xs text-acento"
           >
             <SlidersHorizontal className="size-3.5 shrink-0" aria-hidden />
-            <span>Último ajuste: {ultimoAjuste}</span>
+            <span>Último ajuste: {fraseAjuste(ultimoAjuste)}</span>
           </motion.p>
         )}
       </motion.header>
@@ -370,7 +373,7 @@ export function TarjetaPlan(props: Props) {
               {usoMostrado && (
                 <motion.div key={usoMostrado} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: EASE_SALIDA }} className="overflow-hidden">
                   {cotizacion
-                    ? <CostosMateriales cotizacion={cotizacion} uso={usoMostrado} clave={`plan-${plan.plan_hash}`} onProveedores={onProveedores} mensajePendiente="Todavía no tengo el precio de estos materiales." />
+                    ? <CostosMateriales cotizacion={cotizacion} titulos={titulos} uso={usoMostrado} clave={`plan-${plan.plan_hash}`} onProveedores={onProveedores} mensajePendiente="Todavía no tengo el precio de estos materiales." />
                     : <SinPrecio etiqueta="Buscar un proveedor cerca" onClick={onProveedores} />}
                 </motion.div>
               )}

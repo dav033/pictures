@@ -9,6 +9,7 @@ import { ArmadoColumnaV1Schema, type ArmadoColumnaV1 } from "@/lib/plan/armado-c
 import { ArmadoGuirnaldaOrganicaV1Schema, type ArmadoGuirnaldaOrganicaV1 } from "@/lib/plan/armado-guirnalda-organica";
 import { PARTICIPACION_MINIMA_REPARTO, type EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import { ESTRUCTURAS_OFICIALES_IDS, OFICIALES_SIN_MOTOR, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { indiceMaterialPropio, lineasPorMaterial } from "@/lib/plan/material-de-linea";
 import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import type { CandidatoDelServidor, ColorCatalogo } from "@/components/plan/ajuste/ajuste-propuesta";
@@ -169,11 +170,12 @@ function normal(texto: string | null | undefined): string {
   return (texto ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLocaleLowerCase("es");
 }
 
-/** La línea salió de este material: misma variante, o mismo producto y color (`indice_material_para_linea` de Python). */
-function deMaterial(material: MaterialPlan, linea: Linea): boolean {
-  if (material.product_id !== linea.product_id) return false;
-  if (material.variant_id && material.variant_id === linea.variant_id) return true;
-  return !material.color || normal(material.color) === normal(linea.color);
+/**
+ * Las líneas de cada material de la pieza, contando las que compra una sustitución (`variant_overrides`): el lila de
+ * la idea «rosa, lila y dorado» se compra como otro producto y antes contaba 0 globos (`material-de-linea.ts`).
+ */
+function lineasDeCadaMaterial(estructura: EstructuraPlan, lineas: readonly Linea[]): Linea[][] {
+  return lineasPorMaterial(estructura, lineas);
 }
 
 /** Fracciones a porcentajes enteros que suman 100 (mayor resto). Solo para mostrar. */
@@ -262,14 +264,14 @@ export function piezasAjustables(plan: PlanGuiado): PiezaAjustable[] {
   return estructuras.map((estructura) => {
     const motor = motorDe(estructura);
     const { modo, motivo } = modoColoresDe(estructura, motor);
-    const lineas = lineasDe(plan, estructura.estructura_id);
-    const globos = estructura.materiales.map((material) => lineas.filter((linea) => deMaterial(material, linea)).reduce((suma, linea) => suma + linea.unidades, 0));
+    const porMaterial = lineasDeCadaMaterial(estructura, lineasDe(plan, estructura.estructura_id));
+    const globos = porMaterial.map((propias) => propias.reduce((suma, linea) => suma + linea.unidades, 0));
     const porcentajes = aPorcentajes(globos);
     const total = globos.reduce((suma, valor) => suma + valor, 0);
     const conCantidad = (modo === "paleta" || modo === "reparto") && estructura.materiales.length > 1 && total > 0;
     const colores = estructura.materiales.map((material, indice): ColorPieza => {
       const color = material.color ?? "otro color";
-      const propias = lineas.filter((linea) => deMaterial(material, linea));
+      const propias = porMaterial[indice] ?? [];
       // Con el producto que se compra (su título), el mismo nombre y tono que el chip de la pieza («Plata cromado»).
       const titulo = propias.map((linea) => linea.titulo).find((valor): valor is string => typeof valor === "string") ?? null;
       const comoSeCompra = { titulo, acabado: material.acabado ?? null };
@@ -325,8 +327,7 @@ function rangoCantidad(modo: ModoColores, total: number, colores: number): { min
 
 /** Globos por material de la pieza, de las líneas que resolvió Python. */
 function globosPorMaterial(plan: PlanGuiado, estructura: EstructuraPlan): number[] {
-  const lineas = lineasDe(plan, estructura.estructura_id);
-  return estructura.materiales.map((material) => lineas.filter((linea) => deMaterial(material, linea)).reduce((suma, linea) => suma + linea.unidades, 0));
+  return lineasDeCadaMaterial(estructura, lineasDe(plan, estructura.estructura_id)).map((propias) => propias.reduce((suma, linea) => suma + linea.unidades, 0));
 }
 
 /**
@@ -367,7 +368,18 @@ export function edicionCantidad(plan: PlanGuiado, estructuraId: string, indice: 
   const partes = partesParaCantidad(globos, indice, objetivo);
   if (!partes) return null;
   if (modo === "reparto") {
-    const participaciones = partes.map((parte) => Math.max(PARTE_MINIMA, Math.round(parte * 10_000) / 10_000));
+    // Un color sin globos en las líneas de Python es una línea que no se sabe leer, no un color vacío: repartir sobre
+    // ese 0 lo dejaría en el piso sin que nadie lo pidiera. No se pide nada y `motivoSinCantidad` lo dice.
+    if (globos.some((valor) => valor <= 0)) return null;
+    // Un color que quedaría por debajo del piso del reparto se queda en el piso y el color pedido toma lo que sobra
+    // (como «+»/«−», `partesConObjetivo`): así el máximo que ofrece `rangoCantidad` se puede pedir de verdad (antes,
+    // 35 rosados de 39 dejaban el dorado en 4 % y la edición salía null).
+    const piso = PARTE_MINIMA + 0.001;
+    const acotadas = partes.map((parte, posicion) => (posicion === indice ? parte : Math.max(piso, parte)));
+    const resto = 1 - acotadas.reduce((suma, parte, posicion) => (posicion === indice ? suma : suma + parte), 0);
+    if (resto < piso) return null;
+    acotadas[indice] = Math.min(acotadas[indice]!, resto);
+    const participaciones = acotadas.map((parte) => Math.round(parte * 10_000) / 10_000);
     const suma = participaciones.reduce((acumulado, parte) => acumulado + parte, 0);
     const normalizadas = participaciones.map((parte) => Math.round((parte / suma) * 10_000) / 10_000);
     return normalizadas.every((parte) => parte >= PARTE_MINIMA && parte < 1) ? { accion: "repartir", estructura_id: estructuraId, participaciones: normalizadas } : null;
@@ -390,6 +402,39 @@ export function edicionCantidad(plan: PlanGuiado, estructuraId: string, indice: 
     case "columna_organica": return edicionDeArmado(estructuraId, { tipo: motor.tipo, armado: { ...motor.armado, colores } });
     case "guirnalda_organica": return edicionDeArmado(estructuraId, { tipo: motor.tipo, armado: { ...motor.armado, colores } });
   }
+}
+
+/**
+ * Por qué «Que lleve N globos de este color» no pide nada, con la causa real y en palabras del cliente. Antes siempre
+ * se decía «deja al menos un globo de cada color», también cuando la causa era otra (verificador 127: en la idea
+ * «rosa, lila y dorado» el lila contaba 0 globos y el cliente pedía 12 rosados, dentro del rango). Sigue los mismos
+ * caminos que `edicionCantidad`; solo se llama cuando esa devolvió null.
+ */
+export function motivoSinCantidad(plan: PlanGuiado, estructuraId: string, indice: number, objetivo: number): string {
+  const estructura = plan.plan.estructuras.find((item) => item.estructura_id === estructuraId);
+  const material = estructura?.materiales[indice];
+  if (!estructura || !material) return "No encontré ese color en la pieza. Tu plan sigue como estaba.";
+  const { modo, motivo } = modoColoresDe(estructura, motorDe(estructura));
+  if (modo !== "paleta" && modo !== "reparto") return `${motivo ?? "En esta pieza cada color lleva su parte."} Aquí no se escribe la cifra: usa «+» o «−», «Cambiar» o «Quitar».`;
+  const globos = globosPorMaterial(plan, estructura);
+  const total = globos.reduce((suma, valor) => suma + valor, 0);
+  const color = material.color ?? "ese color";
+  const sinCifra = estructura.materiales.findIndex((_, posicion) => (globos[posicion] ?? 0) <= 0);
+  if (total <= 0 || globos.length < 2 || sinCifra >= 0) {
+    const cual = sinCifra >= 0 ? colorEnPlural(colorCliente(estructura.materiales[sinCifra]?.color ?? "ese color")) : "cada color";
+    return `No pude leer cuántos globos ${sinCifra >= 0 ? cual : `de ${cual}`} lleva esta pieza, así que no puedo repartir esa cifra. Tu plan sigue como estaba; prueba con «+» o «−».`;
+  }
+  const deseada = Math.round(objetivo);
+  if (deseada === globos[indice]) return `Esta pieza ya lleva ${globosDeColorEnTexto(deseada, color)}.`;
+  const rango = rangoCantidad(modo, total, globos.length);
+  if (deseada < 1) return `Para que no lleve ${colorEnPlural(colorCliente(color))}, quita el color con «Quitar».`;
+  if (deseada < rango.minimo) return `Esta pieza lleva ${globosEnTexto(total)}: cada color necesita al menos ${rango.minimo}. Para ninguno, quita el color con «Quitar».`;
+  if (deseada > rango.maximo) {
+    const otros = globos.length - 1;
+    return `Esta pieza lleva ${globosEnTexto(total)}: este color puede llevar hasta ${rango.maximo}, porque ${otros === 1 ? "el otro color necesita" : `cada uno de los otros ${otros} colores necesita`} al menos ${rango.minimo}. Para más globos, agranda la pieza.`;
+  }
+  if (modo === "reparto") return `Con ${deseada} otro color de la pieza se quedaría casi sin globos (menos del 5 %). Prueba con una cifra más cercana a ${globos[indice] ?? 0}.`;
+  return `Esa cifra cambia muy poco el reparto de la pieza. Prueba con una diferencia algo mayor que ${Math.abs(deseada - (globos[indice] ?? 0))}.`;
 }
 
 /** Cuántos globos de un color lleva una pieza en este plan (los de Python); el color se busca por nombre. */
@@ -679,8 +724,9 @@ export function edicionQuitarColor(plan: PlanGuiado, estructuraId: string, indic
   const estructura = plan.plan.estructuras.find((item) => item.estructura_id === estructuraId);
   const material = estructura?.materiales[indice];
   if (!estructura || !material || estructura.materiales.length < 2) return null;
-  // Python quita el material de la línea que se le nombra: tiene que ser una línea de ESTE color.
-  const linea = lineasDe(plan, estructuraId).find((item) => deMaterial(material, item) && estructura.materiales.findIndex((otro) => deMaterial(otro, item)) === indice);
+  // Python quita el material de la línea que se le nombra: tiene que ser una línea PROPIA de este color. Una línea
+  // que compra una sustitución (`variant_overrides`) Python no la encuentra (`material_no_editable`), así que no vale.
+  const linea = lineasDe(plan, estructuraId).find((item) => indiceMaterialPropio(estructura.materiales, item) === indice);
   return linea ? { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id } : null;
 }
 

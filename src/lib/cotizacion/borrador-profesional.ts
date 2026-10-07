@@ -135,7 +135,18 @@ export const TEXTO_ESTADO_PRECIO: Record<EstadoPrecio, string> = {
 
 const MENSAJE_PRECIO_VACIO = "Escribe el precio por paquete o vuelve al de catálogo.";
 
-export function leerBorrador(borrador: BorradorProfesional, materiales: readonly LineaMaterialProfesional[]): EntradaLeida {
+/**
+ * Una fila recién agregada que el decorador todavía no ha dejado (`enCurso`) y a la que solo le FALTAN datos (ninguno mal
+ * escrito) no frena el precio: no se envía y el precio sigue vigente. «+ Montaje» sin valor ponía el precio en gris con
+ * «Este precio es el anterior y no se actualizó: revisa lo que está en rojo» sin nada en rojo (probador 124, hallazgo
+ * 18). Al salir de la fila deja de estar en curso y, si quedó a medias, cuenta como siempre. Sus avisos de qué falta se
+ * conservan (`erroresFila`) para que la lista diga «Completa los datos para sumarlo».
+ */
+function soloLeFaltanDatos(fila: FilaCosto, falta: { descripcion: boolean; costo: boolean; cantidad: boolean }): boolean {
+  return (!falta.descripcion || !fila.descripcion.trim()) && (!falta.costo || !fila.costo.trim()) && (!falta.cantidad || !fila.cantidad.trim());
+}
+
+export function leerBorrador(borrador: BorradorProfesional, materiales: readonly LineaMaterialProfesional[], opciones: { enCurso?: ReadonlySet<string> } = {}): EntradaLeida {
   const invalidas = new Set<string>();
   const erroresFila: Record<string, ErroresFila> = {};
   const preciosInvalidos = new Set<string>();
@@ -153,7 +164,8 @@ export function leerBorrador(borrador: BorradorProfesional, materiales: readonly
       const costo = leerPesos(fila.costo);
       const cantidad = leerCantidad(fila.cantidad);
       if (!descripcion || costo === null || cantidad === null) {
-        invalidas.add(fila.id);
+        const pendiente = opciones.enCurso?.has(fila.id) === true && soloLeFaltanDatos(fila, { descripcion: !descripcion, costo: costo === null, cantidad: cantidad === null });
+        if (!pendiente) invalidas.add(fila.id);
         const errores: ErroresFila = {};
         if (!descripcion) errores.descripcion = "Escribe qué es este gasto.";
         if (costo === null) errores.costo = errorDePesos(fila.costo, "Escribe cuánto cuesta cada unidad, por ejemplo 12.500.") ?? undefined;

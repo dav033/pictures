@@ -1,4 +1,5 @@
 import type { ReferenciaGuiada } from "@/lib/ia/guiado/adaptar-analisis-referencia";
+import { partesDeColorPieza } from "@/lib/plan/colores-referencia";
 import { clasificarColores } from "@/lib/rag/taxonomy/v2";
 import { colorLeido, familiaSempertex, type AcabadoGlobo, type ColorLeido } from "./color-globo";
 import { colorSempertex } from "./color-sempertex";
@@ -17,8 +18,13 @@ type Elemento = Blueprint["elements"][number];
 const MAX_PIEZAS = 8;
 
 export type ColorPieza = ColorLeido & {
-  /** Parte de la pieza que ocupa este color según los píxeles medidos (0-1), si se midió. */
+  /** Parte de la pieza que ocupa este color (0-1), la misma que usa el plan (`partesDeColorPieza`), si se midió. */
   parte: number | null;
+  /**
+   * Lo que se MUESTRA: la parte en % entero, presentada para que los colores de la pieza sumen 100 (`porcentajesQueSuman`).
+   * La lectura guardada (`parte`) no cambia. null: sin cifra.
+   */
+  porcentaje: number | null;
   /** El globo Sempertex medido en la foto para este color («Reflex Plata», código 981), si la familia es fiable. */
   sempertex: { nombre: string; codigo: string } | null;
 };
@@ -34,6 +40,8 @@ export type TamanoPieza = {
   /** Pulgadas para dibujar el globo de muestra. */
   dibujo: number;
   proporcion: number;
+  /** La proporción en % entero, de modo que los tamaños de la pieza sumen 100. */
+  porcentaje: number;
 };
 
 export type PiezaLeida = {
@@ -52,6 +60,8 @@ export type PiezaLeida = {
   /** «≈ 45 globos a la vista», solo si la lectura contó. */
   globos: string | null;
   globosVisibles: number | null;
+  /** La cifra que dice `globos` (exacta, estimada o a la vista) y de qué clase es: con ella se suma el total. */
+  globosCifra: { valor: number; clase: "exacto" | "estimado" | "visibles" } | null;
   colores: ColorPieza[];
   tamanos: TamanoPieza[];
   /** Sin reparto por tamaño: lo que la lectura dijo en palabras («Sobre todo chicos, con algunos grandes»). */
@@ -70,6 +80,11 @@ export type LecturaFoto = {
   colores: ColorPieza[];
   /** Suma de los globos que se ven en las piezas contadas, o null si ninguna se contó. */
   globosVisibles: number | null;
+  /**
+   * El total para la cabecera, con la MISMA cifra que dice cada pieza (el estimado si lo hay): «≈ 160 globos en total»,
+   * «≈ 90 globos a la vista» o «160 globos». Antes sumaba los visibles (≈ 90) junto a piezas de ≈ 75 y ≈ 85.
+   */
+  globosTotal: string | null;
   /** Lo que no es de globos y no entra en el plan: «un fondo», «flores». */
   otros: string[];
 };
@@ -149,11 +164,19 @@ function nombreColor(texto: string | undefined): string | null {
   return colorLeido(texto)?.nombre ?? null;
 }
 
-/** Colores de una pieza: los que nombró la lectura, con su parte medida y su referencia Sempertex. */
+/**
+ * Colores de una pieza: los que nombró la lectura, con su parte y su referencia Sempertex.
+ *
+ * La parte es la MISMA que recibe el plan (`partesDeColorPieza`, la única fuente de proporción de la pieza en el turno
+ * de /api/chat): la medida en píxeles o, cuando esa medida pone delante un neutro que la lectura de la disposición no
+ * (un cromado o un perlado que refleja la luz y la cortina), las partes de la disposición. Probador 124, hallazgo 7: la
+ * foto 01 se mostraba «plata cromado 57 %» (píxeles) y el plan se armaba con rosado 40 / blanco 30 / plata 30 (la
+ * disposición), así que el cliente veía en la tarjeta un color dominante y en su plan otro.
+ */
 function coloresDe(elemento: Elemento): ColorPieza[] {
   const apariencia = elemento.appearance;
   const medidos = new Map<string, number>();
-  for (const medido of apariencia.measured_colors ?? []) {
+  for (const medido of partesDeColorPieza(apariencia).partes) {
     const clave = clasificarColores(medido.color);
     const paleta = clave.status === "known" ? clave.values[0] : undefined;
     if (paleta && !medidos.has(paleta)) medidos.set(paleta, medido.share);
@@ -165,7 +188,7 @@ function coloresDe(elemento: Elemento): ColorPieza[] {
     const color = colorLeido(texto);
     if (!color || vistos.has(color.nombre)) continue;
     vistos.add(color.nombre);
-    colores.push({ ...color, parte: color.clave ? medidos.get(color.clave) ?? null : null, sempertex: null });
+    colores.push({ ...color, parte: color.clave ? medidos.get(color.clave) ?? null : null, porcentaje: null, sempertex: null });
   }
   // Las referencias Sempertex medidas: se pegan al color de su misma paleta; si no hay ninguno, entran como color.
   for (const referencia of apariencia.referencias_medidas ?? []) {
@@ -189,17 +212,70 @@ function coloresDe(elemento: Elemento): ColorPieza[] {
     const adjetivo = familia && familia.cliente !== "liso" ? familia.cliente : leido.adjetivo;
     const nombre = catalogo.producto ? catalogo.nombre.toLocaleLowerCase("es") : [leido.color, adjetivo].filter(Boolean).join(" ");
     vistos.add(nombre);
-    colores.push({ ...leido, nombre, adjetivo, acabado, parte: referencia.parte, sempertex, ...(catalogo.producto ? { hex: catalogo.hex } : {}) });
+    colores.push({ ...leido, nombre, adjetivo, acabado, parte: referencia.parte, porcentaje: null, sempertex, ...(catalogo.producto ? { hex: catalogo.hex } : {}) });
   }
-  return colores.sort((a, b) => (b.parte ?? -1) - (a.parte ?? -1));
+  const ordenados = colores.sort((a, b) => (b.parte ?? -1) - (a.parte ?? -1));
+  const porcentajes = porcentajesQueSuman(ordenados.map((color) => color.parte));
+  return ordenados.map((color, indice) => ({ ...color, porcentaje: porcentajes[indice] ?? null }));
+}
+
+/**
+ * Porcentajes enteros para MOSTRAR las partes (0-1) de una pieza, que la lectura mide con bases distintas (píxeles por
+ * color y referencia Sempertex): una columna salía con 57 + 32 + 27 + 10 = 126 % y otra con 65 + 15 + 3 = 83 % más un
+ * «Transparente» sin cifra (probador 124, hallazgo 13). La lectura guardada no se toca; solo lo que se lee:
+ *  - lo medido suma más de 100, o todo está medido: se reparte en proporción hasta sumar 100;
+ *  - suma menos de 100 y queda UN color sin medir: los medidos quedan como están y ese color es el resto;
+ *  - con varios sin medir: los medidos se reparten hasta 100 y los demás quedan sin cifra (no se inventa un reparto).
+ * Redondeo por mayor resto, sin que ningún color medido baje de 1 %. Puro.
+ */
+export function porcentajesQueSuman(partes: ReadonlyArray<number | null>): Array<number | null> {
+  const salida: Array<number | null> = partes.map(() => null);
+  const indices = partes.flatMap((parte, indice) => (parte !== null && Number.isFinite(parte) && parte > 0 ? [indice] : []));
+  if (!indices.length) return salida;
+  const valor = (indice: number) => partes[indice] as number;
+  const suma = indices.reduce((total, indice) => total + valor(indice), 0);
+  const sinMedir = partes.length - indices.length;
+  if (suma < 1 && sinMedir === 1) {
+    const medidos = repartirEnteros(indices.map((indice) => valor(indice) * 100), Math.max(indices.length, Math.round(suma * 100)));
+    indices.forEach((indice, posicion) => { salida[indice] = medidos[posicion]!; });
+    const resto = 100 - medidos.reduce((total, parte) => total + parte, 0);
+    const faltante = partes.findIndex((_, indice) => !indices.includes(indice));
+    if (resto >= 1 && faltante >= 0) salida[faltante] = resto;
+    return salida;
+  }
+  const enteros = repartirEnteros(indices.map((indice) => (valor(indice) / suma) * 100), 100);
+  indices.forEach((indice, posicion) => { salida[indice] = enteros[posicion]!; });
+  return salida;
+}
+
+/** Enteros (cada uno ≥ 1) que suman `total`, lo más cerca posible de `exactos`: mayor resto. */
+function repartirEnteros(exactos: readonly number[], total: number): number[] {
+  const enteros = exactos.map((exacto) => Math.max(1, Math.floor(exacto)));
+  let falta = total - enteros.reduce((suma, entero) => suma + entero, 0);
+  const porResto = exactos.map((exacto, indice) => ({ indice, resto: exacto - Math.floor(exacto) })).sort((a, b) => b.resto - a.resto || exactos[b.indice]! - exactos[a.indice]!);
+  for (let vuelta = 0; falta > 0 && porResto.length; vuelta += 1) {
+    enteros[porResto[vuelta % porResto.length]!.indice]! += 1;
+    falta -= 1;
+  }
+  while (falta < 0) {
+    // Los mínimos de 1 % pasaron del total: se descuenta del mayor que pueda ceder.
+    const mayor = enteros.reduce((elegido, entero, indice) => (entero > 1 && entero > (enteros[elegido] ?? 0) ? indice : elegido), 0);
+    if ((enteros[mayor] ?? 0) <= 1) break;
+    enteros[mayor]! -= 1;
+    falta += 1;
+  }
+  return enteros;
 }
 
 function tamanosDe(elemento: Elemento): { tamanos: TamanoPieza[]; frase: string | null } {
   const reparto = elemento.appearance.conteo?.por_tamano ?? [];
-  const tamanos = CLASES.flatMap((clase) => {
+  const presentes = CLASES.flatMap((clase) => {
     const item = reparto.find((entrada) => entrada.clase === clase.clase);
     return item ? [{ ...clase, proporcion: item.proporcion }] : [];
   });
+  // Los tamaños también suman 100 al mostrarse (los redondeos daban 99 o 101).
+  const porcentajes = porcentajesQueSuman(presentes.map((tamano) => tamano.proporcion));
+  const tamanos = presentes.map((tamano, indice) => ({ ...tamano, porcentaje: porcentajes[indice] ?? Math.max(1, Math.round(tamano.proporcion * 100)) }));
   const leido = elemento.appearance.tamanos_leidos;
   return { tamanos, frase: tamanos.length ? null : (leido ? TAMANOS_FRASE[leido] ?? null : null) };
 }
@@ -218,12 +294,25 @@ function remateDe(elemento: Elemento): string[] {
   return [...new Set(remates)];
 }
 
-function globosDe(elemento: Elemento): { texto: string | null; visibles: number | null } {
+function globosDe(elemento: Elemento): { texto: string | null; visibles: number | null; cifra: PiezaLeida["globosCifra"] } {
   const conteo = elemento.appearance.conteo;
-  if (!conteo || conteo.globos_visibles <= 0) return { texto: null, visibles: null };
-  if (conteo.exacto) return { texto: `${NUMERO.format(conteo.globos_visibles)} globos`, visibles: conteo.globos_visibles };
-  if (conteo.estimado_total) return { texto: `≈ ${NUMERO.format(conteo.estimado_total)} globos (se ven ${NUMERO.format(conteo.globos_visibles)})`, visibles: conteo.globos_visibles };
-  return { texto: `≈ ${NUMERO.format(conteo.globos_visibles)} globos a la vista`, visibles: conteo.globos_visibles };
+  if (!conteo || conteo.globos_visibles <= 0) return { texto: null, visibles: null, cifra: null };
+  if (conteo.exacto) return { texto: `${NUMERO.format(conteo.globos_visibles)} globos`, visibles: conteo.globos_visibles, cifra: { valor: conteo.globos_visibles, clase: "exacto" } };
+  if (conteo.estimado_total) return { texto: `≈ ${NUMERO.format(conteo.estimado_total)} globos (se ven ${NUMERO.format(conteo.globos_visibles)})`, visibles: conteo.globos_visibles, cifra: { valor: conteo.estimado_total, clase: "estimado" } };
+  return { texto: `≈ ${NUMERO.format(conteo.globos_visibles)} globos a la vista`, visibles: conteo.globos_visibles, cifra: { valor: conteo.globos_visibles, clase: "visibles" } };
+}
+
+/**
+ * El total de la cabecera con la misma cifra que dice cada pieza: todas exactas → «160 globos»; alguna estimada →
+ * «≈ 160 globos en total»; solo las que se ven → «≈ 90 globos a la vista». Null si ninguna pieza se contó.
+ */
+export function totalGlobosLeidos(cifras: ReadonlyArray<PiezaLeida["globosCifra"]>): string | null {
+  const contadas = cifras.filter((cifra): cifra is NonNullable<PiezaLeida["globosCifra"]> => cifra !== null);
+  if (!contadas.length) return null;
+  const total = contadas.reduce((suma, cifra) => suma + cifra.valor, 0);
+  if (contadas.every((cifra) => cifra.clase === "exacto")) return `${NUMERO.format(total)} ${total === 1 ? "globo" : "globos"}`;
+  if (contadas.some((cifra) => cifra.clase === "estimado")) return `≈ ${NUMERO.format(total)} globos en total`;
+  return `≈ ${NUMERO.format(total)} globos a la vista`;
 }
 
 function medidasDe(elemento: Elemento): string | null {
@@ -318,6 +407,7 @@ export function lecturaFoto(blueprint: Blueprint): LecturaFoto | null {
       // Dos piezas leídas como un solo elemento comparten el conteo: se dice en la primera, no se reparte.
       globos: instancia.indice === 0 ? globos.texto : null,
       globosVisibles: instancia.indice === 0 ? globos.visibles : null,
+      globosCifra: instancia.indice === 0 ? globos.cifra : null,
       colores: coloresDe(elemento),
       tamanos,
       tamanosFrase: frase,
@@ -346,7 +436,7 @@ export function lecturaFoto(blueprint: Blueprint): LecturaFoto | null {
     .map((elemento) => OTROS[elemento.category])
     .filter((texto): texto is string => Boolean(texto)))];
 
-  return { piezas, cajas, colores, globosVisibles: contadas.length ? contadas.reduce((suma, valor) => suma + valor, 0) : null, otros };
+  return { piezas, cajas, colores, globosVisibles: contadas.length ? contadas.reduce((suma, valor) => suma + valor, 0) : null, globosTotal: totalGlobosLeidos(piezas.map((pieza) => pieza.globosCifra)), otros };
 }
 
 /** «un fondo, flores y otros objetos». */

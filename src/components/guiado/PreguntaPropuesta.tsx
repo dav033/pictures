@@ -9,9 +9,14 @@ import { DUR, EASE_SALIDA, RESORTE, grupoConRitmo, hijoEscalonado } from "./anim
 
 export type PiezaIndividual = { etiqueta: string; estructura: EstructuraOficialId | null };
 
-/** Las piezas sueltas que se ofrecen; «La que tú quieras» deja que el asistente elija. */
+/**
+ * Las piezas sueltas que se ofrecen; «La que tú quieras» deja que el asistente elija. «Arco orgánico» es el arco
+ * completo (`arco`, las dos patas en el piso) con mezcla de tamaños, como el texto «arco orgánico» en hechos-cliente.ts;
+ * `arco_asimetrico` (una pata que se afina en el aire) es solo para «asimétrico». La mezcla la pone el servidor al leer
+ * la etiqueta del botón (`piezaOrganicaDelBoton`).
+ */
 export const PIEZAS_INDIVIDUALES: readonly PiezaIndividual[] = [
-  { etiqueta: "Arco orgánico", estructura: "arco_asimetrico" },
+  { etiqueta: "Arco orgánico", estructura: "arco" },
   { etiqueta: "Columna", estructura: "columna" },
   { etiqueta: "Guirnalda", estructura: "guirnalda" },
   { etiqueta: "Semiarco", estructura: "semiarco" },

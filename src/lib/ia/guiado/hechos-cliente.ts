@@ -121,6 +121,21 @@ export function estructuraDeTexto(texto: string): EstructuraCliente | null {
   return null;
 }
 
+const BOTON_PIEZA_RE = /^Propónme una pieza individual:\s*(.+?)\.?$/;
+
+/**
+ * El botón de pieza individual «Arco orgánico» (PreguntaPropuesta) se lee como el texto «arco orgánico»: el arco completo
+ * (`arco`) con mezcla de tamaños. El id ya llega en `piezaPedida`; lo que la etiqueta añade es lo orgánico, que sin esto
+ * se perdía (el botón daba `arco_asimetrico`, la pata en el aire). Solo si la etiqueta leída es la misma pieza que manda
+ * el botón y es orgánica; cualquier otro botón no cambia nada. `hechosDelCliente` sigue sin leer los textos de botones.
+ */
+export function piezaOrganicaDelBoton(ultimoUsuario: string, piezaPedida: EstructuraOficialId | undefined): EstructuraCliente | null {
+  const etiqueta = BOTON_PIEZA_RE.exec(ultimoUsuario.trim())?.[1]?.trim();
+  if (!etiqueta || !piezaPedida) return null;
+  const leida = estructuraDeTexto(etiqueta);
+  return leida?.id === piezaPedida && leida.organica ? leida : null;
+}
+
 // ── Lugar, momento y presupuesto (palabras literales) ────────────────────────────────────────────────────────────
 const LUGAR_RE = /\b(?:en|para)\s+(?:un|una|el|la|mi|su|nuestro|nuestra)\s+(?:jard[ií]n|sal[oó]n(?:\s+de\s+(?:eventos|fiestas|recepciones))?|terraza|playa|finca|iglesia|restaurante|hotel|patio|oficina|colegio|piscina|parque|club|hacienda|carpa|auditorio|quinta)\b/i;
 const MOMENTO_RE = /\b(?:de noche|en la noche|por la noche|nocturn[ao]|de d[ií]a|en el d[ií]a|al atardecer|en la tarde|por la tarde|de tarde|en la ma[ñn]ana|por la ma[ñn]ana|al mediod[ií]a)\b/i;

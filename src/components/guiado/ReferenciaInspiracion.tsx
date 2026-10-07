@@ -25,9 +25,6 @@ type Props = {
   onVerIdeas?: () => void;
 };
 
-const NUMERO = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
-const porcentaje = (parte: number) => `${Math.max(1, Math.round(parte * 100))}%`;
-
 const CONFIANZA: Record<PiezaLeida["confianza"], { texto: string; clase: string }> = {
   alta: { texto: "Se ve clara", clase: "bg-exito-suave text-exito" },
   media: { texto: "Probable", clase: "bg-aviso-suave text-aviso" },
@@ -107,7 +104,7 @@ export function ReferenciaInspiracion({ miniatura, referencia, analizando = fals
             {lectura && (
               <p className="mt-0.5 text-xs text-texto-suave">
                 {piezas.length} {piezas.length === 1 ? "pieza" : "piezas"} de globos
-                {lectura.globosVisibles ? ` · ≈ ${NUMERO.format(lectura.globosVisibles)} globos a la vista` : ""}
+                {lectura.globosTotal ? ` · ${lectura.globosTotal}` : ""}
                 {lectura.cajas.length > 0 ? " · toca una pieza para verla en la foto" : ""}
                 {piezas.length > 0 && <Ayuda {...AYUDAS.lecturaFoto} className="-my-1 ml-1" />}
               </p>
@@ -259,7 +256,7 @@ function FichaPieza({ id, pieza, resaltada, onActivar, onDesactivar }: { id: str
                   <li key={color.nombre} className="inline-flex max-w-full items-center gap-1 rounded-full bg-superficie-2 py-0.5 pl-0.5 pr-2 ring-1 ring-borde-suave ring-inset">
                     <GloboMiniatura hex={color.hex} acabado={color.acabado} tamano={20} />
                     <span className="truncate font-medium text-texto">{conMayusculaInicial(color.nombre)}</span>
-                    {color.parte !== null && <span className="tabular-nums text-texto-suave">{porcentaje(color.parte)}</span>}
+                    {color.porcentaje !== null && <span className="tabular-nums text-texto-suave">{color.porcentaje}%</span>}
                   </li>
                 ))}
               </ul>
@@ -286,7 +283,7 @@ function FichaPieza({ id, pieza, resaltada, onActivar, onDesactivar }: { id: str
                       <GloboMiniatura hex={principal?.hex ?? "#9ca3af"} acabado={principal?.acabado ?? null} tamano={Math.round(14 + tamano.dibujo * 0.55)} />
                       <span className="leading-tight">
                         <span className="block font-medium text-texto">{tamano.etiqueta} {tamano.pulgadas}</span>
-                        <span className="block tabular-nums text-texto-suave">{porcentaje(tamano.proporcion)}</span>
+                        <span className="block tabular-nums text-texto-suave">{tamano.porcentaje}%</span>
                       </span>
                     </li>
                   ))}

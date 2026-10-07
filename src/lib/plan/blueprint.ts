@@ -16,6 +16,7 @@
 import { porcentajesMayorResto } from "@/lib/ia/escena/tamano-fisico";
 import { joinWithinLimit } from "@/lib/ia/escena/scene-spec";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import { materialesDeLineas } from "@/lib/plan/material-de-linea";
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 
@@ -43,16 +44,20 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
       : "moderate" as const;
   const elements = plan.estructuras.flatMap((resuelta) => {
     const declarada = plan.plan.estructuras.find((estructura) => estructura.estructura_id === resuelta.estructura_id)!;
+    // El material de cada línea, también de las que compra una sustitución (`variant_overrides`): por producto, el lila
+    // de la idea «rosa, lila y dorado» (comprado como otro producto) salía «principal» y el último (verificador 127).
+    const indiceDeLinea = materialesDeLineas(declarada, resuelta.lineas);
+    const rolDeLinea = (posicion: number) => declarada.materiales[indiceDeLinea[posicion] ?? -1]?.rol_material ?? "principal";
     const materialPorVariante = new Map<string, { id: string; share: number; role: string; color: string | null }>();
-    for (const linea of resuelta.lineas) {
+    resuelta.lineas.forEach((linea, posicion) => {
       const previo = materialPorVariante.get(linea.variant_id);
       materialPorVariante.set(linea.variant_id, {
         id: linea.variant_id,
         share: (previo?.share ?? 0) + linea.unidades / Math.max(1, resuelta.total_unidades),
-        role: declarada.materiales.find((material) => material.product_id === linea.product_id)?.rol_material ?? "principal",
+        role: rolDeLinea(posicion),
         color: linea.color,
       });
-    }
+    });
     const materiales = [...materialPorVariante.values()];
     // Mezcla de color de la estructura para el prompt de imagen: se agrega por
     // color plegado Y producto (dos productos distintos del mismo color siguen
@@ -60,30 +65,28 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
     // reparto por variante partía un mismo color en trozos y ninguno parecía
     // dominante; el `bill_of_materials` sigue siendo por variante porque de él
     // salen las cantidades compradas.
-    const mezclaPorColor = new Map<string, { color: string; productId: string; unidades: number; rol: string }>();
-    for (const linea of resuelta.lineas) {
-      if (!linea.color) continue;
+    const mezclaPorColor = new Map<string, { color: string; productId: string; unidades: number; rol: string; orden: number }>();
+    resuelta.lineas.forEach((linea, posicion) => {
+      if (!linea.color) return;
       const clave = JSON.stringify([plegarColor(linea.color), linea.product_id]);
       const previo = mezclaPorColor.get(clave);
+      const indice = indiceDeLinea[posicion] ?? -1;
       mezclaPorColor.set(clave, {
         color: previo?.color ?? linea.color,
         productId: linea.product_id,
         unidades: (previo?.unidades ?? 0) + linea.unidades,
-        rol: previo?.rol ?? declarada.materiales.find((material) => material.product_id === linea.product_id)?.rol_material ?? "principal",
+        rol: previo?.rol ?? rolDeLinea(posicion),
+        orden: previo?.orden ?? (indice < 0 ? declarada.materiales.length : indice),
       });
-    }
+    });
     // Dominancia primero; un empate lo gana el material que el plan declara
     // antes (el orden de Python, el mismo que `mezcla-color-escena.ts`), no el
     // alfabeto: un 29/29 de un "Arco lila" salía "blanco, lila" (2026-10-05).
     // Detrás, color plegado y producto por punto de código, para que el orden
     // no dependa del idioma del servidor.
-    const ordenDeclarado = (productId: string) => {
-      const indice = declarada.materiales.findIndex((material) => material.product_id === productId);
-      return indice < 0 ? declarada.materiales.length : indice;
-    };
     const mezclaOrdenada = [...mezclaPorColor.values()].sort((a, b) =>
       b.unidades - a.unidades
-      || ordenDeclarado(a.productId) - ordenDeclarado(b.productId)
+      || a.orden - b.orden
       || comparar(plegarColor(a.color), plegarColor(b.color))
       || comparar(a.productId, b.productId));
     const coloresPorDominancia = [...new Set(mezclaOrdenada.map((material) => material.color))].slice(0, 8);

@@ -129,6 +129,8 @@ export function instruccionPlanGuiado(propuesta: PropuestaGuiada, opciones?: { r
   // Con un plan que salió de una foto, cada pieza que sigue en el plan conserva el elemento de la foto que materializa.
   const referencia = opciones?.referencia;
   const deLaFoto = referencia ? elementosDeLaFoto(individuales, referencia) : new Map<string, string>();
+  // «Arco orgánico» que pidió el cliente es el arco completo (`arco`): también mezcla tamaños, aunque su oficial no sea de las orgánicas.
+  const pedidasOrganicas = new Set(opciones?.cliente?.organicas ?? []);
   const piezas = individuales.map((pieza, indice) => {
     const conservada = conservadas.get(pieza.estructuraId);
     const suyos = propias[indice] ?? [];
@@ -143,11 +145,13 @@ export function instruccionPlanGuiado(propuesta: PropuestaGuiada, opciones?: { r
       ...(suyos.length ? [`colores de esta pieza: ${suyos.join(", ")}`] : []),
       ...(medidas ? [`medidas: ${medidas}`] : []),
       ...(conservada?.participacion ? [`participacion: ${conservada.participacion}`] : []),
+      // Probador 124, hallazgo 4: el arco que el decorador pidió «orgánico» salió de mezcla clásica y la guiada lo abría
+      // con el editor de arco de patrón. Su mezcla queda dicha en la pieza: con ella se arma y se edita como orgánico
+      // (`motorDePieza`), sin cambiar su oficial (`arco`, las dos patas en el piso; nunca `arco_asimetrico`).
+      ...(pedidasOrganicas.has(pieza.estructura) && !ESTRUCTURAS_ORGANICAS.has(pieza.estructura) ? ["mezcla: organica_fina (la pidió orgánica; organica_gruesa solo si sus colores no tienen 5\")"] : []),
     ];
     return `- ${nombreOficial(pieza.estructura)} (${datos.join("; ")})`;
   });
-  // «Arco orgánico» que pidió el cliente es el arco completo (`arco`): también mezcla tamaños, aunque su oficial no sea de las orgánicas.
-  const pedidasOrganicas = new Set(opciones?.cliente?.organicas ?? []);
   const organicas = [...new Set(individuales.filter((pieza) => ESTRUCTURAS_ORGANICAS.has(pieza.estructura) || pedidasOrganicas.has(pieza.estructura)).map((pieza) => nombreOficial(pieza.estructura)))];
   const palabrasCliente = opciones?.planAnterior ? null : lineaPalabrasCliente(opciones?.cliente, { sinMedida: medidasPropias.some(Boolean) });
   const lineas = [

@@ -231,6 +231,24 @@ export function idOficial(valor: unknown): EstructuraOficialId | null {
   return typeof valor === "string" && (ESTRUCTURAS_OFICIALES_IDS as readonly string[]).includes(valor) ? valor as EstructuraOficialId : null;
 }
 
+const TituloVarianteSchema = z.object({ variant_id: z.string().min(1), titulo: z.string().trim().min(1) }).passthrough();
+
+/**
+ * El título del catálogo de cada variante del plan («B2b Globo Latex Redondo Fashion Blush Crema — R-12 / PAQUETE X 50»),
+ * de sus compras y de las líneas de sus piezas: con él la cotización nombra cada globo como la tarjeta y «Ver detalle»
+ * (`productoSempertex`), aunque la línea de la cotización ya traiga el nombre de cliente (probador 124, hallazgo 5).
+ */
+export function titulosDelPlan(plan: PlanGuiado): ReadonlyMap<string, string> {
+  const titulos = new Map<string, string>();
+  const leer = (linea: unknown) => {
+    const leida = TituloVarianteSchema.safeParse(linea);
+    if (leida.success && !titulos.has(leida.data.variant_id)) titulos.set(leida.data.variant_id, leida.data.titulo);
+  };
+  for (const compra of plan.compras) leer(compra);
+  for (const estructura of plan.estructuras) for (const linea of estructura.lineas) leer(linea);
+  return titulos;
+}
+
 /** Las piezas de «Tu plan», en el orden del plan, con sus globos tal como los resolvió Python. */
 export function piezasVistaDePlan(plan: PlanGuiado): PiezaVista[] {
   return plan.plan.estructuras.map((pieza) => ({

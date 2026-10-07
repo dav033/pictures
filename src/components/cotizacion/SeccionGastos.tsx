@@ -41,6 +41,8 @@ type Props = {
   onAgregar: (descripcion?: string) => void;
   onQuitar: (id: string) => void;
   onDeshacer: () => void;
+  /** Se salió de una fila: desde ahí lo que le falte cuenta (en rojo y en el precio), no antes. */
+  onSalirFila?: (id: string) => void;
   /** Esta lista lleva el «?» de «Valor por unidad» en su primera fila (una sola vez en todo el precio). */
   ayudaValor?: boolean;
 };
@@ -182,7 +184,10 @@ export function SeccionGastos(props: Props) {
                   registrarCotizacion("gasto.quitar", { seccion, fila: fila.id, descripcion: fila.descripcion.slice(0, 120), enBlanco: filaEnBlanco(fila) });
                   props.onQuitar(fila.id);
                 }}
-                onSalir={() => setTocadas((previas) => (previas.has(fila.id) ? previas : new Set(previas).add(fila.id)))}
+                onSalir={() => {
+                  setTocadas((previas) => (previas.has(fila.id) ? previas : new Set(previas).add(fila.id)));
+                  props.onSalirFila?.(fila.id);
+                }}
               />
             )))}
           </AnimatePresence>
@@ -190,7 +195,8 @@ export function SeccionGastos(props: Props) {
       )}
 
       {filas.length > 0 && !hayFilaSinDescripcion && libres.length > 0 && !limite.llena && (
-        <div role="group" aria-label={`Sumar otro a ${titulo}`} className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 [mask-image:linear-gradient(to_right,black_85%,transparent)] [scrollbar-width:none]">
+        // Los chips bajan de línea: en una sola fila con desplazamiento, «+ Desmontaje» y «+ Diseño» quedaban fuera a 390 px.
+        <div role="group" aria-label={`Sumar otro a ${titulo}`} className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5 pb-0.5">
           <span className="shrink-0 text-xs text-texto-suave">Sumar:</span>
           {libres.map((concepto) => (
             <button key={concepto} type="button" onClick={() => agregar(concepto)} aria-label={`Agregar ${concepto}`} className={`${CHIP} h-9 bg-transparent text-texto-suave ring-borde-suave hover:bg-acento-suave hover:text-acento`}>

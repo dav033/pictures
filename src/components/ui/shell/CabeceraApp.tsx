@@ -23,6 +23,9 @@ type Props = {
   onModoVista: (modo: ModoVista) => void;
   onLimpiar: () => void;
   limpiarDeshabilitado: boolean;
+  /** Cómo se llama esa acción en el menú (la guiada: «Empezar de nuevo», que confirma antes); por defecto «Limpiar chat». */
+  etiquetaLimpiar?: string;
+  iconoLimpiar?: ReactNode;
   /** Abre la hoja de selección manual; undefined cuando no aplica (hay propuesta en modo usuario). */
   onAbrirSeleccion?: () => void;
   totalSeleccion: number;
@@ -48,7 +51,7 @@ function MarcaIcono() {
  * Cabecera de una sola línea (maquetas Main y EstadoInicial): marca, contexto
  * del evento al centro, creatividad compacta, tema, "Modo dev" y menú.
  */
-export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, onModoVista, onLimpiar, limpiarDeshabilitado, onAbrirSeleccion, totalSeleccion, barraDev, ocultarModoDev = false }: Props) {
+export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, onModoVista, onLimpiar, limpiarDeshabilitado, etiquetaLimpiar = "Limpiar chat", iconoLimpiar, onAbrirSeleccion, totalSeleccion, barraDev, ocultarModoDev = false }: Props) {
   const pathname = usePathname();
   const esDev = modoVista === "dev";
   // Vista guiada (pensada para el móvil): tema y menú con el blanco táctil de 44 px; la clásica conserva su cabecera compacta.
@@ -60,7 +63,7 @@ export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, o
     ...(onAbrirSeleccion
       ? [{ tipo: "accion" as const, id: "seleccion", etiqueta: totalSeleccion > 0 ? `Tu selección (${totalSeleccion})` : "Tu selección", onSeleccionar: onAbrirSeleccion, icono: <ListChecks className="size-4" /> }]
       : []),
-    { tipo: "accion", id: "limpiar", etiqueta: "Limpiar chat", onSeleccionar: onLimpiar, deshabilitado: limpiarDeshabilitado, icono: <Trash2 className="size-4" /> },
+    { tipo: "accion", id: "limpiar", etiqueta: etiquetaLimpiar, onSeleccionar: onLimpiar, deshabilitado: limpiarDeshabilitado, icono: iconoLimpiar ?? <Trash2 className="size-4" /> },
     pathname === "/asistente"
       ? { tipo: "enlace", id: "vista-clasica", etiqueta: "Vista clásica", href: "/" }
       : { tipo: "enlace", id: "vista-guiada", etiqueta: "Asistente guiado", href: "/asistente" },

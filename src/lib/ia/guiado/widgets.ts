@@ -34,7 +34,11 @@ export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
     /** Ideas de la biblioteca que el cliente sumó a este plan con «Agregar al plan» (la idea dice «Está en tu plan»). */
     ideas: z.array(z.string().regex(/^(?:deco|ej)-[a-z0-9-]+$/)).max(12).optional(),
     /** La idea que trajo esta versión del plan: «Agregué «Columnas negras y doradas» a tu plan: ahora tiene 188 globos». */
-    agregada: z.object({ titulo: z.string().min(1).max(160), total: z.number().int().nonnegative() }).strict().optional(),
+    agregada: z.object({
+      titulo: z.string().min(1).max(160), total: z.number().int().nonnegative(),
+      /** Si el plan de la idea NO salió exacto, por qué (`avisos-plan-idea.ts`): «Ajustamos un tamaño que no había: 36″ por 24″.». */
+      avisos: z.array(z.string().min(1).max(300)).max(4).optional(),
+    }).strict().optional(),
   }).strict(),
 ]);
 export type WidgetGuiado = z.infer<typeof WidgetGuiadoSchema>;

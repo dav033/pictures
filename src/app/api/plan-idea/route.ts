@@ -28,8 +28,10 @@ async function atenderPOST(request: Request) {
   const body = BodySchema.safeParse(json);
   if (!body.success) return Response.json({ error: "La solicitud no tiene un formato válido.", detalles: body.error.issues.slice(0, 5) }, { status: 400 });
   try {
-    const { plan, cotizacion, nuevas, globosIdea } = await planDesdeIdea({ ideaId: body.data.idea_id, ...(body.data.base ? { base: body.data.base } : {}), signal: request.signal });
-    return Response.json({ plan, cotizacion, nuevas, globosIdea });
+    const { plan, cotizacion, nuevas, globosIdea, exacto, avisos } = await planDesdeIdea({ ideaId: body.data.idea_id, ...(body.data.base ? { base: body.data.base } : {}), signal: request.signal });
+    // `exacto` y `avisos` (en palabras de cliente): si el plan no salió con las cantidades exactas de la idea, la
+    // tarjeta lo dice. Antes se descartaban y el botón prometía «cantidades exactas» sin avisar (verificador 127).
+    return Response.json({ plan, cotizacion, nuevas, globosIdea, exacto, avisos });
   } catch (error) {
     if (error instanceof PlanEditError) return Response.json({ error: error.message, causa: error.causa ?? null }, { status: error.status });
     const estado = isPythonAdapterError(error) ? 502 : 500;

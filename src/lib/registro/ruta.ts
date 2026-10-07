@@ -3,7 +3,8 @@ import { conContexto, contextoActual, contextoDesdeRequest } from "./contexto";
 import { deduplicarMensajes } from "./envoltorios";
 import { huellaBase64, huellaDataUrl, serializarError } from "./redaccion";
 import { auditar, registrar } from "./registro";
-import { CABECERA_CONVERSACION, CABECERA_SOLICITUD, type ContextoRegistro, type DatosEntradaUsuario, type NivelRegistro } from "./tipos";
+import { CABECERA_CONVERSACION, CABECERA_SOLICITUD, CABECERA_VERSION_APP, type ContextoRegistro, type DatosEntradaUsuario, type NivelRegistro } from "./tipos";
+import { versionCodigo } from "./version";
 
 /**
  * `conRegistro(nombreRuta, handler)`: envoltorio de Route Handlers para la segunda pasada. Abre el contexto
@@ -210,6 +211,8 @@ function anadirCabeceras(respuesta: Response, contexto: ContextoRegistro): void 
   try {
     if (!respuesta.headers.has(CABECERA_SOLICITUD)) respuesta.headers.set(CABECERA_SOLICITUD, contexto.solicitud);
     if (contexto.conversacion && !respuesta.headers.has(CABECERA_CONVERSACION)) respuesta.headers.set(CABECERA_CONVERSACION, contexto.conversacion);
+    // Con qué código se respondió: una pestaña abierta antes de un despliegue lo compara con el suyo (version-pagina.ts).
+    if (!respuesta.headers.has(CABECERA_VERSION_APP)) respuesta.headers.set(CABECERA_VERSION_APP, versionCodigo().corta);
   } catch {
     // Cabeceras inmutables (respuesta reenviada): se deja como está.
   }

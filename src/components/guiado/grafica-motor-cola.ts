@@ -44,9 +44,16 @@ type Entrada = { promesa: Promise<GraficaMotor | null>; valor?: GraficaMotor | n
 const cache = new Map<string, Entrada>();
 const espera: Array<() => void> = [];
 let enVuelo = 0;
+/**
+ * Las peticiones en camino por ruta + cuerpo exacto. Dos piezas pareja (columna izquierda y derecha) tienen claves
+ * distintas pero, si su receta es la misma, el MISMO cuerpo: salían dos POST idénticos en el mismo milisegundo y el
+ * motor respondía 429 a uno (verificador 127, producción 05:01:13.202 y .204, 3096 bytes). Ahora el segundo espera
+ * la respuesta del primero.
+ */
+const enCaminoPorCuerpo = new Map<string, Promise<Resultado>>();
 
-/** Mide cuántas peticiones salieron (pruebas y diagnóstico). */
-export const contadores = { pedidas: 0, enVueloMaximo: 0 };
+/** Mide cuántas peticiones salieron y cuántas se ahorraron por llevar el mismo cuerpo (pruebas y diagnóstico). */
+export const contadores = { pedidas: 0, enVueloMaximo: 0, compartidas: 0 };
 
 type Pedir = typeof fetch;
 let pedirRed: Pedir = (...argumentos) => fetch(...argumentos);
@@ -55,9 +62,11 @@ let pedirRed: Pedir = (...argumentos) => fetch(...argumentos);
 export function reiniciarGraficasParaPruebas(red?: Pedir): void {
   cache.clear();
   espera.length = 0;
+  enCaminoPorCuerpo.clear();
   enVuelo = 0;
   contadores.pedidas = 0;
   contadores.enVueloMaximo = 0;
+  contadores.compartidas = 0;
   pedirRed = red ?? ((...argumentos) => fetch(...argumentos));
 }
 
@@ -139,6 +148,19 @@ async function pedirUna(ruta: string, cuerpo: string): Promise<Resultado> {
   return { grafica: null, reintentable: true };
 }
 
+/** Una petición por ruta + cuerpo a la vez: si ya va en camino (o en cola) una idéntica, se espera su respuesta. */
+function pedirCompartida(ruta: string, cuerpo: string): Promise<Resultado> {
+  const llave = `${ruta}\n${cuerpo}`;
+  const enCamino = enCaminoPorCuerpo.get(llave);
+  if (enCamino) {
+    contadores.compartidas += 1;
+    return enCamino;
+  }
+  const promesa = conTurno(() => pedirUna(ruta, cuerpo)).finally(() => enCaminoPorCuerpo.delete(llave));
+  enCaminoPorCuerpo.set(llave, promesa);
+  return promesa;
+}
+
 function recortar(): void {
   while (cache.size > MAX_ENTRADAS) {
     const vieja = [...cache.entries()].find(([, entrada]) => "valor" in entrada)?.[0];
@@ -149,15 +171,22 @@ function recortar(): void {
 
 /**
  * El dibujo de `clave`: el guardado, el que ya va en camino o uno nuevo (en cola). `cuerpo` solo se arma si de verdad
- * hay que pedirlo. Nunca lanza: un fallo es `null`.
+ * hay que pedirlo (y se arma ya, para reconocer otra pieza que pide exactamente lo mismo). Nunca lanza: un fallo es
+ * `null`.
  */
 export function pedirGrafica(clave: string, ruta: string, cuerpo: () => unknown): Promise<GraficaMotor | null> {
   const guardada = graficaGuardada(clave);
   if (guardada !== undefined) return Promise.resolve(guardada);
   const enCurso = cache.get(clave);
   if (enCurso && !("valor" in enCurso)) return enCurso.promesa;
+  let texto: string | null;
+  try {
+    texto = JSON.stringify(cuerpo());
+  } catch {
+    texto = null;
+  }
   const entrada: Entrada = {
-    promesa: conTurno(() => pedirUna(ruta, JSON.stringify(cuerpo())))
+    promesa: (texto === null ? Promise.reject<Resultado>(new Error("cuerpo sin JSON")) : pedirCompartida(ruta, texto))
       .catch((): Resultado => ({ grafica: null, reintentable: true }))
       .then(({ grafica: valor, reintentable }) => {
         // La entrada se reemplaza si mientras tanto alguien la borró: el resultado vale igual.

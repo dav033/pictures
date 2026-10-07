@@ -111,10 +111,13 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
   const [reintento, setReintento] = useState(0);
   const [quitada, setQuitada] = useState<{ seccion: SeccionCosto; fila: FilaQuitada } | null>(null);
   const [foco, setFoco] = useState<FocoFila | null>(null);
+  // Filas recién agregadas que todavía no se dejaron: mientras solo les falten datos, no alarman ni frenan el precio
+  // (probador 124, hallazgo 18). Al salir de la fila (o quitarla) dejan de estar en curso.
+  const [enCurso, setEnCurso] = useState<ReadonlySet<string>>(() => new Set());
   const { materiales, sinPrecio } = useMemo(() => materialesDesdeCotizacion(cotizacion), [cotizacion]);
   // Cómo se ve cada globo (foto, color, tamaño): solo para pintar la lista; no viaja a Python.
   const fichas = useMemo(() => fichasDeCotizacion(cotizacion.lineas), [cotizacion]);
-  const leido = useMemo(() => leerBorrador(borrador, materiales), [borrador, materiales]);
+  const leido = useMemo(() => leerBorrador(borrador, materiales, { enCurso }), [borrador, materiales, enCurso]);
   // Globos a granel: solo si el último Python que respondió lo anunció (a uno anterior se le manda lo de siempre).
   const granel = useGranel({
     clave,
@@ -122,6 +125,7 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
     materiales,
     borrador,
     leido,
+    enCurso,
     datos: calculo.estado === "listo" ? calculo.resultado.datos : calculo.estado === "vacio" ? null : calculo.previo?.datos ?? null,
   });
   // Lo que se envía y las filas que lo forman, como texto: solo un cambio ahí vuelve a calcular.
@@ -192,10 +196,21 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
     const id = idFila();
     const fila = descripcion ? { ...filaVacia(id), descripcion, cantidad: "1" } : filaVacia(id);
     setBorrador((previo) => ({ ...previo, costos: { ...previo.costos, [seccion]: [...previo.costos[seccion], fila] } }));
+    setEnCurso((previas) => new Set(previas).add(id));
     setFoco({ fila: id, campo: descripcion ? "costo" : "descripcion" });
   }
 
+  function dejarFila(id: string): void {
+    setEnCurso((previas) => {
+      if (!previas.has(id)) return previas;
+      const siguen = new Set(previas);
+      siguen.delete(id);
+      return siguen;
+    });
+  }
+
   function quitarFila(seccion: SeccionCosto, id: string): void {
+    dejarFila(id);
     const { quitada: rastro } = quitarConRastro(borrador.costos[seccion], id);
     setQuitada(rastro ? { seccion, fila: rastro } : null);
     setBorrador((previo) => ({ ...previo, costos: { ...previo.costos, [seccion]: previo.costos[seccion].filter((fila) => fila.id !== id) } }));
@@ -269,7 +284,9 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
       )}
 
       {abierta && (
-        <div id={idPanel} className="grid gap-6 border-t border-borde-suave px-4 pb-5 pt-2 @xl:px-5.5 @3xl:grid-cols-[minmax(0,1fr)_17rem]">
+        // Una columna que no crece más que el panel: sin plantilla, la columna implícita `auto` tomaba el ancho de la fila
+        // de chips más larga y a 390 px cortaba las cifras («$ 239.2…») y dejaba chips fuera (probador 124, hallazgo 6).
+        <div id={idPanel} className="grid grid-cols-[minmax(0,1fr)] gap-6 border-t border-borde-suave px-4 pb-5 pt-2 @xl:px-5.5 @3xl:grid-cols-[minmax(0,1fr)_17rem]">
           <div className="min-w-0">
             <CampoGanancia
               clave={clave}
@@ -298,6 +315,7 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
                 onAgregar={(descripcion) => agregarFila(seccion, descripcion)}
                 onQuitar={(id) => quitarFila(seccion, id)}
                 onDeshacer={deshacerQuitar}
+                onSalirFila={dejarFila}
               />
             ))}
 
@@ -316,7 +334,7 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
             <p className="mt-4 text-xs text-texto-suave">Tus cambios se guardan solos mientras esta pestaña siga abierta.</p>
           </div>
 
-          <aside className="@3xl:sticky @3xl:top-4 @3xl:self-start">
+          <aside className="min-w-0 @3xl:sticky @3xl:top-4 @3xl:self-start">
             <ResumenPrecio datos={datos} enviadas={resultado?.enviadas ?? null} atenuar={atenuar} leyenda={leyenda} onReintentar={reintentar} incluyeIva={cotizacion.incluyeIva} />
           </aside>
         </div>

@@ -51,8 +51,9 @@ export function EncabezadoPrecio({ datos, enviadas, atenuar, leyenda, incluyeIva
         </span>
       </div>
       <div className="grid gap-1 @2xl:col-start-2 @2xl:row-span-3 @2xl:row-start-1 @2xl:max-w-[22rem] @2xl:justify-items-end">
-        <div className="flex items-center justify-between gap-4 @2xl:justify-end">
-          <span data-precio-total className={`block text-2xl font-semibold tracking-tight tabular-nums text-texto @xl:text-3xl ${atenuar ? CLASE_NO_VIGENTE : ""}`}>
+        {/* flex-wrap: a 390 px el precio y «Ajustar mi precio» no caben en una fila y el botón quedaba cortado; ahora baja entero. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 @2xl:justify-end">
+          <span data-precio-total className={`block min-w-0 text-2xl font-semibold tracking-tight tabular-nums text-texto @xl:text-3xl ${atenuar ? CLASE_NO_VIGENTE : ""}`}>
             {datos ? <NumeroAnimado valor={datos.precio_sugerido_cop} formato="pesos" /> : "—"}
             {atenuar && <span className="sr-only"> (precio anterior, no actualizado)</span>}
           </span>
@@ -61,7 +62,7 @@ export function EncabezadoPrecio({ datos, enviadas, atenuar, leyenda, incluyeIva
             onClick={onAlternar}
             aria-expanded={abierta}
             aria-controls={idPanel}
-            className="ui-pressable inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-acento px-3.5 text-[13px] font-semibold text-sobre-acento hover:bg-acento-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+            className="ui-pressable inline-flex h-11 max-w-full shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-acento px-3.5 text-[13px] font-semibold text-sobre-acento hover:bg-acento-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
           >
             {abierta ? "Ocultar ajustes" : "Ajustar mi precio"}
             <ChevronDown className={`size-4 transition-transform ${abierta ? "rotate-180" : ""}`} aria-hidden="true" />

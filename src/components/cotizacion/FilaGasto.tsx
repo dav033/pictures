@@ -102,7 +102,7 @@ export function FilaGasto({ seccion, base, titulo, fila, errores, tocada, subtot
             className={`${CAMPO_BASE} ${FOCO} min-w-0 flex-1 bg-transparent px-2 font-semibold hover:border-borde-suave focus-visible:bg-superficie ${fallos.descripcion ? "border-error" : "border-transparent"}`}
           />
           <span className="min-w-0 shrink-0 text-right">
-            <TotalFila valor={subtotal} atenuar={atenuar} enBlanco={enBlanco} falta={falta} rojo={hayFallo} />
+            <TotalFila valor={subtotal} atenuar={atenuar} enBlanco={enBlanco} falta={falta} rojo={hayFallo} alerta={tocada || hayFallo} />
           </span>
           <button
             type="button"
@@ -223,7 +223,7 @@ export function FilaGasto({ seccion, base, titulo, fila, errores, tocada, subtot
  * nuevo valor), nada si la fila está en blanco, o en dos palabras lo que le
  * falta. Nunca «—» ni «$ 0» inventados.
  */
-function TotalFila({ valor, atenuar, enBlanco, falta, rojo }: { valor: number | null; atenuar: boolean; enBlanco: boolean; falta: string | null; rojo: boolean }) {
+function TotalFila({ valor, atenuar, enBlanco, falta, rojo, alerta }: { valor: number | null; atenuar: boolean; enBlanco: boolean; falta: string | null; rojo: boolean; alerta: boolean }) {
   if (valor !== null && !falta) {
     return (
       <span className={`block text-[15px] font-semibold tabular-nums text-texto ${atenuar ? CLASE_NO_VIGENTE : ""}`}>
@@ -232,7 +232,8 @@ function TotalFila({ valor, atenuar, enBlanco, falta, rojo }: { valor: number | 
     );
   }
   if (enBlanco) return null;
-  // En rojo, como dice la leyenda del precio («revisa lo que está en rojo»); el campo se marca al salir de la fila.
-  if (falta) return <span className={`block text-xs text-error ${rojo ? "font-semibold" : "font-medium"}`}>{falta}</span>;
+  // En rojo, como dice la leyenda del precio («revisa lo que está en rojo»), desde que se sale de la fila o algo está mal
+  // escrito; en una fila recién agregada que todavía se está llenando, solo se sugiere (probador 124, hallazgo 18).
+  if (falta) return <span className={`block text-xs ${alerta ? "text-error" : "text-texto-suave"} ${rojo ? "font-semibold" : "font-medium"}`}>{falta}</span>;
   return <span className="block text-xs text-texto-suave">Por calcular</span>;
 }

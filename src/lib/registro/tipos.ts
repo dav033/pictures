@@ -327,3 +327,8 @@ export interface CargaEventoCliente {
 export const CABECERA_SOLICITUD = "x-request-id";
 export const CABECERA_CONVERSACION = "x-conversacion-id";
 export const CABECERA_VISTA = "x-vista";
+/**
+ * La versión del código que respondió (`versionCodigo().corta`), en toda respuesta de `conRegistro`: la página la compara
+ * con la suya para saber si el servidor ya es de otro despliegue (src/components/guiado/version-pagina.ts).
+ */
+export const CABECERA_VERSION_APP = "x-version-app";

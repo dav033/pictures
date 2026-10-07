@@ -101,6 +101,42 @@ async function main(): Promise<void> {
   await pedirGrafica(claves[3]!, RUTA, () => ({}));
   assert.equal(pendientes.length, 0, "y no sale otra petición");
 
+  // 7) Piezas pareja (columna izquierda y derecha) con la misma receta: claves distintas, el MISMO cuerpo. Antes salían
+  //    dos POST idénticos en el mismo milisegundo y el motor respondía 429 a uno (verificador 127, producción
+  //    05:01:13.202 y .204, 3096 bytes). Ahora sale UNO y las dos piezas reciben su dibujo.
+  reiniciarGraficasParaPruebas(redFalsa);
+  const receta = () => ({ plan: { estructuras: ["EST_01", "EST_02"] }, armado_columna_organica: null, tonos: ["#f2b6c8", "#01b2e8"] });
+  const izquierda = claveGrafica({ ruta: RUTA, version: "d".repeat(64), estructuraId: "EST_01_COLUMNA", armado: null, tonos: "#f2b6c8" });
+  const derecha = claveGrafica({ ruta: RUTA, version: "d".repeat(64), estructuraId: "EST_02_COLUMNA", armado: null, tonos: "#f2b6c8" });
+  assert.notEqual(izquierda, derecha);
+  const pareja = [pedirGrafica(izquierda, RUTA, receta), pedirGrafica(derecha, RUTA, receta)];
+  await tic();
+  assert.equal(pendientes.length, 1, "dos piezas con el mismo cuerpo = una sola petición");
+  assert.equal(contadores.compartidas, 1);
+  pendientes.shift()!.responder(200, SVG);
+  const [dibujoIzquierda, dibujoDerecha] = await Promise.all(pareja);
+  assert.equal(dibujoIzquierda?.svg, "<svg/>");
+  assert.equal(dibujoDerecha?.svg, "<svg/>", "la pareja recibe el mismo dibujo");
+  assert.equal(graficaGuardada(derecha)?.svg, "<svg/>", "y queda guardado con su propia clave");
+  assert.equal(contadores.pedidas, 1);
+  // Con otro cuerpo (otra receta) sí sale otra; y una vez respondida, el mismo cuerpo puede volver a pedirse.
+  const otra = pedirGrafica(claveGrafica({ ruta: RUTA, version: "e".repeat(64), estructuraId: "EST_01_COLUMNA" }), RUTA, () => ({ ...receta(), tonos: ["#ffffff"] }));
+  const repetida = pedirGrafica(claveGrafica({ ruta: RUTA, version: "f".repeat(64), estructuraId: "EST_03_COLUMNA" }), RUTA, receta);
+  await tic();
+  assert.equal(pendientes.length, 2, "cuerpos distintos, o el mismo ya respondido: cada uno su petición");
+  while (pendientes.length) pendientes.shift()!.responder(200, SVG);
+  await Promise.all([otra, repetida]);
+  // El 429 de una petición compartida se reintenta una vez para las dos, no una por pieza.
+  reiniciarGraficasParaPruebas(redFalsa);
+  const conEspera = [pedirGrafica(izquierda, RUTA, receta), pedirGrafica(derecha, RUTA, receta)];
+  await tic();
+  pendientes.shift()!.responder(429, { error: "ocupado" }, { "Retry-After": "0.01" });
+  await new Promise((listo) => setTimeout(listo, 40));
+  assert.equal(pendientes.length, 1, "un solo reintento para las dos piezas");
+  pendientes.shift()!.responder(200, SVG);
+  assert.deepEqual((await Promise.all(conEspera)).map((grafica) => grafica?.svg), ["<svg/>", "<svg/>"]);
+  assert.equal(contadores.pedidas, 2);
+
   console.log("test-grafica-motor-cola: OK");
 }
 

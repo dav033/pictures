@@ -11,6 +11,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import planesRaw from "@/lib/biblioteca-sempertex/planes-ideas.json";
 import { pedirPlanDeIdea } from "@/components/guiado/plan-exacto-idea";
+import { WidgetGuiadoSchema } from "@/lib/ia/guiado/widgets";
+import { avisosPlanDeIdea } from "@/lib/plan/avisos-plan-idea";
 import { PlanesIdeasArchivoSchema, planConIdea } from "@/lib/plan/plan-de-idea";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 
@@ -45,7 +47,51 @@ async function main(): Promise<void> {
   const detenida = await pedirPlanDeIdea("x", null, control.signal, async () => { throw new DOMException("abortada", "AbortError"); });
   assert.equal(detenida.ok ? null : detenida.detenido, true);
 
-  console.log(`test-plan-exacto-idea: OK — ${Object.keys(ideas).length} ideas compran todo con su lista; tope de 8 piezas; cliente sin excepciones`);
+  // Verificador 127: si el plan de la idea NO sale exacto, el cliente se entera (antes la ruta devolvía `avisos: []`).
+  const exacta = avisosPlanDeIdea({ globosIdea: 87, globosDeIdeaEnPlan: 87, nuevas: ["EST_01", "EST_02"], sustituciones: [], sinCobertura: [], sinTallasDeIdea: false });
+  assert.deepEqual(exacta, { exacto: true, avisos: [] }, "exacta: nada que decir");
+  const ajustada = avisosPlanDeIdea({
+    globosIdea: 87, globosDeIdeaEnPlan: 85, nuevas: ["EST_02", "EST_03"],
+    sustituciones: [
+      { estructura_id: "EST_02", pedido: "R-36", entregado: "R-24" },
+      { estructura_id: "EST_03", pedido: "R-36", entregado: "R-24" },
+      { estructura_id: "EST_03", pedido: "R-5", entregado: "R-9" },
+      { estructura_id: "EST_01", pedido: "R-18", entregado: "R-12" },
+    ],
+    sinCobertura: [{ estructura_id: "EST_01", tamano: "R-260" }],
+    sinTallasDeIdea: false,
+  });
+  assert.equal(ajustada.exacto, false);
+  assert.deepEqual(ajustada.avisos, [
+    "Ajustamos 2 tamaños que no había: 36″ por 24″ y 5″ por 9″.",
+    "La idea lleva 87 globos; en tu plan salen 85.",
+  ], "solo lo de las piezas de la idea, en palabras de cliente (la pieza que ya estaba no cuenta)");
+  assert.deepEqual(avisosPlanDeIdea({ globosIdea: 40, globosDeIdeaEnPlan: 40, nuevas: ["EST_04"], sustituciones: [], sinCobertura: [{ estructura_id: "EST_04", tamano: "R-36" }], sinTallasDeIdea: true }).avisos, [
+    "No hay globos de 36″ disponibles ahora; la idea va sin ellos.",
+    "Para no cambiar las piezas que ya tenías, la idea se armó con otros tamaños.",
+  ]);
+  assert.deepEqual(avisosPlanDeIdea({ globosIdea: 10, globosDeIdeaEnPlan: 10, nuevas: ["EST_01"], sustituciones: [{ estructura_id: "EST_01", pedido: "gris", entregado: "plateado" }], sinCobertura: [], sinTallasDeIdea: false }).avisos, ["Cambiamos un color que no había: gris por plateado."]);
+
+  // El cliente lee `exacto` y `avisos`; un plan exacto no dice nada y un aviso raro no tumba el plan.
+  const idea07 = ideas["deco-real-07-eb12910e210c94b6184d025127acce95"]!;
+  const resuelto07 = (JSON.parse(readFileSync(path.join(ANALISIS, idea07.archivo), "utf8")) as { plan_resuelto: Record<string, unknown> }).plan_resuelto;
+  const planValido = { ...resuelto07, approval_token: "prueba" };
+  const responder = (extra: Record<string, unknown>): typeof fetch => async () => new Response(JSON.stringify({ plan: planValido, cotizacion: null, nuevas: ["EST_01_COLUMNA_ASIMETRICA"], globosIdea: 87, ...extra }), { status: 200 });
+  const conAvisos = await pedirPlanDeIdea("deco-real-07", null, new AbortController().signal, responder({ exacto: false, avisos: ajustada.avisos }));
+  assert.ok(conAvisos.ok);
+  assert.equal(conAvisos.ok && conAvisos.exacto, false);
+  assert.deepEqual(conAvisos.ok ? conAvisos.avisos : null, ajustada.avisos);
+  const sinAvisos = await pedirPlanDeIdea("deco-real-07", null, new AbortController().signal, responder({ exacto: true, avisos: ["no se muestra"] }));
+  assert.deepEqual(sinAvisos.ok ? [sinAvisos.exacto, sinAvisos.avisos] : null, [true, []], "exacto: sin línea");
+  const antiguo = await pedirPlanDeIdea("deco-real-07", null, new AbortController().signal, responder({}));
+  assert.deepEqual(antiguo.ok ? [antiguo.exacto, antiguo.avisos] : null, [null, []], "un servidor anterior (sin `exacto`) sigue funcionando");
+  const raro = await pedirPlanDeIdea("deco-real-07", null, new AbortController().signal, responder({ exacto: false, avisos: [3, "", "x".repeat(400), "Ajustamos un tamaño que no había: 36″ por 24″."] }));
+  assert.deepEqual(raro.ok ? raro.avisos : null, ["Ajustamos un tamaño que no había: 36″ por 24″."], "un aviso raro se ignora; el plan se coloca igual");
+  // La tarjeta guarda los avisos con la idea agregada (el widget se restaura de la sesión con este esquema).
+  const widget = WidgetGuiadoSchema.safeParse({ tipo: "plan", plan: planValido, agregada: { titulo: "Dos columnas rosa, lila y dorado", total: 85, avisos: ajustada.avisos } });
+  assert.equal(widget.success, true, widget.success ? "" : JSON.stringify(widget.error.issues.slice(0, 3)));
+
+  console.log(`test-plan-exacto-idea: OK — ${Object.keys(ideas).length} ideas compran todo con su lista; tope de 8 piezas; cliente sin excepciones; avisos si no sale exacto`);
 }
 
 main().catch((error: unknown) => { console.error(error); process.exit(1); });

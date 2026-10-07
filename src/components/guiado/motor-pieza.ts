@@ -3,6 +3,7 @@ import { leyendaPatron, type ColorLeyenda } from "@/components/plan/patron/leyen
 import type { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { OFICIALES_CON_DIBUJO_ESQUEMATICO } from "@/lib/plan/dibujo-estructura";
 import { OFICIALES_SIN_MOTOR, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { lineasPorMaterial } from "@/lib/plan/material-de-linea";
 import type { LineaMaterial } from "@/lib/plan/resuelto";
 import { colorSempertex } from "./color-sempertex";
 import { idOficial } from "./piezas-vista";
@@ -59,7 +60,22 @@ const MOTOR_POR_TIPO: Readonly<Record<string, CampoArmado>> = {
 };
 
 /** Lo que se lee de la pieza declarada (`EstructuraPlan` o la pieza cruda que recibe la gráfica). */
-export type PiezaDeclarada = { tipo?: unknown; estructura_oficial?: unknown } & Partial<Record<CampoArmado, unknown>>;
+export type PiezaDeclarada = { tipo?: unknown; estructura_oficial?: unknown; mezcla?: unknown } & Partial<Record<CampoArmado, unknown>>;
+
+/** Mezclas de varios tamaños: la pieza es orgánica aunque su oficial sea la lisa (`MEZCLAS` de tipos.ts). */
+const MEZCLAS_ORGANICAS: ReadonlySet<string> = new Set(["organica_fina", "organica_gruesa"]);
+
+/**
+ * «Arco orgánico» es el arco completo (`arco`, las dos patas en el piso) con mezcla de tamaños (hechos-cliente.ts,
+ * PreguntaPropuesta): sin armado guardado se arma y se edita con el motor de arco orgánico, no con el de patrón
+ * («Espiral» y franjas de un solo tamaño). Probador 124, hallazgo 4: el decorador pidió «arco orgánico de unos 3 m» y
+ * «Modificar esta pieza» abría el arco clásico. Un arco de mezcla `clasica` (las ideas de arco de la biblioteca) sigue
+ * con el de patrón.
+ */
+function campoSinArmado(campo: CampoArmado | undefined, pieza: PiezaDeclarada): CampoArmado | undefined {
+  const organica = typeof pieza.mezcla === "string" && MEZCLAS_ORGANICAS.has(pieza.mezcla);
+  return campo === "armado_arco" && organica ? "armado_arco_organico" : campo;
+}
 
 /**
  * El motor de la pieza y el armado con que se pide su dibujo (el guardado o `null` = su receta), o el dibujo
@@ -73,9 +89,26 @@ export function motorDePieza(pieza: PiezaDeclarada): MotorPieza | null {
   const guardado = PRIORIDAD.find((campo) => pieza[campo] !== undefined && pieza[campo] !== null);
   if (guardado) return { tipo: "motor", campo: guardado, ruta: RUTA_MOTOR[guardado], armado: pieza[guardado] };
   const tipo = typeof pieza.tipo === "string" ? pieza.tipo : "";
-  const campo = oficial ? MOTOR_POR_OFICIAL[oficial] : MOTOR_POR_TIPO[tipo];
+  const campo = campoSinArmado(oficial ? MOTOR_POR_OFICIAL[oficial] : MOTOR_POR_TIPO[tipo], pieza);
   if (campo) return { tipo: "motor", campo, ruta: RUTA_MOTOR[campo], armado: null };
   return !oficial && (tipo === "pared" || tipo === "centro_mesa") ? { tipo: "dibujo" } : null;
+}
+
+type MaterialLeyendaPieza = { product_id: string; color?: string | undefined; acabado?: string | undefined };
+
+/**
+ * El material como se compra: si TODAS sus líneas las compra una sustitución (`variant_overrides`) de un solo color,
+ * el producto, el color y el acabado de esas líneas (lo mismo que hace Python con `_named_by_purchase`: el burdeos de
+ * la guirnalda del Día de la Madre se compra como un Infinity multicolor). Si no, el material declarado.
+ */
+function compradoPorSustitucion(material: MaterialLeyendaPieza, propias: readonly LineaMaterial[]): MaterialLeyendaPieza {
+  if (!propias.length || propias.some((linea) => linea.product_id === material.product_id)) return material;
+  const colores = new Set(propias.map((linea) => (linea.color ?? "").trim().toLocaleLowerCase("es")));
+  const acabados = new Set(propias.map((linea) => linea.acabado ?? ""));
+  const primera = propias[0]!;
+  const color = colores.size === 1 && primera.color ? primera.color : material.color;
+  const acabado = acabados.size === 1 && primera.acabado ? primera.acabado : colores.size === 1 ? undefined : material.acabado;
+  return { product_id: primera.product_id, ...(color ? { color } : {}), ...(acabado ? { acabado } : {}) };
 }
 
 /**
@@ -87,7 +120,11 @@ export function leyendaDePieza(plan: PlanGuiado, estructuraId: string): ColorLey
   if (!declarada) return [];
   // Las líneas del plan guiado son las de Python tal cual (`BasePlanSchema` las deja pasar enteras).
   const lineas = (plan.estructuras.find((estructura) => estructura.estructura_id === estructuraId)?.lineas ?? []) as unknown as LineaMaterial[];
-  const leyenda = leyendaPatron(declarada.materiales.map((material) => ({
+  // Las líneas de cada material, también las que compra una sustitución (`variant_overrides`): antes se buscaban por
+  // producto y el lila de la idea «rosa, lila y dorado», comprado como otro producto, salía sin nombre Sempertex.
+  const porMaterial = lineasPorMaterial(declarada, lineas);
+  const comprados = declarada.materiales.map((material, indice) => compradoPorSustitucion(material, porMaterial[indice] ?? []));
+  const leyenda = leyendaPatron(comprados.map((material) => ({
     product_id: material.product_id,
     ...(material.color ? { color: material.color } : {}),
     ...(material.acabado ? { acabado: material.acabado } : {}),
@@ -96,10 +133,10 @@ export function leyendaDePieza(plan: PlanGuiado, estructuraId: string): ColorLey
   // como los chips, la tabla y los materiales, y su muestra lleva el tono del catálogo, no el de la paleta (antes:
   // «Verde lima mate» aquí y «Fashion Verde Lima» en la tarjeta; muestra azul rey y globo celeste).
   return leyenda.map((entrada, indice) => {
-    const material = declarada.materiales[indice];
+    const material = comprados[indice];
     if (!material?.color) return entrada;
-    const delProducto = lineas.filter((linea) => linea.product_id === material.product_id);
-    const linea = delProducto.find((item) => item.color === material.color) ?? delProducto[0];
+    const propias = porMaterial[indice] ?? [];
+    const linea = propias.find((item) => item.color === material.color) ?? propias[0];
     const sempertex = colorSempertex(material.color, { titulo: linea?.titulo ?? null, acabado: material.acabado ?? linea?.acabado ?? null });
     // El nombre, siempre el de los chips; el tono, solo con referencia del catálogo (un transparente o un multicolor
     // conservan su muestra especial).

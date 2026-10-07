@@ -273,6 +273,30 @@ export function propuestaAgregarIdea(decoracion: DecoracionSempertex, plan: Plan
   };
 }
 
+/**
+ * Las ideas que el plan sigue llevando tras un ajuste. Sin piezas quitadas, todas. Con alguna quitada, las que conservan
+ * al menos una pieza del tipo de las suyas: al quitar UNA de las dos columnas de «Dos columnas rosa, lila y dorado», la
+ * idea seguía en el plan, pero se olvidaba y el carrusel volvía a ofrecer «Agregar a mi plan», que la duplicaba
+ * (probador 124, hallazgo 11). Una idea que ya no está en la conversación (`buscar` → null) no se puede comprobar y sale.
+ */
+export function ideasQueSiguenEnPlan(
+  ideas: readonly string[],
+  anterior: PlanGuiado,
+  nuevo: PlanGuiado,
+  buscar: (id: string) => DecoracionSempertex | null,
+): string[] {
+  if (!ideas.length) return [];
+  if (nuevo.plan.estructuras.length >= anterior.plan.estructuras.length) return [...ideas];
+  const quedan = new Set(nuevo.plan.estructuras.map((estructura) => estructura.estructura_oficial).filter((oficial): oficial is EstructuraOficialId => oficial !== undefined));
+  return ideas.filter((id) => {
+    const decoracion = buscar(id);
+    if (!decoracion) return false;
+    const idea = ideaAgregable(decoracion);
+    const tipos = idea.ok ? idea.piezas.map((pieza) => pieza.estructura) : decoracion.piezas.map((pieza) => pieza.estructura);
+    return tipos.some((tipo) => quedan.has(tipo));
+  });
+}
+
 export type EstadoIdeaEnPlan = "listo" | "agregando" | "agregada" | "bloqueada";
 
 /** Motivos que dependen del plan de ahora (se dicen junto al botón); los demás son de la idea y no muestran botón. */

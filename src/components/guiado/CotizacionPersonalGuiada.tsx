@@ -27,12 +27,25 @@ type FilaCotizacion = { clave: string; nombre: string; esGlobo: boolean; acabado
  * del nombre de la línea. Si dos variantes quedan con el mismo nombre, se distinguen por el acabado. Ordenadas por
  * color y tamaño. El total NO sale de aquí: es cotizacion.total.
  */
-function filasCotizacion(cotizacion: Cotizacion, decoracion: DecoracionSempertex | undefined): FilaCotizacion[] {
+/**
+ * Sin nota de la idea, el título del catálogo de la línea: el del plan (`titulos`, por variante), que es el que nombran
+ * la tarjeta y «Ver detalle», o el de la propia línea si todavía lo trae («B2b Globo Latex…»). La cotización del plan
+ * llega con el nombre de cliente («Globo crema de 12"», `colocarPlan`) y, solo con el color «crema», el nombre salía de
+ * OTRO globo: «Sempertex Pastel Dusk Crema» donde la tarjeta decía «Fashion Blush Crema» (probador 124, hallazgo 5).
+ */
+function tituloDeCatalogo(linea: Cotizacion["lineas"][number], variante: string, titulos: ReadonlyMap<string, string> | undefined): string | null {
+  const delPlan = titulos?.get(variante)?.trim();
+  if (delPlan) return delPlan;
+  return linea.nombre && /^b2b\s/i.test(linea.nombre.trim()) ? linea.nombre.trim() : null;
+}
+
+function filasCotizacion(cotizacion: Cotizacion, decoracion: DecoracionSempertex | undefined, titulos: ReadonlyMap<string, string> | undefined): FilaCotizacion[] {
   const filas = new Map<string, FilaCotizacion>();
   for (const linea of cotizacion.lineas) {
     const variante = linea.varianteId ?? linea.id;
     const nota = decoracion?.materiales.find((material) => material.variantId === variante)?.nota;
-    const fuente = nota ? { nombre: nota } : linea;
+    const catalogo = nota ? null : tituloDeCatalogo(linea, variante, titulos);
+    const fuente = nota ? { nombre: nota } : catalogo ? { ...linea, nombre: catalogo } : linea;
     const partes = partesLinea(fuente);
     // Un globo redondo con su producto Sempertex reconocido se nombra por ese producto y se pinta con la fuente única
     // (`color-sempertex`): «Sempertex Reflex Plata de 12"». El dueño (2026-10-06): «esto debería dar globos Sempertex,
@@ -41,10 +54,13 @@ function filasCotizacion(cotizacion: Cotizacion, decoracion: DecoracionSempertex
     // Con la nota también: su título dice el globo que se compra y su etiqueta, lo que vio el análisis de la foto. El
     // «Fashion Azul Caribe» de la columna arcoíris tiene la etiqueta «azul celeste» y la cotización decía «Globo celeste
     // de 12"» mientras la tarjeta y la tabla decían «Azul caribe» (probador, 2026-10-07): nombre y tono, del producto.
-    const titulo = nota ? nota.split(" · ")[0]! : linea.nombre;
+    const titulo = nota ? nota.split(" · ")[0]! : catalogo ?? linea.nombre;
     const sempertex = partes.esGlobo && !partes.forma && titulo ? colorSempertex(linea.color ?? partes.color, { titulo }) : null;
     const reconocido = sempertex?.producto ? sempertex : null;
-    const producto = reconocido?.producto ?? (nota && partes.esGlobo && !partes.forma ? productoSempertex(titulo) : null);
+    // Con el título del catálogo, el producto sale de él, como en la tarjeta (`productoSempertex`): `colorSempertex` busca
+    // por el color y, con un globo que su lámina no tiene («Fashion Blush Crema»), devolvía otro del mismo tono.
+    const delCatalogo = catalogo && partes.esGlobo && !partes.forma ? productoSempertex(catalogo) : null;
+    const producto = delCatalogo ?? reconocido?.producto ?? (nota && partes.esGlobo && !partes.forma ? productoSempertex(titulo) : null);
     const pulgadasTexto = partes.pulgadas ? ` de ${partes.pulgadas}"` : "";
     const nombre = producto ? `Sempertex ${producto}${pulgadasTexto}` : nombreLineaCliente(fuente);
     const colorNombre = reconocido ? reconocido.nombre.toLocaleLowerCase("es") : partes.color;
@@ -58,7 +74,7 @@ function filasCotizacion(cotizacion: Cotizacion, decoracion: DecoracionSempertex
       if (previa.unidadesPaquete !== unidades) previa.unidadesPaquete = null;
     } else {
       const hex = reconocido?.hex ?? HEX_COLORES_V2[colorNombre as keyof typeof HEX_COLORES_V2] ?? HEX_TONO[colorNombre] ?? (linea.color ? HEX_COLORES_V2[linea.color as keyof typeof HEX_COLORES_V2] : undefined);
-      filas.set(variante, { clave: variante, nombre, esGlobo: partes.esGlobo, acabado: acabadoCliente(nota ?? linea.nombre), ...(linea.color ? { color: linea.color } : {}), ...(hex ? { hex } : {}), cantidad: linea.cantidadNecesaria ?? 0, paquetes: linea.paquetes ?? 0, unidadesPaquete: unidades, sobrante: linea.sobrante ?? 0, subtotal: linea.subtotal ?? 0 });
+      filas.set(variante, { clave: variante, nombre, esGlobo: partes.esGlobo, acabado: acabadoCliente(nota ?? catalogo ?? linea.nombre), ...(linea.color ? { color: linea.color } : {}), ...(hex ? { hex } : {}), cantidad: linea.cantidadNecesaria ?? 0, paquetes: linea.paquetes ?? 0, unidadesPaquete: unidades, sobrante: linea.sobrante ?? 0, subtotal: linea.subtotal ?? 0 });
     }
   }
   const lista = [...filas.values()];
@@ -73,13 +89,19 @@ function unidadDe(fila: FilaCotizacion): string {
   return fila.esGlobo ? (fila.cantidad === 1 ? "globo" : "globos") : (fila.cantidad === 1 ? "unidad" : "unidades");
 }
 
-export function CotizacionPersonalGuiada({ cotizacion, decoracion }: { cotizacion: Cotizacion; decoracion?: DecoracionSempertex }) {
+/**
+ * `titulos`: el título del catálogo de cada variante del plan (`titulosDelPlan`), para nombrar cada globo igual que la
+ * tarjeta y «Ver detalle». `decoracion`: la idea elegida, cuyas notas mandan cuando se cotiza la idea sin plan.
+ */
+export function CotizacionPersonalGuiada({ cotizacion, decoracion, titulos }: { cotizacion: Cotizacion; decoracion?: DecoracionSempertex; titulos?: ReadonlyMap<string, string> }) {
   const sobranteTotal = cotizacion.lineas.reduce((total, linea) => total + (linea.sobrante ?? 0), 0);
-  const filas = filasCotizacion(cotizacion, decoracion);
+  const filas = filasCotizacion(cotizacion, decoracion, titulos);
   // Cómo se ve cada globo (foto del catálogo o dibujo con su color y acabado): solo para pintarlo.
   const fichas = fichasDeCotizacion(cotizacion.lineas.map((linea) => {
-    const nota = decoracion?.materiales.find((material) => material.variantId === (linea.varianteId ?? linea.id))?.nota;
-    return nota ? { ...linea, nombre: nota } : linea;
+    const variante = linea.varianteId ?? linea.id;
+    const nota = decoracion?.materiales.find((material) => material.variantId === variante)?.nota;
+    const catalogo = nota ? null : tituloDeCatalogo(linea, variante, titulos);
+    return nota ? { ...linea, nombre: nota } : catalogo ? { ...linea, nombre: catalogo } : linea;
   }));
   const sempertex = Object.values(fichas).some((ficha) => ficha.familia !== null);
   return (

@@ -15,6 +15,7 @@ import {
   elegirGloboLiso,
   globosDeColor,
   indiceDeColor,
+  motivoSinCantidad,
   motivoSinColorNuevo,
   parejaDe,
   sinGloboLiso,
@@ -172,7 +173,8 @@ async function aplicarCantidad(cambio: Extract<CambioPlan, { tipo: "cantidad" }>
     if (Math.sign(quedo - cambio.desde) === sentido) return ultimo;
   }
   if (ultimo) return ultimo;
-  throw new FalloPlanEditar("Esa cifra no se puede: deja al menos un globo de cada color (para ninguno, quita el color).");
+  // La causa real (antes, siempre «deja al menos un globo de cada color», también cuando no era eso: verificador 127).
+  throw new FalloPlanEditar(motivoSinCantidad(base, cambio.estructuraId, cambio.indice, cambio.desde + sentido * (pasos[0] ?? 0)));
 }
 
 /** Primero en la pieza; luego, con `pareja`, lo mismo en su pareja sobre el plan que ya lo trae. */

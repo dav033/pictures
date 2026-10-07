@@ -15,10 +15,20 @@ const RespuestaSchema = z.object({
   cotizacion: z.unknown().optional(),
   nuevas: z.array(z.string()).optional(),
   globosIdea: z.number().optional(),
+  /** Si salió con las cantidades exactas de la idea; un servidor anterior no lo manda. */
+  exacto: z.boolean().optional(),
+  /** Si no salió exacto, por qué, en palabras de cliente («Ajustamos un tamaño que no había: 36″ por 24″.»). */
+  avisos: z.unknown().optional(),
 }).passthrough();
 
+/** Los avisos que se pueden mostrar: textos cortos, a lo sumo cuatro. Uno raro no tumba el plan, que es lo que importa. */
+function avisosLegibles(valor: unknown): string[] {
+  if (!Array.isArray(valor)) return [];
+  return valor.filter((aviso): aviso is string => typeof aviso === "string" && aviso.trim().length > 0 && aviso.length <= 300).map((aviso) => aviso.trim()).slice(0, 4);
+}
+
 export type PlanExacto =
-  | { ok: true; plan: PlanGuiado; cotizacion: unknown; nuevas: string[]; globosIdea: number | null }
+  | { ok: true; plan: PlanGuiado; cotizacion: unknown; nuevas: string[]; globosIdea: number | null; exacto: boolean | null; avisos: string[] }
   | { ok: false; motivo: string; estado: number | null; detenido: boolean };
 
 export async function pedirPlanDeIdea(ideaId: string, base: PlanGuiado | null, signal: AbortSignal, red: typeof fetch = (...argumentos) => fetch(...argumentos)): Promise<PlanExacto> {
@@ -36,7 +46,12 @@ export async function pedirPlanDeIdea(ideaId: string, base: PlanGuiado | null, s
     }
     const leido = RespuestaSchema.safeParse(datos);
     if (!leido.success) return { ok: false, motivo: "respuesta sin plan válido", estado: respuesta.status, detenido: false };
-    return { ok: true, plan: leido.data.plan, cotizacion: leido.data.cotizacion, nuevas: leido.data.nuevas ?? [], globosIdea: leido.data.globosIdea ?? null };
+    return {
+      ok: true, plan: leido.data.plan, cotizacion: leido.data.cotizacion, nuevas: leido.data.nuevas ?? [], globosIdea: leido.data.globosIdea ?? null,
+      exacto: leido.data.exacto ?? null,
+      // Solo un plan que NO salió exacto trae qué cambió; uno exacto no dice nada.
+      avisos: leido.data.exacto === false ? avisosLegibles(leido.data.avisos) : [],
+    };
   } catch (causa) {
     return { ok: false, motivo: causa instanceof Error ? causa.message : String(causa), estado: null, detenido: signal.aborted };
   }

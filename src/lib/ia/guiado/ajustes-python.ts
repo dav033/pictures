@@ -1,8 +1,14 @@
 import { z } from "zod";
 import { esSustitucionDeColor } from "@/lib/plan/colores-referencia";
-import { esEstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { ESTRUCTURAS_OFICIALES, esEstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { clienteDioMedidasEspacio, estructurasMedidasPorCliente } from "@/lib/plan/medidas-defecto";
+import { TIPOS_ESTRUCTURA, type TipoEstructura } from "@/lib/plan/tipos";
 import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 import { faltantesCliente, supuestoCliente, sustitucionesCliente } from "@/lib/plan/presentacion-cliente";
+
+function esTipoEstructura(valor: string): valor is TipoEstructura {
+  return (TIPOS_ESTRUCTURA as readonly string[]).includes(valor);
+}
 
 /**
  * «Ajustes que hice» de la vista guiada: lo que Python cambió o supuso al resolver el plan, en palabras de cliente.
@@ -19,13 +25,75 @@ export type AjusteGuiado = { tipo: TipoAjusteGuiado; texto: string };
 
 const PlanConAvisosSchema = z.object({
   plan: z.object({
-    estructuras: z.array(z.object({ estructura_id: z.string(), nombre: z.string().optional(), estructura_oficial: z.string().optional() }).passthrough()),
+    estructuras: z.array(z.object({ estructura_id: z.string(), nombre: z.string().optional(), estructura_oficial: z.string().optional(), tipo: z.string().optional() }).passthrough()),
     supuestos: z.array(z.string()).optional(),
   }).passthrough(),
   sustituciones: z.array(z.object({ estructura_id: z.string(), pedido: z.string(), entregado: z.string(), motivo: z.string().optional() }).passthrough()).optional(),
   sin_cobertura: z.array(z.object({ estructura_id: z.string(), tamano: z.string() }).passthrough()).optional(),
   advertencias: z.array(z.string()).optional(),
+  /** Las palabras del cliente con que se pidió el plan (`solicitudCliente` → `original_request`). */
+  original_request: z.string().optional(),
 }).passthrough();
+
+/**
+ * Lo que Python hizo con el conteo de globos de la foto (`plan_resuelto.conteos_referencia`, ADR-0031), solo lo que
+ * hace falta para decirlo. Se lee aparte y sin romper nada: un plan sin conteos (o con otra forma) no lo trae.
+ */
+const ConteosFotoSchema = z.array(z.object({
+  estructura_id: z.string(),
+  decision: z.string(),
+  globos_foto: z.number().int().nonnegative().nullable(),
+  globos_despues: z.number().int().nonnegative(),
+}).passthrough());
+
+/** Por debajo de esto la diferencia con la foto es redondeo de la cuenta aproximada (la misma tolerancia de Python, ±15 %). */
+const TOLERANCIA_CONTEO = 0.15;
+
+const SUPUESTO_SIN_TAMANO = /^Usé medidas estándar para (.+) \((.+)\) porque no me diste el tamaño del espacio\.$/;
+
+/**
+ * El supuesto de medidas cuando el cliente SÍ dio una medida para esa pieza (probador 124, hallazgo 4): Python escribe
+ * «no nos diste el tamaño» en cuanto falta UN eje («arco orgánico de unos 3 metros»: el ancho es suyo y solo el alto es
+ * el estándar), y el decorador leía «porque no me diste el tamaño» después de haberlo dado. Se dice lo que pasó.
+ */
+function supuestoConMedidaDelCliente(texto: string, pieza: string | undefined): string {
+  const coincidencia = SUPUESTO_SIN_TAMANO.exec(texto);
+  if (!coincidencia) return texto;
+  return `Para ${pieza ?? coincidencia[1]} usé la medida que me diste y completé con la estándar lo que no me dijiste: queda de ${coincidencia[2]}.`;
+}
+
+/**
+ * Las piezas cuyas medidas dio el cliente con sus palabras, por su tipo («arco», «columna»): las que el supuesto de
+ * medidas nombra (`medidas asumidas para <tipo>`).
+ */
+function tiposMedidosPorCliente(estructuras: ReadonlyArray<{ estructura_id: string; nombre?: string | undefined; estructura_oficial?: string | undefined; tipo?: string | undefined }>, solicitud: string | undefined): Map<string, string[]> {
+  if (!solicitud || !clienteDioMedidasEspacio(solicitud)) return new Map();
+  const conTipo = estructuras.flatMap((estructura) => {
+    const tipo = estructura.tipo ?? (esEstructuraOficialId(estructura.estructura_oficial) ? ESTRUCTURAS_OFICIALES[estructura.estructura_oficial].tipoBase : undefined);
+    return tipo && esTipoEstructura(tipo) ? [{ estructura_id: estructura.estructura_id, tipo, nombre: estructura.nombre ?? "" }] : [];
+  });
+  const medidas = new Set(estructurasMedidasPorCliente(conTipo, solicitud));
+  const porTipo = new Map<string, string[]>();
+  for (const estructura of conTipo.filter((item) => medidas.has(item.estructura_id))) porTipo.set(estructura.tipo, [...(porTipo.get(estructura.tipo) ?? []), estructura.estructura_id]);
+  return porTipo;
+}
+
+/**
+ * Cuando la foto muestra la pieza claramente más llena de lo que el plan pudo armar con las medidas que se leyeron de
+ * ella (probador 124, hallazgo 7: columnas de ≈ 75 y ≈ 85 globos en la foto, 44 en el plan). La cuenta y la decisión son
+ * de Python; aquí solo se dice, con la salida que tiene el cliente.
+ */
+function conteosFotoCliente(plan: unknown, nombres: ReadonlyMap<string, string>): string[] {
+  const leidos = ConteosFotoSchema.safeParse((plan as { conteos_referencia?: unknown } | null)?.conteos_referencia);
+  if (!leidos.success) return [];
+  return leidos.data.flatMap((conteo) => {
+    const foto = conteo.globos_foto;
+    if (foto === null || conteo.decision === "coincide" || conteo.decision === "no_confiable") return [];
+    if (foto - conteo.globos_despues <= Math.max(2, foto * TOLERANCIA_CONTEO)) return [];
+    const nombre = nombres.get(conteo.estructura_id) ?? "la decoración";
+    return [`En la foto, ${nombre} lleva unos ${foto} globos; en tu plan lleva ${conteo.globos_despues} con las medidas que tomé de la foto. Si la quieres igual de llena, pídela más grande.`];
+  });
+}
 
 function unicos<T>(items: readonly T[], clave: (item: T) => string): T[] {
   const vistos = new Set<string>();
@@ -66,11 +134,20 @@ export function ajustesDePython(plan: unknown, opciones: { sinColoresDeFoto?: bo
   }));
   const sust = unicos(sustituciones, (item) => `${item.estructura_id}|${item.pedido}|${item.entregado}|${item.motivo ?? ""}`).map((item) => ({ ...item, motivo: item.motivo ?? "" }));
   const faltan = unicos(sinCobertura, (item) => `${item.estructura_id}|${item.tamano}`);
+  // Las piezas que el cliente midió con sus palabras: su supuesto de medidas no dice «no me diste el tamaño».
+  const medidasDelCliente = tiposMedidosPorCliente(declarado.estructuras, leido.data.original_request);
+  const supuesto = (texto: string): string => {
+    const tipo = /^medidas asumidas para ([a-z_]+):/i.exec(texto.trim())?.[1];
+    const medidas = tipo ? medidasDelCliente.get(tipo) : undefined;
+    // «el arco principal», como lo nombra la tarjeta, si es una sola pieza de ese tipo.
+    return medidas ? supuestoConMedidaDelCliente(supuestoCliente(texto), medidas.length === 1 ? nombres.get(medidas[0]!) : undefined) : supuestoCliente(texto);
+  };
   const ajustes: AjusteGuiado[] = [
     ...faltantesCliente(faltan, nombres).map((texto): AjusteGuiado => ({ tipo: "faltante", texto })),
     ...(opciones.sinColoresDeFoto ? [] : sustitucionesCliente(sust.filter(esSustitucionDeColor), nombres).map((texto): AjusteGuiado => ({ tipo: "color", texto }))),
     ...sustitucionesCliente(sust.filter((item) => !esSustitucionDeColor(item)), nombres).map((texto): AjusteGuiado => ({ tipo: "tamano", texto })),
-    ...[...new Set(declarado.supuestos ?? [])].map((supuesto): AjusteGuiado => ({ tipo: "supuesto", texto: supuestoCliente(supuesto) })),
+    ...[...new Set(declarado.supuestos ?? [])].map((texto): AjusteGuiado => ({ tipo: "supuesto", texto: supuesto(texto) })),
+    ...conteosFotoCliente(plan, nombres).map((texto): AjusteGuiado => ({ tipo: "supuesto", texto })),
     ...advertencias.flatMap((aviso): AjusteGuiado[] => { const texto = advertenciaCliente(aviso, nombres); return texto ? [{ tipo: "color", texto }] : []; }),
   ];
   return unicos(ajustes, (ajuste) => ajuste.texto);

@@ -6,6 +6,7 @@ import { decidir } from "@/lib/registro/servidor";
 import { verificarBase } from "./ajuste-plan-entero";
 import type { AplicarEdicionResultado } from "./aplicar-edicion";
 import { crearTokenPlan } from "./aprobacion";
+import { avisosPlanDeIdea } from "./avisos-plan-idea";
 import { claveResolucion, recordarResolucion } from "./cache-resoluciones";
 import { conFotosDeCatalogo } from "./cotizacion-fotos";
 import { PlanEditError } from "./edicion-error";
@@ -49,7 +50,8 @@ function piezasIntactas(base: BasePlan, resuelto: { estructuras: ReadonlyArray<{
   });
 }
 
-export type PlanDesdeIdea = AplicarEdicionResultado & { nuevas: string[]; globosIdea: number };
+/** `avisos`: si el plan no salió exacto, por qué en palabras de cliente (`avisos-plan-idea.ts`); vacío si lo es. */
+export type PlanDesdeIdea = AplicarEdicionResultado & { nuevas: string[]; globosIdea: number; exacto: boolean };
 
 export async function planDesdeIdea({ ideaId, base, signal }: Entrada): Promise<PlanDesdeIdea> {
   const guardado = planGuardadoDeIdea(ideaId);
@@ -106,8 +108,18 @@ export async function planDesdeIdea({ ideaId, base, signal }: Entrada): Promise<
   // Los globos de las piezas de la idea en el plan nuevo: si son los de su tarjeta, el plan es exacto.
   const nuevas = new Set(combinado.ok ? combinado.nuevas : []);
   const globosDeIdeaEnPlan = resuelto.estructuras.filter((estructura) => nuevas.has(estructura.estructura_id)).reduce((suma, estructura) => suma + estructura.lineas.reduce((parcial, linea) => parcial + linea.unidades, 0), 0);
-  decidir("regla:plan_desde_idea_resuelto", "Python resolvió el plan de la idea", {
-    plan_hash: resuelto.plan_hash, globos, globosIdea: guardado.globos, globosDeIdeaEnPlan, exacto: globosDeIdeaEnPlan === guardado.globos,
+  // Si no salió exacto, por qué y en palabras de cliente: la tarjeta lo dice (antes solo iba al registro y la ruta
+  // devolvía `avisos: []`, verificador 127).
+  const { exacto, avisos } = avisosPlanDeIdea({
+    globosIdea: guardado.globos,
+    globosDeIdeaEnPlan,
+    nuevas: [...nuevas],
+    sustituciones: resuelto.sustituciones,
+    sinCobertura: resuelto.sin_cobertura,
+    sinTallasDeIdea: conTallasDeIdea && !tallasDeIdea,
+  });
+  decidir("regla:plan_desde_idea_resuelto", "Python resolvió el plan de la idea; si no es exacto, lo que ve el cliente", {
+    plan_hash: resuelto.plan_hash, globos, globosIdea: guardado.globos, globosDeIdeaEnPlan, exacto, avisos,
     tallasDeIdea, sinCobertura: resuelto.sin_cobertura.length, sustituciones: resuelto.sustituciones.length,
   }, { entrada: { ideaId }, ...(conTallasDeIdea && !tallasDeIdea ? { motivo: "con las tallas de la idea cambiaba una pieza que ya estaba: se resolvió sin ellas" } : {}) });
   encolarEscrituraObservabilidad(registrarPlanAudit(getRagPool(), {
@@ -122,5 +134,5 @@ export async function planDesdeIdea({ ideaId, base, signal }: Entrada): Promise<
     packages: { ahorro_paquetes_cop: resuelto.totales.ahorro_paquetes_cop, lineas: resuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })) },
     status: "PLAN_EDITED",
   }));
-  return { plan: resuelto, cotizacion: conFotosDeCatalogo(resolucion.cotizacion, resuelto.compras), avisos: [], nuevas: combinado.nuevas, globosIdea: guardado.globos };
+  return { plan: resuelto, cotizacion: conFotosDeCatalogo(resolucion.cotizacion, resuelto.compras), avisos, exacto, nuevas: combinado.nuevas, globosIdea: guardado.globos };
 }

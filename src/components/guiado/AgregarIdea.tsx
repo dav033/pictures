@@ -95,8 +95,14 @@ export function BotonAgregarIdea({ etiqueta, etiquetaCargando, ayuda, estado, mo
 /** Versión discreta para el carrusel de ideas: no compite con «Me gusta esta». Nada si la idea no se puede agregar. */
 export function BotonAgregarCarrusel({ estado, deshabilitado, onAgregar }: { estado: EstadoAgregarIdea; deshabilitado: boolean; onAgregar: () => void }) {
   if (estado === "bloqueada") return null;
+  // Ya en el plan: el mismo botón, desactivado y con su check (probador 124, hallazgo 11). Agregarla otra vez duplicaría
+  // sus piezas.
   if (estado === "agregada") {
-    return <span className="mt-2 inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-exito"><Check className="size-3.5" aria-hidden />En tu plan</span>;
+    return (
+      <button type="button" disabled aria-disabled="true" className="mt-2 inline-flex min-h-11 w-full cursor-default items-center justify-center gap-1.5 rounded-xl border border-exito/30 bg-exito-suave px-3 text-sm font-semibold text-exito">
+        <Check className="size-4" aria-hidden />Está en tu plan
+      </button>
+    );
   }
   const agregando = estado === "agregando";
   return (
