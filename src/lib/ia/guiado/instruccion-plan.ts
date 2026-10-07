@@ -22,7 +22,7 @@ const GLOBO_NO_LISO = /impres|estampad|2 caras|dos caras|feliz|cumplea|happy|bir
 /** Orden de globos lisos. Sin la palabra «látex»: en el texto del cliente bloquea la categoría en la búsqueda del catálogo. */
 const SOLO_LISOS = "Usa solo globos lisos de un solo color: nada estampado, impreso ni con dibujos, letras, números o frases.";
 
-const REINTENTO = 'El intento anterior no sirvió: busca cada color en 5", 12" y 18", solo globos lisos de un solo color, y usa solo variantes con cobertura antes de confirmar.';
+const REINTENTO = 'El intento anterior no sirvió: busca cada color en los tamaños que existan (5", 12", 18"), solo globos lisos de un solo color, incluye TODOS los colores pedidos y usa solo variantes con cobertura antes de confirmar.';
 
 function nombreOficial(estructura: EstructuraOficialId): string {
   return ESTRUCTURAS_OFICIALES[estructura].nombre;
@@ -37,8 +37,28 @@ function listaColores(colores: readonly string[]): string[] {
   return [...new Set(colores.map((color) => color.trim().toLocaleLowerCase("es")).filter((color) => color.length > 0))];
 }
 
+/**
+ * Globo liso redondo con el que se busca cada color. Sin la pista el modelo usaba el MISMO producto (un transparente) para
+ * «transparente» y «plateado»; el servidor le devolvía al material su color real y la validación rechazaba el plan 3 veces
+ * por «falta el plateado» (producción, 2026-10-06).
+ */
+const BUSQUEDA_COLOR: Readonly<Record<string, string>> = {
+  // Sin nombres de acabado (Reflex, Satin, Fashion): /api/chat los lee como acabados obligatorios y rechaza el plan.
+  plateado: "globo redondo plata",
+  dorado: "globo redondo oro",
+  transparente: "globo redondo cristal",
+  blanco: "globo redondo blanco",
+  negro: "globo redondo negro",
+  rosado: "globo redondo rosado",
+  "dorado rosa": "globo redondo oro rosa",
+};
+
 function lineaColores(colores: readonly string[]): string {
-  return `Colores: usa EXACTAMENTE estos colores: ${colores.join(", ")}; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color. Todos deben aparecer en el plan.`;
+  const pistas = colores.filter((color) => BUSQUEDA_COLOR[color]).map((color) => `${color} → ${BUSQUEDA_COLOR[color]}`);
+  return [
+    `Colores: usa EXACTAMENTE estos colores: ${colores.join(", ")}; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color. Todos deben aparecer en el plan.`,
+    `Busca cada color por separado y usa un producto distinto para cada uno, cuyo color de catálogo sea ese color (nunca el mismo product_id para dos colores).${pistas.length ? ` Búsquedas sugeridas: ${pistas.join("; ")}.` : ""}`,
+  ].join("\n");
 }
 
 /**
@@ -56,7 +76,9 @@ export function instruccionPlanGuiado(propuesta: PropuestaGuiada, opciones?: { r
     "Piezas (usa exactamente estas, con su estructura_oficial y su estructura_id):",
     ...piezas,
     lineaColores(listaColores(propuesta.colores)),
-    ...(organicas.length ? [`Mezcla de tamaños: en ${listaNatural(organicas)} mezcla al menos 3 tamaños (5", 12" y 18") de cada color; una pieza orgánica nunca va en un solo tamaño.`] : []),
+    // «de cada color» era imposible para colores con pocos tamaños lisos (plateado): el modelo lo quitaba, la validación
+    // rechazaba el plan 3 veces y la guiada mostraba «No pude terminar este plan» (producción, 2026-10-06).
+    ...(organicas.length ? [`Mezcla de tamaños: en ${listaNatural(organicas)} mezcla al menos 3 tamaños (por ejemplo 5", 12" y 18") en la pieza; no hace falta que cada color tenga todos los tamaños: un color con pocos tamaños disponibles va en los que tenga, pero ningún color se quita. Una pieza orgánica nunca va en un solo tamaño.`] : []),
     SOLO_LISOS,
     // Sin describir el plan anterior: /api/chat lee las cantidades del texto como restricciones («2 columnas») y las volvía a
     // meter en un plan que el cliente pidió sin columnas (recorrido 2, 2026-10-06).

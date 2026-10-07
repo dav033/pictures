@@ -1693,6 +1693,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
         rerankSignal: options.signal,
       });
+      console.info("[chat] busqueda", JSON.stringify({ request_id: estado.ragRequestId, mensaje: mensaje.slice(0, 200), filtrosDuros, relajado: respuesta.filtroRelajado ?? null, titulos: respuesta.candidatos.slice(0, 8).map((candidato) => candidato.titulo) }).slice(0, 1500));
       // Every variant seen this turn stays known, also when a later search is narrower.
       estado.ragCandidatos = unirCandidatosTurno(estado.ragCandidatos ?? [], respuesta.candidatos);
       if (respuesta.catalogSnapshotId) estado.ragCatalogSnapshotId = respuesta.catalogSnapshotId;
@@ -2125,6 +2126,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       }
       const respuesta = await confirmarPlan(args);
       if (respuesta.ok !== false) return respuesta;
+      // Sin esto el motivo del rechazo solo lo veía el modelo y en producción no había forma de depurarlo (2026-10-06).
+      console.warn("[plan] confirmar rechazado", JSON.stringify({ request_id: estado.ragRequestId, rechazo: estado.rechazosPlan + 1, respuesta, args }).slice(0, 6000));
       estado.rechazosPlan += 1;
       if (estado.rechazosPlan < RECHAZOS_MAXIMOS) return respuesta;
       encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "PLAN_NO_CONVERGE", candidateProductIds: [...estado.ragIdsRecuperados] }));

@@ -449,12 +449,16 @@ export function validarRestriccionesPlan(
     if (total !== requerida.repeticiones) errores.push(`Pediste ${cantidadEstructura(requerida.tipo, requerida.repeticiones)} y la propuesta tiene ${cantidadEstructura(requerida.tipo, total)}.`);
   }
   if (restricciones.colores.filter((color) => color.polaridad === "obligatorio").length) {
-    const coloresPlan = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => normalizar(material.color ?? ""))).filter(Boolean));
+    // «plata»/«oro» y «plateado»/«dorado» son el mismo color: se normalizan ambos lados. Antes solo el pedido pasaba
+    // a «plateado», y un material «plata» (Reflex/Metal Plata) nunca cubría «plateado»: el plan se rechazaba 3 veces
+    // y la vista guiada mostraba «No pude terminar este plan» (2026-10-06).
+    const tono = (valor: string) => normalizar(valor).replace(/\bplata\b/g, "plateado").replace(/\boro\b/g, "dorado");
+    const coloresPlan = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => tono(material.color ?? ""))).filter(Boolean));
     for (const cambio of coloresReemplazados) {
-      if (mismoTono(cambio.antes, cambio.despues) && coloresPlan.has(normalizar(cambio.despues))) coloresPlan.add(normalizar(cambio.antes));
+      if (mismoTono(cambio.antes, cambio.despues) && coloresPlan.has(tono(cambio.despues))) coloresPlan.add(tono(cambio.antes));
     }
     for (const color of restricciones.colores.filter((item) => item.polaridad === "obligatorio")) {
-      const requerido = normalizar(color.valor).replace("plata", "plateado");
+      const requerido = tono(color.valor);
       const cubierto = [...coloresPlan].some((disponible) => disponible === requerido || disponible.includes(requerido) || requerido.includes(disponible));
       if (!cubierto) errores.push(`Pediste el color ${color.valor} y la propuesta todavía no lo incluye.`);
     }

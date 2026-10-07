@@ -28,7 +28,9 @@ assert.ok(instruccion.includes("1 × Arco orgánico (estructura_oficial: arco_as
 assert.ok(instruccion.includes("2 × Columna (estructura_oficial: columna; estructura_id: EST_02_COLUMNA; repeticiones: 2)"));
 assert.ok(instruccion.includes("Todos deben aparecer en el plan."));
 assert.ok(instruccion.includes("usa EXACTAMENTE estos colores: azul, blanco, dorado; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color"));
-assert.ok(/Arco orgánico mezcla al menos 3 tamaños \(5", 12" y 18"\)/.test(instruccion), "pieza orgánica exige mezcla de tamaños");
+assert.ok(/Arco orgánico mezcla al menos 3 tamaños \(por ejemplo 5", 12" y 18"\) en la pieza/.test(instruccion), "pieza orgánica exige mezcla de tamaños");
+assert.ok(instruccion.includes("ningún color se quita"), "un color con pocos tamaños no se quita del plan");
+assert.ok(instruccion.includes("nunca el mismo product_id para dos colores"), "cada color con su propio producto");
 assert.ok(!/Columna mezcla/.test(instruccion), "la columna clásica no está obligada a mezclar");
 assert.ok(/confirma el plan en este mismo turno/i.test(instruccion) && /no le preguntes nada/i.test(instruccion));
 assert.ok(/solo globos lisos de un solo color: nada estampado, impreso ni con dibujos, letras, números o frases/.test(instruccion));
@@ -38,7 +40,7 @@ assert.ok(!/l[aá]tex/i.test(instruccion), "«látex» en el texto del cliente b
 assert.ok(!/Contexto|cumplea|boda|princesa|\d+ años/i.test(instruccion), instruccion);
 assert.ok(!/intento anterior/.test(instruccion));
 const reintento = instruccionPlanGuiado(propuesta, { reintento: true });
-assert.ok(reintento.includes('El intento anterior no sirvió: busca cada color en 5", 12" y 18", solo globos lisos de un solo color'), reintento);
+assert.ok(reintento.includes('El intento anterior no sirvió: busca cada color en los tamaños que existan') && reintento.includes('incluye TODOS los colores pedidos'), reintento);
 const planAnterior = planActualDesdePlan(planBoda)!;
 const cambio = instruccionPlanGuiado(propuesta, { planAnterior });
 assert.ok(cambio.includes("el plan nuevo lleva SOLO las piezas de esta lista"), cambio);

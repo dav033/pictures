@@ -1,6 +1,14 @@
 import type { Brief } from "@/lib/types";
 import { colorDeCatalogo } from "@/lib/plan/colores-catalogo";
 import { extraerFiltrosDurosBusqueda, type FiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
+import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
+
+/** Colores de la paleta que nombra un texto (los colores no son filtros duros, así que no salen del extractor). */
+function coloresNombrados(texto: string): number {
+  const limpio = ` ${texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()} `;
+  const sinonimos: Record<string, string[]> = { plateado: ["plateado", "plata"], dorado: ["dorado", "oro"], rosado: ["rosado", "rosa"], transparente: ["transparente", "cristal"] };
+  return PALETA_COLORES_V2.filter((color) => (sinonimos[color] ?? [color]).some((palabra) => new RegExp(`[^a-z]${palabra}(s|es)?[^a-z]`).test(limpio))).length;
+}
 
 /**
  * Hard filters of ONE `buscar_catalogo_rag` call.
@@ -52,10 +60,16 @@ export function filtrosDurosDeBusqueda(input: {
   const dichos = <T>(valores: readonly T[], cliente: readonly T[]) => valores.filter((valor) => cliente.includes(valor));
   const fuera = new Set((input.coloresRetirados ?? []).map(colorDeCatalogo));
   const colores = dichos(delTurno.colores, delCliente.colores);
+  // Con una paleta de varios colores, un acabado del cliente describe a UNO de ellos («rosado, plateado, transparente y
+  // blanco»): como filtro de todas las búsquedas del turno solo devolvía globos transparentes, el plateado no salía nunca y
+  // el plan se rechazaba tres veces (producción, 2026-10-06). Igual que los tamaños, filtra solo la búsqueda que lo nombra;
+  // el plan sigue exigiendo el acabado (`restricciones.acabados`).
+  const acabadosCliente = dichos(delTurno.acabados, delCliente.acabados);
+  const acabados = coloresNombrados(solicitud) >= 2 ? acabadosCliente.filter((acabado) => deLaBusqueda.acabados.includes(acabado)) : acabadosCliente;
   return {
     ...delTurno,
     colores: fuera.size ? colores.filter((color) => !fuera.has(colorDeCatalogo(color))) : colores,
-    acabados: dichos(delTurno.acabados, delCliente.acabados),
+    acabados,
     formas: dichos(delTurno.formas, delCliente.formas),
     categorias: dichos(delTurno.categorias, delCliente.categorias),
     ocasiones: dichos(delTurno.ocasiones, delCliente.ocasiones),
