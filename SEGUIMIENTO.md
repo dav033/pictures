@@ -28,9 +28,17 @@ El consejo de LLM lo recomendó antes que un LoRA de estructuras (ver enlaces).
 | Decoración | Flores, flor de tubito, moño, estrella y flor de corazones por propiedades (14 predefinidas), colgadas de las anclas de la columna, el arco o la pared; mezcla de varias. **Celebra ed. 27 uno a uno**: modo «Como la foto», cada una de las 25 piezas en su sitio medido en la foto |
 | Orgánico | Motor orgánico (columna, guirnalda, semiarco) con flores artificiales, pedestal y confeti; réplica de la columna azul de XV |
 | Colores de la escena | Paleta arriba en todas las pestañas (menos Globos): cada color usado con su cantidad; tocarlo lo cambia en todo el montaje (en Decoración, por separado la base y las decoraciones), con «Deshacer» y aviso si el color no viene en un formato (p. ej. Corazón 6 solo Fucsia) |
+| Escena | Varias piezas en una sala (piso, paredes y techo que se ocultan al girar): en el piso, contra una pared, colgadas del techo o de un ancla de otra pieza; mover, girar, duplicar, quitar. Presets: arco orgánico con dos columnas y guirnalda, pared de globos al fondo con columnas, techo con tiras y flores. Base común: `Pieza` (`piezas.ts`) y `armarEscena` (`escena.ts`) |
+| Catálogo | 13 decoraciones simples del Banco de estructuras digitalizadas (`catalogo-fotos.ts`), añadibles desde Escena; cada una dice qué se parece y qué no |
 | Imagen con IA | «Generar imagen con IA»: captura el visor y lo vuelve foto con FLUX base `/edit` (sin LoRA), eligiendo lugar; ~US$0,05 por imagen, tope 30/hora, registro en el servidor |
 
-### Siguiente: motor de composición modular («que se pueda armar de todo un poco»)
+### Siguiente
+
+- Más decoraciones del banco: guirnalda espiral roja y azul (e02-p016-002), columnas de cuarteto grande con chicos de colores (e02-p045-000, e02-p044-000), arcos con decoraciones colgadas (e20-p036-002, e26-p043-002).
+- Decidir el paso entre cuartetos: las fotos muestran 0,6–0,7 d por nivel; el taller usa 0,8 d (5 por metro de Sempertex).
+- Afinar decoraciones dentro de una escena (hoy solo se cambian por otra predefinida).
+
+### Antes planeado: motor de composición modular (hecho en buena parte con Escena)
 
 1. Interfaz común `Generador` con esquema de propiedades → `armar(props)` → pieza `{globos, anclas, follaje, materiales}`.
 2. Registro de generadores (módulo, trenza/columna, arco, pared malla, pared trenzas, orgánico, flor, moño, estrella…).
