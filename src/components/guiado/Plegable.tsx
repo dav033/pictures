@@ -5,8 +5,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { DUR, EASE_SALIDA } from "./animacion/movimiento";
 
-/** Panel que se abre y se cierra con altura animada (0 → auto). Solo el contenido; el botón lo pone quien lo usa. */
-export function PanelPlegable({ abierto, id, children }: { abierto: boolean; id?: string; children: ReactNode }) {
+/**
+ * Panel que se abre y se cierra con altura animada (0 → auto). Solo el contenido; el botón lo pone quien lo usa.
+ * `alAbrir`: cuando terminó de abrirse (para llevarlo a la vista sin pelear con la animación).
+ */
+export function PanelPlegable({ abierto, id, alAbrir, children }: { abierto: boolean; id?: string; alAbrir?: () => void; children: ReactNode }) {
   return (
     <AnimatePresence initial={false}>
       {abierto && (
@@ -17,6 +20,7 @@ export function PanelPlegable({ abierto, id, children }: { abierto: boolean; id?
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: EASE_SALIDA }}
+          onAnimationComplete={alAbrir ? (definicion) => { if (typeof definicion === "object" && "height" in definicion && definicion.height === "auto") alAbrir(); } : undefined}
           className="overflow-hidden"
         >
           {children}

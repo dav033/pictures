@@ -17,6 +17,8 @@ import { TarjetaEleccion } from "./TarjetaEleccion";
 import { TarjetasProveedores } from "./TarjetasProveedores";
 import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
+import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
+import type { AjustePublicado, ResultadoRehacer } from "./ajuste/usarAjustePlanGuiado";
 import { TarjetaPropuesta } from "./TarjetaPropuesta";
 import { TarjetaError } from "./TarjetaError";
 import { PreguntaPropuesta } from "./PreguntaPropuesta";
@@ -646,6 +648,61 @@ export function VistaGuiada() {
     setAnuncio("Tu plan está listo");
   }
 
+  /**
+   * «Ajustar mi plan»: el plan que Python rehizo queda en la MISMA tarjeta (no es una versión nueva) y su mensaje, que
+   * viaja en el historial, dice el ajuste («Ajusté: más rosado…») para que «Cambiar algo» parta de lo que se ve. Solo
+   * se publica sobre el plan en que se hizo: si entretanto llegó otro, el ajuste no lo pisa.
+   */
+  function ajustarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, { descripcion, baseHash, rehecho }: AjustePublicado): void {
+    const vigente = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
+    if (!vigente || vigente.reemplazado || vigente.plan.plan_hash !== baseHash) return;
+    const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacionCruda);
+    const cotizacion = precio.success ? { ...precio.data, lineas: precio.data.lineas.map((linea) => ({ ...linea, nombre: nombreLineaCliente(linea) })) } : undefined;
+    const armado = generarPasosPlan(plan);
+    const resumen = resumenPlanGuiado(plan);
+    setMensajes((actuales) => actuales.map((mensaje) => {
+      const actual = mensaje.id === mensajeId ? planDelMensaje(mensaje) : undefined;
+      if (!actual || actual.reemplazado || actual.plan.plan_hash !== baseHash) return mensaje;
+      // Un plan rehecho entero ya no lleva los ajustes de antes: el historial no los menciona.
+      const ajustes = [...(rehecho ? [] : actual.ajustes ?? []), descripcion.slice(0, 160)].slice(-4);
+      const nuevo: WidgetPlan = {
+        tipo: "plan", plan, pasos: armado.pasos, ajustes, totalAnterior: totalDePlan(actual.plan),
+        ...(cotizacion ? { cotizacion } : {}),
+        ...(actual.fotoInspiracion ? { fotoInspiracion: true } : {}),
+        ...(actual.usoCosteo ? { usoCosteo: actual.usoCosteo } : {}),
+        ...(actual.compraAbierta ? { compraAbierta: true } : {}),
+        // La imagen era del plan de antes: «Ver cómo quedaría» vuelve a ser la acción principal.
+        hechas: (actual.hechas ?? []).filter((hecha) => hecha !== "ver"),
+      };
+      return { ...mensaje, content: contenidoPlanAjustado(resumen, ajustes), widgets: mensaje.widgets?.map((widget): Widget => (widget.tipo === "plan" ? nuevo : widget)) };
+    }));
+    setImagenesLocales((actuales) => (mensajeId in actuales ? Object.fromEntries(Object.entries(actuales).filter(([id]) => id !== mensajeId)) : actuales));
+    setAnuncio(`Listo: ${descripcion}. Tu plan tiene ${totalDePlan(plan)} globos.`);
+  }
+
+  /**
+   * Quitar una pieza o añadir un color desde «Ajustar mi plan». Python no tiene una edición que quite una pieza entera, y
+   * `agregar` admite un solo tamaño del globo nuevo (una pieza orgánica mezcla cuatro o cinco), así que el plan se rehace
+   * con la propuesta nueva por la misma ruta que «Cambiar algo» (`instruccionPlanGuiado` con el plan anterior). La
+   * tarjeta no cambia hasta que llega el plan nuevo: si falla, sigue como estaba.
+   */
+  async function rehacerPlan(mensajeId: string, propuesta: Propuesta): Promise<ResultadoRehacer> {
+    if (cargandoRef.current) return { error: "Espera a que termine lo que estoy haciendo y vuelve a intentarlo." };
+    const widget = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
+    const planAnterior = widget ? planActualDesdePlan(widget.plan) ?? undefined : undefined;
+    limpiarAvisos();
+    const armar = (reintento: boolean) => ({
+      schema_version: "chat.v1",
+      messages: [{ role: "user", content: instruccionPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}) }) }],
+      brief: briefChatGuiado(propuesta.colores),
+    });
+    const resultado = await ejecutarPlan(mensajeId, armar, false);
+    if (resultado.estado === "obsoleto") { quitarEtapa(mensajeId); return { error: "Otro cambio se adelantó. Tu plan sigue como estaba." }; }
+    terminarPlan(resultado.turno, mensajeId);
+    if (resultado.estado === "ok") return { plan: resultado.plan, cotizacion: resultado.cotizacion };
+    return { error: resultado.estado === "detenido" ? "Detuviste el cambio. Tu plan sigue como estaba." : "No pude rehacer tu plan con ese cambio. Tu plan sigue como estaba." };
+  }
+
   async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado }): Promise<void> {
     if (cargandoRef.current && !opciones.desdeTurno) return;
     const { mensajeId, planAnterior } = opciones;
@@ -1036,6 +1093,11 @@ export function VistaGuiada() {
             onCosteo={(valor) => { registrarAccion("plan.costeo_uso", { uso: valor, mensajeId }); actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, usoCosteo: valor, hechas: conHecha(actual.hechas, "costear") })); }}
             onProveedores={() => preguntarCiudad("ciudad-decorador", "Quiero cotizar con un proveedor cerca")}
             onDistribuidor={() => preguntarCiudad("ciudad-distribuidor", "Quiero comprar con un distribuidor cerca")}
+            {...(widget.ajustes?.length ? { ajustes: widget.ajustes } : {})}
+            {...(vigente ? {
+              onPlanAjustado: (nuevo: PlanGuiado, cotizacionNueva: unknown, ajuste: AjustePublicado) => ajustarPlan(mensajeId, nuevo, cotizacionNueva, ajuste),
+              rehacerPlan: (propuesta: Propuesta) => rehacerPlan(mensajeId, propuesta),
+            } : {})}
           />
         </div>;
       }

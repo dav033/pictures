@@ -27,6 +27,8 @@ export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
     tipo: z.literal("plan"), plan: PlanGuiadoSchema, cotizacion: CotizacionPlanGuiadoSchema.optional(), pasos: z.array(PasoPlanSchema).optional(), fotoInspiracion: z.boolean().optional(),
     imagen: z.union([z.string().url(), z.string().startsWith("/api/guiada-imagen/")]).optional(), errorImagen: z.boolean().optional(), compraAbierta: z.boolean().optional(),
     usoCosteo: UsoSchema.optional(), reemplazado: z.boolean().optional(), totalAnterior: z.number().int().nonnegative().optional(), hechas: z.array(AccionPlanGuiadaSchema).optional(),
+    /** Ajustes hechos con «Ajustar mi plan» sobre esta tarjeta («más rosado en el semiarco orgánico»), los últimos primero al final. */
+    ajustes: z.array(z.string().min(1).max(160)).max(8).optional(),
   }).strict(),
 ]);
 export type WidgetGuiado = z.infer<typeof WidgetGuiadoSchema>;

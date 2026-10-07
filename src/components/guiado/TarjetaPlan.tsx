@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
-import { Calculator, Check, ChevronDown, GraduationCap, MapPin, PenLine, ShoppingBag, Sparkles, UserRound } from "lucide-react";
+import { Calculator, Check, ChevronDown, GraduationCap, MapPin, PenLine, ShoppingBag, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
 import { z } from "zod";
 import { Lightbox } from "@/components/Lightbox";
 import { BarraTamanos, tramosPorTamano } from "@/components/plan/BarraTamanos";
@@ -18,6 +18,9 @@ import { PanelPlegable } from "./Plegable";
 import { decoracionDePlan, type ContextoCompra } from "./plan-compra";
 import { colorCliente, medidasEnPalabras, textoGlobos } from "./formato";
 import { DUR, EASE_REBOTE, EASE_SALIDA, RESORTE, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
+import { AjustarPlan, CifraAnimada } from "./ajuste/AjustarPlan";
+import { useAjustePlanGuiado, type AjustePublicado, type ResultadoRehacer } from "./ajuste/usarAjustePlanGuiado";
+import type { PropuestaGuiada } from "./ajuste/ajuste-plan-guiado";
 
 export type AccionPlan = "ver" | "costear" | "comprar" | "aprender" | "contratar" | "cambiar";
 export type EstadoImagen = "nada" | "cargando" | "lista" | "error";
@@ -51,7 +54,18 @@ type Props = {
   onProveedores: () => void;
   /** «Buscar un distribuidor cerca» desde Comprar. */
   onDistribuidor: () => void;
+  /**
+   * «Ajustar mi plan»: publica en esta misma tarjeta el plan que Python rehizo tras un ajuste. Sin él (versiones
+   * anteriores) no hay panel. `baseHash` es el plan sobre el que se hizo el ajuste.
+   */
+  onPlanAjustado?: (plan: PlanGuiado, cotizacion: unknown, ajuste: AjustePublicado) => void;
+  /** Quitar una pieza o añadir un color: rehace el plan por la ruta del plan guiado. */
+  rehacerPlan?: (propuesta: PropuestaGuiada) => Promise<ResultadoRehacer>;
+  /** Ajustes ya hechos sobre esta tarjeta; el último se ve bajo el total. */
+  ajustes?: readonly string[];
 };
+
+function sinAjuste(): void {}
 
 const LineaPlanSchema = z.object({ color: z.string().nullish(), diam_pulg: z.number().nullish(), tamano_codigo: z.string().nullish(), unidades: z.number() }).passthrough();
 
@@ -85,16 +99,28 @@ function idOficial(valor: unknown): EstructuraOficialId | null {
  * con él, con una acción principal clara («Ver cómo quedaría») y el resto a mano. Las cantidades son de Python.
  */
 export function TarjetaPlan(props: Props) {
-  const { plan, cotizacion, imagen, estadoImagen, usoCosteo, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor } = props;
+  const { plan, cotizacion, imagen, estadoImagen, usoCosteo, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, rehacerPlan, ajustes } = props;
+  const ultimoAjuste = ajustes?.at(-1);
   const reducido = useReducedMotion();
   const desglose = useMemo(() => generarPasosPlan(plan), [plan]);
   const piezas = plan.plan.estructuras;
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [costeoVisible, setCosteoVisible] = useState<boolean | null>(null);
   const [lightbox, setLightbox] = useState(false);
+  const [ajusteAbierto, setAjusteAbierto] = useState(false);
+  const idAjuste = useId();
+  const filaAjusteRef = useRef<HTMLDivElement>(null);
+  // Al terminar de abrir «Ajustar mi plan», el panel queda a la vista desde su comienzo: la conversación, pegada al
+  // final, lo empujaba hacia arriba mientras se desplegaba y lo primero que se veía eran sus últimos mandos.
+  const mostrarAjuste = () => filaAjusteRef.current?.scrollIntoView({ block: "start", behavior: reducido ? "auto" : "smooth" });
+  const ajuste = useAjustePlanGuiado({ plan, onPlanAjustado: onPlanAjustado ?? sinAjuste, ...(rehacerPlan ? { rehacerPlan } : {}) });
+  // Mientras Python rehace el plan, el total y los colores muestran su esqueleto y las acciones esperan.
+  const recalculando = ajuste.guardando;
+  const ajustable = vigente && Boolean(onPlanAjustado);
   const costeoAbierto = costeoVisible ?? usoCosteo !== null;
-  const bloqueado = ocupado || estadoImagen === "cargando";
-  const paleta = (plan.plan.concepto.paleta.length ? plan.plan.concepto.paleta : [...new Set(desglose.globos.map((globo) => globo.color))]).slice(0, 6);
+  const bloqueado = ocupado || estadoImagen === "cargando" || recalculando;
+  // Tras un ajuste, la paleta del concepto ya no dice los colores que lleva el plan: se muestran los que Python resolvió.
+  const paleta = (plan.plan.concepto.paleta.length && !ajustes?.length ? plan.plan.concepto.paleta : [...new Set(desglose.globos.map((globo) => globo.color))]).slice(0, 6);
   const decoracionCompra = useMemo(
     () => (cotizacion ? decoracionDePlan(plan, cotizacion, contextoCompra) : null),
     // El contexto llega como objeto nuevo en cada render: se compara por sus campos.
@@ -136,13 +162,28 @@ export function TarjetaPlan(props: Props) {
           )}
         </div>
         <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span className="text-4xl font-semibold tracking-tight text-texto tabular-nums"><ContadorGlobos total={desglose.total} desde={totalAnterior ?? 0} /></span>
+          <span className="text-4xl font-semibold tracking-tight text-texto tabular-nums" aria-busy={recalculando || undefined}>
+            {recalculando ? <span className="brillo-carga inline-block h-9 w-24 rounded-lg align-middle" role="img" aria-label="Calculando globos" /> : <ContadorGlobos total={desglose.total} desde={totalAnterior ?? 0} />}
+          </span>
           <span className="text-base text-texto-suave">{desglose.total === 1 ? "globo" : "globos"}</span>
-          {totalAnterior !== undefined && <PastillaDiferencia diferencia={desglose.total - totalAnterior} />}
+          {totalAnterior !== undefined && !recalculando && <PastillaDiferencia key={plan.plan_hash} diferencia={desglose.total - totalAnterior} />}
         </div>
         <p className="mt-0.5 text-sm text-texto-suave">
           {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0)} {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0) === 1 ? "pieza" : "piezas"}: {piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} × ` : ""}${pieza.nombre}`).join(", ")}
         </p>
+        {/* Sin salida animada: el ajuste nuevo reemplaza al anterior en el acto, nunca se ven dos. */}
+        {ultimoAjuste && (
+          <motion.p
+            key={ultimoAjuste}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: DUR.media, ease: EASE_SALIDA }}
+            className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-acento-suave px-2.5 py-1 text-xs text-acento"
+          >
+            <SlidersHorizontal className="size-3.5 shrink-0" aria-hidden />
+            <span>Último ajuste: {ultimoAjuste}</span>
+          </motion.p>
+        )}
       </motion.header>
 
       {/* Piezas */}
@@ -161,14 +202,28 @@ export function TarjetaPlan(props: Props) {
                 <p className="font-medium leading-snug text-texto">{pieza.repeticiones > 1 ? `${pieza.repeticiones} × ` : ""}{pieza.nombre}</p>
                 <p className="text-xs text-texto-suave">{medidas ?? "Medida según el espacio"}</p>
                 {tramos.length > 0 && <BarraTamanos tramos={tramos} retraso={0.25 + indice * 0.12} className="mt-2" descripcion={`Globos de ${tramos.map((tramo) => tramo.pulgadas).join(", ")} pulgadas`} />}
-                {globos.porColor.length > 0 && (
+                {recalculando ? (
+                  <span className="mt-2 flex flex-wrap gap-1.5" aria-hidden>
+                    {(globos.porColor.length ? globos.porColor : [{ color: "", cantidad: 0 }]).map((globo, posicion) => <span key={`${globo.color}-${posicion}`} className="brillo-carga h-5 w-20 rounded-full" />)}
+                  </span>
+                ) : globos.porColor.length > 0 && (
                   <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Globos por color">
-                    {globos.porColor.map((globo) => (
-                      <li key={globo.color} className="inline-flex items-center gap-1.5 rounded-full bg-superficie px-2 py-0.5 text-xs text-texto tabular-nums ring-1 ring-borde-suave">
-                        <span className="size-3 rounded-full ring-1 ring-borde" style={{ backgroundColor: hexDe(globo.color) ?? "#9ca3af" }} aria-hidden />
-                        {colorCliente(globo.color)} {globo.cantidad.toLocaleString("es-CO")}
-                      </li>
-                    ))}
+                    <AnimatePresence initial={false}>
+                      {globos.porColor.map((globo) => (
+                        <motion.li
+                          key={globo.color}
+                          layout="position"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ duration: DUR.media, ease: EASE_REBOTE }}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-superficie px-2 py-0.5 text-xs text-texto tabular-nums ring-1 ring-borde-suave"
+                        >
+                          <span className="size-3 rounded-full ring-1 ring-borde" style={{ backgroundColor: hexDe(globo.color) ?? "#9ca3af" }} aria-hidden />
+                          {colorCliente(globo.color)} <CifraAnimada valor={globo.cantidad} />
+                        </motion.li>
+                      ))}
+                    </AnimatePresence>
                   </ul>
                 )}
               </div>
@@ -177,17 +232,39 @@ export function TarjetaPlan(props: Props) {
         })}
       </motion.ul>
 
-      {/* Ver detalle */}
+      {/* Ajustar mi plan y ver detalle */}
       <motion.div variants={hijoEscalonado} className="mt-2">
-        <button
-          type="button"
-          aria-expanded={detalleAbierto}
-          onClick={() => setDetalleAbierto((valor) => !valor)}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-sm font-medium text-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50"
-        >
-          {detalleAbierto ? "Ocultar detalle" : "Ver detalle"}
-          <motion.span animate={{ rotate: detalleAbierto ? 180 : 0 }} transition={{ duration: DUR.corta }} className="inline-flex"><ChevronDown className="size-4" aria-hidden /></motion.span>
-        </button>
+        <div ref={filaAjusteRef} className="flex scroll-mt-3 flex-wrap items-center justify-between gap-2">
+          {ajustable && (
+            <motion.button
+              type="button"
+              aria-expanded={ajusteAbierto}
+              aria-controls={idAjuste}
+              onClick={() => setAjusteAbierto((valor) => !valor)}
+              whileTap={{ scale: 0.97 }}
+              transition={RESORTE}
+              className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 ${ajusteAbierto ? "border-acento bg-acento text-sobre-acento" : "border-acento/40 bg-acento-suave text-acento hover:border-acento"}`}
+            >
+              <SlidersHorizontal className="size-4" aria-hidden />
+              Ajustar mi plan
+              <motion.span animate={{ rotate: ajusteAbierto ? 180 : 0 }} transition={{ duration: DUR.corta }} className="inline-flex"><ChevronDown className="size-4" aria-hidden /></motion.span>
+            </motion.button>
+          )}
+          <button
+            type="button"
+            aria-expanded={detalleAbierto}
+            onClick={() => setDetalleAbierto((valor) => !valor)}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-sm font-medium text-acento focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50"
+          >
+            {detalleAbierto ? "Ocultar detalle" : "Ver detalle"}
+            <motion.span animate={{ rotate: detalleAbierto ? 180 : 0 }} transition={{ duration: DUR.corta }} className="inline-flex"><ChevronDown className="size-4" aria-hidden /></motion.span>
+          </button>
+        </div>
+        {ajustable && (
+          <PanelPlegable abierto={ajusteAbierto} id={idAjuste} alAbrir={mostrarAjuste}>
+            <AjustarPlan plan={plan} ajuste={ajuste} ocupado={ocupado || estadoImagen === "cargando"} />
+          </PanelPlegable>
+        )}
         <PanelPlegable abierto={detalleAbierto}>
           <div className="space-y-3 pb-1 pt-1 text-sm">
             <ul className="space-y-1 text-texto">
