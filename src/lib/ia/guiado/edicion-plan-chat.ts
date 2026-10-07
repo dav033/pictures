@@ -107,7 +107,7 @@ export function piezasDelPedido(pedido: PedidoEdicionPlan): string[] {
 export const IdeaElegidaSchema = z.object({ id: z.string().regex(/^(?:ej|deco)-[a-z0-9-]+$/), titulo: z.string().min(1).max(160), posicion: z.number().int().min(1).max(12) }).strict();
 export type IdeaElegida = z.infer<typeof IdeaElegidaSchema>;
 
-export const HERRAMIENTAS_EDICION = ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan", "agregar_pieza_plan", "colores_pieza_plan", "editar_pieza_plan", "flores_plan"] as const;
+export const HERRAMIENTAS_EDICION = ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan", "agregar_pieza_plan", "colores_pieza_plan", "flores_plan", "editar_pieza_plan"] as const;
 export type HerramientaEdicion = (typeof HERRAMIENTAS_EDICION)[number];
 export const HERRAMIENTA_ELEGIR_IDEA = "elegir_idea";
 
