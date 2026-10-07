@@ -4,6 +4,7 @@ import { MotionConfig } from "motion/react";
 import { SeleccionProvider } from "@/lib/estado/seleccion";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SCRIPT_TEMA_ANTES_DE_PINTAR } from "@/lib/tema/tema";
+import { CapturaErroresCliente } from "@/components/registro/CapturaErroresCliente";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,6 +40,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <meta name="darkreader-lock" />
       </head>
       <body className="flex min-h-dvh flex-col font-sans">
+        {/* Errores del navegador (window.onerror, promesas sin manejar) al registro del servidor. */}
+        <CapturaErroresCliente />
         {/* "user": Motion respeta prefers-reduced-motion del sistema operativo,
             igual que ya hace el CSS puro en globals.css. */}
         <MotionConfig reducedMotion="user">

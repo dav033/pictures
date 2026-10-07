@@ -23,6 +23,7 @@
     "test-rotacion-secretos": "npm run build --workspace=@sempertex/happie-package-ia && tsx --conditions=react-server scripts/test/test-rotacion-secretos.ts",
     "start": "node scripts/next-with-system-ca.cjs start",
     "lint": "eslint",
+    "registros": "tsx scripts/ops/ver-registros.ts",
     "rag:stack-check": "tsx scripts/ops/stack-check.ts",
     "rag:migrate": "tsx scripts/migrate.ts",
     "rag:migrate:check": "tsx scripts/migrate.ts --dry-run",
