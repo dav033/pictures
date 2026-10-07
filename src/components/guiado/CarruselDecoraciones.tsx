@@ -32,7 +32,6 @@ export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir
   const [indiceVisible, setIndiceVisible] = useState(0);
   const [bordes, setBordes] = useState<{ inicio: boolean; fin: boolean }>({ inicio: true, fin: decoraciones.length <= 1 });
   const unica = decoraciones.length === 1;
-  const hayEjemplo = decoraciones.some((decoracion) => decoracion.origen === "ejemplo");
   const elegidaPreviaRef = useRef(elegidaId);
 
   // Qué tarjeta se ve (puntos de posición).
@@ -121,7 +120,6 @@ export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <FotoDecoracion decoracion={decoracion} sizes="(max-width: 640px) 78vw, 272px" />
                     <span className="absolute left-2.5 top-2.5 flex gap-1.5">
-                      {decoracion.origen === "ejemplo" && <Insignia>Ejemplo</Insignia>}
                       {decoracion.origen === "referencia_real" && <Insignia>Referencia</Insignia>}
                       {decoracion.coincidencia === "cercana" && <Insignia>Parecida</Insignia>}
                     </span>
@@ -187,8 +185,6 @@ export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir
           {onSubirFoto && <ChipSalida icono={<ImagePlus className="size-4" aria-hidden />} onClick={onSubirFoto}>Subir una foto</ChipSalida>}
         </motion.div>
       )}
-
-      {hayEjemplo && <p className="mt-2 text-[0.7rem] text-texto-tenue">Las ideas marcadas «Ejemplo» son ilustrativas.</p>}
     </section>
   );
 }

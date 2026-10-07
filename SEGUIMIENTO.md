@@ -371,6 +371,23 @@ animados → VistaGuiada → verificación con una ronda de arreglo). Directiva:
 implementar recomendaciones superficiales y fáciles, descartar las que meten reglas de negocio (p. ej. WhatsApp). Limpieza de RAM
 autónoma cada 3 latidos (`scratchpad/limpiar-ram.ps1`: huérfanos propios; con <2 GB libres, apps pesadas ajenas al trabajo).
 
+**Noche (2026-10-06 ~19:00-20:20), todo en `main` y VPS:**
+- 0a8d945 rescate de la guiada (auditoría de 4 agentes → 12 defectos confirmados: «Ver cómo quedaría» tiraba la imagen pagada
+  por exigir `approval_token`, plan a medida vía /api/chat lento y fallido, burbuja «Estoy preparando…» colgada, tokens de color
+  inexistentes, autoscroll, «Reintentar» que repetía el texto, callejones sin salida, widgets viejos clicables, «Cambiar algo» sin
+  plan, textos de demo) + componentes animados (motion, reduced-motion). e447cfe: la instrucción del plan ya no lleva evento ni
+  temática (activaban filtros de ocasión → solo impresos de 12"), globos lisos, reintento si sale 1 tamaño o un impreso; plan de
+  foto con todos sus colores. Verificación 2: 4/4 planes al primer intento, p50 14 s.
+- 6fa7964 registro y auditoría por conversación (`src/lib/registro/`, `npm run registros -- [conversaciones] --origen
+  local|vps|python-vps|vercel`, archivos en `DATA_DIR/registros/{general,conversaciones/<fecha>/<id>.jsonl}`). En el VPS se dio
+  permiso de escritura a `nextjs` en `/app/data` y `/app/data/registros` (antes SQLite tampoco podía crear su journal).
+- 8c2c07e + 39a2112 (dueño: «sigue mostrando las decoraciones de ejemplo… solo categorías soportadas»; «no quiero que ofrezca
+  dorado y blanco cuando no tiene imágenes así»): `bibliotecaVisible()` = solo las 20 reales; `tematicasDisponibles()` en el
+  estado del turno; `sanearOpcionesCatalogo()` filtra en servidor las «Opciones:» de estilo que no tengan decoración.
+- En curso (workflow `pulido-y-registro-2`): precio personal por variante, sin «R-12», guías en «tú», no saltar al plan si el
+  cliente relee; segunda pasada del registro (envoltorios en todos los clientes de IA, 27 rutas, id de conversación en ambas
+  vistas, Python con request/conversación en JSON, guardia estricta). Contraseña de producción: variable `APP_PASSWORD`.
+
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
 - Pendientes: taxonomía 12 o 18 clases (las 5 que AGENTS.md daba por retiradas: `arco_no_denso`, `columna_no_densa`, `pared_densa`,

@@ -186,9 +186,9 @@ export function VistaGuiada() {
   const restauradoRef = useRef(false);
   const flujoRef = useRef<{ id: string; texto: string } | null>(null);
   const cuadroRef = useRef<number | null>(null);
-  const vistaPendienteRef = useRef<{ tipo: "final"; instantaneo?: boolean } | { tipo: "mensaje"; id: string } | null>(null);
+  const vistaPendienteRef = useRef<{ tipo: "final"; instantaneo?: boolean } | { tipo: "mensaje" | "llegada"; id: string } | null>(null);
 
-  const { pegado, hayNuevo, irAlFinal, mostrarMensaje, seguirSiPegado } = useSeguirFinal({ contenedorRef, contenidoRef });
+  const { pegado, hayNuevo, irAlFinal, mostrarMensaje, mostrarLlegada, irALoNuevo, seguirSiPegado } = useSeguirFinal({ contenedorRef, contenidoRef });
 
   const marcarCargando = useCallback((valor: boolean) => { cargandoRef.current = valor; setCargandoEstado(valor); }, []);
 
@@ -279,12 +279,15 @@ export function VistaGuiada() {
     if (!pendiente) return;
     vistaPendienteRef.current = null;
     if (pendiente.tipo === "final") irAlFinal(pendiente.instantaneo ? "auto" : undefined);
+    else if (pendiente.tipo === "llegada") mostrarLlegada(pendiente.id);
     else mostrarMensaje(pendiente.id);
-  }, [mensajes, irAlFinal, mostrarMensaje]);
+  }, [mensajes, irAlFinal, mostrarMensaje, mostrarLlegada]);
 
   // ── Utilidades de estado ─────────────────────────────────────────────────────────────────────────────────────
   function pedirFinal(): void { vistaPendienteRef.current = { tipo: "final" }; }
   function pedirVista(id: string): void { vistaPendienteRef.current = { tipo: "mensaje", id }; }
+  /** Lo que llega solo, tras una espera (plan, propuesta, ideas): no saca al cliente de lo que está releyendo. */
+  function pedirLlegada(id: string): void { vistaPendienteRef.current = { tipo: "llegada", id }; }
   /** Lleva a la vista lo que se acaba de abrir dentro de la tarjeta (compra, costeo, imagen); si no está, su final. */
   function revelarEnTarjeta(id: string, selector: string): void {
     window.setTimeout(() => {
@@ -450,7 +453,7 @@ export function VistaGuiada() {
           // Con la lectura no hace falta el modelo: el asistente muestra lo que vio y ofrece armarlo.
           fotosRef.current.set(idAsistente, imagen);
           actualizarMensaje(idAsistente, (mensaje) => ({ ...mensaje, content: "Esto es lo que veo en tu foto.", referencia, ...(miniatura ? { miniatura } : {}) }));
-          pedirVista(idAsistente);
+          pedirLlegada(idAsistente);
           setAnuncio("Ya leí tu foto");
           return;
         }
@@ -500,12 +503,12 @@ export function VistaGuiada() {
           propuestaParaPlan = datos.propuesta;
           setSeleccionada(null); setUso(null);
           actualizarMensaje(idAsistente, (mensaje) => ({ ...mensaje, content: datos.propuesta!.frase, widgets: [{ tipo: "propuesta", propuesta: datos.propuesta!, estado: "resolviendo" }] }));
-          pedirVista(idAsistente);
+          pedirLlegada(idAsistente);
         } else if (!textoFinal.trim() && !widgets.length) {
           setMensajes((actuales) => actuales.filter((mensaje) => mensaje.id !== idAsistente));
         } else {
           actualizarMensaje(idAsistente, (mensaje) => ({ ...mensaje, content: textoFinal, ...(widgets.length ? { widgets } : {}) }));
-          if (widgets.some((widget) => WIDGETS_ALTOS.has(widget.tipo))) pedirVista(idAsistente);
+          if (widgets.some((widget) => WIDGETS_ALTOS.has(widget.tipo))) pedirLlegada(idAsistente);
         }
         setAnuncio("Respuesta lista");
       });
@@ -615,7 +618,7 @@ export function VistaGuiada() {
       });
     });
     setSugerenciasCambio(null);
-    pedirVista(mensajeId);
+    pedirLlegada(mensajeId);
     setAnuncio("Tu plan está listo");
   }
 
@@ -952,7 +955,7 @@ export function VistaGuiada() {
       case "uso":
         return <PreguntaUso key={clave} activo={activo && !widget.elegido} elegido={widget.elegido ?? null} deshabilitado={cargando} onElegir={(valor) => elegirUso(valor, mensajeId)} />;
       case "cotizacion":
-        return <CostosMateriales key={clave} cotizacion={widget.cotizacion} uso={widget.uso} clave={`guiado-${widget.decoracion.id}`} mensajePendiente="Todavía no tengo el precio de estos materiales. Puedo buscarte un proveedor cerca." onProveedores={() => preguntarCiudad("ciudad-decorador", "Quiero cotizar con un proveedor cerca")} />;
+        return <CostosMateriales key={clave} cotizacion={widget.cotizacion} decoracion={widget.decoracion} uso={widget.uso} clave={`guiado-${widget.decoracion.id}`} mensajePendiente="Todavía no tengo el precio de estos materiales. Puedo buscarte un proveedor cerca." onProveedores={() => preguntarCiudad("ciudad-decorador", "Quiero cotizar con un proveedor cerca")} />;
       case "pasos":
         return <PasoAPaso key={clave} decoracion={widget.decoracion} />;
       case "pasos-plan":
@@ -1108,7 +1111,7 @@ export function VistaGuiada() {
           )}
         </div>
       </div>
-      <BotonIrAlFinal visible={!pegado && mensajes.length > 0} hayNuevo={hayNuevo} onClick={() => irAlFinal()} />
+      <BotonIrAlFinal visible={!pegado && mensajes.length > 0} hayNuevo={hayNuevo} onClick={() => (hayNuevo ? irALoNuevo() : irAlFinal())} />
     </section>
     <BarraPlanVigente
       visible={barraVisible}

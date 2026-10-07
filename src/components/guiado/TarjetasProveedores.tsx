@@ -95,7 +95,8 @@ export function TarjetasProveedores({ proveedores, activo, onSolicitar, solicita
                 <p className="text-xs font-semibold uppercase tracking-wide text-acento">{TIPOS[proveedor.tipo]}</p>
                 <h3 className="mt-0.5 font-semibold leading-snug text-texto">{proveedor.nombre}</h3>
               </div>
-              {proveedor.origen === "ejemplo" && <span className="shrink-0 rounded-full bg-acento-suave px-2 py-0.5 text-[0.7rem] font-semibold text-acento">Ejemplo</span>}
+              {/* Decisión del dueño: los proveedores son datos de muestra y se dice con una pastilla discreta. */}
+              {proveedor.origen === "ejemplo" && <span className="shrink-0 rounded-full border border-borde-suave px-2 py-0.5 text-[0.7rem] font-medium text-texto-suave">Ejemplo</span>}
             </div>
             {proveedor.especialidad && <p className="mt-3 text-sm text-texto">{proveedor.especialidad}</p>}
             <p className="mb-4 mt-1 flex items-center gap-1.5 text-sm text-texto-suave"><MapPin className="size-3.5 shrink-0" aria-hidden />{proveedor.zona.cobertura.join(" · ")}</p>

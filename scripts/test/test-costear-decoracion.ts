@@ -16,4 +16,8 @@ assert.deepEqual(profesional.materiales, [{ variant_id: "variante-real", descrip
 assert.deepEqual(presentacionMaterialGuiado("Globo látex R-12 Rosewood, paquete x50"), { nombre: "Globo de látex 12\" Palo de rosa", color: "rosado" });
 assert.deepEqual(presentacionMaterialGuiado("Globo látex R-12 Durazno, paquete x50"), { nombre: "Globo de látex 12\" Durazno", color: "naranja" });
 assert.deepEqual(presentacionMaterialGuiado("Globo látex R-12 Blanco, paquete x50"), { nombre: "Globo de látex 12\" Blanco", color: "blanco" });
+// Notas del catálogo real: antes «Globo de látex 12" / PAQUETE X 50 · R-12 · blanco».
+assert.deepEqual(presentacionMaterialGuiado("B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"), { nombre: "Globo de látex 12\" Palo de rosa", color: "rosado" });
+assert.deepEqual(presentacionMaterialGuiado("B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"), { nombre: "Globo de látex 12\" Reflex dorado rosa", color: "dorado rosa" });
+assert.deepEqual(presentacionMaterialGuiado("B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"), { nombre: "Globo de látex 12\" Azul naval", color: "azul" });
 console.log("test-costear-decoracion: contratos y paso a CotizacionProfesional correctos; cálculo viene de Python");

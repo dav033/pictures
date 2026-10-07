@@ -2,6 +2,7 @@
 
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { guiaParaEstructura } from "@/lib/ia/guiado/guias-armado";
+import { pasoParaCliente } from "@/lib/ia/guiado/pasos-cliente";
 import { ChipsGuia, ContenidoGuia } from "./GuiaPlan";
 import { Plegable } from "./Plegable";
 
@@ -20,7 +21,7 @@ export function PasoAPaso({ decoracion, alTerminar }: { decoracion: DecoracionSe
           {decoracion.pasos.map((paso) => (
             <li key={paso.orden} className="flex gap-3 text-sm leading-6">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-acento text-xs font-bold text-sobre-acento">{paso.orden}</span>
-              <span className="pt-0.5">{paso.texto}</span>
+              <span className="pt-0.5">{pasoParaCliente(paso.texto)}</span>
             </li>
           ))}
         </ol>

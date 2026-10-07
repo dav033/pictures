@@ -12,18 +12,25 @@ type Opciones = {
   contenidoRef: RefObject<HTMLElement | null>;
   /** Distancia al fondo, en px, por debajo de la cual se considera «pegado». */
   umbral?: number;
+  /** Distancia al fondo, en px, desde la que una respuesta que llega (un plan) ya no mueve la vista. */
+  umbralLlegada?: number;
 };
 
 /**
  * Autoscroll que no estorba: sigue al final solo si el cliente ya estaba abajo (a menos de `umbral` px), sin
  * animación en cada fragmento de texto, y si estaba releyendo arriba marca `hayNuevo` para el botón «Ir al final».
  * `mostrarMensaje(id)` lleva un widget alto (plan, carrusel) a la vista por su CABECERA, no por su final.
+ * `mostrarLlegada(id)` es lo mismo para lo que llega solo (el plan tras su espera): si el cliente subió a releer
+ * (a más de `umbralLlegada` px del final) no lo mueve y deja `hayNuevo` para el botón «Ver lo nuevo», que lo lleva
+ * con suavidad a la cabecera de lo que llegó (`irALoNuevo`).
  */
-export function useSeguirFinal({ contenedorRef, contenidoRef, umbral = 120 }: Opciones): {
+export function useSeguirFinal({ contenedorRef, contenidoRef, umbral = 120, umbralLlegada = 200 }: Opciones): {
   pegado: boolean;
   hayNuevo: boolean;
   irAlFinal: (comportamiento?: ScrollBehavior) => void;
   mostrarMensaje: (id: string) => void;
+  mostrarLlegada: (id: string) => void;
+  irALoNuevo: () => void;
   seguirSiPegado: () => void;
 } {
   const reducido = useReducedMotion();
@@ -34,17 +41,28 @@ export function useSeguirFinal({ contenedorRef, contenidoRef, umbral = 120 }: Op
   // ResizeObserver deben deshacerlo.
   const suspendidoHastaRef = useRef(0);
   const destinoRef = useRef<"final" | "mensaje" | null>(null);
+  // Distancia al final medida en el último scroll: crecer el contenido no la cambia, así que dice dónde estaba el
+  // cliente ANTES de que llegara lo nuevo.
+  const distanciaRef = useRef(0);
+  // Mensaje que llegó mientras el cliente releía arriba: «Ver lo nuevo» lleva a su cabecera.
+  const nuevoIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const contenedor = contenedorRef.current;
     if (!contenedor) return;
     const medir = () => {
-      const cerca = contenedor.scrollHeight - contenedor.scrollTop - contenedor.clientHeight < umbral;
+      const distancia = contenedor.scrollHeight - contenedor.scrollTop - contenedor.clientHeight;
+      distanciaRef.current = distancia;
+      const cerca = distancia < umbral;
       if (!cerca && destinoRef.current === "final" && performance.now() < suspendidoHastaRef.current) return;
       if (cerca) destinoRef.current = null;
       pegadoRef.current = cerca;
       setPegado(cerca);
-      if (cerca) setHayNuevo(false);
+      if (cerca) { nuevoIdRef.current = null; setHayNuevo(false); return; }
+      // Si el cliente bajó por su cuenta hasta lo nuevo, el aviso sobra.
+      const nuevo = nuevoIdRef.current;
+      const elemento = nuevo ? contenedor.querySelector<HTMLElement>(`[data-mensaje-id="${CSS.escape(nuevo)}"]`) : null;
+      if (elemento && elemento.getBoundingClientRect().top < contenedor.getBoundingClientRect().bottom - 48) { nuevoIdRef.current = null; setHayNuevo(false); }
     };
     medir();
     contenedor.addEventListener("scroll", medir, { passive: true });
@@ -71,6 +89,7 @@ export function useSeguirFinal({ contenedorRef, contenidoRef, umbral = 120 }: Op
 
   const irAlFinal = useCallback((comportamiento?: ScrollBehavior) => {
     const contenedor = contenedorRef.current;
+    nuevoIdRef.current = null;
     setHayNuevo(false);
     pegadoRef.current = true;
     setPegado(true);
@@ -93,6 +112,27 @@ export function useSeguirFinal({ contenedorRef, contenidoRef, umbral = 120 }: Op
     });
   }, [contenedorRef, reducido]);
 
+  const mostrarLlegada = useCallback((id: string) => {
+    const contenedor = contenedorRef.current;
+    if (!contenedor) return;
+    // Cerca del final, o camino del final por un desplazamiento pedido: como siempre, a la cabecera de lo nuevo.
+    const yendoAlFinal = destinoRef.current === "final" && performance.now() < suspendidoHastaRef.current;
+    if (distanciaRef.current < umbralLlegada || yendoAlFinal) { mostrarMensaje(id); return; }
+    // Releyendo arriba: la vista se queda donde está. Solo si lo nuevo empieza por debajo de lo que se ve, se avisa.
+    const elemento = contenedor.querySelector<HTMLElement>(`[data-mensaje-id="${CSS.escape(id)}"]`);
+    if (!elemento || elemento.getBoundingClientRect().top < contenedor.getBoundingClientRect().bottom - 48) return;
+    nuevoIdRef.current = id;
+    setHayNuevo(true);
+  }, [contenedorRef, mostrarMensaje, umbralLlegada]);
+
+  const irALoNuevo = useCallback(() => {
+    const id = nuevoIdRef.current;
+    nuevoIdRef.current = null;
+    setHayNuevo(false);
+    if (id && contenedorRef.current?.querySelector(`[data-mensaje-id="${CSS.escape(id)}"]`)) mostrarMensaje(id);
+    else irAlFinal();
+  }, [contenedorRef, irAlFinal, mostrarMensaje]);
+
   const seguirSiPegado = useCallback(() => {
     const contenedor = contenedorRef.current;
     if (!contenedor || !pegadoRef.current) return;
@@ -100,28 +140,35 @@ export function useSeguirFinal({ contenedorRef, contenidoRef, umbral = 120 }: Op
     contenedor.scrollTo({ top: contenedor.scrollHeight, behavior: "auto" });
   }, [contenedorRef]);
 
-  return { pegado, hayNuevo, irAlFinal, mostrarMensaje, seguirSiPegado };
+  return { pegado, hayNuevo, irAlFinal, mostrarMensaje, mostrarLlegada, irALoNuevo, seguirSiPegado };
 }
 
-/** Botón flotante «Ir al final», con un punto de acento si llegó algo nuevo mientras el cliente leía arriba. */
+/**
+ * Botón flotante para volver abajo. Con algo nuevo mientras el cliente releía arriba es una pastilla discreta
+ * «Ver lo nuevo ↓»; si no, el círculo «Ir al final».
+ */
 export function BotonIrAlFinal({ visible, hayNuevo, onClick }: { visible: boolean; hayNuevo: boolean; onClick: () => void }) {
   return (
     <AnimatePresence>
       {visible && (
         <motion.button
+          key={hayNuevo ? "nuevo" : "final"}
           type="button"
-          aria-label={hayNuevo ? "Ir al final, hay un mensaje nuevo" : "Ir al final"}
-          title="Ir al final"
+          aria-label={hayNuevo ? "Ver lo nuevo" : "Ir al final"}
+          title={hayNuevo ? "Ver lo nuevo" : "Ir al final"}
           onClick={onClick}
           initial={{ opacity: 0, y: 8, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 8, scale: 0.9 }}
           transition={RESORTE}
-          whileTap={{ scale: 0.92 }}
-          className="absolute bottom-3 left-1/2 z-10 grid size-11 -translate-x-1/2 place-items-center rounded-full bg-superficie text-texto shadow-lg ring-1 ring-borde focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50"
+          whileTap={{ scale: 0.95 }}
+          className={`absolute bottom-3 left-1/2 z-10 -translate-x-1/2 shadow-lg ring-1 ring-borde focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 ${hayNuevo
+            ? "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-superficie/95 px-4 text-sm font-medium text-texto backdrop-blur-sm"
+            : "grid size-11 place-items-center rounded-full bg-superficie text-texto"}`}
         >
-          <ArrowDown className="size-5" aria-hidden />
-          {hayNuevo && <span className="absolute right-1 top-1 size-2.5 rounded-full bg-acento ring-2 ring-superficie" aria-hidden />}
+          {hayNuevo && <span className="size-2 rounded-full bg-acento" aria-hidden />}
+          {hayNuevo && "Ver lo nuevo"}
+          <ArrowDown className={hayNuevo ? "size-4" : "size-5"} aria-hidden />
         </motion.button>
       )}
     </AnimatePresence>

@@ -16,6 +16,7 @@ import { resolverPlan } from "../../src/lib/plan/resolver-backend";
 import { llamarPythonListaMateriales } from "../../src/lib/ia/nucleo/python-adapter";
 import { ListaMaterialesRequestSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
 import { DecoracionSempertexSchema } from "../../src/lib/biblioteca-sempertex/esquemas";
+import { pasosParaCliente } from "../../src/lib/ia/guiado/pasos-cliente";
 import type { PistaConteo } from "../../src/lib/plan/conteo-referencia";
 
 const ENTRADA = process.env.BIBLIOTECA_REAL_ENTRADA ?? "C:/Users/davidt/Downloads/hola";
@@ -327,13 +328,14 @@ function pasosDe(tipo: string, patron: string): Array<{ orden: number; texto: st
   const primero = tipo === "columna" ? "Fija una base pesada y arma el soporte vertical." : tipo === "guirnalda" ? "Marca los puntos de anclaje y prepara la tira de soporte." : tipo === "bouquet" || tipo === "centro_mesa" ? "Prepara el soporte de mesa y asegúralo para que no se vuelque." : "Arma y asegura el soporte con la forma del arco o semiarco.";
   const segundo = tipo === "columna" ? "Infla los globos R-12 y agrúpalos en cuartetos parejos." : tipo === "guirnalda" ? "Infla los globos R-12 y forma grupos compactos de cuatro." : "Infla los globos R-12 con tamaño uniforme.";
   const tercero = tipo === "columna" ? "Monta los grupos desde la base, girando el color en espiral." : tipo === "guirnalda" ? "Sujeta los grupos a la tira y da forma a la curva." : "Distribuye los grupos por toda la estructura.";
-  return [
+  // Los pasos se guardan ya en palabras de cliente (sin «R-12» ni «patrón»), como los muestra la vista guiada.
+  return pasosParaCliente([
     { orden: 1, texto: primero },
     { orden: 2, texto: segundo },
     { orden: 3, texto: `${tercero} ${patronTexto}` },
     { orden: 4, texto: "Añade los globos de acento y revisa que no queden huecos grandes." },
     { orden: 5, texto: "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados." },
-  ];
+  ]);
 }
 
 async function publicarBibliotecaReal(): Promise<void> {

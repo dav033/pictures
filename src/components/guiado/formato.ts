@@ -65,6 +65,12 @@ export function colorCliente(color: string | undefined | null): string {
 
 type LineaNombrable = { nombre?: string; tamano?: string; color?: string };
 
+/**
+ * Color en palabras de cliente que la biblioteca real anota al final de cada material:
+ * «B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado» → «rosado».
+ */
+const ETIQUETA_COLOR = /·\s*R-?\d{1,2}\s*·\s*([^·]+?)\s*$/i;
+
 /** Partes de una línea de catálogo: si es un globo, su color y sus pulgadas; si no, el producto sin ruido. */
 export function partesLinea(linea: LineaNombrable): { esGlobo: boolean; color: string; pulgadas: string | null; producto: string } {
   const original = (linea.nombre ?? "").trim();
@@ -76,6 +82,9 @@ export function partesLinea(linea: LineaNombrable): { esGlobo: boolean; color: s
   const pulgadas = pulgadasDe(original) ?? pulgadasDe(linea.tamano);
   const esGlobo = !original || /\bglobos?\b/i.test(original) || /\bR-?\d{1,2}\b/i.test(original);
   if (!esGlobo) return { esGlobo, color: "", pulgadas, producto: sinPaquete || original };
+  // La etiqueta de la biblioteca ya es el color del cliente: «Reflex Plata» → «plateado», «Azul Naval» → «azul marino».
+  const etiqueta = ETIQUETA_COLOR.exec(original)?.[1];
+  if (etiqueta) return { esGlobo, color: colorCliente(etiqueta), pulgadas, producto: "" };
   const resto = sinPaquete
     .replace(/\bx\s*\d+\b.*$/i, "")
     .replace(/\bR-?\d{1,2}\b/gi, " ")
@@ -84,7 +93,8 @@ export function partesLinea(linea: LineaNombrable): { esGlobo: boolean; color: s
     .replace(/[,;].*$/, "")
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/^de\s+/i, "")
+    // «Globo de látex 12"» sin color deja solo «de»: antes salía «Globo de de 12"».
+    .replace(/^de(?:\s+|$)/i, "")
     // Idempotente: un nombre ya limpio («Globo blanco de 12"») deja «blanco de» al quitarle el tamaño.
     .replace(/\s+de$/i, "")
     .trim();
@@ -107,6 +117,22 @@ export function nombreGlobosCliente(linea: LineaNombrable): string {
   const partes = partesLinea(linea);
   if (!partes.esGlobo) return partes.producto || "Material";
   return `Globos${partes.color ? ` ${colorEnPlural(partes.color)}` : ""}${partes.pulgadas ? ` de ${partes.pulgadas}"` : ""}`;
+}
+
+/** Acabado de un globo del catálogo dicho al cliente («Reflex» → «cromado»); «Fashion» es el liso de siempre. */
+export function acabadoCliente(texto: string | undefined): string | null {
+  const limpio = texto ?? "";
+  if (/\breflex\b/i.test(limpio)) return "cromado";
+  if (/\bsat[ií]n\b/i.test(limpio)) return "satinado";
+  if (/\bmetal\b/i.test(limpio)) return "metalizado";
+  if (/\bfashion\b/i.test(limpio)) return "liso";
+  return null;
+}
+
+/** «Globo dorado de 12"» con «cromado» → «Globo dorado cromado de 12"». */
+export function conAcabado(nombre: string, acabado: string): string {
+  const tamano = / de \d{1,2}(?:,\d)?"$/.exec(nombre);
+  return tamano ? `${nombre.slice(0, tamano.index)} ${acabado}${tamano[0]}` : `${nombre} ${acabado}`;
 }
 
 /** «2,4 m de ancho por 2 m de alto», «3 m de largo» o null si el plan no trae medidas. */

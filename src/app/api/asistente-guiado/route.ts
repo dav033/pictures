@@ -15,6 +15,7 @@ import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
 import { decoracionCotizableCoincide, normalizarCiudad, protegerHerramientas } from "@/lib/ia/guiado/utilidades";
 import { presentacionMaterialGuiado } from "@/lib/ia/guiado/presentacion-material-guiado";
+import { pasosParaCliente } from "@/lib/ia/guiado/pasos-cliente";
 import { ESTRUCTURAS_OFICIALES, ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { normalizarPropuestaComposicion } from "@/lib/ia/guiado/propuesta-composicion";
@@ -194,8 +195,10 @@ export async function POST(request: Request) {
         const entrada = ArgsSchema.parse(args);
         const deco = proveedores.find((item) => item.id === (entrada.decoracionId ?? decoracionConfirmada));
         if (!deco) return { ok: false, motivo: decoracionConfirmada ? "decoracion_no_disponible" : "falta_que_el_cliente_elija_una_decoracion" };
-        datos.pasos = deco.pasos;
-        return { pasos: deco.pasos };
+        // El modelo lee los pasos tal como los verá el cliente: sin «R-12» que repetir en su respuesta.
+        const pasos = pasosParaCliente(deco.pasos);
+        datos.pasos = pasos;
+        return { pasos };
       },
       buscar_proveedores: async (args: Record<string, unknown>) => {
         const entrada = ArgsSchema.parse(args);

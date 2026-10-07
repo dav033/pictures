@@ -16,7 +16,6 @@ export function TarjetaEleccion({ decoracion }: { decoracion: DecoracionSemperte
     <div className="flex-1 p-4">
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold">{decoracion.titulo}</h3>
-        {decoracion.origen === "ejemplo" && <span className="shrink-0 rounded-full bg-acento-suave px-2 py-0.5 text-[0.7rem] font-semibold text-acento">Ejemplo</span>}
         {decoracion.origen === "referencia_real" && <span className="shrink-0 rounded-full border border-borde-suave px-2 py-0.5 text-[0.7rem] font-medium text-texto-suave">Referencia</span>}
       </div>
       {piezas.length > 0 && <p className="mt-1 text-sm text-texto-suave">{piezas.join(" · ")}</p>}
@@ -52,7 +51,8 @@ export function nombreMaterial(nota: string | undefined): string | null {
   const primeraParte = nota.split(/[,;]/)[0]!.trim();
   // Solo un tamaño («12"», sin nombre de producto): sigue siendo un globo.
   if (!/\p{L}/u.test(primeraParte)) return nombreGlobosCliente({ nombre: "Globo", tamano: primeraParte });
-  // Notas de la biblioteca («R-12 Rosewood»): el mapa del costeo. Nombres de catálogo («… — R-12 / PAQUETE X 12»): tal cual.
+  // Notas de ejemplo («R-12 Rosewood»): el mapa del costeo. Notas del catálogo real («… — R-12 / PAQUETE X 50 · R-12 ·
+  // rosado»): su color de cliente, el mismo que dice el precio personal (formato.ts).
   const base = /\bR-\d+\s+\p{L}/u.test(primeraParte) ? presentacionMaterialGuiado(nota).nombre : primeraParte;
   return nombreGlobosCliente({ nombre: base });
 }

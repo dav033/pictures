@@ -1,0 +1,31 @@
+import { strict as assert } from "node:assert";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { decoracionesSempertex, proveedoresSempertex } from "@/lib/biblioteca-sempertex/biblioteca";
+import { CarruselDecoraciones } from "@/components/guiado/CarruselDecoraciones";
+import { TarjetaEleccion } from "@/components/guiado/TarjetaEleccion";
+import { TarjetasProveedores } from "@/components/guiado/TarjetasProveedores";
+
+/**
+ * Insignia «Ejemplo»: las tarjetas de IDEAS nunca la muestran (la guiada solo enseña decoraciones reales; aun si una
+ * de ejemplo se colara, no se marca); las de PROVEEDORES la conservan como pastilla discreta (decisión del dueño:
+ * el directorio es de muestra). Render estático, sin red.
+ */
+const deEjemplo = decoracionesSempertex.find((decoracion) => decoracion.origen === "ejemplo");
+const real = decoracionesSempertex.find((decoracion) => decoracion.origen === "referencia_real");
+assert.ok(deEjemplo && real, "la biblioteca tiene ideas de ejemplo y reales");
+const nada = () => undefined;
+
+const carrusel = renderToStaticMarkup(createElement(CarruselDecoraciones, { decoraciones: [real, deEjemplo], activo: true, elegidaId: null, onElegir: nada, onNinguna: nada }));
+assert.equal(/Ejemplo|ilustrativas/.test(carrusel), false, "el carrusel de ideas no muestra «Ejemplo»");
+const eleccion = renderToStaticMarkup(createElement(TarjetaEleccion, { decoracion: deEjemplo }));
+assert.equal(eleccion.includes("Ejemplo"), false, "la tarjeta de la idea elegida no muestra «Ejemplo»");
+
+const proveedor = proveedoresSempertex.find((item) => item.origen === "ejemplo");
+assert.ok(proveedor, "el directorio de muestra tiene proveedores de ejemplo");
+const proveedores = renderToStaticMarkup(createElement(TarjetasProveedores, { proveedores: [proveedor], activo: true, onSolicitar: nada }));
+const pastilla = /<span class="([^"]*)">Ejemplo<\/span>/.exec(proveedores);
+assert.ok(pastilla, "la tarjeta de proveedor conserva «Ejemplo»");
+assert.ok(pastilla[1]!.includes("text-texto-suave") && !pastilla[1]!.includes("bg-acento"), `pastilla discreta, sin color de acento: ${pastilla[1]}`);
+
+console.log("test-ui-insignia-ejemplo: ideas sin «Ejemplo»; proveedores con pastilla discreta");
