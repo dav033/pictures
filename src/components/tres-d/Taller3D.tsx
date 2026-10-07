@@ -23,7 +23,7 @@ import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/refere
 import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena, TuboEnEscena } from "./escena-globos";
 import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
 import { GeneradorIA } from "./GeneradorIA";
-import { PaletaEscena } from "./PaletaEscena";
+import { PaletaEscena, type GrupoColor } from "./PaletaEscena";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
@@ -63,6 +63,12 @@ function materialesEnIngles(materiales: ReadonlyArray<{ formatoId: string; codig
 const PATRON_EN: Record<PatronColumna, string> = { un_color: "single-color", dos_colores: "two-color", espiral: "spiral", salvavidas: "life-ring", zigzag: "zig-zag" };
 const FORMA_EN: Record<FormaArco, string> = { redondo: "round", parabolico: "parabolic", rectangular: "rectangular" };
 const MODULO_EN: Record<TipoModulo, string> = { pareja: "duplet", trio: "triplet", cuarteto: "quartet", quinteto: "quintet", sexteto: "sextet" };
+
+/** Lo que se guarda antes de cambiar un color con la paleta, para «Deshacer». */
+type FotoColores = {
+  pared: OpcionesPared; paredTrenzas: OpcionesParedTrenzas; mezcla: MezclaDecoraciones; decoracion: Decoracion;
+  coloresColumna: string[]; coloresModulo: string[]; ajustesOrganico: AjustesOrganico; codigo: string;
+};
 
 /** Formatos de la columna de cuartetos: redondos de 5" a 18". */
 const FORMATOS_COLUMNA = ["R-5", "R-9", "R-12", "R-18"] as const;
@@ -158,7 +164,7 @@ export function Taller3D() {
   const cambiarDecoracion = (nueva: Decoracion) => {
     if (editando === null || !elementoEditado) { setDecoracion(nueva); return; }
     const nombre = nombreDecoracion(nueva);
-    setMezcla({ ...mezcla, elementos: mezcla.elementos.map((e, i) => (i === editando ? { ...e, decoracion: nueva, nombre: nombre.endsWith("(editada)") ? e.nombre : nombre } : e)) });
+    setMezcla({ ...mezcla, elementos: mezcla.elementos.map((e, i) => (i === editando ? { ...e, decoracion: nueva, nombre } : e)) });
   };
   const paredTrenzasArmada = useMemo(() => armarParedTrenzas(paredTrenzas), [paredTrenzas]);
   const paredArmada = useMemo(() => armarPared({
@@ -175,9 +181,9 @@ export function Taller3D() {
   // apoyada sobre la superficie y, si se pide, una mezcla de varias repartida en las anclas.
   const paredActual = tipoPared === "trenzas" ? paredTrenzasArmada : paredArmada;
   const superficie = useMemo(() => superficieFrontal(paredActual.globos), [paredActual]);
-  const escenaDecoracion = useMemo((): { globos: GloboDecoracion[]; tubos: TuboDecoracion[]; materiales: MaterialDecoracion[]; puestas: number; porElemento: number[] } => {
+  const escenaDecoracion = useMemo((): { globos: GloboDecoracion[]; tubos: TuboDecoracion[]; materiales: MaterialDecoracion[]; soloDecoraciones: MaterialDecoracion[]; puestas: number; porElemento: number[] } => {
     const armada = decoracionArmada;
-    if (donde === "sola") return { globos: armada.globos, tubos: armada.tubos, materiales: armada.materiales, puestas: 1, porElemento: [] };
+    if (donde === "sola") return { globos: armada.globos, tubos: armada.tubos, materiales: armada.materiales, soloDecoraciones: armada.materiales, puestas: 1, porElemento: [] };
     if (donde === "pared") {
       const base: GloboDecoracion[] = paredActual.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
       const cada = Math.max(1, regla.cadaNiveles);
@@ -192,7 +198,7 @@ export function Taller3D() {
           mezcla: { elementos: [{ nombre: nombreDecoracion(decoracionEnEditor), decoracion: decoracionEnEditor, peso: 1 }], modo: "ciclico", semilla: 0, total: 10000, separacionCm: -1e6, giroAleatorio: false },
           superficie,
         });
-      return { globos: [...base, ...decorada.globos], tubos: decorada.tubos, materiales: sumarMateriales(paredActual.materiales, decorada.materiales), puestas: decorada.colocaciones.length, porElemento: decorada.porElemento };
+      return { globos: [...base, ...decorada.globos], tubos: decorada.tubos, materiales: sumarMateriales(paredActual.materiales, decorada.materiales), soloDecoraciones: decorada.materiales, puestas: decorada.colocaciones.length, porElemento: decorada.porElemento };
     }
     const estructura = donde === "arco" ? arco : columna;
     const base: GloboDecoracion[] = estructura.globos.map((g) => ({ formatoId: formato.id, infladoCm: inflado, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
@@ -201,6 +207,7 @@ export function Taller3D() {
       globos: [...base, ...anclas.flatMap((ancla) => colocarEn(armada.globos, ancla))],
       tubos: anclas.flatMap((ancla) => colocarTubosEn(armada.tubos, ancla)),
       materiales: sumarMateriales(materialesPorFormato(base), ...anclas.map(() => armada.materiales)),
+      soloDecoraciones: sumarMateriales(...anclas.map(() => armada.materiales)),
       puestas: anclas.length, porElemento: [],
     };
   }, [donde, arco, columna, paredActual, paredArmada, paredTrenzasArmada, tipoPared, superficie, regla, usarMezcla, mezcla, decoracionArmada, decoracionEnEditor, formato.id, inflado]);
@@ -308,6 +315,16 @@ export function Taller3D() {
 
   // Colores de la escena: los que usa lo que se ve, y cambiar uno en todo el montaje de una vez.
   const [avisoColor, setAvisoColor] = useState<string | null>(null);
+  const [historialColor, setHistorialColor] = useState<FotoColores[]>([]);
+  // En Decoración, la base (pared, columna o arco) y las decoraciones se cambian por separado.
+  const gruposColor = useMemo((): GrupoColor[] => {
+    if (modo !== "decoracion" || donde === "sola") return [];
+    const deBase = donde === "pared" ? paredActual.materiales : (donde === "arco" ? arco : columna).materiales.map((m) => ({ formatoId: formato.id, codigo: m.codigo, cantidad: m.cantidad }));
+    return [
+      { id: "base", nombre: donde === "pared" ? "Pared" : donde === "arco" ? "Arco" : "Columna", materiales: deBase },
+      { id: "decoraciones", nombre: "Decoraciones", materiales: escenaDecoracion.soloDecoraciones },
+    ];
+  }, [modo, donde, paredActual, escenaDecoracion, arco, columna, formato.id]);
   const materialesEscena = useMemo(() => {
     const conFormato = (lista: ReadonlyArray<{ codigo: string; cantidad: number }>) => lista.map((m) => ({ formatoId: formato.id, codigo: m.codigo, cantidad: m.cantidad }));
     if (modo === "organico") return organico.resultado.materiales;
@@ -319,7 +336,10 @@ export function Taller3D() {
     return [];
   }, [modo, organico, paredActual, escenaDecoracion, columna, arco, materiales, formato.id]);
 
-  function reemplazarEnEscena(de: string, a: string) {
+  function reemplazarEnEscena(de: string, a: string, grupo: GrupoColor["id"] | "todo" = "todo") {
+    setHistorialColor((h) => [...h.slice(-19), { pared, paredTrenzas, mezcla, decoracion, coloresColumna, coloresModulo, ajustesOrganico, codigo }]);
+    const enBase = grupo !== "decoraciones";
+    const enDecoraciones = grupo !== "base";
     const omitidos = new Set<string>();
     let cambios = 0;
     const cambiar = <T,>(valor: T): T => {
@@ -335,18 +355,32 @@ export function Taller3D() {
       return lista.map((c) => (c === de ? a : c));
     };
     if (modo === "organico") setAjustesOrganico(cambiar(ajustesOrganico));
-    if (modo === "pared" || (modo === "decoracion" && donde === "pared")) {
+    if (modo === "pared" || (modo === "decoracion" && donde === "pared" && enBase)) {
       // Solo la pared que se ve (malla o trenzas): la otra no está en la escena.
       if (tipoPared === "malla") setPared(cambiar(pared)); else setParedTrenzas(cambiar(paredTrenzas));
     }
-    if (modo === "decoracion") { setMezcla(cambiar(mezcla)); setDecoracion(cambiar(decoracion)); }
-    if (modo === "columna" || modo === "arco" || (modo === "decoracion" && (donde === "columna" || donde === "arco"))) setColoresColumna(enLista(coloresColumna));
+    if (modo === "decoracion" && enDecoraciones) {
+      // Con el color cambia también el nombre («Moño fucsia» ya no es fucsia).
+      const nueva = cambiar(mezcla);
+      setMezcla({ ...nueva, elementos: nueva.elementos.map((e, i) => (JSON.stringify(e.decoracion) === JSON.stringify(mezcla.elementos[i]?.decoracion) ? e : { ...e, nombre: nombreDecoracion(e.decoracion) })) });
+      setDecoracion(cambiar(decoracion));
+    }
+    if (modo === "columna" || modo === "arco" || (modo === "decoracion" && (donde === "columna" || donde === "arco") && enBase)) setColoresColumna(enLista(coloresColumna));
     if (modo === "modulo") setColoresModulo(enLista(coloresModulo));
     if (codigo === de && colores.some((c) => c.codigo === a)) setCodigo(a);
     const nombre = referenciaPorCodigo(a)?.nombreCompleto ?? a;
     setAvisoColor(omitidos.size
       ? `${nombre} no se fabrica en ${[...omitidos].join(", ")}: esas piezas quedan como estaban.`
       : cambios ? null : "No había nada de ese color para cambiar.");
+  }
+
+  function deshacerColor() {
+    const ultima = historialColor[historialColor.length - 1];
+    if (!ultima) return;
+    setPared(ultima.pared); setParedTrenzas(ultima.paredTrenzas); setMezcla(ultima.mezcla); setDecoracion(ultima.decoracion);
+    setColoresColumna(ultima.coloresColumna); setColoresModulo(ultima.coloresModulo); setAjustesOrganico(ultima.ajustesOrganico); setCodigo(ultima.codigo);
+    setHistorialColor(historialColor.slice(0, -1));
+    setAvisoColor(null);
   }
 
   // Lo que se le cuenta a FLUX junto con la captura: la estructura y sus globos (en inglés, sin marcas).
@@ -490,7 +524,10 @@ export function Taller3D() {
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-1" aria-label="Elegir el globo">
-          {modo !== "globo" && <PaletaEscena materiales={materialesEscena} onReemplazar={reemplazarEnEscena} aviso={avisoColor} />}
+          {modo !== "globo" && (
+            <PaletaEscena grupos={gruposColor.length ? gruposColor : [{ id: "todo", nombre: "", materiales: materialesEscena }]} onReemplazar={reemplazarEnEscena}
+              aviso={avisoColor} puedeDeshacer={historialColor.length > 0} onDeshacer={deshacerColor} />
+          )}
           {modo === "organico" ? (
             <PanelOrganico valor={ajustesOrganico} onCambio={setAjustesOrganico} />
           ) : modo === "pared" ? (
@@ -571,6 +608,7 @@ export function Taller3D() {
                           style={{ background: ref?.hexGlobo, color: "rgba(0,0,0,.55)" }}>{i + 1}</button>
                       );
                     })}
+                    {ranura !== null && <button type="button" onClick={() => setRanura(null)} className={`${BOTON} ${INACTIVO}`}>Toda la {modo === "arco" ? "estructura" : "columna"}</button>}
                   </div>
                 </>
               )}
@@ -660,7 +698,7 @@ export function Taller3D() {
           </>)}
         </aside>
 
-        <section className="order-1 flex min-w-0 flex-col gap-2 lg:order-2" aria-label="Visor 3D">
+        <section className="order-1 flex min-w-0 flex-col gap-2 lg:sticky lg:top-4 lg:order-2 lg:self-start" aria-label="Visor 3D">
           <div className="relative h-[58vh] min-h-[320px] overflow-hidden rounded-2xl bg-superficie-suave ring-1 ring-borde lg:h-[calc(100dvh-220px)]">
             <canvas ref={lienzoRef} className="block h-full w-full touch-none" aria-label="Modelo en 3D: arrastra para girar, rueda o pellizca para acercar" />
             {!listo && !error && <p className="absolute inset-0 grid place-items-center text-sm text-texto-suave">Cargando el visor 3D…</p>}

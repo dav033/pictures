@@ -16,7 +16,7 @@ El consejo de LLM lo recomendó antes que un LoRA de estructuras (ver enlaces).
 - Rama local `fix/color-organico-conteo`; cada hito verificado se sube con `git push origin fix/color-organico-conteo:main`. Vercel
   despliega solo. El VPS se despliega a mano y solo con aviso previo al dueño.
 
-### Hecho (todo en main, último commit `7215029`)
+### Hecho (todo en main)
 
 | Pestaña | Qué hace |
 |---|---|
@@ -25,8 +25,9 @@ El consejo de LLM lo recomendó antes que un LoRA de estructuras (ver enlaces).
 | Columna | Trenza de cuartetos: un color, dos colores, espiral, salvavidas y zig-zag; radio 0,62 d, paso 0,8 d |
 | Arco | La misma trenza sobre un recorrido redondo, parabólico o rectangular |
 | Pared | Malla Link-O-Loon tipo flor (un color, damero, rombos, franjas) o trenzas alternando tamaños |
-| Decoración | Flores, flor de tubito, moño, estrella y flor de corazones por propiedades (14 predefinidas), colgadas de las anclas de la columna, el arco o la pared; mezcla de varias (réplica de Celebra ed. 27) |
+| Decoración | Flores, flor de tubito, moño, estrella y flor de corazones por propiedades (14 predefinidas), colgadas de las anclas de la columna, el arco o la pared; mezcla de varias. **Celebra ed. 27 uno a uno**: modo «Como la foto», cada una de las 25 piezas en su sitio medido en la foto |
 | Orgánico | Motor orgánico (columna, guirnalda, semiarco) con flores artificiales, pedestal y confeti; réplica de la columna azul de XV |
+| Colores de la escena | Paleta arriba en todas las pestañas (menos Globos): cada color usado con su cantidad; tocarlo lo cambia en todo el montaje (en Decoración, por separado la base y las decoraciones), con «Deshacer» y aviso si el color no viene en un formato (p. ej. Corazón 6 solo Fucsia) |
 | Imagen con IA | «Generar imagen con IA»: captura el visor y lo vuelve foto con FLUX base `/edit` (sin LoRA), eligiendo lugar; ~US$0,05 por imagen, tope 30/hora, registro en el servidor |
 
 ### Siguiente: motor de composición modular («que se pueda armar de todo un poco»)

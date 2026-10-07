@@ -26,6 +26,16 @@ export const PARED_INICIAL: OpcionesPared = { formatoId: "LOL-12", infladoCm: 24
 const BOTON = "min-h-10 rounded-xl px-2 text-sm ring-1 transition-colors";
 const ACTIVO = "bg-acento text-sobre-acento ring-acento";
 const INACTIVO = "bg-superficie text-texto ring-borde hover:bg-superficie-suave";
+/** Colores para los puestos nuevos al pasar a un patrón de más colores: distintos de los que ya hay, para que se note. */
+const CONTRASTES = ["009", "005", "012", "050", "031", "020"];
+function completarColores(actuales: readonly string[], n: number, formatoId: string): string[] {
+  const salida = [...actuales];
+  for (const c of [...CONTRASTES, ...coloresDelFormato(formatoId).map((x) => x.codigo)]) {
+    if (salida.length >= n) break;
+    if (!salida.includes(c) && coloresDelFormato(formatoId).some((x) => x.codigo === c)) salida.push(c);
+  }
+  return salida;
+}
 const m = (cm: number) => `${(cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m`;
 
 type Props = {
@@ -120,7 +130,7 @@ function PanelTrenzas({ valor, onCambio }: { valor: OpcionesParedTrenzas; onCamb
         <h2 className="text-sm font-semibold text-texto">Colores</h2>
         <div className="grid grid-cols-2 gap-1">
           {PATRONES_TRENZAS.map((p) => (
-            <button key={p.id} type="button" onClick={() => { pon({ patron: p.id, colores: Array.from({ length: Math.max(p.colores, valor.colores.length) }, (_, i) => valor.colores[i] ?? valor.colores[0] ?? "609") }); setPuesto(0); }} aria-pressed={valor.patron === p.id} className={`${BOTON} ${valor.patron === p.id ? ACTIVO : INACTIVO}`}>{p.nombre}</button>
+            <button key={p.id} type="button" onClick={() => { pon({ patron: p.id, colores: completarColores(valor.colores, Math.max(p.colores, valor.colores.length), valor.grande.formatoId) }); setPuesto(0); }} aria-pressed={valor.patron === p.id} className={`${BOTON} ${valor.patron === p.id ? ACTIVO : INACTIVO}`}>{p.nombre}</button>
           ))}
         </div>
         <p className="text-xs text-texto-suave">{patron.descripcion}</p>

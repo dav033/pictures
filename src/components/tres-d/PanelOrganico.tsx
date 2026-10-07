@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import { coloresDelFormato } from "@/lib/globos3d/formatos";
 import { COLUMNA_QUINCE_AZUL } from "@/lib/globos3d/organico-presets";
 import { formaColumna, type ColorOrganico, type OpcionesOrganico } from "@/lib/globos3d/organico";
@@ -53,11 +54,13 @@ export function PanelOrganico({ valor, onCambio }: { valor: AjustesOrganico; onC
 
       <section className="flex flex-col gap-3 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
         <h2 className="text-sm font-semibold text-texto">Mezcla de colores</h2>
+        <p className="text-xs text-texto-suave">Toca un color para cambiar su peso, su confeti o el color. Para cambiar un color en toda la columna, usa «Colores de la escena».</p>
         {valor.colores.map((c, i) => {
           const ref = coloresDelFormato("R-12").find((x) => x.codigo === c.codigo);
           return (
-            <details key={i} className="rounded-xl bg-superficie-suave p-2">
-              <summary className="flex cursor-pointer items-center gap-2 text-sm text-texto">
+            <details key={i} className="group rounded-xl bg-superficie-suave p-2">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-texto [&::-webkit-details-marker]:hidden">
+                <ChevronRight className="size-4 shrink-0 text-texto-suave transition-transform group-open:rotate-90" aria-hidden />
                 <span className="size-5 rounded-full ring-1 ring-borde" style={{ background: ref?.hexGlobo }} />
                 {ref?.nombreCompleto ?? c.codigo}{c.confeti ? " con confeti" : ""}
                 <span className="ml-auto font-mono text-xs text-texto-suave">{Math.round((c.peso / totalPeso) * 100)} %</span>

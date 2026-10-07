@@ -2,18 +2,24 @@
 
 import { Shuffle, Sparkles, Trash2, Pencil } from "lucide-react";
 import type { ReglaDecoracion } from "@/lib/globos3d/decoraciones";
-import { DECORACIONES_PREDEFINIDAS, TIPOS_DECORACION, predefinidasDe, type Decoracion, type TipoDecoracion } from "@/lib/globos3d/figuras";
+import { DECORACIONES_PREDEFINIDAS, TIPOS_DECORACION, armarDecoracion, predefinidasDe, type Decoracion, type TipoDecoracion } from "@/lib/globos3d/figuras";
+import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import type { MezclaDecoraciones } from "@/lib/globos3d/mezcla";
 import { ACTIVO, BOTON, Deslizador, EditorFlor, INACTIVO, type DondeDecoracion } from "./PanelFlor";
 import { EditorEstrella, EditorFlorCorazones, EditorFlorTubito, EditorMono } from "./EditoresFiguras";
 import type { TipoPared } from "./PanelPared";
 
-/** El nombre de una decoración: el de la predefinida si no se ha tocado, si no el del tipo («editada»). */
+/**
+ * El nombre de una decoración: el de la predefinida si no se ha tocado; si no, el del tipo con su color
+ * principal (el de más piezas), para que el nombre no mienta después de cambiarle el color.
+ */
 export function nombreDecoracion(decoracion: Decoracion): string {
   const clave = JSON.stringify(decoracion);
   const igual = DECORACIONES_PREDEFINIDAS.find((d) => JSON.stringify(d.decoracion) === clave);
   if (igual) return igual.nombre;
-  return `${TIPOS_DECORACION.find((t) => t.id === decoracion.tipo)?.nombre ?? "Decoración"} (editada)`;
+  const principal = [...armarDecoracion(decoracion).materiales].sort((x, y) => y.cantidad - x.cantidad)[0];
+  const color = principal ? referenciaPorCodigo(principal.codigo)?.nombreCompleto : undefined;
+  return `${TIPOS_DECORACION.find((t) => t.id === decoracion.tipo)?.nombre ?? "Decoración"}${color ? ` ${color}` : " (editada)"}`;
 }
 
 function EditorDecoracion({ decoracion, onDecoracion }: { decoracion: Decoracion; onDecoracion: (d: Decoracion) => void }) {
@@ -66,13 +72,9 @@ export function PanelDecoracion(props: Props) {
         <p className="text-xs text-texto-suave">Malla de trenzas rosada alternando R-12 y R-9, con sus 25 decoraciones cada una en su sitio de la foto (p. 42).</p>
       </section>
 
-      <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-        {editando !== null && mezcla.elementos[editando] ? (
-          <div className="flex items-center justify-between gap-2 rounded-xl bg-superficie-suave px-2 py-1.5 text-xs text-texto">
-            <span>Editando <b>{mezcla.elementos[editando]!.nombre}</b> de la mezcla</span>
-            <button type="button" onClick={() => onEditando(null)} className="text-acento underline-offset-2 hover:underline">Listo</button>
-          </div>
-        ) : null}
+      {!enMezcla && (
+        <>
+          <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
         <h2 className="text-sm font-semibold text-texto">Decoración</h2>
         <div className="grid grid-cols-2 gap-1">
           {TIPOS_DECORACION.map((t) => (
@@ -86,9 +88,10 @@ export function PanelDecoracion(props: Props) {
           ))}
         </div>
         <p className="text-xs text-texto-suave">Elige una para empezar; después cambia cualquier propiedad.</p>
-      </section>
-
-      <EditorDecoracion decoracion={decoracion} onDecoracion={onDecoracion} />
+          </section>
+          <EditorDecoracion decoracion={decoracion} onDecoracion={onDecoracion} />
+        </>
+      )}
 
       <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
         <h2 className="text-sm font-semibold text-texto">Dónde va</h2>
@@ -131,12 +134,40 @@ export function PanelDecoracion(props: Props) {
                     <button type="button" onClick={() => { onMezcla({ ...mezcla, elementos: mezcla.elementos.filter((_, k) => k !== i) }); onEditando(null); }} aria-label={`Quitar ${e.nombre}`} title="Quitar de la mezcla" className="grid size-8 place-items-center rounded-lg ring-1 ring-borde hover:bg-superficie-suave"><Trash2 className="size-3.5" aria-hidden /></button>
                   </span>
                 </div>
+                {editando === i && (
+                  <div className="mt-2 flex flex-col gap-2">
+                    <p className="text-xs text-texto-suave">Cambia sus propiedades: se ve al instante en las {puestas[i] ?? 0} de la pared.</p>
+                    <EditorDecoracion decoracion={decoracion} onDecoracion={onDecoracion} />
+                    <button type="button" onClick={() => onEditando(null)} className={`${BOTON} ${INACTIVO}`}>Listo</button>
+                  </div>
+                )}
                 {mezcla.modo !== "fijo" && <Deslizador id={`peso-${i}`} etiqueta={mezcla.modo === "proporcional" ? "Peso" : "Seguidas en el ciclo"} valor={e.peso} min={0} max={10} paso={1} texto={`${e.peso}`} onCambio={(v) => ponElemento(i, { peso: v })} />}
               </li>
             ))}
           </ul>
-          <button type="button" onClick={() => onMezcla({ ...mezcla, modo: mezcla.modo === "fijo" ? "proporcional" : mezcla.modo, elementos: [...mezcla.elementos, { nombre: nombreDecoracion(decoracion), decoracion, peso: 1 }] })} disabled={editando !== null}
-            className={`${BOTON} ${INACTIVO} disabled:opacity-50`}>Añadir la decoración del editor</button>
+          {editando === null && (
+            <details className="rounded-xl p-2 ring-1 ring-borde">
+              <summary className="cursor-pointer text-sm font-semibold text-texto">Añadir otra decoración</summary>
+              <div className="mt-2 flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-texto">Cuál</h3>
+        <div className="grid grid-cols-2 gap-1">
+          {TIPOS_DECORACION.map((t) => (
+            <button key={t.id} type="button" title={t.descripcion} onClick={() => elegirTipo(t.id)} aria-pressed={decoracion.tipo === t.id} className={`${BOTON} ${decoracion.tipo === t.id ? ACTIVO : INACTIVO}`}>{t.nombre}</button>
+          ))}
+        </div>
+        <p className="text-xs text-texto-suave">{TIPOS_DECORACION.find((t) => t.id === decoracion.tipo)?.descripcion}</p>
+        <div className="grid grid-cols-2 gap-1">
+          {predefinidasDe(decoracion.tipo).map((d) => (
+            <button key={d.id} type="button" title={d.descripcion} onClick={() => onDecoracion(d.decoracion)} className={`${BOTON} ${JSON.stringify(d.decoracion) === JSON.stringify(decoracion) ? ACTIVO : INACTIVO}`}>{d.nombre}</button>
+          ))}
+        </div>
+        <p className="text-xs text-texto-suave">Elige una para empezar; después cambia cualquier propiedad.</p>
+                <EditorDecoracion decoracion={decoracion} onDecoracion={onDecoracion} />
+                <button type="button" onClick={() => onMezcla({ ...mezcla, modo: mezcla.modo === "fijo" ? "proporcional" : mezcla.modo, elementos: [...mezcla.elementos, { nombre: nombreDecoracion(decoracion), decoracion, peso: 1 }] })}
+                  className={`${BOTON} ${ACTIVO}`}>Añadir a la mezcla</button>
+              </div>
+            </details>
+          )}
           <div className={`grid gap-1 ${mezcla.fijas?.length ? "grid-cols-3" : "grid-cols-2"}`}>
             {([...(mezcla.fijas?.length ? [["fijo", "Como la foto"] as const] : []), ["proporcional", "Por proporciones"], ["ciclico", "En ciclo"]] as const).map(([valor, etiqueta]) => (
               <button key={valor} type="button" onClick={() => onMezcla({ ...mezcla, modo: valor })} aria-pressed={mezcla.modo === valor} className={`${BOTON} ${mezcla.modo === valor ? ACTIVO : INACTIVO}`}>{etiqueta}</button>
