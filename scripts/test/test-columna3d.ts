@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { armarColumna } from "../../src/lib/globos3d/columnas";
 import { formatoPorId } from "../../src/lib/globos3d/formatos";
+import { centroCuerpo } from "../../src/lib/globos3d/geometria";
 
 const r12 = formatoPorId("R-12")!;
 const metro = (id: string, cm: number) => armarColumna({ formato: formatoPorId(id)!, infladoCm: cm, alturaCm: 100, patron: "un_color", colores: ["005"] }).niveles;
@@ -22,6 +23,13 @@ const giro = Math.abs(((angulo(1) - angulo(0)) * 180) / Math.PI);
 assert.ok(Math.abs(Math.min(giro, 360 - giro) - 45) < 0.5, `giro por nivel ${giro}°`);
 // Los niveles suben 20 cm (0,8 × 25).
 assert.ok(Math.abs(espiral.pasoCm - 20) < 0.01);
+
+// Apretada: el centro de cada globo a 0,62 diámetros del eje (sin hueco en el centro), no a ~0,73 como un cuarteto suelto.
+for (const g of espiral.globos) {
+  const l = centroCuerpo("redondo", 25);
+  const r = Math.hypot(g.nudo.x + g.direccion.x * l, g.nudo.z + g.direccion.z * l);
+  assert.ok(Math.abs(r - 25 * 0.62) < 0.5, `globo a ${r.toFixed(1)} cm del eje`);
+}
 
 const salvavidas = armarColumna({ formato: r12, infladoCm: 25, alturaCm: 100, patron: "salvavidas", colores: ["009", "005"] });
 const colorNivel = (n: number) => new Set(salvavidas.globos.filter((g) => g.nivel === n).map((g) => g.codigo));

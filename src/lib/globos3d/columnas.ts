@@ -1,4 +1,5 @@
 import type { FormatoGlobo } from "./formatos";
+import { centroCuerpo } from "./geometria";
 import { armarModulo, moduloPorId, materialesModulo, type GloboColocado, type Vec3 } from "./modulos";
 
 /**
@@ -21,6 +22,12 @@ export const PATRONES_COLUMNA: ReadonlyArray<{ id: PatronColumna; nombre: string
 ];
 
 export const PASO_POR_DIAMETRO = 0.8;
+/**
+ * Distancia del eje de la columna al centro de cada globo, en diámetros. En la columna la cuerda aprieta el
+ * cuarteto: los nudos quedan metidos hacia dentro y los globos se aplastan entre sí, sin hueco en el centro
+ * (dueño, 2026-10-07: «los globos están muy separados»). Un cuarteto suelto queda a ~0,73.
+ */
+export const RADIO_COLUMNA_POR_DIAMETRO = 0.62;
 const GIRO = Math.PI / 4; // 1/8 de vuelta
 
 export type GloboDeColumna = GloboColocado & { codigo: string; nivel: number };
@@ -62,13 +69,21 @@ export function armarColumna(opciones: { formato: FormatoGlobo; infladoCm: numbe
   // suelto se ve más abierto). Con 0,12 rad la espiral queda limpia.
   const cuarteto = { ...moduloPorId("cuarteto")!, inclinacion: 0.12 };
   const base = armarModulo(cuarteto, formato, infladoCm);
+  // Cada cuerpo se acerca al eje: el nudo se corre hacia dentro lo que haga falta (queda oculto entre los globos).
+  const natural = centroCuerpo(formato.tipo === "link" ? "link" : "redondo", infladoCm);
+  const radio = infladoCm * RADIO_COLUMNA_POR_DIAMETRO;
+  const apretados = base.globos.map((g) => {
+    const horizontal = Math.hypot(g.direccion.x, g.direccion.z) || 1;
+    const desde = radio / horizontal - natural; // a lo largo de la dirección, desde el eje hasta el nudo
+    return { ...g, nudo: { x: g.direccion.x * desde, y: g.direccion.y * desde, z: g.direccion.z * desde }, cuelloExtraCm: 0 };
+  });
   const pasoCm = infladoCm * PASO_POR_DIAMETRO;
   const niveles = Math.max(1, Math.round(alturaCm / pasoCm));
   const globos: GloboDeColumna[] = [];
   for (let nivel = 0; nivel < niveles; nivel++) {
     const angulo = anguloDe(patron, nivel);
     const y = nivel * pasoCm;
-    for (const g of base.globos) {
+    for (const g of apretados) {
       const nudo = rotarY(g.nudo, angulo);
       globos.push({
         ...g,
