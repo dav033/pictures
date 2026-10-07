@@ -262,6 +262,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const controlRef = useRef<AbortController | null>(null);
   const imagenControlRef = useRef<AbortController | null>(null);
   const imagenEnCursoRef = useRef<string | null>(null);
+  /** «Genera la imagen» sin plan: el plan que había (o ninguno); al llegar uno distinto se dibuja su imagen. */
+  const imagenTrasPlanRef = useRef<{ planPrevio: string | null } | null>(null);
   const fotosRef = useRef(new Map<string, FotoInspiracion>());
   const restauradoRef = useRef(false);
   const flujoRef = useRef<{ id: string; texto: string } | null>(null);
@@ -274,6 +276,17 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
 
   // ── Derivados ────────────────────────────────────────────────────────────────────────────────────────────────
   const planVigente = useMemo(() => buscarPlanVigente(mensajes), [mensajes]);
+  const idPlanVigente = planVigente?.mensajeId ?? null;
+  // «Genera la imagen» sin plan: en cuanto aparece un plan distinto del que había, se lleva a la vista y se dibuja.
+  useEffect(() => {
+    const pendiente = imagenTrasPlanRef.current;
+    if (!pendiente || !idPlanVigente || idPlanVigente === pendiente.planPrevio) return;
+    imagenTrasPlanRef.current = null;
+    registrarAccion("plan.imagen_tras_plan", { mensajeId: idPlanVigente });
+    vistaPendienteRef.current = { tipo: "mensaje", id: idPlanVigente };
+    void verComoQuedaria(idPlanVigente);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando aparece un plan nuevo
+  }, [idPlanVigente]);
   const ultimo = mensajes.at(-1);
   const indiceActivo = useMemo(() => {
     for (let indice = mensajes.length - 1; indice >= 0; indice -= 1) if (mensajes[indice]!.role === "assistant") return indice;
@@ -535,7 +548,23 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       }
     }
     // «Genera la imagen» con un plan a la vista: a la tarjeta del plan y a generar, sin modelo (dueño, 2026-10-07).
-    if (!archivo && planVigente && !opcionesEnvio.alcance && !opcionesEnvio.reintentar && pideImagenDelPlan(limpio)) {
+    // Sin plan (o con una foto leída después del último): primero se arma el plan y, en cuanto llega, se dibuja su
+    // imagen (`imagenTrasPlanRef`). Con la lectura de una foto, por el camino del plan con foto; si no, el modelo arma
+    // el plan con lo conversado.
+    const pideImagen = !archivo && !opcionesEnvio.alcance && !opcionesEnvio.reintentar && pideImagenDelPlan(limpio);
+    const lecturaSinPlan = pideImagen ? lecturaPendiente(mensajes, planVigente?.mensajeId ?? null) : null;
+    if (pideImagen && (!planVigente || lecturaSinPlan)) {
+      imagenTrasPlanRef.current = { planPrevio: planVigente?.mensajeId ?? null };
+      registrarAccion("plan.imagen_por_chat_sin_plan", { texto: limpio, referenciaId: lecturaSinPlan?.id ?? null, planPrevio: planVigente?.mensajeId ?? null });
+      if (lecturaSinPlan) {
+        setEntrada("");
+        agregar([{ id: nuevoId(), role: "user", content: limpio.slice(0, 6000) }]);
+        await aceptarPlanFoto(lecturaSinPlan.id);
+        return;
+      }
+      limpio = "Arma mi plan con lo que hablamos y genera la imagen.";
+    }
+    if (pideImagen && planVigente && !lecturaSinPlan) {
       setEntrada("");
       const idPlan = planVigente.mensajeId;
       const yaEnCurso = imagenEnCursoRef.current === idPlan;
