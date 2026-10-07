@@ -1,6 +1,10 @@
+import { z } from "zod";
 import type { CandidatoDelServidor } from "@/components/plan/ajuste/ajuste-propuesta";
-import type { PedidoEdicionPlan } from "@/lib/ia/guiado/edicion-plan-chat";
-import { FalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
+import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { LUGAR_EN_PALABRAS, piezaIndefinida, piezasDelPedido, type PedidoEdicionPlan, type PiezaNuevaChat } from "@/lib/ia/guiado/edicion-plan-chat";
+import { esEstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { FalloPlanEditar, mensajeErrorRespuesta, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
+import { campoPrincipal, type UbicacionPiezaNueva } from "@/lib/plan/pieza-nueva";
 import { esGloboDelTono, tonoDelTitulo } from "@/lib/plan/tonos-color";
 import { familiaDeColorPropuesta, plegarTexto, tonoClaroDe, TONOS_V2, type TonoClaroV2 } from "@/lib/rag/taxonomy/v2";
 import { familiaSempertex } from "../color-globo";
@@ -32,7 +36,22 @@ import { globosDeCandidatos, planConImpresos, type GloboCatalogo } from "./selec
  *
  * Sin React: la red llega por `DependenciasEdicionChat` (en la vista, `/api/plan-editar`; en las pruebas, dobles sin
  * coste). Aquí no se cuenta ningún globo.
+ *
+ * El CRUD por chat (dueño, 2026-10-07) suma tres caminos: `agregar_pieza` (el servidor suma la pieza con
+ * `pieza-nueva.ts` y comprueba que las demás compran lo mismo), `colores_pieza` (con los mismos cambios del editor,
+ * pieza por pieza) y `mover_pieza`/`renombrar_pieza` (solo cambian lugar o nombre). La tarjeta dice «Último ajuste:
+ * añadí una guirnalda de 2,4 m en el centro» y el chat lo confirma en una frase.
  */
+
+/** La pieza que se suma, como la recibe `/api/plan-editar` (`agregar_pieza`): colores del plan y globos nuevos aparte. */
+export type PiezaParaServidor = Pick<PiezaNuevaChat, "estructura" | "ubicacion" | "medidas" | "organica"> & {
+  /** Familias de color del plan que lleva («dorado»); vacío = las del plan (si tampoco hay globos nuevos). */
+  colores: string[];
+  /** Colores que el plan no lleva: el globo del catálogo elegido, con todos sus tamaños. */
+  globos: GloboParaPlan[];
+};
+
+export type CambioDePieza = { estructuraId: string; ubicacion?: UbicacionPiezaNueva; nombre?: string };
 
 export type DependenciasEdicionChat = Pick<DependenciasAjuste, "aplicar" | "quitarPieza" | "agregarColor" | "reemplazarColor"> & {
   /**
@@ -40,7 +59,40 @@ export type DependenciasEdicionChat = Pick<DependenciasAjuste, "aplicar" | "quit
    * pedido («celeste»), para que sus globos lleguen primero entre todos los azules.
    */
   buscarGlobos: (familia: string, approvalToken: string, palabra: string | null) => Promise<readonly CandidatoDelServidor[]>;
+  /** Suma UNA pieza al plan firmado, sin tocar las demás (`/api/plan-editar`, `agregar_pieza`). */
+  agregarPieza?: (base: PlanGuiado, pieza: PiezaParaServidor) => Promise<PlanFirmado & { nuevas?: string[] }>;
+  /** Mueve o renombra UNA pieza (`/api/plan-editar`, `editar_pieza`). */
+  editarPieza?: (base: PlanGuiado, cambio: CambioDePieza) => Promise<PlanFirmado>;
 };
+
+const RESPALDO_PIEZA = "No pude hacer ese cambio en tu plan. Tu plan sigue como estaba.";
+const RespuestaPiezaSchema = z.object({ plan: PlanGuiadoSchema, cotizacion: z.unknown().optional(), nuevas: z.array(z.string()).optional() }).passthrough();
+
+async function pedirPieza(cuerpo: Record<string, unknown>, fetcher?: typeof fetch): Promise<PlanFirmado & { nuevas?: string[] }> {
+  const datos = await pedirPlanEditar(cuerpo, RESPALDO_PIEZA, fetcher ? { fetcher } : {});
+  const leido = RespuestaPiezaSchema.safeParse(datos);
+  if (!leido.success) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, RESPALDO_PIEZA));
+  return { plan: leido.data.plan, cotizacion: leido.data.cotizacion, ...(leido.data.nuevas ? { nuevas: leido.data.nuevas } : {}) };
+}
+
+/** «Agrégale una guirnalda en medio» por `/api/plan-editar` (`modo: "agregar_pieza"`): sin modelo; Python cuenta y firma. */
+export function agregarPiezaEnServidor(base: PlanGuiado, pieza: PiezaParaServidor, fetcher?: typeof fetch): Promise<PlanFirmado & { nuevas?: string[] }> {
+  return pedirPieza({
+    modo: "agregar_pieza",
+    base,
+    estructura: pieza.estructura,
+    ubicacion: pieza.ubicacion,
+    ...(pieza.medidas && Object.keys(pieza.medidas).length ? { medidas: pieza.medidas } : {}),
+    ...(pieza.organica ? { organica: true } : {}),
+    ...(pieza.colores.length ? { colores: pieza.colores } : {}),
+    ...(pieza.globos.length ? { globos: pieza.globos.map((globo) => ({ color: globo.color, product_id: globo.productId, variant_ids: globo.variantIds })) } : {}),
+  }, fetcher);
+}
+
+/** «Pon la guirnalda arriba» o «llámala Cascada» por `/api/plan-editar` (`modo: "editar_pieza"`). */
+export function editarPiezaEnServidor(base: PlanGuiado, cambio: CambioDePieza, fetcher?: typeof fetch): Promise<PlanFirmado> {
+  return pedirPieza({ modo: "editar_pieza", base, estructura_id: cambio.estructuraId, ...(cambio.ubicacion ? { ubicacion: cambio.ubicacion } : {}), ...(cambio.nombre ? { nombre: cambio.nombre } : {}) }, fetcher);
+}
 
 /** El globo del catálogo que se eligió para un color pedido, y por qué. */
 export type GloboElegidoChat = { globo: GloboParaPlan; titulo: string; acabado: string | null; candidatos: number; cubreTamanos: boolean };
@@ -52,6 +104,8 @@ export type EdicionChatHecha = PlanFirmado & {
   confirmacion: string;
   cambios: CambioPlan[];
   globos: GloboElegidoChat[];
+  /** La pieza que se sumó («EST_04_GUIRNALDA»), al agregar una. */
+  nueva?: string;
 };
 
 /** Lo que dice el chat mientras Python rehace el plan. */
@@ -64,8 +118,18 @@ export function avisoEdicionChat(pedido: PedidoEdicionPlan): string {
     case "quitar_pieza": return "Quito esa pieza; lo demás queda igual…";
     case "tamano": return `${pedido.direccion > 0 ? "Agrando" : "Achico"} ${pedido.piezas.length ? "esas piezas" : "tu decoración"} un poco…`;
     case "medidas": return "Ajusto la medida; lo demás queda igual…";
+    case "agregar_pieza": return `Sumo ${piezaIndefinida(pedido.pieza.estructura)}${pedido.pieza.ubicacion ? ` ${LUGAR_EN_PALABRAS[pedido.pieza.ubicacion]}` : ""} a tu plan; lo demás queda igual…`;
+    case "colores_pieza": return `Dejo esa pieza en ${pedido.colores.map(nombreColor).join(" y ")}; lo demás queda igual…`;
+    case "mover_pieza": return `Paso esa pieza ${LUGAR_EN_PALABRAS[pedido.ubicacion]}; lo demás queda igual…`;
+    case "renombrar_pieza": return `Le pongo «${pedido.nombre}» a esa pieza…`;
   }
 }
+
+/** El lugar del plan en palabras («en el centro»): el de una pieza sumada o movida. */
+const LUGAR_DEL_PLAN: Readonly<Record<string, string>> = {
+  arco_central: "en el centro", zona_central: "en el centro", fondo_pared: "al fondo", lateral_izquierdo: "a la izquierda", lateral_derecho: "a la derecha",
+  piso_frontal: "en el piso, al frente", entrada: "en la entrada", sobre_mesa_principal: "sobre la mesa principal", mesas_invitados: "en las mesas de invitados", techo: "en el techo",
+};
 
 function plegar(texto: string | null | undefined): string {
   return plegarTexto(texto ?? "");
@@ -214,12 +278,14 @@ function conParejas(plan: PlanGuiado, ids: readonly string[], cambio: (estructur
  * que esto resuelve.
  */
 export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicionPlan, dependencias: DependenciasEdicionChat): Promise<EdicionChatHecha> {
-  const ids = estructurasDeNombres(base, pedido.piezas);
+  const ids = estructurasDeNombres(base, piezasDelPedido(pedido));
   if (!ids) fallo("No encontré esa pieza en tu plan. Tu plan sigue como estaba.");
   const ajuste: DependenciasAjuste = { ...dependencias, buscar: async () => [] };
   const globos: GloboElegidoChat[] = [];
   const hechos: CambioPlan[] = [];
   let actual: PlanFirmado = { plan: base, cotizacion: undefined };
+  /** La pieza que se sumó (agregar_pieza). */
+  let nueva: string | null = null;
   /** Un cambio sobre el plan que dejó el anterior (`armar` lo calcula con ese plan: los índices pueden moverse). */
   const aplicar = async (armar: (plan: PlanGuiado) => CambioPlan | null): Promise<void> => {
     const cambio = armar(actual.plan);
@@ -306,17 +372,133 @@ export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicio
       if (!hechos.length) fallo("Esa medida no se puede escribir en esa pieza. Tu plan sigue como estaba.");
       break;
     }
+    case "agregar_pieza": {
+      // C · Una pieza más, en los colores del plan o en los pedidos: los del plan van por su familia (el mismo globo que ya
+      // se compra); uno que el plan no lleva (o un tono claro), con el globo liso del catálogo. Las demás piezas no se tocan.
+      const agregarPieza = dependencias.agregarPieza;
+      if (!agregarPieza) fallo(RESPALDO_PIEZA);
+      const delPlan = new Set(base.plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => plegar(material.color))).filter(Boolean));
+      const colores: string[] = [];
+      const nuevos: GloboParaPlan[] = [];
+      for (const color of pedido.pieza.colores) {
+        const familia = plegar(familiaDeColorPropuesta(plegar(color)));
+        if (delPlan.has(familia) && !tonoClaroDe(color)) {
+          if (!colores.includes(familia)) colores.push(familia);
+          continue;
+        }
+        const elegido = await globoPara(base, color, dependencias, { tamanos: [], acabadoPreferido: null });
+        globos.push(elegido);
+        nuevos.push(elegido.globo);
+      }
+      const hecho = await agregarPieza(base, {
+        estructura: pedido.pieza.estructura,
+        ubicacion: pedido.pieza.ubicacion,
+        ...(pedido.pieza.medidas ? { medidas: pedido.pieza.medidas } : {}),
+        ...(pedido.pieza.organica ? { organica: true } : {}),
+        colores,
+        globos: nuevos,
+      });
+      actual = { plan: hecho.plan, cotizacion: hecho.cotizacion };
+      nueva = hecho.nuevas?.[0] ?? hecho.plan.plan.estructuras.find((estructura) => !base.plan.estructuras.some((antes) => antes.estructura_id === estructura.estructura_id))?.estructura_id ?? null;
+      break;
+    }
+    case "colores_pieza": {
+      // U · «Cambia la guirnalda a dorado»: en cada pieza, cada color pedido que no lleva entra en lugar de uno que sobra
+      // (o se añade), y los que sobran se quitan. Con los cambios del editor, pieza por pieza.
+      if (!ids.length) fallo("No encontré esa pieza en tu plan. Tu plan sigue como estaba.");
+      const pedidas = pedido.colores.map((color) => ({ color, familia: plegar(familiaDeColorPropuesta(plegar(color))), tono: tonoClaroDe(color) }));
+      for (const id of ids) {
+        const presentes = [...new Set(actual.plan.plan.estructuras.find((estructura) => estructura.estructura_id === id)?.materiales.map((material) => plegar(material.color)).filter(Boolean) ?? [])];
+        const quedan = pedidas.filter((pedida) => !pedida.tono && presentes.includes(pedida.familia)).map((pedida) => pedida.familia);
+        let sobran = presentes.filter((color) => !quedan.includes(color));
+        for (const falta of pedidas.filter((pedida) => pedida.tono || !presentes.includes(pedida.familia))) {
+          const sale = sobran.find((color) => color === falta.familia) ?? sobran[0];
+          const lineas = lineasDe(actual.plan, [id]).filter((linea) => !sale || linea.color === sale);
+          const elegido = await globoPara(actual.plan, falta.color, dependencias, {
+            tamanos: [...new Set(lineas.flatMap((linea) => (linea.diam ? [linea.diam] : [])))],
+            acabadoPreferido: sale ? familiaSempertex(lineas.find((linea) => linea.titulo)?.titulo)?.nombre ?? null : null,
+            ...(sale === falta.familia ? { excluir: new Set(lineas.map((linea) => linea.productId)) } : {}),
+          });
+          globos.push(elegido);
+          if (sale) {
+            await aplicar(() => ({ tipo: "reemplazar-color", color: sale, estructuraIds: [id], globo: elegido.globo }));
+            sobran = sobran.filter((color) => color !== sale);
+          } else {
+            await aplicar(() => ({ tipo: "agregar-color", color: elegido.globo.color, globo: elegido.globo, estructuraIds: [id] }));
+          }
+        }
+        for (const sobra of sobran) {
+          await aplicar((plan) => {
+            const indice = indiceDeColor(plan, id, sobra);
+            return indice >= 0 && edicionQuitarColor(plan, id, indice) ? { tipo: "quitar-color", estructuraId: id, indice } : null;
+          });
+        }
+      }
+      if (!hechos.length) fallo("Esas piezas ya van en esos colores.");
+      break;
+    }
+    case "mover_pieza":
+    case "renombrar_pieza": {
+      // U · Mover o renombrar: solo cambian el lugar o el nombre; Python vuelve a firmar y los globos no cambian.
+      const editarPieza = dependencias.editarPieza;
+      if (!editarPieza) fallo(RESPALDO_PIEZA);
+      const id = ids[0];
+      if (!id) fallo("No encontré esa pieza en tu plan. Tu plan sigue como estaba.");
+      const hecho = await editarPieza(base, pedido.tipo === "mover_pieza" ? { estructuraId: id, ubicacion: pedido.ubicacion } : { estructuraId: id, nombre: pedido.nombre });
+      actual = { plan: hecho.plan, cotizacion: hecho.cotizacion };
+      break;
+    }
   }
 
-  const descripcion = descripcionDe(base, pedido, hechos, ids);
-  const confirmacion = hechos.length === 1 ? confirmacionDelCambio(base, hechos[0]!, actual.piezas, actual.plan) : `Listo: ${descripcion}; lo demás quedó igual.`;
-  return { ...actual, descripcion: descripcion.slice(0, 160), confirmacion, cambios: hechos, globos };
+  const descripcion = descripcionDe(base, pedido, hechos, ids, { despues: actual.plan, nueva });
+  const propia = pedido.tipo === "agregar_pieza" || pedido.tipo === "colores_pieza" || pedido.tipo === "mover_pieza" || pedido.tipo === "renombrar_pieza";
+  const confirmacion = propia ? confirmacionPropia(base, pedido, descripcion, ids)
+    : hechos.length === 1 ? confirmacionDelCambio(base, hechos[0]!, actual.piezas, actual.plan) : `Listo: ${descripcion}; lo demás quedó igual.`;
+  return { ...actual, descripcion: descripcion.slice(0, 160), confirmacion, cambios: hechos, globos, ...(nueva ? { nueva } : {}) };
 }
 
-/** La línea corta del cambio: la del editor si fue uno solo; si fueron varios, la del pedido entero. */
-function descripcionDe(base: PlanGuiado, pedido: PedidoEdicionPlan, hechos: readonly CambioPlan[], ids: readonly string[]): string {
-  if (hechos.length === 1) return describirCambio(base, hechos[0]!);
+/** Lo que dice el chat al terminar un cambio de pieza (sumar, colores de una pieza, mover, renombrar). */
+function confirmacionPropia(base: PlanGuiado, pedido: PedidoEdicionPlan, descripcion: string, ids: readonly string[]): string {
+  switch (pedido.tipo) {
+    case "colores_pieza": return `Listo: ${conArticulo(base, ids)} ${ids.length > 1 ? "quedaron" : "quedó"} en ${listaNatural(pedido.colores.map(nombreColor))}; lo demás quedó igual.`;
+    case "renombrar_pieza": return `Listo: ${descripcion}.`;
+    default: return `Listo: ${descripcion}; lo demás quedó igual.`;
+  }
+}
+
+/** «de 2,4 m», «de 2,4 × 2,2 m»: la medida principal de la pieza sumada. */
+function medidaDe(estructura: PlanGuiado["plan"]["estructuras"][number]): string {
+  const oficial = esEstructuraOficialId(estructura.estructura_oficial) ? estructura.estructura_oficial : null;
+  const { ancho_m: ancho, alto_m: alto, largo_m: largo } = estructura.medidas;
+  const numero = (valor: number) => String(Math.round(valor * 100) / 100).replace(".", ",");
+  const campo = oficial ? campoPrincipal(oficial) : null;
+  if (campo === "largo_m" && largo) return ` de ${numero(largo)} m`;
+  if (campo === "alto_m" && alto) return ` de ${numero(alto)} m de alto`;
+  if (ancho && alto) return ` de ${numero(ancho)} × ${numero(alto)} m`;
+  const una = largo ?? alto ?? ancho;
+  return una ? ` de ${numero(una)} m` : "";
+}
+
+/**
+ * La línea corta del cambio: la del editor si fue uno solo; si fueron varios, la del pedido entero. Los cambios de pieza
+ * dicen lo que pasó con sus palabras: «añadí una guirnalda de 2,4 m en el centro», «la guirnalda en dorado», «moví la
+ * guirnalda arriba», «la guirnalda ahora se llama «Cascada»».
+ */
+function descripcionDe(base: PlanGuiado, pedido: PedidoEdicionPlan, hechos: readonly CambioPlan[], ids: readonly string[], resultado: { despues: PlanGuiado; nueva: string | null }): string {
   const piezas = (lista: readonly string[]) => conArticulo(base, lista);
+  switch (pedido.tipo) {
+    case "agregar_pieza": {
+      const sumada = resultado.despues.plan.estructuras.find((estructura) => estructura.estructura_id === resultado.nueva);
+      const lugar = pedido.pieza.ubicacion ? LUGAR_EN_PALABRAS[pedido.pieza.ubicacion] : sumada ? LUGAR_DEL_PLAN[sumada.ubicacion] : undefined;
+      const colores = pedido.pieza.colores.length ? ` en ${listaNatural(pedido.pieza.colores.map(nombreColor))}` : "";
+      return `añadí ${piezaIndefinida(pedido.pieza.estructura)}${sumada ? medidaDe(sumada) : ""}${lugar ? ` ${lugar}` : ""}${colores}`;
+    }
+    case "colores_pieza": return `${piezas(ids)} en ${listaNatural(pedido.colores.map(nombreColor))}`;
+    case "mover_pieza": return `moví ${piezas(ids)} ${LUGAR_EN_PALABRAS[pedido.ubicacion]}`;
+    case "renombrar_pieza": return `${piezas(ids)} ahora se llama «${pedido.nombre}»`;
+    default: break;
+  }
+  if (hechos.length === 1) return describirCambio(base, hechos[0]!);
   switch (pedido.tipo) {
     case "agregar_color": return `con ${listaNatural(hechos.flatMap((cambio) => (cambio.tipo === "agregar-color" ? [cambio.globo?.nombre ?? colorCliente(cambio.color)] : [])))}`;
     case "quitar_color": return `sin ${nombreColor(pedido.color)} en ${piezas(hechos.flatMap((cambio) => ("estructuraId" in cambio ? [cambio.estructuraId] : [])))}`;
@@ -325,5 +507,6 @@ function descripcionDe(base: PlanGuiado, pedido: PedidoEdicionPlan, hechos: read
     case "tamano": return `${piezas(ids)} ${pedido.direccion > 0 ? "más grandes" : "más pequeñas"}`;
     case "medidas": return `${piezas(ids)} de ${Object.values(pedido.medidas).map((valor) => `${String(valor).replace(".", ",")} m`).join(" × ")}`;
     case "reemplazar_color": return hechos[0] ? describirCambio(base, hechos[0]) : `${nombreColor(pedido.colorNuevo)} en lugar de ${nombreColor(pedido.color)}`;
+    default: return "cambié tu plan";
   }
 }

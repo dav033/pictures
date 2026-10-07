@@ -246,10 +246,14 @@ caso("las dos vistas llaman a /api/generate con el constructor compartido", () =
 
 caso("el plan con foto de la guiada parte del mismo texto que la clásica", () => {
   const clasica = readFileSync(path.join(process.cwd(), "src/app/page.tsx"), "utf8");
-  const guiada = readFileSync(path.join(process.cwd(), "src/components/guiado/VistaGuiada.tsx"), "utf8");
+  // El cuerpo del plan con foto vive en `foto-con-pieza.ts` (CRUD por chat: también lleva la pieza que el cliente pidió
+  // sumar) y la vista lo usa en «Sí, armémoslo».
+  const vista = readFileSync(path.join(process.cwd(), "src/components/guiado/VistaGuiada.tsx"), "utf8");
+  const guiada = readFileSync(path.join(process.cwd(), "src/lib/ia/guiado/foto-con-pieza.ts"), "utf8");
   assert.match(clasica, /else if \(hayEstilo\) limpio = MENSAJE_SOLO_REFERENCIAS;/);
+  assert.match(vista, /const armar = \(reintento: boolean, faltantes\?: readonly ColorFotoFaltante\[\]\) => cuerpoPlanFoto\(\{/);
   assert.match(guiada, /reintento \? instruccionPlanFoto\(\{ reintento, colores[^\n]*?\}\) : `\$\{MENSAJE_SOLO_REFERENCIAS\}\\n\$\{CONFIRMAR_PLAN_FOTO\}`/);
-  assert.match(guiada, /creatividad: CREATIVIDAD_POR_DEFECTO,\s+\.\.\.\(imagen \? \{ imagenesReferencia: \[imagen\] \} : \{\}\),\s+referenceBlueprint: (?:referencia\.)?blueprint,/);
+  assert.match(guiada, /creatividad: CREATIVIDAD_POR_DEFECTO,\s+\.\.\.\(imagen \? \{ imagenesReferencia: \[imagen\] \} : \{\}\),\s+referenceBlueprint: (?:piezaNueva \? piezaNueva\.lectura\.blueprint : )?(?:referencia\.)?blueprint,/);
 });
 
 if (fallos > 0) {

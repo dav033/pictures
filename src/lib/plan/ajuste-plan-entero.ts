@@ -14,6 +14,7 @@ import { conFotosDeCatalogo } from "./cotizacion-fotos";
 import { EDICION_PYTHON_DEADLINE_MS, exigirContextoPython } from "./edicion-python";
 import { PlanEditError } from "./edicion-error";
 import type { BasePlan } from "./edicion-esquemas";
+import { piezasCambiadas, piezasIntactas, planConPiezaEditada, planConPiezaNueva, type PiezaEditada, type PiezaNuevaArmada, type PiezaNuevaEntrada, type UbicacionPiezaNueva } from "./pieza-nueva";
 import { resolverPlan, type ResolucionPlan } from "./resolver-backend";
 import type { PlanResuelto } from "./resuelto";
 import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
@@ -226,4 +227,100 @@ export async function reemplazarColorPlan(input: Entrada & { color: string; prod
     entrada: { plan_hash: input.base.plan_hash, color: input.color, productIdAnterior: input.productIdAnterior ?? null, estructuras: input.estructuraIds ?? null, variantesPedidas: input.variantIds.length },
   });
   return { ...firmar(verificado, resolucion, allowlist, { accion: "reemplazar_color", color: normal(input.color), colorNuevo: globo.color, product_id: input.productId, piezas: cambio.piezas }, pool), piezas: cambio.piezas };
+}
+
+// --- El CRUD por chat de la guiada: sumar, mover y renombrar una pieza (dueño, 2026-10-07) ----------------------------
+
+const MENSAJE_PIEZA_NUEVA: Readonly<Record<Extract<PiezaNuevaArmada, { ok: false }>["motivo"], string>> = {
+  tope_piezas: "Tu plan ya tiene el máximo de piezas. Quita una para sumar otra.",
+  ubicacion_ocupada: "Ese lugar ya tiene una pieza en tu plan. Pídemela en otro lugar (al centro, a un lado…).",
+  sin_colores: "Tu plan no lleva esos colores. Pídemela en los colores de tu plan o dime cuál añadir.",
+  esquema: "No pude sumar esa pieza a tu plan.",
+};
+
+type GloboPedido = { color: string; productId: string; variantIds: readonly string[] };
+
+/** Piezas nuevas a las que el plan resuelto les dejó globos sin cobertura. */
+function sinCoberturaDe(resuelto: PlanResuelto, estructuraId: string): PlanResuelto["sin_cobertura"] {
+  return resuelto.sin_cobertura.filter((item) => item.estructura_id === estructuraId);
+}
+
+/**
+ * Suma UNA pieza al plan firmado («agrégale una guirnalda en medio», pedido por chat): la entrada del plan con la pieza
+ * nueva (`planConPiezaNueva`: copia de una pieza igual del plan, o la estándar del tipo en los colores y productos del
+ * plan) y Python la vuelve a resolver y a firmar. Garantía: las piezas de antes compran EXACTAMENTE lo mismo
+ * (`piezasIntactas`); si no, no se cambia nada. Los colores que el plan no lleva llegan como globos del catálogo y se
+ * admiten en el snapshot firmado (`/catalog/selection`), como «Añadir un color». Si el catálogo no cubre algún tamaño de
+ * la mezcla orgánica de la pieza nueva, se intenta una vez con la mezcla clásica; si tampoco, no se cambia nada.
+ */
+export async function agregarPiezaPlan(input: Entrada & { pieza: Omit<PiezaNuevaEntrada, "materialesNuevos">; globos?: readonly GloboPedido[] }): Promise<AplicarEdicionResultado & { nuevas: string[]; nombre: string; ubicacion: string; medidas: Record<string, number> }> {
+  const pool = input.pool ?? getRagPool();
+  const verificado = await verificarBase(input);
+  const materialesNuevos: Array<{ product_id: string; color: string }> = [];
+  for (const globo of input.globos ?? []) {
+    const admitidas = await admitirVariantes(verificado, globo.productId, globo.variantIds, input.signal);
+    if (!admitidas.colores.some((color) => normal(color) === normal(globo.color))) throw new PlanEditError(422, "Ese globo no es del color que pediste. Prueba con otro color.");
+    materialesNuevos.push({ product_id: globo.productId, color: normal(globo.color) });
+  }
+  const armada = planConPiezaNueva(input.base.plan, { ...input.pieza, ...(materialesNuevos.length ? { materialesNuevos } : {}) });
+  const entrada = { plan_hash: input.base.plan_hash, pieza: input.pieza, globos: (input.globos ?? []).map((globo) => ({ color: globo.color, product_id: globo.productId, variantes: globo.variantIds.length })), piezasAntes: input.base.plan.estructuras.map((estructura) => ({ id: estructura.estructura_id, nombre: estructura.nombre, ubicacion: estructura.ubicacion })) };
+  if (!armada.ok) {
+    decidir("regla:agregar_pieza", "sumar una pieza al plan por chat sin tocar las demás", { aplicado: false, motivo: armada.motivo, detalle: armada.detalle }, { entrada });
+    throw new PlanEditError(422, MENSAJE_PIEZA_NUEVA[armada.motivo]);
+  }
+  const allowlist = allowlistDesdeMapa(verificado.whitelist);
+  let planNuevo = planValido(armada.plan, MENSAJE_PIEZA_NUEVA.esquema);
+  let resolucion = await resolver(input.base, verificado, planNuevo, allowlist, input.signal);
+  let mezclaClasica = false;
+  const sinArmado = armada.plantilla !== "copia";
+  if (sinCoberturaDe(resolucion.resuelto, armada.nueva).length && sinArmado && armada.plan.estructuras.at(-1)?.mezcla !== "clasica") {
+    // Un color del plan sin algún tamaño de la mezcla orgánica: la misma pieza en la mezcla clásica (un tamaño).
+    planNuevo = planValido({ ...planNuevo, estructuras: planNuevo.estructuras.map((estructura) => (estructura.estructura_id === armada.nueva ? { ...estructura, mezcla: "clasica" as const } : estructura)) }, MENSAJE_PIEZA_NUEVA.esquema);
+    resolucion = await resolver(input.base, verificado, planNuevo, allowlist, input.signal);
+    mezclaClasica = true;
+  }
+  const resuelto = resolucion.resuelto;
+  const intactas = piezasIntactas(input.base, resuelto);
+  const globosNueva = resuelto.estructuras.find((estructura) => estructura.estructura_id === armada.nueva)?.lineas.reduce((suma, linea) => suma + linea.unidades, 0) ?? 0;
+  const sinCobertura = sinCoberturaDe(resuelto, armada.nueva);
+  const aplicado = intactas && globosNueva > 0 && sinCobertura.length === 0;
+  decidir("regla:agregar_pieza", "sumar una pieza al plan por chat sin tocar las demás (Python la cuenta y firma)", {
+    aplicado, nueva: armada.nueva, nombre: armada.nombre, ubicacion: armada.ubicacion, medidas: armada.medidas, plantilla: armada.plantilla, materiales: armada.materiales,
+    renombradas: armada.renombradas, mezclaClasica, intactas, cambiadas: intactas ? [] : piezasCambiadas(input.base, resuelto), globosNueva, sinCobertura,
+  }, { entrada, ...(mezclaClasica ? { motivo: "el catálogo no cubría la mezcla orgánica de la pieza nueva: se resolvió con la mezcla clásica" } : {}) });
+  if (!intactas) throw new PlanEditError(422, "No pude sumar esa pieza sin cambiar las que ya tienes. Tu plan sigue como estaba.");
+  if (!globosNueva || sinCobertura.length) throw new PlanEditError(422, "El catálogo de tu plan no tiene esos colores en los tamaños que lleva esa pieza. Prueba con otros colores.");
+  const firmado = firmar(verificado, resolucion, allowlist, { accion: "agregar_pieza", estructura_id: armada.nueva, oficial: input.pieza.estructura, ubicacion: armada.ubicacion, plantilla: armada.plantilla }, pool);
+  return { ...firmado, nuevas: [armada.nueva], nombre: armada.nombre, ubicacion: armada.ubicacion, medidas: Object.fromEntries(Object.entries(armada.medidas).filter((par): par is [string, number] => typeof par[1] === "number")) };
+}
+
+const MENSAJE_PIEZA_EDITADA: Readonly<Record<Extract<PiezaEditada, { ok: false }>["motivo"], string>> = {
+  sin_pieza: "No encontré esa pieza en tu plan. Tu plan sigue como estaba.",
+  ubicacion_ocupada: "Ese lugar ya tiene una pieza en tu plan. Pídemela en otro lugar.",
+  nombre_repetido: "Otra pieza de tu plan ya se llama así. Elige otro nombre.",
+  sin_cambio: "Esa pieza ya está así en tu plan.",
+  esquema: "No pude cambiar esa pieza de lugar.",
+};
+
+/**
+ * Mueve o renombra UNA pieza del plan firmado («pon la guirnalda arriba», «llama a la guirnalda Cascada»): solo cambian
+ * su ubicación y su nombre (`planConPiezaEditada`) y Python vuelve a resolver y a firmar. Mover no cambia los globos:
+ * si alguna pieza compra otra cosa, no se cambia nada.
+ */
+export async function editarPiezaPlan(input: Entrada & { estructuraId: string; ubicacion?: UbicacionPiezaNueva; nombre?: string }): Promise<AplicarEdicionResultado & { nombre: string; ubicacion: string }> {
+  const pool = input.pool ?? getRagPool();
+  const verificado = await verificarBase(input);
+  const editada = planConPiezaEditada(input.base.plan, input.estructuraId, { ...(input.ubicacion ? { ubicacion: input.ubicacion } : {}), ...(input.nombre ? { nombre: input.nombre } : {}) });
+  const entrada = { plan_hash: input.base.plan_hash, estructura_id: input.estructuraId, ubicacion: input.ubicacion ?? null, nombre: input.nombre ?? null };
+  if (!editada.ok) {
+    decidir("regla:editar_pieza", "mover o renombrar una pieza del plan por chat", { aplicado: false, motivo: editada.motivo, detalle: editada.detalle }, { entrada });
+    throw new PlanEditError(422, MENSAJE_PIEZA_EDITADA[editada.motivo]);
+  }
+  const allowlist = verificado.contexto.allowlist;
+  const resolucion = await resolver(input.base, verificado, planValido(editada.plan, MENSAJE_PIEZA_EDITADA.esquema), allowlist, input.signal);
+  const intactas = piezasIntactas(input.base, resolucion.resuelto);
+  decidir("regla:editar_pieza", "mover o renombrar una pieza del plan por chat (Python vuelve a resolver; los globos no cambian)", { aplicado: intactas, antes: editada.antes, despues: editada.despues, cambiadas: intactas ? [] : piezasCambiadas(input.base, resolucion.resuelto) }, { entrada });
+  if (!intactas) throw new PlanEditError(422, "No pude mover esa pieza sin cambiar sus globos. Tu plan sigue como estaba.");
+  const firmado = firmar(verificado, resolucion, allowlist, { accion: "editar_pieza", estructura_id: input.estructuraId, antes: editada.antes, despues: editada.despues }, pool);
+  return { ...firmado, nombre: editada.despues.nombre, ubicacion: editada.despues.ubicacion };
 }

@@ -12,6 +12,7 @@ import {
   detectarEleccionIdea,
   detectarPedidoEdicion,
   fraseDelPedido,
+  HERRAMIENTAS_EDICION,
   herramientaElegirIdea,
   herramientasConEdicion,
   herramientasEdicionPlan,
@@ -74,7 +75,9 @@ assert.deepEqual(edicionDe("en vez del blanco, dorado en el semiarco"), { tipo: 
 assert.deepEqual(edicionDe("la columna de la izquierda más baja"), { tipo: "tamano", direccion: -1, piezas: ["Columna izquierda"] });
 assert.equal(pedido("quita la columna").estado, "incompleta", "dos columnas y no dice cuál: el modelo pregunta");
 assert.equal(pedido("el resto igual, sin tocar la columna derecha").estado, "ninguna", "«sin tocar…» no quita nada");
-assert.equal(pedido("agrégale una columna").estado, "no_cabe", "agregar una pieza no cabe en una edición: se rehace con proponer_composicion");
+// CRUD por chat (dueño, 2026-10-07): sumar una pieza ya es una edición (agregar_pieza), no rehacer el plan.
+assert.deepEqual(edicionDe("agrégale una columna"), { tipo: "agregar_pieza", pieza: { estructura: "columna", ubicacion: null, colores: [] } }, "agregar una pieza: se suma al plan con agregar_pieza_plan (test-crud-plan-chat-guiada.ts)");
+assert.equal(pedido("agrégale dos columnas").estado, "no_cabe", "varias piezas a la vez: se rehace con proponer_composicion");
 assert.equal(pedido("hazla más sencilla").estado, "no_cabe");
 assert.equal(pedido("quiero otros colores: verde y blanco").estado, "no_cabe");
 assert.equal(pedido("con globos más grandes").estado, "ninguna", "el tamaño de los globos no es el de la pieza");
@@ -104,9 +107,10 @@ const nombres = (deteccion: DeteccionEdicion, eleccion: ReturnType<typeof detect
 assert.deepEqual(nombres(celeste), ["cambiar_color_plan"], "«el azul cámbialo por celeste…»: solo cambiar_color_plan; sin proponer_composicion no puede rehacer el plan");
 assert.deepEqual(nombres(pedido("quita la columna derecha")), ["quitar_pieza_plan"]);
 assert.deepEqual(nombres(pedido("hazla un poco más grande")), ["cambiar_tamano_plan"]);
-assert.deepEqual(nombres(pedido("quita la columna")), ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan"], "falta un dato: las de edición (pregunta cuál), nunca rehacer");
-assert.ok(nombres(pedido("agrégale una columna")).includes("proponer_composicion"), "lo que no cabe en una edición sí puede rehacerse");
-assert.deepEqual(nombres({ estado: "ninguna" }, null, true), ["proponer_composicion", "abrir_accion_plan", "cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan", "elegir_idea"], "un turno libre con plan e ideas: todas");
+assert.deepEqual(nombres(pedido("quita la columna")), [...HERRAMIENTAS_EDICION], "falta un dato: las de edición (pregunta cuál), nunca rehacer");
+assert.deepEqual(nombres(pedido("agrégale una columna")), ["agregar_pieza_plan"], "sumar una pieza: solo agregar_pieza_plan (sin proponer_composicion no puede armar un plan nuevo)");
+assert.ok(nombres(pedido("hazla más sencilla")).includes("proponer_composicion"), "lo que no cabe en una edición sí puede rehacerse");
+assert.deepEqual(nombres({ estado: "ninguna" }, null, true), ["proponer_composicion", "abrir_accion_plan", ...HERRAMIENTAS_EDICION, "elegir_idea"], "un turno libre con plan e ideas: todas");
 const eleccionUno = detectarEleccionIdea("me quedo con la primera", [{ id: "deco-uno", titulo: "Semiarco con centros de mesa" }]);
 assert.deepEqual(nombres({ estado: "ninguna" }, eleccionUno, true), ["elegir_idea"], "«me quedo con la primera»: solo elegir_idea");
 assert.deepEqual(herramientasConEdicion({ base: BASE, plan: null, ideas: [], deteccion: { estado: "ninguna" }, eleccion: null }).herramientas.map((herramienta) => herramienta.nombre), ["proponer_composicion", "abrir_accion_plan"], "sin plan ni ideas, nada cambia");
@@ -133,7 +137,7 @@ for (const valido of [delModelo.pedido, medida.pedido]) assert.ok(PedidoEdicionP
 
 // Las herramientas solo admiten las piezas y los colores de ESTE plan.
 const herramientas = herramientasEdicionPlan(actual!);
-assert.deepEqual(herramientas.map((herramienta) => herramienta.nombre), ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan"]);
+assert.deepEqual(herramientas.map((herramienta) => herramienta.nombre), ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan", "agregar_pieza_plan", "colores_pieza_plan", "editar_pieza_plan"]);
 const esquemaCambio = herramientas[0]!.esquema as { properties: { piezas: { items: { enum: string[] } }; color_actual: { enum: string[] } } };
 assert.deepEqual(esquemaCambio.properties.piezas.items.enum, ["Semiarco orgánico", "Columna izquierda", "Columna derecha"]);
 assert.deepEqual([...esquemaCambio.properties.color_actual.enum].sort(), ["azul", "blanco", "plateado", "rosado"]);

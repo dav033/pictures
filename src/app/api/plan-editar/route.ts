@@ -18,7 +18,8 @@ import {
 } from "@/lib/plan/aplicar-edicion";
 import { BasePlanSchema, EdicionArmadoArcoOrganicoSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionFormaSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionPropiedadesSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
 import { conRegistro } from "@/lib/registro/servidor";
-import { agregarColorPlan, quitarPiezaPlan, reemplazarColorPlan } from "@/lib/plan/ajuste-plan-entero";
+import { agregarColorPlan, agregarPiezaPlan, editarPiezaPlan, quitarPiezaPlan, reemplazarColorPlan } from "@/lib/plan/ajuste-plan-entero";
+import { OFICIALES_AGREGABLES, UBICACIONES_PIEZA_NUEVA } from "@/lib/plan/pieza-nueva";
 
 /** Candidates a search returns when the caller does not say (what the inline editor always got). */
 const LIMITE_BUSQUEDA_PREDETERMINADO = 8;
@@ -93,6 +94,31 @@ const BodySchema = z.discriminatedUnion("modo", [
     product_id: z.string().trim().min(1).max(160),
     variant_ids: z.array(z.string().trim().min(1).max(160)).min(1).max(24).refine((ids) => new Set(ids).size === ids.length),
   }).strict(),
+  // El CRUD por chat de la guiada (pieza-nueva.ts): sumar UNA pieza («agrégale una guirnalda en medio») conservando las
+  // demás, y mover o renombrar una. Python cuenta y firma; las piezas de antes compran exactamente lo mismo.
+  z.object({
+    modo: z.literal("agregar_pieza"),
+    base: BasePlanSchema,
+    estructura: z.enum(OFICIALES_AGREGABLES),
+    ubicacion: z.enum(UBICACIONES_PIEZA_NUEVA).nullable(),
+    medidas: z.object({ ancho_m: z.number().min(0.3).max(12).optional(), alto_m: z.number().min(0.3).max(12).optional(), largo_m: z.number().min(0.3).max(12).optional() }).strict().optional(),
+    organica: z.boolean().optional(),
+    // Familias de color del plan que lleva la pieza; vacío = las del plan.
+    colores: z.array(z.string().trim().min(1).max(40)).max(6).optional(),
+    // Colores que el plan no lleva: el globo del catálogo que eligió la vista, con todos sus tamaños.
+    globos: z.array(z.object({
+      color: z.string().trim().min(1).max(40),
+      product_id: z.string().trim().min(1).max(160),
+      variant_ids: z.array(z.string().trim().min(1).max(160)).min(1).max(24).refine((ids) => new Set(ids).size === ids.length),
+    }).strict()).max(3).optional(),
+  }).strict(),
+  z.object({
+    modo: z.literal("editar_pieza"),
+    base: BasePlanSchema,
+    estructura_id: z.string().regex(/^EST_\d{2}_[A-Z_]+$/),
+    ubicacion: z.enum(UBICACIONES_PIEZA_NUEVA).optional(),
+    nombre: z.string().trim().min(1).max(60).optional(),
+  }).strict().refine((valor) => valor.ubicacion !== undefined || valor.nombre !== undefined, { message: "Di a dónde va la pieza o cómo se llama." }),
   z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoArcoOrganicoSchema, EdicionFormaSchema, EdicionPropiedadesSchema]) }).strict(),
 ]);
 
@@ -218,6 +244,33 @@ async function atenderPOST(request: Request) {
         signal: request.signal,
       });
       return Response.json({ plan: resuelto, cotizacion, piezas }, { headers: cabeceras });
+    }
+    if (body.modo === "agregar_pieza") {
+      const { plan: resuelto, cotizacion, nuevas, nombre, ubicacion, medidas } = await agregarPiezaPlan({
+        base: body.base,
+        pieza: {
+          estructura: body.estructura,
+          ubicacion: body.ubicacion,
+          ...(body.medidas && Object.keys(body.medidas).length ? { medidas: body.medidas } : {}),
+          ...(body.organica ? { organica: true } : {}),
+          ...(body.colores?.length ? { colores: body.colores } : {}),
+        },
+        ...(body.globos?.length ? { globos: body.globos.map((globo) => ({ color: globo.color, productId: globo.product_id, variantIds: globo.variant_ids })) } : {}),
+        pool,
+        signal: request.signal,
+      });
+      return Response.json({ plan: resuelto, cotizacion, nuevas, pieza: { nombre, ubicacion, medidas } }, { headers: cabeceras });
+    }
+    if (body.modo === "editar_pieza") {
+      const { plan: resuelto, cotizacion, nombre, ubicacion } = await editarPiezaPlan({
+        base: body.base,
+        estructuraId: body.estructura_id,
+        ...(body.ubicacion ? { ubicacion: body.ubicacion } : {}),
+        ...(body.nombre ? { nombre: body.nombre } : {}),
+        pool,
+        signal: request.signal,
+      });
+      return Response.json({ plan: resuelto, cotizacion, pieza: { nombre, ubicacion } }, { headers: cabeceras });
     }
 
     // The signed-approval / re-resolution / admission logic lives in
