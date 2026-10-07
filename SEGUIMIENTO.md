@@ -15,6 +15,30 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 
 ---
 
+<!-- ESTADO-VIVO:INICIO -->
+## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 85, 2026-10-06 ~22:35
+
+**En `main` (Vercel):** 5d9c90a. Hoy tras el compact: registro-2 (350ae58), «Ajustar mi plan» (93b2c84), opciones sin «no encontré»
+(9d9243d), 11 fotos nuevas de Sempertex = 46 decoraciones (71a9aed). **VPS atrasado en e447cfe** (no desplegar sin avisar al dueño).
+
+**En curso (workflows; cambios SIN commit en el árbol):**
+| Workflow | Qué hace | Archivos principales |
+|---|---|---|
+| `wf_de9b969f-a93` encargo grande | A piezas individuales + arreglos de «Ajustar» (no cambiar el resto); E imagen fiel a las piezas (2 columnas ≠ arco); B gráfica del clásico editable + tabla «Ver detalle»; D materiales con imágenes de globos + lectura de foto detallada; luego C «Agregar al plan», B2 idea amplia con productos Sempertex; verificador + corrector | instruccion-plan, asistente-guiado-v1, registro-herramientas, ajuste/*, kagutsuchi/*, TarjetaPlan, FilaPieza, TablaGlobosPieza, ModificarPieza, GloboMiniatura, CostosMateriales, ReferenciaInspiracion |
+| `wf_1833d72e-28f` granel | Negocio: cotizar globos sueltos a granel (por unidad) | cotizacion_profesional.py, CotizacionProfesional, PreciosMateriales |
+| `wf_d5965d36-c4e` paridad | La guiada genera con el mismo cuerpo/motor que la clásica (faltaba referenceBlueprint, productos, creatividad) | VistaGuiada (llamada a /api/generate), constructor compartido |
+| `wf_ab26d084-638` lector + banco | Arreglar la lectura de fotos; banco de calidad con las 10 fotos de ejemplo (clásica vs guiada, juez; listón > 50 % bien) | /api/references/analyze, adaptador, scripts/eval |
+| `wf_965af056-88e` auditoría | 31 decoraciones contra su foto: productos Sempertex reales, remates > 12" | decoraciones.json, data/biblioteca-real |
+| ritmo | comparador (84), probador (84), verificador (84), usabilidad (85): solo informan | scratchpad/ritmo/*.md |
+
+**En cola:** `scratchpad/wf-editor.js` (globos libres además del %, chips dentro del editor, reemplazar/añadir colores del catálogo,
+inputs de negocio bonitos) cuando terminen A/B y granel.
+
+**Plan siguiente:** subir a main cada frente verificado (commits selectivos + tsc en e3-verif); convertir los hallazgos de los agentes de
+ritmo en encargos; repetir el banco de calidad tras paridad + lector + A/E para comprobar consistencia (> 50 % bien); luego decidir con
+el dueño el despliegue del VPS (lector y granel pueden exigirlo).
+<!-- ESTADO-VIVO:FIN -->
+
 ## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
 
 Ritmo obligatorio (contador en `scratchpad/latidos.txt`; un latido = 2 min; si uno del mismo tipo sigue corriendo, no se duplica):
@@ -22,6 +46,7 @@ Ritmo obligatorio (contador en `scratchpad/latidos.txt`; un latido = 2 min; si u
 - Cada 5 latidos: pruebas de USABILIDAD de la guiada.
 - Cada 7 latidos: agentes que VERIFICAN esta lista (qué está hecho, qué falta) y lo recuerdan.
 - Cada 10 latidos: agente que COMPARA el flujo viejo (clásico) con el nuevo (guiado) y detecta lo que falta o es peligroso.
+- Cada 5 latidos: si algo cambió, reescribir «📋 ESTADO VIVO» (qué se está haciendo y qué se planea).
 - Cada 40 latidos: checkpoint completo de este archivo y pedir /compact (Claude no puede lanzarlo solo).
 - Cada 3 latidos: limpieza de RAM (ya existía).
 
