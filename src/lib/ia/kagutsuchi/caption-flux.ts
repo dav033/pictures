@@ -6,7 +6,7 @@ import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantic
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { SOPORTES_CON_CAIDA_GUIRNALDA, type SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
 import { FUENTE_PLAN } from "@/lib/plan/blueprint";
-import { armadoDeElemento, armadoGuirnaldaDeElemento, armadoGuirnaldaOrganicaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
+import { armadoDeElemento, armadoGuirnaldaDeElemento, armadoGuirnaldaOrganicaDeElemento, fraseDeFormaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separate-side-pieces";
 import { limpiarTextoBase } from "./texto-base";
 import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, rosaDelante, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
@@ -140,6 +140,11 @@ export type FluxVisualClause = {
   armadoGuirnalda?: ArmadoGuirnaldaEnPrompt;
   /** Set when that `prompt_lora` is the organic engine's garland assembly (ADR-0034). */
   armadoGuirnaldaOrganica?: { enAlto: boolean };
+  /**
+   * `colorPattern` is the SHAPE phrase of an organic-engine piece (`FraseDeEstructura.forma`): the only Python
+   * phrase the last compaction steps may shorten, by whole fragments from the end (`fragmentosForma`).
+   */
+  fraseDeForma?: true;
 };
 
 export type FluxCaptionCompilation = {
@@ -178,6 +183,8 @@ type SemanticElement = {
   armadoGuirnalda?: ArmadoGuirnaldaEnPrompt;
   /** Set when that `prompt_lora` is the organic engine's garland assembly (ADR-0034). */
   armadoGuirnaldaOrganica?: { enAlto: boolean };
+  /** Set when that `prompt_lora` is an organic-engine SHAPE phrase (`FraseDeEstructura.forma`). */
+  fraseDeForma?: boolean;
 };
 
 const STRUCTURE_NOUNS: Record<CaptionStructureType, string> = {
@@ -750,6 +757,7 @@ function createClause(
     ...(first.colorPattern && first.armadoBouquet ? { armadoBouquet: first.armadoBouquet } : {}),
     ...(first.colorPattern && first.armadoGuirnalda ? { armadoGuirnalda: first.armadoGuirnalda } : {}),
     ...(first.colorPattern && first.armadoGuirnaldaOrganica ? { armadoGuirnaldaOrganica: first.armadoGuirnaldaOrganica } : {}),
+    ...(first.colorPattern && first.fraseDeForma ? { fraseDeForma: true as const } : {}),
   };
 }
 
@@ -1003,7 +1011,40 @@ type CaptionRenderStep = {
    * tallas o entorno: dicen lo mismo (cada pieza suelta, cuántas son, el hueco) con la mitad de caracteres.
    */
   compactSeparation: boolean;
+  /*
+   * Presupuesto (verificador 127, 2026-10-07): la foto 06 dejaba el caption en 1540 de 1000 AUN en el paso más
+   * compacto (tres piezas del motor orgánico con sus frases de forma, el hex en cada mención y la escenografía), así
+   * que se quedaba sin imagen. Estos pasos van DESPUÉS de todos los anteriores y por orden de lo menos importante:
+   * nunca cortan a ciegas, nunca tocan un patrón de color ni un armado de bouquet o de guirnalda, y cada color
+   * distinto conserva su hex pegado al nombre (pedido del dueño) en su primera mención.
+   */
+  /** Un hex por color distinto: lo lleva la primera mención («light pink (#F2B6C8)»); las siguientes, solo el nombre. */
+  hexUnaVez?: boolean;
+  /** «with matching …» solo con colores que la cláusula no nombra ya en su propia lista de globos. */
+  referenciasNuevas?: boolean;
+  /** Sin la escenografía no vendida de la foto («styled with …»): ni se compra ni se cotiza. */
+  sinAmbiente?: boolean;
+  /** Sin la frase de forma que el compilador añade a la columna orgánica (Python ya dice la suya). */
+  sinFormaPropia?: boolean;
+  /**
+   * Con la frase de piezas de pie sueltas («Two separate pieces with wide gaps…»), sin la de piezas laterales
+   * separadas («the garland and the column stand apart…»): las dos dicen que no se tocan.
+   */
+  separacionUnica?: boolean;
+  /** Fragmentos (entre comas) que se conservan de cada frase de FORMA del motor orgánico, del principio al final. */
+  fragmentosForma?: number;
+  /** Lo último: sin el cierre fotográfico («Professional event photograph, …»). Piezas, colores y patrones quedan. */
+  sinCierre?: boolean;
 };
+
+/** El paso más compacto de los de siempre, base de los pasos de presupuesto. */
+const PASO_MAS_COMPACTO: CaptionRenderStep = { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true, compactSeparation: true };
+const PASO_HEX_UNA_VEZ: CaptionRenderStep = { ...PASO_MAS_COMPACTO, hexUnaVez: true, referenciasNuevas: true };
+const PASO_SIN_AMBIENTE: CaptionRenderStep = { ...PASO_HEX_UNA_VEZ, sinAmbiente: true };
+const PASO_SIN_FORMA_PROPIA: CaptionRenderStep = { ...PASO_SIN_AMBIENTE, sinFormaPropia: true, separacionUnica: true };
+/** De las frases de forma, primero se van los últimos fragmentos (detalles de remate y racimos), luego el resto. */
+const PASOS_FRAGMENTOS_FORMA: readonly CaptionRenderStep[] = [8, 6, 5, 4, 3, 2, 1, 0].map((fragmentosForma) => ({ ...PASO_SIN_FORMA_PROPIA, fragmentosForma }));
+const PASO_SIN_CIERRE: CaptionRenderStep = { ...PASO_SIN_FORMA_PROPIA, fragmentosForma: 0, sinCierre: true };
 
 const CAPTION_RENDER_STEPS: readonly CaptionRenderStep[] = [
   { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false },
@@ -1016,8 +1057,41 @@ const CAPTION_RENDER_STEPS: readonly CaptionRenderStep[] = [
   { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: false, shortLabels: false, compactSeparation: true },
   { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: false, compactSeparation: true },
   { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true, compactSeparation: true },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true, compactSeparation: true },
+  // Solo si nada de lo anterior cabe (los captions que hoy caben no cambian ni un byte).
+  PASO_HEX_UNA_VEZ,
+  PASO_SIN_AMBIENTE,
+  PASO_SIN_FORMA_PROPIA,
+  ...PASOS_FRAGMENTOS_FORMA,
+  PASO_SIN_CIERRE,
 ];
+
+const HEX_DE_COLOR = / \(#([0-9A-Fa-f]{6})\)/g;
+
+function sinHex(texto: string): string {
+  return texto.replace(HEX_DE_COLOR, "");
+}
+
+/**
+ * Con `hexUnaVez`, el hex de un color que ya salió en el caption (en una cláusula anterior o antes en esta) se quita;
+ * el primero se queda pegado a su nombre. Las cláusulas se redactan en el orden en que se leen, así que «primero» es
+ * la primera mención del texto. Solo el material de la cláusula: la frase de Python va tal cual.
+ */
+function hexSoloLaPrimeraVez(texto: string, render: CaptionRenderState): string {
+  if (!render.step.hexUnaVez) return texto;
+  return texto.replace(HEX_DE_COLOR, (pegado: string, hex: string) => {
+    const clave = hex.toUpperCase();
+    if (render.hexVistos.has(clave)) return "";
+    render.hexVistos.add(clave);
+    return pegado;
+  });
+}
+
+/** La frase de Python de la cláusula como se escribe en este paso: entera, o la de forma con sus primeros fragmentos. */
+function fraseDeLaClausula(clause: FluxVisualClause, step: CaptionRenderStep): string | undefined {
+  if (!clause.colorPattern || !clause.fraseDeForma || step.fragmentosForma === undefined) return clause.colorPattern;
+  const fragmentos = clause.colorPattern.split(/,\s+/);
+  return fragmentos.slice(0, step.fragmentosForma).join(", ") || undefined;
+}
 
 /** "round foil balloon in fuchsia with a metallic sheen hearts pattern" -> "round foil balloon in fuchsia". */
 function shortProductLabel(label: string): string {
@@ -1029,6 +1103,8 @@ type CaptionRenderState = {
   step: CaptionRenderStep;
   /** Concepts already described in full earlier in the caption being rendered. */
   describedConceptIds: Set<string>;
+  /** Hex codes already written next to their color (`hexUnaVez`), upper case. */
+  hexVistos: Set<string>;
 };
 
 /**
@@ -1126,7 +1202,12 @@ function baseMaterialParts(entries: ProductConceptClauseInput[], render: Caption
   const balloons = [...byNoun.entries()].map(([noun, group]) => (reparto
     ? `${[fraseTallasBase(group.sizes, render.step.sizes), noun].filter(Boolean).join(" ")}, ${reparto}`
     : [fraseTallasBase(group.sizes, render.step.sizes), joinNatural(group.descriptors.map((item) => item.text)), noun].filter(Boolean).join(" ")));
-  return { balloons, pieces, references, conReparto: Boolean(reparto) };
+  // `referenciasNuevas`: «with matching light pink» sobra si la cláusula ya dice «light pink» en su lista de globos.
+  const propios = [...byNoun.values()].flatMap((group) => group.descriptors.map((item) => sinHex(item.text)));
+  const nuevas = render.step.referenciasNuevas
+    ? references.filter((reference) => !propios.some((propio) => propio === sinHex(reference) || propio.endsWith(` ${sinHex(reference)}`)))
+    : references;
+  return { balloons, pieces, references: nuevas, conReparto: Boolean(reparto) };
 }
 
 /** Desde esta parte de los globos de la pieza un color manda («mostly»). */
@@ -1210,7 +1291,7 @@ function renderBaseClauseText(clause: FluxVisualClause, render: CaptionRenderSta
   } else if (!parts && !clause.productDescriptors.length) {
     material = baseLegacyMaterial(clause);
   }
-  material = material ? materialCentroContado(withApprovedColorTones(material, clause.colors), clause) : material;
+  material = material ? hexSoloLaPrimeraVez(materialCentroContado(withApprovedColorTones(material, clause.colors), clause), render) : material;
   const descriptorText = clause.physicalForm?.descripcion_perceptual_en ?? (!parts ? clause.productDescriptors[0] : undefined);
   const descriptor = descriptorText ? limpiarEtiqueta(descriptorText) : undefined;
   const renderedCount = clause.visibleCount ?? clause.count;
@@ -1218,12 +1299,14 @@ function renderBaseClauseText(clause: FluxVisualClause, render: CaptionRenderSta
   const core = descriptor
     ? renderedCount === 1 ? descriptor : `${numberWord(renderedCount)} ${descriptor}`
     : renderedCount === 1 ? `${article} ${noun}` : `${numberWord(renderedCount)} ${pluralize(noun)}`;
-  // Python's pattern phrase follows the material, verbatim (ADR-0028 §12).
-  const shapeCue = organicColumn ? "with an uneven, deep silhouette and large balloons interspersed among small cluster fillers" : "";
+  // Python's pattern phrase follows the material, verbatim (ADR-0028 §12); only an organic-engine SHAPE phrase is
+  // shortened, by whole fragments, in the last budget steps (`fragmentosForma`).
+  const frase = fraseDeLaClausula(clause, render.step);
+  const shapeCue = organicColumn && !render.step.sinFormaPropia ? "with an uneven, deep silhouette and large balloons interspersed among small cluster fillers" : "";
   // Tras el reparto («… and accents of pink») una coma: sin ella la frase de Python («with silver, pink and white
   // scattered…») se leía como parte del último acento.
-  const trasMaterial = parts?.conReparto && material && (clause.colorPattern || shapeCue) ? `${material},` : material;
-  const colored = [core, trasMaterial, clause.colorPattern, shapeCue].filter(Boolean).join(" ");
+  const trasMaterial = parts?.conReparto && material && (frase || shapeCue) ? `${material},` : material;
+  const colored = [core, trasMaterial, frase, shapeCue].filter(Boolean).join(" ");
   // The same shape fixes the scene dialect learned: a lone side piece stands
   // apart from the focal arch, a half-arch elsewhere keeps its one-sided
   // shape, a garland without an assembly runs along its surface instead of
@@ -1281,6 +1364,7 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
     armadoBouquet: armadoDeElemento(colorPatterns, element),
     armadoGuirnalda: armadoGuirnaldaDeElemento(colorPatterns, element),
     armadoGuirnaldaOrganica: armadoGuirnaldaOrganicaDeElemento(colorPatterns, element),
+    fraseDeForma: fraseDeFormaDeElemento(colorPatterns, element),
   }));
   const used = new Set<string>();
   const clauses: FluxVisualClause[] = [];
@@ -1384,7 +1468,9 @@ function soloGuirnaldasEnAlto(clauses: readonly FluxVisualClause[]): boolean {
 function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, ambientDecor: readonly string[] = [], creativeCues: readonly string[] = []): string {
   const parts = buildCaptionParts(sceneSpec, context, clauses, step, ambientDecor, creativeCues);
   const piezas = parts.pieceCountSentence ? `${parts.pieceCountSentence}. ` : "";
-  return `${capitalized(parts.structureSentence)}. ${piezas}${capitalized(parts.tail.join(", "))}.`;
+  // Sin cola (`sinCierre` sin evento): la frase acaba en las piezas, sin un «.» suelto.
+  const cola = parts.tail.length ? `${capitalized(parts.tail.join(", "))}.` : "";
+  return `${capitalized(parts.structureSentence)}. ${piezas}${cola}`.trimEnd();
 }
 
 function capitalized(text: string): string {
@@ -1396,7 +1482,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
   assignHeightQualifiers(clauses);
   // Antes de redactar: marca el semiarco suelto (`standsApart`), que su cláusula lee.
   const pieceCountSentence = piezasDePieSueltas(clauses, step.compactSeparation);
-  const render: CaptionRenderState = { step, describedConceptIds: new Set<string>() };
+  const render: CaptionRenderState = { step, describedConceptIds: new Set<string>(), hexVistos: new Set<string>() };
   const clauseText = (clause: FluxVisualClause) => renderClauseText(clause, render);
   const focal = clauses[0];
   const hasCanonicalSemantics = sceneSpec.elements.every((element) => Boolean(element.visual_semantics));
@@ -1414,10 +1500,10 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
   const structureParts = [firstClause, ...supportText];
   let structureSentence = structureParts.join(", ");
   if (accentText.length) structureSentence += `, with ${accentText.join(", ")}`;
-  const separation = separatePiecesPhrase(clauses, step.compactSeparation);
+  const separation = step.separacionUnica && pieceCountSentence ? undefined : separatePiecesPhrase(clauses, step.compactSeparation);
   if (separation) structureSentence += `, ${separation}`;
   // Styling from the reference that is not sold (lights, foliage): rendered, never quoted.
-  if (ambientDecor.length) structureSentence += `, styled with ${joinNatural([...ambientDecor])}`;
+  if (ambientDecor.length && !step.sinAmbiente) structureSentence += `, styled with ${joinNatural([...ambientDecor])}`;
 
   const hasLocalColors = clauses.some((clause) => clause.colors.length > 0);
   const globalPalette = !hasLocalColors && context.palette.length
@@ -1432,7 +1518,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
     ...(step.minimalTail ? [] : creativeCues),
     globalPalette,
     ...(step.dropEnvironment ? [] : dedupeEnvironment(context, eventPhrase).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue)),
-    CIERRE_FOTOGRAFICO_BASE,
+    step.sinCierre ? undefined : CIERRE_FOTOGRAFICO_BASE,
     step.minimalTail ? undefined : enAlto ? "natural depth" : hasCanonicalProducts ? "natural depth, grounded supports" : "natural depth, believable floor contact and supports",
   ].filter((part): part is string => Boolean(part));
   return {
@@ -1509,6 +1595,9 @@ export function compileFluxCaption(input: {
   // If no step fits, the most compact rendering is returned unchanged and the
   // preflight rejects it: the compiler never truncates structures, colors or a
   // color pattern (no step touches the pattern; the tail and setting go first).
+  // The last budget steps (verificador 127) write each color's hex once, drop
+  // the unsold scenery and the compiler's own column shape cue, and only then
+  // shorten an organic-engine SHAPE phrase by whole fragments from its end.
   for (const [index, step] of CAPTION_RENDER_STEPS.entries()) {
     prompt = limpiar(buildCaption(input.sceneSpec, input.visualContext, clauses, step, input.ambientDecor, input.creativeCues));
     compactionStep = index;

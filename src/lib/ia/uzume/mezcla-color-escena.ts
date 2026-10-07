@@ -141,6 +141,13 @@ export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "apl
    * pieza va en alto, para no prometer apoyos en el suelo que la convertían en un arco de pie.
    */
   guirnaldaOrganica?: { enAlto: boolean };
+  /**
+   * Solo en la frase de una pieza del motor ORGÁNICO (arco, columna o guirnalda orgánicos, ADR-0034): describe la
+   * FORMA de la pieza (piernas, alto y ancho, dónde carga los globos), no qué color va dónde. Es lo único de Python
+   * que el caption puede acortar, por fragmentos enteros y del final hacia el principio, cuando nada más cabe
+   * (verificador 127: la foto 06 se quedaba sin imagen con un caption de 1540). Un patrón de color nunca la lleva.
+   */
+  forma?: true;
 };
 
 /**
@@ -203,12 +210,14 @@ export function frasesDeEstructuras(
   // Una cuenta **solo si trae su frase**: un plan resuelto antes de que su pieza la tuviera no la trae, y sin
   // ella la petición tiene que seguir siendo byte a byte la de siempre. La guirnalda orgánica se marca aparte
   // porque de ella el prompt decide una cosa por su cuenta: si va en alto, para no pedir apoyos en el suelo.
-  const delMotor: Array<{ pieza: PiezaDelMotorConFrase; esGuirnaldaOrganica: boolean }> = [
-    ...conFrase(plan?.armados_arco).map((pieza) => ({ pieza, esGuirnaldaOrganica: false })),
-    ...conFrase(plan?.armados_columna).map((pieza) => ({ pieza, esGuirnaldaOrganica: false })),
-    ...conFrase(plan?.armados_arco_organico).map((pieza) => ({ pieza, esGuirnaldaOrganica: false })),
-    ...conFrase(plan?.armados_columna_organica).map((pieza) => ({ pieza, esGuirnaldaOrganica: false })),
-    ...conFrase(plan?.armados_guirnalda_organica).map((pieza) => ({ pieza, esGuirnaldaOrganica: true })),
+  // `organica`: la frase del motor orgánico dice la forma de la pieza (`forma`); la del arco y la columna de patrón
+  // dice qué color va dónde, y esa nunca se acorta.
+  const delMotor: Array<{ pieza: PiezaDelMotorConFrase; esGuirnaldaOrganica: boolean; organica: boolean }> = [
+    ...conFrase(plan?.armados_arco).map((pieza) => ({ pieza, esGuirnaldaOrganica: false, organica: false })),
+    ...conFrase(plan?.armados_columna).map((pieza) => ({ pieza, esGuirnaldaOrganica: false, organica: false })),
+    ...conFrase(plan?.armados_arco_organico).map((pieza) => ({ pieza, esGuirnaldaOrganica: false, organica: true })),
+    ...conFrase(plan?.armados_columna_organica).map((pieza) => ({ pieza, esGuirnaldaOrganica: false, organica: true })),
+    ...conFrase(plan?.armados_guirnalda_organica).map((pieza) => ({ pieza, esGuirnaldaOrganica: true, organica: true })),
   ];
   if (!plan || (plan.patrones_color === undefined && plan.armados_bouquet === undefined && plan.armados_guirnalda === undefined && delMotor.length === 0)) return undefined;
   const frases: FraseDeEstructura[] = [
@@ -244,7 +253,7 @@ export function frasesDeEstructuras(
   }
   // La frase del motor **reemplaza** la del patrón de esa pieza: el armado ya dice qué patrón lleva y con qué
   // colores, y dos frases seguidas nombraban la pieza dos veces.
-  for (const { pieza, esGuirnaldaOrganica } of delMotor) {
+  for (const { pieza, esGuirnaldaOrganica, organica } of delMotor) {
     const entrada: FraseDeEstructura = {
       estructura_id: pieza.estructura_id!,
       aplicado: true,
@@ -252,6 +261,7 @@ export function frasesDeEstructuras(
       prompt_lora: pieza.prompt_lora ?? "",
       // Python lo dice en su propia frase; aquí basta el hecho, que es lo único que el prompt decide solo.
       ...(esGuirnaldaOrganica ? { guirnaldaOrganica: { enAlto: (pieza.prompt_lora ?? "").includes(FRASE_EXTREMOS_LIBRES) } } : {}),
+      ...(organica ? { forma: true as const } : {}),
     };
     const indice = frases.findIndex((frase) => frase.aplicado && frase.estructura_id === entrada.estructura_id && !frase.armado && !frase.guirnalda);
     if (indice >= 0) frases[indice] = entrada;
@@ -282,6 +292,19 @@ export function armadoGuirnaldaOrganicaDeElemento(
   if (!frases?.length) return undefined;
   const estructura = idDeEstructura(element);
   return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura && frase.guirnaldaOrganica)?.guirnaldaOrganica;
+}
+
+/**
+ * Si la frase que el caption pone a este elemento (la misma que `frasePatronColor`: la primera aplicada de su
+ * estructura) es de FORMA del motor orgánico (`forma`), la única que se puede acortar cuando no cabe.
+ */
+export function fraseDeFormaDeElemento(
+  frases: readonly FraseDeEstructura[] | undefined,
+  element: SceneSpec["elements"][number],
+): boolean {
+  if (!frases?.length) return false;
+  const estructura = idDeEstructura(element);
+  return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura)?.forma === true;
 }
 
 /**

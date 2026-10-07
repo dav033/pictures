@@ -126,6 +126,16 @@ export function findFluxPromptProductLeaks(prompt: string): string[] {
   return [...leaks];
 }
 
+/**
+ * La frase de forma está en el texto por fragmentos enteros: sus primeros k fragmentos (entre comas), tal cual. Con
+ * k = 0 no está ninguno (el último paso de presupuesto la quita entera, como hace la guía de escena).
+ */
+function fraseDeFormaPorFragmentos(prompt: string, frase: string): boolean {
+  const fragmentos = frase.split(/,\s+/);
+  if (!prompt.includes(fragmentos[0]!)) return true;
+  return fragmentos.some((_, indice) => indice > 0 && prompt.includes(fragmentos.slice(0, indice).join(", ")));
+}
+
 function requiredAnchorMissing(sceneSpec: SceneSpec, prompt: string): string[] {
   const missing: string[] = [];
   for (const element of sceneSpec.elements) {
@@ -183,8 +193,10 @@ export function preflightFluxPrompt(input: {
   if (representedColors !== expectedColors.size) errors.push(`cobertura de colores ${representedColors}/${expectedColors.size}`);
 
   // A color pattern written by Python (ADR-0028 §12) reaches the model verbatim
-  // or not at all: no compaction may shorten or drop it.
-  const missingPatterns = clauses.filter((clause) => clause.colorPattern && !prompt.includes(clause.colorPattern));
+  // or not at all: no compaction may shorten or drop it. The only exception is
+  // an organic-engine SHAPE phrase (`fraseDeForma`): the last budget steps keep
+  // its leading fragments whole (verificador 127), never a cut mid-fragment.
+  const missingPatterns = clauses.filter((clause) => clause.colorPattern && !prompt.includes(clause.colorPattern) && !(clause.fraseDeForma && fraseDeFormaPorFragmentos(prompt, clause.colorPattern)));
   if (missingPatterns.length) errors.push(`patrón de color ausente o alterado: ${missingPatterns.map((clause) => clause.elementIds.join("+")).join(", ")}`);
 
   const knownTypeFallbacks = clauses.filter((clause) => clause.usedFallbackSemantics).length;
