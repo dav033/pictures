@@ -16,27 +16,26 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 105, 2026-10-06 ~23:50
+## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 110, 2026-10-07 ~00:10
 
-**En `main` (Vercel): ba7be2d** (lectura de foto fiel). Antes: 38b10c0, 9d9243d, 71a9aed, 93b2c84, 350ae58. **VPS en e447cfe** (granel exige
-desplegarlo; avisar). **Pendiente del dueño:** `ARMADO_ARCO_COLUMNA_V1` en producción.
+**En `main` (Vercel): ba7be2d**. **VPS en e447cfe** (granel exige desplegarlo; avisar). **Pendiente del dueño:** `ARMADO_ARCO_COLUMNA_V1`.
 
-**Hecho SIN subir (se sube todo junto, verificado, cuando terminen corrector + arreglos-p88 + calidad-banco):** C «Agregar al plan»; B2 tarjeta
-de idea con productos Sempertex + detalles-ideas.json; imagen-fiel (rehacer sin perder la foto, colores en su proporción, colores dudosos no
-exigidos); hex pegado al color en FLUX (pedido del dueño 1043386, arreglado el corte «white, #F7F7F5»).
+**Hecho SIN subir (106 archivos; commit grande verificado cuando termine corrector:1):** C «Agregar al plan»; B2 idea amplia con productos
+Sempertex; imagen-fiel (rehacer con la foto, colores en proporción); hex pegado al color en FLUX; arreglos-p88 (caché de dibujos sin ráfagas
+ni 429, columnas clásicas con dibujo, cambio de temática a mitad, Spiderman en sus colores, total por chat, nombres de color unificados);
+auditoría de la biblioteca (25/31 corregidas: tamaños reales y remates, productos Sempertex reales, 203 variantes; «Columnas negras y doradas»
+con bola Fashion Negro 36″ y Metal Dorado; `data/biblioteca-real/correcciones-auditoria.json`).
 
-**Banco de calidad (línea base 1×, `scripts/eval/banco-fotos-ejemplo.ts`):** clásica 6/10 (60 %), guiada 4/10 (40 %). La guiada pierde por la
-lectura (varía entre corridas), no por su motor. Repetir con 3× tras los arreglos (~US$7) para medir consistencia.
+**Banco:** línea base clásica 6/10, guiada 4/10. Comparador: la lectura no es determinista; la caché de las fotos de ejemplo estaba muerta (v16).
 
-**Corriendo (6):** corrector:1 del encargo (verificador:1 halló: plan desde idea pierde >12″ y cambia productos; columnas clásicas con icono
-genérico; chips con nombres genéricos; «otras ideas con columnas» arma un plan; columnas con colores distintos; 429 del motor) · integrador de
-la biblioteca · arreglos-p88 · calidad-banco (talla inexistente, «catalog color», pasteles, burdeos/oro rosa, proporción; re-mide 6 fotos) ·
-comparador:100 · probador:104.
+**Corriendo (6):** corrector:1 del encargo · calidad-banco (talla inexistente → la más cercana, «catalog color», pasteles, burdeos/oro rosa,
+proporción; re-mide 6 fotos) · probador:104 · lectura-determinista (caché v20 robusta para las 10 fotos de ejemplo, plan fiel a los colores
+leídos, salida digna si no converge) · editor (globos libres, chips en el editor, colores del catálogo, «Agrandar» con medida, parejas) ·
+inputs de negocio (luego ayudas + verificador + corrector).
 
-**Cola:** 1) `scratchpad/wf-arreglos-u97.js` (crear plan con la idea exacta, no repetir el uso, edades 7+, datos del decorador) tras
-arreglos-p88; 2) `scratchpad/wf-editor.js` (globos libres, chips en el editor, colores del catálogo, inputs de negocio, ayudas, jerga/doble
-scroll de «Modificar pieza», tres cifras, «Agrandar» con medida, pareja de columnas); 3) ritmo: verificador (105), usabilidad (105);
-4) Python/VPS: cotización con líneas repetidas y mezcla de paquetes.
+**Cola:** `scratchpad/wf-arreglos-u97.js` (plan desde idea exacta, uso sin repetir, edades 7+, datos del decorador, palabras del cliente en
+el plan y la escena, «Ajustes que hice») tras corrector:1; ritmo: usabilidad (105/110), comparador (110); banco 3× tras el commit (~US$7);
+Python/VPS: cotización con líneas repetidas y mezcla de paquetes.
 <!-- ESTADO-VIVO:FIN -->
 
 ## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
