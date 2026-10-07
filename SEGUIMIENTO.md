@@ -16,7 +16,7 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 90, 2026-10-06 ~22:55
+## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 95, 2026-10-06 ~23:10
 
 **En `main` (Vercel): 38b10c0** — piezas individuales («Columna izquierda/derecha»; quitar pieza/añadir color sin cambiar el resto),
 gráfica del clásico en cada pieza + «Modificar esta pieza», tabla de «Ver detalle», materiales con miniaturas de globos, lectura de
@@ -31,11 +31,12 @@ escena falla en las dos vistas; cambia la cotización).
 |---|---|---|
 | `wf_de9b969f-a93` encargo grande | C, B2 (luego verificador + corrector) | C «Agregar al plan»; B2 tarjeta de idea amplia con productos Sempertex y detalles-ideas.json |
 | `wf_ab26d084-638` | lector (luego banco) | arreglar la lectura de fotos; banco de calidad con las 10 fotos de ejemplo (clásica vs guiada, listón > 50 %) |
-| `wf_082f0093-f2d` | 2 auditores (luego integrador) | 31 decoraciones contra su foto: productos Sempertex reales, remates > 12" |
+| `wf_082f0093-f2d` | integrador (auditores terminados) | aplica las correcciones de las 31 decoraciones (productos Sempertex reales, remates > 12") y re-resuelve con Python |
+| `wf_a965f0c6-7c6` | imagen-fiel | rehacer el plan sin perder la foto; prompt sin hex; colores en su proporción (≤3 imágenes) |
 | `wf_6cee3065-f7f` | probador 88 | ritmo: probar la guiada (solo informa) |
 
 **Cola (por prioridad):**
-1. Arreglo de imagen: «Cambiar algo»/«Hazla más sencilla» rehacen el plan SIN la foto (pierde escenografía y forma → salió el arco con
+1. (LANZADO 23:05 como `wf_a965f0c6-7c6`) Arreglo de imagen: «Cambiar algo»/«Hazla más sencilla» rehacen el plan SIN la foto (pierde escenografía y forma → salió el arco con
    cintas); en el prompt se cuelan códigos hex y el orden de colores no sigue la proporción (azul marino de más).
 2. `scratchpad/wf-editor.js`: globos libres además del %, chips dentro del editor, reemplazar/añadir colores del catálogo, inputs de
    negocio bonitos, ayudas (tooltips 8-12) + verificador + corrector (tras C/B2, que tocan VistaGuiada/TarjetaEleccion).
