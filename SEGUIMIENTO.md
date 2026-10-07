@@ -16,37 +16,32 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO + CHECKPOINT (latido 120, 2026-10-07 ~00:50) — LEER PRIMERO AL RETOMAR
+## 📋 ESTADO VIVO (latido 122, 2026-10-07 ~05:00) — LEER PRIMERO AL RETOMAR
 
-**En `main` (Vercel): ba7be2d** + docs. **VPS en e447cfe** (granel y la caché de lecturas por huella NO lo exigen; el granel sí para
-verse en producción). **Pendiente del dueño:** `ARMADO_ARCO_COLUMNA_V1` en producción (sin él la columna orgánica no trae armado).
+**En `main` (Vercel): b7f5cfe** — commit grande verificado (tsc limpio en e3-verif, 26 pruebas puntuales + ruff/pytest): editor
+«Ajustar mi plan» (cantidades libres por color, reemplazar/añadir globos del catálogo con selector Sempertex, chips dentro del editor,
+medidas en metros, parejas a la vez), piezas individuales (columna izquierda/derecha), quitar pieza / añadir color sin modelo, B1 plan
+exacto desde la idea (/api/plan-idea) + «Agregar al plan», B2 idea amplia, lectura determinista de las 10 fotos de ejemplo, imagen fiel,
+inputs de negocio (FilaGasto), auditoría de la biblioteca, chips con producto Sempertex, «otras ideas» sin armar plan, parejas simétricas.
+**VPS en e447cfe.** Lo nuevo de Next funciona con ese Python. Desplegar el VPS (avisando antes) solo añade: granel, regla de familia en
+el título del color (`color_catalogo.py`) y talla más cercana. **Pendiente del dueño:** `ARMADO_ARCO_COLUMNA_V1` en producción; arrancar
+el Python local :8000 (el sistema lo cerró por falta de RAM a las ~02:00; no lo arranco sin permiso).
 
-**HECHO SIN SUBIR (~130 archivos; commit grande verificado cuando verificador:2 del encargo dé el visto bueno y tsc pase en e3-verif):**
-C «Agregar al plan» · B2 idea amplia con productos Sempertex · imagen-fiel (rehacer con la foto, colores en proporción) · hex pegado al color
-en FLUX (pedido 1043386) · arreglos-p88 (caché de dibujos sin ráfagas/429, columnas clásicas con dibujo, cambio de temática, Spiderman en
-sus colores, total por chat, nombres de color unificados) · auditoría de la biblioteca (25/31 corregidas, remates reales, 203 variantes
-Sempertex) · corrector:1 (chips con producto Sempertex, «otras ideas» sin armar plan, parejas simétricas, fallos permanentes del motor) ·
-B1 plan EXACTO desde una idea (plan-de-idea.ts, plan-desde-idea.ts, /api/plan-idea, planes-ideas.json + precomputar-planes-ideas.ts
---check/--verificar; respaldo al camino de siempre) · inputs de negocio rediseñados · lectura determinista (huella 16×16 de las 10 fotos
-de ejemplo → misma lectura en las dos vistas sin IA; plan fiel a los colores leídos con reintento y aviso; salida digna al 3.er rechazo) ·
-guardia: /api/plan-idea clasificada.
+**02:00 límite de sesión:** se cortaron a medias calidad-banco (`wf_4b3e1978-044`, sus arreglos de talla/color ya van en b7f5cfe con
+pruebas; faltaba re-medir el banco), colores-claros-ideas (`wf_763c0859-a94`, celeste/Azul Caribe e ideas de boda en b7f5cfe; faltaban
+sondas), arreglos-u97, ayudas, verificador:2 del encargo, verificador y corrector del editor, probador:120.
 
-**Banco:** línea base clásica 6/10, guiada 4/10 (antes de lector/caché/calidad). Repetir 3× tras el commit (~US$7): `npx tsx
-scripts/eval/banco-fotos-ejemplo.ts correr --vistas clasica,guiada --repeticiones 3 --tope-usd 4 --concurrencia 2 --salida <scratchpad>/banco`
-(ojo: la caché nueva de lecturas responde a las fotos de la galería; para medir lecturas nuevas mandar `sin_cache`).
+**Corriendo (`wf_28285e91-542`, 3 a la vez por RAM, sin Python):** ayudas (tooltips 8-12 sitios) ∥ usabilidad (uso sin repetir, edades
+7+, datos del decorador, palabras del cliente en plan y escena, «Ajustes que hice») ∥ chat-editar (herramientas de edición del plan
+vigente por chat + elegir_idea).
 
-**Corriendo (6, tope de concurrencia):** verificador:2 del encargo (`wf_de9b969f-a93`) · calidad-banco (`wf_4b3e1978-044`: talla inexistente
-→ cercana, «catalog color», pasteles, burdeos/oro rosa, proporción; re-mide 6 fotos) · editor (`wf_1dc99ca2-911`: globos libres, chips en el
-editor, colores del catálogo, «Agrandar» con medida, parejas; luego ayudas + verificador + corrector) · colores-claros-ideas
-(`wf_763c0859-a94`) · arreglos-u97 (`wf_b8d62aaf-062`: uso sin repetir, edades 7+, datos del decorador, palabras del cliente en plan/escena,
-«Ajustes que hice») · probador:120.
+**Cuando vuelva Python :8000:** verificador independiente en el navegador de todo lo de b7f5cfe + lo de `wf_28285e91-542`; reanudar
+calidad-banco y colores-claros; `precomputar-planes-ideas.ts --check --verificar`; banco 3× (~US$7, tope declarado). Ritmo: probador,
+usabilidad, comparador, verificador.
 
-**Cola:** `scratchpad/wf-chat-editar.js` (editar el plan por chat sin rehacerlo; elegir idea por texto) tras el editor; ritmo: usabilidad,
-comparador, verificador; banco 3×; Python/VPS: cotización con líneas repetidas y mezcla de paquetes (44 globos → 300 comprados).
-
-**Lecciones de esta noche (memoria):** tope 6 agentes a la vez (concurrencia, no cantidad); SendMessage a un agente de workflow arranca una
-2.ª copia (no usarlo para reencargar); los scripts de workflow editados con Python a veces son rechazados («control characters»): lanzarlos
-en línea; commits selectivos con `git apply --cached` de los trozos de cada agente y tsc en e3-verif antes de cada push.
+**Lecciones (memoria):** tope 6 agentes a la vez (concurrencia, no cantidad; hoy 3 por RAM); SendMessage a un agente de workflow vivo
+arranca una 2.ª copia; scripts de workflow editados con Python → lanzarlos en línea; tsc en e3-verif antes de cada push (los datos
+`data/processed/*` no están en e3-verif: esas pruebas, en el árbol principal).
 <!-- ESTADO-VIVO:FIN -->
 
 ## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
