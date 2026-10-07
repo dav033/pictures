@@ -226,6 +226,7 @@
     "@radix-ui/react-tooltip": "^1.2.16",
     "@sempertex/agente-core": "*",
     "@sempertex/happie-package-ia": "*",
+    "@types/three": "^0.180.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.32.0",
@@ -239,6 +240,7 @@
     "server-only": "^0.0.1",
     "sharp": "^0.35.3",
     "tailwind-merge": "^3.6.0",
+    "three": "^0.180.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

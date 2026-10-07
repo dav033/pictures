@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { ChartColumn, FlaskConical, LayoutGrid, ListChecks, Monitor, Moon, Shield, Sun, Trash2 } from "lucide-react";
+import { Box, ChartColumn, FlaskConical, LayoutGrid, ListChecks, Monitor, Moon, Shield, Sun, Trash2 } from "lucide-react";
 import { OPCIONES_TEMA } from "@/lib/tema/tema";
 import { useTema } from "@/lib/tema/use-tema";
 import type { NivelCreatividad } from "@/lib/ia/escena/creatividad";
@@ -71,6 +71,8 @@ export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, o
       : [pathname === "/asistente"
           ? { tipo: "enlace" as const, id: "vista-clasica", etiqueta: "Vista clásica", href: "/" }
           : { tipo: "enlace" as const, id: "vista-guiada", etiqueta: "Asistente guiado", href: "/asistente" }]),
+    // El taller 3D de globos, en producción y en local.
+    { tipo: "enlace", id: "taller-3d", etiqueta: "Globos en 3D", href: "/3d", icono: <Box className="size-4" /> },
     // D10: the header switch flips light/dark quickly; here the customer can also go back to "Sistema".
     { tipo: "separador", id: "sep-tema" },
     { tipo: "titulo", id: "titulo-tema", etiqueta: "Tema" },
