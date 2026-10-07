@@ -8,8 +8,9 @@ import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 
 const ejemplos = decoracionesSempertex.filter((decoracion) => decoracion.origen === "ejemplo");
 const reales = decoracionesSempertex.filter((decoracion) => decoracion.origen === "referencia_real");
-// Curadas a mano sobre fotos oficiales de Sempertex (deco-real-21…31): cada material dice de dónde sale su cantidad.
-const esCurada = (decoracion: (typeof reales)[number]) => decoracion.materiales.every((material) => material.origenCantidad !== undefined);
+// Curadas a mano sobre fotos oficiales de Sempertex (deco-real-21…31); las del script salen de sus fotos «real-NN-…».
+// Unas y otras dicen de dónde sale cada cantidad (plan de Python o conteo en la foto).
+const esCurada = (decoracion: (typeof reales)[number]) => !/\/referencias\/real-\d{2}-/.test(decoracion.fotos[0]?.url ?? "");
 const curadas = reales.filter(esCurada);
 assert.equal(decoracionesSempertex.length, 46);
 assert.equal(curadas.length, 11, "11 decoraciones curadas de las fotos de Sempertex");
@@ -28,13 +29,13 @@ for (const decoracion of reales) {
   assert.ok(existsSync(path.join(process.cwd(), "public", foto!.url.slice(1))), `${decoracion.id}: foto local existente`);
   assert.ok(decoracion.piezas.length > 0 && decoracion.piezas.every((pieza) => ESTRUCTURAS_OFICIALES_IDS.includes(pieza.estructura)), `${decoracion.id}: piezas oficiales`);
   assert.equal(decoracion.fotoRepresentativa, true, `${decoracion.id}: foto representativa`);
-  if (esCurada(decoracion)) {
-    // Curadas: globos de cualquier forma (redondos, para modelar, eslabón, corazón, metalizados) e impresos si la foto los muestra.
-    assert.ok(decoracion.materiales.every((material) => /^\d+$/.test(material.variantId) && material.cantidad > 0 && /^B2b .+ — .+ · [^·]+$/.test(material.nota ?? "")), `${decoracion.id}: variantes con nota del catálogo`);
+  // Globos de cualquier forma (redondos, para modelar, eslabón, corazón, metalizados) e impresos si la foto los muestra.
+  assert.ok(decoracion.materiales.every((material) => /^\d+$/.test(material.variantId) && material.cantidad > 0 && /^B2b .+ — .+ · [^·]+$/.test(material.nota ?? "") && material.origenCantidad !== undefined), `${decoracion.id}: variantes con nota del catálogo y origen de la cantidad`);
+  {
     // Lo que resolvió Python se respeta: la cantidad es la del plan guardado (o la supera, si se le suma lo contado en la foto).
     const planes = new Map<string, Map<string, number>>();
     for (const material of decoracion.materiales.filter((item) => item.origenCantidad !== "estimado_foto")) {
-      const ruta = /\[(data\/biblioteca-real\/analisis\/nueva-sempertex-\d{2}\.plan\.json)\]/.exec(material.detalleCantidad ?? "")?.[1];
+      const ruta = /\[(data\/biblioteca-real\/analisis\/(?:nueva-sempertex-\d{2}|real-\d{2}-[\w-]+)\.plan\.json)\]/.exec(material.detalleCantidad ?? "")?.[1];
       assert.ok(ruta, `${decoracion.id}: ${material.variantId} cita su plan de Python`);
       if (!planes.has(ruta)) {
         const plan = JSON.parse(readFileSync(path.join(process.cwd(), ruta), "utf8")) as { estado?: string; snapshot?: string; plan_resuelto?: { compras?: Array<{ variant_id?: string; unidades_necesarias?: number }> } };
@@ -47,9 +48,8 @@ for (const decoracion of reales) {
       if (material.origenCantidad === "plan_python") assert.equal(material.cantidad, dePython, `${decoracion.id}: ${material.variantId} respeta la cantidad de Python`);
       else assert.ok(material.cantidad > dePython, `${decoracion.id}: ${material.variantId} suma la foto a la cantidad de Python`);
     }
-    continue;
   }
-  assert.ok(decoracion.materiales.every((material) => material.variantId.length > 0 && material.cantidad > 0 && /R-12/i.test(material.nota ?? "")), `${decoracion.id}: variantes y cantidades R-12`);
+  if (esCurada(decoracion)) continue;
   const plan = JSON.parse(readFileSync(path.join(process.cwd(), "data", "biblioteca-real", "analisis", `${decoracion.id.replace(/^deco-/, "")}.plan.json`), "utf8")) as { estado?: string; snapshot?: string; lista_materiales?: { lineas?: unknown[]; total?: number } };
   assert.equal(plan.estado, "resuelto", `${decoracion.id}: plan Python guardado`);
   assert.ok(plan.snapshot?.startsWith("products_catalog:"), `${decoracion.id}: snapshot guardado`);

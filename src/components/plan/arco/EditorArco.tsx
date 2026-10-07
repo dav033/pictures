@@ -9,6 +9,7 @@ import { ControlesArco } from "./ControlesArco";
 import type { PuedeGuardarArco } from "./guardar-arco";
 import { RecetaArco } from "./RecetaArco";
 import type { EstadoVistaBorradorArco } from "./vista-borrador-arco";
+import { useVozCliente } from "../motor/voz-editor";
 
 /**
  * Lo que va debajo del dibujo cuando se edita el arco (ADR-0035, paso 1): los ajustes, lo que el motor dice del
@@ -54,9 +55,12 @@ export function EditorArco({
   onCambiar, onGuardar, onDescartar, onRestablecer, onReintentar, onSeguirConMiBorrador, onUsarArcoDeLaPropuesta, onReceta,
 }: Props) {
   const id = useId();
+  const cliente = useVozCliente();
   const encabezado = useRef<HTMLHeadingElement | null>(null);
   useEffect(() => {
-    encabezado.current?.focus();
+    if (!cliente) encabezado.current?.focus();
+    // Solo al abrir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const dibujo = vista.vista;
   // El rechazo del motor y su silencio son errores del borrador; el resto, un estado que se anuncia con cortesía.
@@ -70,7 +74,7 @@ export function EditorArco({
     ? vista.error?.mensaje ?? RESPALDO_VISTA_ARMADO_ARCO
     : null;
   const estado = guardar.puede
-    ? "Listo para guardar. Al guardar se recalcula la compra con el catálogo; si falta algún globo, te lo digo y no se guarda."
+    ? (cliente ? "Listo. Al guardar recalculo tus globos y el precio." : "Listo para guardar. Al guardar se recalcula la compra con el catálogo; si falta algún globo, te lo digo y no se guarda.")
     : guardar.tipo === "error" || guardar.tipo === "colores" ? null : guardar.motivo;
   const pendiente = !guardar.puede && guardar.tipo === "espera";
   return (
@@ -79,14 +83,14 @@ export function EditorArco({
       {dibujo ? (
         <ControlesArco borrador={borrador} opciones={dibujo.opciones} limites={dibujo.limites} leyenda={leyenda} onCambiar={onCambiar} />
       ) : (
-        <p role="status" className="brillo-carga rounded-xl bg-superficie px-3 py-6 text-center text-xs text-texto-suave">Cargando los ajustes del motor…</p>
+        <p role="status" className="brillo-carga rounded-xl bg-superficie px-3 py-6 text-center text-xs text-texto-suave">{cliente ? "Preparando los ajustes…" : "Cargando los ajustes del motor…"}</p>
       )}
 
       {coloresCambiaron && (
         <div data-testid="colores-cambiaron-arco" role="alert" className="space-y-2 rounded-xl bg-aviso-suave px-3 py-2.5 text-xs text-aviso">
           <p className="flex items-start gap-2 font-medium">
             <TriangleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 flex-1">Los colores de la pieza cambiaron: revisa el patrón. Tu borrador no se perdió; el dibujo ya usa los colores de ahora.</span>
+            <span className="min-w-0 flex-1">{cliente ? "Los colores de la pieza cambiaron. Tus cambios siguen aquí y el dibujo ya usa los colores nuevos." : "Los colores de la pieza cambiaron: revisa el patrón. Tu borrador no se perdió; el dibujo ya usa los colores de ahora."}</span>
           </p>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={onSeguirConMiBorrador} data-testid="seguir-con-mi-borrador" className={`ui-button-secondary ui-pressable ${BOTON}`}>Seguir con mi borrador</button>
@@ -127,7 +131,7 @@ export function EditorArco({
           </>
         )}
       </p>
-      <p className="text-xs leading-relaxed text-texto-suave">Al guardar, la propuesta cambia de firma: es otra decoración y se recalcula su total. Si ya estaba aprobada, hay que regenerar la imagen.</p>
+      {!cliente && <p className="text-xs leading-relaxed text-texto-suave">Al guardar, la propuesta cambia de firma: es otra decoración y se recalcula su total. Si ya estaba aprobada, hay que regenerar la imagen.</p>}
 
       <div className="flex flex-wrap gap-2">
         <button
@@ -139,12 +143,12 @@ export function EditorArco({
           className={`ui-button-primary ui-pressable ${BOTON}`}
         >
           {guardando ? <LoaderCircle className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : null}
-          {guardando ? "Guardando…" : "Guardar arco"}
+          {guardando ? "Guardando…" : cliente ? "Guardar" : "Guardar arco"}
         </button>
         <button type="button" onClick={onDescartar} disabled={guardando} data-testid="descartar-arco" className={`ui-button-secondary ui-pressable ${BOTON}`}>
-          {hayCambios ? "Descartar cambios" : "Cerrar"}
+          {cliente ? "Cancelar" : hayCambios ? "Descartar cambios" : "Cerrar"}
         </button>
-        {hayCambios && (
+        {hayCambios && !cliente && (
           <button type="button" onClick={onRestablecer} disabled={guardando} data-testid="restablecer-arco" className={`ui-button-secondary ui-pressable ${BOTON}`}>
             <RotateCcw className="size-3.5" aria-hidden="true" />Restablecer
           </button>

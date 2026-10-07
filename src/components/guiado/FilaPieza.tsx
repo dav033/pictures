@@ -8,7 +8,7 @@ import { CifraAnimada } from "./ajuste/AjustarPlan";
 import { DUR, EASE_REBOTE, RESORTE } from "./animacion/movimiento";
 import { medidasEnPalabras } from "./formato";
 import { GloboMiniatura } from "./GloboMiniatura";
-import { globosPorColor, tramosDe, type PiezaVista } from "./piezas-vista";
+import { globosPorColor, rotuloGlobo, tramosDe, type PiezaVista } from "./piezas-vista";
 
 /**
  * Una pieza de «Tu plan» (o de una idea): su dibujo, nombre, medidas, mezcla de tamaños y globos por color (cada color
@@ -57,20 +57,21 @@ export function FilaPieza({ pieza, dibujo, indice, recalculando = false, onModif
             {(porColor.length ? porColor : [{ color: "" }]).map((globo, posicion) => <span key={`${globo.color}-${posicion}`} className="brillo-carga h-5 w-20 rounded-full" />)}
           </span>
         ) : porColor.length > 0 && (
-          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Globos por color">
+          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={porColor.some((globo) => globo.producto) ? "Globos Sempertex" : "Globos por color"}>
             <AnimatePresence initial={false}>
               {porColor.map((globo) => (
                 <motion.li
-                  key={globo.color}
+                  key={globo.clave}
+                  title={rotuloGlobo(globo).titulo}
                   layout="position"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: DUR.media, ease: EASE_REBOTE }}
-                  className="inline-flex items-center gap-1 rounded-full bg-superficie py-0.5 pl-1 pr-2 text-xs text-texto tabular-nums ring-1 ring-borde-suave"
+                  className="inline-flex items-center gap-1 rounded-2xl bg-superficie py-0.5 pl-1 pr-2 text-xs leading-tight text-texto tabular-nums ring-1 ring-borde-suave"
                 >
                   <GloboMiniatura hex={globo.hex} acabado={globo.acabado} pulgadas={globo.pulgadas} tamano={16} className="shrink-0" />
-                  {globo.etiqueta} <CifraAnimada valor={globo.cantidad} />
+                  {rotuloGlobo(globo).texto} <span className="font-semibold"><CifraAnimada valor={globo.cantidad} /></span>
                 </motion.li>
               ))}
             </AnimatePresence>

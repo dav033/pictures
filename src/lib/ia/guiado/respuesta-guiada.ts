@@ -181,7 +181,42 @@ export type ContextoRespuesta = ContextoOpciones & {
   aplicar: boolean;
   /** Ideas que el cliente ve en este turno (carrusel). */
   ideasEnTurno: number;
+  /**
+   * Lo pedido no tiene decoraciones y las ideas del turno son las de sus colores típicos («Spiderman» → rojo, azul y
+   * negro). Solo entonces, y con ideas a la vista, se dice una vez con calidez (`fraseCercanasPorColor`).
+   */
+  cercanasPorColor?: CercanasPorColor | null;
 };
+
+// ── 4. Temática sin decoraciones, ideas en sus colores ─────────────────────────────────────────────────────────────
+/**
+ * Probador (2026-10-06): «Spiderman» no tiene decoraciones y el cliente veía primero «Arco naranja y negro» y una
+ * guirnalda rosa con «Te dejo unas ideas…», sin saber por qué. Ahora las cercanas van por los colores típicos de lo
+ * pedido y se le dice, UNA vez y con ideas reales detrás, que no hay de esa temática exacta pero que estas en sus
+ * colores le pueden servir. No es un «no encontré» vacío: es la única frase de «no tengo» permitida, y solo con
+ * ideas cercanas mostradas en el mismo turno (`ideasEnTurno > 0`); sin ideas, se sanea como cualquier fracaso.
+ */
+export type CercanasPorColor = { tematica: string; colores: readonly string[] };
+
+function listaY(elementos: readonly string[]): string {
+  return elementos.length <= 1 ? (elementos[0] ?? "") : `${elementos.slice(0, -1).join(", ")} y ${elementos.at(-1)}`;
+}
+
+/** «Todavía no tengo decoraciones de Spiderman, pero estas ideas en sus colores (rojo, azul y negro) te pueden servir.» */
+export function fraseCercanasPorColor(cercanas: CercanasPorColor): string {
+  const tematica = cercanas.tematica.trim().replace(/\s+/g, " ");
+  return `Todavía no tengo decoraciones de ${tematica}, pero estas ideas en sus colores (${listaY(cercanas.colores)}) te pueden servir. ¿Alguna te gusta?`;
+}
+
+/** El inicio de la frase, para saber si ya se dijo en la conversación (se dice una sola vez por temática). */
+export function fraseCercanasYaDicha(textosAsistente: readonly string[], tematica: string): boolean {
+  const inicio = normalizarBusqueda(`Todavía no tengo decoraciones de ${tematica}`);
+  return textosAsistente.some((texto) => normalizarBusqueda(texto).includes(inicio));
+}
+
+function cercanasPermitidas(contexto: ContextoRespuesta): CercanasPorColor | null {
+  return contexto.cercanasPorColor && contexto.cercanasPorColor.colores.length && contexto.ideasEnTurno > 0 ? contexto.cercanasPorColor : null;
+}
 
 export type CambioOracion = { regla: "fracaso" | "genero" | "estilo_imposible"; antes: string; despues: string; detalle?: string[] };
 
@@ -229,6 +264,9 @@ function generosPosibles(oracion: string, contexto: ContextoRespuesta): { texto:
 /** Sanea una oración: sin fracaso, sin géneros imposibles y sin preguntas que sugieran estilos inexistentes. */
 export function sanearOracion(oracion: string, contexto: ContextoRespuesta): { texto: string; cambios: CambioOracion[] } {
   if (!contexto.aplicar || !oracion.trim()) return { texto: oracion, cambios: [] };
+  // La única frase de «no tengo» que pasa: la de las ideas en sus colores, y solo con esas ideas a la vista.
+  const cercanas = cercanasPermitidas(contexto);
+  if (cercanas && normalizarBusqueda(oracion).startsWith(normalizarBusqueda(`Todavía no tengo decoraciones de ${cercanas.tematica}`))) return { texto: oracion, cambios: [] };
   const cambios: CambioOracion[] = [];
   let texto = sinFracaso(oracion);
   if (texto !== oracion) cambios.push({ regla: "fracaso", antes: oracion, despues: texto });
@@ -276,7 +314,13 @@ export type SaneoRespuesta = {
 
 export function sanearRespuestaGuiada(texto: string, contexto: ContextoRespuesta): SaneoRespuesta {
   const sinCambios: SaneoRespuesta = { texto, cambio: false, frases: [], opciones: null, respaldo: null, huboFracaso: false };
-  if (!contexto.aplicar) return sinCambios;
+  const cercanas = cercanasPermitidas(contexto);
+  if (!contexto.aplicar) {
+    // Con un plan a la vista el texto no se toca… salvo la frase de las ideas en sus colores, que va igual.
+    if (!cercanas) return sinCambios;
+    const frase = fraseCercanasPorColor(cercanas);
+    return { texto: frase, cambio: frase !== texto.trimEnd(), frases: [], opciones: null, respaldo: frase, huboFracaso: false };
+  }
   const lineas = texto.trimEnd().split("\n");
   const lineaOpciones = OPCIONES_RE.test((lineas.at(-1) ?? "").trim()) ? lineas.at(-1)!.trim() : null;
   const cuerpoOriginal = lineaOpciones ? lineas.slice(0, -1) : lineas;
@@ -284,7 +328,13 @@ export function sanearRespuestaGuiada(texto: string, contexto: ContextoRespuesta
   let cuerpo = cuerpoOriginal.map((linea) => (linea.trim() ? sanearLinea(linea, contexto, frases) : linea)).join("\n").replace(/\n{3,}/g, "\n\n").trim();
   let respaldo: string | null = null;
   let opcionesBase = lineaOpciones;
-  if (!cuerpo) {
+  if (cercanas) {
+    // La frase de las ideas en sus colores reemplaza la presentación del modelo (que no debe repetirla ni decir «no
+    // encontré»): una sola frase, y el carrusel debajo hace el resto.
+    respaldo = fraseCercanasPorColor(cercanas);
+    cuerpo = respaldo;
+    opcionesBase = null;
+  } else if (!cuerpo) {
     if (contexto.ideasEnTurno > 0) { respaldo = FRASE_IDEAS_GUIADAS; opcionesBase = null; }
     else {
       const genero = esBabyShower(contexto.evento) && !contexto.ideasEnTurno && frases.some((frase) => frase.regla === "genero");

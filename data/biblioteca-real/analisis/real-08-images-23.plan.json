@@ -1,6 +1,8 @@
 {
   "estado": "resuelto",
   "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "Cada columna remata con un globo negro gigante (unas 2,9 veces el diámetro de los del cuerpo: un R-36 a media inflada) que no llegaba a Python; cuerpo de 11 capas de 4 en espiral negro y dorado perlado (Metal, no cromado).",
+  "descartadas": [],
   "plan_declarado": {
     "plan_version": "1.0",
     "plan_id": "1b5cd2ef-76eb-5dac-9438-053249418b73",
@@ -8,8 +10,8 @@
       "titulo": "real-08-images-23",
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
-        "dorado",
-        "negro"
+        "negro",
+        "dorado"
       ],
       "estilo": "orgánico"
     },
@@ -20,7 +22,7 @@
     "estructuras": [
       {
         "estructura_id": "EST_01_COLUMNA",
-        "nombre": "Columna de globos",
+        "nombre": "Columna",
         "tipo": "columna",
         "rol_escena": "focal",
         "ubicacion": "lateral_izquierdo",
@@ -33,34 +35,34 @@
         "mezcla": "clasica",
         "materiales": [
           {
-            "product_id": "8634255638823",
-            "variant_id": "46594264695079",
-            "color": "dorado",
-            "participacion": 0.5,
-            "rol_material": "principal"
-          },
-          {
             "product_id": "8634239516967",
             "variant_id": "46594235269415",
             "color": "negro",
             "participacion": 0.5,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634250199335",
+            "variant_id": "46594252898599",
+            "color": "dorado",
+            "participacion": 0.5,
             "rol_material": "secundario"
           }
         ],
-        "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+        "porque": "Columna izquierda de 11 capas en espiral negro y dorado, coronada con un globo negro gigante.",
         "referencia_element_id": "REF_01_E01",
         "estructura_oficial": "columna",
         "colores_referencia": [
-          "dorado",
-          "negro"
+          "negro",
+          "dorado"
         ]
       },
       {
         "estructura_id": "EST_02_COLUMNA",
-        "nombre": "Columna de globos",
+        "nombre": "Columna",
         "tipo": "columna",
         "rol_escena": "soporte",
-        "ubicacion": "lateral_izquierdo",
+        "ubicacion": "lateral_derecho",
         "medidas": {
           "ancho_m": 0.55,
           "alto_m": 2
@@ -70,32 +72,32 @@
         "mezcla": "clasica",
         "materiales": [
           {
-            "product_id": "8634255638823",
-            "variant_id": "46594264695079",
-            "color": "dorado",
-            "participacion": 0.5,
-            "rol_material": "principal"
-          },
-          {
             "product_id": "8634239516967",
             "variant_id": "46594235269415",
             "color": "negro",
             "participacion": 0.5,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634250199335",
+            "variant_id": "46594252898599",
+            "color": "dorado",
+            "participacion": 0.5,
             "rol_material": "secundario"
           }
         ],
-        "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+        "porque": "Columna derecha igual a la izquierda: 11 capas en espiral negro y dorado y globo negro gigante arriba.",
         "referencia_element_id": "REF_01_E02",
         "estructura_oficial": "columna",
         "colores_referencia": [
-          "dorado",
-          "negro"
+          "negro",
+          "dorado"
         ]
       }
     ],
     "supuestos": [
       "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06)."
     ],
     "referencia_omitida": []
   },
@@ -107,8 +109,8 @@
         "titulo": "real-08-images-23",
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
-          "dorado",
-          "negro"
+          "negro",
+          "dorado"
         ],
         "estilo": "orgánico"
       },
@@ -119,7 +121,7 @@
       "estructuras": [
         {
           "estructura_id": "EST_01_COLUMNA",
-          "nombre": "Columna de globos",
+          "nombre": "Columna",
           "tipo": "columna",
           "rol_escena": "focal",
           "ubicacion": "lateral_izquierdo",
@@ -132,34 +134,173 @@
           "mezcla": "clasica",
           "materiales": [
             {
-              "product_id": "8634255638823",
-              "variant_id": "46594264695079",
-              "color": "dorado",
-              "participacion": 0.5,
-              "rol_material": "principal"
-            },
-            {
               "product_id": "8634239516967",
               "variant_id": "46594235269415",
               "color": "negro",
               "participacion": 0.5,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634250199335",
+              "variant_id": "46594252898599",
+              "color": "dorado",
+              "participacion": 0.5,
               "rol_material": "secundario"
             }
           ],
-          "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+          "porque": "Columna izquierda de 11 capas en espiral negro y dorado, coronada con un globo negro gigante.",
           "referencia_element_id": "REF_01_E01",
           "estructura_oficial": "columna",
           "colores_referencia": [
-            "dorado",
-            "negro"
-          ]
+            "negro",
+            "dorado"
+          ],
+          "armado_columna": {
+            "version": "armado-columna.v1",
+            "origen": "referencia",
+            "modo": "capas",
+            "patron": "espiral",
+            "opciones": {
+              "vueltas": 2,
+              "inclinacion": 1
+            },
+            "cuerpo": {
+              "alto_m": 2,
+              "globos_capa": 4,
+              "abajo": 12,
+              "arriba": 12,
+              "escalonado": true,
+              "base": true
+            },
+            "inflado": {
+              "inflado": 1,
+              "tamano": 1.14,
+              "compresion": 0.8,
+              "variacion_tam": 0,
+              "variacion_tono": 0.03,
+              "desorden": 0,
+              "semilla": 7
+            },
+            "remate": {
+              "tipo": "globo",
+              "tamano": 36,
+              "cantidad": 5,
+              "foil_m": 0.7,
+              "material": 0
+            },
+            "capas": [
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  1,
+                  1,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  1,
+                  1,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  1,
+                  1,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  1,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "materiales": [
+              0,
+              1
+            ]
+          }
         },
         {
           "estructura_id": "EST_02_COLUMNA",
-          "nombre": "Columna de globos",
+          "nombre": "Columna",
           "tipo": "columna",
           "rol_escena": "soporte",
-          "ubicacion": "lateral_izquierdo",
+          "ubicacion": "lateral_derecho",
           "medidas": {
             "ancho_m": 0.55,
             "alto_m": 2
@@ -169,36 +310,175 @@
           "mezcla": "clasica",
           "materiales": [
             {
-              "product_id": "8634255638823",
-              "variant_id": "46594264695079",
-              "color": "dorado",
-              "participacion": 0.5,
-              "rol_material": "principal"
-            },
-            {
               "product_id": "8634239516967",
               "variant_id": "46594235269415",
               "color": "negro",
               "participacion": 0.5,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634250199335",
+              "variant_id": "46594252898599",
+              "color": "dorado",
+              "participacion": 0.5,
               "rol_material": "secundario"
             }
           ],
-          "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+          "porque": "Columna derecha igual a la izquierda: 11 capas en espiral negro y dorado y globo negro gigante arriba.",
           "referencia_element_id": "REF_01_E02",
           "estructura_oficial": "columna",
           "colores_referencia": [
-            "dorado",
-            "negro"
-          ]
+            "negro",
+            "dorado"
+          ],
+          "armado_columna": {
+            "version": "armado-columna.v1",
+            "origen": "referencia",
+            "modo": "capas",
+            "patron": "espiral",
+            "opciones": {
+              "vueltas": 2,
+              "inclinacion": 1
+            },
+            "cuerpo": {
+              "alto_m": 2,
+              "globos_capa": 4,
+              "abajo": 12,
+              "arriba": 12,
+              "escalonado": true,
+              "base": true
+            },
+            "inflado": {
+              "inflado": 1,
+              "tamano": 1.14,
+              "compresion": 0.8,
+              "variacion_tam": 0,
+              "variacion_tono": 0.03,
+              "desorden": 0,
+              "semilla": 7
+            },
+            "remate": {
+              "tipo": "globo",
+              "tamano": 36,
+              "cantidad": 5,
+              "foil_m": 0.7,
+              "material": 0
+            },
+            "capas": [
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  1,
+                  1,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  1,
+                  1,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  1,
+                  1,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  1,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "materiales": [
+              0,
+              1
+            ]
+          }
         }
       ],
       "supuestos": [
         "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-        "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+        "Los tamaños son los que se ven en la foto (auditoría 2026-10-06)."
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "783188a0861762f7128b728a46b014e5208cd0e13f74cebd606dd4ac90add7d2",
+    "plan_hash": "96c7c1651e92ff1152d02264e8fde0a4514df2de6f63d4f619c2c7dd1e2b16e4",
     "request_id": "9c2475f4-eb16-5a5b-8ee0-4050f422fc04",
     "compras": [
       {
@@ -214,20 +494,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "negro",
-        "unidades_necesarias": 42,
-        "design_quantity": 42,
-        "waste_reserve": 7,
-        "required_quantity": 49,
-        "unidades_con_merma": 49,
+        "unidades_necesarias": 44,
+        "design_quantity": 44,
+        "waste_reserve": 2,
+        "required_quantity": 46,
+        "unidades_con_merma": 46,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 42,
-        "leftover_inventory": 1,
-        "consumption_cost": 12776,
+        "used": 44,
+        "leftover_inventory": 4,
+        "consumption_cost": 11994,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 8,
+        "sobrante": 6,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -247,34 +527,34 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093"
       },
       {
-        "variant_id": "46594264695079",
-        "product_id": "8634255638823",
-        "sku": "B2B-20014156",
-        "sku_original": "B2B-20014156",
+        "variant_id": "46594235433255",
+        "product_id": "8634239516967",
+        "sku": "B2B-20009580",
+        "sku_original": "B2B-20009580",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
-        "inventory_quantity": 958502,
+        "source_variant_id": "gid://shopify/ProductVariant/46594235433255",
+        "inventory_quantity": 999889,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
-        "tamano_codigo": "R-12",
-        "diam_pulg": 12,
-        "color": "dorado",
-        "unidades_necesarias": 44,
-        "design_quantity": 44,
+        "titulo": "B2b Globo Latex Redondo Fashion Negro — R-36 / PAQUETE X 2",
+        "tamano_codigo": "R-36",
+        "diam_pulg": 36,
+        "color": "negro",
+        "unidades_necesarias": 2,
+        "design_quantity": 2,
         "waste_reserve": 0,
-        "required_quantity": 44,
-        "unidades_con_merma": 44,
-        "unidades_paquete": 50,
+        "required_quantity": 2,
+        "unidades_con_merma": 2,
+        "unidades_paquete": 2,
         "paquetes": 1,
-        "purchase_quantity": 50,
-        "used": 44,
-        "leftover_inventory": 6,
-        "consumption_cost": 25500,
-        "purchase_cost": 28977,
+        "purchase_quantity": 2,
+        "used": 2,
+        "leftover_inventory": 0,
+        "consumption_cost": 9819,
+        "purchase_cost": 9819,
         "additional_package_for_waste": false,
-        "sobrante": 6,
-        "precio_paquete": 28977,
-        "subtotal": 28977,
+        "sobrante": 0,
+        "precio_paquete": 9819,
+        "subtotal": 9819,
         "estructuras": [
           "EST_01_COLUMNA",
           "EST_02_COLUMNA"
@@ -289,25 +569,71 @@
             "id": "EST_02_COLUMNA"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093"
+      },
+      {
+        "variant_id": "46594252898599",
+        "product_id": "8634250199335",
+        "sku": "B2B-20000885",
+        "sku_original": "B2B-20000885",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594252898599",
+        "inventory_quantity": 974671,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Metal Dorado — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "dorado",
+        "unidades_necesarias": 44,
+        "design_quantity": 44,
+        "waste_reserve": 6,
+        "required_quantity": 50,
+        "unidades_con_merma": 50,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 44,
+        "leftover_inventory": 0,
+        "consumption_cost": 13847,
+        "purchase_cost": 13847,
+        "additional_package_for_waste": false,
+        "sobrante": 6,
+        "precio_paquete": 13847,
+        "subtotal": 13847,
+        "estructuras": [
+          "EST_01_COLUMNA",
+          "EST_02_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_570.jpg?v=1763501377"
       }
     ],
     "totales": {
       "globos_por_tamano": {
-        "R-12": 86
+        "R-12": 88,
+        "R-36": 2
       },
-      "total_unidades": 86,
-      "total_cop": 42014,
-      "design_quantity": 86,
-      "target_waste_reserve": 7,
-      "covered_waste_reserve": 7,
+      "total_unidades": 90,
+      "total_cop": 36703,
+      "design_quantity": 90,
+      "target_waste_reserve": 8,
+      "covered_waste_reserve": 8,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 14,
-      "purchase_cost": 42014,
-      "consumption_cost": 38276,
-      "waste_only_savings_cop": 0,
+      "natural_package_surplus": 12,
+      "purchase_cost": 36703,
+      "consumption_cost": 35660,
+      "waste_only_savings_cop": 9819,
       "additional_waste_packages": 0,
-      "ahorro_paquetes_cop": 42014,
+      "ahorro_paquetes_cop": 36703,
       "incluye_iva": true,
       "merma_porcentaje": 8
     },
@@ -320,41 +646,1058 @@
     "sustituciones": [],
     "sin_cobertura": [],
     "advertencias": [],
+    "armados_columna": [
+      {
+        "version": "armado-columna.v1",
+        "globos": [
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 2.2669499999999996,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 1.8402299999999998,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 1.4135099999999998,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 0.98679,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 0.56007,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 0.13335,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 2.05359,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 1.6268699999999998,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 1.2001499999999998,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 0.77343,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 0.34670999999999996,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 2.05359,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 1.6268699999999998,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 1.2001499999999998,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 0.77343,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 0.34670999999999996,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 2.2669499999999996,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 1.8402299999999998,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 1.4135099999999998,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 0.98679,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 0.56007,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 0.13335,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 2.2669499999999996,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 1.8402299999999998,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 1.4135099999999998,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 0.98679,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 0.56007,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 0.13335,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 2.05359,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 1.6268699999999998,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 1.2001499999999998,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 0.77343,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 0.34670999999999996,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 2.05359,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 1.6268699999999998,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 1.2001499999999998,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 0.77343,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 0.34670999999999996,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0,
+            "y": 2.2669499999999996,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 1.8402299999999998,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 1.4135099999999998,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 0.98679,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 0.56007,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 0.13335,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 0,
+            "prof": 1
+          }
+        ],
+        "capas": 11,
+        "alto_cuerpo_m": 2.4002999999999997,
+        "alto_total_m": 3.0698999999999996,
+        "diametro_m": 0.5975515413025478,
+        "remate_alto_m": 0.6096,
+        "conteo": [
+          {
+            "material": 0,
+            "tamano": 12,
+            "cantidad": 22
+          },
+          {
+            "material": 1,
+            "tamano": 12,
+            "cantidad": 22
+          }
+        ],
+        "remate": {
+          "descripcion": "Globo de R36",
+          "globos": [
+            {
+              "material": 0,
+              "tamano": 36,
+              "cantidad": 1
+            }
+          ]
+        },
+        "avisos": [],
+        "estructura_id": "EST_01_COLUMNA",
+        "prompt_gemini": "COLUMN ASSEMBLY - a free-standing balloon column about 3.1 m tall and 0.6 m across, standing on a weighted base plate at its foot, built as a stack of 11 rings of 4 round 12-inch latex balloons each, every ring turned half a step over the one below so its balloons nest in the gaps of the ring beneath, its rings colored one by one from the bottom up, in black and gold. Crown it with a single round 36-inch latex balloon in black, sitting on the top ring and adding about 0.6 m. Keep the column the same thickness all the way up and that color layout readable from the base to the top, and make the whole column only of round latex balloons: no ribbons, streamers or fabric.",
+        "prompt_lora": "stacked in rings of four round balloons, each ring nested into the gaps of the one below, its rings colored one by one from the bottom up, in black and gold, topped with a single giant round balloon in black"
+      },
+      {
+        "version": "armado-columna.v1",
+        "globos": [
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 2.2669499999999996,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 1.8402299999999998,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 1.4135099999999998,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 0.98679,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 0.56007,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 0.13335,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 2.05359,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 1.6268699999999998,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 1.2001499999999998,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 0.77343,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 0.34670999999999996,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 2.05359,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 1.6268699999999998,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 1.2001499999999998,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 0.77343,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 0.34670999999999996,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 2.2669499999999996,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 1.8402299999999998,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 1.4135099999999998,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 0.98679,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 0.56007,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 0.13335,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 2.2669499999999996,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 1.8402299999999998,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 1.4135099999999998,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 0.98679,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 0.56007,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 0.13335,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 2.05359,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 1.6268699999999998,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 1.2001499999999998,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 0.77343,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 0.34670999999999996,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 2.05359,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 1.6268699999999998,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 1.2001499999999998,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 0.77343,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 0.34670999999999996,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0,
+            "y": 2.2669499999999996,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 1.8402299999999998,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 1.4135099999999998,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 0.98679,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 0.56007,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 0.13335,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 0,
+            "prof": 1
+          }
+        ],
+        "capas": 11,
+        "alto_cuerpo_m": 2.4002999999999997,
+        "alto_total_m": 3.0698999999999996,
+        "diametro_m": 0.5975515413025478,
+        "remate_alto_m": 0.6096,
+        "conteo": [
+          {
+            "material": 0,
+            "tamano": 12,
+            "cantidad": 22
+          },
+          {
+            "material": 1,
+            "tamano": 12,
+            "cantidad": 22
+          }
+        ],
+        "remate": {
+          "descripcion": "Globo de R36",
+          "globos": [
+            {
+              "material": 0,
+              "tamano": 36,
+              "cantidad": 1
+            }
+          ]
+        },
+        "avisos": [],
+        "estructura_id": "EST_02_COLUMNA",
+        "prompt_gemini": "COLUMN ASSEMBLY - a free-standing balloon column about 3.1 m tall and 0.6 m across, standing on a weighted base plate at its foot, built as a stack of 11 rings of 4 round 12-inch latex balloons each, every ring turned half a step over the one below so its balloons nest in the gaps of the ring beneath, its rings colored one by one from the bottom up, in black and gold. Crown it with a single round 36-inch latex balloon in black, sitting on the top ring and adding about 0.6 m. Keep the column the same thickness all the way up and that color layout readable from the base to the top, and make the whole column only of round latex balloons: no ribbons, streamers or fabric.",
+        "prompt_lora": "stacked in rings of four round balloons, each ring nested into the gaps of the one below, its rings colored one by one from the bottom up, in black and gold, topped with a single giant round balloon in black"
+      }
+    ],
     "estructuras": [
       {
         "estructura_id": "EST_01_COLUMNA",
-        "nombre": "Columna de globos",
+        "nombre": "Columna",
         "tipo": "columna",
         "ubicacion": "lateral_izquierdo",
         "repeticiones": 1,
-        "eje_m": 2,
-        "total_unidades": 43,
+        "eje_m": 3.07,
+        "total_unidades": 45,
         "lineas": [
-          {
-            "estructura_id": "EST_01_COLUMNA",
-            "origen": {
-              "kind": "estructura",
-              "id": "EST_01_COLUMNA"
-            },
-            "product_id": "8634255638823",
-            "variant_id": "46594264695079",
-            "sku": "B2B-20014156",
-            "sku_original": "B2B-20014156",
-            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
-            "inventory_quantity": 958502,
-            "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
-            "color": "dorado",
-            "tamano_codigo": "R-12",
-            "diam_pulg": 12,
-            "diam_cm": 30.5,
-            "forma": "redondo",
-            "acabado": "reflex",
-            "unidades": 22,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
-            "sustitucion": null
-          },
           {
             "estructura_id": "EST_01_COLUMNA",
             "origen": {
@@ -376,7 +1719,57 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 21,
+            "unidades": 22,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634250199335",
+            "variant_id": "46594252898599",
+            "sku": "B2B-20000885",
+            "sku_original": "B2B-20000885",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594252898599",
+            "inventory_quantity": 974671,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Metal Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "metal",
+            "unidades": 22,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_570.jpg?v=1763501377",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634239516967",
+            "variant_id": "46594235433255",
+            "sku": "B2B-20009580",
+            "sku_original": "B2B-20009580",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235433255",
+            "inventory_quantity": 999889,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Negro — R-36 / PAQUETE X 2",
+            "color": "negro",
+            "tamano_codigo": "R-36",
+            "diam_pulg": 36,
+            "diam_cm": 91.4,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 1,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093",
             "sustitucion": null
           }
@@ -385,46 +1778,27 @@
           {
             "diam_pulg": 12,
             "forma": "redondo",
-            "unidades": 43,
-            "pct": 100
+            "unidades": 44,
+            "pct": 97.78
+          },
+          {
+            "diam_pulg": 36,
+            "forma": "redondo",
+            "unidades": 1,
+            "pct": 2.22
           }
         ],
         "supuestos": []
       },
       {
         "estructura_id": "EST_02_COLUMNA",
-        "nombre": "Columna de globos",
+        "nombre": "Columna",
         "tipo": "columna",
-        "ubicacion": "lateral_izquierdo",
+        "ubicacion": "lateral_derecho",
         "repeticiones": 1,
-        "eje_m": 2,
-        "total_unidades": 43,
+        "eje_m": 3.07,
+        "total_unidades": 45,
         "lineas": [
-          {
-            "estructura_id": "EST_02_COLUMNA",
-            "origen": {
-              "kind": "estructura",
-              "id": "EST_02_COLUMNA"
-            },
-            "product_id": "8634255638823",
-            "variant_id": "46594264695079",
-            "sku": "B2B-20014156",
-            "sku_original": "B2B-20014156",
-            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594264695079",
-            "inventory_quantity": 958502,
-            "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
-            "color": "dorado",
-            "tamano_codigo": "R-12",
-            "diam_pulg": 12,
-            "diam_cm": 30.5,
-            "forma": "redondo",
-            "acabado": "reflex",
-            "unidades": 22,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
-            "sustitucion": null
-          },
           {
             "estructura_id": "EST_02_COLUMNA",
             "origen": {
@@ -446,7 +1820,57 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 21,
+            "unidades": 22,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA"
+            },
+            "product_id": "8634250199335",
+            "variant_id": "46594252898599",
+            "sku": "B2B-20000885",
+            "sku_original": "B2B-20000885",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594252898599",
+            "inventory_quantity": 974671,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Metal Dorado — R-12 / PAQUETE X 50",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "metal",
+            "unidades": 22,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_570.jpg?v=1763501377",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA"
+            },
+            "product_id": "8634239516967",
+            "variant_id": "46594235433255",
+            "sku": "B2B-20009580",
+            "sku_original": "B2B-20009580",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594235433255",
+            "inventory_quantity": 999889,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Negro — R-36 / PAQUETE X 2",
+            "color": "negro",
+            "tamano_codigo": "R-36",
+            "diam_pulg": 36,
+            "diam_cm": 91.4,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 1,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/080_398ea765-7d94-4243-954f-d26a0b1e547a.png?v=1694793093",
             "sustitucion": null
           }
@@ -455,8 +1879,14 @@
           {
             "diam_pulg": 12,
             "forma": "redondo",
-            "unidades": 43,
-            "pct": 100
+            "unidades": 44,
+            "pct": 97.78
+          },
+          {
+            "diam_pulg": 36,
+            "forma": "redondo",
+            "unidades": 1,
+            "pct": 2.22
           }
         ],
         "supuestos": []
@@ -465,73 +1895,11 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_COLUMNA",
-        "consumo_cop": 18225
+        "consumo_cop": 16738
       },
       {
         "estructura_id": "EST_02_COLUMNA",
-        "consumo_cop": 18225
-      }
-    ],
-    "conteos_referencia": [
-      {
-        "estructura_id": "EST_01_COLUMNA",
-        "referencia_element_id": "REF_01_E01",
-        "decision": "coincide",
-        "lectura": {
-          "globos_visibles": 45,
-          "exacto": false,
-          "estimado_total": null,
-          "racimos": 11,
-          "globos_por_racimo": 4,
-          "por_tamano": [
-            {
-              "clase": "mediano",
-              "proporcion": 0.95
-            },
-            {
-              "clase": "gigante",
-              "proporcion": 0.05
-            }
-          ],
-          "largo_relativo": null,
-          "alto_relativo": null,
-          "confianza": 0.95
-        },
-        "globos_foto": 44,
-        "globos_antes": 43,
-        "globos_despues": 43,
-        "cambios": [],
-        "motivo": "El plan ya sigue la foto."
-      },
-      {
-        "estructura_id": "EST_02_COLUMNA",
-        "referencia_element_id": "REF_01_E02",
-        "decision": "coincide",
-        "lectura": {
-          "globos_visibles": 45,
-          "exacto": false,
-          "estimado_total": null,
-          "racimos": 11,
-          "globos_por_racimo": 4,
-          "por_tamano": [
-            {
-              "clase": "mediano",
-              "proporcion": 0.95
-            },
-            {
-              "clase": "gigante",
-              "proporcion": 0.05
-            }
-          ],
-          "largo_relativo": null,
-          "alto_relativo": null,
-          "confianza": 0.95
-        },
-        "globos_foto": 44,
-        "globos_antes": 43,
-        "globos_despues": 43,
-        "cambios": [],
-        "motivo": "El plan ya sigue la foto."
+        "consumo_cop": 16738
       }
     ]
   },
@@ -545,19 +1913,32 @@
         "height": 2,
         "length": null
       },
-      "installation_length_m": 4,
+      "installation_length_m": 6.14,
       "density": "media",
       "visual_density": "medium",
-      "visual_scale": "very_large",
+      "visual_scale": "large",
       "cluster_count": 2
     },
     "balloons": [
       {
         "structure_id": "EST_01_COLUMNA",
-        "product_id": "8634255638823",
-        "variant_id": "46594264695079",
+        "product_id": "8634239516967",
+        "variant_id": "46594235269415",
+        "color": "negro",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 22,
+        "waste_reserve": 0,
+        "required_quantity": 22,
+        "waste_adjusted_quantity": 22
+      },
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634250199335",
+        "variant_id": "46594252898599",
         "color": "dorado",
-        "finish": "reflex",
+        "finish": "metal",
         "size_inches": 12,
         "shape": "redondo",
         "design_quantity": 22,
@@ -568,22 +1949,35 @@
       {
         "structure_id": "EST_01_COLUMNA",
         "product_id": "8634239516967",
+        "variant_id": "46594235433255",
+        "color": "negro",
+        "finish": "fashion",
+        "size_inches": 36,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_02_COLUMNA",
+        "product_id": "8634239516967",
         "variant_id": "46594235269415",
         "color": "negro",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 21,
+        "design_quantity": 22,
         "waste_reserve": 0,
-        "required_quantity": 21,
-        "waste_adjusted_quantity": 21
+        "required_quantity": 22,
+        "waste_adjusted_quantity": 22
       },
       {
         "structure_id": "EST_02_COLUMNA",
-        "product_id": "8634255638823",
-        "variant_id": "46594264695079",
+        "product_id": "8634250199335",
+        "variant_id": "46594252898599",
         "color": "dorado",
-        "finish": "reflex",
+        "finish": "metal",
         "size_inches": 12,
         "shape": "redondo",
         "design_quantity": 22,
@@ -594,15 +1988,15 @@
       {
         "structure_id": "EST_02_COLUMNA",
         "product_id": "8634239516967",
-        "variant_id": "46594235269415",
+        "variant_id": "46594235433255",
         "color": "negro",
         "finish": "fashion",
-        "size_inches": 12,
+        "size_inches": 36,
         "shape": "redondo",
-        "design_quantity": 21,
+        "design_quantity": 1,
         "waste_reserve": 0,
-        "required_quantity": 21,
-        "waste_adjusted_quantity": 21
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
       }
     ],
     "special_elements": [],
@@ -610,55 +2004,73 @@
       {
         "product_id": "8634239516967",
         "variant_id": "46594235269415",
-        "design_quantity": 42,
-        "waste_reserve": 7,
-        "required_quantity": 49,
-        "waste_adjusted_quantity": 49,
-        "units_per_package": 50,
-        "package_count": 1,
-        "purchase_quantity": 50,
-        "used": 42,
-        "leftover_inventory": 1,
-        "consumption_cost": 12776,
-        "purchase_cost": 13037,
-        "additional_package_for_waste": false,
-        "operational_surplus": 1,
-        "potential_surplus": 8
-      },
-      {
-        "product_id": "8634255638823",
-        "variant_id": "46594264695079",
         "design_quantity": 44,
-        "waste_reserve": 0,
-        "required_quantity": 44,
-        "waste_adjusted_quantity": 44,
+        "waste_reserve": 2,
+        "required_quantity": 46,
+        "waste_adjusted_quantity": 46,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
         "used": 44,
-        "leftover_inventory": 6,
-        "consumption_cost": 25500,
-        "purchase_cost": 28977,
+        "leftover_inventory": 4,
+        "consumption_cost": 11994,
+        "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 6,
+        "operational_surplus": 4,
+        "potential_surplus": 6
+      },
+      {
+        "product_id": "8634239516967",
+        "variant_id": "46594235433255",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2,
+        "units_per_package": 2,
+        "package_count": 1,
+        "purchase_quantity": 2,
+        "used": 2,
+        "leftover_inventory": 0,
+        "consumption_cost": 9819,
+        "purchase_cost": 9819,
+        "additional_package_for_waste": false,
+        "operational_surplus": 0,
+        "potential_surplus": 0
+      },
+      {
+        "product_id": "8634250199335",
+        "variant_id": "46594252898599",
+        "design_quantity": 44,
+        "waste_reserve": 6,
+        "required_quantity": 50,
+        "waste_adjusted_quantity": 50,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 44,
+        "leftover_inventory": 0,
+        "consumption_cost": 13847,
+        "purchase_cost": 13847,
+        "additional_package_for_waste": false,
+        "operational_surplus": 0,
         "potential_surplus": 6
       }
     ],
     "totals": {
-      "design_quantity": 86,
-      "target_waste_reserve": 7,
-      "covered_waste_reserve": 7,
+      "design_quantity": 90,
+      "target_waste_reserve": 8,
+      "covered_waste_reserve": 8,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 14,
-      "required_quantity": 93,
-      "consumption_cost": 38276,
-      "purchase_cost": 42014,
-      "waste_only_savings_cop": 0,
+      "natural_package_surplus": 12,
+      "required_quantity": 98,
+      "consumption_cost": 35660,
+      "purchase_cost": 36703,
+      "waste_only_savings_cop": 9819,
       "additional_waste_packages": 0,
-      "waste_adjusted_quantity": 93,
-      "purchase_quantity": 100,
-      "operational_surplus": 7,
-      "potential_surplus": 14
+      "waste_adjusted_quantity": 98,
+      "purchase_quantity": 102,
+      "operational_surplus": 4,
+      "potential_surplus": 12
     },
     "warnings": []
   },
@@ -689,14 +2101,14 @@
           "REF_01_E02"
         ],
         "color": "negro",
-        "cantidadNecesaria": 42,
-        "designQuantity": 42,
-        "wasteReserve": 7,
-        "requiredQuantity": 49,
+        "cantidadNecesaria": 44,
+        "designQuantity": 44,
+        "wasteReserve": 2,
+        "requiredQuantity": 46,
         "purchaseQuantity": 50,
-        "used": 42,
-        "leftoverInventory": 1,
-        "consumptionCost": 12776,
+        "used": 44,
+        "leftoverInventory": 4,
+        "consumptionCost": 11994,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -706,11 +2118,55 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 8
+        "sobrante": 6
       },
       {
-        "id": "46594264695079",
-        "productId": "8634255638823",
+        "id": "46594235433255",
+        "productId": "8634239516967",
+        "tamano": "R-36",
+        "tamanoCodigo": "R-36",
+        "diamPulg": 36,
+        "estructuras": [
+          "EST_01_COLUMNA",
+          "EST_02_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01",
+          "REF_01_E02"
+        ],
+        "color": "negro",
+        "cantidadNecesaria": 2,
+        "designQuantity": 2,
+        "wasteReserve": 0,
+        "requiredQuantity": 2,
+        "purchaseQuantity": 2,
+        "used": 2,
+        "leftoverInventory": 0,
+        "consumptionCost": 9819,
+        "purchaseCost": 9819,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594235433255",
+        "nombre": "B2b Globo Latex Redondo Fashion Negro — R-36 / PAQUETE X 2",
+        "precioPaquete": 9819,
+        "unidadesPaquete": 2,
+        "paquetes": 1,
+        "subtotal": 9819,
+        "sobrante": 0
+      },
+      {
+        "id": "46594252898599",
+        "productId": "8634250199335",
         "tamano": "R-12",
         "tamanoCodigo": "R-12",
         "diamPulg": 12,
@@ -735,34 +2191,34 @@
         "color": "dorado",
         "cantidadNecesaria": 44,
         "designQuantity": 44,
-        "wasteReserve": 0,
-        "requiredQuantity": 44,
+        "wasteReserve": 6,
+        "requiredQuantity": 50,
         "purchaseQuantity": 50,
         "used": 44,
-        "leftoverInventory": 6,
-        "consumptionCost": 25500,
-        "purchaseCost": 28977,
+        "leftoverInventory": 0,
+        "consumptionCost": 13847,
+        "purchaseCost": 13847,
         "additionalPackageForWaste": false,
         "disponible": true,
-        "varianteId": "46594264695079",
-        "nombre": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
-        "precioPaquete": 28977,
+        "varianteId": "46594252898599",
+        "nombre": "B2b Globo Latex Redondo Metal Dorado — R-12 / PAQUETE X 50",
+        "precioPaquete": 13847,
         "unidadesPaquete": 50,
         "paquetes": 1,
-        "subtotal": 28977,
+        "subtotal": 13847,
         "sobrante": 6
       }
     ],
-    "total": 42014,
+    "total": 36703,
     "mermaPorcentaje": 8,
-    "purchaseCost": 42014,
-    "consumptionCost": 38276,
-    "targetWasteReserve": 7,
-    "coveredWasteReserve": 7,
-    "leftoverInventory": 7,
+    "purchaseCost": 36703,
+    "consumptionCost": 35660,
+    "targetWasteReserve": 8,
+    "coveredWasteReserve": 8,
+    "leftoverInventory": 4,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "783188a0861762f7128b728a46b014e5208cd0e13f74cebd606dd4ac90add7d2"
+    "plan_hash": "96c7c1651e92ff1152d02264e8fde0a4514df2de6f63d4f619c2c7dd1e2b16e4"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -772,25 +2228,69 @@
       {
         "variant_id": "46594235269415",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 42,
+        "cantidad_necesaria": 44,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 8
+        "sobrante": 6
       },
       {
-        "variant_id": "46594264695079",
+        "variant_id": "46594235433255",
+        "nombre": "R-36 / PAQUETE X 2",
+        "cantidad_necesaria": 2,
+        "unidades_paquete": 2,
+        "paquetes": 1,
+        "precio_paquete": 9819,
+        "subtotal": 9819,
+        "sobrante": 0
+      },
+      {
+        "variant_id": "46594252898599",
         "nombre": "R-12 / PAQUETE X 50",
         "cantidad_necesaria": 44,
         "unidades_paquete": 50,
         "paquetes": 1,
-        "precio_paquete": 28977,
-        "subtotal": 28977,
+        "precio_paquete": 13847,
+        "subtotal": 13847,
         "sobrante": 6
       }
     ],
-    "total": 42014
+    "total": 36703
   },
-  "descartadas": []
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E01",
+      "tamanos": "un_solo_tamano",
+      "confianza": 1
+    },
+    {
+      "referencia_element_id": "REF_01_E02",
+      "tamanos": "un_solo_tamano",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [],
+  "remates": [
+    {
+      "estructura_id": "EST_01_COLUMNA",
+      "tamano": 36,
+      "cantidad": 1,
+      "color": "negro",
+      "tipo": "globo"
+    },
+    {
+      "estructura_id": "EST_02_COLUMNA",
+      "tamano": 36,
+      "cantidad": 1,
+      "color": "negro",
+      "tipo": "globo"
+    }
+  ],
+  "colores_cliente": {
+    "46594235269415": "negro",
+    "46594235433255": "negro",
+    "46594252898599": "dorado"
+  },
+  "extras_foto": []
 }

@@ -50,6 +50,8 @@ export function TablaGlobosPieza({ titulo, oficial, tabla, repeticiones = 1 }: {
   const reducido = useReducedMotion();
   const conTotal = tabla.columnas.length > 1;
   const conPie = tabla.filas.length > 1;
+  // Con productos Sempertex, cada fila nombra el globo real («Reflex Dorado»), no un color genérico.
+  const conProductos = tabla.filas.some((fila) => fila.producto);
   if (tabla.filas.length === 0) return null;
   return (
     <section aria-labelledby={idTitulo}>
@@ -67,45 +69,47 @@ export function TablaGlobosPieza({ titulo, oficial, tabla, repeticiones = 1 }: {
           className="overflow-x-auto overscroll-x-contain rounded-xl ring-1 ring-borde-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50"
         >
           <table className="w-max min-w-full border-separate border-spacing-0 text-sm tabular-nums">
-            <caption className="sr-only">Globos de {titulo} por color y tamaño</caption>
+            <caption className="sr-only">{conProductos ? `Globos Sempertex de ${titulo} por producto y tamaño` : `Globos de ${titulo} por color y tamaño`}</caption>
             <thead>
               <tr className="text-xs text-texto-suave">
-                <th scope="col" className={`sticky left-0 z-[1] bg-superficie-suave px-2.5 py-1.5 text-left font-medium ${desborde.desplazada ? "shadow-[4px_0_6px_-4px_var(--sombra)]" : ""}`}>Color</th>
+                <th scope="col" className={`sticky left-0 z-[1] bg-superficie-suave px-2 py-1.5 text-left font-medium sm:px-2.5 ${desborde.desplazada ? "shadow-[4px_0_6px_-4px_var(--sombra)]" : ""}`}>{conProductos ? "Globo Sempertex" : "Color"}</th>
                 {tabla.columnas.map((columna) => (
-                  <th key={columna.clave} scope="col" className="min-w-12 bg-superficie-suave px-2 py-1.5 text-right font-medium whitespace-nowrap">
+                  <th key={columna.clave} scope="col" className="min-w-10 bg-superficie-suave px-1.5 py-1.5 text-right font-medium whitespace-nowrap sm:min-w-12 sm:px-2">
                     <span aria-hidden>{columna.etiqueta}</span>
                     <span className="sr-only">{columna.descripcion}</span>
                   </th>
                 ))}
-                {conTotal && <th scope="col" className="min-w-12 bg-acento-suave/60 px-2.5 py-1.5 text-right font-semibold text-texto">Total</th>}
+                {conTotal && <th scope="col" className="min-w-10 bg-acento-suave/60 px-2 py-1.5 text-right font-semibold text-texto sm:min-w-12 sm:px-2.5">Total</th>}
               </tr>
             </thead>
             <motion.tbody variants={grupoConRitmo(0.04)} initial="oculto" animate="visible">
               {tabla.filas.map((fila) => (
                 <motion.tr key={fila.clave} variants={hijoEscalonado}>
-                  <th scope="row" className={`sticky left-0 z-[1] border-t border-borde-suave bg-superficie px-2.5 py-1.5 text-left font-normal ${desborde.desplazada ? "shadow-[4px_0_6px_-4px_var(--sombra)]" : ""}`}>
+                  <th scope="row" className={`sticky left-0 z-[1] border-t border-borde-suave bg-superficie px-2 py-1.5 text-left font-normal sm:px-2.5 ${desborde.desplazada ? "shadow-[4px_0_6px_-4px_var(--sombra)]" : ""}`}>
                     <span className="flex items-center gap-1.5">
                       <GloboMiniatura hex={fila.hex} acabado={fila.acabado} pulgadas={fila.pulgadas} tamano={20} className="shrink-0" />
-                      <span className="max-w-[7.5rem] truncate text-texto" title={fila.etiqueta}>{fila.etiqueta}</span>
+                      {fila.producto
+                        ? <span className="line-clamp-2 max-w-[5.75rem] text-[0.8125rem] leading-tight text-texto sm:max-w-[9rem]" title={`Sempertex ${fila.producto}`}>{fila.producto}</span>
+                        : <span className="max-w-[7.5rem] truncate text-texto" title={fila.etiqueta}>{fila.etiqueta}</span>}
                     </span>
                   </th>
                   {fila.celdas.map((celda, posicion) => (
-                    <td key={tabla.columnas[posicion]!.clave} className="border-t border-borde-suave px-2 py-1.5 text-right text-texto">
+                    <td key={tabla.columnas[posicion]!.clave} className="border-t border-borde-suave px-1.5 py-1.5 text-right text-texto sm:px-2">
                       {celda > 0 ? <CifraAnimada valor={celda} /> : <><span aria-hidden className="text-texto-suave/50">·</span><span className="sr-only">0</span></>}
                     </td>
                   ))}
-                  {conTotal && <td className="border-t border-borde-suave bg-acento-suave/40 px-2.5 py-1.5 text-right font-semibold text-texto"><CifraAnimada valor={fila.total} /></td>}
+                  {conTotal && <td className="border-t border-borde-suave bg-acento-suave/40 px-2 py-1.5 text-right font-semibold sm:px-2.5 text-texto"><CifraAnimada valor={fila.total} /></td>}
                 </motion.tr>
               ))}
             </motion.tbody>
             {conPie && (
               <tfoot>
                 <tr className="font-semibold text-texto">
-                  <th scope="row" className={`sticky left-0 z-[1] border-t border-borde bg-superficie-suave px-2.5 py-1.5 text-left ${desborde.desplazada ? "shadow-[4px_0_6px_-4px_var(--sombra)]" : ""}`}>Total</th>
+                  <th scope="row" className={`sticky left-0 z-[1] border-t border-borde bg-superficie-suave px-2 py-1.5 text-left sm:px-2.5 ${desborde.desplazada ? "shadow-[4px_0_6px_-4px_var(--sombra)]" : ""}`}>Total</th>
                   {tabla.totalesColumna.map((valor, posicion) => (
-                    <td key={tabla.columnas[posicion]!.clave} className="border-t border-borde bg-superficie-suave px-2 py-1.5 text-right"><CifraAnimada valor={valor} /></td>
+                    <td key={tabla.columnas[posicion]!.clave} className="border-t border-borde bg-superficie-suave px-1.5 py-1.5 text-right sm:px-2"><CifraAnimada valor={valor} /></td>
                   ))}
-                  {conTotal && <td className="border-t border-borde bg-acento-suave/60 px-2.5 py-1.5 text-right"><CifraAnimada valor={tabla.total} /></td>}
+                  {conTotal && <td className="border-t border-borde bg-acento-suave/60 px-2 py-1.5 text-right sm:px-2.5"><CifraAnimada valor={tabla.total} /></td>}
                 </tr>
               </tfoot>
             )}

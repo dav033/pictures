@@ -16,6 +16,7 @@ import { peticionVistaColumna } from "@/components/plan/columna/vista-columna";
 import { peticionVistaColumnaOrganica } from "@/components/plan/columna-organica/vista-columna-organica";
 import { peticionVistaGuirnaldaOrganica } from "@/components/plan/guirnalda-organica/vista-guirnalda-organica";
 import type { ColorLeyenda } from "@/components/plan/patron/leyenda";
+import { VozEditorProvider } from "@/components/plan/motor/voz-editor";
 import type { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { ArmadoArcoV1Schema, type ArmadoArcoV1 } from "@/lib/plan/armado-arco";
 import { ArmadoArcoOrganicoV1Schema, type ArmadoArcoOrganicoV1 } from "@/lib/plan/armado-arco-organico";
@@ -240,7 +241,7 @@ export function ModificarPieza({ plan, estructuraId, onCerrar, onPlanAjustado, o
   if (!enNavegador) return null;
   return createPortal(
     <AnimatePresence>
-      {estructuraId && <Hoja key={estructuraId} plan={plan} estructuraId={estructuraId} onCerrar={onCerrar} onPlanAjustado={onPlanAjustado} onIrAAjustar={onIrAAjustar} ocupado={ocupado} />}
+      {estructuraId && <Hoja key={`${estructuraId}-${plan.plan_hash}`} plan={plan} estructuraId={estructuraId} onCerrar={onCerrar} onPlanAjustado={onPlanAjustado} onIrAAjustar={onIrAAjustar} ocupado={ocupado} />}
     </AnimatePresence>,
     document.body,
   );
@@ -249,6 +250,7 @@ export function ModificarPieza({ plan, estructuraId, onCerrar, onPlanAjustado, o
 function Hoja({ plan, estructuraId, onCerrar, onPlanAjustado, onIrAAjustar, ocupado }: Omit<Props, "estructuraId"> & { estructuraId: string }) {
   const idTitulo = useId();
   const tituloRef = useRef<HTMLHeadingElement>(null);
+  const cuerpoRef = useRef<HTMLDivElement>(null);
   // El plan con que se abrió: el editor trabaja sobre él aunque la tarjeta cambie detrás; guardar lo reemplaza.
   const [base] = useState(plan);
   const declarada = base.plan.estructuras.find((estructura) => estructura.estructura_id === estructuraId);
@@ -271,7 +273,7 @@ function Hoja({ plan, estructuraId, onCerrar, onPlanAjustado, onIrAAjustar, ocup
     const desborde = document.body.style.overflow;
     desbordeRef.current = desborde;
     document.body.style.overflow = "hidden";
-    tituloRef.current?.focus();
+    tituloRef.current?.focus({ preventScroll: true });
     registrar("pieza.modificar_abrir", { estructura_id: estructuraId, campo: motor?.tipo === "motor" ? motor.campo : null, receta: motor?.tipo === "motor" ? motor.armado === null : null, plan_hash: base.plan_hash });
     const alTeclear = (evento: KeyboardEvent) => { if (evento.key === "Escape") onCerrar(); };
     window.addEventListener("keydown", alTeclear);
@@ -288,7 +290,8 @@ function Hoja({ plan, estructuraId, onCerrar, onPlanAjustado, onIrAAjustar, ocup
     registrar("pieza.modificar_guardar", { estructura_id: estructuraId, accion: edicion.accion, plan_hash_base: base.plan_hash });
     try {
       const nuevo = await aplicarEnServidor(base, edicion);
-      const descripcion = declarada ? `nueva forma para ${piezaConArticulo(declarada)}` : "nueva forma de la pieza";
+      // «Cambios en…»: guardar puede ser la forma, el tamaño o el peso de un color (antes decía «nueva forma» siempre).
+      const descripcion = declarada ? `cambios en ${piezaConArticulo(declarada)}` : "cambios en la pieza";
       onPlanAjustado(nuevo.plan, nuevo.cotizacion, { descripcion, baseHash: base.plan_hash });
       registrar("pieza.modificada", { estructura_id: estructuraId, accion: edicion.accion, plan_hash: nuevo.plan.plan_hash });
       return null;
@@ -333,8 +336,8 @@ function Hoja({ plan, estructuraId, onCerrar, onPlanAjustado, onIrAAjustar, ocup
         <header className="flex items-start gap-3 border-b border-borde-suave px-4 pb-3 pt-4 sm:px-5">
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wide text-acento">Modificar pieza</p>
-            <h2 id={idTitulo} ref={tituloRef} tabIndex={-1} className="text-lg font-semibold leading-snug text-texto focus:outline-none">{nombre}</h2>
-            <p className="mt-0.5 text-sm text-texto-suave">Cambia la forma, el alto o los colores y mira el dibujo al momento. Al guardar, recalculo los globos de tu plan.</p>
+            <h2 id={idTitulo} ref={tituloRef} tabIndex={-1} style={{ outline: "none" }} className="text-lg font-semibold leading-snug text-texto focus:outline-none">{nombre}</h2>
+            <p className="mt-0.5 text-sm text-texto-suave">Cambia la forma, el tamaño o los colores y mira el dibujo al momento. Al guardar, recalculo tus globos y el precio.</p>
           </div>
           <motion.button
             type="button"
@@ -347,12 +350,15 @@ function Hoja({ plan, estructuraId, onCerrar, onPlanAjustado, onIrAAjustar, ocup
             <X className="size-5" aria-hidden />
           </motion.button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-5 sm:py-4">
-          {editor ?? <p className="rounded-2xl bg-superficie-suave px-3 py-3 text-sm text-texto">Esta pieza no se puede modificar aquí. Pídelo con «Cambiar algo».</p>}
+        {/* UN solo desplazamiento (el de la hoja): los editores hablan con la voz del cliente y no traen su propia caja con scroll. */}
+        <div ref={cuerpoRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-5 sm:py-4">
+          <VozEditorProvider value="cliente">
+            {editor ?? <p className="rounded-2xl bg-superficie-suave px-3 py-3 text-sm text-texto">Esta pieza no se puede modificar aquí. Pídelo con «Cambiar algo».</p>}
+          </VozEditorProvider>
         </div>
         {onIrAAjustar && (
           <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-borde-suave px-4 py-2.5 sm:px-5">
-            <p className="text-xs text-texto-suave">¿Más o menos de un color, o quitar la pieza?</p>
+            <p className="text-xs text-texto-suave">¿Cuántos globos de cada color, otro globo del catálogo o medidas exactas?</p>
             <button type="button" onClick={onIrAAjustar} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-acento hover:bg-acento-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50">
               <SlidersHorizontal className="size-4" aria-hidden />Ajustar mi plan
             </button>

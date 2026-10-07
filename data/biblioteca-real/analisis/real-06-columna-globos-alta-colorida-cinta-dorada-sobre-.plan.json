@@ -1,6 +1,8 @@
 {
   "estado": "resuelto",
   "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "Columna por bandas de 4: rojo, azul rey, verde, naranja, amarillo, verde, verde, amarillo, rojo, azul rey y celeste arriba; hay dos azules distintos.",
+  "descartadas": [],
   "plan_declarado": {
     "plan_version": "1.0",
     "plan_id": "d8262d5c-3096-5763-9180-663d2617c7dc",
@@ -8,9 +10,9 @@
       "titulo": "real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
-        "azul",
-        "rojo",
         "verde",
+        "rojo",
+        "azul",
         "amarillo",
         "naranja"
       ],
@@ -23,7 +25,7 @@
     "estructuras": [
       {
         "estructura_id": "EST_01_COLUMNA",
-        "nombre": "Columna de globos",
+        "nombre": "Columna",
         "tipo": "columna",
         "rol_escena": "focal",
         "ubicacion": "lateral_izquierdo",
@@ -36,48 +38,55 @@
         "mezcla": "clasica",
         "materiales": [
           {
-            "product_id": "8634239385895",
-            "variant_id": "46594233925927",
-            "color": "azul",
-            "participacion": 0.30000000000000004,
+            "product_id": "8634233618727",
+            "variant_id": "46594211840295",
+            "color": "verde",
+            "participacion": 0.273,
             "rol_material": "principal"
           },
           {
             "product_id": "8634239942951",
             "variant_id": "46594236416295",
             "color": "rojo",
-            "participacion": 0.20000000000000004,
+            "participacion": 0.182,
             "rol_material": "secundario"
           },
           {
-            "product_id": "8634233618727",
-            "variant_id": "46594211840295",
-            "color": "verde",
-            "participacion": 0.20000000000000004,
+            "product_id": "8634239320359",
+            "variant_id": "46594232582439",
+            "color": "azul",
+            "participacion": 0.182,
             "rol_material": "acento"
           },
           {
             "product_id": "8634239287591",
             "variant_id": "46594231992615",
             "color": "amarillo",
-            "participacion": 0.20000000000000004,
+            "participacion": 0.182,
             "rol_material": "acento"
           },
           {
             "product_id": "8634238599463",
             "variant_id": "46594228715815",
             "color": "naranja",
-            "participacion": 0.10000000000000002,
+            "participacion": 0.091,
+            "rol_material": "acento"
+          },
+          {
+            "product_id": "8634233979175",
+            "variant_id": "46594216886567",
+            "color": "azul",
+            "participacion": 0.091,
             "rol_material": "acento"
           }
         ],
-        "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+        "porque": "Columna arcoíris de 11 anillos de un color cada uno; el último, celeste, corona la columna.",
         "referencia_element_id": "REF_01_E01",
         "estructura_oficial": "columna",
         "colores_referencia": [
-          "azul",
-          "rojo",
           "verde",
+          "rojo",
+          "azul",
           "amarillo",
           "naranja"
         ]
@@ -85,7 +94,8 @@
     ],
     "supuestos": [
       "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06).",
+      "La cinta dorada en espiral no es un globo y no tiene producto en el catálogo de globos."
     ],
     "referencia_omitida": []
   },
@@ -97,9 +107,9 @@
         "titulo": "real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
-          "azul",
-          "rojo",
           "verde",
+          "rojo",
+          "azul",
           "amarillo",
           "naranja"
         ],
@@ -112,7 +122,7 @@
       "estructuras": [
         {
           "estructura_id": "EST_01_COLUMNA",
-          "nombre": "Columna de globos",
+          "nombre": "Columna",
           "tipo": "columna",
           "rol_escena": "focal",
           "ubicacion": "lateral_izquierdo",
@@ -125,60 +135,211 @@
           "mezcla": "clasica",
           "materiales": [
             {
-              "product_id": "8634239385895",
-              "variant_id": "46594233925927",
-              "color": "azul",
-              "participacion": 0.30000000000000004,
+              "product_id": "8634233618727",
+              "variant_id": "46594211840295",
+              "color": "verde",
+              "participacion": 0.273,
               "rol_material": "principal"
             },
             {
               "product_id": "8634239942951",
               "variant_id": "46594236416295",
               "color": "rojo",
-              "participacion": 0.20000000000000004,
+              "participacion": 0.182,
               "rol_material": "secundario"
             },
             {
-              "product_id": "8634233618727",
-              "variant_id": "46594211840295",
-              "color": "verde",
-              "participacion": 0.20000000000000004,
+              "product_id": "8634239320359",
+              "variant_id": "46594232582439",
+              "color": "azul",
+              "participacion": 0.182,
               "rol_material": "acento"
             },
             {
               "product_id": "8634239287591",
               "variant_id": "46594231992615",
               "color": "amarillo",
-              "participacion": 0.20000000000000004,
+              "participacion": 0.182,
               "rol_material": "acento"
             },
             {
               "product_id": "8634238599463",
               "variant_id": "46594228715815",
               "color": "naranja",
-              "participacion": 0.10000000000000002,
+              "participacion": 0.091,
+              "rol_material": "acento"
+            },
+            {
+              "product_id": "8634233979175",
+              "variant_id": "46594216886567",
+              "color": "azul",
+              "participacion": 0.091,
               "rol_material": "acento"
             }
           ],
-          "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+          "porque": "Columna arcoíris de 11 anillos de un color cada uno; el último, celeste, corona la columna.",
           "referencia_element_id": "REF_01_E01",
           "estructura_oficial": "columna",
           "colores_referencia": [
-            "azul",
-            "rojo",
             "verde",
+            "rojo",
+            "azul",
             "amarillo",
             "naranja"
-          ]
+          ],
+          "armado_columna": {
+            "version": "armado-columna.v1",
+            "origen": "referencia",
+            "modo": "capas",
+            "patron": "ombre",
+            "opciones": {
+              "suavidad": 0.6,
+              "invertir": 0
+            },
+            "cuerpo": {
+              "alto_m": 2,
+              "globos_capa": 4,
+              "abajo": 12,
+              "arriba": 12,
+              "escalonado": true,
+              "base": true
+            },
+            "inflado": {
+              "inflado": 1,
+              "tamano": 1.14,
+              "compresion": 0.8,
+              "variacion_tam": 0,
+              "variacion_tono": 0.03,
+              "desorden": 0,
+              "semilla": 7
+            },
+            "remate": {
+              "tipo": "ninguno",
+              "tamano": 24,
+              "cantidad": 5,
+              "foil_m": 0.7,
+              "material": 0
+            },
+            "capas": [
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  2,
+                  2,
+                  2,
+                  2
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  4,
+                  4,
+                  4,
+                  4
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  3,
+                  3,
+                  3,
+                  3
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  3,
+                  3,
+                  3,
+                  3
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  2,
+                  2,
+                  2,
+                  2
+                ]
+              },
+              {
+                "tamano": 12,
+                "materiales": [
+                  5,
+                  5,
+                  5,
+                  5
+                ]
+              }
+            ],
+            "materiales": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
         }
       ],
       "supuestos": [
         "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-        "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+        "Los tamaños son los que se ven en la foto (auditoría 2026-10-06).",
+        "La cinta dorada en espiral no es un globo y no tiene producto en el catálogo de globos."
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "a80ff89768d57d03fe76df684dad5a60893858a3388f6f7cb8b30f5bf24f9f87",
+    "plan_hash": "b281960e0b30f20a43eb4dd3a7aa2479204d8f68ac70a848a475a507936eeb56",
     "request_id": "a995ac2f-8987-57ff-87ad-90dd4eb83b44",
     "compras": [
       {
@@ -194,20 +355,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "verde",
-        "unidades_necesarias": 9,
-        "design_quantity": 9,
+        "unidades_necesarias": 12,
+        "design_quantity": 12,
         "waste_reserve": 0,
-        "required_quantity": 9,
-        "unidades_con_merma": 9,
+        "required_quantity": 12,
+        "unidades_con_merma": 12,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 9,
-        "leftover_inventory": 41,
-        "consumption_cost": 2347,
+        "used": 12,
+        "leftover_inventory": 38,
+        "consumption_cost": 3129,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 41,
+        "sobrante": 38,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -220,6 +381,46 @@
           }
         ],
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fashion_Verde_-_Green_030.jpg?v=1763138390"
+      },
+      {
+        "variant_id": "46594216886567",
+        "product_id": "8634233979175",
+        "sku": "B2B-20000755",
+        "sku_original": "B2B-20000755",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594216886567",
+        "inventory_quantity": 997215,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Azul Caribe — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "azul",
+        "unidades_necesarias": 4,
+        "design_quantity": 4,
+        "waste_reserve": 4,
+        "required_quantity": 8,
+        "unidades_con_merma": 8,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 42,
+        "consumption_cost": 2086,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 46,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Caribe_-_Caribbean_Blue_038.jpg?v=1763140007"
       },
       {
         "variant_id": "46594228715815",
@@ -236,15 +437,15 @@
         "color": "naranja",
         "unidades_necesarias": 4,
         "design_quantity": 4,
-        "waste_reserve": 4,
-        "required_quantity": 8,
-        "unidades_con_merma": 8,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "unidades_con_merma": 4,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
         "used": 4,
-        "leftover_inventory": 42,
-        "consumption_cost": 2086,
+        "leftover_inventory": 46,
+        "consumption_cost": 1043,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
         "sobrante": 46,
@@ -302,34 +503,34 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Amarillo_-_Yellow_020.jpg?v=1763047205"
       },
       {
-        "variant_id": "46594233925927",
-        "product_id": "8634239385895",
-        "sku": "B2B-20000758",
-        "sku_original": "B2B-20000758",
+        "variant_id": "46594232582439",
+        "product_id": "8634239320359",
+        "sku": "B2B-20000761",
+        "sku_original": "B2B-20000761",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
-        "inventory_quantity": 984338,
+        "source_variant_id": "gid://shopify/ProductVariant/46594232582439",
+        "inventory_quantity": 967776,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+        "titulo": "B2b Globo Latex Redondo Fashion Azul Rey — R-12 / PAQUETE X 50",
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "azul",
-        "unidades_necesarias": 13,
-        "design_quantity": 13,
+        "unidades_necesarias": 8,
+        "design_quantity": 8,
         "waste_reserve": 0,
-        "required_quantity": 13,
-        "unidades_con_merma": 13,
+        "required_quantity": 8,
+        "unidades_con_merma": 8,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 13,
-        "leftover_inventory": 37,
-        "consumption_cost": 3390,
-        "purchase_cost": 13037,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 2236,
+        "purchase_cost": 13974,
         "additional_package_for_waste": false,
-        "sobrante": 37,
-        "precio_paquete": 13037,
-        "subtotal": 13037,
+        "sobrante": 42,
+        "precio_paquete": 13974,
+        "subtotal": 13974,
         "estructuras": [
           "EST_01_COLUMNA"
         ],
@@ -339,7 +540,7 @@
             "id": "EST_01_COLUMNA"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Rey_-_Royal_Blue_041.jpg?v=1763140355"
       },
       {
         "variant_id": "46594236416295",
@@ -354,20 +555,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "rojo",
-        "unidades_necesarias": 9,
-        "design_quantity": 9,
+        "unidades_necesarias": 8,
+        "design_quantity": 8,
         "waste_reserve": 0,
-        "required_quantity": 9,
-        "unidades_con_merma": 9,
+        "required_quantity": 8,
+        "unidades_con_merma": 8,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 9,
-        "leftover_inventory": 41,
-        "consumption_cost": 2347,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 2086,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 41,
+        "sobrante": 42,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -384,17 +585,17 @@
     ],
     "totales": {
       "globos_por_tamano": {
-        "R-12": 43
+        "R-12": 44
       },
-      "total_unidades": 43,
-      "total_cop": 66122,
-      "design_quantity": 43,
+      "total_unidades": 44,
+      "total_cop": 80096,
+      "design_quantity": 44,
       "target_waste_reserve": 4,
       "covered_waste_reserve": 4,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 207,
-      "purchase_cost": 66122,
-      "consumption_cost": 12406,
+      "natural_package_surplus": 256,
+      "purchase_cost": 80096,
+      "consumption_cost": 12816,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "ahorro_paquetes_cop": 0,
@@ -411,20 +612,557 @@
     "sin_cobertura": [],
     "advertencias": [
       "sobrante_alto:46594211840295",
+      "sobrante_alto:46594216886567",
       "sobrante_alto:46594228715815",
       "sobrante_alto:46594231992615",
-      "sobrante_alto:46594233925927",
+      "sobrante_alto:46594232582439",
       "sobrante_alto:46594236416295"
+    ],
+    "armados_columna": [
+      {
+        "version": "armado-columna.v1",
+        "globos": [
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 2.2669499999999996,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 5,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 1.8402299999999998,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 1.4135099999999998,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 0.98679,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 3,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 0.56007,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": 2.0258814052456678e-17,
+            "y": 0.13335,
+            "z": -0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 2,
+            "prof": -1
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 2.05359,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 2,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 1.6268699999999998,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 3,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 1.2001499999999998,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 0.77343,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 4,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": -0.11697368421052634,
+            "y": 0.34670999999999996,
+            "z": -0.11697368421052637,
+            "r": 0.13335,
+            "material": 2,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 2,
+            "prof": -0.7071067811865477
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 2.05359,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 2,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 1.6268699999999998,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 3,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 1.2001499999999998,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 0.77343,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 4,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": 0.11697368421052635,
+            "y": 0.34670999999999996,
+            "z": -0.11697368421052634,
+            "r": 0.13335,
+            "material": 2,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 1,
+            "prof": -0.7071067811865475
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 2.2669499999999996,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 5,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 1.8402299999999998,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 1.4135099999999998,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 0.98679,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 3,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 0.56007,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": -0.16542577065127392,
+            "y": 0.13335,
+            "z": -3.038822107868501e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 3,
+            "prof": -1.8369701987210294e-16
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 2.2669499999999996,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 5,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 1.8402299999999998,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 1.4135099999999998,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 0.98679,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 3,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 0.56007,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": 0.16542577065127392,
+            "y": 0.13335,
+            "z": 1.0129407026228339e-17,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 1,
+            "prof": 6.123233995736766e-17
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 2.05359,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 2,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 1.6268699999999998,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 3,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 1.2001499999999998,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 0.77343,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 4,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": -0.11697368421052637,
+            "y": 0.34670999999999996,
+            "z": 0.11697368421052631,
+            "r": 0.13335,
+            "material": 2,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 3,
+            "prof": 0.7071067811865474
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 2.05359,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 2,
+            "tamano": 12,
+            "capa": 9,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 1.6268699999999998,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 3,
+            "tamano": 12,
+            "capa": 7,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 1.2001499999999998,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 5,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 0.77343,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 4,
+            "tamano": 12,
+            "capa": 3,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0.11697368421052634,
+            "y": 0.34670999999999996,
+            "z": 0.11697368421052635,
+            "r": 0.13335,
+            "material": 2,
+            "tamano": 12,
+            "capa": 1,
+            "puesto": 0,
+            "prof": 0.7071067811865476
+          },
+          {
+            "x": 0,
+            "y": 2.2669499999999996,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 5,
+            "tamano": 12,
+            "capa": 10,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 1.8402299999999998,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 8,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 1.4135099999999998,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 6,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 0.98679,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 3,
+            "tamano": 12,
+            "capa": 4,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 0.56007,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 0,
+            "tamano": 12,
+            "capa": 2,
+            "puesto": 0,
+            "prof": 1
+          },
+          {
+            "x": 0,
+            "y": 0.13335,
+            "z": 0.16542577065127392,
+            "r": 0.13335,
+            "material": 1,
+            "tamano": 12,
+            "capa": 0,
+            "puesto": 0,
+            "prof": 1
+          }
+        ],
+        "capas": 11,
+        "alto_cuerpo_m": 2.4002999999999997,
+        "alto_total_m": 2.4602999999999997,
+        "diametro_m": 0.5975515413025478,
+        "remate_alto_m": 0,
+        "conteo": [
+          {
+            "material": 0,
+            "tamano": 12,
+            "cantidad": 12
+          },
+          {
+            "material": 1,
+            "tamano": 12,
+            "cantidad": 8
+          },
+          {
+            "material": 2,
+            "tamano": 12,
+            "cantidad": 8
+          },
+          {
+            "material": 3,
+            "tamano": 12,
+            "cantidad": 8
+          },
+          {
+            "material": 4,
+            "tamano": 12,
+            "cantidad": 4
+          },
+          {
+            "material": 5,
+            "tamano": 12,
+            "cantidad": 4
+          }
+        ],
+        "remate": {
+          "descripcion": "Sin remate",
+          "globos": []
+        },
+        "avisos": [],
+        "estructura_id": "EST_01_COLUMNA",
+        "prompt_gemini": "COLUMN ASSEMBLY - a free-standing balloon column about 2.5 m tall and 0.6 m across, standing on a weighted base plate at its foot, built as a stack of 11 rings of 4 round 12-inch latex balloons each, every ring turned half a step over the one below so its balloons nest in the gaps of the ring beneath, its rings colored one by one from the bottom up, in green, red, blue, yellow, orange and blue. The column ends flush at its top ring: that last ring of balloons is the highest point of the piece and its top is left bare, with no topper balloon, cluster, star or heart above it. Keep the column the same thickness all the way up and that color layout readable from the base to the top, and make the whole column only of round latex balloons: no ribbons, streamers or fabric.",
+        "prompt_lora": "stacked in rings of four round balloons, each ring nested into the gaps of the one below, its rings colored one by one from the bottom up, in a mix of five colors, ending flush at its top ring, the last ring of balloons level and bare on top"
+      }
     ],
     "estructuras": [
       {
         "estructura_id": "EST_01_COLUMNA",
-        "nombre": "Columna de globos",
+        "nombre": "Columna",
         "tipo": "columna",
         "ubicacion": "lateral_izquierdo",
         "repeticiones": 1,
-        "eje_m": 2,
-        "total_unidades": 43,
+        "eje_m": 2.46,
+        "total_unidades": 44,
         "lineas": [
           {
             "estructura_id": "EST_01_COLUMNA",
@@ -432,23 +1170,23 @@
               "kind": "estructura",
               "id": "EST_01_COLUMNA"
             },
-            "product_id": "8634239385895",
-            "variant_id": "46594233925927",
-            "sku": "B2B-20000758",
-            "sku_original": "B2B-20000758",
+            "product_id": "8634233618727",
+            "variant_id": "46594211840295",
+            "sku": "B2B-20000745",
+            "sku_original": "B2B-20000745",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
-            "inventory_quantity": 984338,
+            "source_variant_id": "gid://shopify/ProductVariant/46594211840295",
+            "inventory_quantity": 995853,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
-            "color": "azul",
+            "titulo": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50",
+            "color": "verde",
             "tamano_codigo": "R-12",
             "diam_pulg": 12,
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 13,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141",
+            "unidades": 12,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fashion_Verde_-_Green_030.jpg?v=1763138390",
             "sustitucion": null
           },
           {
@@ -472,7 +1210,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 9,
+            "unidades": 8,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149",
             "sustitucion": null
           },
@@ -482,23 +1220,23 @@
               "kind": "estructura",
               "id": "EST_01_COLUMNA"
             },
-            "product_id": "8634233618727",
-            "variant_id": "46594211840295",
-            "sku": "B2B-20000745",
-            "sku_original": "B2B-20000745",
+            "product_id": "8634239320359",
+            "variant_id": "46594232582439",
+            "sku": "B2B-20000761",
+            "sku_original": "B2B-20000761",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594211840295",
-            "inventory_quantity": 995853,
+            "source_variant_id": "gid://shopify/ProductVariant/46594232582439",
+            "inventory_quantity": 967776,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50",
-            "color": "verde",
+            "titulo": "B2b Globo Latex Redondo Fashion Azul Rey — R-12 / PAQUETE X 50",
+            "color": "azul",
             "tamano_codigo": "R-12",
             "diam_pulg": 12,
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 9,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fashion_Verde_-_Green_030.jpg?v=1763138390",
+            "unidades": 8,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Rey_-_Royal_Blue_041.jpg?v=1763140355",
             "sustitucion": null
           },
           {
@@ -550,13 +1288,38 @@
             "unidades": 4,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Naranja_-_Orange_061.jpg?v=1763150269",
             "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_COLUMNA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_COLUMNA"
+            },
+            "product_id": "8634233979175",
+            "variant_id": "46594216886567",
+            "sku": "B2B-20000755",
+            "sku_original": "B2B-20000755",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594216886567",
+            "inventory_quantity": 997215,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Azul Caribe — R-12 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 4,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Caribe_-_Caribbean_Blue_038.jpg?v=1763140007",
+            "sustitucion": null
           }
         ],
         "mezcla_real": [
           {
             "diam_pulg": 12,
             "forma": "redondo",
-            "unidades": 43,
+            "unidades": 44,
             "pct": 100
           }
         ],
@@ -566,35 +1329,7 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_COLUMNA",
-        "consumo_cop": 11362
-      }
-    ],
-    "conteos_referencia": [
-      {
-        "estructura_id": "EST_01_COLUMNA",
-        "referencia_element_id": "REF_01_E01",
-        "decision": "coincide",
-        "lectura": {
-          "globos_visibles": 32,
-          "exacto": false,
-          "estimado_total": 40,
-          "racimos": 10,
-          "globos_por_racimo": 4,
-          "por_tamano": [
-            {
-              "clase": "mediano",
-              "proporcion": 1
-            }
-          ],
-          "largo_relativo": null,
-          "alto_relativo": null,
-          "confianza": 0.95
-        },
-        "globos_foto": 40,
-        "globos_antes": 43,
-        "globos_despues": 43,
-        "cambios": [],
-        "motivo": "El plan ya sigue la foto."
+        "consumo_cop": 11772
       }
     ]
   },
@@ -608,7 +1343,7 @@
         "height": 2,
         "length": null
       },
-      "installation_length_m": 2,
+      "installation_length_m": 2.46,
       "density": "media",
       "visual_density": "medium",
       "visual_scale": "medium",
@@ -617,16 +1352,16 @@
     "balloons": [
       {
         "structure_id": "EST_01_COLUMNA",
-        "product_id": "8634239385895",
-        "variant_id": "46594233925927",
-        "color": "azul",
+        "product_id": "8634233618727",
+        "variant_id": "46594211840295",
+        "color": "verde",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 13,
+        "design_quantity": 12,
         "waste_reserve": 0,
-        "required_quantity": 13,
-        "waste_adjusted_quantity": 13
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12
       },
       {
         "structure_id": "EST_01_COLUMNA",
@@ -636,23 +1371,23 @@
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 9,
+        "design_quantity": 8,
         "waste_reserve": 0,
-        "required_quantity": 9,
-        "waste_adjusted_quantity": 9
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8
       },
       {
         "structure_id": "EST_01_COLUMNA",
-        "product_id": "8634233618727",
-        "variant_id": "46594211840295",
-        "color": "verde",
+        "product_id": "8634239320359",
+        "variant_id": "46594232582439",
+        "color": "azul",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 9,
+        "design_quantity": 8,
         "waste_reserve": 0,
-        "required_quantity": 9,
-        "waste_adjusted_quantity": 9
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8
       },
       {
         "structure_id": "EST_01_COLUMNA",
@@ -679,6 +1414,19 @@
         "waste_reserve": 0,
         "required_quantity": 4,
         "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_01_COLUMNA",
+        "product_id": "8634233979175",
+        "variant_id": "46594216886567",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
       }
     ],
     "special_elements": [],
@@ -686,24 +1434,24 @@
       {
         "product_id": "8634233618727",
         "variant_id": "46594211840295",
-        "design_quantity": 9,
+        "design_quantity": 12,
         "waste_reserve": 0,
-        "required_quantity": 9,
-        "waste_adjusted_quantity": 9,
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 9,
-        "leftover_inventory": 41,
-        "consumption_cost": 2347,
+        "used": 12,
+        "leftover_inventory": 38,
+        "consumption_cost": 3129,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 41,
-        "potential_surplus": 41
+        "operational_surplus": 38,
+        "potential_surplus": 38
       },
       {
-        "product_id": "8634238599463",
-        "variant_id": "46594228715815",
+        "product_id": "8634233979175",
+        "variant_id": "46594216886567",
         "design_quantity": 4,
         "waste_reserve": 4,
         "required_quantity": 8,
@@ -717,6 +1465,24 @@
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
         "operational_surplus": 42,
+        "potential_surplus": 46
+      },
+      {
+        "product_id": "8634238599463",
+        "variant_id": "46594228715815",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 4,
+        "leftover_inventory": 46,
+        "consumption_cost": 1043,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 46,
         "potential_surplus": 46
       },
       {
@@ -738,63 +1504,64 @@
         "potential_surplus": 42
       },
       {
-        "product_id": "8634239385895",
-        "variant_id": "46594233925927",
-        "design_quantity": 13,
+        "product_id": "8634239320359",
+        "variant_id": "46594232582439",
+        "design_quantity": 8,
         "waste_reserve": 0,
-        "required_quantity": 13,
-        "waste_adjusted_quantity": 13,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 13,
-        "leftover_inventory": 37,
-        "consumption_cost": 3390,
-        "purchase_cost": 13037,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 2236,
+        "purchase_cost": 13974,
         "additional_package_for_waste": false,
-        "operational_surplus": 37,
-        "potential_surplus": 37
+        "operational_surplus": 42,
+        "potential_surplus": 42
       },
       {
         "product_id": "8634239942951",
         "variant_id": "46594236416295",
-        "design_quantity": 9,
+        "design_quantity": 8,
         "waste_reserve": 0,
-        "required_quantity": 9,
-        "waste_adjusted_quantity": 9,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 9,
-        "leftover_inventory": 41,
-        "consumption_cost": 2347,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 2086,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 41,
-        "potential_surplus": 41
+        "operational_surplus": 42,
+        "potential_surplus": 42
       }
     ],
     "totals": {
-      "design_quantity": 43,
+      "design_quantity": 44,
       "target_waste_reserve": 4,
       "covered_waste_reserve": 4,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 207,
-      "required_quantity": 47,
-      "consumption_cost": 12406,
-      "purchase_cost": 66122,
+      "natural_package_surplus": 256,
+      "required_quantity": 48,
+      "consumption_cost": 12816,
+      "purchase_cost": 80096,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
-      "waste_adjusted_quantity": 47,
-      "purchase_quantity": 250,
-      "operational_surplus": 203,
-      "potential_surplus": 207
+      "waste_adjusted_quantity": 48,
+      "purchase_quantity": 300,
+      "operational_surplus": 252,
+      "potential_surplus": 256
     },
     "warnings": [
       "sobrante_alto:46594211840295",
+      "sobrante_alto:46594216886567",
       "sobrante_alto:46594228715815",
       "sobrante_alto:46594231992615",
-      "sobrante_alto:46594233925927",
+      "sobrante_alto:46594232582439",
       "sobrante_alto:46594236416295"
     ]
   },
@@ -819,14 +1586,14 @@
           "REF_01_E01"
         ],
         "color": "verde",
-        "cantidadNecesaria": 9,
-        "designQuantity": 9,
+        "cantidadNecesaria": 12,
+        "designQuantity": 12,
         "wasteReserve": 0,
-        "requiredQuantity": 9,
+        "requiredQuantity": 12,
         "purchaseQuantity": 50,
-        "used": 9,
-        "leftoverInventory": 41,
-        "consumptionCost": 2347,
+        "used": 12,
+        "leftoverInventory": 38,
+        "consumptionCost": 3129,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -836,7 +1603,45 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 41
+        "sobrante": 38
+      },
+      {
+        "id": "46594216886567",
+        "productId": "8634233979175",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_COLUMNA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_COLUMNA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 4,
+        "designQuantity": 4,
+        "wasteReserve": 4,
+        "requiredQuantity": 8,
+        "purchaseQuantity": 50,
+        "used": 4,
+        "leftoverInventory": 42,
+        "consumptionCost": 2086,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594216886567",
+        "nombre": "B2b Globo Latex Redondo Fashion Azul Caribe — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 46
       },
       {
         "id": "46594228715815",
@@ -859,12 +1664,12 @@
         "color": "naranja",
         "cantidadNecesaria": 4,
         "designQuantity": 4,
-        "wasteReserve": 4,
-        "requiredQuantity": 8,
+        "wasteReserve": 0,
+        "requiredQuantity": 4,
         "purchaseQuantity": 50,
         "used": 4,
-        "leftoverInventory": 42,
-        "consumptionCost": 2086,
+        "leftoverInventory": 46,
+        "consumptionCost": 1043,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -915,8 +1720,8 @@
         "sobrante": 42
       },
       {
-        "id": "46594233925927",
-        "productId": "8634239385895",
+        "id": "46594232582439",
+        "productId": "8634239320359",
         "tamano": "R-12",
         "tamanoCodigo": "R-12",
         "diamPulg": 12,
@@ -933,24 +1738,24 @@
           "REF_01_E01"
         ],
         "color": "azul",
-        "cantidadNecesaria": 13,
-        "designQuantity": 13,
+        "cantidadNecesaria": 8,
+        "designQuantity": 8,
         "wasteReserve": 0,
-        "requiredQuantity": 13,
+        "requiredQuantity": 8,
         "purchaseQuantity": 50,
-        "used": 13,
-        "leftoverInventory": 37,
-        "consumptionCost": 3390,
-        "purchaseCost": 13037,
+        "used": 8,
+        "leftoverInventory": 42,
+        "consumptionCost": 2236,
+        "purchaseCost": 13974,
         "additionalPackageForWaste": false,
         "disponible": true,
-        "varianteId": "46594233925927",
-        "nombre": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
-        "precioPaquete": 13037,
+        "varianteId": "46594232582439",
+        "nombre": "B2b Globo Latex Redondo Fashion Azul Rey — R-12 / PAQUETE X 50",
+        "precioPaquete": 13974,
         "unidadesPaquete": 50,
         "paquetes": 1,
-        "subtotal": 13037,
-        "sobrante": 37
+        "subtotal": 13974,
+        "sobrante": 42
       },
       {
         "id": "46594236416295",
@@ -971,14 +1776,14 @@
           "REF_01_E01"
         ],
         "color": "rojo",
-        "cantidadNecesaria": 9,
-        "designQuantity": 9,
+        "cantidadNecesaria": 8,
+        "designQuantity": 8,
         "wasteReserve": 0,
-        "requiredQuantity": 9,
+        "requiredQuantity": 8,
         "purchaseQuantity": 50,
-        "used": 9,
-        "leftoverInventory": 41,
-        "consumptionCost": 2347,
+        "used": 8,
+        "leftoverInventory": 42,
+        "consumptionCost": 2086,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -988,19 +1793,19 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 41
+        "sobrante": 42
       }
     ],
-    "total": 66122,
+    "total": 80096,
     "mermaPorcentaje": 8,
-    "purchaseCost": 66122,
-    "consumptionCost": 12406,
+    "purchaseCost": 80096,
+    "consumptionCost": 12816,
     "targetWasteReserve": 4,
     "coveredWasteReserve": 4,
-    "leftoverInventory": 203,
+    "leftoverInventory": 252,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "a80ff89768d57d03fe76df684dad5a60893858a3388f6f7cb8b30f5bf24f9f87"
+    "plan_hash": "b281960e0b30f20a43eb4dd3a7aa2479204d8f68ac70a848a475a507936eeb56"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -1010,12 +1815,22 @@
       {
         "variant_id": "46594211840295",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 9,
+        "cantidad_necesaria": 12,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 41
+        "sobrante": 38
+      },
+      {
+        "variant_id": "46594216886567",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 4,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 46
       },
       {
         "variant_id": "46594228715815",
@@ -1038,27 +1853,44 @@
         "sobrante": 42
       },
       {
-        "variant_id": "46594233925927",
+        "variant_id": "46594232582439",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 13,
+        "cantidad_necesaria": 8,
         "unidades_paquete": 50,
         "paquetes": 1,
-        "precio_paquete": 13037,
-        "subtotal": 13037,
-        "sobrante": 37
+        "precio_paquete": 13974,
+        "subtotal": 13974,
+        "sobrante": 42
       },
       {
         "variant_id": "46594236416295",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 9,
+        "cantidad_necesaria": 8,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 41
+        "sobrante": 42
       }
     ],
-    "total": 66122
+    "total": 80096
   },
-  "descartadas": []
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E01",
+      "tamanos": "un_solo_tamano",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [],
+  "remates": [],
+  "colores_cliente": {
+    "46594211840295": "verde",
+    "46594236416295": "rojo",
+    "46594232582439": "azul rey",
+    "46594231992615": "amarillo",
+    "46594228715815": "naranja",
+    "46594216886567": "azul celeste"
+  },
+  "extras_foto": []
 }

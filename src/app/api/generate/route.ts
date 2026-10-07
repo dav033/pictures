@@ -1115,6 +1115,15 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     }
     if (!fluxPreflightParaGenerar.ok) {
       const codigo = fluxPreflightParaGenerar.requiresPlanSemantics ? "FLUX_PLAN_REQUIRED" : "FLUX_PREFLIGHT_FAILED";
+      // El texto rechazado queda en el registro (auditoría de IA): sin él, un «longitud 1540 supera límite 1000» no
+      // decía qué parte del caption sobraba ni si la guía de escena se había caído (banco de fotos 06, 2026-10-07).
+      decidir("regla:prompt_flux_rechazado", "texto que no pasó la revisión previa de FLUX y no se envió", {
+        codigo,
+        errores: fluxPreflightParaGenerar.errors,
+        largo: promptFluxParaGenerar.length,
+        guia: imagenesGuia ? "usada" : admiteGuiaEscena ? "no_cupo" : "no_aplica",
+        prompt: promptFluxParaGenerar,
+      });
       throw new Error(`${codigo}: ${fluxPreflightParaGenerar.errors.join("; ")}`);
     }
     if (planResuelto) {

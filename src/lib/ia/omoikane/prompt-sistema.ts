@@ -3,7 +3,7 @@ import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-bluepri
 import type { ClaseTamanoNivel } from "@/lib/plan/armado-bouquet";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import { EJEMPLO_UNIDADES_DECLARADAS, GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { coloresConAcabadoReferencia } from "@/lib/plan/colores-referencia";
+import { coloresConAcabadoReferencia, partesDeColorPieza } from "@/lib/plan/colores-referencia";
 import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/escena/creatividad";
 import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { colorDeReferencia, referenciasUsables } from "@/lib/plan/referencias-medidas";
@@ -183,7 +183,13 @@ function coloresDeLaPieza(apariencia: ReferenceBlueprintV2["elements"][number]["
   const colores = coloresConAcabadoReferencia(apariencia);
   if (colores.length === 0) return { texto: apariencia.observed_colors.map(sanearTextoObservado).join(", ") || "no determinable", conPartes: false };
   const partes = new Map<string, number>();
-  if (colores.length > 1) for (const entrada of apariencia.measured_colors ?? []) if (!partes.has(entrada.color) && entrada.share > 0) partes.set(entrada.color, entrada.share);
+  // La parte de cada color sale de UNA fuente (`partesDeColorPieza`): la medida en píxeles o, cuando la medida pone
+  // delante un neutro que la lectura de la disposición no (el panel crema medido como globo beige, el blanco perlado
+  // bajo luz morada medido como plata), las partes de esa lectura. El modelo escribía la participación con el número
+  // que se le daba y el neutro salía de color principal (banco de fotos 01 y 02, 2026-10-06).
+  const reparto = partesDeColorPieza(apariencia);
+  if (colores.length > 1) for (const entrada of reparto.partes) if (!partes.has(entrada.color)) partes.set(entrada.color, entrada.share);
+  const palabraParte = reparto.fuente === "disposicion" ? "leído en la disposición de la pieza" : "medido";
   const referencias = referenciasUsables(apariencia);
   let conPartes = false;
   const texto = colores.map((item) => {
@@ -191,7 +197,7 @@ function coloresDeLaPieza(apariencia: ReferenceBlueprintV2["elements"][number]["
     const parte = partes.get(item.color);
     if (parte !== undefined) {
       conPartes = true;
-      detalles.push(`~${porcentajeAproximado(parte)} % medido, aproximado`);
+      detalles.push(`~${porcentajeAproximado(parte)} % ${palabraParte}, aproximado`);
     }
     const suyas = referencias.filter((referencia) => colorDeReferencia(referencia.nombre) === item.color);
     if (suyas.length) {

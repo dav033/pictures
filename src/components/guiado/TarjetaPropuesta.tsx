@@ -3,9 +3,9 @@
 import { AnimatePresence, motion } from "motion/react";
 import { IconoEstructura } from "@/components/plan/IconoEstructura";
 import { ESTRUCTURAS_OFICIALES, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
-import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
+import { nombresIndividuales } from "@/lib/plan/piezas-individuales";
 import { EsqueletoPlan, type EtapaPlan } from "./Esqueletos";
-import { colorCliente } from "./formato";
+import { colorSempertex } from "./color-sempertex";
 import { DUR, EASE_SALIDA, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 
 type Props = {
@@ -31,21 +31,28 @@ export function TarjetaPropuesta({ frase, piezas, colores, estado, etapa = "prep
         <motion.p variants={hijoEscalonado} className="text-xs font-semibold uppercase tracking-wide text-acento">Una idea para tu celebración</motion.p>
         <motion.p variants={hijoEscalonado} className="mt-1.5 text-sm text-texto">{frase}</motion.p>
         <motion.ul variants={hijoEscalonado} className="mt-3 flex flex-wrap gap-2">
-          {piezas.map((pieza, indice) => (
+          {/* Piezas SIEMPRE individuales, como saldrán en «Tu plan»: «Columna izquierda» y «Columna derecha», no «2 × Columna». */}
+          {piezas.flatMap((pieza) => (pieza.cantidad > 1
+            ? nombresIndividuales(pieza.estructura, pieza.cantidad)
+            : [pieza.nombre ?? ESTRUCTURAS_OFICIALES[pieza.estructura].nombre]).map((nombre) => ({ estructura: pieza.estructura, nombre }))).map((pieza, indice) => (
             <li key={`${pieza.estructura}-${indice}`} className="inline-flex items-center gap-2 rounded-full bg-superficie-suave py-1 pl-1.5 pr-3 text-sm text-texto ring-1 ring-borde-suave">
               <span className="grid size-7 place-items-center rounded-full bg-acento-suave text-acento" aria-hidden><IconoEstructura id={pieza.estructura} className="h-4 w-5" /></span>
-              {pieza.cantidad > 1 ? `${pieza.cantidad} × ` : ""}{pieza.nombre ?? ESTRUCTURAS_OFICIALES[pieza.estructura].nombre}
+              {pieza.nombre}
             </li>
           ))}
         </motion.ul>
         {colores.length > 0 && (
-          <motion.div variants={hijoEscalonado} className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5" aria-label={`Colores: ${colores.map(colorCliente).join(", ")}`}>
-            {colores.map((color) => (
-              <span key={color} className="inline-flex items-center gap-1.5 text-xs text-texto-suave">
-                <span className="size-4 rounded-full ring-1 ring-borde" style={{ backgroundColor: HEX_COLORES_V2[color as keyof typeof HEX_COLORES_V2] ?? "#9ca3af" }} aria-hidden />
-                {colorCliente(color)}
-              </span>
-            ))}
+          <motion.div variants={hijoEscalonado} className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5" aria-label={`Colores: ${colores.map((color) => colorSempertex(color).nombre).join(", ")}`}>
+            {/* Nombre y tono de la fuente única (color-sempertex): los mismos que verá en «Tu plan». */}
+            {colores.map((color) => {
+              const sempertex = colorSempertex(color);
+              return (
+                <span key={color} className="inline-flex items-center gap-1.5 text-xs text-texto-suave">
+                  <span className="size-4 rounded-full ring-1 ring-borde" style={{ backgroundColor: sempertex.hex }} aria-hidden />
+                  {sempertex.nombre}
+                </span>
+              );
+            })}
           </motion.div>
         )}
         <AnimatePresence initial={false}>

@@ -1,6 +1,8 @@
 {
   "estado": "resuelto",
   "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "Correcta: arco clásico blanco y negro de unas 38 capas de 4, un solo tamaño.",
+  "descartadas": [],
   "plan_declarado": {
     "plan_version": "1.0",
     "plan_id": "9d88c3ea-8241-571b-8f3c-78299fe8e21a",
@@ -20,7 +22,7 @@
     "estructuras": [
       {
         "estructura_id": "EST_01_ARCO",
-        "nombre": "Arco de globos",
+        "nombre": "Arco",
         "tipo": "arco",
         "rol_escena": "focal",
         "ubicacion": "arco_central",
@@ -47,7 +49,7 @@
             "rol_material": "secundario"
           }
         ],
-        "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+        "porque": "Arco clásico en espiral blanco y negro, un solo tamaño.",
         "referencia_element_id": "REF_01_E01",
         "estructura_oficial": "arco",
         "colores_referencia": [
@@ -58,7 +60,7 @@
     ],
     "supuestos": [
       "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06)."
     ],
     "referencia_omitida": []
   },
@@ -82,7 +84,7 @@
       "estructuras": [
         {
           "estructura_id": "EST_01_ARCO",
-          "nombre": "Arco de globos",
+          "nombre": "Arco",
           "tipo": "arco",
           "rol_escena": "focal",
           "ubicacion": "arco_central",
@@ -109,7 +111,7 @@
               "rol_material": "secundario"
             }
           ],
-          "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+          "porque": "Arco clásico en espiral blanco y negro, un solo tamaño.",
           "referencia_element_id": "REF_01_E01",
           "estructura_oficial": "arco",
           "colores_referencia": [
@@ -120,12 +122,12 @@
       ],
       "supuestos": [
         "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-        "Se usan globos redondos R-12 disponibles en el snapshot vigente.",
-        "Arco de globos: la foto muestra unos 152 globos y el plan tenía 116; densidad media → lujosa: quedó en 145."
+        "Los tamaños son los que se ven en la foto (auditoría 2026-10-06).",
+        "Arco: la foto muestra unos 152 globos y el plan tenía 116; densidad media → lujosa: quedó en 145."
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "9e29cb65645344d385d5f72d597d783dadbc85a97167aea0217c6c76b4f4ac57",
+    "plan_hash": "9212595fe8018dee7682dfe2d7f961830d095f889ce187948dd8988a8b63c3f4",
     "request_id": "f3f686c6-92e2-51cf-bb71-1a4b9887ca24",
     "compras": [
       {
@@ -240,7 +242,7 @@
     "estructuras": [
       {
         "estructura_id": "EST_01_ARCO",
-        "nombre": "Arco de globos",
+        "nombre": "Arco",
         "tipo": "arco",
         "ubicacion": "arco_central",
         "repeticiones": 1,
@@ -539,7 +541,7 @@
     "leftoverInventory": 43,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "9e29cb65645344d385d5f72d597d783dadbc85a97167aea0217c6c76b4f4ac57"
+    "plan_hash": "9212595fe8018dee7682dfe2d7f961830d095f889ce187948dd8988a8b63c3f4"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -569,5 +571,36 @@
     ],
     "total": 52148
   },
-  "descartadas": []
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E01",
+      "tamanos": "un_solo_tamano",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [
+    {
+      "globos_visibles": 95,
+      "exacto": false,
+      "estimado_total": 152,
+      "racimos": 38,
+      "globos_por_racimo": 4,
+      "por_tamano": [
+        {
+          "clase": "mediano",
+          "proporcion": 1
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.92,
+      "referencia_element_id": "REF_01_E01"
+    }
+  ],
+  "remates": [],
+  "colores_cliente": {
+    "46594235269415": "negro",
+    "46594221343015": "blanco"
+  },
+  "extras_foto": []
 }

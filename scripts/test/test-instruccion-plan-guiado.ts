@@ -26,8 +26,10 @@ const propuesta = normalizarPropuestaComposicion({ frase: "x", colores: ["azul",
 const instruccion = instruccionPlanGuiado(propuesta);
 // Piezas SIEMPRE individuales: una línea por pieza con repeticiones 1, su id y su lado (antes «2 × Columna … repeticiones: 2»).
 assert.ok(instruccion.includes("- Arco orgánico (estructura_oficial: arco_asimetrico; estructura_id: EST_01_ARCO_ASIMETRICO; repeticiones: 1)"), instruccion);
-assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_02_COLUMNA; ubicacion: lateral_izquierdo; repeticiones: 1)"), instruccion);
-assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_03_COLUMNA; ubicacion: lateral_derecho; repeticiones: 1)"), instruccion);
+// La pareja (una línea «2 × Columna») va declarada y con todos los colores en las dos (test-parejas-simetricas.ts).
+assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_02_COLUMNA; ubicacion: lateral_izquierdo; repeticiones: 1; colores de esta pieza: azul, blanco, dorado)"), instruccion);
+assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_03_COLUMNA; ubicacion: lateral_derecho; repeticiones: 1; colores de esta pieza: azul, blanco, dorado)"), instruccion);
+assert.ok(instruccion.includes("Pareja simétrica: EST_02_COLUMNA y EST_03_COLUMNA"), instruccion);
 assert.ok(!/repeticiones: 2|\d × /.test(instruccion), "nunca una estructura repetida");
 assert.ok(instruccion.includes("Todos deben aparecer en el plan."));
 assert.ok(instruccion.includes("usa EXACTAMENTE estos colores: azul, blanco, dorado; no agregues otros; si uno no tiene cobertura usa el tono más cercano de ese mismo color"));
@@ -50,7 +52,10 @@ assert.ok(cambio.includes("el plan nuevo lleva SOLO las piezas de esta lista"), 
 assert.ok(!cambio.includes("Tu plan:") && !/columnas/.test(cambio), "no describe el plan anterior: /api/chat leería sus cantidades como restricciones");
 // Sí conserva las medidas y el reparto de cada pieza que sigue (el plan anterior las trae), sin activar restricciones.
 assert.ok(cambio.includes("- Arco orgánico (estructura_oficial: arco_asimetrico; estructura_id: EST_01_ARCO_ASIMETRICO; repeticiones: 1; medidas: ancho_m 2, alto_m 2.2)"), cambio);
-assert.ok(cambio.includes("ubicacion: lateral_derecho; repeticiones: 1; medidas: alto_m 2.4)"), cambio);
+assert.ok(cambio.includes("ubicacion: lateral_derecho; repeticiones: 1; colores de esta pieza: azul, blanco, dorado; medidas: alto_m 2.4)"), cambio);
+// Sin colores nuevos, la pareja conserva su reparto anterior y no se le imponen todos los colores del plan.
+const sinNuevos = instruccionPlanGuiado(normalizarPropuestaComposicion({ frase: "x", colores: ["blanco", "dorado"], piezas: [{ estructura: "arco_asimetrico", cantidad: 1 }, { estructura: "columna", cantidad: 2 }] })!, { planAnterior });
+assert.ok(sinNuevos.includes("ubicacion: lateral_derecho; repeticiones: 1; medidas: alto_m 2.4; participacion: blanco 0.55, dorado 0.45)"), sinNuevos);
 assert.ok(!/(?:\bej-|\bdeco-|sku|variant_id)/i.test(instruccion), "sin ids internos del catálogo");
 // Sin filtros duros de ocasión ni de categoría que salgan de la instrucción (el fallo del cumpleaños de princesas).
 const filtros = extraerFiltrosDurosBusqueda(instruccion, briefChatGuiado(propuesta.colores));

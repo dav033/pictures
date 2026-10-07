@@ -27,26 +27,26 @@
   ],
   "materiales": [
     {
-      "variantId": "46594267676967",
-      "sku": "B2B-20014159",
+      "variantId": "50195455607079",
+      "sku": "B2B-20019918",
       "cantidad": 12,
-      "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 12 · R-12 · plateado",
+      "nota": "B2b Globo Latex Redondo Silk Nuevo Gris Medianoche — R-12 / PAQUETE X 12 · R-12 · gris grafito",
       "origenCantidad": "estimado_foto",
       "detalleCantidad": "estimado a partir de la foto (8 para los dos pisos bajos del cono y 4 de la base)"
     },
     {
-      "variantId": "46594267840807",
-      "sku": "B2B-20017756",
+      "variantId": "50195455541543",
+      "sku": "B2B-20019914",
       "cantidad": 8,
-      "nota": "B2b Globo Latex Redondo Reflex Plata — R-9 / PAQUETE X 20 · R-9 · plateado",
+      "nota": "B2b Globo Latex Redondo Silk Nuevo Gris Medianoche — R-9 / PAQUETE X 12 · R-9 · gris grafito",
       "origenCantidad": "estimado_foto",
       "detalleCantidad": "estimado a partir de la foto (dos pisos medios del cono)"
     },
     {
-      "variantId": "46594267611431",
-      "sku": "B2B-20014244",
+      "variantId": "50195455476007",
+      "sku": "B2B-20019911",
       "cantidad": 5,
-      "nota": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 20 · R-5 · plateado",
+      "nota": "B2b Globo Latex Redondo Silk Nuevo Gris Medianoche — R-5 / PAQUETE X 20 · R-5 · gris grafito",
       "origenCantidad": "estimado_foto",
       "detalleCantidad": "estimado a partir de la foto (piso alto y punta del cono)"
     },
@@ -134,7 +134,7 @@
   "pasos": [
     {
       "orden": 1,
-      "texto": "Arma la base: pon un peso o base de columna en el piso y fija cuatro globos plateados de 12 pulgadas en cruz; encima coloca cuatro globos color café con leche."
+      "texto": "Arma la base: pon un peso o base de columna en el piso y fija cuatro globos gris grafito de 12 pulgadas en cruz; encima coloca cuatro globos color café con leche."
     },
     {
       "orden": 2,
@@ -150,7 +150,7 @@
     },
     {
       "orden": 5,
-      "texto": "Levanta el cono con grupos de cuatro globos plateados: primero de 12, luego de 9 y al final de 5 pulgadas, y termina con un solo globo en la punta."
+      "texto": "Levanta el cono con grupos de cuatro globos gris grafito: primero de 12, luego de 9 y al final de 5 pulgadas, y termina con un solo globo en la punta."
     },
     {
       "orden": 6,

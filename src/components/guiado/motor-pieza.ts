@@ -4,6 +4,7 @@ import type { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { OFICIALES_CON_DIBUJO_ESQUEMATICO } from "@/lib/plan/dibujo-estructura";
 import { OFICIALES_SIN_MOTOR, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import type { LineaMaterial } from "@/lib/plan/resuelto";
+import { colorSempertex } from "./color-sempertex";
 import { idOficial } from "./piezas-vista";
 
 /**
@@ -86,9 +87,24 @@ export function leyendaDePieza(plan: PlanGuiado, estructuraId: string): ColorLey
   if (!declarada) return [];
   // Las líneas del plan guiado son las de Python tal cual (`BasePlanSchema` las deja pasar enteras).
   const lineas = (plan.estructuras.find((estructura) => estructura.estructura_id === estructuraId)?.lineas ?? []) as unknown as LineaMaterial[];
-  return leyendaPatron(declarada.materiales.map((material) => ({
+  const leyenda = leyendaPatron(declarada.materiales.map((material) => ({
     product_id: material.product_id,
     ...(material.color ? { color: material.color } : {}),
     ...(material.acabado ? { acabado: material.acabado } : {}),
   })), lineas);
+  // Nombre y tono de la fuente única de la guiada (`color-sempertex`): el editor dice «Verde lima» y «Plata cromado»
+  // como los chips, la tabla y los materiales, y su muestra lleva el tono del catálogo, no el de la paleta (antes:
+  // «Verde lima mate» aquí y «Fashion Verde Lima» en la tarjeta; muestra azul rey y globo celeste).
+  return leyenda.map((entrada, indice) => {
+    const material = declarada.materiales[indice];
+    if (!material?.color) return entrada;
+    const delProducto = lineas.filter((linea) => linea.product_id === material.product_id);
+    const linea = delProducto.find((item) => item.color === material.color) ?? delProducto[0];
+    const sempertex = colorSempertex(material.color, { titulo: linea?.titulo ?? null, acabado: material.acabado ?? linea?.acabado ?? null });
+    // El nombre, siempre el de los chips; el tono, solo con referencia del catálogo (un transparente o un multicolor
+    // conservan su muestra especial).
+    if (!sempertex.producto) return { ...entrada, etiqueta: sempertex.nombre, muestra: { ...entrada.muestra, etiqueta: sempertex.nombre } };
+    const solida = /^#[0-9a-f]{6}$/i.test(entrada.muestra.fondo);
+    return { ...entrada, etiqueta: sempertex.nombre, hex: sempertex.hex, muestra: { ...entrada.muestra, etiqueta: sempertex.nombre, ...(solida ? { fondo: sempertex.hex } : {}) } };
+  });
 }

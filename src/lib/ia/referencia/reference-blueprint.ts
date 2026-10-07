@@ -196,10 +196,13 @@ const CatalogResolutionSchema = z
     match_type: z.enum(["exact", "closest", "none"]),
     reason: texto(260),
     adaptation: texto(260),
-    // Un plan puede expandir hasta 6 materiales declarados por 4 tamaños
-    // físicos en una estructura; conservar todas las variantes evita perder
-    // la mezcla real de tamaños antes de construir el scene spec.
-    bill_of_materials: z.array(MaterialLineSchema).max(24).optional(),
+    // Una línea por VARIANTE comprada: hasta 6 materiales por 6 tallas (las 5 de
+    // una mezcla orgánica y el R-36 del globo de la punta) y, en cada talla, hasta
+    // 2 presentaciones (paquete de 12 y de 50). Conservarlas todas evita perder la
+    // mezcla real de tamaños antes de construir el scene spec. El tope de 24
+    // (6 × 4) dejaba sin imagen un techo de 6 colores ya cotizado: 29 variantes,
+    // SOLICITUD_INVALIDA en /api/generate (banco de fotos 10, 2026-10-07).
+    bill_of_materials: z.array(MaterialLineSchema).max(72).optional(),
   })
   .strict()
   .superRefine((value, ctx) => {

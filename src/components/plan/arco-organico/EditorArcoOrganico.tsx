@@ -9,6 +9,7 @@ import { ControlesArcoOrganico } from "./ControlesArcoOrganico";
 import type { PuedeGuardarArcoOrganico } from "./guardar-arco-organico";
 import { RecetaArco } from "../arco/RecetaArco";
 import type { EstadoVistaBorradorArcoOrganico } from "./vista-borrador-arco-organico";
+import { useVozCliente } from "../motor/voz-editor";
 
 /**
  * Lo que va al lado del dibujo cuando se edita el arco orgánico (ADR-0035): los ajustes, lo que el motor dice del
@@ -60,9 +61,12 @@ export function EditorArcoOrganico({
 }: Props) {
   const el = "el";
   const id = useId();
+  const cliente = useVozCliente();
   const encabezado = useRef<HTMLHeadingElement | null>(null);
   useEffect(() => {
-    encabezado.current?.focus();
+    if (!cliente) encabezado.current?.focus();
+    // Solo al abrir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const dibujo = vista.vista;
   // El rechazo del motor y su silencio son errores del borrador; el resto, un estado que se anuncia con cortesía.
@@ -76,7 +80,7 @@ export function EditorArcoOrganico({
     ? vista.error?.mensaje ?? RESPALDO_VISTA_ARMADO_ARCO_ORGANICO
     : null;
   const estado = guardar.puede
-    ? "Listo para guardar. Al guardar se recalcula la compra con el catálogo; si falta algún globo, te lo digo y no se guarda."
+    ? (cliente ? "Listo. Al guardar recalculo tus globos y el precio." : "Listo para guardar. Al guardar se recalcula la compra con el catálogo; si falta algún globo, te lo digo y no se guarda.")
     : guardar.tipo === "error" || guardar.tipo === "colores" ? null : guardar.motivo;
   const pendiente = !guardar.puede && guardar.tipo === "espera";
   return (
@@ -85,7 +89,7 @@ export function EditorArcoOrganico({
       {dibujo ? (
         <ControlesArcoOrganico borrador={borrador} opciones={dibujo.opciones} limites={dibujo.limites} leyenda={leyenda} onCambiar={onCambiar} />
       ) : (
-        <p role="status" className="brillo-carga rounded-xl bg-superficie px-3 py-6 text-center text-xs text-texto-suave">Cargando los ajustes del motor…</p>
+        <p role="status" className="brillo-carga rounded-xl bg-superficie px-3 py-6 text-center text-xs text-texto-suave">{cliente ? "Preparando los ajustes…" : "Cargando los ajustes del motor…"}</p>
       )}
 
       {coloresCambiaron && (
@@ -133,7 +137,7 @@ export function EditorArcoOrganico({
           </>
         )}
       </p>
-      <p className="text-xs leading-relaxed text-texto-suave">Al guardar, la propuesta cambia de firma: es otra decoración y se recalcula su total. Si ya estaba aprobada, hay que regenerar la imagen.</p>
+      {!cliente && <p className="text-xs leading-relaxed text-texto-suave">Al guardar, la propuesta cambia de firma: es otra decoración y se recalcula su total. Si ya estaba aprobada, hay que regenerar la imagen.</p>}
 
       <div className="flex flex-wrap gap-2">
         <button
@@ -145,12 +149,12 @@ export function EditorArcoOrganico({
           className={`ui-button-primary ui-pressable ${BOTON}`}
         >
           {guardando ? <LoaderCircle className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : null}
-          {guardando ? "Guardando…" : `Guardar ${pieza}`}
+          {guardando ? "Guardando…" : cliente ? "Guardar" : `Guardar ${pieza}`}
         </button>
         <button type="button" onClick={onDescartar} disabled={guardando} data-testid="descartar-arco-organico" className={`ui-button-secondary ui-pressable ${BOTON}`}>
-          {hayCambios ? "Descartar cambios" : "Cerrar"}
+          {cliente ? "Cancelar" : hayCambios ? "Descartar cambios" : "Cerrar"}
         </button>
-        {hayCambios && (
+        {hayCambios && !cliente && (
           <button type="button" onClick={onRestablecer} disabled={guardando} data-testid="restablecer-arco-organico" className={`ui-button-secondary ui-pressable ${BOTON}`}>
             <RotateCcw className="size-3.5" aria-hidden="true" />Restablecer
           </button>

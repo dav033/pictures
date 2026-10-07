@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
+import { COLORES_PROPUESTA_V2, PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 import { BasePlanSchema } from "@/lib/plan/edicion-esquemas";
 import { MAX_PIEZAS_PLAN } from "@/lib/plan/piezas-individuales";
@@ -71,12 +71,26 @@ export const CotizacionGuiadaSchema = z.object({
   total: z.number().int().positive(), mermaPorcentaje: z.literal(0), incluyeIva: z.literal(true), complementosSoportados: z.literal(false),
 }).strict();
 
+/** Colores de una propuesta: los del plan entero (`concepto.paleta` admite 8). El modelo propone como mucho 5 (su esquema). */
+export const MAX_COLORES_PROPUESTA = 8;
 export const PropuestaComposicionSchema = z.object({
   frase: z.string().trim().min(1).max(360),
-  colores: z.array(z.enum(PALETA_COLORES_V2)).min(1).max(5),
+  // La paleta y los tonos claros («celeste», «rosa pastel», «durazno»: taxonomy/v2.ts). Solo TypeScript: al plan de
+  // Python le llega la familia («azul») y la búsqueda del catálogo se queda con los globos del tono (tonos-color.ts).
+  colores: z.array(z.enum(COLORES_PROPUESTA_V2)).min(1).max(MAX_COLORES_PROPUESTA),
   // Hasta 8 (el tope del plan): «Ajustar mi plan» y «Agregar al plan» la arman con piezas individuales. `ubicacion` no la
-  // manda el modelo (su esquema no la tiene): la pone quien arma la propuesta desde un plan con lados.
-  piezas: z.array(z.object({ estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS), cantidad: z.number().int().min(1).max(12), nombre: z.string().min(1).max(120).optional(), ubicacion: LateralSchema.optional() }).strict()).min(1).max(MAX_PIEZAS_PLAN),
+  // manda el modelo (su esquema no la tiene): la pone quien arma la propuesta desde un plan con lados. `colores` de una
+  // pieza (tampoco los manda el modelo): «Agregar al plan» suma una idea en sus colores sin teñir las piezas que ya había;
+  // como mucho 6, los materiales que admite una pieza del plan. `medidas`: las de la pieza de la idea (biblioteca), para que
+  // el plan salga del tamaño que el cliente vio en la foto y no con medidas por defecto.
+  piezas: z.array(z.object({
+    estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS),
+    cantidad: z.number().int().min(1).max(12),
+    nombre: z.string().min(1).max(120).optional(),
+    ubicacion: LateralSchema.optional(),
+    colores: z.array(z.enum(COLORES_PROPUESTA_V2)).min(1).max(6).optional(),
+    medidas: MedidasPiezaSchema.optional(),
+  }).strict()).min(1).max(MAX_PIEZAS_PLAN),
 }).strict();
 export const PlanGuiadoSchema = BasePlanSchema;
 export const CotizacionPlanGuiadoSchema = z.object({

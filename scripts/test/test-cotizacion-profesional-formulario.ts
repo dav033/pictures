@@ -325,6 +325,8 @@ async function probarPantalla(): Promise<void> {
   assert.match(resumen({ tipo: "no-vigente", motivo: "error-de-calculo" }), /opacity-55[\s\S]*Último precio calculado/);
   assert.doesNotMatch(resumen({ tipo: "vigente" }), /opacity-55|\$\s0\b|Transporte y equipos/);
   assert.match(resumen({ tipo: "vigente" }), /Materiales \(sin IVA\) \+ tus gastos \+ tu ganancia/);
+  // La suma a la vista: materiales + gastos + ganancia = precio al cliente, todos de Python.
+  assert.match(resumen({ tipo: "vigente" }), />Materiales<\/span><\/dt><dd[^>]*>\$\s26\.900[\s\S]*>\+<\/span>[\s\S]*Tu trabajo y ayudantes[\s\S]*\$\s24\.000[\s\S]*Lo que te cuesta todo[\s\S]*\$\s50\.900[\s\S]*Tu ganancia \(30 %\)[\s\S]*\$\s15\.270[\s\S]*>=<\/span>Precio al cliente[\s\S]*\$\s66\.170/);
 
   // R2/R3/R4/R6/R11/R12: la lista de gastos.
   const fila = (id: string, descripcion: string, costo: string, cantidad: string) => ({ id, descripcion, costo, cantidad });
@@ -343,7 +345,13 @@ async function probarPantalla(): Promise<void> {
   assert.match(malaUnCampo, /id="equipos_transporte-k-a-descripcion"[^>]*aria-invalid="false"/);
   assert.match(malaUnCampo, /<li id="equipos_transporte-k-a-costo-error">El peso no lleva decimales: escribe 13, no 12,5/, "el mensaje existe y dice qué escribir");
   assert.doesNotMatch(malaUnCampo, /aria-errormessage="equipos_transporte-k-a-cantidad/);
-  assert.match(malaUnCampo, /Total: <span[^>]*>—<\/span>/, "una lista que no entró en el cálculo no vale $ 0");
+  assert.match(malaUnCampo, />Total<\/span><span[^>]*>Completa los datos para sumarlo<\/span>/, "una lista que no entró en el cálculo no vale $ 0: dice qué falta");
+  assert.doesNotMatch(malaUnCampo, /—|\$\s0/, "ni «—» ni $ 0 inventados");
+  assert.match(malaUnCampo, /<span[^>]*text-error[^>]*>Revisa el valor<\/span>/, "donde irá el total, qué revisar");
+  assert.match(malaUnCampo, /id="equipos_transporte-k-a-costo"[^>]*inputMode="numeric"/, "teclado numérico para el valor");
+  assert.match(malaUnCampo, /id="equipos_transporte-k-a-cantidad"[^>]*inputMode="decimal"/, "y decimal para la cantidad");
+  assert.match(malaUnCampo, /aria-label="Una menos de Camión"/, "la cantidad tiene − / +");
+  assert.match(malaUnCampo, /aria-label="Una más de Camión"/);
   assert.match(malaUnCampo, /<label[^>]*for="equipos_transporte-k-a-costo"[^>]*>Valor por unidad<\/label>/, "etiqueta visible, no solo placeholder");
   assert.match(malaUnCampo, /<button[^>]*class="[^"]*size-11[^"]*"[^>]*aria-label="Quitar Camión"|<button[^>]*aria-label="Quitar Camión"[^>]*class="[^"]*size-11/, "la papelera mide 44 px");
   assert.match(malaUnCampo, /class="[^"]*h-11[^"]*"/, "los campos miden 44 px");
@@ -356,6 +364,24 @@ async function probarPantalla(): Promise<void> {
   assert.match(exceso, /Tienes 52 gastos y el máximo es 50: quita 2 para ver el precio/);
   assert.doesNotMatch(lista([fila("a", "Camión", "1.000", "1")]), /de 50 gastos/, "lejos del tope no hay contador");
   assert.match(lista([fila("a", "Camión", "1.000", "1")], { quitada: { fila: fila("z", "Peaje", "5.000", "1"), indice: 0 } }), /Quitaste «Peaje»\.[\s\S]*Deshacer/);
+  // Rediseño: lista vacía invita con ideas de un toque; fila en blanco sin «—» y con ideas; total de Python a la derecha.
+  const listaVacia = lista([]);
+  assert.match(listaVacia, /Toca uno para sumarlo/, "una lista vacía invita");
+  assert.match(listaVacia, /aria-label="Agregar Transporte"[^>]*>[\s\S]*?Transporte<\/button>/, "con ideas de un toque");
+  assert.match(listaVacia, /aria-label="Agregar Alquiler de base"/);
+  assert.doesNotMatch(listaVacia, /—|Total/);
+  assert.match(lista([], { quitada: { fila: fila("z", "Peaje", "5.000", "1"), indice: 0 } }), /Quitaste «Peaje»\.[\s\S]*Deshacer[\s\S]*Toca uno para sumarlo/, "quitada la última fila, deshacer sigue a mano, sobre la invitación");
+  assert.match(lista([fila("a", "Camión", "1.000", "1"), fila("b", "Peaje", "1.000", "1")], { quitada: { fila: fila("z", "Bus", "5.000", "1"), indice: 1 } }), /Quitar Camión[\s\S]*Quitaste «Bus»[\s\S]*Quitar Peaje/, "el aviso va donde estaba la fila");
+  const enBlanco = lista([fila("a", "", "", "")]);
+  assert.doesNotMatch(enBlanco, /—|Total|Falta|aria-invalid="true"/, "una fila en blanco no muestra «—» ni errores");
+  assert.match(enBlanco, /placeholder="¿Qué es\? Ej\. Transporte"/, "placeholder que dice qué escribir");
+  assert.match(enBlanco, /role="group" aria-label="Ideas para Transporte y equipos"/, "ideas para la descripción");
+  assert.match(enBlanco, /placeholder="50\.000"/);
+  const unaUnidad = lista([fila("a", "Transporte", "50.000", "1")]);
+  assert.match(unaUnidad, /<button[^>]*disabled=""[^>]*aria-label="Una menos de Transporte"|aria-label="Una menos de Transporte"[^>]*disabled=""/, "no baja de 1 con el −");
+  const conTotal = lista([fila("a", "Transporte", "50.000", "2")], { subtotal: () => 100000, total: 100000 });
+  assert.match(conTotal, /\$\s100\.000[\s\S]*>Total<\/span>[\s\S]*\$\s100\.000/, "el total de la fila y el de la lista son los de Python");
+  assert.match(lista([fila("a", "Transporte", "", "1")]), /Falta el valor/, "a la fila a medias se le dice qué falta");
 
   // R7: el material con el precio vaciado lo dice la fila, el campo y el botón; y el desplegable se abre solo.
   const materiales = (precios: Record<string, string>) => {
@@ -403,6 +429,8 @@ async function probarPantalla(): Promise<void> {
   assert.match(treinta, /aria-pressed="true"[^>]*>30 %<\/button>/, "la ficha que coincide se marca");
   assert.equal(ganancia("25").match(/aria-pressed="true"/g), null, "otro valor: ninguna");
   assert.match(ganancia("1500", "No puede pasar de 1.000 %."), /aria-errormessage="ganancia-k-error"[\s\S]*No puede pasar de 1\.000 %/);
+  assert.match(renderToStaticMarkup(h(CampoGanancia, { clave: "k", valor: "30", error: null, ganancia: { cop: 15270, atenuar: false }, onValor: sinAccion })), /Ganas <span[^>]*><span[^>]*>\$\s15\.270/, "lo que ganas, de Python");
+  assert.doesNotMatch(treinta, /Ganas/, "sin cálculo no se inventa la ganancia");
   assert.doesNotMatch(vacia + treinta, JERGA_VISIBLE);
   // El texto «Todavía no incluye tu ganancia» sigue mientras el campo esté vacío (lo dice la leyenda, no el campo).
   assert.equal(leyenda({ tipo: "vigente" }).texto === "Incluye tu ganancia: el 23,08 % del precio es tuyo.", true);
@@ -457,7 +485,38 @@ async function probarFormularioCompleto(): Promise<void> {
   console.log("[PASS] formulario: sin materiales dice por qué; un borrador vacío no abre el panel; «Tu ganancia» va primero; el aviso de excluidos está a la vista");
 }
 
+async function probarAyudasDeEscritura(): Promise<void> {
+  const c = await import("../../src/components/cotizacion/conceptos-gasto");
+  const fila = (descripcion: string, costo: string, cantidad: string) => ({ id: "a", descripcion, costo, cantidad });
+  // − / +: en blanco cuenta como 1 (lo que se ve en gris); nunca baja a 0 ni pasa del tope; escribe con coma decimal.
+  assert.equal(c.pasoCantidad("", 1), "2");
+  assert.equal(c.pasoCantidad("", -1), null);
+  assert.equal(c.pasoCantidad("1", -1), null, "no baja de lo vendible");
+  assert.equal(c.pasoCantidad("3", -1), "2");
+  assert.equal(c.pasoCantidad("1,5", 1), "2,5");
+  assert.equal(c.pasoCantidad("1,5", -1), "0,5");
+  assert.equal(c.pasoCantidad("100000", 1), null, "tope de Python");
+  assert.equal(c.pasoCantidad("abc", 1), "1", "con algo ilegible, + vuelve a empezar");
+  assert.equal(c.pasoCantidad("abc", -1), null);
+  // Empezar a escribir una fila sin cantidad la deja en 1; no toca una cantidad escrita ni una fila que se vacía.
+  assert.deepEqual(c.cambiosConCantidad(fila("", "", ""), { descripcion: "Montaje" }), { descripcion: "Montaje", cantidad: "1" });
+  assert.deepEqual(c.cambiosConCantidad(fila("", "", ""), { costo: "5" }), { costo: "5", cantidad: "1" });
+  assert.deepEqual(c.cambiosConCantidad(fila("Montaje", "", "3"), { costo: "5" }), { costo: "5" });
+  assert.deepEqual(c.cambiosConCantidad(fila("M", "", ""), { descripcion: "" }), { descripcion: "" });
+  assert.deepEqual(c.cambiosConCantidad(fila("", "", ""), { cantidad: "" }), { cantidad: "" });
+  // Ideas: no se ofrece dos veces lo ya escrito (sin importar mayúsculas).
+  assert.ok(!c.conceptosLibres("mano_de_obra", [fila(" montaje ", "", "")]).includes("Montaje"));
+  assert.ok(c.conceptosLibres("mano_de_obra", []).includes("Ayudante"));
+  for (const seccion of ["mano_de_obra", "equipos_transporte", "indirectos"] as const) assert.ok(c.CONCEPTOS_GASTO[seccion].length >= 3);
+  assert.equal(c.faltaEnFila({ costo: "x" }, fila("T", "", "1")), "Falta el valor");
+  assert.equal(c.faltaEnFila({ costo: "x" }, fila("T", "12,5", "1")), "Revisa el valor");
+  assert.equal(c.faltaEnFila({ descripcion: "x" }, fila("", "5", "1")), "Falta qué es");
+  assert.equal(c.faltaEnFila({}, fila("T", "5", "1")), null);
+  console.log("[PASS] ayudas de escritura: − / + seguros, cantidad 1 al empezar, ideas sin repetir, qué falta en dos palabras");
+}
+
 async function main(): Promise<void> {
+  await probarAyudasDeEscritura();
   await probarVigencia();
   await probarLectura();
   await probarFilas();

@@ -63,8 +63,8 @@ assert.equal(PlanActualGuiadoSchema.safeParse({ piezas: ocho, colores: ["rosado"
 // --- La instrucción del plan guiado ---------------------------------------------------------------------------------
 const propuesta = normalizarPropuestaComposicion({ frase: "x", colores: ["azul", "plateado", "blanco", "rosado"], piezas: [{ estructura: "semiarco_asimetrico", cantidad: 1 }, { estructura: "columna", cantidad: 2 }] });
 const instruccion = instruccionPlanGuiado(propuesta);
-assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_02_COLUMNA; ubicacion: lateral_izquierdo; repeticiones: 1)"), instruccion);
-assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_03_COLUMNA; ubicacion: lateral_derecho; repeticiones: 1)"), instruccion);
+assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_02_COLUMNA; ubicacion: lateral_izquierdo; repeticiones: 1; colores de esta pieza: azul, plateado, blanco, rosado)"), instruccion);
+assert.ok(instruccion.includes("- Columna (estructura_oficial: columna; estructura_id: EST_03_COLUMNA; ubicacion: lateral_derecho; repeticiones: 1; colores de esta pieza: azul, plateado, blanco, rosado)"), instruccion);
 assert.ok(!/repeticiones: [2-9]/.test(instruccion) && !/\d+ × /.test(instruccion), "nunca una estructura repetida");
 assert.ok(!/izquierda|derecha|Columna \d/.test(instruccion), "los nombres individuales los pone el servidor, no el texto");
 // La trampa: un nombre con número o «una columna» en el texto se vuelve restricción y el plan de dos se rechaza en bucle.

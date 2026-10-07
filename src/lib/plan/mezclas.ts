@@ -68,7 +68,14 @@ export function pulgadasDeMezcla(mezcla: Mezcla): number[] {
   return MEZCLAS[mezcla].map((tamano) => tamano.pulgadas);
 }
 
-const DIAMETROS_ESTANDAR = [5, 9, 12, 18, 24] as const;
+/**
+ * La escalera de diámetros del catálogo, también el 36": ninguna mezcla lo pide, pero el motor sí (el globo grande
+ * de la punta de una columna orgánica sube a R-36 cuando la punta es ancha). Sin el 36 en la escalera ningún
+ * producto podía servirlo con su escalón contiguo, y un dorado Reflex sin R-36 dejaba la columna SIN_COBERTURA en
+ * bucle hasta agotar el turno (banco de fotos 04, 2026-10-06). Con él, el R-36 que falta se sirve con el R-24 del
+ * mismo producto (razón 1,5, el tope) y queda como sustitución que se le dice al cliente.
+ */
+const DIAMETROS_ESTANDAR = [5, 9, 12, 18, 24, 36] as const;
 
 /** Cuánto puede crecer (o encoger) un globo al servirse con el escalón contiguo. */
 const RAZON_MAXIMA_SUSTITUCION = 1.5;

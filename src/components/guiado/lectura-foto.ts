@@ -1,6 +1,7 @@
 import type { ReferenciaGuiada } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { clasificarColores } from "@/lib/rag/taxonomy/v2";
 import { colorLeido, familiaSempertex, type AcabadoGlobo, type ColorLeido } from "./color-globo";
+import { colorSempertex } from "./color-sempertex";
 
 /**
  * La lectura de la foto de inspiración, ordenada para mostrarla: cada pieza de globos POR SEPARADO (una pareja en
@@ -173,8 +174,12 @@ function coloresDe(elemento: Elemento): ColorPieza[] {
     const leido = colorLeido(referencia.nombre);
     const destino = leido?.clave ? colores.find((color) => color.clave === leido.clave && !color.sempertex) : undefined;
     const sempertex = { nombre: referencia.nombre_completo, codigo: referencia.codigo };
+    // Con la referencia Sempertex medida, nombre y tono de la fuente única (`color-sempertex`): «Plata cromado» y el hex
+    // del catálogo, como los chips, la tabla y los materiales del plan que sale de esta foto.
+    const catalogo = colorSempertex(leido?.clave ?? referencia.nombre, { titulo: referencia.nombre_completo });
     if (destino) {
       destino.sempertex = sempertex;
+      if (catalogo.producto) Object.assign(destino, { nombre: catalogo.nombre.toLocaleLowerCase("es"), hex: catalogo.hex });
       if (destino.parte === null) destino.parte = referencia.parte;
       if (familia && destino.acabado === "estandar") destino.acabado = familia.acabado;
       continue;
@@ -182,9 +187,9 @@ function coloresDe(elemento: Elemento): ColorPieza[] {
     if (!leido || vistos.has(leido.nombre)) continue;
     const acabado: AcabadoGlobo = familia?.acabado ?? leido.acabado;
     const adjetivo = familia && familia.cliente !== "liso" ? familia.cliente : leido.adjetivo;
-    const nombre = [leido.color, adjetivo].filter(Boolean).join(" ");
+    const nombre = catalogo.producto ? catalogo.nombre.toLocaleLowerCase("es") : [leido.color, adjetivo].filter(Boolean).join(" ");
     vistos.add(nombre);
-    colores.push({ ...leido, nombre, adjetivo, acabado, parte: referencia.parte, sempertex });
+    colores.push({ ...leido, nombre, adjetivo, acabado, parte: referencia.parte, sempertex, ...(catalogo.producto ? { hex: catalogo.hex } : {}) });
   }
   return colores.sort((a, b) => (b.parte ?? -1) - (a.parte ?? -1));
 }

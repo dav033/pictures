@@ -36,14 +36,6 @@
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
     },
     {
-      "variantId": "46594264858919",
-      "sku": "B2B-20017754",
-      "cantidad": 6,
-      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado cromado",
-      "origenCantidad": "plan_python",
-      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-    },
-    {
       "variantId": "46594264695079",
       "sku": "B2B-20014156",
       "cantidad": 18,
@@ -54,32 +46,16 @@
     {
       "variantId": "46594264727847",
       "sku": "B2B-20015523",
-      "cantidad": 1,
+      "cantidad": 2,
       "nota": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6 · R-18 · dorado cromado",
       "origenCantidad": "plan_python",
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
     },
     {
-      "variantId": "46594264793383",
-      "sku": "B2B-20014725",
-      "cantidad": 1,
-      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-24 / PAQUETE X 3 · R-24 · dorado cromado",
-      "origenCantidad": "plan_python",
-      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-    },
-    {
-      "variantId": "46594302411047",
-      "sku": "B2B-20016823",
-      "cantidad": 5,
-      "nota": "B2b Globo Latex Redondo Fashion Latte — R-5 / PAQUETE X 50 · R-5 · nude",
-      "origenCantidad": "plan_python",
-      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-    },
-    {
-      "variantId": "47466211836199",
-      "sku": "B2B-20017533",
-      "cantidad": 4,
-      "nota": "B2b Globo Latex Redondo Fashion Latte — R-9 / PAQUETE X 50 · R-9 · nude",
+      "variantId": "46594264858919",
+      "sku": "B2B-20017754",
+      "cantidad": 6,
+      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado cromado",
       "origenCantidad": "plan_python",
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
     },
@@ -100,10 +76,26 @@
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
     },
     {
-      "variantId": "49475778085159",
-      "sku": "B2B-20019336",
-      "cantidad": 8,
-      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 20 · R-5 · blanco nácar",
+      "variantId": "46594302411047",
+      "sku": "B2B-20016823",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Redondo Fashion Latte — R-5 / PAQUETE X 50 · R-5 · nude",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "47466211836199",
+      "sku": "B2B-20017533",
+      "cantidad": 4,
+      "nota": "B2b Globo Latex Redondo Fashion Latte — R-9 / PAQUETE X 50 · R-9 · nude",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
+      "variantId": "49475778019623",
+      "sku": "B2B-20019347",
+      "cantidad": 3,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6 · R-18 · blanco nácar",
       "origenCantidad": "plan_python",
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
     },
@@ -116,26 +108,18 @@
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
     },
     {
+      "variantId": "49475778085159",
+      "sku": "B2B-20019336",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 20 · R-5 · blanco nácar",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+    },
+    {
       "variantId": "49475778216231",
       "sku": "B2B-20019344",
       "cantidad": 20,
       "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-12 / PAQUETE X 50 · R-12 · blanco nácar",
-      "origenCantidad": "plan_python",
-      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-    },
-    {
-      "variantId": "49475778019623",
-      "sku": "B2B-20019347",
-      "cantidad": 2,
-      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6 · R-18 · blanco nácar",
-      "origenCantidad": "plan_python",
-      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-    },
-    {
-      "variantId": "49475777954087",
-      "sku": "B2B-20019351",
-      "cantidad": 1,
-      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-24 / PAQUETE X 3 · R-24 · blanco nácar",
       "origenCantidad": "plan_python",
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
     },
@@ -179,7 +163,7 @@
     },
     {
       "orden": 2,
-      "texto": "Infla los globos blanco nácar, dorados y nude en varios tamaños (5, 9, 12, 18 y 24 pulgadas) y átalos en grupos mezclando los tres colores."
+      "texto": "Infla los globos blanco nácar, dorados y nude en varios tamaños (5, 9, 12 y 18 pulgadas) y átalos en grupos mezclando los tres colores."
     },
     {
       "orden": 3,

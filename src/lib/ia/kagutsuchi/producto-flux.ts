@@ -16,6 +16,8 @@ export type ElementSizeConfirmation = {
   productId: string;
   sizeCode: string;
   diameterInches?: number;
+  /** Globos de esta línea según Python (`design_quantity`): el peso del producto en la frase de materiales. */
+  units?: number;
 };
 export type ProductPromptRuntimeResult = {
   prompt: string;
@@ -37,7 +39,7 @@ export function aliasesDeProducto(producto: { id: string; catalogSku?: string; f
 }
 
 export function sizeConfirmationsFromMaterialLines(
-  lines: ReadonlyArray<{ structure_id?: string; product_id?: string; variant_id?: string }>,
+  lines: ReadonlyArray<{ structure_id?: string; product_id?: string; variant_id?: string; design_quantity?: number }>,
   products: ReadonlyArray<{ id: string; familiaId?: string; tamanoCodigo?: string; diamPulg?: number }>,
 ): ElementSizeConfirmation[] {
   return lines.flatMap((line) => {
@@ -47,8 +49,9 @@ export function sizeConfirmationsFromMaterialLines(
     const exact = products.find((candidate) => candidate.id === selectedProductId);
     const siblings = exact ? [] : products.filter((candidate) => candidate.familiaId === line.product_id || candidate.familiaId === selectedProductId);
     const product = exact ?? (new Set(siblings.map((candidate) => candidate.tamanoCodigo)).size === 1 ? siblings[0] : undefined);
+    const units = typeof line.design_quantity === "number" && Number.isFinite(line.design_quantity) && line.design_quantity >= 0 ? line.design_quantity : undefined;
     return product?.tamanoCodigo
-      ? [{ elementId, productId: selectedProductId, sizeCode: product.tamanoCodigo, diameterInches: product.diamPulg }]
+      ? [{ elementId, productId: selectedProductId, sizeCode: product.tamanoCodigo, diameterInches: product.diamPulg, ...(units === undefined ? {} : { units }) }]
       : [];
   });
 }
@@ -90,9 +93,13 @@ function entradaCatalogo(
       : productoUnico ? element.resolved_colors.map(translateFluxColor).join(" and ") : "";
     const terminos = terminosBaseDeTitulo(lectura, color);
     if (!terminos || terminos.kind !== "balloon") continue;
-    const sizeCodes = (tallas.get(productId) ?? [])
-      .filter(({ elementId }) => elementId === element.element_id || element.element_id.startsWith(`${elementId}#`))
-      .map(({ sizeCode, diameterInches }) => renderSize(diameterInches ?? diameterFromSizeCode(sizeCode), sizeCode));
+    const confirmadas = (tallas.get(productId) ?? [])
+      .filter(({ elementId }) => elementId === element.element_id || element.element_id.startsWith(`${elementId}#`));
+    const sizeCodes = confirmadas.map(({ sizeCode, diameterInches }) => renderSize(diameterInches ?? diameterFromSizeCode(sizeCode), sizeCode));
+    // El peso del producto en la pieza: los globos de sus líneas (solo si todas traen la cantidad de Python).
+    const units = confirmadas.length && confirmadas.every((linea) => linea.units !== undefined)
+      ? confirmadas.reduce((suma, linea) => suma + linea.units!, 0)
+      : undefined;
     return {
       elementId: element.element_id,
       conceptId: `catalog:${productId}`,
@@ -100,6 +107,7 @@ function entradaCatalogo(
       sizeCodes: sizeCodes.length ? [...new Set(sizeCodes)] : undefined,
       colorName: terminos.color,
       baseTerms: terminos,
+      ...(units === undefined ? {} : { units }),
     };
   }
   return undefined;

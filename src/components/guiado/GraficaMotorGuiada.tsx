@@ -1,18 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { z } from "zod";
 import { IconoEstructura } from "@/components/plan/IconoEstructura";
 import { VistaMotor } from "@/components/plan/motor/VistaMotor";
-import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { colorSempertex } from "./color-sempertex";
+import { claveGrafica, graficaGuardada, huella, pedirGrafica, type GraficaMotor } from "./grafica-motor-cola";
 import { motorDePieza } from "./motor-pieza";
 
-const GraficaSchema = z.object({ svg: z.string().min(1), lienzo: z.number().positive().optional(), ancho: z.number().positive().optional(), alto: z.number().positive().optional() }).passthrough();
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
-type Grafica = z.infer<typeof GraficaSchema>;
+type Grafica = GraficaMotor;
+
+/** Sin `plan_hash` (un llamador que no lo pasa), la versión del plan es la huella de su contenido, una vez por objeto. */
+const versionPorPlan = new WeakMap<object, string>();
+function versionDe(plan: unknown): string {
+  if (typeof plan !== "object" || plan === null) return "sin-plan";
+  const guardada = versionPorPlan.get(plan);
+  if (guardada) return guardada;
+  const nueva = `h${huella(JSON.stringify(plan))}`;
+  versionPorPlan.set(plan, nueva);
+  return nueva;
+}
 
 /** Los tonos con que pinta el motor: los de la leyenda (Sempertex) si llegan; si no, los de la paleta del plan. */
 function tonosDe(pieza: Record<string, unknown>, colores: readonly string[] | undefined): string[] {
@@ -20,27 +30,9 @@ function tonosDe(pieza: Record<string, unknown>, colores: readonly string[] | un
   const materiales = Array.isArray(pieza.materiales) ? pieza.materiales : [];
   return materiales.flatMap((valor) => {
     if (typeof valor !== "object" || valor === null || !("color" in valor) || typeof valor.color !== "string") return [];
-    const hex = valor.color.startsWith("#") ? valor.color : HEX_COLORES_V2[valor.color as keyof typeof HEX_COLORES_V2];
+    const hex = valor.color.startsWith("#") ? valor.color : colorSempertex(valor.color).hex;
     return hex && HEX.test(hex) ? [hex] : [];
   }).slice(0, 6);
-}
-
-async function pedirGrafica(ruta: string, cuerpo: unknown, signal: AbortSignal): Promise<Grafica | null> {
-  for (let intento = 0; intento < 2; intento += 1) {
-    const respuesta = await fetch(ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo), signal });
-    // El motor atiende pocos dibujos a la vez (429 con `Retry-After`): uno más tarde, una sola vez.
-    if (respuesta.status === 429 && intento === 0) {
-      await new Promise((listo) => setTimeout(listo, 1200));
-      if (signal.aborted) return null;
-      continue;
-    }
-    if (!respuesta.ok) return null;
-    const datos: unknown = await respuesta.json();
-    if (typeof datos !== "object" || datos === null || !("grafica" in datos)) return null;
-    const parseada = GraficaSchema.safeParse(datos.grafica);
-    return parseada.success ? parseada.data : null;
-  }
-  return null;
 }
 
 /**
@@ -49,9 +41,14 @@ async function pedirGrafica(ruta: string, cuerpo: unknown, signal: AbortSignal):
  * su editor en «Modificar». Pared, aro, techo y centro de mesa van al dibujo esquemático; lo que ningún dibujo
  * representa (bouquet, figura) muestra su icono sin pedir nada.
  * Distingue «cargando» (brillo), «fallo» (silueta de la estructura, atenuada) y «lista» (el dibujo entra suave).
+ *
+ * El dibujo se pide UNA vez por pieza y versión del plan (`grafica-motor-cola.ts`): un re-render, un remontaje o la
+ * misma pieza en otra tarjeta usan el que ya está (o el que va en camino), y nunca se cancela uno en curso.
  */
-export function GraficaMotorGuiada({ plan, pieza, mezclaReal, id, nombre, colores, className = "size-full" }: {
+export function GraficaMotorGuiada({ plan, version, pieza, mezclaReal, id, nombre, colores, className = "size-full" }: {
   plan: unknown;
+  /** La versión del plan (`plan_hash`): con la pieza, su armado y sus tonos, la clave del dibujo. */
+  version?: string;
   pieza: Record<string, unknown>;
   mezclaReal?: unknown;
   id: EstructuraOficialId;
@@ -60,31 +57,39 @@ export function GraficaMotorGuiada({ plan, pieza, mezclaReal, id, nombre, colore
   colores?: readonly string[];
   className?: string;
 }) {
-  // El resultado recuerda para qué pieza se pidió: si la pieza cambia, vuelve a «cargando» sin un setState síncrono.
-  const [resultado, setResultado] = useState<{ pieza: Record<string, unknown>; grafica: Grafica | null } | null>(null);
   // Un arreglo nuevo en cada render no debe volver a pedir el dibujo: se compara por su contenido.
   const firmaTonos = tonosDe(pieza, colores).join(",");
-  const sinDibujo = motorDePieza(pieza) === null;
+  const elegido = motorDePieza(pieza);
+  const ruta = elegido === null ? null : elegido.tipo === "motor" ? elegido.ruta : "/api/plan-dibujo-estructura";
+  const estructuraId = typeof pieza.estructura_id === "string" ? pieza.estructura_id : String(pieza.estructura_id ?? "");
+  const versionPlan = version ?? versionDe(plan);
+  const armado = elegido?.tipo === "motor" ? elegido.armado : undefined;
+  const clave = useMemo(
+    () => (ruta ? claveGrafica({ ruta, version: versionPlan, estructuraId, armado, tonos: firmaTonos, ...(elegido?.tipo === "dibujo" ? { mezclaReal } : {}) }) : null),
+    [ruta, versionPlan, estructuraId, armado, firmaTonos, elegido?.tipo, mezclaReal],
+  );
+  // El resultado recuerda para qué clave llegó: si la pieza cambia, vuelve a «cargando» sin un setState síncrono.
+  const [resultado, setResultado] = useState<{ clave: string; grafica: Grafica | null } | null>(null);
+  const guardada = clave ? graficaGuardada(clave) : undefined;
 
   useEffect(() => {
-    const elegido = motorDePieza(pieza);
-    if (!elegido) return;
+    if (!clave || !ruta || guardada !== undefined) return;
+    const motor = motorDePieza(pieza);
+    if (!motor) return;
+    let atento = true;
     const tonos = firmaTonos ? firmaTonos.split(",") : [];
-    const cuerpo = elegido.tipo === "motor"
-      ? { plan, estructura_id: pieza.estructura_id, [elegido.campo]: elegido.armado, ...(tonos.length ? { colores: tonos } : {}) }
+    const cuerpo = () => motor.tipo === "motor"
+      ? { plan, estructura_id: pieza.estructura_id, [motor.campo]: motor.armado, ...(tonos.length ? { colores: tonos } : {}) }
       : { plan, estructura_id: pieza.estructura_id, ...(mezclaReal ? { mezcla_real: mezclaReal } : {}) };
-    const ruta = elegido.tipo === "motor" ? elegido.ruta : "/api/plan-dibujo-estructura";
-    const controller = new AbortController();
-    void pedirGrafica(ruta, cuerpo, controller.signal)
-      .then((grafica) => { if (!controller.signal.aborted) setResultado({ pieza, grafica }); })
-      .catch(() => { if (!controller.signal.aborted) setResultado({ pieza, grafica: null }); });
-    return () => controller.abort();
-  }, [plan, pieza, mezclaReal, firmaTonos]);
+    // Sin abortar: si este componente se va, la petición termina igual y su dibujo queda para el siguiente.
+    void pedirGrafica(clave, ruta, cuerpo).then((grafica) => { if (atento) setResultado({ clave, grafica }); });
+    return () => { atento = false; };
+  }, [clave, ruta, guardada, plan, pieza, mezclaReal, firmaTonos]);
 
-  const estado: "cargando" | "lista" | "fallo" = sinDibujo ? "fallo" : resultado?.pieza !== pieza ? "cargando" : resultado.grafica ? "lista" : "fallo";
+  const grafica = guardada !== undefined ? guardada : resultado?.clave === clave ? resultado.grafica : undefined;
+  const estado: "cargando" | "lista" | "fallo" = elegido === null ? "fallo" : grafica === undefined ? "cargando" : grafica ? "lista" : "fallo";
   if (estado === "cargando") return <span className={`brillo-carga block rounded-lg ${className}`} role="img" aria-label={`Dibujando ${nombre}`} />;
-  if (estado === "fallo" || !resultado?.grafica) return <span className={`grid place-items-center text-acento/60 ${className}`}><IconoEstructura id={id} className="h-3/5 w-3/5" /></span>;
-  const grafica = resultado.grafica;
+  if (estado === "fallo" || !grafica) return <span className={`grid place-items-center text-acento/60 ${className}`}><IconoEstructura id={id} className="h-3/5 w-3/5" /></span>;
   return (
     // El SVG va absoluto dentro de una caja fija: con alto automático, un lienzo alto (la columna, 600 × 720) se salía
     // del marco y se veía recortado.

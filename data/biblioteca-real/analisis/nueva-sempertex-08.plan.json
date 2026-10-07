@@ -67,7 +67,8 @@
     ],
     "supuestos": [
       "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-      "Las dos flores grandes de pétalos perlados se cuentan aparte, a mano, sobre la foto."
+      "Las dos flores grandes de pétalos perlados se cuentan aparte, a mano, sobre la foto.",
+      "Sin globos de 24 pulgadas: el mayor de la foto mide unas 1,5 veces uno de 12, es decir de 18 (auditoría 2026-10-06)."
     ],
     "referencia_omitida": []
   },
@@ -139,11 +140,12 @@
       "supuestos": [
         "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
         "Las dos flores grandes de pétalos perlados se cuentan aparte, a mano, sobre la foto.",
+        "Sin globos de 24 pulgadas: el mayor de la foto mide unas 1,5 veces uno de 12, es decir de 18 (auditoría 2026-10-06).",
         "Aro circular: la foto muestra unos 85 globos y el plan tenía 151; densidad lujosa → sencilla: quedó en 94."
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "d53d05d428a981a898f777bdd2ccf94ad9e6e0a662976538f6e89710dd3e10db",
+    "plan_hash": "b18c62a7faa824dac4f06cbed26f86365e49f2aea0ef3a2cf66d741d5729b45f",
     "request_id": "f2ae30d2-d334-56c7-8de9-8a257001cff5",
     "compras": [
       {
@@ -239,62 +241,22 @@
         "tamano_codigo": "R-18",
         "diam_pulg": 18,
         "color": "dorado",
-        "unidades_necesarias": 1,
-        "design_quantity": 1,
+        "unidades_necesarias": 2,
+        "design_quantity": 2,
         "waste_reserve": 0,
-        "required_quantity": 1,
-        "unidades_con_merma": 1,
+        "required_quantity": 2,
+        "unidades_con_merma": 2,
         "unidades_paquete": 6,
         "paquetes": 1,
         "purchase_quantity": 6,
-        "used": 1,
-        "leftover_inventory": 5,
-        "consumption_cost": 2951,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 5901,
         "purchase_cost": 17704,
         "additional_package_for_waste": false,
-        "sobrante": 5,
+        "sobrante": 4,
         "precio_paquete": 17704,
         "subtotal": 17704,
-        "estructuras": [
-          "EST_01_ARO_CIRCULAR"
-        ],
-        "elementos_origen": [
-          {
-            "kind": "estructura",
-            "id": "EST_01_ARO_CIRCULAR"
-          }
-        ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
-      },
-      {
-        "variant_id": "46594264793383",
-        "product_id": "8634255638823",
-        "sku": "B2B-20014725",
-        "sku_original": "B2B-20014725",
-        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594264793383",
-        "inventory_quantity": 998944,
-        "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-24 / PAQUETE X 3",
-        "tamano_codigo": "R-24",
-        "diam_pulg": 24,
-        "color": "dorado",
-        "unidades_necesarias": 1,
-        "design_quantity": 1,
-        "waste_reserve": 0,
-        "required_quantity": 1,
-        "unidades_con_merma": 1,
-        "unidades_paquete": 3,
-        "paquetes": 1,
-        "purchase_quantity": 3,
-        "used": 1,
-        "leftover_inventory": 2,
-        "consumption_cost": 8082,
-        "purchase_cost": 24246,
-        "additional_package_for_waste": false,
-        "sobrante": 2,
-        "precio_paquete": 24246,
-        "subtotal": 24246,
         "estructuras": [
           "EST_01_ARO_CIRCULAR"
         ],
@@ -507,46 +469,6 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Latte_073.jpg?v=1763151852"
       },
       {
-        "variant_id": "49475777954087",
-        "product_id": "9661845995815",
-        "sku": "B2B-20019351",
-        "sku_original": "B2B-20019351",
-        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/49475777954087",
-        "inventory_quantity": 999964,
-        "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar — R-24 / PAQUETE X 3",
-        "tamano_codigo": "R-24",
-        "diam_pulg": 24,
-        "color": "blanco",
-        "unidades_necesarias": 1,
-        "design_quantity": 1,
-        "waste_reserve": 0,
-        "required_quantity": 1,
-        "unidades_con_merma": 1,
-        "unidades_paquete": 3,
-        "paquetes": 1,
-        "purchase_quantity": 3,
-        "used": 1,
-        "leftover_inventory": 2,
-        "consumption_cost": 5969,
-        "purchase_cost": 17908,
-        "additional_package_for_waste": false,
-        "sobrante": 2,
-        "precio_paquete": 17908,
-        "subtotal": 17908,
-        "estructuras": [
-          "EST_01_ARO_CIRCULAR"
-        ],
-        "elementos_origen": [
-          {
-            "kind": "estructura",
-            "id": "EST_01_ARO_CIRCULAR"
-          }
-        ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_Nacar_-_Oyster_White_806.jpg?v=1763584889"
-      },
-      {
         "variant_id": "49475778019623",
         "product_id": "9661845995815",
         "sku": "B2B-20019347",
@@ -559,20 +481,20 @@
         "tamano_codigo": "R-18",
         "diam_pulg": 18,
         "color": "blanco",
-        "unidades_necesarias": 2,
-        "design_quantity": 2,
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
         "waste_reserve": 0,
-        "required_quantity": 2,
-        "unidades_con_merma": 2,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
         "unidades_paquete": 6,
         "paquetes": 1,
         "purchase_quantity": 6,
-        "used": 2,
-        "leftover_inventory": 4,
-        "consumption_cost": 4362,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 6543,
         "purchase_cost": 13085,
         "additional_package_for_waste": false,
-        "sobrante": 4,
+        "sobrante": 3,
         "precio_paquete": 13085,
         "subtotal": 13085,
         "estructuras": [
@@ -711,22 +633,21 @@
       "globos_por_tamano": {
         "R-5": 20,
         "R-12": 51,
-        "R-18": 4,
-        "R-24": 2,
+        "R-18": 6,
         "R-9": 17
       },
       "total_unidades": 94,
-      "total_cop": 190900,
+      "total_cop": 148746,
       "design_quantity": 94,
       "target_waste_reserve": 8,
       "covered_waste_reserve": 8,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 290,
-      "purchase_cost": 190900,
-      "consumption_cost": 55890,
+      "natural_package_surplus": 284,
+      "purchase_cost": 148746,
+      "consumption_cost": 46970,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
-      "ahorro_paquetes_cop": 0,
+      "ahorro_paquetes_cop": 30789,
       "incluye_iva": true,
       "merma_porcentaje": 8
     },
@@ -739,6 +660,18 @@
     "sustituciones": [
       {
         "estructura_id": "EST_01_ARO_CIRCULAR",
+        "pedido": "R-24",
+        "entregado": "R-18",
+        "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para blanco."
+      },
+      {
+        "estructura_id": "EST_01_ARO_CIRCULAR",
+        "pedido": "R-24",
+        "entregado": "R-18",
+        "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para dorado."
+      },
+      {
+        "estructura_id": "EST_01_ARO_CIRCULAR",
         "pedido": "beige",
         "entregado": "blanco, dorado",
         "motivo": "La foto de referencia muestra beige y esta pieza no lo lleva: se armó con blanco y dorado."
@@ -749,13 +682,11 @@
       "sobrante_alto:46594264596775",
       "sobrante_alto:46594264695079",
       "sobrante_alto:46594264727847",
-      "sobrante_alto:46594264793383",
       "sobrante_alto:46594264858919",
       "sobrante_alto:46594302247207",
       "sobrante_alto:46594302312743",
       "sobrante_alto:46594302411047",
       "sobrante_alto:47466211836199",
-      "sobrante_alto:49475777954087",
       "sobrante_alto:49475778019623",
       "sobrante_alto:49475778052391",
       "sobrante_alto:49475778085159",
@@ -1078,23 +1009,27 @@
               "id": "EST_01_ARO_CIRCULAR"
             },
             "product_id": "9661845995815",
-            "variant_id": "49475777954087",
-            "sku": "B2B-20019351",
-            "sku_original": "B2B-20019351",
+            "variant_id": "49475778019623",
+            "sku": "B2B-20019347",
+            "sku_original": "B2B-20019347",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/49475777954087",
-            "inventory_quantity": 999964,
+            "source_variant_id": "gid://shopify/ProductVariant/49475778019623",
+            "inventory_quantity": 999785,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar — R-24 / PAQUETE X 3",
+            "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6",
             "color": "blanco",
-            "tamano_codigo": "R-24",
-            "diam_pulg": 24,
-            "diam_cm": 61,
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
             "forma": "redondo",
             "acabado": null,
             "unidades": 1,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_Nacar_-_Oyster_White_806.jpg?v=1763584889",
-            "sustitucion": null
+            "sustitucion": {
+              "pedido": "R-24",
+              "entregado": "R-18",
+              "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para blanco."
+            }
           },
           {
             "estructura_id": "EST_01_ARO_CIRCULAR",
@@ -1103,23 +1038,27 @@
               "id": "EST_01_ARO_CIRCULAR"
             },
             "product_id": "8634255638823",
-            "variant_id": "46594264793383",
-            "sku": "B2B-20014725",
-            "sku_original": "B2B-20014725",
+            "variant_id": "46594264727847",
+            "sku": "B2B-20015523",
+            "sku_original": "B2B-20015523",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594264793383",
-            "inventory_quantity": 998944,
+            "source_variant_id": "gid://shopify/ProductVariant/46594264727847",
+            "inventory_quantity": 995905,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-24 / PAQUETE X 3",
+            "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6",
             "color": "dorado",
-            "tamano_codigo": "R-24",
-            "diam_pulg": 24,
-            "diam_cm": 61,
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
             "forma": "redondo",
             "acabado": "reflex",
             "unidades": 1,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
-            "sustitucion": null
+            "sustitucion": {
+              "pedido": "R-24",
+              "entregado": "R-18",
+              "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para dorado."
+            }
           }
         ],
         "mezcla_real": [
@@ -1144,14 +1083,8 @@
           {
             "diam_pulg": 18,
             "forma": "redondo",
-            "unidades": 4,
-            "pct": 4.26
-          },
-          {
-            "diam_pulg": 24,
-            "forma": "redondo",
-            "unidades": 2,
-            "pct": 2.13
+            "unidades": 6,
+            "pct": 6.38
           }
         ],
         "supuestos": []
@@ -1160,7 +1093,7 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_ARO_CIRCULAR",
-        "consumo_cop": 54622
+        "consumo_cop": 45702
       }
     ],
     "conteos_referencia": [
@@ -1382,10 +1315,10 @@
       {
         "structure_id": "EST_01_ARO_CIRCULAR",
         "product_id": "9661845995815",
-        "variant_id": "49475777954087",
+        "variant_id": "49475778019623",
         "color": "blanco",
         "finish": null,
-        "size_inches": 24,
+        "size_inches": 18,
         "shape": "redondo",
         "design_quantity": 1,
         "waste_reserve": 0,
@@ -1395,10 +1328,10 @@
       {
         "structure_id": "EST_01_ARO_CIRCULAR",
         "product_id": "8634255638823",
-        "variant_id": "46594264793383",
+        "variant_id": "46594264727847",
         "color": "dorado",
         "finish": "reflex",
-        "size_inches": 24,
+        "size_inches": 18,
         "shape": "redondo",
         "design_quantity": 1,
         "waste_reserve": 0,
@@ -1447,38 +1380,20 @@
       {
         "product_id": "8634255638823",
         "variant_id": "46594264727847",
-        "design_quantity": 1,
+        "design_quantity": 2,
         "waste_reserve": 0,
-        "required_quantity": 1,
-        "waste_adjusted_quantity": 1,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2,
         "units_per_package": 6,
         "package_count": 1,
         "purchase_quantity": 6,
-        "used": 1,
-        "leftover_inventory": 5,
-        "consumption_cost": 2951,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 5901,
         "purchase_cost": 17704,
         "additional_package_for_waste": false,
-        "operational_surplus": 5,
-        "potential_surplus": 5
-      },
-      {
-        "product_id": "8634255638823",
-        "variant_id": "46594264793383",
-        "design_quantity": 1,
-        "waste_reserve": 0,
-        "required_quantity": 1,
-        "waste_adjusted_quantity": 1,
-        "units_per_package": 3,
-        "package_count": 1,
-        "purchase_quantity": 3,
-        "used": 1,
-        "leftover_inventory": 2,
-        "consumption_cost": 8082,
-        "purchase_cost": 24246,
-        "additional_package_for_waste": false,
-        "operational_surplus": 2,
-        "potential_surplus": 2
+        "operational_surplus": 4,
+        "potential_surplus": 4
       },
       {
         "product_id": "8634255638823",
@@ -1572,39 +1487,21 @@
       },
       {
         "product_id": "9661845995815",
-        "variant_id": "49475777954087",
-        "design_quantity": 1,
-        "waste_reserve": 0,
-        "required_quantity": 1,
-        "waste_adjusted_quantity": 1,
-        "units_per_package": 3,
-        "package_count": 1,
-        "purchase_quantity": 3,
-        "used": 1,
-        "leftover_inventory": 2,
-        "consumption_cost": 5969,
-        "purchase_cost": 17908,
-        "additional_package_for_waste": false,
-        "operational_surplus": 2,
-        "potential_surplus": 2
-      },
-      {
-        "product_id": "9661845995815",
         "variant_id": "49475778019623",
-        "design_quantity": 2,
+        "design_quantity": 3,
         "waste_reserve": 0,
-        "required_quantity": 2,
-        "waste_adjusted_quantity": 2,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
         "units_per_package": 6,
         "package_count": 1,
         "purchase_quantity": 6,
-        "used": 2,
-        "leftover_inventory": 4,
-        "consumption_cost": 4362,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 6543,
         "purchase_cost": 13085,
         "additional_package_for_waste": false,
-        "operational_surplus": 4,
-        "potential_surplus": 4
+        "operational_surplus": 3,
+        "potential_surplus": 3
       },
       {
         "product_id": "9661845995815",
@@ -1666,28 +1563,26 @@
       "target_waste_reserve": 8,
       "covered_waste_reserve": 8,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 290,
+      "natural_package_surplus": 284,
       "required_quantity": 102,
-      "consumption_cost": 55890,
-      "purchase_cost": 190900,
+      "consumption_cost": 46970,
+      "purchase_cost": 148746,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "waste_adjusted_quantity": 102,
-      "purchase_quantity": 384,
-      "operational_surplus": 282,
-      "potential_surplus": 290
+      "purchase_quantity": 378,
+      "operational_surplus": 276,
+      "potential_surplus": 284
     },
     "warnings": [
       "sobrante_alto:46594264596775",
       "sobrante_alto:46594264695079",
       "sobrante_alto:46594264727847",
-      "sobrante_alto:46594264793383",
       "sobrante_alto:46594264858919",
       "sobrante_alto:46594302247207",
       "sobrante_alto:46594302312743",
       "sobrante_alto:46594302411047",
       "sobrante_alto:47466211836199",
-      "sobrante_alto:49475777954087",
       "sobrante_alto:49475778019623",
       "sobrante_alto:49475778052391",
       "sobrante_alto:49475778085159",
@@ -1791,14 +1686,14 @@
           "REF_01_E01"
         ],
         "color": "dorado",
-        "cantidadNecesaria": 1,
-        "designQuantity": 1,
+        "cantidadNecesaria": 2,
+        "designQuantity": 2,
         "wasteReserve": 0,
-        "requiredQuantity": 1,
+        "requiredQuantity": 2,
         "purchaseQuantity": 6,
-        "used": 1,
-        "leftoverInventory": 5,
-        "consumptionCost": 2951,
+        "used": 2,
+        "leftoverInventory": 4,
+        "consumptionCost": 5901,
         "purchaseCost": 17704,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -1808,45 +1703,7 @@
         "unidadesPaquete": 6,
         "paquetes": 1,
         "subtotal": 17704,
-        "sobrante": 5
-      },
-      {
-        "id": "46594264793383",
-        "productId": "8634255638823",
-        "tamano": "R-24",
-        "tamanoCodigo": "R-24",
-        "diamPulg": 24,
-        "estructuras": [
-          "EST_01_ARO_CIRCULAR"
-        ],
-        "elementosOrigen": [
-          {
-            "kind": "estructura",
-            "id": "EST_01_ARO_CIRCULAR"
-          }
-        ],
-        "referenciaElementIds": [
-          "REF_01_E01"
-        ],
-        "color": "dorado",
-        "cantidadNecesaria": 1,
-        "designQuantity": 1,
-        "wasteReserve": 0,
-        "requiredQuantity": 1,
-        "purchaseQuantity": 3,
-        "used": 1,
-        "leftoverInventory": 2,
-        "consumptionCost": 8082,
-        "purchaseCost": 24246,
-        "additionalPackageForWaste": false,
-        "disponible": true,
-        "varianteId": "46594264793383",
-        "nombre": "B2b Globo Latex Redondo Reflex Dorado — R-24 / PAQUETE X 3",
-        "precioPaquete": 24246,
-        "unidadesPaquete": 3,
-        "paquetes": 1,
-        "subtotal": 24246,
-        "sobrante": 2
+        "sobrante": 4
       },
       {
         "id": "46594264858919",
@@ -2035,44 +1892,6 @@
         "sobrante": 46
       },
       {
-        "id": "49475777954087",
-        "productId": "9661845995815",
-        "tamano": "R-24",
-        "tamanoCodigo": "R-24",
-        "diamPulg": 24,
-        "estructuras": [
-          "EST_01_ARO_CIRCULAR"
-        ],
-        "elementosOrigen": [
-          {
-            "kind": "estructura",
-            "id": "EST_01_ARO_CIRCULAR"
-          }
-        ],
-        "referenciaElementIds": [
-          "REF_01_E01"
-        ],
-        "color": "blanco",
-        "cantidadNecesaria": 1,
-        "designQuantity": 1,
-        "wasteReserve": 0,
-        "requiredQuantity": 1,
-        "purchaseQuantity": 3,
-        "used": 1,
-        "leftoverInventory": 2,
-        "consumptionCost": 5969,
-        "purchaseCost": 17908,
-        "additionalPackageForWaste": false,
-        "disponible": true,
-        "varianteId": "49475777954087",
-        "nombre": "B2b Globo Latex Redondo Silk Blanco Nácar — R-24 / PAQUETE X 3",
-        "precioPaquete": 17908,
-        "unidadesPaquete": 3,
-        "paquetes": 1,
-        "subtotal": 17908,
-        "sobrante": 2
-      },
-      {
         "id": "49475778019623",
         "productId": "9661845995815",
         "tamano": "R-18",
@@ -2091,14 +1910,14 @@
           "REF_01_E01"
         ],
         "color": "blanco",
-        "cantidadNecesaria": 2,
-        "designQuantity": 2,
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
         "wasteReserve": 0,
-        "requiredQuantity": 2,
+        "requiredQuantity": 3,
         "purchaseQuantity": 6,
-        "used": 2,
-        "leftoverInventory": 4,
-        "consumptionCost": 4362,
+        "used": 3,
+        "leftoverInventory": 3,
+        "consumptionCost": 6543,
         "purchaseCost": 13085,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -2108,7 +1927,7 @@
         "unidadesPaquete": 6,
         "paquetes": 1,
         "subtotal": 13085,
-        "sobrante": 4
+        "sobrante": 3
       },
       {
         "id": "49475778052391",
@@ -2225,16 +2044,16 @@
         "sobrante": 30
       }
     ],
-    "total": 190900,
+    "total": 148746,
     "mermaPorcentaje": 8,
-    "purchaseCost": 190900,
-    "consumptionCost": 55890,
+    "purchaseCost": 148746,
+    "consumptionCost": 46970,
     "targetWasteReserve": 8,
     "coveredWasteReserve": 8,
-    "leftoverInventory": 282,
+    "leftoverInventory": 276,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "d53d05d428a981a898f777bdd2ccf94ad9e6e0a662976538f6e89710dd3e10db"
+    "plan_hash": "b18c62a7faa824dac4f06cbed26f86365e49f2aea0ef3a2cf66d741d5729b45f"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -2264,22 +2083,12 @@
       {
         "variant_id": "46594264727847",
         "nombre": "R-18 / PAQUETE X 6",
-        "cantidad_necesaria": 1,
+        "cantidad_necesaria": 2,
         "unidades_paquete": 6,
         "paquetes": 1,
         "precio_paquete": 17704,
         "subtotal": 17704,
-        "sobrante": 5
-      },
-      {
-        "variant_id": "46594264793383",
-        "nombre": "R-24 / PAQUETE X 3",
-        "cantidad_necesaria": 1,
-        "unidades_paquete": 3,
-        "paquetes": 1,
-        "precio_paquete": 24246,
-        "subtotal": 24246,
-        "sobrante": 2
+        "sobrante": 4
       },
       {
         "variant_id": "46594264858919",
@@ -2332,24 +2141,14 @@
         "sobrante": 46
       },
       {
-        "variant_id": "49475777954087",
-        "nombre": "R-24 / PAQUETE X 3",
-        "cantidad_necesaria": 1,
-        "unidades_paquete": 3,
-        "paquetes": 1,
-        "precio_paquete": 17908,
-        "subtotal": 17908,
-        "sobrante": 2
-      },
-      {
         "variant_id": "49475778019623",
         "nombre": "R-18 / PAQUETE X 6",
-        "cantidad_necesaria": 2,
+        "cantidad_necesaria": 3,
         "unidades_paquete": 6,
         "paquetes": 1,
         "precio_paquete": 13085,
         "subtotal": 13085,
-        "sobrante": 4
+        "sobrante": 3
       },
       {
         "variant_id": "49475778052391",
@@ -2382,7 +2181,7 @@
         "sobrante": 30
       }
     ],
-    "total": 190900
+    "total": 148746
   },
   "descartadas": [],
   "pistas_conteo_usadas": [
@@ -2410,6 +2209,13 @@
       "alto_relativo": null,
       "confianza": 0.92,
       "referencia_element_id": "REF_01_E01"
+    }
+  ],
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E01",
+      "tamanos": "chicos_con_pocos_grandes",
+      "confianza": 1
     }
   ]
 }

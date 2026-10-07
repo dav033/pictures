@@ -1,6 +1,8 @@
 {
   "estado": "resuelto",
   "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "Faltaba el racimo orgánico aparte en el piso (izquierda); hay muchos de 5, 12 y 18 pulgadas; el morado es cromado y el lila es pastel mate.",
+  "descartadas": [],
   "plan_declarado": {
     "plan_version": "1.0",
     "plan_id": "b3143bd9-72bb-581a-a417-b254da65964b",
@@ -9,7 +11,7 @@
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
         "lila",
-        "morado",
+        "violeta",
         "plateado"
       ],
       "estilo": "orgánico"
@@ -21,29 +23,29 @@
     "estructuras": [
       {
         "estructura_id": "EST_01_SEMIARCO",
-        "nombre": "Semiarco orgánico",
+        "nombre": "Semiarco",
         "tipo": "semiarco",
         "rol_escena": "focal",
         "ubicacion": "fondo_pared",
         "medidas": {
-          "ancho_m": 1.7,
-          "alto_m": 2
+          "ancho_m": 2,
+          "alto_m": 2.6
         },
         "repeticiones": 1,
-        "densidad": "media",
+        "densidad": "lujosa",
         "mezcla": "clasica",
         "materiales": [
           {
-            "product_id": "8634232996135",
-            "variant_id": "46594210496807",
+            "product_id": "8634258424103",
+            "variant_id": "46594271150375",
             "color": "lila",
             "participacion": 0.4,
             "rol_material": "principal"
           },
           {
-            "product_id": "8634302464295",
-            "variant_id": "46594343731495",
-            "color": "morado",
+            "product_id": "8634269008167",
+            "variant_id": "46594290745639",
+            "color": "violeta",
             "participacion": 0.35,
             "rol_material": "secundario"
           },
@@ -55,19 +57,64 @@
             "rol_material": "acento"
           }
         ],
-        "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+        "porque": "Semiarco orgánico lila pastel, morado cromado y plata sobre el panel.",
         "referencia_element_id": "REF_01_E02",
         "estructura_oficial": "semiarco",
         "colores_referencia": [
           "lila",
-          "morado",
+          "violeta",
+          "plateado"
+        ]
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "nombre": "Columna orgánica",
+        "tipo": "columna",
+        "rol_escena": "soporte",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {
+          "ancho_m": 0.6,
+          "alto_m": 1
+        },
+        "repeticiones": 1,
+        "densidad": "lujosa",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "8634269008167",
+            "variant_id": "46594290745639",
+            "color": "violeta",
+            "participacion": 0.4,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634258424103",
+            "variant_id": "46594271150375",
+            "color": "lila",
+            "participacion": 0.3,
+            "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634257211687",
+            "variant_id": "46594267709735",
+            "color": "plateado",
+            "participacion": 0.3,
+            "rol_material": "acento"
+          }
+        ],
+        "porque": "Racimo orgánico bajo en el piso, a la izquierda del panel (el análisis lo había juntado con el semiarco).",
+        "referencia_element_id": "REF_01_EXTRA_01",
+        "estructura_oficial": "columna_asimetrica",
+        "colores_referencia": [
+          "violeta",
+          "lila",
           "plateado"
         ]
       }
     ],
     "supuestos": [
       "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06)."
     ],
     "referencia_omitida": []
   },
@@ -80,7 +127,7 @@
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
           "lila",
-          "morado",
+          "violeta",
           "plateado"
         ],
         "estilo": "orgánico"
@@ -92,29 +139,29 @@
       "estructuras": [
         {
           "estructura_id": "EST_01_SEMIARCO",
-          "nombre": "Semiarco orgánico",
+          "nombre": "Semiarco",
           "tipo": "semiarco",
           "rol_escena": "focal",
           "ubicacion": "fondo_pared",
           "medidas": {
-            "ancho_m": 1.7,
-            "alto_m": 2
+            "ancho_m": 2,
+            "alto_m": 2.6
           },
           "repeticiones": 1,
-          "densidad": "media",
-          "mezcla": "clasica",
+          "densidad": "lujosa",
+          "mezcla": "organica_fina",
           "materiales": [
             {
-              "product_id": "8634232996135",
-              "variant_id": "46594210496807",
+              "product_id": "8634258424103",
+              "variant_id": "46594271150375",
               "color": "lila",
               "participacion": 0.4,
               "rol_material": "principal"
             },
             {
-              "product_id": "8634302464295",
-              "variant_id": "46594343731495",
-              "color": "morado",
+              "product_id": "8634269008167",
+              "variant_id": "46594290745639",
+              "color": "violeta",
               "participacion": 0.35,
               "rol_material": "secundario"
             },
@@ -126,64 +173,116 @@
               "rol_material": "acento"
             }
           ],
-          "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+          "porque": "Semiarco orgánico lila pastel, morado cromado y plata sobre el panel.",
           "referencia_element_id": "REF_01_E02",
           "estructura_oficial": "semiarco",
           "colores_referencia": [
             "lila",
-            "morado",
+            "violeta",
+            "plateado"
+          ]
+        },
+        {
+          "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+          "nombre": "Columna orgánica",
+          "tipo": "columna",
+          "rol_escena": "soporte",
+          "ubicacion": "lateral_izquierdo",
+          "medidas": {
+            "ancho_m": 0.6,
+            "alto_m": 1
+          },
+          "repeticiones": 1,
+          "densidad": "lujosa",
+          "mezcla": "organica_fina",
+          "materiales": [
+            {
+              "product_id": "8634269008167",
+              "variant_id": "46594290745639",
+              "color": "violeta",
+              "participacion": 0.4,
+              "rol_material": "principal"
+            },
+            {
+              "product_id": "8634258424103",
+              "variant_id": "46594271150375",
+              "color": "lila",
+              "participacion": 0.3,
+              "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634257211687",
+              "variant_id": "46594267709735",
+              "color": "plateado",
+              "participacion": 0.3,
+              "rol_material": "acento"
+            }
+          ],
+          "porque": "Racimo orgánico bajo en el piso, a la izquierda del panel (el análisis lo había juntado con el semiarco).",
+          "referencia_element_id": "REF_01_EXTRA_01",
+          "estructura_oficial": "columna_asimetrica",
+          "colores_referencia": [
+            "violeta",
+            "lila",
             "plateado"
           ]
         }
       ],
       "supuestos": [
-        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-        "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+        "las medidas en metros parten de un tamano frecuente y se ajustan con la lectura de la foto.",
+        "los tamanos son los que se ven en la foto (auditoria 2026-10-06).",
+        "Semiarco: los tamaños de la foto piden la mezcla organica_fina, no clasica.",
+        "Columna orgánica: los tamaños de la foto piden la mezcla organica_fina, no clasica."
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "17f82f520e30a39b875e07707addf0d351608d260d1288b2cbf2f13fc1690165",
+    "plan_hash": "ef7d5989426cf0c60b7ff0ae528cea23fa4fc1d41a73f8787b84b608325fe28d",
     "request_id": "906df0f3-b0d8-5297-ad2e-8d22f34d9edd",
     "compras": [
       {
-        "variant_id": "46594210496807",
-        "product_id": "8634232996135",
-        "sku": "B2B-20000765",
-        "sku_original": "B2B-20000765",
+        "variant_id": "46594267644199",
+        "product_id": "8634257211687",
+        "sku": "B2B-20014171",
+        "sku_original": "B2B-20014171",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
-        "inventory_quantity": 985804,
+        "source_variant_id": "gid://shopify/ProductVariant/46594267644199",
+        "inventory_quantity": 984734,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
-        "tamano_codigo": "R-12",
-        "diam_pulg": 12,
-        "color": "lila",
-        "unidades_necesarias": 25,
-        "design_quantity": 25,
-        "waste_reserve": 0,
-        "required_quantity": 25,
-        "unidades_con_merma": 25,
+        "titulo": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "plateado",
+        "unidades_necesarias": 6,
+        "design_quantity": 6,
+        "waste_reserve": 9,
+        "required_quantity": 15,
+        "unidades_con_merma": 15,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 25,
-        "leftover_inventory": 25,
-        "consumption_cost": 6519,
-        "purchase_cost": 13037,
+        "used": 6,
+        "leftover_inventory": 35,
+        "consumption_cost": 3990,
+        "purchase_cost": 13301,
         "additional_package_for_waste": false,
-        "sobrante": 25,
-        "precio_paquete": 13037,
-        "subtotal": 13037,
+        "sobrante": 44,
+        "precio_paquete": 13301,
+        "subtotal": 13301,
         "estructuras": [
-          "EST_01_SEMIARCO"
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
         ],
         "elementos_origen": [
           {
             "kind": "estructura",
             "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
       },
       {
         "variant_id": "46594267709735",
@@ -198,62 +297,202 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "plateado",
-        "unidades_necesarias": 15,
-        "design_quantity": 15,
-        "waste_reserve": 5,
-        "required_quantity": 20,
-        "unidades_con_merma": 20,
+        "unidades_necesarias": 21,
+        "design_quantity": 21,
+        "waste_reserve": 0,
+        "required_quantity": 21,
+        "unidades_con_merma": 21,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 15,
-        "leftover_inventory": 30,
-        "consumption_cost": 11591,
+        "used": 21,
+        "leftover_inventory": 29,
+        "consumption_cost": 12170,
         "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "sobrante": 35,
+        "sobrante": 29,
         "precio_paquete": 28977,
         "subtotal": 28977,
         "estructuras": [
-          "EST_01_SEMIARCO"
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
         ],
         "elementos_origen": [
           {
             "kind": "estructura",
             "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
           }
         ],
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
       },
       {
-        "variant_id": "46594343731495",
-        "product_id": "8634302464295",
-        "sku": "B2B-20017220",
-        "sku_original": "B2B-20017220",
+        "variant_id": "46594267742503",
+        "product_id": "8634257211687",
+        "sku": "B2B-20015517",
+        "sku_original": "B2B-20015517",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594343731495",
-        "inventory_quantity": 998261,
+        "source_variant_id": "gid://shopify/ProductVariant/46594267742503",
+        "inventory_quantity": 997757,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
-        "tamano_codigo": "R-12",
-        "diam_pulg": 12,
-        "color": "morado",
-        "unidades_necesarias": 22,
-        "design_quantity": 22,
+        "titulo": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "plateado",
+        "unidades_necesarias": 2,
+        "design_quantity": 2,
         "waste_reserve": 0,
-        "required_quantity": 22,
-        "unidades_con_merma": 22,
+        "required_quantity": 2,
+        "unidades_con_merma": 2,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 5901,
+        "purchase_cost": 17704,
+        "additional_package_for_waste": false,
+        "sobrante": 4,
+        "precio_paquete": 17704,
+        "subtotal": 17704,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
+      },
+      {
+        "variant_id": "46594270986535",
+        "product_id": "8634258424103",
+        "sku": "B2B-20012401",
+        "sku_original": "B2B-20012401",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594270986535",
+        "inventory_quantity": 990882,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "lila",
+        "unidades_necesarias": 9,
+        "design_quantity": 9,
+        "waste_reserve": 0,
+        "required_quantity": 9,
+        "unidades_con_merma": 9,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 22,
-        "leftover_inventory": 28,
-        "consumption_cost": 5736,
+        "used": 9,
+        "leftover_inventory": 41,
+        "consumption_cost": 1110,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 41,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472"
+      },
+      {
+        "variant_id": "46594271150375",
+        "product_id": "8634258424103",
+        "sku": "B2B-20012403",
+        "sku_original": "B2B-20012403",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594271150375",
+        "inventory_quantity": 982411,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "lila",
+        "unidades_necesarias": 30,
+        "design_quantity": 30,
+        "waste_reserve": 0,
+        "required_quantity": 30,
+        "unidades_con_merma": 30,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 30,
+        "leftover_inventory": 20,
+        "consumption_cost": 7822,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 28,
+        "sobrante": 20,
         "precio_paquete": 13037,
         "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472"
+      },
+      {
+        "variant_id": "46594271183143",
+        "product_id": "8634258424103",
+        "sku": "B2B-20012312",
+        "sku_original": "B2B-20012312",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594271183143",
+        "inventory_quantity": 997816,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "lila",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 3600,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "sobrante": 3,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
         "estructuras": [
           "EST_01_SEMIARCO"
         ],
@@ -263,25 +502,117 @@
             "id": "EST_01_SEMIARCO"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Orquidea_Morada_Purple_Orchid_056.jpg?v=1763148616"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472"
+      },
+      {
+        "variant_id": "46594290680103",
+        "product_id": "8634269008167",
+        "sku": "B2B-20014173",
+        "sku_original": "B2B-20014173",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594290680103",
+        "inventory_quantity": 997663,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Reflex Violeta — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "violeta",
+        "unidades_necesarias": 8,
+        "design_quantity": 8,
+        "waste_reserve": 0,
+        "required_quantity": 8,
+        "unidades_con_merma": 8,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 2128,
+        "purchase_cost": 13301,
+        "additional_package_for_waste": false,
+        "sobrante": 42,
+        "precio_paquete": 13301,
+        "subtotal": 13301,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Violeta_-_Violet_951.jpg?v=1763581702"
+      },
+      {
+        "variant_id": "46594290745639",
+        "product_id": "8634269008167",
+        "sku": "B2B-20014164",
+        "sku_original": "B2B-20014164",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594290745639",
+        "inventory_quantity": 997429,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Reflex Violeta — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "violeta",
+        "unidades_necesarias": 30,
+        "design_quantity": 30,
+        "waste_reserve": 0,
+        "required_quantity": 30,
+        "unidades_con_merma": 30,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 30,
+        "leftover_inventory": 20,
+        "consumption_cost": 17386,
+        "purchase_cost": 28977,
+        "additional_package_for_waste": false,
+        "sobrante": 20,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Violeta_-_Violet_951.jpg?v=1763581702"
       }
     ],
     "totales": {
       "globos_por_tamano": {
-        "R-12": 62
+        "R-5": 23,
+        "R-12": 81,
+        "R-18": 5
       },
-      "total_unidades": 62,
-      "total_cop": 55051,
-      "design_quantity": 62,
-      "target_waste_reserve": 5,
-      "covered_waste_reserve": 5,
+      "total_unidades": 109,
+      "total_cop": 128660,
+      "design_quantity": 109,
+      "target_waste_reserve": 9,
+      "covered_waste_reserve": 9,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 88,
-      "purchase_cost": 55051,
-      "consumption_cost": 23846,
+      "natural_package_surplus": 203,
+      "purchase_cost": 128660,
+      "consumption_cost": 54107,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
-      "ahorro_paquetes_cop": 0,
+      "ahorro_paquetes_cop": 299619,
       "incluye_iva": true,
       "merma_porcentaje": 8
     },
@@ -291,22 +622,89 @@
     },
     "alternativas": [],
     "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
-    "sustituciones": [],
-    "sin_cobertura": [],
+    "sustituciones": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "pedido": "R-9",
+        "entregado": "R-12",
+        "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para lila."
+      },
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "pedido": "R-9",
+        "entregado": "R-12",
+        "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para violeta."
+      },
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "pedido": "R-9",
+        "entregado": "R-12",
+        "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para plateado."
+      },
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "pedido": "R-18",
+        "entregado": "R-12",
+        "motivo": "La whitelist no tiene R-18; se usó el diámetro más cercano disponible para violeta."
+      },
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "pedido": "R-24",
+        "entregado": "R-18",
+        "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para lila."
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "pedido": "R-9",
+        "entregado": "R-12",
+        "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para violeta."
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "pedido": "R-9",
+        "entregado": "R-12",
+        "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para lila."
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "pedido": "R-9",
+        "entregado": "R-12",
+        "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para plateado."
+      }
+    ],
+    "sin_cobertura": [
+      {
+        "estructura_id": "EST_01_SEMIARCO",
+        "product_id": "8634269008167",
+        "tamano": "R-24"
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634269008167",
+        "tamano": "R-24"
+      }
+    ],
     "advertencias": [
-      "sobrante_alto:46594210496807",
+      "estructura_sin_cobertura:EST_01_SEMIARCO",
+      "estructura_sin_cobertura:EST_02_COLUMNA_ASIMETRICA",
+      "sobrante_alto:46594267644199",
       "sobrante_alto:46594267709735",
-      "sobrante_alto:46594343731495"
+      "sobrante_alto:46594267742503",
+      "sobrante_alto:46594270986535",
+      "sobrante_alto:46594271150375",
+      "sobrante_alto:46594271183143",
+      "sobrante_alto:46594290680103",
+      "sobrante_alto:46594290745639"
     ],
     "estructuras": [
       {
         "estructura_id": "EST_01_SEMIARCO",
-        "nombre": "Semiarco orgánico",
+        "nombre": "Semiarco",
         "tipo": "semiarco",
         "ubicacion": "fondo_pared",
         "repeticiones": 1,
-        "eje_m": 2.91,
-        "total_unidades": 62,
+        "eje_m": 3.63,
+        "total_unidades": 86,
         "lineas": [
           {
             "estructura_id": "EST_01_SEMIARCO",
@@ -314,23 +712,23 @@
               "kind": "estructura",
               "id": "EST_01_SEMIARCO"
             },
-            "product_id": "8634232996135",
-            "variant_id": "46594210496807",
-            "sku": "B2B-20000765",
-            "sku_original": "B2B-20000765",
+            "product_id": "8634258424103",
+            "variant_id": "46594270986535",
+            "sku": "B2B-20012401",
+            "sku_original": "B2B-20012401",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594210496807",
-            "inventory_quantity": 985804,
+            "source_variant_id": "gid://shopify/ProductVariant/46594270986535",
+            "inventory_quantity": 990882,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-5 / PAQUETE X 50",
             "color": "lila",
-            "tamano_codigo": "R-12",
-            "diam_pulg": 12,
-            "diam_cm": 30.5,
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
             "forma": "redondo",
-            "acabado": "fashion",
-            "unidades": 25,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/products/050_95015a79-439c-4ca1-b14c-82a525d43b9a.png?v=1694792985",
+            "acabado": "mate",
+            "unidades": 7,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472",
             "sustitucion": null
           },
           {
@@ -339,23 +737,185 @@
               "kind": "estructura",
               "id": "EST_01_SEMIARCO"
             },
-            "product_id": "8634302464295",
-            "variant_id": "46594343731495",
-            "sku": "B2B-20017220",
-            "sku_original": "B2B-20017220",
+            "product_id": "8634269008167",
+            "variant_id": "46594290680103",
+            "sku": "B2B-20014173",
+            "sku_original": "B2B-20014173",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594343731495",
-            "inventory_quantity": 998261,
+            "source_variant_id": "gid://shopify/ProductVariant/46594290680103",
+            "inventory_quantity": 997663,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
-            "color": "morado",
+            "titulo": "B2b Globo Latex Redondo Reflex Violeta — R-5 / PAQUETE X 50",
+            "color": "violeta",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 6,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Violeta_-_Violet_951.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267644199",
+            "sku": "B2B-20014171",
+            "sku_original": "B2B-20014171",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267644199",
+            "inventory_quantity": 984734,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50",
+            "color": "plateado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 5,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634258424103",
+            "variant_id": "46594271150375",
+            "sku": "B2B-20012403",
+            "sku_original": "B2B-20012403",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594271150375",
+            "inventory_quantity": 982411,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-12 / PAQUETE X 50",
+            "color": "lila",
             "tamano_codigo": "R-12",
             "diam_pulg": 12,
             "diam_cm": 30.5,
             "forma": "redondo",
-            "acabado": "fashion",
-            "unidades": 22,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Orquidea_Morada_Purple_Orchid_056.jpg?v=1763148616",
+            "acabado": "mate",
+            "unidades": 6,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472",
+            "sustitucion": {
+              "pedido": "R-9",
+              "entregado": "R-12",
+              "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para lila."
+            }
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634269008167",
+            "variant_id": "46594290745639",
+            "sku": "B2B-20014164",
+            "sku_original": "B2B-20014164",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594290745639",
+            "inventory_quantity": 997429,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Violeta — R-12 / PAQUETE X 50",
+            "color": "violeta",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 6,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Violeta_-_Violet_951.jpg?v=1763581702",
+            "sustitucion": {
+              "pedido": "R-9",
+              "entregado": "R-12",
+              "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para violeta."
+            }
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267709735",
+            "sku": "B2B-20014160",
+            "sku_original": "B2B-20014160",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
+            "inventory_quantity": 980461,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+            "color": "plateado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 4,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "sustitucion": {
+              "pedido": "R-9",
+              "entregado": "R-12",
+              "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para plateado."
+            }
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634258424103",
+            "variant_id": "46594271150375",
+            "sku": "B2B-20012403",
+            "sku_original": "B2B-20012403",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594271150375",
+            "inventory_quantity": 982411,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-12 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "mate",
+            "unidades": 19,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634269008167",
+            "variant_id": "46594290745639",
+            "sku": "B2B-20014164",
+            "sku_original": "B2B-20014164",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594290745639",
+            "inventory_quantity": 997429,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Violeta — R-12 / PAQUETE X 50",
+            "color": "violeta",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 16,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Violeta_-_Violet_951.jpg?v=1763581702",
             "sustitucion": null
           },
           {
@@ -379,7 +939,409 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "reflex",
-            "unidades": 15,
+            "unidades": 12,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634258424103",
+            "variant_id": "46594271183143",
+            "sku": "B2B-20012312",
+            "sku_original": "B2B-20012312",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594271183143",
+            "inventory_quantity": 997816,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-18 / PAQUETE X 6",
+            "color": "lila",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "mate",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634269008167",
+            "variant_id": "46594290745639",
+            "sku": "B2B-20014164",
+            "sku_original": "B2B-20014164",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594290745639",
+            "inventory_quantity": 997429,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Violeta — R-12 / PAQUETE X 50",
+            "color": "violeta",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Violeta_-_Violet_951.jpg?v=1763581702",
+            "sustitucion": {
+              "pedido": "R-18",
+              "entregado": "R-12",
+              "motivo": "La whitelist no tiene R-18; se usó el diámetro más cercano disponible para violeta."
+            }
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267742503",
+            "sku": "B2B-20015517",
+            "sku_original": "B2B-20015517",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267742503",
+            "inventory_quantity": 997757,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6",
+            "color": "plateado",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634258424103",
+            "variant_id": "46594271183143",
+            "sku": "B2B-20012312",
+            "sku_original": "B2B-20012312",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594271183143",
+            "inventory_quantity": 997816,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-18 / PAQUETE X 6",
+            "color": "lila",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "mate",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472",
+            "sustitucion": {
+              "pedido": "R-24",
+              "entregado": "R-18",
+              "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para lila."
+            }
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 64,
+            "pct": 74.42
+          },
+          {
+            "diam_pulg": 5,
+            "forma": "redondo",
+            "unidades": 18,
+            "pct": 20.93
+          },
+          {
+            "diam_pulg": 18,
+            "forma": "redondo",
+            "unidades": 4,
+            "pct": 4.65
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "nombre": "Columna orgánica",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo",
+        "repeticiones": 1,
+        "eje_m": 1,
+        "total_unidades": 23,
+        "lineas": [
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634269008167",
+            "variant_id": "46594290680103",
+            "sku": "B2B-20014173",
+            "sku_original": "B2B-20014173",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594290680103",
+            "inventory_quantity": 997663,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Violeta — R-5 / PAQUETE X 50",
+            "color": "violeta",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Violeta_-_Violet_951.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634258424103",
+            "variant_id": "46594270986535",
+            "sku": "B2B-20012401",
+            "sku_original": "B2B-20012401",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594270986535",
+            "inventory_quantity": 990882,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-5 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "mate",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267644199",
+            "sku": "B2B-20014171",
+            "sku_original": "B2B-20014171",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267644199",
+            "inventory_quantity": 984734,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50",
+            "color": "plateado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634269008167",
+            "variant_id": "46594290745639",
+            "sku": "B2B-20014164",
+            "sku_original": "B2B-20014164",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594290745639",
+            "inventory_quantity": 997429,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Violeta — R-12 / PAQUETE X 50",
+            "color": "violeta",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Violeta_-_Violet_951.jpg?v=1763581702",
+            "sustitucion": {
+              "pedido": "R-9",
+              "entregado": "R-12",
+              "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para violeta."
+            }
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634258424103",
+            "variant_id": "46594271150375",
+            "sku": "B2B-20012403",
+            "sku_original": "B2B-20012403",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594271150375",
+            "inventory_quantity": 982411,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-12 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "mate",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472",
+            "sustitucion": {
+              "pedido": "R-9",
+              "entregado": "R-12",
+              "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para lila."
+            }
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267709735",
+            "sku": "B2B-20014160",
+            "sku_original": "B2B-20014160",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
+            "inventory_quantity": 980461,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+            "color": "plateado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "sustitucion": {
+              "pedido": "R-9",
+              "entregado": "R-12",
+              "motivo": "La whitelist no tiene R-9; se usó el diámetro más cercano disponible para plateado."
+            }
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634269008167",
+            "variant_id": "46594290745639",
+            "sku": "B2B-20014164",
+            "sku_original": "B2B-20014164",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594290745639",
+            "inventory_quantity": 997429,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Violeta — R-12 / PAQUETE X 50",
+            "color": "violeta",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 5,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Violeta_-_Violet_951.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634258424103",
+            "variant_id": "46594271150375",
+            "sku": "B2B-20012403",
+            "sku_original": "B2B-20012403",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594271150375",
+            "inventory_quantity": 982411,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Lila — R-12 / PAQUETE X 50",
+            "color": "lila",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "mate",
+            "unidades": 4,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Lila_-_Lilac_650.jpg?v=1763572472",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267709735",
+            "sku": "B2B-20014160",
+            "sku_original": "B2B-20014160",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
+            "inventory_quantity": 980461,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+            "color": "plateado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 4,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COLUMNA_ASIMETRICA"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267742503",
+            "sku": "B2B-20015517",
+            "sku_original": "B2B-20015517",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267742503",
+            "inventory_quantity": 997757,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6",
+            "color": "plateado",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 1,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
             "sustitucion": null
           }
@@ -388,8 +1350,20 @@
           {
             "diam_pulg": 12,
             "forma": "redondo",
-            "unidades": 62,
-            "pct": 100
+            "unidades": 17,
+            "pct": 73.91
+          },
+          {
+            "diam_pulg": 5,
+            "forma": "redondo",
+            "unidades": 5,
+            "pct": 21.74
+          },
+          {
+            "diam_pulg": 18,
+            "forma": "redondo",
+            "unidades": 1,
+            "pct": 4.35
           }
         ],
         "supuestos": []
@@ -398,7 +1372,11 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_SEMIARCO",
-        "consumo_cop": 20948
+        "consumo_cop": 39460
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA_ASIMETRICA",
+        "consumo_cop": 12253
       }
     ],
     "conteos_referencia": [
@@ -435,8 +1413,8 @@
           "confianza": 0.88
         },
         "globos_foto": 180,
-        "globos_antes": 62,
-        "globos_despues": 62,
+        "globos_antes": 87,
+        "globos_despues": 87,
         "cambios": [],
         "motivo": "Ninguna densidad ni medida dentro de ±35 % alcanza la cuenta de la foto."
       }
@@ -445,45 +1423,84 @@
   "material_estimate": {
     "version": "design-material-estimate-v1",
     "design": {
-      "type": "semiarco",
-      "shape": "clasica",
+      "type": "composite_installation",
+      "shape": "coordinated structures",
       "dimensions_m": {
-        "width": 1.7,
-        "height": 2,
+        "width": 2,
+        "height": 2.6,
         "length": null
       },
-      "installation_length_m": 2.91,
-      "density": "media",
-      "visual_density": "medium",
-      "visual_scale": "medium",
-      "cluster_count": 1
+      "installation_length_m": 4.63,
+      "density": "lujosa",
+      "visual_density": "high",
+      "visual_scale": "very_large",
+      "cluster_count": 2
     },
     "balloons": [
       {
         "structure_id": "EST_01_SEMIARCO",
-        "product_id": "8634232996135",
-        "variant_id": "46594210496807",
+        "product_id": "8634258424103",
+        "variant_id": "46594270986535",
         "color": "lila",
-        "finish": "fashion",
-        "size_inches": 12,
+        "finish": "mate",
+        "size_inches": 5,
         "shape": "redondo",
-        "design_quantity": 25,
+        "design_quantity": 7,
         "waste_reserve": 0,
-        "required_quantity": 25,
-        "waste_adjusted_quantity": 25
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
       },
       {
         "structure_id": "EST_01_SEMIARCO",
-        "product_id": "8634302464295",
-        "variant_id": "46594343731495",
-        "color": "morado",
-        "finish": "fashion",
+        "product_id": "8634269008167",
+        "variant_id": "46594290680103",
+        "color": "violeta",
+        "finish": "reflex",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634257211687",
+        "variant_id": "46594267644199",
+        "color": "plateado",
+        "finish": "reflex",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634258424103",
+        "variant_id": "46594271150375",
+        "color": "lila",
+        "finish": "mate",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 22,
+        "design_quantity": 6,
         "waste_reserve": 0,
-        "required_quantity": 22,
-        "waste_adjusted_quantity": 22
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634269008167",
+        "variant_id": "46594290745639",
+        "color": "violeta",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6
       },
       {
         "structure_id": "EST_01_SEMIARCO",
@@ -493,99 +1510,637 @@
         "finish": "reflex",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 15,
+        "design_quantity": 4,
         "waste_reserve": 0,
-        "required_quantity": 15,
-        "waste_adjusted_quantity": 15
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634258424103",
+        "variant_id": "46594271150375",
+        "color": "lila",
+        "finish": "mate",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 19,
+        "waste_reserve": 0,
+        "required_quantity": 19,
+        "waste_adjusted_quantity": 19
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634269008167",
+        "variant_id": "46594290745639",
+        "color": "violeta",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 16,
+        "waste_reserve": 0,
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634257211687",
+        "variant_id": "46594267709735",
+        "color": "plateado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634258424103",
+        "variant_id": "46594271183143",
+        "color": "lila",
+        "finish": "mate",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634269008167",
+        "variant_id": "46594290745639",
+        "color": "violeta",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634257211687",
+        "variant_id": "46594267742503",
+        "color": "plateado",
+        "finish": "reflex",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634258424103",
+        "variant_id": "46594271183143",
+        "color": "lila",
+        "finish": "mate",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634269008167",
+        "variant_id": "46594290680103",
+        "color": "violeta",
+        "finish": "reflex",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634258424103",
+        "variant_id": "46594270986535",
+        "color": "lila",
+        "finish": "mate",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634257211687",
+        "variant_id": "46594267644199",
+        "color": "plateado",
+        "finish": "reflex",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634269008167",
+        "variant_id": "46594290745639",
+        "color": "violeta",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634258424103",
+        "variant_id": "46594271150375",
+        "color": "lila",
+        "finish": "mate",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634257211687",
+        "variant_id": "46594267709735",
+        "color": "plateado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634269008167",
+        "variant_id": "46594290745639",
+        "color": "violeta",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634258424103",
+        "variant_id": "46594271150375",
+        "color": "lila",
+        "finish": "mate",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634257211687",
+        "variant_id": "46594267709735",
+        "color": "plateado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_02_COLUMNA_ASIMETRICA",
+        "product_id": "8634257211687",
+        "variant_id": "46594267742503",
+        "color": "plateado",
+        "finish": "reflex",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
       }
     ],
     "special_elements": [],
     "purchases": [
       {
-        "product_id": "8634232996135",
-        "variant_id": "46594210496807",
-        "design_quantity": 25,
-        "waste_reserve": 0,
-        "required_quantity": 25,
-        "waste_adjusted_quantity": 25,
+        "product_id": "8634257211687",
+        "variant_id": "46594267644199",
+        "design_quantity": 6,
+        "waste_reserve": 9,
+        "required_quantity": 15,
+        "waste_adjusted_quantity": 15,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 25,
-        "leftover_inventory": 25,
-        "consumption_cost": 6519,
-        "purchase_cost": 13037,
+        "used": 6,
+        "leftover_inventory": 35,
+        "consumption_cost": 3990,
+        "purchase_cost": 13301,
         "additional_package_for_waste": false,
-        "operational_surplus": 25,
-        "potential_surplus": 25
+        "operational_surplus": 35,
+        "potential_surplus": 44
       },
       {
         "product_id": "8634257211687",
         "variant_id": "46594267709735",
-        "design_quantity": 15,
-        "waste_reserve": 5,
-        "required_quantity": 20,
-        "waste_adjusted_quantity": 20,
+        "design_quantity": 21,
+        "waste_reserve": 0,
+        "required_quantity": 21,
+        "waste_adjusted_quantity": 21,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 15,
-        "leftover_inventory": 30,
-        "consumption_cost": 11591,
+        "used": 21,
+        "leftover_inventory": 29,
+        "consumption_cost": 12170,
         "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "operational_surplus": 30,
-        "potential_surplus": 35
+        "operational_surplus": 29,
+        "potential_surplus": 29
       },
       {
-        "product_id": "8634302464295",
-        "variant_id": "46594343731495",
-        "design_quantity": 22,
+        "product_id": "8634257211687",
+        "variant_id": "46594267742503",
+        "design_quantity": 2,
         "waste_reserve": 0,
-        "required_quantity": 22,
-        "waste_adjusted_quantity": 22,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 5901,
+        "purchase_cost": 17704,
+        "additional_package_for_waste": false,
+        "operational_surplus": 4,
+        "potential_surplus": 4
+      },
+      {
+        "product_id": "8634258424103",
+        "variant_id": "46594270986535",
+        "design_quantity": 9,
+        "waste_reserve": 0,
+        "required_quantity": 9,
+        "waste_adjusted_quantity": 9,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 22,
-        "leftover_inventory": 28,
-        "consumption_cost": 5736,
+        "used": 9,
+        "leftover_inventory": 41,
+        "consumption_cost": 1110,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 41,
+        "potential_surplus": 41
+      },
+      {
+        "product_id": "8634258424103",
+        "variant_id": "46594271150375",
+        "design_quantity": 30,
+        "waste_reserve": 0,
+        "required_quantity": 30,
+        "waste_adjusted_quantity": 30,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 30,
+        "leftover_inventory": 20,
+        "consumption_cost": 7822,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 28,
-        "potential_surplus": 28
+        "operational_surplus": 20,
+        "potential_surplus": 20
+      },
+      {
+        "product_id": "8634258424103",
+        "variant_id": "46594271183143",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 3600,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "operational_surplus": 3,
+        "potential_surplus": 3
+      },
+      {
+        "product_id": "8634269008167",
+        "variant_id": "46594290680103",
+        "design_quantity": 8,
+        "waste_reserve": 0,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 2128,
+        "purchase_cost": 13301,
+        "additional_package_for_waste": false,
+        "operational_surplus": 42,
+        "potential_surplus": 42
+      },
+      {
+        "product_id": "8634269008167",
+        "variant_id": "46594290745639",
+        "design_quantity": 30,
+        "waste_reserve": 0,
+        "required_quantity": 30,
+        "waste_adjusted_quantity": 30,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 30,
+        "leftover_inventory": 20,
+        "consumption_cost": 17386,
+        "purchase_cost": 28977,
+        "additional_package_for_waste": false,
+        "operational_surplus": 20,
+        "potential_surplus": 20
       }
     ],
     "totals": {
-      "design_quantity": 62,
-      "target_waste_reserve": 5,
-      "covered_waste_reserve": 5,
+      "design_quantity": 109,
+      "target_waste_reserve": 9,
+      "covered_waste_reserve": 9,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 88,
-      "required_quantity": 67,
-      "consumption_cost": 23846,
-      "purchase_cost": 55051,
+      "natural_package_surplus": 203,
+      "required_quantity": 118,
+      "consumption_cost": 54107,
+      "purchase_cost": 128660,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
-      "waste_adjusted_quantity": 67,
-      "purchase_quantity": 150,
-      "operational_surplus": 83,
-      "potential_surplus": 88
+      "waste_adjusted_quantity": 118,
+      "purchase_quantity": 312,
+      "operational_surplus": 194,
+      "potential_surplus": 203
     },
     "warnings": [
-      "sobrante_alto:46594210496807",
+      "estructura_sin_cobertura:EST_01_SEMIARCO",
+      "estructura_sin_cobertura:EST_02_COLUMNA_ASIMETRICA",
+      "sobrante_alto:46594267644199",
       "sobrante_alto:46594267709735",
-      "sobrante_alto:46594343731495"
+      "sobrante_alto:46594267742503",
+      "sobrante_alto:46594270986535",
+      "sobrante_alto:46594271150375",
+      "sobrante_alto:46594271183143",
+      "sobrante_alto:46594290680103",
+      "sobrante_alto:46594290745639"
     ]
   },
   "quote": {
     "lineas": [
       {
-        "id": "46594210496807",
-        "productId": "8634232996135",
+        "id": "46594267644199",
+        "productId": "8634257211687",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02",
+          "REF_01_EXTRA_01"
+        ],
+        "color": "plateado",
+        "cantidadNecesaria": 6,
+        "designQuantity": 6,
+        "wasteReserve": 9,
+        "requiredQuantity": 15,
+        "purchaseQuantity": 50,
+        "used": 6,
+        "leftoverInventory": 35,
+        "consumptionCost": 3990,
+        "purchaseCost": 13301,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594267644199",
+        "nombre": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50",
+        "precioPaquete": 13301,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13301,
+        "sobrante": 44
+      },
+      {
+        "id": "46594267709735",
+        "productId": "8634257211687",
         "tamano": "R-12",
         "tamanoCodigo": "R-12",
         "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02",
+          "REF_01_EXTRA_01"
+        ],
+        "color": "plateado",
+        "cantidadNecesaria": 21,
+        "designQuantity": 21,
+        "wasteReserve": 0,
+        "requiredQuantity": 21,
+        "purchaseQuantity": 50,
+        "used": 21,
+        "leftoverInventory": 29,
+        "consumptionCost": 12170,
+        "purchaseCost": 28977,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594267709735",
+        "nombre": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+        "precioPaquete": 28977,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 28977,
+        "sobrante": 29
+      },
+      {
+        "id": "46594267742503",
+        "productId": "8634257211687",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02",
+          "REF_01_EXTRA_01"
+        ],
+        "color": "plateado",
+        "cantidadNecesaria": 2,
+        "designQuantity": 2,
+        "wasteReserve": 0,
+        "requiredQuantity": 2,
+        "purchaseQuantity": 6,
+        "used": 2,
+        "leftoverInventory": 4,
+        "consumptionCost": 5901,
+        "purchaseCost": 17704,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594267742503",
+        "nombre": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6",
+        "precioPaquete": 17704,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 17704,
+        "sobrante": 4
+      },
+      {
+        "id": "46594270986535",
+        "productId": "8634258424103",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02",
+          "REF_01_EXTRA_01"
+        ],
+        "color": "lila",
+        "cantidadNecesaria": 9,
+        "designQuantity": 9,
+        "wasteReserve": 0,
+        "requiredQuantity": 9,
+        "purchaseQuantity": 50,
+        "used": 9,
+        "leftoverInventory": 41,
+        "consumptionCost": 1110,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594270986535",
+        "nombre": "B2b Globo Latex Redondo Pastel Mate Lila — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 41
+      },
+      {
+        "id": "46594271150375",
+        "productId": "8634258424103",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02",
+          "REF_01_EXTRA_01"
+        ],
+        "color": "lila",
+        "cantidadNecesaria": 30,
+        "designQuantity": 30,
+        "wasteReserve": 0,
+        "requiredQuantity": 30,
+        "purchaseQuantity": 50,
+        "used": 30,
+        "leftoverInventory": 20,
+        "consumptionCost": 7822,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594271150375",
+        "nombre": "B2b Globo Latex Redondo Pastel Mate Lila — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 20
+      },
+      {
+        "id": "46594271183143",
+        "productId": "8634258424103",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
         "estructuras": [
           "EST_01_SEMIARCO"
         ],
@@ -599,112 +2154,124 @@
           "REF_01_E02"
         ],
         "color": "lila",
-        "cantidadNecesaria": 25,
-        "designQuantity": 25,
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
         "wasteReserve": 0,
-        "requiredQuantity": 25,
-        "purchaseQuantity": 50,
-        "used": 25,
-        "leftoverInventory": 25,
-        "consumptionCost": 6519,
-        "purchaseCost": 13037,
+        "requiredQuantity": 3,
+        "purchaseQuantity": 6,
+        "used": 3,
+        "leftoverInventory": 3,
+        "consumptionCost": 3600,
+        "purchaseCost": 7199,
         "additionalPackageForWaste": false,
         "disponible": true,
-        "varianteId": "46594210496807",
-        "nombre": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
-        "precioPaquete": 13037,
-        "unidadesPaquete": 50,
+        "varianteId": "46594271183143",
+        "nombre": "B2b Globo Latex Redondo Pastel Mate Lila — R-18 / PAQUETE X 6",
+        "precioPaquete": 7199,
+        "unidadesPaquete": 6,
         "paquetes": 1,
-        "subtotal": 13037,
-        "sobrante": 25
+        "subtotal": 7199,
+        "sobrante": 3
       },
       {
-        "id": "46594267709735",
-        "productId": "8634257211687",
-        "tamano": "R-12",
-        "tamanoCodigo": "R-12",
-        "diamPulg": 12,
+        "id": "46594290680103",
+        "productId": "8634269008167",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
         "estructuras": [
-          "EST_01_SEMIARCO"
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
         ],
         "elementosOrigen": [
           {
             "kind": "estructura",
             "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
           }
         ],
         "referenciaElementIds": [
-          "REF_01_E02"
+          "REF_01_E02",
+          "REF_01_EXTRA_01"
         ],
-        "color": "plateado",
-        "cantidadNecesaria": 15,
-        "designQuantity": 15,
-        "wasteReserve": 5,
-        "requiredQuantity": 20,
+        "color": "violeta",
+        "cantidadNecesaria": 8,
+        "designQuantity": 8,
+        "wasteReserve": 0,
+        "requiredQuantity": 8,
         "purchaseQuantity": 50,
-        "used": 15,
-        "leftoverInventory": 30,
-        "consumptionCost": 11591,
+        "used": 8,
+        "leftoverInventory": 42,
+        "consumptionCost": 2128,
+        "purchaseCost": 13301,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594290680103",
+        "nombre": "B2b Globo Latex Redondo Reflex Violeta — R-5 / PAQUETE X 50",
+        "precioPaquete": 13301,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13301,
+        "sobrante": 42
+      },
+      {
+        "id": "46594290745639",
+        "productId": "8634269008167",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO",
+          "EST_02_COLUMNA_ASIMETRICA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNA_ASIMETRICA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02",
+          "REF_01_EXTRA_01"
+        ],
+        "color": "violeta",
+        "cantidadNecesaria": 30,
+        "designQuantity": 30,
+        "wasteReserve": 0,
+        "requiredQuantity": 30,
+        "purchaseQuantity": 50,
+        "used": 30,
+        "leftoverInventory": 20,
+        "consumptionCost": 17386,
         "purchaseCost": 28977,
         "additionalPackageForWaste": false,
         "disponible": true,
-        "varianteId": "46594267709735",
-        "nombre": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+        "varianteId": "46594290745639",
+        "nombre": "B2b Globo Latex Redondo Reflex Violeta — R-12 / PAQUETE X 50",
         "precioPaquete": 28977,
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 28977,
-        "sobrante": 35
-      },
-      {
-        "id": "46594343731495",
-        "productId": "8634302464295",
-        "tamano": "R-12",
-        "tamanoCodigo": "R-12",
-        "diamPulg": 12,
-        "estructuras": [
-          "EST_01_SEMIARCO"
-        ],
-        "elementosOrigen": [
-          {
-            "kind": "estructura",
-            "id": "EST_01_SEMIARCO"
-          }
-        ],
-        "referenciaElementIds": [
-          "REF_01_E02"
-        ],
-        "color": "morado",
-        "cantidadNecesaria": 22,
-        "designQuantity": 22,
-        "wasteReserve": 0,
-        "requiredQuantity": 22,
-        "purchaseQuantity": 50,
-        "used": 22,
-        "leftoverInventory": 28,
-        "consumptionCost": 5736,
-        "purchaseCost": 13037,
-        "additionalPackageForWaste": false,
-        "disponible": true,
-        "varianteId": "46594343731495",
-        "nombre": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50",
-        "precioPaquete": 13037,
-        "unidadesPaquete": 50,
-        "paquetes": 1,
-        "subtotal": 13037,
-        "sobrante": 28
+        "sobrante": 20
       }
     ],
-    "total": 55051,
+    "total": 128660,
     "mermaPorcentaje": 8,
-    "purchaseCost": 55051,
-    "consumptionCost": 23846,
-    "targetWasteReserve": 5,
-    "coveredWasteReserve": 5,
-    "leftoverInventory": 83,
+    "purchaseCost": 128660,
+    "consumptionCost": 54107,
+    "targetWasteReserve": 9,
+    "coveredWasteReserve": 9,
+    "leftoverInventory": 194,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "17f82f520e30a39b875e07707addf0d351608d260d1288b2cbf2f13fc1690165"
+    "plan_hash": "ef7d5989426cf0c60b7ff0ae528cea23fa4fc1d41a73f8787b84b608325fe28d"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -712,37 +2279,141 @@
     "incluye_iva": true,
     "lineas": [
       {
-        "variant_id": "46594210496807",
-        "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 25,
+        "variant_id": "46594267644199",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 6,
         "unidades_paquete": 50,
         "paquetes": 1,
-        "precio_paquete": 13037,
-        "subtotal": 13037,
-        "sobrante": 25
+        "precio_paquete": 13301,
+        "subtotal": 13301,
+        "sobrante": 44
       },
       {
         "variant_id": "46594267709735",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 15,
+        "cantidad_necesaria": 21,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 28977,
         "subtotal": 28977,
-        "sobrante": 35
+        "sobrante": 29
       },
       {
-        "variant_id": "46594343731495",
+        "variant_id": "46594267742503",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 2,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 17704,
+        "subtotal": 17704,
+        "sobrante": 4
+      },
+      {
+        "variant_id": "46594270986535",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 9,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 41
+      },
+      {
+        "variant_id": "46594271150375",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 22,
+        "cantidad_necesaria": 30,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 28
+        "sobrante": 20
+      },
+      {
+        "variant_id": "46594271183143",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 3,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
+        "sobrante": 3
+      },
+      {
+        "variant_id": "46594290680103",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 8,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13301,
+        "subtotal": 13301,
+        "sobrante": 42
+      },
+      {
+        "variant_id": "46594290745639",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 30,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 28977,
+        "subtotal": 28977,
+        "sobrante": 20
       }
     ],
-    "total": 55051
+    "total": 128660
   },
-  "descartadas": []
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E02",
+      "tamanos": "chicos_con_pocos_grandes",
+      "confianza": 1
+    },
+    {
+      "referencia_element_id": "REF_01_EXTRA_01",
+      "tamanos": "chicos_con_pocos_grandes",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [
+    {
+      "globos_visibles": 120,
+      "exacto": false,
+      "estimado_total": 180,
+      "racimos": null,
+      "globos_por_racimo": null,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.35
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.4
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.2
+        },
+        {
+          "clase": "gigante",
+          "proporcion": 0.05
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.88,
+      "referencia_element_id": "REF_01_E02"
+    }
+  ],
+  "remates": [],
+  "colores_cliente": {
+    "46594270986535": "lila pastel",
+    "46594271150375": "lila pastel",
+    "46594271183143": "lila pastel",
+    "46594290680103": "morado cromado",
+    "46594290745639": "morado cromado",
+    "46594267644199": "plateado",
+    "46594267709735": "plateado",
+    "46594267742503": "plateado"
+  },
+  "extras_foto": []
 }

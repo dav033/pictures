@@ -205,7 +205,10 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   { value: "dorado", aliases: ["dorado", "dorados", "dorada", "doradas", "oro", "gold"] },
   { value: "plateado", aliases: ["plateado", "plateados", "plateada", "plateadas", "plata", "silver"] },
   { value: "rojo", aliases: ["rojo", "rojos", "roja", "rojas", "red"] },
-  { value: "azul", aliases: ["azul", "azules", "azul rey", "azul caribe", "azul naval", "blue"] },
+  // Los tonos claros (`TONOS_CLAROS_V2`) son de su familia del catálogo: «celeste» es azul para los filtros, las
+  // restricciones y Python (que solo conocen familias), y `clasificarTonos` conserva el tono para la vista guiada.
+  // Antes «celeste» no era ningún color: «rosa, lila, celeste y dorado» se leía como tres colores (probador, 2026-10-07).
+  { value: "azul", aliases: ["azul", "azules", "azul rey", "azul caribe", "azul naval", "blue", "celeste", "celestes", "azul celeste", "azul claro", "azul cielo", "azul bebe", "azul pastel", "azul palido"] },
   // "rose"/"dusty rose" are how a photo analysis names old pink ("rose gold" is
   // longer and wins at the same span).
   { value: "rosado", aliases: ["rosado", "rosados", "rosada", "rosadas", "rosa", "pink", "rose", "dusty rose", "blush"] },
@@ -213,6 +216,8 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   { value: "blanco", aliases: ["blanco", "blancos", "blanca", "blancas", "white"] },
   { value: "negro", aliases: ["negro", "negros", "negra", "negras", "black"] },
   { value: "morado", aliases: ["morado", "morados", "morada", "moradas", "purple"] },
+  // «durazno» NO va aquí: como color de paleta sería naranja y un plan «naranja» compraría el Fashion Naranja vivo. Es un
+  // tono (`TONOS_V2.durazno`): la búsqueda se queda con el Fashion Durazno y su familia del catálogo sigue siendo naranja.
   { value: "naranja", aliases: ["naranja", "naranjas", "orange"] },
   { value: "amarillo", aliases: ["amarillo", "amarillos", "amarilla", "amarillas", "yellow"] },
   { value: "fucsia", aliases: ["fucsia", "magenta", "fuchsia"] },
@@ -247,6 +252,107 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
  * agregar un alias aquí cambia también lo que el cliente puede exigir.
  */
 export const ALIAS_COLORES_V2: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = COLORS;
+
+/**
+ * Tonos claros que el catálogo vende y que la paleta junta con su familia: «celeste» (Fashion Azul Celeste, Pastel
+ * Mate Azul…), «rosa pastel» (Pastel Mate Rosado, Fashion Rosado) y «durazno» (Fashion Durazno). Lila y menta ya son
+ * colores de la paleta.
+ *
+ * Por qué no entran a `PALETA_COLORES_V2` (probador, 2026-10-07: «rosa, lila, celeste y dorado» salió «Azul cromado»,
+ * un azul petróleo): la paleta viaja a Python por el contrato (`x-paleta-colores`, `x-hex-colores`) y es el vocabulario
+ * de los colores derivados que guarda el catálogo (`derived_colors`): el globo «FASHION AZUL CELESTE» está guardado como
+ * «azul» y el Python del VPS exige que el color de cada material sea uno de los guardados. Un «celeste» de paleta
+ * rompería la cobertura del plan hasta reingestar el catálogo y desplegar Python. El tono vive del lado de TypeScript:
+ * la vista guiada lo nombra y lo propone, la búsqueda del catálogo se queda con los globos de ese tono
+ * (`src/lib/plan/tonos-color.ts`) y a Python le llega la familia de siempre.
+ */
+export const TONOS_CLAROS_V2 = ["celeste", "rosa pastel", "durazno"] as const;
+export type TonoClaroV2 = (typeof TONOS_CLAROS_V2)[number];
+type ColorPaletaV2 = (typeof PALETA_COLORES_V2)[number];
+
+export type DefinicionTonoV2 = {
+  /** La familia del catálogo con que lo guardan los productos y lo filtra Python. */
+  familia: ColorPaletaV2;
+  /** Cómo se le dice al cliente. */
+  nombre: string;
+  /** Aproximación de pantalla, como `HEX_COLORES_V2`. */
+  hex: string;
+  /** Nombre en inglés para los textos de imagen. */
+  en: string;
+  /** Palabras que lo nombran en lo que escribe el cliente (plegadas como `plegarTexto`). */
+  aliases: readonly string[];
+  /** Palabras del TÍTULO de un producto que lo hacen de este tono («FASHION AZUL CELESTE»). */
+  titulo: readonly string[];
+  /** Un título con «pastel» y la familia es de este tono («PASTEL MATE AZUL», «CRISTAL PASTEL ROSADO»). */
+  pastel: boolean;
+  /** `nombreBase` de la lámina Sempertex (`tabla-color.json`) de las referencias de este tono. */
+  basesSempertex: readonly string[];
+};
+
+export const TONOS_V2: Readonly<Record<TonoClaroV2, DefinicionTonoV2>> = {
+  celeste: {
+    familia: "azul",
+    nombre: "Celeste",
+    hex: "#8fd0f2",
+    en: "light blue",
+    aliases: ["celeste", "celestes", "azul celeste", "azul claro", "azul cielo", "azul bebe", "azul pastel", "azul palido", "baby blue", "light blue", "sky blue", "pale blue", "pastel blue"],
+    titulo: ["celeste", "cielo", "bebe"],
+    pastel: true,
+    basesSempertex: ["light blue", "pale blue"],
+  },
+  "rosa pastel": {
+    familia: "rosado",
+    nombre: "Rosa pastel",
+    hex: "#f6c4d4",
+    en: "pastel pink",
+    aliases: ["rosa pastel", "rosado pastel", "rosada pastel", "rosa bebe", "rosado bebe", "rosa claro", "rosado claro", "rosa palido", "baby pink", "light pink", "pale pink", "pastel pink"],
+    titulo: [],
+    pastel: true,
+    basesSempertex: ["light pink", "pale pink"],
+  },
+  durazno: {
+    familia: "naranja",
+    nombre: "Durazno",
+    hex: "#ffb38a",
+    en: "peach",
+    aliases: ["durazno", "duraznos", "melocoton", "peach"],
+    titulo: ["durazno", "melocoton", "peach"],
+    pastel: false,
+    basesSempertex: ["peach"],
+  },
+};
+
+const TONOS: readonly Alias<TonoClaroV2>[] = TONOS_CLAROS_V2.map((tono) => ({ value: tono, aliases: TONOS_V2[tono].aliases }));
+
+/** Los tonos claros que nombra un texto: «rosa, lila, celeste y dorado» → [celeste]. */
+export function clasificarTonos(text: string): TaxonomyMatch<TonoClaroV2> {
+  return matchAliases(text, TONOS);
+}
+
+/**
+ * Los colores que puede llevar una propuesta de la vista guiada: la paleta y los tonos claros. Es solo de TypeScript
+ * (`PropuestaComposicionSchema`): el plan que llega a Python lleva la familia (`familiaDeColorPropuesta`).
+ */
+export const COLORES_PROPUESTA_V2 = [...PALETA_COLORES_V2, ...TONOS_CLAROS_V2] as const;
+export type ColorPropuestaV2 = (typeof COLORES_PROPUESTA_V2)[number];
+
+/** El tono claro que ES este color («Celeste», «rosa pastel»), o null si es otro. */
+export function tonoClaroDe(color: string): TonoClaroV2 | null {
+  const plegado = fold(color);
+  return TONOS_CLAROS_V2.find((tono) => tono === plegado) ?? null;
+}
+
+/** «celeste» → «azul»; un color de la paleta se queda como está. */
+export function familiaDeColorPropuesta(color: string): string {
+  const tono = tonoClaroDe(color);
+  return tono ? TONOS_V2[tono].familia : color;
+}
+
+/**
+ * Los colores claros que el catálogo vende, en el orden en que se ofrecen al cliente («Añadir un color», chips de
+ * colores): celeste, rosa pastel, lila, menta y durazno.
+ */
+export const COLORES_CLAROS_V2: readonly ColorPropuestaV2[] = ["celeste", "rosa pastel", "lila", "menta", "durazno"];
 
 const FINISHES: readonly Alias<(typeof ACABADOS_CATALOGO_V2)[number]>[] = [
   { value: "satin", aliases: ["satin", "satín", "satinado"] },

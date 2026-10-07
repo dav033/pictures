@@ -44,20 +44,20 @@
       "detalleCantidad": "estimado a partir de la foto (8 colgantes de 4 a 6 eslabones)"
     },
     {
-      "variantId": "46594264629543",
-      "sku": "B2B-20014169",
+      "variantId": "46594290975015",
+      "sku": "B2B-20016802",
       "cantidad": 63,
-      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado",
+      "nota": "B2b Globo Latex Redondo Reflex Champaña — R-5 / PAQUETE X 50 · R-5 · champaña",
       "origenCantidad": "estimado_foto",
       "detalleCantidad": "estimado a partir de la foto (dos racimos de unos 14 y unos 35 en el centro de la flor grande)"
     },
     {
-      "variantId": "46594264858919",
-      "sku": "B2B-20017754",
+      "variantId": "46594291007783",
+      "sku": "B2B-20016803",
       "cantidad": 1,
-      "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado",
+      "nota": "B2b Globo Latex Redondo Reflex Champaña — R-12 / PAQUETE X 12 · R-12 · champaña",
       "origenCantidad": "estimado_foto",
-      "detalleCantidad": "estimado a partir de la foto (centro de la flor pequeña)"
+      "detalleCantidad": "estimado a partir de la foto (centro de la flor pequeña: un globo champaña de 12 pulgadas inflado a medias; no hay champaña de 9)"
     },
     {
       "variantId": "46594228617511",
@@ -91,15 +91,15 @@
     },
     {
       "orden": 4,
-      "texto": "Arma dos racimos de unos 14 globos dorados de 5 pulgadas y pégalos sobre la guirnalda, uno a cada lado de la flor pequeña."
+      "texto": "Arma dos racimos de unos 14 globos champaña de 5 pulgadas y pégalos sobre la guirnalda, uno a cada lado de la flor pequeña."
     },
     {
       "orden": 5,
-      "texto": "Para la flor grande da forma de pétalo a ocho globos naranja de 12 pulgadas, únelos en círculo, llena el centro con unos 35 globos dorados pequeños y fíjala en el extremo derecho."
+      "texto": "Para la flor grande da forma de pétalo a ocho globos naranja de 12 pulgadas, únelos en círculo, llena el centro con unos 35 globos champaña pequeños y fíjala en el extremo derecho."
     },
     {
       "orden": 6,
-      "texto": "Tuerce dos globos para modelar naranja en seis pétalos con un globo dorado de 9 pulgadas al centro, colócala a la izquierda y revisa que todo quede firme."
+      "texto": "Tuerce dos globos para modelar naranja en seis pétalos con un globo champaña de 12 pulgadas inflado a medias al centro, colócala a la izquierda y revisa que todo quede firme."
     }
   ],
   "shopifyHandle": null,

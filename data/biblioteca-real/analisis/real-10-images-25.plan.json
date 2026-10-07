@@ -1,6 +1,8 @@
 {
   "estado": "resuelto",
   "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "Semiarco de 5, 12 y 18 pulgadas: azul pastel (los grandes), blanco perlado, plata cromada, azul y azul marino, con algunos transparentes rellenos de confeti; detrás, cortina metálica plateada.",
+  "descartadas": [],
   "plan_declarado": {
     "plan_version": "1.0",
     "plan_id": "d446649f-ed48-5528-b25b-5c1287a525a4",
@@ -11,7 +13,7 @@
         "azul",
         "blanco",
         "plateado",
-        "azul marino"
+        "transparente"
       ],
       "estilo": "orgánico"
     },
@@ -22,7 +24,7 @@
     "estructuras": [
       {
         "estructura_id": "EST_01_SEMIARCO",
-        "nombre": "Semiarco orgánico",
+        "nombre": "Semiarco",
         "tipo": "semiarco",
         "rol_escena": "focal",
         "ubicacion": "fondo_pared",
@@ -35,49 +37,88 @@
         "mezcla": "clasica",
         "materiales": [
           {
-            "product_id": "8634239385895",
-            "variant_id": "46594233925927",
+            "product_id": "8634259374375",
+            "variant_id": "46594272985383",
             "color": "azul",
-            "participacion": 0.4210526315789473,
+            "participacion": 0.35,
             "rol_material": "principal"
           },
           {
-            "product_id": "8634266321191",
-            "variant_id": "46594286780711",
+            "product_id": "8634277921063",
+            "variant_id": "46594308768039",
             "color": "blanco",
-            "participacion": 0.31578947368421045,
+            "participacion": 0.25,
             "rol_material": "secundario"
           },
           {
             "product_id": "8634257211687",
             "variant_id": "46594267709735",
             "color": "plateado",
-            "participacion": 0.15789473684210523,
+            "participacion": 0.15,
+            "rol_material": "acento"
+          },
+          {
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "color": "azul",
+            "participacion": 0.1,
             "rol_material": "acento"
           },
           {
             "product_id": "8869949341991",
             "variant_id": "47230981112103",
-            "color": "azul marino",
-            "participacion": 0.10526315789473682,
+            "color": "azul",
+            "participacion": 0.1,
+            "rol_material": "acento"
+          },
+          {
+            "product_id": "8634277003559",
+            "variant_id": "46594306605351",
+            "color": "transparente",
+            "participacion": 0.05,
             "rol_material": "acento"
           }
         ],
-        "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+        "porque": "Semiarco orgánico azul pastel, blanco perlado, plata y azul marino con transparentes de confeti.",
         "referencia_element_id": "REF_01_E01",
         "estructura_oficial": "semiarco",
         "colores_referencia": [
           "azul",
           "blanco",
           "plateado",
-          "azul marino"
+          "transparente"
         ]
       }
     ],
     "supuestos": [
       "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06)."
     ],
+    "restricciones": {
+      "estructuras": [],
+      "colores": [],
+      "tamanos": [
+        {
+          "valor": "R-5",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-5",
+          "polaridad": "obligatorio"
+        },
+        {
+          "valor": "R-12",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-12",
+          "polaridad": "obligatorio"
+        },
+        {
+          "valor": "R-18",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-18",
+          "polaridad": "obligatorio"
+        }
+      ],
+      "acabados": []
+    },
     "referencia_omitida": []
   },
   "plan_resuelto": {
@@ -91,7 +132,7 @@
           "azul",
           "blanco",
           "plateado",
-          "azul marino"
+          "transparente"
         ],
         "estilo": "orgánico"
       },
@@ -102,68 +143,148 @@
       "estructuras": [
         {
           "estructura_id": "EST_01_SEMIARCO",
-          "nombre": "Semiarco orgánico",
+          "nombre": "Semiarco",
           "tipo": "semiarco",
           "rol_escena": "focal",
           "ubicacion": "fondo_pared",
           "medidas": {
-            "ancho_m": 1.7,
-            "alto_m": 2
+            "ancho_m": 1.75,
+            "alto_m": 2.06
           },
           "repeticiones": 1,
           "densidad": "lujosa",
-          "mezcla": "clasica",
+          "mezcla": "organica_fina",
           "materiales": [
             {
-              "product_id": "8634239385895",
-              "variant_id": "46594233925927",
+              "product_id": "8634259374375",
+              "variant_id": "46594272985383",
               "color": "azul",
-              "participacion": 0.4210526315789473,
+              "participacion": 0.35,
               "rol_material": "principal"
             },
             {
-              "product_id": "8634266321191",
-              "variant_id": "46594286780711",
+              "product_id": "8634277921063",
+              "variant_id": "46594308768039",
               "color": "blanco",
-              "participacion": 0.31578947368421045,
+              "participacion": 0.25,
               "rol_material": "secundario"
             },
             {
               "product_id": "8634257211687",
               "variant_id": "46594267709735",
               "color": "plateado",
-              "participacion": 0.15789473684210523,
+              "participacion": 0.15,
+              "rol_material": "acento"
+            },
+            {
+              "product_id": "8634239385895",
+              "variant_id": "46594233925927",
+              "color": "azul",
+              "participacion": 0.1,
               "rol_material": "acento"
             },
             {
               "product_id": "8869949341991",
               "variant_id": "47230981112103",
               "color": "azul",
-              "participacion": 0.10526315789473682,
+              "participacion": 0.1,
+              "rol_material": "acento"
+            },
+            {
+              "product_id": "8634277003559",
+              "variant_id": "46594306605351",
+              "color": "transparente",
+              "participacion": 0.05,
               "rol_material": "acento"
             }
           ],
-          "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+          "porque": "Semiarco orgánico azul pastel, blanco perlado, plata y azul marino con transparentes de confeti.",
           "referencia_element_id": "REF_01_E01",
           "estructura_oficial": "semiarco",
           "colores_referencia": [
             "azul",
             "blanco",
             "plateado",
-            "azul marino"
+            "transparente"
           ]
         }
       ],
       "supuestos": [
-        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-        "Se usan globos redondos R-12 disponibles en el snapshot vigente.",
-        "Semiarco orgánico: la foto muestra unos 85 globos y el plan tenía 62; densidad media → lujosa: quedó en 78."
+        "las medidas en metros parten de un tamano frecuente y se ajustan con la lectura de la foto.",
+        "los tamanos son los que se ven en la foto (auditoria 2026-10-06).",
+        "Semiarco: los tamaños de la foto piden la mezcla organica_fina, no clasica.",
+        "Semiarco: la foto muestra unos 85 globos y el plan tenía 57; densidad media → lujosa, ancho 1,7 → 1,75 m y alto 2 → 2,06 m equivalentes a la foto (no medidos): quedó en 73."
       ],
+      "restricciones": {
+        "estructuras": [],
+        "colores": [],
+        "tamanos": [
+          {
+            "valor": "R-5",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-5",
+            "polaridad": "obligatorio"
+          },
+          {
+            "valor": "R-12",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-12",
+            "polaridad": "obligatorio"
+          },
+          {
+            "valor": "R-18",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-18",
+            "polaridad": "obligatorio"
+          }
+        ],
+        "acabados": []
+      },
       "referencia_omitida": []
     },
-    "plan_hash": "7f2cae433c526a64ef9c8651d5c892677e179d62fea48594970b796a36f2d5fd",
+    "plan_hash": "91f5f996de95dcb0e5d6a70ccd740af7e588deaf78702491d38e903cfc7a81da",
     "request_id": "d5a70e21-b8ed-51a7-868c-09908af8afd1",
     "compras": [
+      {
+        "variant_id": "46594233729319",
+        "product_id": "8634239385895",
+        "sku": "B2B-20000472",
+        "sku_original": "B2B-20000472",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594233729319",
+        "inventory_quantity": 994374,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Azul — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "azul",
+        "unidades_necesarias": 2,
+        "design_quantity": 2,
+        "waste_reserve": 6,
+        "required_quantity": 8,
+        "unidades_con_merma": 8,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 2,
+        "leftover_inventory": 42,
+        "consumption_cost": 986,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 48,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141"
+      },
       {
         "variant_id": "46594233925927",
         "product_id": "8634239385895",
@@ -177,20 +298,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "azul",
-        "unidades_necesarias": 33,
-        "design_quantity": 33,
-        "waste_reserve": 7,
-        "required_quantity": 40,
-        "unidades_con_merma": 40,
+        "unidades_necesarias": 5,
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "unidades_con_merma": 5,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 33,
-        "leftover_inventory": 10,
-        "consumption_cost": 10430,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 1304,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 17,
+        "sobrante": 45,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
@@ -205,6 +326,46 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141"
       },
       {
+        "variant_id": "46594267644199",
+        "product_id": "8634257211687",
+        "sku": "B2B-20014171",
+        "sku_original": "B2B-20014171",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594267644199",
+        "inventory_quantity": 984734,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "plateado",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 798,
+        "purchase_cost": 13301,
+        "additional_package_for_waste": false,
+        "sobrante": 47,
+        "precio_paquete": 13301,
+        "subtotal": 13301,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
+      },
+      {
         "variant_id": "46594267709735",
         "product_id": "8634257211687",
         "sku": "B2B-20014160",
@@ -217,20 +378,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "plateado",
-        "unidades_necesarias": 12,
-        "design_quantity": 12,
+        "unidades_necesarias": 7,
+        "design_quantity": 7,
         "waste_reserve": 0,
-        "required_quantity": 12,
-        "unidades_con_merma": 12,
+        "required_quantity": 7,
+        "unidades_con_merma": 7,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 12,
-        "leftover_inventory": 38,
-        "consumption_cost": 6954,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 4057,
         "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "sobrante": 38,
+        "sobrante": 43,
         "precio_paquete": 28977,
         "subtotal": 28977,
         "estructuras": [
@@ -245,32 +406,312 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
       },
       {
-        "variant_id": "46594286780711",
-        "product_id": "8634266321191",
-        "sku": "B2B-20000829",
-        "sku_original": "B2B-20000829",
+        "variant_id": "46594267742503",
+        "product_id": "8634257211687",
+        "sku": "B2B-20015517",
+        "sku_original": "B2B-20015517",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594286780711",
-        "inventory_quantity": 994788,
+        "source_variant_id": "gid://shopify/ProductVariant/46594267742503",
+        "inventory_quantity": 997757,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Satin Blanco — R-12 / PAQUETE X 50",
-        "tamano_codigo": "R-12",
-        "diam_pulg": 12,
-        "color": "blanco",
-        "unidades_necesarias": 25,
-        "design_quantity": 25,
+        "titulo": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "plateado",
+        "unidades_necesarias": 1,
+        "design_quantity": 1,
         "waste_reserve": 0,
-        "required_quantity": 25,
-        "unidades_con_merma": 25,
+        "required_quantity": 1,
+        "unidades_con_merma": 1,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 2951,
+        "purchase_cost": 17704,
+        "additional_package_for_waste": false,
+        "sobrante": 5,
+        "precio_paquete": 17704,
+        "subtotal": 17704,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
+      },
+      {
+        "variant_id": "46594272854311",
+        "product_id": "8634259374375",
+        "sku": "B2B-20012397",
+        "sku_original": "B2B-20012397",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594272854311",
+        "inventory_quantity": 988157,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Mate Azul — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "azul",
+        "unidades_necesarias": 6,
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "unidades_con_merma": 6,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 25,
-        "leftover_inventory": 25,
-        "consumption_cost": 6924,
+        "used": 6,
+        "leftover_inventory": 44,
+        "consumption_cost": 740,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 44,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_640.jpg?v=1763572472"
+      },
+      {
+        "variant_id": "46594272985383",
+        "product_id": "8634259374375",
+        "sku": "B2B-20012399",
+        "sku_original": "B2B-20012399",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594272985383",
+        "inventory_quantity": 976350,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Mate Azul — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "azul",
+        "unidades_necesarias": 17,
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "unidades_con_merma": 17,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 4433,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 33,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_640.jpg?v=1763572472"
+      },
+      {
+        "variant_id": "46594273018151",
+        "product_id": "8634259374375",
+        "sku": "B2B-20012301",
+        "sku_original": "B2B-20012301",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594273018151",
+        "inventory_quantity": 997394,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Mate Azul — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "azul",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 3600,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "sobrante": 3,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_640.jpg?v=1763572472"
+      },
+      {
+        "variant_id": "46594306474279",
+        "product_id": "8634277003559",
+        "sku": "B2B-20000496",
+        "sku_original": "B2B-20000496",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594306474279",
+        "inventory_quantity": 998697,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Transparente — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "transparente",
+        "unidades_necesarias": 1,
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "unidades_con_merma": 1,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 1,
+        "leftover_inventory": 49,
+        "consumption_cost": 123,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 49,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Cristal_Transparente_-_Crystal_Clear_390.jpg?v=1763154284"
+      },
+      {
+        "variant_id": "46594306605351",
+        "product_id": "8634277003559",
+        "sku": "B2B-20000784",
+        "sku_original": "B2B-20000784",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594306605351",
+        "inventory_quantity": 997954,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Transparente — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "transparente",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 782,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 47,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Cristal_Transparente_-_Crystal_Clear_390.jpg?v=1763154284"
+      },
+      {
+        "variant_id": "46594308505895",
+        "product_id": "8634277921063",
+        "sku": "B2B-20000520",
+        "sku_original": "B2B-20000520",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594308505895",
+        "inventory_quantity": 996300,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Satin Perla — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "blanco",
+        "unidades_necesarias": 5,
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "unidades_con_merma": 5,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 676,
+        "purchase_cost": 6764,
+        "additional_package_for_waste": false,
+        "sobrante": 45,
+        "precio_paquete": 6764,
+        "subtotal": 6764,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Pearl_-_Perla_406.jpg?v=1763582643"
+      },
+      {
+        "variant_id": "46594308768039",
+        "product_id": "8634277921063",
+        "sku": "B2B-20000826",
+        "sku_original": "B2B-20000826",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594308768039",
+        "inventory_quantity": 990500,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "blanco",
+        "unidades_necesarias": 12,
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "unidades_con_merma": 12,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 12,
+        "leftover_inventory": 38,
+        "consumption_cost": 3323,
         "purchase_cost": 13847,
         "additional_package_for_waste": false,
-        "sobrante": 25,
+        "sobrante": 38,
         "precio_paquete": 13847,
         "subtotal": 13847,
         "estructuras": [
@@ -282,7 +723,47 @@
             "id": "EST_01_SEMIARCO"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_White_-_Blanco_405.jpg?v=1763582445"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Pearl_-_Perla_406.jpg?v=1763582643"
+      },
+      {
+        "variant_id": "46594308800807",
+        "product_id": "8634277921063",
+        "sku": "B2B-20013761",
+        "sku_original": "B2B-20013761",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594308800807",
+        "inventory_quantity": 999441,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Satin Perla — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "blanco",
+        "unidades_necesarias": 1,
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "unidades_con_merma": 1,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 1284,
+        "purchase_cost": 7703,
+        "additional_package_for_waste": false,
+        "sobrante": 5,
+        "precio_paquete": 7703,
+        "subtotal": 7703,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Pearl_-_Perla_406.jpg?v=1763582643"
       },
       {
         "variant_id": "47230981112103",
@@ -297,22 +778,62 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "azul",
-        "unidades_necesarias": 8,
-        "design_quantity": 8,
+        "unidades_necesarias": 5,
+        "design_quantity": 5,
         "waste_reserve": 0,
-        "required_quantity": 8,
-        "unidades_con_merma": 8,
+        "required_quantity": 5,
+        "unidades_con_merma": 5,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 8,
-        "leftover_inventory": 42,
-        "consumption_cost": 2086,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 1304,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 42,
+        "sobrante": 45,
         "precio_paquete": 13037,
         "subtotal": 13037,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802"
+      },
+      {
+        "variant_id": "47466207019303",
+        "product_id": "8869949341991",
+        "sku": "B2B-20010802",
+        "sku_original": "B2B-20010802",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/47466207019303",
+        "inventory_quantity": 994073,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "azul",
+        "unidades_necesarias": 2,
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "unidades_con_merma": 2,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 2,
+        "leftover_inventory": 48,
+        "consumption_cost": 247,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 48,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
         "estructuras": [
           "EST_01_SEMIARCO"
         ],
@@ -327,17 +848,19 @@
     ],
     "totales": {
       "globos_por_tamano": {
-        "R-12": 78
+        "R-5": 19,
+        "R-12": 49,
+        "R-18": 5
       },
-      "total_unidades": 78,
-      "total_cop": 68898,
-      "design_quantity": 78,
-      "target_waste_reserve": 7,
-      "covered_waste_reserve": 7,
+      "total_unidades": 73,
+      "total_cop": 172299,
+      "design_quantity": 73,
+      "target_waste_reserve": 6,
+      "covered_waste_reserve": 6,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 122,
-      "purchase_cost": 68898,
-      "consumption_cost": 26394,
+      "natural_package_surplus": 545,
+      "purchase_cost": 172299,
+      "consumption_cost": 26608,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "ahorro_paquetes_cop": 0,
@@ -350,30 +873,34 @@
     },
     "alternativas": [],
     "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
-    "sustituciones": [
-      {
-        "estructura_id": "EST_01_SEMIARCO",
-        "pedido": "azul marino",
-        "entregado": "azul, blanco, plateado",
-        "motivo": "La foto de referencia muestra azul marino y esta pieza no lo lleva: se armó con azul, blanco y plateado."
-      }
-    ],
+    "sustituciones": [],
     "sin_cobertura": [],
     "advertencias": [
+      "sobrante_alto:46594233729319",
       "sobrante_alto:46594233925927",
+      "sobrante_alto:46594267644199",
       "sobrante_alto:46594267709735",
-      "sobrante_alto:46594286780711",
-      "sobrante_alto:47230981112103"
+      "sobrante_alto:46594267742503",
+      "sobrante_alto:46594272854311",
+      "sobrante_alto:46594272985383",
+      "sobrante_alto:46594273018151",
+      "sobrante_alto:46594306474279",
+      "sobrante_alto:46594306605351",
+      "sobrante_alto:46594308505895",
+      "sobrante_alto:46594308768039",
+      "sobrante_alto:46594308800807",
+      "sobrante_alto:47230981112103",
+      "sobrante_alto:47466207019303"
     ],
     "estructuras": [
       {
         "estructura_id": "EST_01_SEMIARCO",
-        "nombre": "Semiarco orgánico",
+        "nombre": "Semiarco",
         "tipo": "semiarco",
         "ubicacion": "fondo_pared",
         "repeticiones": 1,
-        "eje_m": 2.91,
-        "total_unidades": 78,
+        "eje_m": 3,
+        "total_unidades": 73,
         "lineas": [
           {
             "estructura_id": "EST_01_SEMIARCO",
@@ -381,22 +908,97 @@
               "kind": "estructura",
               "id": "EST_01_SEMIARCO"
             },
-            "product_id": "8634239385895",
-            "variant_id": "46594233925927",
-            "sku": "B2B-20000758",
-            "sku_original": "B2B-20000758",
+            "product_id": "8634259374375",
+            "variant_id": "46594272854311",
+            "sku": "B2B-20012397",
+            "sku_original": "B2B-20012397",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
-            "inventory_quantity": 984338,
+            "source_variant_id": "gid://shopify/ProductVariant/46594272854311",
+            "inventory_quantity": 988157,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Azul — R-5 / PAQUETE X 50",
             "color": "azul",
-            "tamano_codigo": "R-12",
-            "diam_pulg": 12,
-            "diam_cm": 30.5,
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "mate",
+            "unidades": 6,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_640.jpg?v=1763572472",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634277921063",
+            "variant_id": "46594308505895",
+            "sku": "B2B-20000520",
+            "sku_original": "B2B-20000520",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594308505895",
+            "inventory_quantity": 996300,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Satin Perla — R-5 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "satin",
+            "unidades": 5,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Pearl_-_Perla_406.jpg?v=1763582643",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267644199",
+            "sku": "B2B-20014171",
+            "sku_original": "B2B-20014171",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267644199",
+            "inventory_quantity": 984734,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50",
+            "color": "plateado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634239385895",
+            "variant_id": "46594233729319",
+            "sku": "B2B-20000472",
+            "sku_original": "B2B-20000472",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594233729319",
+            "inventory_quantity": 994374,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Azul — R-5 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 33,
+            "unidades": 2,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141",
             "sustitucion": null
           },
@@ -406,23 +1008,98 @@
               "kind": "estructura",
               "id": "EST_01_SEMIARCO"
             },
-            "product_id": "8634266321191",
-            "variant_id": "46594286780711",
-            "sku": "B2B-20000829",
-            "sku_original": "B2B-20000829",
+            "product_id": "8869949341991",
+            "variant_id": "47466207019303",
+            "sku": "B2B-20010802",
+            "sku_original": "B2B-20010802",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594286780711",
-            "inventory_quantity": 994788,
+            "source_variant_id": "gid://shopify/ProductVariant/47466207019303",
+            "inventory_quantity": 994073,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Satin Blanco — R-12 / PAQUETE X 50",
+            "titulo": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634277003559",
+            "variant_id": "46594306474279",
+            "sku": "B2B-20000496",
+            "sku_original": "B2B-20000496",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594306474279",
+            "inventory_quantity": 998697,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Transparente — R-5 / PAQUETE X 50",
+            "color": "transparente",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Cristal_Transparente_-_Crystal_Clear_390.jpg?v=1763154284",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634259374375",
+            "variant_id": "46594272985383",
+            "sku": "B2B-20012399",
+            "sku_original": "B2B-20012399",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594272985383",
+            "inventory_quantity": 976350,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Azul — R-12 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "mate",
+            "unidades": 17,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_640.jpg?v=1763572472",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634277921063",
+            "variant_id": "46594308768039",
+            "sku": "B2B-20000826",
+            "sku_original": "B2B-20000826",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594308768039",
+            "inventory_quantity": 990500,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50",
             "color": "blanco",
             "tamano_codigo": "R-12",
             "diam_pulg": 12,
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "satin",
-            "unidades": 25,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_White_-_Blanco_405.jpg?v=1763582445",
+            "unidades": 12,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Pearl_-_Perla_406.jpg?v=1763582643",
             "sustitucion": null
           },
           {
@@ -446,8 +1123,33 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "reflex",
-            "unidades": 12,
+            "unidades": 7,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634239385895",
+            "variant_id": "46594233925927",
+            "sku": "B2B-20000758",
+            "sku_original": "B2B-20000758",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594233925927",
+            "inventory_quantity": 984338,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 5,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_040.jpg?v=1763140141",
             "sustitucion": null
           },
           {
@@ -471,8 +1173,108 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 8,
+            "unidades": 5,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634277003559",
+            "variant_id": "46594306605351",
+            "sku": "B2B-20000784",
+            "sku_original": "B2B-20000784",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594306605351",
+            "inventory_quantity": 997954,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Transparente — R-12 / PAQUETE X 50",
+            "color": "transparente",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Cristal_Transparente_-_Crystal_Clear_390.jpg?v=1763154284",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634259374375",
+            "variant_id": "46594273018151",
+            "sku": "B2B-20012301",
+            "sku_original": "B2B-20012301",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594273018151",
+            "inventory_quantity": 997394,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Mate Azul — R-18 / PAQUETE X 6",
+            "color": "azul",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "mate",
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_640.jpg?v=1763572472",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634277921063",
+            "variant_id": "46594308800807",
+            "sku": "B2B-20013761",
+            "sku_original": "B2B-20013761",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594308800807",
+            "inventory_quantity": 999441,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Satin Perla — R-18 / PAQUETE X 6",
+            "color": "blanco",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "satin",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Pearl_-_Perla_406.jpg?v=1763582643",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_SEMIARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_SEMIARCO"
+            },
+            "product_id": "8634257211687",
+            "variant_id": "46594267742503",
+            "sku": "B2B-20015517",
+            "sku_original": "B2B-20015517",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594267742503",
+            "inventory_quantity": 997757,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6",
+            "color": "plateado",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
             "sustitucion": null
           }
         ],
@@ -480,8 +1282,20 @@
           {
             "diam_pulg": 12,
             "forma": "redondo",
-            "unidades": 78,
-            "pct": 100
+            "unidades": 49,
+            "pct": 67.12
+          },
+          {
+            "diam_pulg": 5,
+            "forma": "redondo",
+            "unidades": 19,
+            "pct": 26.03
+          },
+          {
+            "diam_pulg": 18,
+            "forma": "redondo",
+            "unidades": 5,
+            "pct": 6.85
           }
         ],
         "supuestos": []
@@ -490,7 +1304,7 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_SEMIARCO",
-        "consumo_cop": 24568
+        "consumo_cop": 25867
       }
     ],
     "conteos_referencia": [
@@ -523,16 +1337,26 @@
           "confianza": 0.92
         },
         "globos_foto": 85,
-        "globos_antes": 62,
-        "globos_despues": 78,
+        "globos_antes": 57,
+        "globos_despues": 73,
         "cambios": [
           {
             "campo": "densidad",
             "antes": "media",
             "despues": "lujosa"
+          },
+          {
+            "campo": "ancho_m",
+            "antes": 1.7,
+            "despues": 1.75
+          },
+          {
+            "campo": "alto_m",
+            "antes": 2,
+            "despues": 2.06
           }
         ],
-        "motivo": "Densidad y tamaños ajustados con las medidas del plan."
+        "motivo": "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
       }
     ]
   },
@@ -540,51 +1364,116 @@
     "version": "design-material-estimate-v1",
     "design": {
       "type": "semiarco",
-      "shape": "clasica",
+      "shape": "organica_fina",
       "dimensions_m": {
-        "width": 1.7,
-        "height": 2,
+        "width": 1.75,
+        "height": 2.06,
         "length": null
       },
-      "installation_length_m": 2.91,
+      "installation_length_m": 3,
       "density": "lujosa",
       "visual_density": "high",
-      "visual_scale": "medium",
+      "visual_scale": "large",
       "cluster_count": 1
     },
     "balloons": [
       {
         "structure_id": "EST_01_SEMIARCO",
-        "product_id": "8634239385895",
-        "variant_id": "46594233925927",
+        "product_id": "8634259374375",
+        "variant_id": "46594272854311",
         "color": "azul",
-        "finish": "fashion",
-        "size_inches": 12,
+        "finish": "mate",
+        "size_inches": 5,
         "shape": "redondo",
-        "design_quantity": 33,
+        "design_quantity": 6,
         "waste_reserve": 0,
-        "required_quantity": 33,
-        "waste_adjusted_quantity": 33
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6
       },
       {
         "structure_id": "EST_01_SEMIARCO",
-        "product_id": "8634266321191",
-        "variant_id": "46594286780711",
+        "product_id": "8634277921063",
+        "variant_id": "46594308505895",
         "color": "blanco",
         "finish": "satin",
-        "size_inches": 12,
+        "size_inches": 5,
         "shape": "redondo",
-        "design_quantity": 25,
+        "design_quantity": 5,
         "waste_reserve": 0,
-        "required_quantity": 25,
-        "waste_adjusted_quantity": 25
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5
       },
       {
         "structure_id": "EST_01_SEMIARCO",
         "product_id": "8634257211687",
-        "variant_id": "46594267709735",
+        "variant_id": "46594267644199",
         "color": "plateado",
         "finish": "reflex",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634239385895",
+        "variant_id": "46594233729319",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8869949341991",
+        "variant_id": "47466207019303",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634277003559",
+        "variant_id": "46594306474279",
+        "color": "transparente",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634259374375",
+        "variant_id": "46594272985383",
+        "color": "azul",
+        "finish": "mate",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634277921063",
+        "variant_id": "46594308768039",
+        "color": "blanco",
+        "finish": "satin",
         "size_inches": 12,
         "shape": "redondo",
         "design_quantity": 12,
@@ -594,41 +1483,299 @@
       },
       {
         "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634257211687",
+        "variant_id": "46594267709735",
+        "color": "plateado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634239385895",
+        "variant_id": "46594233925927",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
         "product_id": "8869949341991",
         "variant_id": "47230981112103",
         "color": "azul",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 8,
+        "design_quantity": 5,
         "waste_reserve": 0,
-        "required_quantity": 8,
-        "waste_adjusted_quantity": 8
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634277003559",
+        "variant_id": "46594306605351",
+        "color": "transparente",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634259374375",
+        "variant_id": "46594273018151",
+        "color": "azul",
+        "finish": "mate",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634277921063",
+        "variant_id": "46594308800807",
+        "color": "blanco",
+        "finish": "satin",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_01_SEMIARCO",
+        "product_id": "8634257211687",
+        "variant_id": "46594267742503",
+        "color": "plateado",
+        "finish": "reflex",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
       }
     ],
     "special_elements": [],
     "purchases": [
       {
         "product_id": "8634239385895",
-        "variant_id": "46594233925927",
-        "design_quantity": 33,
-        "waste_reserve": 7,
-        "required_quantity": 40,
-        "waste_adjusted_quantity": 40,
+        "variant_id": "46594233729319",
+        "design_quantity": 2,
+        "waste_reserve": 6,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 33,
-        "leftover_inventory": 10,
-        "consumption_cost": 10430,
+        "used": 2,
+        "leftover_inventory": 42,
+        "consumption_cost": 986,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 42,
+        "potential_surplus": 48
+      },
+      {
+        "product_id": "8634239385895",
+        "variant_id": "46594233925927",
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 1304,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 10,
-        "potential_surplus": 17
+        "operational_surplus": 45,
+        "potential_surplus": 45
+      },
+      {
+        "product_id": "8634257211687",
+        "variant_id": "46594267644199",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 798,
+        "purchase_cost": 13301,
+        "additional_package_for_waste": false,
+        "operational_surplus": 47,
+        "potential_surplus": 47
       },
       {
         "product_id": "8634257211687",
         "variant_id": "46594267709735",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 4057,
+        "purchase_cost": 28977,
+        "additional_package_for_waste": false,
+        "operational_surplus": 43,
+        "potential_surplus": 43
+      },
+      {
+        "product_id": "8634257211687",
+        "variant_id": "46594267742503",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 2951,
+        "purchase_cost": 17704,
+        "additional_package_for_waste": false,
+        "operational_surplus": 5,
+        "potential_surplus": 5
+      },
+      {
+        "product_id": "8634259374375",
+        "variant_id": "46594272854311",
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 6,
+        "leftover_inventory": 44,
+        "consumption_cost": 740,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 44,
+        "potential_surplus": 44
+      },
+      {
+        "product_id": "8634259374375",
+        "variant_id": "46594272985383",
+        "design_quantity": 17,
+        "waste_reserve": 0,
+        "required_quantity": 17,
+        "waste_adjusted_quantity": 17,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 17,
+        "leftover_inventory": 33,
+        "consumption_cost": 4433,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 33,
+        "potential_surplus": 33
+      },
+      {
+        "product_id": "8634259374375",
+        "variant_id": "46594273018151",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 3600,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "operational_surplus": 3,
+        "potential_surplus": 3
+      },
+      {
+        "product_id": "8634277003559",
+        "variant_id": "46594306474279",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 1,
+        "leftover_inventory": 49,
+        "consumption_cost": 123,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 49,
+        "potential_surplus": 49
+      },
+      {
+        "product_id": "8634277003559",
+        "variant_id": "46594306605351",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 782,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 47,
+        "potential_surplus": 47
+      },
+      {
+        "product_id": "8634277921063",
+        "variant_id": "46594308505895",
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 676,
+        "purchase_cost": 6764,
+        "additional_package_for_waste": false,
+        "operational_surplus": 45,
+        "potential_surplus": 45
+      },
+      {
+        "product_id": "8634277921063",
+        "variant_id": "46594308768039",
         "design_quantity": 12,
         "waste_reserve": 0,
         "required_quantity": 12,
@@ -638,74 +1785,141 @@
         "purchase_quantity": 50,
         "used": 12,
         "leftover_inventory": 38,
-        "consumption_cost": 6954,
-        "purchase_cost": 28977,
+        "consumption_cost": 3323,
+        "purchase_cost": 13847,
         "additional_package_for_waste": false,
         "operational_surplus": 38,
         "potential_surplus": 38
       },
       {
-        "product_id": "8634266321191",
-        "variant_id": "46594286780711",
-        "design_quantity": 25,
+        "product_id": "8634277921063",
+        "variant_id": "46594308800807",
+        "design_quantity": 1,
         "waste_reserve": 0,
-        "required_quantity": 25,
-        "waste_adjusted_quantity": 25,
-        "units_per_package": 50,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1,
+        "units_per_package": 6,
         "package_count": 1,
-        "purchase_quantity": 50,
-        "used": 25,
-        "leftover_inventory": 25,
-        "consumption_cost": 6924,
-        "purchase_cost": 13847,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 1284,
+        "purchase_cost": 7703,
         "additional_package_for_waste": false,
-        "operational_surplus": 25,
-        "potential_surplus": 25
+        "operational_surplus": 5,
+        "potential_surplus": 5
       },
       {
         "product_id": "8869949341991",
         "variant_id": "47230981112103",
-        "design_quantity": 8,
+        "design_quantity": 5,
         "waste_reserve": 0,
-        "required_quantity": 8,
-        "waste_adjusted_quantity": 8,
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 8,
-        "leftover_inventory": 42,
-        "consumption_cost": 2086,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 1304,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 42,
-        "potential_surplus": 42
+        "operational_surplus": 45,
+        "potential_surplus": 45
+      },
+      {
+        "product_id": "8869949341991",
+        "variant_id": "47466207019303",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 2,
+        "leftover_inventory": 48,
+        "consumption_cost": 247,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 48,
+        "potential_surplus": 48
       }
     ],
     "totals": {
-      "design_quantity": 78,
-      "target_waste_reserve": 7,
-      "covered_waste_reserve": 7,
+      "design_quantity": 73,
+      "target_waste_reserve": 6,
+      "covered_waste_reserve": 6,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 122,
-      "required_quantity": 85,
-      "consumption_cost": 26394,
-      "purchase_cost": 68898,
+      "natural_package_surplus": 545,
+      "required_quantity": 79,
+      "consumption_cost": 26608,
+      "purchase_cost": 172299,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
-      "waste_adjusted_quantity": 85,
-      "purchase_quantity": 200,
-      "operational_surplus": 115,
-      "potential_surplus": 122
+      "waste_adjusted_quantity": 79,
+      "purchase_quantity": 618,
+      "operational_surplus": 539,
+      "potential_surplus": 545
     },
     "warnings": [
+      "sobrante_alto:46594233729319",
       "sobrante_alto:46594233925927",
+      "sobrante_alto:46594267644199",
       "sobrante_alto:46594267709735",
-      "sobrante_alto:46594286780711",
-      "sobrante_alto:47230981112103"
+      "sobrante_alto:46594267742503",
+      "sobrante_alto:46594272854311",
+      "sobrante_alto:46594272985383",
+      "sobrante_alto:46594273018151",
+      "sobrante_alto:46594306474279",
+      "sobrante_alto:46594306605351",
+      "sobrante_alto:46594308505895",
+      "sobrante_alto:46594308768039",
+      "sobrante_alto:46594308800807",
+      "sobrante_alto:47230981112103",
+      "sobrante_alto:47466207019303"
     ]
   },
   "quote": {
     "lineas": [
+      {
+        "id": "46594233729319",
+        "productId": "8634239385895",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 2,
+        "designQuantity": 2,
+        "wasteReserve": 6,
+        "requiredQuantity": 8,
+        "purchaseQuantity": 50,
+        "used": 2,
+        "leftoverInventory": 42,
+        "consumptionCost": 986,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594233729319",
+        "nombre": "B2b Globo Latex Redondo Fashion Azul — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 48
+      },
       {
         "id": "46594233925927",
         "productId": "8634239385895",
@@ -725,14 +1939,14 @@
           "REF_01_E01"
         ],
         "color": "azul",
-        "cantidadNecesaria": 33,
-        "designQuantity": 33,
-        "wasteReserve": 7,
-        "requiredQuantity": 40,
+        "cantidadNecesaria": 5,
+        "designQuantity": 5,
+        "wasteReserve": 0,
+        "requiredQuantity": 5,
         "purchaseQuantity": 50,
-        "used": 33,
-        "leftoverInventory": 10,
-        "consumptionCost": 10430,
+        "used": 5,
+        "leftoverInventory": 45,
+        "consumptionCost": 1304,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -742,7 +1956,45 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 17
+        "sobrante": 45
+      },
+      {
+        "id": "46594267644199",
+        "productId": "8634257211687",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "plateado",
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
+        "wasteReserve": 0,
+        "requiredQuantity": 3,
+        "purchaseQuantity": 50,
+        "used": 3,
+        "leftoverInventory": 47,
+        "consumptionCost": 798,
+        "purchaseCost": 13301,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594267644199",
+        "nombre": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50",
+        "precioPaquete": 13301,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13301,
+        "sobrante": 47
       },
       {
         "id": "46594267709735",
@@ -763,14 +2015,14 @@
           "REF_01_E01"
         ],
         "color": "plateado",
-        "cantidadNecesaria": 12,
-        "designQuantity": 12,
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
         "wasteReserve": 0,
-        "requiredQuantity": 12,
+        "requiredQuantity": 7,
         "purchaseQuantity": 50,
-        "used": 12,
-        "leftoverInventory": 38,
-        "consumptionCost": 6954,
+        "used": 7,
+        "leftoverInventory": 43,
+        "consumptionCost": 4057,
         "purchaseCost": 28977,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -780,11 +2032,277 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 28977,
-        "sobrante": 38
+        "sobrante": 43
       },
       {
-        "id": "46594286780711",
-        "productId": "8634266321191",
+        "id": "46594267742503",
+        "productId": "8634257211687",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "plateado",
+        "cantidadNecesaria": 1,
+        "designQuantity": 1,
+        "wasteReserve": 0,
+        "requiredQuantity": 1,
+        "purchaseQuantity": 6,
+        "used": 1,
+        "leftoverInventory": 5,
+        "consumptionCost": 2951,
+        "purchaseCost": 17704,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594267742503",
+        "nombre": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6",
+        "precioPaquete": 17704,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 17704,
+        "sobrante": 5
+      },
+      {
+        "id": "46594272854311",
+        "productId": "8634259374375",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 6,
+        "designQuantity": 6,
+        "wasteReserve": 0,
+        "requiredQuantity": 6,
+        "purchaseQuantity": 50,
+        "used": 6,
+        "leftoverInventory": 44,
+        "consumptionCost": 740,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594272854311",
+        "nombre": "B2b Globo Latex Redondo Pastel Mate Azul — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 44
+      },
+      {
+        "id": "46594272985383",
+        "productId": "8634259374375",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 17,
+        "designQuantity": 17,
+        "wasteReserve": 0,
+        "requiredQuantity": 17,
+        "purchaseQuantity": 50,
+        "used": 17,
+        "leftoverInventory": 33,
+        "consumptionCost": 4433,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594272985383",
+        "nombre": "B2b Globo Latex Redondo Pastel Mate Azul — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 33
+      },
+      {
+        "id": "46594273018151",
+        "productId": "8634259374375",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
+        "wasteReserve": 0,
+        "requiredQuantity": 3,
+        "purchaseQuantity": 6,
+        "used": 3,
+        "leftoverInventory": 3,
+        "consumptionCost": 3600,
+        "purchaseCost": 7199,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594273018151",
+        "nombre": "B2b Globo Latex Redondo Pastel Mate Azul — R-18 / PAQUETE X 6",
+        "precioPaquete": 7199,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 7199,
+        "sobrante": 3
+      },
+      {
+        "id": "46594306474279",
+        "productId": "8634277003559",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "transparente",
+        "cantidadNecesaria": 1,
+        "designQuantity": 1,
+        "wasteReserve": 0,
+        "requiredQuantity": 1,
+        "purchaseQuantity": 50,
+        "used": 1,
+        "leftoverInventory": 49,
+        "consumptionCost": 123,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594306474279",
+        "nombre": "B2b Globo Latex Redondo Fashion Transparente — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 49
+      },
+      {
+        "id": "46594306605351",
+        "productId": "8634277003559",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "transparente",
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
+        "wasteReserve": 0,
+        "requiredQuantity": 3,
+        "purchaseQuantity": 50,
+        "used": 3,
+        "leftoverInventory": 47,
+        "consumptionCost": 782,
+        "purchaseCost": 13037,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594306605351",
+        "nombre": "B2b Globo Latex Redondo Fashion Transparente — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 47
+      },
+      {
+        "id": "46594308505895",
+        "productId": "8634277921063",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 5,
+        "designQuantity": 5,
+        "wasteReserve": 0,
+        "requiredQuantity": 5,
+        "purchaseQuantity": 50,
+        "used": 5,
+        "leftoverInventory": 45,
+        "consumptionCost": 676,
+        "purchaseCost": 6764,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594308505895",
+        "nombre": "B2b Globo Latex Redondo Satin Perla — R-5 / PAQUETE X 50",
+        "precioPaquete": 6764,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6764,
+        "sobrante": 45
+      },
+      {
+        "id": "46594308768039",
+        "productId": "8634277921063",
         "tamano": "R-12",
         "tamanoCodigo": "R-12",
         "diamPulg": 12,
@@ -801,24 +2319,62 @@
           "REF_01_E01"
         ],
         "color": "blanco",
-        "cantidadNecesaria": 25,
-        "designQuantity": 25,
+        "cantidadNecesaria": 12,
+        "designQuantity": 12,
         "wasteReserve": 0,
-        "requiredQuantity": 25,
+        "requiredQuantity": 12,
         "purchaseQuantity": 50,
-        "used": 25,
-        "leftoverInventory": 25,
-        "consumptionCost": 6924,
+        "used": 12,
+        "leftoverInventory": 38,
+        "consumptionCost": 3323,
         "purchaseCost": 13847,
         "additionalPackageForWaste": false,
         "disponible": true,
-        "varianteId": "46594286780711",
-        "nombre": "B2b Globo Latex Redondo Satin Blanco — R-12 / PAQUETE X 50",
+        "varianteId": "46594308768039",
+        "nombre": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50",
         "precioPaquete": 13847,
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13847,
-        "sobrante": 25
+        "sobrante": 38
+      },
+      {
+        "id": "46594308800807",
+        "productId": "8634277921063",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 1,
+        "designQuantity": 1,
+        "wasteReserve": 0,
+        "requiredQuantity": 1,
+        "purchaseQuantity": 6,
+        "used": 1,
+        "leftoverInventory": 5,
+        "consumptionCost": 1284,
+        "purchaseCost": 7703,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594308800807",
+        "nombre": "B2b Globo Latex Redondo Satin Perla — R-18 / PAQUETE X 6",
+        "precioPaquete": 7703,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 7703,
+        "sobrante": 5
       },
       {
         "id": "47230981112103",
@@ -839,14 +2395,14 @@
           "REF_01_E01"
         ],
         "color": "azul",
-        "cantidadNecesaria": 8,
-        "designQuantity": 8,
+        "cantidadNecesaria": 5,
+        "designQuantity": 5,
         "wasteReserve": 0,
-        "requiredQuantity": 8,
+        "requiredQuantity": 5,
         "purchaseQuantity": 50,
-        "used": 8,
-        "leftoverInventory": 42,
-        "consumptionCost": 2086,
+        "used": 5,
+        "leftoverInventory": 45,
+        "consumptionCost": 1304,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -856,19 +2412,57 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 42
+        "sobrante": 45
+      },
+      {
+        "id": "47466207019303",
+        "productId": "8869949341991",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_SEMIARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_SEMIARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 2,
+        "designQuantity": 2,
+        "wasteReserve": 0,
+        "requiredQuantity": 2,
+        "purchaseQuantity": 50,
+        "used": 2,
+        "leftoverInventory": 48,
+        "consumptionCost": 247,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "47466207019303",
+        "nombre": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 48
       }
     ],
-    "total": 68898,
+    "total": 172299,
     "mermaPorcentaje": 8,
-    "purchaseCost": 68898,
-    "consumptionCost": 26394,
-    "targetWasteReserve": 7,
-    "coveredWasteReserve": 7,
-    "leftoverInventory": 115,
+    "purchaseCost": 172299,
+    "consumptionCost": 26608,
+    "targetWasteReserve": 6,
+    "coveredWasteReserve": 6,
+    "leftoverInventory": 539,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "7f2cae433c526a64ef9c8651d5c892677e179d62fea48594970b796a36f2d5fd"
+    "plan_hash": "91f5f996de95dcb0e5d6a70ccd740af7e588deaf78702491d38e903cfc7a81da"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -876,47 +2470,227 @@
     "incluye_iva": true,
     "lineas": [
       {
+        "variant_id": "46594233729319",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 2,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 48
+      },
+      {
         "variant_id": "46594233925927",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 33,
+        "cantidad_necesaria": 5,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 17
+        "sobrante": 45
+      },
+      {
+        "variant_id": "46594267644199",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 3,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13301,
+        "subtotal": 13301,
+        "sobrante": 47
       },
       {
         "variant_id": "46594267709735",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 12,
+        "cantidad_necesaria": 7,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 28977,
         "subtotal": 28977,
-        "sobrante": 38
+        "sobrante": 43
       },
       {
-        "variant_id": "46594286780711",
-        "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 25,
+        "variant_id": "46594267742503",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 1,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 17704,
+        "subtotal": 17704,
+        "sobrante": 5
+      },
+      {
+        "variant_id": "46594272854311",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 6,
         "unidades_paquete": 50,
         "paquetes": 1,
-        "precio_paquete": 13847,
-        "subtotal": 13847,
-        "sobrante": 25
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 44
       },
       {
-        "variant_id": "47230981112103",
+        "variant_id": "46594272985383",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 8,
+        "cantidad_necesaria": 17,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 42
+        "sobrante": 33
+      },
+      {
+        "variant_id": "46594273018151",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 3,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
+        "sobrante": 3
+      },
+      {
+        "variant_id": "46594306474279",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 1,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 49
+      },
+      {
+        "variant_id": "46594306605351",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 3,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 47
+      },
+      {
+        "variant_id": "46594308505895",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 5,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6764,
+        "subtotal": 6764,
+        "sobrante": 45
+      },
+      {
+        "variant_id": "46594308768039",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 12,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13847,
+        "subtotal": 13847,
+        "sobrante": 38
+      },
+      {
+        "variant_id": "46594308800807",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 1,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 7703,
+        "subtotal": 7703,
+        "sobrante": 5
+      },
+      {
+        "variant_id": "47230981112103",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 5,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 45
+      },
+      {
+        "variant_id": "47466207019303",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 2,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 48
       }
     ],
-    "total": 68898
+    "total": 172299
   },
-  "descartadas": []
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E01",
+      "tamanos": "chicos_con_pocos_grandes",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [
+    {
+      "globos_visibles": 62,
+      "exacto": false,
+      "estimado_total": 85,
+      "racimos": null,
+      "globos_por_racimo": null,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.35
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.45
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.2
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.92,
+      "referencia_element_id": "REF_01_E01"
+    }
+  ],
+  "remates": [],
+  "colores_cliente": {
+    "46594272854311": "azul pastel",
+    "46594272985383": "azul pastel",
+    "46594273018151": "azul pastel",
+    "46594308505895": "blanco perla",
+    "46594308768039": "blanco perla",
+    "46594308800807": "blanco perla",
+    "46594267644199": "plateado",
+    "46594267709735": "plateado",
+    "46594267742503": "plateado",
+    "46594233729319": "azul",
+    "46594233925927": "azul",
+    "46594233991463": "azul",
+    "47466207019303": "azul marino",
+    "47230981112103": "azul marino",
+    "47466210656551": "azul marino",
+    "46594306474279": "transparente con confeti",
+    "46594306605351": "transparente con confeti",
+    "46594306638119": "transparente con confeti"
+  },
+  "extras_foto": [
+    {
+      "variantId": "46594103247143",
+      "sku": "B2B-30003253",
+      "cantidad": 1,
+      "nota": "B2b Confetti Azul Celeste - Plateado — PAQUETE X 1 · celeste y plateado",
+      "detalleCantidad": "estimado a partir de la foto: un paquete de confeti para rellenar los ~4 globos transparentes"
+    },
+    {
+      "variantId": "46594157117735",
+      "sku": "B2B-30001001",
+      "cantidad": 1,
+      "nota": "B2b Cortina Metalica Plata — PAQUETE X 1 · plateado",
+      "detalleCantidad": "estimado a partir de la foto: la cortina metálica plateada del fondo (no es globo)"
+    }
+  ]
 }

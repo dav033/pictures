@@ -2,10 +2,12 @@ import { ejecutarConversacionStream } from "@sempertex/agente-core";
 import type { Herramienta, Mensaje } from "@sempertex/agente-core";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { bibliotecaVisible, normalizarBusqueda, proveedoresVisibles, tematicasDisponibles } from "@/lib/biblioteca-sempertex/biblioteca";
+import { bibliotecaVisible, coloresTipicosDe, esPersonaje, normalizarBusqueda, proveedoresVisibles, tematicasDisponibles } from "@/lib/biblioteca-sempertex/biblioteca";
+import { detectarCambioTematica } from "@/lib/ia/guiado/cambio-tematica";
 import { diferenciaOpciones, sanearOpcionesCatalogo } from "@/lib/ia/guiado/opciones-catalogo";
-import { eventoDeMensajes, generosBabyShower, ideasGuiadas, ideasRealesDeOpcion, NOMBRE_GENERO } from "@/lib/ia/guiado/ideas-guiadas";
-import { CHIP_FOTO_GUIADA, FiltroFlujoGuiado, FRASE_IDEAS_GUIADAS, sanearRespuestaGuiada, type ContextoRespuesta } from "@/lib/ia/guiado/respuesta-guiada";
+import { eventoDeMensajes, generosBabyShower, ideasGuiadas, ideasRealesDeOpcion, ideasYaVistas, NOMBRE_GENERO, tematicaFielAlCliente } from "@/lib/ia/guiado/ideas-guiadas";
+import { esPedidoParecidasAFoto, ideasParecidasAFoto, ordenarIdeasPorPieza, pedidoDeIdeas } from "@/lib/ia/guiado/pedido-ideas";
+import { CHIP_FOTO_GUIADA, FiltroFlujoGuiado, FRASE_IDEAS_GUIADAS, fraseCercanasYaDicha, sanearRespuestaGuiada, type CercanasPorColor, type ContextoRespuesta } from "@/lib/ia/guiado/respuesta-guiada";
 import { AsistenteGuiadoRequestSchema, CotizacionGuiadaSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
@@ -19,7 +21,8 @@ import { decoracionCotizableCoincide, normalizarCiudad, protegerHerramientas } f
 import { presentacionMaterialGuiado } from "@/lib/ia/guiado/presentacion-material-guiado";
 import { pasosParaCliente } from "@/lib/ia/guiado/pasos-cliente";
 import { ESTRUCTURAS_OFICIALES, ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
-import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
+import { COLORES_PROPUESTA_V2 } from "@/lib/rag/taxonomy/v2";
+import { coloresConTonosDelCliente } from "@/lib/plan/tonos-color";
 import { normalizarPropuestaComposicion } from "@/lib/ia/guiado/propuesta-composicion";
 import { recortarCantidades } from "@/lib/plan/piezas-individuales";
 import { esquemaHerramientaPropuesta, type AlcancePropuesta } from "@/lib/ia/guiado/esquema-herramienta-propuesta";
@@ -35,7 +38,7 @@ const ACCIONES_PLAN = ["ver", "costear", "comprar", "aprender", "contratar"] as 
 const herramientas: Herramienta[] = [
   { nombre: "guardar_brief_guiado", descripcion: "Guarda el evento y la temática que el cliente ya indicó; la edad solo si es un cumpleaños.", esquema: { type: "object", properties: { evento: { type: "string" }, edad: { type: "integer" }, tematica: { type: "string" } }, required: ["evento", "tematica"], additionalProperties: false } },
   { nombre: "buscar_decoraciones_sempertex", descripcion: "Busca ideas de decoración según evento y temática (y la edad solo en un cumpleaños).", esquema: { type: "object", properties: { evento: { type: "string" }, edad: { type: "integer" }, tematica: { type: "string" } }, required: ["evento", "tematica"], additionalProperties: false } },
-  { nombre: "proponer_composicion", descripcion: "Propone entre una y tres estructuras oficiales para esta celebración. Usa exclusivamente ids oficiales y colores de la paleta Sempertex permitida. Llama cuando el cliente pida que le propongas algo o cuando pida cambiar su plan o su propuesta.", esquema: { type: "object", properties: { frase: { type: "string" }, colores: { type: "array", items: { type: "string", enum: [...PALETA_COLORES_V2] }, minItems: 1, maxItems: 5 }, piezas: { type: "array", items: { type: "object", properties: { estructura: { type: "string", enum: [...ESTRUCTURAS_OFICIALES_IDS] }, cantidad: { type: "integer", minimum: 1, maximum: 12 } }, required: ["estructura", "cantidad"], additionalProperties: false }, minItems: 1, maxItems: 3 } }, required: ["frase", "colores", "piezas"], additionalProperties: false } },
+  { nombre: "proponer_composicion", descripcion: "Propone entre una y tres estructuras oficiales para esta celebración. Usa exclusivamente ids oficiales y colores de la paleta Sempertex permitida. Llama cuando el cliente pida que le propongas algo o cuando pida cambiar su plan o su propuesta.", esquema: { type: "object", properties: { frase: { type: "string" }, colores: { type: "array", description: "Usa el tono que dijo el cliente si es uno de los claros (celeste, rosa pastel, durazno), no su familia.", items: { type: "string", enum: [...COLORES_PROPUESTA_V2] }, minItems: 1, maxItems: 5 }, piezas: { type: "array", items: { type: "object", properties: { estructura: { type: "string", enum: [...ESTRUCTURAS_OFICIALES_IDS] }, cantidad: { type: "integer", minimum: 1, maximum: 12 } }, required: ["estructura", "cantidad"], additionalProperties: false }, minItems: 1, maxItems: 3 } }, required: ["frase", "colores", "piezas"], additionalProperties: false } },
   { nombre: "ofrecer_opciones", descripcion: "Ofrece las cuatro opciones para continuar con una decoración elegida.", esquema: { type: "object", properties: {}, additionalProperties: false } },
   { nombre: "preguntar_uso", descripcion: "Solicita elegir entre negocio y uso personal antes de consultar precios.", esquema: { type: "object", properties: {}, additionalProperties: false } },
   { nombre: "pasos_decoracion", descripcion: "Muestra los pasos de montaje de la decoración que el cliente eligió en la interfaz. No necesita argumentos.", esquema: { type: "object", properties: {}, additionalProperties: false } },
@@ -159,11 +162,29 @@ async function turnoGuiado(request: Request) {
       const guardado = BriefCompletoSchema.safeParse(datos.brief);
       return guardado.success ? guardado.data : briefPrevio;
     };
+    // Lo pedido sin decoraciones («Spiderman»): las ideas van en sus colores y se dice UNA vez por temática (respuesta-guiada).
+    let cercanasPorColor: CercanasPorColor | null = null;
+    const textosAsistente = messages.filter((mensaje) => mensaje.role === "assistant").map((mensaje) => mensaje.content);
+    const cercanasDe = (tematica: string, exactas: number): CercanasPorColor | null => {
+      if (exactas > 0) return null;
+      const colores = coloresTipicosDe(tematica);
+      // «spiderman» → «Spiderman»: un personaje es un nombre propio.
+      const dicha = esPersonaje(tematica) ? tematica.trim().replace(/(^|\s)(\p{Ll})/gu, (_, espacio: string, letra: string) => `${espacio}${letra.toLocaleUpperCase("es")}`) : tematica;
+      return colores.length && !fraseCercanasYaDicha(textosAsistente, tematica) ? { tematica: dicha, colores } : null;
+    };
+    // La temática que escribe el modelo se guarda con los colores que dijo el cliente, no con los de la temática del
+    // catálogo más parecida («blanco y dorado» → no «Blanco, dorado y nude»; probador 2026-10-07, ideas-guiadas.ts).
+    const dichoPorCliente = messages.filter((mensaje) => mensaje.role === "user").map((mensaje) => mensaje.content);
+    const tematicaDelCliente = (tematica: string, herramienta: string): string => {
+      const fiel = tematicaFielAlCliente(tematica, dichoPorCliente);
+      if (fiel.quitados.length) decidir("regla:tematica_fiel_cliente", "temática guardada con los colores que dijo el cliente", { tematica: fiel.tematica, quitados: fiel.quitados }, { entrada: { herramienta, tematicaModelo: tematica } });
+      return fiel.tematica;
+    };
     const registro = {
       guardar_brief_guiado: async (args: Record<string, unknown>) => {
         const entrada = z.object({ evento: z.string().trim().min(1).max(120), edad: z.number().int().min(0).max(120).nullish(), tematica: z.string().trim().min(1).max(160) }).strict().parse(args);
         // 0 = «sin edad» (boda, baby shower…): el contrato de salida no cambia.
-        const brief: BriefCompleto = { evento: entrada.evento, edad: entrada.edad ?? 0, tematica: entrada.tematica };
+        const brief: BriefCompleto = { evento: entrada.evento, edad: entrada.edad ?? 0, tematica: tematicaDelCliente(entrada.tematica, "guardar_brief_guiado") };
         datos.brief = brief;
         return { brief };
       },
@@ -171,7 +192,7 @@ async function turnoGuiado(request: Request) {
         const pedida = z.object({ evento: z.string().trim().max(120).nullish(), edad: z.number().int().min(0).max(120).nullish(), tematica: z.string().trim().max(160).nullish() }).strict().parse(args);
         const previo = briefVigente();
         const evento = pedida.evento || previo.evento;
-        const tematica = pedida.tematica || previo.tematica;
+        const tematica = pedida.tematica ? tematicaDelCliente(pedida.tematica, "buscar_decoraciones_sempertex") : previo.tematica;
         if (!evento || !tematica) return { ok: false, motivo: "brief_incompleto", accion_requerida: "Pregunta lo que falta (qué celebra o qué temática o colores quiere) antes de buscar." };
         const brief: BriefCompleto = { evento, edad: pedida.edad ?? previo.edad ?? 0, tematica };
         datos.brief = brief;
@@ -181,7 +202,8 @@ async function turnoGuiado(request: Request) {
         const encontradas = resultado.ideas;
         datos.decoraciones = encontradas;
         const exactas = encontradas.filter((decoracion) => decoracion.coincidencia === "exacta").length;
-        decidir("regla:busqueda_biblioteca", "ideas reales del catálogo que ve el cliente", { total: encontradas.length, exactas, via: resultado.via, ideas: encontradas.map((decoracion) => ({ id: decoracion.id, titulo: decoracion.titulo, tematica: decoracion.tematica, coincidencia: decoracion.coincidencia })) }, {
+        cercanasPorColor = encontradas.length ? cercanasDe(brief.tematica, exactas) : null;
+        decidir("regla:busqueda_biblioteca", "ideas reales del catálogo que ve el cliente", { total: encontradas.length, exactas, via: resultado.via, ideas: encontradas.map((decoracion) => ({ id: decoracion.id, titulo: decoracion.titulo, tematica: decoracion.tematica, coincidencia: decoracion.coincidencia })), cercanasPorColor }, {
           entrada: { brief, consulta: resultado.consulta, generoBaby: resultado.genero },
           ...(resultado.via === "evento" ? { motivo: "sin ideas de lo pedido: se muestran las reales más cercanas del mismo evento, sin anunciarlo como fracaso" } : resultado.via === "vacio" ? { motivo: "sin ideas para el evento: se ofrecen temáticas con decoraciones" } : {}),
         });
@@ -189,7 +211,9 @@ async function turnoGuiado(request: Request) {
           const conIdeas = tematicasDisponibles(brief.evento).filter((tematica) => ideasRealesDeOpcion(tematica, { evento: brief.evento, edad: brief.edad }) > 0).slice(0, 4);
           return { brief, ideas: [], aviso: `NO digas que no hay ni que no encontraste. Pregunta en una frase qué estilo le gusta y cierra con «Opciones: ${[...conIdeas, CHIP_FOTO_GUIADA].join(" | ")}».` };
         }
-        const aviso = exactas === 0
+        const aviso = cercanasPorColor
+          ? `Son ideas reales en los colores típicos de ${brief.tematica} (${cercanasPorColor.colores.join(", ")}): la interfaz ya le dice al cliente, con calidez, que no hay de esa temática exacta. No lo repitas ni digas «no encontré»: pregunta solo si alguna le gusta, en una frase.`
+          : exactas === 0
           ? "Son ideas reales del catálogo, las más cercanas a lo que pidió: preséntalas con naturalidad («Te dejo unas ideas que pueden encantarte, ¿alguna te gusta?»). NO digas que no encontraste, que no hay ni que no son exactas."
           : exactas < encontradas.length ? `Las primeras ${exactas} son de lo que pidió y las demás, parecidas: preséntalas todas con naturalidad, sin decir que algo no existe.` : "Todas son de lo que pidió.";
         // Al modelo solo le hacen falta los títulos: el cliente ya ve las fotos y el detalle.
@@ -203,8 +227,10 @@ async function turnoGuiado(request: Request) {
           : alcancePropuesta === "completa" ? base.piezas.map((pieza) => ({ ...pieza, cantidad: Math.min(pieza.cantidad, 4) })) : base.piezas;
         // Cada pieza del plan es individual y un plan lleva como mucho 8 (MAX_PIEZAS_PLAN): la suma se acota aquí, a la vista.
         const acotadas = recortarCantidades(piezas);
-        const validada = normalizarPropuestaComposicion({ ...base, piezas: acotadas.piezas });
-        decidir("regla:propuesta_normalizada", "propuesta del modelo ajustada al alcance y al catálogo oficial", validada, { entrada: { propuestaModelo: base, alcancePropuesta, piezaPedida: piezaPedida ?? null, piezasTrasAlcance: piezas, piezasRecortadas: acotadas.recortadas } });
+        // El tono que dijo el cliente («celeste») y no la familia que eligió el modelo («azul»): tonos-color.ts.
+        const colores = coloresConTonosDelCliente(base.colores, dichoPorCliente);
+        const validada = normalizarPropuestaComposicion({ ...base, colores, piezas: acotadas.piezas });
+        decidir("regla:propuesta_normalizada", "propuesta del modelo ajustada al alcance, al catálogo oficial y a los tonos del cliente", validada, { entrada: { propuestaModelo: base, alcancePropuesta, piezaPedida: piezaPedida ?? null, piezasTrasAlcance: piezas, piezasRecortadas: acotadas.recortadas, coloresConTonos: colores } });
         datos.propuesta = validada;
         return { propuesta: validada, aviso: "Las piezas y colores vienen del catálogo oficial. Responde con una sola frase («Te preparo el plan con las cantidades exactas.»): la interfaz arma el plan en seguida." };
       },
@@ -288,6 +314,63 @@ async function turnoGuiado(request: Request) {
     const generos = generosBabyShower();
     const generosValidos = generos.filter((item) => item.ideas > 0).map((item) => item.genero);
     const generosSin = generos.filter((item) => item.ideas === 0).map((item) => NOMBRE_GENERO[item.genero]);
+    // Cambio de temática a mitad (probador, 2026-10-06: «mejor cambiemos, mi hijo ahora quiere dinosaurios»): el servidor
+    // guarda el brief nuevo (la cabecera lo refleja) y busca las ideas reales de la nueva temática antes de que hable el
+    // modelo; en ese turno el modelo solo las presenta, sin herramientas (antes rehacía el mismo plan recoloreado).
+    const cambioTematica = alcancePropuesta ? null : detectarCambioTematica({ ultimoUsuario, tematicaPrevia: briefPrevio.tematica });
+    let ideasCambio: string[] = [];
+    if (cambioTematica) {
+      const eventoCambio = eventoTurno();
+      if (eventoCambio) {
+        const brief: BriefCompleto = { evento: eventoCambio, edad: briefVigente().edad ?? 0, tematica: cambioTematica.nueva.slice(0, 160) };
+        const resultado = ideasGuiadas({ evento: brief.evento, edad: brief.edad, tematica: brief.tematica, ultimoUsuario });
+        datos.brief = brief;
+        if (resultado.ideas.length) datos.decoraciones = resultado.ideas;
+        const exactas = resultado.ideas.filter((idea) => idea.coincidencia === "exacta").length;
+        cercanasPorColor = resultado.ideas.length ? cercanasDe(brief.tematica, exactas) : null;
+        ideasCambio = resultado.ideas.map((idea) => idea.titulo);
+        decidir("regla:cambio_tematica", "el cliente cambió de temática: brief nuevo e ideas reales de la nueva temática", {
+          brief, total: resultado.ideas.length, exactas, via: resultado.via, cercanasPorColor,
+          ideas: resultado.ideas.map((idea) => ({ id: idea.id, titulo: idea.titulo, coincidencia: idea.coincidencia })),
+        }, { entrada: { ultimoUsuario, briefPrevio, grupo: cambioTematica.grupo, planVigente: Boolean(planActual) }, motivo: cambioTematica.motivo });
+      } else {
+        decidir("regla:cambio_tematica", "el cliente nombró otra temática pero no se sabe el evento: lo resuelve el modelo", { aplicado: false }, { entrada: { ultimoUsuario, briefPrevio, grupo: cambioTematica.grupo } });
+      }
+    }
+    // «Muéstrame otras ideas con columnas» (verificador, 2026-10-06, solicitud 2c18cf03): pedir VER ideas no es cambiar el
+    // plan. Antes el modelo llamaba proponer_composicion, la vista la aceptaba sola y se armaba y cobraba un plan nuevo.
+    // Ahora el servidor busca las ideas reales (primero las que llevan la pieza nombrada) y el modelo solo las presenta.
+    const pedidoIdeas = alcancePropuesta || ideasCambio.length ? null : pedidoDeIdeas(ultimoUsuario);
+    let ideasPedidas: string[] = [];
+    if (pedidoIdeas) {
+      const vigente = briefVigente();
+      const eventoIdeas = eventoTurno();
+      if (eventoIdeas) {
+        const edad = vigente.edad ?? 0;
+        const resultado = ideasGuiadas({ evento: eventoIdeas, edad, tematica: vigente.tematica ?? "", ultimoUsuario });
+        // «Prefiero ver ideas parecidas» a una foto (probador, 2026-10-07): las de su estructura y sus colores, sin las
+        // que ya vio (antes volvía el mismo aro con `conPieza: 0`). Sin ninguna, la búsqueda de siempre.
+        const aLaFoto = esPedidoParecidasAFoto(ultimoUsuario)
+          ? ideasParecidasAFoto({ texto: ultimoUsuario, piezas: pedidoIdeas.piezas, evento: eventoIdeas, edad, excluir: ideasYaVistas({ evento: eventoIdeas, edad, tematica: vigente.tematica ?? "", mensajesPrevios: dichoPorCliente.slice(0, -1), ...(decoracionConfirmada ? { elegida: decoracionConfirmada } : {}) }) })
+          : null;
+        // Si la búsqueda no trae bastantes con la pieza nombrada, las del mismo evento que sí la llevan (como parecidas).
+        const delEvento = pedidoIdeas.piezas.length ? ideasGuiadas({ evento: eventoIdeas, edad, tematica: "" }).ideas.map((idea) => ({ ...idea, coincidencia: "cercana" as const })) : [];
+        const { ideas, conPieza } = aLaFoto?.ideas.length ? aLaFoto : ordenarIdeasPorPieza(resultado.ideas, delEvento, pedidoIdeas.piezas);
+        if (ideas.length) {
+          datos.decoraciones = ideas;
+          ideasPedidas = ideas.map((idea) => idea.titulo);
+          const exactas = ideas.filter((idea) => idea.coincidencia === "exacta").length;
+          // Las parecidas a la foto no son «las ideas en los colores de la temática»: esa frase no va.
+          cercanasPorColor = vigente.tematica && !aLaFoto?.ideas.length ? cercanasDe(vigente.tematica, exactas) : null;
+        }
+        decidir("regla:pedido_ideas", "el cliente pidió ver ideas del catálogo: se buscan aquí y su plan no cambia", {
+          total: ideas.length, conPieza, via: aLaFoto?.ideas.length ? "parecidas_foto" : resultado.via, piezas: pedidoIdeas.piezas, ...(aLaFoto ? { conColor: aLaFoto.conColor } : {}),
+          ideas: ideas.map((idea) => ({ id: idea.id, titulo: idea.titulo, coincidencia: idea.coincidencia, piezas: idea.piezas.map((pieza) => pieza.estructura) })),
+        }, { entrada: { ultimoUsuario, brief: vigente, evento: eventoIdeas, planVigente: Boolean(planActual) }, ...(ideas.length ? {} : { motivo: "sin ideas para el evento: lo resuelve el modelo" }) });
+      } else {
+        decidir("regla:pedido_ideas", "el cliente pidió ver ideas pero no se sabe el evento: lo resuelve el modelo", { aplicado: false }, { entrada: { ultimoUsuario } });
+      }
+    }
     const eventoInicial = eventoTurno();
     const edadInicial = briefVigente().edad || undefined;
     const estilosEvento = eventoInicial
@@ -316,17 +399,25 @@ async function turnoGuiado(request: Request) {
         return { ...herramienta, descripcion: `${String(description)} Usa ids oficiales y colores permitidos.`, esquema: campos };
       });
     }
+    if (ideasCambio.length || ideasPedidas.length) herramientasTurno = [];
     decidir("regla:herramientas_turno", "herramientas que el modelo tiene en este turno", herramientasTurno.map((herramienta) => herramienta.nombre), {
-      motivo: alcancePropuesta ? `alcance «${alcancePropuesta}»: solo propuesta y brief` : decoracionConfirmada ? "hay una idea elegida" : "sin idea elegida: sin herramientas de decoración",
+      motivo: ideasCambio.length ? "cambio de temática: el servidor ya guardó el brief y buscó las ideas" : ideasPedidas.length ? "pidió ver ideas: el servidor ya las buscó y el plan no cambia" : alcancePropuesta ? `alcance «${alcancePropuesta}»: solo propuesta y brief` : decoracionConfirmada ? "hay una idea elegida" : "sin idea elegida: sin herramientas de decoración",
     });
     const instruccionTurno = alcancePropuesta
       ? `\n\nEN ESTE TURNO el cliente eligió ${alcancePropuesta === "completa" ? "una decoración completa (2-3 piezas)" : `una pieza individual${piezaPedida ? `: ${ESTRUCTURAS_OFICIALES[piezaPedida].nombre.toLocaleLowerCase("es")}` : ""}`}: llama proponer_composicion ahora y no busques ideas en la biblioteca.`
-      : "";
+      : ideasCambio.length && cambioTematica
+        ? `\n\nEN ESTE TURNO el cliente cambió la temática de «${cambioTematica.anterior}» a «${cambioTematica.nueva}»: ya guardé el cambio y la interfaz le muestra estas ideas reales del catálogo: ${ideasCambio.map((titulo) => `«${titulo}»`).join(", ")}. Responde en una o dos frases cálidas: confirma el cambio y pregúntale si alguna le gusta o si prefiere que le proponga un plan nuevo con esa temática. No llames herramientas ni enumeres los títulos.`
+        : ideasPedidas.length
+          ? `
+
+EN ESTE TURNO el cliente pidió ver ideas${pedidoIdeas?.palabra ? ` con ${pedidoIdeas.palabra}` : ""} del catálogo: la interfaz ya le muestra estas ideas reales: ${ideasPedidas.map((titulo) => `«${titulo}»`).join(", ")}. Responde en una o dos frases cálidas y pregúntale si alguna le gusta${planActual ? "; recuérdale que puede sumarla a su plan con «Agregar a mi plan» o crear un plan nuevo con ella" : ""}. No cambies su plan, no llames herramientas ni enumeres los títulos.`
+          : "";
     // Fuera de plan, propuesta y proveedores, cada frase y cada opción que ve el cliente lleva a decoraciones reales.
     const contextoRespuesta = (): ContextoRespuesta => ({
       evento: eventoTurno(), edad: briefVigente().edad || undefined, generosValidos,
       aplicar: !(planActual || alcancePropuesta || datos.propuesta || datos.proveedores !== undefined || datos.ciudadesDisponibles !== undefined),
       ideasEnTurno: Array.isArray(datos.decoraciones) ? datos.decoraciones.length : 0,
+      cercanasPorColor,
     });
     // El texto que se transmite también va saneado (oración a oración): el cliente no ve «No encontré…» ni un instante.
     const filtroFlujo = planActual || alcancePropuesta ? null : new FiltroFlujoGuiado(contextoRespuesta);

@@ -1,6 +1,8 @@
 {
   "estado": "resuelto",
   "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "No hay plata: lo plateado son transparentes con confeti; tamaños de 5, 12 y 18; faltaban las estrellas metalizadas azul rey y la cortina plateada.",
+  "descartadas": [],
   "plan_declarado": {
     "plan_version": "1.0",
     "plan_id": "e16b92c1-4227-5098-bcc2-6cb594ff16e8",
@@ -8,9 +10,8 @@
       "titulo": "real-16-images-31",
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
-        "azul marino",
         "azul",
-        "plateado"
+        "transparente"
       ],
       "estilo": "orgánico"
     },
@@ -21,7 +22,7 @@
     "estructuras": [
       {
         "estructura_id": "EST_01_GUIRNALDA",
-        "nombre": "Guirnalda orgánica",
+        "nombre": "Guirnalda",
         "tipo": "guirnalda",
         "rol_escena": "focal",
         "ubicacion": "fondo_pared",
@@ -35,32 +36,31 @@
           {
             "product_id": "8869949341991",
             "variant_id": "47230981112103",
-            "color": "azul marino",
-            "participacion": 0.5555555555555556,
+            "color": "azul",
+            "participacion": 0.55,
             "rol_material": "principal"
           },
           {
             "product_id": "8634249543975",
             "variant_id": "46594250440999",
             "color": "azul",
-            "participacion": 0.3333333333333333,
+            "participacion": 0.33,
             "rol_material": "secundario"
           },
           {
-            "product_id": "8634257211687",
-            "variant_id": "46594267709735",
-            "color": "plateado",
-            "participacion": 0.11111111111111112,
+            "product_id": "8634277003559",
+            "variant_id": "46594306605351",
+            "color": "transparente",
+            "participacion": 0.12,
             "rol_material": "acento"
           }
         ],
-        "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+        "porque": "Guirnalda orgánica azul marino y azul cromado con transparentes de confeti.",
         "referencia_element_id": "REF_01_E02",
         "estructura_oficial": "guirnalda",
         "colores_referencia": [
-          "azul marino",
           "azul",
-          "plateado"
+          "transparente"
         ]
       },
       {
@@ -78,24 +78,23 @@
             "product_id": "8634249543975",
             "variant_id": "46594250440999",
             "color": "azul",
-            "participacion": 0.8928571428571429,
+            "participacion": 0.6,
             "rol_material": "principal"
           },
           {
             "product_id": "8869949341991",
             "variant_id": "47230981112103",
-            "color": "azul marino",
-            "participacion": 0.10714285714285714,
+            "color": "azul",
+            "participacion": 0.4,
             "rol_material": "secundario"
           }
         ],
         "unidades_declaradas": 12,
-        "porque": "Recreación de referencia REF_01_E05, con color y forma observados.",
+        "porque": "Racimo de piso izquierdo azul cromado y azul marino, coronado por una estrella metalizada.",
         "referencia_element_id": "REF_01_E05",
         "estructura_oficial": "bouquet",
         "colores_referencia": [
-          "azul",
-          "azul marino"
+          "azul"
         ]
       },
       {
@@ -113,31 +112,64 @@
             "product_id": "8634249543975",
             "variant_id": "46594250440999",
             "color": "azul",
-            "participacion": 0.875,
+            "participacion": 0.5,
             "rol_material": "principal"
           },
           {
-            "product_id": "8634257211687",
-            "variant_id": "46594267709735",
-            "color": "plateado",
-            "participacion": 0.12500000000000003,
+            "product_id": "8869949341991",
+            "variant_id": "47230981112103",
+            "color": "azul",
+            "participacion": 0.4,
             "rol_material": "secundario"
+          },
+          {
+            "product_id": "8634277003559",
+            "variant_id": "46594306605351",
+            "color": "transparente",
+            "participacion": 0.1,
+            "rol_material": "acento"
           }
         ],
         "unidades_declaradas": 10,
-        "porque": "Recreación de referencia REF_01_E06, con color y forma observados.",
+        "porque": "Racimo de piso derecho azul cromado y azul marino con un transparente de confeti.",
         "referencia_element_id": "REF_01_E06",
         "estructura_oficial": "bouquet",
         "colores_referencia": [
           "azul",
-          "plateado"
+          "transparente"
         ]
       }
     ],
     "supuestos": [
       "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06).",
+      "Los 2 corazones metalizados azul rey de la foto no tienen equivalente de ese color en el catálogo (solo azul pastel) y no se incluyen; las letras plateadas tampoco tienen equivalente."
     ],
+    "restricciones": {
+      "estructuras": [],
+      "colores": [],
+      "tamanos": [
+        {
+          "valor": "R-5",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-5",
+          "polaridad": "obligatorio"
+        },
+        {
+          "valor": "R-12",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-12",
+          "polaridad": "obligatorio"
+        },
+        {
+          "valor": "R-18",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-18",
+          "polaridad": "obligatorio"
+        }
+      ],
+      "acabados": []
+    },
     "referencia_omitida": []
   },
   "plan_resuelto": {
@@ -148,9 +180,8 @@
         "titulo": "real-16-images-31",
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
-          "azul marino",
           "azul",
-          "plateado"
+          "transparente"
         ],
         "estilo": "orgánico"
       },
@@ -161,46 +192,45 @@
       "estructuras": [
         {
           "estructura_id": "EST_01_GUIRNALDA",
-          "nombre": "Guirnalda orgánica",
+          "nombre": "Guirnalda",
           "tipo": "guirnalda",
           "rol_escena": "focal",
           "ubicacion": "fondo_pared",
           "medidas": {
-            "largo_m": 2.74
+            "largo_m": 2.98
           },
           "repeticiones": 1,
           "densidad": "lujosa",
-          "mezcla": "clasica",
+          "mezcla": "organica_fina",
           "materiales": [
             {
               "product_id": "8869949341991",
               "variant_id": "47230981112103",
               "color": "azul",
-              "participacion": 0.5555555555555556,
+              "participacion": 0.55,
               "rol_material": "principal"
             },
             {
               "product_id": "8634249543975",
               "variant_id": "46594250440999",
               "color": "azul",
-              "participacion": 0.3333333333333333,
+              "participacion": 0.33,
               "rol_material": "secundario"
             },
             {
-              "product_id": "8634257211687",
-              "variant_id": "46594267709735",
-              "color": "plateado",
-              "participacion": 0.11111111111111112,
+              "product_id": "8634277003559",
+              "variant_id": "46594306605351",
+              "color": "transparente",
+              "participacion": 0.12,
               "rol_material": "acento"
             }
           ],
-          "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+          "porque": "Guirnalda orgánica azul marino y azul cromado con transparentes de confeti.",
           "referencia_element_id": "REF_01_E02",
           "estructura_oficial": "guirnalda",
           "colores_referencia": [
-            "azul marino",
             "azul",
-            "plateado"
+            "transparente"
           ]
         },
         {
@@ -218,24 +248,23 @@
               "product_id": "8634249543975",
               "variant_id": "46594250440999",
               "color": "azul",
-              "participacion": 0.8928571428571429,
+              "participacion": 0.6,
               "rol_material": "principal"
             },
             {
               "product_id": "8869949341991",
               "variant_id": "47230981112103",
               "color": "azul",
-              "participacion": 0.10714285714285714,
+              "participacion": 0.4,
               "rol_material": "secundario"
             }
           ],
           "unidades_declaradas": 12,
-          "porque": "Recreación de referencia REF_01_E05, con color y forma observados.",
+          "porque": "Racimo de piso izquierdo azul cromado y azul marino, coronado por una estrella metalizada.",
           "referencia_element_id": "REF_01_E05",
           "estructura_oficial": "bouquet",
           "colores_referencia": [
-            "azul",
-            "azul marino"
+            "azul"
           ]
         },
         {
@@ -253,37 +282,111 @@
               "product_id": "8634249543975",
               "variant_id": "46594250440999",
               "color": "azul",
-              "participacion": 0.875,
+              "participacion": 0.5,
               "rol_material": "principal"
             },
             {
-              "product_id": "8634257211687",
-              "variant_id": "46594267709735",
-              "color": "plateado",
-              "participacion": 0.12500000000000003,
+              "product_id": "8869949341991",
+              "variant_id": "47230981112103",
+              "color": "azul",
+              "participacion": 0.4,
               "rol_material": "secundario"
+            },
+            {
+              "product_id": "8634277003559",
+              "variant_id": "46594306605351",
+              "color": "transparente",
+              "participacion": 0.1,
+              "rol_material": "acento"
             }
           ],
           "unidades_declaradas": 10,
-          "porque": "Recreación de referencia REF_01_E06, con color y forma observados.",
+          "porque": "Racimo de piso derecho azul cromado y azul marino con un transparente de confeti.",
           "referencia_element_id": "REF_01_E06",
           "estructura_oficial": "bouquet",
           "colores_referencia": [
             "azul",
-            "plateado"
+            "transparente"
           ]
         }
       ],
       "supuestos": [
-        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-        "Se usan globos redondos R-12 disponibles en el snapshot vigente.",
-        "Guirnalda orgánica: la foto muestra unos 85 globos y el plan tenía 51; densidad media → lujosa, largo 2,4 → 2,74 m equivalente a la foto (no medido): quedó en 73."
+        "las medidas en metros parten de un tamano frecuente y se ajustan con la lectura de la foto.",
+        "los tamanos son los que se ven en la foto (auditoria 2026-10-06).",
+        "los 2 corazones metalizados azul rey de la foto no tienen equivalente de ese color en el catalogo (solo azul pastel) y no se incluyen; las letras plateadas tampoco tienen equivalente.",
+        "Guirnalda: los tamaños de la foto piden la mezcla organica_fina, no clasica.",
+        "Guirnalda: la foto muestra unos 85 globos y el plan tenía 47; densidad media → lujosa, largo 2,4 → 2,98 m equivalente a la foto (no medido): quedó en 73."
       ],
+      "restricciones": {
+        "estructuras": [],
+        "colores": [],
+        "tamanos": [
+          {
+            "valor": "R-5",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-5",
+            "polaridad": "obligatorio"
+          },
+          {
+            "valor": "R-12",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-12",
+            "polaridad": "obligatorio"
+          },
+          {
+            "valor": "R-18",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-18",
+            "polaridad": "obligatorio"
+          }
+        ],
+        "acabados": []
+      },
       "referencia_omitida": []
     },
-    "plan_hash": "90f156927cd135ac3d901f7bca99963ef2cbaa39ec8b8b559a34fb3d9bf0024e",
+    "plan_hash": "7fc39b3cac2cf4d2e32e039f6c16b3c25b39009c762924c9dadbfd4a5fd23fcb",
     "request_id": "8e816b7a-120f-5404-8580-3aa6b697609d",
     "compras": [
+      {
+        "variant_id": "46594250375463",
+        "product_id": "8634249543975",
+        "sku": "B2B-20014167",
+        "sku_original": "B2B-20014167",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594250375463",
+        "inventory_quantity": 996279,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Reflex Azul — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "azul",
+        "unidades_necesarias": 6,
+        "design_quantity": 6,
+        "waste_reserve": 8,
+        "required_quantity": 14,
+        "unidades_con_merma": 14,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 6,
+        "leftover_inventory": 36,
+        "consumption_cost": 3724,
+        "purchase_cost": 13301,
+        "additional_package_for_waste": false,
+        "sobrante": 44,
+        "precio_paquete": 13301,
+        "subtotal": 13301,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702"
+      },
       {
         "variant_id": "46594250440999",
         "product_id": "8634249543975",
@@ -297,20 +400,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "azul",
-        "unidades_necesarias": 44,
-        "design_quantity": 44,
+        "unidades_necesarias": 28,
+        "design_quantity": 28,
         "waste_reserve": 0,
-        "required_quantity": 44,
-        "unidades_con_merma": 44,
+        "required_quantity": 28,
+        "unidades_con_merma": 28,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 44,
-        "leftover_inventory": 6,
-        "consumption_cost": 25500,
+        "used": 28,
+        "leftover_inventory": 22,
+        "consumption_cost": 16227,
         "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "sobrante": 6,
+        "sobrante": 22,
         "precio_paquete": 28977,
         "subtotal": 28977,
         "estructuras": [
@@ -335,34 +438,114 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702"
       },
       {
-        "variant_id": "46594267709735",
-        "product_id": "8634257211687",
-        "sku": "B2B-20014160",
-        "sku_original": "B2B-20014160",
+        "variant_id": "46594250473767",
+        "product_id": "8634249543975",
+        "sku": "B2B-20015527",
+        "sku_original": "B2B-20015527",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
-        "inventory_quantity": 980461,
+        "source_variant_id": "gid://shopify/ProductVariant/46594250473767",
+        "inventory_quantity": 999590,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
-        "tamano_codigo": "R-12",
-        "diam_pulg": 12,
-        "color": "plateado",
-        "unidades_necesarias": 9,
-        "design_quantity": 9,
-        "waste_reserve": 8,
-        "required_quantity": 17,
-        "unidades_con_merma": 17,
+        "titulo": "B2b Globo Latex Redondo Reflex Azul — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "azul",
+        "unidades_necesarias": 2,
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "unidades_con_merma": 2,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 5901,
+        "purchase_cost": 17704,
+        "additional_package_for_waste": false,
+        "sobrante": 4,
+        "precio_paquete": 17704,
+        "subtotal": 17704,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702"
+      },
+      {
+        "variant_id": "46594306474279",
+        "product_id": "8634277003559",
+        "sku": "B2B-20000496",
+        "sku_original": "B2B-20000496",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594306474279",
+        "inventory_quantity": 998697,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Transparente — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "transparente",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 9,
-        "leftover_inventory": 33,
-        "consumption_cost": 9852,
-        "purchase_cost": 28977,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 370,
+        "purchase_cost": 6164,
         "additional_package_for_waste": false,
-        "sobrante": 41,
-        "precio_paquete": 28977,
-        "subtotal": 28977,
+        "sobrante": 47,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Cristal_Transparente_-_Crystal_Clear_390.jpg?v=1763154284"
+      },
+      {
+        "variant_id": "46594306605351",
+        "product_id": "8634277003559",
+        "sku": "B2B-20000784",
+        "sku_original": "B2B-20000784",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594306605351",
+        "inventory_quantity": 997954,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Transparente — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "transparente",
+        "unidades_necesarias": 7,
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "unidades_con_merma": 7,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 1825,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 43,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
         "estructuras": [
           "EST_01_GUIRNALDA",
           "EST_03_BOUQUET"
@@ -377,7 +560,7 @@
             "id": "EST_03_BOUQUET"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Cristal_Transparente_-_Crystal_Clear_390.jpg?v=1763154284"
       },
       {
         "variant_id": "47230981112103",
@@ -392,25 +575,26 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "azul",
-        "unidades_necesarias": 42,
-        "design_quantity": 42,
+        "unidades_necesarias": 36,
+        "design_quantity": 36,
         "waste_reserve": 0,
-        "required_quantity": 42,
-        "unidades_con_merma": 42,
+        "required_quantity": 36,
+        "unidades_con_merma": 36,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 42,
-        "leftover_inventory": 8,
-        "consumption_cost": 10951,
+        "used": 36,
+        "leftover_inventory": 14,
+        "consumption_cost": 9387,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 8,
+        "sobrante": 14,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
           "EST_01_GUIRNALDA",
-          "EST_02_BOUQUET"
+          "EST_02_BOUQUET",
+          "EST_03_BOUQUET"
         ],
         "elementos_origen": [
           {
@@ -420,6 +604,90 @@
           {
             "kind": "estructura",
             "id": "EST_02_BOUQUET"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_03_BOUQUET"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802"
+      },
+      {
+        "variant_id": "47466207019303",
+        "product_id": "8869949341991",
+        "sku": "B2B-20010802",
+        "sku_original": "B2B-20010802",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/47466207019303",
+        "inventory_quantity": 994073,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "azul",
+        "unidades_necesarias": 10,
+        "design_quantity": 10,
+        "waste_reserve": 0,
+        "required_quantity": 10,
+        "unidades_con_merma": 10,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 10,
+        "leftover_inventory": 40,
+        "consumption_cost": 1233,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 40,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802"
+      },
+      {
+        "variant_id": "47466210656551",
+        "product_id": "8869949341991",
+        "sku": "B2B-20013752",
+        "sku_original": "B2B-20013752",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/47466210656551",
+        "inventory_quantity": 998607,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Azul Naval — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "azul",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 3600,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "sobrante": 3,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
           }
         ],
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802"
@@ -427,20 +695,22 @@
     ],
     "totales": {
       "globos_por_tamano": {
-        "R-12": 95
+        "R-5": 19,
+        "R-12": 71,
+        "R-18": 5
       },
       "total_unidades": 95,
-      "total_cop": 70991,
+      "total_cop": 105583,
       "design_quantity": 95,
       "target_waste_reserve": 8,
       "covered_waste_reserve": 8,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 55,
-      "purchase_cost": 70991,
-      "consumption_cost": 46303,
+      "natural_package_surplus": 217,
+      "purchase_cost": 105583,
+      "consumption_cost": 42267,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
-      "ahorro_paquetes_cop": 99968,
+      "ahorro_paquetes_cop": 97065,
       "incluye_iva": true,
       "merma_porcentaje": 8
     },
@@ -450,34 +720,102 @@
     },
     "alternativas": [],
     "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
-    "sustituciones": [
-      {
-        "estructura_id": "EST_01_GUIRNALDA",
-        "pedido": "azul marino",
-        "entregado": "azul, plateado",
-        "motivo": "La foto de referencia muestra azul marino y esta pieza no lo lleva: se armó con azul y plateado."
-      },
-      {
-        "estructura_id": "EST_02_BOUQUET",
-        "pedido": "azul marino",
-        "entregado": "azul",
-        "motivo": "La foto de referencia muestra azul marino y esta pieza no lo lleva: se armó con azul."
-      }
-    ],
+    "sustituciones": [],
     "sin_cobertura": [],
     "advertencias": [
-      "sobrante_alto:46594267709735"
+      "sobrante_alto:46594250375463",
+      "sobrante_alto:46594250440999",
+      "sobrante_alto:46594250473767",
+      "sobrante_alto:46594306474279",
+      "sobrante_alto:46594306605351",
+      "sobrante_alto:47466207019303",
+      "sobrante_alto:47466210656551"
     ],
     "estructuras": [
       {
         "estructura_id": "EST_01_GUIRNALDA",
-        "nombre": "Guirnalda orgánica",
+        "nombre": "Guirnalda",
         "tipo": "guirnalda",
         "ubicacion": "fondo_pared",
         "repeticiones": 1,
-        "eje_m": 2.74,
+        "eje_m": 2.98,
         "total_unidades": 73,
         "lineas": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8869949341991",
+            "variant_id": "47466207019303",
+            "sku": "B2B-20010802",
+            "sku_original": "B2B-20010802",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/47466207019303",
+            "inventory_quantity": 994073,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 10,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634249543975",
+            "variant_id": "46594250375463",
+            "sku": "B2B-20014167",
+            "sku_original": "B2B-20014167",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594250375463",
+            "inventory_quantity": 996279,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Azul — R-5 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 6,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634277003559",
+            "variant_id": "46594306474279",
+            "sku": "B2B-20000496",
+            "sku_original": "B2B-20000496",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594306474279",
+            "inventory_quantity": 998697,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Transparente — R-5 / PAQUETE X 50",
+            "color": "transparente",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Cristal_Transparente_-_Crystal_Clear_390.jpg?v=1763154284",
+            "sustitucion": null
+          },
           {
             "estructura_id": "EST_01_GUIRNALDA",
             "origen": {
@@ -499,7 +837,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 41,
+            "unidades": 27,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802",
             "sustitucion": null
           },
@@ -524,7 +862,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "reflex",
-            "unidades": 24,
+            "unidades": 16,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702",
             "sustitucion": null
           },
@@ -534,23 +872,73 @@
               "kind": "estructura",
               "id": "EST_01_GUIRNALDA"
             },
-            "product_id": "8634257211687",
-            "variant_id": "46594267709735",
-            "sku": "B2B-20014160",
-            "sku_original": "B2B-20014160",
+            "product_id": "8634277003559",
+            "variant_id": "46594306605351",
+            "sku": "B2B-20000784",
+            "sku_original": "B2B-20000784",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
-            "inventory_quantity": 980461,
+            "source_variant_id": "gid://shopify/ProductVariant/46594306605351",
+            "inventory_quantity": 997954,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
-            "color": "plateado",
+            "titulo": "B2b Globo Latex Redondo Fashion Transparente — R-12 / PAQUETE X 50",
+            "color": "transparente",
             "tamano_codigo": "R-12",
             "diam_pulg": 12,
             "diam_cm": 30.5,
             "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 6,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Cristal_Transparente_-_Crystal_Clear_390.jpg?v=1763154284",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8869949341991",
+            "variant_id": "47466210656551",
+            "sku": "B2B-20013752",
+            "sku_original": "B2B-20013752",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/47466210656551",
+            "inventory_quantity": 998607,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Azul Naval — R-18 / PAQUETE X 6",
+            "color": "azul",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634249543975",
+            "variant_id": "46594250473767",
+            "sku": "B2B-20015527",
+            "sku_original": "B2B-20015527",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594250473767",
+            "inventory_quantity": 999590,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Reflex Azul — R-18 / PAQUETE X 6",
+            "color": "azul",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
             "acabado": "reflex",
-            "unidades": 8,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702",
             "sustitucion": null
           }
         ],
@@ -558,8 +946,20 @@
           {
             "diam_pulg": 12,
             "forma": "redondo",
-            "unidades": 73,
-            "pct": 100
+            "unidades": 49,
+            "pct": 67.12
+          },
+          {
+            "diam_pulg": 5,
+            "forma": "redondo",
+            "unidades": 19,
+            "pct": 26.03
+          },
+          {
+            "diam_pulg": 18,
+            "forma": "redondo",
+            "unidades": 5,
+            "pct": 6.85
           }
         ],
         "supuestos": []
@@ -594,7 +994,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "reflex",
-            "unidades": 11,
+            "unidades": 7,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702",
             "sustitucion": null
           },
@@ -619,7 +1019,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 1,
+            "unidades": 5,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802",
             "sustitucion": null
           }
@@ -664,7 +1064,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "reflex",
-            "unidades": 9,
+            "unidades": 5,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702",
             "sustitucion": null
           },
@@ -674,23 +1074,48 @@
               "kind": "estructura",
               "id": "EST_03_BOUQUET"
             },
-            "product_id": "8634257211687",
-            "variant_id": "46594267709735",
-            "sku": "B2B-20014160",
-            "sku_original": "B2B-20014160",
+            "product_id": "8869949341991",
+            "variant_id": "47230981112103",
+            "sku": "B2B-20010806",
+            "sku_original": "B2B-20010806",
             "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-            "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
-            "inventory_quantity": 980461,
+            "source_variant_id": "gid://shopify/ProductVariant/47230981112103",
+            "inventory_quantity": 990462,
             "unidades_inferidas": false,
-            "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
-            "color": "plateado",
+            "titulo": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50",
+            "color": "azul",
             "tamano_codigo": "R-12",
             "diam_pulg": 12,
             "diam_cm": 30.5,
             "forma": "redondo",
-            "acabado": "reflex",
+            "acabado": "fashion",
+            "unidades": 4,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Naval_-_Navy_Blue_044.jpg?v=1763147802",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_03_BOUQUET",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_03_BOUQUET"
+            },
+            "product_id": "8634277003559",
+            "variant_id": "46594306605351",
+            "sku": "B2B-20000784",
+            "sku_original": "B2B-20000784",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594306605351",
+            "inventory_quantity": 997954,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Transparente — R-12 / PAQUETE X 50",
+            "color": "transparente",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
             "unidades": 1,
-            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Cristal_Transparente_-_Crystal_Clear_390.jpg?v=1763154284",
             "sustitucion": null
           }
         ],
@@ -708,15 +1133,15 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_GUIRNALDA",
-        "consumo_cop": 29236
+        "consumo_cop": 30577
       },
       {
         "estructura_id": "EST_02_BOUQUET",
-        "consumo_cop": 6636
+        "consumo_cop": 5360
       },
       {
         "estructura_id": "EST_03_BOUQUET",
-        "consumo_cop": 5795
+        "consumo_cop": 4201
       }
     ],
     "conteos_referencia": [
@@ -749,7 +1174,7 @@
           "confianza": 0.9
         },
         "globos_foto": 85,
-        "globos_antes": 51,
+        "globos_antes": 47,
         "globos_despues": 73,
         "cambios": [
           {
@@ -760,7 +1185,7 @@
           {
             "campo": "largo_m",
             "antes": 2.4,
-            "despues": 2.74
+            "despues": 2.98
           }
         ],
         "motivo": "Largo equivalente a la foto dentro de ±35 %: no es una medida tomada."
@@ -843,9 +1268,9 @@
       "dimensions_m": {
         "width": null,
         "height": null,
-        "length": 2.74
+        "length": 2.98
       },
-      "installation_length_m": 2.74,
+      "installation_length_m": 2.98,
       "density": "lujosa",
       "visual_density": "high",
       "visual_scale": "medium",
@@ -855,15 +1280,54 @@
       {
         "structure_id": "EST_01_GUIRNALDA",
         "product_id": "8869949341991",
+        "variant_id": "47466207019303",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 10,
+        "waste_reserve": 0,
+        "required_quantity": 10,
+        "waste_adjusted_quantity": 10
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634249543975",
+        "variant_id": "46594250375463",
+        "color": "azul",
+        "finish": "reflex",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 6,
+        "waste_reserve": 0,
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634277003559",
+        "variant_id": "46594306474279",
+        "color": "transparente",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8869949341991",
         "variant_id": "47230981112103",
         "color": "azul",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 41,
+        "design_quantity": 27,
         "waste_reserve": 0,
-        "required_quantity": 41,
-        "waste_adjusted_quantity": 41
+        "required_quantity": 27,
+        "waste_adjusted_quantity": 27
       },
       {
         "structure_id": "EST_01_GUIRNALDA",
@@ -873,23 +1337,49 @@
         "finish": "reflex",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 24,
+        "design_quantity": 16,
         "waste_reserve": 0,
-        "required_quantity": 24,
-        "waste_adjusted_quantity": 24
+        "required_quantity": 16,
+        "waste_adjusted_quantity": 16
       },
       {
         "structure_id": "EST_01_GUIRNALDA",
-        "product_id": "8634257211687",
-        "variant_id": "46594267709735",
-        "color": "plateado",
-        "finish": "reflex",
+        "product_id": "8634277003559",
+        "variant_id": "46594306605351",
+        "color": "transparente",
+        "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 8,
+        "design_quantity": 6,
         "waste_reserve": 0,
-        "required_quantity": 8,
-        "waste_adjusted_quantity": 8
+        "required_quantity": 6,
+        "waste_adjusted_quantity": 6
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8869949341991",
+        "variant_id": "47466210656551",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634249543975",
+        "variant_id": "46594250473767",
+        "color": "azul",
+        "finish": "reflex",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
       },
       {
         "structure_id": "EST_02_BOUQUET",
@@ -899,10 +1389,10 @@
         "finish": "reflex",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 11,
+        "design_quantity": 7,
         "waste_reserve": 0,
-        "required_quantity": 11,
-        "waste_adjusted_quantity": 11
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
       },
       {
         "structure_id": "EST_02_BOUQUET",
@@ -912,10 +1402,10 @@
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 1,
+        "design_quantity": 5,
         "waste_reserve": 0,
-        "required_quantity": 1,
-        "waste_adjusted_quantity": 1
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5
       },
       {
         "structure_id": "EST_03_BOUQUET",
@@ -925,17 +1415,30 @@
         "finish": "reflex",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 9,
+        "design_quantity": 5,
         "waste_reserve": 0,
-        "required_quantity": 9,
-        "waste_adjusted_quantity": 9
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5
       },
       {
         "structure_id": "EST_03_BOUQUET",
-        "product_id": "8634257211687",
-        "variant_id": "46594267709735",
-        "color": "plateado",
-        "finish": "reflex",
+        "product_id": "8869949341991",
+        "variant_id": "47230981112103",
+        "color": "azul",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 4,
+        "waste_reserve": 0,
+        "required_quantity": 4,
+        "waste_adjusted_quantity": 4
+      },
+      {
+        "structure_id": "EST_03_BOUQUET",
+        "product_id": "8634277003559",
+        "variant_id": "46594306605351",
+        "color": "transparente",
+        "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
         "design_quantity": 1,
@@ -948,57 +1451,147 @@
     "purchases": [
       {
         "product_id": "8634249543975",
-        "variant_id": "46594250440999",
-        "design_quantity": 44,
-        "waste_reserve": 0,
-        "required_quantity": 44,
-        "waste_adjusted_quantity": 44,
+        "variant_id": "46594250375463",
+        "design_quantity": 6,
+        "waste_reserve": 8,
+        "required_quantity": 14,
+        "waste_adjusted_quantity": 14,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 44,
-        "leftover_inventory": 6,
-        "consumption_cost": 25500,
-        "purchase_cost": 28977,
+        "used": 6,
+        "leftover_inventory": 36,
+        "consumption_cost": 3724,
+        "purchase_cost": 13301,
         "additional_package_for_waste": false,
-        "operational_surplus": 6,
-        "potential_surplus": 6
+        "operational_surplus": 36,
+        "potential_surplus": 44
       },
       {
-        "product_id": "8634257211687",
-        "variant_id": "46594267709735",
-        "design_quantity": 9,
-        "waste_reserve": 8,
-        "required_quantity": 17,
-        "waste_adjusted_quantity": 17,
+        "product_id": "8634249543975",
+        "variant_id": "46594250440999",
+        "design_quantity": 28,
+        "waste_reserve": 0,
+        "required_quantity": 28,
+        "waste_adjusted_quantity": 28,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 9,
-        "leftover_inventory": 33,
-        "consumption_cost": 9852,
+        "used": 28,
+        "leftover_inventory": 22,
+        "consumption_cost": 16227,
         "purchase_cost": 28977,
         "additional_package_for_waste": false,
-        "operational_surplus": 33,
-        "potential_surplus": 41
+        "operational_surplus": 22,
+        "potential_surplus": 22
+      },
+      {
+        "product_id": "8634249543975",
+        "variant_id": "46594250473767",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 5901,
+        "purchase_cost": 17704,
+        "additional_package_for_waste": false,
+        "operational_surplus": 4,
+        "potential_surplus": 4
+      },
+      {
+        "product_id": "8634277003559",
+        "variant_id": "46594306474279",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 370,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 47,
+        "potential_surplus": 47
+      },
+      {
+        "product_id": "8634277003559",
+        "variant_id": "46594306605351",
+        "design_quantity": 7,
+        "waste_reserve": 0,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 1825,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 43,
+        "potential_surplus": 43
       },
       {
         "product_id": "8869949341991",
         "variant_id": "47230981112103",
-        "design_quantity": 42,
+        "design_quantity": 36,
         "waste_reserve": 0,
-        "required_quantity": 42,
-        "waste_adjusted_quantity": 42,
+        "required_quantity": 36,
+        "waste_adjusted_quantity": 36,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 42,
-        "leftover_inventory": 8,
-        "consumption_cost": 10951,
+        "used": 36,
+        "leftover_inventory": 14,
+        "consumption_cost": 9387,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 8,
-        "potential_surplus": 8
+        "operational_surplus": 14,
+        "potential_surplus": 14
+      },
+      {
+        "product_id": "8869949341991",
+        "variant_id": "47466207019303",
+        "design_quantity": 10,
+        "waste_reserve": 0,
+        "required_quantity": 10,
+        "waste_adjusted_quantity": 10,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 10,
+        "leftover_inventory": 40,
+        "consumption_cost": 1233,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 40,
+        "potential_surplus": 40
+      },
+      {
+        "product_id": "8869949341991",
+        "variant_id": "47466210656551",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 3,
+        "leftover_inventory": 3,
+        "consumption_cost": 3600,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "operational_surplus": 3,
+        "potential_surplus": 3
       }
     ],
     "totals": {
@@ -1006,23 +1599,67 @@
       "target_waste_reserve": 8,
       "covered_waste_reserve": 8,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 55,
+      "natural_package_surplus": 217,
       "required_quantity": 103,
-      "consumption_cost": 46303,
-      "purchase_cost": 70991,
+      "consumption_cost": 42267,
+      "purchase_cost": 105583,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "waste_adjusted_quantity": 103,
-      "purchase_quantity": 150,
-      "operational_surplus": 47,
-      "potential_surplus": 55
+      "purchase_quantity": 312,
+      "operational_surplus": 209,
+      "potential_surplus": 217
     },
     "warnings": [
-      "sobrante_alto:46594267709735"
+      "sobrante_alto:46594250375463",
+      "sobrante_alto:46594250440999",
+      "sobrante_alto:46594250473767",
+      "sobrante_alto:46594306474279",
+      "sobrante_alto:46594306605351",
+      "sobrante_alto:47466207019303",
+      "sobrante_alto:47466210656551"
     ]
   },
   "quote": {
     "lineas": [
+      {
+        "id": "46594250375463",
+        "productId": "8634249543975",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 6,
+        "designQuantity": 6,
+        "wasteReserve": 8,
+        "requiredQuantity": 14,
+        "purchaseQuantity": 50,
+        "used": 6,
+        "leftoverInventory": 36,
+        "consumptionCost": 3724,
+        "purchaseCost": 13301,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594250375463",
+        "nombre": "B2b Globo Latex Redondo Reflex Azul — R-5 / PAQUETE X 50",
+        "precioPaquete": 13301,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13301,
+        "sobrante": 44
+      },
       {
         "id": "46594250440999",
         "productId": "8634249543975",
@@ -1054,14 +1691,14 @@
           "REF_01_E06"
         ],
         "color": "azul",
-        "cantidadNecesaria": 44,
-        "designQuantity": 44,
+        "cantidadNecesaria": 28,
+        "designQuantity": 28,
         "wasteReserve": 0,
-        "requiredQuantity": 44,
+        "requiredQuantity": 28,
         "purchaseQuantity": 50,
-        "used": 44,
-        "leftoverInventory": 6,
-        "consumptionCost": 25500,
+        "used": 28,
+        "leftoverInventory": 22,
+        "consumptionCost": 16227,
         "purchaseCost": 28977,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -1071,11 +1708,87 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 28977,
-        "sobrante": 6
+        "sobrante": 22
       },
       {
-        "id": "46594267709735",
-        "productId": "8634257211687",
+        "id": "46594250473767",
+        "productId": "8634249543975",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 2,
+        "designQuantity": 2,
+        "wasteReserve": 0,
+        "requiredQuantity": 2,
+        "purchaseQuantity": 6,
+        "used": 2,
+        "leftoverInventory": 4,
+        "consumptionCost": 5901,
+        "purchaseCost": 17704,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594250473767",
+        "nombre": "B2b Globo Latex Redondo Reflex Azul — R-18 / PAQUETE X 6",
+        "precioPaquete": 17704,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 17704,
+        "sobrante": 4
+      },
+      {
+        "id": "46594306474279",
+        "productId": "8634277003559",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "transparente",
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
+        "wasteReserve": 0,
+        "requiredQuantity": 3,
+        "purchaseQuantity": 50,
+        "used": 3,
+        "leftoverInventory": 47,
+        "consumptionCost": 370,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594306474279",
+        "nombre": "B2b Globo Latex Redondo Fashion Transparente — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 47
+      },
+      {
+        "id": "46594306605351",
+        "productId": "8634277003559",
         "tamano": "R-12",
         "tamanoCodigo": "R-12",
         "diamPulg": 12,
@@ -1097,25 +1810,25 @@
           "REF_01_E02",
           "REF_01_E06"
         ],
-        "color": "plateado",
-        "cantidadNecesaria": 9,
-        "designQuantity": 9,
-        "wasteReserve": 8,
-        "requiredQuantity": 17,
+        "color": "transparente",
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
+        "wasteReserve": 0,
+        "requiredQuantity": 7,
         "purchaseQuantity": 50,
-        "used": 9,
-        "leftoverInventory": 33,
-        "consumptionCost": 9852,
-        "purchaseCost": 28977,
+        "used": 7,
+        "leftoverInventory": 43,
+        "consumptionCost": 1825,
+        "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
-        "varianteId": "46594267709735",
-        "nombre": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
-        "precioPaquete": 28977,
+        "varianteId": "46594306605351",
+        "nombre": "B2b Globo Latex Redondo Fashion Transparente — R-12 / PAQUETE X 50",
+        "precioPaquete": 13037,
         "unidadesPaquete": 50,
         "paquetes": 1,
-        "subtotal": 28977,
-        "sobrante": 41
+        "subtotal": 13037,
+        "sobrante": 43
       },
       {
         "id": "47230981112103",
@@ -1125,7 +1838,8 @@
         "diamPulg": 12,
         "estructuras": [
           "EST_01_GUIRNALDA",
-          "EST_02_BOUQUET"
+          "EST_02_BOUQUET",
+          "EST_03_BOUQUET"
         ],
         "elementosOrigen": [
           {
@@ -1135,21 +1849,26 @@
           {
             "kind": "estructura",
             "id": "EST_02_BOUQUET"
+          },
+          {
+            "kind": "estructura",
+            "id": "EST_03_BOUQUET"
           }
         ],
         "referenciaElementIds": [
           "REF_01_E02",
-          "REF_01_E05"
+          "REF_01_E05",
+          "REF_01_E06"
         ],
         "color": "azul",
-        "cantidadNecesaria": 42,
-        "designQuantity": 42,
+        "cantidadNecesaria": 36,
+        "designQuantity": 36,
         "wasteReserve": 0,
-        "requiredQuantity": 42,
+        "requiredQuantity": 36,
         "purchaseQuantity": 50,
-        "used": 42,
-        "leftoverInventory": 8,
-        "consumptionCost": 10951,
+        "used": 36,
+        "leftoverInventory": 14,
+        "consumptionCost": 9387,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -1159,19 +1878,95 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 8
+        "sobrante": 14
+      },
+      {
+        "id": "47466207019303",
+        "productId": "8869949341991",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 10,
+        "designQuantity": 10,
+        "wasteReserve": 0,
+        "requiredQuantity": 10,
+        "purchaseQuantity": 50,
+        "used": 10,
+        "leftoverInventory": 40,
+        "consumptionCost": 1233,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "47466207019303",
+        "nombre": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 40
+      },
+      {
+        "id": "47466210656551",
+        "productId": "8869949341991",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "azul",
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
+        "wasteReserve": 0,
+        "requiredQuantity": 3,
+        "purchaseQuantity": 6,
+        "used": 3,
+        "leftoverInventory": 3,
+        "consumptionCost": 3600,
+        "purchaseCost": 7199,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "47466210656551",
+        "nombre": "B2b Globo Latex Redondo Fashion Azul Naval — R-18 / PAQUETE X 6",
+        "precioPaquete": 7199,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 7199,
+        "sobrante": 3
       }
     ],
-    "total": 70991,
+    "total": 105583,
     "mermaPorcentaje": 8,
-    "purchaseCost": 70991,
-    "consumptionCost": 46303,
+    "purchaseCost": 105583,
+    "consumptionCost": 42267,
     "targetWasteReserve": 8,
     "coveredWasteReserve": 8,
-    "leftoverInventory": 47,
+    "leftoverInventory": 209,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "90f156927cd135ac3d901f7bca99963ef2cbaa39ec8b8b559a34fb3d9bf0024e"
+    "plan_hash": "7fc39b3cac2cf4d2e32e039f6c16b3c25b39009c762924c9dadbfd4a5fd23fcb"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -1179,37 +1974,215 @@
     "incluye_iva": true,
     "lineas": [
       {
+        "variant_id": "46594250375463",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 6,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13301,
+        "subtotal": 13301,
+        "sobrante": 44
+      },
+      {
         "variant_id": "46594250440999",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 44,
+        "cantidad_necesaria": 28,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 28977,
         "subtotal": 28977,
-        "sobrante": 6
+        "sobrante": 22
       },
       {
-        "variant_id": "46594267709735",
-        "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 9,
+        "variant_id": "46594250473767",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 2,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 17704,
+        "subtotal": 17704,
+        "sobrante": 4
+      },
+      {
+        "variant_id": "46594306474279",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 3,
         "unidades_paquete": 50,
         "paquetes": 1,
-        "precio_paquete": 28977,
-        "subtotal": 28977,
-        "sobrante": 41
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 47
       },
       {
-        "variant_id": "47230981112103",
+        "variant_id": "46594306605351",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 42,
+        "cantidad_necesaria": 7,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 8
+        "sobrante": 43
+      },
+      {
+        "variant_id": "47230981112103",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 36,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 14
+      },
+      {
+        "variant_id": "47466207019303",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 10,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 40
+      },
+      {
+        "variant_id": "47466210656551",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 3,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
+        "sobrante": 3
       }
     ],
-    "total": 70991
+    "total": 105583
   },
-  "descartadas": []
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E02",
+      "tamanos": "chicos_con_pocos_grandes",
+      "confianza": 1
+    },
+    {
+      "referencia_element_id": "REF_01_E05",
+      "tamanos": "un_solo_tamano",
+      "confianza": 1
+    },
+    {
+      "referencia_element_id": "REF_01_E06",
+      "tamanos": "un_solo_tamano",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [
+    {
+      "globos_visibles": 65,
+      "exacto": false,
+      "estimado_total": 85,
+      "racimos": null,
+      "globos_por_racimo": null,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.2
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.6
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.2
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.9,
+      "referencia_element_id": "REF_01_E02"
+    },
+    {
+      "globos_visibles": 12,
+      "exacto": true,
+      "estimado_total": null,
+      "racimos": null,
+      "globos_por_racimo": null,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.3
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.6
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.1
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.88,
+      "referencia_element_id": "REF_01_E05"
+    },
+    {
+      "globos_visibles": 10,
+      "exacto": true,
+      "estimado_total": null,
+      "racimos": null,
+      "globos_por_racimo": null,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.3
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.6
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.1
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.88,
+      "referencia_element_id": "REF_01_E06"
+    }
+  ],
+  "remates": [],
+  "colores_cliente": {
+    "47466207019303": "azul marino",
+    "47230981112103": "azul marino",
+    "47466210656551": "azul marino",
+    "46594250375463": "azul cromado",
+    "46594250440999": "azul cromado",
+    "46594250473767": "azul cromado",
+    "46594306474279": "transparente con confeti",
+    "46594306605351": "transparente con confeti",
+    "46594306638119": "transparente con confeti"
+  },
+  "extras_foto": [
+    {
+      "variantId": "46594103247143",
+      "sku": "B2B-30003253",
+      "cantidad": 1,
+      "nota": "B2b Confetti Azul Celeste - Plateado — PAQUETE X 1 · celeste y plateado",
+      "detalleCantidad": "estimado a partir de la foto: un paquete de confeti para rellenar los ~6 globos transparentes"
+    },
+    {
+      "variantId": "51128000086311",
+      "sku": "B2B-30005923",
+      "cantidad": 2,
+      "nota": "B2b Globo Metalizado Estrella Azul Rey — 18 IN / PAQUETE X 1 · 18 IN · azul rey",
+      "detalleCantidad": "estimado a partir de la foto: 2 estrellas metalizadas azul rey sobre los racimos"
+    },
+    {
+      "variantId": "46594157117735",
+      "sku": "B2B-30001001",
+      "cantidad": 1,
+      "nota": "B2b Cortina Metalica Plata — PAQUETE X 1 · plateado",
+      "detalleCantidad": "estimado a partir de la foto: la cortina metálica plateada del fondo (no es globo)"
+    }
+  ]
 }

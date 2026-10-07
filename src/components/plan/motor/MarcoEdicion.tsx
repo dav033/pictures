@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useVozCliente } from "./voz-editor";
 
 /**
  * Dónde va el editor mientras se edita una pieza del motor: **al lado del dibujo, no debajo**.
@@ -20,7 +21,18 @@ import type { ReactNode } from "react";
  * se está editando.
  */
 export function MarcoEdicion({ editor, children }: { editor?: ReactNode; children: ReactNode }) {
+  // En la guiada la pieza se edita dentro de una hoja que ya se desplaza: una caja con su propio scroll dentro
+  // daba DOS desplazamientos en un teléfono (probador, latido 88). Allí los mandos van debajo, en el mismo scroll.
+  const cliente = useVozCliente();
   if (!editor) return <>{children}</>;
+  if (cliente) {
+    return (
+      <div className="grid items-start gap-3 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] @3xl:gap-5">
+        <div className="@container min-w-0">{children}</div>
+        <div data-testid="mandos-edicion" className="min-w-0">{editor}</div>
+      </div>
+    );
+  }
   return (
     <div className="grid items-start gap-3 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] @3xl:gap-5">
       {/*

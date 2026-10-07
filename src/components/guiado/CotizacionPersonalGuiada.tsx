@@ -6,7 +6,9 @@ import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { motion } from "motion/react";
 import { acabadoCliente, conAcabado, nombreLineaCliente, partesLinea, pulgadasDe } from "./formato";
 import { BaldosaGlobo } from "./GloboMiniatura";
+import { colorSempertex } from "./color-sempertex";
 import { fichasDeCotizacion } from "./ficha-globo";
+import { productoSempertex } from "./piezas-vista";
 import { DUR, EASE_SALIDA, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -29,9 +31,21 @@ function filasCotizacion(cotizacion: Cotizacion, decoracion: DecoracionSempertex
     const variante = linea.varianteId ?? linea.id;
     const nota = decoracion?.materiales.find((material) => material.variantId === variante)?.nota;
     const fuente = nota ? { nombre: nota } : linea;
-    const nombre = nombreLineaCliente(fuente);
     const partes = partesLinea(fuente);
-    const colorNombre = partes.color;
+    // Un globo redondo con su producto Sempertex reconocido se nombra por ese producto y se pinta con la fuente única
+    // (`color-sempertex`): «Sempertex Reflex Plata de 12"». El dueño (2026-10-06): «esto debería dar globos Sempertex,
+    // no genéricos»; el verificador vio «Globo reflex dorado de 5″» en «Tus materiales». Con la nota de la idea, su
+    // producto («Fashion Fucsia»); sin producto reconocido, el nombre de cliente de siempre.
+    // Con la nota también: su título dice el globo que se compra y su etiqueta, lo que vio el análisis de la foto. El
+    // «Fashion Azul Caribe» de la columna arcoíris tiene la etiqueta «azul celeste» y la cotización decía «Globo celeste
+    // de 12"» mientras la tarjeta y la tabla decían «Azul caribe» (probador, 2026-10-07): nombre y tono, del producto.
+    const titulo = nota ? nota.split(" · ")[0]! : linea.nombre;
+    const sempertex = partes.esGlobo && !partes.forma && titulo ? colorSempertex(linea.color ?? partes.color, { titulo }) : null;
+    const reconocido = sempertex?.producto ? sempertex : null;
+    const producto = reconocido?.producto ?? (nota && partes.esGlobo && !partes.forma ? productoSempertex(titulo) : null);
+    const pulgadasTexto = partes.pulgadas ? ` de ${partes.pulgadas}"` : "";
+    const nombre = producto ? `Sempertex ${producto}${pulgadasTexto}` : nombreLineaCliente(fuente);
+    const colorNombre = reconocido ? reconocido.nombre.toLocaleLowerCase("es") : partes.color;
     const previa = filas.get(variante);
     const unidades = linea.unidadesPaquete ?? null;
     if (previa) {
@@ -41,7 +55,7 @@ function filasCotizacion(cotizacion: Cotizacion, decoracion: DecoracionSempertex
       previa.subtotal += linea.subtotal ?? 0;
       if (previa.unidadesPaquete !== unidades) previa.unidadesPaquete = null;
     } else {
-      const hex = HEX_COLORES_V2[colorNombre as keyof typeof HEX_COLORES_V2] ?? HEX_TONO[colorNombre] ?? (linea.color ? HEX_COLORES_V2[linea.color as keyof typeof HEX_COLORES_V2] : undefined);
+      const hex = reconocido?.hex ?? HEX_COLORES_V2[colorNombre as keyof typeof HEX_COLORES_V2] ?? HEX_TONO[colorNombre] ?? (linea.color ? HEX_COLORES_V2[linea.color as keyof typeof HEX_COLORES_V2] : undefined);
       filas.set(variante, { clave: variante, nombre, esGlobo: partes.esGlobo, acabado: acabadoCliente(nota ?? linea.nombre), ...(linea.color ? { color: linea.color } : {}), ...(hex ? { hex } : {}), cantidad: linea.cantidadNecesaria ?? 0, paquetes: linea.paquetes ?? 0, unidadesPaquete: unidades, sobrante: linea.sobrante ?? 0, subtotal: linea.subtotal ?? 0 });
     }
   }
@@ -75,7 +89,11 @@ export function CotizacionPersonalGuiada({ cotizacion, decoracion }: { cotizacio
         </div>
         <p className="text-right">
           <span className="block text-xs text-texto-suave">Total con IVA</span>
-          <span className="block text-2xl font-semibold tracking-tight tabular-nums text-texto">{pesos.format(cotizacion.total)}</span>
+          {/* `data-precio-total`: a él va la vista cuando el cliente pregunta el precio por chat; entra resaltado y se apaga. */}
+          <span data-precio-total className="relative block scroll-mt-24 text-2xl font-semibold tracking-tight tabular-nums text-texto">
+            <motion.span aria-hidden className="absolute -inset-x-2 -inset-y-0.5 rounded-lg bg-acento-suave" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 1.4, delay: 0.6, ease: EASE_SALIDA }} />
+            <span className="relative">{pesos.format(cotizacion.total)}</span>
+          </span>
         </p>
       </div>
       <motion.ul className="mt-2 px-4 @xl:px-5.5" aria-label="Materiales por color" initial="oculto" animate="visible" variants={grupoConRitmo(0.05, 0.05)}>

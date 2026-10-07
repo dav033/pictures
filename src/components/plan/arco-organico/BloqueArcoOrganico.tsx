@@ -15,6 +15,7 @@ import { EditorArcoOrganico } from "./EditorArcoOrganico";
 import { useEditorArcoOrganico } from "./usarEditorArcoOrganico";
 import { useVistaArcoOrganico } from "./usarVistaArcoOrganico";
 import { peticionVistaArcoOrganico, type PanelVistaArcoOrganico, type PiezaVistaArcoOrganico } from "./vista-arco-organico";
+import { RESERVA_CLIENTE, useVozCliente } from "../motor/voz-editor";
 
 /**
  * "Armado del arco" dentro del detalle de una pieza (ADR-0034): el dibujo que emite el motor del diseñador y,
@@ -100,6 +101,8 @@ function porTamano(cantidades: Readonly<Record<string, number | undefined>>): st
  * lleva de cada tamaño; sin ella se muestra solo el conteo, sin inventar la compra.
  */
 function MaterialesArco({ arco, leyenda }: { arco: Listo["vista"]["arco"]; leyenda: readonly ColorLeyenda[] }) {
+  // En la guiada, UNA cifra: la que lleva la pieza (la de Python); la reserva de compra se explica en una línea.
+  const cliente = useVozCliente();
   const filas: Array<{ material: number; cantidad: number; comprar: number | null; tamanos: string }> = arco.compra.length
     ? arco.compra.map((linea) => ({ material: linea.material, cantidad: linea.cantidad, comprar: linea.comprar, tamanos: porTamano(linea.por_tamano) }))
     : [...arco.conteo.reduce((por, linea) => por.set(linea.material, (por.get(linea.material) ?? 0) + linea.cantidad), new Map<number, number>())].map(
@@ -108,12 +111,12 @@ function MaterialesArco({ arco, leyenda }: { arco: Listo["vista"]["arco"]; leyen
   if (!filas.length) return null;
   return (
     <table data-testid="materiales-armado-arco-organico" className="w-full text-[13px]">
-      <caption className="sr-only">Globos por color y lo que hay que comprar, según el motor</caption>
+      <caption className="sr-only">{cliente ? "Globos por color" : "Globos por color y lo que hay que comprar, según el motor"}</caption>
       <thead>
         <tr className="text-xs text-texto-suave">
           <th scope="col" className="pb-1 text-left font-medium">Color</th>
-          <th scope="col" className="pb-1 pl-3 text-right font-medium">Lleva</th>
-          <th scope="col" className="pb-1 pl-3 text-right font-medium">Comprar</th>
+          <th scope="col" className="pb-1 pl-3 text-right font-medium">{cliente ? "Globos" : "Lleva"}</th>
+          {!cliente && <th scope="col" className="pb-1 pl-3 text-right font-medium">Comprar</th>}
         </tr>
       </thead>
       <tbody>
@@ -131,7 +134,7 @@ function MaterialesArco({ arco, leyenda }: { arco: Listo["vista"]["arco"]; leyen
                 </span>
               </th>
               <td className="py-1 pl-3 text-right tabular-nums text-texto">{entero.format(fila.cantidad)}</td>
-              <td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{fila.comprar === null ? "—" : entero.format(fila.comprar)}</td>
+              {!cliente && <td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{fila.comprar === null ? "—" : entero.format(fila.comprar)}</td>}
             </tr>
           );
         })}
@@ -139,9 +142,14 @@ function MaterialesArco({ arco, leyenda }: { arco: Listo["vista"]["arco"]; leyen
       {arco.total_comprar > 0 && (
         <tfoot>
           <tr className="border-t border-borde">
-            <th scope="row" colSpan={2} className="py-1 text-left text-xs font-semibold text-texto">Total a comprar</th>
-            <td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{entero.format(arco.total_comprar)}</td>
+            {cliente ? (
+              <><th scope="row" className="py-1 text-left text-xs font-semibold text-texto">Total</th><td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{entero.format(filas.reduce((suma, fila) => suma + fila.cantidad, 0))}</td></>
+            ) : (
+              <><th scope="row" colSpan={2} className="py-1 text-left text-xs font-semibold text-texto">Total a comprar</th>
+            <td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{entero.format(arco.total_comprar)}</td></>
+            )}
           </tr>
+          {cliente && <tr><td colSpan={2} className="pt-1 text-[11px] leading-snug text-texto-suave">{RESERVA_CLIENTE}</td></tr>}
         </tfoot>
       )}
     </table>
@@ -304,13 +312,14 @@ function ArcoDibujado({ estado, leyenda, nombrePieza, repeticiones, onReintentar
   const tenue = actualizando || vencido ? "opacity-60 transition-opacity motion-reduce:transition-none" : "";
   const { arco, grafica } = vista;
   // Las medidas reales del arco armado, no las declaradas: el motor ajusta lo que no cabe y lo cuenta en `avisos`.
+  const cliente = useVozCliente();
   const medidas: Array<{ termino: string; valor: string }> = [
     { termino: "Ancho", valor: metrosCliente(arco.ancho_m) },
     { termino: "Alto", valor: metrosCliente(arco.alto_m) },
     { termino: "Grosor en los pies", valor: metrosCliente(arco.grosor_patas_m) },
     { termino: "Grosor en la cima", valor: metrosCliente(arco.grosor_cima_m) },
-    { termino: "Línea guía", valor: metrosCliente(arco.largo_m) },
-    { termino: "Globos por metro", valor: conDecimal.format(arco.globos_por_metro) },
+    ...(cliente ? [] : [{ termino: "Línea guía", valor: metrosCliente(arco.largo_m) }]),
+    ...(cliente ? [] : [{ termino: "Globos por metro", valor: conDecimal.format(arco.globos_por_metro) }]),
   ];
   const { ramas, flores } = arco.adornos;
   return (
@@ -321,14 +330,14 @@ function ArcoDibujado({ estado, leyenda, nombrePieza, repeticiones, onReintentar
             svg={grafica.svg}
             lienzo={grafica.ancho}
             alto={grafica.alto}
-            etiqueta={`${nombrePieza}: ${sustantivo} de ${metrosCliente(arco.ancho_m)} de ancho, dibujado por el motor`}
+            etiqueta={`${nombrePieza}: ${sustantivo} de ${metrosCliente(arco.ancho_m)} de ancho${cliente ? "" : ", dibujado por el motor"}`}
             className="absolute inset-0 size-full p-1.5"
           />
         </div>
         <div className="min-w-0 flex-1 space-y-2.5">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 self-center">
-              <p className="text-[13px] font-semibold text-texto">Armado del {sustantivo}</p>
+              <p className="text-[13px] font-semibold text-texto">{cliente ? "Así queda" : `Armado del ${sustantivo}`}</p>
               <span aria-live="polite" className="inline-flex items-center gap-1 text-[11px] font-medium text-texto-suave">
                 {actualizando && <><LoaderCircle className="size-3 animate-spin text-acento motion-reduce:animate-none" aria-hidden="true" />Actualizando…</>}
                 {vencido && "Es el último dibujo que llegó."}

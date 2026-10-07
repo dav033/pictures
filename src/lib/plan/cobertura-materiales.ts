@@ -1,4 +1,5 @@
-import type { Mezcla } from "@/lib/plan/mezclas";
+import { mezclasCompatiblesConDiametros, type Mezcla } from "@/lib/plan/mezclas";
+import { esReferenciaPastel, referenciaDelTitulo } from "@/lib/plan/referencia-sempertex";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
 import { esCuentaGeometrica, type PlanDecoracion } from "./tipos";
 
@@ -21,6 +22,11 @@ import { esCuentaGeometrica, type PlanDecoracion } from "./tipos";
  *    its tags). A finish
  *    the product does not have is dropped: the product fixes its finish, and
  *    "satin" on Fashion Rosado left every size uncovered (rid 0acd0eb6).
+ *    A material WITHOUT color takes the product's one real color (`color_catalogo`).
+ * 2a. A material whose product builds none of the structure's close mixes is
+ *    bought as another product of the SAME real color that does, when this
+ *    turn's search has one (`producto_mismo_color`); rule 3 tries the same swap
+ *    before removing a material.
  * 2. A geometric structure without mandatory customer sizes keeps its mix when
  *    every material covers it. Otherwise the closest mix of the same family
  *    (`MEZCLAS_CERCANAS`) that every material covers replaces it.
@@ -70,7 +76,20 @@ export type AjusteCobertura =
    */
   | { tipo: "color_referencia"; estructura_id: string; product_id: string; despues: string; antes: string | null; color: string; referencia: string }
   | { tipo: "mezcla"; estructura_id: string; antes: Mezcla; despues: Mezcla }
-  | { tipo: "material_quitado"; estructura_id: string; product_id: string; color: string | null; aviso_cliente: string };
+  | { tipo: "material_quitado"; estructura_id: string; product_id: string; color: string | null; aviso_cliente: string }
+  /**
+   * El modelo dejó el material sin `color` y el producto tiene un solo color real: el material lo toma del catálogo
+   * (regla 1). Sin aviso: no cambia nada de lo que el cliente ve, solo deja de faltar el dato. Antes el material
+   * llegaba sin color a Python y al texto de FLUX, que decía «catalog color» (banco de fotos 09 y 10, 2026-10-06).
+   */
+  | { tipo: "color_catalogo"; estructura_id: string; product_id: string; color: string }
+  /**
+   * Un material que no podía seguir la mezcla de su pieza (sus tamaños no alcanzan) se cambió por otro producto del
+   * MISMO color real que sí la cubre (regla 3, antes de quitarlo). Sin aviso: el color y la pieza son los de la foto.
+   * Antes el Metal Vinotinto (solo R-9) se quitaba del arco y el vino de la foto desaparecía mientras el catálogo
+   * tenía el Fashion Merlot en todos los tamaños (banco de fotos 07, 2026-10-06).
+   */
+  | { tipo: "producto_mismo_color"; estructura_id: string; product_id: string; despues: string; color: string };
 
 /**
  * Los productos que nombra un ajuste: el que tenía el material y, si el ajuste lo cambió por otro, también el
@@ -80,7 +99,7 @@ export type AjusteCobertura =
  */
 export function productosDelAjuste(ajuste: AjusteCobertura): string[] {
   if (ajuste.tipo === "mezcla") return [];
-  if (ajuste.tipo === "acabado_referencia" || ajuste.tipo === "color_referencia") return [ajuste.product_id, ajuste.despues];
+  if (ajuste.tipo === "acabado_referencia" || ajuste.tipo === "color_referencia" || ajuste.tipo === "producto_mismo_color") return [ajuste.product_id, ajuste.despues];
   return [ajuste.product_id];
 }
 
@@ -216,10 +235,22 @@ const ACABADOS_QUE_CUMPLEN: Readonly<Record<string, readonly string[]>> = {
   mate: ["mate", "fashion"],
 };
 
-/** El acabado con que ESTE producto cumple el observado, o `undefined` si no lo cumple. */
-function acabadoQueCumple(observado: string, acabados: readonly string[]): string | undefined {
+/**
+ * El acabado con que ESTE producto cumple el observado, o `undefined` si no lo cumple.
+ *
+ * «pastel» (`acabadosObservadosDeMateriales`) no es un acabado del catálogo sino un tono: lo cumple un globo mate cuyo
+ * color real, el de la referencia Sempertex que nombra su título, es claro y poco saturado (`esReferenciaPastel`). Así un Fashion
+ * Rosado o un Pastel Mate Azul sirven a una foto pastel y el Fashion Azul 040 (un cian intenso) o el Azul Naval, no.
+ */
+function acabadoQueCumple(observado: string, producto: Pick<DisponibilidadProducto, "acabados" | "titulo">): string | undefined {
+  if (plegar(observado) === "pastel") {
+    const mate = acabadoQueCumple("mate", producto);
+    if (!mate) return undefined;
+    const referencia = referenciaDelTitulo(producto.titulo, null);
+    return referencia && !esReferenciaPastel(referencia) ? undefined : mate;
+  }
   const admitidos = ACABADOS_QUE_CUMPLEN[plegar(observado)] ?? [plegar(observado)];
-  return acabados.map(plegar).find((acabado) => admitidos.includes(acabado));
+  return producto.acabados.map(plegar).find((acabado) => admitidos.includes(acabado));
 }
 
 /**
@@ -268,7 +299,7 @@ export function aplicarAcabadoReferencia(
       // Regla 4: sin acabados leídos no hay nada que comparar ni que avisar.
       if (!observado || !producto || producto.acabados.length === 0) return material;
       if (producto.categoria !== CATEGORIA_CON_ACABADO) return material;
-      if (acabadoQueCumple(observado, producto.acabados)) return material;
+      if (acabadoQueCumple(observado, producto)) return material;
       const color = plegar(material.color ?? "");
       // Una variante fijada por el modelo, o una línea que un `variant_override`
       // reemplaza, nombran ESE producto: cambiarlo debajo dejaría el plan
@@ -300,14 +331,14 @@ function buscarProductoConAcabado(
     if (!candidato.coloresVariante.map(plegar).includes(color)) continue;
     // Cambiar el acabado no puede dejar la pieza sin los tamaños de su mezcla.
     if (GEOMETRICOS.has(estructura.tipo) && !candidato.mezclas.includes(estructura.mezcla)) continue;
-    const acabado = acabadoQueCumple(observado, candidato.acabados);
+    const acabado = acabadoQueCumple(observado, candidato);
     if (acabado) return { product_id: productId, acabado };
   }
   return undefined;
 }
 
 /** La palabra con que el catálogo titula cada acabado («Pastel Mate Rosado», «Reflex Plata», «Satin Rosado»). */
-const PALABRA_DE_ACABADO: Readonly<Record<string, string>> = { reflex: "reflex", satin: "satin", mate: "mate" };
+const PALABRA_DE_ACABADO: Readonly<Record<string, string>> = { reflex: "reflex", satin: "satin", mate: "mate", pastel: "pastel mate" };
 
 /**
  * Lo que el servidor tiene que buscar para que `aplicarAcabadoReferencia` pueda cumplir su regla 2: la frase
@@ -338,7 +369,7 @@ export function busquedasDeAcabado(
       const color = plegar(material.color ?? "");
       if (!observado || !producto || !color || material.variant_id) continue;
       if (producto.categoria !== CATEGORIA_CON_ACABADO || producto.acabados.length === 0) continue;
-      if (acabadoQueCumple(observado, producto.acabados)) continue;
+      if (acabadoQueCumple(observado, producto)) continue;
       if (buscarProductoConAcabado(estructura, producto, color, observado, disponibilidad)) continue;
       const palabra = PALABRA_DE_ACABADO[plegar(observado)];
       if (!palabra) continue;
@@ -396,7 +427,7 @@ export function avisosClienteAjustes(
   // El producto que quedó en el plan después de un cambio de producto: el `despues` del ajuste o, si
   // `aplicarAcabadoReferencia` lo volvió a cambiar por el acabado de la foto, el de ese segundo cambio.
   const siguiente = new Map(ajustes.flatMap((ajuste) => (
-    ajuste.tipo === "acabado_referencia" || ajuste.tipo === "color_referencia" ? [[`${ajuste.estructura_id}|${ajuste.product_id}`, ajuste.despues] as const] : []
+    ajuste.tipo === "acabado_referencia" || ajuste.tipo === "color_referencia" || ajuste.tipo === "producto_mismo_color" ? [[`${ajuste.estructura_id}|${ajuste.product_id}`, ajuste.despues] as const] : []
   )));
   const productoQueQueda = (estructuraId: string, productId: string): string => {
     const vistos = new Set<string>();
@@ -413,7 +444,7 @@ export function avisosClienteAjustes(
     // `acabado_referencia` no lleva aviso: el acabado de la foto SÍ se respetó,
     // y contarle al cliente que se cambió de producto para lograrlo sería
     // hablarle de catálogo en vez de de su decoración.
-    if (ajuste.tipo === "mezcla" || ajuste.tipo === "material_quitado" || ajuste.tipo === "acabado_referencia") return [];
+    if (ajuste.tipo === "mezcla" || ajuste.tipo === "material_quitado" || ajuste.tipo === "acabado_referencia" || ajuste.tipo === "color_catalogo" || ajuste.tipo === "producto_mismo_color") return [];
     if (ajuste.tipo === "color_referencia") {
       // El producto viejo salió del plan a propósito: lo que importa es que el nuevo siga en él.
       if (fuera.has(`${ajuste.estructura_id}|${productoQueQueda(ajuste.estructura_id, ajuste.product_id)}`)) return [];
@@ -432,6 +463,110 @@ export function avisosClienteAjustes(
   }))];
 }
 
+/**
+ * El material comprado como otro producto de su MISMO color real que sí arma alguna de `mezclas` (en ese orden de
+ * preferencia), o el material tal cual si la búsqueda del turno no trae ninguno. Mismas guardas que el cambio de
+ * acabado (`buscarProductoConAcabado`): misma categoría, nada de variantes fijadas por el modelo ni de
+ * `variant_overrides`, y un producto que la pieza ya usa no se repite. Se prefiere el que tiene el acabado que el
+ * material declaraba; si no lo tiene, el acabado se suelta (lo fija el producto, como en la regla 1).
+ */
+function cambiarPorMismoColor(
+  estructura: PlanDecoracion["estructuras"][number],
+  material: Material,
+  actual: DisponibilidadProducto,
+  mezclas: readonly Mezcla[],
+  disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
+  ajustes: AjusteCobertura[],
+): Material {
+  const color = plegar(material.color ?? "");
+  if (!color || material.variant_id || estructura.variant_overrides?.length) return material;
+  const enUso = new Set(estructura.materiales.map((item) => item.product_id));
+  const acabado = material.acabado ? plegar(material.acabado) : undefined;
+  for (const mezcla of mezclas) {
+    let elegido: { productId: string; producto: DisponibilidadProducto } | undefined;
+    for (const [productId, candidato] of disponibilidad) {
+      if (enUso.has(productId) || candidato === actual || candidato.categoria !== actual.categoria) continue;
+      if (!candidato.coloresVariante.map(plegar).includes(color) || !candidato.mezclas.includes(mezcla)) continue;
+      if (acabado && candidato.acabados.map(plegar).includes(acabado)) {
+        elegido = { productId, producto: candidato };
+        break;
+      }
+      elegido ??= { productId, producto: candidato };
+    }
+    if (!elegido) continue;
+    ajustes.push({ tipo: "producto_mismo_color", estructura_id: estructura.estructura_id, product_id: material.product_id, despues: elegido.productId, color });
+    const cambiado: Material = { ...material, product_id: elegido.productId };
+    if (acabado && !elegido.producto.acabados.map(plegar).includes(acabado)) delete cambiado.acabado;
+    return cambiado;
+  }
+  return material;
+}
+
+/**
+ * Los colores cuyo producto no arma ninguna mezcla cercana de su pieza y para los que la búsqueda del turno no trae
+ * otro producto del mismo color que sí la arme: lo que la regla 2a necesita que el servidor busque, con las mezclas
+ * que sirven. Sin esto el cambio dependía de que la búsqueda del MODELO hubiera traído el producto bueno: «Borgoña
+ * vino» trajo el Metal Vinotinto (solo R-9) y no el Fashion Merlot, y el vino de la foto 07 se quitó del arco.
+ *
+ * Pura: quien llama consulta el catálogo por color (`buscarGlobosPorColor`) y busca los títulos que sirven.
+ */
+export function coloresSinTamanos(
+  plan: Pick<PlanDecoracion, "estructuras" | "restricciones">,
+  disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
+): Array<{ color: string; mezclas: readonly Mezcla[] }> {
+  if ((plan.restricciones?.tamanos ?? []).some((item) => item.polaridad === "obligatorio")) return [];
+  const resultado = new Map<string, Set<Mezcla>>();
+  for (const estructura of plan.estructuras) {
+    if (!esCuentaGeometrica(estructura) || estructura.variant_overrides?.length) continue;
+    const cercanas = MEZCLAS_CERCANAS[estructura.mezcla];
+    for (const material of estructura.materiales) {
+      const producto = disponibilidad.get(material.product_id);
+      if (!producto || material.variant_id) continue;
+      // Sin color del modelo, el del producto (el mismo que le pondrá la regla 1): el Metal Vinotinto llegó sin color
+      // en la guiada de la foto 07 y el servidor no buscaba el Fashion Merlot (banco de fotos, segunda corrida).
+      const unicos = producto.coloresVariante.map(plegar).filter((tono) => !SIN_COLOR_UNICO.has(tono));
+      const color = plegar(material.color ?? (unicos.length === 1 ? unicos[0]! : ""));
+      if (!color) continue;
+      if (cercanas.some((mezcla) => producto.mezclas.includes(mezcla))) continue;
+      const hayOtro = [...disponibilidad.values()].some((candidato) => candidato !== producto
+        && candidato.categoria === producto.categoria
+        && candidato.coloresVariante.map(plegar).includes(color)
+        && cercanas.some((mezcla) => candidato.mezclas.includes(mezcla)));
+      if (hayOtro) continue;
+      const mezclas = resultado.get(color) ?? new Set<Mezcla>();
+      for (const mezcla of cercanas) mezclas.add(mezcla);
+      resultado.set(color, mezclas);
+    }
+  }
+  return [...resultado].map(([color, mezclas]) => ({ color, mezclas: [...mezclas] }));
+}
+
+/**
+ * Las frases con que el servidor trae al turno los productos del catálogo (consultados por color) que sí arman la
+ * pieza: el título tal cual se pide en la tienda («globo latex redondo fashion merlot»), como `busquedasDeReferencias`.
+ * Un producto que el turno ya tiene no se busca; como mucho `porColor` productos por color y `maximo` frases.
+ */
+export function busquedasDeMismoColor(
+  faltan: ReadonlyArray<{ color: string; mezclas: readonly Mezcla[] }>,
+  catalogoPorColor: ReadonlyMap<string, ReadonlyArray<{ product_id: string; titulo: string; diametros?: readonly number[] }>>,
+  disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
+  { porColor = 2, maximo = 4 }: { porColor?: number; maximo?: number } = {},
+): string[] {
+  const busquedas: string[] = [];
+  for (const { color, mezclas } of faltan) {
+    const sirven = (catalogoPorColor.get(color) ?? [])
+      .filter((producto) => !disponibilidad.has(producto.product_id))
+      .filter((producto) => mezclasCompatiblesConDiametros(producto.diametros ?? []).some((mezcla) => mezclas.includes(mezcla)))
+      .slice(0, porColor);
+    for (const producto of sirven) {
+      const nombre = plegar(producto.titulo).replace(/^(?:b2[bc]\s+)?(?:globos?\s+)?(?:latex\s+)?(?:redond[oa]s?\s+)?/, "").trim();
+      const frase = `globo latex redondo ${nombre}`;
+      if (nombre && !busquedas.includes(frase)) busquedas.push(frase);
+    }
+  }
+  return busquedas.slice(0, maximo);
+}
+
 export function ajustarCoberturaPlan(
   plan: PlanDecoracion,
   disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
@@ -440,7 +575,7 @@ export function ajustarCoberturaPlan(
   const tamanosObligatorios = (plan.restricciones?.tamanos ?? []).some((item) => item.polaridad === "obligatorio");
   const estructuras = plan.estructuras.map((estructuraOriginal) => {
     // Rule 1: the material color follows a one-color product.
-    const materiales = estructuraOriginal.materiales.map((materialModelo) => {
+    const materialesConColor = estructuraOriginal.materiales.map((materialModelo) => {
       const producto = disponibilidad.get(materialModelo.product_id);
       if (!producto) return materialModelo;
       let material = materialModelo;
@@ -450,26 +585,41 @@ export function ajustarCoberturaPlan(
         delete sinAcabado.acabado;
         material = sinAcabado;
       }
-      if (!material.color) return material;
       // The variant colors, not the product's: a product's `derived.colors`
       // include the Shopify color FAMILIES of its tags ("Fashion Violeta" is
       // tagged MORADOS), and taking them as real colors stopped this rule from
       // firing, so a violet balloon was quoted as "morado".
       const colores = producto.coloresVariante.map(plegar).filter((color) => !SIN_COLOR_UNICO.has(color));
+      if (!material.color) {
+        // Sin color del modelo, el del catálogo: un producto de un solo color real lo dice él. Un producto de varios
+        // colores (un surtido, un «Duo») se queda sin él: elegir uno sería inventarlo.
+        if (colores.length !== 1) return material;
+        ajustes.push({ tipo: "color_catalogo", estructura_id: estructuraOriginal.estructura_id, product_id: material.product_id, color: colores[0]! });
+        return { ...material, color: colores[0]! };
+      }
       const actual = plegar(material.color);
       if (colores.length !== 1 || colores.includes(actual)) return material;
       ajustes.push({ tipo: "color_material", estructura_id: estructuraOriginal.estructura_id, product_id: material.product_id, antes: material.color, despues: colores[0]! });
       return { ...material, color: colores[0]! };
     });
-    const estructura = { ...estructuraOriginal, materiales };
+    const conColor = { ...estructuraOriginal, materiales: materialesConColor };
     // Un centro de mesa de globos contados (UI-6) compra variantes fijas: no tiene mezcla que cubrir.
-    if (!esCuentaGeometrica(estructura) || tamanosObligatorios) return estructura;
+    if (!esCuentaGeometrica(conColor) || tamanosObligatorios) return conColor;
+    if (materialesConColor.some((material) => !disponibilidad.get(material.product_id))) return conColor;
+    const cercanas = MEZCLAS_CERCANAS[conColor.mezcla];
+    // Rule 2a: a material whose product builds none of the close mixes is bought as another product of the SAME
+    // real color that does, when this turn's search has one; only then do rules 2 and 3 decide the mix.
+    const materiales = materialesConColor.map((material) => {
+      const producto = disponibilidad.get(material.product_id)!;
+      if (cercanas.some((mezcla) => producto.mezclas.includes(mezcla))) return material;
+      return cambiarPorMismoColor(conColor, material, producto, cercanas, disponibilidad, ajustes);
+    });
+    const estructura = { ...conColor, materiales };
     const productos = materiales.map((material) => disponibilidad.get(material.product_id));
     if (productos.some((producto) => !producto)) return estructura;
     const cubre = (indice: number, mezcla: Mezcla) => productos[indice]!.mezclas.includes(mezcla);
 
     // Rule 2: a close mix every material covers.
-    const cercanas = MEZCLAS_CERCANAS[estructura.mezcla];
     const comun = cercanas.find((mezcla) => materiales.every((_, indice) => cubre(indice, mezcla)));
     if (comun) {
       if (comun === estructura.mezcla) return estructura;
@@ -483,10 +633,19 @@ export function ajustarCoberturaPlan(
     if (opciones.length === 0 || materiales.length < 2) return estructura;
     const participacionQueQueda = (mezcla: Mezcla) => materiales.reduce((suma, material, indice) => suma + (cubre(indice, mezcla) ? material.participacion : 0), 0);
     const elegida = opciones.reduce((mejor, mezcla) => (participacionQueQueda(mezcla) > participacionQueQueda(mejor) ? mezcla : mejor), opciones[0]!);
+    // Antes de salir, el material que no puede seguir la mezcla elegida prueba otro producto de su MISMO color real
+    // que sí la sigue (el cambio de la regla 2a, ahora para la mezcla elegida): quitarlo es perder un color de la foto.
+    const seguidores = materiales.map((material, indice) => (cubre(indice, elegida) ? material : cambiarPorMismoColor(estructura, material, productos[indice]!, [elegida], disponibilidad, ajustes)));
+    const sigue = (material: Material) => disponibilidad.get(material.product_id)?.mezclas.includes(elegida) ?? false;
     // El material que decide la mezcla es el `principal`: si el que lo era se
     // fue, el rol pasa al de mayor participación reescalada (`partirMateriales`).
-    const partido = partirMateriales(materiales, (_, indice) => !cubre(indice, elegida));
-    if (!partido) return estructura;
+    const partido = partirMateriales(seguidores, (material) => !sigue(material));
+    if (!partido) {
+      if (!seguidores.every(sigue)) return estructura;
+      // Todos la siguen gracias al cambio de producto: la pieza conserva todos sus colores.
+      if (elegida !== estructura.mezcla) ajustes.push({ tipo: "mezcla", estructura_id: estructura.estructura_id, antes: estructura.mezcla, despues: elegida });
+      return { ...estructura, mezcla: elegida, materiales: seguidores };
+    }
     const { quedan: reescaladas, salen } = partido;
     const coloresQuedan = [...new Set(reescaladas.map((material) => material.color).filter((color): color is string => Boolean(color)))];
     for (const material of salen) {

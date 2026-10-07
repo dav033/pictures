@@ -18,11 +18,12 @@ import { PanelPlegable } from "./Plegable";
 import { hexColor, piezasVistaDePlan } from "./piezas-vista";
 import { BotonVerDetalle, DetalleGlobos } from "./TablaGlobosPieza";
 import { decoracionDePlan, type ContextoCompra } from "./plan-compra";
-import { colorCliente } from "./formato";
+import { colorSempertex } from "./color-sempertex";
 import { DUR, EASE_REBOTE, EASE_SALIDA, RESORTE, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 import { AjustarPlan } from "./ajuste/AjustarPlan";
 import { useAjustePlanGuiado, type AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
 import { listaNatural } from "@/lib/ia/guiado/propuesta-composicion";
+import { avisoColoresFoto } from "@/lib/plan/colores-foto-plan";
 
 export type AccionPlan = "ver" | "costear" | "comprar" | "aprender" | "contratar" | "cambiar";
 export type EstadoImagen = "nada" | "cargando" | "lista" | "error";
@@ -63,6 +64,11 @@ type Props = {
   onPlanAjustado?: (plan: PlanGuiado, cotizacion: unknown, ajuste: AjustePublicado) => void;
   /** Ajustes ya hechos sobre esta tarjeta; el último se ve bajo el total. */
   ajustes?: readonly string[];
+  /**
+   * Las sugerencias que rehace el asistente («Otros colores», «Agregar una pieza», «Hacerla más sencilla»): viven
+   * DENTRO de «Ajustar mi plan» (pedido del dueño, 2026-10-06), no como chips sueltos bajo la tarjeta.
+   */
+  onSugerencia?: (texto: string) => void;
 };
 
 function sinAjuste(): void {}
@@ -72,7 +78,7 @@ function sinAjuste(): void {}
  * con él, con una acción principal clara («Ver cómo quedaría») y el resto a mano. Las cantidades son de Python.
  */
 export function TarjetaPlan(props: Props) {
-  const { plan, cotizacion, imagen, estadoImagen, usoCosteo, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes } = props;
+  const { plan, cotizacion, imagen, estadoImagen, usoCosteo, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
   const ultimoAjuste = ajustes?.at(-1);
   const reducido = useReducedMotion();
   const desglose = useMemo(() => generarPasosPlan(plan), [plan]);
@@ -97,6 +103,8 @@ export function TarjetaPlan(props: Props) {
   // Mientras Python rehace el plan, el total y los colores muestran su esqueleto y las acciones esperan.
   const recalculando = ajuste.guardando;
   const ajustable = vigente && Boolean(onPlanAjustado);
+  // Las piezas que se abren con su dibujo (las arma un motor): «Cambiar la forma» desde «Ajustar mi plan».
+  const modificables = useMemo(() => new Set(piezas.filter((pieza) => piezaModificable(plan, pieza.estructura_id)).map((pieza) => pieza.estructura_id)), [plan, piezas]);
   const costeoAbierto = costeoVisible ?? usoCosteo !== null;
   const bloqueado = ocupado || estadoImagen === "cargando" || recalculando;
   // Tras un ajuste, la paleta del concepto ya no dice los colores que lleva el plan: se muestran los que Python resolvió.
@@ -109,6 +117,9 @@ export function TarjetaPlan(props: Props) {
   );
   const hecha = (accion: AccionPlan) => hechas.includes(accion);
   const etiquetaPrincipal = estadoImagen === "error" ? "Reintentar imagen" : estadoImagen === "lista" ? "Dibujar otra versión" : "Ver cómo quedaría";
+  // Un color de la foto que el plan no compra ni con el reintento se dice en una frase, no se pierde en silencio
+  // (`avisoColoresFoto`). Solo los de la paleta del plan: con «Otros colores» la foto ya no manda. Tras un ajuste, no.
+  const avisoColores = useMemo(() => (ajustes?.length ? null : avisoColoresFoto(plan, plan.plan.concepto.paleta.length ? { soloEstos: plan.plan.concepto.paleta } : {})), [plan, ajustes]);
 
   return (
     <motion.article
@@ -128,11 +139,11 @@ export function TarjetaPlan(props: Props) {
         <div className="mt-1 flex items-start justify-between gap-3">
           <h3 className="min-w-0 text-lg font-semibold leading-snug text-texto">{plan.plan.concepto.titulo}</h3>
           {paleta.length > 0 && (
-            <motion.span className="flex shrink-0 pl-1.5 pt-1" aria-label={`Colores: ${paleta.map(colorCliente).join(", ")}`} role="img" variants={grupoConRitmo(0.04, 0.15)}>
+            <motion.span className="flex shrink-0 pl-1.5 pt-1" aria-label={`Colores: ${paleta.map((color) => colorSempertex(color).nombre).join(", ")}`} role="img" variants={grupoConRitmo(0.04, 0.15)}>
               {paleta.map((color) => (
                 <motion.span
                   key={color}
-                  title={colorCliente(color)}
+                  title={colorSempertex(color).nombre}
                   variants={{ oculto: { scale: 0 }, visible: { scale: 1, transition: { duration: 0.35, ease: EASE_REBOTE } } }}
                   className="-ml-1.5 size-5 rounded-full ring-2 ring-superficie"
                   style={{ backgroundColor: hexColor(color) }}
@@ -151,6 +162,7 @@ export function TarjetaPlan(props: Props) {
         <p className="mt-0.5 text-sm text-texto-suave">
           {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0)} {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0) === 1 ? "pieza" : "piezas"}: {listaNatural(piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} × ` : ""}${pieza.nombre}`))}
         </p>
+        {avisoColores && <p className="mt-1.5 rounded-xl bg-aviso-suave px-3 py-2 text-sm text-texto">{avisoColores}</p>}
         {/* Sin salida animada: el ajuste nuevo reemplaza al anterior en el acto, nunca se ven dos. */}
         {ultimoAjuste && (
           <motion.p
@@ -180,7 +192,7 @@ export function TarjetaPlan(props: Props) {
               pieza={vista}
               indice={indice}
               recalculando={recalculando}
-              dibujo={<GraficaMotorGuiada plan={plan.plan} pieza={pieza} mezclaReal={mezclaReal} colores={tonosPorPieza.get(pieza.estructura_id)} id={vista.oficial ?? "arco"} nombre={pieza.nombre} />}
+              dibujo={<GraficaMotorGuiada plan={plan.plan} version={plan.plan_hash} pieza={pieza} mezclaReal={mezclaReal} colores={tonosPorPieza.get(pieza.estructura_id)} id={vista.oficial ?? "arco"} nombre={pieza.nombre} />}
               {...(abrir ? { onModificar: abrir } : {})}
               {...(modificable ? {
                 accion: (
@@ -234,7 +246,14 @@ export function TarjetaPlan(props: Props) {
         </div>
         {ajustable && (
           <PanelPlegable abierto={ajusteAbierto} id={idAjuste} alAbrir={mostrarAjuste}>
-            <AjustarPlan plan={plan} ajuste={ajuste} ocupado={ocupado || estadoImagen === "cargando"} />
+            <AjustarPlan
+              plan={plan}
+              ajuste={ajuste}
+              ocupado={ocupado || estadoImagen === "cargando"}
+              {...(onSugerencia ? { onSugerencia: (texto: string) => { setAjusteAbierto(false); onSugerencia(texto); } } : {})}
+              modificables={modificables}
+              onModificarPieza={(estructuraId) => { if (piezaModificable(plan, estructuraId)) setModificando(estructuraId); }}
+            />
           </PanelPlegable>
         )}
         <PanelPlegable abierto={detalleAbierto} id={idDetalle}>
@@ -306,7 +325,8 @@ export function TarjetaPlan(props: Props) {
           <button
             type="button"
             disabled={bloqueado}
-            onClick={() => onAccion("cambiar")}
+            // «Cambiar algo» abre «Ajustar mi plan», donde están todos los cambios (también los que rehace el asistente).
+            onClick={() => { if (ajustable) { setAjusteAbierto(true); filaAjusteRef.current?.scrollIntoView({ block: "start", behavior: reducido ? "auto" : "smooth" }); } onAccion("cambiar"); }}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-medium text-acento transition-colors hover:bg-acento-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50"
           >
             {hecha("cambiar") ? <Check className="size-4" aria-hidden /> : <PenLine className="size-4" aria-hidden />}

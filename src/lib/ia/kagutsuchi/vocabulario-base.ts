@@ -1,6 +1,7 @@
 import { aDescriptorPerceptual } from "./descriptor-perceptual";
+import { hexPegado } from "./texto-base";
 import { ACABADO_EN } from "@/lib/ia/uzume/mezcla-color-escena";
-import { referenciaDelCatalogo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
+import { esReferenciaViva, referenciaDelCatalogo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
 import { labDeRgb } from "@/lib/rag/catalog/similitud-color";
 
 /**
@@ -18,8 +19,9 @@ const PALABRAS_APAGADO = /\b(?:muted|dusty|dusk|sage|grey|gray|smoky)\b/;
  * claro o apagado que es: «deep», «pale», «muted». Así el dorado 970 Reflex y el 570 Metal, o el Lila 050
  * Fashion y el 650 Pastel Mate, dejan de ser la misma palabra (auditoría 2026-10-04).
  *
- * Nunca el código, el Pantone ni el hexadecimal: un modelo de difusión no sabe qué color es «PANTONE 10444»
- * y puede dibujar el número como texto. Las cifras van solo al prompt de Gemini (`bloqueColoresExactos`).
+ * Nunca el código ni el Pantone: un modelo de difusión no sabe qué color es «PANTONE 10444» y puede dibujar
+ * el número como texto. Esas cifras van solo al prompt de Gemini (`bloqueColoresExactos`). El hex del globo
+ * inflado sí llega a FLUX, y solo pegado entre paréntesis a su color («vivid pink (#E04B87)», `hexPegado`).
  *
  * El hex guía claridad, croma y temperatura sin convertir reflejos en pigmento. Para plata neutra solo
  * decide si decir «bright» o «dark»; su matiz Lab no es significativo.
@@ -40,7 +42,9 @@ export function colorDeReferencia(referencia: ReferenciaSempertex): string {
   // El nombre comercial puede mentir sobre la intensidad: el Fashion 040 se llama «Light Blue» y es un cian intenso
   // (#01b2e8), y «pink» a secas sale pastel en FLUX aunque el 011 sea un rosa fuerte (2026-10-06: el dueño vio pasteles
   // donde la foto tenía colores vivos). Un color saturado de luminosidad media se dice «vivid», sin «light/pale».
-  const vivo = croma > 40 && l >= 40 && l <= 74;
+  // Una línea pastel (Pastel Mate, Pastel Dusk) nunca es «vivid»: es claridad alta y croma bajo por definición, y
+  // decirle «vivid» a FLUX pintaba un cian intenso donde la foto tenía un celeste pastel (banco de fotos 06 y 09).
+  const vivo = esReferenciaViva(referencia);
   if (vivo) {
     nombre = nombre.replace(/\b(?:light|pale|soft|baby)\s+/g, "");
     if (/\bblue\b/.test(nombre) && a < -8 && b < -20 && !/\b(?:cyan|turquoise|teal|aqua)\b/.test(nombre)) nombre = nombre.replace(/\bblue\b/, "cyan blue");
@@ -56,11 +60,26 @@ export function colorDeReferencia(referencia: ReferenciaSempertex): string {
   // que ya fijan temperatura, como gold, beige, navy o blue.
   if (croma > 12 && b > 18 && !/\b(?:gold|yellow|beige|brown|orange|warm)\b/.test(nombre)) tonos.push("warm");
   else if (croma > 12 && b < -12 && !/\b(?:blue|navy|violet|purple|cool)\b/.test(nombre)) tonos.push("cool");
+  // «rose gold» a secas FLUX lo pinta dorado: es un dorado ROSADO, y el rosa tiene que ir delante (banco de fotos 07,
+  // 2026-10-06: el oro rosa de la foto salió como un tercio de dorado cromado). La palabra «rose gold» se queda, que
+  // es la que el preflight busca.
+  nombre = rosaDelante(nombre);
   // FLUX.2 respeta códigos hex en el texto: junto a las palabras va el color real del globo inflado (pedido del dueño,
   // 2026-10-06: «FLUX debe recibir los códigos de color»). Las palabras siguen para el acabado y por si el hex se ignora.
+  // El hex va pegado entre paréntesis a su color y así llega al texto: `limpiarEtiqueta` ya no lo parte en
+  // «white, #F7F7F5» (que FLUX leía como otro globo de la lista, conversación guiada-20261006-220821-ci54dg) y
+  // `limpiarTextoBase` solo quita los códigos sueltos.
   const palabras = [...tonos, nombre].filter(Boolean).join(" ");
   // En cromados y metalizados (Reflex, Metal) el hex del globo inflado es un ocre/gris apagado que FLUX pinta mate: van solo palabras.
-  return /reflex|metal|chrome|cromad/i.test(`${referencia.familia} ${referencia.acabado}`) ? palabras : `${palabras} (#${hex.toUpperCase()})`;
+  return /reflex|metal|chrome|cromad/i.test(`${referencia.familia} ${referencia.acabado}`) ? palabras : hexPegado(palabras, hex);
+}
+
+/** «rose gold» sin «pink» delante: el patrón de `rosaDelante` (y de `COLORES_VISIBLES`), sin repetir el rosa. */
+const ORO_ROSA_SIN_ROSA = /(?<!\bpink(?:ish)? )\brose gold\b/gi;
+
+/** El oro rosa dicho con el rosa delante («pink rose gold»): FLUX lee «rose gold» como dorado. */
+export function rosaDelante(texto: string): string {
+  return texto.replace(ORO_ROSA_SIN_ROSA, "pink rose gold");
 }
 
 /**
@@ -208,6 +227,8 @@ const COLORES_VISIBLES: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bpastel multicolor\b/gi, "pale multicolor"],
   [/\bmuted pastel\b/gi, "muted pale tones"],
   [/^pearl$/gi, "pearly white"],
+  // El oro rosa es un dorado ROSADO: «rose gold» a secas sale dorado en FLUX (banco de fotos 07, 2026-10-06).
+  [ORO_ROSA_SIN_ROSA, "pink rose gold"],
 ];
 
 /** Color de un producto con las palabras de lo que se ve; cadena vacía si el catálogo no lo sabe. */
@@ -250,7 +271,9 @@ export function limpiarEtiqueta(texto: string): string {
     .replace(/\bpastel\b/gi, "pale")
     .replace(/\bNeon\b/g, "fluorescent")
     .replace(/\b(?:Fashion|Reflex|Silk|Crystal)\b\s*/g, "")
-    .replace(/\s*\(([^)]*)\)/g, ", $1")
+    // El hex pegado a su color («white (#F7F7F5)», `hexPegado`) no es una nota al margen: partido en «white,
+    // #F7F7F5» quedaba como un color más de la lista y FLUX lo leía como otro globo (2026-10-06).
+    .replace(/\s*\((?!#[0-9A-Fa-f]{6}\))([^)]*)\)/g, ", $1")
     .replace(/;/g, ",")
     .replace(/\bmatte matte\b/gi, "matte")
     .replace(/\s+,/g, ",")

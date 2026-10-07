@@ -306,7 +306,7 @@
             "maxLength": 160
           },
           "catalog_product_ids": {
-            "maxItems": 24,
+            "maxItems": 72,
             "type": "array",
             "items": {
               "type": "string",

@@ -108,14 +108,35 @@ def referencia_del_titulo(titulo: str | None, acabado: str | None) -> dict[str, 
     plegado = f" {' '.join(re.sub(r'[^a-z0-9]+', ' ', _plegar(titulo)).split())} "
     dichos = [nombre for nombre in _por_nombre() if f" {nombre} " in plegado]
     # «azul» va dentro de «azul rey»: el nombre que otro más largo contiene no es otro tono.
-    tonos = [
+    contenidos = [
         nombre
         for nombre in dichos
         if not any(nombre != otro and f" {nombre} " in f" {otro} " for otro in dichos)
     ]
+    # «Azul Turquesa Profundo» es el Turquesa Profundo: una palabra suelta justo delante del nombre compuesto es el
+    # prefijo de familia de la tienda, no otro tono (``referenciaDelTitulo`` de ``referencia-sempertex.ts``).
+    tonos = [
+        nombre
+        for nombre in contenidos
+        if not (
+            " " not in nombre
+            and any(" " in otro and f" {nombre} {otro} " in plegado for otro in contenidos)
+        )
+    ]
     if len(tonos) != 1:
         return None
-    return referencia_de(tonos[0], acabado)
+    return referencia_de(tonos[0], _familia_del_titulo(plegado) or acabado)
+
+
+def _familia_del_titulo(plegado: str) -> str | None:
+    """La familia que el título NOMBRA («pastel mate», «reflex», «cristal»), la más larga, o ``None``.
+
+    Manda sobre el acabado del material: «mate» cae en la familia Fashion, la primera de la lámina, y el «Pastel
+    Mate Azul» que se compraba (#a3d1ed) se pintaba como el Fashion Azul 040, un cian intenso (banco de fotos 06,
+    2026-10-06). Es ``familiaDelTitulo`` de ``src/lib/plan/referencia-sempertex.ts``.
+    """
+    dichas = [palabra for palabra in _FAMILIAS_POR_ACABADO if f" {palabra} " in plegado]
+    return max(dichas, key=len) if dichas else None
 
 
 #: La familia de la referencia del catálogo, en el acabado con el que pinta el motor orgánico. Es la tabla

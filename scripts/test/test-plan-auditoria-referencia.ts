@@ -697,13 +697,13 @@ async function main(): Promise<void> {
   const semiarcoPastel = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Balloon half arch", "balloon_structure", ["chrome silver", "pastel pink"])]);
   const planPastel = pared([materialPared("P-PLATA", "plateado", 0.5, "principal"), materialPared("P-ROSADO-REFLEX", "rosado", 0.5, "secundario")]);
   const esperadoPastel = acabadosObservadosDeMateriales([planPastel], semiarcoPastel);
-  assert.deepEqual(esperadoPastel.map((item) => [item.product_id, item.acabado]), [["P-PLATA", "reflex"], ["P-ROSADO-REFLEX", "mate"]], "«pastel» es un acabado mate de la foto");
+  assert.deepEqual(esperadoPastel.map((item) => [item.product_id, item.acabado]), [["P-PLATA", "reflex"], ["P-ROSADO-REFLEX", "pastel"]], "«pastel» es un tono mate y claro de la foto (banco de fotos 06 y 09: el pastel no se compra vivo)");
   const plataReflex = globoConAcabado("P-PLATA", "plateado", ["reflex"]);
   const rosadoReflex = globoConAcabado("P-ROSADO-REFLEX", "rosado", ["reflex"]);
   assert.deepEqual(
     busquedasDeAcabado(planDe(planPastel), esperadoPastel, disponibilidadDelTurno([plataReflex, rosadoReflex])),
-    ["globo latex redondo mate rosado"],
-    "el rosado pastel comprado en Reflex se busca en mate; el plateado cromado ya cumple",
+    ["globo latex redondo pastel mate rosado"],
+    "el rosado pastel comprado en Reflex se busca en la línea pastel mate; el plateado cromado ya cumple",
   );
   const rosadoPastelMate = globoConAcabado("P-ROSADO-PASTEL", "rosado", ["mate"]);
   const pastelCumplido = aplicarAcabadoReferencia(planDe(planPastel), esperadoPastel, disponibilidadDelTurno([plataReflex, rosadoReflex, rosadoPastelMate]));

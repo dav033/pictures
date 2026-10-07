@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Baby, Cake, Church, Crown, Heart, ImagePlus, Sparkles } from "lucide-react";
+import { Baby, Cake, Church, CircleCheck, Crown, Heart, ImagePlus, Sparkles } from "lucide-react";
 import { z } from "zod";
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
 import { Markdown } from "@/components/Markdown";
@@ -14,9 +14,13 @@ import { PasoAPaso } from "./PasoAPaso";
 import { PreguntaUso } from "./PreguntaUso";
 import { RespuestasRapidas, dedupeOpciones, separarOpciones } from "./RespuestasRapidas";
 import { TarjetaEleccion } from "./TarjetaEleccion";
+import type { DatosAgregarIdea, EstadoAgregarIdea } from "./AgregarIdea";
+import { estadoAgregarIdea, propuestaAgregarIdea } from "./agregar-idea";
+import { pedirPlanDeIdea } from "./plan-exacto-idea";
 import { TarjetasProveedores } from "./TarjetasProveedores";
 import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
+import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
 import type { AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
 import { TarjetaPropuesta } from "./TarjetaPropuesta";
@@ -42,7 +46,9 @@ import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-refe
 import { prepararFotoReferencia } from "@/lib/imagen-cliente/preparar-foto";
 import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
-import { briefChatGuiado, defectoPlanGuiado, instruccionPlanFoto, instruccionPlanGuiado, planActualDesdePlan, resumenPlanGuiado } from "@/lib/ia/guiado/instruccion-plan";
+import { briefChatGuiado, coloresFaltantesPlanGuiado, cuerpoPlanGuiado, defectoPlanGuiado, instruccionPlanFoto, planActualDesdePlan, referenciaDelPlan, resumenPlanGuiado, type ReferenciaDelPlan } from "@/lib/ia/guiado/instruccion-plan";
+import type { ColorFotoFaltante } from "@/lib/plan/colores-foto-plan";
+import { lecturaSinRemateGrande, tieneRemateGrande } from "@/lib/ia/guiado/remate-foto";
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 import { cuerpoGeneracion, fuentesDelPlan, resumenCuerpoGeneracion } from "@/lib/generacion/cuerpo-generacion";
@@ -66,13 +72,15 @@ type FotoInspiracion = { base64: string; mime: "image/jpeg" | "image/png" | "ima
 type PreguntaCiudad = "ciudad-decorador" | "ciudad-distribuidor";
 type OpcionesEnvio = { uso?: Uso; reintentar?: boolean; alcance?: "completa" | "individual"; pieza?: EstructuraOficialId };
 
+/** La idea de la biblioteca que trae un plan («Agregar al plan»): queda en el widget y dice «Está en tu plan». `sumada`: había plan. */
+type IdeaAgregada = { id: string; titulo: string; sumada: boolean };
 /** Qué repite «Reintentar»: se guarda la acción (no un cierre) para ejecutarla con el estado del momento del clic. */
 type AccionFallo =
   | { tipo: "turno"; texto: string; opciones: OpcionesEnvio }
-  | { tipo: "plan"; propuesta: Propuesta; mensajeId: string; planAnterior?: PlanActualGuiado }
-  | { tipo: "foto"; referenciaId: string; mensajeId: string }
+  | { tipo: "plan"; propuesta: Propuesta; mensajeId: string; planAnterior?: PlanActualGuiado; idea?: IdeaAgregada }
+  | { tipo: "foto"; referenciaId: string; mensajeId: string; sinRemate?: boolean }
   | { tipo: "subir-foto" };
-type AlternativaFallo = "otros-colores" | "otra-pieza";
+type AlternativaFallo = "otros-colores" | "otra-pieza" | "idea-parecida" | "otra-foto";
 type Fallo = { titulo: string; detalle?: string; etiqueta?: string; accion: AccionFallo; alternativas?: AlternativaFallo[]; mensajeId?: string };
 
 const ReferenciaSchema = z.object({ blueprint: ReferenceBlueprintV2Schema, frase: z.string(), aspecto: z.number().positive().optional(), piezas: z.array(z.object({ x: z.number(), y: z.number(), ancho: z.number(), alto: z.number() }).strict()), colores: z.array(z.object({ nombre: z.string(), hex: z.string() }).strict()) }).strict();
@@ -122,6 +130,14 @@ const ImagenGeneradaSchema = z.object({ imagen: z.string().regex(/^data:image\/(
 
 const LIMITE_TURNO_MS = 75_000;
 const LIMITE_PLAN_MS = 75_000;
+/** El plan exacto de una idea solo pasa por Python (sin modelo): si tarda más, se arma por el camino de siempre. */
+const LIMITE_PLAN_IDEA_MS = 40_000;
+/**
+ * Confirmaciones rechazadas que aguanta un intento de plan. El servidor ya repara solo lo reparable tras 2 rechazos
+ * (`RECHAZOS_PARA_CONVERGER`): un tercero es que el catálogo no tiene lo que la lectura pide (ej04: un remate de 36"
+ * dorado que no existe), y seguir solo gasta llamadas.
+ */
+const MAX_RECHAZOS_INTENTO = 3;
 const LIMITE_IMAGEN_MS = 90_000;
 // La lectura tarda 12-27 s en local y más en Vercel (va por el Python del VPS): con 12 s se cortaba siempre en
 // producción, la guiada seguía sin la foto y adivinaba las piezas («un arco» donde había dos columnas; 2026-10-06).
@@ -177,6 +193,8 @@ export function VistaGuiada() {
   const [placeholderForzado, setPlaceholderForzado] = useState<string | null>(null);
   const [sugerenciasCambio, setSugerenciasCambio] = useState<string[] | null>(null);
   const [anuncio, setAnuncio] = useState("");
+  /** La idea que se está sumando al plan («Agregar al plan»): su botón dice «Agregando a tu plan…». */
+  const [agregandoId, setAgregandoId] = useState<string | null>(null);
   const [restaurado, setRestaurado] = useState(false);
   /** Ids restaurados de la sesión: no se vuelven a animar al montar. */
   const [restaurados, setRestaurados] = useState<ReadonlySet<string>>(() => new Set());
@@ -377,6 +395,9 @@ export function VistaGuiada() {
     setPlaceholderForzado(null); setSugerenciasCambio(null); setAnuncio("");
     marcarCargando(false);
     try { sessionStorage.removeItem(CLAVE_SESION); } catch (cause) { console.warn("[asistente-guiado] no se pudo limpiar la sesión.", cause); }
+    // Arriba de inmediato: con la posición del scroll de la conversación anterior, la pantalla quedaba en blanco unos 2 s
+    // (verificador, 2026-10-06).
+    contenedorRef.current?.scrollTo({ top: 0, behavior: "auto" });
     vaciarConversacionGuiada();
   }, [marcarCargando]);
 
@@ -521,7 +542,10 @@ export function VistaGuiada() {
         if (elegida && (datos.opciones || widgets.some((widget) => widget.tipo === "cotizacion" || widget.tipo === "pasos"))) widgets.push({ tipo: "opciones" });
         const accion = AccionModeloSchema.safeParse(datos.accionPlan);
         if (accion.success) accionModelo = accion.data;
-        const textoFinal = evento.reply.slice(0, 6000);
+        // «¿Cuánto me sale?»: el costeo se abre en la tarjeta del plan y la respuesta dice el total (no «Aquí tienes…»).
+        const textoFinal = accion.success && accion.data === "costear" && planVigente
+          ? respuestaPrecioPlan(planVigente.widget, planVigente.widget.usoCosteo ?? uso ?? "personal")
+          : evento.reply.slice(0, 6000);
         if (datos.propuesta) {
           propuestaParaPlan = datos.propuesta;
           setSeleccionada(null); setUso(null);
@@ -571,22 +595,36 @@ export function VistaGuiada() {
    * pero defectuoso (pieza orgánica de un solo tamaño, globos estampados) gasta ese reintento; si el segundo no llega, se
    * queda el primero: un plan imperfecto es mejor que un error.
    */
-  async function ejecutarPlan(mensajeId: string, armarCuerpo: (reintento: boolean) => Record<string, unknown>, soloReintento: boolean): Promise<{ turno: number } & ({ estado: "ok"; plan: PlanGuiado; cotizacion: unknown } | { estado: "detenido" | "fallo" | "obsoleto" })> {
+  async function ejecutarPlan(mensajeId: string, armarCuerpo: (reintento: boolean, faltantes?: readonly ColorFotoFaltante[]) => Record<string, unknown>, soloReintento: boolean, coloresPedidos?: readonly string[]): Promise<{ turno: number } & ({ estado: "ok"; plan: PlanGuiado; cotizacion: unknown } | { estado: "detenido" } | { estado: "obsoleto" } | { estado: "fallo"; sinConverger?: true })> {
     const turno = ++turnoRef.current;
     const control = new AbortController();
     controlRef.current = control;
     marcarCargando(true);
     fijarEtapa(mensajeId, soloReintento ? "reintentando" : "preparando");
     let respaldo: { plan: PlanGuiado; cotizacion: unknown } | null = null;
+    // Colores de la foto que perdió el primer plan: el reintento los pide uno por uno (`instruccionPlanFoto`).
+    let faltantes: ColorFotoFaltante[] = [];
+    let sinConverger = false;
     for (const reintento of soloReintento ? [true] : [false, true]) {
+      // Un intento que no convergió (el catálogo rechazó el plan una y otra vez) no se repite igual: con la misma
+      // lectura vuelve a fallar igual (ej04: 16 llamadas, ~65 s, US$0,125). Se ofrecen salidas en su lugar.
+      if (reintento && sinConverger && !respaldo) break;
       if (reintento && !soloReintento) fijarEtapa(mensajeId, "reintentando");
       const intento = new AbortController();
       const cortar = () => intento.abort();
       control.signal.addEventListener("abort", cortar);
       const reloj = window.setTimeout(cortar, LIMITE_PLAN_MS);
+      let rechazos = 0;
       try {
-        const respuesta = await pedirPlanChat(armarCuerpo(reintento), intento.signal, (nombre, estado, ok) => {
+        const respuesta = await pedirPlanChat(armarCuerpo(reintento, faltantes), intento.signal, (nombre, estado, ok) => {
           if (turno !== turnoRef.current) return;
+          // Tope de llamadas por intento: tras MAX_RECHAZOS_INTENTO confirmaciones rechazadas se corta la petición
+          // (el servidor deja de llamar al modelo al abortarse) en vez de dejar que el modelo pruebe hasta 10 vueltas.
+          if (nombre === "confirmar_plan_decoracion" && estado === "lista" && ok === false && ++rechazos >= MAX_RECHAZOS_INTENTO) {
+            sinConverger = true;
+            intento.abort();
+            return;
+          }
           const siguiente: EtapaPlan | null = nombre === "buscar_catalogo_rag" ? "buscando"
             : nombre === "confirmar_plan_decoracion" ? (estado === "ejecutando" ? "calculando" : ok !== false ? "precio" : null)
               : null;
@@ -595,12 +633,13 @@ export function VistaGuiada() {
         if (turno !== turnoRef.current) return { turno, estado: "obsoleto" };
         const plan = PlanGuiadoSchema.safeParse(respuesta.plan);
         if (plan.success) {
-          const defecto = reintento ? null : defectoPlanGuiado(plan.data, respuesta.cotizacion);
+          const defecto = reintento ? null : defectoPlanGuiado(plan.data, respuesta.cotizacion, { ...(coloresPedidos ? { coloresPedidos } : {}) });
           if (!defecto) {
             registrarAccion("plan.listo", { intento: reintento ? 2 : 1, plan_hash: plan.data.plan_hash });
             return { turno, estado: "ok", plan: plan.data, cotizacion: respuesta.cotizacion };
           }
-          registrarFallo("plan.defecto", defecto, { intento: 1, plan_hash: plan.data.plan_hash, accion: "se pide otra vez" }, "warn");
+          faltantes = coloresFaltantesPlanGuiado(plan.data, { ...(coloresPedidos ? { coloresPedidos } : {}) });
+          registrarFallo("plan.defecto", defecto, { intento: 1, plan_hash: plan.data.plan_hash, accion: "se pide otra vez", ...(faltantes.length ? { colores_faltantes: faltantes } : {}) }, "warn");
           console.warn("[asistente-guiado] el plan no cumple la guía; se pide otra vez", { defecto });
           respaldo = { plan: plan.data, cotizacion: respuesta.cotizacion };
           continue;
@@ -611,16 +650,17 @@ export function VistaGuiada() {
       } catch (causa) {
         if (turno !== turnoRef.current) return { turno, estado: "obsoleto" };
         if (control.signal.aborted) return { turno, estado: "detenido" };
-        registrarFallo("plan.intento_fallido", causa, { intento: reintento ? 2 : 1 }, "warn");
-        console.warn("[asistente-guiado] falló un intento de plan", { intento: reintento ? 2 : 1, causa });
+        if (sinConverger) registrarFallo("plan.no_converge", "el catálogo rechazó el plan varias veces en el mismo intento: se corta", { intento: reintento ? 2 : 1, rechazos, tope: MAX_RECHAZOS_INTENTO }, "warn");
+        else registrarFallo("plan.intento_fallido", causa, { intento: reintento ? 2 : 1 }, "warn");
+        console.warn("[asistente-guiado] falló un intento de plan", { intento: reintento ? 2 : 1, causa, sinConverger });
       } finally {
         window.clearTimeout(reloj);
         control.signal.removeEventListener("abort", cortar);
       }
     }
     if (respaldo) registrarFallo("plan.respaldo", "el reintento no dio un plan mejor: se queda el primero", { plan_hash: respaldo.plan.plan_hash }, "warn");
-    else registrarFallo("plan.fallo", "ningún intento dio un plan confirmado", {});
-    return respaldo ? { turno, estado: "ok", ...respaldo } : { turno, estado: "fallo" };
+    else registrarFallo("plan.fallo", "ningún intento dio un plan confirmado", { sinConverger });
+    return respaldo ? { turno, estado: "ok", ...respaldo } : { turno, estado: "fallo", ...(sinConverger ? { sinConverger: true as const } : {}) };
   }
 
   function terminarPlan(turno: number, mensajeId: string): void {
@@ -628,20 +668,28 @@ export function VistaGuiada() {
     if (turno === turnoRef.current) { marcarCargando(false); controlRef.current = null; }
   }
 
-  /** Deja el plan en el MISMO mensaje (la propuesta pasa a «Tu plan») y marca como versión anterior el que había. */
-  function colocarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, fotoInspiracion: boolean): void {
+  /**
+   * Deja el plan en el MISMO mensaje (la propuesta pasa a «Tu plan») y marca como versión anterior el que había. Con
+   * `idea` («Agregar al plan»), el plan nuevo recuerda las ideas que lleva y dice qué se agregó y cuántos globos tiene.
+   */
+  function colocarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, fotoInspiracion: boolean, idea?: IdeaAgregada, referenciaId?: string): void {
     const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacionCruda);
     const cotizacion = precio.success ? { ...precio.data, lineas: precio.data.lineas.map((linea) => ({ ...linea, nombre: nombreLineaCliente(linea) })) } : undefined;
     const armado = generarPasosPlan(plan);
     const resumen = resumenPlanGuiado(plan);
+    const total = totalDePlan(plan);
     setMensajes((actuales) => {
       const previo = buscarPlanVigente(actuales.filter((mensaje) => mensaje.id !== mensajeId));
       const totalAnterior = previo ? totalDePlan(previo.widget.plan) : undefined;
+      // Las ideas solo se heredan al agregar otra: un plan rehecho por «Cambiar algo» ya no sabe qué ideas lleva.
+      const ideas = idea ? [...new Set([...(previo?.widget.ideas ?? []), idea.id])].slice(-12) : [];
       const nuevo: WidgetPlan = {
         tipo: "plan", plan, pasos: armado.pasos,
         ...(cotizacion ? { cotizacion } : {}),
         ...(totalAnterior !== undefined ? { totalAnterior } : {}),
-        ...(fotoInspiracion ? { fotoInspiracion: true } : {}),
+        ...(fotoInspiracion ? { fotoInspiracion: true, ...(referenciaId ? { referenciaId } : {}) } : {}),
+        ...(ideas.length ? { ideas } : {}),
+        ...(idea ? { agregada: { titulo: idea.titulo.slice(0, 160), total } } : {}),
       };
       return actuales.map((mensaje) => {
         if (mensaje.id === mensajeId) return { ...mensaje, content: resumen, widgets: [nuevo] };
@@ -651,7 +699,7 @@ export function VistaGuiada() {
     });
     setSugerenciasCambio(null);
     pedirLlegada(mensajeId);
-    setAnuncio("Tu plan está listo");
+    setAnuncio(idea ? textoIdeaAgregada(idea.titulo, total, idea.sumada) : "Tu plan está listo");
   }
 
   /**
@@ -674,9 +722,12 @@ export function VistaGuiada() {
       const nuevo: WidgetPlan = {
         tipo: "plan", plan, pasos: armado.pasos, ajustes, totalAnterior: totalDePlan(actual.plan),
         ...(cotizacion ? { cotizacion } : {}),
-        ...(actual.fotoInspiracion ? { fotoInspiracion: true } : {}),
+        ...(actual.fotoInspiracion ? { fotoInspiracion: true, ...(actual.referenciaId ? { referenciaId: actual.referenciaId } : {}) } : {}),
         ...(actual.usoCosteo ? { usoCosteo: actual.usoCosteo } : {}),
         ...(actual.compraAbierta ? { compraAbierta: true } : {}),
+        // Las ideas sumadas siguen en el plan salvo que el ajuste quitara una pieza (pudo ser la de la idea). El aviso
+        // «Agregué… ahora tiene N globos» no se hereda: el total ya cambió.
+        ...(actual.ideas?.length && plan.plan.estructuras.length >= actual.plan.plan.estructuras.length ? { ideas: actual.ideas } : {}),
         // La imagen era del plan de antes: «Ver cómo quedaría» vuelve a ser la acción principal.
         hechas: (actual.hechas ?? []).filter((hecha) => hecha !== "ver"),
       };
@@ -686,42 +737,56 @@ export function VistaGuiada() {
     setAnuncio(`Listo: ${descripcion}. Tu plan tiene ${totalDePlan(plan)} globos.`);
   }
 
-  async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado }): Promise<void> {
-    if (cargandoRef.current && !opciones.desdeTurno) return;
-    const { mensajeId, planAnterior } = opciones;
-    registrarAccion("propuesta.aceptar", { mensajeId, desdeTurno: Boolean(opciones.desdeTurno), reintento: Boolean(opciones.reintento), propuesta });
+  /** Resuelve la propuesta con /api/chat (Python, dueño de las cantidades). Devuelve cómo terminó; quien no lo necesita lo ignora. */
+  async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado; idea?: IdeaAgregada }): Promise<"ok" | "fallo" | "detenido" | "obsoleto" | "ocupado"> {
+    if (cargandoRef.current && !opciones.desdeTurno) return "ocupado";
+    const { mensajeId, planAnterior, idea } = opciones;
+    // Rehacer un plan que salió de una foto («Cambiar algo», «Hazla más sencilla», «Otros colores», «Agregar al plan»)
+    // la conserva, por el mismo camino que la clásica: la foto, su lectura y cada pieza atada a su elemento de la foto.
+    // Sin ella el plan nuevo perdía la escenografía y las cajas, y la imagen salía inventada (2026-10-06, ci54dg).
+    const foto = planAnterior ? fotoDelPlan(mensajes, planVigente, fotosRef.current) : null;
+    registrarAccion("propuesta.aceptar", {
+      mensajeId, desdeTurno: Boolean(opciones.desdeTurno), reintento: Boolean(opciones.reintento), propuesta, ...(idea ? { idea: idea.id } : {}),
+      ...(foto ? { foto: { referenciaId: foto.referenciaId, conImagen: Boolean(foto.imagen), piezasDeLaFoto: foto.referencia?.piezas.length ?? 0 } } : {}),
+    });
     setFallo(null);
     setSeleccionada(null); setUso(null);
     actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: propuesta.frase, widgets: [{ tipo: "propuesta", propuesta, estado: "resolviendo" }] }));
-    const armar = (reintento: boolean) => ({
-      schema_version: "chat.v1",
-      messages: [{ role: "user", content: instruccionPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}) }) }],
-      brief: briefChatGuiado(propuesta.colores),
-      // Piezas SIEMPRE individuales: el servidor separa cualquier estructura repetida y nombra cada pieza.
-      piezasIndividuales: true,
-    });
-    const resultado = await ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento));
-    if (resultado.estado === "obsoleto") return;
-    if (resultado.estado === "ok") colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, false);
-    else {
+    // Piezas SIEMPRE individuales y, con foto, la foto y su lectura (`cuerpoPlanGuiado`).
+    const armar = (reintento: boolean, faltantes?: readonly ColorFotoFaltante[]) => cuerpoPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}), foto, ...(faltantes?.length ? { faltantes } : {}) });
+    // Con foto, de sus colores solo se exigen los que siguen en la propuesta: «Otros colores» los cambió el cliente.
+    const resultado = await ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento), propuesta.colores);
+    if (resultado.estado === "obsoleto") return "obsoleto";
+    if (resultado.estado === "ok") {
+      if (foto?.imagen) fotosRef.current.set(mensajeId, foto.imagen);
+      colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, Boolean(foto), idea, foto?.referenciaId);
+    } else {
       actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: "fallo" }] }));
-      const accion: AccionFallo = { tipo: "plan", propuesta, mensajeId, ...(planAnterior ? { planAnterior } : {}) };
+      const accion: AccionFallo = { tipo: "plan", propuesta, mensajeId, ...(planAnterior ? { planAnterior } : {}), ...(idea ? { idea } : {}) };
+      // Al sumar una idea, el plan de antes sigue intacto (vigente): se dice, y solo se ofrece reintentar.
       setFallo(resultado.estado === "detenido"
         ? { titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion, mensajeId }
-        : { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion, alternativas: ["otros-colores", "otra-pieza"], mensajeId });
-      setAnuncio("No pude terminar tu plan");
+        : idea
+          ? { titulo: idea.sumada ? `No pude agregar «${idea.titulo}» a tu plan` : `No pude armar tu plan con «${idea.titulo}»`, detalle: idea.sumada ? "Tu plan sigue como estaba. Inténtalo otra vez." : "Tu conversación sigue guardada. Inténtalo otra vez.", accion, mensajeId }
+          : { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion, alternativas: ["otros-colores", "otra-pieza"], mensajeId });
+      setAnuncio(idea?.sumada ? "No pude agregar la idea; tu plan sigue como estaba" : "No pude terminar tu plan");
     }
     terminarPlan(resultado.turno, mensajeId);
+    return resultado.estado;
   }
 
-  /** «Sí, armémoslo» con la lectura de una foto. `mensajeId` es el del plan cuando se reintenta. */
-  async function aceptarPlanFoto(referenciaId: string, opciones?: { mensajeId?: string }): Promise<void> {
+  /**
+   * «Sí, armémoslo» con la lectura de una foto. `mensajeId` es el del plan cuando se reintenta. `sinRemate`: la salida
+   * «Armarlo sin el remate grande» de un plan que no convergió (la lectura del mensaje no cambia; solo la que se manda).
+   */
+  async function aceptarPlanFoto(referenciaId: string, opciones?: { mensajeId?: string; sinRemate?: boolean }): Promise<void> {
     if (cargandoRef.current) return;
     const origen = mensajes.find((mensaje) => mensaje.id === referenciaId);
     if (!origen?.referencia) return;
     const referencia = origen.referencia;
+    const blueprint = opciones?.sinRemate ? lecturaSinRemateGrande(referencia.blueprint) : referencia.blueprint;
     const imagen = fotosRef.current.get(referenciaId);
-    registrarAccion("foto.armar_plan", { referenciaId, colores: referencia.colores.map((color) => color.nombre), conFoto: Boolean(imagen) });
+    registrarAccion("foto.armar_plan", { referenciaId, colores: referencia.colores.map((color) => color.nombre), conFoto: Boolean(imagen), ...(opciones?.sinRemate ? { sinRemate: true } : {}) });
     limpiarAvisos();
     setSeleccionada(null); setUso(null);
     let mensajeId = opciones?.mensajeId;
@@ -735,18 +800,18 @@ export function VistaGuiada() {
     }
     const idPlan = mensajeId;
     const colores = referencia.colores.map((color) => color.nombre);
-    const armar = (reintento: boolean) => ({
+    const armar = (reintento: boolean, faltantes?: readonly ColorFotoFaltante[]) => ({
       schema_version: "chat.v1",
       // Primer intento: el MISMO texto que manda la clásica con una foto sola (`MENSAJE_SOLO_REFERENCIAS`), y el plan sale
       // de la lectura como en la clásica. Con «usa EXACTAMENTE estos colores» la guiada perdía el transparente y el cromado
       // de la foto (2026-10-06). A propósito distinto: la guiada no conversa la aprobación, así que pide confirmar ya; los
       // colores que el cliente vio van solo en el brief, como dato. El reintento (plan sin confirmar o defectuoso) usa la
-      // instrucción guiada con esos colores.
-      messages: [{ role: "user", content: reintento ? instruccionPlanFoto({ reintento, colores }) : `${MENSAJE_SOLO_REFERENCIAS}\n${CONFIRMAR_PLAN_FOTO}` }],
+      // instrucción guiada con esos colores y, si el primero perdió colores de la foto, cada uno pedido aparte.
+      messages: [{ role: "user", content: reintento ? instruccionPlanFoto({ reintento, colores, ...(faltantes?.length ? { faltantes } : {}) }) : `${MENSAJE_SOLO_REFERENCIAS}\n${CONFIRMAR_PLAN_FOTO}` }],
       brief: briefChatGuiado(colores),
       creatividad: CREATIVIDAD_POR_DEFECTO,
       ...(imagen ? { imagenesReferencia: [imagen] } : {}),
-      referenceBlueprint: referencia.blueprint,
+      referenceBlueprint: blueprint,
       // Dos columnas de la foto son dos piezas: el servidor separa la pareja en espejo («Columna izquierda» y «derecha»).
       piezasIndividuales: true,
     });
@@ -754,13 +819,26 @@ export function VistaGuiada() {
     if (resultado.estado === "obsoleto") return;
     if (resultado.estado === "ok") {
       if (imagen) fotosRef.current.set(idPlan, imagen);
-      colocarPlan(idPlan, resultado.plan, resultado.cotizacion, true);
+      colocarPlan(idPlan, resultado.plan, resultado.cotizacion, true, undefined, referenciaId);
       actualizarMensaje(referenciaId, (mensaje) => ({ ...mensaje, fotoArmada: true }));
-    } else {
-      setFallo(resultado.estado === "detenido"
-        ? { titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion: { tipo: "foto", referenciaId, mensajeId: idPlan }, mensajeId: idPlan }
-        : { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion: { tipo: "foto", referenciaId, mensajeId: idPlan }, mensajeId: idPlan });
+    } else if (resultado.estado === "detenido") {
+      setFallo({ titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion: { tipo: "foto", referenciaId, mensajeId: idPlan, ...(opciones?.sinRemate ? { sinRemate: true } : {}) }, mensajeId: idPlan });
       setAnuncio("No pude terminar tu plan");
+    } else {
+      // Salida digna: un «Reintentar» con la misma lectura vuelve a fallar igual. Si el catálogo rechazó el plan y la
+      // lectura trae un remate grande, la acción principal es armarlo sin él; siempre hay una idea parecida del
+      // catálogo y otra foto.
+      const sinRemate = resultado.sinConverger === true && !opciones?.sinRemate && tieneRemateGrande(referencia.blueprint);
+      setFallo({
+        titulo: resultado.sinConverger ? "No pude armar tu plan con el catálogo" : "No pude terminar tu plan",
+        detalle: resultado.sinConverger ? "Algunos globos de tu foto no están en el catálogo en ese color o tamaño." : "Tu conversación sigue guardada.",
+        ...(sinRemate ? { etiqueta: "Armarlo sin el remate grande" } : {}),
+        accion: { tipo: "foto", referenciaId, mensajeId: idPlan, ...(sinRemate || opciones?.sinRemate ? { sinRemate: true } : {}) },
+        alternativas: ["idea-parecida", "otra-foto"],
+        mensajeId: idPlan,
+      });
+      registrarAccion("plan.salida_foto", { referenciaId, sinConverger: Boolean(resultado.sinConverger), ofreceSinRemate: sinRemate });
+      setAnuncio(resultado.sinConverger ? "No pude armar tu plan con el catálogo" : "No pude terminar tu plan");
     }
     terminarPlan(resultado.turno, idPlan);
   }
@@ -838,7 +916,7 @@ export function VistaGuiada() {
         return;
       case "costear":
         actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, usoCosteo: actual.usoCosteo ?? uso ?? "personal", hechas: conHecha(actual.hechas, "costear") }));
-        if (origen !== "tarjeta") revelarEnTarjeta(mensajeId, '[role="radiogroup"]');
+        if (origen !== "tarjeta") revelarEnTarjeta(mensajeId, SELECTOR_PRECIO_TOTAL);
         return;
       case "comprar":
         actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, compraAbierta: origen === "tarjeta" ? !actual.compraAbierta : true, hechas: conHecha(actual.hechas, "comprar") }));
@@ -862,7 +940,10 @@ export function VistaGuiada() {
       case "cambiar":
         actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, hechas: conHecha(actual.hechas, "cambiar") }));
         setFallo(null);
-        setSugerenciasCambio(sugerenciasDeCambio(widget.plan));
+        // Los cambios rápidos («Otros colores», «Agregar una pieza», «Hacerla más grande», «Hacerla más sencilla») viven
+        // DENTRO de «Ajustar mi plan» (pedido del dueño): desde la tarjeta, «Cambiar algo» abre ese editor; desde la barra
+        // o el modelo, se deja escribir el cambio. Ya no salen como chips sueltos bajo la tarjeta.
+        if (origen === "tarjeta") return;
         pedirEscritura(PLACEHOLDER_CAMBIO);
         irAlFinal();
         return;
@@ -890,6 +971,124 @@ export function VistaGuiada() {
       { id: nuevoId(), role: "assistant", content: `¡Buena elección! Esto es lo que lleva **${decoracion.titulo}**. ¿Qué te gustaría hacer ahora?`, widgets: [{ tipo: "seleccion", decoracion }, { tipo: "opciones" }] },
     ]);
     pedirFinal();
+  }
+
+  /**
+   * El plan EXACTO de la idea (`/api/plan-idea`): sus piezas, medidas, productos Sempertex y tamaños, que Python cuenta y
+   * firma sin modelo; con `base`, sumadas a las del plan vigente. Verificador (2026-10-06, v43qux): por /api/chat la
+   * guirnalda de 51 globos de 12″ y 18″ volvía como 77 globos de otros productos, y las columnas negras y doradas perdían
+   * la bola negra de 36″. «fallo» = la idea no tiene plan guardado o no cabe: se sigue por el camino de siempre.
+   */
+  async function planExactoDeIdea(mensajeId: string, decoracion: DecoracionSempertex, base: PlanGuiado | null, idea: IdeaAgregada, propuesta: Propuesta, planAnterior: PlanActualGuiado | null): Promise<"ok" | "fallo" | "detenido" | "obsoleto"> {
+    const turno = ++turnoRef.current;
+    const control = new AbortController();
+    controlRef.current = control;
+    marcarCargando(true);
+    fijarEtapa(mensajeId, "calculando");
+    let porTiempo = false;
+    const reloj = window.setTimeout(() => { porTiempo = true; control.abort("tiempo"); }, LIMITE_PLAN_IDEA_MS);
+    try {
+      const resultado = await pedirPlanDeIdea(decoracion.id, base, control.signal);
+      if (turno !== turnoRef.current) return "obsoleto";
+      if (resultado.ok) {
+        registrarAccion("idea.plan_exacto", { id: decoracion.id, plan_hash: resultado.plan.plan_hash, nuevas: resultado.nuevas, globosIdea: resultado.globosIdea, globosPlan: totalDePlan(resultado.plan), sumada: idea.sumada });
+        colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, false, idea);
+        return "ok";
+      }
+      if (resultado.detenido && !porTiempo) {
+        actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: "fallo" }] }));
+        setFallo({ titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion: { tipo: "plan", propuesta, mensajeId, ...(planAnterior ? { planAnterior } : {}), idea }, mensajeId });
+        return "detenido";
+      }
+      registrarFallo("idea.plan_exacto_fallo", resultado.motivo, { id: decoracion.id, estado: resultado.estado, porTiempo, accion: "se arma por el camino de siempre (/api/chat)" }, "warn");
+      return "fallo";
+    } finally {
+      window.clearTimeout(reloj);
+      terminarPlan(turno, mensajeId);
+    }
+  }
+
+  /**
+   * «Agregar al plan» (pedido 3): primero la idea EXACTA (`planExactoDeIdea`); si no se puede, las piezas de la idea,
+   * individuales y en sus colores lisos, se suman a las del plan vigente (o crean el plan) por el camino de siempre:
+   * propuesta → `aceptarPropuesta` → /api/chat → Python, dueño de las cantidades. Los topes (8 piezas, 8 colores) se
+   * dicen antes de llamar al modelo. El plan de antes no se toca hasta que llega el nuevo, que lo deja como versión
+   * anterior; si falla, sigue vigente y hay «Reintentar».
+   */
+  async function agregarIdeaAlPlan(decoracion: DecoracionSempertex, origen: "eleccion" | "carrusel", mensajeOrigenId: string): Promise<void> {
+    if (cargandoRef.current) return;
+    const vigente = planVigente;
+    const resultado = propuestaAgregarIdea(decoracion, vigente?.widget.plan ?? null);
+    const datos = { id: decoracion.id, titulo: decoracion.titulo, origen, mensajeId: mensajeOrigenId, plan_hash_base: vigente?.widget.plan.plan_hash ?? null };
+    if (!resultado.ok) {
+      registrarAccion("idea.agregar_bloqueada", { ...datos, motivo: resultado.motivo, mensaje: resultado.mensaje });
+      setAnuncio(resultado.mensaje);
+      return;
+    }
+    registrarAccion("idea.agregar_al_plan", {
+      ...datos,
+      piezas_antes: resultado.piezasAntes, piezas_despues: resultado.piezasDespues, nuevas: resultado.nuevas,
+      colores: resultado.propuesta.colores, colores_nuevos: resultado.coloresNuevos,
+    });
+    limpiarAvisos();
+    setAgregandoId(decoracion.id);
+    const idPlan = nuevoId();
+    agregar([
+      { id: nuevoId(), role: "user", content: vigente ? `Agrega «${decoracion.titulo}» a mi plan.` : `Arma mi plan con «${decoracion.titulo}».` },
+      { id: idPlan, role: "assistant", content: resultado.propuesta.frase, widgets: [{ tipo: "propuesta", propuesta: resultado.propuesta, estado: "resolviendo" }] },
+    ]);
+    pedirFinal();
+    const planAnterior = vigente ? planActualDesdePlan(vigente.widget.plan) : null;
+    const idea: IdeaAgregada = { id: decoracion.id, titulo: decoracion.titulo, sumada: Boolean(vigente) };
+    try {
+      // Un plan que salió de una foto se rehace por el camino de siempre, que conserva la foto y su lectura.
+      const exacto = vigente?.widget.fotoInspiracion ? "fallo" : await planExactoDeIdea(idPlan, decoracion, vigente?.widget.plan ?? null, idea, resultado.propuesta, planAnterior);
+      if (exacto !== "fallo") {
+        registrarAccion(exacto === "ok" ? "idea.agregada" : "idea.agregar_sin_plan", { id: decoracion.id, estado: exacto, exacto: true });
+        return;
+      }
+      const estado = await aceptarPropuesta(resultado.propuesta, {
+        mensajeId: idPlan,
+        idea,
+        ...(planAnterior ? { planAnterior } : {}),
+      });
+      registrarAccion(estado === "ok" ? "idea.agregada" : "idea.agregar_sin_plan", { id: decoracion.id, estado });
+    } finally {
+      setAgregandoId(null);
+    }
+  }
+
+  /** «Reintentar» de un plan que no llegó; si traía una idea, su botón vuelve a decir «Agregando a tu plan…». */
+  async function reintentarPlan(accion: Extract<AccionFallo, { tipo: "plan" }>): Promise<void> {
+    const { idea } = accion;
+    if (idea && !cargandoRef.current) setAgregandoId(idea.id);
+    try {
+      const estado = await aceptarPropuesta(accion.propuesta, { mensajeId: accion.mensajeId, ...(accion.planAnterior ? { planAnterior: accion.planAnterior } : {}), ...(idea ? { idea } : {}) });
+      if (idea) registrarAccion(estado === "ok" ? "idea.agregada" : "idea.agregar_sin_plan", { id: idea.id, estado, reintento: true });
+    } finally {
+      if (idea) setAgregandoId(null);
+    }
+  }
+
+  /** Lo que muestra el botón «Agregar al plan» de una idea con el plan vigente de este momento. */
+  function datosAgregar(decoracion: DecoracionSempertex): DatosAgregarIdea | undefined {
+    const estado = estadoAgregarIdea(decoracion, planVigente?.widget.plan ?? null, { ideasDelPlan: planVigente?.widget.ideas ?? [], agregandoId });
+    if (!estado) return undefined;
+    return {
+      etiqueta: planVigente ? "Agregar a mi plan" : "Crear mi plan con esta idea",
+      etiquetaCargando: planVigente ? "Agregando a tu plan…" : "Armando tu plan…",
+      estado: estado.estado,
+      ...(estado.ayuda ? { ayuda: estado.ayuda } : {}),
+      ...(estado.motivo ? { motivo: estado.motivo } : {}),
+      deshabilitado: cargando,
+    };
+  }
+
+  /** «Ver mi plan» desde la idea ya agregada: lleva a la tarjeta del plan vigente. */
+  function verPlanDesdeIdea(id: string): void {
+    if (!planVigente) return;
+    registrarAccion("idea.ver_plan", { id, mensajeId: planVigente.mensajeId });
+    mostrarMensaje(planVigente.mensajeId);
   }
 
   function elegirOpcion(opcion: OpcionGuiada, mensajeId?: string): void {
@@ -1018,14 +1217,21 @@ export function VistaGuiada() {
     registrarAccion("fallo.reintentar", { tipo: accion.tipo, ...(accion.tipo === "turno" ? { texto: accion.texto } : {}) });
     switch (accion.tipo) {
       case "turno": void enviar(accion.texto, { ...accion.opciones, reintentar: true }); return;
-      case "plan": void aceptarPropuesta(accion.propuesta, { mensajeId: accion.mensajeId, ...(accion.planAnterior ? { planAnterior: accion.planAnterior } : {}) }); return;
-      case "foto": void aceptarPlanFoto(accion.referenciaId, { mensajeId: accion.mensajeId }); return;
+      case "plan": void reintentarPlan(accion); return;
+      case "foto": void aceptarPlanFoto(accion.referenciaId, { mensajeId: accion.mensajeId, ...(accion.sinRemate ? { sinRemate: true } : {}) }); return;
       case "subir-foto": setFallo(null); archivoRef.current?.click(); return;
     }
   }
 
-  function alternativa(tipo: AlternativaFallo): { etiqueta: string; onElegir: () => void } {
+  function alternativa(tipo: AlternativaFallo, actual: Fallo): { etiqueta: string; onElegir: () => void } {
     if (tipo === "otros-colores") return { etiqueta: "Usar otros colores", onElegir: () => { setFallo(null); pedirEscritura(PLACEHOLDER_CAMBIO, "Quiero otros colores: "); } };
+    // Las dos salidas de un plan de foto que no salió: lo mismo que «Ver ideas parecidas» de la lectura, y subir otra.
+    if (tipo === "idea-parecida") {
+      const referenciaId = actual.accion.tipo === "foto" ? actual.accion.referenciaId : undefined;
+      const frase = referenciaId ? mensajes.find((mensaje) => mensaje.id === referenciaId)?.referencia?.frase : undefined;
+      return { etiqueta: "Elegir una idea parecida del catálogo", onElegir: () => { setFallo(null); registrarAccion("fallo.alternativa", { tipo }); void enviar((frase ? `Muéstrame ideas parecidas a mi foto: ${frase}` : "Muéstrame ideas parecidas a mi foto.").slice(0, 600)); } };
+    }
+    if (tipo === "otra-foto") return { etiqueta: "Probar con otra foto", onElegir: () => { setFallo(null); registrarAccion("fallo.alternativa", { tipo }); archivoRef.current?.click(); } };
     return { etiqueta: "Elegir otra pieza", onElegir: () => { setFallo(null); void enviar(PROPONME); } };
   }
 
@@ -1036,7 +1242,7 @@ export function VistaGuiada() {
       {...(actual.etiqueta ? { reintentarEtiqueta: actual.etiqueta } : {})}
       onReintentar={() => reintentar(actual.accion)}
       onCerrar={() => setFallo(null)}
-      {...(actual.alternativas?.length ? { alternativas: actual.alternativas.map(alternativa) } : {})}
+      {...(actual.alternativas?.length ? { alternativas: actual.alternativas.map((tipo) => alternativa(tipo, actual)) } : {})}
     />;
   }
 
@@ -1048,10 +1254,24 @@ export function VistaGuiada() {
         // Solo la elegida EN ESTE carrusel: con «otras ideas» que repetían la ya elegida, el carrusel nuevo salía marcado y sin
         // botones (ni «Me gusta esta» ni las salidas de abajo), un callejón sin salida.
         const elegidaId = widget.elegidaId ?? null;
-        return <CarruselDecoraciones key={clave} decoraciones={widget.decoraciones} activo={activo && !elegidaId} elegidaId={elegidaId} onElegir={(decoracion) => elegirDecoracion(decoracion, mensajeId)} onNinguna={ningunaMeConvence} onProponer={() => void enviar(PROPONME)} onSubirFoto={() => archivoRef.current?.click()} />;
+        // «Agregar a mi plan» en el carrusel solo con un plan vigente (sin plan, «Me gusta esta» lleva a crearlo).
+        const vigenteAhora = planVigente;
+        const estadosAgregar: Record<string, EstadoAgregarIdea | null> | undefined = vigenteAhora
+          ? Object.fromEntries(widget.decoraciones.map((decoracion) => [decoracion.id, estadoAgregarIdea(decoracion, vigenteAhora.widget.plan, { ideasDelPlan: vigenteAhora.widget.ideas ?? [], agregandoId })?.estado ?? null]))
+          : undefined;
+        return <CarruselDecoraciones
+          key={clave} decoraciones={widget.decoraciones} activo={activo && !elegidaId} elegidaId={elegidaId}
+          onElegir={(decoracion) => elegirDecoracion(decoracion, mensajeId)} onNinguna={ningunaMeConvence} onProponer={() => void enviar(PROPONME)} onSubirFoto={() => archivoRef.current?.click()}
+          estadosAgregar={estadosAgregar} agregarDeshabilitado={cargando}
+          onAgregar={vigenteAhora ? (decoracion) => void agregarIdeaAlPlan(decoracion, "carrusel", mensajeId) : undefined}
+        />;
       }
       case "seleccion":
-        return <TarjetaEleccion key={clave} decoracion={widget.decoracion} />;
+        return <TarjetaEleccion
+          key={clave} decoracion={widget.decoracion} agregar={datosAgregar(widget.decoracion)}
+          onAgregar={() => void agregarIdeaAlPlan(widget.decoracion, "eleccion", mensajeId)}
+          onVerPlan={planVigente ? () => verPlanDesdeIdea(widget.decoracion.id) : undefined}
+        />;
       case "opciones":
         return <ChipsOpciones key={clave} activo={activo && !widget.elegida} elegida={widget.elegida ?? null} hechas={hechasOpciones} deshabilitado={cargando} onElegir={(opcion) => elegirOpcion(opcion, mensajeId)} />;
       case "uso":
@@ -1083,6 +1303,18 @@ export function VistaGuiada() {
         const imagen = imagenesLocales[mensajeId] ?? widget.imagen ?? null;
         const estadoImagen: EstadoImagen = imagenEnCurso === mensajeId ? "cargando" : widget.errorImagen ? "error" : imagen ? "lista" : "nada";
         return <div key={clave} className="w-full">
+          {widget.agregada && (
+            <motion.p
+              initial={reducido || restaurados.has(mensajeId) ? false : { opacity: 0, y: 6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: DUR.media, ease: EASE_SALIDA }}
+              className={`mt-3 flex items-start gap-2 rounded-2xl bg-exito-suave px-3.5 py-2.5 text-sm font-medium text-exito ${vigente ? "" : "opacity-70"}`}
+              data-testid="idea-agregada"
+            >
+              <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>{textoIdeaAgregada(widget.agregada.titulo, widget.agregada.total, widget.totalAnterior !== undefined)}</span>
+            </motion.p>
+          )}
           <TarjetaPlan
             plan={widget.plan}
             {...(widget.cotizacion ? { cotizacion: widget.cotizacion } : {})}
@@ -1102,6 +1334,8 @@ export function VistaGuiada() {
             {...(widget.ajustes?.length ? { ajustes: widget.ajustes } : {})}
             {...(vigente ? {
               onPlanAjustado: (nuevo: PlanGuiado, cotizacionNueva: unknown, ajuste: AjustePublicado) => ajustarPlan(mensajeId, nuevo, cotizacionNueva, ajuste),
+              // Los cambios rápidos que rehace el asistente, desde «Ajustar mi plan» (los mismos de antes como chips).
+              onSugerencia: (texto: string) => elegirRapida(texto),
             } : {})}
           />
         </div>;
@@ -1283,28 +1517,54 @@ function ultimoIndiceConReferencia(lista: readonly Mensaje[]): number {
 }
 
 /**
- * La lectura de la foto de la que salió el plan de `mensajeId`: la última foto leída ANTES de ese mensaje («Sí, armémoslo»
- * siempre deja el plan después de su lectura). Vive en el mensaje guardado, así que sobrevive a recargar aunque la foto no.
+ * El mensaje con la lectura de la foto de la que salió el plan de `mensajeId`: el que el plan recuerda (`referenciaId`,
+ * que pasa a cada versión rehecha) o, en un plan guardado antes de recordarlo, la última foto leída ANTES de ese mensaje
+ * («Sí, armémoslo» siempre deja el plan después de su lectura). Vive en el mensaje guardado, así que sobrevive a recargar
+ * aunque la foto no.
  */
-function lecturaDelPlan(lista: readonly Mensaje[], mensajeId: string): Mensaje["referencia"] {
+function mensajeLecturaDelPlan(lista: readonly Mensaje[], mensajeId: string): Mensaje | undefined {
   const indicePlan = lista.findIndex((mensaje) => mensaje.id === mensajeId);
-  for (let indice = indicePlan - 1; indice >= 0; indice -= 1) if (lista[indice]!.referencia) return lista[indice]!.referencia;
+  const recordado = planDelMensaje(lista[indicePlan])?.referenciaId;
+  const delPlan = recordado ? lista.find((mensaje) => mensaje.id === recordado && mensaje.referencia) : undefined;
+  if (delPlan) return delPlan;
+  for (let indice = indicePlan - 1; indice >= 0; indice -= 1) if (lista[indice]!.referencia) return lista[indice];
   return undefined;
+}
+
+function lecturaDelPlan(lista: readonly Mensaje[], mensajeId: string): Mensaje["referencia"] {
+  return mensajeLecturaDelPlan(lista, mensajeId)?.referencia;
+}
+
+type FotoDelPlan = {
+  referenciaId: string;
+  blueprint: NonNullable<Mensaje["referencia"]>["blueprint"];
+  /** La foto, si sigue en memoria (no sobrevive a recargar; la lectura sí). */
+  imagen?: FotoInspiracion;
+  /** Cada pieza del plan con su elemento de la foto y lo que el plan no arma (`referenciaDelPlan`). */
+  referencia: ReferenciaDelPlan | null;
+};
+
+/** La foto de la que salió el plan vigente, para rehacerlo sin perderla; null si el plan no salió de una foto. */
+function fotoDelPlan(lista: readonly Mensaje[], vigente: { mensajeId: string; widget: WidgetPlan } | null, fotos: ReadonlyMap<string, FotoInspiracion>): FotoDelPlan | null {
+  if (!vigente?.widget.fotoInspiracion) return null;
+  const lectura = mensajeLecturaDelPlan(lista, vigente.mensajeId);
+  if (!lectura?.referencia) return null;
+  const imagen = fotos.get(vigente.mensajeId) ?? fotos.get(lectura.id);
+  return { referenciaId: lectura.id, blueprint: lectura.referencia.blueprint, ...(imagen ? { imagen } : {}), referencia: referenciaDelPlan(vigente.widget.plan) };
 }
 
 function totalDePlan(plan: PlanGuiado): number {
   try { return generarPasosPlan(plan).total; } catch { return 0; }
 }
 
+/** El aviso de «Agregar al plan» (en la tarjeta y para el lector de pantalla). `sumada`: la idea se sumó a un plan que ya había. */
+function textoIdeaAgregada(titulo: string, total: number, sumada: boolean): string {
+  return sumada ? `Agregué «${titulo}» a tu plan: ahora tiene ${total} globos.` : `Armé tu plan con «${titulo}»: tiene ${total} globos.`;
+}
+
 function conHecha(hechas: WidgetPlan["hechas"], accion: AccionPlan): NonNullable<WidgetPlan["hechas"]> {
   const actuales = hechas ?? [];
   return actuales.includes(accion) ? actuales : [...actuales, accion];
-}
-
-/** Sugerencias de «Cambiar algo» según lo que tiene el plan. */
-function sugerenciasDeCambio(plan: PlanGuiado): string[] {
-  const piezas = plan.plan.estructuras.length;
-  return ["Otros colores", ...(piezas > 1 ? ["Quitar una pieza"] : []), "Agregar una pieza", "Hacerla más grande", "Hacerla más sencilla"];
 }
 
 function textoBusquedaCiudad(pregunta: PreguntaCiudad, ciudad: string, hayPlan: boolean): string {

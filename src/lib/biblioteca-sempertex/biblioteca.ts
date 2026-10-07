@@ -47,7 +47,16 @@ const sinonimosEvento: string[][] = [
   ["dia de la madre", "dia de las madres", "dia de la mama", "dia de mama"],
 ];
 // Las temáticas sin decoración propia (princesas, videojuegos…) se resuelven por sus colores típicos hacia las del catálogo.
-const sinonimosColor: string[][] = [
+// Personajes sin decoración propia (probador, 2026-10-06: «Spiderman» mostraba primero naranja y negro y rosa y dorado):
+// sus colores típicos ordenan las ideas cercanas (`ordenarPorColores`) y se le dicen al cliente (`coloresTipicosDe`).
+const PERSONAJES_COLOR: Readonly<Record<string, readonly string[]>> = {
+  rojo: ["spiderman", "spider man", "hombre arana", "spidey", "mario bros", "capitan america", "superman", "paw patrol", "mickey", "mickey mouse", "minnie", "cars", "rayo mcqueen"],
+  azul: ["spiderman", "spider man", "hombre arana", "spidey", "sonic", "mario bros", "capitan america", "superman", "paw patrol", "stitch", "bluey"],
+  negro: ["spiderman", "spider man", "hombre arana", "spidey", "batman", "mickey", "mickey mouse", "minnie"],
+  rosa: ["barbie", "minnie"],
+  blanco: ["capitan america"],
+};
+const sinonimosColorBase: string[][] = [
   ["rosa", "rosado", "rosada", "fucsia", "princesa", "princesas", "hada", "hadas", "unicornio", "unicornios", "mariposa", "mariposas"],
   ["dorado", "oro", "princesa", "princesas", "corona", "reina", "realeza"],
   ["azul", "celeste", "frozen", "hielo", "nieve", "invierno", "espacio", "galaxia", "estrella", "estrellas", "planeta", "planetas", "mar", "marinero", "sirena", "sirenas"],
@@ -60,6 +69,7 @@ const sinonimosColor: string[][] = [
   ["lila", "morado", "violeta", "purpura", "unicornio", "unicornios", "hada", "hadas", "sirena", "sirenas"],
   ["arcoiris", "multicolor", "colores vivos", "vivos", "neon", "carnaval", "festivo", "festivos", "alegre", "alegres", "colorido", "colorida", "coloridos", "videojuego", "videojuegos", "gamer", "superheroe", "superheroes", "heroe", "heroes", "circo", "payaso", "fiesta infantil"],
 ];
+const sinonimosColor: string[][] = sinonimosColorBase.map((grupo) => [...grupo, ...(PERSONAJES_COLOR[grupo[0]!] ?? [])]);
 
 function prioridadOrigen(decoracion: DecoracionSempertex): number {
   return decoracion.origen === "referencia_real" ? 1 : 0;
@@ -115,7 +125,7 @@ function motivoDe(decoracion: DecoracionSempertex): string[] | undefined {
 }
 
 /** Quita las ideas de un motivo que el cliente no nombró. */
-function sinMotivosAjenos(catalogo: DecoracionSempertex[], entrada: { evento?: string; tematica?: string }): DecoracionSempertex[] {
+export function sinMotivosAjenos(catalogo: DecoracionSempertex[], entrada: { evento?: string; tematica?: string }): DecoracionSempertex[] {
   const consulta = normalizarBusqueda(`${entrada.evento ?? ""} ${entrada.tematica ?? ""}`);
   return catalogo.filter((decoracion) => { const motivo = motivoDe(decoracion); return !motivo || contieneAlguno(consulta, motivo); });
 }
@@ -195,6 +205,10 @@ export function buscarDecoracionesSempertex(entradaCruda: { evento?: string; eda
     const gruposReferencia = sinonimosColor.filter((grupo) => contieneAlguno(temaConsulta, grupo) || exactas.some((item) => contieneAlguno(item.temaEvento, grupo)));
     const afinidad = (item: (typeof puntajes)[number]): number => gruposReferencia.filter((grupo) => contieneAlguno(item.temaEvento, grupo)).length;
     cercanas.sort((a, b) => afinidad(b) - afinidad(a));
+  } else {
+    // Sin ninguna de lo pedido, las parecidas van por los colores típicos de lo pedido («Spiderman» → rojo, azul y negro).
+    const gruposPedidos = sinonimosColor.filter((grupo) => contieneAlguno(temaConsulta, grupo));
+    if (gruposPedidos.length) cercanas.splice(0, cercanas.length, ...ordenarPorColores(cercanas, gruposPedidos));
   }
   const tope = Math.max(IDEAS_MINIMAS, Math.min(exactas.length || elegidas.length, 6));
   const vistos = new Set<string>();
@@ -209,6 +223,87 @@ export function buscarDecoracionesSempertex(entradaCruda: { evento?: string; eda
   return resultado;
 }
 
+/**
+ * Ordena ideas parecidas por los colores pedidos: primero las que llevan alguno, eligiendo cada vez la que suma un
+ * color pedido que aún no está a la vista (así salen rojo, azul y negro, y no tres azules) y, a igualdad, la que menos
+ * colores ajenos nombra en su título. Las que no llevan ninguno quedan detrás, en su orden.
+ */
+function ordenarPorColores<T extends { decoracion: DecoracionSempertex; temaEvento: string }>(items: readonly T[], gruposPedidos: readonly string[][]): T[] {
+  const datos = items.map((item, indice) => {
+    const cubre = gruposPedidos.flatMap((grupo, posicion) => (contieneAlguno(item.temaEvento, grupo) ? [posicion] : []));
+    // El título dice los colores que se ven («Semiarco rojo, blanco y dorado»); la temática a veces es más amplia.
+    const titulo = normalizarBusqueda(item.decoracion.titulo);
+    const ajenos = sinonimosColor.filter((grupo) => !gruposPedidos.includes(grupo) && contieneAlguno(titulo, grupo)).length;
+    return { item, indice, cubre, ajenos };
+  });
+  const conColor = datos.filter((dato) => dato.cubre.length > 0);
+  const vistos = new Set<number>();
+  const ordenadas: T[] = [];
+  while (conColor.length) {
+    let mejor = 0;
+    const valor = (dato: (typeof datos)[number]) => [dato.cubre.filter((posicion) => !vistos.has(posicion)).length, dato.cubre.length * 2 - dato.ajenos, -dato.indice];
+    for (let posicion = 1; posicion < conColor.length; posicion += 1) {
+      const [a1, a2, a3] = valor(conColor[posicion]!);
+      const [b1, b2, b3] = valor(conColor[mejor]!);
+      if (a1! > b1! || (a1 === b1 && (a2! > b2! || (a2 === b2 && a3! > b3!)))) mejor = posicion;
+    }
+    const [elegido] = conColor.splice(mejor, 1);
+    elegido!.cubre.forEach((posicion) => vistos.add(posicion));
+    ordenadas.push(elegido!.item);
+  }
+  return [...ordenadas, ...datos.filter((dato) => dato.cubre.length === 0).map((dato) => dato.item)];
+}
+
+const NOMBRE_COLOR_TIPICO: Readonly<Record<string, string>> = { arcoiris: "arcoíris", plateado: "plateado", nude: "nude" };
+
+/**
+ * Los colores típicos de una temática que no es un color («Spiderman» → rojo, azul y negro; «princesas» → rosa y
+ * dorado), en el orden de la biblioteca. Vacío si la temática ya nombra un color o no se le conocen colores.
+ */
+export function coloresTipicosDe(tematica: string): string[] {
+  const consulta = normalizarBusqueda(tematica);
+  if (!consulta) return [];
+  const nombraColor = sinonimosColor.some((grupo) => contieneAlguno(consulta, [grupo[0]!]));
+  if (nombraColor) return [];
+  // El orden de los personajes manda («Spiderman» → rojo, azul y negro: el rojo es el que más se ve).
+  const orden = (color: string): number => { const posicion = Object.keys(PERSONAJES_COLOR).indexOf(color); return posicion < 0 ? 99 : posicion; };
+  return sinonimosColor.filter((grupo) => contieneAlguno(consulta, grupo)).map((grupo) => grupo[0]!)
+    .sort((a, b) => orden(a) - orden(b))
+    .map((color) => NOMBRE_COLOR_TIPICO[color] ?? color);
+}
+
+/** Cabezas de los grupos temáticos que son un motivo (no un color ni un evento): los que el cliente cambia a mitad. */
+const MOTIVOS_TEMATICOS = new Set(["princesa", "dinosaurio", "superheroe", "unicornio", "espacio", "safari", "tropical", "futbol", "san valentin", "halloween", "navidad", "dia de la madre", "flores"]);
+
+/**
+ * Motivos y personajes que nombra un texto, con la forma en que el cliente los escribió (normalizada): «mi hijo ahora
+ * quiere dinosaurios» → [{ grupo: "dinosaurio", palabra: "dinosaurios" }]; «le encanta spiderman» → [{ grupo:
+ * "spiderman", palabra: "spiderman" }]. Para saber si cambió de temática a mitad de la conversación.
+ */
+export function motivosNombrados(texto: string): Array<{ grupo: string; palabra: string }> {
+  const consulta = normalizarBusqueda(texto);
+  if (!consulta) return [];
+  const encontrados: Array<{ grupo: string; palabra: string }> = [];
+  for (const grupo of sinonimosTematicos) {
+    if (!MOTIVOS_TEMATICOS.has(normalizarBusqueda(grupo[0]!))) continue;
+    // La forma más larga primero: «dinosaurios» antes que «dino».
+    const palabra = [...grupo].map(normalizarBusqueda).sort((a, b) => b.length - a.length).find((forma) => ` ${consulta} `.includes(` ${forma} `));
+    if (palabra) encontrados.push({ grupo: normalizarBusqueda(grupo[0]!), palabra });
+  }
+  const personajes = [...new Set(Object.values(PERSONAJES_COLOR).flat())].sort((a, b) => b.length - a.length);
+  for (const personaje of personajes) {
+    const forma = normalizarBusqueda(personaje);
+    if (` ${consulta} `.includes(` ${forma} `) && !encontrados.some((item) => item.palabra.includes(forma) || forma.includes(item.palabra))) encontrados.push({ grupo: forma, palabra: forma });
+  }
+  return encontrados;
+}
+
+/** ¿Es un personaje (nombre propio: «spiderman», «mickey»)? Se escribe con mayúscula al decírselo al cliente. */
+export function esPersonaje(texto: string): boolean {
+  const consulta = normalizarBusqueda(texto);
+  return Object.values(PERSONAJES_COLOR).some((lista) => lista.some((personaje) => normalizarBusqueda(personaje) === consulta));
+}
+
 /** Mínimo de ideas que se intenta mostrar en el carrusel (exactas primero, luego cercanas). */
 const IDEAS_MINIMAS = 4;
 
@@ -218,7 +313,7 @@ function tituloComparable(titulo: string): string {
 }
 
 /** Fuera de un cumpleaños, una idea titulada «Cumpleaños …» se presenta como «Fiesta …» (solo en la copia que se devuelve). */
-function tituloParaEvento(titulo: string, evento: string | undefined): string {
+export function tituloParaEvento(titulo: string, evento: string | undefined): string {
   if (!evento?.trim() || normalizarBusqueda(evento).includes("cumple")) return titulo;
   return titulo.replace(/^cumplea(?:ñ|n)os(?=\s|$)/i, "Fiesta").replace(/\s+(?:de|para)\s+cumplea(?:ñ|n)os$/i, "");
 }

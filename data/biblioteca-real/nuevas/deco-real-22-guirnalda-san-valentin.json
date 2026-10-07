@@ -27,34 +27,90 @@
   ],
   "materiales": [
     {
+      "variantId": "46594236219687",
+      "sku": "B2B-20000446",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Fashion Rojo — R-5 / PAQUETE X 50 · R-5 · rojo",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
       "variantId": "46594236416295",
       "sku": "B2B-20000732",
-      "cantidad": 7,
+      "cantidad": 5,
       "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "46594342060327",
+      "sku": "B2B-20017128",
+      "cantidad": 3,
+      "nota": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-5 / PAQUETE X 50 · R-5 · rosa claro",
       "origenCantidad": "plan_python",
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
     },
     {
       "variantId": "46594342453543",
       "sku": "B2B-20017131",
-      "cantidad": 12,
+      "cantidad": 7,
       "nota": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-12 / PAQUETE X 50 · R-12 · rosa claro",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "46594342551847",
+      "sku": "B2B-20017134",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-18 / PAQUETE X 6 · R-18 · rosa claro",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "49475777986855",
+      "sku": "B2B-20019337",
+      "cantidad": 3,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 50 · R-5 · blanco perlado",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "49475778019623",
+      "sku": "B2B-20019347",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6 · R-18 · blanco perlado",
       "origenCantidad": "plan_python",
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
     },
     {
       "variantId": "49475778216231",
       "sku": "B2B-20019344",
-      "cantidad": 12,
+      "cantidad": 7,
       "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-12 / PAQUETE X 50 · R-12 · blanco perlado",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "50030991147303",
+      "sku": "B2B-20019698",
+      "cantidad": 8,
+      "nota": "B2b Globo Fashion Rosa — R-5 / PAQUETE X 50 · R-5 · rosa fuerte",
       "origenCantidad": "plan_python",
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
     },
     {
       "variantId": "50030991311143",
       "sku": "B2B-20019705",
-      "cantidad": 33,
+      "cantidad": 21,
       "nota": "B2b Globo Fashion Rosa — R-12 / PAQUETE X 50 · R-12 · rosa fuerte",
+      "origenCantidad": "plan_python",
+      "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+    },
+    {
+      "variantId": "50030991343911",
+      "sku": "B2B-20019708",
+      "cantidad": 2,
+      "nota": "B2b Globo Fashion Rosa — R-18 / PAQUETE X 6 · R-18 · rosa fuerte",
       "origenCantidad": "plan_python",
       "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
     },
@@ -89,6 +145,14 @@
       "nota": "B2b Cortina Metalica Roja — PAQUETE X 1 · rojo",
       "origenCantidad": "estimado_foto",
       "detalleCantidad": "estimado a partir de la foto (cortina de tiras bajo la guirnalda; no es globo)"
+    },
+    {
+      "variantId": "46594189656359",
+      "sku": "B2B-20001351",
+      "cantidad": 1,
+      "nota": "B2b Globo Latex Corazon Fashion Rojo — CORAZON 12 / PAQUETE X 12 · C-12 · rojo",
+      "origenCantidad": "estimado_foto",
+      "detalleCantidad": "estimado a partir de la foto (segundo corazón rojo liso, arriba a la izquierda junto al de «Te amo»)"
     }
   ],
   "pasos": [
@@ -98,7 +162,7 @@
     },
     {
       "orden": 2,
-      "texto": "Infla los globos de 12 pulgadas a tamaños distintos (algunos bien llenos y otros a medio inflar) para que la guirnalda se vea natural."
+      "texto": "Infla los globos de 5, 12 y 18 pulgadas (algunos bien llenos y otros a medio inflar) para que la guirnalda se vea natural."
     },
     {
       "orden": 3,
@@ -106,11 +170,11 @@
     },
     {
       "orden": 4,
-      "texto": "Con los globos rosa fuerte más pequeños forma una tira que cuelgue por debajo de la guirnalda, sobre la cortina."
+      "texto": "Con los globitos rosa fuerte de 5 pulgadas forma una tira que cuelgue por debajo de la guirnalda, sobre la cortina."
     },
     {
       "orden": 5,
-      "texto": "Coloca arriba los dos globos metalizados «LOVE» y pega los corazones entre los grupos: el rojo «Te amo» a la izquierda y el rosa a la derecha."
+      "texto": "Coloca arriba los dos globos metalizados «LOVE» y pega los corazones entre los grupos: los dos rojos (uno con «Te amo») a la izquierda y el rosa a la derecha."
     },
     {
       "orden": 6,

@@ -13,8 +13,72 @@ type AparienciaColor = {
    * analizador nombró y que esa lectura también pone en la pieza —en un tramo (`colores`) o salpicado (`motas`)— es
    * parte real de la pieza aunque los píxeles no lo separen (ver `coloresDominantesReferencia`).
    */
-  patron_color?: { colores: readonly string[]; motas?: readonly string[] };
+  patron_color?: { colores: readonly string[]; motas?: readonly string[]; modo?: string; pesos?: readonly number[]; confianza?: number };
 };
+
+/**
+ * Colores sin tono propio que la medida en píxeles no sabe separar entre sí ni de lo que hay detrás de la pieza:
+ * un blanco perlado bajo luz morada se mide plata, un rosa pastel bajo luz cálida se mide beige, el panel crema o la
+ * cortina que caen dentro de la caja se miden como globos, y un cromado devuelve el gris de la sala.
+ */
+const NEUTROS_CONFUNDIBLES: ReadonlySet<string> = new Set(["blanco", "plateado", "gris", "beige", "crema", "nude", "champagne", "transparente"]);
+/** Los modos de `patron_color` cuyos `pesos` son la parte de cada color en la pieza (`lectura-unica.ts`). */
+const MODOS_CON_PARTES: ReadonlySet<string> = new Set(["aleatorio", "bloques"]);
+/** La misma barra que el resto de la lectura de la disposición (`adjuntarPistasPatron`, `validar_pistas`). */
+const CONFIANZA_DISPOSICION = 0.5;
+
+export type PartesColorPieza = {
+  /** Cada color nombrado con su parte, de mayor a menor; los que ninguna fuente pesa no salen. */
+  partes: Array<{ color: string; share: number }>;
+  fuente: "medida" | "disposicion" | "ninguna";
+};
+
+/**
+ * Cuánto lleva la pieza de cada color que el analizador nombró, con UNA sola fuente: la medida en píxeles
+ * (`measured_colors`) o la lectura de la disposición (`patron_color.pesos`).
+ *
+ * Manda la medida, que es más fiel que cualquier texto, salvo en el único caso en que se sabe que se equivoca: cuando
+ * pone delante un neutro (`NEUTROS_CONFUNDIBLES`) que la lectura de la disposición, mirando los globos, no pone
+ * delante. Medido en el banco de fotos del 2026-10-06: la guirnalda rosa y dorada de la foto 02 medía «beige 44 %»
+ * (los paneles crema dentro de la caja) y la lectura decía rosado 60 %; las columnas rosa y blanca de la foto 01
+ * medían «plata 57 %» (el blanco perlado bajo luz morada) y la lectura decía rosado 50 %. Las dos veces el plan salió
+ * con el neutro de color principal y la imagen con el color equivocado. Entonces mandan las partes de la lectura
+ * (solo con confianza >= 0,5, en los modos cuyos pesos son partes y sumadas por color), y solo para los colores que
+ * el analizador nombró, como siempre.
+ */
+export function partesDeColorPieza(apariencia: AparienciaColor): PartesColorPieza {
+  const nombrados = new Set(coloresObservados(apariencia));
+  const medidas = [...(apariencia.measured_colors ?? [])]
+    .filter((entrada) => entrada.share > 0 && nombrados.has(entrada.color))
+    .sort((una, otra) => otra.share - una.share)
+    .filter((entrada, indice, todas) => todas.findIndex((otra) => otra.color === entrada.color) === indice);
+  const disposicion = partesDeLaDisposicion(apariencia.patron_color, nombrados);
+  const dominanteMedido = medidas[0]?.color;
+  const dominanteLeido = disposicion[0]?.color;
+  if (disposicion.length >= 2 && dominanteMedido && NEUTROS_CONFUNDIBLES.has(dominanteMedido) && dominanteLeido !== dominanteMedido) {
+    return { partes: disposicion, fuente: "disposicion" };
+  }
+  if (medidas.length > 0) return { partes: medidas, fuente: "medida" };
+  return { partes: [], fuente: "ninguna" };
+}
+
+/** Las partes que da la lectura de la disposición, sumadas por color y normalizadas sobre los colores nombrados. */
+function partesDeLaDisposicion(patron: AparienciaColor["patron_color"], nombrados: ReadonlySet<string>): Array<{ color: string; share: number }> {
+  if (!patron?.modo || !MODOS_CON_PARTES.has(patron.modo) || (patron.confianza ?? 0) < CONFIANZA_DISPOSICION) return [];
+  if (!patron.pesos || patron.pesos.length !== patron.colores.length) return [];
+  const suma = new Map<string, number>();
+  patron.colores.forEach((color, indice) => {
+    if (nombrados.has(color)) suma.set(color, (suma.get(color) ?? 0) + patron.pesos![indice]!);
+  });
+  const total = [...suma.values()].reduce((acumulado, peso) => acumulado + peso, 0);
+  // La lectura de la disposición solo sirve si habla de los mismos colores que el analizador nombró: con menos del
+  // 60 % de su peso en ellos (la columna de la foto 09 nombrada «pastel orange, mint, pastel blue» y leída «rosado,
+  // blanco, azul, dorado») sus partes, renormalizadas, inventarían un reparto que nadie leyó.
+  const totalLeido = patron.pesos.reduce((acumulado, peso) => acumulado + peso, 0);
+  if (total <= 0 || total < 0.6 * totalLeido) return [];
+  return [...suma].map(([color, peso]) => ({ color, share: Number((peso / total).toFixed(4)) }))
+    .sort((una, otra) => otra.share - una.share || (una.color < otra.color ? -1 : 1));
+}
 
 /**
  * Dominant colors of a reference photo versus the colors a plan actually buys
@@ -306,8 +370,9 @@ function coloresNombradosOrdenados(apariencia: AparienciaColor): string[] {
   const unico = colorUnico(apariencia);
   if (unico) return [unico];
   const nombrados = coloresObservados(apariencia);
-  const medidos = [...(apariencia.measured_colors ?? [])].sort((uno, otro) => otro.share - uno.share).map((entrada) => entrada.color);
-  const vistos = medidos.filter((color, indice) => nombrados.includes(color) && medidos.indexOf(color) === indice);
+  // El orden de la parte de cada color: la medida o, cuando la medida pone delante un neutro que la lectura de la
+  // disposición no, esa lectura (`partesDeColorPieza`, banco de fotos 01 y 02).
+  const vistos = partesDeColorPieza(apariencia).partes.map((entrada) => entrada.color).filter((color) => nombrados.includes(color));
   return [...vistos, ...nombrados.filter((color) => !vistos.includes(color))];
 }
 
@@ -383,7 +448,8 @@ function coloresMedidosDeFoto(blueprint: Pick<ReferenceBlueprintV2, "elements"> 
     // El área de la caja pondera: un color que domina un elemento diminuto no
     // domina la foto.
     const area = elemento.reference_bbox.width * elemento.reference_bbox.height;
-    for (const entrada of elemento.appearance.measured_colors ?? []) {
+    // La parte de cada color con la misma fuente que ordena la pieza (`partesDeColorPieza`).
+    for (const entrada of partesDeColorPieza(elemento.appearance).partes) {
       if (nombrados.includes(entrada.color)) suma.set(entrada.color, (suma.get(entrada.color) ?? 0) + entrada.share * area);
     }
   }
@@ -515,6 +581,23 @@ export function materialesDeColorInventado<E extends {
 
 export type AcabadoObservadoMaterial = { estructura_id: string; product_id: string; color: string; acabado: string };
 
+/** Palabras de una etiqueta que dicen que el tono es claro y suave: un pastel. */
+const TONO_PASTEL = /\b(?:pastel|light|pale|baby|soft|powder)\b/i;
+
+/**
+ * El acabado que se le exige a un color, con el TONO pastel aparte: una etiqueta mate que dice
+ * «pastel», «light», «pale» o «baby» exige «pastel», que el catálogo no tiene como acabado sino como tono claro y
+ * poco saturado (`aplicarAcabadoReferencia` lo cumple con cualquier globo que no sea de un color vivo). Sin esto
+ * «matte light blue» se compraba como el Fashion Azul 040, un cian intenso, y la imagen salía saturada sobre una
+ * foto pastel (banco de fotos 06 y 09, 2026-10-06). Cromados, perlados y transparentes conservan su acabado.
+ */
+function acabadoConTono(observado: ColorObservadoConAcabado): string | undefined {
+  // Solo sobre una etiqueta mate («matte light blue», «matte pastel pink»): una sin acabado no exige ninguno, tampoco
+  // el pastel (el silencio no es mate).
+  if (observado.acabado === "mate" && TONO_PASTEL.test(observado.etiqueta)) return "pastel";
+  return observado.acabado;
+}
+
 /**
  * El acabado que la foto muestra para el color de cada material.
  *
@@ -556,7 +639,8 @@ export function acabadosObservadosDeMateriales<E extends {
       const color = normalizarColor(observado.color);
       if (!color || COLORES_SIN_TONO.has(color)) continue;
       if (!tonos.includes(color)) tonos.push(color);
-      if (observado.acabado && !acabadoPorColor.has(color)) acabadoPorColor.set(color, observado.acabado);
+      const acabado = acabadoConTono(observado);
+      if (acabado && !acabadoPorColor.has(color)) acabadoPorColor.set(color, acabado);
     }
     if (acabadoPorColor.size === 0) continue;
     for (const material of estructura.materiales) {

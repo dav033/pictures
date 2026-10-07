@@ -2,10 +2,10 @@ import { z } from "zod";
 import { tramosPorTamano, type TramoTamano } from "@/components/plan/BarraTamanos";
 import type { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
-import { tonoCliente } from "@/lib/plan/presentacion-cliente";
-import { hexDelCatalogo } from "@/lib/plan/referencia-sempertex";
-import { HEX_COLORES_V2, PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
-import { colorCliente, conMayuscula } from "./formato";
+import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
+import { familiaSempertex } from "./color-globo";
+import { colorSempertex } from "./color-sempertex";
+import { fichaGlobo } from "./ficha-globo";
 
 /**
  * Lo que «Tu plan» (y la tarjeta de una idea) muestran de cada pieza: sus globos por color y por tamaño. Solo agrupa
@@ -32,6 +32,12 @@ export type LineaGlobo = {
   acabado: string | null;
   /** Un globo liso (sin impresos ni figuras). */
   liso: boolean;
+  /**
+   * El globo Sempertex tal como se pide en el catálogo («Reflex Dorado», «Fashion Palo de Rosa»), sin marca B2B,
+   * tamaño ni paquete; null si la línea no trae su título de catálogo. Con él, las filas y los chips nombran el
+   * producto real y no un color genérico (dueño, 2026-10-06: «esto debería dar globos Sempertex, no genéricos»).
+   */
+  producto: string | null;
   tamano: TamanoGlobo;
   unidades: number;
 };
@@ -45,10 +51,10 @@ export type PiezaVista = {
   lineas: LineaGlobo[];
 };
 
-export type FilaTabla = { clave: string; color: string; etiqueta: string; hex: string; acabado: string | null; pulgadas: number | null; celdas: number[]; total: number };
+/** Una fila de la tabla: un producto Sempertex (o un color, si la línea no trae producto). `etiqueta` es lo que se lee. */
+export type FilaTabla = { clave: string; color: string; etiqueta: string; producto: string | null; hex: string; acabado: string | null; pulgadas: number | null; celdas: number[]; total: number };
 export type TablaGlobos = { columnas: TamanoGlobo[]; filas: FilaTabla[]; totalesColumna: number[]; total: number };
 
-const GRIS = "#9ca3af";
 /** Lo que no es un globo liso: impresos, figuras, frases, números y letras. Misma idea que la regla del plan guiado. */
 const GLOBO_NO_LISO = /impres|estampad|feliz|happy|te amo|love|infinity|bal[oó]n|f[uú]tbol|n[uú]mero|letra|personaje|figura|cortina|confeti/i;
 
@@ -91,13 +97,31 @@ function enPaleta(color: string): (typeof PALETA_COLORES_V2)[number] | null {
   return (PALETA_COLORES_V2 as readonly string[]).includes(clave) ? clave as (typeof PALETA_COLORES_V2)[number] : null;
 }
 
-/** El tono de un color: el del catálogo Sempertex para ese acabado si lo hay; si no, el de la paleta; si no, gris. */
+/**
+ * El tono de un color: el del catálogo Sempertex para ese producto y acabado si lo hay; si no, el de la paleta; si no,
+ * gris. Es el de `colorSempertex`, la fuente única de nombre y tono de la guiada (probador, 2026-10-06).
+ */
 export function hexColor(color: string, opciones: { titulo?: string | null; acabado?: string | null } = {}): string {
   if (color.startsWith("#") && /^#[0-9a-f]{6}$/i.test(color)) return color;
-  const paleta = enPaleta(color);
-  const tono = opciones.titulo ? tonoCliente(color, opciones.titulo) : color;
-  const delCatalogo = hexDelCatalogo(tono, opciones.acabado ?? null);
-  return delCatalogo ?? (paleta ? HEX_COLORES_V2[paleta] : null) ?? GRIS;
+  return colorSempertex(color, opciones).hex;
+}
+
+/**
+ * «B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50» → «Reflex Dorado»: el globo Sempertex tal como se
+ * pide, sin marca B2B, tamaño ni paquete (la misma ficha que la cotización, `ficha-globo.ts`). null si el texto no es
+ * un título del catálogo (sin título no se inventa ningún producto).
+ */
+export function productoSempertex(titulo: string | null | undefined): string | null {
+  const limpio = titulo?.trim();
+  if (!limpio || !(/^b2b\s/i.test(limpio) || familiaSempertex(limpio))) return null;
+  // «Palo De Rosa» → «Palo de Rosa»: los conectores en minúscula, como se escribe en español.
+  const producto = fichaGlobo({ nombre: limpio }).producto.replace(/\s(De|Del|Y|Con|La|El|En)(?=\s)/g, (_, palabra: string) => ` ${palabra.toLocaleLowerCase("es")}`).trim();
+  return producto || null;
+}
+
+/** La clave con la que se agrupa una línea en filas y chips: su producto Sempertex o, sin él, su color. */
+function claveDe(linea: LineaGlobo): string {
+  return linea.producto ? `producto:${linea.producto.toLocaleLowerCase("es")}` : linea.color;
 }
 
 /**
@@ -109,13 +133,16 @@ export function lineaGlobo(datos: { color?: string | null; diam_pulg?: number | 
   const color = datos.color?.trim() || "otro color";
   const paleta = enPaleta(color);
   const titulo = datos.titulo?.trim() || null;
+  // Nombre y tono de la misma fuente que la leyenda del editor, la propuesta y los materiales («Verde lima», «Plata cromado»).
+  const sempertex = colorSempertex(color, { titulo, acabado: datos.acabado ?? null });
   return {
     color,
     paleta,
-    etiqueta: conMayuscula(paleta ? colorCliente(color) : color),
-    hex: hexColor(color, { titulo, acabado: datos.acabado ?? null }),
+    etiqueta: sempertex.nombre,
+    hex: sempertex.hex,
     acabado: datos.acabado?.trim() || titulo,
     liso: !GLOBO_NO_LISO.test(`${titulo ?? ""} ${datos.forma ?? ""}`),
+    producto: productoSempertex(titulo),
     tamano: tamanoDeLinea(datos),
     unidades: datos.unidades,
   };
@@ -141,20 +168,35 @@ export function lineasDePieza(plan: PlanGuiado, estructuraId: string): LineaGlob
   });
 }
 
-/** Cuántos globos de cada color, en el orden en que aparecen (el de los chips de siempre). */
-export function globosPorColor(lineas: readonly LineaGlobo[]): Array<{ color: string; etiqueta: string; hex: string; acabado: string | null; pulgadas: number | null; cantidad: number }> {
-  const porColor = new Map<string, { color: string; etiqueta: string; hex: string; acabado: string | null; pulgadas: number | null; cantidad: number; mayor: number }>();
+/**
+ * Cuántos globos de cada producto Sempertex (o de cada color, si las líneas no traen producto), en el orden en que
+ * aparecen (el de los chips de siempre). `etiqueta` es el producto («Reflex Dorado») o el color («Dorado»).
+ */
+export function globosPorColor(lineas: readonly LineaGlobo[]): Array<{ clave: string; color: string; etiqueta: string; producto: string | null; hex: string; acabado: string | null; pulgadas: number | null; cantidad: number }> {
+  const porColor = new Map<string, { clave: string; color: string; etiqueta: string; producto: string | null; hex: string; acabado: string | null; pulgadas: number | null; cantidad: number; mayor: number }>();
   for (const linea of lineas) {
-    const actual = porColor.get(linea.color);
+    const clave = claveDe(linea);
+    const actual = porColor.get(clave);
     if (!actual) {
-      porColor.set(linea.color, { color: linea.color, etiqueta: linea.etiqueta, hex: linea.hex, acabado: linea.acabado, pulgadas: linea.tamano.pulgadas, cantidad: linea.unidades, mayor: linea.unidades });
+      porColor.set(clave, { clave, color: linea.color, etiqueta: linea.etiqueta, producto: linea.producto, hex: linea.hex, acabado: linea.acabado, pulgadas: linea.tamano.pulgadas, cantidad: linea.unidades, mayor: linea.unidades });
       continue;
     }
     actual.cantidad += linea.unidades;
     // La muestra del chip es la del tamaño que más lleva de ese color.
     if (linea.unidades > actual.mayor) Object.assign(actual, { pulgadas: linea.tamano.pulgadas, mayor: linea.unidades });
   }
-  return [...porColor.values()].map((globo) => ({ color: globo.color, etiqueta: globo.etiqueta, hex: globo.hex, acabado: globo.acabado, pulgadas: globo.pulgadas, cantidad: globo.cantidad }));
+  return [...porColor.values()].map((globo) => ({ clave: globo.clave, color: globo.color, etiqueta: globo.etiqueta, producto: globo.producto, hex: globo.hex, acabado: globo.acabado, pulgadas: globo.pulgadas, cantidad: globo.cantidad }));
+}
+
+/**
+ * Lo que dice un chip de globos: el producto Sempertex si se sabe («Reflex Plata»), y el color de cliente («Plata
+ * cromado») solo cuando la línea no trae producto. El dueño (2026-10-06): «esto debería dar globos Sempertex, no
+ * genéricos»; el verificador vio los chips de «Tu plan» y de la idea en «Plata cromado 107 · Negro 23». El nombre de
+ * cliente sigue en `etiqueta` (la leyenda del editor y la propuesta lo usan) y va en el `title` del chip.
+ */
+export function rotuloGlobo(globo: { producto: string | null; etiqueta: string }): { texto: string; titulo: string } {
+  if (!globo.producto) return { texto: globo.etiqueta, titulo: globo.etiqueta };
+  return { texto: globo.producto, titulo: `Sempertex ${globo.producto} · ${globo.etiqueta}` };
 }
 
 /** Los tramos de la barra de tamaños (solo los redondos, que son los que tienen pulgadas). */
@@ -162,16 +204,20 @@ export function tramosDe(lineas: readonly LineaGlobo[]): TramoTamano[] {
   return tramosPorTamano(lineas.filter((linea) => linea.tamano.pulgadas !== null).map((linea) => ({ pulgadas: linea.tamano.pulgadas, unidades: linea.unidades })));
 }
 
-/** La tabla de una pieza: filas = colores (orden de aparición), columnas = solo los tamaños presentes (ordenados). */
+/**
+ * La tabla de una pieza: filas = productos Sempertex (o colores, si las líneas no traen producto), en orden de
+ * aparición; columnas = solo los tamaños presentes (ordenados).
+ */
 export function tablaGlobos(lineas: readonly LineaGlobo[]): TablaGlobos {
   const columnas = [...new Map(lineas.map((linea) => [linea.tamano.clave, linea.tamano])).values()].sort((a, b) => a.orden - b.orden);
   const indice = new Map(columnas.map((columna, posicion) => [columna.clave, posicion]));
   const filas = new Map<string, FilaTabla>();
   for (const linea of lineas) {
-    let fila = filas.get(linea.color);
+    const clave = claveDe(linea);
+    let fila = filas.get(clave);
     if (!fila) {
-      fila = { clave: linea.color, color: linea.color, etiqueta: linea.etiqueta, hex: linea.hex, acabado: linea.acabado, pulgadas: linea.tamano.pulgadas, celdas: columnas.map(() => 0), total: 0 };
-      filas.set(linea.color, fila);
+      fila = { clave, color: linea.color, etiqueta: linea.etiqueta, producto: linea.producto, hex: linea.hex, acabado: linea.acabado, pulgadas: linea.tamano.pulgadas, celdas: columnas.map(() => 0), total: 0 };
+      filas.set(clave, fila);
     }
     fila.celdas[indice.get(linea.tamano.clave)!]! += linea.unidades;
     fila.total += linea.unidades;

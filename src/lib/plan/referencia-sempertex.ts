@@ -445,8 +445,51 @@ export function referenciaDelTitulo(titulo: string | null | undefined, acabado: 
   const plegado = ` ${plegarNombre(titulo).replace(/[^a-z0-9]+/g, " ").trim()} `;
   const dichos = [...CODIGOS_POR_NOMBRE_ES.keys()].filter((nombre) => plegado.includes(` ${nombre} `));
   // «azul» va dentro de «azul rey»: el nombre que otro más largo contiene no es otro tono.
-  const tonos = dichos.filter((nombre) => !dichos.some((otro) => otro !== nombre && ` ${otro} `.includes(` ${nombre} `)));
-  return tonos.length === 1 ? referenciaDelCatalogo(tonos[0]!, acabado) : null;
+  const contenidos = dichos.filter((nombre) => !dichos.some((otro) => otro !== nombre && ` ${otro} `.includes(` ${nombre} `)));
+  // La tienda antepone a veces la familia de color al nombre del tono: «Azul Turquesa Profundo» es el Turquesa
+  // Profundo 035 (#015671), no un azul. Una palabra suelta justo DELANTE del nombre compuesto es ese prefijo y no
+  // otro tono; sin esto el título nombraba dos tonos, no se elegía ninguno y FLUX recibía «blue» (banco de fotos 10,
+  // 2026-10-07). Dos tonos separados («Duo Rosa Azul») siguen sin elegirse.
+  const tonos = contenidos.filter((nombre) => !(!nombre.includes(" ") && contenidos.some((otro) => otro.includes(" ") && plegado.includes(` ${nombre} ${otro} `))));
+  return tonos.length === 1 ? referenciaDelCatalogo(tonos[0]!, familiaDelTitulo(plegado) ?? acabado) : null;
+}
+
+/**
+ * Si el globo inflado de una referencia es un color VIVO: saturado (croma > 40) y de claridad media (40-74). Es la
+ * regla que hace decir «vivid» al texto de FLUX (`colorDeReferencia`, vocabulario-base.ts) y la que decide que un
+ * producto no sirve para un tono pastel de la foto (`aplicarAcabadoReferencia`): una sola regla para las dos cosas.
+ * Una línea pastel (Pastel Mate, Pastel Dusk) nunca es viva: es claridad alta y croma bajo por definición.
+ */
+export function esReferenciaViva(referencia: Pick<ReferenciaSempertex, "hexGlobo" | "familia">): boolean {
+  if (/pastel/i.test(referencia.familia)) return false;
+  const lab = labDeHex(referencia.hexGlobo);
+  return croma(lab) > 40 && lab[0] >= 40 && lab[0] <= 74;
+}
+
+/**
+ * Si el globo inflado de una referencia es un tono PASTEL: claro (L >= 65) y poco saturado (croma <= 35), o de una
+ * línea pastel (Pastel Mate, Pastel Dusk). Es lo que cumple un «pastel», «light» o «pale» de la foto
+ * (`aplicarAcabadoReferencia`): el Fashion Rosado (L 80, croma 24) o el Fashion Durazno sí; el Fashion Azul 040 (un cian
+ * de croma 42), el Azul Naval (L 19) o el Neón Naranja, no. «No vivo» no bastaba: un azul naval tampoco es vivo y el
+ * banco de fotos 09 (2026-10-07) lo compró para un celeste pastel.
+ */
+export function esReferenciaPastel(referencia: Pick<ReferenciaSempertex, "hexGlobo" | "familia">): boolean {
+  if (/pastel/i.test(referencia.familia)) return true;
+  const lab = labDeHex(referencia.hexGlobo);
+  return lab[0] >= 65 && croma(lab) <= 35;
+}
+
+/**
+ * La familia que el título del producto NOMBRA («Pastel Mate», «Reflex», «Cristal»), la más larga que dice con
+ * palabras enteras, o `undefined`. Manda sobre el acabado que pasa quien llama: ese acabado es una palabra visible
+ * del prompt («soft matte») o del plan («mate»), y las dos caen en la familia Fashion, la primera de la lámina. El
+ * «Pastel Mate Azul» que se compraba (#a3d1ed, «pale blue») llegaba a FLUX como el Fashion Azul 040, un cian
+ * intenso: «matte vivid cyan blue» sobre una foto pastel (banco de fotos 06, 2026-10-06).
+ */
+function familiaDelTitulo(plegado: string): string | undefined {
+  return Object.keys(FAMILIAS_POR_PALABRA_CATALOGO)
+    .filter((palabra) => plegado.includes(` ${palabra} `))
+    .sort((una, otra) => otra.length - una.length)[0];
 }
 
 /**

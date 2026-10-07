@@ -22,8 +22,11 @@ assert.deepEqual(resumen("Globo de látex 12\" Palo de rosa", { color: "rosado" 
 assert.deepEqual(resumen("B2b Globo Latex Redondo Crystal Transparente — R-12 / PAQUETE X 50"), ["Crystal Transparente", "Crystal", "cristal", "12″", 50]);
 assert.deepEqual(resumen("B2b Globo Latex Tubito Fashion Naranja — T260 / PAQUETE X 50"), ["Tubito Fashion Naranja", "Fashion", "estandar", "Para modelar", 50]);
 assert.deepEqual(resumen("B2b Globo Latex Link-O-Loon Fashion Fucsia — LOL 6 / PAQUETE X 50"), ["Link-O-Loon Fashion Fucsia", "Fashion", "estandar", "Link 6″", 50]);
-assert.equal(fichaGlobo({ nombre: "B2b Globo Latex Redondo Fashion Azul Naval — R-18 / PAQUETE X 25" }).hex, "#1f2d5c", "el tono exacto del nombre manda");
-assert.equal(fichaGlobo({ nombre: "Globo de látex 12\" Rojo", color: "rojo" }).hex, "#d32f2f");
+// Fuente única (color-sempertex, probador 2026-10-06): el tono es el de la referencia del catálogo que nombra el producto,
+// el mismo de los chips, la tabla y el editor (antes, la paleta de la taxonomía: «Rojo» #d32f2f aquí y #e4002b allá).
+assert.equal(fichaGlobo({ nombre: "B2b Globo Latex Redondo Fashion Azul Naval — R-18 / PAQUETE X 25" }).hex, "#1e22aa", "el tono exacto del nombre manda (Fashion Azul Naval del catálogo)");
+assert.equal(fichaGlobo({ nombre: "Globo de látex 12\" Rojo", color: "rojo" }).hex, "#e4002b");
+assert.equal(fichaGlobo({ nombre: "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50", color: "azul" }).hex, "#62b5e5", "el Azul 040 es azul claro, como en los chips");
 
 // Foto del catálogo a tamaño de miniatura; nada que no sea https.
 assert.equal(fotoMiniatura("https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149"), "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149&width=160");

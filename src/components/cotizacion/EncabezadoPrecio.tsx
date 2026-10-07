@@ -52,7 +52,7 @@ export function EncabezadoPrecio({ datos, enviadas, atenuar, leyenda, incluyeIva
       </div>
       <div className="grid gap-1 @2xl:col-start-2 @2xl:row-span-3 @2xl:row-start-1 @2xl:max-w-[22rem] @2xl:justify-items-end">
         <div className="flex items-center justify-between gap-4 @2xl:justify-end">
-          <span className={`block text-2xl font-semibold tracking-tight tabular-nums text-texto @xl:text-3xl ${atenuar ? CLASE_NO_VIGENTE : ""}`}>
+          <span data-precio-total className={`block text-2xl font-semibold tracking-tight tabular-nums text-texto @xl:text-3xl ${atenuar ? CLASE_NO_VIGENTE : ""}`}>
             {datos ? <NumeroAnimado valor={datos.precio_sugerido_cop} formato="pesos" /> : "—"}
             {atenuar && <span className="sr-only"> (precio anterior, no actualizado)</span>}
           </span>

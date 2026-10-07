@@ -6,6 +6,7 @@ import { Check, ChevronLeft, ChevronRight, ImagePlus, Sparkles } from "lucide-re
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { FotoDecoracion } from "./FotoDecoracion";
 import { EASE_REBOTE, RESORTE, RESORTE_SUAVE, grupoConRitmo } from "./animacion/movimiento";
+import { BotonAgregarCarrusel, type EstadoAgregarIdea } from "./AgregarIdea";
 
 type Props = {
   decoraciones: DecoracionSempertex[];
@@ -18,6 +19,13 @@ type Props = {
   onProponer?: () => void;
   /** «Subir una foto»: abre el selector de archivo del compositor. */
   onSubirFoto?: () => void;
+  /**
+   * «Agregar a mi plan» (pedido 3), solo con un plan vigente: por id, si cada idea se puede agregar, se está agregando o
+   * ya está en el plan (null o ausente: no se ofrece). Se agrega sin elegirla.
+   */
+  estadosAgregar?: Readonly<Record<string, EstadoAgregarIdea | null>> | undefined;
+  agregarDeshabilitado?: boolean | undefined;
+  onAgregar?: ((decoracion: DecoracionSempertex) => void) | undefined;
 };
 
 const entradaTarjeta = {
@@ -26,7 +34,7 @@ const entradaTarjeta = {
 };
 
 /** Ideas de decoración en un carril deslizable, con flechas en escritorio, puntos de posición y salidas debajo. */
-export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir, onNinguna, onProponer, onSubirFoto }: Props) {
+export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir, onNinguna, onProponer, onSubirFoto, estadosAgregar, agregarDeshabilitado = true, onAgregar }: Props) {
   const reducido = useReducedMotion();
   const carrilRef = useRef<HTMLDivElement>(null);
   const [indiceVisible, setIndiceVisible] = useState(0);
@@ -103,6 +111,9 @@ export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir
           {decoraciones.map((decoracion, indice) => {
             const elegida = decoracion.id === elegidaId;
             const atenuada = (elegidaId !== null && !elegida) || (!activo && !elegida);
+            // Ya en el plan se dice siempre; el botón, solo en el carrusel activo y no en la elegida (su tarjeta ya lo tiene).
+            const estadoAgregar = onAgregar ? estadosAgregar?.[decoracion.id] ?? null : null;
+            const conAgregar = estadoAgregar === "agregada" || (estadoAgregar !== null && activo && !elegida);
             return (
               <motion.article
                 key={decoracion.id}
@@ -155,6 +166,7 @@ export function CarruselDecoraciones({ decoraciones, activo, elegidaId, onElegir
                           Me gusta esta
                         </motion.button>
                       ) : null}
+                      {conAgregar && estadoAgregar && <BotonAgregarCarrusel estado={estadoAgregar} deshabilitado={agregarDeshabilitado} onAgregar={() => onAgregar?.(decoracion)} />}
                     </div>
                   </div>
                 </motion.div>

@@ -56,8 +56,8 @@ export async function archivoDeFotoEjemplo(foto: FotoEjemplo, signal?: AbortSign
 
 /**
  * La foto de ejemplo tal cual está en `public/`, sin recomprimir: ya viene a
- * 1200 px, y con los mismos bytes en todos los navegadores el servidor
- * reconoce la foto y responde con su análisis revisado (`analisis-ejemplos`).
+ * 1200 px. El servidor la reconoce (por sus bytes o, recodificada como la manda
+ * la guiada, por su huella) y responde con su lectura revisada (`lecturas-ejemplos`).
  */
 export async function imagenDeFotoEjemplo(foto: FotoEjemplo, signal?: AbortSignal): Promise<{ base64: string; mime: string; ancho: number; alto: number; originalAncho: number; originalAlto: number }> {
   const archivo = await archivoDeFotoEjemplo(foto, signal);

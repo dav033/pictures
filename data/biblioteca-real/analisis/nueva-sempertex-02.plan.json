@@ -9,6 +9,7 @@
       "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
       "paleta": [
         "rosado",
+        "rosado",
         "blanco",
         "rojo"
       ],
@@ -61,7 +62,7 @@
             "rol_material": "acento"
           }
         ],
-        "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+        "porque": "Recreación de referencia REF_01_E02: guirnalda orgánica rosa, rosa claro, blanco perlado y rojo, con muchos globitos de 5 pulgadas y algunos rosados de 18.",
         "referencia_element_id": "REF_01_E02",
         "estructura_oficial": "guirnalda",
         "colores_referencia": [
@@ -74,8 +75,34 @@
     ],
     "supuestos": [
       "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      "Los tamaños son los que se ven en la foto: fila de globitos de 5 pulgadas, cuerpo de 12 y algunos rosados de 18 (auditoría 2026-10-06).",
+      "Los globos metalizados LOVE, los corazones y la cortina se cuentan aparte, a mano, sobre la foto."
     ],
+    "restricciones": {
+      "estructuras": [],
+      "colores": [],
+      "tamanos": [
+        {
+          "valor": "R-5",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-5",
+          "polaridad": "obligatorio"
+        },
+        {
+          "valor": "R-12",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-12",
+          "polaridad": "obligatorio"
+        },
+        {
+          "valor": "R-18",
+          "procedencia": "inferido",
+          "texto_original": "Tamaño visto en la foto: R-18",
+          "polaridad": "obligatorio"
+        }
+      ],
+      "acabados": []
+    },
     "referencia_omitida": []
   },
   "plan_resuelto": {
@@ -86,6 +113,7 @@
         "titulo": "nueva-sempertex-02",
         "descripcion": "Plan de estructuras y materiales derivado de una decoración de referencia.",
         "paleta": [
+          "rosado",
           "rosado",
           "blanco",
           "rojo"
@@ -108,7 +136,7 @@
           },
           "repeticiones": 1,
           "densidad": "lujosa",
-          "mezcla": "clasica",
+          "mezcla": "organica_fina",
           "materiales": [
             {
               "product_id": "9832318828839",
@@ -139,7 +167,7 @@
               "rol_material": "acento"
             }
           ],
-          "porque": "Recreación de referencia REF_01_E02, con color y forma observados.",
+          "porque": "Recreación de referencia REF_01_E02: guirnalda orgánica rosa, rosa claro, blanco perlado y rojo, con muchos globitos de 5 pulgadas y algunos rosados de 18.",
           "referencia_element_id": "REF_01_E02",
           "estructura_oficial": "guirnalda",
           "colores_referencia": [
@@ -151,15 +179,82 @@
         }
       ],
       "supuestos": [
-        "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-        "Se usan globos redondos R-12 disponibles en el snapshot vigente.",
-        "Guirnalda orgánica: la foto muestra unos 65 globos y el plan tenía 51; densidad media → lujosa: quedó en 64."
+        "las medidas en metros parten de un tamano frecuente y se ajustan con la lectura de la foto.",
+        "los tamanos son los que se ven en la foto: fila de globitos de 5 pulgadas, cuerpo de 12 y algunos rosados de 18 (auditoria 2026-10-06).",
+        "los globos metalizados love, los corazones y la cortina se cuentan aparte, a mano, sobre la foto.",
+        "Guirnalda orgánica: los tamaños de la foto piden la mezcla organica_fina, no clasica.",
+        "Guirnalda orgánica: la foto muestra unos 65 globos y el plan tenía 47; densidad media → lujosa: quedó en 59."
       ],
+      "restricciones": {
+        "estructuras": [],
+        "colores": [],
+        "tamanos": [
+          {
+            "valor": "R-5",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-5",
+            "polaridad": "obligatorio"
+          },
+          {
+            "valor": "R-12",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-12",
+            "polaridad": "obligatorio"
+          },
+          {
+            "valor": "R-18",
+            "procedencia": "inferido",
+            "texto_original": "Tamaño visto en la foto: R-18",
+            "polaridad": "obligatorio"
+          }
+        ],
+        "acabados": []
+      },
       "referencia_omitida": []
     },
-    "plan_hash": "6cea35f55166aa22ddb202ccc7bf9848eeb5055050dfa6637da9cf63152dc775",
+    "plan_hash": "1691564a95fb324b159a76d893ab0e6449bec292b734df3a78b08c545e5e87b2",
     "request_id": "684334cb-3844-5173-8605-78d917ddb8a0",
     "compras": [
+      {
+        "variant_id": "46594236219687",
+        "product_id": "8634239942951",
+        "sku": "B2B-20000446",
+        "sku_original": "B2B-20000446",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594236219687",
+        "inventory_quantity": 980234,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Rojo — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "rojo",
+        "unidades_necesarias": 1,
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "unidades_con_merma": 1,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 1,
+        "leftover_inventory": 49,
+        "consumption_cost": 123,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 49,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149"
+      },
       {
         "variant_id": "46594236416295",
         "product_id": "8634239942951",
@@ -173,6 +268,86 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "rojo",
+        "unidades_necesarias": 5,
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "unidades_con_merma": 5,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 1304,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "sobrante": 45,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149"
+      },
+      {
+        "variant_id": "46594342060327",
+        "product_id": "8634302071079",
+        "sku": "B2B-20017128",
+        "sku_original": "B2B-20017128",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594342060327",
+        "inventory_quantity": 996538,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "rosado",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 5,
+        "required_quantity": 8,
+        "unidades_con_merma": 8,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 42,
+        "consumption_cost": 986,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 47,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rose_110.jpg?v=1763563201"
+      },
+      {
+        "variant_id": "46594342453543",
+        "product_id": "8634302071079",
+        "sku": "B2B-20017131",
+        "sku_original": "B2B-20017131",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594342453543",
+        "inventory_quantity": 994661,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "rosado",
         "unidades_necesarias": 7,
         "design_quantity": 7,
         "waste_reserve": 0,
@@ -198,37 +373,37 @@
             "id": "EST_01_GUIRNALDA"
           }
         ],
-        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149"
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rose_110.jpg?v=1763563201"
       },
       {
-        "variant_id": "46594342453543",
+        "variant_id": "46594342551847",
         "product_id": "8634302071079",
-        "sku": "B2B-20017131",
-        "sku_original": "B2B-20017131",
+        "sku": "B2B-20017134",
+        "sku_original": "B2B-20017134",
         "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
-        "source_variant_id": "gid://shopify/ProductVariant/46594342453543",
-        "inventory_quantity": 994661,
+        "source_variant_id": "gid://shopify/ProductVariant/46594342551847",
+        "inventory_quantity": 999082,
         "unidades_inferidas": false,
-        "titulo": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-12 / PAQUETE X 50",
-        "tamano_codigo": "R-12",
-        "diam_pulg": 12,
+        "titulo": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
         "color": "rosado",
-        "unidades_necesarias": 12,
-        "design_quantity": 12,
-        "waste_reserve": 6,
-        "required_quantity": 18,
-        "unidades_con_merma": 18,
-        "unidades_paquete": 50,
+        "unidades_necesarias": 1,
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "unidades_con_merma": 1,
+        "unidades_paquete": 6,
         "paquetes": 1,
-        "purchase_quantity": 50,
-        "used": 12,
-        "leftover_inventory": 32,
-        "consumption_cost": 4693,
-        "purchase_cost": 13037,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 1200,
+        "purchase_cost": 7199,
         "additional_package_for_waste": false,
-        "sobrante": 38,
-        "precio_paquete": 13037,
-        "subtotal": 13037,
+        "sobrante": 5,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
         "estructuras": [
           "EST_01_GUIRNALDA"
         ],
@@ -239,6 +414,86 @@
           }
         ],
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rose_110.jpg?v=1763563201"
+      },
+      {
+        "variant_id": "49475777986855",
+        "product_id": "9661845995815",
+        "sku": "B2B-20019337",
+        "sku_original": "B2B-20019337",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/49475777986855",
+        "inventory_quantity": 999192,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "blanco",
+        "unidades_necesarias": 3,
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "unidades_con_merma": 3,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 559,
+        "purchase_cost": 9313,
+        "additional_package_for_waste": false,
+        "sobrante": 47,
+        "precio_paquete": 9313,
+        "subtotal": 9313,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_Nacar_-_Oyster_White_806.jpg?v=1763584889"
+      },
+      {
+        "variant_id": "49475778019623",
+        "product_id": "9661845995815",
+        "sku": "B2B-20019347",
+        "sku_original": "B2B-20019347",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/49475778019623",
+        "inventory_quantity": 999785,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "blanco",
+        "unidades_necesarias": 1,
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "unidades_con_merma": 1,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 2181,
+        "purchase_cost": 13085,
+        "additional_package_for_waste": false,
+        "sobrante": 5,
+        "precio_paquete": 13085,
+        "subtotal": 13085,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_Nacar_-_Oyster_White_806.jpg?v=1763584889"
       },
       {
         "variant_id": "49475778216231",
@@ -253,20 +508,20 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "blanco",
-        "unidades_necesarias": 12,
-        "design_quantity": 12,
+        "unidades_necesarias": 7,
+        "design_quantity": 7,
         "waste_reserve": 0,
-        "required_quantity": 12,
-        "unidades_con_merma": 12,
+        "required_quantity": 7,
+        "unidades_con_merma": 7,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 12,
-        "leftover_inventory": 38,
-        "consumption_cost": 5137,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 2996,
         "purchase_cost": 21403,
         "additional_package_for_waste": false,
-        "sobrante": 38,
+        "sobrante": 43,
         "precio_paquete": 21403,
         "subtotal": 21403,
         "estructuras": [
@@ -281,6 +536,46 @@
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_Nacar_-_Oyster_White_806.jpg?v=1763584889"
       },
       {
+        "variant_id": "50030991147303",
+        "product_id": "9832318828839",
+        "sku": "B2B-20019698",
+        "sku_original": "B2B-20019698",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/50030991147303",
+        "inventory_quantity": 997591,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Fashion Rosa — R-5 / PAQUETE X 50",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "color": "rosado",
+        "unidades_necesarias": 8,
+        "design_quantity": 8,
+        "waste_reserve": 0,
+        "required_quantity": 8,
+        "unidades_con_merma": 8,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 986,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "sobrante": 42,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rosewood_011.jpg?v=1762967094"
+      },
+      {
         "variant_id": "50030991311143",
         "product_id": "9832318828839",
         "sku": "B2B-20019705",
@@ -293,22 +588,62 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "rosado",
-        "unidades_necesarias": 33,
-        "design_quantity": 33,
+        "unidades_necesarias": 21,
+        "design_quantity": 21,
         "waste_reserve": 0,
-        "required_quantity": 33,
-        "unidades_con_merma": 33,
+        "required_quantity": 21,
+        "unidades_con_merma": 21,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 33,
-        "leftover_inventory": 17,
-        "consumption_cost": 8604,
+        "used": 21,
+        "leftover_inventory": 29,
+        "consumption_cost": 5476,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 17,
+        "sobrante": 29,
         "precio_paquete": 13037,
         "subtotal": 13037,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rosewood_011.jpg?v=1762967094"
+      },
+      {
+        "variant_id": "50030991343911",
+        "product_id": "9832318828839",
+        "sku": "B2B-20019708",
+        "sku_original": "B2B-20019708",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/50030991343911",
+        "inventory_quantity": 999433,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Fashion Rosa — R-18 / PAQUETE X 6",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "color": "rosado",
+        "unidades_necesarias": 2,
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "unidades_con_merma": 2,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "purchase_quantity": 6,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 2400,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "sobrante": 4,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
         "estructuras": [
           "EST_01_GUIRNALDA"
         ],
@@ -323,17 +658,19 @@
     ],
     "totales": {
       "globos_por_tamano": {
-        "R-12": 64
+        "R-5": 15,
+        "R-12": 40,
+        "R-18": 4
       },
-      "total_unidades": 64,
-      "total_cop": 60514,
-      "design_quantity": 64,
-      "target_waste_reserve": 6,
-      "covered_waste_reserve": 6,
+      "total_unidades": 59,
+      "total_cop": 115802,
+      "design_quantity": 59,
+      "target_waste_reserve": 5,
+      "covered_waste_reserve": 5,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 136,
-      "purchase_cost": 60514,
-      "consumption_cost": 20259,
+      "natural_package_surplus": 359,
+      "purchase_cost": 115802,
+      "consumption_cost": 20036,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
       "ahorro_paquetes_cop": 0,
@@ -349,10 +686,17 @@
     "sustituciones": [],
     "sin_cobertura": [],
     "advertencias": [
+      "sobrante_alto:46594236219687",
       "sobrante_alto:46594236416295",
+      "sobrante_alto:46594342060327",
       "sobrante_alto:46594342453543",
+      "sobrante_alto:46594342551847",
+      "sobrante_alto:49475777986855",
+      "sobrante_alto:49475778019623",
       "sobrante_alto:49475778216231",
-      "sobrante_alto:50030991311143"
+      "sobrante_alto:50030991147303",
+      "sobrante_alto:50030991311143",
+      "sobrante_alto:50030991343911"
     ],
     "estructuras": [
       {
@@ -362,8 +706,108 @@
         "ubicacion": "fondo_pared",
         "repeticiones": 1,
         "eje_m": 2.4,
-        "total_unidades": 64,
+        "total_unidades": 59,
         "lineas": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "9832318828839",
+            "variant_id": "50030991147303",
+            "sku": "B2B-20019698",
+            "sku_original": "B2B-20019698",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/50030991147303",
+            "inventory_quantity": 997591,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Fashion Rosa — R-5 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 8,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rosewood_011.jpg?v=1762967094",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634302071079",
+            "variant_id": "46594342060327",
+            "sku": "B2B-20017128",
+            "sku_original": "B2B-20017128",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594342060327",
+            "inventory_quantity": 996538,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-5 / PAQUETE X 50",
+            "color": "rosado",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rose_110.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "9661845995815",
+            "variant_id": "49475777986855",
+            "sku": "B2B-20019337",
+            "sku_original": "B2B-20019337",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/49475777986855",
+            "inventory_quantity": 999192,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 50",
+            "color": "blanco",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 3,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_Nacar_-_Oyster_White_806.jpg?v=1763584889",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634239942951",
+            "variant_id": "46594236219687",
+            "sku": "B2B-20000446",
+            "sku_original": "B2B-20000446",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594236219687",
+            "inventory_quantity": 980234,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Rojo — R-5 / PAQUETE X 50",
+            "color": "rojo",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5,
+            "diam_cm": 12.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149",
+            "sustitucion": null
+          },
           {
             "estructura_id": "EST_01_GUIRNALDA",
             "origen": {
@@ -385,7 +829,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 33,
+            "unidades": 21,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rosewood_011.jpg?v=1762967094",
             "sustitucion": null
           },
@@ -410,7 +854,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": null,
-            "unidades": 12,
+            "unidades": 7,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rose_110.jpg?v=1763563201",
             "sustitucion": null
           },
@@ -435,7 +879,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": null,
-            "unidades": 12,
+            "unidades": 7,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_Nacar_-_Oyster_White_806.jpg?v=1763584889",
             "sustitucion": null
           },
@@ -460,8 +904,83 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 7,
+            "unidades": 5,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rojo_-_Red_015.jpg?v=1763045149",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "9832318828839",
+            "variant_id": "50030991343911",
+            "sku": "B2B-20019708",
+            "sku_original": "B2B-20019708",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/50030991343911",
+            "inventory_quantity": 999433,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Fashion Rosa — R-18 / PAQUETE X 6",
+            "color": "rosado",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 2,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rosewood_011.jpg?v=1762967094",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "8634302071079",
+            "variant_id": "46594342551847",
+            "sku": "B2B-20017134",
+            "sku_original": "B2B-20017134",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594342551847",
+            "inventory_quantity": 999082,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-18 / PAQUETE X 6",
+            "color": "rosado",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Rosa_-_Rose_110.jpg?v=1763563201",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "9661845995815",
+            "variant_id": "49475778019623",
+            "sku": "B2B-20019347",
+            "sku_original": "B2B-20019347",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/49475778019623",
+            "inventory_quantity": 999785,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6",
+            "color": "blanco",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18,
+            "diam_cm": 45.7,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 1,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_Nacar_-_Oyster_White_806.jpg?v=1763584889",
             "sustitucion": null
           }
         ],
@@ -469,8 +988,20 @@
           {
             "diam_pulg": 12,
             "forma": "redondo",
-            "unidades": 64,
-            "pct": 100
+            "unidades": 40,
+            "pct": 67.8
+          },
+          {
+            "diam_pulg": 5,
+            "forma": "redondo",
+            "unidades": 15,
+            "pct": 25.42
+          },
+          {
+            "diam_pulg": 18,
+            "forma": "redondo",
+            "unidades": 4,
+            "pct": 6.78
           }
         ],
         "supuestos": []
@@ -479,7 +1010,7 @@
     "costes_por_estructura": [
       {
         "estructura_id": "EST_01_GUIRNALDA",
-        "consumo_cop": 18695
+        "consumo_cop": 19419
       }
     ],
     "conteos_referencia": [
@@ -516,8 +1047,8 @@
           "confianza": 0.9
         },
         "globos_foto": 65,
-        "globos_antes": 51,
-        "globos_despues": 64,
+        "globos_antes": 47,
+        "globos_despues": 59,
         "cambios": [
           {
             "campo": "densidad",
@@ -533,7 +1064,7 @@
     "version": "design-material-estimate-v1",
     "design": {
       "type": "guirnalda",
-      "shape": "clasica",
+      "shape": "organica_fina",
       "dimensions_m": {
         "width": null,
         "height": null,
@@ -549,15 +1080,67 @@
       {
         "structure_id": "EST_01_GUIRNALDA",
         "product_id": "9832318828839",
+        "variant_id": "50030991147303",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 8,
+        "waste_reserve": 0,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634302071079",
+        "variant_id": "46594342060327",
+        "color": "rosado",
+        "finish": null,
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "9661845995815",
+        "variant_id": "49475777986855",
+        "color": "blanco",
+        "finish": null,
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634239942951",
+        "variant_id": "46594236219687",
+        "color": "rojo",
+        "finish": "fashion",
+        "size_inches": 5,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "9832318828839",
         "variant_id": "50030991311143",
         "color": "rosado",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 33,
+        "design_quantity": 21,
         "waste_reserve": 0,
-        "required_quantity": 33,
-        "waste_adjusted_quantity": 33
+        "required_quantity": 21,
+        "waste_adjusted_quantity": 21
       },
       {
         "structure_id": "EST_01_GUIRNALDA",
@@ -567,10 +1150,10 @@
         "finish": null,
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 12,
+        "design_quantity": 7,
         "waste_reserve": 0,
-        "required_quantity": 12,
-        "waste_adjusted_quantity": 12
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
       },
       {
         "structure_id": "EST_01_GUIRNALDA",
@@ -580,10 +1163,10 @@
         "finish": null,
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 12,
+        "design_quantity": 7,
         "waste_reserve": 0,
-        "required_quantity": 12,
-        "waste_adjusted_quantity": 12
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7
       },
       {
         "structure_id": "EST_01_GUIRNALDA",
@@ -593,17 +1176,110 @@
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 7,
+        "design_quantity": 5,
         "waste_reserve": 0,
-        "required_quantity": 7,
-        "waste_adjusted_quantity": 7
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "9832318828839",
+        "variant_id": "50030991343911",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "8634302071079",
+        "variant_id": "46594342551847",
+        "color": "rosado",
+        "finish": null,
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
+      },
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "9661845995815",
+        "variant_id": "49475778019623",
+        "color": "blanco",
+        "finish": null,
+        "size_inches": 18,
+        "shape": "redondo",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1
       }
     ],
     "special_elements": [],
     "purchases": [
       {
         "product_id": "8634239942951",
+        "variant_id": "46594236219687",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 1,
+        "leftover_inventory": 49,
+        "consumption_cost": 123,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 49,
+        "potential_surplus": 49
+      },
+      {
+        "product_id": "8634239942951",
         "variant_id": "46594236416295",
+        "design_quantity": 5,
+        "waste_reserve": 0,
+        "required_quantity": 5,
+        "waste_adjusted_quantity": 5,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 5,
+        "leftover_inventory": 45,
+        "consumption_cost": 1304,
+        "purchase_cost": 13037,
+        "additional_package_for_waste": false,
+        "operational_surplus": 45,
+        "potential_surplus": 45
+      },
+      {
+        "product_id": "8634302071079",
+        "variant_id": "46594342060327",
+        "design_quantity": 3,
+        "waste_reserve": 5,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 3,
+        "leftover_inventory": 42,
+        "consumption_cost": 986,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 42,
+        "potential_surplus": 47
+      },
+      {
+        "product_id": "8634302071079",
+        "variant_id": "46594342453543",
         "design_quantity": 7,
         "waste_reserve": 0,
         "required_quantity": 7,
@@ -621,84 +1297,201 @@
       },
       {
         "product_id": "8634302071079",
-        "variant_id": "46594342453543",
-        "design_quantity": 12,
-        "waste_reserve": 6,
-        "required_quantity": 18,
-        "waste_adjusted_quantity": 18,
+        "variant_id": "46594342551847",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 1200,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "operational_surplus": 5,
+        "potential_surplus": 5
+      },
+      {
+        "product_id": "9661845995815",
+        "variant_id": "49475777986855",
+        "design_quantity": 3,
+        "waste_reserve": 0,
+        "required_quantity": 3,
+        "waste_adjusted_quantity": 3,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 12,
-        "leftover_inventory": 32,
-        "consumption_cost": 4693,
-        "purchase_cost": 13037,
+        "used": 3,
+        "leftover_inventory": 47,
+        "consumption_cost": 559,
+        "purchase_cost": 9313,
         "additional_package_for_waste": false,
-        "operational_surplus": 32,
-        "potential_surplus": 38
+        "operational_surplus": 47,
+        "potential_surplus": 47
+      },
+      {
+        "product_id": "9661845995815",
+        "variant_id": "49475778019623",
+        "design_quantity": 1,
+        "waste_reserve": 0,
+        "required_quantity": 1,
+        "waste_adjusted_quantity": 1,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 1,
+        "leftover_inventory": 5,
+        "consumption_cost": 2181,
+        "purchase_cost": 13085,
+        "additional_package_for_waste": false,
+        "operational_surplus": 5,
+        "potential_surplus": 5
       },
       {
         "product_id": "9661845995815",
         "variant_id": "49475778216231",
-        "design_quantity": 12,
+        "design_quantity": 7,
         "waste_reserve": 0,
-        "required_quantity": 12,
-        "waste_adjusted_quantity": 12,
+        "required_quantity": 7,
+        "waste_adjusted_quantity": 7,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 12,
-        "leftover_inventory": 38,
-        "consumption_cost": 5137,
+        "used": 7,
+        "leftover_inventory": 43,
+        "consumption_cost": 2996,
         "purchase_cost": 21403,
         "additional_package_for_waste": false,
-        "operational_surplus": 38,
-        "potential_surplus": 38
+        "operational_surplus": 43,
+        "potential_surplus": 43
+      },
+      {
+        "product_id": "9832318828839",
+        "variant_id": "50030991147303",
+        "design_quantity": 8,
+        "waste_reserve": 0,
+        "required_quantity": 8,
+        "waste_adjusted_quantity": 8,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 8,
+        "leftover_inventory": 42,
+        "consumption_cost": 986,
+        "purchase_cost": 6164,
+        "additional_package_for_waste": false,
+        "operational_surplus": 42,
+        "potential_surplus": 42
       },
       {
         "product_id": "9832318828839",
         "variant_id": "50030991311143",
-        "design_quantity": 33,
+        "design_quantity": 21,
         "waste_reserve": 0,
-        "required_quantity": 33,
-        "waste_adjusted_quantity": 33,
+        "required_quantity": 21,
+        "waste_adjusted_quantity": 21,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 33,
-        "leftover_inventory": 17,
-        "consumption_cost": 8604,
+        "used": 21,
+        "leftover_inventory": 29,
+        "consumption_cost": 5476,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 17,
-        "potential_surplus": 17
+        "operational_surplus": 29,
+        "potential_surplus": 29
+      },
+      {
+        "product_id": "9832318828839",
+        "variant_id": "50030991343911",
+        "design_quantity": 2,
+        "waste_reserve": 0,
+        "required_quantity": 2,
+        "waste_adjusted_quantity": 2,
+        "units_per_package": 6,
+        "package_count": 1,
+        "purchase_quantity": 6,
+        "used": 2,
+        "leftover_inventory": 4,
+        "consumption_cost": 2400,
+        "purchase_cost": 7199,
+        "additional_package_for_waste": false,
+        "operational_surplus": 4,
+        "potential_surplus": 4
       }
     ],
     "totals": {
-      "design_quantity": 64,
-      "target_waste_reserve": 6,
-      "covered_waste_reserve": 6,
+      "design_quantity": 59,
+      "target_waste_reserve": 5,
+      "covered_waste_reserve": 5,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 136,
-      "required_quantity": 70,
-      "consumption_cost": 20259,
-      "purchase_cost": 60514,
+      "natural_package_surplus": 359,
+      "required_quantity": 64,
+      "consumption_cost": 20036,
+      "purchase_cost": 115802,
       "waste_only_savings_cop": 0,
       "additional_waste_packages": 0,
-      "waste_adjusted_quantity": 70,
-      "purchase_quantity": 200,
-      "operational_surplus": 130,
-      "potential_surplus": 136
+      "waste_adjusted_quantity": 64,
+      "purchase_quantity": 418,
+      "operational_surplus": 354,
+      "potential_surplus": 359
     },
     "warnings": [
+      "sobrante_alto:46594236219687",
       "sobrante_alto:46594236416295",
+      "sobrante_alto:46594342060327",
       "sobrante_alto:46594342453543",
+      "sobrante_alto:46594342551847",
+      "sobrante_alto:49475777986855",
+      "sobrante_alto:49475778019623",
       "sobrante_alto:49475778216231",
-      "sobrante_alto:50030991311143"
+      "sobrante_alto:50030991147303",
+      "sobrante_alto:50030991311143",
+      "sobrante_alto:50030991343911"
     ]
   },
   "quote": {
     "lineas": [
+      {
+        "id": "46594236219687",
+        "productId": "8634239942951",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "rojo",
+        "cantidadNecesaria": 1,
+        "designQuantity": 1,
+        "wasteReserve": 0,
+        "requiredQuantity": 1,
+        "purchaseQuantity": 50,
+        "used": 1,
+        "leftoverInventory": 49,
+        "consumptionCost": 123,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594236219687",
+        "nombre": "B2b Globo Latex Redondo Fashion Rojo — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 49
+      },
       {
         "id": "46594236416295",
         "productId": "8634239942951",
@@ -718,14 +1511,14 @@
           "REF_01_E02"
         ],
         "color": "rojo",
-        "cantidadNecesaria": 7,
-        "designQuantity": 7,
+        "cantidadNecesaria": 5,
+        "designQuantity": 5,
         "wasteReserve": 0,
-        "requiredQuantity": 7,
+        "requiredQuantity": 5,
         "purchaseQuantity": 50,
-        "used": 7,
-        "leftoverInventory": 43,
-        "consumptionCost": 1825,
+        "used": 5,
+        "leftoverInventory": 45,
+        "consumptionCost": 1304,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -735,7 +1528,45 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 43
+        "sobrante": 45
+      },
+      {
+        "id": "46594342060327",
+        "productId": "8634302071079",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "rosado",
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
+        "wasteReserve": 5,
+        "requiredQuantity": 8,
+        "purchaseQuantity": 50,
+        "used": 3,
+        "leftoverInventory": 42,
+        "consumptionCost": 986,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594342060327",
+        "nombre": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 47
       },
       {
         "id": "46594342453543",
@@ -756,14 +1587,14 @@
           "REF_01_E02"
         ],
         "color": "rosado",
-        "cantidadNecesaria": 12,
-        "designQuantity": 12,
-        "wasteReserve": 6,
-        "requiredQuantity": 18,
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
+        "wasteReserve": 0,
+        "requiredQuantity": 7,
         "purchaseQuantity": 50,
-        "used": 12,
-        "leftoverInventory": 32,
-        "consumptionCost": 4693,
+        "used": 7,
+        "leftoverInventory": 43,
+        "consumptionCost": 1825,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -773,7 +1604,121 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 38
+        "sobrante": 43
+      },
+      {
+        "id": "46594342551847",
+        "productId": "8634302071079",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "rosado",
+        "cantidadNecesaria": 1,
+        "designQuantity": 1,
+        "wasteReserve": 0,
+        "requiredQuantity": 1,
+        "purchaseQuantity": 6,
+        "used": 1,
+        "leftoverInventory": 5,
+        "consumptionCost": 1200,
+        "purchaseCost": 7199,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594342551847",
+        "nombre": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-18 / PAQUETE X 6",
+        "precioPaquete": 7199,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 7199,
+        "sobrante": 5
+      },
+      {
+        "id": "49475777986855",
+        "productId": "9661845995815",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 3,
+        "designQuantity": 3,
+        "wasteReserve": 0,
+        "requiredQuantity": 3,
+        "purchaseQuantity": 50,
+        "used": 3,
+        "leftoverInventory": 47,
+        "consumptionCost": 559,
+        "purchaseCost": 9313,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "49475777986855",
+        "nombre": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 50",
+        "precioPaquete": 9313,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 9313,
+        "sobrante": 47
+      },
+      {
+        "id": "49475778019623",
+        "productId": "9661845995815",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "blanco",
+        "cantidadNecesaria": 1,
+        "designQuantity": 1,
+        "wasteReserve": 0,
+        "requiredQuantity": 1,
+        "purchaseQuantity": 6,
+        "used": 1,
+        "leftoverInventory": 5,
+        "consumptionCost": 2181,
+        "purchaseCost": 13085,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "49475778019623",
+        "nombre": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6",
+        "precioPaquete": 13085,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 13085,
+        "sobrante": 5
       },
       {
         "id": "49475778216231",
@@ -794,14 +1739,14 @@
           "REF_01_E02"
         ],
         "color": "blanco",
-        "cantidadNecesaria": 12,
-        "designQuantity": 12,
+        "cantidadNecesaria": 7,
+        "designQuantity": 7,
         "wasteReserve": 0,
-        "requiredQuantity": 12,
+        "requiredQuantity": 7,
         "purchaseQuantity": 50,
-        "used": 12,
-        "leftoverInventory": 38,
-        "consumptionCost": 5137,
+        "used": 7,
+        "leftoverInventory": 43,
+        "consumptionCost": 2996,
         "purchaseCost": 21403,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -811,7 +1756,45 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 21403,
-        "sobrante": 38
+        "sobrante": 43
+      },
+      {
+        "id": "50030991147303",
+        "productId": "9832318828839",
+        "tamano": "R-5",
+        "tamanoCodigo": "R-5",
+        "diamPulg": 5,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "rosado",
+        "cantidadNecesaria": 8,
+        "designQuantity": 8,
+        "wasteReserve": 0,
+        "requiredQuantity": 8,
+        "purchaseQuantity": 50,
+        "used": 8,
+        "leftoverInventory": 42,
+        "consumptionCost": 986,
+        "purchaseCost": 6164,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "50030991147303",
+        "nombre": "B2b Globo Fashion Rosa — R-5 / PAQUETE X 50",
+        "precioPaquete": 6164,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 6164,
+        "sobrante": 42
       },
       {
         "id": "50030991311143",
@@ -832,14 +1815,14 @@
           "REF_01_E02"
         ],
         "color": "rosado",
-        "cantidadNecesaria": 33,
-        "designQuantity": 33,
+        "cantidadNecesaria": 21,
+        "designQuantity": 21,
         "wasteReserve": 0,
-        "requiredQuantity": 33,
+        "requiredQuantity": 21,
         "purchaseQuantity": 50,
-        "used": 33,
-        "leftoverInventory": 17,
-        "consumptionCost": 8604,
+        "used": 21,
+        "leftoverInventory": 29,
+        "consumptionCost": 5476,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -849,19 +1832,57 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 17
+        "sobrante": 29
+      },
+      {
+        "id": "50030991343911",
+        "productId": "9832318828839",
+        "tamano": "R-18",
+        "tamanoCodigo": "R-18",
+        "diamPulg": 18,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E02"
+        ],
+        "color": "rosado",
+        "cantidadNecesaria": 2,
+        "designQuantity": 2,
+        "wasteReserve": 0,
+        "requiredQuantity": 2,
+        "purchaseQuantity": 6,
+        "used": 2,
+        "leftoverInventory": 4,
+        "consumptionCost": 2400,
+        "purchaseCost": 7199,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "50030991343911",
+        "nombre": "B2b Globo Fashion Rosa — R-18 / PAQUETE X 6",
+        "precioPaquete": 7199,
+        "unidadesPaquete": 6,
+        "paquetes": 1,
+        "subtotal": 7199,
+        "sobrante": 4
       }
     ],
-    "total": 60514,
+    "total": 115802,
     "mermaPorcentaje": 8,
-    "purchaseCost": 60514,
-    "consumptionCost": 20259,
-    "targetWasteReserve": 6,
-    "coveredWasteReserve": 6,
-    "leftoverInventory": 130,
+    "purchaseCost": 115802,
+    "consumptionCost": 20036,
+    "targetWasteReserve": 5,
+    "coveredWasteReserve": 5,
+    "leftoverInventory": 354,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "6cea35f55166aa22ddb202ccc7bf9848eeb5055050dfa6637da9cf63152dc775"
+    "plan_hash": "1691564a95fb324b159a76d893ab0e6449bec292b734df3a78b08c545e5e87b2"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -869,7 +1890,37 @@
     "incluye_iva": true,
     "lineas": [
       {
+        "variant_id": "46594236219687",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 1,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 49
+      },
+      {
         "variant_id": "46594236416295",
+        "nombre": "R-12 / PAQUETE X 50",
+        "cantidad_necesaria": 5,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 13037,
+        "subtotal": 13037,
+        "sobrante": 45
+      },
+      {
+        "variant_id": "46594342060327",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 3,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 47
+      },
+      {
+        "variant_id": "46594342453543",
         "nombre": "R-12 / PAQUETE X 50",
         "cantidad_necesaria": 7,
         "unidades_paquete": 50,
@@ -879,37 +1930,115 @@
         "sobrante": 43
       },
       {
-        "variant_id": "46594342453543",
-        "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 12,
+        "variant_id": "46594342551847",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 1,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
+        "sobrante": 5
+      },
+      {
+        "variant_id": "49475777986855",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 3,
         "unidades_paquete": 50,
         "paquetes": 1,
-        "precio_paquete": 13037,
-        "subtotal": 13037,
-        "sobrante": 38
+        "precio_paquete": 9313,
+        "subtotal": 9313,
+        "sobrante": 47
+      },
+      {
+        "variant_id": "49475778019623",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 1,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 13085,
+        "subtotal": 13085,
+        "sobrante": 5
       },
       {
         "variant_id": "49475778216231",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 12,
+        "cantidad_necesaria": 7,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 21403,
         "subtotal": 21403,
-        "sobrante": 38
+        "sobrante": 43
+      },
+      {
+        "variant_id": "50030991147303",
+        "nombre": "R-5 / PAQUETE X 50",
+        "cantidad_necesaria": 8,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "precio_paquete": 6164,
+        "subtotal": 6164,
+        "sobrante": 42
       },
       {
         "variant_id": "50030991311143",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 33,
+        "cantidad_necesaria": 21,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 17
+        "sobrante": 29
+      },
+      {
+        "variant_id": "50030991343911",
+        "nombre": "R-18 / PAQUETE X 6",
+        "cantidad_necesaria": 2,
+        "unidades_paquete": 6,
+        "paquetes": 1,
+        "precio_paquete": 7199,
+        "subtotal": 7199,
+        "sobrante": 4
       }
     ],
-    "total": 60514
+    "total": 115802
   },
-  "descartadas": []
+  "descartadas": [],
+  "pistas_conteo_usadas": [
+    {
+      "globos_visibles": 52,
+      "exacto": false,
+      "estimado_total": 65,
+      "racimos": 14,
+      "globos_por_racimo": 4,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.35
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.45
+        },
+        {
+          "clase": "grande",
+          "proporcion": 0.15
+        },
+        {
+          "clase": "gigante",
+          "proporcion": 0.05
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.9,
+      "referencia_element_id": "REF_01_E02"
+    }
+  ],
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E02",
+      "tamanos": "chicos_con_pocos_grandes",
+      "confianza": 1
+    }
+  ]
 }

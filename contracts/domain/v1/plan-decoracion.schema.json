@@ -4488,7 +4488,8 @@
       9,
       12,
       18,
-      24
+      24,
+      36
     ],
     "razon_maxima_sustitucion": 1.5,
     "sustituciones_admisibles": {
@@ -4505,7 +4506,11 @@
         24
       ],
       "24": [
-        18
+        18,
+        36
+      ],
+      "36": [
+        24
       ]
     },
     "patron_tamano_obligatorio": "^[ \\t\\n\\r\\f\\v]*R?-?(\\d{1,3})[ \\t\\n\\r\\f\\v]*$"

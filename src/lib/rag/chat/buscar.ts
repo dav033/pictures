@@ -9,6 +9,8 @@ import { llamarPythonCatalogSearch } from "@/lib/ia/nucleo/python-adapter";
 import { candidatoDesdePython } from "./candidato-python";
 import { coloresRealesProducto } from "@/lib/plan/colores-producto";
 import { recorrerEscalera } from "./relajacion-filtros";
+import { filtrarPorTonos } from "@/lib/plan/tonos-color";
+import type { TonoClaroV2 } from "@/lib/rag/taxonomy/v2";
 
 /**
  * Filters the customer clicked in the editor's catalog explorer. They are free
@@ -43,6 +45,13 @@ export type OpcionesBusquedaRag = {
    * colors of a reference photo). They only let the ladder relax the occasion
    * when its hits leave one uncovered (`debeAplicarPaso`). */
   coloresContexto?: readonly string[];
+  /**
+   * Tonos claros que pidió el cliente sin pedir otro color de su familia (`tonosExclusivos`: «celeste» y no «azul
+   * rey»). De esa familia solo vuelven los globos del tono: Python filtra por la familia guardada («azul») y devolvía
+   * Reflex Azul o Azul Rey para un celeste (probador, 2026-10-07). Es un filtro de TypeScript, así que sirve igual con
+   * el Python del VPS.
+   */
+  tonos?: readonly TonoClaroV2[];
 };
 
 export type VarianteCandidata = {
@@ -168,7 +177,10 @@ async function buscarCatalogoPython(
         puedeSeguir: (respuesta) => respuesta.status !== "AMBIGUOUS_SKU" && Date.now() < deadlineAt,
       })
     : { respuesta: primera, relajado: null };
-  const scores: ResultadoRetrieval[] = response.candidates.map((candidate) => ({
+  const candidates = opciones.tonos?.length
+    ? filtrarPorTonos(response.candidates, opciones.tonos, (candidate) => ({ titulo: candidate.title, colores: coloresRealesProducto(candidate.title, candidate.colors) }))
+    : response.candidates;
+  const scores: ResultadoRetrieval[] = candidates.map((candidate) => ({
     productId: candidate.product_id,
     variantIds: candidate.variants.map((variant) => variant.variant_id),
     vectorScore: 0,
@@ -176,7 +188,7 @@ async function buscarCatalogoPython(
     trigramScore: candidate.score,
     finalScore: candidate.score,
   }));
-  const candidatos: ProductoCandidato[] = response.candidates.map(candidatoDesdePython);
+  const candidatos: ProductoCandidato[] = candidates.map(candidatoDesdePython);
   const status = response.status === "OK"
     ? "candidatos"
     : response.status === "AMBIGUOUS_SKU" ? "aclaracion" : "NO_MATCH";

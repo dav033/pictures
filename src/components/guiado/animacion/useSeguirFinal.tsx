@@ -163,6 +163,10 @@ export function useSeguirFinal({ contenedorRef, contenidoRef, umbral = 120, umbr
  * Botón flotante para volver abajo. Con algo nuevo mientras el cliente releía arriba es una pastilla discreta
  * «Ver lo nuevo ↓»; si no, el círculo «Ir al final».
  */
+/**
+ * A la derecha y no en el centro: centrada tapaba el botón principal de la tarjeta que se está leyendo («Ver cómo
+ * quedaría», verificador 2026-10-06).
+ */
 export function BotonIrAlFinal({ visible, hayNuevo, onClick }: { visible: boolean; hayNuevo: boolean; onClick: () => void }) {
   return (
     <AnimatePresence>
@@ -178,7 +182,7 @@ export function BotonIrAlFinal({ visible, hayNuevo, onClick }: { visible: boolea
           exit={{ opacity: 0, y: 8, scale: 0.9 }}
           transition={RESORTE}
           whileTap={{ scale: 0.95 }}
-          className={`absolute bottom-3 left-1/2 z-10 -translate-x-1/2 shadow-lg ring-1 ring-borde focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 ${hayNuevo
+          className={`absolute bottom-3 right-3 z-10 shadow-lg sm:right-5 ring-1 ring-borde focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 ${hayNuevo
             ? "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-superficie/95 px-4 text-sm font-medium text-texto backdrop-blur-sm"
             : "grid size-11 place-items-center rounded-full bg-superficie text-texto"}`}
         >

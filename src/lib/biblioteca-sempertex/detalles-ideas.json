@@ -1,0 +1,4734 @@
+{
+  "generado": "npx tsx scripts/biblioteca/precomputar-detalles-ideas.ts (no editar a mano; --check detecta el desfase)",
+  "ideas": {
+    "deco-real-01-305": {
+      "fuente": "plan",
+      "planHash": "f4af1f505c63a271203cb775f713a9051262e9784d76faf336d0aecca15878f8",
+      "total": 145,
+      "piezas": [
+        {
+          "id": "EST_01_ARCO",
+          "nombre": "Arco",
+          "estructura": "arco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2.4,
+            "alto_m": 2.2
+          },
+          "lineas": [
+            {
+              "variantId": "46594235269415",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-12",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 73,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221343015",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-12",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 72,
+              "estimado": false
+            }
+          ],
+          "total": 145,
+          "colores": [
+            "negro",
+            "blanco"
+          ]
+        }
+      ]
+    },
+    "deco-real-02-34722b3ec9978bfe7439a121c16a1db7": {
+      "fuente": "estimado",
+      "planHash": "5ae4e9ad589b96f0674d21d2fb4848ad816f8f4616f2ce0af828ec1fb89b87ec",
+      "total": 179,
+      "piezas": [
+        {
+          "id": "EST_01_ARCO",
+          "nombre": "Arco",
+          "estructura": "arco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2.52,
+            "alto_m": 2.31
+          },
+          "lineas": [
+            {
+              "variantId": "46594228715815",
+              "producto": "Fashion Naranja",
+              "titulo": "B2b Globo Latex Redondo Fashion Naranja",
+              "codigo": "R-12",
+              "color": "naranja",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 81,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235269415",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-12",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 72,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221146407",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-5",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 6,
+              "estimado": true
+            },
+            {
+              "variantId": "46594213118247",
+              "producto": "Fashion Verde Lima",
+              "titulo": "B2b Globo Latex Redondo Fashion Verde Lima",
+              "codigo": "R-5",
+              "color": "verde lima",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 7,
+              "estimado": true
+            },
+            {
+              "variantId": "46594228486439",
+              "producto": "Fashion Naranja",
+              "titulo": "B2b Globo Latex Redondo Fashion Naranja",
+              "codigo": "R-5",
+              "color": "naranja",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 5,
+              "estimado": true
+            },
+            {
+              "variantId": "46594300936487",
+              "producto": "Tubito Fashion Negro",
+              "titulo": "B2b Globo Latex Tubito Fashion Negro",
+              "codigo": "T260",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 8,
+              "estimado": true
+            }
+          ],
+          "total": 179,
+          "colores": [
+            "naranja",
+            "negro",
+            "verde",
+            "blanco"
+          ]
+        }
+      ]
+    },
+    "deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1": {
+      "fuente": "plan",
+      "planHash": "a5f9db2006d18ebbbf7acbfca759498146fa20be67873cfa2ce5632d663a5654",
+      "total": 82,
+      "piezas": [
+        {
+          "id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco",
+          "estructura": "semiarco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 1.7,
+            "alto_m": 2
+          },
+          "lineas": [
+            {
+              "variantId": "46594272854311",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-5",
+              "color": "azul bebé",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250375463",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-5",
+              "color": "azul rey cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267644199",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-5",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221146407",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-5",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233729319",
+              "producto": "Fashion Azul",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul",
+              "codigo": "R-5",
+              "color": "azul cielo",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594272985383",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-12",
+              "color": "azul bebé",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 22,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250440999",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-12",
+              "color": "azul rey cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 14,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267709735",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-12",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221343015",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-12",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233925927",
+              "producto": "Fashion Azul",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul",
+              "codigo": "R-12",
+              "color": "azul cielo",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594273018151",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-18",
+              "color": "azul bebé",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250473767",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-18",
+              "color": "azul rey cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233991463",
+              "producto": "Fashion Azul",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul",
+              "codigo": "R-18",
+              "color": "azul cielo",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 71,
+          "colores": [
+            "azul",
+            "plateado",
+            "blanco"
+          ]
+        },
+        {
+          "id": "EST_02_BOUQUET",
+          "nombre": "Bouquet de globos",
+          "estructura": "bouquet",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [
+            {
+              "variantId": "46594272985383",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-12",
+              "color": "azul bebé",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250440999",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-12",
+              "color": "azul rey cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267709735",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-12",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233925927",
+              "producto": "Fashion Azul",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul",
+              "codigo": "R-12",
+              "color": "azul cielo",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 6,
+          "colores": [
+            "azul",
+            "plateado"
+          ]
+        },
+        {
+          "id": "EST_03_CENTRO_MESA",
+          "nombre": "Centro de mesa con globos",
+          "estructura": "centro_mesa",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 0.4,
+            "alto_m": 0.5
+          },
+          "lineas": [
+            {
+              "variantId": "46594307293479",
+              "producto": "Satin Azul",
+              "titulo": "B2b Globo Latex Redondo Satin Azul",
+              "codigo": "R-12",
+              "color": "azul perlado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250440999",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-12",
+              "color": "azul rey cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 5,
+          "colores": [
+            "azul"
+          ]
+        }
+      ]
+    },
+    "deco-real-04-71mp5umakml-ac-uf894-1000-ql80": {
+      "fuente": "plan",
+      "planHash": "cdafac0740431a3ca89940a9f89898dbedcca9ba7a3152be23b4f0daae0218cf",
+      "total": 101,
+      "piezas": [
+        {
+          "id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco",
+          "estructura": "semiarco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2.46,
+            "alto_m": 2.91
+          },
+          "lineas": [
+            {
+              "variantId": "46594247819559",
+              "producto": "Metal Verde",
+              "titulo": "B2b Globo Latex Redondo Metal Verde",
+              "codigo": "R-5",
+              "color": "verde metal",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "47466207019303",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-5",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250375463",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-5",
+              "color": "azul cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594294645031",
+              "producto": "Reflex Verde Lima",
+              "titulo": "B2b Globo Latex Redondo Reflex Verde Lima",
+              "codigo": "R-5",
+              "color": "verde lima cromado",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264629543",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-5",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594247983399",
+              "producto": "Metal Verde",
+              "titulo": "B2b Globo Latex Redondo Metal Verde",
+              "codigo": "R-12",
+              "color": "verde metal",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 23,
+              "estimado": false
+            },
+            {
+              "variantId": "47230981112103",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-12",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 18,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250440999",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-12",
+              "color": "azul cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 11,
+              "estimado": false
+            },
+            {
+              "variantId": "46594294710567",
+              "producto": "Reflex Verde Lima",
+              "titulo": "B2b Globo Latex Redondo Reflex Verde Lima",
+              "codigo": "R-12",
+              "color": "verde lima cromado",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 12,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264695079",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-12",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 11,
+              "estimado": false
+            },
+            {
+              "variantId": "47466210656551",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-18",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250473767",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-18",
+              "color": "azul cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264727847",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-18",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 101,
+          "colores": [
+            "verde",
+            "azul",
+            "dorado"
+          ]
+        }
+      ]
+    },
+    "deco-real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec": {
+      "fuente": "estimado",
+      "planHash": "e8dfb8f0ad5ae209b8aea6b76121c7df7faf6ed1cdac7f7c3bdbbcca2be8fec6",
+      "total": 109,
+      "piezas": [
+        {
+          "id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco",
+          "estructura": "semiarco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2.46,
+            "alto_m": 2.91
+          },
+          "lineas": [
+            {
+              "variantId": "46594251391271",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-5",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594229436711",
+              "producto": "Fashion Arena",
+              "titulo": "B2b Globo Latex Redondo Fashion Arena",
+              "codigo": "R-5",
+              "color": "arena",
+              "paleta": "beige",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235629863",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-5",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594208497959",
+              "producto": "Fashion Frambuesa",
+              "titulo": "B2b Globo Latex Redondo Fashion Frambuesa",
+              "codigo": "R-5",
+              "color": "rojo frambuesa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594211217703",
+              "producto": "Fashion Palo de Rosa",
+              "titulo": "B2b Globo Latex Redondo Fashion Palo De Rosa",
+              "codigo": "R-5",
+              "color": "palo de rosa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251456807",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-12",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 24,
+              "estimado": false
+            },
+            {
+              "variantId": "46594229797159",
+              "producto": "Fashion Arena",
+              "titulo": "B2b Globo Latex Redondo Fashion Arena",
+              "codigo": "R-9",
+              "color": "arena",
+              "paleta": "beige",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235728167",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-9",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594208792871",
+              "producto": "Fashion Frambuesa",
+              "titulo": "B2b Globo Latex Redondo Fashion Frambuesa",
+              "codigo": "R-9",
+              "color": "rojo frambuesa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594211316007",
+              "producto": "Fashion Palo de Rosa",
+              "titulo": "B2b Globo Latex Redondo Fashion Palo De Rosa",
+              "codigo": "R-9",
+              "color": "palo de rosa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594230157607",
+              "producto": "Fashion Arena",
+              "titulo": "B2b Globo Latex Redondo Fashion Arena",
+              "codigo": "R-12",
+              "color": "arena",
+              "paleta": "beige",
+              "liso": true,
+              "unidades": 10,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235826471",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-12",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 10,
+              "estimado": false
+            },
+            {
+              "variantId": "46594208956711",
+              "producto": "Fashion Frambuesa",
+              "titulo": "B2b Globo Latex Redondo Fashion Frambuesa",
+              "codigo": "R-12",
+              "color": "rojo frambuesa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 10,
+              "estimado": false
+            },
+            {
+              "variantId": "46594211414311",
+              "producto": "Fashion Palo de Rosa",
+              "titulo": "B2b Globo Latex Redondo Fashion Palo De Rosa",
+              "codigo": "R-12",
+              "color": "palo de rosa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251489575",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-18",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594230354215",
+              "producto": "Fashion Arena",
+              "titulo": "B2b Globo Latex Redondo Fashion Arena",
+              "codigo": "R-18",
+              "color": "arena",
+              "paleta": "beige",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235859239",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-18",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594211447079",
+              "producto": "Fashion Palo de Rosa",
+              "titulo": "B2b Globo Latex Redondo Fashion Palo De Rosa",
+              "codigo": "R-18",
+              "color": "palo de rosa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251555111",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-24",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594263843111",
+              "producto": "Infinity® Feliz Dia Mami Flores Fashion Surtido Rosa Silvestre",
+              "titulo": "B2b Globo Latex Redondo Infinity® Feliz Dia Mami Flores Fashion Surtido Rosa Silvestre",
+              "codigo": "R-12",
+              "color": "rosa con «Feliz día Mami»",
+              "paleta": "rosado",
+              "liso": false,
+              "unidades": 7,
+              "estimado": true
+            }
+          ],
+          "total": 109,
+          "colores": [
+            "rosado",
+            "dorado rosa",
+            "beige"
+          ]
+        }
+      ]
+    },
+    "deco-real-06-columna-globos-alta-colorida-cinta-dorada-sobre-": {
+      "fuente": "plan",
+      "planHash": "b281960e0b30f20a43eb4dd3a7aa2479204d8f68ac70a848a475a507936eeb56",
+      "total": 44,
+      "piezas": [
+        {
+          "id": "EST_01_COLUMNA",
+          "nombre": "Columna",
+          "estructura": "columna",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "lineas": [
+            {
+              "variantId": "46594211840295",
+              "producto": "Fashion Verde",
+              "titulo": "B2b Globo Latex Redondo Fashion Verde",
+              "codigo": "R-12",
+              "color": "verde",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 12,
+              "estimado": false
+            },
+            {
+              "variantId": "46594236416295",
+              "producto": "Fashion Rojo",
+              "titulo": "B2b Globo Latex Redondo Fashion Rojo",
+              "codigo": "R-12",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594232582439",
+              "producto": "Fashion Azul Rey",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Rey",
+              "codigo": "R-12",
+              "color": "azul rey",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594231992615",
+              "producto": "Fashion Amarillo",
+              "titulo": "B2b Globo Latex Redondo Fashion Amarillo",
+              "codigo": "R-12",
+              "color": "amarillo",
+              "paleta": "amarillo",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594228715815",
+              "producto": "Fashion Naranja",
+              "titulo": "B2b Globo Latex Redondo Fashion Naranja",
+              "codigo": "R-12",
+              "color": "naranja",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594216886567",
+              "producto": "Fashion Azul Caribe",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Caribe",
+              "codigo": "R-12",
+              "color": "azul celeste",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            }
+          ],
+          "total": 44,
+          "colores": [
+            "verde",
+            "azul",
+            "rojo",
+            "amarillo",
+            "naranja"
+          ]
+        }
+      ]
+    },
+    "deco-real-07-eb12910e210c94b6184d025127acce95": {
+      "fuente": "plan",
+      "planHash": "0e6c6cb5f47021b92cb5848579682a0f07f8e04190068e6b96fca7cae7c93572",
+      "total": 87,
+      "piezas": [
+        {
+          "id": "EST_01_COLUMNA_ASIMETRICA",
+          "nombre": "Columna orgánica izquierda",
+          "estructura": "columna_asimetrica",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "lineas": [
+            {
+              "variantId": "46594235629863",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-5",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594358640935",
+              "producto": "Pastel Dusk Lavanda",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda",
+              "codigo": "R-5",
+              "color": "lavanda",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264629543",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-5",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235728167",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-9",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594358706471",
+              "producto": "Pastel Dusk Lavanda",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda",
+              "codigo": "R-9",
+              "color": "lavanda",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264891687",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-9",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235826471",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-12",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594358772007",
+              "producto": "Pastel Dusk Lavanda",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda",
+              "codigo": "R-12",
+              "color": "lavanda",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264695079",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-12",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235957543",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-24",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594358968615",
+              "producto": "Pastel Dusk Lavanda",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda",
+              "codigo": "R-18",
+              "color": "lavanda",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            }
+          ],
+          "total": 39,
+          "colores": [
+            "rosado",
+            "lila",
+            "dorado"
+          ]
+        },
+        {
+          "id": "EST_02_COLUMNA_ASIMETRICA",
+          "nombre": "Columna orgánica derecha",
+          "estructura": "columna_asimetrica",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "lineas": [
+            {
+              "variantId": "46594235629863",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-5",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594358640935",
+              "producto": "Pastel Dusk Lavanda",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda",
+              "codigo": "R-5",
+              "color": "lavanda",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264629543",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-5",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235728167",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-9",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594358706471",
+              "producto": "Pastel Dusk Lavanda",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda",
+              "codigo": "R-9",
+              "color": "lavanda",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264891687",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-9",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235826471",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-12",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 10,
+              "estimado": false
+            },
+            {
+              "variantId": "46594358772007",
+              "producto": "Pastel Dusk Lavanda",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda",
+              "codigo": "R-12",
+              "color": "lavanda",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 9,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264695079",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-12",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235957543",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-24",
+              "color": "rosa bebé",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594358968615",
+              "producto": "Pastel Dusk Lavanda",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Lavanda",
+              "codigo": "R-18",
+              "color": "lavanda",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264727847",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-18",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 48,
+          "colores": [
+            "rosado",
+            "lila",
+            "dorado"
+          ]
+        }
+      ]
+    },
+    "deco-real-08-images-23": {
+      "fuente": "plan",
+      "planHash": "96c7c1651e92ff1152d02264e8fde0a4514df2de6f63d4f619c2c7dd1e2b16e4",
+      "total": 90,
+      "piezas": [
+        {
+          "id": "EST_01_COLUMNA",
+          "nombre": "Columna izquierda",
+          "estructura": "columna",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "lineas": [
+            {
+              "variantId": "46594235269415",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-12",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 22,
+              "estimado": false
+            },
+            {
+              "variantId": "46594252898599",
+              "producto": "Metal Dorado",
+              "titulo": "B2b Globo Latex Redondo Metal Dorado",
+              "codigo": "R-12",
+              "color": "dorado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 22,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235433255",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-36",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 45,
+          "colores": [
+            "negro",
+            "dorado"
+          ]
+        },
+        {
+          "id": "EST_02_COLUMNA",
+          "nombre": "Columna derecha",
+          "estructura": "columna",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 0.55,
+            "alto_m": 2
+          },
+          "lineas": [
+            {
+              "variantId": "46594235269415",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-12",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 22,
+              "estimado": false
+            },
+            {
+              "variantId": "46594252898599",
+              "producto": "Metal Dorado",
+              "titulo": "B2b Globo Latex Redondo Metal Dorado",
+              "codigo": "R-12",
+              "color": "dorado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 22,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235433255",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-36",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 45,
+          "colores": [
+            "negro",
+            "dorado"
+          ]
+        }
+      ]
+    },
+    "deco-real-09-images-24": {
+      "fuente": "plan",
+      "planHash": "eb5f1ab547c7d8cb03e134367f3981e3af25777e922e340aff57805423cd8438",
+      "total": 41,
+      "piezas": [
+        {
+          "id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda",
+          "estructura": "guirnalda",
+          "repeticiones": 1,
+          "medidas": {
+            "largo_m": 2.4
+          },
+          "lineas": [
+            {
+              "variantId": "46594359918887",
+              "producto": "Fashion Coral Tropical",
+              "titulo": "B2b Globo Latex Redondo Fashion Coral Tropical",
+              "codigo": "R-5",
+              "color": "coral",
+              "paleta": "coral",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235629863",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-5",
+              "color": "rosa chicle",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264629543",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-5",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "51140271145255",
+              "producto": "Fashion Blush Crema",
+              "titulo": "B2b Globo Latex Redondo Fashion Blush Crema",
+              "codigo": "R-5",
+              "color": "rosa blush",
+              "paleta": "crema",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594359886119",
+              "producto": "Fashion Coral Tropical",
+              "titulo": "B2b Globo Latex Redondo Fashion Coral Tropical",
+              "codigo": "R-12",
+              "color": "coral",
+              "paleta": "coral",
+              "liso": true,
+              "unidades": 10,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235826471",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-12",
+              "color": "rosa chicle",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264695079",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-12",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "51140271341863",
+              "producto": "Fashion Blush Crema",
+              "titulo": "B2b Globo Latex Redondo Fashion Blush Crema",
+              "codigo": "R-12",
+              "color": "rosa blush",
+              "paleta": "crema",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            }
+          ],
+          "total": 41,
+          "colores": [
+            "coral",
+            "rosado",
+            "dorado",
+            "crema"
+          ]
+        }
+      ]
+    },
+    "deco-real-10-images-25": {
+      "fuente": "estimado",
+      "planHash": "91f5f996de95dcb0e5d6a70ccd740af7e588deaf78702491d38e903cfc7a81da",
+      "total": 75,
+      "piezas": [
+        {
+          "id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco",
+          "estructura": "semiarco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 1.75,
+            "alto_m": 2.06
+          },
+          "lineas": [
+            {
+              "variantId": "46594272854311",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-5",
+              "color": "azul pastel",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "46594308505895",
+              "producto": "Satin Perla",
+              "titulo": "B2b Globo Latex Redondo Satin Perla",
+              "codigo": "R-5",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267644199",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-5",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233729319",
+              "producto": "Fashion Azul",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul",
+              "codigo": "R-5",
+              "color": "azul",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "47466207019303",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-5",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594306474279",
+              "producto": "Fashion Transparente",
+              "titulo": "B2b Globo Latex Redondo Fashion Transparente",
+              "codigo": "R-5",
+              "color": "transparente con confeti",
+              "paleta": "transparente",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594272985383",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-12",
+              "color": "azul pastel",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 17,
+              "estimado": false
+            },
+            {
+              "variantId": "46594308768039",
+              "producto": "Satin Perla",
+              "titulo": "B2b Globo Latex Redondo Satin Perla",
+              "codigo": "R-12",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 12,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267709735",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-12",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233925927",
+              "producto": "Fashion Azul",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul",
+              "codigo": "R-12",
+              "color": "azul",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "47230981112103",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-12",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594306605351",
+              "producto": "Fashion Transparente",
+              "titulo": "B2b Globo Latex Redondo Fashion Transparente",
+              "codigo": "R-12",
+              "color": "transparente con confeti",
+              "paleta": "transparente",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594273018151",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-18",
+              "color": "azul pastel",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594308800807",
+              "producto": "Satin Perla",
+              "titulo": "B2b Globo Latex Redondo Satin Perla",
+              "codigo": "R-18",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267742503",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-18",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594103247143",
+              "producto": "Confetti Azul Celeste - Plateado",
+              "titulo": "B2b Confetti Azul Celeste - Plateado",
+              "codigo": null,
+              "color": "celeste y plateado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "46594157117735",
+              "producto": "Cortina Metalica Plata",
+              "titulo": "B2b Cortina Metalica Plata",
+              "codigo": null,
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": false,
+              "unidades": 1,
+              "estimado": true
+            }
+          ],
+          "total": 75,
+          "colores": [
+            "azul",
+            "blanco",
+            "plateado"
+          ]
+        }
+      ]
+    },
+    "deco-real-11-images-26": {
+      "fuente": "plan",
+      "planHash": "90d877c0275066093cae4392e9f30a6b0db22f757031688bbfe19fdfd143075a",
+      "total": 120,
+      "piezas": [
+        {
+          "id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda",
+          "estructura": "guirnalda",
+          "repeticiones": 1,
+          "medidas": {
+            "largo_m": 5.49
+          },
+          "lineas": [
+            {
+              "variantId": "46594235629863",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-5",
+              "color": "rosa chicle",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 11,
+              "estimado": false
+            },
+            {
+              "variantId": "46594210595111",
+              "producto": "Fashion Aguamarina",
+              "titulo": "B2b Globo Latex Redondo Fashion Aguamarina",
+              "codigo": "R-5",
+              "color": "turquesa aguamarina",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594210300199",
+              "producto": "Fashion Lila",
+              "titulo": "B2b Globo Latex Redondo Fashion Lila",
+              "codigo": "R-5",
+              "color": "lila",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221146407",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-5",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233172263",
+              "producto": "Fashion Violeta",
+              "titulo": "B2b Globo Latex Redondo Fashion Violeta",
+              "codigo": "R-5",
+              "color": "violeta",
+              "paleta": "violeta",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235826471",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-12",
+              "color": "rosa chicle",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 27,
+              "estimado": false
+            },
+            {
+              "variantId": "46594210791719",
+              "producto": "Fashion Aguamarina",
+              "titulo": "B2b Globo Latex Redondo Fashion Aguamarina",
+              "codigo": "R-12",
+              "color": "turquesa aguamarina",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 20,
+              "estimado": false
+            },
+            {
+              "variantId": "46594210496807",
+              "producto": "Fashion Lila",
+              "titulo": "B2b Globo Latex Redondo Fashion Lila",
+              "codigo": "R-12",
+              "color": "lila",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 19,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221343015",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-12",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 11,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233434407",
+              "producto": "Fashion Violeta",
+              "titulo": "B2b Globo Latex Redondo Fashion Violeta",
+              "codigo": "R-12",
+              "color": "violeta",
+              "paleta": "violeta",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594252898599",
+              "producto": "Metal Dorado",
+              "titulo": "B2b Globo Latex Redondo Metal Dorado",
+              "codigo": "R-12",
+              "color": "dorado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            }
+          ],
+          "total": 120,
+          "colores": [
+            "rosado",
+            "azul",
+            "lila",
+            "blanco",
+            "violeta"
+          ]
+        }
+      ]
+    },
+    "deco-real-12-images-27": {
+      "fuente": "plan",
+      "planHash": "ef7d5989426cf0c60b7ff0ae528cea23fa4fc1d41a73f8787b84b608325fe28d",
+      "total": 109,
+      "piezas": [
+        {
+          "id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco",
+          "estructura": "semiarco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2,
+            "alto_m": 2.6
+          },
+          "lineas": [
+            {
+              "variantId": "46594270986535",
+              "producto": "Pastel Mate Lila",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Lila",
+              "codigo": "R-5",
+              "color": "lila pastel",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594290680103",
+              "producto": "Reflex Violeta",
+              "titulo": "B2b Globo Latex Redondo Reflex Violeta",
+              "codigo": "R-5",
+              "color": "morado cromado",
+              "paleta": "violeta",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267644199",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-5",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594271150375",
+              "producto": "Pastel Mate Lila",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Lila",
+              "codigo": "R-12",
+              "color": "lila pastel",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 25,
+              "estimado": false
+            },
+            {
+              "variantId": "46594290745639",
+              "producto": "Reflex Violeta",
+              "titulo": "B2b Globo Latex Redondo Reflex Violeta",
+              "codigo": "R-12",
+              "color": "morado cromado",
+              "paleta": "violeta",
+              "liso": true,
+              "unidades": 23,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267709735",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-12",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 16,
+              "estimado": false
+            },
+            {
+              "variantId": "46594271183143",
+              "producto": "Pastel Mate Lila",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Lila",
+              "codigo": "R-18",
+              "color": "lila pastel",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267742503",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-18",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 86,
+          "colores": [
+            "lila",
+            "violeta",
+            "plateado"
+          ]
+        },
+        {
+          "id": "EST_02_COLUMNA_ASIMETRICA",
+          "nombre": "Columna orgánica",
+          "estructura": "columna_asimetrica",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 0.6,
+            "alto_m": 1
+          },
+          "lineas": [
+            {
+              "variantId": "46594290680103",
+              "producto": "Reflex Violeta",
+              "titulo": "B2b Globo Latex Redondo Reflex Violeta",
+              "codigo": "R-5",
+              "color": "morado cromado",
+              "paleta": "violeta",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594270986535",
+              "producto": "Pastel Mate Lila",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Lila",
+              "codigo": "R-5",
+              "color": "lila pastel",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267644199",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-5",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594290745639",
+              "producto": "Reflex Violeta",
+              "titulo": "B2b Globo Latex Redondo Reflex Violeta",
+              "codigo": "R-12",
+              "color": "morado cromado",
+              "paleta": "violeta",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594271150375",
+              "producto": "Pastel Mate Lila",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Lila",
+              "codigo": "R-12",
+              "color": "lila pastel",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267709735",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-12",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594267742503",
+              "producto": "Reflex Plata",
+              "titulo": "B2b Globo Latex Redondo Reflex Plata",
+              "codigo": "R-18",
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 23,
+          "colores": [
+            "violeta",
+            "lila",
+            "plateado"
+          ]
+        }
+      ]
+    },
+    "deco-real-13-images-28": {
+      "fuente": "plan",
+      "planHash": "a9d37fcebe19c12fbe836196c9dcf27faa93f04ed0e9b5bb445bf65861cb02d3",
+      "total": 102,
+      "piezas": [
+        {
+          "id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco",
+          "estructura": "semiarco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2.44,
+            "alto_m": 2.89
+          },
+          "lineas": [
+            {
+              "variantId": "46594251391271",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-5",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 16,
+              "estimado": false
+            },
+            {
+              "variantId": "46594308505895",
+              "producto": "Satin Perla",
+              "titulo": "B2b Globo Latex Redondo Satin Perla",
+              "codigo": "R-5",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 11,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251456807",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-12",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 41,
+              "estimado": false
+            },
+            {
+              "variantId": "46594308768039",
+              "producto": "Satin Perla",
+              "titulo": "B2b Globo Latex Redondo Satin Perla",
+              "codigo": "R-12",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 28,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251489575",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-18",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594308800807",
+              "producto": "Satin Perla",
+              "titulo": "B2b Globo Latex Redondo Satin Perla",
+              "codigo": "R-18",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            }
+          ],
+          "total": 102,
+          "colores": [
+            "dorado rosa",
+            "blanco"
+          ]
+        }
+      ]
+    },
+    "deco-real-14-images-29": {
+      "fuente": "plan",
+      "planHash": "9212595fe8018dee7682dfe2d7f961830d095f889ce187948dd8988a8b63c3f4",
+      "total": 145,
+      "piezas": [
+        {
+          "id": "EST_01_ARCO",
+          "nombre": "Arco",
+          "estructura": "arco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2.4,
+            "alto_m": 2.2
+          },
+          "lineas": [
+            {
+              "variantId": "46594235269415",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-12",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 73,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221343015",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-12",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 72,
+              "estimado": false
+            }
+          ],
+          "total": 145,
+          "colores": [
+            "negro",
+            "blanco"
+          ]
+        }
+      ]
+    },
+    "deco-real-15-images-30": {
+      "fuente": "plan",
+      "planHash": "ebc8cd8e0762a3b97bf13b59e95025138b59a833add4568420baedab75699049",
+      "total": 89,
+      "piezas": [
+        {
+          "id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco",
+          "estructura": "semiarco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 1.75,
+            "alto_m": 2.06
+          },
+          "lineas": [
+            {
+              "variantId": "46594352972071",
+              "producto": "Pastel Dusk Crema",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Crema",
+              "codigo": "R-5",
+              "color": "crema",
+              "paleta": "crema",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264629543",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-5",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594236219687",
+              "producto": "Fashion Rojo",
+              "titulo": "B2b Globo Latex Redondo Fashion Rojo",
+              "codigo": "R-5",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594353135911",
+              "producto": "Pastel Dusk Crema",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Crema",
+              "codigo": "R-12",
+              "color": "crema",
+              "paleta": "crema",
+              "liso": true,
+              "unidades": 20,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264695079",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-12",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 17,
+              "estimado": false
+            },
+            {
+              "variantId": "46594236416295",
+              "producto": "Fashion Rojo",
+              "titulo": "B2b Globo Latex Redondo Fashion Rojo",
+              "codigo": "R-12",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 12,
+              "estimado": false
+            },
+            {
+              "variantId": "46594353266983",
+              "producto": "Pastel Dusk Crema",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Crema",
+              "codigo": "R-18",
+              "color": "crema",
+              "paleta": "crema",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264727847",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-18",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594236449063",
+              "producto": "Fashion Rojo",
+              "titulo": "B2b Globo Latex Redondo Fashion Rojo",
+              "codigo": "R-18",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 73,
+          "colores": [
+            "crema",
+            "dorado",
+            "rojo"
+          ]
+        },
+        {
+          "id": "EST_02_GUIRNALDA",
+          "nombre": "Guirnalda",
+          "estructura": "guirnalda",
+          "repeticiones": 1,
+          "medidas": {
+            "largo_m": 0.8
+          },
+          "lineas": [
+            {
+              "variantId": "46594236219687",
+              "producto": "Fashion Rojo",
+              "titulo": "B2b Globo Latex Redondo Fashion Rojo",
+              "codigo": "R-5",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594352972071",
+              "producto": "Pastel Dusk Crema",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Crema",
+              "codigo": "R-5",
+              "color": "crema",
+              "paleta": "crema",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594236416295",
+              "producto": "Fashion Rojo",
+              "titulo": "B2b Globo Latex Redondo Fashion Rojo",
+              "codigo": "R-12",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594353135911",
+              "producto": "Pastel Dusk Crema",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Crema",
+              "codigo": "R-12",
+              "color": "crema",
+              "paleta": "crema",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594236449063",
+              "producto": "Fashion Rojo",
+              "titulo": "B2b Globo Latex Redondo Fashion Rojo",
+              "codigo": "R-18",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 16,
+          "colores": [
+            "rojo",
+            "crema"
+          ]
+        }
+      ]
+    },
+    "deco-real-16-images-31": {
+      "fuente": "estimado",
+      "planHash": "7fc39b3cac2cf4d2e32e039f6c16b3c25b39009c762924c9dadbfd4a5fd23fcb",
+      "total": 99,
+      "piezas": [
+        {
+          "id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda",
+          "estructura": "guirnalda",
+          "repeticiones": 1,
+          "medidas": {
+            "largo_m": 2.98
+          },
+          "lineas": [
+            {
+              "variantId": "47466207019303",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-5",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 10,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250375463",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-5",
+              "color": "azul cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "46594306474279",
+              "producto": "Fashion Transparente",
+              "titulo": "B2b Globo Latex Redondo Fashion Transparente",
+              "codigo": "R-5",
+              "color": "transparente con confeti",
+              "paleta": "transparente",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "47230981112103",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-12",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 27,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250440999",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-12",
+              "color": "azul cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 16,
+              "estimado": false
+            },
+            {
+              "variantId": "46594306605351",
+              "producto": "Fashion Transparente",
+              "titulo": "B2b Globo Latex Redondo Fashion Transparente",
+              "codigo": "R-12",
+              "color": "transparente con confeti",
+              "paleta": "transparente",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "47466210656551",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-18",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594250473767",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-18",
+              "color": "azul cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            }
+          ],
+          "total": 73,
+          "colores": [
+            "azul"
+          ]
+        },
+        {
+          "id": "EST_02_BOUQUET",
+          "nombre": "Bouquet de globos 1",
+          "estructura": "bouquet",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [
+            {
+              "variantId": "46594250440999",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-12",
+              "color": "azul cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "47230981112103",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-12",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            }
+          ],
+          "total": 12,
+          "colores": [
+            "azul"
+          ]
+        },
+        {
+          "id": "EST_03_BOUQUET",
+          "nombre": "Bouquet de globos 2",
+          "estructura": "bouquet",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [
+            {
+              "variantId": "46594250440999",
+              "producto": "Reflex Azul",
+              "titulo": "B2b Globo Latex Redondo Reflex Azul",
+              "codigo": "R-12",
+              "color": "azul cromado",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "47230981112103",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-12",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594306605351",
+              "producto": "Fashion Transparente",
+              "titulo": "B2b Globo Latex Redondo Fashion Transparente",
+              "codigo": "R-12",
+              "color": "transparente con confeti",
+              "paleta": "transparente",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 10,
+          "colores": [
+            "azul"
+          ]
+        }
+      ],
+      "lineasSinPieza": [
+        {
+          "variantId": "46594103247143",
+          "producto": "Confetti Azul Celeste - Plateado",
+          "titulo": "B2b Confetti Azul Celeste - Plateado",
+          "codigo": null,
+          "color": "celeste y plateado",
+          "paleta": "azul",
+          "liso": true,
+          "unidades": 1,
+          "estimado": true
+        },
+        {
+          "variantId": "51128000086311",
+          "producto": "Metalizado Estrella Azul Rey",
+          "titulo": "B2b Globo Metalizado Estrella Azul Rey",
+          "codigo": "18 IN",
+          "color": "azul rey",
+          "paleta": "azul",
+          "liso": true,
+          "unidades": 2,
+          "estimado": true
+        },
+        {
+          "variantId": "46594157117735",
+          "producto": "Cortina Metalica Plata",
+          "titulo": "B2b Cortina Metalica Plata",
+          "codigo": null,
+          "color": "plateado",
+          "paleta": "plateado",
+          "liso": false,
+          "unidades": 1,
+          "estimado": true
+        }
+      ]
+    },
+    "deco-real-17-img-2939-1-600x600": {
+      "fuente": "plan",
+      "planHash": "441eb8108cbf6d3537fb90b80885bfb438a51b189131953b0a1514c0aea1083c",
+      "total": 102,
+      "piezas": [
+        {
+          "id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco",
+          "estructura": "semiarco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2.46,
+            "alto_m": 2.91
+          },
+          "lineas": [
+            {
+              "variantId": "46594251391271",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-5",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264629543",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-5",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251653415",
+              "producto": "Pastel Mate Amarillo",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Amarillo",
+              "codigo": "R-5",
+              "color": "amarillo pastel",
+              "paleta": "amarillo",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235629863",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-5",
+              "color": "rosa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251456807",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-12",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 21,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264891687",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-9",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251718951",
+              "producto": "Pastel Mate Amarillo",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Amarillo",
+              "codigo": "R-9",
+              "color": "amarillo pastel",
+              "paleta": "amarillo",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235728167",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-9",
+              "color": "rosa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264695079",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-12",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 17,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251784487",
+              "producto": "Pastel Mate Amarillo",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Amarillo",
+              "codigo": "R-12",
+              "color": "amarillo pastel",
+              "paleta": "amarillo",
+              "liso": true,
+              "unidades": 11,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235826471",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-12",
+              "color": "rosa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 11,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251489575",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-18",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264727847",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-18",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251817255",
+              "producto": "Pastel Mate Amarillo",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Amarillo",
+              "codigo": "R-18",
+              "color": "amarillo pastel",
+              "paleta": "amarillo",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235859239",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-18",
+              "color": "rosa",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594251555111",
+              "producto": "Reflex Dorado Rosa",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado Rosa",
+              "codigo": "R-24",
+              "color": "oro rosa",
+              "paleta": "dorado rosa",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264793383",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-24",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            }
+          ],
+          "total": 102,
+          "colores": [
+            "dorado rosa",
+            "dorado",
+            "amarillo",
+            "rosado"
+          ]
+        }
+      ]
+    },
+    "deco-real-18-sddefault": {
+      "fuente": "estimado",
+      "planHash": "5d85a57b09b7b0bde32ccb8442b584889b8cbf10813ec8e61afbf11890c2ed2e",
+      "total": 45,
+      "piezas": [
+        {
+          "id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda",
+          "estructura": "guirnalda",
+          "repeticiones": 1,
+          "medidas": {
+            "largo_m": 2.4
+          },
+          "lineas": [
+            {
+              "variantId": "46594260926759",
+              "producto": "Pastel Mate Rosado",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Rosado",
+              "codigo": "R-5",
+              "color": "rosa pastel",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264629543",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-5",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221146407",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-5",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594261057831",
+              "producto": "Pastel Mate Rosado",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Rosado",
+              "codigo": "R-12",
+              "color": "rosa pastel",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 16,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264695079",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-12",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221343015",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-12",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594261090599",
+              "producto": "Pastel Mate Rosado",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Rosado",
+              "codigo": "R-18",
+              "color": "rosa pastel",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594301526311",
+              "producto": "Infinity® Estrellas Fashion Transparente",
+              "titulo": "B2b Globo Latex Redondo Infinity® Estrellas Fashion Transparente",
+              "codigo": "R-12",
+              "color": "transparente con estrellas blancas",
+              "paleta": "transparente",
+              "liso": false,
+              "unidades": 6,
+              "estimado": true
+            },
+            {
+              "variantId": "46594192015655",
+              "producto": "Cortina Metalica Rosado",
+              "titulo": "B2b Cortina Metalica Rosado",
+              "codigo": null,
+              "color": "rosado",
+              "paleta": "rosado",
+              "liso": false,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "46594160001319",
+              "producto": "Cortina Metalica Dorado",
+              "titulo": "B2b Cortina Metalica Dorado",
+              "codigo": null,
+              "color": "dorado",
+              "paleta": "dorado",
+              "liso": false,
+              "unidades": 1,
+              "estimado": true
+            }
+          ],
+          "total": 45,
+          "colores": [
+            "rosado",
+            "dorado",
+            "blanco"
+          ]
+        }
+      ]
+    },
+    "deco-real-19-semiarco-organico-combinaciones-con-reflex-26bbc": {
+      "fuente": "estimado",
+      "planHash": "2d95fcc7e9d198a668f93b5b6d496d68fc50fe70cd1add8e8cdb773d84f12f6f",
+      "total": 65,
+      "piezas": [
+        {
+          "id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda",
+          "estructura": "guirnalda",
+          "repeticiones": 1,
+          "medidas": {
+            "largo_m": 2.4
+          },
+          "lineas": [
+            {
+              "variantId": "46594264629543",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-5",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235629863",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-5",
+              "color": "rosa chicle",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594234384679",
+              "producto": "Fashion Fucsia",
+              "titulo": "B2b Globo Latex Redondo Fashion Fucsia",
+              "codigo": "R-5",
+              "color": "fucsia",
+              "paleta": "fucsia",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594270396711",
+              "producto": "Reflex Cristal Rojo",
+              "titulo": "B2b Globo Latex Redondo Reflex Cristal Rojo",
+              "codigo": "R-5",
+              "color": "rojo cereza cromado",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264695079",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-12",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 15,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235826471",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-12",
+              "color": "rosa chicle",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 12,
+              "estimado": false
+            },
+            {
+              "variantId": "46594234614055",
+              "producto": "Fashion Fucsia",
+              "titulo": "B2b Globo Latex Redondo Fashion Fucsia",
+              "codigo": "R-12",
+              "color": "fucsia",
+              "paleta": "fucsia",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594270462247",
+              "producto": "Reflex Cristal Rojo",
+              "titulo": "B2b Globo Latex Redondo Reflex Cristal Rojo",
+              "codigo": "R-12",
+              "color": "rojo cereza cromado",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264793383",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-24",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235859239",
+              "producto": "Fashion Rosado",
+              "titulo": "B2b Globo Latex Redondo Fashion Rosado",
+              "codigo": "R-18",
+              "color": "rosa chicle",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594234712359",
+              "producto": "Fashion Fucsia",
+              "titulo": "B2b Globo Latex Redondo Fashion Fucsia",
+              "codigo": "R-18",
+              "color": "fucsia",
+              "paleta": "fucsia",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594270495015",
+              "producto": "Reflex Cristal Rojo",
+              "titulo": "B2b Globo Latex Redondo Reflex Cristal Rojo",
+              "codigo": "R-18",
+              "color": "rojo cereza cromado",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594209415463",
+              "producto": "Infinity® Confetti Multicolor Pastel Fashion Transparente",
+              "titulo": "B2b Globo Latex Redondo Infinity® Confetti Multicolor Pastel Fashion Transparente",
+              "codigo": "R-12",
+              "color": "transparente con confeti",
+              "paleta": "transparente",
+              "liso": false,
+              "unidades": 7,
+              "estimado": true
+            }
+          ],
+          "total": 65,
+          "colores": [
+            "dorado",
+            "rosado",
+            "fucsia",
+            "rojo"
+          ]
+        }
+      ]
+    },
+    "deco-real-20-semiarcoilusionazul-1200x1200": {
+      "fuente": "estimado",
+      "planHash": "b89f6a04e6aaea15e6b0d21eb7727e8336dc93804ff4453292d6e838d18a7bb0",
+      "total": 48,
+      "piezas": [
+        {
+          "id": "EST_01_SEMIARCO",
+          "nombre": "Semiarco",
+          "estructura": "semiarco",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 1.7,
+            "alto_m": 2
+          },
+          "lineas": [
+            {
+              "variantId": "47466207019303",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-5",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233729319",
+              "producto": "Fashion Azul",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul",
+              "codigo": "R-5",
+              "color": "azul",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594272854311",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-5",
+              "color": "azul pastel",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "47230981112103",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-12",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 13,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233925927",
+              "producto": "Fashion Azul",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul",
+              "codigo": "R-12",
+              "color": "azul",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 10,
+              "estimado": false
+            },
+            {
+              "variantId": "46594272985383",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-12",
+              "color": "azul pastel",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "47466210656551",
+              "producto": "Fashion Azul Naval",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul Naval",
+              "codigo": "R-18",
+              "color": "azul marino",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594233991463",
+              "producto": "Fashion Azul",
+              "titulo": "B2b Globo Latex Redondo Fashion Azul",
+              "codigo": "R-18",
+              "color": "azul",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594273018151",
+              "producto": "Pastel Mate Azul",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Azul",
+              "codigo": "R-18",
+              "color": "azul pastel",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "49858791178535",
+              "producto": "Metalizado Estrella Azul Pastel",
+              "titulo": "B2b Globo Metalizado Estrella Azul Pastel",
+              "codigo": "18 IN",
+              "color": "azul celeste",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 3,
+              "estimado": true
+            },
+            {
+              "variantId": "46594157117735",
+              "producto": "Cortina Metalica Plata",
+              "titulo": "B2b Cortina Metalica Plata",
+              "codigo": null,
+              "color": "plateado",
+              "paleta": "plateado",
+              "liso": false,
+              "unidades": 1,
+              "estimado": true
+            }
+          ],
+          "total": 48,
+          "colores": [
+            "azul"
+          ]
+        }
+      ]
+    },
+    "deco-real-21-bouquet-flores-modelables": {
+      "fuente": "estimado",
+      "total": 66,
+      "piezas": [
+        {
+          "id": "PIEZA_01_FIGURA",
+          "nombre": "Figura con globos",
+          "estructura": "figura",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [
+            {
+              "variantId": "46594294776103",
+              "producto": "Tubito Fashion Naranja",
+              "titulo": "B2b Globo Latex Tubito Fashion Naranja",
+              "codigo": "T260",
+              "color": "naranja",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 5,
+              "estimado": true
+            },
+            {
+              "variantId": "46594279702823",
+              "producto": "Tubito Fashion Fucsia",
+              "titulo": "B2b Globo Latex Tubito Fashion Fucsia",
+              "codigo": "T260",
+              "color": "fucsia",
+              "paleta": "fucsia",
+              "liso": true,
+              "unidades": 4,
+              "estimado": true
+            },
+            {
+              "variantId": "47466190864679",
+              "producto": "Tubito Pastel Mate Rosado",
+              "titulo": "B2b Globo Latex Tubito Pastel Mate Rosado",
+              "codigo": "T260",
+              "color": "rosa claro",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": true
+            },
+            {
+              "variantId": "46594301690151",
+              "producto": "Tubito Fashion Eucalipto",
+              "titulo": "B2b Globo Latex Tubito Fashion Eucalipto",
+              "codigo": "T260",
+              "color": "verde eucalipto",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 5,
+              "estimado": true
+            },
+            {
+              "variantId": "46594234351911",
+              "producto": "Fashion Fucsia",
+              "titulo": "B2b Globo Latex Redondo Fashion Fucsia",
+              "codigo": "R-5",
+              "color": "fucsia",
+              "paleta": "fucsia",
+              "liso": true,
+              "unidades": 18,
+              "estimado": true
+            },
+            {
+              "variantId": "46594260795687",
+              "producto": "Pastel Mate Rosado",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Rosado",
+              "codigo": "R-5",
+              "color": "rosa claro",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 11,
+              "estimado": true
+            },
+            {
+              "variantId": "46594210890023",
+              "producto": "Fashion Durazno",
+              "titulo": "B2b Globo Latex Redondo Fashion Durazno",
+              "codigo": "R-5",
+              "color": "durazno",
+              "paleta": null,
+              "liso": true,
+              "unidades": 11,
+              "estimado": true
+            },
+            {
+              "variantId": "46594210955559",
+              "producto": "Fashion Durazno",
+              "titulo": "B2b Globo Latex Redondo Fashion Durazno",
+              "codigo": "R-9",
+              "color": "durazno",
+              "paleta": null,
+              "liso": true,
+              "unidades": 8,
+              "estimado": true
+            },
+            {
+              "variantId": "46594234417447",
+              "producto": "Fashion Fucsia",
+              "titulo": "B2b Globo Latex Redondo Fashion Fucsia",
+              "codigo": "R-9",
+              "color": "fucsia",
+              "paleta": "fucsia",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            }
+          ],
+          "total": 66,
+          "colores": [
+            "fucsia",
+            "rosado",
+            "naranja",
+            "verde"
+          ]
+        }
+      ]
+    },
+    "deco-real-22-guirnalda-san-valentin": {
+      "fuente": "estimado",
+      "planHash": "1691564a95fb324b159a76d893ab0e6449bec292b734df3a78b08c545e5e87b2",
+      "total": 65,
+      "piezas": [
+        {
+          "id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda",
+          "estructura": "guirnalda",
+          "repeticiones": 1,
+          "medidas": {
+            "largo_m": 2.4
+          },
+          "lineas": [
+            {
+              "variantId": "50030991147303",
+              "producto": "Fashion Rosa",
+              "titulo": "B2b Globo Fashion Rosa",
+              "codigo": "R-5",
+              "color": "rosa fuerte",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594342060327",
+              "producto": "Pastel Dusk Rosa",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Rosa",
+              "codigo": "R-5",
+              "color": "rosa claro",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "49475777986855",
+              "producto": "Silk Blanco Nácar",
+              "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar",
+              "codigo": "R-5",
+              "color": "blanco perlado",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594236219687",
+              "producto": "Fashion Rojo",
+              "titulo": "B2b Globo Latex Redondo Fashion Rojo",
+              "codigo": "R-5",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "50030991311143",
+              "producto": "Fashion Rosa",
+              "titulo": "B2b Globo Fashion Rosa",
+              "codigo": "R-12",
+              "color": "rosa fuerte",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 21,
+              "estimado": false
+            },
+            {
+              "variantId": "46594342453543",
+              "producto": "Pastel Dusk Rosa",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Rosa",
+              "codigo": "R-12",
+              "color": "rosa claro",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "49475778216231",
+              "producto": "Silk Blanco Nácar",
+              "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar",
+              "codigo": "R-12",
+              "color": "blanco perlado",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594236416295",
+              "producto": "Fashion Rojo",
+              "titulo": "B2b Globo Latex Redondo Fashion Rojo",
+              "codigo": "R-12",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "50030991343911",
+              "producto": "Fashion Rosa",
+              "titulo": "B2b Globo Fashion Rosa",
+              "codigo": "R-18",
+              "color": "rosa fuerte",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594342551847",
+              "producto": "Pastel Dusk Rosa",
+              "titulo": "B2b Globo Latex Redondo Pastel Dusk Rosa",
+              "codigo": "R-18",
+              "color": "rosa claro",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "49475778019623",
+              "producto": "Silk Blanco Nácar",
+              "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar",
+              "codigo": "R-18",
+              "color": "blanco perlado",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "49733988450599",
+              "producto": "Metalizado Love",
+              "titulo": "B2b Globo Metalizado Love",
+              "codigo": "18 IN",
+              "color": "«LOVE» rojo y blanco",
+              "paleta": "rojo",
+              "liso": false,
+              "unidades": 2,
+              "estimado": true
+            },
+            {
+              "variantId": "50244465492263",
+              "producto": "Fashion Te Amo Corazones Divertidos",
+              "titulo": "B2b Globo Latex Fashion Te Amo Corazones Divertidos",
+              "codigo": "C-12",
+              "color": "rojo con «Te amo»",
+              "paleta": "rojo",
+              "liso": false,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "47230947655975",
+              "producto": "Corazon Fashion Rosado",
+              "titulo": "B2b Globo Latex Corazon Fashion Rosado",
+              "codigo": "C-12",
+              "color": "rosa claro",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "46594168389927",
+              "producto": "Cortina Metalica Roja",
+              "titulo": "B2b Cortina Metalica Roja",
+              "codigo": null,
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": false,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "46594189656359",
+              "producto": "Corazon Fashion Rojo",
+              "titulo": "B2b Globo Latex Corazon Fashion Rojo",
+              "codigo": "C-12",
+              "color": "rojo",
+              "paleta": "rojo",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            }
+          ],
+          "total": 65,
+          "colores": [
+            "rosado",
+            "blanco",
+            "rojo"
+          ]
+        }
+      ]
+    },
+    "deco-real-23-sombrero-bruja-halloween": {
+      "fuente": "estimado",
+      "total": 124,
+      "piezas": [
+        {
+          "id": "PIEZA_01_FIGURA",
+          "nombre": "Figura con globos",
+          "estructura": "figura",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [
+            {
+              "variantId": "50195455607079",
+              "producto": "Silk Nuevo Gris Medianoche",
+              "titulo": "B2b Globo Latex Redondo Silk Nuevo Gris Medianoche",
+              "codigo": "R-12",
+              "color": "gris grafito",
+              "paleta": null,
+              "liso": true,
+              "unidades": 12,
+              "estimado": true
+            },
+            {
+              "variantId": "50195455541543",
+              "producto": "Silk Nuevo Gris Medianoche",
+              "titulo": "B2b Globo Latex Redondo Silk Nuevo Gris Medianoche",
+              "codigo": "R-9",
+              "color": "gris grafito",
+              "paleta": null,
+              "liso": true,
+              "unidades": 8,
+              "estimado": true
+            },
+            {
+              "variantId": "50195455476007",
+              "producto": "Silk Nuevo Gris Medianoche",
+              "titulo": "B2b Globo Latex Redondo Silk Nuevo Gris Medianoche",
+              "codigo": "R-5",
+              "color": "gris grafito",
+              "paleta": null,
+              "liso": true,
+              "unidades": 5,
+              "estimado": true
+            },
+            {
+              "variantId": "46594235171111",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-12",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 12,
+              "estimado": true
+            },
+            {
+              "variantId": "46594234974503",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-5",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 10,
+              "estimado": true
+            },
+            {
+              "variantId": "47318128263463",
+              "producto": "Fashion Naranja Cobrizo",
+              "titulo": "B2b Globo Latex Redondo Fashion Naranja Cobrizo",
+              "codigo": "R-12",
+              "color": "naranja cobrizo",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 4,
+              "estimado": true
+            },
+            {
+              "variantId": "47318128165159",
+              "producto": "Fashion Naranja Cobrizo",
+              "titulo": "B2b Globo Latex Redondo Fashion Naranja Cobrizo",
+              "codigo": "R-5",
+              "color": "naranja cobrizo",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 8,
+              "estimado": true
+            },
+            {
+              "variantId": "47318128427303",
+              "producto": "Fashion Naranja Cobrizo",
+              "titulo": "B2b Globo Latex Redondo Fashion Naranja Cobrizo",
+              "codigo": "R-24",
+              "color": "naranja cobrizo",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "47318128361767",
+              "producto": "Fashion Naranja Cobrizo",
+              "titulo": "B2b Globo Latex Redondo Fashion Naranja Cobrizo",
+              "codigo": "R-18",
+              "color": "naranja cobrizo",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "47318266118439",
+              "producto": "Tubito Fashion Naranja Cobrizo",
+              "titulo": "B2b Globo Latex Tubito Fashion Naranja Cobrizo",
+              "codigo": "T260",
+              "color": "naranja cobrizo",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 4,
+              "estimado": true
+            },
+            {
+              "variantId": "46594290975015",
+              "producto": "Reflex Champaña",
+              "titulo": "B2b Globo Latex Redondo Reflex Champaña",
+              "codigo": "R-5",
+              "color": "champaña",
+              "paleta": "champagne",
+              "liso": true,
+              "unidades": 50,
+              "estimado": true
+            },
+            {
+              "variantId": "47466190471463",
+              "producto": "Tubito Reflex Champaña",
+              "titulo": "B2b Globo Latex Tubito Reflex Champaña",
+              "codigo": "T260",
+              "color": "champaña",
+              "paleta": "champagne",
+              "liso": true,
+              "unidades": 5,
+              "estimado": true
+            },
+            {
+              "variantId": "46594302181671",
+              "producto": "Fashion Latte",
+              "titulo": "B2b Globo Latex Redondo Fashion Latte",
+              "codigo": "R-12",
+              "color": "café con leche",
+              "paleta": "cafe",
+              "liso": true,
+              "unidades": 4,
+              "estimado": true
+            }
+          ],
+          "total": 124,
+          "colores": [
+            "champagne",
+            "negro",
+            "naranja",
+            "cafe"
+          ]
+        }
+      ]
+    },
+    "deco-real-24-guirnalda-verde-salvia-flores": {
+      "fuente": "estimado",
+      "planHash": "1c605a1d3b830b4049f707e5c1cc025d2caf69752a433b5010131f675d735d7f",
+      "total": 164,
+      "piezas": [
+        {
+          "id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda",
+          "estructura": "guirnalda",
+          "repeticiones": 1,
+          "medidas": {
+            "largo_m": 2.4
+          },
+          "lineas": [
+            {
+              "variantId": "46594222784807",
+              "producto": "Fashion Eucalipto",
+              "titulo": "B2b Globo Latex Redondo Fashion Eucalipto",
+              "codigo": "R-12",
+              "color": "verde eucalipto",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 51,
+              "estimado": false
+            },
+            {
+              "variantId": "49778969379111",
+              "producto": "Link-O-Loon® Pastel Dusk Té Verde",
+              "titulo": "B2b Globo Latex Link-O-Loon® Pastel Dusk Té Verde",
+              "codigo": "LOL6",
+              "color": "verde té",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 39,
+              "estimado": true
+            },
+            {
+              "variantId": "46594290975015",
+              "producto": "Reflex Champaña",
+              "titulo": "B2b Globo Latex Redondo Reflex Champaña",
+              "codigo": "R-5",
+              "color": "champaña",
+              "paleta": "champagne",
+              "liso": true,
+              "unidades": 63,
+              "estimado": true
+            },
+            {
+              "variantId": "46594291007783",
+              "producto": "Reflex Champaña",
+              "titulo": "B2b Globo Latex Redondo Reflex Champaña",
+              "codigo": "R-12",
+              "color": "champaña",
+              "paleta": "champagne",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "46594228617511",
+              "producto": "Fashion Naranja",
+              "titulo": "B2b Globo Latex Redondo Fashion Naranja",
+              "codigo": "R-12",
+              "color": "naranja",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 8,
+              "estimado": true
+            },
+            {
+              "variantId": "46594294776103",
+              "producto": "Tubito Fashion Naranja",
+              "titulo": "B2b Globo Latex Tubito Fashion Naranja",
+              "codigo": "T260",
+              "color": "naranja",
+              "paleta": "naranja",
+              "liso": true,
+              "unidades": 2,
+              "estimado": true
+            }
+          ],
+          "total": 164,
+          "colores": [
+            "verde",
+            "champagne",
+            "naranja"
+          ]
+        }
+      ]
+    },
+    "deco-real-25-guirnalda-dia-de-la-madre": {
+      "fuente": "estimado",
+      "planHash": "0f9a50ce5ddc2412e83c430e91f0004960021eee424835f917a21e663f516646",
+      "total": 118,
+      "piezas": [
+        {
+          "id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda",
+          "estructura": "guirnalda",
+          "repeticiones": 1,
+          "medidas": {
+            "largo_m": 2.4
+          },
+          "lineas": [
+            {
+              "variantId": "46594359886119",
+              "producto": "Fashion Coral Tropical",
+              "titulo": "B2b Globo Latex Redondo Fashion Coral Tropical",
+              "codigo": "R-12",
+              "color": "coral",
+              "paleta": "coral",
+              "liso": true,
+              "unidades": 23,
+              "estimado": false
+            },
+            {
+              "variantId": "49778969248039",
+              "producto": "Infinity® Feliz Dia Mama Floral Fashion Surtido",
+              "titulo": "B2b Globo Latex Redondo Infinity® Feliz Dia Mama Floral Fashion Surtido",
+              "codigo": "R-12",
+              "color": "vino con «Feliz día Mamá»",
+              "paleta": "multicolor",
+              "liso": false,
+              "unidades": 23,
+              "estimado": false
+            },
+            {
+              "variantId": "46594308768039",
+              "producto": "Satin Perla",
+              "titulo": "B2b Globo Latex Redondo Satin Perla",
+              "codigo": "R-12",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 18,
+              "estimado": false
+            },
+            {
+              "variantId": "46594260926759",
+              "producto": "Pastel Mate Rosado",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Rosado",
+              "codigo": "R-5",
+              "color": "rosado pastel",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 42,
+              "estimado": true
+            },
+            {
+              "variantId": "46594437808423",
+              "producto": "Fashion Merlot",
+              "titulo": "B2b Globo Latex Redondo Fashion Merlot",
+              "codigo": "R-5",
+              "color": "vino",
+              "paleta": "burdeos",
+              "liso": true,
+              "unidades": 7,
+              "estimado": true
+            },
+            {
+              "variantId": "46594283766055",
+              "producto": "Tubito Reflex Dorado",
+              "titulo": "B2b Globo Latex Tubito Reflex Dorado",
+              "codigo": "T260",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 5,
+              "estimado": true
+            }
+          ],
+          "total": 118,
+          "colores": [
+            "rosado",
+            "coral",
+            "blanco",
+            "burdeos",
+            "dorado"
+          ]
+        }
+      ]
+    },
+    "deco-real-26-escultura-mono-y-flores": {
+      "fuente": "estimado",
+      "total": 17,
+      "piezas": [
+        {
+          "id": "PIEZA_01_FIGURA",
+          "nombre": "Figura con globos",
+          "estructura": "figura",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [
+            {
+              "variantId": "48718444626215",
+              "producto": "Tubito Silk Verde Menta",
+              "titulo": "B2b Globo Latex Tubito Silk Verde Menta",
+              "codigo": "T260",
+              "color": "verde menta",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 5,
+              "estimado": true
+            },
+            {
+              "variantId": "46594357526823",
+              "producto": "Tubito Pastel Dusk Crema",
+              "titulo": "B2b Globo Latex Tubito Pastel Dusk Crema",
+              "codigo": "T260",
+              "color": "crema",
+              "paleta": "crema",
+              "liso": true,
+              "unidades": 3,
+              "estimado": true
+            },
+            {
+              "variantId": "48718444527911",
+              "producto": "Tubito Silk Rosa Primaveral",
+              "titulo": "B2b Globo Latex Tubito Silk Rosa Primaveral",
+              "codigo": "T260",
+              "color": "rosa perlado",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 3,
+              "estimado": true
+            },
+            {
+              "variantId": "48718444101927",
+              "producto": "Tubito Silk Amatista",
+              "titulo": "B2b Globo Latex Tubito Silk Amatista",
+              "codigo": "T260",
+              "color": "lila amatista",
+              "paleta": "lila",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "46594252112167",
+              "producto": "Pastel Mate Verde",
+              "titulo": "B2b Globo Latex Redondo Pastel Mate Verde",
+              "codigo": "R-5",
+              "color": "verde menta",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 2,
+              "estimado": true
+            },
+            {
+              "variantId": "48718442823975",
+              "producto": "Silk Rosa Primaveral",
+              "titulo": "B2b Globo Latex Redondo Silk Rosa Primaveral",
+              "codigo": "R-18",
+              "color": "rosa perlado",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": true
+            },
+            {
+              "variantId": "48718443381031",
+              "producto": "Silk Rosa Primaveral",
+              "titulo": "B2b Globo Latex Redondo Silk Rosa Primaveral",
+              "codigo": "R-5",
+              "color": "rosa perlado",
+              "paleta": "rosado",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            }
+          ],
+          "total": 17,
+          "colores": [
+            "verde",
+            "rosado",
+            "crema",
+            "lila"
+          ]
+        }
+      ]
+    },
+    "deco-real-27-aro-navideno-verde-salvia": {
+      "fuente": "estimado",
+      "planHash": "bf68264b71aa326528867077ba709f426dbc90a197973f49aac8a0f6eca556f8",
+      "total": 223,
+      "piezas": [
+        {
+          "id": "EST_01_ARO_CIRCULAR",
+          "nombre": "Aro circular",
+          "estructura": "aro_circular",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2,
+            "alto_m": 2
+          },
+          "lineas": [
+            {
+              "variantId": "46594222620967",
+              "producto": "Fashion Eucalipto",
+              "titulo": "B2b Globo Latex Redondo Fashion Eucalipto",
+              "codigo": "R-5",
+              "color": "verde eucalipto",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 32,
+              "estimado": false
+            },
+            {
+              "variantId": "46594222686503",
+              "producto": "Fashion Eucalipto",
+              "titulo": "B2b Globo Latex Redondo Fashion Eucalipto",
+              "codigo": "R-9",
+              "color": "verde eucalipto",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 27,
+              "estimado": false
+            },
+            {
+              "variantId": "46594222752039",
+              "producto": "Fashion Eucalipto",
+              "titulo": "B2b Globo Latex Redondo Fashion Eucalipto",
+              "codigo": "R-12",
+              "color": "verde eucalipto",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 36,
+              "estimado": false
+            },
+            {
+              "variantId": "46594222784807",
+              "producto": "Fashion Eucalipto",
+              "titulo": "B2b Globo Latex Redondo Fashion Eucalipto",
+              "codigo": "R-12",
+              "color": "verde eucalipto",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 45,
+              "estimado": false
+            },
+            {
+              "variantId": "46594222817575",
+              "producto": "Fashion Eucalipto",
+              "titulo": "B2b Globo Latex Redondo Fashion Eucalipto",
+              "codigo": "R-18",
+              "color": "verde eucalipto",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594222883111",
+              "producto": "Fashion Eucalipto",
+              "titulo": "B2b Globo Latex Redondo Fashion Eucalipto",
+              "codigo": "R-24",
+              "color": "verde eucalipto",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594306179367",
+              "producto": "Infinity® Copos de Nieve Cristal y Satin Surtido",
+              "titulo": "B2b Globo Latex Redondo Infinity® Copos De Nieve Cristal Y Satin Surtido",
+              "codigo": "R-12",
+              "color": "con copos de nieve",
+              "paleta": null,
+              "liso": false,
+              "unidades": 4,
+              "estimado": true
+            },
+            {
+              "variantId": "48718442758439",
+              "producto": "Silk Perla Crema",
+              "titulo": "B2b Globo Latex Redondo Silk Perla Crema",
+              "codigo": "R-18",
+              "color": "champaña perlado",
+              "paleta": "champagne",
+              "liso": true,
+              "unidades": 1,
+              "estimado": true
+            },
+            {
+              "variantId": "48718443249959",
+              "producto": "Silk Azul Ártico",
+              "titulo": "B2b Globo Latex Redondo Silk Azul Ártico",
+              "codigo": "R-5",
+              "color": "azul ártico",
+              "paleta": "azul",
+              "liso": true,
+              "unidades": 4,
+              "estimado": true
+            },
+            {
+              "variantId": "48718443348263",
+              "producto": "Silk Perla Crema",
+              "titulo": "B2b Globo Latex Redondo Silk Perla Crema",
+              "codigo": "R-5",
+              "color": "champaña perlado",
+              "paleta": "champagne",
+              "liso": true,
+              "unidades": 2,
+              "estimado": true
+            },
+            {
+              "variantId": "46594221080871",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-5",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 3,
+              "estimado": true
+            },
+            {
+              "variantId": "46594308505895",
+              "producto": "Satin Perla",
+              "titulo": "B2b Globo Latex Redondo Satin Perla",
+              "codigo": "R-5",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 39,
+              "estimado": true
+            },
+            {
+              "variantId": "46594304409895",
+              "producto": "Tubito Satin Perla",
+              "titulo": "B2b Globo Latex Tubito Satin Perla",
+              "codigo": "T160",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 8,
+              "estimado": true
+            },
+            {
+              "variantId": "46594283766055",
+              "producto": "Tubito Reflex Dorado",
+              "titulo": "B2b Globo Latex Tubito Reflex Dorado",
+              "codigo": "T260",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 11,
+              "estimado": true
+            }
+          ],
+          "total": 223,
+          "colores": [
+            "verde",
+            "blanco",
+            "dorado",
+            "azul",
+            "champagne"
+          ]
+        }
+      ]
+    },
+    "deco-real-28-aro-blanco-dorado-y-nude": {
+      "fuente": "estimado",
+      "planHash": "b18c62a7faa824dac4f06cbed26f86365e49f2aea0ef3a2cf66d741d5729b45f",
+      "total": 122,
+      "piezas": [
+        {
+          "id": "EST_01_ARO_CIRCULAR",
+          "nombre": "Aro circular",
+          "estructura": "aro_circular",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 2,
+            "alto_m": 2
+          },
+          "lineas": [
+            {
+              "variantId": "49475778085159",
+              "producto": "Silk Blanco Nácar",
+              "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar",
+              "codigo": "R-5",
+              "color": "blanco nácar",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 8,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264596775",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-5",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594302411047",
+              "producto": "Fashion Latte",
+              "titulo": "B2b Globo Latex Redondo Fashion Latte",
+              "codigo": "R-5",
+              "color": "nude",
+              "paleta": "nude",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "49475778052391",
+              "producto": "Silk Blanco Nácar",
+              "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar",
+              "codigo": "R-9",
+              "color": "blanco nácar",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264858919",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-9",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 6,
+              "estimado": false
+            },
+            {
+              "variantId": "47466211836199",
+              "producto": "Fashion Latte",
+              "titulo": "B2b Globo Latex Redondo Fashion Latte",
+              "codigo": "R-9",
+              "color": "nude",
+              "paleta": "nude",
+              "liso": true,
+              "unidades": 4,
+              "estimado": false
+            },
+            {
+              "variantId": "49475778216231",
+              "producto": "Silk Blanco Nácar",
+              "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar",
+              "codigo": "R-12",
+              "color": "blanco nácar",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 20,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264695079",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-12",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 18,
+              "estimado": false
+            },
+            {
+              "variantId": "46594302247207",
+              "producto": "Fashion Latte",
+              "titulo": "B2b Globo Latex Redondo Fashion Latte",
+              "codigo": "R-12",
+              "color": "nude",
+              "paleta": "nude",
+              "liso": true,
+              "unidades": 13,
+              "estimado": false
+            },
+            {
+              "variantId": "49475778019623",
+              "producto": "Silk Blanco Nácar",
+              "titulo": "B2b Globo Latex Redondo Silk Blanco Nácar",
+              "codigo": "R-18",
+              "color": "blanco nácar",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 3,
+              "estimado": false
+            },
+            {
+              "variantId": "46594264727847",
+              "producto": "Reflex Dorado",
+              "titulo": "B2b Globo Latex Redondo Reflex Dorado",
+              "codigo": "R-18",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594302312743",
+              "producto": "Fashion Latte",
+              "titulo": "B2b Globo Latex Redondo Fashion Latte",
+              "codigo": "R-18",
+              "color": "nude",
+              "paleta": "nude",
+              "liso": true,
+              "unidades": 1,
+              "estimado": false
+            },
+            {
+              "variantId": "46594308702503",
+              "producto": "Satin Perla",
+              "titulo": "B2b Globo Latex Redondo Satin Perla",
+              "codigo": "R-12",
+              "color": "blanco perla",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 12,
+              "estimado": true
+            },
+            {
+              "variantId": "49475778740519",
+              "producto": "Tubito Silk Dorado",
+              "titulo": "B2b Globo Latex Tubito Silk Dorado",
+              "codigo": "T260",
+              "color": "dorado claro",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 12,
+              "estimado": true
+            },
+            {
+              "variantId": "49475778576679",
+              "producto": "Silk Dorado",
+              "titulo": "B2b Globo Latex Redondo Silk Dorado",
+              "codigo": "R-9",
+              "color": "dorado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": true
+            },
+            {
+              "variantId": "46594283766055",
+              "producto": "Tubito Reflex Dorado",
+              "titulo": "B2b Globo Latex Tubito Reflex Dorado",
+              "codigo": "T260",
+              "color": "dorado cromado",
+              "paleta": "dorado",
+              "liso": true,
+              "unidades": 2,
+              "estimado": true
+            }
+          ],
+          "total": 122,
+          "colores": [
+            "blanco",
+            "dorado",
+            "nude"
+          ]
+        }
+      ]
+    },
+    "deco-real-29-arco-link-o-loon-fucsia-tulipanes": {
+      "fuente": "estimado",
+      "total": 94,
+      "piezas": [
+        {
+          "id": "PIEZA_01_ARCO",
+          "nombre": "Arco",
+          "estructura": "arco",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [],
+          "total": 0,
+          "colores": [
+            "fucsia",
+            "amarillo",
+            "verde",
+            "crema"
+          ]
+        },
+        {
+          "id": "PIEZA_02_BOUQUET",
+          "nombre": "Bouquet de globos",
+          "estructura": "bouquet",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [],
+          "total": 0,
+          "colores": [
+            "fucsia",
+            "amarillo",
+            "verde",
+            "crema"
+          ]
+        }
+      ],
+      "lineasSinPieza": [
+        {
+          "variantId": "46594234614055",
+          "producto": "Fashion Fucsia",
+          "titulo": "B2b Globo Latex Redondo Fashion Fucsia",
+          "codigo": "R-12",
+          "color": "fucsia",
+          "paleta": "fucsia",
+          "liso": true,
+          "unidades": 30,
+          "estimado": false
+        },
+        {
+          "variantId": "46594172027175",
+          "producto": "Link-O-Loon® Fashion Fucsia",
+          "titulo": "B2b Globo Latex Link-O-Loon® Fashion Fucsia",
+          "codigo": "LOL12",
+          "color": "fucsia",
+          "paleta": "fucsia",
+          "liso": true,
+          "unidades": 11,
+          "estimado": true
+        },
+        {
+          "variantId": "46594234384679",
+          "producto": "Fashion Fucsia",
+          "titulo": "B2b Globo Latex Redondo Fashion Fucsia",
+          "codigo": "R-5",
+          "color": "fucsia",
+          "paleta": "fucsia",
+          "liso": true,
+          "unidades": 24,
+          "estimado": true
+        },
+        {
+          "variantId": "47466217046311",
+          "producto": "Tubito Pastel Dusk Crema",
+          "titulo": "B2b Globo Latex Tubito Pastel Dusk Crema",
+          "codigo": "T160",
+          "color": "crema",
+          "paleta": "crema",
+          "liso": true,
+          "unidades": 4,
+          "estimado": true
+        },
+        {
+          "variantId": "46594251620647",
+          "producto": "Pastel Mate Amarillo",
+          "titulo": "B2b Globo Latex Redondo Pastel Mate Amarillo",
+          "codigo": "R-5",
+          "color": "amarillo pastel",
+          "paleta": "amarillo",
+          "liso": true,
+          "unidades": 12,
+          "estimado": true
+        },
+        {
+          "variantId": "46594294317351",
+          "producto": "Tubito Fashion Amarillo",
+          "titulo": "B2b Globo Latex Tubito Fashion Amarillo",
+          "codigo": "T260",
+          "color": "amarillo",
+          "paleta": "amarillo",
+          "liso": true,
+          "unidades": 6,
+          "estimado": true
+        },
+        {
+          "variantId": "46594301690151",
+          "producto": "Tubito Fashion Eucalipto",
+          "titulo": "B2b Globo Latex Tubito Fashion Eucalipto",
+          "codigo": "T260",
+          "color": "verde eucalipto",
+          "paleta": "verde",
+          "liso": true,
+          "unidades": 6,
+          "estimado": true
+        },
+        {
+          "variantId": "47466192535847",
+          "producto": "Tubito Pastel Mate Amarillo",
+          "titulo": "B2b Globo Latex Tubito Pastel Mate Amarillo",
+          "codigo": "T260",
+          "color": "amarillo pastel",
+          "paleta": "amarillo",
+          "liso": true,
+          "unidades": 1,
+          "estimado": true
+        }
+      ]
+    },
+    "deco-real-30-columna-balon-futbol": {
+      "fuente": "estimado",
+      "planHash": "b2a1b931c0d306ebf28648be480ed1db99b4ac6d9a6b5724b1f530130a141a61",
+      "total": 164,
+      "piezas": [
+        {
+          "id": "EST_01_COLUMNA",
+          "nombre": "Columna",
+          "estructura": "columna",
+          "repeticiones": 1,
+          "medidas": {
+            "ancho_m": 0.75,
+            "alto_m": 2.18
+          },
+          "lineas": [
+            {
+              "variantId": "46594213118247",
+              "producto": "Fashion Verde Lima",
+              "titulo": "B2b Globo Latex Redondo Fashion Verde Lima",
+              "codigo": "R-5",
+              "color": "verde lima",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 10,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235040039",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-5",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221146407",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-5",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 2,
+              "estimado": false
+            },
+            {
+              "variantId": "46594213314855",
+              "producto": "Fashion Verde Lima",
+              "titulo": "B2b Globo Latex Redondo Fashion Verde Lima",
+              "codigo": "R-12",
+              "color": "verde lima",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 27,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235269415",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-12",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 11,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221343015",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-12",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 5,
+              "estimado": false
+            }
+          ],
+          "total": 60,
+          "colores": [
+            "verde",
+            "negro",
+            "blanco"
+          ]
+        },
+        {
+          "id": "PIEZA_01_FIGURA",
+          "nombre": "Figura con globos",
+          "estructura": "figura",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [
+            {
+              "variantId": "46594221146407",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-5",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 24,
+              "estimado": true
+            },
+            {
+              "variantId": "46594221343015",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-12",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 20,
+              "estimado": true
+            },
+            {
+              "variantId": "46594235040039",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-5",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 60,
+              "estimado": true
+            }
+          ],
+          "total": 104,
+          "colores": [
+            "negro",
+            "blanco"
+          ]
+        }
+      ]
+    },
+    "deco-real-31-arco-futbol-balones-gigantes": {
+      "fuente": "estimado",
+      "total": 100,
+      "piezas": [
+        {
+          "id": "PIEZA_01_ARCO_ASIMETRICO",
+          "nombre": "Arco orgánico",
+          "estructura": "arco_asimetrico",
+          "repeticiones": 1,
+          "medidas": {},
+          "lineas": [
+            {
+              "variantId": "46594213118247",
+              "producto": "Fashion Verde Lima",
+              "titulo": "B2b Globo Latex Redondo Fashion Verde Lima",
+              "codigo": "R-5",
+              "color": "verde lima",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 13,
+              "estimado": true
+            },
+            {
+              "variantId": "46594213314855",
+              "producto": "Fashion Verde Lima",
+              "titulo": "B2b Globo Latex Redondo Fashion Verde Lima",
+              "codigo": "R-12",
+              "color": "verde lima",
+              "paleta": "verde",
+              "liso": true,
+              "unidades": 28,
+              "estimado": true
+            },
+            {
+              "variantId": "46594221146407",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-5",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594221343015",
+              "producto": "Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+              "codigo": "R-12",
+              "color": "blanco",
+              "paleta": "blanco",
+              "liso": true,
+              "unidades": 17,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235040039",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-5",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 7,
+              "estimado": false
+            },
+            {
+              "variantId": "46594235269415",
+              "producto": "Fashion Negro",
+              "titulo": "B2b Globo Latex Redondo Fashion Negro",
+              "codigo": "R-12",
+              "color": "negro",
+              "paleta": "negro",
+              "liso": true,
+              "unidades": 17,
+              "estimado": false
+            },
+            {
+              "variantId": "51021065683239",
+              "producto": "Infinity® Balón de Futbol Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Infinity® Balón De Futbol Fashion Blanco",
+              "codigo": "R-24",
+              "color": "blanco con balón de fútbol",
+              "paleta": "blanco",
+              "liso": false,
+              "unidades": 3,
+              "estimado": true
+            },
+            {
+              "variantId": "51128339235111",
+              "producto": "Infinity® Futbol Tricolor Fashion Blanco",
+              "titulo": "B2b Globo Latex Redondo Infinity® Futbol Tricolor Fashion Blanco",
+              "codigo": "R-12",
+              "color": "blanco con balones de fútbol",
+              "paleta": "blanco",
+              "liso": false,
+              "unidades": 8,
+              "estimado": true
+            }
+          ],
+          "total": 100,
+          "colores": [
+            "verde",
+            "blanco",
+            "negro"
+          ]
+        }
+      ]
+    }
+  }
+}

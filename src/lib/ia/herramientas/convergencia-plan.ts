@@ -119,6 +119,39 @@ export function quitarMaterialesSinCobertura(
   return { plan: { ...plan, estructuras }, avisos, cambiado };
 }
 
+/**
+ * El globo grande de la punta de una columna orgánica que el producto no tiene en su talla, fuera.
+ *
+ * El motor (Python, `columnaorg/limites.py`) sube ese globo a R-36 cuando la punta es ancha, y ninguna mezcla ni
+ * ningún producto que el modelo elija lo cambia: la confirmación respondía SIN_COBERTURA hasta agotar el turno
+ * (banco de fotos 04, 2026-10-06). Con el 36 en la escalera de diámetros (`mezclas.ts`) el Python nuevo ya lo
+ * compra como el R-24 del mismo producto y esto no hace falta; con el de producción anterior (e447cfe) es la única
+ * salida que converge, y la columna sale sin el globo de arriba con su aviso.
+ *
+ * Solo cuando TODAS las tallas que faltan en la pieza son tallas que su propia mezcla no pide (es decir, la del
+ * globo de la punta): una talla de la mezcla la arregla la mezcla o el producto, no esto.
+ */
+export function sinCoronaSinCobertura(
+  plan: PlanDecoracion,
+  sinCobertura: ReadonlyArray<{ estructura_id: string; product_id: string; tamano: string }>,
+): { plan: PlanDecoracion; avisos: string[]; cambiado: boolean } {
+  const avisos: string[] = [];
+  let cambiado = false;
+  const estructuras = plan.estructuras.map((estructura) => {
+    const armado = estructura.armado_columna_organica;
+    const faltan = sinCobertura.filter((item) => item.estructura_id === estructura.estructura_id);
+    if (!armado || !armado.corona.activa || faltan.length === 0) return estructura;
+    const deLaMezcla = new Set(Object.entries(armado.tamanos.mezcla).filter(([, peso]) => typeof peso === "number" && peso > 0).map(([tamano]) => `R-${tamano}`));
+    if (faltan.some((item) => deLaMezcla.has(item.tamano))) return estructura;
+    cambiado = true;
+    const material = estructura.materiales[armado.corona.material] ?? estructura.materiales[0];
+    const tallas = [...new Set(faltan.map((item) => item.tamano.replace(/^R-/, "")))].join(" ni de ");
+    avisos.push(`No tengo ${material?.color ? `globos ${material.color}` : "ese globo"} de ${tallas}" para el globo grande de la punta de ${estructura.nombre.toLowerCase()}: la armé sin él.`);
+    return { ...estructura, armado_columna_organica: { ...armado, corona: { ...armado.corona, activa: false } } };
+  });
+  return { plan: { ...plan, estructuras }, avisos, cambiado };
+}
+
 function unirColores(colores: readonly string[]): string {
   return colores.length <= 1 ? (colores[0] ?? "") : `${colores.slice(0, -1).join(", ")} y ${colores.at(-1)}`;
 }

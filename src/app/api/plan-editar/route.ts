@@ -18,7 +18,7 @@ import {
 } from "@/lib/plan/aplicar-edicion";
 import { BasePlanSchema, EdicionArmadoArcoOrganicoSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionFormaSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionPropiedadesSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
 import { conRegistro } from "@/lib/registro/servidor";
-import { agregarColorPlan, quitarPiezaPlan } from "@/lib/plan/ajuste-plan-entero";
+import { agregarColorPlan, quitarPiezaPlan, reemplazarColorPlan } from "@/lib/plan/ajuste-plan-entero";
 
 /** Candidates a search returns when the caller does not say (what the inline editor always got). */
 const LIMITE_BUSQUEDA_PREDETERMINADO = 8;
@@ -77,6 +77,17 @@ const BodySchema = z.discriminatedUnion("modo", [
     modo: z.literal("agregar_color"),
     base: BasePlanSchema,
     color: z.string().trim().min(1).max(40),
+    product_id: z.string().trim().min(1).max(160),
+    variant_ids: z.array(z.string().trim().min(1).max(160)).min(1).max(24).refine((ids) => new Set(ids).size === ids.length),
+  }).strict(),
+  // «Cambiar» un color por otro globo del catálogo (ajuste-plan-entero.ts): mismo lugar, misma parte, en todas sus medidas.
+  z.object({
+    modo: z.literal("reemplazar_color"),
+    base: BasePlanSchema,
+    color: z.string().trim().min(1).max(40),
+    product_id_anterior: z.string().trim().min(1).max(160).optional(),
+    estructura_ids: z.array(z.string().regex(/^EST_\d{2}_[A-Z_]+$/)).max(24).optional(),
+    color_nuevo: z.string().trim().min(1).max(40),
     product_id: z.string().trim().min(1).max(160),
     variant_ids: z.array(z.string().trim().min(1).max(160)).min(1).max(24).refine((ids) => new Set(ids).size === ids.length),
   }).strict(),
@@ -190,6 +201,20 @@ async function atenderPOST(request: Request) {
     }
     if (body.modo === "agregar_color") {
       const { plan: resuelto, cotizacion, piezas } = await agregarColorPlan({ base: body.base, color: body.color, productId: body.product_id, variantIds: body.variant_ids, pool, signal: request.signal });
+      return Response.json({ plan: resuelto, cotizacion, piezas }, { headers: cabeceras });
+    }
+    if (body.modo === "reemplazar_color") {
+      const { plan: resuelto, cotizacion, piezas } = await reemplazarColorPlan({
+        base: body.base,
+        color: body.color,
+        ...(body.product_id_anterior ? { productIdAnterior: body.product_id_anterior } : {}),
+        ...(body.estructura_ids?.length ? { estructuraIds: body.estructura_ids } : {}),
+        colorNuevo: body.color_nuevo,
+        productId: body.product_id,
+        variantIds: body.variant_ids,
+        pool,
+        signal: request.signal,
+      });
       return Response.json({ plan: resuelto, cotizacion, piezas }, { headers: cabeceras });
     }
 

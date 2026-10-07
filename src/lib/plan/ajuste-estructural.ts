@@ -26,10 +26,47 @@ const TIPOS_CON_REPARTO = new Set(["arco", "semiarco", "guirnalda", "columna", "
 
 export type AcabadoMotor = (typeof ACABADOS_GUIRNALDA)[number];
 
-/** Cómo entra un color nuevo en una pieza, o por qué no entra. */
+/** Cómo entra un color nuevo en una pieza, o por qué no entra. `patron`: el patrón de colores de la pieza lo toma. */
 export type EntradaColor =
-  | { modo: "paleta" | "posiciones" | "reparto" }
+  | { modo: "paleta" | "posiciones" | "reparto" | "patron" }
   | { modo: null; motivo: string };
+
+type PatronPieza = NonNullable<EstructuraPlan["patron_color"]>;
+
+/**
+ * El patrón de colores con un material más, sin cambiar su modo ni su ritmo: entra con un peso pequeño (aleatorio,
+ * bloques), como un racimo más de la secuencia (anillos, damero), como la última parada (degradado) o en una posición
+ * del racimo de la espiral (la del color que más se repite). Null si el modo no deja sumar otro color (flor, zonas)
+ * o ya está lleno. Python valida el patrón con la geometría de la pieza al resolver.
+ */
+export function patronConColor(patron: PatronPieza, indice: number): PatronPieza | null {
+  const base = patron.base;
+  const peso = (pesos: ReadonlyArray<{ peso: number }>) => Math.min(100, Math.max(1, Math.round((pesos.reduce((suma, item) => suma + item.peso, 0) / Math.max(1, pesos.length)) * 0.5)));
+  switch (base.modo) {
+    case "aleatorio":
+      return base.pesos.length >= 6 ? null : { ...patron, origen: "decorador", base: { ...base, pesos: [...base.pesos, { material: indice, peso: peso(base.pesos) }] } };
+    case "bloques":
+      return base.bloques.length >= 12 ? null : { ...patron, origen: "decorador", base: { ...base, bloques: [...base.bloques, { material: indice, peso: peso(base.bloques) }] } };
+    case "anillos":
+      return base.secuencia.length >= 12 ? null : { ...patron, origen: "decorador", base: { ...base, secuencia: [...base.secuencia, indice] } };
+    case "damero":
+      return base.secuencia.length >= 4 ? null : { ...patron, origen: "decorador", base: { ...base, secuencia: [...base.secuencia, indice] } };
+    case "degradado":
+      return base.paradas.length >= 6 ? null : { ...patron, origen: "decorador", base: { ...base, paradas: [...base.paradas, indice] } };
+    case "espiral": {
+      if (base.racimo.length < 2) return null;
+      const veces = new Map<number, number>();
+      for (const material of base.racimo) veces.set(material, (veces.get(material) ?? 0) + 1);
+      const [masRepetido, cuantas] = [...veces.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]!;
+      // Con todas las posiciones de colores distintos no se quita ninguno: no hay sitio sin borrar un color.
+      if (cuantas < 2) return null;
+      const posicion = base.racimo.lastIndexOf(masRepetido);
+      return { ...patron, origen: "decorador", base: { ...base, racimo: base.racimo.map((material, lugar) => (lugar === posicion ? indice : material)) } };
+    }
+    default:
+      return null;
+  }
+}
 
 function normal(texto: string | null | undefined): string {
   return (texto ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLocaleLowerCase("es");
@@ -44,11 +81,19 @@ export function acabadoMotorDeTitulo(titulo: string): AcabadoMotor {
   return "mate";
 }
 
-/** Si una pieza admite un color más y cómo (misma precedencia de motores que Python: el clásico manda). */
-export function entradaColorNuevo(estructura: EstructuraPlan, color: string): EntradaColor {
-  if (estructura.materiales.some((material) => normal(material.color) === normal(color))) return { modo: null, motivo: "ya lleva ese color" };
+/**
+ * Si una pieza admite un color más y cómo (misma precedencia de motores que Python: el clásico manda). Con `productId`,
+ * lo que no se repite es el GLOBO (un blanco perla junto al blanco de siempre sí entra); sin él, el color.
+ */
+export function entradaColorNuevo(estructura: EstructuraPlan, color: string, productId?: string): EntradaColor {
+  if (estructura.materiales.some((material) => normal(material.color) === normal(color) && (!productId || material.product_id === productId))) return { modo: null, motivo: productId ? "ya lleva ese globo" : "ya lleva ese color" };
   if (estructura.materiales.length >= MAX_MATERIALES) return { modo: null, motivo: "ya lleva seis colores" };
-  if (estructura.patron_color) return { modo: null, motivo: "sigue un patrón de colores" };
+  if (estructura.patron_color) {
+    const conMotor = Boolean(estructura.armado_columna || estructura.armado_arco || estructura.armado_arco_organico || estructura.armado_columna_organica || estructura.armado_guirnalda_organica || estructura.armado_guirnalda || estructura.armado_bouquet);
+    // Un patrón sin motor que lo cuente toma el color en su propio ritmo (`patronConColor`); Python lo valida.
+    if (!conMotor && esCuentaGeometrica(estructura) && patronConColor(estructura.patron_color, estructura.materiales.length)) return { modo: "patron" };
+    return { modo: null, motivo: "sigue un patrón de colores" };
+  }
   if (estructura.armado_bouquet || estructura.estructura_oficial === "bouquet") return { modo: null, motivo: "en un bouquet cada globo tiene su lugar" };
   if (!esCuentaGeometrica(estructura)) return { modo: null, motivo: "es una pieza contada" };
   const sinMotor = esEstructuraOficialId(estructura.estructura_oficial) && OFICIALES_SIN_MOTOR.has(estructura.estructura_oficial);
@@ -78,7 +123,7 @@ function participacionesConNuevo(materiales: readonly MaterialPlan[]): number[] 
 
 export type GloboNuevo = { product_id: string; color: string; acabadoMotor: AcabadoMotor };
 
-function conColor(estructura: EstructuraPlan, globo: GloboNuevo, modo: "paleta" | "posiciones" | "reparto"): EstructuraPlan {
+function conColor(estructura: EstructuraPlan, globo: GloboNuevo, modo: "paleta" | "posiciones" | "reparto" | "patron"): EstructuraPlan {
   const indice = estructura.materiales.length;
   const partes = participacionesConNuevo(estructura.materiales);
   const materiales: MaterialPlan[] = [
@@ -86,6 +131,10 @@ function conColor(estructura: EstructuraPlan, globo: GloboNuevo, modo: "paleta" 
     { product_id: globo.product_id, color: globo.color, participacion: partes[indice]!, rol_material: "acento" },
   ];
   if (modo === "reparto") return { ...estructura, materiales };
+  if (modo === "patron") {
+    const patron = estructura.patron_color ? patronConColor(estructura.patron_color, indice) : null;
+    return patron ? { ...estructura, materiales, patron_color: patron } : estructura;
+  }
   if (modo === "posiciones") {
     if (estructura.armado_columna) return { ...estructura, materiales, armado_columna: { ...estructura.armado_columna, materiales: [...estructura.armado_columna.materiales, indice] } };
     if (estructura.armado_arco) return { ...estructura, materiales, armado_arco: { ...estructura.armado_arco, materiales: [...estructura.armado_arco.materiales, indice] } };
@@ -119,7 +168,7 @@ export function planConColor(plan: PlanDecoracion, globo: GloboNuevo, soloEn?: R
       omitidas.push({ estructura_id: estructura.estructura_id, motivo: "el catálogo no tiene ese color en sus tamaños" });
       return estructura;
     }
-    const entrada = entradaColorNuevo(estructura, globo.color);
+    const entrada = entradaColorNuevo(estructura, globo.color, globo.product_id);
     if (entrada.modo === null) {
       omitidas.push({ estructura_id: estructura.estructura_id, motivo: entrada.motivo });
       return estructura;
@@ -131,6 +180,61 @@ export function planConColor(plan: PlanDecoracion, globo: GloboNuevo, soloEn?: R
     ? plan.concepto.paleta
     : [...plan.concepto.paleta, globo.color];
   return { plan: { ...plan, concepto: { ...plan.concepto, paleta }, estructuras }, piezas, omitidas };
+}
+
+/** El globo que reemplaza a un color: su producto, su color en el catálogo y el acabado con que lo pinta el motor. */
+export type GloboReemplazo = { product_id: string; color: string; acabadoMotor: AcabadoMotor };
+
+/** Qué color se cambia y dónde: `estructuras` vacío o ausente = en todas las piezas que lo llevan. */
+export type ColorAReemplazar = { color: string; product_id?: string; estructuras?: ReadonlySet<string> };
+
+function conPaletaAcabado<A extends { colores: { paleta: Array<{ material: number; acabado: AcabadoMotor }> } }>(armado: A, indices: ReadonlySet<number>, acabado: AcabadoMotor): A {
+  if (!armado.colores.paleta.some((color) => indices.has(color.material))) return armado;
+  return { ...armado, origen: "decorador", colores: { ...armado.colores, paleta: armado.colores.paleta.map((color) => (indices.has(color.material) ? { ...color, acabado } : color)) } };
+}
+
+/**
+ * El plan con UN color cambiado por otro globo del catálogo, en todas sus medidas: cada material de ese color pasa a
+ * ser el producto nuevo (sin variante fija: Python elige la de cada tamaño) y conserva su lugar, su parte y su papel;
+ * las paletas de los motores orgánicos pintan ese material con el acabado del globo nuevo. Medidas, armados, pesos de
+ * los demás colores y nombres quedan tal cual. Una pieza que ya lleva ESE mismo globo no se toca (quedaría repetido).
+ * Puro: no cuenta globos; Python vuelve a resolver y a firmar.
+ */
+export function planConColorReemplazado(plan: PlanDecoracion, objetivo: ColorAReemplazar, globo: GloboReemplazo): { plan: PlanDecoracion; piezas: string[]; omitidas: Array<{ estructura_id: string; motivo: string }> } {
+  const piezas: string[] = [];
+  const omitidas: Array<{ estructura_id: string; motivo: string }> = [];
+  const viejo = normal(objetivo.color);
+  const nuevo = normal(globo.color);
+  const esDelColor = (material: MaterialPlan) => normal(material.color) === viejo && (!objetivo.product_id || material.product_id === objetivo.product_id);
+  const estructuras = plan.estructuras.map((estructura) => {
+    if (objetivo.estructuras?.size && !objetivo.estructuras.has(estructura.estructura_id)) return estructura;
+    const indices = new Set(estructura.materiales.flatMap((material, indice) => (esDelColor(material) ? [indice] : [])));
+    if (!indices.size) return estructura;
+    if (estructura.materiales.some((material, indice) => !indices.has(indice) && material.product_id === globo.product_id && normal(material.color) === nuevo)) {
+      omitidas.push({ estructura_id: estructura.estructura_id, motivo: "ya lleva ese globo" });
+      return estructura;
+    }
+    piezas.push(estructura.estructura_id);
+    const materiales = estructura.materiales.map((material, indice): MaterialPlan => {
+      if (!indices.has(indice)) return material;
+      // Sin variante ni acabado fijos: el globo nuevo se compra en cada tamaño que la pieza lleve.
+      return { product_id: globo.product_id, color: nuevo, participacion: material.participacion, rol_material: material.rol_material };
+    });
+    // Un reemplazo suelto de una medida de ESE color (de la clásica) ya no aplica: el color entero cambió.
+    const overrides = estructura.variant_overrides?.filter((item) => normal(item.color) !== viejo && (!objetivo.product_id || item.product_id !== objetivo.product_id));
+    const cambiada: EstructuraPlan = { ...estructura, materiales };
+    if (overrides?.length) cambiada.variant_overrides = overrides;
+    else delete cambiada.variant_overrides;
+    if (cambiada.armado_arco_organico) cambiada.armado_arco_organico = conPaletaAcabado(cambiada.armado_arco_organico, indices, globo.acabadoMotor);
+    if (cambiada.armado_columna_organica) cambiada.armado_columna_organica = conPaletaAcabado(cambiada.armado_columna_organica, indices, globo.acabadoMotor);
+    if (cambiada.armado_guirnalda_organica) cambiada.armado_guirnalda_organica = conPaletaAcabado(cambiada.armado_guirnalda_organica, indices, globo.acabadoMotor);
+    return cambiada;
+  });
+  // La paleta del concepto dice el color nuevo en el lugar del viejo (o al final, si el viejo sigue en otra pieza).
+  const quedaElViejo = estructuras.some((estructura) => estructura.materiales.some((material) => normal(material.color) === viejo));
+  const base = quedaElViejo ? plan.concepto.paleta : [...new Set(plan.concepto.paleta.map((color) => (normal(color) === viejo ? nuevo : color)))];
+  const paleta = base.some((color) => normal(color) === nuevo) || base.length >= 8 ? base : [...base, nuevo];
+  return { plan: { ...plan, concepto: { ...plan.concepto, paleta: piezas.length ? paleta : plan.concepto.paleta }, estructuras }, piezas, omitidas };
 }
 
 /** Si alguna pieza del plan admite un color más (para ofrecer «Añadir un color»). */

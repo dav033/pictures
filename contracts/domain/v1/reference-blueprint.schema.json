@@ -1371,7 +1371,7 @@
                 "maxLength": 260
               },
               "bill_of_materials": {
-                "maxItems": 24,
+                "maxItems": 72,
                 "type": "array",
                 "items": {
                   "type": "object",

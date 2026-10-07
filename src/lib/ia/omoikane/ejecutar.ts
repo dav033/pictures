@@ -15,6 +15,7 @@ import { sanearBrief } from "@/lib/ia/herramientas/brief-herramienta";
 import { cierreAnticipado, disponibilidadDelTurno } from "@/lib/ia/herramientas/convergencia-plan";
 import { colorDeCatalogo } from "@/lib/plan/colores-catalogo";
 import { coloresFotoParaBusqueda } from "@/lib/plan/colores-referencia";
+import { coloresFotoFaltantes } from "@/lib/plan/colores-foto-plan";
 import { textoFinalTurno } from "./texto-final-turno";
 import { sistemaConPropuestaVigente } from "./resumen-plan-vigente";
 import type { ChatPort, Mensaje } from "@/lib/ia/nucleo/tipos";
@@ -131,6 +132,14 @@ function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPo
     ragValidados: estado.ragValidados?.length ?? 0,
     ragRechazados: estado.ragRechazados?.length ?? 0,
   }, { entrada: { textoFinal: texto, brief: sanearBrief(estado.brief), proveedor, modelo } });
+  // Los colores de la foto que el plan confirmado no compra (`colores_referencia` de cada pieza frente a sus líneas):
+  // la misma comprobación con que la guiada reintenta y avisa en la tarjeta, para las dos vistas.
+  const coloresFaltantes = estado.planResuelto ? coloresFotoFaltantes(estado.planResuelto) : [];
+  if (coloresFaltantes.length) {
+    decidir("regla:plan.colores_foto_faltantes", "colores de la foto que el plan confirmado no compra", coloresFaltantes, {
+      motivo: "colores_referencia de la pieza sin línea de ese color; la guiada lo pide otra vez y, si sigue faltando, lo dice en la tarjeta",
+    });
+  }
   return {
     texto,
     // The `fin` event validates the brief strictly: only valid fields leave the turn.

@@ -26,7 +26,7 @@ import { EncabezadoPrecio } from "./EncabezadoPrecio";
 import { PreciosMateriales } from "./PreciosMateriales";
 import { fichasDeCotizacion } from "@/components/guiado/ficha-globo";
 import { ResumenPrecio } from "./ResumenPrecio";
-import { SeccionGastos } from "./SeccionGastos";
+import { SeccionGastos, type FocoFila } from "./SeccionGastos";
 import { MaterialesGranel } from "./MaterialesGranel";
 import { ModoMateriales } from "./ModoMateriales";
 import { useGranel } from "./useGranel";
@@ -110,7 +110,7 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
   const [calculo, setCalculo] = useState<Calculo>({ estado: "vacio" });
   const [reintento, setReintento] = useState(0);
   const [quitada, setQuitada] = useState<{ seccion: SeccionCosto; fila: FilaQuitada } | null>(null);
-  const [foco, setFoco] = useState<string | null>(null);
+  const [foco, setFoco] = useState<FocoFila | null>(null);
   const { materiales, sinPrecio } = useMemo(() => materialesDesdeCotizacion(cotizacion), [cotizacion]);
   // Cómo se ve cada globo (foto, color, tamaño): solo para pintar la lista; no viaja a Python.
   const fichas = useMemo(() => fichasDeCotizacion(cotizacion.lineas), [cotizacion]);
@@ -187,10 +187,12 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
     }));
   }
 
-  function agregarFila(seccion: SeccionCosto): void {
+  /** Con `descripcion` (una idea de un toque) la fila llega con qué es y 1 unidad, y el foco va a su valor. */
+  function agregarFila(seccion: SeccionCosto, descripcion?: string): void {
     const id = idFila();
-    setBorrador((previo) => ({ ...previo, costos: { ...previo.costos, [seccion]: [...previo.costos[seccion], filaVacia(id)] } }));
-    setFoco(id);
+    const fila = descripcion ? { ...filaVacia(id), descripcion, cantidad: "1" } : filaVacia(id);
+    setBorrador((previo) => ({ ...previo, costos: { ...previo.costos, [seccion]: [...previo.costos[seccion], fila] } }));
+    setFoco({ fila: id, campo: descripcion ? "costo" : "descripcion" });
   }
 
   function quitarFila(seccion: SeccionCosto, id: string): void {
@@ -269,7 +271,13 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
       {abierta && (
         <div id={idPanel} className="grid gap-6 border-t border-borde-suave px-4 pb-5 pt-2 @xl:px-5.5 @3xl:grid-cols-[minmax(0,1fr)_17rem]">
           <div className="min-w-0">
-            <CampoGanancia clave={clave} valor={borrador.utilidad} error={leido.errorUtilidad} onValor={(texto) => setBorrador((previo) => ({ ...previo, utilidad: texto }))} />
+            <CampoGanancia
+              clave={clave}
+              valor={borrador.utilidad}
+              error={leido.errorUtilidad}
+              ganancia={datos && datos.utilidad_porcentaje !== null ? { cop: datos.utilidad_cop, atenuar } : null}
+              onValor={(texto) => setBorrador((previo) => ({ ...previo, utilidad: texto }))}
+            />
 
             {SECCIONES_COSTO.map((seccion) => (
               <SeccionGastos
@@ -286,7 +294,7 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
                 foco={foco}
                 onFocoListo={focoListo}
                 onCambiar={(id, cambios) => cambiarFila(seccion, id, cambios)}
-                onAgregar={() => agregarFila(seccion)}
+                onAgregar={(descripcion) => agregarFila(seccion, descripcion)}
                 onQuitar={(id) => quitarFila(seccion, id)}
                 onDeshacer={deshacerQuitar}
               />

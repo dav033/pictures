@@ -291,6 +291,149 @@ export function nombrarPiezasIndividuales(plan: PlanDecoracion): { plan: PlanDec
   return { plan: { ...plan, estructuras }, renombradas };
 }
 
+// --- Parejas simétricas -------------------------------------------------------------------------------------------
+
+/**
+ * Dos piezas que salen de UNA línea de la propuesta («2 × Columna») son la izquierda y la derecha de la misma pieza y
+ * van iguales. Verificador (2026-10-06, guiada-20261006-231824-v43qux): la propuesta solo traía los colores del plan
+ * entero y el modelo los repartió, y la columna izquierda salió dorada y fucsia y la derecha rosada y oro rosa.
+ * La instrucción de la guiada declara cada pareja con esta línea (con ids, nunca con nombres numerados) y
+ * `confirmar_plan_decoracion` la lee de la solicitud y la hace cumplir con `igualarParejas` antes de resolver.
+ */
+const PREFIJO_PAREJA = "Pareja simétrica:";
+const PAREJA = /Pareja simétrica: (EST_\d{2}_[A-Z_]+) y (EST_\d{2}_[A-Z_]+)/g;
+
+export function lineaPareja(izquierda: string, derecha: string): string {
+  return `${PREFIJO_PAREJA} ${izquierda} y ${derecha} van a los dos lados y son iguales: llevan exactamente los mismos materiales (mismo product_id y misma participacion por color), las mismas medidas, la misma densidad y la misma mezcla.`;
+}
+
+/** Las parejas que declaró la instrucción de la guiada (vacío en cualquier otro texto). */
+export function parejasDeInstruccion(texto: string): Array<[string, string]> {
+  return [...texto.matchAll(PAREJA)].map((coincidencia) => [coincidencia[1]!, coincidencia[2]!]);
+}
+
+/** Las piezas que la propuesta declara pareja: las dos individuales de una misma línea de cantidad 2 con lado. */
+export function parejasDePropuesta(individuales: readonly PiezaIndividual[], origen: readonly number[]): Array<[PiezaIndividual, PiezaIndividual]> {
+  const porOrigen = new Map<number, PiezaIndividual[]>();
+  individuales.forEach((pieza, indice) => {
+    const linea = origen[indice];
+    if (linea === undefined) return;
+    porOrigen.set(linea, [...(porOrigen.get(linea) ?? []), pieza]);
+  });
+  const parejas: Array<[PiezaIndividual, PiezaIndividual]> = [];
+  for (const piezas of porOrigen.values()) {
+    if (piezas.length !== 2) continue;
+    const [a, b] = piezas as [PiezaIndividual, PiezaIndividual];
+    if (a.estructura !== b.estructura || !PIEZAS_CON_LADO.has(a.estructura) || !a.ubicacion || !b.ubicacion || a.ubicacion === b.ubicacion) continue;
+    parejas.push(a.ubicacion === "lateral_izquierdo" ? [a, b] : [b, a]);
+  }
+  return parejas;
+}
+
+export type Igualada = { piezas: [string, string]; modo: "copia" | "union"; desde: string | null; copiado: string[] };
+export type NoIgualada = { izquierda: string; derecha: string; motivo: string };
+
+function claveColor(material: EstructuraPlan["materiales"][number]): string {
+  return (material.color ?? material.product_id).trim().toLocaleLowerCase("es");
+}
+
+function colores(estructura: EstructuraPlan): Set<string> {
+  return new Set(estructura.materiales.map(claveColor));
+}
+
+function contiene(mayor: Set<string>, menor: Set<string>): boolean {
+  return [...menor].every((color) => mayor.has(color));
+}
+
+const tieneArmado = (estructura: EstructuraPlan) => Boolean(estructura.armado_arco || estructura.armado_arco_organico || estructura.armado_columna || estructura.armado_columna_organica || estructura.armado_guirnalda || estructura.armado_guirnalda_organica || estructura.armado_bouquet);
+
+/** Materiales máximos de una pieza (`EstructuraPlanSchema.materiales.max(6)`). */
+const MAX_MATERIALES = 6;
+
+/**
+ * Los materiales de las dos piezas juntos: cada color una vez (con el producto de la izquierda si las dos lo tienen) y
+ * su parte, la media de las dos (cada pieza suma 1, así que la unión también). El de mayor parte es el principal.
+ */
+function unionDeMateriales(a: EstructuraPlan, b: EstructuraPlan): EstructuraPlan["materiales"] | null {
+  const porColor = new Map<string, { material: EstructuraPlan["materiales"][number]; parte: number }>();
+  for (const material of [...a.materiales, ...b.materiales]) {
+    const clave = claveColor(material);
+    const previo = porColor.get(clave);
+    if (previo) previo.parte += material.participacion / 2;
+    else porColor.set(clave, { material, parte: material.participacion / 2 });
+  }
+  if (porColor.size > MAX_MATERIALES) return null;
+  const lista = [...porColor.values()];
+  const mayor = lista.reduce((indice, actual, posicion) => (actual.parte > lista[indice]!.parte ? posicion : indice), 0);
+  return lista.map(({ material, parte }, posicion) => ({
+    ...material,
+    participacion: Math.round(parte * 10_000) / 10_000,
+    rol_material: posicion === mayor ? "principal" as const : parte >= 0.2 ? "secundario" as const : "acento" as const,
+  }));
+}
+
+/**
+ * Hace iguales las parejas declaradas. Si los colores de una pieza están todos en la otra, la que los tiene todos (la
+ * izquierda si son los mismos) presta a la otra sus materiales, medidas, densidad, mezcla y patrón; si el modelo los
+ * repartió (izquierda dorado y fucsia, derecha rosado y oro rosa), las dos llevan todos los colores con la parte media
+ * de cada uno, sin quitar ninguno del plan. No toca lo que no es seguro tocar: una pieza de la foto
+ * (`referencia_element_id`, sus colores son los de su elemento), una con armado guardado o una unión de más de 6
+ * colores. Python sigue contando.
+ */
+export function igualarParejas(plan: PlanDecoracion, parejas: ReadonlyArray<readonly [string, string]>): { plan: PlanDecoracion; igualadas: Igualada[]; noIgualadas: NoIgualada[] } {
+  const igualadas: Igualada[] = [];
+  const noIgualadas: NoIgualada[] = [];
+  let estructuras = plan.estructuras;
+  const igual = (x: unknown, y: unknown) => JSON.stringify(x ?? null) === JSON.stringify(y ?? null);
+  for (const [idA, idB] of parejas) {
+    const a = estructuras.find((estructura) => estructura.estructura_id === idA);
+    const b = estructuras.find((estructura) => estructura.estructura_id === idB);
+    if (!a || !b) continue;
+    const pareja = { izquierda: idA, derecha: idB };
+    if (a.referencia_element_id || b.referencia_element_id) { noIgualadas.push({ ...pareja, motivo: "pieza de la foto" }); continue; }
+    if (tieneArmado(a) || tieneArmado(b)) { noIgualadas.push({ ...pareja, motivo: "pieza con armado guardado" }); continue; }
+    const coloresA = colores(a);
+    const coloresB = colores(b);
+    const contenedora = contiene(coloresA, coloresB) ? a : contiene(coloresB, coloresA) ? b : null;
+    let modelo: EstructuraPlan;
+    if (contenedora) modelo = contenedora;
+    else {
+      const union = unionDeMateriales(a, b);
+      if (!union) { noIgualadas.push({ ...pareja, motivo: `más de ${MAX_MATERIALES} colores entre las dos` }); continue; }
+      modelo = { ...a, materiales: union };
+    }
+    const copiado = new Set<string>();
+    const igualar = (pieza: EstructuraPlan): EstructuraPlan => {
+      const cambios: string[] = [];
+      if (!igual(modelo.materiales, pieza.materiales)) cambios.push("materiales");
+      if (!igual(modelo.medidas, pieza.medidas)) cambios.push("medidas");
+      if (modelo.densidad !== pieza.densidad) cambios.push("densidad");
+      if (modelo.mezcla !== pieza.mezcla) cambios.push("mezcla");
+      if (!igual(modelo.patron_color, pieza.patron_color)) cambios.push("patron_color");
+      if (!cambios.length) return pieza;
+      for (const cambio of cambios) copiado.add(cambio);
+      const nueva: EstructuraPlan = {
+        ...pieza,
+        materiales: modelo.materiales.map((material) => ({ ...material })),
+        medidas: { ...modelo.medidas },
+        densidad: modelo.densidad,
+        mezcla: modelo.mezcla,
+      };
+      if (modelo.patron_color) nueva.patron_color = modelo.patron_color;
+      else delete nueva.patron_color;
+      const coloresModelo = [...new Set(modelo.materiales.map((material) => material.color).filter((color): color is string => Boolean(color)))];
+      if (pieza.colores_referencia) nueva.colores_referencia = coloresModelo.slice(0, 8);
+      return nueva;
+    };
+    const nuevaA = igualar(a);
+    const nuevaB = igualar(b);
+    if (nuevaA === a && nuevaB === b) continue;
+    estructuras = estructuras.map((estructura) => (estructura.estructura_id === idA ? nuevaA : estructura.estructura_id === idB ? nuevaB : estructura));
+    igualadas.push({ piezas: [idA, idB], modo: contenedora ? "copia" : "union", desde: contenedora?.estructura_id ?? null, copiado: [...copiado] });
+  }
+  return { plan: igualadas.length ? { ...plan, estructuras } : plan, igualadas, noIgualadas };
+}
+
 /** «izquierda» o «derecha» de una pieza por su ubicación (para el chat y la tarjeta), o null. */
 export function ladoDeUbicacion(ubicacion: string | undefined): Lado | null {
   return esLateral(ubicacion) ? LADO_DE_LATERAL[ubicacion] : null;

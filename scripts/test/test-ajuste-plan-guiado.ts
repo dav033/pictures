@@ -118,7 +118,7 @@ const piezas = piezasAjustables(plan);
 assert.deepEqual(piezas.map((pieza) => pieza.modoColores), ["paleta", "posiciones", "reparto"], "cada pieza cambia sus colores por su propio camino");
 assert.equal(piezas[1]!.titulo, "2 × Columna");
 for (const pieza of piezas) assert.equal(pieza.colores.reduce((suma, color) => suma + color.porcentaje, 0), 100, `los porcentajes de ${pieza.titulo} suman 100`);
-assert.deepEqual(piezas[0]!.colores.map((color) => [color.etiqueta, color.porcentaje]), [["Azul", 39], ["Plateado", 31], ["Blanco", 30]], "el porcentaje sale de los globos que resolvió Python");
+assert.deepEqual(piezas[0]!.colores.map((color) => [color.etiqueta, color.porcentaje]), [["Azul", 39], ["Plata cromado", 31], ["Blanco", 30]], "el porcentaje sale de los globos que resolvió Python (nombres de color-sempertex, como los chips)");
 assert.equal(piezas[0]!.tamano?.texto, "1,58 × 2,23 m");
 assert.equal(piezas[1]!.tamano?.texto, "2 m de alto");
 assert.ok(piezas.every((pieza) => pieza.puedeQuitarPieza), "con tres piezas, cualquiera se puede quitar");
@@ -150,9 +150,10 @@ assert.equal(edicionQuitarColor(unColor, PARED, 0), null, "el único color no se
 
 // --- Tamaño ---
 const arcoMasGrande = campo(edicionTamano(plan, SEMIARCO, 1), "armado_arco_organico");
-assert.deepEqual([arcoMasGrande.armado_arco_organico?.forma.anchoM, arcoMasGrande.armado_arco_organico?.forma.altoM], [2.66, 2.7], "el arco del motor crece medio metro en su armado");
-assert.equal(campo(edicionTamano(plan, COLUMNA, -1), "armado_columna").armado_columna?.cuerpo.alto_m, 1.5);
-assert.deepEqual(campo(edicionTamano(plan, PARED, 1), "propiedades").medidas, { alto_m: 2.5 }, "sin armado, se cambian sus medidas");
+// Un 10 % de la medida que se ve (1,58 × 2,23 → 1,75 × 2,45), pedido al motor con la razón pedida/armada (2,16/1,58).
+assert.deepEqual([arcoMasGrande.armado_arco_organico?.forma.anchoM, arcoMasGrande.armado_arco_organico?.forma.altoM], [2.39, 2.42], "el arco del motor crece un 10 % en su armado, no medio metro de golpe");
+assert.equal(campo(edicionTamano(plan, COLUMNA, -1), "armado_columna").armado_columna?.cuerpo.alto_m, 1.8);
+assert.deepEqual(campo(edicionTamano(plan, PARED, 1), "propiedades").medidas, { alto_m: 2.2 }, "sin armado, se cambian sus medidas");
 
 // --- Quitar y añadir colores ---
 assert.deepEqual(edicionQuitarColor(plan, SEMIARCO, 1), { accion: "quitar", estructura_id: SEMIARCO, objetivo_variant_id: "pl5" }, "se quita nombrando una línea de ese color");
@@ -174,7 +175,7 @@ assert.deepEqual(
 );
 
 // --- Los colores del plan ---
-assert.deepEqual(coloresDelPlanVista(plan).map((color) => [color.etiqueta, color.porcentaje]), [["Azul", 37], ["Plateado", 31], ["Blanco", 32]], "la parte de cada color en todo el plan");
+assert.deepEqual(coloresDelPlanVista(plan).map((color) => [color.etiqueta, color.porcentaje]), [["Azul", 37], ["Plata", 31], ["Blanco", 32]], "la parte de cada color en todo el plan");
 assert.equal(admiteColorNuevo(plan), true);
 
 // --- Quitar una pieza ---

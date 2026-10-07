@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LoaderCircle, TriangleAlert, Wand2 } from "lucide-react";
+import { useVozCliente } from "../motor/voz-editor";
 
 /**
  * «Volver a la receta» (ADR-0035, paso 1): la salida cuando el armado no se sostiene o el decorador quiere
@@ -18,6 +19,8 @@ export function RecetaColumna({ onReceta, deshabilitado = false, perdida }: {
 }) {
   const [fase, setFase] = useState<"cerrada" | "confirmando" | "pidiendo">("cerrada");
   const [error, setError] = useState<string | null>(null);
+  // La receta es del decorador: en la guiada no se ofrece (allí solo hay «Guardar» y «Cancelar»).
+  const cliente = useVozCliente();
 
   async function confirmar(): Promise<void> {
     setFase("pidiendo");
@@ -31,6 +34,7 @@ export function RecetaColumna({ onReceta, deshabilitado = false, perdida }: {
     setFase("confirmando");
   }
 
+  if (cliente) return null;
   const boton = "ui-button-secondary ui-pressable min-h-11 px-3.5 py-1.5 text-[13px]";
   if (fase === "cerrada") {
     return (

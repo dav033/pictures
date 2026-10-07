@@ -1,6 +1,8 @@
 {
   "estado": "resuelto",
   "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+  "correccion_auditoria": "Cuerpo del arco en 12 pulgadas correcto; faltaban los ~18 acentos de 5 pulgadas con cara (calavera, lima y calabaza) y sus adornos negros, que se cuentan en la foto.",
+  "descartadas": [],
   "plan_declarado": {
     "plan_version": "1.0",
     "plan_id": "f0ed5df6-4256-5f1a-be5d-420ae56c86f9",
@@ -20,7 +22,7 @@
     "estructuras": [
       {
         "estructura_id": "EST_01_ARCO",
-        "nombre": "Arco de globos",
+        "nombre": "Arco",
         "tipo": "arco",
         "rol_escena": "focal",
         "ubicacion": "arco_central",
@@ -36,18 +38,18 @@
             "product_id": "8634238599463",
             "variant_id": "46594228715815",
             "color": "naranja",
-            "participacion": 0.5263157894736842,
+            "participacion": 0.53,
             "rol_material": "principal"
           },
           {
             "product_id": "8634239516967",
             "variant_id": "46594235269415",
             "color": "negro",
-            "participacion": 0.4736842105263158,
+            "participacion": 0.47,
             "rol_material": "secundario"
           }
         ],
-        "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+        "porque": "Cuerpo del arco naranja y negro en racimos de 12 pulgadas; los acentos de 5 pulgadas con cara van aparte.",
         "referencia_element_id": "REF_01_E01",
         "estructura_oficial": "arco",
         "colores_referencia": [
@@ -58,7 +60,7 @@
     ],
     "supuestos": [
       "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-      "Se usan globos redondos R-12 disponibles en el snapshot vigente."
+      "Los tamaños son los que se ven en la foto (auditoría 2026-10-06)."
     ],
     "referencia_omitida": []
   },
@@ -82,7 +84,7 @@
       "estructuras": [
         {
           "estructura_id": "EST_01_ARCO",
-          "nombre": "Arco de globos",
+          "nombre": "Arco",
           "tipo": "arco",
           "rol_escena": "focal",
           "ubicacion": "arco_central",
@@ -98,18 +100,18 @@
               "product_id": "8634238599463",
               "variant_id": "46594228715815",
               "color": "naranja",
-              "participacion": 0.5263157894736842,
+              "participacion": 0.53,
               "rol_material": "principal"
             },
             {
               "product_id": "8634239516967",
               "variant_id": "46594235269415",
               "color": "negro",
-              "participacion": 0.4736842105263158,
+              "participacion": 0.47,
               "rol_material": "secundario"
             }
           ],
-          "porque": "Recreación de referencia REF_01_E01, con color y forma observados.",
+          "porque": "Cuerpo del arco naranja y negro en racimos de 12 pulgadas; los acentos de 5 pulgadas con cara van aparte.",
           "referencia_element_id": "REF_01_E01",
           "estructura_oficial": "arco",
           "colores_referencia": [
@@ -120,12 +122,12 @@
       ],
       "supuestos": [
         "Las medidas en metros parten de un tamaño frecuente y se ajustan con la lectura de la foto.",
-        "Se usan globos redondos R-12 disponibles en el snapshot vigente.",
-        "Arco de globos: la foto muestra unos 180 globos y el plan tenía 116; densidad media → lujosa, ancho 2,4 → 2,52 m y alto 2,2 → 2,31 m equivalentes a la foto (no medidos): quedó en 153."
+        "Los tamaños son los que se ven en la foto (auditoría 2026-10-06).",
+        "Arco: la foto muestra unos 180 globos y el plan tenía 116; densidad media → lujosa, ancho 2,4 → 2,52 m y alto 2,2 → 2,31 m equivalentes a la foto (no medidos): quedó en 153."
       ],
       "referencia_omitida": []
     },
-    "plan_hash": "b5c391639e3696232599cf072fbe9e7b15a760539841f1ad6fe5b0b13ab2219a",
+    "plan_hash": "5ae4e9ad589b96f0674d21d2fb4848ad816f8f4616f2ce0af828ec1fb89b87ec",
     "request_id": "0e412dbf-7ba1-57e5-95bf-b9d468544774",
     "compras": [
       {
@@ -240,7 +242,7 @@
     "estructuras": [
       {
         "estructura_id": "EST_01_ARCO",
-        "nombre": "Arco de globos",
+        "nombre": "Arco",
         "tipo": "arco",
         "ubicacion": "arco_central",
         "repeticiones": 1,
@@ -553,7 +555,7 @@
     "leftoverInventory": 34,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "b5c391639e3696232599cf072fbe9e7b15a760539841f1ad6fe5b0b13ab2219a"
+    "plan_hash": "5ae4e9ad589b96f0674d21d2fb4848ad816f8f4616f2ce0af828ec1fb89b87ec"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -583,5 +585,69 @@
     ],
     "total": 52148
   },
-  "descartadas": []
+  "pistas_tamanos": [
+    {
+      "referencia_element_id": "REF_01_E01",
+      "tamanos": "un_solo_tamano",
+      "confianza": 1
+    }
+  ],
+  "pistas_conteo": [
+    {
+      "globos_visibles": 110,
+      "exacto": false,
+      "estimado_total": 180,
+      "racimos": 45,
+      "globos_por_racimo": 4,
+      "por_tamano": [
+        {
+          "clase": "chico",
+          "proporcion": 0.15
+        },
+        {
+          "clase": "mediano",
+          "proporcion": 0.85
+        }
+      ],
+      "largo_relativo": null,
+      "alto_relativo": null,
+      "confianza": 0.9,
+      "referencia_element_id": "REF_01_E01"
+    }
+  ],
+  "remates": [],
+  "colores_cliente": {
+    "46594228715815": "naranja",
+    "46594235269415": "negro"
+  },
+  "extras_foto": [
+    {
+      "variantId": "46594221146407",
+      "sku": "B2B-20000437",
+      "cantidad": 6,
+      "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+      "detalleCantidad": "estimado a partir de la foto: unos 6 acentos blancos de 5 pulgadas con calavera dibujada a mano"
+    },
+    {
+      "variantId": "46594213118247",
+      "sku": "B2B-20000462",
+      "cantidad": 7,
+      "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50 · R-5 · verde lima",
+      "detalleCantidad": "estimado a partir de la foto: unos 7 acentos verde lima de 5 pulgadas con cara dibujada a mano"
+    },
+    {
+      "variantId": "46594228486439",
+      "sku": "B2B-20000486",
+      "cantidad": 5,
+      "nota": "B2b Globo Latex Redondo Fashion Naranja — R-5 / PAQUETE X 50 · R-5 · naranja",
+      "detalleCantidad": "estimado a partir de la foto: unos 5 acentos naranjas de 5 pulgadas con cara de calabaza dibujada a mano"
+    },
+    {
+      "variantId": "46594300936487",
+      "sku": "B2B-20001244",
+      "cantidad": 8,
+      "nota": "B2b Globo Latex Tubito Fashion Negro — T260 / PAQUETE X 20 · T260 · negro",
+      "detalleCantidad": "estimado a partir de la foto: adornos negros torcidos sobre los 18 acentos (2 o 3 adornos por globo para modelar)"
+    }
+  ]
 }

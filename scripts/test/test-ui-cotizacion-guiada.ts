@@ -95,8 +95,8 @@ assert.ok(!textoNegocio.includes("R-12") && !textoNegocio.includes("variante"));
 const visibles = bibliotecaVisible();
 const resumenReales: string[] = [];
 for (const [id, esperados] of [
-  ["deco-real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec", ["Globo rosado de 12\"", "Globo beige de 12\"", "Globo rojo de 12\"", "Globo dorado rosa de 12\""]],
-  ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", ["Globo blanco de 12\"", "Globo azul de 12\"", "Globo plateado de 12\"", "Globo azul marino de 12\""]],
+  ["deco-real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec", ["Globo palo de rosa de 12\"", "Globo arena de 12\"", "Globo rojo frambuesa de 12\"", "Globo oro rosa de 12\"", "Globo rosa bebé de 12\""]],
+  ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", ["Globo blanco de 12\"", "Globo azul bebé de 12\"", "Globo plateado de 12\"", "Globo azul rey cromado de 12\""]],
 ] as const) {
   const idea = visibles.find((item) => item.id === id);
   assert.ok(idea, `La idea ${id} debe estar visible en la biblioteca.`);
@@ -120,7 +120,7 @@ for (const [id, esperados] of [
     assert.ok(tarjeta.includes(`Globos ${colorEnPlural(color)} de 12"`), `${id}: la idea no dice «${color}» como su precio: ${tarjeta.join(", ")}`);
   }
   // Negocio: el nombre del catálogo, limpio (sin paquete ni etiqueta).
-  for (const linea of cotizacionReal.lineas) assert.match(linea.nombre, /^Globo de látex 12" [A-ZÁÉÍÓÚ][^·/]*$/, `${id}: nombre de negocio limpio: ${linea.nombre}`);
+  for (const linea of cotizacionReal.lineas) assert.match(linea.nombre, /^Globo de látex \d{1,2}" [A-ZÁÉÍÓÚ][^·/]*$/, `${id}: nombre de negocio limpio: ${linea.nombre}`);
   resumenReales.push(`${id.slice(0, 12)}: ${[...texto.matchAll(/Globo [^<]*?de 12"/g)].map((m) => m[0]).join(", ")}`);
 }
 

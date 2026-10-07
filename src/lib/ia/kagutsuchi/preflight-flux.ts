@@ -1,7 +1,7 @@
 import type { SceneSpec } from "../escena/scene-spec";
 import type { FluxVisualClause } from "./caption-flux";
 import { BASE_PROMPT_MAX_LENGTH, translateFluxColor } from "./caption-flux";
-import { palabrasSoloFlux } from "./texto-base";
+import { HEX_PEGADO, palabrasSoloFlux } from "./texto-base";
 
 export type FluxPromptPreflightReport = {
   ok: boolean;
@@ -239,7 +239,8 @@ function basePromptErrors(prompt: string, clauses: readonly FluxVisualClause[], 
   const errors = palabrasSoloFlux(prompt).map((etiqueta) => `prompt base con ${etiqueta}`);
   // Python's pattern phrases travel verbatim (ADR-0028 §12); only the
   // compiler's own wording is held to the plain-sentence shape.
-  const ownWording = clauses.reduce((text, clause) => clause.colorPattern ? text.split(clause.colorPattern).join(" ") : text, prompt);
+  // El hex pegado a su color («white (#F7F7F5)») es la forma pedida, no una nota al margen entre paréntesis.
+  const ownWording = clauses.reduce((text, clause) => clause.colorPattern ? text.split(clause.colorPattern).join(" ") : text, prompt).replace(HEX_PEGADO, "");
   if (/[();]/.test(ownWording)) warnings.push("prompt base con paréntesis o punto y coma");
   return errors;
 }

@@ -9,7 +9,7 @@ import { FUENTE_PLAN } from "@/lib/plan/blueprint";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, armadoGuirnaldaOrganicaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separate-side-pieces";
 import { limpiarTextoBase } from "./texto-base";
-import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
+import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, rosaDelante, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
 
 export const FLUX_CAPTION_COMPILER_VERSION = "flux-caption-v2.11-piezas-sueltas" as const;
 
@@ -55,6 +55,11 @@ export type ProductConceptClauseInput = {
    * canonical label, cleaned of commercial names.
    */
   baseTerms?: TerminosBase;
+  /**
+   * Globos de este producto en la pieza según las líneas que resolvió Python (`design_quantity`). Ordenan los
+   * colores de la frase de materiales y dicen su peso («mostly …, accents of …»). Sin ellas, el orden de siempre.
+   */
+  units?: number;
 };
 
 
@@ -1080,18 +1085,23 @@ function withApprovedColorTones(material: string, colors: string[]): string {
  * No hace falta ningún dato nuevo para decidir cuál va: los propios códigos de
  * talla confirmados de la cláusula ya lo dicen.
  */
-function baseMaterialParts(entries: ProductConceptClauseInput[], render: CaptionRenderState): { balloons: string[]; pieces: string[]; references: string[] } {
-  const byConcept = new Map<string, { terms: TerminosBase; colorName?: string; sizes: string[] }>();
+function baseMaterialParts(entries: ProductConceptClauseInput[], render: CaptionRenderState): { balloons: string[]; pieces: string[]; references: string[]; conReparto: boolean } {
+  const byConcept = new Map<string, { terms: TerminosBase; colorName?: string; sizes: string[]; units?: number }>();
   for (const entry of entries) {
     const existing = byConcept.get(entry.conceptId);
     const terms = entry.baseTerms ?? { kind: "piece" as const, label: limpiarEtiqueta(entry.canonicalLabel) };
-    byConcept.set(entry.conceptId, { terms, colorName: existing?.colorName ?? entry.colorName, sizes: [...(existing?.sizes ?? []), ...(entry.sizeCodes ?? [])] });
+    const units = entry.units === undefined ? existing?.units : (existing?.units ?? 0) + entry.units;
+    byConcept.set(entry.conceptId, { terms, colorName: existing?.colorName ?? entry.colorName, sizes: [...(existing?.sizes ?? []), ...(entry.sizeCodes ?? [])], ...(units === undefined ? {} : { units }) });
   }
-  const byNoun = new Map<string, { descriptors: string[]; sizes: string[] }>();
+  const byNoun = new Map<string, { descriptors: Array<{ text: string; units?: number }>; sizes: string[] }>();
   const pieces: string[] = [];
   const references: string[] = [];
-  for (const conceptId of [...byConcept.keys()].sort()) {
-    const { terms, colorName, sizes } = byConcept.get(conceptId)!;
+  // Orden del plan: el producto con más globos primero (las líneas de Python). Antes el orden era el del id de
+  // producto, así que un azul del 10 % podía abrir la lista y FLUX lo pintaba dominante (2026-10-06). Sin unidades,
+  // o a igualdad, el orden de siempre.
+  const orden = [...byConcept.keys()].sort((a, b) => (byConcept.get(b)!.units ?? -1) - (byConcept.get(a)!.units ?? -1) || (a < b ? -1 : a > b ? 1 : 0));
+  for (const conceptId of orden) {
+    const { terms, colorName, sizes, units } = byConcept.get(conceptId)!;
     const reference = terms.kind === "balloon" ? terms.color : colorName;
     if (render.step.referenceRepeatedConcepts && reference && render.describedConceptIds.has(conceptId)) {
       if (!references.includes(reference)) references.push(reference);
@@ -1104,13 +1114,44 @@ function baseMaterialParts(entries: ProductConceptClauseInput[], render: Caption
     }
     const descriptor = render.step.shortLabels ? terms.color : [terms.finish, terms.color].filter(Boolean).join(" ");
     const group = byNoun.get(terms.noun) ?? { descriptors: [], sizes: [] };
-    if (!group.descriptors.includes(descriptor)) group.descriptors.push(descriptor);
+    const previo = group.descriptors.find((item) => item.text === descriptor);
+    if (!previo) group.descriptors.push({ text: descriptor, ...(units === undefined ? {} : { units }) });
+    else if (units !== undefined) previo.units = (previo.units ?? 0) + units;
     group.sizes.push(...sizes);
     byNoun.set(terms.noun, group);
   }
-  const balloons = [...byNoun.entries()].map(([noun, group]) =>
-    [fraseTallasBase(group.sizes, render.step.sizes), joinNatural(group.descriptors), noun].filter(Boolean).join(" "));
-  return { balloons, pieces, references };
+  // El peso de cada color se dice solo cuando la lista entera es de un mismo tipo de globo y ningún producto quedó
+  // como referencia a uno ya descrito: así las partes son las de la pieza completa.
+  const reparto = byNoun.size === 1 && references.length === 0 ? repartoConPeso([...byNoun.values()][0]!.descriptors) : undefined;
+  const balloons = [...byNoun.entries()].map(([noun, group]) => (reparto
+    ? `${[fraseTallasBase(group.sizes, render.step.sizes), noun].filter(Boolean).join(" ")}, ${reparto}`
+    : [fraseTallasBase(group.sizes, render.step.sizes), joinNatural(group.descriptors.map((item) => item.text)), noun].filter(Boolean).join(" ")));
+  return { balloons, pieces, references, conReparto: Boolean(reparto) };
+}
+
+/** Desde esta parte de los globos de la pieza un color manda («mostly»). */
+const PARTE_MAYORIA = 0.5;
+/** Por debajo de esta parte un color es acento («accents of»). */
+const PARTE_ACENTO = 0.15;
+
+/**
+ * El peso de cada color en palabras, en el orden del plan: «mostly reflective chrome silver with satin pearlescent
+ * white and accents of reflective chrome light pink». Solo con las unidades de todos y al menos un color que mande o
+ * uno que sea acento; un reparto parejo sin acentos se queda en la lista ordenada (`undefined`).
+ */
+function repartoConPeso(descriptores: ReadonlyArray<{ text: string; units?: number }>): string | undefined {
+  if (descriptores.length < 2 || descriptores.some((item) => !item.units || item.units <= 0)) return undefined;
+  const total = descriptores.reduce((suma, item) => suma + item.units!, 0);
+  const [primero, ...resto] = [...descriptores].sort((a, b) => b.units! - a.units!).map((item) => ({ text: item.text, parte: item.units! / total }));
+  const medios = resto.filter((item) => item.parte >= PARTE_ACENTO).map((item) => item.text);
+  const acentos = resto.filter((item) => item.parte < PARTE_ACENTO).map((item) => item.text);
+  if (primero!.parte >= PARTE_MAYORIA) {
+    const conMedios = medios.length ? ` with ${joinNatural(medios)}` : "";
+    const conAcentos = acentos.length ? `${medios.length ? " and" : " with"} accents of ${joinNatural(acentos)}` : "";
+    return `mostly ${primero!.text}${conMedios}${conAcentos}`;
+  }
+  if (!acentos.length) return undefined;
+  return `${joinNatural([primero!.text, ...medios])} with accents of ${joinNatural(acentos)}`;
 }
 
 /** Structure types that are made of balloons; the others (a backdrop, an accent) are not "made of" them. */
@@ -1179,7 +1220,10 @@ function renderBaseClauseText(clause: FluxVisualClause, render: CaptionRenderSta
     : renderedCount === 1 ? `${article} ${noun}` : `${numberWord(renderedCount)} ${pluralize(noun)}`;
   // Python's pattern phrase follows the material, verbatim (ADR-0028 §12).
   const shapeCue = organicColumn ? "with an uneven, deep silhouette and large balloons interspersed among small cluster fillers" : "";
-  const colored = [core, material, clause.colorPattern, shapeCue].filter(Boolean).join(" ");
+  // Tras el reparto («… and accents of pink») una coma: sin ella la frase de Python («with silver, pink and white
+  // scattered…») se leía como parte del último acento.
+  const trasMaterial = parts?.conReparto && material && (clause.colorPattern || shapeCue) ? `${material},` : material;
+  const colored = [core, trasMaterial, clause.colorPattern, shapeCue].filter(Boolean).join(" ");
   // The same shape fixes the scene dialect learned: a lone side piece stands
   // apart from the focal arch, a half-arch elsewhere keeps its one-sided
   // shape, a garland without an assembly runs along its surface instead of
@@ -1456,7 +1500,9 @@ export function compileFluxCaption(input: {
   const limpiar = (texto: string): string => {
     const limpio = limpiarTextoBase(texto);
     for (const palabra of limpio.quitadas) palabrasQuitadas.add(palabra);
-    return limpio.texto;
+    // El oro rosa con el rosa delante en TODO el texto, también en las frases que escribe Python (patrones,
+    // armados): «rose gold» a secas FLUX lo pinta dorado (banco de fotos 07, 2026-10-06; `rosaDelante`).
+    return rosaDelante(limpio.texto);
   };
   let prompt = "";
   let compactionStep = 0;

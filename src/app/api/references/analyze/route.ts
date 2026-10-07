@@ -1,4 +1,5 @@
-import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
+import { analizarReferenciasV2, ANALYSIS_PARSER_VERSION, sistemaAnalisis } from "@/lib/ia/amaterasu/analizar-referencias-v2";
+import { LECTURAS_EJEMPLOS, lecturaDeEjemplo } from "@/lib/ia/amaterasu/lecturas-ejemplos";
 import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
 import { leerLecturaUnica } from "@/lib/ia/amaterasu/lectura-unica";
 import { leerLecturasDeFoto } from "@/lib/ia/amaterasu/lecturas-foto";
@@ -22,10 +23,11 @@ import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
 import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
 import { conReferenciasMedidas } from "@/lib/plan/referencias-medidas";
 import { unificarPiezasEspejo } from "@/lib/ia/referencia/piezas-espejo";
+import { conCintasDeLasPiezas } from "@/lib/ia/referencia/cintas-de-pieza";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 import { reconciliarColoresLectura } from "@/lib/ia/referencia/colores-lectura";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
-import { coloresDominantesReferencia, coloresNombradosReferencia } from "@/lib/plan/colores-referencia";
+import { coloresDominantesReferencia, coloresNombradosReferencia, partesDeColorPieza } from "@/lib/plan/colores-referencia";
 
 export const maxDuration = 120;
 
@@ -52,7 +54,25 @@ async function atenderPOST(request: Request) {
       ? crearChatTurnoPython({ requestId, correlationId, model: MODELO_LECTURA_FOTO })
       : await chatLecturaFotoDe(id);
     decidir("regla:config_lectura_foto", "con qué configuración se lee la foto", { via: REFERENCE_ANALYSIS_PYTHON_ENABLED ? "python" : "gemini_directo", modelo: MODELO_LECTURA_FOTO, razonamiento: RAZONAMIENTO_LECTURA_FOTO, variante: LECTURA_UNICA_REFERENCIA_ENABLED ? VARIANTE_RUTA_ANALISIS : "v16" }, { motivo: "REFERENCE_ANALYSIS_PYTHON_ENABLED y config-lectura-foto.ts" });
-    const references = referenciasEtiquetadas(body.images);
+    const recibidas = referenciasEtiquetadas(body.images);
+    // Una foto de la galería (intacta desde la clásica o recodificada por la guiada) sale con su lectura revisada, sin
+    // llamar al modelo, y el resto de la ruta trabaja sobre los píxeles del archivo de la galería: las dos vistas
+    // reciben EXACTAMENTE la misma lectura (`lecturas-ejemplos.ts`). «Reintentar» (`sin_cache`) pide una nueva.
+    const deGaleria = LECTURA_UNICA_REFERENCIA_ENABLED && !body.sinCache
+      ? await lecturaDeEjemplo(recibidas, { parserVersion: ANALYSIS_PARSER_VERSION, variante: VARIANTE_RUTA_ANALISIS })
+      : null;
+    if (deGaleria) {
+      decidir("regla:lectura_foto.ejemplo_revisado", "la foto es una de la galería: sale su lectura revisada, sin llamar al modelo", {
+        ejemplo: deGaleria.ejemplo.id,
+        coincidencia: deGaleria.coincidencia,
+        distancia_huella: deGaleria.distancia,
+        pixeles: deGaleria.pixeles,
+        variante: LECTURAS_EJEMPLOS.variante,
+        prompt_vigente: LECTURAS_EJEMPLOS.system_prompt_hash === sistemaAnalisis([], "perceptual", VARIANTE_RUTA_ANALISIS).systemPromptHash,
+        revision: deGaleria.ejemplo.revision,
+      }, { motivo: "lecturas-ejemplos.json: una lectura elegida mirando la foto; la misma en la clásica y en la guiada" });
+    }
+    const references = deGaleria?.referencias ?? recibidas;
     // La descripción visual no decide productos. El chat resuelve después
     // cada elemento mediante buscar_catalogo_rag contra PostgreSQL validado.
     // `sin_cache` es el "Reintentar" de la UI: pide un análisis nuevo.
@@ -60,7 +80,7 @@ async function atenderPOST(request: Request) {
     // también las cuatro lecturas (variante `VARIANTE_RUTA_ANALISIS`: v20, que es
     // v18 —v17 más las fronteras de UI-3— más las reglas de color) y no hay
     // ninguna llamada de visión más. Apagada, v16 y las cuatro de siempre.
-    const analisis = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal, {
+    const analisis = deGaleria?.analisis ?? await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal, {
       forzarNuevoAnalisis: body.sinCache,
       ...(LECTURA_UNICA_REFERENCIA_ENABLED ? { variante: VARIANTE_RUTA_ANALISIS } : {}),
     });
@@ -112,7 +132,17 @@ async function atenderPOST(request: Request) {
     // (`referencias-medidas.ts`). El bloque `analisis_color` de abajo sigue igual para la pantalla.
     // Dos piezas en espejo son UNA pieza repetida (`piezas-espejo.ts`, 2026-10-04): el reconocedor llamó
     // columna a una y semiarco a la otra y el plan armó dos estructuras distintas. Determinista, sin proveedor.
-    const final = unificarPiezasEspejo(conReferenciasMedidas(blueprint, analisisColor));
+    // Las cintas o flecos que la lectura solo dijo DENTRO de una pieza de globos salen como escenografía propia
+    // (`cintas-de-pieza.ts`): sin elemento propio la escena no los nombra y la misma foto salía con o sin cintas
+    // según la corrida (banco de fotos 10, 2026-10-06). Va en las dos vistas, que leen la foto por esta ruta.
+    const conCintas = conCintasDeLasPiezas(unificarPiezasEspejo(blueprint));
+    const final = conCintasDeLasPiezas(unificarPiezasEspejo(conReferenciasMedidas(blueprint, analisisColor)));
+    const cintas = final.elements.filter((elemento) => elemento.element_id.endsWith("_CINTAS") && !blueprint.elements.some((original) => original.element_id === elemento.element_id));
+    if (cintas.length > 0) {
+      decidir("regla:lectura_foto.cintas_de_pieza", "cintas o flecos dichos dentro de una pieza de globos, como escenografía propia", cintas.map((elemento) => ({ id: elemento.element_id, nombre: elemento.name, de: elemento.relationships[0]?.target_element_id ?? null })), {
+        motivo: "la lectura las nombró en la evidencia de la pieza y no como elemento: sin elemento la escena no las dibuja",
+      });
+    }
     // Las dos vistas validan el blueprint con su esquema y, si no lo cumple, tiran la lectura entera (la guiada
     // dice «no pude distinguir los detalles», la clásica da error). Un añadido medido que lo rompa (una parte de
     // 1,0001, banco del 2026-10-06) no puede costar la foto: sale el blueprint sin las referencias medidas.
@@ -120,7 +150,7 @@ async function atenderPOST(request: Request) {
     if (!valido.success) {
       decidir("regla:lectura_foto.blueprint_invalido", "el blueprint con las referencias medidas no cumple su esquema; sale sin ellas", { problemas: valido.error.issues.slice(0, 5).map((problema) => `${problema.path.join(".")}: ${problema.message}`) });
     }
-    const result = { ...analisis, blueprint: valido.success ? final : unificarPiezasEspejo(blueprint) };
+    const result = { ...analisis, blueprint: valido.success ? final : conCintas };
     // Auditoría de IA: de los colores que la lectura nombró en cada pieza de globos, cuáles compra el plan
     // (`coloresDominantesReferencia`) y cuáles se quedan fuera por el tope de tonos, con lo que midieron los píxeles.
     decidir("regla:lectura_foto.colores", "qué colores de cada pieza leída pasan a la compra del plan", result.blueprint.elements
@@ -129,6 +159,9 @@ async function atenderPOST(request: Request) {
         const nombrados = coloresNombradosReferencia(elemento.appearance);
         const compra = coloresDominantesReferencia(elemento.appearance);
         const fuera = nombrados.map((color) => color.color).filter((color) => !compra.includes(color));
+        // De dónde sale la parte de cada color que se le da al plan: la medida o la lectura de la disposición
+        // cuando la medida pone delante un neutro que esa lectura no (`partesDeColorPieza`).
+        const reparto = partesDeColorPieza(elemento.appearance);
         return {
           id: elemento.element_id,
           etiquetas: elemento.appearance.observed_colors,
@@ -136,6 +169,7 @@ async function atenderPOST(request: Request) {
           compra,
           ...(fuera.length ? { fuera_de_compra: fuera } : {}),
           medidos: elemento.appearance.measured_colors?.map((medido) => `${medido.color}:${medido.share}`) ?? null,
+          partes: { fuente: reparto.fuente, partes: reparto.partes.map((parte) => `${parte.color}:${parte.share}`) },
         };
       }));
     // Qué vio el reconocedor y qué lecturas quedaron en cada elemento: solo

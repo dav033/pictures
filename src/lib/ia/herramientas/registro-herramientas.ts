@@ -4,16 +4,18 @@ import type { Pool } from "pg";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { TEXTO_PLAN_LISTO } from "@/lib/ia/omoikane/texto-final-turno";
 import { FalloTecnicoTurnoError } from "@/lib/ia/herramientas/fallo-tecnico-turno";
-import { advertenciasPuertaFisica, mezclasCompatiblesConDiametros, tamanosObligatorios } from "@/lib/plan/mezclas";
+import { advertenciasPuertaFisica, mezclasCompatiblesConDiametros, pulgadasDeMezcla, tamanosObligatorios } from "@/lib/plan/mezclas";
+import { sustitucionesCliente } from "@/lib/plan/presentacion-cliente";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { avisoFiltrosBusqueda, filtrosDurosDeBusqueda } from "@/lib/rag/chat/filtros-turno";
+import { tonosExclusivos } from "@/lib/plan/tonos-color";
 import type { FiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { type ItemRechazado, type ItemValidado } from "@/lib/rag/chat/validar";
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, type HechosPeticionPlan } from "@/lib/rag/observability/log";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
-import { separarEstructurasRepetidas } from "@/lib/plan/piezas-individuales";
+import { igualarParejas, parejasDeInstruccion, separarEstructurasRepetidas } from "@/lib/plan/piezas-individuales";
 import { decidir } from "@/lib/registro/servidor";
 import type { PistaArmado } from "@/lib/plan/armado-bouquet";
 import type { PistaRemate } from "@/lib/plan/armado-columna";
@@ -70,6 +72,7 @@ import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
 import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio, estructurasMedidasPorCliente } from "@/lib/plan/medidas-defecto";
 import { acabadosObservadosDeMateriales, coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, materialesDeColorInventado, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { colorDeCompraSinVenta } from "@/lib/rag/catalog/similitud-color";
+import { evidenciaColorFoto, PARTE_MINIMA_RECLAMO, type EvidenciaColorFoto } from "@/lib/plan/reclamo-color-referencia";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
 import { RAG_ENABLED, featureEnabled } from "@/lib/ia/nucleo/feature-flags";
@@ -79,10 +82,10 @@ import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, busquedasDeAcabado, mezclasAdmisiblesEstructura, productosDelAjuste, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
+import { ajustarCoberturaPlan, aplicarAcabadoReferencia, avisosClienteAjustes, busquedasDeAcabado, busquedasDeMismoColor, coloresSinTamanos, mezclasAdmisiblesEstructura, productosDelAjuste, quitarMaterialesDeColorInventado, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
 import { aplicarReferenciasMedidas, busquedasDeReferencias, familiaDeTitulo } from "@/lib/plan/referencias-medidas";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
-import { ACCION_PLAN_NO_CONVERGE, accionEstimacionInconsistente, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
+import { ACCION_PLAN_NO_CONVERGE, accionEstimacionInconsistente, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, sinCoronaSinCobertura, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
 import { ArgsArmarEstructuraSchema, ArgsConsultarOpcionesArmadoSchema, erroresDeArgs, opcionesDePares } from "./armado-motor";
 import { EstimarConteoRequestV1Schema } from "@/lib/ia/contracts/domain-v1";
@@ -537,10 +540,28 @@ async function coloresReferenciaOmitidosDelTurno(
   if (!estado.referenceBlueprint || estado.restriccionesUsuario.colores.length > 0 || estado.coloresReferenciaReclamados.size > 0) return [];
   // After repeated refusals the photo colors are notices, never another refusal.
   if (estado.rechazosPlan >= RECHAZOS_PARA_CONVERGER) return [];
-  const pendientes = plan.estructuras.map((estructura) => ({
-    ...estructura,
-    colores_referencia: coloresElementoReferencia(estado.referenceBlueprint, estructura.referencia_element_id),
-  }));
+  // Solo se le exige al modelo un color con respaldo en la pieza (reclamo-color-referencia.ts): uno que la lectura
+  // nombró sin que los píxeles ni la disposición lo muestren (luz morada leída como «azul pastel») o que es un acento
+  // de poca proporción se queda en aviso. Antes forzaba un Reflex Azul oscuro en unas columnas rosa y plata (2026-10-06).
+  const elementosFoto = new Map(estado.referenceBlueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento] as const));
+  const noExigidos: Array<{ estructura_id: string; element_id: string } & EvidenciaColorFoto> = [];
+  const pendientes = plan.estructuras.map((estructura) => {
+    const usados = new Set(estructura.materiales.map((material) => material.color?.trim().toLowerCase()).filter(Boolean));
+    const elemento = estructura.referencia_element_id ? elementosFoto.get(estructura.referencia_element_id) : undefined;
+    const colores = coloresElementoReferencia(estado.referenceBlueprint, estructura.referencia_element_id).filter((color) => {
+      if (!elemento || usados.has(color.trim().toLowerCase()) || usados.has(colorDeCompraSinVenta(color) ?? "")) return true;
+      const evidencia = evidenciaColorFoto(elemento.appearance, color);
+      if (!evidencia.reclamable) noExigidos.push({ estructura_id: estructura.estructura_id, element_id: elemento.element_id, ...evidencia });
+      return evidencia.reclamable;
+    });
+    return { ...estructura, colores_referencia: colores };
+  });
+  if (noExigidos.length > 0) {
+    decidir("regla:colores_referencia_no_exigidos", "colores de la foto que el plan no compra y no se le exigen al modelo (dudosos o de poca proporción)", noExigidos, {
+      entrada: { parteMinima: PARTE_MINIMA_RECLAMO },
+      motivo: "sin respaldo en los píxeles ni en la disposición de la pieza, o por debajo de la parte mínima: queda como aviso, no como rechazo",
+    });
+  }
   const faltantes = [...new Set(pendientes.flatMap((estructura) => {
     const usados = new Set(estructura.materiales.map((material) => material.color?.trim().toLowerCase()).filter(Boolean));
     // An unsold photo color is covered by the color it is bought as ("gris" as "plateado").
@@ -548,12 +569,19 @@ async function coloresReferenciaOmitidosDelTurno(
   }))];
   if (faltantes.length === 0) return [];
   const disponibles = new Map<string, ProductoColorDisponible[]>(productosGloboPorColor(estado.ragCandidatos ?? [], faltantes));
-  const sinBusqueda = faltantes.filter((color) => !disponibles.has(color));
+  // También se consulta el catálogo cuando los productos del turno de ese color no arman ninguna mezcla (el Metal
+  // Vinotinto, solo R-9): sin eso el vino de la foto 07 no se reclamaba nunca, porque el único burdeos del turno no
+  // servía y el Fashion Merlot, que sí, no se miraba (banco de fotos, 2026-10-06).
+  const sirveParaAlgo = (producto: ProductoColorDisponible) => !producto.diametros || mezclasCompatiblesConDiametros(producto.diametros).length > 0;
+  const sinBusqueda = faltantes.filter((color) => !(disponibles.get(color) ?? []).some(sirveParaAlgo));
   const busquedaLosPuedeDevolver = !tieneFiltrosNoRelajables(filtrosDurosDeBusqueda({ mensaje: "", solicitudOriginal: estado.solicitudOriginal, brief: estado.brief }));
   if (sinBusqueda.length > 0 && busquedaLosPuedeDevolver) {
     try {
       const catalogo = await buscarGlobosPorColor(pool, sinBusqueda, { catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
-      for (const [color, productos] of catalogo) disponibles.set(color, productos);
+      for (const [color, productos] of catalogo) {
+        const delTurno = disponibles.get(color) ?? [];
+        disponibles.set(color, [...delTurno, ...productos.filter((producto) => !delTurno.some((visto) => visto.product_id === producto.product_id))]);
+      }
     } catch (error) {
       console.warn("[plan] no se pudo consultar colores de la foto en el catálogo", { requestId: estado.ragRequestId, error: error instanceof Error ? error.message : String(error) });
     }
@@ -945,9 +973,28 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         return busquedasDeAcabado(previo, acabadosObservadosDeMateriales(previo.estructuras, estado.referenceBlueprint), disponibilidadPrevia);
       })()
       : [];
+    // Un color cuyo producto no tiene los tamaños de su pieza (el Metal Vinotinto, solo R-9) sin otro producto del
+    // turno de ese color que los tenga: el servidor consulta el catálogo por ese color y trae los que sí la arman,
+    // para que la regla 2a de cobertura lo compre en vez de quitar el color (banco de fotos 07, 2026-10-06: el vino
+    // salió del arco con el Fashion Merlot en todos los tamaños en el catálogo).
+    const faltanTamanos = coloresSinTamanos(canonizarColoresPlan(parseado.data).plan, disponibilidadPrevia);
+    let busquedasMismoColor: string[] = [];
+    if (faltanTamanos.length > 0) {
+      try {
+        const catalogoPorColor = await buscarGlobosPorColor(ragPool, faltanTamanos.map((item) => item.color), { catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
+        busquedasMismoColor = busquedasDeMismoColor(faltanTamanos, catalogoPorColor, disponibilidadPrevia);
+      } catch (error) {
+        console.warn("[confirmar] no se pudo consultar el catálogo por color", { requestId: estado.ragRequestId, error: error instanceof Error ? error.message : String(error) });
+      }
+      decidir("regla:mismo_color_con_tamanos", "colores cuyo producto no arma su pieza: buscar otro del mismo color que sí", { busquedas: busquedasMismoColor }, {
+        entrada: { faltan: faltanTamanos },
+        ...(busquedasMismoColor.length ? {} : { motivo: "el catálogo no tiene ese color en los tamaños de la pieza: la regla 3 lo quita con aviso" }),
+      });
+    }
     const busquedasReferencia = [...new Set([
       ...(fotoManda ? busquedasDeReferencias(parseado.data, estado.referenceBlueprint, disponibilidadPrevia) : []),
       ...busquedasAcabado,
+      ...busquedasMismoColor,
     ])];
     if (busquedasReferencia.length > 0) {
       const respuestas = await Promise.all(busquedasReferencia.map((frase) => buscarCatalogoRag(ragPool, frase, {
@@ -973,6 +1020,12 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     }
     const disponibilidadTurno = disponibilidadDelTurno(estado.ragCandidatos ?? []);
     const coberturaBase = ajustarCoberturaPlan(canonizarColoresPlan(parseado.data).plan, disponibilidadTurno);
+    const delCatalogo = coberturaBase.ajustes.filter((ajuste) => ajuste.tipo === "color_catalogo" || ajuste.tipo === "producto_mismo_color");
+    if (delCatalogo.length > 0) {
+      decidir("regla:cobertura_desde_catalogo", "material sin color: el del producto; material sin tamaños: otro producto de su mismo color", delCatalogo, {
+        motivo: "el color de un material sale del catálogo y no se pierde un color de la pieza por los tamaños de un producto",
+      });
+    }
     // Cada globo de una pieza con referencias medidas tiene que SER una de ellas (referencias-medidas.ts).
     // Va antes de la poda de colores inventados: un Reflex Fucsia que la foto no tiene se cambia por la
     // referencia rosada más cercana en vez de quitarse.
@@ -1087,6 +1140,21 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         entrada: { estructuras: deLaEntrada },
         ...(valido && !valido.success ? { motivo: "el plan separado no pasa el esquema: se resuelve como lo escribió el modelo" } : cambia ? {} : { motivo: "sin cambios: cada pieza ya era individual y con su nombre" }),
       });
+      // Parejas simétricas (la instrucción de la guiada las declara, `lineaPareja`): la izquierda y la derecha de una
+      // misma línea de la propuesta llevan los mismos materiales y medidas aunque el modelo las haya repartido distinto.
+      const parejas = parejasDeInstruccion(estado.solicitudOriginal);
+      if (parejas.length) {
+        const piezasAntes = planCanonico.estructuras.filter((estructura) => parejas.some((pareja) => pareja.includes(estructura.estructura_id))).map((estructura) => ({ id: estructura.estructura_id, ubicacion: estructura.ubicacion, medidas: estructura.medidas, materiales: estructura.materiales.map((material) => `${material.color ?? "?"} ${material.product_id} ${material.participacion}`) }));
+        const igualado = igualarParejas(planCanonico, parejas);
+        const validoParejas = igualado.igualadas.length ? PlanDecoracionSchema.safeParse(igualado.plan) : null;
+        if (validoParejas?.success) planCanonico = validoParejas.data;
+        decidir("regla:pareja_simetrica", "las dos piezas de una pareja (izquierda y derecha) llevan los mismos materiales y medidas", validoParejas && !validoParejas.success
+          ? { aplicado: false, errores: validoParejas.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`) }
+          : { aplicado: igualado.igualadas.length > 0, igualadas: igualado.igualadas, noIgualadas: igualado.noIgualadas }, {
+          entrada: { parejas, piezas: piezasAntes },
+          ...(validoParejas && !validoParejas.success ? { motivo: "la pareja igualada no pasa el esquema: se resuelve como lo escribió el modelo" } : igualado.igualadas.length ? {} : { motivo: "la pareja ya era igual o no se puede igualar sin quitar colores" }),
+        });
+      }
     }
     // Number figures spell the customer's number (numeros-pedidos.ts, E2E 2026-09-15 D4).
     const erroresDeNumero = validarNumerosPedidos(planCanonico, new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato])), numerosPedidos(estado.solicitudOriginal));
@@ -1481,6 +1549,25 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     try {
       planCanonico = await conArmadosDeMotor(planCanonico);
       resolucion = await resolverPlanDelTurno(planCanonico);
+      // La talla del globo de la punta la pone el motor, no el modelo: ningún reintento la arregla, así que no se
+      // espera a la convergencia. El Python nuevo ya la sirve con la talla más cercana del mismo producto; esto es
+      // para el de producción anterior al 36 en la escalera (`sinCoronaSinCobertura`, banco de fotos 04).
+      if (resolucion.resuelto.sin_cobertura.length > 0) {
+        const sinCorona = sinCoronaSinCobertura(planCanonico, resolucion.resuelto.sin_cobertura);
+        if (sinCorona.cambiado) {
+          const reintento = await resolverPlanDelTurno(sinCorona.plan);
+          const mejora = reintento.resuelto.sin_cobertura.length < resolucion.resuelto.sin_cobertura.length;
+          decidir("regla:corona_sin_talla", "globo de la punta en una talla que el producto no tiene: la columna va sin él", { aplicado: mejora, avisos: sinCorona.avisos }, {
+            entrada: { sin_cobertura: resolucion.resuelto.sin_cobertura },
+            ...(mejora ? {} : { motivo: "quitarlo no cubrió más tallas: se responde SIN_COBERTURA como antes" }),
+          });
+          if (mejora) {
+            planCanonico = sinCorona.plan;
+            resolucion = reintento;
+            avisosConvergencia.push(...sinCorona.avisos);
+          }
+        }
+      }
       // Convergence: after repeated refusals the materials without size
       // coverage leave the structure (with a notice) instead of another
       // SIN_COBERTURA refusal (convergencia-plan.ts).
@@ -1630,7 +1717,17 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // aviso de acabado ni de color: la cotización no lo compra y el aviso de
     // material quitado ya lo cuenta. `planCanonico` es el plan que se resolvió.
     const materialesEnPlan = new Set(planCanonico.estructuras.flatMap((estructura) => estructura.materiales.map((material) => `${estructura.estructura_id}|${material.product_id}`)));
+    // Una talla que la pieza no pide en su mezcla (el R-36 del globo de la punta que pone el motor) y que se compró
+    // con la más cercana del mismo producto: se le dice al cliente (banco de fotos 04). Las sustituciones de las
+    // tallas de la mezcla ya las enseña la tarjeta del plan y no se repiten aquí.
+    const tallasDeLaMezcla = new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, new Set(pulgadasDeMezcla(estructura.mezcla).map((pulgadas) => `R-${pulgadas}`))]));
+    const tallasFueraDeMezcla = resuelto.sustituciones.filter((item) => !esSustitucionDeColor(item) && /^R-\d+$/.test(item.pedido) && tallasDeLaMezcla.get(item.estructura_id)?.has(item.pedido) === false);
+    const avisosTalla = sustitucionesCliente(tallasFueraDeMezcla, new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre.toLowerCase()])));
+    if (tallasFueraDeMezcla.length > 0) {
+      decidir("regla:talla_mas_cercana", "talla que el producto no tiene servida con la más cercana del mismo producto", tallasFueraDeMezcla, { motivo: "se avisa al cliente en vez de rechazar el plan" });
+    }
     const avisosCliente = [...new Set([
+      ...avisosTalla,
       ...estado.ajustesCobertura.flatMap((ajuste) => (ajuste.tipo === "material_quitado" ? [ajuste.aviso_cliente] : [])),
       ...avisosClienteAjustes(estado.ajustesCobertura, {
         nombres: new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre])),
@@ -1721,6 +1818,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         focusedQueries: [mensaje],
         catalogSnapshotId: estado.ragCatalogSnapshotId,
         coloresContexto,
+        // «celeste» sin otro azul (del cliente o de esta búsqueda): de los azules solo vuelven los celestes (tonos-color.ts).
+        tonos: [...new Set([...tonosExclusivos(estado.solicitudOriginal), ...tonosExclusivos(mensaje)])],
         rerankRequestId: estado.ragRequestId,
         rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
         rerankSignal: options.signal,

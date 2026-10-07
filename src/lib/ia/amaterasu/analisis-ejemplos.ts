@@ -10,6 +10,10 @@ import { VARIANTE_PRODUCCION } from "@/lib/ia/referencia/reference-structure";
  * browser: the same photo always shows the same pieces and boxes, instantly
  * and without a provider call. Regenerate with
  * `npx tsx scripts/ops/generar-analisis-ejemplos.ts` when the parser version changes.
+ *
+ * Only the v16 path (`LECTURA_UNICA_REFERENCIA_ENABLED=false`) and its tests read this file. The route variant
+ * (`VARIANTE_RUTA_ANALISIS`, v20) has its own reviewed readings, recognized by perceptual fingerprint so the guided
+ * view (which re-encodes the photo) gets them too: `lecturas-ejemplos.ts`.
  */
 export type AnalisisEjemplo = {
   id: string;

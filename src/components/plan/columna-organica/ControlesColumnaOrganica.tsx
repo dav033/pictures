@@ -8,6 +8,7 @@ import type { LimitesColumnaOrganica, OpcionesArmadoColumnaOrganica } from "@/li
 import { metrosCliente } from "@/lib/plan/presentacion-cliente";
 import { DeslizadorColumna, GrupoOpcionesColumna, InterruptorColumna, SeleccionColumna } from "../columna/controles-columna";
 import { colorDe, type ColorLeyenda } from "../patron/leyenda";
+import { useVozCliente } from "../motor/voz-editor";
 import {
   PASO_FRACCION,
   conAcabado,
@@ -104,6 +105,8 @@ function ladoInclinado(valor: number): string {
 const AYUDA_SIN_GLOBO_GRANDE = "Ningún globo guarda proporción con una punta tan gruesa: adelgázala para poder poner un globo grande arriba.";
 
 export function ControlesColumnaOrganica({ borrador, opciones, limites, leyenda, onCambiar }: Props) {
+  // En la guiada no se muestran los mandos de decorador (papel del color, hasta dónde llega la banda).
+  const cliente = useVozCliente();
   const rangoDe = {
     ondulacion: rangoDelContrato(FormaColumnaOrganicaSchema.shape.ondulacion, PASO_FRACCION),
     irregularidad: rangoDelContrato(VolumenColumnaOrganicaSchema.shape.irregularidad, PASO_FRACCION),
@@ -214,7 +217,7 @@ export function ControlesColumnaOrganica({ borrador, opciones, limites, leyenda,
               <EnCantidad etiqueta={`Cuánto pesa el color ${numero}`} ayuda="Cuántos globos de este color hay frente a los demás: más peso, más se ve." valor={entrada.peso} rango={rangoDe.pesoDeColor} onConfirmar={(v) => onCambiar(conPesoDeColor(borrador, posicion, v))} testid={`peso-columna-organica-${numero}`} />
               <div className="grid gap-2 @sm:grid-cols-2">
                 <SeleccionColumna etiqueta={`Acabado del color ${numero}`} ayuda="Cambia el aspecto del globo (brillo, confeti, transparencia), no su color." opciones={opciones.acabados.map((acabado) => ({ valor: acabado.valor, etiqueta: acabado.texto }))} valor={entrada.acabado} onCambiar={(v) => { const hallado = opciones.acabados.find((acabado) => acabado.valor === v); if (hallado) onCambiar(conAcabado(borrador, posicion, hallado.valor)); }} testid={`acabado-columna-organica-${numero}`} />
-                <SeleccionColumna etiqueta={`Papel del color ${numero}`} ayuda="Normal va dentro de los racimos; acento son globos sueltos que asoman por fuera." opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-columna-organica-${numero}`} />
+                {!cliente && <SeleccionColumna etiqueta={`Papel del color ${numero}`} ayuda="Normal va dentro de los racimos; acento son globos sueltos que asoman por fuera." opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-columna-organica-${numero}`} />}
               </div>
               <button
                 type="button"

@@ -45,9 +45,12 @@ const SceneElementSchema = z
     // de globos) — `catalog_product_id` sigue siendo solo el principal, este
     // array es la lista completa que necesita ver el modelo de imagen y la
     // cotización.
-    // La mezcla real puede contener 6 materiales × 4 tamaños; no truncar las
-    // variantes cotizadas antes de cargar sus referencias visuales.
-    catalog_product_ids: z.array(texto(160)).max(24).optional(),
+    // La mezcla real puede contener 6 materiales × 6 tallas (las 5 de una mezcla
+    // orgánica y el R-36 del globo de la punta) × 2 presentaciones; no truncar las
+    // variantes cotizadas antes de cargar sus referencias visuales. El tope de 24
+    // dejaba sin imagen un techo de 6 colores ya cotizado (banco de fotos 10,
+    // 2026-10-07). Es el mismo tope que `bill_of_materials` (reference-blueprint.ts).
+    catalog_product_ids: z.array(texto(160)).max(72).optional(),
     required: z.boolean(),
     quantity: z
       .object({ mode: z.enum(["exact", "approximate", "range"]), min: z.number().int().min(0).max(999), max: z.number().int().min(0).max(999) })

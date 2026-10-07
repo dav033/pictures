@@ -1,5 +1,6 @@
 import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { HEX_SIN_COLOR, acabadoVisual, colorLeido, familiaSempertex, sinTildes, type AcabadoGlobo } from "./color-globo";
+import { colorSempertex } from "./color-sempertex";
 import { partesLinea } from "./formato";
 
 /**
@@ -103,7 +104,10 @@ export function fichaGlobo(datos: DatosLinea): FichaGlobo {
   // se reconoce, desde el color de paleta que trae la línea.
   const leido = colorLeido(producto) ?? colorLeido(partes.color) ?? null;
   const hexPaleta = datos.color ? HEX_COLORES_V2[datos.color as keyof typeof HEX_COLORES_V2] : undefined;
-  const hex = leido?.hex ?? hexPaleta ?? HEX_SIN_COLOR;
+  // Con el producto Sempertex reconocido, su tono del catálogo: el mismo que los chips, la tabla y el editor
+  // (`color-sempertex`). Antes salía de la paleta de la taxonomía y el «Azul» 040 (azul claro) se pintaba azul rey.
+  const sempertex = nombre ? colorSempertex(datos.color ?? partes.color ?? "", { titulo: nombre }) : null;
+  const hex = (sempertex?.producto ? sempertex.hex : null) ?? leido?.hex ?? hexPaleta ?? HEX_SIN_COLOR;
   const metalizado = partes.forma === "metalizado" || /\bmetalizado\b|\b\d{1,2}\s*IN\b/i.test(nombre);
   const transparente = /\b(crystal|cristal|transparente|clear)\b/i.test(sinTildes(nombre)) || datos.color === "transparente";
   const acabado: AcabadoGlobo = metalizado ? "metalizado"

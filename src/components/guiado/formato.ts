@@ -1,3 +1,7 @@
+import { referenciaDelTitulo } from "@/lib/plan/referencia-sempertex";
+import { tonoDelTitulo } from "@/lib/plan/tonos-color";
+import { TONOS_V2 } from "@/lib/rag/taxonomy/v2";
+
 /**
  * Cómo se dicen al cliente los globos, los colores y las medidas en la vista guiada. Solo presentación: las
  * cantidades llegan resueltas por Python y aquí nunca se calcula consumo ni precio.
@@ -72,6 +76,22 @@ type LineaNombrable = { nombre?: string; tamano?: string; color?: string };
  */
 const ETIQUETA_COLOR = /·\s*(?:R-?\d{1,2}|T\d{3}|LOL\s?\d{1,2}|C-?\d{1,2}|\d{1,2}\s*IN)\s*·\s*([^·]+?)\s*$/i;
 
+/**
+ * El color que dice el PRODUCTO de una nota, con el nombre de la lámina Sempertex (la misma fuente que `color-sempertex`
+ * usa para la tarjeta, la tabla y los chips): «Fashion Azul Caribe» → «azul caribe», «Fashion Azul Celeste» y «Pastel
+ * Mate Azul» → «celeste». Null si no nombra un tono de la lámina o si es un impreso (su etiqueta dice lo impreso).
+ *
+ * Por qué (probador, 2026-10-07): la etiqueta de la nota es lo que vio el análisis de la foto, no el globo que se compra.
+ * El «Fashion Azul Caribe» de la columna arcoíris tiene la etiqueta «azul celeste» y la cotización decía «celeste»
+ * mientras la tarjeta y la tabla decían «Azul caribe».
+ */
+function colorDelProducto(producto: string, etiqueta: string): string | null {
+  if (/«|\bcon\b/i.test(etiqueta) || /\b(?:infinity|impres\w*|estampad\w*)\b/i.test(producto)) return null;
+  const tono = tonoDelTitulo(producto);
+  if (tono) return TONOS_V2[tono].nombre.toLocaleLowerCase("es");
+  return referenciaDelTitulo(producto, null)?.nombre.toLocaleLowerCase("es") ?? null;
+}
+
 /** La etiqueta de color de la biblioteca, en minúscula salvo lo impreso entre comillas: «vino con «Feliz día Mamá»». */
 function etiquetaCliente(etiqueta: string): string {
   const limpia = etiqueta.trim();
@@ -110,9 +130,10 @@ export function partesLinea(linea: LineaNombrable): { esGlobo: boolean; color: s
   const pulgadas = forma === "modelar" ? null : pulgadasDeForma(original, forma) ?? pulgadasDe(original) ?? pulgadasDe(linea.tamano);
   const esGlobo = !original || /\bglobos?\b/i.test(original) || /\bR-?\d{1,2}\b/i.test(original);
   if (!esGlobo) return { esGlobo, color: "", pulgadas, producto: sinPaquete || original, forma: null };
-  // La etiqueta de la biblioteca ya es el color del cliente: «Reflex Plata» → «plateado», «Azul Naval» → «azul marino».
+  // La etiqueta de la biblioteca es lo que vio la foto; manda el producto que se compra (`colorDelProducto`) y la
+  // etiqueta queda para lo que la lámina no nombra (impresos, «transparente con confeti»).
   const etiqueta = ETIQUETA_COLOR.exec(original)?.[1];
-  if (etiqueta) return { esGlobo, color: etiquetaCliente(etiqueta), pulgadas, producto: "", forma };
+  if (etiqueta) return { esGlobo, color: colorDelProducto(sinPaquete, etiqueta) ?? etiquetaCliente(etiqueta), pulgadas, producto: "", forma };
   const resto = sinPaquete
     .replace(/\bx\s*\d+\b.*$/i, "")
     .replace(/\bR-?\d{1,2}\b/gi, " ")

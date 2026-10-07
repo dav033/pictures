@@ -25,10 +25,16 @@ export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("propuesta"), propuesta: PropuestaComposicionSchema, estado: z.enum(["resolviendo", "fallo"]).optional() }).strict(),
   z.object({
     tipo: z.literal("plan"), plan: PlanGuiadoSchema, cotizacion: CotizacionPlanGuiadoSchema.optional(), pasos: z.array(PasoPlanSchema).optional(), fotoInspiracion: z.boolean().optional(),
+    /** Con `fotoInspiracion`: el mensaje que trae la lectura de la foto de la que salió el plan (y sus versiones rehechas). */
+    referenciaId: z.string().min(1).max(80).optional(),
     imagen: z.union([z.string().url(), z.string().startsWith("/api/guiada-imagen/")]).optional(), errorImagen: z.boolean().optional(), compraAbierta: z.boolean().optional(),
     usoCosteo: UsoSchema.optional(), reemplazado: z.boolean().optional(), totalAnterior: z.number().int().nonnegative().optional(), hechas: z.array(AccionPlanGuiadaSchema).optional(),
     /** Ajustes hechos con «Ajustar mi plan» sobre esta tarjeta («más rosado en el semiarco orgánico»), los últimos primero al final. */
     ajustes: z.array(z.string().min(1).max(160)).max(8).optional(),
+    /** Ideas de la biblioteca que el cliente sumó a este plan con «Agregar al plan» (la idea dice «Está en tu plan»). */
+    ideas: z.array(z.string().regex(/^(?:deco|ej)-[a-z0-9-]+$/)).max(12).optional(),
+    /** La idea que trajo esta versión del plan: «Agregué «Columnas negras y doradas» a tu plan: ahora tiene 188 globos». */
+    agregada: z.object({ titulo: z.string().min(1).max(160), total: z.number().int().nonnegative() }).strict().optional(),
   }).strict(),
 ]);
 export type WidgetGuiado = z.infer<typeof WidgetGuiadoSchema>;

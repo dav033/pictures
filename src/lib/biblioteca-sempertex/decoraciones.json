@@ -1260,13 +1260,17 @@
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
         "cantidad": 72,
-        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "72 de arco (plan resuelto por Python) [data/biblioteca-real/analisis/real-01-305.plan.json]"
       },
       {
         "variantId": "46594235269415",
         "sku": "B2B-20000781",
         "cantidad": 73,
-        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "73 de arco (plan resuelto por Python) [data/biblioteca-real/analisis/real-01-305.plan.json]"
       }
     ],
     "pasos": [
@@ -1276,11 +1280,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 12 pulgadas con tamaño uniforme."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón espiral y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Coloca los colores en espiral, como en la foto."
       },
       {
         "orden": 4,
@@ -1330,13 +1334,49 @@
         "variantId": "46594228715815",
         "sku": "B2B-20000773",
         "cantidad": 81,
-        "nota": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50 · R-12 · naranja"
+        "nota": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50 · R-12 · naranja",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "81 de arco (plan resuelto por Python) [data/biblioteca-real/analisis/real-02-34722b3ec9978bfe7439a121c16a1db7.plan.json]"
       },
       {
         "variantId": "46594235269415",
         "sku": "B2B-20000781",
         "cantidad": 72,
-        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "72 de arco (plan resuelto por Python) [data/biblioteca-real/analisis/real-02-34722b3ec9978bfe7439a121c16a1db7.plan.json]"
+      },
+      {
+        "variantId": "46594221146407",
+        "sku": "B2B-20000437",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: unos 6 acentos blancos de 5 pulgadas con calavera dibujada a mano"
+      },
+      {
+        "variantId": "46594213118247",
+        "sku": "B2B-20000462",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Verde Lima — R-5 / PAQUETE X 50 · R-5 · verde lima",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: unos 7 acentos verde lima de 5 pulgadas con cara dibujada a mano"
+      },
+      {
+        "variantId": "46594228486439",
+        "sku": "B2B-20000486",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Fashion Naranja — R-5 / PAQUETE X 50 · R-5 · naranja",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: unos 5 acentos naranjas de 5 pulgadas con cara de calabaza dibujada a mano"
+      },
+      {
+        "variantId": "46594300936487",
+        "sku": "B2B-20001244",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Tubito Fashion Negro — T260 / PAQUETE X 20 · T260 · negro",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: adornos negros torcidos sobre los 18 acentos (2 o 3 adornos por globo para modelar)"
       }
     ],
     "pasos": [
@@ -1346,15 +1386,15 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 12 pulgadas con tamaño uniforme."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón espiral y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Coloca los colores en espiral, como en la foto."
       },
       {
         "orden": 4,
-        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+        "texto": "Añade los globitos de acento con su cara dibujada y los adornos hechos con globos para modelar, y revisa que no queden huecos grandes."
       },
       {
         "orden": 5,
@@ -1406,28 +1446,116 @@
     ],
     "materiales": [
       {
+        "variantId": "46594221146407",
+        "sku": "B2B-20000437",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
-        "cantidad": 9,
-        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "5 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
+        "variantId": "46594233729319",
+        "sku": "B2B-20000472",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-5 / PAQUETE X 50 · R-5 · azul cielo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
       },
       {
         "variantId": "46594233925927",
         "sku": "B2B-20000758",
-        "cantidad": 70,
-        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul cielo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco y bouquet de globos (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
+        "variantId": "46594233991463",
+        "sku": "B2B-20000916",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-18 / PAQUETE X 6 · R-18 · azul cielo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
+        "variantId": "46594250375463",
+        "sku": "B2B-20014167",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-5 / PAQUETE X 50 · R-5 · azul rey cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "6 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
+        "variantId": "46594250440999",
+        "sku": "B2B-20014152",
+        "cantidad": 17,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50 · R-12 · azul rey cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "17 de semiarco, bouquet de globos y centro de mesa con globos (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
+        "variantId": "46594250473767",
+        "sku": "B2B-20015527",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-18 / PAQUETE X 6 · R-18 · azul rey cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
+        "variantId": "46594267644199",
+        "sku": "B2B-20014171",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50 · R-5 · plateado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
       },
       {
         "variantId": "46594267709735",
         "sku": "B2B-20014160",
-        "cantidad": 9,
-        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "6 de semiarco y bouquet de globos (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
       },
       {
-        "variantId": "47230981112103",
-        "sku": "B2B-20010806",
-        "cantidad": 1,
-        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
+        "variantId": "46594272854311",
+        "sku": "B2B-20012397",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Azul — R-5 / PAQUETE X 50 · R-5 · azul bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
+        "variantId": "46594272985383",
+        "sku": "B2B-20012399",
+        "cantidad": 24,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Azul — R-12 / PAQUETE X 50 · R-12 · azul bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "24 de semiarco y bouquet de globos (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
+        "variantId": "46594273018151",
+        "sku": "B2B-20012301",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Azul — R-18 / PAQUETE X 6 · R-18 · azul bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
+      },
+      {
+        "variantId": "46594307293479",
+        "sku": "B2B-20000843",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Satin Azul — R-12 / PAQUETE X 12 · R-12 · azul perlado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de centro de mesa con globos (plan resuelto por Python) [data/biblioteca-real/analisis/real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1.plan.json]"
       }
     ],
     "pasos": [
@@ -1437,11 +1565,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
@@ -1490,34 +1618,108 @@
     ],
     "materiales": [
       {
-        "variantId": "46594233925927",
-        "sku": "B2B-20000758",
-        "cantidad": 29,
-        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+        "variantId": "46594247819559",
+        "sku": "B2B-20000551",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Metal Verde — R-5 / PAQUETE X 50 · R-5 · verde metal",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
       },
       {
         "variantId": "46594247983399",
         "sku": "B2B-20000870",
-        "cantidad": 39,
-        "nota": "B2b Globo Latex Redondo Metal Verde — R-12 / PAQUETE X 50 · R-12 · verde"
+        "cantidad": 23,
+        "nota": "B2b Globo Latex Redondo Metal Verde — R-12 / PAQUETE X 50 · R-12 · verde metal",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "23 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
+      },
+      {
+        "variantId": "46594250375463",
+        "sku": "B2B-20014167",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-5 / PAQUETE X 50 · R-5 · azul cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
+      },
+      {
+        "variantId": "46594250440999",
+        "sku": "B2B-20014152",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50 · R-12 · azul cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "11 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
+      },
+      {
+        "variantId": "46594250473767",
+        "sku": "B2B-20015527",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-18 / PAQUETE X 6 · R-18 · azul cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
+      },
+      {
+        "variantId": "46594264629543",
+        "sku": "B2B-20014169",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
       },
       {
         "variantId": "46594264695079",
         "sku": "B2B-20014156",
-        "cantidad": 15,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "11 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
+      },
+      {
+        "variantId": "46594264727847",
+        "sku": "B2B-20015523",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6 · R-18 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
+      },
+      {
+        "variantId": "46594294645031",
+        "sku": "B2B-20014172",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Reflex Verde Lima — R-5 / PAQUETE X 50 · R-5 · verde lima cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
+      },
+      {
+        "variantId": "46594294710567",
+        "sku": "B2B-20014162",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Reflex Verde Lima — R-12 / PAQUETE X 50 · R-12 · verde lima cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "12 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
       },
       {
         "variantId": "47230981112103",
         "sku": "B2B-20010806",
-        "cantidad": 5,
-        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
+        "cantidad": 18,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "18 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
       },
       {
-        "variantId": "47392128467239",
-        "sku": "B2B-20018043",
-        "cantidad": 14,
-        "nota": "B2b Globo Latex Redondo Fashion Azul Turquesa Profundo — R-12 / PAQUETE X 50 · R-12 · turquesa"
+        "variantId": "47466207019303",
+        "sku": "B2B-20010802",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50 · R-5 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "6 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
+      },
+      {
+        "variantId": "47466210656551",
+        "sku": "B2B-20013752",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-18 / PAQUETE X 6 · R-18 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-04-71mp5umakml-ac-uf894-1000-ql80.plan.json]"
       }
     ],
     "pasos": [
@@ -1527,11 +1729,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
@@ -1554,15 +1756,15 @@
   },
   {
     "id": "deco-real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec",
-    "titulo": "Semiarco rosa palo y dorado",
+    "titulo": "Semiarco rosa y oro rosa para mamá",
     "tematica": "Romántico rosa y dorado",
     "eventos": [
-      "Boda",
+      "Día de la Madre",
       "Cumpleaños"
     ],
     "edad": {
       "min": 18,
-      "max": 60
+      "max": 80
     },
     "fotos": [
       {
@@ -1580,28 +1782,164 @@
     ],
     "materiales": [
       {
+        "variantId": "46594208497959",
+        "sku": "B2B-20012955",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Frambuesa — R-5 / PAQUETE X 50 · R-5 · rojo frambuesa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594208792871",
+        "sku": "B2B-20012958",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Frambuesa — R-9 / PAQUETE X 50 · R-9 · rojo frambuesa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594208956711",
+        "sku": "B2B-20012962",
+        "cantidad": 10,
+        "nota": "B2b Globo Latex Redondo Fashion Frambuesa — R-12 / PAQUETE X 50 · R-12 · rojo frambuesa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "10 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594211217703",
+        "sku": "B2B-20010671",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-5 / PAQUETE X 50 · R-5 · palo de rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594211316007",
+        "sku": "B2B-20010673",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-9 / PAQUETE X 50 · R-9 · palo de rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
         "variantId": "46594211414311",
         "sku": "B2B-20010675",
-        "cantidad": 33,
-        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · palo de rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594211447079",
+        "sku": "B2B-20016066",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-18 / PAQUETE X 6 · R-18 · palo de rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594229436711",
+        "sku": "B2B-20014532",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Arena — R-5 / PAQUETE X 50 · R-5 · arena",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594229797159",
+        "sku": "B2B-20014536",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Arena — R-9 / PAQUETE X 50 · R-9 · arena",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
       },
       {
         "variantId": "46594230157607",
         "sku": "B2B-20014530",
-        "cantidad": 24,
-        "nota": "B2b Globo Latex Redondo Fashion Arena — R-12 / PAQUETE X 50 · R-12 · beige"
+        "cantidad": 10,
+        "nota": "B2b Globo Latex Redondo Fashion Arena — R-12 / PAQUETE X 50 · R-12 · arena",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "10 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
       },
       {
-        "variantId": "46594236416295",
-        "sku": "B2B-20000732",
-        "cantidad": 9,
-        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
+        "variantId": "46594230354215",
+        "sku": "B2B-20016058",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Arena — R-18 / PAQUETE X 6 · R-18 · arena",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594235629863",
+        "sku": "B2B-20000440",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50 · R-5 · rosa bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594235728167",
+        "sku": "B2B-20000578",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 50 · R-9 · rosa bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594235826471",
+        "sku": "B2B-20000726",
+        "cantidad": 10,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50 · R-12 · rosa bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "10 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594235859239",
+        "sku": "B2B-20000904",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-18 / PAQUETE X 6 · R-18 · rosa bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594251391271",
+        "sku": "B2B-20014170",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-5 / PAQUETE X 50 · R-5 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
       },
       {
         "variantId": "46594251456807",
         "sku": "B2B-20014158",
-        "cantidad": 36,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+        "cantidad": 24,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "24 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594251489575",
+        "sku": "B2B-20015519",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-18 / PAQUETE X 6 · R-18 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594251555111",
+        "sku": "B2B-20014726",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-24 / PAQUETE X 3 · R-24 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json]"
+      },
+      {
+        "variantId": "46594263843111",
+        "sku": "B2B-20012938",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Infinity® Feliz Dia Mami Flores Fashion Surtido Rosa Silvestre — R-12 / PAQUETE X 12 · R-12 · rosa con «Feliz día Mami»",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: unos 7 globos impresos «Feliz Día Mami» con flores blancas repartidos por el semiarco"
       }
     ],
     "pasos": [
@@ -1611,15 +1949,15 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 5, 9, 12, 18 y 24 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón bloques y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Agrupa cada color en su propia zona, como en la foto."
       },
       {
         "orden": 4,
-        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+        "texto": "Añade los globos impresos, y revisa que no queden huecos grandes."
       },
       {
         "orden": 5,
@@ -1664,32 +2002,50 @@
       {
         "variantId": "46594211840295",
         "sku": "B2B-20000745",
-        "cantidad": 9,
-        "nota": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50 · R-12 · verde"
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Fashion Verde — R-12 / PAQUETE X 50 · R-12 · verde",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "12 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/real-06-columna-globos-alta-colorida-cinta-dorada-sobre-.plan.json]"
+      },
+      {
+        "variantId": "46594216886567",
+        "sku": "B2B-20000755",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Caribe — R-12 / PAQUETE X 50 · R-12 · azul celeste",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/real-06-columna-globos-alta-colorida-cinta-dorada-sobre-.plan.json]"
       },
       {
         "variantId": "46594228715815",
         "sku": "B2B-20000773",
         "cantidad": 4,
-        "nota": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50 · R-12 · naranja"
+        "nota": "B2b Globo Latex Redondo Fashion Naranja — R-12 / PAQUETE X 50 · R-12 · naranja",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/real-06-columna-globos-alta-colorida-cinta-dorada-sobre-.plan.json]"
       },
       {
         "variantId": "46594231992615",
         "sku": "B2B-20000737",
         "cantidad": 8,
-        "nota": "B2b Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50 · R-12 · amarillo"
+        "nota": "B2b Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50 · R-12 · amarillo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/real-06-columna-globos-alta-colorida-cinta-dorada-sobre-.plan.json]"
       },
       {
-        "variantId": "46594233925927",
-        "sku": "B2B-20000758",
-        "cantidad": 13,
-        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+        "variantId": "46594232582439",
+        "sku": "B2B-20000761",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Rey — R-12 / PAQUETE X 50 · R-12 · azul rey",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/real-06-columna-globos-alta-colorida-cinta-dorada-sobre-.plan.json]"
       },
       {
         "variantId": "46594236416295",
         "sku": "B2B-20000732",
-        "cantidad": 9,
-        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de columna (plan resuelto por Python) [data/biblioteca-real/analisis/real-06-columna-globos-alta-colorida-cinta-dorada-sobre-.plan.json]"
       }
     ],
     "pasos": [
@@ -1699,11 +2055,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 y agrúpalos en cuartetos parejos."
+        "texto": "Infla los globos de 12 pulgadas y agrúpalos en cuartetos parejos."
       },
       {
         "orden": 3,
-        "texto": "Monta los grupos desde la base, girando el color en espiral. Sigue el patrón anillos y alterna los colores según la foto."
+        "texto": "Monta los grupos desde la base. Coloca los colores por anillos, uno sobre otro, como en la foto."
       },
       {
         "orden": 4,
@@ -1747,28 +2103,106 @@
     "video": null,
     "piezas": [
       {
-        "estructura": "columna",
+        "estructura": "columna_asimetrica",
         "cantidad": 2
       }
     ],
     "materiales": [
       {
-        "variantId": "46594211414311",
-        "sku": "B2B-20010675",
-        "cantidad": 39,
-        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+        "variantId": "46594235629863",
+        "sku": "B2B-20000440",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50 · R-5 · rosa bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
+      },
+      {
+        "variantId": "46594235728167",
+        "sku": "B2B-20000578",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 50 · R-9 · rosa bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
+      },
+      {
+        "variantId": "46594235826471",
+        "sku": "B2B-20000726",
+        "cantidad": 18,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50 · R-12 · rosa bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "18 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
+      },
+      {
+        "variantId": "46594235957543",
+        "sku": "B2B-20012054",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-24 / PAQUETE X 3 · R-24 · rosa bebé",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
+      },
+      {
+        "variantId": "46594264629543",
+        "sku": "B2B-20014169",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
       },
       {
         "variantId": "46594264695079",
         "sku": "B2B-20014156",
-        "cantidad": 24,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "cantidad": 13,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "13 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
       },
       {
-        "variantId": "46594343731495",
-        "sku": "B2B-20017220",
-        "cantidad": 34,
-        "nota": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50 · R-12 · morado"
+        "variantId": "46594264727847",
+        "sku": "B2B-20015523",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6 · R-18 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de columna orgánica (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
+      },
+      {
+        "variantId": "46594264891687",
+        "sku": "B2B-20017755",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 80 · R-9 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
+      },
+      {
+        "variantId": "46594358640935",
+        "sku": "B2B-20017173",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-5 / PAQUETE X 50 · R-5 · lavanda",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
+      },
+      {
+        "variantId": "46594358706471",
+        "sku": "B2B-20017295",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-9 / PAQUETE X 50 · R-9 · lavanda",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "5 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
+      },
+      {
+        "variantId": "46594358772007",
+        "sku": "B2B-20017176",
+        "cantidad": 16,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-12 / PAQUETE X 50 · R-12 · lavanda",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "16 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
+      },
+      {
+        "variantId": "46594358968615",
+        "sku": "B2B-20017179",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Lavanda — R-18 / PAQUETE X 6 · R-18 · lavanda",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de columna orgánica (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-07-eb12910e210c94b6184d025127acce95.plan.json]"
       }
     ],
     "pasos": [
@@ -1778,11 +2212,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 y agrúpalos en cuartetos parejos."
+        "texto": "Infla los globos de 5, 9, 12, 18 y 24 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Monta los grupos desde la base, girando el color en espiral. Sigue el patrón bloques y alterna los colores según la foto."
+        "texto": "Monta los grupos desde la base. Agrupa cada color en su propia zona, como en la foto."
       },
       {
         "orden": 4,
@@ -1835,14 +2269,26 @@
       {
         "variantId": "46594235269415",
         "sku": "B2B-20000781",
-        "cantidad": 42,
-        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
+        "cantidad": 44,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "44 de columna (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-08-images-23.plan.json]"
       },
       {
-        "variantId": "46594264695079",
-        "sku": "B2B-20014156",
+        "variantId": "46594235433255",
+        "sku": "B2B-20009580",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-36 / PAQUETE X 2 · R-36 · negro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de columna (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-08-images-23.plan.json]"
+      },
+      {
+        "variantId": "46594252898599",
+        "sku": "B2B-20000885",
         "cantidad": 44,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "nota": "B2b Globo Latex Redondo Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "44 de columna (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-08-images-23.plan.json]"
       }
     ],
     "pasos": [
@@ -1852,18 +2298,22 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 y agrúpalos en cuartetos parejos."
+        "texto": "Infla los globos de 12 pulgadas y agrúpalos en cuartetos parejos."
       },
       {
         "orden": 3,
-        "texto": "Monta los grupos desde la base, girando el color en espiral. Sigue el patrón espiral y alterna los colores según la foto."
+        "texto": "Monta los grupos desde la base. Coloca los colores en espiral, como en la foto."
       },
       {
         "orden": 4,
-        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+        "texto": "Corona cada columna con un globo negro de 36 pulgadas, sin inflarlo del todo para que guarde proporción con el cuerpo."
       },
       {
         "orden": 5,
+        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+      },
+      {
+        "orden": 6,
         "texto": "Asegura cada pieza, comprueba la estabilidad y ajusta la forma antes de recibir a tus invitados."
       }
     ],
@@ -1904,22 +2354,68 @@
     ],
     "materiales": [
       {
-        "variantId": "46594211414311",
-        "sku": "B2B-20010675",
-        "cantidad": 26,
-        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+        "variantId": "46594235629863",
+        "sku": "B2B-20000440",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50 · R-5 · rosa chicle",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-09-images-24.plan.json]"
       },
       {
-        "variantId": "46594236416295",
-        "sku": "B2B-20000732",
-        "cantidad": 15,
-        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
+        "variantId": "46594235826471",
+        "sku": "B2B-20000726",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50 · R-12 · rosa chicle",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-09-images-24.plan.json]"
+      },
+      {
+        "variantId": "46594264629543",
+        "sku": "B2B-20014169",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-09-images-24.plan.json]"
       },
       {
         "variantId": "46594264695079",
         "sku": "B2B-20014156",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-09-images-24.plan.json]"
+      },
+      {
+        "variantId": "46594359886119",
+        "sku": "B2B-20017232",
         "cantidad": 10,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "nota": "B2b Globo Latex Redondo Fashion Coral Tropical — R-12 / PAQUETE X 50 · R-12 · coral",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "10 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-09-images-24.plan.json]"
+      },
+      {
+        "variantId": "46594359918887",
+        "sku": "B2B-20017228",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Coral Tropical — R-5 / PAQUETE X 50 · R-5 · coral",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-09-images-24.plan.json]"
+      },
+      {
+        "variantId": "51140271145255",
+        "sku": "B2B-20020757",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Blush Crema — R-5 / PAQUETE X 50 · R-5 · rosa blush",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-09-images-24.plan.json]"
+      },
+      {
+        "variantId": "51140271341863",
+        "sku": "B2B-20020764",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Fashion Blush Crema — R-12 / PAQUETE X 50 · R-12 · rosa blush",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "6 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-09-images-24.plan.json]"
       }
     ],
     "pasos": [
@@ -1929,11 +2425,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+        "texto": "Infla los globos de 5 y 12 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
@@ -1983,28 +2479,140 @@
     ],
     "materiales": [
       {
+        "variantId": "46594233729319",
+        "sku": "B2B-20000472",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-5 / PAQUETE X 50 · R-5 · azul",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
         "variantId": "46594233925927",
         "sku": "B2B-20000758",
-        "cantidad": 33,
-        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "5 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594267644199",
+        "sku": "B2B-20014171",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50 · R-5 · plateado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
       },
       {
         "variantId": "46594267709735",
         "sku": "B2B-20014160",
-        "cantidad": 12,
-        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
       },
       {
-        "variantId": "46594286780711",
-        "sku": "B2B-20000829",
-        "cantidad": 25,
-        "nota": "B2b Globo Latex Redondo Satin Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "variantId": "46594267742503",
+        "sku": "B2B-20015517",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6 · R-18 · plateado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594272854311",
+        "sku": "B2B-20012397",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Azul — R-5 / PAQUETE X 50 · R-5 · azul pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "6 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594272985383",
+        "sku": "B2B-20012399",
+        "cantidad": 17,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Azul — R-12 / PAQUETE X 50 · R-12 · azul pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "17 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594273018151",
+        "sku": "B2B-20012301",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Azul — R-18 / PAQUETE X 6 · R-18 · azul pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594306474279",
+        "sku": "B2B-20000496",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Transparente — R-5 / PAQUETE X 50 · R-5 · transparente con confeti",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594306605351",
+        "sku": "B2B-20000784",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Transparente — R-12 / PAQUETE X 50 · R-12 · transparente con confeti",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594308505895",
+        "sku": "B2B-20000520",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Satin Perla — R-5 / PAQUETE X 50 · R-5 · blanco perla",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "5 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594308768039",
+        "sku": "B2B-20000826",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50 · R-12 · blanco perla",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "12 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594308800807",
+        "sku": "B2B-20013761",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Satin Perla — R-18 / PAQUETE X 6 · R-18 · blanco perla",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
       },
       {
         "variantId": "47230981112103",
         "sku": "B2B-20010806",
-        "cantidad": 8,
-        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "5 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "47466207019303",
+        "sku": "B2B-20010802",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50 · R-5 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-10-images-25.plan.json]"
+      },
+      {
+        "variantId": "46594103247143",
+        "sku": "B2B-30003253",
+        "cantidad": 1,
+        "nota": "B2b Confetti Azul Celeste - Plateado — PAQUETE X 1 · celeste y plateado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: un paquete de confeti para rellenar los ~4 globos transparentes"
+      },
+      {
+        "variantId": "46594157117735",
+        "sku": "B2B-30001001",
+        "cantidad": 1,
+        "nota": "B2b Cortina Metalica Plata — PAQUETE X 1 · plateado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: la cortina metálica plateada del fondo (no es globo)"
       }
     ],
     "pasos": [
@@ -2014,15 +2622,15 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
-        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+        "texto": "Añade el confeti dentro de los globos transparentes y la cortina metálica de fondo, y revisa que no queden huecos grandes."
       },
       {
         "orden": 5,
@@ -2040,7 +2648,7 @@
   },
   {
     "id": "deco-real-11-images-26",
-    "titulo": "Arco pastel rosa y turquesa",
+    "titulo": "Guirnalda pastel rosa, lila y aguamarina",
     "tematica": "Baby shower niña",
     "eventos": [
       "Baby shower",
@@ -2066,40 +2674,92 @@
     ],
     "materiales": [
       {
-        "variantId": "46594210496807",
-        "sku": "B2B-20000765",
-        "cantidad": 28,
-        "nota": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50 · R-12 · lila"
+        "variantId": "46594210300199",
+        "sku": "B2B-20000478",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Lila — R-5 / PAQUETE X 50 · R-5 · lila",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
       },
       {
-        "variantId": "46594211414311",
-        "sku": "B2B-20010675",
-        "cantidad": 39,
-        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+        "variantId": "46594210496807",
+        "sku": "B2B-20000765",
+        "cantidad": 19,
+        "nota": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50 · R-12 · lila",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "19 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
+      },
+      {
+        "variantId": "46594210595111",
+        "sku": "B2B-20009086",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Aguamarina — R-5 / PAQUETE X 50 · R-5 · turquesa aguamarina",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
+      },
+      {
+        "variantId": "46594210791719",
+        "sku": "B2B-20009089",
+        "cantidad": 20,
+        "nota": "B2b Globo Latex Redondo Fashion Aguamarina — R-12 / PAQUETE X 50 · R-12 · turquesa aguamarina",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "20 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
+      },
+      {
+        "variantId": "46594221146407",
+        "sku": "B2B-20000437",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "5 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
       },
       {
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
-        "cantidad": 16,
-        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "11 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
+      },
+      {
+        "variantId": "46594233172263",
+        "sku": "B2B-20000481",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Violeta — R-5 / PAQUETE X 50 · R-5 · violeta",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
+      },
+      {
+        "variantId": "46594233434407",
+        "sku": "B2B-20000768",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Violeta — R-12 / PAQUETE X 50 · R-12 · violeta",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
+      },
+      {
+        "variantId": "46594235629863",
+        "sku": "B2B-20000440",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50 · R-5 · rosa chicle",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "11 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
+      },
+      {
+        "variantId": "46594235826471",
+        "sku": "B2B-20000726",
+        "cantidad": 27,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50 · R-12 · rosa chicle",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "27 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
       },
       {
         "variantId": "46594252898599",
         "sku": "B2B-20000885",
-        "cantidad": 4,
-        "nota": "B2b Globo Latex Redondo Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
-      },
-      {
-        "variantId": "46594343731495",
-        "sku": "B2B-20017220",
-        "cantidad": 5,
-        "nota": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50 · R-12 · morado"
-      },
-      {
-        "variantId": "47392128467239",
-        "sku": "B2B-20018043",
-        "cantidad": 28,
-        "nota": "B2b Globo Latex Redondo Fashion Azul Turquesa Profundo — R-12 / PAQUETE X 50 · R-12 · turquesa"
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Metal Dorado — R-12 / PAQUETE X 50 · R-12 · dorado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-11-images-26.plan.json]"
       }
     ],
     "pasos": [
@@ -2109,11 +2769,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+        "texto": "Infla los globos de 5 y 12 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
@@ -2157,40 +2817,90 @@
       {
         "estructura": "semiarco",
         "cantidad": 1
+      },
+      {
+        "estructura": "columna_asimetrica",
+        "cantidad": 1
       }
     ],
     "materiales": [
       {
-        "variantId": "46594210496807",
-        "sku": "B2B-20000765",
-        "cantidad": 25,
-        "nota": "B2b Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50 · R-12 · lila"
+        "variantId": "46594267644199",
+        "sku": "B2B-20014171",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 50 · R-5 · plateado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "6 de semiarco y columna orgánica (plan resuelto por Python) [data/biblioteca-real/analisis/real-12-images-27.plan.json]"
       },
       {
         "variantId": "46594267709735",
         "sku": "B2B-20014160",
-        "cantidad": 15,
-        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+        "cantidad": 21,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "21 de semiarco y columna orgánica (plan resuelto por Python) [data/biblioteca-real/analisis/real-12-images-27.plan.json]"
       },
       {
-        "variantId": "46594343731495",
-        "sku": "B2B-20017220",
-        "cantidad": 22,
-        "nota": "B2b Globo Latex Redondo Fashion Orquidea Morada — R-12 / PAQUETE X 50 · R-12 · morado"
+        "variantId": "46594267742503",
+        "sku": "B2B-20015517",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Reflex Plata — R-18 / PAQUETE X 6 · R-18 · plateado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco y columna orgánica (plan resuelto por Python) [data/biblioteca-real/analisis/real-12-images-27.plan.json]"
+      },
+      {
+        "variantId": "46594270986535",
+        "sku": "B2B-20012401",
+        "cantidad": 9,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Lila — R-5 / PAQUETE X 50 · R-5 · lila pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "9 de semiarco y columna orgánica (plan resuelto por Python) [data/biblioteca-real/analisis/real-12-images-27.plan.json]"
+      },
+      {
+        "variantId": "46594271150375",
+        "sku": "B2B-20012403",
+        "cantidad": 30,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Lila — R-12 / PAQUETE X 50 · R-12 · lila pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "30 de semiarco y columna orgánica (plan resuelto por Python) [data/biblioteca-real/analisis/real-12-images-27.plan.json]"
+      },
+      {
+        "variantId": "46594271183143",
+        "sku": "B2B-20012312",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Lila — R-18 / PAQUETE X 6 · R-18 · lila pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-12-images-27.plan.json]"
+      },
+      {
+        "variantId": "46594290680103",
+        "sku": "B2B-20014173",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Reflex Violeta — R-5 / PAQUETE X 50 · R-5 · morado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de semiarco y columna orgánica (plan resuelto por Python) [data/biblioteca-real/analisis/real-12-images-27.plan.json]"
+      },
+      {
+        "variantId": "46594290745639",
+        "sku": "B2B-20014164",
+        "cantidad": 30,
+        "nota": "B2b Globo Latex Redondo Reflex Violeta — R-12 / PAQUETE X 50 · R-12 · morado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "30 de semiarco y columna orgánica (plan resuelto por Python) [data/biblioteca-real/analisis/real-12-images-27.plan.json]"
       }
     ],
     "pasos": [
       {
         "orden": 1,
-        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+        "texto": "Fija una base pesada y arma el soporte vertical."
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Monta los grupos desde la base. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
@@ -2233,24 +2943,56 @@
       {
         "estructura": "semiarco",
         "cantidad": 1
-      },
-      {
-        "estructura": "bouquet",
-        "cantidad": 1
       }
     ],
     "materiales": [
       {
-        "variantId": "46594251456807",
-        "sku": "B2B-20014158",
-        "cantidad": 63,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+        "variantId": "46594251391271",
+        "sku": "B2B-20014170",
+        "cantidad": 16,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-5 / PAQUETE X 50 · R-5 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "16 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-13-images-28.plan.json]"
       },
       {
-        "variantId": "46594286780711",
-        "sku": "B2B-20000829",
+        "variantId": "46594251456807",
+        "sku": "B2B-20014158",
         "cantidad": 41,
-        "nota": "B2b Globo Latex Redondo Satin Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "41 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-13-images-28.plan.json]"
+      },
+      {
+        "variantId": "46594251489575",
+        "sku": "B2B-20015519",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-18 / PAQUETE X 6 · R-18 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-13-images-28.plan.json]"
+      },
+      {
+        "variantId": "46594308505895",
+        "sku": "B2B-20000520",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Satin Perla — R-5 / PAQUETE X 50 · R-5 · blanco perla",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "11 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-13-images-28.plan.json]"
+      },
+      {
+        "variantId": "46594308768039",
+        "sku": "B2B-20000826",
+        "cantidad": 28,
+        "nota": "B2b Globo Latex Redondo Satin Perla — R-12 / PAQUETE X 50 · R-12 · blanco perla",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "28 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-13-images-28.plan.json]"
+      },
+      {
+        "variantId": "46594308800807",
+        "sku": "B2B-20013761",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Satin Perla — R-18 / PAQUETE X 6 · R-18 · blanco perla",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-13-images-28.plan.json]"
       }
     ],
     "pasos": [
@@ -2260,11 +3002,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
@@ -2278,8 +3020,7 @@
     "shopifyHandle": null,
     "paleta": [
       "#341107",
-      "#a29e9e",
-      "#a8827f"
+      "#a29e9e"
     ],
     "fotoRepresentativa": true,
     "origen": "referencia_real"
@@ -2315,13 +3056,17 @@
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
         "cantidad": 72,
-        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "72 de arco (plan resuelto por Python) [data/biblioteca-real/analisis/real-14-images-29.plan.json]"
       },
       {
         "variantId": "46594235269415",
         "sku": "B2B-20000781",
         "cantidad": 73,
-        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro"
+        "nota": "B2b Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50 · R-12 · negro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "73 de arco (plan resuelto por Python) [data/biblioteca-real/analisis/real-14-images-29.plan.json]"
       }
     ],
     "pasos": [
@@ -2331,11 +3076,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 12 pulgadas con tamaño uniforme."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón espiral y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Coloca los colores en espiral, como en la foto."
       },
       {
         "orden": 4,
@@ -2356,7 +3101,7 @@
   },
   {
     "id": "deco-real-15-images-30",
-    "titulo": "Semiarco rojo, blanco y dorado",
+    "titulo": "Semiarco rojo, crema y dorado",
     "tematica": "Infantil colorida",
     "eventos": [
       "Cumpleaños"
@@ -2379,42 +3124,96 @@
         "cantidad": 1
       },
       {
-        "estructura": "bouquet",
+        "estructura": "guirnalda",
         "cantidad": 1
       }
     ],
     "materiales": [
       {
+        "variantId": "46594236219687",
+        "sku": "B2B-20000446",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-5 / PAQUETE X 50 · R-5 · rojo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de semiarco y guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-15-images-30.plan.json]"
+      },
+      {
         "variantId": "46594236416295",
         "sku": "B2B-20000732",
-        "cantidad": 31,
-        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo"
+        "cantidad": 19,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "19 de semiarco y guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-15-images-30.plan.json]"
+      },
+      {
+        "variantId": "46594236449063",
+        "sku": "B2B-20000908",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-18 / PAQUETE X 6 · R-18 · rojo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco y guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-15-images-30.plan.json]"
+      },
+      {
+        "variantId": "46594264629543",
+        "sku": "B2B-20014169",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-15-images-30.plan.json]"
       },
       {
         "variantId": "46594264695079",
         "sku": "B2B-20014156",
-        "cantidad": 27,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "cantidad": 17,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "17 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-15-images-30.plan.json]"
       },
       {
-        "variantId": "46594286780711",
-        "sku": "B2B-20000829",
-        "cantidad": 35,
-        "nota": "B2b Globo Latex Redondo Satin Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "variantId": "46594264727847",
+        "sku": "B2B-20015523",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6 · R-18 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-15-images-30.plan.json]"
+      },
+      {
+        "variantId": "46594352972071",
+        "sku": "B2B-20017113",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Crema — R-5 / PAQUETE X 50 · R-5 · crema",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de semiarco y guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-15-images-30.plan.json]"
+      },
+      {
+        "variantId": "46594353135911",
+        "sku": "B2B-20017116",
+        "cantidad": 24,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Crema — R-12 / PAQUETE X 50 · R-12 · crema",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "24 de semiarco y guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-15-images-30.plan.json]"
+      },
+      {
+        "variantId": "46594353266983",
+        "sku": "B2B-20017119",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Crema — R-18 / PAQUETE X 6 · R-18 · crema",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-15-images-30.plan.json]"
       }
     ],
     "pasos": [
       {
         "orden": 1,
-        "texto": "Arma y asegura el soporte con la forma del arco o semiarco."
+        "texto": "Marca los puntos de anclaje y prepara la tira de soporte."
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón bloques y alterna los colores según la foto."
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Agrupa cada color en su propia zona, como en la foto."
       },
       {
         "orden": 4,
@@ -2467,22 +3266,92 @@
     ],
     "materiales": [
       {
-        "variantId": "46594250440999",
-        "sku": "B2B-20014152",
-        "cantidad": 44,
-        "nota": "B2b Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+        "variantId": "46594250375463",
+        "sku": "B2B-20014167",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-5 / PAQUETE X 50 · R-5 · azul cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "6 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-16-images-31.plan.json]"
       },
       {
-        "variantId": "46594267709735",
-        "sku": "B2B-20014160",
-        "cantidad": 9,
-        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50 · R-12 · plateado"
+        "variantId": "46594250440999",
+        "sku": "B2B-20014152",
+        "cantidad": 28,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50 · R-12 · azul cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "28 de guirnalda y bouquet de globos (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-16-images-31.plan.json]"
+      },
+      {
+        "variantId": "46594250473767",
+        "sku": "B2B-20015527",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Reflex Azul — R-18 / PAQUETE X 6 · R-18 · azul cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-16-images-31.plan.json]"
+      },
+      {
+        "variantId": "46594306474279",
+        "sku": "B2B-20000496",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Transparente — R-5 / PAQUETE X 50 · R-5 · transparente con confeti",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-16-images-31.plan.json]"
+      },
+      {
+        "variantId": "46594306605351",
+        "sku": "B2B-20000784",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Fashion Transparente — R-12 / PAQUETE X 50 · R-12 · transparente con confeti",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de guirnalda y bouquet de globos (plan resuelto por Python) [data/biblioteca-real/analisis/real-16-images-31.plan.json]"
       },
       {
         "variantId": "47230981112103",
         "sku": "B2B-20010806",
-        "cantidad": 42,
-        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
+        "cantidad": 36,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "36 de guirnalda y bouquet de globos (2 piezas) (plan resuelto por Python) [data/biblioteca-real/analisis/real-16-images-31.plan.json]"
+      },
+      {
+        "variantId": "47466207019303",
+        "sku": "B2B-20010802",
+        "cantidad": 10,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50 · R-5 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "10 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-16-images-31.plan.json]"
+      },
+      {
+        "variantId": "47466210656551",
+        "sku": "B2B-20013752",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-18 / PAQUETE X 6 · R-18 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-16-images-31.plan.json]"
+      },
+      {
+        "variantId": "46594103247143",
+        "sku": "B2B-30003253",
+        "cantidad": 1,
+        "nota": "B2b Confetti Azul Celeste - Plateado — PAQUETE X 1 · celeste y plateado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: un paquete de confeti para rellenar los ~6 globos transparentes"
+      },
+      {
+        "variantId": "51128000086311",
+        "sku": "B2B-30005923",
+        "cantidad": 2,
+        "nota": "B2b Globo Metalizado Estrella Azul Rey — 18 IN / PAQUETE X 1 · 18 IN · azul rey",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: 2 estrellas metalizadas azul rey sobre los racimos"
+      },
+      {
+        "variantId": "46594157117735",
+        "sku": "B2B-30001001",
+        "cantidad": 1,
+        "nota": "B2b Cortina Metalica Plata — PAQUETE X 1 · plateado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: la cortina metálica plateada del fondo (no es globo)"
       }
     ],
     "pasos": [
@@ -2492,15 +3361,15 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
-        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+        "texto": "Añade el confeti dentro de los globos transparentes, las estrellas metalizadas y la cortina metálica de fondo, y revisa que no queden huecos grandes."
       },
       {
         "orden": 5,
@@ -2520,7 +3389,7 @@
   },
   {
     "id": "deco-real-17-img-2939-1-600x600",
-    "titulo": "Semiarco rosa y champagne",
+    "titulo": "Semiarco oro rosa, dorado y amarillo pastel",
     "tematica": "Romántico rosa y dorado",
     "eventos": [
       "Boda",
@@ -2546,28 +3415,140 @@
     ],
     "materiales": [
       {
-        "variantId": "46594211414311",
-        "sku": "B2B-20010675",
-        "cantidad": 20,
-        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+        "variantId": "46594235629863",
+        "sku": "B2B-20000440",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50 · R-5 · rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
       },
       {
-        "variantId": "46594231992615",
-        "sku": "B2B-20000737",
-        "cantidad": 20,
-        "nota": "B2b Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50 · R-12 · amarillo"
+        "variantId": "46594235728167",
+        "sku": "B2B-20000578",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 50 · R-9 · rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594235826471",
+        "sku": "B2B-20000726",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50 · R-12 · rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "11 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594235859239",
+        "sku": "B2B-20000904",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-18 / PAQUETE X 6 · R-18 · rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594251391271",
+        "sku": "B2B-20014170",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-5 / PAQUETE X 50 · R-5 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
       },
       {
         "variantId": "46594251456807",
         "sku": "B2B-20014158",
-        "cantidad": 31,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+        "cantidad": 21,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "21 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594251489575",
+        "sku": "B2B-20015519",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-18 / PAQUETE X 6 · R-18 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594251555111",
+        "sku": "B2B-20014726",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-24 / PAQUETE X 3 · R-24 · oro rosa",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594251653415",
+        "sku": "B2B-20012389",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Amarillo — R-5 / PAQUETE X 50 · R-5 · amarillo pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594251718951",
+        "sku": "B2B-20012390",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Amarillo — R-9 / PAQUETE X 50 · R-9 · amarillo pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594251784487",
+        "sku": "B2B-20012391",
+        "cantidad": 11,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Amarillo — R-12 / PAQUETE X 50 · R-12 · amarillo pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "11 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594251817255",
+        "sku": "B2B-20012279",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Amarillo — R-18 / PAQUETE X 6 · R-18 · amarillo pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594264629543",
+        "sku": "B2B-20014169",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
       },
       {
         "variantId": "46594264695079",
         "sku": "B2B-20014156",
-        "cantidad": 31,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "cantidad": 17,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "17 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594264727847",
+        "sku": "B2B-20015523",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6 · R-18 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594264793383",
+        "sku": "B2B-20014725",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-24 / PAQUETE X 3 · R-24 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
+      },
+      {
+        "variantId": "46594264891687",
+        "sku": "B2B-20017755",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 80 · R-9 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "5 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-17-img-2939-1-600x600.plan.json]"
       }
     ],
     "pasos": [
@@ -2577,11 +3558,11 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 5, 9, 12, 18 y 24 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
@@ -2628,22 +3609,84 @@
     ],
     "materiales": [
       {
-        "variantId": "46594211414311",
-        "sku": "B2B-20010675",
-        "cantidad": 27,
-        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+        "variantId": "46594221146407",
+        "sku": "B2B-20000437",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50 · R-5 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-18-sddefault.plan.json]"
       },
       {
         "variantId": "46594221343015",
         "sku": "B2B-20000723",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-18-sddefault.plan.json]"
+      },
+      {
+        "variantId": "46594260926759",
+        "sku": "B2B-20012385",
         "cantidad": 6,
-        "nota": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50 · R-12 · blanco"
+        "nota": "B2b Globo Latex Redondo Pastel Mate Rosado — R-5 / PAQUETE X 50 · R-5 · rosa pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "6 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-18-sddefault.plan.json]"
+      },
+      {
+        "variantId": "46594261057831",
+        "sku": "B2B-20012387",
+        "cantidad": 16,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Rosado — R-12 / PAQUETE X 50 · R-12 · rosa pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "16 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-18-sddefault.plan.json]"
+      },
+      {
+        "variantId": "46594261090599",
+        "sku": "B2B-20012268",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Rosado — R-18 / PAQUETE X 6 · R-18 · rosa pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-18-sddefault.plan.json]"
+      },
+      {
+        "variantId": "46594264629543",
+        "sku": "B2B-20014169",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-18-sddefault.plan.json]"
       },
       {
         "variantId": "46594264695079",
         "sku": "B2B-20014156",
-        "cantidad": 7,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "5 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-18-sddefault.plan.json]"
+      },
+      {
+        "variantId": "46594301526311",
+        "sku": "B2B-20001572",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Infinity® Estrellas Fashion Transparente — R-12 / PAQUETE X 12 · R-12 · transparente con estrellas blancas",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: unos 6 globos transparentes con estrellas blancas, los más grandes de la guirnalda (el de 24 pulgadas no está disponible)"
+      },
+      {
+        "variantId": "46594192015655",
+        "sku": "B2B-30000993",
+        "cantidad": 1,
+        "nota": "B2b Cortina Metalica Rosado — PAQUETE X 1 · rosado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: la cortina metálica rosada que cuelga bajo la guirnalda (no es globo)"
+      },
+      {
+        "variantId": "46594160001319",
+        "sku": "B2B-30001000",
+        "cantidad": 1,
+        "nota": "B2b Cortina Metalica Dorado — PAQUETE X 1 · dorado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: la cortina metálica dorada que cuelga bajo la guirnalda (no es globo)"
       }
     ],
     "pasos": [
@@ -2653,15 +3696,15 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
-        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+        "texto": "Añade los globos impresos y la cortina metálica de fondo, y revisa que no queden huecos grandes."
       },
       {
         "orden": 5,
@@ -2680,7 +3723,7 @@
   },
   {
     "id": "deco-real-19-semiarco-organico-combinaciones-con-reflex-26bbc",
-    "titulo": "Guirnalda rosa, fucsia y oro rosa",
+    "titulo": "Guirnalda rosa, fucsia, rojo y dorado",
     "tematica": "Rosa y dorado",
     "eventos": [
       "Cumpleaños",
@@ -2706,28 +3749,108 @@
     ],
     "materiales": [
       {
-        "variantId": "46594211414311",
-        "sku": "B2B-20010675",
-        "cantidad": 12,
-        "nota": "B2b Globo Latex Redondo Fashion Palo De Rosa — R-12 / PAQUETE X 50 · R-12 · rosado"
+        "variantId": "46594234384679",
+        "sku": "B2B-20000443",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-5 / PAQUETE X 50 · R-5 · fucsia",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
       },
       {
         "variantId": "46594234614055",
         "sku": "B2B-20000729",
-        "cantidad": 12,
-        "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 50 · R-12 · fucsia"
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 50 · R-12 · fucsia",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "8 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
       },
       {
-        "variantId": "46594251456807",
-        "sku": "B2B-20014158",
-        "cantidad": 9,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado Rosa — R-12 / PAQUETE X 50 · R-12 · dorado rosa"
+        "variantId": "46594234712359",
+        "sku": "B2B-20000906",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Fucsia — R-18 / PAQUETE X 6 · R-18 · fucsia",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
+      },
+      {
+        "variantId": "46594235629863",
+        "sku": "B2B-20000440",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50 · R-5 · rosa chicle",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
+      },
+      {
+        "variantId": "46594235826471",
+        "sku": "B2B-20000726",
+        "cantidad": 12,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50 · R-12 · rosa chicle",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "12 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
+      },
+      {
+        "variantId": "46594235859239",
+        "sku": "B2B-20000904",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Rosado — R-18 / PAQUETE X 6 · R-18 · rosa chicle",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
+      },
+      {
+        "variantId": "46594264629543",
+        "sku": "B2B-20014169",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "4 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
       },
       {
         "variantId": "46594264695079",
         "sku": "B2B-20014156",
-        "cantidad": 18,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado"
+        "cantidad": 15,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50 · R-12 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "15 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
+      },
+      {
+        "variantId": "46594264793383",
+        "sku": "B2B-20014725",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-24 / PAQUETE X 3 · R-24 · dorado cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
+      },
+      {
+        "variantId": "46594270396711",
+        "sku": "B2B-20014505",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Reflex Cristal Rojo — R-5 / PAQUETE X 50 · R-5 · rojo cereza cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
+      },
+      {
+        "variantId": "46594270462247",
+        "sku": "B2B-20014504",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Reflex Cristal Rojo — R-12 / PAQUETE X 50 · R-12 · rojo cereza cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
+      },
+      {
+        "variantId": "46594270495015",
+        "sku": "B2B-20015521",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Reflex Cristal Rojo — R-18 / PAQUETE X 6 · R-18 · rojo cereza cromado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de guirnalda (plan resuelto por Python) [data/biblioteca-real/analisis/real-19-semiarco-organico-combinaciones-con-reflex-26bbc.plan.json]"
+      },
+      {
+        "variantId": "46594209415463",
+        "sku": "B2B-20014695",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Infinity® Confetti Multicolor Pastel Fashion Transparente — R-12 / PAQUETE X 12 · R-12 · transparente con confeti",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: unos 7 globos transparentes con confeti; el catálogo no tiene confeti rosado y va el impreso de confeti pastel, lo más parecido"
       }
     ],
     "pasos": [
@@ -2737,15 +3860,15 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 y forma grupos compactos de cuatro."
+        "texto": "Infla los globos de 5, 12, 18 y 24 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Sujeta los grupos a la tira y da forma a la curva. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Sujeta los grupos a la tira y da forma a la curva. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
-        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+        "texto": "Añade los globos impresos, y revisa que no queden huecos grandes."
       },
       {
         "orden": 5,
@@ -2791,16 +3914,92 @@
     ],
     "materiales": [
       {
-        "variantId": "46594250440999",
-        "sku": "B2B-20014152",
-        "cantidad": 27,
-        "nota": "B2b Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50 · R-12 · azul"
+        "variantId": "46594233729319",
+        "sku": "B2B-20000472",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-5 / PAQUETE X 50 · R-5 · azul",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "3 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-20-semiarcoilusionazul-1200x1200.plan.json]"
+      },
+      {
+        "variantId": "46594233925927",
+        "sku": "B2B-20000758",
+        "cantidad": 10,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-12 / PAQUETE X 50 · R-12 · azul",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "10 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-20-semiarcoilusionazul-1200x1200.plan.json]"
+      },
+      {
+        "variantId": "46594233991463",
+        "sku": "B2B-20000916",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Azul — R-18 / PAQUETE X 6 · R-18 · azul",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-20-semiarcoilusionazul-1200x1200.plan.json]"
+      },
+      {
+        "variantId": "46594272854311",
+        "sku": "B2B-20012397",
+        "cantidad": 2,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Azul — R-5 / PAQUETE X 50 · R-5 · azul pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "2 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-20-semiarcoilusionazul-1200x1200.plan.json]"
+      },
+      {
+        "variantId": "46594272985383",
+        "sku": "B2B-20012399",
+        "cantidad": 7,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Azul — R-12 / PAQUETE X 50 · R-12 · azul pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "7 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-20-semiarcoilusionazul-1200x1200.plan.json]"
+      },
+      {
+        "variantId": "46594273018151",
+        "sku": "B2B-20012301",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Pastel Mate Azul — R-18 / PAQUETE X 6 · R-18 · azul pastel",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-20-semiarcoilusionazul-1200x1200.plan.json]"
       },
       {
         "variantId": "47230981112103",
         "sku": "B2B-20010806",
-        "cantidad": 22,
-        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino"
+        "cantidad": 13,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-12 / PAQUETE X 50 · R-12 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "13 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-20-semiarcoilusionazul-1200x1200.plan.json]"
+      },
+      {
+        "variantId": "47466207019303",
+        "sku": "B2B-20010802",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-5 / PAQUETE X 50 · R-5 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "6 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-20-semiarcoilusionazul-1200x1200.plan.json]"
+      },
+      {
+        "variantId": "47466210656551",
+        "sku": "B2B-20013752",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Azul Naval — R-18 / PAQUETE X 6 · R-18 · azul marino",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "1 de semiarco (plan resuelto por Python) [data/biblioteca-real/analisis/real-20-semiarcoilusionazul-1200x1200.plan.json]"
+      },
+      {
+        "variantId": "49858791178535",
+        "sku": "B2B-30005962",
+        "cantidad": 3,
+        "nota": "B2b Globo Metalizado Estrella Azul Pastel — 18 IN / PAQUETE X 1 · 18 IN · azul celeste",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: 3 estrellas metalizadas celestes entre los globos"
+      },
+      {
+        "variantId": "46594157117735",
+        "sku": "B2B-30001001",
+        "cantidad": 1,
+        "nota": "B2b Cortina Metalica Plata — PAQUETE X 1 · plateado",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto: la pared de lentejuelas plateada no está en el catálogo; la cortina metálica plateada es lo más parecido (no es globo)"
       }
     ],
     "pasos": [
@@ -2810,15 +4009,15 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos R-12 con tamaño uniforme."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas y arma racimos mezclando tamaños: los chicos rellenan los huecos y los grandes dan volumen."
       },
       {
         "orden": 3,
-        "texto": "Distribuye los grupos por toda la estructura. Sigue el patrón aleatorio y alterna los colores según la foto."
+        "texto": "Distribuye los grupos por toda la estructura. Mezcla los colores sin un orden fijo, como en la foto."
       },
       {
         "orden": 4,
-        "texto": "Añade los globos de acento y revisa que no queden huecos grandes."
+        "texto": "Añade las estrellas metalizadas y la cortina metálica de fondo, y revisa que no queden huecos grandes."
       },
       {
         "orden": 5,
@@ -2857,7 +4056,7 @@
     "video": null,
     "piezas": [
       {
-        "estructura": "bouquet",
+        "estructura": "figura",
         "cantidad": 1
       }
     ],
@@ -3001,34 +4200,90 @@
     ],
     "materiales": [
       {
+        "variantId": "46594236219687",
+        "sku": "B2B-20000446",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Fashion Rojo — R-5 / PAQUETE X 50 · R-5 · rojo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
         "variantId": "46594236416295",
         "sku": "B2B-20000732",
-        "cantidad": 7,
+        "cantidad": 5,
         "nota": "B2b Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50 · R-12 · rojo",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "46594342060327",
+        "sku": "B2B-20017128",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-5 / PAQUETE X 50 · R-5 · rosa claro",
         "origenCantidad": "plan_python",
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
       },
       {
         "variantId": "46594342453543",
         "sku": "B2B-20017131",
-        "cantidad": 12,
+        "cantidad": 7,
         "nota": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-12 / PAQUETE X 50 · R-12 · rosa claro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "46594342551847",
+        "sku": "B2B-20017134",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Pastel Dusk Rosa — R-18 / PAQUETE X 6 · R-18 · rosa claro",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "49475777986855",
+        "sku": "B2B-20019337",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 50 · R-5 · blanco perlado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "49475778019623",
+        "sku": "B2B-20019347",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6 · R-18 · blanco perlado",
         "origenCantidad": "plan_python",
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
       },
       {
         "variantId": "49475778216231",
         "sku": "B2B-20019344",
-        "cantidad": 12,
+        "cantidad": 7,
         "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-12 / PAQUETE X 50 · R-12 · blanco perlado",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "50030991147303",
+        "sku": "B2B-20019698",
+        "cantidad": 8,
+        "nota": "B2b Globo Fashion Rosa — R-5 / PAQUETE X 50 · R-5 · rosa fuerte",
         "origenCantidad": "plan_python",
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
       },
       {
         "variantId": "50030991311143",
         "sku": "B2B-20019705",
-        "cantidad": 33,
+        "cantidad": 21,
         "nota": "B2b Globo Fashion Rosa — R-12 / PAQUETE X 50 · R-12 · rosa fuerte",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
+      },
+      {
+        "variantId": "50030991343911",
+        "sku": "B2B-20019708",
+        "cantidad": 2,
+        "nota": "B2b Globo Fashion Rosa — R-18 / PAQUETE X 6 · R-18 · rosa fuerte",
         "origenCantidad": "plan_python",
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-02.plan.json]"
       },
@@ -3063,6 +4318,14 @@
         "nota": "B2b Cortina Metalica Roja — PAQUETE X 1 · rojo",
         "origenCantidad": "estimado_foto",
         "detalleCantidad": "estimado a partir de la foto (cortina de tiras bajo la guirnalda; no es globo)"
+      },
+      {
+        "variantId": "46594189656359",
+        "sku": "B2B-20001351",
+        "cantidad": 1,
+        "nota": "B2b Globo Latex Corazon Fashion Rojo — CORAZON 12 / PAQUETE X 12 · C-12 · rojo",
+        "origenCantidad": "estimado_foto",
+        "detalleCantidad": "estimado a partir de la foto (segundo corazón rojo liso, arriba a la izquierda junto al de «Te amo»)"
       }
     ],
     "pasos": [
@@ -3072,7 +4335,7 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos de 12 pulgadas a tamaños distintos (algunos bien llenos y otros a medio inflar) para que la guirnalda se vea natural."
+        "texto": "Infla los globos de 5, 12 y 18 pulgadas (algunos bien llenos y otros a medio inflar) para que la guirnalda se vea natural."
       },
       {
         "orden": 3,
@@ -3080,11 +4343,11 @@
       },
       {
         "orden": 4,
-        "texto": "Con los globos rosa fuerte más pequeños forma una tira que cuelgue por debajo de la guirnalda, sobre la cortina."
+        "texto": "Con los globitos rosa fuerte de 5 pulgadas forma una tira que cuelgue por debajo de la guirnalda, sobre la cortina."
       },
       {
         "orden": 5,
-        "texto": "Coloca arriba los dos globos metalizados «LOVE» y pega los corazones entre los grupos: el rojo «Te amo» a la izquierda y el rosa a la derecha."
+        "texto": "Coloca arriba los dos globos metalizados «LOVE» y pega los corazones entre los grupos: los dos rojos (uno con «Te amo») a la izquierda y el rosa a la derecha."
       },
       {
         "orden": 6,
@@ -3131,26 +4394,26 @@
     ],
     "materiales": [
       {
-        "variantId": "46594267676967",
-        "sku": "B2B-20014159",
+        "variantId": "50195455607079",
+        "sku": "B2B-20019918",
         "cantidad": 12,
-        "nota": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 12 · R-12 · plateado",
+        "nota": "B2b Globo Latex Redondo Silk Nuevo Gris Medianoche — R-12 / PAQUETE X 12 · R-12 · gris grafito",
         "origenCantidad": "estimado_foto",
         "detalleCantidad": "estimado a partir de la foto (8 para los dos pisos bajos del cono y 4 de la base)"
       },
       {
-        "variantId": "46594267840807",
-        "sku": "B2B-20017756",
+        "variantId": "50195455541543",
+        "sku": "B2B-20019914",
         "cantidad": 8,
-        "nota": "B2b Globo Latex Redondo Reflex Plata — R-9 / PAQUETE X 20 · R-9 · plateado",
+        "nota": "B2b Globo Latex Redondo Silk Nuevo Gris Medianoche — R-9 / PAQUETE X 12 · R-9 · gris grafito",
         "origenCantidad": "estimado_foto",
         "detalleCantidad": "estimado a partir de la foto (dos pisos medios del cono)"
       },
       {
-        "variantId": "46594267611431",
-        "sku": "B2B-20014244",
+        "variantId": "50195455476007",
+        "sku": "B2B-20019911",
         "cantidad": 5,
-        "nota": "B2b Globo Latex Redondo Reflex Plata — R-5 / PAQUETE X 20 · R-5 · plateado",
+        "nota": "B2b Globo Latex Redondo Silk Nuevo Gris Medianoche — R-5 / PAQUETE X 20 · R-5 · gris grafito",
         "origenCantidad": "estimado_foto",
         "detalleCantidad": "estimado a partir de la foto (piso alto y punta del cono)"
       },
@@ -3238,7 +4501,7 @@
     "pasos": [
       {
         "orden": 1,
-        "texto": "Arma la base: pon un peso o base de columna en el piso y fija cuatro globos plateados de 12 pulgadas en cruz; encima coloca cuatro globos color café con leche."
+        "texto": "Arma la base: pon un peso o base de columna en el piso y fija cuatro globos gris grafito de 12 pulgadas en cruz; encima coloca cuatro globos color café con leche."
       },
       {
         "orden": 2,
@@ -3254,7 +4517,7 @@
       },
       {
         "orden": 5,
-        "texto": "Levanta el cono con grupos de cuatro globos plateados: primero de 12, luego de 9 y al final de 5 pulgadas, y termina con un solo globo en la punta."
+        "texto": "Levanta el cono con grupos de cuatro globos gris grafito: primero de 12, luego de 9 y al final de 5 pulgadas, y termina con un solo globo en la punta."
       },
       {
         "orden": 6,
@@ -3318,20 +4581,20 @@
         "detalleCantidad": "estimado a partir de la foto (8 colgantes de 4 a 6 eslabones)"
       },
       {
-        "variantId": "46594264629543",
-        "sku": "B2B-20014169",
+        "variantId": "46594290975015",
+        "sku": "B2B-20016802",
         "cantidad": 63,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50 · R-5 · dorado",
+        "nota": "B2b Globo Latex Redondo Reflex Champaña — R-5 / PAQUETE X 50 · R-5 · champaña",
         "origenCantidad": "estimado_foto",
         "detalleCantidad": "estimado a partir de la foto (dos racimos de unos 14 y unos 35 en el centro de la flor grande)"
       },
       {
-        "variantId": "46594264858919",
-        "sku": "B2B-20017754",
+        "variantId": "46594291007783",
+        "sku": "B2B-20016803",
         "cantidad": 1,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado",
+        "nota": "B2b Globo Latex Redondo Reflex Champaña — R-12 / PAQUETE X 12 · R-12 · champaña",
         "origenCantidad": "estimado_foto",
-        "detalleCantidad": "estimado a partir de la foto (centro de la flor pequeña)"
+        "detalleCantidad": "estimado a partir de la foto (centro de la flor pequeña: un globo champaña de 12 pulgadas inflado a medias; no hay champaña de 9)"
       },
       {
         "variantId": "46594228617511",
@@ -3365,15 +4628,15 @@
       },
       {
         "orden": 4,
-        "texto": "Arma dos racimos de unos 14 globos dorados de 5 pulgadas y pégalos sobre la guirnalda, uno a cada lado de la flor pequeña."
+        "texto": "Arma dos racimos de unos 14 globos champaña de 5 pulgadas y pégalos sobre la guirnalda, uno a cada lado de la flor pequeña."
       },
       {
         "orden": 5,
-        "texto": "Para la flor grande da forma de pétalo a ocho globos naranja de 12 pulgadas, únelos en círculo, llena el centro con unos 35 globos dorados pequeños y fíjala en el extremo derecho."
+        "texto": "Para la flor grande da forma de pétalo a ocho globos naranja de 12 pulgadas, únelos en círculo, llena el centro con unos 35 globos champaña pequeños y fíjala en el extremo derecho."
       },
       {
         "orden": 6,
-        "texto": "Tuerce dos globos para modelar naranja en seis pétalos con un globo dorado de 9 pulgadas al centro, colócala a la izquierda y revisa que todo quede firme."
+        "texto": "Tuerce dos globos para modelar naranja en seis pétalos con un globo champaña de 12 pulgadas inflado a medias al centro, colócala a la izquierda y revisa que todo quede firme."
       }
     ],
     "shopifyHandle": null,
@@ -3536,10 +4799,10 @@
         "detalleCantidad": "estimado a partir de la foto (tallos, hojas y base del capullo)"
       },
       {
-        "variantId": "48414513234215",
-        "sku": "B2B-20018408",
+        "variantId": "46594357526823",
+        "sku": "B2B-20017124",
         "cantidad": 3,
-        "nota": "B2b Globo Latex Tubito Pastel Mate Durazno Malibu — T260 / PAQUETE X 20 · T260 · durazno",
+        "nota": "B2b Globo Latex Tubito Pastel Dusk Crema — T260 / PAQUETE X 20 · T260 · crema",
         "origenCantidad": "estimado_foto",
         "detalleCantidad": "estimado a partir de la foto (unos 10 pétalos de lazo de la flor grande)"
       },
@@ -3595,7 +4858,7 @@
       },
       {
         "orden": 3,
-        "texto": "Haz la flor grande: infla tres globos para modelar color durazno, dóblalos en lazos para formar unos diez pétalos y pon al centro un globo verde menta de 5 pulgadas."
+        "texto": "Haz la flor grande: infla tres globos para modelar color crema, dóblalos en lazos para formar unos diez pétalos y pon al centro un globo verde menta de 5 pulgadas."
       },
       {
         "orden": 4,
@@ -3836,14 +5099,6 @@
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
       },
       {
-        "variantId": "46594264858919",
-        "sku": "B2B-20017754",
-        "cantidad": 6,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado cromado",
-        "origenCantidad": "plan_python",
-        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-      },
-      {
         "variantId": "46594264695079",
         "sku": "B2B-20014156",
         "cantidad": 18,
@@ -3854,32 +5109,16 @@
       {
         "variantId": "46594264727847",
         "sku": "B2B-20015523",
-        "cantidad": 1,
+        "cantidad": 2,
         "nota": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6 · R-18 · dorado cromado",
         "origenCantidad": "plan_python",
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
       },
       {
-        "variantId": "46594264793383",
-        "sku": "B2B-20014725",
-        "cantidad": 1,
-        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-24 / PAQUETE X 3 · R-24 · dorado cromado",
-        "origenCantidad": "plan_python",
-        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-      },
-      {
-        "variantId": "46594302411047",
-        "sku": "B2B-20016823",
-        "cantidad": 5,
-        "nota": "B2b Globo Latex Redondo Fashion Latte — R-5 / PAQUETE X 50 · R-5 · nude",
-        "origenCantidad": "plan_python",
-        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-      },
-      {
-        "variantId": "47466211836199",
-        "sku": "B2B-20017533",
-        "cantidad": 4,
-        "nota": "B2b Globo Latex Redondo Fashion Latte — R-9 / PAQUETE X 50 · R-9 · nude",
+        "variantId": "46594264858919",
+        "sku": "B2B-20017754",
+        "cantidad": 6,
+        "nota": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20 · R-9 · dorado cromado",
         "origenCantidad": "plan_python",
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
       },
@@ -3900,10 +5139,26 @@
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
       },
       {
-        "variantId": "49475778085159",
-        "sku": "B2B-20019336",
-        "cantidad": 8,
-        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 20 · R-5 · blanco nácar",
+        "variantId": "46594302411047",
+        "sku": "B2B-20016823",
+        "cantidad": 5,
+        "nota": "B2b Globo Latex Redondo Fashion Latte — R-5 / PAQUETE X 50 · R-5 · nude",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "47466211836199",
+        "sku": "B2B-20017533",
+        "cantidad": 4,
+        "nota": "B2b Globo Latex Redondo Fashion Latte — R-9 / PAQUETE X 50 · R-9 · nude",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
+        "variantId": "49475778019623",
+        "sku": "B2B-20019347",
+        "cantidad": 3,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6 · R-18 · blanco nácar",
         "origenCantidad": "plan_python",
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
       },
@@ -3916,26 +5171,18 @@
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
       },
       {
+        "variantId": "49475778085159",
+        "sku": "B2B-20019336",
+        "cantidad": 8,
+        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-5 / PAQUETE X 20 · R-5 · blanco nácar",
+        "origenCantidad": "plan_python",
+        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
+      },
+      {
         "variantId": "49475778216231",
         "sku": "B2B-20019344",
         "cantidad": 20,
         "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-12 / PAQUETE X 50 · R-12 · blanco nácar",
-        "origenCantidad": "plan_python",
-        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-      },
-      {
-        "variantId": "49475778019623",
-        "sku": "B2B-20019347",
-        "cantidad": 2,
-        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-18 / PAQUETE X 6 · R-18 · blanco nácar",
-        "origenCantidad": "plan_python",
-        "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
-      },
-      {
-        "variantId": "49475777954087",
-        "sku": "B2B-20019351",
-        "cantidad": 1,
-        "nota": "B2b Globo Latex Redondo Silk Blanco Nácar — R-24 / PAQUETE X 3 · R-24 · blanco nácar",
         "origenCantidad": "plan_python",
         "detalleCantidad": "cantidad resuelta por el plan de Python [data/biblioteca-real/analisis/nueva-sempertex-08.plan.json]"
       },
@@ -3979,7 +5226,7 @@
       },
       {
         "orden": 2,
-        "texto": "Infla los globos blanco nácar, dorados y nude en varios tamaños (5, 9, 12, 18 y 24 pulgadas) y átalos en grupos mezclando los tres colores."
+        "texto": "Infla los globos blanco nácar, dorados y nude en varios tamaños (5, 9, 12 y 18 pulgadas) y átalos en grupos mezclando los tres colores."
       },
       {
         "orden": 3,

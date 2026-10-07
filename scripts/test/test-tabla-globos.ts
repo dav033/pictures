@@ -78,7 +78,9 @@ prueba("las líneas en 0 se descartan y cada color lleva su tono (nunca vacío)"
   const conCero = lineas([{ color: "dorado", tamano_codigo: "R-12", unidades: 0 }, { color: "dorado", tamano_codigo: "R-12", unidades: 4, acabado: "reflex", titulo: "B2b Globo Latex Redondo Reflex Dorado — R-12" }, { color: "rosa claro", tamano_codigo: "R-5", unidades: 2 }]);
   assert.equal(conCero.length, 2);
   for (const linea of conCero) assert.match(linea.hex, /^#[0-9a-f]{6}$/i);
-  assert.equal(conCero[0]!.etiqueta, "Dorado");
+  // Nombre de la fuente única (color-sempertex): el tono Sempertex y su acabado conocido (Reflex → cromado).
+  assert.equal(conCero[0]!.etiqueta, "Dorado cromado");
+  assert.equal(conCero[0]!.hex, "#c5a253", "el hex de la referencia Reflex Dorado del catálogo");
   assert.equal(conCero[1]!.etiqueta, "Rosa claro", "un color fuera de la paleta se muestra tal cual");
   const tabla = tablaGlobos(conCero);
   assert.deepEqual(tabla.columnas.map((columna) => columna.etiqueta), ["5″", "12″"]);

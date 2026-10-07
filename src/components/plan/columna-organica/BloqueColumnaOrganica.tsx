@@ -15,6 +15,7 @@ import { EditorColumnaOrganica } from "./EditorColumnaOrganica";
 import { useEditorColumnaOrganica } from "./usarEditorColumnaOrganica";
 import { useVistaColumnaOrganica } from "./usarVistaColumnaOrganica";
 import { peticionVistaColumnaOrganica, type PanelVistaColumnaOrganica, type PiezaVistaColumnaOrganica } from "./vista-columna-organica";
+import { RESERVA_CLIENTE, useVozCliente } from "../motor/voz-editor";
 
 /**
  * "Armado de la columna" dentro del detalle de una pieza (ADR-0034): el dibujo que emite el motor del
@@ -94,6 +95,8 @@ function porTamano(cantidades: Readonly<Record<string, number | undefined>>): st
  * Python) y cuántos lleva de cada tamaño; sin ella se muestra solo el conteo, sin inventar la compra.
  */
 function MaterialesColumna({ columna, leyenda }: { columna: Listo["vista"]["columna"]; leyenda: readonly ColorLeyenda[] }) {
+  // En la guiada, UNA cifra: la que lleva la pieza (la de Python); la reserva de compra se explica en una línea.
+  const cliente = useVozCliente();
   const filas: Array<{ material: number; cantidad: number; comprar: number | null; tamanos: string }> = columna.compra.length
     ? columna.compra.map((linea) => ({ material: linea.material, cantidad: linea.cantidad, comprar: linea.comprar, tamanos: porTamano(linea.por_tamano) }))
     : [...columna.conteo.reduce((por, linea) => por.set(linea.material, (por.get(linea.material) ?? 0) + linea.cantidad), new Map<number, number>())].map(
@@ -102,12 +105,12 @@ function MaterialesColumna({ columna, leyenda }: { columna: Listo["vista"]["colu
   if (!filas.length) return null;
   return (
     <table data-testid="materiales-armado-columna-organica" className="w-full text-[13px]">
-      <caption className="sr-only">Globos por color y lo que hay que comprar, según el motor</caption>
+      <caption className="sr-only">{cliente ? "Globos por color" : "Globos por color y lo que hay que comprar, según el motor"}</caption>
       <thead>
         <tr className="text-xs text-texto-suave">
           <th scope="col" className="pb-1 text-left font-medium">Color</th>
-          <th scope="col" className="pb-1 pl-3 text-right font-medium">Lleva</th>
-          <th scope="col" className="pb-1 pl-3 text-right font-medium">Comprar</th>
+          <th scope="col" className="pb-1 pl-3 text-right font-medium">{cliente ? "Globos" : "Lleva"}</th>
+          {!cliente && <th scope="col" className="pb-1 pl-3 text-right font-medium">Comprar</th>}
         </tr>
       </thead>
       <tbody>
@@ -125,7 +128,7 @@ function MaterialesColumna({ columna, leyenda }: { columna: Listo["vista"]["colu
                 </span>
               </th>
               <td className="py-1 pl-3 text-right tabular-nums text-texto">{entero.format(fila.cantidad)}</td>
-              <td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{fila.comprar === null ? "—" : entero.format(fila.comprar)}</td>
+              {!cliente && <td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{fila.comprar === null ? "—" : entero.format(fila.comprar)}</td>}
             </tr>
           );
         })}
@@ -133,9 +136,14 @@ function MaterialesColumna({ columna, leyenda }: { columna: Listo["vista"]["colu
       {columna.total_comprar > 0 && (
         <tfoot>
           <tr className="border-t border-borde">
-            <th scope="row" colSpan={2} className="py-1 text-left text-xs font-semibold text-texto">Total a comprar</th>
-            <td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{entero.format(columna.total_comprar)}</td>
+            {cliente ? (
+              <><th scope="row" className="py-1 text-left text-xs font-semibold text-texto">Total</th><td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{entero.format(filas.reduce((suma, fila) => suma + fila.cantidad, 0))}</td></>
+            ) : (
+              <><th scope="row" colSpan={2} className="py-1 text-left text-xs font-semibold text-texto">Total a comprar</th>
+            <td className="py-1 pl-3 text-right font-semibold tabular-nums text-texto">{entero.format(columna.total_comprar)}</td></>
+            )}
           </tr>
+          {cliente && <tr><td colSpan={2} className="pt-1 text-[11px] leading-snug text-texto-suave">{RESERVA_CLIENTE}</td></tr>}
         </tfoot>
       )}
     </table>
@@ -294,12 +302,13 @@ function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReinten
   const tenue = actualizando || vencido ? "opacity-60 transition-opacity motion-reduce:transition-none" : "";
   const { columna, grafica } = vista;
   // Las medidas reales de la columna armada, no las declaradas: el motor ajusta lo que no cabe y lo cuenta en `avisos`.
+  const cliente = useVozCliente();
   const medidas: Array<{ termino: string; valor: string }> = [
     { termino: "Alto", valor: metrosCliente(columna.alto_m) },
     { termino: "Ancho", valor: metrosCliente(columna.ancho_m) },
     { termino: "Grosor en la base", valor: metrosCliente(columna.grosor_base_m) },
     { termino: "Grosor en la punta", valor: metrosCliente(columna.grosor_punta_m) },
-    { termino: "Globos por metro", valor: conDecimal.format(columna.globos_por_metro) },
+    ...(cliente ? [] : [{ termino: "Globos por metro", valor: conDecimal.format(columna.globos_por_metro) }]),
   ];
   const { ramas, flores } = columna.adornos;
   return (
@@ -317,7 +326,7 @@ function ColumnaDibujada({ estado, leyenda, nombrePieza, repeticiones, onReinten
         <div className="min-w-0 flex-1 space-y-2.5">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 self-center">
-              <p className="text-[13px] font-semibold text-texto">Armado de la columna</p>
+              <p className="text-[13px] font-semibold text-texto">{cliente ? "Así queda" : `Armado de la columna`}</p>
               <span aria-live="polite" className="inline-flex items-center gap-1 text-[11px] font-medium text-texto-suave">
                 {actualizando && <><LoaderCircle className="size-3 animate-spin text-acento motion-reduce:animate-none" aria-hidden="true" />Actualizando…</>}
                 {vencido && "Es el último dibujo que llegó."}

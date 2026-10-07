@@ -50,6 +50,7 @@ assert.equal(colorDeTitulo("B2b Globo Latex Redondo Fashion Blanco", "matte"), "
 // Colores vivos: el nombre comercial no los aclara y FLUX recibe el hex real del globo (2026-10-06).
 assert.equal(colorDeTitulo("B2b Globo Latex Redondo Fashion Rosa", "matte"), "vivid pink (#E04B87)");
 assert.equal(colorDeTitulo("B2b Globo Latex Redondo Fashion Azul", "matte"), "vivid cyan blue (#01B2E8)");
+assert.equal(colorDeTitulo("B2b Globo Latex Redondo Satin Blanco", "satin pearlescent"), "white (#F7F7F5)");
 assert.doesNotMatch(colorDeTitulo("B2b Globo Latex Redondo Reflex Plata", "mirror-like chrome"), /#/, "en cromados el hex engaña: solo palabras");
 const captionDeTitulo = (titulo: string) => compileProductPrompt({
   sceneSpec,
@@ -60,4 +61,11 @@ assert.match(captionDeTitulo("B2b Globo Latex Redondo Silk Rosa Primaveral"), /b
 assert.match(captionDeTitulo("B2b Globo Latex Redondo Pastel Mate Nude"), /(?:pale|light|muted).*nude beige/i);
 assert.match(captionDeTitulo("B2b Globo Latex Redondo Reflex Plata"), /bright silver.*reflective chrome|reflective chrome.*bright silver/i);
 assert.doesNotMatch(captionDeTitulo("B2b Globo Latex Redondo Reflex Plata"), /reflecting the room/i);
-console.log("Perceptual catalog colors (pink, nude, chrome silver, gold, navy, white): OK");
+// El hex llega pegado a su color hasta el texto final: nunca «white, #F7F7F5» (FLUX lo leía como otro globo).
+const captionBlanco = captionDeTitulo("B2b Globo Latex Redondo Satin Blanco");
+assert.match(captionBlanco, /satin pearlescent white \(#F7F7F5\) latex balloons/, captionBlanco);
+assert.doesNotMatch(captionBlanco, /,\s*\(?#|#[0-9A-F]{6}\s+and\b/i, captionBlanco);
+const preflightBlanco = preflightFluxPrompt({ sceneSpec, clauses: compileProductPrompt({ sceneSpec, visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }), productCatalogTitles: new Map([[id, "B2b Globo Latex Redondo Satin Blanco"]]) }).clauses, prompt: captionBlanco });
+assert.equal(preflightBlanco.ok, true, preflightBlanco.errors.join("; "));
+assert.ok(!preflightBlanco.warnings.some((aviso) => /paréntesis/.test(aviso)), "el hex pegado no cuenta como nota al margen");
+console.log("Perceptual catalog colors (pink, nude, chrome silver, gold, navy, white, hex pegado): OK");

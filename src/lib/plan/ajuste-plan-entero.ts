@@ -4,7 +4,7 @@ import { llamarPythonCatalogSelection } from "@/lib/ia/nucleo/python-adapter";
 import { getRagPool } from "@/lib/rag/db";
 import { encolarEscrituraObservabilidad, registrarPlanAudit } from "@/lib/rag/observability/log";
 import { decidir } from "@/lib/registro/servidor";
-import { acabadoMotorDeTitulo, planConColor, planSinPieza, type GloboNuevo } from "./ajuste-estructural";
+import { acabadoMotorDeTitulo, planConColor, planConColorReemplazado, planSinPieza, type GloboNuevo } from "./ajuste-estructural";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import { conteosDeLaEdicion, contextoBaseExigido, correlationDesde, lecturasGuirnaldaDeLaEdicion, MENSAJE_APROBACION_INVALIDA, type AplicarEdicionResultado } from "./aplicar-edicion";
 import { allowlistDesdeMapa, crearTokenPlan, mapaDesdeAllowlist, verificarTokenAprobacion, type ContextoPlan } from "./aprobacion";
@@ -30,7 +30,7 @@ import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
 
 type Entrada = { base: BasePlan; signal?: AbortSignal; pool?: Pool };
 
-type Verificado = {
+export type Verificado = {
   contexto: ContextoPlan;
   snapshot: string;
   whitelist: Map<string, Set<string>>;
@@ -57,7 +57,7 @@ function resolver(base: BasePlan, verificado: Pick<Verificado, "snapshot" | "cor
 }
 
 /** Lo mismo que verifica `aplicarEdicionPlan`: token firmado, procedencia Python y que el plan base no cambió. */
-async function verificarBase({ base, signal }: Entrada): Promise<Verificado> {
+export async function verificarBase({ base, signal }: Entrada): Promise<Verificado> {
   const { aprobacion, contexto } = contextoBaseExigido(base);
   const snapshot = exigirContextoPython(contexto);
   const correlationId = correlationDesde(base.request_id ?? aprobacion.requestId);
@@ -195,4 +195,33 @@ export async function agregarColorPlan(input: Entrada & { color: string; product
     entrada: { plan_hash: input.base.plan_hash, color: input.color, variantesPedidas: input.variantIds.length },
   });
   return { ...firmar(verificado, resolucion, allowlist, { accion: "agregar_color", color: globo.color, product_id: input.productId, piezas }, pool), piezas };
+}
+
+const SIN_TAMANOS_DEL_REEMPLAZO = "El catálogo no tiene ese globo en todos los tamaños que lleva ese color. Prueba con otro globo.";
+
+/**
+ * Cambia UN color del plan por otro globo del catálogo («Cambiar» de «Ajustar mi plan»), en todas sus medidas: cada
+ * material de ese color pasa a ser el producto elegido en su mismo lugar, con su misma parte (`planConColorReemplazado`).
+ * Medidas, armados, nombres y los demás colores no se tocan; Python vuelve a contar y a firmar. Si el globo nuevo no
+ * cubre algún tamaño que ese color necesita, no se cambia nada (el plan quedaría con globos sin comprar).
+ */
+export async function reemplazarColorPlan(input: Entrada & { color: string; productIdAnterior?: string; estructuraIds?: readonly string[]; colorNuevo: string; productId: string; variantIds: readonly string[] }): Promise<AplicarEdicionResultado & { piezas: string[] }> {
+  const pool = input.pool ?? getRagPool();
+  const verificado = await verificarBase(input);
+  const admitidas = await admitirVariantes(verificado, input.productId, input.variantIds, input.signal);
+  if (!admitidas.colores.some((color) => normal(color) === normal(input.colorNuevo))) {
+    throw new PlanEditError(422, "Ese globo no es del color que elegiste. Prueba con otro.");
+  }
+  const globo = { product_id: input.productId, color: normal(input.colorNuevo), acabadoMotor: acabadoMotorDeTitulo(admitidas.titulo) };
+  const objetivo = { color: input.color, ...(input.productIdAnterior ? { product_id: input.productIdAnterior } : {}), ...(input.estructuraIds?.length ? { estructuras: new Set(input.estructuraIds) } : {}) };
+  const cambio = planConColorReemplazado(input.base.plan, objetivo, globo);
+  if (!cambio.piezas.length) throw new PlanEditError(422, cambio.omitidas.length ? "Esa pieza ya lleva ese globo. Prueba con otro." : "Tu plan no lleva ese color.");
+  const allowlist = allowlistDesdeMapa(verificado.whitelist);
+  const resolucion = await resolver(input.base, verificado, planValido(cambio.plan, "No pude cambiar ese color en tus piezas."), allowlist, input.signal);
+  const faltan = piezasSinCobertura(verificado.antes.resuelto, resolucion.resuelto, input.productId);
+  if (faltan.size) throw new PlanEditError(422, SIN_TAMANOS_DEL_REEMPLAZO);
+  decidir("regla:reemplazar_color", "cambiar un color del plan por otro globo del catálogo sin tocar medidas ni los demás colores", { color: normal(input.color), colorNuevo: globo.color, product_id: input.productId, titulo: admitidas.titulo, variantes: admitidas.variantIds, acabadoMotor: globo.acabadoMotor, piezas: cambio.piezas, omitidas: cambio.omitidas }, {
+    entrada: { plan_hash: input.base.plan_hash, color: input.color, productIdAnterior: input.productIdAnterior ?? null, estructuras: input.estructuraIds ?? null, variantesPedidas: input.variantIds.length },
+  });
+  return { ...firmar(verificado, resolucion, allowlist, { accion: "reemplazar_color", color: normal(input.color), colorNuevo: globo.color, product_id: input.productId, piezas: cambio.piezas }, pool), piezas: cambio.piezas };
 }

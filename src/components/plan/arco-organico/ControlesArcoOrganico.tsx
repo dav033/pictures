@@ -8,6 +8,7 @@ import type { LimitesArcoOrganico, OpcionesArmadoArcoOrganico } from "@/lib/plan
 import { metrosCliente } from "@/lib/plan/presentacion-cliente";
 import { DeslizadorArco, GrupoOpcionesArco, InterruptorArco, SeleccionArco } from "../arco/controles-arco";
 import { colorDe, type ColorLeyenda } from "../patron/leyenda";
+import { useVozCliente } from "../motor/voz-editor";
 import {
   PASO_FRACCION,
   conAcabado,
@@ -117,6 +118,8 @@ function hastaDondeLlega(valor: number): string {
 }
 
 export function ControlesArcoOrganico({ borrador, opciones, limites, leyenda, onCambiar }: Props) {
+  // En la guiada no se muestran los mandos de decorador (papel del color, hasta dónde llega la banda).
+  const cliente = useVozCliente();
   const rangoDe = {
     cima: rangoDelContrato(FormaArcoOrganicoSchema.shape.cima, 0.01),
     curva: rangoDelContrato(FormaArcoOrganicoSchema.shape.curva, 0.1),
@@ -145,7 +148,8 @@ export function ControlesArcoOrganico({ borrador, opciones, limites, leyenda, on
   return (
     <div className="space-y-2" data-testid="controles-arco-organico">
       <div className="space-y-1 rounded-xl bg-superficie px-3 py-1 ring-1 ring-borde-suave ring-inset">
-        <EnCantidad
+        {!cliente && (
+          <EnCantidad
           etiqueta="Hasta dónde llega la banda"
           ayuda="Con el recorrido completo la banda baja por las dos patas; acortándolo queda un medio arco que termina en el aire."
           valor={forma.corte}
@@ -154,6 +158,7 @@ export function ControlesArcoOrganico({ borrador, opciones, limites, leyenda, on
           onConfirmar={(v) => onCambiar(conForma(borrador, "corte", v))}
           testid="corte-arco-organico"
         />
+        )}
         {medioArco && (
           <div className="pb-2">
             <InterruptorArco
@@ -226,7 +231,7 @@ export function ControlesArcoOrganico({ borrador, opciones, limites, leyenda, on
               <EnCantidad etiqueta={`Cuánto pesa el color ${numero}`} ayuda="Cuántos globos de este color hay frente a los demás: más peso, más se ve." valor={entrada.peso} rango={rangoDe.pesoDeColor} onConfirmar={(v) => onCambiar(conPesoDeColor(borrador, posicion, v))} testid={`peso-arco-organico-${numero}`} />
               <div className="grid gap-2 @sm:grid-cols-2">
                 <SeleccionArco etiqueta={`Acabado del color ${numero}`} ayuda="Cambia el aspecto del globo (brillo, confeti, transparencia), no su color." opciones={opciones.acabados.map((acabado) => ({ valor: acabado.valor, etiqueta: acabado.texto }))} valor={entrada.acabado} onCambiar={(v) => { const hallado = opciones.acabados.find((acabado) => acabado.valor === v); if (hallado) onCambiar(conAcabado(borrador, posicion, hallado.valor)); }} testid={`acabado-arco-organico-${numero}`} />
-                <SeleccionArco etiqueta={`Papel del color ${numero}`} ayuda="Normal va dentro de los racimos; acento son globos sueltos que asoman por fuera." opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-arco-organico-${numero}`} />
+                {!cliente && <SeleccionArco etiqueta={`Papel del color ${numero}`} ayuda="Normal va dentro de los racimos; acento son globos sueltos que asoman por fuera." opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-arco-organico-${numero}`} />}
               </div>
               <button
                 type="button"

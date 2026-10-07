@@ -111,6 +111,7 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/plan-armado-guirnalda/route.ts": "armado (Python)",
   "src/app/api/plan-armado-guirnalda-organica/route.ts": "armado (Python)",
   "src/app/api/plan-dibujo-estructura/route.ts": "dibujo de estructura (Python)",
+  "src/app/api/plan-idea/route.ts": "plan exacto de una idea de la biblioteca (Python, sin modelo)",
   "src/app/api/cotizacion-profesional/route.ts": "cotización (Python)",
   "src/app/api/catalogo/piezas/route.ts": "búsqueda de piezas del catálogo (vista clásica)",
   "src/app/api/happie/recomendar/route.ts": "Happie (IA)",

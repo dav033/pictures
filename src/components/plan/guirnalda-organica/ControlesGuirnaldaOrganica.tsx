@@ -13,6 +13,7 @@ import type { LimitesGuirnaldaOrganica, OpcionesArmadoGuirnaldaOrganica } from "
 import { metrosCliente } from "@/lib/plan/presentacion-cliente";
 import { DeslizadorArco, GrupoOpcionesArco, SeleccionArco } from "../arco/controles-arco";
 import { colorDe, type ColorLeyenda } from "../patron/leyenda";
+import { useVozCliente } from "../motor/voz-editor";
 import {
   PASO_FRACCION,
   conAcabado,
@@ -133,6 +134,8 @@ function ladoCargado(valor: number): string {
 }
 
 export function ControlesGuirnaldaOrganica({ borrador, opciones, limites, leyenda, onCambiar }: Props) {
+  // En la guiada no se muestran los mandos de decorador (papel del color, hasta dónde llega la banda).
+  const cliente = useVozCliente();
   const rangoDe = {
     onda: rangoDeOnda(limites),
     ondas: rangoDelContrato(FormaGuirnaldaOrganicaSchema.shape.ondas, 1),
@@ -199,7 +202,7 @@ export function ControlesGuirnaldaOrganica({ borrador, opciones, limites, leyend
               <EnCantidad etiqueta={`Cuánto pesa el color ${numero}`} ayuda="Cuántos globos de este color hay frente a los demás: más peso, más se ve." valor={entrada.peso} rango={rangoDe.pesoDeColor} onConfirmar={(v) => onCambiar(conPesoDeColor(borrador, posicion, v))} testid={`peso-guirnalda-${numero}`} />
               <div className="grid gap-2 @sm:grid-cols-2">
                 <SeleccionArco etiqueta={`Acabado del color ${numero}`} ayuda="Cambia el aspecto del globo (brillo, confeti, transparencia), no su color." opciones={opciones.acabados.map((acabado) => ({ valor: acabado.valor, etiqueta: acabado.texto }))} valor={entrada.acabado} onCambiar={(v) => { const hallado = opciones.acabados.find((acabado) => acabado.valor === v); if (hallado) onCambiar(conAcabado(borrador, posicion, hallado.valor)); }} testid={`acabado-guirnalda-${numero}`} />
-                <SeleccionArco etiqueta={`Papel del color ${numero}`} ayuda="Normal va dentro de los racimos; acento son globos sueltos que asoman por fuera." opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-guirnalda-${numero}`} />
+                {!cliente && <SeleccionArco etiqueta={`Papel del color ${numero}`} ayuda="Normal va dentro de los racimos; acento son globos sueltos que asoman por fuera." opciones={opciones.roles.map((rol) => ({ valor: rol, etiqueta: NOMBRES_ROL[rol] ?? rol }))} valor={entrada.rol} onCambiar={(v) => { const hallado = opciones.roles.find((rol) => rol === v); if (hallado) onCambiar(conRol(borrador, posicion, hallado)); }} testid={`rol-guirnalda-${numero}`} />}
               </div>
               <button
                 type="button"
