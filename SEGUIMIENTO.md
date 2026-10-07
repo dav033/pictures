@@ -16,31 +16,37 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO (se reescribe cada 5 latidos si algo cambió) — latido 115, 2026-10-07 ~00:28
+## 📋 ESTADO VIVO + CHECKPOINT (latido 120, 2026-10-07 ~00:50) — LEER PRIMERO AL RETOMAR
 
-**En `main` (Vercel): ba7be2d**. **VPS en e447cfe** (granel exige desplegarlo; avisar). **Pendiente del dueño:** `ARMADO_ARCO_COLUMNA_V1`.
+**En `main` (Vercel): ba7be2d** + docs. **VPS en e447cfe** (granel y la caché de lecturas por huella NO lo exigen; el granel sí para
+verse en producción). **Pendiente del dueño:** `ARMADO_ARCO_COLUMNA_V1` en producción (sin él la columna orgánica no trae armado).
 
-**Hecho SIN subir (106 archivos; commit grande verificado cuando termine corrector:1):** C «Agregar al plan»; B2 idea amplia con productos
-Sempertex; imagen-fiel (rehacer con la foto, colores en proporción); hex pegado al color en FLUX; arreglos-p88 (caché de dibujos sin ráfagas
-ni 429, columnas clásicas con dibujo, cambio de temática a mitad, Spiderman en sus colores, total por chat, nombres de color unificados);
-auditoría de la biblioteca (25/31 corregidas: tamaños reales y remates, productos Sempertex reales, 203 variantes; «Columnas negras y doradas»
-con bola Fashion Negro 36″ y Metal Dorado; `data/biblioteca-real/correcciones-auditoria.json`).
+**HECHO SIN SUBIR (~130 archivos; commit grande verificado cuando verificador:2 del encargo dé el visto bueno y tsc pase en e3-verif):**
+C «Agregar al plan» · B2 idea amplia con productos Sempertex · imagen-fiel (rehacer con la foto, colores en proporción) · hex pegado al color
+en FLUX (pedido 1043386) · arreglos-p88 (caché de dibujos sin ráfagas/429, columnas clásicas con dibujo, cambio de temática, Spiderman en
+sus colores, total por chat, nombres de color unificados) · auditoría de la biblioteca (25/31 corregidas, remates reales, 203 variantes
+Sempertex) · corrector:1 (chips con producto Sempertex, «otras ideas» sin armar plan, parejas simétricas, fallos permanentes del motor) ·
+B1 plan EXACTO desde una idea (plan-de-idea.ts, plan-desde-idea.ts, /api/plan-idea, planes-ideas.json + precomputar-planes-ideas.ts
+--check/--verificar; respaldo al camino de siempre) · inputs de negocio rediseñados · lectura determinista (huella 16×16 de las 10 fotos
+de ejemplo → misma lectura en las dos vistas sin IA; plan fiel a los colores leídos con reintento y aviso; salida digna al 3.er rechazo) ·
+guardia: /api/plan-idea clasificada.
 
-**Banco:** línea base clásica 6/10, guiada 4/10. Comparador: la lectura no es determinista; la caché de las fotos de ejemplo estaba muerta (v16).
+**Banco:** línea base clásica 6/10, guiada 4/10 (antes de lector/caché/calidad). Repetir 3× tras el commit (~US$7): `npx tsx
+scripts/eval/banco-fotos-ejemplo.ts correr --vistas clasica,guiada --repeticiones 3 --tope-usd 4 --concurrencia 2 --salida <scratchpad>/banco`
+(ojo: la caché nueva de lecturas responde a las fotos de la galería; para medir lecturas nuevas mandar `sin_cache`).
 
-**Corriendo (6):** corrector:1 del encargo · calidad-banco (talla inexistente → la más cercana, «catalog color», pasteles, burdeos/oro rosa,
-proporción; re-mide 6 fotos) · probador:104 · lectura-determinista (caché v20 robusta para las 10 fotos de ejemplo, plan fiel a los colores
-leídos, salida digna si no converge) · editor (globos libres, chips en el editor, colores del catálogo, «Agrandar» con medida, parejas) ·
-inputs de negocio (luego ayudas + verificador + corrector).
+**Corriendo (6, tope de concurrencia):** verificador:2 del encargo (`wf_de9b969f-a93`) · calidad-banco (`wf_4b3e1978-044`: talla inexistente
+→ cercana, «catalog color», pasteles, burdeos/oro rosa, proporción; re-mide 6 fotos) · editor (`wf_1dc99ca2-911`: globos libres, chips en el
+editor, colores del catálogo, «Agrandar» con medida, parejas; luego ayudas + verificador + corrector) · colores-claros-ideas
+(`wf_763c0859-a94`) · arreglos-u97 (`wf_b8d62aaf-062`: uso sin repetir, edades 7+, datos del decorador, palabras del cliente en plan/escena,
+«Ajustes que hice») · probador:120.
 
-**Novedades 110→115:** colores-claros-ideas lanzado (celeste/colores claros, boda blanco y dorado con ≥3 ideas, nombres en la
-cotización). Mi SendMessage al corrector arrancó una SEGUNDA copia del mismo agente (memoria feedback-sendmessage-workflow): esa copia
-termina B1 «Crear mi plan con esta idea» exacto (plan-de-idea.ts, plan-desde-idea.ts, /api/plan-idea, plan-exacto-idea.ts,
-planes-ideas.json + precomputar-planes-ideas.ts); la original sigue con el resto de hallazgos. En cola también `scratchpad/wf-chat-editar.js`
-(editar el plan desde el chat sin rehacerlo, elegir idea por texto) tras el editor.
-**Cola:** `scratchpad/wf-arreglos-u97.js` (plan desde idea exacta, uso sin repetir, edades 7+, datos del decorador, palabras del cliente en
-el plan y la escena, «Ajustes que hice») tras corrector:1; ritmo: usabilidad (105/110), comparador (110); banco 3× tras el commit (~US$7);
-Python/VPS: cotización con líneas repetidas y mezcla de paquetes.
+**Cola:** `scratchpad/wf-chat-editar.js` (editar el plan por chat sin rehacerlo; elegir idea por texto) tras el editor; ritmo: usabilidad,
+comparador, verificador; banco 3×; Python/VPS: cotización con líneas repetidas y mezcla de paquetes (44 globos → 300 comprados).
+
+**Lecciones de esta noche (memoria):** tope 6 agentes a la vez (concurrencia, no cantidad); SendMessage a un agente de workflow arranca una
+2.ª copia (no usarlo para reencargar); los scripts de workflow editados con Python a veces son rechazados («control characters»): lanzarlos
+en línea; commits selectivos con `git apply --cached` de los trozos de cada agente y tsc en e3-verif antes de cada push.
 <!-- ESTADO-VIVO:FIN -->
 
 ## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
