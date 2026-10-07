@@ -7,6 +7,8 @@
 // Antes de cualquier import del registro: la lista de secretos del entorno se lee la primera vez.
 const SECRETO_ENTORNO = "valor-super-secreto-del-entorno-9137";
 process.env.PRUEBA_REGISTRO_API_KEY = SECRETO_ENTORNO;
+// Fuera de Next el registro está inactivo por defecto (los scripts no ensucian stdout ni data/registros).
+process.env.REGISTRO_ACTIVO = "1";
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -27,6 +29,7 @@ import { diagnosticoEscritor, esperarRegistros, fechaUtc, limpiarAntiguos, reini
 import { esClaveSecreta, MARCA_OCULTO, redactar, resumirDatos, sanearTexto, serializarError } from "../../src/lib/registro/redaccion";
 import { auditar, registrar } from "../../src/lib/registro/registro";
 import { conRegistro } from "../../src/lib/registro/ruta";
+import { resolverVersionCodigo, versionCodigo } from "../../src/lib/registro/version";
 
 const BASE = mkdtempSync(path.join(tmpdir(), "prueba-registro-"));
 let pruebas = 0;
@@ -508,6 +511,76 @@ async function principal(): Promise<void> {
       delete globales.document;
     }
     ok("navegador: ids de conversación por vista, límite 30/min con conteo de suprimidos, sendBeacon→fetch, recorte, sin bucles");
+  }
+
+  /* ---------- Segunda pasada: versión, cuerpos casi completos, banderas, flujos, registro inactivo ---------- */
+  {
+    const raiz = nuevaRaiz("segunda-pasada");
+    // Versión: entorno > version-codigo.json (sin expandir no cuenta) > .git (+local).
+    const sha = "0123456789abcdef0123456789abcdef01234567";
+    assert.equal(resolverVersionCodigo({ VERCEL_GIT_COMMIT_SHA: sha } as unknown as NodeJS.ProcessEnv, BASE).corta, "0123456789ab");
+    const conArchivo = path.join(BASE, "con-archivo");
+    mkdirSync(conArchivo, { recursive: true });
+    writeFileSync(path.join(conArchivo, "version-codigo.json"), JSON.stringify({ commit: "$Format:%H$" }));
+    assert.equal(resolverVersionCodigo({} as NodeJS.ProcessEnv, conArchivo).origen === "archivo", false, "un $Format sin expandir no es versión");
+    writeFileSync(path.join(conArchivo, "version-codigo.json"), JSON.stringify({ commit: sha, fecha: "2026-10-06T20:00:00-05:00" }));
+    const delArchivo = resolverVersionCodigo({} as NodeJS.ProcessEnv, conArchivo);
+    assert.deepEqual([delArchivo.origen, delArchivo.corta, delArchivo.fecha], ["archivo", "0123456789ab", "2026-10-06T20:00:00-05:00"]);
+    const local = resolverVersionCodigo({} as NodeJS.ProcessEnv, process.cwd());
+    assert.ok(local.origen === "git-local" ? /^[0-9a-f]{12}\+local$/.test(local.corta) : local.origen === "desconocida", `versión local: ${JSON.stringify(local)}`);
+
+    const id = "conv-segunda-pasada";
+    const cuerpoGrande = "globo rosa, ".repeat(12_500); // 150 000 caracteres de texto (no base64)
+    const fetchPython = crearFetchAuditado(async (_entrada, init) => {
+      const enviado = JSON.parse(String(init?.body)) as { payload: unknown };
+      return Response.json({ payload: { eco: enviado.payload, text: "{\"ok\":true}", model: "gemini-x", usage: { prompt_token_count: 9, candidates_token_count: 3 } } });
+    }, { tipo: "python", propositoIa: (ruta) => (ruta.endsWith("/ia/intent-parse") ? "parser_intencion" : undefined) });
+    const fetchFlujo = crearFetchAuditado(async () => new Response(new ReadableStream({ start(controlador) { controlador.enqueue(new TextEncoder().encode('{"type":"text"}\n')); } }), { headers: { "content-type": "application/x-ndjson" } }), { tipo: "python" });
+    await conContexto({ conversacion: id, solicitud: "sol-segunda" }, async () => {
+      const respuesta = await fetchPython("http://py/internal/v1/plan/resolve", { method: "POST", body: JSON.stringify({ payload: { grande: cuerpoGrande } }) });
+      assert.equal(((await respuesta.json()) as { payload: { eco: { grande: string } } }).payload.eco.grande.length, 150_000, "la respuesta llega intacta");
+      await fetchPython("http://py/internal/v1/ia/intent-parse", { method: "POST", body: JSON.stringify({ payload: { message: "hola", model: "gemini-x" } }) });
+      // Un flujo NDJSON no se clona: el consumidor lo lee (y lo corta) como siempre.
+      const flujo = await fetchFlujo("http://py/internal/v1/ia/chat-turn-stream", { method: "POST", body: "{}" });
+      const lector = flujo.body!.getReader();
+      assert.ok((await lector.read()).value);
+      await lector.cancel();
+      await envolverChatPort({ id: "gemini", modelo: "m", thinkingLevel: undefined, turno: async () => ({ texto: "hola", llamadas: [], uso: { entrada: 1, salida: 1 }, modelo: "m" }), turnoStream: async function* () { /* nada */ } } as unknown as ChatPort, { proposito: "chat_guiado" })
+        .turno({ sistema: "s", historial: [], herramientas: [] } as unknown as PeticionChat);
+    });
+    await esperarRegistros();
+    const lineas = leerJsonl(archivoConversacion(raiz, id));
+    for (const linea of lineas) assert.equal(linea.version, versionCodigo().corta, "cada línea lleva la versión del código");
+    const python = lineas.filter((linea) => linea.tipo === "python");
+    const resolve = python.find((linea) => (linea.datos as { ruta: string }).ruta === "/internal/v1/plan/resolve")!.datos as { cuerpoEnviado: { payload: { grande: string } }; cuerpoRecibido: { payload: { eco: { grande: string } } } };
+    assert.equal(resolve.cuerpoEnviado.payload.grande.length, 150_000, "cuerpo enviado al Python completo (hasta ~200 kB)");
+    assert.equal(resolve.cuerpoRecibido.payload.eco.grande.length, 150_000, "cuerpo recibido del Python completo");
+    const flujoPython = python.find((linea) => (linea.datos as { ruta: string }).ruta.endsWith("chat-turn-stream"))!.datos as { cuerpoRecibido: { omitido: string } };
+    assert.equal(flujoPython.cuerpoRecibido.omitido, "flujo (ver respuesta_ia)");
+    const respuestaIa = lineas.find((linea) => linea.tipo === "respuesta_ia" && (linea.datos as { proposito: string }).proposito === "parser_intencion")!.datos as { texto: string; modelo: string; tokens: { entrada: number } };
+    assert.deepEqual([respuestaIa.texto, respuestaIa.modelo, respuestaIa.tokens.entrada], ['{"ok":true}', "gemini-x", 9], "la respuesta de IA del Python trae texto, modelo y tokens");
+    const llamadas = lineas.filter((linea) => linea.tipo === "llamada_ia").map((linea) => linea.datos as { banderas?: Record<string, unknown>; modelo?: string });
+    assert.ok(llamadas.length >= 2);
+    for (const llamada of llamadas) {
+      assert.equal(typeof llamada.banderas?.CHAT_PYTHON_ENABLED, "boolean", "cada llamada_ia lleva las banderas de IA");
+      assert.ok(llamada.banderas?.GEMINI_CHAT_MODEL, "y el modelo configurado");
+    }
+
+    // Fuera de Next (sin NEXT_RUNTIME ni REGISTRO_ACTIVO=1) el registro no escribe nada y el fetch pasa intacto.
+    const inactiva = nuevaRaiz("inactiva", { activo: false });
+    let llamado = 0;
+    const directo = crearFetchAuditado(async () => { llamado += 1; return Response.json({ ok: true }); }, { tipo: "python" });
+    const manejador = conRegistro("/api/prueba", async () => Response.json({ hola: 1 }));
+    await conContexto({ conversacion: "conv-inactiva" }, async () => {
+      await directo("http://py/internal/v1/echo", { method: "POST", body: "{}" });
+      auditar("decision", { quien: "regla:x", que: "y", resultado: 1 });
+      registrar("info", "prueba.inactiva");
+      assert.deepEqual(await (await manejador(new Request("http://x/api/prueba", { method: "POST", body: "{}", headers: { "content-type": "application/json" } }))).json(), { hola: 1 });
+    });
+    await esperarRegistros();
+    assert.equal(llamado, 1);
+    assert.equal(todosLosArchivos(inactiva).length, 0, "registro inactivo: ningún archivo");
+    ok("segunda pasada: versión en cada línea (entorno, archivo de git archive, .git), cuerpos del Python casi completos, IA del Python con texto/modelo/tokens, banderas en cada llamada_ia, flujos sin clonar, inactivo fuera de Next");
   }
 
   /* ---------- Ningún secreto en disco ---------- */

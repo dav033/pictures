@@ -5,6 +5,7 @@ import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traduc
 import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { isPythonAdapterError, llamarPythonCotizacionProfesional, pythonErrorBody, PYTHON_MAX_BODY_BYTES } from "@/lib/ia/nucleo/python-adapter";
 import { EDICION_PYTHON_DEADLINE_MS } from "@/lib/plan/edicion-python";
+import { conRegistro } from "@/lib/registro/servidor";
 
 /**
  * Cotización profesional: el navegador manda los materiales de la cotización
@@ -46,7 +47,10 @@ async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
   }
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/cotizacion-profesional", atenderPOST);
+
+async function atenderPOST(request: Request) {
   const requestIdHttp = requestIdDe(request);
   const cabeceras = { "X-Request-ID": requestIdHttp };
   const rechazoTransporte = (status: number, mensaje: string, codigo: string) => {

@@ -1,8 +1,8 @@
-import "server-only";
 import { existsSync } from "node:fs";
 import { appendFile, mkdir, readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { configuracion } from "./configuracion";
+import { versionCodigo } from "./version";
 
 /**
  * Escritura de archivos JSONL con cola asíncrona: `escribirLinea` solo encola (nunca espera ni lanza); un
@@ -114,7 +114,7 @@ function avisoUnaVez(clave: string, evento: string, datos: Record<string, unknow
   if (actual.avisos.has(clave)) return;
   actual.avisos.add(clave);
   try {
-    const linea = JSON.stringify({ ts: new Date().toISOString(), nivel: "warn", servicio: "next", entorno: configuracion().entorno, evento, datos });
+    const linea = JSON.stringify({ ts: new Date().toISOString(), nivel: "warn", servicio: "next", entorno: configuracion().entorno, version: versionCodigo().corta, evento, datos });
     console.warn(linea);
     if (actual.modo !== "desactivado") encolar({ relativa: rutaGeneral(), linea, destino: "general" });
   } catch {

@@ -10,6 +10,7 @@ import {
 import { HAPPIE_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { idsTelemetria, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { generadorHappiePython } from "./generador-python";
+import { generadorHappieAuditado } from "./ia-recomendacion";
 import { correlacionValida } from "./telemetria";
 
 const MODELO_POR_DEFECTO = process.env.GEMINI_CHAT_MODEL ?? "gemini-3.6-flash";
@@ -73,11 +74,11 @@ Devuelve el estado completo actualizado dentro de los campos del esquema. Reglas
 function generadorExtraccion(telemetria: ContextoTelemetriaIA | undefined): GenerarEstructurado {
   if (HAPPIE_PYTHON_ENABLED) {
     const { requestId, correlationId } = idsTelemetria(telemetria);
-    return generadorHappiePython("conversation_extract", { requestId, correlationId: correlacionValida(correlationId, requestId) });
+    return generadorHappieAuditado(generadorHappiePython("conversation_extract", { requestId, correlationId: correlacionValida(correlationId, requestId) }), "happie_conversacion");
   }
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Falta GEMINI_API_KEY para conversar.");
-  return crearGeneradorGemini(apiKey);
+  return generadorHappieAuditado(crearGeneradorGemini(apiKey), "happie_conversacion");
 }
 
 async function extraerConIA(mensaje: string, estado: EstadoConversacion, signal?: AbortSignal, telemetria?: ContextoTelemetriaIA): Promise<Extraccion> {

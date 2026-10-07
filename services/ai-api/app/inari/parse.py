@@ -20,6 +20,7 @@ from typing import Callable, Literal
 from pydantic import Field, field_validator
 
 from app.operational_models import OperationalRequest
+from app.registro import cliente_auditado
 
 
 INTENT_PARSE_SCOPE = "ia.intent_parse"
@@ -110,7 +111,8 @@ async def interpretar_consulta_gemini(
 
     from google.genai import types
 
-    client = (client_factory or _default_client)(api_key)
+    # Auditado (app/registro.py): prompt, esquema, respuesta y tokens.
+    client = cliente_auditado((client_factory or _default_client)(api_key), "parser_intencion")
     try:
         response = await client.aio.models.generate_content(  # type: ignore[attr-defined]
             model=payload.model,

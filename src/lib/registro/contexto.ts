@@ -1,4 +1,3 @@
-import "server-only";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 import { CABECERA_CONVERSACION, CABECERA_SOLICITUD, CABECERA_VISTA, type ContextoRegistro } from "./tipos";

@@ -10,6 +10,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Protocol
 
+from app.registro import cliente_auditado
+
 
 EMBEDDING_TASK_TYPE = "RETRIEVAL_DOCUMENT"
 QUERY_EMBEDDING_TASK_TYPE = "RETRIEVAL_QUERY"
@@ -61,7 +63,8 @@ class GeminiEmbeddingProvider:
         if self._client is None:
             from google import genai
 
-            self._client = genai.Client(api_key=self._api_key)
+            # Auditado (app/registro.py): cuántos textos, una muestra y las dimensiones devueltas.
+            self._client = cliente_auditado(genai.Client(api_key=self._api_key), "embedding_catalogo")
         return self._client
 
     async def embed(

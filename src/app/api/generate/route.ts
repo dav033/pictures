@@ -64,6 +64,7 @@ import {
   validateMaterialEstimate,
   type DesignMaterialEstimate,
 } from "@/lib/materiales/estimacion";
+import { conRegistro, decidir } from "@/lib/registro/servidor";
 
 export const maxDuration = 120;
 
@@ -456,7 +457,10 @@ function buildInputs(input: {
  * back without it), the same id as `ui_error.request_id` and the telemetry of the
  * generation, so any outcome can be traced.
  */
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/generate", atenderPOST);
+
+async function atenderPOST(request: Request) {
   const generationRequestId = crypto.randomUUID();
   return conRequestId(await generar(request, generationRequestId), generationRequestId);
 }
@@ -582,6 +586,13 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     });
     const planResuelto = resolucion.resuelto;
     const cotizacionPlan = resolucion.cotizacion;
+    decidir("regla:plan_resuelto_generacion", "plan que el servidor re-resolvió (Python) para la imagen", {
+      planHash: planResuelto.plan_hash,
+      totalCop: planResuelto.totales.total_cop,
+      compras: planResuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })),
+      sinCobertura: planResuelto.sin_cobertura,
+      comercial: planResuelto.comercial,
+    }, { entrada: { planHashCliente: body.plan.plan_hash, estructuras: planResuelto.plan.estructuras.length } });
     // La huella ata la propuesta que el cliente aprobó al plan que el servidor
     // acaba de re-resolver. En desarrollo se puede soltar (ver
     // `aprobacionSinHuellaEnPruebas`): iterar sobre el reparto de color mueve
@@ -619,6 +630,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     if (bloqueoDeCero) throw new Error(bloqueoDeCero);
     const motorImagenPrevisto = "flux";
     const auditarImagen =async (status: string, scene: SceneSpec) => {
+      decidir("regla:auditoria_imagen", "estado de la imagen en la auditoría de planes (Postgres)", status, { entrada: { planHash: planResuelto.plan_hash, sceneSpecHash: sceneSpecHash(scene), motor: motorImagenPrevisto } });
       await registrarPlanAudit(getRagPool(), {
          requestId: approvalContext.requestId,
         planHash: planResuelto.plan_hash,
@@ -763,8 +775,8 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         // Misma forma que el análisis de referencias (dos pasadas de un solo
         // mensaje con la foto), así que va por el mismo flag de Amaterasu.
         const chatVenue = REFERENCE_ANALYSIS_PYTHON_ENABLED
-          ? crearChatTurnoPython({ requestId: generationRequestId, correlationId: generationCorrelationId })
-          : await chatDe(proveedorSeleccionado);
+          ? crearChatTurnoPython({ requestId: generationRequestId, correlationId: generationCorrelationId, proposito: "analisis_venue" })
+          : await chatDe(proveedorSeleccionado, "analisis_venue");
         venueAnalysis = (await analizarVenue(chatVenue, venue, contextoTelemetria, request.signal)).analysis;
       } catch (error) {
         if (request.signal.aborted) throw error;
@@ -815,6 +827,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const aspectTransform = resolveAspectTransform(aspecto, capabilities);
     const transformedSceneSpec = SceneSpecSchema.parse({ ...sceneSpec, canvas: { ...sceneSpec.canvas, content_rect: aspectTransform.contentRect } });
     const resolvedSceneSpecHash = sceneSpecHash(transformedSceneSpec);
+    decidir("regla:escena_aprobada", "escena que el servidor aprueba para la imagen", { sceneSpecHash: resolvedSceneSpecHash, modo: sceneSpec.generation_mode, elementos: sceneSpec.elements.length, aspecto }, { entrada: { venue: Boolean(venue), previa: Boolean(previous), venueAnalizado: Boolean(venueAnalysis) } });
     if (body.sceneSpecHash && body.sceneSpecHash !== resolvedSceneSpecHash) throw new Error("Scene specification hash does not match the validated scene.");
     const { imagenes: productImages, faltantes: fotosCatalogoFaltantes } = await cargarFotosProducto(productosConMateriales, materialEstimate);
     // LoRA Edit recibe hasta cuatro referencias visuales. Mantenemos una lista
@@ -825,6 +838,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // The level signed into the approved plan wins over the slider at generation time.
     // presentationMode (R23): con el catálogo cerrado el nivel no pasa del techo sin ambientación; apagado, el nivel es el de siempre.
     const creatividad = perfilCreatividad(nivelCreatividadConPolitica(nivelCreatividadParaGenerar(contextoPlan?.creatividad, body.creatividad), politicaPresentacion));
+    decidir("regla:creatividad_generacion", "nivel de creatividad con que se genera (el firmado en el plan manda)", creatividad, { entrada: { delPlan: contextoPlan?.creatividad ?? null, delCliente: body.creatividad ?? null, referenciasElegidas: selected.inputs.map((input) => input.role) } });
     // The venue and time of day the chat recorded in the approved (signed) plan
     // fill only what the customer left open (a venue photo is the venue); see
     // completarEscenaConPlan.
@@ -1105,7 +1119,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     }
     const revisionFlux = revisionInstruction?.trim()
       ? await traducirRevisionParaFlux(revisionInstruction, async (texto) => {
-          const client = getGeminiClient();
+          const client = getGeminiClient("traduccion_revision");
           if (!client) throw new Error("Gemini de texto no está disponible.");
           const respuesta = await client.models.generateContent({
             model: MODELO_CHAT,
@@ -1141,6 +1155,14 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // revisión de una imagen previa; una generación nueva no hereda otra.
     // Semilla fija para atribuir esta llamada a fal.
     const fluxSeed = resolveFluxSeed(undefined);
+    decidir("regla:prompt_flux", "texto final, referencias y semilla que van a FLUX", {
+      promptFinal,
+      largo: promptFinal.length,
+      compilador: fluxCompilation.compilerVersion,
+      referencias: imagenesEdit.map((imagen) => imagen.role),
+      semilla: fluxSeed ?? null,
+      guidanceScale: creatividad.guidanceScale,
+    }, { entrada: { revision: revisionFlux ?? null, conGuiaEscena: Boolean(imagenesGuia), aplicaciones: (resolvedFluxApplications ?? []).length } });
     const generarFlux = (prompt: string, intento: number) => generarConSempertexFlux(prompt, aspecto, referenciasEtapa1, {
       loras: resolvedFluxApplications ?? [],
       signal: request.signal,

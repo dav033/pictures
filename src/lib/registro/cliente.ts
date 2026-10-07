@@ -113,10 +113,10 @@ export function conversacionActiva(): string | undefined {
 }
 
 /**
- * OPCIONAL (segunda pasada): en vez de añadir `cabecerasConversacion` en cada fetch, intercepta `window.fetch`
- * y añade x-conversacion-id / x-vista de la conversación activa a las peticiones del mismo origen a /api/*
- * que no las traigan ya. Devuelve cómo desinstalarlo. Las vistas solo tienen que llamar a
- * `obtenerIdConversacion(vista)` al montar y a `nuevaConversacion(vista)` al vaciar.
+ * Instalado una vez por CapturaErroresCliente (layout raíz): intercepta `window.fetch` y añade
+ * x-conversacion-id / x-vista de la conversación activa a las peticiones del mismo origen a /api/* que no las
+ * traigan ya. Devuelve cómo desinstalarlo. Las vistas solo llaman a `obtenerIdConversacion(vista)` al montar y a
+ * `nuevaConversacion(vista)` al vaciar.
  */
 export function instalarCabecerasConversacionEnFetch(): () => void {
   if (!hayNavegador() || fetchOriginal) return () => undefined;

@@ -23,6 +23,7 @@ from typing import Any, AsyncGenerator, Callable, Literal
 from pydantic import Field, ValidationError
 
 from app.operational_models import ContractModel, OperationalRequest
+from app.registro import cliente_auditado
 
 
 CHAT_TURN_STREAM_SCOPE = "ia.chat_turn_stream"
@@ -234,7 +235,8 @@ def abrir_turno_stream(
         config = _build_config(payload)
     except ValidationError:
         raise ChatTurnError("chat_turn_invalid_tools", 422) from None
-    client = (client_factory or _default_client)(api_key)
+    # Auditado (app/registro.py): sistema, historial, herramientas y el flujo completo (texto, llamadas, tokens).
+    client = cliente_auditado((client_factory or _default_client)(api_key), "chat_turno")
     return _events(client, payload.model, contents, config)
 
 

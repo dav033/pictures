@@ -42,6 +42,7 @@ import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
 import { briefChatGuiado, defectoPlanGuiado, instruccionPlanFoto, instruccionPlanGuiado, planActualDesdePlan, resumenPlanGuiado } from "@/lib/ia/guiado/instruccion-plan";
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
+import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, vaciarConversacionGuiada, type EstadoParaInstantanea } from "./registro-guiado";
 
 /**
  * Vista guiada (/asistente). Cada pieza (ideas, plan, proveedores…) va PEGADA al mensaje que la trajo; solo las del
@@ -255,6 +256,8 @@ export function VistaGuiada() {
     if (restauradoRef.current) return;
     restauradoRef.current = true;
     const guardado = leerSesion();
+    // Conversación del servidor (registro y auditoría): la de esta sesión, o una nueva; todo fetch a /api/* la lleva.
+    abrirConversacionGuiada(Boolean(guardado), guardado?.mensajes.length ?? 0);
     /* eslint-disable react-hooks/set-state-in-effect -- restauración única desde sessionStorage (sistema externo) */
     if (guardado) {
       setMensajes(guardado.mensajes);
@@ -366,7 +369,15 @@ export function VistaGuiada() {
     setPlaceholderForzado(null); setSugerenciasCambio(null); setAnuncio("");
     marcarCargando(false);
     try { sessionStorage.removeItem(CLAVE_SESION); } catch (cause) { console.warn("[asistente-guiado] no se pudo limpiar la sesión.", cause); }
+    vaciarConversacionGuiada();
   }, [marcarCargando]);
+
+  // ── Registro de acciones y fallos (auditoría del servidor; con la instantánea del estado, sin fotos) ─────────────
+  function estadoRegistro(): EstadoParaInstantanea {
+    return { mensajes, brief, seleccionada, uso, planVigente, cargando: cargandoRef.current, fallo };
+  }
+  function registrarAccion(evento: string, datos: Record<string, unknown> = {}): void { registrarAccionGuiada(evento, datos, estadoRegistro()); }
+  function registrarFallo(evento: string, causa: unknown, datos: Record<string, unknown> = {}, nivel: "warn" | "error" = "error"): void { registrarFalloGuiado(evento, causa, datos, estadoRegistro(), nivel); }
 
   function detener(): void { controlRef.current?.abort("usuario"); }
 
@@ -375,6 +386,7 @@ export function VistaGuiada() {
     const archivo = foto;
     let limpio = texto.trim();
     if ((!limpio && !archivo) || cargandoRef.current) return;
+    registrarAccion("turno.enviar", { texto: limpio, opciones: opcionesEnvio, conFoto: Boolean(archivo) });
     limpiarAvisos();
     if (!limpio) limpio = "Mira esta foto de inspiración.";
 
@@ -460,6 +472,7 @@ export function VistaGuiada() {
           return;
         }
         actualizarMensaje(idUsuario, (mensaje) => ({ ...mensaje, notaFoto: "No pude distinguir bien los detalles, pero podemos seguir con tu idea." }));
+        registrarFallo("foto.sin_lectura", "la lectura de la foto no devolvió piezas", {}, "warn");
         etapa = "turno";
       }
 
@@ -523,6 +536,7 @@ export function VistaGuiada() {
       if (turno !== turnoRef.current) return;
       cancelarFlujo();
       const detenido = control.signal.aborted && control.signal.reason === "usuario";
+      registrarFallo(etapa === "foto" ? "foto.fallo" : detenido ? "turno.detenido" : "sse.fallo", causa, { etapa, detenido, texto: contenido, cortadoPor: control.signal.aborted ? String(control.signal.reason) : null }, detenido ? "warn" : "error");
       // warn y no error: en desarrollo, console.error abre el aviso rojo de Next en plena demo.
       if (!detenido) console.warn("[asistente-guiado] turno fallido", causa);
       // Si el cliente detuvo, se queda lo que alcanzó a llegar; si falló, el mensaje vacío o a medias se quita.
@@ -574,22 +588,30 @@ export function VistaGuiada() {
         const plan = PlanGuiadoSchema.safeParse(respuesta.plan);
         if (plan.success) {
           const defecto = reintento ? null : defectoPlanGuiado(plan.data, respuesta.cotizacion);
-          if (!defecto) return { turno, estado: "ok", plan: plan.data, cotizacion: respuesta.cotizacion };
+          if (!defecto) {
+            registrarAccion("plan.listo", { intento: reintento ? 2 : 1, plan_hash: plan.data.plan_hash });
+            return { turno, estado: "ok", plan: plan.data, cotizacion: respuesta.cotizacion };
+          }
+          registrarFallo("plan.defecto", defecto, { intento: 1, plan_hash: plan.data.plan_hash, accion: "se pide otra vez" }, "warn");
           console.warn("[asistente-guiado] el plan no cumple la guía; se pide otra vez", { defecto });
           respaldo = { plan: plan.data, cotizacion: respuesta.cotizacion };
           continue;
         }
         // La respuesta del agente clásico trae jerga: solo a la consola.
+        registrarFallo("plan.sin_confirmar", "el plan no llegó confirmado", { intento: reintento ? 2 : 1, respuesta: respuesta.reply.slice(0, 600) }, "warn");
         console.warn("[asistente-guiado] el plan no llegó confirmado", { intento: reintento ? 2 : 1, respuesta: respuesta.reply.slice(0, 600) });
       } catch (causa) {
         if (turno !== turnoRef.current) return { turno, estado: "obsoleto" };
         if (control.signal.aborted) return { turno, estado: "detenido" };
+        registrarFallo("plan.intento_fallido", causa, { intento: reintento ? 2 : 1 }, "warn");
         console.warn("[asistente-guiado] falló un intento de plan", { intento: reintento ? 2 : 1, causa });
       } finally {
         window.clearTimeout(reloj);
         control.signal.removeEventListener("abort", cortar);
       }
     }
+    if (respaldo) registrarFallo("plan.respaldo", "el reintento no dio un plan mejor: se queda el primero", { plan_hash: respaldo.plan.plan_hash }, "warn");
+    else registrarFallo("plan.fallo", "ningún intento dio un plan confirmado", {});
     return respaldo ? { turno, estado: "ok", ...respaldo } : { turno, estado: "fallo" };
   }
 
@@ -627,6 +649,7 @@ export function VistaGuiada() {
   async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado }): Promise<void> {
     if (cargandoRef.current && !opciones.desdeTurno) return;
     const { mensajeId, planAnterior } = opciones;
+    registrarAccion("propuesta.aceptar", { mensajeId, desdeTurno: Boolean(opciones.desdeTurno), reintento: Boolean(opciones.reintento), propuesta });
     setFallo(null);
     setSeleccionada(null); setUso(null);
     actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: propuesta.frase, widgets: [{ tipo: "propuesta", propuesta, estado: "resolviendo" }] }));
@@ -656,6 +679,7 @@ export function VistaGuiada() {
     if (!origen?.referencia) return;
     const referencia = origen.referencia;
     const imagen = fotosRef.current.get(referenciaId);
+    registrarAccion("foto.armar_plan", { referenciaId, colores: referencia.colores.map((color) => color.nombre), conFoto: Boolean(imagen) });
     limpiarAvisos();
     setSeleccionada(null); setUso(null);
     let mensajeId = opciones?.mensajeId;
@@ -725,6 +749,7 @@ export function VistaGuiada() {
       });
     } catch (causa) {
       if (sesion !== sesionRef.current) return;
+      registrarFallo("imagen.fallo", causa, { mensajeId, plan_hash: plan.plan_hash });
       console.warn("[asistente-guiado] no se pudo dibujar la decoración", causa);
       // Sin tarjeta de error aparte: la del plan ya dice «No pude dibujarla esta vez» y su botón principal es «Reintentar imagen».
       actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: true }));
@@ -740,6 +765,7 @@ export function VistaGuiada() {
   function accionPlan(accion: AccionPlan, mensajeId: string, origen: "tarjeta" | "barra" | "modelo" = "tarjeta"): void {
     const widget = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
     if (!widget || widget.reemplazado) return;
+    registrarAccion("plan.accion", { accion, origen, mensajeId, plan_hash: widget.plan.plan_hash });
     if (accion !== "costear" && accion !== "comprar") limpiarAvisos();
     const delCliente = origen !== "modelo";
     switch (accion) {
@@ -792,6 +818,7 @@ export function VistaGuiada() {
   // ── Acciones locales (sin modelo) ────────────────────────────────────────────────────────────────────────────
   function elegirDecoracion(decoracion: DecoracionSempertex, mensajeId: string): void {
     if (cargandoRef.current) return;
+    registrarAccion("idea.elegir", { id: decoracion.id, titulo: decoracion.titulo, mensajeId });
     limpiarAvisos();
     setSeleccionada(decoracion); setUso(null);
     actualizarWidget(mensajeId, "decoraciones", (widget) => ({ ...widget, elegidaId: decoracion.id }));
@@ -804,6 +831,7 @@ export function VistaGuiada() {
 
   function elegirOpcion(opcion: OpcionGuiada, mensajeId?: string): void {
     if (cargandoRef.current) return;
+    registrarAccion("opcion.elegir", { opcion, mensajeId: mensajeId ?? null });
     if (mensajeId) actualizarWidget(mensajeId, "opciones", (widget) => ({ ...widget, elegida: opcion }));
     if (opcion === "comprar" && seleccionada) {
       limpiarAvisos();
@@ -825,6 +853,7 @@ export function VistaGuiada() {
 
   function elegirUso(valor: Uso, mensajeId: string): void {
     if (cargandoRef.current) return;
+    registrarAccion("uso.elegir", { uso: valor, mensajeId });
     actualizarWidget(mensajeId, "uso", (widget) => ({ ...widget, elegido: valor }));
     setUso(valor);
     void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor });
@@ -832,6 +861,7 @@ export function VistaGuiada() {
 
   function elegirTipo(tipo: "completa" | "individual", mensajeId: string): void {
     if (cargandoRef.current) return;
+    registrarAccion("propuesta.tipo", { tipo, mensajeId });
     actualizarWidget(mensajeId, "pregunta-propuesta", (widget) => ({ ...widget, elegida: tipo === "completa" ? "Decoración completa" : "Pieza individual" }));
     if (tipo === "completa") { void enviar("Propónme algo para una decoración completa con varias piezas.", { alcance: "completa" }); return; }
     limpiarAvisos();
@@ -844,12 +874,14 @@ export function VistaGuiada() {
 
   function elegirPieza(pieza: { etiqueta: string; estructura: EstructuraOficialId | null }, mensajeId: string): void {
     if (cargandoRef.current) return;
+    registrarAccion("propuesta.pieza", { pieza: pieza.etiqueta, estructura: pieza.estructura, mensajeId });
     actualizarWidget(mensajeId, "pregunta-propuesta", (widget) => ({ ...widget, elegida: pieza.etiqueta }));
     void enviar(`Propónme una pieza individual: ${pieza.etiqueta}.`, { alcance: "individual", ...(pieza.estructura ? { pieza: pieza.estructura } : {}) });
   }
 
   function ningunaMeConvence(): void {
     if (cargandoRef.current) return;
+    registrarAccion("idea.ninguna");
     limpiarAvisos();
     agregar([
       { id: nuevoId(), role: "user", content: "Ninguna me convence." },
@@ -859,6 +891,7 @@ export function VistaGuiada() {
   }
 
   function otraCelebracion(): void {
+    registrarAccion("chip.otra_celebracion");
     limpiarAvisos();
     agregar([
       { id: nuevoId(), role: "user", content: "Otra celebración" },
@@ -869,6 +902,7 @@ export function VistaGuiada() {
 
   function solicitarProveedor(proveedor: ProveedorSempertex, mensajeId: string): void {
     const decorador = proveedor.tipo === "decorador_happia" || proveedor.tipo === "mbp";
+    registrarAccion("proveedor.elegir", { id: proveedor.id, nombre: proveedor.nombre, tipo: proveedor.tipo, mensajeId });
     actualizarWidget(mensajeId, "proveedores", (widget) => ({ ...widget, solicitadoId: proveedor.id }));
     limpiarAvisos();
     const respuesta = decorador
@@ -885,6 +919,7 @@ export function VistaGuiada() {
 
   function elegirFoto(archivo: File | null): void {
     if (!archivo) { setFoto(null); setPlaceholderForzado(null); return; }
+    registrarAccion("foto.elegir", { tipo: archivo.type, bytes: archivo.size, valida: TIPOS_FOTO.has(archivo.type) && archivo.size <= 6_000_000 });
     if (!TIPOS_FOTO.has(archivo.type) || archivo.size > 6_000_000) {
       setFoto(null);
       setFallo({ titulo: "No pude leer tu foto", detalle: "Usa una foto JPG, PNG o WebP de menos de 6 MB.", etiqueta: "Elegir otra foto", accion: { tipo: "subir-foto" } });
@@ -899,6 +934,7 @@ export function VistaGuiada() {
   function elegirRapida(texto: string): void {
     const clave = claveTexto(texto);
     const mensaje = ultimo?.role === "assistant" ? ultimo : undefined;
+    registrarAccion("chip.respuesta_rapida", { texto });
     if (clave === claveTexto("Subir una foto") || clave === claveTexto(CHIP_FOTO)) { archivoRef.current?.click(); return; }
     if (clave === "otra ciudad") { pedirEscritura(PLACEHOLDER_CIUDAD); return; }
     if (clave === claveTexto("Otra celebración")) { otraCelebracion(); return; }
@@ -916,6 +952,7 @@ export function VistaGuiada() {
   }
 
   function reintentar(accion: AccionFallo): void {
+    registrarAccion("fallo.reintentar", { tipo: accion.tipo, ...(accion.tipo === "turno" ? { texto: accion.texto } : {}) });
     switch (accion.tipo) {
       case "turno": void enviar(accion.texto, { ...accion.opciones, reintentar: true }); return;
       case "plan": void aceptarPropuesta(accion.propuesta, { mensajeId: accion.mensajeId, ...(accion.planAnterior ? { planAnterior: accion.planAnterior } : {}) }); return;
@@ -996,7 +1033,7 @@ export function VistaGuiada() {
             {...(widget.totalAnterior !== undefined ? { totalAnterior: widget.totalAnterior } : {})}
             contextoCompra={brief}
             onAccion={(accion) => accionPlan(accion, mensajeId, "tarjeta")}
-            onCosteo={(valor) => actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, usoCosteo: valor, hechas: conHecha(actual.hechas, "costear") }))}
+            onCosteo={(valor) => { registrarAccion("plan.costeo_uso", { uso: valor, mensajeId }); actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, usoCosteo: valor, hechas: conHecha(actual.hechas, "costear") })); }}
             onProveedores={() => preguntarCiudad("ciudad-decorador", "Quiero cotizar con un proveedor cerca")}
             onDistribuidor={() => preguntarCiudad("ciudad-distribuidor", "Quiero comprar con un distribuidor cerca")}
           />

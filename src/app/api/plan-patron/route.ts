@@ -8,6 +8,7 @@ import { RechazoVistaPatronError, vistaPreviaPatronPython } from "@/lib/plan/edi
 import { EdicionRepartoSchema } from "@/lib/plan/edicion-esquemas";
 import { MODOS_PATRON_COLOR, PatronColorV1Schema } from "@/lib/plan/patron-color";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import { conRegistro } from "@/lib/registro/servidor";
 
 /**
  * Vista previa del editor de patrones de color (ADR-0028 §10): el navegador
@@ -83,7 +84,10 @@ async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
   }
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/plan-patron", atenderPOST);
+
+async function atenderPOST(request: Request) {
   const requestIdHttp = requestIdDe(request);
   const cabeceras = { "X-Request-ID": requestIdHttp };
   const rechazoTransporte = (status: number, mensaje: string, codigo: string) => {

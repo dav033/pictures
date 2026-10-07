@@ -7,6 +7,7 @@ import { ArmadoColumnaOrganicaV1Schema } from "@/lib/plan/armado-columna-organic
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { vistaPreviaArmadoColumnaOrganicaPython } from "@/lib/plan/edicion-python";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import { conRegistro } from "@/lib/registro/servidor";
 
 /**
  * Vista previa del editor de columnas orgánicas (ADR-0034): el navegador
@@ -81,7 +82,10 @@ async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
   }
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/plan-armado-columna-organica", atenderPOST);
+
+async function atenderPOST(request: Request) {
   if (dibujosEnVuelo >= MAX_DIBUJOS_EN_VUELO) {
     const requestId = requestIdDe(request);
     const mensaje = "Hay demasiados dibujos de la columna en curso. Espera un momento y vuelve a intentarlo.";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { conversacionActiva, registrarEventoCliente } from "@/lib/registro/cliente";
+import { conversacionActiva, instalarCabecerasConversacionEnFetch, registrarEventoCliente } from "@/lib/registro/cliente";
 
 /** Avisos del navegador que no son fallos de la app y solo gastarían el cupo por minuto. */
 const IGNORADOS = [/ResizeObserver loop/i, /^Script error\.?$/i];
@@ -22,10 +22,13 @@ function detalleRazon(razon: unknown): Record<string, unknown> {
 
 /**
  * Montado una vez en el layout raíz: manda a /api/registro-cliente los errores de `window.onerror` y los
- * rechazos de promesas sin manejar, atribuidos a la conversación activa de la pestaña si la hay. No pinta nada.
+ * rechazos de promesas sin manejar, atribuidos a la conversación activa de la pestaña si la hay, e instala
+ * (una sola vez) el interceptor que añade x-conversacion-id / x-vista a cada fetch del mismo origen a /api/*:
+ * así el servidor guarda todo lo de una conversación en su propio archivo. No pinta nada.
  */
 export function CapturaErroresCliente(): null {
   useEffect(() => {
+    const desinstalarCabeceras = instalarCabecerasConversacionEnFetch();
     const alError = (evento: ErrorEvent): void => {
       const mensaje = evento.message || (evento.error instanceof Error ? evento.error.message : "");
       if (ignorado(mensaje)) return;
@@ -50,6 +53,7 @@ export function CapturaErroresCliente(): null {
     window.addEventListener("error", alError);
     window.addEventListener("unhandledrejection", alRechazo);
     return () => {
+      desinstalarCabeceras();
       window.removeEventListener("error", alError);
       window.removeEventListener("unhandledrejection", alRechazo);
     };

@@ -30,6 +30,8 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Commit desplegado (git archive lo escribe por export-subst): cada línea del registro lo lleva.
+COPY --from=builder /app/version-codigo.json ./version-codigo.json
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
 USER nextjs

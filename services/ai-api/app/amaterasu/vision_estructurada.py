@@ -16,6 +16,7 @@ import json
 import os
 from collections.abc import Callable, Mapping
 
+from app.registro import cliente_auditado
 from app.amaterasu.turno import (
     DEFAULT_MODEL,
     _block_reason,
@@ -65,7 +66,8 @@ async def leer_foto(
 
     from google.genai import types
 
-    client: object = (client_factory or _default_client)(api_key)
+    # Auditado (app/registro.py): el prompt de la lectura completo, la foto como hash y la respuesta.
+    client: object = cliente_auditado((client_factory or _default_client)(api_key), f"lectura_{prefijo}")
     content = types.Content(
         role="user",
         parts=[

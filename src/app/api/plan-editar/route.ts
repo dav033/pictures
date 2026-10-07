@@ -17,6 +17,7 @@ import {
   correlationDesde,
 } from "@/lib/plan/aplicar-edicion";
 import { BasePlanSchema, EdicionArmadoArcoOrganicoSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionFormaSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionPropiedadesSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
+import { conRegistro } from "@/lib/registro/servidor";
 
 /** Candidates a search returns when the caller does not say (what the inline editor always got). */
 const LIMITE_BUSQUEDA_PREDETERMINADO = 8;
@@ -96,7 +97,10 @@ function requestIdDe(request: Request): string {
   return z.string().uuid().safeParse(cabecera).success ? cabecera! : crypto.randomUUID();
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/plan-editar", atenderPOST);
+
+async function atenderPOST(request: Request) {
   // Every response carries X-Request-ID, so a failed edit can be traced (E2E 2026-09-14).
   const requestIdHttp = requestIdDe(request);
   const cabeceras = { "X-Request-ID": requestIdHttp };

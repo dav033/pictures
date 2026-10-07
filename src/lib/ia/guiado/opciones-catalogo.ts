@@ -31,6 +31,20 @@ function correspondeACatalogo(opcion: string, tematicas: readonly string[]): boo
   });
 }
 
+/** Las opciones de la línea final «Opciones: a | b | c» (vacío si no la hay). */
+export function opcionesDeTexto(texto: string): string[] {
+  const ultima = texto.trimEnd().split("\n").at(-1) ?? "";
+  const coincide = /^(\**\s*opciones\s*:\**\s*)(.+)$/i.exec(ultima.trim());
+  return coincide ? coincide[2]!.split("|").map((opcion) => opcion.trim()).filter(Boolean) : [];
+}
+
+/** Para la auditoría del saneo: qué opciones quitó y cuáles añadió (temáticas del catálogo). */
+export function diferenciaOpciones(antes: string, despues: string): { quitadas: string[]; anadidas: string[] } {
+  const previas = opcionesDeTexto(antes);
+  const finales = opcionesDeTexto(despues);
+  return { quitadas: previas.filter((opcion) => !finales.includes(opcion)), anadidas: finales.filter((opcion) => !previas.includes(opcion)) };
+}
+
 export function sanearOpcionesCatalogo(texto: string, tematicas: readonly string[]): string {
   if (!tematicas.length) return texto;
   const lineas = texto.trimEnd().split("\n");

@@ -21,10 +21,14 @@ import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
 import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
 import { conReferenciasMedidas } from "@/lib/plan/referencias-medidas";
 import { unificarPiezasEspejo } from "@/lib/ia/referencia/piezas-espejo";
+import { conRegistro } from "@/lib/registro/servidor";
 
 export const maxDuration = 120;
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/references/analyze", atenderPOST);
+
+async function atenderPOST(request: Request) {
   const vencimiento = Date.now() + maxDuration * 1000;
   let id: ProveedorId | undefined;
   const requestId = crypto.randomUUID();
@@ -40,7 +44,7 @@ export async function POST(request: Request) {
     // independiente de las demás IAs -- ver crearChatTurnoPython.
     const chat = REFERENCE_ANALYSIS_PYTHON_ENABLED
       ? crearChatTurnoPython({ requestId, correlationId })
-      : await chatDe(id);
+      : await chatDe(id, "analisis_foto");
     const references = referenciasEtiquetadas(body.images);
     // La descripción visual no decide productos. El chat resuelve después
     // cada elemento mediante buscar_catalogo_rag contra PostgreSQL validado.

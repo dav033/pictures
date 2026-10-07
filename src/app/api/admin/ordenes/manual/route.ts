@@ -7,6 +7,7 @@ import { resolverElementosCatalogoOrden, type ElementoCatalogoOrden } from "@/li
 import { generarCaption } from "@/lib/ordenes/generarCaption";
 import type { Desglose, FeedbackFoto } from "@/lib/ordenes/tipos";
 import { directorioOrdenes } from "@/lib/ordenes/directorio";
+import { conRegistro } from "@/lib/registro/servidor";
 
 const TIPOS_ESTRUCTURA = ["arco", "semiarco", "guirnalda", "columna", "pared", "bouquet", "centro_mesa", "otro"] as const;
 const TIPOS_IMAGEN = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -47,7 +48,10 @@ async function crearCarpetaManual(): Promise<{ numero: string; carpeta: string }
   throw new Error("No se pudo reservar un identificador único para la orden manual.");
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/admin/ordenes/manual", atenderPOST, { vista: "admin" });
+
+async function atenderPOST(request: Request) {
   if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
   if (!isSameOriginRequest(request)) return Response.json({ error: "Origen no permitido." }, { status: 403 });
 

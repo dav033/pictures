@@ -132,6 +132,7 @@ import {
 } from "@/lib/plan/patron-color";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
+import { cabecerasCorrelacion, crearFetchAuditado } from "@/lib/registro/servidor";
 import { z } from "zod";
 
 export const PYTHON_ECHO_PATH = "/internal/v1/echo";
@@ -204,6 +205,27 @@ export const PYTHON_COTIZACION_PROFESIONAL_SCOPE = "plan.cotizacion_profesional"
 export const PYTHON_LISTA_MATERIALES_PATH = "/internal/v1/plan/lista-materiales";
 export const PYTHON_LISTA_MATERIALES_SCOPE = "plan.lista_materiales";
 export const PYTHON_ESTIMAR_CONTEO_PATH = "/internal/v1/plan/estimar-conteo";
+
+/**
+ * Operaciones del Python que ejecutan un modelo y su propósito en la auditoría (src/lib/registro): esas
+ * peticiones dejan además `llamada_ia`/`respuesta_ia` con el cuerpo completo. Las que ya audita su propio
+ * envoltorio (chat-turn-stream y reference-turn con envolverChatPort, lora-generate con
+ * auditarGeneracionImagen, happie-generate con envolverFuncionIa) no van aquí: saldrían duplicadas. Tampoco
+ * lectura-unica: no llama a ningún modelo (valida lo que escribió el análisis); queda como evento `python`.
+ */
+const PROPOSITO_IA_PYTHON: ReadonlyArray<readonly [string, string]> = [
+  ["/internal/v1/ia/intent-parse", "parser_intencion"],
+  ["/internal/v1/ia/patron-referencia", "lectura_patron_foto"],
+  ["/internal/v1/ia/bouquet-referencia", "lectura_bouquet_foto"],
+  ["/internal/v1/ia/conteo-referencia", "conteo_foto"],
+  ["/internal/v1/ia/guirnalda-referencia", "lectura_guirnalda_foto"],
+  ["/internal/v1/embed", "embedding"],
+  ["/internal/v1/rerank", "rerank_catalogo"],
+];
+
+function propositoIaPython(ruta: string): string | undefined {
+  return PROPOSITO_IA_PYTHON.find(([sufijo]) => ruta.endsWith(sufijo))?.[1];
+}
 export const PYTHON_ESTIMAR_CONTEO_SCOPE = "plan.estimar_conteo";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
 export const PYTHON_EMBEDDING_DIMENSIONS = 768;
@@ -839,10 +861,21 @@ async function abrirPeticionPython(
       "x-internal-scopes": signature.scopes.join(","),
     });
     if (input.idempotencyKey) headers.set("idempotency-key", input.idempotencyKey);
+    // Conversación y vista de la petición en curso (src/lib/registro): el Python las pone en cada línea de su
+    // registro. Fuera de la firma HMAC (que solo cubre método, ruta, cuerpo, scopes, hora y nonce).
+    try {
+      for (const [nombre, valor] of Object.entries(cabecerasCorrelacion({ incluirSolicitud: false }))) {
+        if (!headers.has(nombre)) headers.set(nombre, valor);
+      }
+    } catch {
+      // Una cabecera de correlación inválida nunca impide la llamada.
+    }
 
     let response: Response;
     try {
-      response = await (input.fetchImpl ?? fetch)(target, {
+      // Auditado: evento `python` con el cuerpo enviado y el recibido (cadenas hasta ~200 kB), estado y ms.
+      const fetchAuditado = crearFetchAuditado(input.fetchImpl ?? fetch, { tipo: "python", propositoIa: propositoIaPython });
+      response = await fetchAuditado(target, {
         method: "POST",
         headers,
         body,

@@ -3,7 +3,7 @@ import type { Herramienta, Mensaje } from "@sempertex/agente-core";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { bibliotecaVisible, buscarDecoracionesSempertex, normalizarBusqueda, proveedoresVisibles, tematicasDisponibles } from "@/lib/biblioteca-sempertex/biblioteca";
-import { sanearOpcionesCatalogo } from "@/lib/ia/guiado/opciones-catalogo";
+import { diferenciaOpciones, sanearOpcionesCatalogo } from "@/lib/ia/guiado/opciones-catalogo";
 import { AsistenteGuiadoRequestSchema, CotizacionGuiadaSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
@@ -21,6 +21,7 @@ import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { normalizarPropuestaComposicion } from "@/lib/ia/guiado/propuesta-composicion";
 import { esquemaHerramientaPropuesta, type AlcancePropuesta } from "@/lib/ia/guiado/esquema-herramienta-propuesta";
 import { textoPlanActual } from "@/lib/ia/guiado/instruccion-plan";
+import { conRegistro, contextoActual, decidir, envolverRegistroHerramientas } from "@/lib/registro";
 
 export const maxDuration = 75;
 
@@ -96,8 +97,17 @@ function falloProveedor(error: unknown): { code: ErrorCodeV1; message: string; s
   return { code: "AI_PROVIDER", message: "No se pudo iniciar el asistente guiado.", status: 502, retryable: true };
 }
 
-export async function POST(request: Request) {
-  const requestId = crypto.randomUUID();
+/** El request_id del turno es el de la petición registrada (x-request-id), si es un UUID: así el SSE, la telemetría, el Python y la auditoría hablan del mismo id. */
+function requestIdDelTurno(): string {
+  const solicitud = contextoActual()?.solicitud;
+  return solicitud && z.string().uuid().safeParse(solicitud).success ? solicitud : crypto.randomUUID();
+}
+
+// Auditado (src/lib/registro): entrada, cada llamada al modelo, cada herramienta, las decisiones de abajo y el SSE de salida.
+export const POST = conRegistro("/api/asistente-guiado", turnoGuiado, { vista: "guiada" });
+
+async function turnoGuiado(request: Request) {
+  const requestId = requestIdDelTurno();
   const headers = { "X-Request-ID": requestId };
   const length = Number(request.headers.get("content-length"));
   if (Number.isFinite(length) && length > 25_000_000) {
@@ -121,6 +131,10 @@ export async function POST(request: Request) {
   const alcancePropuesta = alcanceDelTurno(estado?.alcancePropuesta, ultimoUsuario, piezaBoton);
   // Una pieza pedida solo restringe la pieza individual: en la decoración completa se ignora.
   const piezaPedida = alcancePropuesta === "individual" ? piezaBoton : undefined;
+  decidir("regla:alcance_turno_guiado", "alcance de la propuesta y pieza pedida", { alcancePropuesta, piezaPedida: piezaPedida ?? null }, {
+    entrada: { alcanceDeclarado: estado?.alcancePropuesta ?? null, piezaDeclarada: estado?.piezaPedida ?? null, piezaBoton: piezaBoton ?? null, ultimoUsuario },
+    motivo: estado?.alcancePropuesta ? "lo declaró la interfaz" : alcancePropuesta ? "texto exacto de un botón" : "turno libre (sin alcance)",
+  });
   const planActual = estado?.planActual;
   const usoConfirmado = estado?.uso;
   const decoracionConfirmada = estado?.decoracionId;
@@ -134,7 +148,7 @@ export async function POST(request: Request) {
   const deadline = crearDeadlineSignal(request.signal, DEADLINE_TURNO_MS);
   try {
     const id = resolverProveedor({ cookie: request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1] });
-    const chat = await chatOmoikaneDe(id, { requestId, correlationId: requestId });
+    const chat = await chatOmoikaneDe(id, { requestId, correlationId: requestId }, "chat_guiado");
     const historial: Mensaje[] = messages.map((mensaje, indice) => mensaje.role === "assistant"
       ? { rol: "asistente", texto: mensaje.content }
       : { rol: "usuario", texto: mensaje.content, ...(indice === messages.length - 1 && parsed.data.fotoInspiracion ? { imagenes: [{ ...parsed.data.fotoInspiracion, id: "INSPIRACION", descripcion: "Foto de inspiración adjuntada por el cliente." }] } : {}) });
@@ -171,8 +185,12 @@ export async function POST(request: Request) {
           ? coincidencias.filter((decoracion) => normalizarBusqueda(`${decoracion.titulo} ${decoracion.tematica}`).split(" ").includes(generoBaby))
           : coincidencias;
         datos.decoraciones = encontradas;
-        if (!encontradas.length) return { brief, ideas: [], aviso: "No hay ideas que mostrar: NO hables de «esta propuesta» ni de opciones; pregunta otro estilo o colores, o pide una foto de inspiración." };
         const exactas = encontradas.filter((decoracion) => decoracion.coincidencia === "exacta").length;
+        decidir("regla:busqueda_biblioteca", "ideas reales del catálogo que ve el cliente", { total: encontradas.length, exactas, ideas: encontradas.map((decoracion) => ({ id: decoracion.id, titulo: decoracion.titulo, tematica: decoracion.tematica, coincidencia: decoracion.coincidencia })) }, {
+          entrada: { brief, consulta: tematicaBusqueda, generoBaby, candidatas: coincidencias.length, descartadasPorGenero: coincidencias.length - encontradas.length },
+          ...(encontradas.length ? {} : { motivo: "sin coincidencias en la biblioteca visible" }),
+        });
+        if (!encontradas.length) return { brief, ideas: [], aviso: "No hay ideas que mostrar: NO hables de «esta propuesta» ni de opciones; pregunta otro estilo o colores, o pide una foto de inspiración." };
         const aviso = exactas === 0
           ? "No hay una idea exacta de esa temática: son parecidas por color o estilo. Dilo con naturalidad una sola vez."
           : exactas < encontradas.length ? `Las primeras ${exactas} son de la temática pedida; las demás son parecidas por color o estilo.` : "Todas son de la temática pedida.";
@@ -186,6 +204,7 @@ export async function POST(request: Request) {
           ? [{ estructura: piezaPedida ?? base.piezas[0]!.estructura, cantidad: 1 }]
           : alcancePropuesta === "completa" ? base.piezas.map((pieza) => ({ ...pieza, cantidad: Math.min(pieza.cantidad, 4) })) : base.piezas;
         const validada = normalizarPropuestaComposicion({ ...base, piezas });
+        decidir("regla:propuesta_normalizada", "propuesta del modelo ajustada al alcance y al catálogo oficial", validada, { entrada: { propuestaModelo: base, alcancePropuesta, piezaPedida: piezaPedida ?? null, piezasTrasAlcance: piezas } });
         datos.propuesta = validada;
         return { propuesta: validada, aviso: "Las piezas y colores vienen del catálogo oficial. Responde con una sola frase («Te preparo el plan con las cantidades exactas.»): la interfaz arma el plan en seguida." };
       },
@@ -206,6 +225,7 @@ export async function POST(request: Request) {
         const ciudadBusqueda = normalizarBusqueda(ciudadPedida);
         // Sin ciudad escrita por el cliente no se busca: antes el modelo inventaba una y el cliente veía un directorio vacío.
         if (!ciudadBusqueda || !textoCliente.includes(` ${ciudadBusqueda} `)) {
+          decidir("regla:proveedores_ciudad", "buscar proveedores", { busca: false }, { entrada: { ciudadModelo: ciudadPedida, tipo: entrada.tipo ?? null }, motivo: "el cliente no escribió esa ciudad" });
           return { ok: false, motivo: "falta_ciudad", accion_requerida: "Pregunta en qué ciudad está el cliente, en una frase, cerrando con «Opciones: Bogotá | Medellín | Cali | Barranquilla | Otra ciudad»." };
         }
         // «Decorador» es uno solo para el cliente: certificados HAPPIA y Master Balloon Pro salen juntos.
@@ -214,6 +234,7 @@ export async function POST(request: Request) {
         const encontrados = directorio.filter((item) => tipos.includes(item.tipo) && (normalizarCiudad(item.zona.ciudad) === ciudad || item.zona.cobertura.some((zona) => normalizarCiudad(zona) === ciudad)));
         datos.proveedores = encontrados;
         datos.ciudadProveedores = ciudadPedida;
+        decidir("regla:proveedores_ciudad", "proveedores que ve el cliente", { busca: true, total: encontrados.length, proveedores: encontrados.map((item) => ({ nombre: item.nombre, tipo: item.tipo, ciudad: item.zona.ciudad })) }, { entrada: { ciudad: ciudadPedida, ciudadNormalizada: ciudad, tipos } });
         if (encontrados.length) return { proveedores: encontrados.map((item) => ({ nombre: item.nombre, ...(item.especialidad ? { especialidad: item.especialidad } : {}), ciudad: item.zona.ciudad })) };
         const ciudadesDisponibles = [...new Set(directorio.filter((item) => tipos.includes(item.tipo)).map((item) => item.zona.ciudad))];
         datos.ciudadesDisponibles = ciudadesDisponibles;
@@ -224,7 +245,11 @@ export async function POST(request: Request) {
         // ids internos y adivinarlos hacía fallar el costeo varias veces seguidas. Si aun así manda uno, debe coincidir.
         const pedida = ArgsSchema.parse(args);
         const entrada = { decoracionId: pedida.decoracionId ?? decoracionConfirmada, uso: pedida.uso ?? usoConfirmado };
-        if (!usoConfirmado || entrada.uso !== usoConfirmado || !decoracionCotizableCoincide(decoracionConfirmada, entrada.decoracionId) || !proveedores.some((item) => item.id === entrada.decoracionId)) return { ok: false, motivo: !usoConfirmado ? "falta_que_el_cliente_elija_negocio_o_personal" : "uso_o_decoracion_no_validado_por_el_cliente" };
+        if (!usoConfirmado || entrada.uso !== usoConfirmado || !decoracionCotizableCoincide(decoracionConfirmada, entrada.decoracionId) || !proveedores.some((item) => item.id === entrada.decoracionId)) {
+          const motivo = !usoConfirmado ? "falta_que_el_cliente_elija_negocio_o_personal" : "uso_o_decoracion_no_validado_por_el_cliente";
+          decidir("regla:cotizacion_guiada", "costear la idea elegida", { cotiza: false, motivo }, { entrada: { pedida, decoracionConfirmada: decoracionConfirmada ?? null, usoConfirmado: usoConfirmado ?? null } });
+          return { ok: false, motivo };
+        }
         datos.uso = usoConfirmado;
         const decoracion = proveedores.find((item) => item.id === entrada.decoracionId);
         if (!decoracion || decoracion.materiales.length === 0) {
@@ -241,6 +266,7 @@ export async function POST(request: Request) {
           total: cotizada.total, mermaPorcentaje: 0, incluyeIva: true, complementosSoportados: false,
         });
         datos.cotizacion = cotizacion;
+        decidir("regla:cotizacion_guiada", "precio de los materiales de la idea elegida (Python)", { cotiza: true, total: cotizacion.total, lineas: cotizacion.lineas.length }, { entrada: { decoracionId: decoracion.id, uso: usoConfirmado, materiales: entradaCotizacion.materiales } });
         return { cotizacion, incluyeIva: true, uso: usoConfirmado, aviso: "Precio de los materiales en la tienda en línea, con IVA. No incluye montaje." };
       },
       abrir_accion_plan: async (args: Record<string, unknown>) => {
@@ -250,13 +276,16 @@ export async function POST(request: Request) {
         return { ok: true, accion, aviso: "La interfaz abre esa acción sobre el plan: acompáñala con una frase corta y no describas lo que va a ver." };
       },
     };
-    const registroProtegido = protegerHerramientas(registro);
+    // Auditada por dentro: cada herramienta deja argumentos, resultado y el error real con su pila (protegerHerramientas lo convierte en ok:false para el modelo).
+    const registroProtegido = protegerHerramientas(envolverRegistroHerramientas(registro));
     const elegida = decoracionConfirmada ? proveedores.find((item) => item.id === decoracionConfirmada) : undefined;
+    const tematicasCatalogo = textoTematicasCatalogo();
+    decidir("regla:tematicas_catalogo", "temáticas que el modelo puede ofrecer (solo con decoraciones reales)", tematicasCatalogo, { entrada: { decoracionElegida: elegida ? { id: elegida.id, titulo: elegida.titulo } : null, uso: usoConfirmado ?? null, planVigente: Boolean(planActual) } });
     const estadoConfirmado = [
       elegida ? `Decoración elegida por el cliente en la interfaz: «${elegida.titulo}».` : "El cliente todavía no eligió una idea del catálogo.",
       usoConfirmado ? `Uso elegido: ${usoConfirmado === "negocio" ? "para su negocio" : "uso personal"}.` : "El cliente todavía no eligió si es para negocio o uso personal.",
       planActual ? `Plan vigente del cliente: ${textoPlanActual(planActual)} Si pide un cambio, llama proponer_composicion conservando todo lo que no pidió cambiar.` : "El cliente todavía no tiene un plan a medida.",
-      `Temáticas del catálogo (las ÚNICAS que puedes ofrecer en «Opciones:» al preguntar temática, estilo o colores; elige 3-6 que encajen con el evento): ${textoTematicasCatalogo()}.`,
+      `Temáticas del catálogo (las ÚNICAS que puedes ofrecer en «Opciones:» al preguntar temática, estilo o colores; elige 3-6 que encajen con el evento): ${tematicasCatalogo}.`,
     ].join(" ");
     let herramientasTurno: Herramienta[] = herramientas.filter((herramienta) => decoracionConfirmada || !HERRAMIENTAS_DE_DECORACION.has(herramienta.nombre));
     if (planActual) herramientasTurno = [...herramientasTurno, herramientaAccionPlan];
@@ -270,6 +299,9 @@ export async function POST(request: Request) {
         return { ...herramienta, descripcion: `${String(description)} Usa ids oficiales y colores permitidos.`, esquema: campos };
       });
     }
+    decidir("regla:herramientas_turno", "herramientas que el modelo tiene en este turno", herramientasTurno.map((herramienta) => herramienta.nombre), {
+      motivo: alcancePropuesta ? `alcance «${alcancePropuesta}»: solo propuesta y brief` : decoracionConfirmada ? "hay una idea elegida" : "sin idea elegida: sin herramientas de decoración",
+    });
     const instruccionTurno = alcancePropuesta
       ? `\n\nEN ESTE TURNO el cliente eligió ${alcancePropuesta === "completa" ? "una decoración completa (2-3 piezas)" : `una pieza individual${piezaPedida ? `: ${ESTRUCTURAS_OFICIALES[piezaPedida].nombre.toLocaleLowerCase("es")}` : ""}`}: llama proponer_composicion ahora y no busques ideas en la biblioteca.`
       : "";
@@ -290,7 +322,13 @@ export async function POST(request: Request) {
             else if (evento.tipo === "herramienta") mandar("herramienta", { nombre: evento.nombre, estado: evento.estado, ok: evento.ok });
             else {
               // Fuera de un plan a medida, las «Opciones:» de estilo solo pueden nombrar temáticas con decoraciones.
-              const reply = planActual || alcancePropuesta || datos.propuesta ? evento.resultado.texto : sanearOpcionesCatalogo(evento.resultado.texto, tematicasDisponibles(briefVigente().evento));
+              const sanear = !(planActual || alcancePropuesta || datos.propuesta);
+              const disponibles = sanear ? tematicasDisponibles(briefVigente().evento) : [];
+              const reply = sanear ? sanearOpcionesCatalogo(evento.resultado.texto, disponibles) : evento.resultado.texto;
+              decidir("regla:sanear_opciones_catalogo", "opciones de estilo que ve el cliente", { aplicado: sanear, cambio: reply !== evento.resultado.texto, ...diferenciaOpciones(evento.resultado.texto, reply) }, {
+                entrada: { tematicasDisponibles: disponibles, evento: briefVigente().evento ?? null },
+                motivo: sanear ? "fuera de un plan a medida las opciones solo nombran temáticas con decoraciones" : "hay plan o propuesta: no se tocan",
+              });
               mandar("fin", { reply, brief: {}, proveedor: evento.resultado.proveedor, modelo: evento.resultado.modelo, result: datos });
             }
           }

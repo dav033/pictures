@@ -111,7 +111,7 @@ export async function embeberTexto(
     return result.values;
   }
 
-  const cliente = getGeminiClient();
+  const cliente = getGeminiClient("embedding");
   if (!cliente) throw new Error("No hay GEMINI_API_KEY configurada.");
 
   let respuesta: Awaited<ReturnType<typeof cliente.models.embedContent>>;

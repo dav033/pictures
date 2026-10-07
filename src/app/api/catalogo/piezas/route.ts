@@ -1,5 +1,6 @@
 import { aProducto, buscarCatalogoShopify, type FiltrosCatalogo } from "@/lib/shopify/consultas";
 import { z } from "zod";
+import { conRegistro } from "@/lib/registro/servidor";
 
 const FiltrosCatalogoSchema = z.object({
   texto: z.string().optional(),
@@ -22,7 +23,10 @@ const FiltrosCatalogoSchema = z.object({
  * es la misma búsqueda que ya validó `buscar_catalogo` en el chat, solo que
  * sin pasar por el modelo.
  */
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/catalogo/piezas", atenderPOST, { vista: "clasica" });
+
+async function atenderPOST(request: Request) {
   let filtros: FiltrosCatalogo;
   try {
     filtros = FiltrosCatalogoSchema.parse(await request.json());

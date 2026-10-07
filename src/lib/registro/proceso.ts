@@ -1,10 +1,10 @@
-import "server-only";
 import { configuracion } from "./configuracion";
 import { sanearIdConversacion, sanearIdSolicitud } from "./contexto";
 import { diagnosticoEscritor } from "./escritor";
 import { serializarError } from "./redaccion";
 import { auditar, informar, registrar } from "./registro";
 import { CABECERA_CONVERSACION, CABECERA_SOLICITUD, CABECERA_VISTA } from "./tipos";
+import { versionCodigo } from "./version";
 
 /**
  * Lo que engancha src/instrumentation.ts: una línea de arranque y la captura de errores del proceso y de
@@ -30,6 +30,7 @@ export function iniciarRegistroDelProceso(datos: Record<string, unknown> = {}): 
       nivelArchivo: cfg.nivelArchivo,
       nivelStdout: cfg.nivelStdout,
       auditoriaEnStdout: cfg.auditoriaEnStdout,
+      versionCodigo: versionCodigo(),
     });
     // `uncaughtExceptionMonitor` observa sin impedir que el proceso termine (a diferencia de `uncaughtException`).
     // También ve los rechazos sin manejar cuando nadie escucha `unhandledRejection` (Node los convierte en excepción).

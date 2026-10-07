@@ -7,6 +7,7 @@ import { idsTelemetria, registrarGemini, resultadoTelemetria, type ContextoTelem
 import { INTENT_PARSER_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { isPythonAdapterError, llamarPythonIntentParse } from "@/lib/ia/nucleo/python-adapter";
 import { esquemaRaizParaGoogle } from "@/lib/ia/nucleo/esquema-google";
+import { decidir } from "@/lib/registro/servidor";
 
 const JSON_SCHEMA = z.toJSONSchema(IntentQuerySchema, { target: "draft-7" });
 
@@ -75,14 +76,18 @@ async function enriquecerConGeminiPython(mensaje: string, local: DeterministicPa
  */
 export async function interpretarConsulta(mensaje: string, telemetria?: ContextoTelemetriaIA): Promise<IntentQuery> {
   const local = interpretarConsultaDeterminista(mensaje);
-  if (local.confidence === "certain") return local.intent;
+  if (local.confidence === "certain") {
+    decidir("regla:parser_intencion_local", "interpretar la consulta sin modelo", { llamaModelo: false, intencion: local.intent }, { entrada: { mensaje, confianza: local.confidence }, motivo: "el parser local es concluyente" });
+    return local.intent;
+  }
+  decidir("regla:parser_intencion_local", "interpretar la consulta sin modelo", { llamaModelo: true, via: INTENT_PARSER_PYTHON_ENABLED ? "python" : "gemini", intencionLocal: local.intent }, { entrada: { mensaje, confianza: local.confidence }, motivo: "consulta ambigua: se enriquece con el modelo" });
 
   const inicio = Date.now();
   if (INTENT_PARSER_PYTHON_ENABLED) {
     return enriquecerConGeminiPython(mensaje, local, telemetria, inicio);
   }
 
-  const client = getGeminiClient();
+  const client = getGeminiClient("parser_intencion");
   if (!client) return local.intent;
 
   try {

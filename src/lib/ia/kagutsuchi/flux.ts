@@ -3,6 +3,7 @@ import { idsTelemetria, resultadoTelemetria, type ContextoTelemetriaIA } from "@
 import { bytesDeBase64, registrarLlamadaIA } from "@sempertex/agente-core";
 import { FLUX_GENERATION_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { isPythonAdapterError, llamarPythonFluxGenerate } from "@/lib/ia/nucleo/python-adapter";
+import { auditarGeneracionImagen, crearFetchAuditado, type DescripcionImagen } from "@/lib/registro/servidor";
 
 const TEXT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora";
 const EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/edit";
@@ -173,6 +174,17 @@ function isAllowedFalImageUrl(value: string): boolean {
   }
 }
 
+/**
+ * `fetch` auditado hacia fal (src/lib/registro): envío a la cola (prompt, parámetros, referencias como hash),
+ * resultado (URL de la imagen) y descarga, con estado y ms. Los sondeos de estado de la cola no se auditan
+ * (serían decenas de líneas iguales por imagen). Llama al `fetch` global del momento (las pruebas lo sustituyen).
+ */
+const fetchFalAuditado = crearFetchAuditado((entrada, init) => fetch(entrada, init), {
+  tipo: "http",
+  proveedor: "fal",
+  omitir: (url, metodo) => metodo === "GET" && /\/status\/?$/.test(url.split("?")[0] ?? ""),
+});
+
 async function fetchFalAllowed(
   url: string,
   init: RequestInit,
@@ -180,7 +192,7 @@ async function fetchFalAllowed(
 ): Promise<Response> {
   let currentUrl = url;
   for (let attempt = 0; attempt < 4; attempt += 1) {
-    const response = await fetch(currentUrl, { ...init, redirect: "manual" });
+    const response = await fetchFalAuditado(currentUrl, { ...init, redirect: "manual" });
     if (response.status < 300 || response.status >= 400) return response;
     const location = response.headers.get("location");
     if (!location) throw new Error("fal.ai devolvió un redirect sin destino.");
@@ -528,10 +540,46 @@ async function generarConSempertexFluxPython(
   }
 }
 
+/**
+ * Genera la imagen con FLUX (fal directo o vía Python) y deja un evento `imagen` en la auditoría de la
+ * conversación: prompt final, referencias como hash, parámetros, resultado como hash, ms o error.
+ */
 export async function generarConSempertexFlux(
   prompt: string,
   aspecto: PeticionImagen["aspecto"],
   inputs: ImageInput[] = [],
+  options: SempertexFluxOptions,
+): Promise<Imagen> {
+  let descripcion: DescripcionImagen;
+  try {
+    const references = options.imagenesEdit ? imagenesEditExplicitas(options.imagenesEdit) : referenciasParaFluxEdit(inputs);
+    const loras = Array.isArray(options.loras) ? options.loras : [];
+    descripcion = {
+      proveedor: FLUX_GENERATION_PYTHON_ENABLED ? "fal-via-python" : "fal",
+      endpoint: references.length ? loras.length ? EDIT_ENDPOINT_WITH_ADAPTERS : EDIT_ENDPOINT : TEXT_ENDPOINT,
+      modelo: modeloFluxParaTelemetria(loras, references.length > 0),
+      prompt: buildFluxEditPrompt(prompt, references),
+      referencias: references.map((image) => ({ base64: image.base64, mime: image.mime, rol: image.role })),
+      parametros: {
+        aspecto,
+        imageSize: imageSizeFor(aspecto),
+        guidanceScale: guidanceScaleSeguro(options.guidanceScale),
+        numInferenceSteps: 28,
+        ...(Number.isInteger(options.seed) ? { seed: options.seed } : {}),
+        loras: lorasFor(loras),
+        promptOriginal: prompt,
+      },
+    };
+  } catch {
+    descripcion = { proveedor: "fal", prompt };
+  }
+  return auditarGeneracionImagen(descripcion, () => generarConSempertexFluxSinAuditar(prompt, aspecto, inputs, options), (imagen) => ({ base64: imagen.base64, mime: imagen.mime }));
+}
+
+async function generarConSempertexFluxSinAuditar(
+  prompt: string,
+  aspecto: PeticionImagen["aspecto"],
+  inputs: ImageInput[],
   options: SempertexFluxOptions,
 ): Promise<Imagen> {
   if (!Array.isArray(options.loras)) {

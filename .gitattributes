@@ -1,0 +1,3 @@
+# El despliegue al VPS empaqueta con `git archive`: aquí se escribe el commit (ver src/lib/registro/version.ts).
+version-codigo.json export-subst
+services/ai-api/app/version_codigo.json export-subst

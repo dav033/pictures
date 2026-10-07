@@ -1,9 +1,9 @@
-import "server-only";
 import { configuracion, NIVELES } from "./configuracion";
 import { contextoActual, idConversacionEfectivo, sanearIdConversacion } from "./contexto";
 import { escribirLinea, fechaUtc, rutaConversacion, rutaGeneral } from "./escritor";
 import { recortarTexto, redactar, resumirDatos, serializarError } from "./redaccion";
 import type { ContextoRegistro, LineaAuditoria, LineaGeneral, MapaAuditoria, NivelRegistro, TipoAuditoria } from "./tipos";
+import { versionCodigo } from "./version";
 
 /**
  * Registro general (`registrar` y atajos) y auditoría por conversación (`auditar`). Ver tipos.ts.
@@ -46,6 +46,7 @@ function escribirStdout(nivel: NivelRegistro, linea: string): void {
 export function registrar(nivel: NivelRegistro, evento: string, datos?: unknown, opciones: OpcionesRegistro = {}): void {
   try {
     const cfg = configuracion();
+    if (!cfg.activo) return;
     const aStdout = NIVELES[nivel] >= NIVELES[cfg.nivelStdout];
     const aArchivo = cfg.archivosActivos && NIVELES[nivel] >= NIVELES[cfg.nivelArchivo];
     if (!aStdout && !aArchivo) return;
@@ -53,11 +54,13 @@ export function registrar(nivel: NivelRegistro, evento: string, datos?: unknown,
     const ahora = Date.now();
     const error = opciones.error === undefined ? undefined : serializarError(opciones.error);
     const conversacion = sanearIdConversacion(opciones.conversacion) ?? contexto?.conversacion;
+    const version = versionCodigo().corta;
     const construir = (limite: number): LineaGeneral => ({
       ts: new Date(ahora).toISOString(),
       nivel,
       servicio: "next",
       entorno: cfg.entorno,
+      version,
       evento: recortarTexto(String(evento), 120),
       ...(contexto?.solicitud ? { solicitud: contexto.solicitud } : {}),
       ...(conversacion ? { conversacion } : {}),
@@ -119,7 +122,12 @@ export interface OpcionesAuditoria {
   /** Id de conversación explícito (si no, el del contexto; si no, `sin-conversacion-<solicitud>`). */
   conversacion?: string;
   contexto?: ContextoRegistro;
+  /** Caracteres por cadena (por defecto: ~200 kB para `python`/`http`, 20 000 para el resto). */
+  limiteCadena?: number;
 }
+
+/** Tipos cuyo contenido son cuerpos de peticiones a otros servicios: casi completos para depurar fielmente. */
+const TIPOS_CON_CUERPOS: ReadonlySet<TipoAuditoria> = new Set<TipoAuditoria>(["python", "http"]);
 
 /**
  * Traza COMPLETA (redactada) en `conversaciones/<fecha>/<id>.jsonl` y un resumen sin cargas grandes en el
@@ -128,18 +136,25 @@ export interface OpcionesAuditoria {
 export function auditar<T extends TipoAuditoria>(tipo: T, datos: MapaAuditoria[T], opciones: OpcionesAuditoria = {}): string | undefined {
   try {
     const cfg = configuracion();
+    if (!cfg.activo) return undefined;
     const contexto = opciones.contexto ?? contextoActual();
     const conversacion = idConversacionEfectivo(contexto, opciones.conversacion);
     const ahora = Date.now();
     const solicitud = contexto?.solicitud ?? "fuera-de-peticion";
     const seq = siguienteSecuencia();
-    let redactados: unknown = redactar(datos, { limiteCadena: cfg.limiteCadenaAuditoria });
+    const cuerpos = TIPOS_CON_CUERPOS.has(tipo);
+    const limiteInicial = opciones.limiteCadena ?? (cuerpos ? cfg.limiteCadenaCuerpos : cfg.limiteCadenaAuditoria);
+    // Cuerpos del Python (planes, armados): más profundidad y elementos que el resto para no cortar estructuras.
+    const amplio = cuerpos || limiteInicial > cfg.limiteCadenaAuditoria ? { profundidadMax: 32, maxElementos: 2_000, maxClaves: 1_000 } : {};
+    let redactados: unknown = redactar(datos, { limiteCadena: limiteInicial, ...amplio });
+    const version = versionCodigo().corta;
     const construir = (limite: number): LineaAuditoria => {
-      if (limite !== cfg.limiteCadenaAuditoria) redactados = limite > 0 ? redactar(datos, { limiteCadena: limite, maxElementos: 100 }) : { omitido: "línea demasiado grande" };
+      if (limite !== limiteInicial) redactados = limite > 0 ? redactar(datos, { limiteCadena: limite, maxElementos: 100 }) : { omitido: "línea demasiado grande" };
       return {
         ts: new Date(ahora).toISOString(),
         seq,
         tipo,
+        version,
         solicitud,
         conversacion,
         ...(contexto?.vista ? { vista: contexto.vista } : {}),
@@ -148,7 +163,7 @@ export function auditar<T extends TipoAuditoria>(tipo: T, datos: MapaAuditoria[T
         datos: redactados,
       };
     };
-    const linea = serializarAcotado(construir, [cfg.limiteCadenaAuditoria, 4_000, 500], MAX_LINEA_AUDITORIA);
+    const linea = serializarAcotado(construir, [limiteInicial, ...(limiteInicial > cfg.limiteCadenaAuditoria ? [cfg.limiteCadenaAuditoria] : []), 4_000, 500], MAX_LINEA_AUDITORIA);
     if (cfg.archivosActivos) escribirLinea("conversacion", rutaConversacion(conversacion, ahora), linea);
     if (cfg.auditoriaEnStdout) escribirStdout("info", linea.length > MAX_LINEA_STDOUT_AUDITORIA ? `${linea.slice(0, MAX_LINEA_STDOUT_AUDITORIA)}…[recortado]` : linea);
     registrar(nivelDeAuditoria(tipo, redactados), `auditoria.${tipo}`, resumirDatos(redactados), {

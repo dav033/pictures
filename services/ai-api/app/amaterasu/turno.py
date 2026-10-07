@@ -28,6 +28,7 @@ from typing import Callable, Literal
 from pydantic import Field, field_validator
 
 from app.operational_models import ContractModel, OperationalRequest
+from app.registro import cliente_auditado
 
 
 REFERENCE_TURN_SCOPE = "ia.reference_turn"
@@ -179,7 +180,8 @@ async def ejecutar_turno_gemini(
 
     from google.genai import types
 
-    client = (client_factory or _default_client)(api_key)
+    # Auditado (app/registro.py): prompt, imágenes como hash, herramientas, respuesta, tokens y ms.
+    client = cliente_auditado((client_factory or _default_client)(api_key), "turno_referencia")
     parts: list[object] = []
     for image in payload.images:
         label = f"[IMAGEN_ID={image.id}]"

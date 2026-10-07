@@ -2,22 +2,23 @@
  * GUARDIA: ninguna llamada a un proveedor de IA (ni decisión de un modelo) sin pasar por un envoltorio de
  * src/lib/registro. Sin red ni coste:
  *
- *   npx tsx scripts/test/test-guardia-proveedores-ia.ts             # falla si aparece un punto NO inventariado
- *   npx tsx scripts/test/test-guardia-proveedores-ia.ts --estricto  # además falla con los PENDIENTES (2.ª pasada)
+ *   npx tsx scripts/test/test-guardia-proveedores-ia.ts             # estricto (por defecto desde la 2.ª pasada)
+ *   REGISTRO_GUARDIA_ESTRICTA=0 npx tsx scripts/test/test-guardia-proveedores-ia.ts  # solo puntos NO inventariados
  *
  * Cómo funciona: detecta en el código de servidor (src/, packages/*\/src) las formas crudas de llamar a una IA
  * (SDK de Gemini u otros, hosts de proveedores, procesos hijo, transporte al Python, fábricas de ChatPort,
  * bucles de herramientas, operaciones del Python que ejecutan un modelo). Cada línea detectada debe estar en
  * INVENTARIO con su punto de enganche; el punto está «envuelto» cuando el archivo de enganche contiene el
  * envoltorio. Lo mismo para las rutas /api (conRegistro) y para los fetch del navegador que deben llevar el id
- * de conversación. La segunda pasada debe terminar con `--estricto` en verde y cambiar ESTRICTO_POR_DEFECTO.
+ * de conversación. Desde la segunda pasada es estricta por defecto: cualquier punto sin envolver la hace fallar.
+ * También comprueba los enganches de la conversación (vistas, ruta guiada, Python) que el registro necesita.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-const ESTRICTO_POR_DEFECTO = false;
+const ESTRICTO_POR_DEFECTO = true;
 const RAIZ = path.resolve(__dirname, "..", "..");
-const ESTRICTO = ESTRICTO_POR_DEFECTO || process.argv.includes("--estricto") || process.env.REGISTRO_GUARDIA_ESTRICTA === "1";
+const ESTRICTO = process.argv.includes("--estricto") || process.env.REGISTRO_GUARDIA_ESTRICTA === "1" || (ESTRICTO_POR_DEFECTO && process.env.REGISTRO_GUARDIA_ESTRICTA !== "0");
 
 interface Enganche {
   archivo: string;
@@ -51,7 +52,7 @@ export const INVENTARIO: readonly Punto[] = [
   { id: "agente-core-cliente", archivo: "packages/agente-core/src/gemini/chat.ts", patron: /new\s+GoogleGenAI|export function crearChatGemini/, que: "ChatPort Gemini (chat clásico, guiado, Amaterasu, venue)", envoltorio: "chatDe()/chatOmoikaneDe() → envolverChatPort(port, { proposito })", enganche: [CHATPORT_CENTRAL] },
   { id: "agente-core-turno", archivo: "packages/agente-core/src/gemini/chat.ts", patron: /\.models\.generateContent(Stream)?\(/, que: "turno y turno en streaming del ChatPort Gemini", envoltorio: "envolverChatPort (cubre turno y turnoStream)", enganche: [CHATPORT_CENTRAL] },
   // ── @sempertex/happie-package-ia (paquete) ──
-  { id: "happie-gemini", archivo: "packages/happie-package-ia/src/recomendador.ts", patron: /new\s+GoogleGenAI|\.models\.generateContent\(/, que: "Happie: recomendación/extracción estructurada (crearGeneradorGemini y su uso por defecto si `generar` falta)", envoltorio: "pasar SIEMPRE generar: envolverFuncionIa(generador, { proveedor, proposito: \"happie\" })", enganche: [{ archivo: "src/lib/happie/ia-recomendacion.ts", contiene: /envolverFuncionIa\(/ }, { archivo: "src/lib/happie/conversacion-webhook.ts", contiene: /envolverFuncionIa\(/ }] },
+  { id: "happie-gemini", archivo: "packages/happie-package-ia/src/recomendador.ts", patron: /new\s+GoogleGenAI|\.models\.generateContent\(/, que: "Happie: recomendación/extracción estructurada (crearGeneradorGemini y su uso por defecto si `generar` falta)", envoltorio: "pasar SIEMPRE generar: envolverFuncionIa(generador, { proveedor, proposito: \"happie\" })", enganche: [{ archivo: "src/lib/happie/ia-recomendacion.ts", contiene: /envolverFuncionIa\(/ }, { archivo: "src/lib/happie/conversacion-webhook.ts", contiene: /envolverFuncionIa\(|generadorHappieAuditado\(/ }] },
   // ── fal / FLUX directo ──
   { id: "fal-flux", archivo: "src/lib/ia/kagutsuchi/flux.ts", patron: /queue\.fal\.run|rest\.alpha\.fal\.ai/, que: "FLUX en fal (cola submit → status → result → descarga)", envoltorio: "generarConSempertexFlux → auditarGeneracionImagen(...); fetchFalAllowed → crearFetchAuditado(fetch, { tipo: \"http\", proveedor: \"fal\", omitir: sondeos de estado })", enganche: [{ archivo: "src/lib/ia/kagutsuchi/flux.ts", contiene: /auditarGeneracionImagen\(/ }, { archivo: "src/lib/ia/kagutsuchi/flux.ts", contiene: /crearFetchAuditado\(/ }] },
   // ── Transporte Next → Python (todas las llamarPython*) ──
@@ -73,7 +74,7 @@ export const INVENTARIO: readonly Punto[] = [
   { id: "py-ia-bouquet-referencia", archivo: "src/lib/ia/amaterasu/bouquet-referencia.ts", patron: /llamarPythonBouquetReferencia\(/, que: "lectura de bouquet de la foto (visión en Python)", envoltorio: "propositoIa = \"lectura_bouquet_foto\"", enganche: [PYTHON_CENTRAL, PYTHON_IA] },
   { id: "py-ia-conteo-referencia", archivo: "src/lib/ia/amaterasu/conteo-referencia.ts", patron: /llamarPythonConteoReferencia\(/, que: "conteo de globos de la foto (visión en Python)", envoltorio: "propositoIa = \"conteo_foto\"", enganche: [PYTHON_CENTRAL, PYTHON_IA] },
   { id: "py-ia-guirnalda-referencia", archivo: "src/lib/ia/amaterasu/guirnalda-referencia.ts", patron: /llamarPythonGuirnaldaReferencia\(/, que: "lectura de guirnalda de la foto (visión en Python)", envoltorio: "propositoIa = \"lectura_guirnalda_foto\"", enganche: [PYTHON_CENTRAL, PYTHON_IA] },
-  { id: "py-ia-lectura-unica", archivo: "src/lib/ia/amaterasu/lectura-unica.ts", patron: /llamarPythonLecturaUnica\(/, que: "lectura única de la foto (visión en Python)", envoltorio: "propositoIa = \"lectura_unica_foto\"", enganche: [PYTHON_CENTRAL, PYTHON_IA] },
+  { id: "py-ia-lectura-unica", archivo: "src/lib/ia/amaterasu/lectura-unica.ts", patron: /llamarPythonLecturaUnica\(/, que: "lectura única de la foto: el Python solo VALIDA lo que escribió el análisis (sin modelo)", envoltorio: "evento `python` con el cuerpo completo (la visión es el reference-turn, con envolverChatPort)", enganche: [PYTHON_CENTRAL] },
   { id: "py-ia-flux", archivo: "src/lib/ia/kagutsuchi/flux.ts", patron: /llamarPythonFluxGenerate\(/, que: "FLUX vía Python (FLUX_GENERATION_PYTHON)", envoltorio: "auditarGeneracionImagen en generarConSempertexFlux (cubre ambas rutas)", enganche: [PYTHON_CENTRAL, { archivo: "src/lib/ia/kagutsuchi/flux.ts", contiene: /auditarGeneracionImagen\(/ }] },
   { id: "py-ia-chat-stream", archivo: "src/lib/ia/omoikane/chat-python.ts", patron: /llamarPythonChatTurnStream\(/, que: "turno de chat en streaming vía Python", envoltorio: "envolverChatPort en chatOmoikaneDe", enganche: [PYTHON_CENTRAL, CHATPORT_CENTRAL] },
   { id: "py-ia-embedding", archivo: "src/lib/rag/embeddings.ts", patron: /llamarPythonEmbedding\(/, que: "embeddings vía Python", envoltorio: "propositoIa(/embed) = \"embedding\"", enganche: [PYTHON_CENTRAL, PYTHON_IA] },
@@ -162,6 +163,23 @@ const CLIENTES_FLUJO: Readonly<Record<string, string>> = {
   "src/lib/cotizacion/borrador-profesional.ts": "/api/cotizacion-profesional",
 };
 const INTERCEPTOR_FETCH: Enganche = { archivo: "src/components/registro/CapturaErroresCliente.tsx", contiene: /instalarCabecerasConversacionEnFetch\(/ };
+
+/**
+ * Enganches de la conversación sin los que la auditoría queda partida o sin contexto: cada vista abre su id al montar
+ * y lo renueva al vaciar; la ruta guiada se registra como vista «guiada» con su request_id alineado; el Python lee
+ * x-conversacion-id y escribe sus llamadas a modelos como JSON.
+ */
+const ENGANCHES_CONVERSACION: ReadonlyArray<Enganche & { que: string }> = [
+  { archivo: "src/components/guiado/VistaGuiada.tsx", contiene: /abrirConversacionGuiada\(/, que: "vista guiada: id de conversación al montar" },
+  { archivo: "src/components/guiado/VistaGuiada.tsx", contiene: /vaciarConversacionGuiada\(/, que: "vista guiada: conversación nueva al vaciar" },
+  { archivo: "src/components/guiado/VistaGuiada.tsx", contiene: /registrarFallo\("sse\.fallo"|"sse\.fallo"/, que: "vista guiada: fallos del SSE con instantánea" },
+  { archivo: "src/app/page.tsx", contiene: /obtenerIdConversacion\("clasica"\)/, que: "vista clásica: id de conversación al montar" },
+  { archivo: "src/app/page.tsx", contiene: /nuevaConversacion\("clasica"\)/, que: "vista clásica: conversación nueva al vaciar" },
+  { archivo: "src/app/api/asistente-guiado/route.ts", contiene: /conRegistro\([^)]*vista:\s*"guiada"/, que: "ruta guiada con vista «guiada»" },
+  { archivo: "src/app/api/asistente-guiado/route.ts", contiene: /contextoActual\(\)\?\.solicitud/, que: "ruta guiada: request_id alineado con la auditoría" },
+  { archivo: "services/ai-api/app/registro.py", contiene: /x-conversacion-id/, que: "Python: lee x-conversacion-id" },
+  { archivo: "services/ai-api/app/main.py", contiene: /instalar_registro\(/, que: "Python: middleware de registro instalado" },
+];
 
 /* ---------- Recorrido ---------- */
 
@@ -272,6 +290,13 @@ function principal(): void {
   }
   if (!interceptor) console.log(`  (alternativa central: ${INTERCEPTOR_FETCH.archivo} con instalarCabecerasConversacionEnFetch())`);
 
+  console.log("\nENGANCHES DE LA CONVERSACIÓN:");
+  for (const enganche of ENGANCHES_CONVERSACION) {
+    const listo = cumple(enganche);
+    if (!listo) pendientes.push(`${enganche.archivo} (${enganche.que})`);
+    console.log(`  [${(listo ? "listo" : "PENDIENTE").padEnd(9)}] ${enganche.archivo} — ${enganche.que}`);
+  }
+
   let fallo = false;
   if (sinInventario.length) {
     fallo = true;
@@ -290,7 +315,7 @@ function principal(): void {
   }
   console.log(`\nResumen: ${INVENTARIO.length} puntos inventariados, ${pendientes.length} pendientes de envolver, ${obsoletos.length} obsoletos, ${sinInventario.length} sin inventario, ${rutasSinClasificar.length} rutas sin clasificar${ESTRICTO ? " (estricto)" : ""}.`);
   if (fallo) process.exit(1);
-  console.log(ESTRICTO ? "[PASS] todo envuelto" : "[PASS] ningún punto nuevo sin inventario (usa --estricto tras la segunda pasada)");
+  console.log(ESTRICTO ? "[PASS] todo envuelto" : "[PASS] ningún punto nuevo sin inventario (modo no estricto: REGISTRO_GUARDIA_ESTRICTA=0)");
 }
 
 principal();

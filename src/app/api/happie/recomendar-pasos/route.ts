@@ -13,8 +13,12 @@ import {
   HappieStructuredRecommendationRequestV1Schema,
 } from "@/lib/ia/contracts/happie-v1";
 import { iaRecomendacionHappie } from "@/lib/happie/ia-recomendacion";
+import { conRegistro } from "@/lib/registro/servidor";
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/happie/recomendar-pasos", atenderPOST, { vista: "happie" });
+
+async function atenderPOST(request: Request) {
   if (!isAuthenticatedRequest(request) || !isSameOriginRequest(request)) {
     return Response.json(
       HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "Sesión requerida." }),

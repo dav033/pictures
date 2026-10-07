@@ -20,6 +20,7 @@ from typing import Callable, Literal
 from pydantic import Field, field_validator
 
 from app.operational_models import OperationalRequest
+from app.registro import cliente_auditado
 
 
 HAPPIE_GENERATE_SCOPE = "ia.happie_generate"
@@ -122,7 +123,8 @@ async def generar_happie_gemini(
 
     from google.genai import types
 
-    client = (client_factory or _default_client)(api_key)
+    # Auditado (app/registro.py): prompt, esquema, respuesta y tokens.
+    client = cliente_auditado((client_factory or _default_client)(api_key), "happie")
     try:
         response = await client.aio.models.generate_content(  # type: ignore[attr-defined]
             model=payload.model,

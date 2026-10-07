@@ -7,6 +7,7 @@ import { ArmadoArcoOrganicoV1Schema } from "@/lib/plan/armado-arco-organico";
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { vistaPreviaArmadoArcoOrganicoPython } from "@/lib/plan/edicion-python";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import { conRegistro } from "@/lib/registro/servidor";
 
 /**
  * Vista previa del editor de arcos orgánicos (ADR-0034): el navegador manda el
@@ -83,7 +84,10 @@ async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
   }
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/plan-armado-arco-organico", atenderPOST);
+
+async function atenderPOST(request: Request) {
   if (dibujosEnVuelo >= MAX_DIBUJOS_EN_VUELO) {
     const requestId = requestIdDe(request);
     const mensaje = "Hay demasiados dibujos del arco en curso. Espera un momento y vuelve a intentarlo.";

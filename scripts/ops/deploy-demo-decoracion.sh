@@ -50,10 +50,12 @@ docker run --rm --user 0:0 \
   --mount "type=bind,src=$APP_DIR/data,dst=/source,readonly" \
   node:22-alpine sh -c 'cp -a /source/. /target/'
 
+# REGISTRO_VERSION: el commit desplegado va en cada línea del registro (src/lib/registro/version.ts).
 docker run -d --name demo-decoracion \
   --network stack_web \
   --restart unless-stopped \
   --env-file .env.production \
+  --env REGISTRO_VERSION="$DEPLOY_SHA" \
   -v "$DATA_VOLUME:/app/data" \
   "$IMAGE"
 

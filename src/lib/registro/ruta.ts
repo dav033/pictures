@@ -1,4 +1,3 @@
-import "server-only";
 import { configuracion } from "./configuracion";
 import { conContexto, contextoActual, contextoDesdeRequest } from "./contexto";
 import { deduplicarMensajes } from "./envoltorios";
@@ -254,6 +253,8 @@ export function conRegistro<A extends unknown[]>(
   opciones: OpcionesConRegistro = {},
 ): (request: Request, ...resto: A) => Promise<Response> {
   return async (request: Request, ...resto: A): Promise<Response> => {
+    // Fuera de Next (scripts de tsx que importan la ruta) el registro está inactivo: la ruta corre tal cual.
+    if (!configuracion().activo) return handler(request, ...resto);
     const inicio = performance.now();
     let metodo = "GET";
     let contexto: ContextoRegistro;

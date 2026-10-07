@@ -20,11 +20,12 @@
  *   proceso viva); el lector (`npm run registros`) junta todos los días igualmente.
  *
  * ── Línea general ─────────────────────────────────────────────────────────────────────────────────
- *   {ts, nivel, servicio:"next", entorno, evento, solicitud?, conversacion?, vista?, ruta?, ms?, datos?, error?}
+ *   {ts, nivel, servicio:"next", entorno, version, evento, solicitud?, conversacion?, vista?, ruta?, ms?, datos?, error?}
+ *   `version` = commit del código (12 caracteres; «+local» en desarrollo): ver version.ts.
  *   Cada evento de auditoría deja además aquí un resumen `auditoria.<tipo>` sin cargas grandes.
  *
  * ── Línea de auditoría (archivo de la conversación) ───────────────────────────────────────────────
- *   {ts, seq, tipo, solicitud, conversacion, vista?, ruta?, ms?, datos}
+ *   {ts, seq, tipo, version, solicitud, conversacion, vista?, ruta?, ms?, datos}
  *
  * ── Taxonomía (tipo → campos de `datos`) ──────────────────────────────────────────────────────────
  *   entrada_usuario  metodo, texto (último mensaje del usuario), adjuntos [{imagen:sha256, bytes, mime}],
@@ -34,13 +35,14 @@
  *                    "embedding", "traduccion_revision", "caption_flux", "caption_orden", "happie", "juez"…),
  *                    sistema {sha256, caracteres, version?, texto? (solo la 1.ª vez que ese sha aparece en la
  *                    conversación)}, mensajes (cada uno completo la 1.ª vez; después {ref: sha}),
- *                    herramientas (esquemas completos la 1.ª vez; después {nombres, ref}), parametros
+ *                    herramientas (esquemas completos la 1.ª vez; después {nombres, ref}), parametros,
+ *                    banderas (banderas de IA y modelos configurados; completas la 1.ª vez, después {ref})
  *   respuesta_ia     llamada, proveedor, modelo, proposito, texto, llamadasHerramientas [{nombre, id, argumentos}],
  *                    motivoFin, bloqueo, tokens {entrada, salida, pensamiento, cacheados}, ms,
  *                    costeEstimadoUsd?, error?, interrumpida?
  *   herramienta      nombre, llamadaId, argumentos, resultado (recortado), ok, ms, error?
  *   decision         quien ("modelo:<nombre>" o "regla:<nombre>"), que, entrada?, resultado, motivo?
- *   python           metodo, ruta, cuerpoEnviado, estado, cuerpoRecibido (recortado), ms, requestId, error?
+ *   python           metodo, ruta, cuerpoEnviado, estado, cuerpoRecibido (cadenas hasta ~200 kB), ms, requestId, error?
  *   http             proveedor, metodo, url (saneada), estado, cuerpoEnviado?, cuerpoRecibido?, ms, error?
  *   imagen           proveedor, endpoint, modelo?, prompt, referencias [{imagen:sha256, bytes, mime, rol}],
  *                    parametros, resultado {url?, imagen?, bytes?, mime?, proveedorRequestId?}, ms, costeEstimadoUsd?
@@ -58,13 +60,25 @@
  *   con marca; circulares, profundidad, claves y elementos acotados; process.env nunca se serializa.
  *
  * ── Variables de entorno (todas opcionales) ───────────────────────────────────────────────────────
- *   REGISTRO_DIR, REGISTRO_ENTORNO (local|vps|vercel), REGISTRO_NIVEL_ARCHIVO (debug), REGISTRO_NIVEL_STDOUT
+ *   REGISTRO_ACTIVO (1/0; por defecto solo dentro de Next: los scripts de tsx no registran),
+ *   REGISTRO_VERSION (commit; si no, VERCEL_GIT_COMMIT_SHA, version-codigo.json o .git), REGISTRO_DIR, REGISTRO_ENTORNO (local|vps|vercel), REGISTRO_NIVEL_ARCHIVO (debug), REGISTRO_NIVEL_STDOUT
  *   (info), REGISTRO_RETENCION_GENERAL_DIAS (14), REGISTRO_RETENCION_CONVERSACIONES_DIAS (30),
  *   REGISTRO_TOPE_GENERAL_MB_DIA (200), REGISTRO_TOPE_CONVERSACION_MB (25), REGISTRO_ARCHIVOS=0 (solo
  *   stdout), REGISTRO_AUDITORIA_STDOUT=1 (copia la traza completa a stdout; activo por defecto en Vercel).
  *
+ * ── Dónde está enganchado (segunda pasada; la guardia scripts/test/test-guardia-proveedores-ia.ts lo exige) ──
+ *   Gemini directo (getGeminiClient), ChatPort (chatDe/chatOmoikaneDe, Amaterasu vía Python), Happie, fal/FLUX,
+ *   transporte al Python (crearFetchAuditado + x-conversacion-id), captions de órdenes (opencode), herramientas de
+ *   los bucles, conRegistro en las rutas del flujo y decidir(...) en las reglas deterministas. El navegador manda
+ *   x-conversacion-id en todo fetch a /api/* (instalarCabecerasConversacionEnFetch en CapturaErroresCliente) y la
+ *   vista guiada registra sus acciones y fallos con una instantánea del estado (components/guiado/registro-guiado.ts).
+ *   El Python (services/ai-api/app/registro.py) escribe sus propias líneas JSON con el mismo conversacion_id.
+ *   Módulos que también cargan scripts de tsx sin --conditions=react-server importan ./servidor.ts (sin server-only).
+ *
  * ── Leerlo ────────────────────────────────────────────────────────────────────────────────────────
  *   npm run registros -- --ayuda      (scripts/ops/ver-registros.ts: local, VPS por ssh, Vercel, Python)
+ *   npm run registros -- conversaciones --origen local --conversacion <id>   (intercala las líneas «py:» del Python local)
+ *   npm run registros -- --origen python-local --conversacion <id>
  */
 
 export type NivelRegistro = "debug" | "info" | "warn" | "error";
@@ -97,6 +111,8 @@ export interface LineaGeneral {
   nivel: NivelRegistro;
   servicio: "next";
   entorno: EntornoRegistro;
+  /** Commit del código que escribió la línea (ver version.ts). */
+  version?: string;
   evento: string;
   solicitud?: string;
   conversacion?: string;
@@ -111,6 +127,8 @@ export interface LineaAuditoria {
   ts: string;
   seq: number;
   tipo: TipoAuditoria;
+  /** Commit del código que escribió la línea (ver version.ts). */
+  version?: string;
   solicitud: string;
   conversacion: string;
   vista?: string;
@@ -150,6 +168,8 @@ export interface DatosLlamadaIa {
   mensajes?: unknown[];
   herramientas?: unknown;
   parametros?: Record<string, unknown>;
+  /** Banderas y modelos configurados al llamar: completos la 1.ª vez por conversación, después {ref: sha}. */
+  banderas?: unknown;
 }
 
 export interface DatosRespuestaIa {

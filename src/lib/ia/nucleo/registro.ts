@@ -4,6 +4,7 @@ import { guardarMeta, obtenerMeta } from "@/lib/db";
 import { ErrorIA } from "./tipos";
 import type { ChatPort, ProveedorId } from "./tipos";
 import { CHAT_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
+import { decidir, envolverChatPort } from "@/lib/registro";
 
 const CLAVE_META = "ia_proveedor";
 
@@ -68,10 +69,14 @@ function thinkingLevelDeChatDesdeEnv(): ThinkingLevel | undefined {
   return undefined;
 }
 
-export async function chatDe(id: ProveedorId): Promise<ChatPort> {
+/**
+ * `proposito` etiqueta la auditoría (src/lib/registro): cada turno del ChatPort devuelto deja `llamada_ia`
+ * (sistema, historial, herramientas, parámetros) y `respuesta_ia` (texto, llamadas, tokens, ms o error).
+ */
+export async function chatDe(id: ProveedorId, proposito = "chat"): Promise<ChatPort> {
   void id;
   const { crearChatGemini } = await import("@sempertex/agente-core/gemini");
-  return crearChatGemini({ thinkingLevel: thinkingLevelDeChatDesdeEnv() });
+  return envolverChatPort(crearChatGemini({ thinkingLevel: thinkingLevelDeChatDesdeEnv() }), { proposito });
 }
 
 /**
@@ -79,10 +84,11 @@ export async function chatDe(id: ProveedorId): Promise<ChatPort> {
  * Amaterasu, so the chat's migration flag (ADR-0027) lives here instead of
  * inside it, and Amaterasu keeps its own flag and path untouched.
  */
-export async function chatOmoikaneDe(id: ProveedorId, ids: { requestId: string; correlationId: string }): Promise<ChatPort> {
+export async function chatOmoikaneDe(id: ProveedorId, ids: { requestId: string; correlationId: string }, proposito = "chat_clasico"): Promise<ChatPort> {
+  decidir("regla:proveedor_chat", "por dónde corre el turno del chat", { proveedor: id, via: CHAT_PYTHON_ENABLED ? "python" : "gemini_directo", proposito, thinkingLevel: process.env.GEMINI_CHAT_THINKING_LEVEL ?? "(por defecto)" }, { motivo: "CHAT_PYTHON_ENABLED y GEMINI_CHAT_THINKING_LEVEL" });
   if (CHAT_PYTHON_ENABLED) {
     const { crearChatGeminiPython } = await import("../omoikane/chat-python");
-    return crearChatGeminiPython({ ...ids, thinkingLevel: thinkingLevelDeChatDesdeEnv() });
+    return envolverChatPort(crearChatGeminiPython({ ...ids, thinkingLevel: thinkingLevelDeChatDesdeEnv() }), { proposito });
   }
-  return chatDe(id);
+  return chatDe(id, proposito);
 }

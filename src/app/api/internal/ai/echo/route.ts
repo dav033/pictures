@@ -9,6 +9,7 @@ import {
   leerContextoOperativo,
   sha256Body,
 } from "@/lib/ia/contracts/operational-v1";
+import { conRegistro } from "@/lib/registro/servidor";
 
 export const maxDuration = 75;
 
@@ -18,7 +19,10 @@ const commonHeaders = (requestId: string, correlationId: string): Record<string,
   "X-Correlation-ID": correlationId,
 });
 
-export async function POST(request: Request): Promise<Response> {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/internal/ai/echo", atenderPOST, { vista: "interna" });
+
+async function atenderPOST(request: Request): Promise<Response> {
   const preliminaryContext = leerContextoOperativo(request);
   const preliminaryHeaders = commonHeaders(
     preliminaryContext.request_id,

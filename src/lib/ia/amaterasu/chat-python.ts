@@ -2,6 +2,7 @@ import "server-only";
 import type { ChatPort, FragmentoChat, PeticionChat, TurnoChat } from "@/lib/ia/nucleo/tipos";
 import { errorIADeTransportePython } from "@/lib/ia/nucleo/error-ia-python";
 import { llamarPythonReferenceTurn, type PythonReferenceTurnImage } from "@/lib/ia/nucleo/python-adapter";
+import { envolverChatPort } from "@/lib/registro";
 
 const IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
@@ -41,7 +42,12 @@ function imagenesPython(mensaje: Extract<PeticionChat["historial"][number], { ro
  * intentos de un mismo análisis como sí hace `crearChatGemini`
  * (diferencia aceptada y documentada en `app/amaterasu/turno.py`).
  */
-export function crearChatTurnoPython(opts: { requestId: string; correlationId: string; model?: string }): ChatPort {
+export function crearChatTurnoPython(opts: { requestId: string; correlationId: string; model?: string; proposito?: string }): ChatPort {
+  // Auditado (src/lib/registro): cada turno deja llamada_ia/respuesta_ia con el prompt, las imágenes como hash y la respuesta.
+  return envolverChatPort(crearPuertoTurnoPython(opts), { proposito: opts.proposito ?? "analisis_foto" });
+}
+
+function crearPuertoTurnoPython(opts: { requestId: string; correlationId: string; model?: string }): ChatPort {
   return {
     id: "gemini",
     modelo: opts.model ?? "gemini-3.6-flash",

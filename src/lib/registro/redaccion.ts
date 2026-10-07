@@ -1,4 +1,3 @@
-import "server-only";
 import { createHash } from "node:crypto";
 import type { ErrorSerializado } from "./tipos";
 

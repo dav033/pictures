@@ -7,6 +7,7 @@ import { ArmadoGuirnaldaV1Schema } from "@/lib/plan/armado-guirnalda";
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { vistaPreviaArmadoGuirnaldaPython } from "@/lib/plan/edicion-python";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import { conRegistro } from "@/lib/registro/servidor";
 
 /**
  * Vista previa del editor de armado de guirnaldas (ADR-0032, entrega E6): el
@@ -60,7 +61,10 @@ async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
   }
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/plan-armado-guirnalda", atenderPOST);
+
+async function atenderPOST(request: Request) {
   const requestIdHttp = requestIdDe(request);
   const cabeceras = { "X-Request-ID": requestIdHttp };
   const rechazoTransporte = (status: number, mensaje: string, codigo: string) => {

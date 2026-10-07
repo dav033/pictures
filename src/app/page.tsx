@@ -40,6 +40,7 @@ import { adjuntosParaGeneracion, contextoDeGeneracion } from "@/lib/estado/gener
 import { aligerarAdjuntos, claveImagen, imagenesSinMiniatura, type AdjuntosTurno } from "@/lib/estado/persistencia-adjuntos";
 import { respetarReintentable, uiErrorDesdeEventoChat, type OrigenError } from "@/lib/estado/estado-error";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
+import { nuevaConversacion, obtenerIdConversacion, registrarEventoCliente } from "@/lib/registro/cliente";
 import {
   CLAVE_GENERACIONES,
   generacionParaRestaurar,
@@ -668,6 +669,8 @@ export default function Page() {
   // hilo. sessionStorage (no localStorage) a propósito — es una demo por
   // sesión, no algo que deba sobrevivir entre visitas distintas.
   useEffect(() => {
+    // Conversación del servidor (registro y auditoría): la de esta sesión, o una nueva; todo fetch a /api/* la lleva.
+    obtenerIdConversacion("clasica");
     try {
       sessionStorage.removeItem(CLAVE_CHAT_LEGACY);
       const guardado = sessionStorage.getItem(CLAVE_CHAT);
@@ -1124,6 +1127,10 @@ export default function Page() {
     } catch {
       // sessionStorage no disponible — no hay nada que limpiar ahí.
     }
+    // Empezar de cero es otra conversación: su propio archivo en el registro del servidor.
+    const anterior = obtenerIdConversacion("clasica");
+    const nueva = nuevaConversacion("clasica");
+    registrarEventoCliente("conversacion.vaciar", { nueva }, anterior, { vista: "clasica" });
     entradaRef.current?.focus();
   }
 

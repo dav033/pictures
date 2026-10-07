@@ -202,6 +202,7 @@ from app.plan_edicion import (
     vista_previa_patron,
 )
 from app.postgres_store import PostgresOperationalStore
+from app.registro import auditar_llamada, configurar_registro, instalar_registro
 
 
 SCHEMA_VERSION = "operational.v1"
@@ -401,7 +402,18 @@ async def _default_rerank_handler(payload: RerankRequest) -> dict[str, object]:
     # Cross-encoder inference is CPU-bound and may download model weights on
     # first use. Run it outside the event loop and serialize model work so one
     # small CPU instance cannot be saturated by concurrent requests.
-    return await asyncio.to_thread(_run_bounded_rerank, payload)
+    # Auditado (app/registro.py): consulta, candidatos, orden y puntuaciones.
+    resultado: dict[str, object] = await auditar_llamada(
+        proposito="rerank_catalogo",
+        proveedor="cross-encoder",
+        peticion={
+            "consulta": payload.query,
+            "candidatos": [{"id": c.id, "texto": c.text[:300]} for c in payload.candidates],
+        },
+        ejecutar=lambda: asyncio.to_thread(_run_bounded_rerank, payload),
+        resumir=lambda resultado: dict(cast(dict[str, object], resultado.get("payload") or {})),
+    )
+    return resultado
 
 
 async def _default_embedding_handler(payload: EmbeddingRequest) -> dict[str, object]:
@@ -557,7 +569,27 @@ async def _default_patron_referencia_handler(payload: PatronReferenciaRequest) -
 
 async def _default_flux_generate_handler(payload: FluxGenerateRequest) -> dict[str, object]:
     try:
-        result = await generar_flux_fal(payload)
+        # Auditado (app/registro.py): prompt final, referencias y resultado como hash, ms o el error.
+        result = await auditar_llamada(
+            proposito="imagen_flux",
+            proveedor="fal",
+            peticion={
+                "modo": payload.mode,
+                "prompt": payload.prompt,
+                "loras": [lora.model_dump() for lora in payload.loras],
+                "guidance_scale": payload.guidance_scale,
+                "pasos": payload.num_inference_steps,
+                "tamano": [payload.image_width, payload.image_height],
+                "semilla": payload.seed,
+                "referencias": payload.image_data_urls,
+            },
+            ejecutar=lambda: generar_flux_fal(payload),
+            resumir=lambda resultado: {
+                "imagen": resultado.get("image_base64"),
+                "mime": resultado.get("mime"),
+                "proveedor_request_id": resultado.get("provider_request_id"),
+            },
+        )
     except FluxGenerateError as error:
         details: dict[str, object] = {}
         if error.provider_status is not None:
@@ -1314,6 +1346,8 @@ def create_app(
     lectura_unica_handler: LecturaUnicaHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
+    # Registro en JSON (app/registro.py): antes de cualquier línea de arranque.
+    configurar_registro()
     default_store: object | None = None
     if current_settings.database_url:
         try:
@@ -1424,6 +1458,9 @@ def create_app(
             raise
         response.headers.update(_response_headers(request))
         return response
+
+    # Más externo que `request_context`: contexto (x-request-id, x-conversacion-id), `peticion.fin` y errores.
+    instalar_registro(application)
 
     @application.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exception: HTTPException) -> JSONResponse:

@@ -66,8 +66,11 @@ DÓNDE ESTÁ CADA COSA
               allí la auditoría completa se copia a stdout (REGISTRO_AUDITORIA_STDOUT, activo por defecto) y
               puede llegar recortada; no hay listado de conversaciones.
   python-vps  docker logs --since … ${CONTENEDOR_PYTHON} (uvicorn, texto plano)
-  python-local el supervisor (scripts/ops/supervisar-ai-api.py) escribe en su consola; si la rediriges a
-              data/registros/python/*.log, este comando la lee.
+  python-local el Python escribe una línea JSON por evento en su consola y, en local, también en
+              data/registros/python/ai-api-AAAA-MM-DD.jsonl (app/registro.py): peticiones con request_id,
+              conversacion_id, ruta, estado y ms; cada llamada a un modelo con su prompt completo, la respuesta,
+              tokens y ms; errores con traceback. --conversacion <id> filtra por conversación.
+              La línea de tiempo local de una conversación intercala esas líneas («py:…»); --sin-python las quita.
 `;
 
 interface Opciones {
@@ -85,6 +88,8 @@ interface Opciones {
   completo: boolean;
   stdout: boolean;
   incluirSalud: boolean;
+  /** Línea de tiempo local sin las líneas del Python (por defecto se intercalan). */
+  sinPython: boolean;
   descargar?: string;
   raiz?: string;
   ayuda: boolean;
@@ -96,7 +101,7 @@ function fallar(mensaje: string): never {
 }
 
 function leerArgumentos(argv: string[]): Opciones {
-  const opciones: Opciones = { subcomando: "general", origen: "local", json: false, completo: false, stdout: false, incluirSalud: false, ayuda: false };
+  const opciones: Opciones = { subcomando: "general", origen: "local", json: false, completo: false, stdout: false, incluirSalud: false, sinPython: false, ayuda: false };
   const valores = new Map<string, string>();
   const banderas = new Set<string>();
   for (let indice = 0; indice < argv.length; indice += 1) {
@@ -110,7 +115,7 @@ function leerArgumentos(argv: string[]): Opciones {
     }
     const igual = argumento.indexOf("=");
     const nombre = argumento.slice(2, igual > 0 ? igual : undefined);
-    if (["json", "completo", "stdout", "incluir-salud", "ayuda", "help"].includes(nombre)) {
+    if (["json", "completo", "stdout", "incluir-salud", "sin-python", "ayuda", "help"].includes(nombre)) {
       banderas.add(nombre);
       continue;
     }
@@ -142,6 +147,7 @@ function leerArgumentos(argv: string[]): Opciones {
   opciones.completo = banderas.has("completo");
   opciones.stdout = banderas.has("stdout");
   opciones.incluirSalud = banderas.has("incluir-salud");
+  opciones.sinPython = banderas.has("sin-python");
   opciones.ayuda = banderas.has("ayuda") || banderas.has("help");
   return opciones;
 }
@@ -376,25 +382,63 @@ function resumenEvento(tipo: string, datos: unknown): string {
   }
 }
 
-function imprimirLineaDeTiempo(id: string, lineas: string[], completo: boolean): void {
-  const objetos = lineas.map(parsear).filter((objeto): objeto is Record<string, unknown> => Boolean(objeto));
+/** Líneas JSON del Python local (data/registros/python/*.jsonl) de esa conversación, como eventos de la línea de tiempo. */
+function lineasPythonDeConversacion(raices: string[], id: string): Record<string, unknown>[] {
+  const carpeta = path.join(raices[0]!, "python");
+  if (!existsSync(carpeta)) return [];
+  const salida: Record<string, unknown>[] = [];
+  for (const nombre of readdirSync(carpeta).filter((archivo) => archivo.endsWith(".jsonl")).sort()) {
+    for (const linea of readFileSync(path.join(carpeta, nombre), "utf8").split(/\r?\n/)) {
+      if (!linea.includes(id)) continue;
+      const objeto = parsear(linea);
+      if (!objeto || objeto.conversacion_id !== id) continue;
+      salida.push({ ts: objeto.ts, tipo: `py:${texto(objeto.evento)}`, origen: "python", solicitud: objeto.request_id, ruta: objeto.ruta, ms: objeto.ms, version: objeto.version, datos: { ...objeto, ts: undefined, servicio: undefined } });
+    }
+  }
+  return salida;
+}
+
+function resumenPython(tipo: string, datos: Record<string, unknown>): string {
+  const error = esObjeto(datos.error) ? ` ✖ ${texto(datos.error.tipo)}: ${corto(texto(datos.error.mensaje), 160)}` : "";
+  const interno = esObjeto(datos.datos) ? datos.datos : {};
+  if (tipo === "py:llamada_modelo") {
+    const respuesta = esObjeto(interno.respuesta) ? interno.respuesta : {};
+    const tokens = esObjeto(interno.tokens) ? ` · in ${String(interno.tokens.entrada ?? "?")}/out ${String(interno.tokens.salida ?? "?")}` : "";
+    const sistema = esObjeto(interno.sistema) ? ` · sistema ${interno.sistema.valor !== undefined ? "(completo aquí)" : "(ref)"} ${String(interno.sistema.caracteres ?? "")} car.` : "";
+    const salida = respuesta.texto !== undefined ? ` · ${compacto(respuesta.texto, 140)}` : respuesta.vectores !== undefined ? ` · ${String(respuesta.vectores)} vectores` : "";
+    return `${texto(interno.proveedor)}/${texto(interno.modelo) || "?"} ${texto(interno.proposito)} ${String(datos.ms ?? "?")}ms${sistema}${tokens}${interno.interrumpida ? " · INTERRUMPIDA" : ""}${salida}${error}`;
+  }
+  if (tipo === "py:peticion.fin" || tipo === "py:peticion.error") return `${texto(datos.metodo)} ${texto(datos.ruta)} → ${String(datos.estado ?? "✖")} ${String(datos.ms ?? "?")}ms${error}`;
+  return `${paresDatos(interno, 200)}${error}`;
+}
+
+function imprimirLineaDeTiempo(id: string, lineas: string[], completo: boolean, python: Record<string, unknown>[] = []): void {
+  const objetos = [...lineas.map(parsear).filter((objeto): objeto is Record<string, unknown> => Boolean(objeto)), ...python]
+    .sort((a, b) => (Date.parse(texto(a.ts)) - Date.parse(texto(b.ts))) || (Number(a.seq ?? 0) - Number(b.seq ?? 0)));
   const llamadas = objetos.filter((objeto) => objeto.tipo === "llamada_ia").length;
+  const llamadasPython = objetos.filter((objeto) => objeto.tipo === "py:llamada_modelo").length;
   const errores = objetos.filter((objeto) => objeto.tipo === "error" || (esObjeto(objeto.datos) && esObjeto(objeto.datos.error))).length;
   const vista = texto(objetos.find((objeto) => objeto.vista)?.vista);
-  console.log(`Conversación ${id}${vista ? ` · vista ${vista}` : ""} · ${objetos.length} eventos · ${llamadas} llamadas IA · ${errores} errores`);
+  const versiones = [...new Set(objetos.map((objeto) => texto(objeto.version)).filter(Boolean))];
+  console.log(`Conversación ${id}${vista ? ` · vista ${vista}` : ""} · ${objetos.length} eventos · ${llamadas} llamadas IA (Next)${python.length ? ` · ${llamadasPython} llamadas a modelos del Python` : ""} · ${errores} errores${versiones.length ? ` · código ${versiones.join(", ")}` : ""}`);
   let solicitudActual = "";
-  let inicioTurno = 0;
+  // Lo que llega antes del primer turno (p. ej. «vista.abierta» del navegador) se mide desde la primera línea.
+  let inicioTurno = Date.parse(texto(objetos[0]?.ts));
   for (const objeto of objetos) {
     const solicitud = texto(objeto.solicitud);
     const ts = Date.parse(texto(objeto.ts));
-    if (solicitud !== solicitudActual) {
+    // Las líneas del Python y las acciones del navegador van dentro del turno en curso, en su momento: no abren
+    // un bloque propio (su request_id es el de cada llamada al Python o el del aviso del navegador).
+    const enLinea = objeto.origen === "python" || objeto.ruta === "/api/registro-cliente";
+    if (!enLinea && solicitud !== solicitudActual) {
       solicitudActual = solicitud;
       inicioTurno = ts;
       console.log(`\n── solicitud ${solicitud.slice(0, 13)} · ${texto(objeto.ruta) || "?"} · ${hora(texto(objeto.ts))} ${"─".repeat(30)}`);
     }
     const relativo = Number.isFinite(ts) && Number.isFinite(inicioTurno) ? `+${((ts - inicioTurno) / 1000).toFixed(3)}s` : "";
     const tipo = texto(objeto.tipo);
-    console.log(`  ${relativo.padStart(9)}  ${tipo.padEnd(15)} ${resumenEvento(tipo, objeto.datos)}`);
+    const resumen = objeto.origen === "python" && esObjeto(objeto.datos) ? resumenPython(tipo, objeto.datos) : resumenEvento(tipo, objeto.datos);
+    console.log(`  ${relativo.padStart(9)}  ${tipo.padEnd(15)} ${resumen}`);
     if (completo) console.log(JSON.stringify(objeto.datos, null, 2).split("\n").map((fila) => `             ${fila}`).join("\n"));
   }
 }
@@ -478,7 +522,7 @@ async function verConversaciones(opciones: Opciones): Promise<void> {
       for (const linea of lineas) console.log(linea);
       return;
     }
-    imprimirLineaDeTiempo(id, lineas, opciones.completo);
+    imprimirLineaDeTiempo(id, lineas, opciones.completo, remoto || opciones.sinPython ? [] : lineasPythonDeConversacion(raices, id));
     return;
   }
   const filtros = { ...filtrosDe(opciones, "24h"), conversacion: undefined };
@@ -498,6 +542,8 @@ async function verPython(opciones: Opciones): Promise<void> {
     .filter((linea) => opciones.incluirSalud || !/GET \/healthz/.test(linea))
     .filter((linea) => !opciones.buscar || linea.toLowerCase().includes(opciones.buscar.toLowerCase()))
     .filter((linea) => !opciones.solicitud || linea.includes(opciones.solicitud))
+    .filter((linea) => !opciones.conversacion || linea.includes(opciones.conversacion))
+    .filter((linea) => !/"evento": "peticion\.fin".*"ruta": "\/(healthz|readyz)"/.test(linea) || opciones.incluirSalud)
     .filter((linea) => !opciones.nivel || new RegExp(`\\b(${opciones.nivel === "error" ? "ERROR|CRITICAL" : opciones.nivel === "warn" ? "WARNING|ERROR|CRITICAL" : "INFO|WARNING|ERROR|CRITICAL|DEBUG"})\\b`).test(linea))
     .slice(-(opciones.ultimos ?? 200));
   if (opciones.origen === "python-vps") {
@@ -505,7 +551,7 @@ async function verPython(opciones: Opciones): Promise<void> {
     if (resultado.codigo !== 0) fallar(resultado.stderr.trim() || "docker logs falló");
     // docker logs manda el stderr del contenedor a su stderr: se mezclan y se ordenan por la marca de tiempo.
     const lineas = `${resultado.stdout}\n${resultado.stderr}`.split("\n").sort();
-    for (const linea of filtrar(lineas)) console.log(linea);
+    for (const linea of filtrar(lineas)) console.log(opciones.json ? linea : formatoPython(linea));
     return;
   }
   const carpeta = path.join(raicesLocales(opciones)[0]!, "python");
@@ -519,8 +565,22 @@ async function verPython(opciones: Opciones): Promise<void> {
     ].join("\n"));
     return;
   }
-  const lineas = archivos.flatMap((nombre) => readFileSync(path.join(carpeta, nombre), "utf8").split(/\r?\n/));
-  for (const linea of filtrar(lineas)) console.log(linea);
+  const desde = momento(opciones.desde);
+  const lineas = archivos.flatMap((nombre) => readFileSync(path.join(carpeta, nombre), "utf8").split(/\r?\n/))
+    .filter((linea) => desde === undefined || !linea.startsWith("{") || Date.parse(texto(parsear(linea)?.ts)) >= desde);
+  for (const linea of filtrar(lineas)) console.log(opciones.json ? linea : formatoPython(linea));
+}
+
+/** Una línea JSON del Python (app/registro.py) legible: hora, nivel, evento, correlación y resumen. */
+function formatoPython(linea: string): string {
+  // `docker logs --timestamps` antepone la hora: el JSON empieza en la primera llave.
+  const inicio = linea.indexOf("{");
+  const objeto = inicio >= 0 ? parsear(linea.slice(inicio)) : undefined;
+  if (!objeto || !objeto.evento) return linea;
+  const tipo = `py:${texto(objeto.evento)}`;
+  const correlacion = [objeto.conversacion_id ? `conv=${texto(objeto.conversacion_id)}` : "", objeto.request_id ? `sol=${texto(objeto.request_id).slice(0, 8)}` : ""].filter(Boolean).join(" ");
+  const resumen = tipo === "py:llamada_modelo" || tipo.startsWith("py:peticion.") ? resumenPython(tipo, objeto) : `${paresDatos(objeto.datos, 300)}${esObjeto(objeto.error) ? ` ✖ ${texto(objeto.error.tipo)}: ${corto(texto(objeto.error.mensaje), 200)}` : ""}`;
+  return `${hora(texto(objeto.ts))} ${texto(objeto.nivel).toUpperCase().padEnd(5)} ${texto(objeto.evento)}${correlacion ? ` [${correlacion}]` : ""} ${resumen}`;
 }
 
 function mensajeVercel(objeto: Record<string, unknown>): string {

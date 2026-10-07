@@ -1,6 +1,6 @@
-import "server-only";
 import { randomUUID } from "node:crypto";
 import type { ChatPort, FragmentoChat, PeticionChat, TurnoChat } from "@sempertex/agente-core";
+import { resumenBanderas } from "../ia/nucleo/feature-flags";
 import { configuracion } from "./configuracion";
 import { contextoActual, idConversacionEfectivo } from "./contexto";
 import { rutaConversacion } from "./escritor";
@@ -63,8 +63,25 @@ function huellaDe(valorRedactado: unknown): string {
   }
 }
 
-function redactarAuditoria(valor: unknown): unknown {
-  return redactar(valor, { limiteCadena: configuracion().limiteCadenaAuditoria });
+function redactarAuditoria(valor: unknown, limiteCadena?: number): unknown {
+  const limite = limiteCadena ?? configuracion().limiteCadenaAuditoria;
+  return redactar(valor, limite > configuracion().limiteCadenaAuditoria ? { limiteCadena: limite, profundidadMax: 32, maxElementos: 2_000, maxClaves: 1_000 } : { limiteCadena: limite });
+}
+
+/**
+ * Banderas de IA y modelos configurados en el momento de la llamada (nombres, booleanos y nombres de modelo:
+ * ningún secreto; ver `resumenBanderas`). Van en CADA `llamada_ia`: son pocas y así cada llamada se lee sola.
+ */
+function banderasActuales(): Record<string, unknown> | undefined {
+  try {
+    return {
+      ...resumenBanderas(),
+      GEMINI_CHAT_MODEL: process.env.GEMINI_CHAT_MODEL ?? "(por defecto)",
+      OPENCODE_CAPTION_MODEL: process.env.OPENCODE_CAPTION_MODEL ?? "(por defecto)",
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function esObjeto(valor: unknown): valor is Record<string, unknown> {
@@ -92,6 +109,8 @@ export interface DescripcionLlamadaIa {
   mensajes?: readonly unknown[];
   herramientas?: unknown;
   parametros?: Record<string, unknown>;
+  /** Caracteres por cadena en la auditoría de esta llamada (p. ej. ~200 kB para las que pasan por el Python). */
+  limiteCadena?: number;
 }
 
 export interface ResultadoLlamadaIa {
@@ -133,9 +152,9 @@ function nombresHerramientas(herramientas: unknown): string[] {
  * Cada mensaje completo (redactado) la primera vez que aparece en el archivo de la conversación; después solo
  * `{ref: sha, rol}`. El historial que se reenvía en cada turno no multiplica el tamaño del archivo.
  */
-export function deduplicarMensajes(mensajes: readonly unknown[], contexto: ContextoRegistro | undefined = contextoActual()): unknown[] {
+export function deduplicarMensajes(mensajes: readonly unknown[], contexto: ContextoRegistro | undefined = contextoActual(), limiteCadena?: number): unknown[] {
   return mensajes.map((mensaje) => {
-    const redactado = redactarAuditoria(mensaje);
+    const redactado = redactarAuditoria(mensaje, limiteCadena);
     const huella = huellaDe(redactado);
     const rol = esObjeto(mensaje) ? texto(mensaje.rol) ?? texto(mensaje.role) : undefined;
     if (yaVisto(contexto, `mensaje:${huella}`)) return { ref: huella, ...(rol ? { rol } : {}) };
@@ -159,7 +178,7 @@ function describirParaAuditoria(descripcion: DescripcionLlamadaIa, id: string, c
       ...(yaVisto(contexto, `sistema:${huella}`) ? {} : { texto: descripcion.sistema }),
     };
   }
-  if (descripcion.mensajes) datos.mensajes = deduplicarMensajes(descripcion.mensajes, contexto);
+  if (descripcion.mensajes) datos.mensajes = deduplicarMensajes(descripcion.mensajes, contexto, descripcion.limiteCadena);
   if (descripcion.herramientas !== undefined) {
     const redactadas = redactarAuditoria(descripcion.herramientas);
     const huella = huellaDe(redactadas);
@@ -183,6 +202,8 @@ function describirParaAuditoria(descripcion: DescripcionLlamadaIa, id: string, c
     }
     datos.parametros = parametros;
   }
+  const banderas = banderasActuales();
+  if (banderas) datos.banderas = banderas;
   return datos;
 }
 
@@ -192,7 +213,7 @@ export function iniciarLlamadaIa(descripcion: DescripcionLlamadaIa): LlamadaIaEn
   const inicio = performance.now();
   const contexto = contextoActual();
   try {
-    auditar("llamada_ia", describirParaAuditoria(descripcion, id, contexto), { contexto });
+    auditar("llamada_ia", describirParaAuditoria(descripcion, id, contexto), { contexto, ...(descripcion.limiteCadena ? { limiteCadena: descripcion.limiteCadena } : {}) });
   } catch {
     // Nunca lanza.
   }
@@ -210,7 +231,7 @@ export function iniciarLlamadaIa(descripcion: DescripcionLlamadaIa): LlamadaIaEn
         modelo: resultado.modelo ?? descripcion.modelo,
         ms,
         ...(error !== undefined ? { error: serializarError(error) } : {}),
-      }, { contexto, ms });
+      }, { contexto, ms, ...(descripcion.limiteCadena ? { limiteCadena: descripcion.limiteCadena } : {}) });
     } catch {
       // Nunca lanza.
     }
@@ -335,12 +356,12 @@ export function resultadoDeTurno(turno: TurnoChat): ResultadoLlamadaIa {
 
 const MAX_TEXTO_STREAM = 200_000;
 
-async function* flujoChatAuditado(chat: ChatPort, peticion: PeticionChat, descripcion: DescripcionLlamadaIa): AsyncGenerator<FragmentoChat> {
+async function* flujoChatAuditado(flujo: AsyncIterable<FragmentoChat>, descripcion: DescripcionLlamadaIa): AsyncGenerator<FragmentoChat> {
   const llamada = iniciarLlamadaIa(descripcion);
   let acumulado = "";
   let cerrada = false;
   try {
-    for await (const fragmento of chat.turnoStream(peticion)) {
+    for await (const fragmento of flujo) {
       if (fragmento.tipo === "texto") {
         if (acumulado.length < MAX_TEXTO_STREAM) acumulado += fragmento.delta;
       } else if (fragmento.tipo === "fin" && !cerrada) {
@@ -389,7 +410,17 @@ export function envolverChatPort(chat: ChatPort, opciones: { proposito: string; 
       return chat.thinkingLevel;
     },
     turno: (peticion) => auditarLlamadaIa(describir(peticion), () => chat.turno(peticion), resultadoDeTurno),
-    turnoStream: (peticion) => flujoChatAuditado(chat, peticion, describir(peticion)),
+    turnoStream: (peticion) => {
+      // Se abre el flujo aquí mismo, como sin el envoltorio: un error síncrono del puerto se lanza igual que antes.
+      let flujo: AsyncIterable<FragmentoChat>;
+      try {
+        flujo = chat.turnoStream(peticion);
+      } catch (error) {
+        iniciarLlamadaIa(describir(peticion)).fallar(error);
+        throw error;
+      }
+      return flujoChatAuditado(flujo, describir(peticion));
+    },
   };
   return marcar(envuelto);
 }
@@ -569,6 +600,17 @@ export interface OpcionesFetchAuditado {
 
 type EntradaFetch = string | URL | Request;
 
+/** Texto, modelo y tokens de la respuesta de una operación de IA del Python (`{text, model, usage}`), si los trae. */
+function resultadoIaPython(respuesta: unknown): ResultadoLlamadaIa {
+  if (!esObjeto(respuesta)) return {};
+  const uso = esObjeto(respuesta.usage) ? respuesta.usage : undefined;
+  return {
+    ...(texto(respuesta.text) !== undefined ? { texto: texto(respuesta.text) } : {}),
+    ...(texto(respuesta.model) ? { modelo: texto(respuesta.model) } : {}),
+    ...(uso ? { tokens: { entrada: numero(uso.prompt_token_count), salida: numero(uso.candidates_token_count), pensamiento: numero(uso.thoughts_token_count), cacheados: numero(uso.cached_content_token_count) } } : {}),
+  };
+}
+
 function cuerpoLegible(cuerpo: unknown): unknown {
   if (cuerpo === undefined || cuerpo === null) return undefined;
   if (typeof cuerpo === "string") {
@@ -636,7 +678,7 @@ export function crearFetchAuditado(base: typeof fetch, opciones: OpcionesFetchAu
     } catch {
       // Se audita con lo que haya.
     }
-    if (opciones.omitir?.(url, metodo)) return base(entrada, init);
+    if (!configuracion().activo || opciones.omitir?.(url, metodo)) return base(entrada, init);
     const contexto = contextoActual();
     const inicio = performance.now();
     const cuerpoEnviado = cuerpoLegible(init?.body);
@@ -646,7 +688,7 @@ export function crearFetchAuditado(base: typeof fetch, opciones: OpcionesFetchAu
       if (proposito) {
         const peticion = esObjeto(cuerpoEnviado) && cuerpoEnviado.payload !== undefined ? cuerpoEnviado.payload : cuerpoEnviado;
         const modelo = esObjeto(peticion) ? texto(peticion.model) ?? texto(peticion.modelo) : undefined;
-        llamadaIa = iniciarLlamadaIa({ proveedor: "python", ...(modelo ? { modelo } : {}), proposito, mensajes: [peticion], parametros: { rutaPython: ruta } });
+        llamadaIa = iniciarLlamadaIa({ proveedor: "python", ...(modelo ? { modelo } : {}), proposito, mensajes: [peticion], parametros: { rutaPython: ruta }, limiteCadena: configuracion().limiteCadenaCuerpos });
       }
     } catch {
       llamadaIa = undefined;
@@ -657,7 +699,7 @@ export function crearFetchAuditado(base: typeof fetch, opciones: OpcionesFetchAu
           const respuestaIa = esObjeto(campos.cuerpoRecibido) && campos.cuerpoRecibido.payload !== undefined ? campos.cuerpoRecibido.payload : campos.cuerpoRecibido;
           if (campos.error !== undefined) llamadaIa.fallar(campos.error);
           else if ((campos.estado ?? 0) >= 400) llamadaIa.fallar(new Error(`El Python respondió ${String(campos.estado)}`), { crudo: respuestaIa });
-          else llamadaIa.terminar({ crudo: respuestaIa });
+          else llamadaIa.terminar({ ...resultadoIaPython(respuestaIa), crudo: respuestaIa });
         }
         const comun = {
           metodo,
@@ -690,8 +732,11 @@ export function crearFetchAuditado(base: typeof fetch, opciones: OpcionesFetchAu
       const tipoContenido = respuesta.headers.get("content-type") ?? "";
       const longitud = Number(respuesta.headers.get("content-length"));
       const binario = /^(image|video|audio)\/|octet-stream|zip|pdf/.test(tipoContenido);
-      if (!respuesta.body || binario || (Number.isFinite(longitud) && longitud > maxBytes)) {
-        emitir({ estado: respuesta.status, ms, cuerpoRecibido: { tipoContenido, ...(Number.isFinite(longitud) && longitud > 0 ? { bytes: longitud } : {}), omitido: binario ? "binario" : respuesta.body ? "demasiado grande" : "sin cuerpo" } });
+      // Un flujo (NDJSON del chat vía Python, SSE) no se clona: la copia mantendría viva la conexión cuando el
+      // consumidor la corta, y el Python seguiría generando. Su contenido queda en la `respuesta_ia` del ChatPort.
+      const flujo = /ndjson|event-stream/.test(tipoContenido);
+      if (!respuesta.body || binario || flujo || (Number.isFinite(longitud) && longitud > maxBytes)) {
+        emitir({ estado: respuesta.status, ms, cuerpoRecibido: { tipoContenido, ...(Number.isFinite(longitud) && longitud > 0 ? { bytes: longitud } : {}), omitido: binario ? "binario" : flujo ? "flujo (ver respuesta_ia)" : respuesta.body ? "demasiado grande" : "sin cuerpo" } });
       } else {
         // Clonar ANTES de devolver: el llamante consume el original y la copia se lee en segundo plano.
         const copia = respuesta.clone();

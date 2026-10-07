@@ -6,6 +6,7 @@ import { isPythonAdapterError, pythonErrorBody, PYTHON_MAX_BODY_BYTES } from "@/
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { vistaPreviaDibujoEstructuraPython } from "@/lib/plan/edicion-python";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import { conRegistro } from "@/lib/registro/servidor";
 
 /**
  * Dibujo esquemático de una pieza que ningún motor arma (ADR-0034): el
@@ -90,7 +91,10 @@ async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
   }
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/plan-dibujo-estructura", atenderPOST);
+
+async function atenderPOST(request: Request) {
   if (dibujosEnVuelo >= MAX_DIBUJOS_EN_VUELO) {
     const requestId = requestIdDe(request);
     const mensaje = "Hay demasiados dibujos en curso. Espera un momento y vuelve a intentarlo.";

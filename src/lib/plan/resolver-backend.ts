@@ -4,6 +4,7 @@ import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import { canonizarColoresPlan } from "./colores-catalogo";
+import { decidir } from "@/lib/registro";
 import type { EntradaAllowlistPlan } from "./aprobacion";
 import type { PistaArmado } from "./armado-bouquet";
 import type { PistaGuirnalda } from "./armado-guirnalda";
@@ -101,7 +102,8 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
   // exactamente lo que `AGENTS.md` prohíbe. Canonizar es idempotente, así que el
   // llamador que ya lo hacía sigue igual y conserva sus `cambios` para
   // reportárselos al cliente.
-  const { plan } = canonizarColoresPlan(entrada.plan);
+  const { plan, cambios } = canonizarColoresPlan(entrada.plan);
+  if (cambios.length) decidir("regla:canonizar_colores", "colores del plan llevados al nombre del catálogo antes de resolver", cambios, { entrada: { estructuras: entrada.plan.estructuras.length } });
 
   let resultado: Awaited<ReturnType<typeof llamarPythonPlanResolution>>;
   try {

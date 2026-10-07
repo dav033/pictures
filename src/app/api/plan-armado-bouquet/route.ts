@@ -7,6 +7,7 @@ import { ArmadoBouquetV1Schema, DISPOSICIONES_NUMERO, VARIANTES_BOUQUET } from "
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { RechazoVistaArmadoError, vistaPreviaArmadoPython } from "@/lib/plan/edicion-python";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import { conRegistro } from "@/lib/registro/servidor";
 
 /**
  * Vista previa del editor de armado de bouquets (ADR-0030, segunda entrega):
@@ -66,7 +67,10 @@ async function leerCuerpo(request: Request): Promise<CuerpoLeido> {
   }
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/plan-armado-bouquet", atenderPOST);
+
+async function atenderPOST(request: Request) {
   const requestIdHttp = requestIdDe(request);
   const cabeceras = { "X-Request-ID": requestIdHttp };
   const rechazoTransporte = (status: number, mensaje: string, codigo: string) => {

@@ -4,8 +4,12 @@ import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request"
 import { generarCaption } from "@/lib/ordenes/generarCaption";
 import type { Desglose, FeedbackFoto } from "@/lib/ordenes/tipos";
 import { directorioOrdenes, nombreFotoOrden } from "@/lib/ordenes/directorio";
+import { conRegistro } from "@/lib/registro/servidor";
 
-export async function POST(request: Request, { params }: { params: Promise<{ numero: string }> }) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/admin/ordenes/[numero]/recaption", atenderPOST, { vista: "admin" });
+
+async function atenderPOST(request: Request, { params }: { params: Promise<{ numero: string }> }) {
   if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
   if (!isSameOriginRequest(request)) return Response.json({ error: "Origen no permitido." }, { status: 403 });
 

@@ -20,6 +20,7 @@ import { sistemaConPropuestaVigente } from "./resumen-plan-vigente";
 import type { ChatPort, Mensaje } from "@/lib/ia/nucleo/tipos";
 import type { FlujoIA } from "@sempertex/agente-core";
 import type { NivelCreatividad } from "@/lib/ia/escena/creatividad";
+import { decidir, envolverRegistroHerramientas } from "@/lib/registro";
 
 type TelemetriaConversacion = {
   flujo: FlujoIA;
@@ -120,6 +121,16 @@ function textoDelTurno(estado: EstadoConversacion, texto: string, historial: Men
 }
 
 function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPort["id"], modelo: string): ResultadoConversacion {
+  // Auditoría (src/lib/registro): lo que el turno entrega al cliente, decidido por las herramientas deterministas.
+  decidir("regla:resultado_turno_chat", "plan, cotización y productos que entrega el turno", {
+    plan: estado.planResuelto ?? null,
+    cotizacion: estado.cotizacion ?? null,
+    seleccionFinalIA: estado.seleccionFinalIA ?? null,
+    recomendaciones: estado.recomendaciones.length,
+    decoraciones: estado.decoraciones.length,
+    ragValidados: estado.ragValidados?.length ?? 0,
+    ragRechazados: estado.ragRechazados?.length ?? 0,
+  }, { entrada: { textoFinal: texto, brief: sanearBrief(estado.brief), proveedor, modelo } });
   return {
     texto,
     // The `fin` event validates the brief strictly: only valid fields leave the turn.
@@ -165,7 +176,8 @@ export async function ejecutarConversacion(opts: {
     sistema: sistemaConPropuestaVigente(opts.sistema, estado.planVigente),
     historial: opts.historial,
     herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
-    registro: crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, hechosPeticion: hechosDelTurno(opts) }),
+    // Auditado: cada herramienta deja argumentos, resultado, ok, ms o el error con su pila.
+    registro: envolverRegistroHerramientas(crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, hechosPeticion: hechosDelTurno(opts) })),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     onLlamada: opts.onLlamada,
@@ -207,7 +219,8 @@ export async function* ejecutarConversacionStream(opts: {
     sistema: sistemaConPropuestaVigente(opts.sistema, estado.planVigente),
     historial: opts.historial,
     herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
-    registro: crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad, hechosPeticion: hechosDelTurno(opts) }),
+    // Auditado: cada herramienta deja argumentos, resultado, ok, ms o el error con su pila.
+    registro: envolverRegistroHerramientas(crearRegistroHerramientas(estado, { correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad, hechosPeticion: hechosDelTurno(opts) })),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),

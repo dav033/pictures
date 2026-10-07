@@ -4,6 +4,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { auditarLlamadaIaSincrona } from "../registro/servidor";
 import { decodificarTamano } from "../shopify/derivar";
 import type { Desglose, FeedbackFoto } from "./tipos";
 
@@ -239,7 +240,15 @@ function llamarOpencode(prompt: string, fotoPath: string): DatosGenerados | null
     fotoPath,
   ];
 
-  const resultado = spawnSync(/*turbopackIgnore: true*/ binarioOpencode(), args, { encoding: "utf-8", maxBuffer: 20 * 1024 * 1024 });
+  // Auditado (src/lib/registro): prompt completo, modelo y variante, y lo que devolvió el CLI (texto final, estado, stderr).
+  const resultado = auditarLlamadaIaSincrona(
+    { proveedor: "opencode", modelo: OPENCODE_MODELO, proposito: "caption_orden", mensajes: [{ rol: "usuario", texto: prompt, foto: path.basename(fotoPath) }], parametros: { variante: OPENCODE_VARIANTE, agente: "plan" } },
+    () => spawnSync(/*turbopackIgnore: true*/ binarioOpencode(), args, { encoding: "utf-8", maxBuffer: 20 * 1024 * 1024 }),
+    (salida) => ({
+      ...(salida.stdout ? { texto: textoFinalDeEventos(salida.stdout) ?? undefined } : {}),
+      crudo: { estado: salida.status, senal: salida.signal, ...(salida.stderr ? { stderr: salida.stderr.slice(0, 4_000) } : {}), ...(salida.error ? { error: salida.error.message } : {}) },
+    }),
+  );
   const raw = resultado.stdout || resultado.stderr;
   if (!raw) return null;
 

@@ -26,6 +26,7 @@ import {
   remainingDeadlineMs,
   sha256Body,
 } from "@/lib/ia/contracts/operational-v1";
+import { conRegistro, decidir } from "@/lib/registro/servidor";
 
 type LegacyBody = {
   messages: ChatMessage[];
@@ -169,7 +170,10 @@ function envelopeHttp(requestId: string, code: ErrorCodeV1, message: string, ret
   };
 }
 
-export async function POST(request: Request) {
+// Auditado (src/lib/registro): entrada, salida, errores y lo que la petición llame (IA, Python, decisiones).
+export const POST = conRegistro("/api/chat", atenderPOST, { vista: "clasica" });
+
+async function atenderPOST(request: Request) {
   const contextoPreliminar = leerContextoOperativo(request);
   const requestIdPreliminar = contextoPreliminar.request_id;
   const correlationIdPreliminar = contextoPreliminar.correlation_id;
@@ -229,6 +233,7 @@ export async function POST(request: Request) {
     // a surprising scene can be traced.
     const sugerencia = sugerenciaEscenaDelTurno({ nivel: creatividad, mensajes: messages ?? [], brief, fotoEspacio: Boolean(fotoEspacio) });
     if (sugerencia) console.info("[chat] sugerencia de escena por creatividad", { requestId, creatividad, ...sugerencia });
+    decidir("regla:sugerencia_escena", "lugar y hora que sugiere el servidor según la creatividad", sugerencia ?? null, { entrada: { creatividad, fotoEspacio: Boolean(fotoEspacio), brief: brief ?? null } });
     sistema = construirSistema({ ragEnabled: RAG_ENABLED, brief, referenceBlueprint, creatividad, sugerenciaEscena: sugerencia });
 
     // Las imágenes solo se adjuntan al último mensaje (el que se acaba de
@@ -254,6 +259,7 @@ export async function POST(request: Request) {
     // The brief carries durable event facts; old prose only adds input tokens
     // and makes each tool-calling turn slower as the chat grows.
     const mensajes = limitarHistorialChat(messages ?? []);
+    decidir("regla:recorte_historial", "mensajes del historial que se mandan al modelo", { enviados: mensajes.length, recibidos: messages?.length ?? 0, imagenesAdjuntas: imagenesActuales.length }, { motivo: "el brief guarda los hechos; el texto viejo solo suma tokens" });
     historial = mensajes.map((m, i) => {
       if (m.role === "assistant") return { rol: "asistente" as const, texto: m.content };
       const esUltimo = i === mensajes.length - 1;
