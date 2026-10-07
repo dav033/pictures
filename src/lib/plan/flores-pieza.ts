@@ -147,7 +147,11 @@ export function fraseFloresFlux(
   const cada = (estructura.repeticiones ?? 1) > 1 ? "each with " : "with ";
   const petalos = describir(flores.petalo);
   const centro = describir(flores.centro);
-  const nucleo = `${cantidad === 1 ? "one small balloon flower" : `${cantidad} small balloon flowers`} of ${pulgadas}${petalos ? `${petalos} ` : ""}petals`;
+  // Pétalos de 12″ o más: flores grandes, como las de la foto; con un número de pétalos distinto del de siempre, se dice.
+  const tamano = (resumen.pulgadas[0] ?? 5) >= 12 ? "large" : "small";
+  const NUMEROS = ["", "one", "two", "three", "four", "five", "six"] as const;
+  const cuantosPetalos = flores.petalos !== undefined && flores.petalos !== PETALOS_FLOR_POR_DEFECTO ? `${NUMEROS[flores.petalos] ?? flores.petalos} ` : "";
+  const nucleo = `${cantidad === 1 ? `one ${tamano} balloon flower` : `${cantidad} ${tamano} balloon flowers`} of ${cuantosPetalos}${pulgadas}${petalos ? `${petalos} ` : ""}petals`;
   return `${cada}${nucleo}${flores.centro ? ` around ${centro ? `${centro} ` : ""}${cantidad === 1 ? "center" : "centers"}` : ""}`;
 }
 

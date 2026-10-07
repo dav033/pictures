@@ -1047,7 +1047,11 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // a su escala real en metros según su ubicación. Si la guía no se puede construir o su nota no cabe, se genera
     // sin ella y la respuesta lo dice (`guiaEscena.usada: false`, `motivo`). Misma ruta y mismo constructor para la
     // clásica y la guiada. Sustituye a la guía de estructura cuando aplica.
-    const admiteGuiaEscena = Boolean(planResuelto && resolvedFluxApplications && generacionAdmiteGuiaEscena({
+    // Las flores de globo no están en el dibujo del motor: con la guía, FLUX copia el mapa y las borra (dueño,
+    // 2026-10-07, aro con flores). Un plan con flores va solo con texto, que sí las describe.
+    const planConFlores = Boolean(planResuelto?.plan.estructuras.some((estructura) => Boolean(estructura.flores)));
+    if (planConFlores) decidir("regla:guia_escena_sin_flores", "plan con flores de globo: la imagen va sin guía de escena para que FLUX dibuje las flores", true, { entrada: { planHash: planResuelto?.plan_hash ?? null } });
+    const admiteGuiaEscena = !planConFlores && Boolean(planResuelto && resolvedFluxApplications && generacionAdmiteGuiaEscena({
       bandera: featureEnabled("GUIA_ESCENA_V1"),
       usarFlux: true,
       hibrido: false,

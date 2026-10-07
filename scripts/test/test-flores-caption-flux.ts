@@ -35,7 +35,7 @@ async function principal(): Promise<void> {
         { adorno: "flor", product_id: "reflex", color: "dorado", unidades: 2, diam_pulg: 5, titulo: "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 20" },
       ],
     );
-    assert.equal(frase, "with 2 small balloon flowers of 5-inch pearl white petals around chrome gold centers");
+    assert.equal(frase, "with 2 small balloon flowers of six 5-inch pearl white petals around chrome gold centers");
     assert.doesNotMatch(frase!, /,/, "sin comas: el compilador acorta por comas desde el final");
     // El plan EXACTO de la idea del dueño, resuelto, con sus flores: la misma cadena que /api/generate.
     const guardado = JSON.parse(readFileSync(path.join(RAIZ, "data", "biblioteca-real", "analisis", "nueva-sempertex-08.plan.json"), "utf8"));
@@ -48,17 +48,17 @@ async function principal(): Promise<void> {
       return { ...estructura, lineas: [...estructura.lineas, { ...silk, unidades: 12, adorno: "flor" }, { ...reflex, unidades: 2, adorno: "flor" }] };
     });
     const frases = frasesDeEstructuras({ plan, estructuras } as never);
-    assert.ok(frases?.some((item) => item.estructura_id === "EST_01_ARO_CIRCULAR" && item.prompt_lora.startsWith("with 2 small balloon flowers of 5-inch pearl white petals around chrome gold centers")), JSON.stringify(frases));
+    assert.ok(frases?.some((item) => item.estructura_id === "EST_01_ARO_CIRCULAR" && item.prompt_lora.startsWith("with 2 small balloon flowers of six 5-inch pearl white petals around chrome gold centers")), JSON.stringify(frases));
     const cuerpo = { brief: { tipo_evento: "boda", colores: ["blanco", "dorado", "beige"], estilo: "Boda" } as never, solicitudUsuario: "Aro de globos blanco, dorado y nude con flores.", creatividad: 2 };
     const python = { plan_resuelto: { schema_version: "plan-resuelto.v1", ...guardado.plan_resuelto, plan, estructuras }, material_estimate: guardado.material_estimate };
     const r = await captionDeCuerpoGenerate(cuerpo, python);
     assert.ok(r.prompt.length <= BASE_PROMPT_MAX_LENGTH, `cabe en ${BASE_PROMPT_MAX_LENGTH} (mide ${r.prompt.length})\n${r.prompt}`);
-    assert.match(r.prompt, /small balloon flowers of 5-inch pearl white petals around chrome gold centers/, r.prompt);
+    assert.match(r.prompt, /small balloon flowers of six 5-inch pearl white petals around chrome gold centers/, r.prompt);
     console.log(`     caption (${r.prompt.length}): ${r.prompt}`);
     // Con el tope de 1000 caracteres, la compactación quita escenario y cola antes que las flores.
     const corto = await captionDeCuerpoGenerate(cuerpo, python, 1000);
     assert.ok(corto.prompt.length <= 1000, `cabe en 1000 (mide ${corto.prompt.length})\n${corto.prompt}`);
-    assert.match(corto.prompt, /small balloon flowers of 5-inch pearl white petals around chrome gold centers/, corto.prompt);
+    assert.match(corto.prompt, /small balloon flowers of six 5-inch pearl white petals around chrome gold centers/, corto.prompt);
     console.log(`     caption con tope 1000 (${corto.prompt.length}): ${corto.prompt}`);
     // Sin flores, la petición de siempre: ninguna frase nueva.
     assert.equal(frasesDeEstructuras({ plan: guardado.plan_resuelto.plan, estructuras: guardado.plan_resuelto.estructuras } as never), undefined);
