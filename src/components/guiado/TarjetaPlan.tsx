@@ -126,9 +126,21 @@ export function TarjetaPlan(props: Props) {
   const costeoAbierto = costeoVisible ?? usoCosteo !== null;
   // El uso de este plan o, si todavía no se costeó, el que el cliente ya dijo: no se le vuelve a preguntar.
   const usoMostrado = usoCosteo ?? usoConocido ?? null;
+  // Las cuatro acciones son excluyentes (dueño, 2026-10-07: «seleccionar una deseleccione el resto, porque hay
+  // solapamiento de menú»): elegir una cierra los paneles de las demás y solo ella queda marcada.
+  const [seleccion, setSeleccion] = useState<"costear" | "comprar" | "aprender" | "contratar" | null>(null);
+  const elegirAccion = (accion: "comprar" | "aprender" | "contratar") => {
+    setSeleccion(accion);
+    setCosteoVisible(false);
+    // «Comprar» alterna su panel; las otras dos lo cierran si estaba abierto.
+    if (accion !== "comprar" && compraAbierta) onAccion("comprar");
+    onAccion(accion);
+  };
   const abrirCosteo = () => {
     const abrir = !costeoAbierto;
     setCosteoVisible(abrir);
+    setSeleccion(abrir ? "costear" : null);
+    if (abrir && compraAbierta) onAccion("comprar");
     // Abrir con el uso ya sabido es costear con él: queda registrado y la acción, hecha.
     if (abrir && usoCosteo === null && usoConocido) onCosteo(usoConocido, "conocido");
   };
@@ -375,10 +387,10 @@ export function TarjetaPlan(props: Props) {
             {estadoImagen === "cargando" ? "Dibujando…" : etiquetaPrincipal}
           </motion.button>
           <div className="grid grid-cols-2 gap-2">
-            <BotonSecundario icono={<Calculator className="size-4" />} hecha={hecha("costear")} activo={costeoAbierto} deshabilitado={bloqueado} onClick={abrirCosteo}>Cuánto cuesta</BotonSecundario>
-            <BotonSecundario icono={<ShoppingBag className="size-4" />} hecha={hecha("comprar")} activo={compraAbierta} deshabilitado={bloqueado} onClick={() => onAccion("comprar")}>Comprar</BotonSecundario>
-            <BotonSecundario icono={<GraduationCap className="size-4" />} hecha={hecha("aprender")} deshabilitado={bloqueado} onClick={() => onAccion("aprender")}>Aprender a hacerlo</BotonSecundario>
-            <BotonSecundario icono={<UserRound className="size-4" />} hecha={hecha("contratar")} deshabilitado={bloqueado} onClick={() => onAccion("contratar")}>Contratar decorador</BotonSecundario>
+            <BotonSecundario icono={<Calculator className="size-4" />} hecha={seleccion === "costear"} activo={costeoAbierto} deshabilitado={bloqueado} onClick={abrirCosteo}>Cuánto cuesta</BotonSecundario>
+            <BotonSecundario icono={<ShoppingBag className="size-4" />} hecha={seleccion === "comprar" && compraAbierta} activo={compraAbierta} deshabilitado={bloqueado} onClick={() => elegirAccion("comprar")}>Comprar</BotonSecundario>
+            <BotonSecundario icono={<GraduationCap className="size-4" />} hecha={seleccion === "aprender"} deshabilitado={bloqueado} onClick={() => elegirAccion("aprender")}>Aprender a hacerlo</BotonSecundario>
+            <BotonSecundario icono={<UserRound className="size-4" />} hecha={seleccion === "contratar"} deshabilitado={bloqueado} onClick={() => elegirAccion("contratar")}>Contratar decorador</BotonSecundario>
           </div>
           <button
             type="button"
