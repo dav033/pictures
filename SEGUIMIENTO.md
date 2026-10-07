@@ -17,6 +17,13 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 
 ## ⏯ ESTADO PARA RETOMAR (2026-10-06 ~21:30, antes del /compact)
 
+**Tras el compact (2026-10-06 ~21:45):** registro-2 verificado y en `main` = `350ae58` (tsc en copia limpia, test-registro 15/15,
+guardia estricta OK, opciones-catálogo, contrato guiado, pytest test_registro 10/10). La fusión de las 11 fotos YA NO está
+cancelada: el dueño pidió hacerla; corre sola en `wf_c88656d7-a4a` al terminar los curadores. Diseño del encargo del plan (solo
+lectura, 2 agentes: UI 1-3 y piezas individuales 4) en `wf_1f7c07dd-24c`; la implementación se lanza al terminar «Ajustar mi plan»
+(`wf_7d93867a-63d`) y la fusión, para no pisar archivos. VPS sigue en `e447cfe`: avisar al dueño antes de desplegar.
+
+
 **Reglas nuevas del dueño (hoy):**
 - **Subir todo a `main` en cada hito verificado** (tsc en una copia limpia del commit + pruebas puntuales) y desplegar. `main` despliega
   Vercel solo. El VPS se despliega a mano (`git archive --format=tar.gz HEAD | ssh advin-vps "SSH_ORIGINAL_COMMAND=<sha>
