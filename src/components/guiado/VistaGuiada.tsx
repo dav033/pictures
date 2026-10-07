@@ -39,6 +39,7 @@ import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { CotizacionGuiadaSchema, CotizacionPlanGuiadoSchema, PlanGuiadoSchema, PropuestaComposicionSchema, type PlanActualGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/utilidades";
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
+import { prepararFotoReferencia } from "@/lib/imagen-cliente/preparar-foto";
 import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
 import { briefChatGuiado, defectoPlanGuiado, instruccionPlanFoto, instruccionPlanGuiado, planActualDesdePlan, resumenPlanGuiado } from "@/lib/ia/guiado/instruccion-plan";
@@ -1429,13 +1430,14 @@ async function miniaturaDe(archivo: File): Promise<string> {
   return lienzo.toDataURL("image/jpeg", 0.7);
 }
 
+/**
+ * La foto de inspiración preparada EXACTAMENTE como la prepara la clásica (`prepararFotoReferencia`: rotación EXIF,
+ * lado mayor 1800 px, JPEG 0,9), para que `/api/references/analyze` lea la misma imagen en las dos vistas. Antes la
+ * guiada mandaba el archivo crudo (otra resolución, otra compresión y sin girar una foto de celular).
+ */
 async function leerFoto(archivo: File): Promise<FotoInspiracion> {
-  const mime = archivo.type;
-  if ((mime !== "image/jpeg" && mime !== "image/png" && mime !== "image/webp") || archivo.size > 6_000_000) throw new Error("La foto debe ser JPG, PNG o WebP y pesar menos de 6 MB.");
-  const bytes = new Uint8Array(await archivo.arrayBuffer());
-  let binario = "";
-  for (let inicio = 0; inicio < bytes.length; inicio += 0x8000) binario += String.fromCharCode(...bytes.subarray(inicio, inicio + 0x8000));
-  return { mime, base64: btoa(binario) };
+  const { base64 } = await prepararFotoReferencia(archivo);
+  return { mime: "image/jpeg", base64 };
 }
 
 function suscribirNada(): () => void {

@@ -83,7 +83,7 @@ For every element return composition_relevance: essential (defines the compositi
  * uses; the others stay selectable for evaluation only. "v13" is the base text
  * alone (production until ADR-0029); the rest append their rules to it.
  */
-export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "v16", "v17-lectura-unica", "v18-candidato", "v19-candidato", "v19b-candidato"] as const;
+export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "v16", "v17-lectura-unica", "v18-candidato", "v19-candidato", "v19b-candidato", "v20-colores"] as const;
 /**
  * `v17-lectura-unica` (candidata): v16 tal cual **más** las cuatro lecturas de
  * la foto dentro del mismo análisis (`lectura-unica.ts`). Es la única variante
@@ -116,15 +116,24 @@ export const VARIANTE_V19_CANDIDATA: VarianteReconocedor = "v19-candidato";
  */
 export const VARIANTE_V19B_CANDIDATA: VarianteReconocedor = "v19b-candidato";
 /**
+ * `v20-colores` (2026-10-06, pedido 3 del dueño: «el agente que lee la imagen está horriblemente configurado»): v18
+ * tal cual **más** `STRUCTURE_RULES_V20_COLORES` detrás, y la descripción de `observed_colors` de la herramienta más
+ * exigente (`analizar-referencias-v2.ts`). v18 no decía qué colores listar ni que el acabado fuera obligatorio: en
+ * el banco de 11 fotos (10 de ejemplo + la del dueño, v18 en local) la lectura perdió el blanco de dos fotos, el
+ * crema de otra y el confeti de las dos que lo tienen, y 9 de 27 colores llegaron sin acabado («pink», «white»,
+ * «burgundy»). Reglas generales, sin colores ni piezas de un caso concreto.
+ */
+export const VARIANTE_V20_COLORES: VarianteReconocedor = "v20-colores";
+/**
  * La variante que usa la ruta `/api/references/analyze` con `LECTURA_UNICA_REFERENCIA_ENABLED`. Promovida a v18
  * el 2026-10-05 por decisión del dueño, sobre la línea base sin etiquetas de images-judge (tipo 33/48 frente a
- * 29/48 de v17, n = 6; riesgo conocido: CASE-004 1/6 frente a 3/6). Volver atrás es poner aquí
- * `VARIANTE_LECTURA_UNICA`: el esquema de la herramienta y el validador de Python son los mismos.
+ * 29/48 de v17, n = 6; riesgo conocido: CASE-004 1/6 frente a 3/6), y a v20 (v18 + colores) el 2026-10-06 con el
+ * pedido 3 del dueño. Volver atrás es poner aquí `VARIANTE_V18_CANDIDATA`: el validador de Python es el mismo.
  */
-export const VARIANTE_RUTA_ANALISIS: VarianteReconocedor = VARIANTE_V18_CANDIDATA;
+export const VARIANTE_RUTA_ANALISIS: VarianteReconocedor = VARIANTE_V20_COLORES;
 /** Las variantes que piden las cuatro lecturas de la foto (esquema de herramienta con `lecturas`). */
 export function varianteConLecturas(variante: VarianteReconocedor): boolean {
-  return variante === VARIANTE_LECTURA_UNICA || variante === VARIANTE_V18_CANDIDATA || variante === VARIANTE_V19_CANDIDATA || variante === VARIANTE_V19B_CANDIDATA;
+  return variante === VARIANTE_LECTURA_UNICA || variante === VARIANTE_V18_CANDIDATA || variante === VARIANTE_V19_CANDIDATA || variante === VARIANTE_V19B_CANDIDATA || variante === VARIANTE_V20_COLORES;
 }
 /** ADR-0029: v16 separates bouquet from centerpiece (89 % vs 80 % on 105 photos). */
 export const VARIANTE_PRODUCCION: VarianteReconocedor = "v16";
@@ -194,6 +203,22 @@ export const STRUCTURE_RULES_V19_CANDIDATE = `Clarifications for color order and
 /** v19b candidate: solo la regla de orden de color de v19, con el mismo texto. */
 export const STRUCTURE_RULE_V19B_ORDEN_COLOR = `Clarification for color order (it overrides the definitions above when they conflict):
 - For a half_arch or a column, the start of the piece is its foot on the floor: list the colors, weights and stops of lecturas.patron_color from the foot upward to the top, never from the top down.`;
+
+/**
+ * v20 (ver `VARIANTE_V20_COLORES`): qué colores lista la lectura de cada pieza de globos y cómo los escribe. Es la
+ * lista con la que se compra la pieza, así que un color que falta es una pieza equivocada. Mismas reglas de
+ * escritura que v18: fronteras generales, sin colores, lugares ni cantidades de un caso. La última regla corrige
+ * un efecto de v18 («lo que cuelga desde arriba y no es semiarco es guirnalda»), que mandaba a guirnalda una
+ * instalación de techo.
+ */
+export const STRUCTURE_RULES_V20_COLORES = `Colors of every balloon structure (they override the definitions above when they conflict). observed_colors is the shopping list a decorator rebuilds the piece from, so a missing color makes the wrong piece:
+- Look over the whole piece, its edges, its base and its top, before answering. List EVERY balloon color it has, most used first, up to 8: the main colors and also the ones carried by only a few balloons (an accent color, the clear balloons, the chrome or foil accents, a topper). A pair of identical pieces reported as one element lists the colors of both.
+- Write every entry as finish + color, always with its finish: chrome (mirror-like, reflects the room), metallic (foil), pearl (soft satin glow), matte (flat, no sheen; pastel colors are matte), neon, or clear (transparent). When one hue appears with two finishes, for example chrome gold and matte gold, write two entries.
+- Clear balloons are a color of their own: write clear, and when something is visible inside them add it, for example "clear with gold confetti". Never merge clear balloons into white or silver, and never leave them out because the wall shows through them.
+- Judge the color of the balloon itself, not of the light on it. A white or pearl balloon in shadow or under colored light is still white. Call a balloon grey only when it is clearly darker than the white balloons of the same piece, and silver only when it is mirror-like or clearly metallic. When a piece mixes white balloons with grey or silver ones, list each of them.
+- Never list a color that is not a balloon of this piece: the wall, the backdrop, curtains, flowers, furniture, reflections on chrome balloons or the colored light belong to their own elements or to none.
+- Use the same color words in composition and give there the share of each listed color. Every color of observed_colors also appears in lecturas.patron_color, in colores when it owns part of the piece or in motas when it is only sprinkled over it (clear balloons and chrome accents usually are motas), unless the arrangement is "ninguno".
+- Balloons that float or hang from the ceiling and fill it as a mass, often helium balloons with ribbons, are a ceiling_installation, not a garland.`;
 
 function oneOf<T extends readonly string[]>(values: T, value: unknown): T[number] | undefined {
   const text = typeof value === "string" ? value.trim().toLowerCase().replace(/[\s-]+/g, "_") : "";

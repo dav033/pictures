@@ -70,7 +70,10 @@ export function referenciasDePieza(pieza: AnalisisColorSempertex["piezas"][numbe
       familia: referencia.familia,
       nombre: referencia.nombre,
       nombre_completo: mejor.nombreCompleto,
-      parte: Math.round(color.parte * 1e4) / 1e4,
+      // Acotada como la suma de arriba: una pieza de un solo color medido llegaba con 1,00005 (suma en coma
+      // flotante), se redondeaba a 1,0001 y el blueprint entero dejaba de cumplir su esquema (parte <= 1): la guiada
+      // descartaba la lectura («no pude distinguir los detalles») y la clásica daba error (banco 2026-10-06).
+      parte: Math.min(1, Math.round(color.parte * 1e4) / 1e4),
       familia_fiable: fiable,
     });
   }

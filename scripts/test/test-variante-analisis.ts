@@ -14,6 +14,8 @@ import { sistemaAnalisis } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import {
   STRUCTURE_RULES_V18_CANDIDATE,
   STRUCTURE_RULES_V19_CANDIDATE,
+  STRUCTURE_RULES_V20_COLORES,
+  VARIANTE_V20_COLORES,
   VARIANTE_LECTURA_UNICA,
   VARIANTE_RUTA_ANALISIS,
   VARIANTE_V18_CANDIDATA,
@@ -35,6 +37,12 @@ const v19 = sistemaAnalisis([], "perceptual", VARIANTE_V19_CANDIDATA).inventoryS
 assert.ok(v19.startsWith(v18), "el texto de v18 es prefijo exacto del de v19");
 assert.equal(v19.slice(v18.length), `\n${STRUCTURE_RULES_V19_CANDIDATE}`, "v19 solo añade sus reglas detrás");
 assert.ok(varianteConLecturas(VARIANTE_V19_CANDIDATA), "v19 pide las cuatro lecturas");
+// v20 (la de la ruta desde el 2026-10-06): v18 byte a byte y las reglas de color detrás.
+const v20 = sistemaAnalisis([], "perceptual", VARIANTE_V20_COLORES).inventorySystem;
+assert.ok(v20.startsWith(v18), "el texto de v18 es prefijo exacto del de v20");
+assert.equal(v20.slice(v18.length), `\n${STRUCTURE_RULES_V20_COLORES}`, "v20 solo añade sus reglas de color detrás");
+assert.equal(VARIANTE_RUTA_ANALISIS, VARIANTE_V20_COLORES, "la ruta lee con v20");
+assert.ok(varianteConLecturas(VARIANTE_V20_COLORES), "v20 pide las cuatro lecturas");
 
 assert.ok(varianteConLecturas(VARIANTE_RUTA_ANALISIS), "la ruta pide las cuatro lecturas");
 assert.ok(varianteConLecturas(VARIANTE_LECTURA_UNICA) && varianteConLecturas(VARIANTE_V18_CANDIDATA));

@@ -105,7 +105,8 @@ function unirPorReferencia(colores: readonly ColorConReferencia[]): {
       color.cruce.candidatas[0].distancia < previo.cruce.candidatas[0].distancia ? color : previo;
     porCodigo.set(codigo, {
       hex: mejor.hex,
-      parte: Math.round((previo.parte + color.parte) * 1e4) / 1e4,
+      // Acotada a 1: dos partes ya redondeadas (0,5 + 0,5001) suman 1,0001 y `analisis-color.v1` exige <= 1.
+      parte: Math.min(1, Math.round((previo.parte + color.parte) * 1e4) / 1e4),
       pixeles: previo.pixeles + color.pixeles,
       cruce: mejor.cruce,
     });

@@ -20,6 +20,7 @@ import { PasosAsistente } from "@/components/propuesta";
 import { useSeleccion } from "@/lib/estado/seleccion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { Imagen, PeticionImagen } from "@/lib/ia/nucleo/tipos";
+import { prepararFotoReferencia, redimensionarImagen } from "@/lib/imagen-cliente/preparar-foto";
 import { ASPECTOS_SOPORTADOS, aspectoMasCercano } from "@/lib/ia/nucleo/aspecto";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
@@ -307,81 +308,8 @@ function aspectoDe(ancho: number, alto: number): PeticionImagen["aspecto"] {
   return aspectoMasCercano(ancho / alto);
 }
 
-const TAMANO_MAX_ARCHIVO = 20 * 1024 * 1024; // 20MB crudos — generoso para fotos de celular, evita colgar canvas con archivos absurdos.
-
-/**
- * Convierte un archivo subido a un `Imagen` liviano para mandar por JSON:
- * respeta la rotación EXIF de fotos de celular, reescala al máximo indicado
- * y siempre normaliza a JPEG (tamaño predecible sin importar el formato de
- * origen). Lanza con mensaje legible si el archivo no es una imagen válida.
- */
-async function redimensionarImagen(
-  file: File,
-  maxDim: number,
-  calidad: number,
-): Promise<Imagen & { ancho: number; alto: number }> {
-  // Fotos de iPhone salen en HEIC/HEIF por defecto — ni Chrome ni Firefox en
-  // Windows/Android lo decodifican de forma confiable vía createImageBitmap
-  // (a veces ni siquiera lanza error, solo produce un bitmap vacío/negro en
-  // silencio). El MIME también puede llegar vacío en vez de "image/heic" si
-  // el sistema no tiene el codec registrado, así que se revisa también la
-  // extensión del archivo para dar un mensaje útil en vez de un fallo mudo.
-  const esHeic = /\.(heic|heif)$/i.test(file.name) || /^image\/hei[cf]/i.test(file.type);
-  if (esHeic) {
-    throw new Error(
-      `"${file.name}" está en formato HEIC/HEIF (típico de iPhone) y no se puede leer en este navegador. Expórtala como JPEG o PNG antes de subirla.`,
-    );
-  }
-  if (!file.type.startsWith("image/")) {
-    throw new Error(`"${file.name}" no es una imagen.`);
-  }
-  if (file.size > TAMANO_MAX_ARCHIVO) {
-    throw new Error(`"${file.name}" pesa demasiado (máximo 20MB).`);
-  }
-
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-  } catch {
-    throw new Error(`No se pudo leer "${file.name}" — ¿es una imagen válida?`);
-  }
-  if (bitmap.width === 0 || bitmap.height === 0) {
-    bitmap.close();
-    throw new Error(`"${file.name}" se leyó vacía o corrupta — prueba exportarla de nuevo como JPEG o PNG.`);
-  }
-
-  try {
-    const escala = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
-    const ancho = Math.round(bitmap.width * escala);
-    const alto = Math.round(bitmap.height * escala);
-
-    const canvas = document.createElement("canvas");
-    canvas.width = ancho;
-    canvas.height = alto;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Este navegador no pudo procesar la imagen. Prueba con otro navegador.");
-    ctx.drawImage(bitmap, 0, 0, ancho, alto);
-
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (b) => (b ? resolve(b) : reject(new Error("No se pudo procesar la imagen."))),
-        "image/jpeg",
-        calidad,
-      );
-    });
-
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string).split(",")[1]);
-      reader.onerror = () => reject(new Error("No se pudo leer la imagen procesada."));
-      reader.readAsDataURL(blob);
-    });
-
-    return { base64, mime: "image/jpeg", ancho, alto, originalAncho: bitmap.width, originalAlto: bitmap.height };
-  } finally {
-    bitmap.close();
-  }
-}
+// El redimensionado de las fotos vive en `src/lib/imagen-cliente/preparar-foto.ts`: la guiada prepara la foto de
+// inspiración con la MISMA función (`prepararFotoReferencia`), así las dos vistas leen la misma imagen.
 
 /**
  * Recorta al centro para que la imagen coincida EXACTO con uno de los 4
@@ -1570,7 +1498,7 @@ export default function Page() {
       setErrorAdjuntos(`Solo se usarán ${LIMITE_REFERENCIAS_CLIENTE} imágenes de referencia como máximo.`);
     }
     try {
-      const procesadas = await Promise.all(aProcesar.map((f) => redimensionarImagen(f, 1800, 0.9)));
+      const procesadas = await Promise.all(aProcesar.map((f) => prepararFotoReferencia(f)));
       setEtiquetasAdjuntos((previas) => ({ ...previas, ...Object.fromEntries(procesadas.map((imagen, indice) => [claveImagen(imagen), aProcesar[indice]!.name])) }));
       // En el modo «solo el análisis de la foto» no se programa el turno automático: la foto se analiza, se mide
       // su color y ahí se para, sin búsqueda en el RAG, sin plan y sin cotización.

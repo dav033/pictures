@@ -143,7 +143,8 @@ assert.equal(familiaSempertex("Silk Blanco Nácar")?.cliente, "perlado");
 const html = renderToStaticMarkup(createElement(ReferenciaInspiracion, { miniatura: "data:image/jpeg;base64,AAAA", referencia, onArmar: () => undefined, onVerIdeas: () => undefined }));
 const texto = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
 for (const visible of [
-  "Veo dos columnas en plata, blanco y rosa.", "Columna izquierda", "Columna derecha", "Columna orgánica · inclinada hacia la derecha · muy llena",
+  // La frase dice lo que el plan lee de la foto, con acabados y el transparente (antes: «en plata, blanco y rosa»).
+  "Veo dos columnas en plata cromado, rosa pastel, blanco perlado y transparente.", "Columna izquierda", "Columna derecha", "Columna orgánica · inclinada hacia la derecha · muy llena",
   "≈ 45 globos a la vista", "Plata cromado", "65%", "Sempertex Reflex Plata · 981", "Sempertex Silk Blanco Nácar · 806",
   "Grandes 18–24″", "Lleva globos más grandes que 12″.", "Globo metalizado plata en el extremo izquierdo",
   "También veo un fondo, otros objetos y flores", "Sí, arma mi plan con estas 2 piezas", "Prefiero ver ideas parecidas",

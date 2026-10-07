@@ -5,6 +5,7 @@ import { ErrorIA } from "./tipos";
 import type { ChatPort, ProveedorId } from "./tipos";
 import { CHAT_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { decidir, envolverChatPort } from "@/lib/registro";
+import { MODELO_LECTURA_FOTO } from "@/lib/ia/amaterasu/config-lectura-foto";
 
 const CLAVE_META = "ia_proveedor";
 
@@ -77,6 +78,17 @@ export async function chatDe(id: ProveedorId, proposito = "chat"): Promise<ChatP
   void id;
   const { crearChatGemini } = await import("@sempertex/agente-core/gemini");
   return envolverChatPort(crearChatGemini({ thinkingLevel: thinkingLevelDeChatDesdeEnv() }), { proposito });
+}
+
+/**
+ * El modelo que lee la foto de referencia por el camino directo (sin Python). NO es `chatDe()`: la lectura no hereda
+ * el modelo ni el razonamiento del chat (`GEMINI_CHAT_*`), sino `config-lectura-foto.ts`, la misma configuración
+ * que usa el camino de Python.
+ */
+export async function chatLecturaFotoDe(id: ProveedorId): Promise<ChatPort> {
+  void id;
+  const { crearChatGemini } = await import("@sempertex/agente-core/gemini");
+  return envolverChatPort(crearChatGemini({ modelo: MODELO_LECTURA_FOTO }), { proposito: "analisis_foto" });
 }
 
 /**

@@ -8,6 +8,12 @@ type AparienciaColor = {
   measured_colors?: ReadonlyArray<{ color: string; share: number }>;
   /** La pieza entera es de este color, dicho por quien miró la foto (`color_unico`). */
   color_unico?: string;
+  /**
+   * La lectura de cómo están dispuestos los colores (`patron_color`, en vocabulario de catálogo): un color que el
+   * analizador nombró y que esa lectura también pone en la pieza —en un tramo (`colores`) o salpicado (`motas`)— es
+   * parte real de la pieza aunque los píxeles no lo separen (ver `coloresDominantesReferencia`).
+   */
+  patron_color?: { colores: readonly string[]; motas?: readonly string[] };
 };
 
 /**
@@ -43,7 +49,7 @@ type AparienciaColor = {
 // comprables en una sola pieza; con tres, el blanco quedaba fuera de la
 // cobertura del chat aunque el analizador sí lo hubiera nombrado.
 export const MAX_COLORES_REFERENCIA = 5;
-/** Tonos nombrados que entran siempre; del cuarto al quinto solo con presencia medida relevante (o sin medición). */
+/** Tonos nombrados que entran siempre; del cuarto al quinto solo con presencia (medida o en `patron_color`) o sin medición. */
 const CUPO_BASE = 3;
 /** A named tone this visible in the photo remains in the purchase palette beyond the default slots. */
 const PRESENCIA_RELEVANTE = 0.03;
@@ -335,9 +341,17 @@ function seleccionarDominantes(colores: readonly string[], presenciaRelevante: R
 export function coloresDominantesReferencia(apariencia: AparienciaColor | readonly string[]): string[] {
   const entrada = aparienciaDe(apariencia);
   const nombrados = coloresNombradosOrdenados(entrada);
-  const presenciaRelevante = new Set((entrada.measured_colors ?? [])
-    .filter((medido) => medido.share >= PRESENCIA_RELEVANTE && nombrados.includes(medido.color))
-    .map((medido) => medido.color));
+  // Del cuarto tono en adelante entra el que tiene presencia: medida en píxeles (>= 3 %) o puesta en la pieza por
+  // la lectura de la disposición. La medida sola no basta: no separa el blanco perlado de la plata ni un rosa claro
+  // de un fondo rosa, y el banco de la lectura (2026-10-06) perdía así el blanco de una columna coral, rosa, blanca
+  // y plata que la propia lectura ponía en un tramo de la pieza.
+  const enLaDisposicion = new Set([...(entrada.patron_color?.colores ?? []), ...(entrada.patron_color?.motas ?? [])]);
+  const presenciaRelevante = new Set([
+    ...(entrada.measured_colors ?? [])
+      .filter((medido) => medido.share >= PRESENCIA_RELEVANTE && nombrados.includes(medido.color))
+      .map((medido) => medido.color),
+    ...nombrados.filter((color) => enLaDisposicion.has(color)),
+  ]);
   return seleccionarDominantes(nombrados, presenciaRelevante, !(entrada.measured_colors ?? []).length);
 }
 

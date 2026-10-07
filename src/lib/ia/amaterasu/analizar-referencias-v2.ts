@@ -6,6 +6,7 @@ import { conProporcionDeFotos, enriquecerConDominancia } from "./dominancia-refe
 import { featureEnabled, referenceAnalysisCacheEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { bytesDeBase64 } from "@sempertex/agente-core";
 import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
+import { decidir } from "@/lib/registro/servidor";
 import {
   analysisCacheKey,
   ReferenceBlueprintV2Schema,
@@ -25,12 +26,14 @@ import {
   STRUCTURE_RULES_V18_CANDIDATE,
   STRUCTURE_RULES_V19_CANDIDATE,
   STRUCTURE_RULE_V19B_ORDEN_COLOR,
+  STRUCTURE_RULES_V20_COLORES,
   inclinacionObservada,
   VARIANTE_LECTURA_UNICA,
   VARIANTE_PRODUCCION,
   VARIANTE_V18_CANDIDATA,
   VARIANTE_V19_CANDIDATA,
   VARIANTE_V19B_CANDIDATA,
+  VARIANTE_V20_COLORES,
   varianteConLecturas,
   type VarianteReconocedor,
   tieneElementosAprobados,
@@ -246,8 +249,39 @@ const TOOL_LECTURA_UNICA: Herramienta = (() => {
   };
 })();
 
+/**
+ * v20 (`VARIANTE_V20_COLORES`): la herramienta de la lectura única con `observed_colors` descrito como lo que es,
+ * la lista de compra de la pieza. La descripción de siempre («each prefixed with its finish when visible») dejaba
+ * el acabado opcional y no pedía los colores menores: 9 de 27 colores del banco llegaron sin acabado y el confeti
+ * de los transparentes no salió nunca. Copia, como `TOOL_LECTURA_UNICA`: v16-v19 siguen byte a byte.
+ */
+const DESCRIPCION_COLORES_V20 = "EVERY balloon color of this piece, most used first, up to 8, including colors carried by only a few balloons (accents, clear balloons, chrome or foil accents, toppers). Each entry is one color in plain English with its finish ALWAYS first: chrome, metallic, pearl, matte (pastels are matte), neon or clear, and what is visible inside a clear balloon (e.g. chrome silver, pearl white, matte pastel pink, clear with gold confetti). For an element that is not a balloon structure, its own visible colors.";
+const TOOL_V20_COLORES: Herramienta = (() => {
+  const esquema = object(TOOL_LECTURA_UNICA.esquema);
+  const images = object(object(esquema.properties).images);
+  const imageItems = object(images.items);
+  const elements = object(object(imageItems.properties).elements);
+  const elementItems = object(elements.items);
+  const propiedades = object(elementItems.properties);
+  const conColores = {
+    ...elementItems,
+    properties: { ...propiedades, observed_colors: { ...object(propiedades.observed_colors), description: DESCRIPCION_COLORES_V20 } },
+  };
+  return {
+    ...TOOL_LECTURA_UNICA,
+    esquema: {
+      ...esquema,
+      properties: {
+        ...object(esquema.properties),
+        images: { ...images, items: { ...imageItems, properties: { ...object(imageItems.properties), elements: { ...elements, items: conColores } } } },
+      },
+    },
+  };
+})();
+
 /** La herramienta del inventario para una variante. */
 function toolDeVariante(variante: VarianteReconocedor): Herramienta {
+  if (variante === VARIANTE_V20_COLORES) return TOOL_V20_COLORES;
   return varianteConLecturas(variante) ? TOOL_LECTURA_UNICA : TOOL;
 }
 
@@ -431,7 +465,7 @@ function resolveBillOfMaterials(
  * aparte del blueprint a proposito: todavia no esta validado y no cabe en
  * `reference-blueprint.v2` hasta que Python lo valide.
  */
-function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string, unknown>, catalogo: ReferenceCatalogItem[], mode: AnalysisMode): { blueprint: ReferenceBlueprintV2; lecturasCrudas: Record<string, Record<string, unknown>> } {
+function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string, unknown>, catalogo: ReferenceCatalogItem[], mode: AnalysisMode): { blueprint: ReferenceBlueprintV2; lecturasCrudas: Record<string, Record<string, unknown>>; normalizacion: NormalizacionLectura } {
   const inventoryImages = Array.isArray(inventoryRaw.images) ? inventoryRaw.images : [];
   const knownImageIds = new Set(images.map((image) => image.id));
   const safeImageId = (value: unknown) => {
@@ -592,7 +626,65 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
     palette: { observed: [...new Set(palette)].slice(0, 12), priority: [...new Set(palette)].slice(0, 8) },
     unresolved_decisions: [],
   });
-  return { blueprint, lecturasCrudas };
+  return { blueprint, lecturasCrudas, normalizacion: resumenNormalizacion(inventoryImages, allCandidates, elements, attachments) };
+}
+
+/**
+ * Lo que la normalización (`parseCandidates` + `buildBlueprint`) descartó o cambió de lo que escribió el modelo, para
+ * la auditoría (`decidir`): elementos por encima del tope, elementos que no se aprueban y por qué, colores que no
+ * llegan como el modelo los escribió (tope de 8, acabado normalizado) y piezas partidas en dos. Solo lo que cambió.
+ */
+export type NormalizacionLectura = {
+  elementos_modelo: number;
+  recortados_por_tope: number;
+  elementos: Array<{ element_id: string; nombre: string; categoria: string; aprobado: boolean; motivo?: string; notas?: string[]; colores_modelo?: string[]; colores_lectura?: string[]; partida?: true }>;
+};
+
+const MAX_ELEMENTOS_LEIDOS = 40;
+
+export function resumenNormalizacion(
+  inventoryImages: readonly unknown[],
+  candidatos: readonly Candidate[],
+  elementos: ReadonlyArray<{ element_id: string; name: string; category: string; approved: boolean; appearance: { observed_colors: string[] } }>,
+  pegados: ReadonlyMap<number, number>,
+): NormalizacionLectura {
+  const crudos = inventoryImages.flatMap((value) => { const item = object(value); return Array.isArray(item.elements) ? item.elements : []; });
+  const porImagen = inventoryImages.map((value) => { const item = object(value); return Array.isArray(item.elements) ? item.elements.length : 0; });
+  const coloresModelo = new Map<string, string[]>();
+  for (const crudo of crudos) {
+    const item = object(crudo);
+    const nombre = stringValue(item.name, "", 160);
+    if (nombre && !coloresModelo.has(nombre)) coloresModelo.set(nombre, stringList(item.observed_colors ?? item.colors, 50));
+  }
+  const entradas: NormalizacionLectura["elementos"] = [];
+  elementos.forEach((elemento, indice) => {
+    const candidato = candidatos[indice];
+    if (!candidato) return;
+    const partida = /\s\((?:left|right)\)$/.test(elemento.name);
+    const crudosColores = coloresModelo.get(elemento.name.replace(/\s\((?:left|right)\)$/, ""));
+    const cambiaColores = crudosColores !== undefined && JSON.stringify(crudosColores) !== JSON.stringify(elemento.appearance.observed_colors);
+    const contenedor = pegados.get(indice);
+    const motivo = elemento.approved ? undefined
+      : contenedor !== undefined ? `parte_de:${elementos[contenedor]?.element_id ?? "?"}`
+        : candidato.category === "balloon_structure" && !candidato.structure ? "globo_sin_tipo_de_estructura"
+          : candidato.relevance === "minor" ? "relevancia_menor"
+            : "omitido";
+    if (elemento.approved && !cambiaColores && !partida) return;
+    entradas.push({
+      element_id: elemento.element_id,
+      nombre: elemento.name,
+      categoria: elemento.category,
+      aprobado: elemento.approved,
+      ...(motivo ? { motivo, notas: candidato.uncertainties.slice(0, 2) } : {}),
+      ...(cambiaColores ? { colores_modelo: crudosColores, colores_lectura: elemento.appearance.observed_colors } : {}),
+      ...(partida ? { partida: true as const } : {}),
+    });
+  });
+  return {
+    elementos_modelo: crudos.length,
+    recortados_por_tope: porImagen.reduce((suma, n) => suma + Math.max(0, n - MAX_ELEMENTOS_LEIDOS), 0),
+    elementos: entradas,
+  };
 }
 
 /** Prompts and their hash for a mode and catalog; the evaluation runner records the same hash. */
@@ -606,7 +698,9 @@ export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: Analysis
     // v19 (candidata) = v18 byte a byte y sus reglas DETRÁS: el texto de v18 sigue siendo prefijo.
     : variante === VARIANTE_V19_CANDIDATA ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}\n${STRUCTURE_RULES_V18_CANDIDATE}\n${STRUCTURE_RULES_V19_CANDIDATE}`
     // v19b (candidata) = v18 byte a byte y solo la regla del orden de color detrás.
-    : variante === VARIANTE_V19B_CANDIDATA ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}\n${STRUCTURE_RULES_V18_CANDIDATE}\n${STRUCTURE_RULE_V19B_ORDEN_COLOR}` : "";
+    : variante === VARIANTE_V19B_CANDIDATA ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}\n${STRUCTURE_RULES_V18_CANDIDATE}\n${STRUCTURE_RULE_V19B_ORDEN_COLOR}`
+    // v20 (la de la ruta) = v18 byte a byte y las reglas de color DETRÁS: el texto de v18 sigue siendo prefijo.
+    : variante === VARIANTE_V20_COLORES ? `\n${STRUCTURE_RULES_V16}\n${LECTURA_UNICA_RULES}\n${STRUCTURE_RULES_V18_CANDIDATE}\n${STRUCTURE_RULES_V20_COLORES}` : "";
   const inventorySystem = (mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM) + extra;
   // En modo perceptual nunca se manda el catálogo al modelo: no hay nada
   // válido que pueda elegir, y mandarlo solo lo tentaría a inventar un id.
@@ -744,7 +838,9 @@ async function ejecutarAnalisis(input: {
       ...parametrosInventario(variante),
       signal,
   }, tool.nombre);
-  const { blueprint: armado, lecturasCrudas } = buildBlueprint(referencias, inventoryRaw, mode === "perceptual" ? [] : catalogo, mode);
+  const { blueprint: armado, lecturasCrudas, normalizacion } = buildBlueprint(referencias, inventoryRaw, mode === "perceptual" ? [] : catalogo, mode);
+  // Auditoría de IA: lo que la normalización descartó o cambió de la lectura del modelo no se pierde en silencio.
+  decidir("regla:lectura_foto.normalizacion", "qué descartó o cambió la normalización de la lectura de la foto (modelo → blueprint)", normalizacion, { entrada: { variante, modelo: chat.modelo } });
   // La dominancia se mide sobre los píxeles, no sobre el orden en que el modelo
   // escribió los nombres (fase 2.1). Detrás de bandera hasta que el benchmark
   // muestre la mejora.
