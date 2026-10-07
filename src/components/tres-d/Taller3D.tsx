@@ -2,23 +2,35 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Rows3, Circle } from "lucide-react";
+import { ArrowLeft, Rows3, Circle, Anchor } from "lucide-react";
 import { FORMATOS_GLOBO, NOMBRE_FAMILIA, coloresDelFormato, formatoPorId, infladoValido, type FormatoGlobo } from "@/lib/globos3d/formatos";
-import type { EscenaGlobos, GloboEnEscena } from "./escena-globos";
+import { MODULOS, armarModulo, materialesModulo, moduloPorId, type TipoModulo } from "@/lib/globos3d/modulos";
+import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
+import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena } from "./escena-globos";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 
+/** Formatos con los que se arman módulos: redondos de 5" a 24" y Link-O-Loon 6 y 12. */
+const FORMATOS_MODULO = ["R-5", "R-9", "R-12", "R-18", "R-24", "LOL-6", "LOL-12"] as const;
+
+type Modo = "globo" | "modulo";
+
+const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
+const ACTIVO = "bg-acento text-sobre-acento ring-acento";
+const INACTIVO = "bg-superficie text-texto ring-borde hover:bg-superficie-suave";
+
 /**
- * Página /3d: cada globo Sempertex modelado en 3D, uno por uno, a su tamaño real. Se elige el formato (R-5 a
- * R-36, Link-O-Loon, tubitos, corazón), el color de la tabla oficial (solo los que se fabrican en ese formato,
- * con su acabado) y el inflado en cm. «Todos los tamaños» pone la familia de redondos lado a lado sobre la
- * cuadrícula de 10 cm para comparar escalas.
+ * Página /3d. Dos pestañas:
+ * - Globo: cada globo Sempertex a su tamaño real (formato, color oficial, inflado), o todos los redondos lado a lado.
+ * - Módulos: pareja, trío, cuarteto, quinteto y sexteto armados como enseña Sempertex, con color por globo,
+ *   sus anclas (donde se cuelgan las decoraciones) y su lista de materiales.
  */
 export function Taller3D() {
   const lienzoRef = useRef<HTMLCanvasElement>(null);
   const escenaRef = useRef<EscenaGlobos | null>(null);
   const [listo, setListo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modo, setModo] = useState<Modo>("globo");
   const [formatoId, setFormatoId] = useState("R-12");
   const formato = formatoPorId(formatoId) ?? FORMATOS_GLOBO[2]!;
   const colores = useMemo(() => coloresDelFormato(formato.id), [formato.id]);
@@ -26,6 +38,12 @@ export function Taller3D() {
   const color = colores.find((c) => c.codigo === codigo) ?? colores[0];
   const [infladoCm, setInfladoCm] = useState(formato.infladoDecoracionCm);
   const [vista, setVista] = useState<"uno" | "todos">("uno");
+  // Módulos
+  const [moduloId, setModuloId] = useState<TipoModulo>("cuarteto");
+  const modulo = moduloPorId(moduloId) ?? MODULOS[2]!;
+  const [coloresModulo, setColoresModulo] = useState<string[]>(["009", "009", "009", "009", "009", "009"]);
+  const [ranura, setRanura] = useState<number | null>(null);
+  const [verAnclas, setVerAnclas] = useState(true);
 
   // La escena se crea una vez (three.js se carga solo en el navegador).
   useEffect(() => {
@@ -52,24 +70,51 @@ export function Taller3D() {
     };
   }, []);
 
-  // Lo que se ve: un globo, o la fila de todos los formatos redondos en el color elegido.
+  const inflado = infladoValido(formato, infladoCm);
+  const armado = useMemo(() => armarModulo(modulo, formato, inflado), [modulo, formato, inflado]);
+  const refModulo = (i: number): ReferenciaSempertex | undefined => {
+    const c = coloresModulo[i] ?? codigo;
+    return colores.find((x) => x.codigo === c) ?? color;
+  };
+
+  // Lo que se ve.
   useEffect(() => {
     const escena = escenaRef.current;
     if (!listo || !escena || !color) return;
-    if (vista === "todos") {
+    if (modo === "modulo") {
+      const globos: GloboColocadoEnEscena[] = armado.globos.map((g) => {
+        const ref = colores.find((x) => x.codigo === coloresModulo[g.indice]) ?? color;
+        return { formato, infladoCm: inflado, hex: ref.hexGlobo, familia: ref.familia, nudo: g.nudo, direccion: g.direccion };
+      });
+      escena.mostrarModulo(globos, verAnclas ? armado.anclas.map((a) => a.posicion) : []);
+    } else if (vista === "todos") {
       const fila: GloboEnEscena[] = FORMATOS_GLOBO.filter((f) => f.tipo === "redondo" && color.formatos.includes(f.id))
         .map((f) => ({ formato: f, infladoCm: f.infladoDecoracionCm, hex: color.hexGlobo, familia: color.familia }));
       escena.mostrar(fila);
     } else {
-      escena.mostrar([{ formato, infladoCm: infladoValido(formato, infladoCm), hex: color.hexGlobo, familia: color.familia }]);
+      escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
-  }, [listo, vista, formato, infladoCm, color]);
+  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas]);
 
   function elegirFormato(f: FormatoGlobo) {
     setFormatoId(f.id);
     setInfladoCm(f.infladoDecoracionCm);
-    if (!coloresDelFormato(f.id).some((c) => c.codigo === codigo)) setCodigo(coloresDelFormato(f.id)[0]?.codigo ?? codigo);
+    const disponibles = coloresDelFormato(f.id);
+    if (!disponibles.some((c) => c.codigo === codigo)) setCodigo(disponibles[0]?.codigo ?? codigo);
+    setColoresModulo((actual) => actual.map((c) => (disponibles.some((d) => d.codigo === c) ? c : disponibles[0]?.codigo ?? c)));
     setVista("uno");
+  }
+
+  function cambiarModo(nuevo: Modo) {
+    setModo(nuevo);
+    if (nuevo === "modulo" && !FORMATOS_MODULO.includes(formato.id as (typeof FORMATOS_MODULO)[number])) elegirFormato(formatoPorId("R-12")!);
+  }
+
+  function elegirColor(nuevo: string) {
+    setCodigo(nuevo);
+    if (modo !== "modulo") return;
+    // Con una ranura elegida cambia solo ese globo; sin ranura, todo el módulo queda de ese color.
+    setColoresModulo((actual) => (ranura === null ? actual.map(() => nuevo) : actual.map((c, i) => (i === ranura ? nuevo : c))));
   }
 
   const porFamilia = useMemo(() => {
@@ -77,6 +122,10 @@ export function Taller3D() {
     for (const c of colores) grupos.set(c.familia, [...(grupos.get(c.familia) ?? []), c]);
     return [...grupos.entries()];
   }, [colores]);
+
+  const materiales = materialesModulo(coloresModulo.slice(0, modulo.globos));
+  const formatosVisibles = modo === "modulo" ? FORMATOS_GLOBO.filter((f) => FORMATOS_MODULO.includes(f.id as (typeof FORMATOS_MODULO)[number])) : FORMATOS_GLOBO;
+  const seleccionado = (i: number) => (modo === "modulo" ? coloresModulo[i] : codigo);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-4 px-4 py-5">
@@ -91,36 +140,86 @@ export function Taller3D() {
         </Link>
       </header>
 
+      <div role="tablist" aria-label="Qué modelar" className="inline-flex w-fit gap-1 rounded-full bg-superficie p-1 ring-1 ring-borde">
+        {([["globo", "Globos"], ["modulo", "Módulos"]] as const).map(([valor, etiqueta]) => (
+          <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => cambiarModo(valor)}
+            className={`min-h-10 rounded-full px-5 text-sm font-medium ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
+            {etiqueta}
+          </button>
+        ))}
+      </div>
+
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-1" aria-label="Elegir el globo">
+          {modo === "modulo" && (
+            <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
+              <h2 className="mb-2 text-sm font-semibold text-texto">Módulo</h2>
+              <div className="grid grid-cols-2 gap-1.5">
+                {MODULOS.map((m) => (
+                  <button key={m.id} type="button" onClick={() => { setModuloId(m.id); setRanura(null); }} aria-pressed={m.id === modulo.id}
+                    className={`${BOTON} ${m.id === modulo.id ? ACTIVO : INACTIVO}`}>
+                    {m.nombre} <span className="font-mono text-xs opacity-75">×{m.globos}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-texto-suave">{modulo.armado}</p>
+            </section>
+          )}
+
           <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-            <h2 className="mb-2 text-sm font-semibold text-texto">Formato</h2>
+            <h2 className="mb-2 text-sm font-semibold text-texto">{modo === "modulo" ? "Globo del módulo" : "Formato"}</h2>
             <div className="grid grid-cols-3 gap-1.5">
-              {FORMATOS_GLOBO.map((f) => (
-                <button key={f.id} type="button" onClick={() => elegirFormato(f)} aria-pressed={vista === "uno" && f.id === formato.id}
-                  className={`min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors ${vista === "uno" && f.id === formato.id ? "bg-acento text-sobre-acento ring-acento" : "bg-superficie text-texto ring-borde hover:bg-superficie-suave"}`}>
+              {formatosVisibles.map((f) => (
+                <button key={f.id} type="button" onClick={() => elegirFormato(f)} aria-pressed={(modo === "modulo" || vista === "uno") && f.id === formato.id}
+                  className={`${BOTON} ${(modo === "modulo" || vista === "uno") && f.id === formato.id ? ACTIVO : INACTIVO}`}>
                   {f.id}
                 </button>
               ))}
             </div>
-            <button type="button" onClick={() => setVista(vista === "todos" ? "uno" : "todos")} aria-pressed={vista === "todos"}
-              className={`mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm ring-1 ${vista === "todos" ? "bg-acento text-sobre-acento ring-acento" : "bg-superficie text-texto ring-borde hover:bg-superficie-suave"}`}>
-              {vista === "todos" ? <Circle className="size-4" aria-hidden /> : <Rows3 className="size-4" aria-hidden />}
-              {vista === "todos" ? "Ver un solo globo" : "Todos los tamaños lado a lado"}
-            </button>
+            {modo === "globo" && (
+              <button type="button" onClick={() => setVista(vista === "todos" ? "uno" : "todos")} aria-pressed={vista === "todos"}
+                className={`mt-2 inline-flex w-full items-center justify-center gap-2 ${BOTON} ${vista === "todos" ? ACTIVO : INACTIVO}`}>
+                {vista === "todos" ? <Circle className="size-4" aria-hidden /> : <Rows3 className="size-4" aria-hidden />}
+                {vista === "todos" ? "Ver un solo globo" : "Todos los tamaños lado a lado"}
+              </button>
+            )}
           </section>
 
-          {vista === "uno" && (
+          {(modo === "modulo" || vista === "uno") && (
             <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
               <label htmlFor="inflado" className="flex items-baseline justify-between text-sm font-semibold text-texto">
-                Inflado <span className="font-mono text-xs font-normal text-texto-suave">{formatoCm(infladoValido(formato, infladoCm))} de {formatoCm(formato.diametroMaxCm)} máx.</span>
+                Inflado <span className="font-mono text-xs font-normal text-texto-suave">{formatoCm(inflado)} de {formatoCm(formato.diametroMaxCm)} máx.</span>
               </label>
               <input id="inflado" type="range" min={Math.round(formato.diametroMaxCm * 0.4 * 10) / 10} max={formato.diametroMaxCm} step={0.5}
-                value={infladoValido(formato, infladoCm)} onChange={(e) => setInfladoCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
+                value={inflado} onChange={(e) => setInfladoCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
               <button type="button" onClick={() => setInfladoCm(formato.infladoDecoracionCm)} className="mt-1 text-xs text-acento underline-offset-2 hover:underline">
                 Inflado de decoración ({formatoCm(formato.infladoDecoracionCm)})
               </button>
-              <p className="mt-2 text-xs text-texto-suave">{formato.descripcion}</p>
+              {modo === "globo" && <p className="mt-2 text-xs text-texto-suave">{formato.descripcion}</p>}
+            </section>
+          )}
+
+          {modo === "modulo" && (
+            <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
+              <h2 className="text-sm font-semibold text-texto">Color de cada globo</h2>
+              <p className="mb-2 text-xs text-texto-suave">{ranura === null ? "Elige un color para todo el módulo, o toca un globo para cambiar solo ese." : `Elige el color del globo ${ranura + 1}.`}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                {Array.from({ length: modulo.globos }, (_, i) => {
+                  const ref = refModulo(i);
+                  return (
+                    <button key={i} type="button" onClick={() => setRanura(ranura === i ? null : i)} aria-pressed={ranura === i}
+                      aria-label={`Globo ${i + 1}: ${ref?.nombreCompleto ?? ""}`} title={`Globo ${i + 1}: ${ref?.nombreCompleto ?? ""}`}
+                      className={`grid size-10 place-items-center rounded-full font-mono text-xs ring-2 ring-offset-2 ring-offset-superficie ${ranura === i ? "ring-acento" : "ring-borde"}`}
+                      style={{ background: ref?.hexGlobo, color: "rgba(0,0,0,.55)" }}>{i + 1}</button>
+                  );
+                })}
+                {ranura !== null && <button type="button" onClick={() => setRanura(null)} className="text-xs text-acento underline-offset-2 hover:underline">Todo el módulo</button>}
+              </div>
+              <label className="mt-3 flex items-center gap-2 text-sm text-texto" htmlFor="ver-anclas">
+                <input id="ver-anclas" type="checkbox" checked={verAnclas} onChange={(e) => setVerAnclas(e.target.checked)} />
+                <Anchor className="size-4 text-acento" aria-hidden /> Ver anclas ({armado.anclas.length})
+              </label>
+              <p className="mt-1 text-xs text-texto-suave">Las anclas son los puntos donde se cuelga una decoración: el centro y los huecos entre globos.</p>
             </section>
           )}
 
@@ -131,12 +230,15 @@ export function Taller3D() {
                 <div key={familia}>
                   <p className="mb-1 font-mono text-[0.7rem] uppercase tracking-wider text-texto-suave">{NOMBRE_FAMILIA[familia] ?? familia}</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {lista.map((c) => (
-                      <button key={c.codigo} type="button" onClick={() => setCodigo(c.codigo)} aria-pressed={c.codigo === color?.codigo}
-                        title={`${c.nombreCompleto} ${c.codigo}`} aria-label={`${c.nombreCompleto} ${c.codigo}`}
-                        className={`size-9 rounded-full ring-2 ring-offset-2 ring-offset-superficie ${c.codigo === color?.codigo ? "ring-acento" : "ring-transparent hover:ring-borde"}`}
-                        style={{ background: c.hexGlobo, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.12)" }} />
-                    ))}
+                    {lista.map((c) => {
+                      const marcado = modo === "modulo" ? (ranura === null ? coloresModulo.slice(0, modulo.globos).every((x) => x === c.codigo) : seleccionado(ranura) === c.codigo) : c.codigo === color?.codigo;
+                      return (
+                        <button key={c.codigo} type="button" onClick={() => elegirColor(c.codigo)} aria-pressed={marcado}
+                          title={`${c.nombreCompleto} ${c.codigo}`} aria-label={`${c.nombreCompleto} ${c.codigo}`}
+                          className={`size-9 rounded-full ring-2 ring-offset-2 ring-offset-superficie ${marcado ? "ring-acento" : "ring-transparent hover:ring-borde"}`}
+                          style={{ background: c.hexGlobo, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.12)" }} />
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -145,21 +247,36 @@ export function Taller3D() {
         </aside>
 
         <section className="order-1 flex min-w-0 flex-col gap-2 lg:order-2" aria-label="Visor 3D">
-          <div className="relative h-[58vh] min-h-[320px] overflow-hidden rounded-2xl bg-superficie-suave ring-1 ring-borde lg:h-[calc(100dvh-170px)]">
-            <canvas ref={lienzoRef} className="block h-full w-full touch-none" aria-label="Globo en 3D: arrastra para girar, rueda o pellizca para acercar" />
+          <div className="relative h-[58vh] min-h-[320px] overflow-hidden rounded-2xl bg-superficie-suave ring-1 ring-borde lg:h-[calc(100dvh-220px)]">
+            <canvas ref={lienzoRef} className="block h-full w-full touch-none" aria-label="Modelo en 3D: arrastra para girar, rueda o pellizca para acercar" />
             {!listo && !error && <p className="absolute inset-0 grid place-items-center text-sm text-texto-suave">Cargando el visor 3D…</p>}
             {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-texto">{error}</p>}
             {color && (
               <div className="pointer-events-none absolute left-3 top-3 max-w-[80%] rounded-xl bg-superficie/90 px-3 py-2 text-sm shadow-sm ring-1 ring-borde backdrop-blur">
-                <p className="font-semibold text-texto">{vista === "todos" ? "Redondos de 5\" a 36\"" : formato.nombre} · {color.nombreCompleto} <span className="font-mono text-xs text-texto-suave">{color.codigo}</span></p>
-                <p className="font-mono text-xs text-texto-suave">
-                  {vista === "todos"
-                    ? "Inflado de decoración de cada tamaño"
-                    : formato.largoCm
-                      ? `${formatoCm(infladoValido(formato, infladoCm))} de grosor × ${formatoCm(formato.largoCm)} de largo`
-                      : `${formatoCm(infladoValido(formato, infladoCm))} de diámetro`}
-                  {" · "}{color.acabado}
-                </p>
+                {modo === "modulo" ? (
+                  <>
+                    <p className="font-semibold text-texto">{modulo.nombre} de {formato.id} a {formatoCm(inflado)}</p>
+                    <p className="font-mono text-xs text-texto-suave">{modulo.globos} globos · {formatoCm(armado.anchoCm)} de ancho</p>
+                    <ul className="mt-1 text-xs text-texto">
+                      {materiales.map((m) => {
+                        const ref = referenciaPorCodigo(m.codigo);
+                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
+                      })}
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-texto">{vista === "todos" ? "Redondos de 5\" a 36\"" : formato.nombre} · {color.nombreCompleto} <span className="font-mono text-xs text-texto-suave">{color.codigo}</span></p>
+                    <p className="font-mono text-xs text-texto-suave">
+                      {vista === "todos"
+                        ? "Inflado de decoración de cada tamaño"
+                        : formato.largoCm
+                          ? `${formatoCm(inflado)} de grosor × ${formatoCm(formato.largoCm)} de largo`
+                          : `${formatoCm(inflado)} de diámetro`}
+                      {" · "}{color.acabado}
+                    </p>
+                  </>
+                )}
               </div>
             )}
           </div>

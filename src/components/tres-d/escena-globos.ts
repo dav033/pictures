@@ -11,8 +11,14 @@ import { contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/
  */
 export type GloboEnEscena = { formato: FormatoGlobo; infladoCm: number; hex: string; familia: string };
 
+/** Un globo de un módulo: dónde queda su nudo y hacia dónde apunta su cuerpo (cm, y hacia arriba). */
+export type GloboColocadoEnEscena = GloboEnEscena & { nudo: Punto3; direccion: Punto3 };
+export type Punto3 = { x: number; y: number; z: number };
+
 export type EscenaGlobos = {
   mostrar: (globos: readonly GloboEnEscena[]) => void;
+  /** Un módulo armado (pareja, trío, cuarteto…): los globos colocados y, si se piden, sus anclas. */
+  mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[]) => void;
   redimensionar: () => void;
   destruir: () => void;
 };
@@ -192,6 +198,32 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     encuadrar();
   }
 
+  const ARRIBA = new THREE.Vector3(0, 1, 0);
+  function mostrarModulo(globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[]) {
+    for (const hijo of [...contenido.children]) { contenido.remove(hijo); liberar(hijo); }
+    const modulo = new THREE.Group();
+    for (const globo of globos) {
+      const objeto = construir(globo);
+      objeto.quaternion.setFromUnitVectors(ARRIBA, new THREE.Vector3(globo.direccion.x, globo.direccion.y, globo.direccion.z).normalize());
+      objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
+      objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
+      modulo.add(objeto);
+    }
+    // Anclas: puntos donde se cuelga una decoración hija (una flor, un moño).
+    const materialAncla = new THREE.MeshStandardMaterial({ color: 0x7c3aed, emissive: 0x7c3aed, emissiveIntensity: 0.6 });
+    for (const ancla of anclas) {
+      const punto = new THREE.Mesh(new THREE.SphereGeometry(1.4 * CM, 20, 12), materialAncla.clone());
+      punto.position.set(ancla.x * CM, ancla.y * CM, ancla.z * CM);
+      modulo.add(punto);
+    }
+    materialAncla.dispose();
+    // Apoyado sobre el piso.
+    const caja = new THREE.Box3().setFromObject(modulo);
+    modulo.position.y = -caja.min.y + 0.005;
+    contenido.add(modulo);
+    encuadrar();
+  }
+
   function redimensionar() {
     const { clientWidth, clientHeight } = lienzo;
     if (!clientWidth || !clientHeight) return;
@@ -211,6 +243,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
 
   return {
     mostrar,
+    mostrarModulo,
     redimensionar,
     destruir() {
       cancelAnimationFrame(cuadro);

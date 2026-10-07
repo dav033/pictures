@@ -70,6 +70,17 @@ export function contornoCorazon(anchoCm: number): Array<{ x: number; y: number }
   return puntos;
 }
 
+/**
+ * Distancia (cm) del nudo al centro del cuerpo: es lo que separa los cuerpos del centro de un módulo. Sale
+ * del mismo perfil que se dibuja (el punto más ancho del cuerpo).
+ */
+export function centroCuerpo(tipo: "redondo" | "link", diametroCm: number): number {
+  const perfil = tipo === "link" ? perfilLink(diametroCm) : perfilRedondo(diametroCm);
+  let mejor = perfil[0]!;
+  for (const punto of perfil) if (punto.r > mejor.r) mejor = punto;
+  return mejor.y;
+}
+
 /** Alto total del perfil (cm): para encuadrar la cámara y alinear la fila de tamaños. */
 export function altoPerfil(perfil: readonly PuntoPerfil[]): number {
   return perfil.reduce((max, punto) => Math.max(max, punto.y), 0);
