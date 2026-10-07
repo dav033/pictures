@@ -6,14 +6,16 @@ import { armarModulo, moduloPorId, materialesModulo, type GloboColocado, type Ve
  * La trenza de cuartetos de Sempertex a lo largo de cualquier recorrido: cuartetos apretados (los globos a 0,62
  * diámetros del eje, los nudos metidos hacia dentro), cada uno perpendicular al recorrido y girado 1/8 de vuelta
  * respecto al anterior. Una columna es un recorrido recto hacia arriba; un arco, una curva de piso a piso.
- * Patrones de color de «Conceptos y técnicas»: un color, espiralada, salvavidas y zig-zag.
+ * Patrones de color de «Conceptos y técnicas»: un color, dos colores (una pareja de cada color), espiralada,
+ * salvavidas y zig-zag.
  * La separación entre cuartetos sale de la fórmula de Sempertex (R-12 a 25 cm: 5 por metro; R-9 a 18 cm: 7;
  * R-5 a 12 cm: 10), unos 0,8 diámetros. Unidades: cm; el recorrido va en el plano XY (y hacia arriba).
  */
-export type PatronTrenza = "un_color" | "espiral" | "salvavidas" | "zigzag";
+export type PatronTrenza = "un_color" | "dos_colores" | "espiral" | "salvavidas" | "zigzag";
 
 export const PATRONES_TRENZA: ReadonlyArray<{ id: PatronTrenza; nombre: string; descripcion: string; colores: number }> = [
   { id: "un_color", nombre: "Un color", descripcion: "Todos los cuartetos del mismo color.", colores: 1 },
+  { id: "dos_colores", nombre: "Dos colores", descripcion: "Cada cuarteto con una pareja de cada color (A, B, A, B); al girar 1/8 por nivel se forma una espiral doble.", colores: 2 },
   { id: "espiral", nombre: "Espiralada", descripcion: "Cada cuarteto con 4 colores en el mismo orden; al girar 1/8 por nivel se forma la espiral.", colores: 4 },
   { id: "salvavidas", nombre: "Salvavidas", descripcion: "Bloques de 2 cuartetos de un solo color, alternando.", colores: 2 },
   { id: "zigzag", nombre: "Zig-zag", descripcion: "Se giran 2 cuartetos a la izquierda y los 2 siguientes a la derecha.", colores: 4 },

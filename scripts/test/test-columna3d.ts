@@ -31,6 +31,11 @@ for (const g of espiral.globos) {
   assert.ok(Math.abs(r - 25 * 0.62) < 0.5, `globo a ${r.toFixed(1)} cm del eje`);
 }
 
+// Dos colores: cada cuarteto es una pareja de cada color, alternados A, B, A, B (mitad y mitad).
+const dos = armarColumna({ formato: r12, infladoCm: 25, alturaCm: 100, patron: "dos_colores", colores: ["009", "005"] });
+assert.deepEqual(dos.globos.filter((g) => g.nivel === 0).map((g) => g.codigo), ["009", "005", "009", "005"]);
+assert.deepEqual(dos.materiales, [{ codigo: "009", cantidad: 10 }, { codigo: "005", cantidad: 10 }]);
+
 const salvavidas = armarColumna({ formato: r12, infladoCm: 25, alturaCm: 100, patron: "salvavidas", colores: ["009", "005"] });
 const colorNivel = (n: number) => new Set(salvavidas.globos.filter((g) => g.nivel === n).map((g) => g.codigo));
 assert.deepEqual([...colorNivel(0)], ["009"]);
@@ -42,4 +47,4 @@ const z = (nivel: number) => { const g = zigzag.globos.find((x) => x.nivel === n
 assert.equal(Math.abs(z(2) - z(0)), 90, "zig-zag: los 2 primeros giros van al mismo lado (2 × 45°)");
 assert.equal(z(4), z(0), "zig-zag: los 2 siguientes vuelven");
 
-console.log(`OK test-columna3d: 5/7/10 cuartetos por metro (R-12/R-9/R-5), giro de 1/8, espiralada 9 × 4 = 36 globos, salvavidas y zig-zag`);
+console.log(`OK test-columna3d: 5/7/10 cuartetos por metro (R-12/R-9/R-5), giro de 1/8, espiralada 9 × 4 = 36 globos, dos colores, salvavidas y zig-zag`);

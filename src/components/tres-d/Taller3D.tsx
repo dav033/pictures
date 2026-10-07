@@ -239,7 +239,7 @@ export function Taller3D() {
           {(modo === "columna" || modo === "arco") && (
             <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
               <h2 className="mb-2 text-sm font-semibold text-texto">Trenza de cuartetos</h2>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 {PATRONES_COLUMNA.map((p) => (
                   <button key={p.id} type="button" onClick={() => { setPatron(p.id); setRanura(null); }} aria-pressed={p.id === patron}
                     className={`${BOTON} ${p.id === patron ? ACTIVO : INACTIVO}`}>{p.nombre}</button>
