@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sparkles, LoaderCircle } from "lucide-react";
 import { AMBIENTES_RENDER, type AmbienteRender } from "@/lib/globos3d/render-ia";
+import type { AspectoCaptura } from "./escena-globos";
 
 type Generada = { id: number; imagen: string; ambiente: AmbienteRender };
 
@@ -11,19 +12,19 @@ type Generada = { id: number; imagen: string; ambiente: AmbienteRender };
  * decoración se conserva: forma, cantidades y colores; FLUX pone el látex real y el salón). Guarda las últimas 4
  * en la página; nada se guarda en el servidor.
  */
-export function GeneradorIA({ capturar, descripcion }: { capturar: () => string | null; descripcion: string }) {
+export function GeneradorIA({ capturar, descripcion }: { capturar: () => { datos: string; aspecto: AspectoCaptura } | null; descripcion: string }) {
   const [ambiente, setAmbiente] = useState<AmbienteRender>("salon_elegante");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generadas, setGeneradas] = useState<Generada[]>([]);
 
   async function generar() {
-    const render = capturar();
-    if (!render) { setError("El visor 3D todavía no está listo."); return; }
+    const captura = capturar();
+    if (!captura) { setError("El visor 3D todavía no está listo."); return; }
     setCargando(true);
     setError(null);
     try {
-      const respuesta = await fetch("/api/render-3d-imagen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ render, descripcion, ambiente, aspecto: "3:2" }) });
+      const respuesta = await fetch("/api/render-3d-imagen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ render: captura.datos, descripcion, ambiente, aspecto: captura.aspecto }) });
       const datos = (await respuesta.json().catch(() => ({}))) as { imagen?: string; error?: string };
       if (!respuesta.ok || !datos.imagen) throw new Error(datos.error ?? "No pude generar la foto.");
       const imagen = datos.imagen;

@@ -32,10 +32,17 @@ export type EscenaGlobos = {
   /** Un módulo armado (pareja, trío, cuarteto…): los globos colocados, si se piden sus anclas, y los tubitos. */
   mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos?: readonly TuboEnEscena[], extras?: ExtrasEscena) => void;
   redimensionar: () => void;
-  /** Captura lo que se ve como JPEG, sin cuadrícula y con fondo claro (para la foto con IA). */
-  capturar: () => string;
+  /**
+   * Captura para la foto con IA: JPEG grande (lado mayor 1536 px) desde el ángulo que se ve, con la decoración
+   * encuadrada justa, sin cuadrícula y con fondo claro. La proporción sale de la forma (vertical, cuadrada o
+   * apaisada) y es la misma que se le pide a FLUX, para que no estire ni recorte.
+   */
+  capturar: () => { datos: string; aspecto: AspectoCaptura };
   destruir: () => void;
 };
+
+export type AspectoCaptura = "2:3" | "1:1" | "3:2";
+const TAMANO_CAPTURA: Record<AspectoCaptura, { ancho: number; alto: number }> = { "2:3": { ancho: 1024, alto: 1536 }, "1:1": { ancho: 1024, alto: 1024 }, "3:2": { ancho: 1536, alto: 1024 } };
 
 const CM = 0.01;
 
@@ -401,14 +408,69 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     mostrarModulo,
     redimensionar,
     capturar() {
-      // Sin cuadrícula ni piso de sombra y con fondo claro: FLUX recibe la decoración, no la escala del taller.
+      // 1. Render cuadrado grande desde el mismo ángulo, con la decoración entera en cuadro y fondo transparente.
+      const L = 2304;
+      const caja = new THREE.Box3().setFromObject(contenido);
+      const esfera = caja.getBoundingSphere(new THREE.Sphere());
+      const direccion = camara.position.clone().sub(controles.target).normalize();
+      const antes = { posicion: camara.position.clone(), aspecto: camara.aspect, ratio: renderer.getPixelRatio(), tamano: renderer.getSize(new THREE.Vector2()), near: camara.near, far: camara.far };
+      const distancia = esfera.radius / Math.sin(THREE.MathUtils.degToRad(camara.fov) / 2) * 1.02;
+      camara.position.copy(esfera.center).addScaledVector(direccion, distancia);
+      camara.lookAt(esfera.center);
+      camara.aspect = 1;
+      camara.near = distancia / 100;
+      camara.far = distancia * 20;
+      camara.updateProjectionMatrix();
+      renderer.setPixelRatio(1);
+      renderer.setSize(L, L, false);
       cuadricula.visible = false;
-      renderer.setClearColor(0xefedf2, 1);
-      renderer.render(escena, camara);
-      const datos = lienzo.toDataURL("image/jpeg", 0.92);
-      cuadricula.visible = true;
       renderer.setClearColor(0x000000, 0);
-      return datos;
+      renderer.render(escena, camara);
+      const cuadro = document.createElement("canvas");
+      cuadro.width = L;
+      cuadro.height = L;
+      const pincel = cuadro.getContext("2d", { willReadFrequently: true });
+      pincel?.drawImage(lienzo, 0, 0);
+
+      // Volver al visor tal como estaba.
+      cuadricula.visible = true;
+      renderer.setPixelRatio(antes.ratio);
+      renderer.setSize(antes.tamano.x, antes.tamano.y, false);
+      camara.position.copy(antes.posicion);
+      camara.aspect = antes.aspecto;
+      camara.near = antes.near;
+      camara.far = antes.far;
+      camara.updateProjectionMatrix();
+      camara.lookAt(controles.target);
+      renderer.render(escena, camara);
+
+      // 2. Lo que de verdad se dibujó (píxeles no transparentes, sombra incluida) y su proporción.
+      let x0 = L, y0 = L, x1 = 0, y1 = 0;
+      if (pincel) {
+        const { data } = pincel.getImageData(0, 0, L, L);
+        for (let y = 0; y < L; y += 2) for (let x = 0; x < L; x += 2) {
+          if (data[(y * L + x) * 4 + 3]! > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        }
+      }
+      if (x1 <= x0 || y1 <= y0) { x0 = 0; y0 = 0; x1 = L; y1 = L; }
+      const razon = (x1 - x0) / (y1 - y0);
+      const aspecto: AspectoCaptura = razon < 0.8 ? "2:3" : razon > 1.25 ? "3:2" : "1:1";
+      const { ancho, alto } = TAMANO_CAPTURA[aspecto];
+
+      // 3. Recorte con un 6 % de aire, en la proporción que se le pide a FLUX, sobre fondo claro.
+      const anchoCaja = (x1 - x0) * 1.12, altoCaja = (y1 - y0) * 1.12;
+      const escala = Math.min(ancho / anchoCaja, alto / altoCaja);
+      const salida = document.createElement("canvas");
+      salida.width = ancho;
+      salida.height = alto;
+      const destino = salida.getContext("2d");
+      if (!destino) return { datos: lienzo.toDataURL("image/jpeg", 0.92), aspecto };
+      destino.fillStyle = "#efedf2";
+      destino.fillRect(0, 0, ancho, alto);
+      destino.imageSmoothingQuality = "high";
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      destino.drawImage(cuadro, ancho / 2 - cx * escala, alto / 2 - cy * escala, L * escala, L * escala);
+      return { datos: salida.toDataURL("image/jpeg", 0.92), aspecto };
     },
     destruir() {
       cancelAnimationFrame(cuadro);

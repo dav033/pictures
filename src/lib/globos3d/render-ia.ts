@@ -22,7 +22,7 @@ export function promptRender3d(descripcion: string, ambiente: AmbienteRender): s
   return [
     "Turn this 3D preview into a real professional event photograph.",
     "Keep the balloon decoration exactly as shown: same overall shape, height and width, same number, size, position and color of every balloon and of every decoration; do not add, remove, merge or recolor balloons.",
-    "Make it photorealistic: real latex balloons with natural soft highlights, slight squash where balloons touch, knots hidden; chrome balloons with mirror reflections, clear balloons see-through.",
+    "Make it a real photograph, not a 3D render: real latex balloons with natural soft highlights and subtle texture, tightly packed and slightly squashed where they touch (where the preview shows small gaps or see-through spots, the real decoration is full), knots hidden; chrome balloons with mirror reflections, clear balloons see-through.",
     `Replace the plain backdrop and the grid floor with ${lugar}.`,
     decoracion ? `The decoration: ${decoracion}.` : "",
     "Same camera angle and framing as the input; sharp detail, natural depth.",
@@ -40,12 +40,29 @@ export function formatoEnIngles(formatoId: string): string {
 }
 
 /**
- * La descripción que viaja con la captura: la estructura y su lista de materiales en inglés, de mayor a menor
- * cantidad («40 × 12-inch round Pastel Matte Blue»), recortada a `MAX_DESCRIPCION`.
+ * La descripción que viaja con la captura: la estructura, los colores por proporción («about 60% Pastel Matte
+ * Blue, 20% Fashion White…», de más a menos) y los tamaños como rango. Las cantidades por formato no van: FLUX
+ * no cuenta globos (la cantidad la da la captura) y una lista larga solo le quita peso a lo importante.
+ * Recortada a `MAX_DESCRIPCION`.
  */
 export function descripcionRender3d(estructura: string, materiales: ReadonlyArray<{ cantidad: number; formatoId: string; colorEn: string }>, extra = ""): string {
-  const lista = [...materiales].sort((a, b) => b.cantidad - a.cantidad).map((m) => `${m.cantidad} × ${formatoEnIngles(m.formatoId)} ${m.colorEn}`);
-  const partes = [estructura.trim(), lista.length ? `Balloons: ${lista.join(", ")}` : "", extra.trim()].filter(Boolean);
+  const total = materiales.reduce((suma, m) => suma + m.cantidad, 0);
+  const porColor = new Map<string, number>();
+  for (const m of materiales) porColor.set(m.colorEn, (porColor.get(m.colorEn) ?? 0) + m.cantidad);
+  const colores = [...porColor.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
+    .map(([color, n]) => `${Math.max(1, Math.round((100 * n) / total))}% ${color}`);
+  const redondos = [...new Set(materiales.filter((m) => m.formatoId.startsWith("R-")).map((m) => Number(m.formatoId.slice(2))))].sort((a, b) => a - b);
+  const otros = [...new Set(materiales.filter((m) => !m.formatoId.startsWith("R-")).map((m) => formatoEnIngles(m.formatoId).replace(/^\d+[- ]?(inch )?/, "")))];
+  const tamanos = [
+    redondos.length > 1 ? `round balloons from ${redondos[0]} to ${redondos[redondos.length - 1]} inches` : redondos.length === 1 ? `${redondos[0]}-inch round balloons` : "",
+    ...otros.map((o) => (o.endsWith("tube") ? "twisting balloons" : `${o} balloons`)),
+  ].filter(Boolean);
+  const partes = [
+    estructura.trim(),
+    colores.length ? `Colors: about ${colores.join(", ")}` : "",
+    tamanos.length ? `Sizes: ${tamanos.join(", ")}` : "",
+    extra.trim(),
+  ].filter(Boolean);
   const texto = partes.join(". ");
   return texto.length <= MAX_DESCRIPCION ? texto : `${texto.slice(0, MAX_DESCRIPCION - 1).replace(/[,\s]+\S*$/, "")}…`;
 }

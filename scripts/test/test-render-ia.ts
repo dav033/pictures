@@ -16,9 +16,14 @@ const descripcion = descripcionRender3d("A balloon column 1.8 m tall", [
   { cantidad: 8, formatoId: "R-12", colorEn: "Pastel Matte Pink" },
   { cantidad: 40, formatoId: "R-12", colorEn: "Fashion White" },
 ]);
-assert.equal(descripcion, "A balloon column 1.8 m tall. Balloons: 40 × 12-inch round Fashion White, 8 × 12-inch round Pastel Matte Pink");
+assert.equal(descripcion, "A balloon column 1.8 m tall. Colors: about 83% Fashion White, 17% Pastel Matte Pink. Sizes: 12-inch round balloons");
+const mezcla = descripcionRender3d("An organic column", [
+  { cantidad: 30, formatoId: "R-5", colorEn: "Pastel Matte Blue" }, { cantidad: 2, formatoId: "R-24", colorEn: "Pastel Matte Blue" },
+  { cantidad: 10, formatoId: "R-12", colorEn: "Reflex Silver" }, { cantidad: 6, formatoId: "T-260", colorEn: "Fashion Pink" }, { cantidad: 4, formatoId: "LOL-12", colorEn: "Fashion Pink" },
+]);
+assert.equal(mezcla, "An organic column. Colors: about 62% Pastel Matte Blue, 19% Reflex Silver, 19% Fashion Pink. Sizes: round balloons from 5 to 24 inches, twisting balloons, Link-O-Loon balloons");
 
-const larga = descripcionRender3d("A wall", Array.from({ length: 80 }, (_, i) => ({ cantidad: i + 1, formatoId: "R-5", colorEn: `Color number ${i}` })));
+const larga = descripcionRender3d(`A wall ${"with many small details ".repeat(40)}`, Array.from({ length: 80 }, (_, i) => ({ cantidad: i + 1, formatoId: "R-5", colorEn: `Color number ${i}` })));
 assert.ok(larga.length <= MAX_DESCRIPCION, `descripción de ${larga.length} caracteres`);
 assert.ok(larga.endsWith("…"));
 
