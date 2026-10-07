@@ -15,6 +15,27 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 
 ---
 
+## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
+
+Ritmo obligatorio (contador en `scratchpad/latidos.txt`; un latido = 2 min; si uno del mismo tipo sigue corriendo, no se duplica):
+- Cada 2 latidos: agente agresivo que PRUEBA la guiada nueva para mantenerla simple (solo informa; los arreglos los lanza el orquestador).
+- Cada 5 latidos: pruebas de USABILIDAD de la guiada.
+- Cada 7 latidos: agentes que VERIFICAN esta lista (qué está hecho, qué falta) y lo recuerdan.
+- Cada 10 latidos: agente que COMPARA el flujo viejo (clásico) con el nuevo (guiado) y detecta lo que falta o es peligroso.
+- Cada 40 latidos: checkpoint completo de este archivo y pedir /compact (Claude no puede lanzarlo solo).
+- Cada 3 latidos: limpieza de RAM (ya existía).
+
+Pedidos (marcar ✅ solo con verificación independiente):
+1. [ ] El MOTOR de la guiada debe ser IGUAL al del clásico (lectura de foto, plan, gráfica de armado, imagen). Comparar con más agentes.
+2. [ ] Banco de calidad: las fotos de ejemplo del clásico («¿No tienes foto? Prueba con una de estas», 10 de Pexels) son el listón. Si salen bien MÁS DE LA MITAD de forma CONSISTENTE, está bien. Permiso para generar imágenes de prueba con ellas.
+3. [ ] El agente que LEE LA IMAGEN está «horriblemente configurado»: arreglarlo (ej.: dos columnas plata/rosa/blanco con transparentes leídas como «rosa y plata»).
+4. [ ] Editor («Ajustar mi plan»): quitar/poner GLOBOS libremente (cantidades), además del porcentaje.
+5. [ ] Inputs de la cotización de negocio (Descripción / Valor por unidad / Cantidad) son «horribles»: rediseñarlos.
+6. [ ] Los chips «Otros colores · Agregar una pieza · Hacerla más grande · Hacerla más sencilla» deben estar DENTRO del editor.
+7. [ ] En el editor: escoger un color y REEMPLAZARLO por completo por otra referencia de globo del catálogo; también agregar/poner otros colores desde el catálogo.
+8. [ ] Integrar la GRÁFICA DEL CLÁSICO en «Tu plan» (y editable).
+Pedidos anteriores de esta noche aún abiertos: piezas individuales; imagen fiel a las piezas (dos columnas ≠ arco); tabla de «Ver detalle»; idea amplia con productos Sempertex; «Agregar al plan»; materiales con imágenes de globos; lectura de foto detallada; globos a granel para negocio; auditoría de las 31 decoraciones contra su foto (remates > 12"); arreglos de «Ajustar mi plan» (añadir color/quitar pieza no deben cambiar el resto).
+
 ## ⏯ ESTADO PARA RETOMAR (2026-10-06 ~21:30, antes del /compact)
 
 **~22:10:** «Ajustar mi plan» en `main` = `93b2c84` (tsc limpio + prueba). Su verificador NO lo aprobó del todo: «Añadir un color»
