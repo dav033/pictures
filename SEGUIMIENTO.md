@@ -15,6 +15,62 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 
 ---
 
+## ⏯ ESTADO PARA RETOMAR (2026-10-06 ~21:30, antes del /compact)
+
+**Reglas nuevas del dueño (hoy):**
+- **Subir todo a `main` en cada hito verificado** (tsc en una copia limpia del commit + pruebas puntuales) y desplegar. `main` despliega
+  Vercel solo. El VPS se despliega a mano (`git archive --format=tar.gz HEAD | ssh advin-vps "SSH_ORIGINAL_COMMAND=<sha>
+  /usr/local/sbin/gh-deploy-vps pictures"`) PERO reinicia también el Python que usa Vercel (1-2 min caído): no desplegar el VPS
+  mientras el dueño prueba; avisar antes.
+- **Subagentes de Claude** (ya no Codex) con workflows; ultracode activo. UI/UX agresiva: el usuario siempre sabe qué hacer.
+- **Registro/auditoría**: ninguna decisión de IA sin registrar; un archivo por conversación (`DATA_DIR/registros/conversaciones/
+  <fecha>/<id>.jsonl`). Depurar con `npm run registros -- [conversaciones] --origen local|vps|python-vps|vercel [--desde 30m]
+  [--nivel warn] [--conversacion <id>]` antes de adivinar. Logging determinista: no gasta tokens.
+- **Biblioteca**: solo decoraciones reales visibles; solo se ofrecen temáticas con ≥1 decoración (`tematicasDisponibles`,
+  `sanearOpcionesCatalogo`); temática del catálogo elegida → sus decoraciones aunque sean de otro evento.
+- Limpieza de RAM cada 3 latidos (`scratchpad/limpiar-ram.ps1`, contador `scratchpad/latidos.txt`); progreso de workflows con
+  `python scratchpad/progreso.py <wf_id…>` (scratchpad = `C:\Users\davidt\AppData\Local\Temp\claude\C--Users-davidt-Downloads-
+  pictures-workspace\46a78670-2b14-4fff-9d3c-699a35e6bcb9\scratchpad`). Contraseña de producción: variable `APP_PASSWORD`.
+
+**Producción:** `main` = `6d7db03` (Vercel lo sirve). **VPS atrasado en `e447cfe`**: le faltan e3405ff (filtro «transparente»),
+9ae53a6 (pulido), d96a426 + 2d5d072 (lectura de foto hasta 100 s), 6d7db03 (temáticas del catálogo) y lo que salga de los agentes.
+
+**Arreglos de esta noche (todos en `main`):** rescate de la guiada (0a8d945, e447cfe), registro núcleo (6fa7964), solo ideas reales
+y opciones filtradas (8c2c07e, 39a2112), plan con «transparente» (e3405ff: el acabado de una paleta multicolor filtraba TODAS las
+búsquedas → nunca salía plateado; «plata/oro» ≡ «plateado/dorado»; registro de rechazos de `confirmar_plan_decoracion` y de cada
+búsqueda), pulido (9ae53a6), lectura de foto (12 s → 100 s: en producción va por el Python del VPS y tarda ~30 s; local 12-27 s),
+temáticas del catálogo (6d7db03).
+
+**Agentes en curso al compactar (comprobar con `progreso.py`; sus cambios están SIN commit en el árbol):**
+1. `wf_b3ef7f41-7a7` → agente `registro-2`: conecta los envoltorios de auditoría a todos los clientes de IA, 27 rutas, id de
+   conversación en ambas vistas, Python con request/conversación en JSON (toca muchos `src/app/api/**`, `src/lib/gemini.ts`,
+   `python-adapter`, `services/ai-api/**`, `Dockerfile`). Al terminar: tsc, `test-registro`, `test-guardia-proveedores-ia --estricto`,
+   prueba con `npm run registros -- conversaciones --origen local`; commit y despliegue (VPS avisando).
+2. `wf_7d93867a-63d` → «Ajustar mi plan» (panel simplificado en «Tu plan»: protagonismo de colores, tamaño de pieza, quitar pieza;
+   reutiliza la edición de la clásica) + verificador en navegador. Al terminar: revisar informe, commit selectivo.
+3. `wf_c88656d7-a4a` → 11 fotos nuevas de Sempertex (`C:\Users\davidt\Downloads\hola-2\sempertex-01..11`): 3 curadores (A 01-04,
+   B 05-08, C 09-11) dejan entradas en `data/biblioteca-real/nuevas/*.json`, análisis en `data/biblioteca-real/analisis/nueva-*.json`
+   y fotos en `public/biblioteca-sempertex/referencias/`. **La fusión quedó CANCELADA por el dueño (se hace después del compact):**
+   revisar cada entrada contra su foto, ampliar el esquema si hace falta (esculturas, «estimado a partir de la foto»), fusionar en
+   `decoraciones.json`, temáticas nuevas (San Valentín, Halloween, Día de la Madre, Navidad, fútbol, flores), pruebas
+   (`test-biblioteca-sempertex`, `test-busqueda-biblioteca-sempertex`, calidad), tsc. El prompt completo de la fusión está en el script
+   del workflow (`…\workflows\scripts\biblioteca-sempertex-nuevas-wf_c88656d7-a4a.js`).
+
+**EN PAUSA por el dueño (encargo del plan, hacer después):**
+1. «Ver detalle» de «Tu plan»: tabla compacta por pieza (filas = colores, columnas = tamaños 5"/9"/12"/18"/24", totales); hoy repite
+   la lista dos veces («ridiculez»).
+2. Tarjeta de idea del catálogo con detalle amplio como «Tu plan» (pieza, dibujo, medidas, mezcla de tamaños, globos por color,
+   total, tabla): datos precomputados de `data/biblioteca-real/analisis/*.plan.json` al construir la biblioteca (sin Python en caliente).
+3. «Agregar al plan»: botón en la idea elegida que suma sus estructuras al plan del cliente (o lo crea), resuelto con Python.
+4. Piezas individuales: nunca «2 columnas» como una pieza con repeticiones; «Columna izquierda/derecha» (1, 2, 3…) para poder
+   modificar o borrar una en concreto.
+
+**Al hacer commits con agentes trabajando**: subir solo lo propio (`git show HEAD:archivo > tmp`, editar, `git hash-object -w`,
+`git update-index --cacheinfo`) o `git add` de archivos concretos; verificar el commit en la copia limpia
+`C:\Users\davidt\Downloads\e3-verif` (`git checkout --detach <sha>` + `npx tsc --noEmit`).
+
+---
+
 ## 0. Cómo trabajar (preferencias del dueño)
 
 - Todo en **español**. Autonomía total: no preguntar si empezar o continuar. Si hay un bloqueo de verdad, deliberar con 3 subagentes
