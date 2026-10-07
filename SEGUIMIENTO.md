@@ -16,33 +16,33 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 ---
 
 <!-- ESTADO-VIVO:INICIO -->
-## 📋 ESTADO VIVO (latido 134, 2026-10-07 ~05:25) — LEER PRIMERO AL RETOMAR
+## 📋 ESTADO VIVO (latido 140, 2026-10-07 ~06:35) — LEER PRIMERO AL RETOMAR
 
-**En `main` (Vercel): ff92855** (verificado: tsc limpio en e3-verif + 17 pruebas puntuales; contrato chat-v1 exportado y
-`generated_models.py` regenerado). Encima de **b7f5cfe** (commit grande de la noche). ff92855 trae: ayudas «?» (12 sitios, `Ayuda.tsx`,
-`ayudas-guiada.ts`), usabilidad (`hechos-cliente.ts`: uso sin repetir, edades como opciones de flujo, decorador con medida y arco completo,
-palabras del cliente en instrucción/brief/imagen vía `solicitudCliente`, «Ajustes que hice») y editar el plan por chat sin rehacerlo
-(`edicion-plan-chat.ts`, `edicion-chat-guiada.ts`, `elegir_idea`).
-**VPS en e447cfe.** Next funciona con él; desplegarlo añade granel, talla más cercana, familia del color y auditoría de Python.
-**Decisiones del dueño pendientes:** (a) desplegar VPS ANTES de la demo; (b) `ARMADO_ARCO_COLUMNA_V1` en producción (hoy local≠prod);
-(c) arrancar Python local :8000 (caído desde ~02:00 por RAM); (d) hora de la presentación → hora de congelación de main.
+**En `main` (Vercel): 6628c49.** **VPS: 8922cbe** (desplegado hoy: granel, talla más cercana, familia del color, auditoría
+Python, conteo de foto S1, supuesto de medidas S3). **`ARMADO_ARCO_COLUMNA_V1=true` en Vercel producción** (decisión del dueño).
+**Python local :8000 y Next :3010 arriba** (el dueño pidió reiniciar todo lo necesario).
 
-**Corriendo:** corrector:demo-133 (`wf_563b8cef-450`: `variant_overrides` rompe «Ajustar mi plan» en ideas deco-real-07/25 — BLOQUEANTE
-demo; caption FLUX de ej06 > 1000 → sin imagen; POST duplicado de dibujos de parejas → 429; avisos de plan de idea no exacto) ·
-pulido-134 (`wf_dada9c66-142`: galería de las 10 fotos de ejemplo en la guiada; botón «Arco orgánico» → arco; «Ajustar mi precio» a 390 px)
-· probador:124-prod (`wf_da0cd4d7-2ab`) · comparador:130-prod (`wf_27f800ab-6f1`).
+**Hoy en main:** b7f5cfe (commit grande) · ff92855 (ayudas, usabilidad, chat edita sin rehacer) · 2defb78 (registro.py no
+rompe la imagen del VPS: parents[3] en BuildKit) · e2fb267 (caption ≤ límite: arreglaba «No pude dibujarla» en la guiada con
+ARMADO encendida) · 8922cbe (Python S1/S3) · 9cf6a85 (editor con variant_overrides — bloqueante demo —, Modificar pieza
+fiel al plan, dibujos sin 429, avisos de idea no exacta, aviso de versión nueva, cotización, pulido) · 6628c49 (límite FLUX
+1500: era nuestro, no de FLUX; FLUX dev lee ~512 tokens).
 
-**Verificador 127** (`scratchpad/ritmo/verificador-127.md`): ningún pedido tiene aún verificación independiente posterior a b7f5cfe en
-navegador; cadencia de usabilidad y comparador atrasada (se lanzan contra PRODUCCIÓN mientras Python local esté caído). Producción en
-frío: el primer buscador del catálogo da 504 a los 5 s → calentar antes de la demo (abrir «Cambiar» un color y «Crear mi plan» de una
-idea). Durante la demo: nada de banco ni agentes contra el VPS.
+**Pendiente de subir (en el árbol, mezclado con agentes en curso):** VistaGuiada.tsx + asistente-guiado/route.ts (galería de
+ejemplos, Empezar de nuevo, Propónme con pieza conocida, CRUD) → 3 pruebas de cableado fallan en main hasta entonces
+(test-motor-plan-probador-124, test-interfaz-probador-124, test-pulido-presentacion-guiada). caption-flux.ts: escala de
+la pieza (guirnalda ≠ arco; HECHO) mezclado con escena audaz (EN CURSO).
 
-**Después de la demo / con Python:** reanudar calidad-banco y colores-claros; `precomputar-planes-ideas.ts --check --verificar`; banco 3×
-(~US$7); restos de pulido (probador-104 #6/#7/#12-15, comparador I3/I7); `analisis-ejemplos.json` v16 muerto; auditoría Python en VPS.
+**Corriendo:** impl:crud-chat-139 (agregar pieza suma, consultar, cambiar, quitar por chat, también sobre la lectura de foto)
+· impl:flores-141 (flores de 3×R5 en cualquier estructura, Python+Next; acabado perlado fiel; exigirá VPS) ·
+impl:escena-audaz-142 (entorno del evento audaz, reserva de caracteres para la escena).
 
-**Lecciones (memoria):** tope 6 agentes a la vez (concurrencia, no cantidad); SendMessage a un agente de workflow vivo arranca una 2.ª
-copia; tsc en e3-verif antes de cada push (los datos `data/processed/*` no están en e3-verif: esas pruebas, en el árbol principal); al
-cambiar chat-v1: `npm run contracts:export` + `services/ai-api/scripts/generate_models.py`; no subir `scripts/test/_sonda-celeste-real.ts`.
+**Pedidos del dueño de esta mañana:** guirnalda que sale arco (arreglado, sin subir) · CRUD por chat · flores de globo · globos
+iguales a la foto (perlado, globo Sempertex de la flor) · entorno más audaz · límite 1500 (hecho).
+
+**Lecciones:** los agentes pueden sobrescribir scripts del scratchpad (correr-pruebas.sh): el orquestador usa
+`scratchpad/orq-pruebas-e3.sh`; el despliegue del VPS imprime el fallo real ANTES del rollback (guardar el log entero, no tail);
+commit selectivo de un archivo compartido = blob con `git hash-object -w` + `git update-index --cacheinfo`.
 <!-- ESTADO-VIVO:FIN -->
 
 ## 🔴 PEDIDO INMENSAMENTE IMPORTANTE DEL DUEÑO (2026-10-06 ~22:35) — lista de control
