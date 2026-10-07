@@ -84,7 +84,7 @@ export function Taller3D() {
     if (modo === "modulo") {
       const globos: GloboColocadoEnEscena[] = armado.globos.map((g) => {
         const ref = colores.find((x) => x.codigo === coloresModulo[g.indice]) ?? color;
-        return { formato, infladoCm: inflado, hex: ref.hexGlobo, familia: ref.familia, nudo: g.nudo, direccion: g.direccion };
+        return { formato, infladoCm: inflado, hex: ref.hexGlobo, familia: ref.familia, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
       });
       escena.mostrarModulo(globos, verAnclas ? armado.anclas.map((a) => a.posicion) : []);
     } else if (vista === "todos") {

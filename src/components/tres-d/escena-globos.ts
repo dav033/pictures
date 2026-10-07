@@ -9,7 +9,7 @@ import { contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/
  * cuadrícula de 10 cm, luz de estudio (RoomEnvironment) para que el cromado y el perlado reflejen, y cámara
  * orbital. Unidades: 1 = 1 metro; los perfiles vienen en centímetros.
  */
-export type GloboEnEscena = { formato: FormatoGlobo; infladoCm: number; hex: string; familia: string };
+export type GloboEnEscena = { formato: FormatoGlobo; infladoCm: number; hex: string; familia: string; cuelloExtraCm?: number };
 
 /** Un globo de un módulo: dónde queda su nudo y hacia dónde apunta su cuerpo (cm, y hacia arriba). */
 export type GloboColocadoEnEscena = GloboEnEscena & { nudo: Punto3; direccion: Punto3 };
@@ -104,7 +104,8 @@ function construir(globo: GloboEnEscena): THREE.Object3D {
   if (formato.tipo === "tubito") return tubo(infladoCm, formato.largoCm ?? 150, material);
   if (formato.tipo === "link" && formato.largoCm) return tubo(infladoCm, formato.largoCm, material);
   if (formato.tipo === "corazon") return corazon(infladoCm, material);
-  const perfil = formato.tipo === "link" ? perfilLink(infladoCm) : perfilRedondo(infladoCm);
+  const extra = globo.cuelloExtraCm ?? 0;
+  const perfil = formato.tipo === "link" ? perfilLink(infladoCm, extra) : perfilRedondo(infladoCm, extra);
   const malla = new THREE.Mesh(torneado(perfil), material);
   malla.castShadow = true;
   return malla;

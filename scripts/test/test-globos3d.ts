@@ -49,13 +49,17 @@ for (const modulo of MODULOS) {
     const armado = armarModulo(modulo, f, d);
     assert.equal(armado.globos.length, modulo.globos);
     const centro = centroCuerpo(f.tipo === "link" ? "link" : "redondo", d);
-    const cuerpos = armado.globos.map((g) => ({ x: g.nudo.x + g.direccion.x * centro, y: g.nudo.y + g.direccion.y * centro, z: g.nudo.z + g.direccion.z * centro }));
+    const cuerpos = armado.globos.map((g) => { const l = centro + g.cuelloExtraCm; return { x: g.nudo.x + g.direccion.x * l, y: g.nudo.y + g.direccion.y * l, z: g.nudo.z + g.direccion.z * l }; });
     for (let i = 0; i < cuerpos.length; i++) {
       const a = cuerpos[i]!, b = cuerpos[(i + 1) % cuerpos.length]!;
-      if (cuerpos.length > 1) assert.ok(Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) >= d * 0.95, `${modulo.id} ${id}: los globos ${i} y ${i + 1} se montan`);
+      // Se tocan aplastándose un poco (hasta un 12 % del diámetro), nunca más.
+      if (cuerpos.length > 1) assert.ok(Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) >= d * 0.87, `${modulo.id} ${id}: los globos ${i} y ${i + 1} se montan`);
     }
-    for (const g of armado.globos) assert.ok(Math.hypot(g.nudo.x, g.nudo.y, g.nudo.z) < d, `${modulo.id} ${id}: un nudo quedó lejos del centro`);
+    // Los pitones quedan amarrados juntos en el centro (a menos de 1,5 cm): lo que separa los cuerpos es el cuello.
+    for (const g of armado.globos) assert.ok(Math.hypot(g.nudo.x, g.nudo.y, g.nudo.z) <= 1.5, `${modulo.id} ${id}: un nudo quedó lejos del centro`);
     assert.equal(armado.anclas.length, modulo.globos >= 3 ? modulo.globos + 1 : 1);
+    // Cuellos cortos: lo natural es que el cuerpo quede pegado al amarre, sin cuellos largos y finos.
+    for (const g of armado.globos) assert.ok(g.cuelloExtraCm <= d * 0.12, `${modulo.id} ${id}: cuello estirado ${g.cuelloExtraCm.toFixed(1)} cm`);
   }
 }
 const cuartetoR12 = armarModulo(MODULOS[2]!, formatoPorId("R-12")!, 25);

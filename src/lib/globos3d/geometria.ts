@@ -10,13 +10,18 @@ export type PuntoPerfil = { r: number; y: number };
 
 const PASOS = 48;
 
+/** Radio del nudo (cm) de un globo de ese diámetro. */
+export function nudoCm(diametroCm: number): number {
+  return Math.max(0.35, diametroCm * 0.035);
+}
+
 /** Cuerpo ovalado de ancho `diametro` y alto `diametro × alargue`, más el cuello cónico y el nudo. */
 function perfilCuerpo(diametro: number, alargue: number, cuello: number): PuntoPerfil[] {
   const radio = diametro / 2;
   const alto = diametro * alargue;
   const puntos: PuntoPerfil[] = [];
   // Nudo: un aro pequeño en la base.
-  const nudo = Math.max(0.35, diametro * 0.035);
+  const nudo = nudoCm(diametro);
   puntos.push({ r: 0, y: 0 }, { r: nudo, y: nudo * 0.4 }, { r: nudo * 1.1, y: nudo * 1.2 }, { r: nudo * 0.6, y: nudo * 2 });
   // Cuello: sube estrecho y se abre hasta tocar el cuerpo.
   const baseCuerpo = nudo * 2 + cuello;
@@ -36,13 +41,14 @@ function perfilCuerpo(diametro: number, alargue: number, cuello: number): PuntoP
   return puntos;
 }
 
-export function perfilRedondo(diametroCm: number): PuntoPerfil[] {
-  return perfilCuerpo(diametroCm, 1.08, diametroCm * 0.08);
+/** `cuelloExtraCm`: cuánto se estira el cuello (en un módulo, para que el nudo siga amarrado al centro). */
+export function perfilRedondo(diametroCm: number, cuelloExtraCm = 0): PuntoPerfil[] {
+  return perfilCuerpo(diametroCm, 1.08, diametroCm * 0.08 + cuelloExtraCm);
 }
 
 /** Link-O-Loon: cuerpo alargado, cuello abajo y, arriba, la cola del conector (un tubo corto que se angosta). */
-export function perfilLink(diametroCm: number): PuntoPerfil[] {
-  const cuerpo = perfilCuerpo(diametroCm, 1.35, diametroCm * 0.06);
+export function perfilLink(diametroCm: number, cuelloExtraCm = 0): PuntoPerfil[] {
+  const cuerpo = perfilCuerpo(diametroCm, 1.35, diametroCm * 0.06 + cuelloExtraCm);
   const tope = cuerpo[cuerpo.length - 1]!.y;
   const cola = Math.max(0.3, diametroCm * 0.05);
   const largoCola = diametroCm * 0.32;
