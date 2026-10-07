@@ -2,8 +2,10 @@ import { ejecutarConversacionStream } from "@sempertex/agente-core";
 import type { Herramienta, Mensaje } from "@sempertex/agente-core";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { bibliotecaVisible, buscarDecoracionesSempertex, normalizarBusqueda, proveedoresVisibles, tematicasDisponibles } from "@/lib/biblioteca-sempertex/biblioteca";
+import { bibliotecaVisible, normalizarBusqueda, proveedoresVisibles, tematicasDisponibles } from "@/lib/biblioteca-sempertex/biblioteca";
 import { diferenciaOpciones, sanearOpcionesCatalogo } from "@/lib/ia/guiado/opciones-catalogo";
+import { eventoDeMensajes, generosBabyShower, ideasGuiadas, ideasRealesDeOpcion, NOMBRE_GENERO } from "@/lib/ia/guiado/ideas-guiadas";
+import { CHIP_FOTO_GUIADA, FiltroFlujoGuiado, FRASE_IDEAS_GUIADAS, sanearRespuestaGuiada, type ContextoRespuesta } from "@/lib/ia/guiado/respuesta-guiada";
 import { AsistenteGuiadoRequestSchema, CotizacionGuiadaSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
@@ -172,28 +174,23 @@ async function turnoGuiado(request: Request) {
         if (!evento || !tematica) return { ok: false, motivo: "brief_incompleto", accion_requerida: "Pregunta lo que falta (qué celebra o qué temática o colores quiere) antes de buscar." };
         const brief: BriefCompleto = { evento, edad: pedida.edad ?? previo.edad ?? 0, tematica };
         datos.brief = brief;
-        const tematicaBusqueda = `${brief.tematica} ${ultimoUsuario}`;
-        const coincidencias = buscarDecoracionesSempertex({ ...brief, tematica: tematicaBusqueda });
-        const eventoNormalizado = normalizarBusqueda(brief.evento);
-        const consultaNormalizada = normalizarBusqueda(tematicaBusqueda);
-        const generoBaby = eventoNormalizado.includes("baby shower")
-          ? consultaNormalizada.split(" ").includes("nina") ? "nina"
-            : consultaNormalizada.split(" ").includes("nino") ? "nino"
-              : consultaNormalizada.split(" ").some((palabra) => ["neutro", "neutra", "unisex"].includes(palabra)) ? "neutro" : null
-          : null;
-        const encontradas = generoBaby
-          ? coincidencias.filter((decoracion) => normalizarBusqueda(`${decoracion.titulo} ${decoracion.tematica}`).split(" ").includes(generoBaby))
-          : coincidencias;
+        // Misma búsqueda con la que se validan las «Opciones:» (ideas-guiadas): el género del baby shower sale de la
+        // temática o de los colores de cada idea, y si no hay de lo pedido van las reales más cercanas del mismo evento.
+        const resultado = ideasGuiadas({ evento: brief.evento, edad: brief.edad, tematica: brief.tematica, ultimoUsuario });
+        const encontradas = resultado.ideas;
         datos.decoraciones = encontradas;
         const exactas = encontradas.filter((decoracion) => decoracion.coincidencia === "exacta").length;
-        decidir("regla:busqueda_biblioteca", "ideas reales del catálogo que ve el cliente", { total: encontradas.length, exactas, ideas: encontradas.map((decoracion) => ({ id: decoracion.id, titulo: decoracion.titulo, tematica: decoracion.tematica, coincidencia: decoracion.coincidencia })) }, {
-          entrada: { brief, consulta: tematicaBusqueda, generoBaby, candidatas: coincidencias.length, descartadasPorGenero: coincidencias.length - encontradas.length },
-          ...(encontradas.length ? {} : { motivo: "sin coincidencias en la biblioteca visible" }),
+        decidir("regla:busqueda_biblioteca", "ideas reales del catálogo que ve el cliente", { total: encontradas.length, exactas, via: resultado.via, ideas: encontradas.map((decoracion) => ({ id: decoracion.id, titulo: decoracion.titulo, tematica: decoracion.tematica, coincidencia: decoracion.coincidencia })) }, {
+          entrada: { brief, consulta: resultado.consulta, generoBaby: resultado.genero },
+          ...(resultado.via === "evento" ? { motivo: "sin ideas de lo pedido: se muestran las reales más cercanas del mismo evento, sin anunciarlo como fracaso" } : resultado.via === "vacio" ? { motivo: "sin ideas para el evento: se ofrecen temáticas con decoraciones" } : {}),
         });
-        if (!encontradas.length) return { brief, ideas: [], aviso: "No hay ideas que mostrar: NO hables de «esta propuesta» ni de opciones; pregunta otro estilo o colores, o pide una foto de inspiración." };
+        if (!encontradas.length) {
+          const conIdeas = tematicasDisponibles(brief.evento).filter((tematica) => ideasRealesDeOpcion(tematica, { evento: brief.evento, edad: brief.edad }) > 0).slice(0, 4);
+          return { brief, ideas: [], aviso: `NO digas que no hay ni que no encontraste. Pregunta en una frase qué estilo le gusta y cierra con «Opciones: ${[...conIdeas, CHIP_FOTO_GUIADA].join(" | ")}».` };
+        }
         const aviso = exactas === 0
-          ? "No hay una idea exacta de esa temática: son parecidas por color o estilo. Dilo con naturalidad una sola vez."
-          : exactas < encontradas.length ? `Las primeras ${exactas} son de la temática pedida; las demás son parecidas por color o estilo.` : "Todas son de la temática pedida.";
+          ? "Son ideas reales del catálogo, las más cercanas a lo que pidió: preséntalas con naturalidad («Te dejo unas ideas que pueden encantarte, ¿alguna te gusta?»). NO digas que no encontraste, que no hay ni que no son exactas."
+          : exactas < encontradas.length ? `Las primeras ${exactas} son de lo que pidió y las demás, parecidas: preséntalas todas con naturalidad, sin decir que algo no existe.` : "Todas son de lo que pidió.";
         // Al modelo solo le hacen falta los títulos: el cliente ya ve las fotos y el detalle.
         return { brief, ideas: encontradas.map((decoracion) => ({ titulo: decoracion.titulo, coincidencia: decoracion.coincidencia })), aviso };
       },
@@ -281,11 +278,28 @@ async function turnoGuiado(request: Request) {
     const elegida = decoracionConfirmada ? proveedores.find((item) => item.id === decoracionConfirmada) : undefined;
     const tematicasCatalogo = textoTematicasCatalogo();
     decidir("regla:tematicas_catalogo", "temáticas que el modelo puede ofrecer (solo con decoraciones reales)", tematicasCatalogo, { entrada: { decoracionElegida: elegida ? { id: elegida.id, titulo: elegida.titulo } : null, uso: usoConfirmado ?? null, planVigente: Boolean(planActual) } });
+    // Dueño (2026-10-07): nada que desemboque en «no encontré». El modelo recibe los géneros y estilos que llevan a
+    // decoraciones reales (corriendo la búsqueda de cada uno) y el saneo final lo garantiza.
+    const mensajesCliente = messages.filter((mensaje) => mensaje.role === "user").map((mensaje) => mensaje.content);
+    const eventoTurno = (): string | undefined => briefVigente().evento ?? eventoDeMensajes(mensajesCliente);
+    const generos = generosBabyShower();
+    const generosValidos = generos.filter((item) => item.ideas > 0).map((item) => item.genero);
+    const generosSin = generos.filter((item) => item.ideas === 0).map((item) => NOMBRE_GENERO[item.genero]);
+    const eventoInicial = eventoTurno();
+    const edadInicial = briefVigente().edad || undefined;
+    const estilosEvento = eventoInicial
+      ? tematicasDisponibles(eventoInicial).map((tematica) => ({ tematica, ideas: ideasRealesDeOpcion(tematica, { evento: eventoInicial, edad: edadInicial }) })).filter((item) => item.ideas > 0)
+      : [];
+    decidir("regla:opciones_validas_turno", "géneros y estilos que llevan a decoraciones reales (los únicos que se ofrecen)", { generos, evento: eventoInicial ?? null, estilos: estilosEvento }, {
+      entrada: { briefEvento: briefVigente().evento ?? null, eventoDeMensajes: eventoDeMensajes(mensajesCliente) ?? null, edad: edadInicial ?? null },
+    });
     const estadoConfirmado = [
       elegida ? `Decoración elegida por el cliente en la interfaz: «${elegida.titulo}».` : "El cliente todavía no eligió una idea del catálogo.",
       usoConfirmado ? `Uso elegido: ${usoConfirmado === "negocio" ? "para su negocio" : "uso personal"}.` : "El cliente todavía no eligió si es para negocio o uso personal.",
       planActual ? `Plan vigente del cliente: ${textoPlanActual(planActual)} Si pide un cambio, llama proponer_composicion conservando todo lo que no pidió cambiar.` : "El cliente todavía no tiene un plan a medida.",
       `Temáticas del catálogo (las ÚNICAS que puedes ofrecer en «Opciones:» al preguntar temática, estilo o colores; elige 3-6 que encajen con el evento): ${tematicasCatalogo}.`,
+      `Géneros de baby shower con decoraciones (los ÚNICOS que puedes ofrecer al preguntar el género): ${generosValidos.map((genero) => NOMBRE_GENERO[genero]).join(", ") || "ninguno (no preguntes el género: pregunta el estilo)"}${generosSin.length ? `; NO ofrezcas ${generosSin.join(" ni ")}: no hay decoraciones` : ""}.`,
+      ...(eventoInicial && estilosEvento.length ? [`Estilos con decoraciones para ${eventoInicial} (ofrece solo estos al preguntar estilo o colores): ${estilosEvento.map((item) => item.tematica).join(" | ")}.`] : []),
     ].join(" ");
     let herramientasTurno: Herramienta[] = herramientas.filter((herramienta) => decoracionConfirmada || !HERRAMIENTAS_DE_DECORACION.has(herramienta.nombre));
     if (planActual) herramientasTurno = [...herramientasTurno, herramientaAccionPlan];
@@ -305,6 +319,14 @@ async function turnoGuiado(request: Request) {
     const instruccionTurno = alcancePropuesta
       ? `\n\nEN ESTE TURNO el cliente eligió ${alcancePropuesta === "completa" ? "una decoración completa (2-3 piezas)" : `una pieza individual${piezaPedida ? `: ${ESTRUCTURAS_OFICIALES[piezaPedida].nombre.toLocaleLowerCase("es")}` : ""}`}: llama proponer_composicion ahora y no busques ideas en la biblioteca.`
       : "";
+    // Fuera de plan, propuesta y proveedores, cada frase y cada opción que ve el cliente lleva a decoraciones reales.
+    const contextoRespuesta = (): ContextoRespuesta => ({
+      evento: eventoTurno(), edad: briefVigente().edad || undefined, generosValidos,
+      aplicar: !(planActual || alcancePropuesta || datos.propuesta || datos.proveedores !== undefined || datos.ciudadesDisponibles !== undefined),
+      ideasEnTurno: Array.isArray(datos.decoraciones) ? datos.decoraciones.length : 0,
+    });
+    // El texto que se transmite también va saneado (oración a oración): el cliente no ve «No encontré…» ni un instante.
+    const filtroFlujo = planActual || alcancePropuesta ? null : new FiltroFlujoGuiado(contextoRespuesta);
     const generador = ejecutarConversacionStream({ chat, sistema: `${PROMPT_GUIADO}\n\nEstado confirmado (no lo leas en voz alta): ${estadoConfirmado}${instruccionTurno}`, historial, herramientas: herramientasTurno, registro: registroProtegido, vueltasMax: 8, herramientasSoloLectura: new Set(["buscar_decoraciones_sempertex", "pasos_decoracion", "buscar_proveedores"]), signal: deadline.signal, telemetria: { flujo: "armador_decoracion", requestId, correlationId: requestId, superficie: "/api/asistente-guiado", promptVersion: "asistente-guiado.v2" } });
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
@@ -318,16 +340,41 @@ async function turnoGuiado(request: Request) {
         try {
           for await (const evento of generador) {
             if (deadline.signal.aborted) break;
-            if (evento.tipo === "texto") mandar("texto", { delta: evento.delta });
-            else if (evento.tipo === "herramienta") mandar("herramienta", { nombre: evento.nombre, estado: evento.estado, ok: evento.ok });
+            if (evento.tipo === "texto") {
+              const delta = filtroFlujo ? filtroFlujo.empujar(evento.delta) : evento.delta;
+              if (delta) mandar("texto", { delta });
+            } else if (evento.tipo === "herramienta") mandar("herramienta", { nombre: evento.nombre, estado: evento.estado, ok: evento.ok });
             else {
-              // Fuera de un plan a medida, las «Opciones:» de estilo solo pueden nombrar temáticas con decoraciones.
-              const sanear = !(planActual || alcancePropuesta || datos.propuesta);
-              const disponibles = sanear ? tematicasDisponibles(briefVigente().evento) : [];
-              const reply = sanear ? sanearOpcionesCatalogo(evento.resultado.texto, disponibles) : evento.resultado.texto;
-              decidir("regla:sanear_opciones_catalogo", "opciones de estilo que ve el cliente", { aplicado: sanear, cambio: reply !== evento.resultado.texto, ...diferenciaOpciones(evento.resultado.texto, reply) }, {
-                entrada: { tematicasDisponibles: disponibles, evento: briefVigente().evento ?? null },
-                motivo: sanear ? "fuera de un plan a medida las opciones solo nombran temáticas con decoraciones" : "hay plan o propuesta: no se tocan",
+              const crudo = evento.resultado.texto;
+              const contexto = contextoRespuesta();
+              // 1) Palabras de estilo que no están en ninguna temática del evento; 2) cada opción, pregunta y frase contra la
+              // búsqueda real (sanearRespuestaGuiada): sin «no encontré» y sin alternativas que no llevan a decoraciones.
+              const disponibles = contexto.aplicar ? tematicasDisponibles(contexto.evento) : [];
+              const porTematica = contexto.aplicar ? sanearOpcionesCatalogo(crudo, disponibles) : crudo;
+              const saneo = sanearRespuestaGuiada(porTematica, contexto);
+              let reply = saneo.texto;
+              let ideasForzadas = 0;
+              if (saneo.huboFracaso && !contexto.ideasEnTurno && contexto.evento) {
+                // El modelo anunció un fracaso sin mostrar ideas: se muestran las reales más cercanas del evento.
+                const brief = briefVigente();
+                const respaldo = ideasGuiadas({ evento: contexto.evento, edad: contexto.edad, tematica: brief.tematica, ultimoUsuario });
+                if (respaldo.ideas.length) {
+                  datos.decoraciones = respaldo.ideas;
+                  datos.brief ??= { evento: contexto.evento, edad: contexto.edad ?? 0, tematica: (brief.tematica || ultimoUsuario || contexto.evento).slice(0, 160) };
+                  ideasForzadas = respaldo.ideas.length;
+                  reply = FRASE_IDEAS_GUIADAS;
+                  decidir("regla:ideas_sin_fracaso", "el modelo dijo «no encontré» sin mostrar ideas: se muestran las reales más cercanas", { total: respaldo.ideas.length, via: respaldo.via, ideas: respaldo.ideas.map((idea) => ({ id: idea.id, titulo: idea.titulo, coincidencia: idea.coincidencia })) }, {
+                    entrada: { evento: contexto.evento, tematica: brief.tematica ?? null, ultimoUsuario, textoModelo: crudo },
+                  });
+                }
+              }
+              decidir("regla:sanear_opciones_catalogo", "opciones, preguntas y frases que ve el cliente (solo lo que lleva a decoraciones reales)", {
+                aplicado: contexto.aplicar, cambio: reply !== crudo, ...diferenciaOpciones(crudo, reply),
+                opcionesEvaluadas: saneo.opciones?.evaluadas ?? [], quitadasSinIdeas: saneo.opciones?.quitadas ?? [], anadidasConIdeas: saneo.opciones?.anadidas ?? [],
+                frases: saneo.frases, respaldo: saneo.respaldo, ideasForzadas,
+              }, {
+                entrada: { tematicasDisponibles: disponibles, evento: contexto.evento ?? null, generosValidos, textoModelo: crudo },
+                motivo: contexto.aplicar ? "solo se ofrece lo que lleva a decoraciones reales y nunca se anuncia «no encontré»" : "hay plan, propuesta o proveedores: no se tocan",
               });
               mandar("fin", { reply, brief: {}, proveedor: evento.resultado.proveedor, modelo: evento.resultado.modelo, result: datos });
             }
