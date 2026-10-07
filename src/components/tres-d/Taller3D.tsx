@@ -6,6 +6,7 @@ import { ArrowLeft, Rows3, Circle, Anchor } from "lucide-react";
 import { FORMATOS_GLOBO, NOMBRE_FAMILIA, coloresDelFormato, formatoPorId, infladoValido, type FormatoGlobo } from "@/lib/globos3d/formatos";
 import { MODULOS, armarModulo, materialesModulo, moduloPorId, type TipoModulo } from "@/lib/globos3d/modulos";
 import { PATRONES_COLUMNA, armarColumna, type PatronColumna } from "@/lib/globos3d/columnas";
+import { FORMAS_ARCO, armarArco, type FormaArco } from "@/lib/globos3d/arcos";
 import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
 import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena } from "./escena-globos";
 
@@ -17,7 +18,7 @@ const FORMATOS_COLUMNA = ["R-5", "R-9", "R-12", "R-18"] as const;
 /** Formatos con los que se arman módulos: redondos de 5" a 24" y Link-O-Loon 6 y 12. */
 const FORMATOS_MODULO = ["R-5", "R-9", "R-12", "R-18", "R-24", "LOL-6", "LOL-12"] as const;
 
-type Modo = "globo" | "modulo" | "columna";
+type Modo = "globo" | "modulo" | "columna" | "arco";
 
 const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
 const ACTIVO = "bg-acento text-sobre-acento ring-acento";
@@ -52,6 +53,10 @@ export function Taller3D() {
   const [patron, setPatron] = useState<PatronColumna>("espiral");
   const [alturaCm, setAlturaCm] = useState(180);
   const [coloresColumna, setColoresColumna] = useState<string[]>(["020", "038", "012", "031"]);
+  // Arco (comparte patrón y colores con la columna: es la misma trenza sobre una curva)
+  const [forma, setForma] = useState<FormaArco>("redondo");
+  const [anchoArcoCm, setAnchoArcoCm] = useState(300);
+  const [altoArcoCm, setAltoArcoCm] = useState(240);
 
   // La escena se crea una vez (three.js se carga solo en el navegador).
   useEffect(() => {
@@ -81,6 +86,7 @@ export function Taller3D() {
   const inflado = infladoValido(formato, infladoCm);
   const armado = useMemo(() => armarModulo(modulo, formato, inflado), [modulo, formato, inflado]);
   const datosPatron = PATRONES_COLUMNA.find((p) => p.id === patron) ?? PATRONES_COLUMNA[1]!;
+  const arco = useMemo(() => armarArco({ formato, infladoCm: inflado, forma, anchoCm: anchoArcoCm, altoCm: altoArcoCm, patron, colores: coloresColumna.slice(0, datosPatron.colores) }), [formato, inflado, forma, anchoArcoCm, altoArcoCm, patron, coloresColumna, datosPatron.colores]);
   const columna = useMemo(() => armarColumna({ formato, infladoCm: inflado, alturaCm, patron, colores: coloresColumna.slice(0, datosPatron.colores) }), [formato, inflado, alturaCm, patron, coloresColumna, datosPatron.colores]);
   const refModulo = (i: number): ReferenciaSempertex | undefined => {
     const c = coloresModulo[i] ?? codigo;
@@ -91,8 +97,8 @@ export function Taller3D() {
   useEffect(() => {
     const escena = escenaRef.current;
     if (!listo || !escena || !color) return;
-    if (modo === "columna") {
-      const globos: GloboColocadoEnEscena[] = columna.globos.map((g) => {
+    if (modo === "columna" || modo === "arco") {
+      const globos: GloboColocadoEnEscena[] = (modo === "arco" ? arco.globos : columna.globos).map((g) => {
         const ref = colores.find((x) => x.codigo === g.codigo) ?? color;
         return { formato, infladoCm: inflado, hex: ref.hexGlobo, familia: ref.familia, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
       });
@@ -110,7 +116,7 @@ export function Taller3D() {
     } else {
       escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
-  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna]);
+  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco]);
 
   function elegirFormato(f: FormatoGlobo) {
     setFormatoId(f.id);
@@ -125,13 +131,13 @@ export function Taller3D() {
   function cambiarModo(nuevo: Modo) {
     setModo(nuevo);
     if (nuevo === "modulo" && !FORMATOS_MODULO.includes(formato.id as (typeof FORMATOS_MODULO)[number])) elegirFormato(formatoPorId("R-12")!);
-    if (nuevo === "columna" && !FORMATOS_COLUMNA.includes(formato.id as (typeof FORMATOS_COLUMNA)[number])) elegirFormato(formatoPorId("R-12")!);
+    if ((nuevo === "columna" || nuevo === "arco") && !FORMATOS_COLUMNA.includes(formato.id as (typeof FORMATOS_COLUMNA)[number])) elegirFormato(formatoPorId("R-12")!);
     setRanura(null);
   }
 
   function elegirColor(nuevo: string) {
     setCodigo(nuevo);
-    if (modo === "columna") {
+    if (modo === "columna" || modo === "arco") {
       setColoresColumna((actual) => (ranura === null ? actual.map(() => nuevo) : actual.map((c, i) => (i === ranura ? nuevo : c))));
       return;
     }
@@ -149,7 +155,7 @@ export function Taller3D() {
   const materiales = materialesModulo(coloresModulo.slice(0, modulo.globos));
   const formatosVisibles = modo === "modulo"
     ? FORMATOS_GLOBO.filter((f) => FORMATOS_MODULO.includes(f.id as (typeof FORMATOS_MODULO)[number]))
-    : modo === "columna" ? FORMATOS_GLOBO.filter((f) => FORMATOS_COLUMNA.includes(f.id as (typeof FORMATOS_COLUMNA)[number])) : FORMATOS_GLOBO;
+    : modo === "columna" || modo === "arco" ? FORMATOS_GLOBO.filter((f) => FORMATOS_COLUMNA.includes(f.id as (typeof FORMATOS_COLUMNA)[number])) : FORMATOS_GLOBO;
   const seleccionado = (i: number) => (modo === "modulo" ? coloresModulo[i] : codigo);
 
   return (
@@ -166,7 +172,7 @@ export function Taller3D() {
       </header>
 
       <div role="tablist" aria-label="Qué modelar" className="inline-flex w-fit gap-1 rounded-full bg-superficie p-1 ring-1 ring-borde">
-        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"]] as const).map(([valor, etiqueta]) => (
+        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"]] as const).map(([valor, etiqueta]) => (
           <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => cambiarModo(valor)}
             className={`min-h-10 rounded-full px-5 text-sm font-medium ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
             {etiqueta}
@@ -191,9 +197,22 @@ export function Taller3D() {
             </section>
           )}
 
-          {modo === "columna" && (
+          {modo === "arco" && (
             <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-              <h2 className="mb-2 text-sm font-semibold text-texto">Columna de cuartetos</h2>
+              <h2 className="mb-2 text-sm font-semibold text-texto">Forma del arco</h2>
+              <div className="grid grid-cols-3 gap-1.5">
+                {FORMAS_ARCO.map((f) => (
+                  <button key={f.id} type="button" onClick={() => setForma(f.id)} aria-pressed={f.id === forma}
+                    className={`${BOTON} ${f.id === forma ? ACTIVO : INACTIVO}`}>{f.nombre}</button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-texto-suave">{FORMAS_ARCO.find((f) => f.id === forma)?.descripcion}</p>
+            </section>
+          )}
+
+          {(modo === "columna" || modo === "arco") && (
+            <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
+              <h2 className="mb-2 text-sm font-semibold text-texto">Trenza de cuartetos</h2>
               <div className="grid grid-cols-2 gap-1.5">
                 {PATRONES_COLUMNA.map((p) => (
                   <button key={p.id} type="button" onClick={() => { setPatron(p.id); setRanura(null); }} aria-pressed={p.id === patron}
@@ -201,10 +220,25 @@ export function Taller3D() {
                 ))}
               </div>
               <p className="mt-2 text-xs text-texto-suave">{datosPatron.descripcion}</p>
-              <label htmlFor="altura" className="mt-3 flex items-baseline justify-between text-sm font-semibold text-texto">
-                Altura <span className="font-mono text-xs font-normal text-texto-suave">{(alturaCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {columna.niveles} cuartetos</span>
-              </label>
-              <input id="altura" type="range" min={40} max={260} step={5} value={alturaCm} onChange={(e) => setAlturaCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
+              {modo === "columna" ? (
+                <>
+                  <label htmlFor="altura" className="mt-3 flex items-baseline justify-between text-sm font-semibold text-texto">
+                    Altura <span className="font-mono text-xs font-normal text-texto-suave">{(alturaCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {columna.niveles} cuartetos</span>
+                  </label>
+                  <input id="altura" type="range" min={40} max={260} step={5} value={alturaCm} onChange={(e) => setAlturaCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
+                </>
+              ) : (
+                <>
+                  <label htmlFor="ancho-arco" className="mt-3 flex items-baseline justify-between text-sm font-semibold text-texto">
+                    Ancho <span className="font-mono text-xs font-normal text-texto-suave">{(anchoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m</span>
+                  </label>
+                  <input id="ancho-arco" type="range" min={100} max={500} step={10} value={anchoArcoCm} onChange={(e) => setAnchoArcoCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
+                  <label htmlFor="alto-arco" className="mt-3 flex items-baseline justify-between text-sm font-semibold text-texto">
+                    Alto <span className="font-mono text-xs font-normal text-texto-suave">{(altoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {arco.niveles} cuartetos</span>
+                  </label>
+                  <input id="alto-arco" type="range" min={100} max={350} step={10} value={altoArcoCm} onChange={(e) => setAltoArcoCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
+                </>
+              )}
               {datosPatron.colores > 1 && (
                 <>
                   <p className="mb-2 mt-3 text-xs text-texto-suave">{ranura === null ? "Toca un color de abajo para toda la columna, o elige un puesto para cambiar solo ese." : `Elige el color ${ranura + 1}.`}</p>
@@ -225,7 +259,7 @@ export function Taller3D() {
           )}
 
           <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-            <h2 className="mb-2 text-sm font-semibold text-texto">{modo === "modulo" ? "Globo del módulo" : modo === "columna" ? "Globo de los cuartetos" : "Formato"}</h2>
+            <h2 className="mb-2 text-sm font-semibold text-texto">{modo === "modulo" ? "Globo del módulo" : modo === "columna" || modo === "arco" ? "Globo de los cuartetos" : "Formato"}</h2>
             <div className="grid grid-cols-3 gap-1.5">
               {formatosVisibles.map((f) => (
                 <button key={f.id} type="button" onClick={() => elegirFormato(f)} aria-pressed={(modo !== "globo" || vista === "uno") && f.id === formato.id}
@@ -289,7 +323,7 @@ export function Taller3D() {
                   <p className="mb-1 font-mono text-[0.7rem] uppercase tracking-wider text-texto-suave">{NOMBRE_FAMILIA[familia] ?? familia}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {lista.map((c) => {
-                      const marcado = modo === "columna"
+                      const marcado = modo === "columna" || modo === "arco"
                         ? (ranura === null ? coloresColumna.slice(0, datosPatron.colores).every((x) => x === c.codigo) : coloresColumna[ranura] === c.codigo)
                         : modo === "modulo" ? (ranura === null ? coloresModulo.slice(0, modulo.globos).every((x) => x === c.codigo) : seleccionado(ranura) === c.codigo) : c.codigo === color?.codigo;
                       return (
@@ -313,7 +347,18 @@ export function Taller3D() {
             {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-texto">{error}</p>}
             {color && (
               <div className="pointer-events-none absolute left-3 top-3 max-w-[80%] rounded-xl bg-superficie/90 px-3 py-2 text-sm shadow-sm ring-1 ring-borde backdrop-blur">
-                {modo === "columna" ? (
+                {modo === "arco" ? (
+                  <>
+                    <p className="font-semibold text-texto">Arco {FORMAS_ARCO.find((f) => f.id === forma)?.nombre.toLowerCase()} {datosPatron.nombre.toLowerCase()} de {formato.id} a {formatoCm(inflado)}</p>
+                    <p className="font-mono text-xs text-texto-suave">{(anchoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} × {(altoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {(arco.longitudCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 1 })} m de recorrido · {arco.niveles} cuartetos · {arco.globos.length} globos</p>
+                    <ul className="mt-1 text-xs text-texto">
+                      {arco.materiales.map((m) => {
+                        const ref = referenciaPorCodigo(m.codigo);
+                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
+                      })}
+                    </ul>
+                  </>
+                ) : modo === "columna" ? (
                   <>
                     <p className="font-semibold text-texto">Columna {datosPatron.nombre.toLowerCase()} de {formato.id} a {formatoCm(inflado)}</p>
                     <p className="font-mono text-xs text-texto-suave">{(columna.alturaCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {columna.niveles} cuartetos · {columna.globos.length} globos</p>
