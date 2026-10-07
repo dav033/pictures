@@ -31,8 +31,12 @@ const GIRO = Math.PI / 4; // 1/8 de vuelta
 export type Punto2 = { x: number; y: number };
 export type GloboDeTrenza = GloboColocado & { codigo: string; nivel: number };
 
+/** Un ancla de la trenza: el hueco `hueco` (0-3) entre dos globos vecinos del cuarteto `nivel`, hacia fuera. */
+export type AnclaTrenza = { nivel: number; hueco: number; posicion: Vec3; normal: Vec3 };
+
 export type TrenzaArmada = {
   niveles: number;
+  anclas: AnclaTrenza[];
   longitudCm: number;
   pasoCm: number;
   globos: GloboDeTrenza[];
@@ -112,7 +116,20 @@ export function armarTrenza(opciones: OpcionesTrenza): TrenzaArmada {
   const niveles = reparto === "paso" ? Math.max(1, Math.round(longitudCm / pasoCm)) : Math.max(2, Math.round(longitudCm / pasoCm) + 1);
   const separacion = reparto === "paso" ? pasoCm : longitudCm / (niveles - 1);
 
+  // Huecos entre globos vecinos del cuarteto (en su marco local): a medio camino entre los dos, sobre la
+  // superficie de la canaleta que forman, con la normal hacia fuera.
+  const mitad = Math.PI / apretados.length;
+  const profundidadHueco = radio * Math.cos(mitad) + Math.sqrt(Math.max(0, (infladoCm / 2) ** 2 - (radio * Math.sin(mitad)) ** 2));
+  const huecosLocales = apretados.map((g, k) => {
+    const otro = apretados[(k + 1) % apretados.length]!;
+    const x = g.direccion.x + otro.direccion.x, z = g.direccion.z + otro.direccion.z;
+    const largo = Math.hypot(x, z) || 1;
+    const normal: Vec3 = { x: x / largo, y: 0, z: z / largo };
+    return { hueco: k, normal, posicion: { x: normal.x * profundidadHueco, y: 0, z: normal.z * profundidadHueco } };
+  });
+
   const globos: GloboDeTrenza[] = [];
+  const anclas: AnclaTrenza[] = [];
   for (let nivel = 0; nivel < niveles; nivel++) {
     const { punto, tangente } = enRecorrido(recorrido, nivel * separacion);
     // Marco local: el eje del cuarteto (Y local) sigue la tangente; X local queda en el plano del recorrido y
@@ -137,6 +154,10 @@ export function armarTrenza(opciones: OpcionesTrenza): TrenzaArmada {
         nivel,
       });
     }
+    for (const h of huecosLocales) {
+      const p = mundo(rotarY(h.posicion, angulo));
+      anclas.push({ nivel, hueco: h.hueco, posicion: { x: p.x + punto.x, y: p.y + punto.y, z: p.z }, normal: mundo(rotarY(h.normal, angulo)) });
+    }
   }
-  return { niveles, longitudCm: Math.round(longitudCm), pasoCm, globos, materiales: materialesModulo(globos.map((g) => g.codigo)) };
+  return { niveles, anclas, longitudCm: Math.round(longitudCm), pasoCm, globos, materiales: materialesModulo(globos.map((g) => g.codigo)) };
 }

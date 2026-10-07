@@ -1,5 +1,5 @@
 import type { FormatoGlobo } from "./formatos";
-import { armarTrenza, type GloboDeTrenza, type PatronTrenza, type Punto2 } from "./trenza";
+import { armarTrenza, type AnclaTrenza, type GloboDeTrenza, type PatronTrenza, type Punto2 } from "./trenza";
 
 /**
  * El arco de cuartetos: la misma trenza de Sempertex (cuartetos apretados, giro de 1/8 por nivel), siguiendo
@@ -46,6 +46,7 @@ export function recorridoArco(forma: FormaArco, anchoCm: number, altoCm: number)
 
 export type ArcoArmado = {
   niveles: number;
+  anclas: AnclaTrenza[];
   longitudCm: number;
   globos: GloboDeTrenza[];
   materiales: Array<{ codigo: string; cantidad: number }>;
@@ -54,5 +55,5 @@ export type ArcoArmado = {
 export function armarArco(opciones: { formato: FormatoGlobo; infladoCm: number; forma: FormaArco; anchoCm: number; altoCm: number; patron: PatronTrenza; colores: readonly string[] }): ArcoArmado {
   const { formato, infladoCm, forma, anchoCm, altoCm, patron, colores } = opciones;
   const trenza = armarTrenza({ formato, infladoCm, patron, colores, recorrido: recorridoArco(forma, anchoCm, altoCm), reparto: "extremos" });
-  return { niveles: trenza.niveles, longitudCm: trenza.longitudCm, globos: trenza.globos, materiales: trenza.materiales };
+  return { niveles: trenza.niveles, anclas: trenza.anclas, longitudCm: trenza.longitudCm, globos: trenza.globos, materiales: trenza.materiales };
 }

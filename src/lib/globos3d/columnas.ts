@@ -1,5 +1,5 @@
 import type { FormatoGlobo } from "./formatos";
-import { armarTrenza, PATRONES_TRENZA, PASO_POR_DIAMETRO, RADIO_TRENZA_POR_DIAMETRO, type GloboDeTrenza, type PatronTrenza } from "./trenza";
+import { armarTrenza, PATRONES_TRENZA, PASO_POR_DIAMETRO, RADIO_TRENZA_POR_DIAMETRO, type AnclaTrenza, type GloboDeTrenza, type PatronTrenza } from "./trenza";
 
 /**
  * La columna de cuartetos (la «trenza» de Sempertex en vertical): cuartetos apilados sobre una cuerda, cada uno
@@ -12,6 +12,7 @@ export type GloboDeColumna = GloboDeTrenza;
 
 export type ColumnaArmada = {
   niveles: number;
+  anclas: AnclaTrenza[];
   alturaCm: number;
   pasoCm: number;
   globos: GloboDeColumna[];
@@ -23,6 +24,7 @@ export function armarColumna(opciones: { formato: FormatoGlobo; infladoCm: numbe
   const trenza = armarTrenza({ formato, infladoCm, patron, colores, recorrido: [{ x: 0, y: 0 }, { x: 0, y: alturaCm }], reparto: "paso" });
   return {
     niveles: trenza.niveles,
+    anclas: trenza.anclas,
     // Alto real: del borde de abajo del primer cuarteto al de arriba del último (un cuarteto casi plano mide ~1 diámetro).
     alturaCm: Math.round((trenza.niveles - 1) * trenza.pasoCm + infladoCm * 1.06),
     pasoCm: trenza.pasoCm,
