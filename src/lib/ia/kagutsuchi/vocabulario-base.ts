@@ -442,3 +442,34 @@ export const UBICACIONES_BASE = {
  * escribir en la imagen (nada de «sign», «caption», «label» ni comillas).
  */
 export const CIERRE_FOTOGRAFICO_BASE = "professional event photograph, realistic latex balloons with natural reflections, sharp detail";
+
+/**
+ * Medida de una pieza del plan en palabras para FLUX base (2026-10-07, «GUIRNALDA SACA ESTA ABERRACIÓN»): los metros
+ * que cotiza el plan y los pies con los que se describen las piezas en los catálogos en inglés, separados por « / »
+ * y sin paréntesis (el preflight base los reserva al hex). `corta` (pasos de compactación): solo los metros.
+ */
+export function medidaBase(metros: number, corta = false): string {
+  const enMetros = `${Number(metros.toFixed(1))} m`;
+  if (corta) return enMetros;
+  const pies = metros * 3.28084;
+  return `${enMetros} / ${pies < 3 ? Math.round(pies * 2) / 2 : Math.round(pies)} ft`;
+}
+
+/**
+ * Tamaño de un globo por comparación con un objeto que el modelo conoce (los anclajes de `tamano-fisico.ts`: 5" un
+ * puño, 12" una cabeza, 18" un balón de playa). FLUX.2 no admite negativos («no giant balloons» le pone gigantes en
+ * la cabeza): el tope se dice en positivo, con la talla mayor que el plan compra y su objeto.
+ */
+const TOPES_TALLA_BASE: ReadonlyArray<readonly [number, string]> = [[5, "fist size"], [9, "grapefruit size"], [12, "head size"], [18, "beach-ball size"]];
+/** Desde esta talla un globo ya es «jumbo» o gigante: el plan los compra a propósito y no se acota nada. */
+export const TALLA_GIGANTE_BASE = 24;
+
+/** «every balloon at most 18-inch, about beach-ball size», o `undefined` si la talla mayor ya es jumbo. */
+export function topeTallaBase(pulgadasMaximas: number, corta = false): string | undefined {
+  if (!(pulgadasMaximas > 0) || pulgadasMaximas >= TALLA_GIGANTE_BASE) return undefined;
+  const objeto = TOPES_TALLA_BASE.find(([pulgadas]) => pulgadasMaximas <= pulgadas)?.[1] ?? "beach-ball size";
+  return corta ? `every balloon at most ${objeto}` : `every balloon at most ${pulgadasMaximas}-inch, about ${objeto}`;
+}
+
+/** Encuadre de una escena pequeña: el modelo base, sin él, agranda la pieza hasta llenar un salón entero. */
+export const ENCUADRE_ESCENA_PEQUENA_BASE = "medium shot showing the whole decoration";

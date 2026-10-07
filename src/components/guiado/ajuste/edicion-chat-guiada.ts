@@ -3,6 +3,7 @@ import type { CandidatoDelServidor } from "@/components/plan/ajuste/ajuste-propu
 import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { LUGAR_EN_PALABRAS, piezaIndefinida, piezasDelPedido, type PedidoEdicionPlan, type PiezaNuevaChat } from "@/lib/ia/guiado/edicion-plan-chat";
 import { esEstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { edicionFloresDePedido } from "@/lib/plan/flores-pieza";
 import { FalloPlanEditar, mensajeErrorRespuesta, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { campoPrincipal, type UbicacionPiezaNueva } from "@/lib/plan/pieza-nueva";
 import { esGloboDelTono, tonoDelTitulo } from "@/lib/plan/tonos-color";
@@ -122,6 +123,7 @@ export function avisoEdicionChat(pedido: PedidoEdicionPlan): string {
     case "colores_pieza": return `Dejo esa pieza en ${pedido.colores.map(nombreColor).join(" y ")}; lo demás queda igual…`;
     case "mover_pieza": return `Paso esa pieza ${LUGAR_EN_PALABRAS[pedido.ubicacion]}; lo demás queda igual…`;
     case "renombrar_pieza": return `Le pongo «${pedido.nombre}» a esa pieza…`;
+    case "flores": return pedido.quitar ? "Quito las flores de globo; lo demás queda igual…" : "Pongo las flores de globo; lo demás queda igual…";
   }
 }
 
@@ -286,6 +288,8 @@ export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicio
   let actual: PlanFirmado = { plan: base, cotizacion: undefined };
   /** La pieza que se sumó (agregar_pieza). */
   let nueva: string | null = null;
+  /** Las piezas que recibieron (o perdieron) sus flores de globo. */
+  const conFlores: string[] = [];
   /** Un cambio sobre el plan que dejó el anterior (`armar` lo calcula con ese plan: los índices pueden moverse). */
   const aplicar = async (armar: (plan: PlanGuiado) => CambioPlan | null): Promise<void> => {
     const cambio = armar(actual.plan);
@@ -437,6 +441,24 @@ export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicio
       if (!hechos.length) fallo("Esas piezas ya van en esos colores.");
       break;
     }
+    case "flores": {
+      // Flores de globo (flores-pieza.ts): la edición `flores` de cada pieza, con globos que el plan ya compra; Python
+      // cuenta y cotiza sus globos al volver a firmar. Sin piezas nombradas, todas las que admiten esas flores.
+      const destino = ids.length ? ids : base.plan.estructuras.map((estructura) => estructura.estructura_id);
+      const motivos: string[] = [];
+      for (const id of destino) {
+        const armada = edicionFloresDePedido(actual.plan.plan, id, { tipo: "flores", quitar: pedido.quitar, cantidad: pedido.cantidad, colorPetalo: pedido.colorPetalo, colorCentro: pedido.colorCentro });
+        if (!armada.ok) {
+          motivos.push(armada.motivo);
+          continue;
+        }
+        const nuevo = await dependencias.aplicar(actual.plan, armada.edicion);
+        actual = { ...nuevo, piezas: [...new Set([...(actual.piezas ?? []), id])] };
+        conFlores.push(id);
+      }
+      if (!conFlores.length) fallo(motivos[0] ?? "No pude poner esas flores. Tu plan sigue como estaba.");
+      break;
+    }
     case "mover_pieza":
     case "renombrar_pieza": {
       // U · Mover o renombrar: solo cambian el lugar o el nombre; Python vuelve a firmar y los globos no cambian.
@@ -450,8 +472,10 @@ export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicio
     }
   }
 
-  const descripcion = descripcionDe(base, pedido, hechos, ids, { despues: actual.plan, nueva });
-  const propia = pedido.tipo === "agregar_pieza" || pedido.tipo === "colores_pieza" || pedido.tipo === "mover_pieza" || pedido.tipo === "renombrar_pieza";
+  const descripcion = pedido.tipo === "flores"
+    ? `${pedido.quitar ? "quité las flores de globo de" : `puse ${pedido.cantidad ? `${pedido.cantidad} ${pedido.cantidad === 1 ? "flor" : "flores"}` : "flores"} de globo en`} ${conArticulo(base, conFlores)}`
+    : descripcionDe(base, pedido, hechos, ids, { despues: actual.plan, nueva });
+  const propia = pedido.tipo === "agregar_pieza" || pedido.tipo === "colores_pieza" || pedido.tipo === "mover_pieza" || pedido.tipo === "renombrar_pieza" || pedido.tipo === "flores";
   const confirmacion = propia ? confirmacionPropia(base, pedido, descripcion, ids)
     : hechos.length === 1 ? confirmacionDelCambio(base, hechos[0]!, actual.piezas, actual.plan) : `Listo: ${descripcion}; lo demás quedó igual.`;
   return { ...actual, descripcion: descripcion.slice(0, 160), confirmacion, cambios: hechos, globos, ...(nueva ? { nueva } : {}) };

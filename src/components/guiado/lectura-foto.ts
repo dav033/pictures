@@ -1,5 +1,6 @@
 import type { ReferenciaGuiada } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { partesDeColorPieza } from "@/lib/plan/colores-referencia";
+import { CONFIANZA_MINIMA_FLORES } from "@/lib/plan/flores-pieza";
 import { clasificarColores } from "@/lib/rag/taxonomy/v2";
 import { colorLeido, familiaSempertex, type AcabadoGlobo, type ColorLeido } from "./color-globo";
 import { colorSempertex } from "./color-sempertex";
@@ -395,6 +396,11 @@ export function lecturaFoto(blueprint: Blueprint): LecturaFoto | null {
     if (densidad === "lujosa") detalles.push(`muy ${concordar("lleno", sustantivo.genero)}`);
     if (densidad === "sencilla") detalles.push(concordar("sencillo", sustantivo.genero));
     if (instancia.total > 1) detalles.push(`${instancia.indice + 1} de ${instancia.total} iguales`);
+    // Las flores de globo que la lectura vio sobre la pieza (flores-pieza.ts): el plan las arma con sus globos.
+    const flores = elemento.appearance.flores;
+    if (flores && flores.confianza >= CONFIANZA_MINIMA_FLORES) {
+      detalles.push(`con ${flores.cantidad === 1 ? "una flor" : `${flores.cantidad} flores`} de globo ${flores.color_petalo}${flores.color_centro ? ` y centro ${flores.color_centro}` : ""}`);
+    }
     const globos = globosDe(elemento);
     const { tamanos, frase } = tamanosDe(elemento);
     return {

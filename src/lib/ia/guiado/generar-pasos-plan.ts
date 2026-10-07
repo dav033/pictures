@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { esEstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { ADORNO_FLOR, FloresPiezaV1Schema, petalosDe } from "@/lib/plan/flores-pieza";
 import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 import { guiaParaEstructura, GuiaArmadoSchema } from "./guias-armado";
 
@@ -13,7 +14,16 @@ const PlanMinimoSchema = z.object({
   }).passthrough(),
   estructuras: z.array(z.object({
     estructura_id: z.string(),
-    lineas: z.array(z.object({ color: z.string().optional(), tamano_codigo: z.string().optional(), diam_pulg: z.number().optional(), unidades: z.number().int().nonnegative() }).passthrough()),
+    // `null` es lo que manda Python cuando el catálogo no le da color a la variante (Fashion Latte) o la línea no tiene
+    // código ni diámetro: es «sin dato», no un plan inválido. Con `.optional()` el plan EXACTO de la idea «Aro de globos
+    // blanco, dorado y nude con flores» rompía la tarjeta (ZodError en lineas[2].color) y la vista caía a /api/chat, que
+    // rehacía el plan con otros globos (Fashion Blanco mate en vez del Silk Blanco Nácar de la foto; dueño, 2026-10-07).
+    lineas: z.array(z.object({
+      color: z.string().nullish().transform((valor) => valor ?? undefined),
+      tamano_codigo: z.string().nullish().transform((valor) => valor ?? undefined),
+      diam_pulg: z.number().nullish().transform((valor) => valor ?? undefined),
+      unidades: z.number().int().nonnegative(),
+    }).passthrough()),
   }).passthrough()),
 }).passthrough();
 
@@ -99,6 +109,21 @@ export function generarPasosPlan(planGuardado: unknown): { pasos: PasoPlanGuiado
     }
     const { pieza, armado, medidas, globosPieza } = actual;
     pasos.push({ orden: pasos.length + 1, texto: `Arma ${pieza.nombre}${pieza.repeticiones > 1 ? ` (${pieza.repeticiones} piezas)` : ""}${medidas ? `, de ${medidas}` : ""}. ${armado}`, ...(globosPieza ? { globos: globosPieza } : {}) });
+  }
+  // Las flores de globo de cada pieza (flores-pieza.ts): un paso propio, con los globos que Python les compró.
+  for (const pieza of plan.plan.estructuras) {
+    const flores = FloresPiezaV1Schema.safeParse(pieza.flores);
+    if (!flores.success) continue;
+    const lineasFlor = (plan.estructuras.find((item) => item.estructura_id === pieza.estructura_id)?.lineas ?? []).filter((linea) => linea.adorno === ADORNO_FLOR);
+    const globosFlor = textoGlobos(agruparGlobos(lineasFlor));
+    const cantidad = flores.data.cantidad * pieza.repeticiones;
+    const petalo = flores.data.petalo.color ? ` ${colorEnPlural(flores.data.petalo.color)}` : "";
+    const centro = flores.data.centro ? `, con un globo${flores.data.centro.color ? ` ${flores.data.centro.color}` : ""} al centro` : "";
+    pasos.push({
+      orden: pasos.length + 1,
+      texto: `Arma ${cantidad === 1 ? "la flor" : `las ${cantidad} flores`} de globo de ${pieza.nombre}: amarra ${petalosDe(flores.data)} globos${petalo} de 5″ como pétalos${centro}, y fíjalas sobre la pieza.`,
+      ...(globosFlor ? { globos: globosFlor } : {}),
+    });
   }
   pasos.push({ orden: pasos.length + 1, texto: "Monta las piezas en su lugar y fija cada una a su soporte antes de seguir con la siguiente." });
   pasos.push({ orden: pasos.length + 1, texto: "Ajusta los amarres, oculta los soportes y revisa que todo quede firme y en su sitio." });

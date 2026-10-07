@@ -93,6 +93,7 @@ import { ArgsEstimarConteoGlobosSchema, erroresDeEstimacion, objetivoDeLaFoto, s
 import { AJUSTAR_PLAN_DECORACION, ESTIMAR_CONTEO_GLOBOS, HERRAMIENTAS_ARMADO_MOTOR, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "../referencia/reference-blueprint";
 import type { Herramienta } from "../nucleo/tipos";
+import { aplicarFloresDeFoto } from "@/lib/plan/flores-pieza";
 import { z } from "zod";
 
 /**
@@ -1560,6 +1561,19 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     };
     let resolucion: ResolucionPlan;
     const avisosConvergencia: string[] = [];
+    // Flores de globo de la foto (flores-pieza.ts): la pieza que materializa un elemento donde la lectura vio flores las
+    // lleva como adorno, con sus propios globos (el pétalo perlado sale del perlado de la pieza). Después de cobertura,
+    // acabados y piezas individuales, así que los productos ya son los finales; Python cuenta y cotiza sus globos.
+    const floresFoto = aplicarFloresDeFoto(planCanonico, estado.referenceBlueprint);
+    if (floresFoto.aplicadas.length || floresFoto.omitidas.length) {
+      const conFlores = floresFoto.aplicadas.length ? PlanDecoracionSchema.safeParse(floresFoto.plan) : null;
+      if (conFlores?.success) planCanonico = conFlores.data;
+      decidir("regla:flores_de_foto", "flores de globo de la foto como adorno de su pieza", conFlores && !conFlores.success
+        ? { aplicado: false, errores: conFlores.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`) }
+        : { aplicado: floresFoto.aplicadas.length > 0, aplicadas: floresFoto.aplicadas, omitidas: floresFoto.omitidas }, {
+        motivo: "la lectura vio flores de globo en la pieza; se arman con los globos de esa pieza",
+      });
+    }
     try {
       planCanonico = await conArmadosDeMotor(planCanonico);
       resolucion = await resolverPlanDelTurno(planCanonico);

@@ -29,6 +29,7 @@ import {
   MODOS_PATRON_COLOR,
   TAMANOS_LEIDOS,
 } from "@/lib/plan/patron-color";
+import { MAX_FLORES_PIEZA } from "@/lib/plan/flores-pieza";
 import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 
 /**
@@ -231,6 +232,16 @@ export const LECTURA_UNICA_TOOL_SCHEMA = {
         confianza: CONFIANZA,
       },
     },
+    flores: {
+      type: "object",
+      required: ["cantidad", "color_petalo", "confianza"],
+      properties: {
+        cantidad: { type: "integer", minimum: 1, maximum: MAX_FLORES_PIEZA },
+        color_petalo: COLOR,
+        color_centro: COLOR,
+        confianza: CONFIANZA,
+      },
+    },
   },
 } as const;
 
@@ -284,4 +295,6 @@ forma: "recta", "curva" (one gentle curve), "ondulada" (rises and falls along it
 linea_central: where the garland runs, as three points on the center line of its band of balloons. Each point is a position in the WHOLE image, never relative to box_2d: x goes from 0 at the left edge of the image to 1 at its right edge, y from 0 at the top edge to 1 at the bottom edge. extremo_izquierdo = the center of the band at its left end, in the middle of its last cluster on the left; extremo_derecho = the same at its right end; punto_medio = go halfway between the two ends horizontally, look straight up and down at that x, and mark the center of the band there, at whatever height the balloons actually are. Place every point on the balloons themselves, not on the wall, a ribbon or the edge of the box. Omit linea_central when you cannot see both ends. Do not try to say which way it curves or how much: those are computed from these three points.
 racimos_visibles: the clusters you can see from one end to the other. unidad_racimo: the balloons of one cluster, "trio" (3), "cuarteto" (4) or "quinteto" (5); omit it when you cannot tell. colores_por_racimo: the colors of a typical cluster in position order, at most 5.
 relleno: the small balloons tucked between the clusters, with their main color and the share of the garland's balloons they make up (0 to 0.5); omit it when there are none.
-remates: balloons clearly bigger than the cluster balloons, or foil or bubble balloons, placed on the garland: clase "latex", "metalizado" or "burbuja", their color, and posicion "extremo_izq", "extremo_der", "centro" or "cada_n" (repeated along the garland). At most 6; empty when there are none.`;
+remates: balloons clearly bigger than the cluster balloons, or foil or bubble balloons, placed on the garland: clase "latex", "metalizado" or "burbuja", their color, and posicion "extremo_izq", "extremo_der", "centro" or "cada_n" (repeated along the garland). At most 6; empty when there are none.
+
+\`lecturas.flores\` — only when the piece carries BALLOON FLOWERS: daisy-like flowers made of balloons, several petal balloons of one color around a center balloon of another color, fixed on the piece as an ornament (on an arch, a hoop, a column, a garland or a wall). Real flowers, paper flowers, foil flower balloons and a flower motif drawn by the color layout itself (the "flor" pattern) are not balloon flowers. cantidad = the balloon flowers on ONE piece. color_petalo = the catalog color of the petals; color_centro = the catalog color of the center balloon, omitted when you cannot see it or it is the same color as the petals. Omit the whole reading when the piece has no balloon flowers.`;

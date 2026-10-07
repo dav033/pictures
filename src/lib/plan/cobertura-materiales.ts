@@ -1,5 +1,6 @@
 import { mezclasCompatiblesConDiametros, type Mezcla } from "@/lib/plan/mezclas";
 import { esReferenciaPastel, referenciaDelTitulo } from "@/lib/plan/referencia-sempertex";
+import { familiaDeTitulo } from "./referencias-medidas";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
 import { esCuentaGeometrica, type PlanDecoracion } from "./tipos";
 
@@ -250,7 +251,32 @@ function acabadoQueCumple(observado: string, producto: Pick<DisponibilidadProduc
     return referencia && !esReferenciaPastel(referencia) ? undefined : mate;
   }
   const admitidos = ACABADOS_QUE_CUMPLEN[plegar(observado)] ?? [plegar(observado)];
-  return producto.acabados.map(plegar).find((acabado) => admitidos.includes(acabado));
+  return acabadosEfectivos(producto).find((acabado) => admitidos.includes(acabado));
+}
+
+/**
+ * La familia de la lámina de cada producto en las palabras de acabado del catálogo. Hace falta porque el catálogo no
+ * etiqueta el acabado de toda la línea Silk: «Silk Blanco Nácar» y «Silk Dorado» llegan con `finishes: []`, así que
+ * para la regla eran productos «sin acabado» que nunca cumplían el perlado de la foto, y un blanco perlado acababa en
+ * el Fashion Blanco mate (dueño, 2026-10-07: «los globos no son iguales a los de la foto»).
+ */
+const ACABADOS_DE_FAMILIA: Readonly<Record<string, readonly string[]>> = {
+  reflex: ["reflex"],
+  satin: ["satin", "perlado"],
+  silk: ["satin", "perlado"],
+  fashion: ["fashion", "mate"],
+  pastelMate: ["mate"],
+  pastelDusk: ["mate"],
+};
+
+/** Los acabados del producto: los que etiqueta el catálogo o, sin ninguno, los de su familia leída del título. */
+function acabadosEfectivos(producto: Pick<DisponibilidadProducto, "acabados" | "titulo">): string[] {
+  const delCatalogo = producto.acabados.map(plegar);
+  if (delCatalogo.length) return delCatalogo;
+  // `familiaDeTitulo` y no `referenciaDelTitulo`: solo un globo liso cuyo título NOMBRA la familia («Globo Latex Redondo
+  // Silk Blanco Nácar»); un título sin familia («P-PLATA», un impreso) sigue sin acabado leído y no se juzga (regla 4).
+  const familia = familiaDeTitulo(producto.titulo);
+  return familia ? [...(ACABADOS_DE_FAMILIA[familia] ?? [])] : [];
 }
 
 /**
@@ -297,7 +323,7 @@ export function aplicarAcabadoReferencia(
       const observado = acabadoEsperado.get(material.product_id);
       const producto = observado ? disponibilidad.get(material.product_id) : undefined;
       // Regla 4: sin acabados leídos no hay nada que comparar ni que avisar.
-      if (!observado || !producto || producto.acabados.length === 0) return material;
+      if (!observado || !producto || acabadosEfectivos(producto).length === 0) return material;
       if (producto.categoria !== CATEGORIA_CON_ACABADO) return material;
       if (acabadoQueCumple(observado, producto)) return material;
       const color = plegar(material.color ?? "");
@@ -311,7 +337,12 @@ export function aplicarAcabadoReferencia(
         return material;
       }
       ajustes.push({ tipo: "acabado_referencia", estructura_id: estructura.estructura_id, product_id: material.product_id, despues: reemplazo.product_id, color: material.color ?? null, acabado: observado });
-      return { ...material, product_id: reemplazo.product_id, acabado: reemplazo.acabado };
+      // El acabado solo viaja si el catálogo lo etiqueta: Python filtra las variantes por él, y un Silk (sin etiqueta)
+      // cumple el perlado por su familia pero quedaría sin una sola variante (sin cobertura).
+      const cambiado = { ...material, product_id: reemplazo.product_id };
+      if (reemplazo.acabado) cambiado.acabado = reemplazo.acabado;
+      else delete cambiado.acabado;
+      return cambiado;
     });
     return { ...estructura, materiales };
   });
@@ -325,14 +356,14 @@ function buscarProductoConAcabado(
   color: string,
   observado: string,
   disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
-): { product_id: string; acabado: string } | undefined {
+): { product_id: string; acabado: string | undefined } | undefined {
   for (const [productId, candidato] of disponibilidad) {
     if (candidato === actual || candidato.categoria !== actual.categoria) continue;
     if (!candidato.coloresVariante.map(plegar).includes(color)) continue;
     // Cambiar el acabado no puede dejar la pieza sin los tamaños de su mezcla.
     if (GEOMETRICOS.has(estructura.tipo) && !candidato.mezclas.includes(estructura.mezcla)) continue;
     const acabado = acabadoQueCumple(observado, candidato);
-    if (acabado) return { product_id: productId, acabado };
+    if (acabado) return { product_id: productId, acabado: candidato.acabados.map(plegar).includes(acabado) ? acabado : undefined };
   }
   return undefined;
 }
@@ -368,7 +399,7 @@ export function busquedasDeAcabado(
       const producto = observado ? disponibilidad.get(material.product_id) : undefined;
       const color = plegar(material.color ?? "");
       if (!observado || !producto || !color || material.variant_id) continue;
-      if (producto.categoria !== CATEGORIA_CON_ACABADO || producto.acabados.length === 0) continue;
+      if (producto.categoria !== CATEGORIA_CON_ACABADO || acabadosEfectivos(producto).length === 0) continue;
       if (acabadoQueCumple(observado, producto)) continue;
       if (buscarProductoConAcabado(estructura, producto, color, observado, disponibilidad)) continue;
       const palabra = PALABRA_DE_ACABADO[plegar(observado)];

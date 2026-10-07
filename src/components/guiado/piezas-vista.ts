@@ -2,6 +2,7 @@ import { z } from "zod";
 import { tramosPorTamano, type TramoTamano } from "@/components/plan/BarraTamanos";
 import type { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { resumenFlores, textoFlores, type ResumenFlores } from "@/lib/plan/flores-pieza";
 import { PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { familiaSempertex } from "./color-globo";
 import { colorSempertex } from "./color-sempertex";
@@ -49,6 +50,11 @@ export type PiezaVista = {
   repeticiones: number;
   medidas: { ancho_m?: number; alto_m?: number; largo_m?: number };
   lineas: LineaGlobo[];
+  /**
+   * Las flores de globo de la pieza (`flores-pieza.ts`), tal como las resolvió Python: cuántas y sus globos, de las
+   * líneas marcadas `adorno: "flor"` (que también están en `lineas`, porque se compran). Ausente o null: sin flores.
+   */
+  flores?: ResumenFlores | null;
 };
 
 /** Una fila de la tabla: un producto Sempertex (o un color, si la línea no trae producto). `etiqueta` es lo que se lee. */
@@ -249,6 +255,16 @@ export function titulosDelPlan(plan: PlanGuiado): ReadonlyMap<string, string> {
   return titulos;
 }
 
+/**
+ * La nota de la cotización cuando el plan lleva flores de globo: sus globos ya están en las líneas (se compran por
+ * paquete con los demás); esto dice cuáles son de flores. «Incluye flores de globo: Aro circular, + 2 flores (8 globos
+ * de 5″).». Null sin flores.
+ */
+export function notaFloresCotizacion(piezas: readonly Pick<PiezaVista, "nombre" | "flores">[]): string | null {
+  const conFlores = piezas.flatMap((pieza) => (pieza.flores ? [`${pieza.nombre}, ${textoFlores(pieza.flores)}`] : []));
+  return conFlores.length ? `Incluye flores de globo: ${conFlores.join("; ")}.` : null;
+}
+
 /** Las piezas de «Tu plan», en el orden del plan, con sus globos tal como los resolvió Python. */
 export function piezasVistaDePlan(plan: PlanGuiado): PiezaVista[] {
   return plan.plan.estructuras.map((pieza) => ({
@@ -262,5 +278,6 @@ export function piezasVistaDePlan(plan: PlanGuiado): PiezaVista[] {
       ...(pieza.medidas.largo_m !== undefined ? { largo_m: pieza.medidas.largo_m } : {}),
     },
     lineas: lineasDePieza(plan, pieza.estructura_id),
+    flores: resumenFlores(pieza, plan.estructuras.find((estructura) => estructura.estructura_id === pieza.estructura_id)?.lineas ?? []),
   }));
 }

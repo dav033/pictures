@@ -137,7 +137,7 @@ for (const valido of [delModelo.pedido, medida.pedido]) assert.ok(PedidoEdicionP
 
 // Las herramientas solo admiten las piezas y los colores de ESTE plan.
 const herramientas = herramientasEdicionPlan(actual!);
-assert.deepEqual(herramientas.map((herramienta) => herramienta.nombre), ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan", "agregar_pieza_plan", "colores_pieza_plan", "editar_pieza_plan"]);
+assert.deepEqual(herramientas.map((herramienta) => herramienta.nombre), ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan", "agregar_pieza_plan", "colores_pieza_plan", "flores_plan", "editar_pieza_plan"]);
 const esquemaCambio = herramientas[0]!.esquema as { properties: { piezas: { items: { enum: string[] } }; color_actual: { enum: string[] } } };
 assert.deepEqual(esquemaCambio.properties.piezas.items.enum, ["Semiarco orgánico", "Columna izquierda", "Columna derecha"]);
 assert.deepEqual([...esquemaCambio.properties.color_actual.enum].sort(), ["azul", "blanco", "plateado", "rosado"]);

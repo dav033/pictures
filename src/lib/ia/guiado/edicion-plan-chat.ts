@@ -3,6 +3,7 @@ import type { IdeaVisibleGuiada, PlanActualGuiado } from "@/lib/ia/contracts/asi
 import { ESTRUCTURAS_OFICIALES, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { campoPrincipal, esOficialAgregable, OFICIALES_AGREGABLES, UBICACIONES_PIEZA_NUEVA, type OficialAgregable, type UbicacionPiezaNueva } from "@/lib/plan/pieza-nueva";
 import { FEMENINAS } from "@/lib/plan/piezas-individuales";
+import { MAX_FLORES_PIEZA, pedidoFloresDeTexto } from "@/lib/plan/flores-pieza";
 import { coloresConTonosDelCliente } from "@/lib/plan/tonos-color";
 import { ALIAS_COLORES_V2, COLORES_PROPUESTA_V2, familiaDeColorPropuesta, plegarTexto, tonoClaroDe, TONOS_CLAROS_V2, TONOS_V2, type ColorPropuestaV2 } from "@/lib/rag/taxonomy/v2";
 
@@ -79,6 +80,16 @@ export const PedidoEdicionPlanSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("colores_pieza"), colores: z.array(ColorNuevoSchema).min(1).max(3), piezas: z.array(NombrePiezaSchema).min(1).max(MAX_PIEZAS) }).strict(),
   z.object({ tipo: z.literal("mover_pieza"), pieza: NombrePiezaSchema, ubicacion: UbicacionPiezaSchema }).strict(),
   z.object({ tipo: z.literal("renombrar_pieza"), pieza: NombrePiezaSchema, nombre: z.string().trim().min(1).max(60) }).strict(),
+  // Flores de globo como adorno de las piezas (flores-pieza.ts): ponerlas, cambiarlas o quitarlas («ponle flores»,
+  // «agrega 3 flores doradas a la columna»). Colores null = los de la pieza; cantidad null = las de siempre; piezas vacío = todas.
+  z.object({
+    tipo: z.literal("flores"),
+    quitar: z.boolean(),
+    cantidad: z.number().int().min(1).max(MAX_FLORES_PIEZA).nullable(),
+    colorPetalo: ColorDelPlanSchema.nullable(),
+    colorCentro: ColorDelPlanSchema.nullable(),
+    piezas: z.array(NombrePiezaSchema).max(MAX_PIEZAS),
+  }).strict(),
 ]);
 export type PedidoEdicionPlan = z.infer<typeof PedidoEdicionPlanSchema>;
 
@@ -96,7 +107,7 @@ export function piezasDelPedido(pedido: PedidoEdicionPlan): string[] {
 export const IdeaElegidaSchema = z.object({ id: z.string().regex(/^(?:ej|deco)-[a-z0-9-]+$/), titulo: z.string().min(1).max(160), posicion: z.number().int().min(1).max(12) }).strict();
 export type IdeaElegida = z.infer<typeof IdeaElegidaSchema>;
 
-export const HERRAMIENTAS_EDICION = ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan", "agregar_pieza_plan", "colores_pieza_plan", "editar_pieza_plan"] as const;
+export const HERRAMIENTAS_EDICION = ["cambiar_color_plan", "agregar_color_plan", "quitar_color_plan", "mas_o_menos_color", "quitar_pieza_plan", "cambiar_tamano_plan", "agregar_pieza_plan", "colores_pieza_plan", "editar_pieza_plan", "flores_plan"] as const;
 export type HerramientaEdicion = (typeof HERRAMIENTAS_EDICION)[number];
 export const HERRAMIENTA_ELEGIR_IDEA = "elegir_idea";
 
@@ -112,6 +123,7 @@ const HERRAMIENTA_DE_TIPO: Readonly<Record<PedidoEdicionPlan["tipo"], Herramient
   colores_pieza: "colores_pieza_plan",
   mover_pieza: "editar_pieza_plan",
   renombrar_pieza: "editar_pieza_plan",
+  flores: "flores_plan",
 };
 
 export function esHerramientaEdicion(nombre: string): nombre is HerramientaEdicion {
@@ -603,6 +615,16 @@ export function detectarPedidoEdicion(texto: string, plan: PlanActualGuiado, con
   const piezasPedidas = nombradas.nombres;
   const referida = piezaReferida(limpio, contexto, piezas);
 
+  // Flores de globo (flores-pieza.ts): «ponle flores», «agrega 3 flores doradas a la columna», «quítale las flores».
+  // Antes que sumar una pieza: una flor es un adorno de la pieza, no una pieza nueva. Sin pieza nombrada: la de la que
+  // se habla o, si no, todas.
+  const flores = pedidoFloresDeTexto(texto);
+  if (flores) {
+    if (nombradas.ambigua) return { estado: "incompleta", herramienta: "flores_plan", motivo: "no dice en cuál de las piezas iguales van las flores" };
+    const destino = piezasPedidas.length ? piezasPedidas : referida && generoDelPronombre(limpio) ? [referida.nombre] : [];
+    return edicion({ tipo: "flores", quitar: flores.quitar, cantidad: flores.cantidad, colorPetalo: flores.colorPetalo, colorCentro: flores.colorCentro, piezas: destino }, flores.quitar ? "quitar las flores de globo de las piezas" : "poner flores de globo en las piezas");
+  }
+
   // C · Sumar una pieza («¿puedes agregar una guirnalda en medio?», «agrégale otra columna», «ponle un arco»).
   const nueva = leerPiezaNueva(limpio, texto, piezas);
   if (nueva && "noCabe" in nueva) return { estado: "no_cabe", motivo: nueva.noCabe };
@@ -736,6 +758,7 @@ export function herramientasEdicionPlan(plan: PlanActualGuiado): DefinicionHerra
     { nombre: "cambiar_tamano_plan", descripcion: "Agranda o achica piezas del plan vigente (un 10 %), o les pone una medida en metros. Sin piezas: toda la decoración.", esquema: { type: "object", properties: { cambio: { type: "string", enum: ["agrandar", "achicar", "medida"] }, piezas: { ...piezas, description: "Piezas que cambian, con su nombre exacto. Vacío: todas." }, alto_m: { type: "number", minimum: 0.3, maximum: 12 }, ancho_m: { type: "number", minimum: 0.3, maximum: 12 }, largo_m: { type: "number", minimum: 0.3, maximum: 12 } }, required: ["cambio"], additionalProperties: false } },
     { nombre: "agregar_pieza_plan", descripcion: "Suma UNA pieza nueva al plan vigente (una guirnalda, otra columna, un arco…) en los colores del plan o en los que diga el cliente; las demás piezas quedan exactamente igual. Úsala cuando pida agregar, poner o sumar una pieza: nunca rehagas el plan para eso.", esquema: { type: "object", properties: { estructura: { type: "string", enum: [...OFICIALES_AGREGABLES] }, ubicacion: { type: "string", enum: [...UBICACIONES_PIEZA_NUEVA], description: "Dónde la pidió («en medio» o «entre las columnas» = centro). Omítela si no lo dijo." }, medida_m: { type: "number", minimum: 0.3, maximum: 12, description: "Solo si dijo la medida: el largo de una guirnalda, el alto de una columna o el ancho de un arco." }, colores: { type: "array", items: colorNuevo, maxItems: 4, description: "Solo si pidió colores para esta pieza; vacío: los del plan." } }, required: ["estructura"], additionalProperties: false } },
     { nombre: "colores_pieza_plan", descripcion: "Deja piezas concretas del plan en los colores que pide el cliente («cambia la guirnalda a dorado»): cambia, añade o quita colores solo en esas piezas; medidas y demás piezas quedan igual.", esquema: { type: "object", properties: { piezas: { ...piezas, description: "Las piezas que cambian de color, con su nombre exacto.", minItems: 1 }, colores: { type: "array", items: colorNuevo, minItems: 1, maxItems: 3 } }, required: ["piezas", "colores"], additionalProperties: false } },
+    { nombre: "flores_plan", descripcion: "Pone, cambia o quita flores de globo (grupitos de globos de 5″: pétalos de un color y un centro de otro) como adorno de piezas del plan vigente. Úsala cuando pida flores («ponle flores», «agrega 3 flores doradas a la columna», «quítale las flores»); las piezas, medidas y demás globos quedan igual.", esquema: { type: "object", properties: { piezas: { ...piezas, description: "Piezas que llevan (o pierden) las flores, con su nombre exacto. Vacío: todas." }, quitar: { type: "boolean", description: "true para quitar las flores." }, cantidad: { type: "integer", minimum: 1, maximum: MAX_FLORES_PIEZA, description: "Flores por pieza, solo si lo dijo." }, color_petalo: colorPlan, color_centro: colorPlan }, additionalProperties: false } },
     { nombre: "editar_pieza_plan", descripcion: "Mueve UNA pieza del plan a otro lugar o le cambia el nombre; medidas, colores y globos quedan igual.", esquema: { type: "object", properties: { pieza: { type: "string", enum: nombres }, ubicacion: { type: "string", enum: [...UBICACIONES_PIEZA_NUEVA] }, nombre: { type: "string", minLength: 1, maxLength: 60 } }, required: ["pieza"], additionalProperties: false } },
   ];
 }
@@ -751,6 +774,7 @@ const ArgsSchemas = {
   agregar_pieza_plan: z.object({ estructura: z.string().trim().min(1).max(40), ubicacion: z.string().trim().max(40).nullish(), medida_m: z.number().nullish(), colores: z.array(z.string().trim().min(1).max(40)).max(4).nullish() }).strict(),
   colores_pieza_plan: z.object({ piezas: z.array(z.string().trim().min(1).max(120)).min(1).max(MAX_PIEZAS), colores: z.array(z.string().trim().min(1).max(40)).min(1).max(3) }).strict(),
   editar_pieza_plan: z.object({ pieza: z.string().trim().min(1).max(120), ubicacion: z.string().trim().max(40).nullish(), nombre: z.string().trim().max(60).nullish() }).strict(),
+  flores_plan: z.object({ piezas: ArgsPiezas, quitar: z.boolean().nullish(), cantidad: z.number().int().nullish(), color_petalo: z.string().trim().max(40).nullish(), color_centro: z.string().trim().max(40).nullish() }).strict(),
 } as const;
 
 export type ResultadoHerramientaEdicion =
@@ -919,6 +943,17 @@ export function pedidoDesdeHerramienta(nombre: HerramientaEdicion, args: unknown
       if (piezas.some((otra) => otra.nombre !== pieza && otra.clave === plegar(nombre))) return falla("nombre_repetido", "Otra pieza ya se llama así: pregunta otro nombre.");
       return { ok: true, pedido: { tipo: "renombrar_pieza", pieza, nombre: nombre.slice(0, 60) }, origen: "modelo", correcciones };
     }
+    case "flores_plan": {
+      const entrada = ArgsSchemas.flores_plan.parse(args);
+      const nombres = resolverPiezas(entrada.piezas);
+      if (!nombres) return falla("pieza_desconocida", `Las piezas del plan son ${listaPiezas}: usa esos nombres.`);
+      // Los globos de las flores son los del plan (su allowlist firmada): un color que el plan no lleva no se inventa.
+      const colorPetalo = entrada.color_petalo ? colorDelPlan(entrada.color_petalo, coloresPlan) : null;
+      const colorCentro = entrada.color_centro ? colorDelPlan(entrada.color_centro, coloresPlan) : null;
+      if ((entrada.color_petalo && !colorPetalo) || (entrada.color_centro && !colorCentro)) return falla("color_no_esta_en_el_plan", `Las flores se arman con los globos del plan (${[...coloresPlan].join(", ")}): ofrece uno de esos o agregar primero el color.`);
+      const cantidad = typeof entrada.cantidad === "number" ? Math.max(1, Math.min(MAX_FLORES_PIEZA, Math.round(entrada.cantidad))) : null;
+      return { ok: true, pedido: { tipo: "flores", quitar: entrada.quitar === true, cantidad, colorPetalo, colorCentro, piezas: nombres }, origen: "modelo", correcciones };
+    }
   }
 }
 
@@ -955,6 +990,12 @@ export function fraseDelPedido(pedido: PedidoEdicionPlan): string {
     case "colores_pieza": return `Dejo ${lista(pedido.piezas.map((pieza) => pieza.toLocaleLowerCase("es")))} en ${lista(pedido.colores.map(nombreColor))}; lo demás queda igual.`;
     case "mover_pieza": return `Paso ${pedido.pieza.toLocaleLowerCase("es")} ${LUGAR_EN_PALABRAS[pedido.ubicacion]}; lo demás queda igual.`;
     case "renombrar_pieza": return `Le cambio el nombre a ${pedido.pieza.toLocaleLowerCase("es")}: ahora se llama «${pedido.nombre}».`;
+    case "flores": {
+      if (pedido.quitar) return `Quito las flores de globo${enPiezas(pedido.piezas)}; lo demás queda igual.`;
+      const cuantas = pedido.cantidad ? `${pedido.cantidad} ${pedido.cantidad === 1 ? "flor" : "flores"}` : "flores";
+      const colores = pedido.colorPetalo ? ` ${nombreColor(pedido.colorPetalo)}${pedido.colorCentro ? ` con centro ${nombreColor(pedido.colorCentro)}` : ""}` : pedido.colorCentro ? ` con centro ${nombreColor(pedido.colorCentro)}` : "";
+      return `Pongo ${cuantas} de globo${colores}${enPiezas(pedido.piezas)}; lo demás queda igual.`;
+    }
   }
 }
 

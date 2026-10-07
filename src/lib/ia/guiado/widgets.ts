@@ -28,6 +28,11 @@ export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
     /** Con `fotoInspiracion`: el mensaje que trae la lectura de la foto de la que salió el plan (y sus versiones rehechas). */
     referenciaId: z.string().min(1).max(80).optional(),
     imagen: z.union([z.string().url(), z.string().startsWith("/api/guiada-imagen/")]).optional(), errorImagen: z.boolean().optional(), compraAbierta: z.boolean().optional(),
+    /**
+     * Lo que la imagen muestra y no se cotiza (mesa, torta, regalos, luces del entorno del evento, o lo que conserva de
+     * la foto): el `avisoNoCotizado` de /api/generate, el mismo que ve la clásica junto a su imagen.
+     */
+    avisoImagen: z.string().min(1).max(300).optional(),
     usoCosteo: UsoSchema.optional(), reemplazado: z.boolean().optional(), totalAnterior: z.number().int().nonnegative().optional(), hechas: z.array(AccionPlanGuiadaSchema).optional(),
     /** Ajustes hechos con «Ajustar mi plan» sobre esta tarjeta («más rosado en el semiarco orgánico»), los últimos primero al final. */
     ajustes: z.array(z.string().min(1).max(160)).max(8).optional(),

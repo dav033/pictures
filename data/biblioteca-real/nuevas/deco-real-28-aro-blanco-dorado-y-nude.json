@@ -23,7 +23,13 @@
   "piezas": [
     {
       "estructura": "aro_circular",
-      "cantidad": 1
+      "cantidad": 1,
+      "flores": {
+        "cantidad": 2,
+        "petalos": 6,
+        "color_petalo": "blanco",
+        "color_centro": "dorado"
+      }
     }
   ],
   "materiales": [

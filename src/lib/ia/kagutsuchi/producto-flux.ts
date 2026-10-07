@@ -1,5 +1,6 @@
 import type { SceneElement, SceneSpec } from "../escena/scene-spec";
 import type { VisualContext } from "../escena/visual-context";
+import type { EntornoEscena } from "../escena/entorno-escena";
 import { compileFluxCaption, translateFluxColor, type FluxVisualClause, type ProductConceptClauseInput } from "./caption-flux";
 import { canonicalizeSku } from "@/lib/rag/catalog/canonicalize";
 import { colorDeReferencia, leerTituloCatalogo, terminosBaseDeTitulo } from "./vocabulario-base";
@@ -124,6 +125,8 @@ export function compileProductPrompt(input: {
   officialStructures?: ReadonlyMap<string, string>;
   creativeCues?: readonly string[];
   colorPatterns?: readonly FraseDeEstructura[];
+  /** El entorno del evento (`entornoDeEscena`): escenario, utilería, luz y encuadre después de la decoración. */
+  entorno?: EntornoEscena;
 }): ProductPromptRuntimeResult {
   const tallas = new Map<string, ElementSizeConfirmation[]>();
   for (const confirmacion of input.sizeConfirmations ?? []) {
@@ -159,6 +162,7 @@ export function compileProductPrompt(input: {
     officialStructures: input.officialStructures,
     creativeCues: input.creativeCues,
     colorPatterns: input.colorPatterns,
+    entorno: input.entorno,
   });
   if (compilacion.palabrasQuitadas.length) diagnosticos.push(`palabras comerciales quitadas: ${compilacion.palabrasQuitadas.join(", ")}`);
   if (compilacion.compactionStep > 0) diagnosticos.push(`caption compactado al paso ${compilacion.compactionStep}; conserva estructuras, ubicaciones, relaciones y colores`);

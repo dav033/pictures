@@ -21,6 +21,7 @@
  *
  * Puro: sin proveedor, HTTP, base de datos ni entorno.
  */
+import { avisoNoCotizadoEntorno, type EntornoEscena } from "../escena/entorno-escena";
 
 /** Cuánto ambiente pide el cliente. `ninguno` es el estado por defecto. */
 export type NivelAmbiente = "ninguno" | "minimo" | "completo";
@@ -82,6 +83,20 @@ export function requiereAvisoNoCotizado(ambiente: Ambiente, escenografiaDeRefere
   // plan es lo que se construye y se cobra, y una mesa que estaba en su foto
   // tampoco se la vendemos.
   return ambiente.props.length > 0 || escenografiaDeReferencia.length > 0;
+}
+
+/**
+ * El aviso «no incluido en la cotización» que acompaña a la imagen, en las dos vistas (la respuesta de /api/generate
+ * lo trae como `avisoNoCotizado`). Tres fuentes de escenografía y un solo aviso:
+ *  1. el entorno del evento (`entorno-escena.ts`: mesa, torta, regalos, luces…), que nombra lo que añadió;
+ *  2. el interruptor de ambiente;
+ *  3. la escenografía de la foto del propio cliente.
+ * El del entorno va primero porque dice qué objetos son; si el entorno no añadió objetos, los de siempre.
+ */
+export function avisoNoCotizadoDeImagen(ambiente: Ambiente, escenografiaDeReferencia: readonly unknown[], entorno?: EntornoEscena): string | undefined {
+  const delEntorno = avisoNoCotizadoEntorno(entorno);
+  if (delEntorno) return delEntorno;
+  return requiereAvisoNoCotizado(ambiente, escenografiaDeReferencia) ? ambiente.aviso || AVISO_ESCENOGRAFIA_NO_COTIZADA : undefined;
 }
 
 /** Parseo del interruptor tal como llega del cliente. Cualquier otra cosa es `ninguno`. */

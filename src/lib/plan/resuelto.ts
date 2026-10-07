@@ -44,6 +44,8 @@ export type LineaMaterial = {
   unidades: number;
   imagen?: string | null;
   sustitucion: { pedido: string; entregado: string; motivo: string } | null;
+  /** Globos de un adorno de la pieza (`flores-pieza.ts`), no de su cuerpo. */
+  adorno?: "flor";
 };
 
 export type EstructuraResuelta = {

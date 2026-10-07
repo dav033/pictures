@@ -5,6 +5,7 @@ import { z } from "zod";
 import { DecoracionSempertexSchema, type DecoracionSempertex } from "../../src/lib/biblioteca-sempertex/esquemas";
 import { PlanesIdeasArchivoSchema, unirAllowlist, type PlanIdeaGuardado } from "../../src/lib/plan/plan-de-idea";
 import { PlanDecoracionSchema } from "../../src/lib/plan/tipos";
+import { floresDeIdea } from "../../src/lib/plan/flores-pieza";
 
 /**
  * Regenera `src/lib/biblioteca-sempertex/planes-ideas.json`: el plan EXACTO de cada idea visible de la biblioteca (la
@@ -88,6 +89,16 @@ function planLimpio(decoracion: DecoracionSempertex, archivo: PlanArchivo) {
   // El título interno era el id del análisis («real-08-images-23»): la tarjeta de «Tu plan» lo mostraría.
   crudo.concepto = { ...crudo.concepto, titulo: decoracion.titulo.slice(0, 160), descripcion: `Plan de la decoración «${decoracion.titulo.slice(0, 120)}» con sus globos Sempertex.`.slice(0, 320) };
   crudo.supuestos = [`Piezas, medidas y globos de la decoración «${decoracion.titulo.slice(0, 120)}» del catálogo.`.slice(0, 240)];
+  // Las flores de globo que la foto de la idea muestra (`piezas[].flores`, flores-pieza.ts): la primera estructura de
+  // esa oficial que aún no las lleva, armadas con sus propios globos. Python las cuenta y cotiza al resolver la idea.
+  for (const pieza of decoracion.piezas) {
+    if (!pieza.flores) continue;
+    const estructura = crudo.estructuras.find((item) => item.estructura_oficial === pieza.estructura && item.flores === undefined);
+    const materiales = Array.isArray(estructura?.materiales) ? (estructura.materiales as Array<{ product_id: string; color?: string }>) : [];
+    const flores = estructura ? floresDeIdea(materiales, pieza.flores) : null;
+    if (!estructura || !flores) throw new Error(`${decoracion.id}: las flores de ${pieza.estructura} no encuentran su pieza o el globo ${pieza.flores.color_petalo} de sus pétalos.`);
+    estructura.flores = flores;
+  }
   return PlanDecoracionSchema.parse(crudo);
 }
 

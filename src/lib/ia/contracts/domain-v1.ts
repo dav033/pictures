@@ -35,6 +35,7 @@ import { ArmadoGuirnaldaOrganicaV1Schema, GuirnaldaOrganicaResueltaSchema } from
 import { ArmadoGuirnaldaResueltoSchema, ArmadoGuirnaldaV1Schema, PistaGuirnaldaSchema } from "@/lib/plan/armado-guirnalda";
 import { ConteoAplicadoSchema, MAX_GLOBOS_CONTEO, PistaConteoSchema } from "@/lib/plan/conteo-referencia";
 import { PistaGeometriaSchema } from "@/lib/plan/geometria-referencia";
+import { ADORNOS_LINEA } from "@/lib/plan/flores-pieza";
 import { PatronColorResueltoSchema, PistaPatronSchema, PistaTamanosSchema } from "@/lib/plan/patron-color";
 import { PlanGuiaEscenaRequestV1Schema, PlanGuiaEscenaResultV1Schema } from "@/lib/plan/guia-escena";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
@@ -288,6 +289,11 @@ const resolvedMaterialLineSchema = z.object({
   unidades: positiveIntSchema,
   imagen: z.string().url().nullable().optional(),
   sustitucion: z.object({ pedido: z.string(), entregado: z.string(), motivo: z.string() }).strict().nullable(),
+  /**
+   * Los globos de un adorno de la pieza y no de su cuerpo (`flores-pieza.ts`): Python marca así las líneas de las flores
+   * para que la tarjeta las nombre aparte y para que el cuerpo (mezcla real, densidad, puerta física) no las cuente.
+   */
+  adorno: z.enum(ADORNOS_LINEA).optional(),
 }).strict();
 
 const resolvedStructureSchema = z.object({

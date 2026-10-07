@@ -8,6 +8,7 @@ import type { ColumnaResuelta } from "@/lib/plan/armado-columna";
 import type { ColumnaOrganicaResuelta } from "@/lib/plan/armado-columna-organica";
 import type { GuirnaldaOrganicaResuelta } from "@/lib/plan/armado-guirnalda-organica";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import { fraseFloresFlux, type FloresPieza } from "@/lib/plan/flores-pieza";
 
 /**
  * Proporción y acabado de color POR ESTRUCTURA para el modelo de imagen y para
@@ -148,7 +149,24 @@ export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "apl
    * (verificador 127: la foto 06 se quedaba sin imagen con un caption de 1540). Un patrón de color nunca la lleva.
    */
   forma?: true;
+  /**
+   * La frase de las flores de globo de la pieza (`fraseFloresFlux`), que va delante de su frase. Se guarda aparte para
+   * que la versión sin frases del caption (`frasesEsenciales`) conserve las flores: son globos que se compran.
+   */
+  flores?: string;
 };
+
+/**
+ * Las frases que sobreviven cuando el caption no cabe con su guía (`compilarSinFrases` de /api/generate): los armados de
+ * bouquet y de guirnalda enteros, y de las demás piezas solo sus flores (la forma y el patrón los dibuja la guía).
+ */
+export function frasesEsenciales(frases: readonly FraseDeEstructura[] | undefined): FraseDeEstructura[] | undefined {
+  return frases?.flatMap((frase) => {
+    if (frase.armado || frase.guirnalda) return [frase];
+    if (!frase.flores) return [];
+    return [{ estructura_id: frase.estructura_id, aplicado: frase.aplicado, prompt_gemini: frase.flores, prompt_lora: frase.flores, flores: frase.flores }];
+  });
+}
 
 /**
  * Une la frase del armado de una guirnalda con la de su patrón, cuando lo
@@ -193,8 +211,39 @@ function unirFrases(armado: string, patron: string | undefined, separador: strin
  * la frase que escribió Python y **reemplaza** la de su patrón, si lo traía: el
  * armado ya dice qué patrón lleva y con qué colores. `undefined` cuando el plan no
  * trae ninguno, para que la petición de siempre siga byte a byte igual.
+ *
+ * Las flores de globo de una pieza (`flores-pieza.ts`, 2026-10-07) van DELANTE de la frase de su pieza, enteras y sin
+ * comas («with 4 small balloon flowers of 5-inch pearl white petals around chrome gold centers»): el compilador solo
+ * acorta una frase de forma por fragmentos desde el final, así que la de las flores es la última en caer. Una pieza
+ * sin frase recibe solo la de sus flores. Sin flores, todo queda byte a byte como antes.
  */
 export function frasesDeEstructuras(
+  plan: Parameters<typeof frasesDeArmados>[0] & {
+    plan?: { estructuras?: ReadonlyArray<{ estructura_id: string; repeticiones?: number; flores?: FloresPieza | undefined }> };
+    estructuras?: ReadonlyArray<{ estructura_id: string; lineas: ReadonlyArray<Record<string, unknown>> }>;
+  } | null | undefined,
+): FraseDeEstructura[] | undefined {
+  const frases = frasesDeArmados(plan);
+  const conFlores = (plan?.plan?.estructuras ?? []).flatMap((pieza) => {
+    const frase = pieza.flores ? fraseFloresFlux(pieza, plan?.estructuras?.find((item) => item.estructura_id === pieza.estructura_id)?.lineas ?? []) : null;
+    return frase ? [{ estructura_id: pieza.estructura_id, frase }] : [];
+  });
+  if (!conFlores.length) return frases;
+  const todas = [...(frases ?? [])];
+  for (const { estructura_id, frase } of conFlores) {
+    // La primera frase aplicada de la pieza es la que el caption le pone (`frasePatronColor`).
+    const indice = todas.findIndex((item) => item.aplicado && item.estructura_id === estructura_id);
+    const actual = indice >= 0 ? todas[indice]! : undefined;
+    const entrada: FraseDeEstructura = actual
+      ? { ...actual, prompt_gemini: unirFrases(frase, actual.prompt_gemini, " "), prompt_lora: unirFrases(frase, actual.prompt_lora, ", "), flores: frase }
+      : { estructura_id, aplicado: true, prompt_gemini: frase, prompt_lora: frase, flores: frase };
+    if (indice >= 0) todas[indice] = entrada;
+    else todas.push(entrada);
+  }
+  return todas;
+}
+
+function frasesDeArmados(
   plan: {
     patrones_color?: readonly PatronColorResuelto[];
     armados_bouquet?: readonly ArmadoBouquetResuelto[];

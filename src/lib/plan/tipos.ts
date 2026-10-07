@@ -27,6 +27,7 @@ import { ArmadoColumnaV1Schema } from "./armado-columna";
 import { ArmadoColumnaOrganicaV1Schema } from "./armado-columna-organica";
 import { ArmadoGuirnaldaOrganicaV1Schema } from "./armado-guirnalda-organica";
 import { ArmadoGuirnaldaV1Schema } from "./armado-guirnalda";
+import { FloresPiezaV1Schema } from "./flores-pieza";
 import { PatronColorV1Schema } from "./patron-color";
 
 /**
@@ -175,6 +176,11 @@ const EstructuraPlanSchema = z.object({
    * Python (`app/armado_arco_organico.py`).
    */
   armado_arco_organico: ArmadoArcoOrganicoV1Schema.optional(),
+  /**
+   * Flores de globo como adorno de la pieza (`flores-pieza.ts`, 2026-10-07): grupitos de globos de 5″ que se suman a
+   * cualquier estructura. Python cuenta sus globos, elige la talla y los cotiza (`app/flores_pieza.py`).
+   */
+  flores: FloresPiezaV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   for (const problema of incoherenciasEstructuraOficial(value)) {
     ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
@@ -437,6 +443,8 @@ export const EstructuraPlan1_1Schema = z.object({
    * Python (`app/armado_arco_organico.py`).
    */
   armado_arco_organico: ArmadoArcoOrganicoV1Schema.optional(),
+  /** Flores de globo como adorno de la pieza (`flores-pieza.ts`); ver Plan 1.0. */
+  flores: FloresPiezaV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   validarRelacionesFisicasSchema(value.relaciones_fisicas, ctx);
   for (const problema of incoherenciasEstructuraOficial(value)) {

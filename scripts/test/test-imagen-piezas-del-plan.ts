@@ -23,7 +23,7 @@ import { join } from "node:path";
 import { PLAN_RESUELTO_CONTRACT_VERSION, PlanResueltoV1Schema } from "@/lib/ia/contracts/domain-v1";
 import { buildApprovedSceneSpec } from "@/lib/ia/escena/scene-spec";
 import { buildVisualContext } from "@/lib/ia/escena/visual-context";
-import { compileFluxCaption } from "@/lib/ia/kagutsuchi/caption-flux";
+import { BASE_PROMPT_MAX_LENGTH, compileFluxCaption } from "@/lib/ia/kagutsuchi/caption-flux";
 import { preflightFluxPrompt } from "@/lib/ia/kagutsuchi/preflight-flux";
 import { MaterialEstimateSchema } from "@/lib/materiales/estimacion";
 import { planBlueprint } from "@/lib/plan/blueprint";
@@ -130,7 +130,8 @@ if (process.argv.includes("--imprimir")) {
 for (const [clave, caso] of Object.entries(CASOS)) {
   const salida = r[clave as keyof typeof CASOS];
   assert.ok(salida.ok, `${caso.nombre}: el preflight debe pasar; ${salida.errores.join("; ")}`);
-  assert.ok(salida.prompt.length <= 1000, `${caso.nombre}: ${salida.prompt.length} caracteres`);
+  // El límite es el del compilador (1500 desde el 2026-10-07, pedido del dueño), no una cifra fija.
+  assert.ok(salida.prompt.length <= BASE_PROMPT_MAX_LENGTH, `${caso.nombre}: ${salida.prompt.length} caracteres`);
 }
 
 // Las frases que se verificaron con FLUX real (2026-10-07, ver el informe del agente E).
@@ -140,7 +141,15 @@ const TRES_PIEZAS = "The curved garland and the two columns are three separate p
 
 // A/B. El caso del dueño: dos torres sueltas, nada encima. «repeticiones 2» y dos piezas individuales dan el MISMO caption.
 assert.ok(r.A.prompt.includes(`one standing on the left and one on the right, ${TORRES}`), r.A.prompt);
-assert.equal(r.B.prompt, r.A.prompt, "dos piezas individuales izquierda/derecha = una pieza con repeticiones 2");
+// Desde el 2026-10-07 cada pieza dice su escala del plan: medida y globos («each 1.8 m / 6 ft tall with about 39
+// balloons», caption-flux.ts, «GUIRNALDA SACA ESTA ABERRACIÓN»), y una escena de 80 globos o menos lleva plano medio.
+// En este fixture «repeticiones 2» reparte los 78 globos de la estructura (39 por columna) y cada pieza individual
+// hereda los 78 enteros: los dos planes compran distinto, así que la cifra (y con ella el encuadre) es lo único que
+// puede cambiar entre las dos formas.
+const sinCifras = (texto: string): string => texto.replace(/about \d+ balloons/g, "about N balloons").replace("medium shot showing the whole decoration, ", "");
+assert.match(r.A.prompt, /^Two organic balloon columns, each 1\.8 m \/ 6 ft tall with about 39 balloons, /, r.A.prompt);
+assert.match(r.B.prompt, /^Two organic balloon columns, each 1\.8 m \/ 6 ft tall with about 78 balloons, /, r.B.prompt);
+assert.equal(sinCifras(r.B.prompt), sinCifras(r.A.prompt), "dos piezas individuales izquierda/derecha = una pieza con repeticiones 2");
 assert.doesNotMatch(r.A.prompt, /\barch\b/, "dos columnas: ningún arco en el caption");
 assert.doesNotMatch(r.A.prompt, /separate pieces standing on the floor/, "un solo par de columnas no lleva la frase de escena: el caption verificado con la semilla del dueño no cambia");
 
@@ -152,7 +161,7 @@ for (const caso of [r.C, r.D, r.E]) {
   assert.doesNotMatch(caso.prompt, /main arch|\barch\b/, "semiarco + columnas: el caption no nombra un arco que el plan no tiene");
 }
 assert.match(r.D.prompt, /flanking the curved garland/, "las columnas flanquean el semiarco, no «the main arch»");
-assert.equal(r.E.prompt, r.D.prompt, "semiarco + dos columnas individuales = semiarco + columnas con repeticiones 2");
+assert.equal(sinCifras(r.E.prompt), sinCifras(r.D.prompt), "semiarco + dos columnas individuales = semiarco + columnas con repeticiones 2");
 
 // F. Con un arco en el plan las columnas lo flanquean y no se dice que nada pase entre ellas (el arco pasa).
 assert.match(r.F.prompt, /flanking the main arch, each a separate freestanding tower on its own base on the floor, standing apart from the arch/);

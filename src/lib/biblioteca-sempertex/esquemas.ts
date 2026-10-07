@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
+import { FloresIdeaSchema } from "@/lib/plan/flores-pieza";
 
 const FotoSchema = z.object({ url: z.union([z.url(), z.string().regex(/^\/[\w./-]+$/)]), fuente: z.string().trim().min(1), licencia: z.enum(["sempertex_propia", "pexels", "ejemplo_sin_licencia", "referencia_web_sin_licencia"]) }).strict();
 /**
@@ -24,7 +25,8 @@ const BaseSchema = z.object({
   titulo: z.string().min(1), tematica: z.string().min(1), eventos: z.array(z.string().min(1)).min(1),
   edad: z.object({ min: z.number().int().nonnegative(), max: z.number().int().nonnegative() }).strict().nullable(),
   fotos: z.array(FotoSchema).min(1), video: z.url().nullable(),
-  piezas: z.array(z.object({ estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS), cantidad: z.number().int().positive() }).strict()),
+  /** `flores`: las flores de globo que la foto muestra sobre la pieza (`flores-pieza.ts`); el plan exacto de la idea las arma. */
+  piezas: z.array(z.object({ estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS), cantidad: z.number().int().positive(), flores: FloresIdeaSchema.optional() }).strict()),
   materiales: z.array(MaterialSchema), pasos: z.array(PasoSchema), shopifyHandle: z.string().nullable(),
   /** Colores de la decoración (hex), del más presente al menos. Con ellos se dibuja la ilustración cuando no hay foto que la represente. */
   paleta: z.array(z.string().regex(/^#[0-9a-f]{6}$/i)).min(1).max(5).optional(),

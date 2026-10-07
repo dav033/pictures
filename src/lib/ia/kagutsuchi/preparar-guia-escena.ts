@@ -43,7 +43,8 @@ export function datosDePiezas(plan: PlanResuelto, instancias: readonly Instancia
     return {
       estructura_id: estructura.estructura_id,
       mezcla_real: estructura.mezcla_real,
-      lineas: estructura.lineas.slice(0, MAX_LINEAS).map((linea) => ({
+      // Solo el cuerpo de la pieza: los globos de sus flores (adorno, flores-pieza.ts) no son la mezcla que se dibuja.
+      lineas: estructura.lineas.filter((linea) => linea.adorno !== "flor").slice(0, MAX_LINEAS).map((linea) => ({
         product_id: linea.product_id,
         variant_id: linea.variant_id,
         titulo: linea.titulo.slice(0, 500),

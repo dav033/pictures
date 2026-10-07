@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/uzume/build-image-prompt";
-import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
+import { frasesDeEstructuras, frasesEsenciales } from "@/lib/ia/uzume/mezcla-color-escena";
 import { mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
 import { BASE_PROMPT_MAX_LENGTH, translateFluxColor } from "@/lib/ia/kagutsuchi/caption-flux";
 import { resolveFluxSeed } from "@/lib/ia/kagutsuchi/semilla-flux";
@@ -33,7 +33,8 @@ import { bloqueoPorGeneracionSinReferencia, CODIGO_GENERACION_SIN_REFERENCIA, le
 import { FluxRevisionTranslationError, traducirRevisionParaFlux } from "@/lib/ia/kagutsuchi/revision-flux";
 
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/escena/visual-context";
-import { ambienteDeFiesta, AVISO_ESCENOGRAFIA_NO_COTIZADA, nivelAmbienteDe, requiereAvisoNoCotizado } from "@/lib/ia/uzume/ambiente-fiesta";
+import { entornoDeEscena } from "@/lib/ia/escena/entorno-escena";
+import { ambienteDeFiesta, avisoNoCotizadoDeImagen, nivelAmbienteDe } from "@/lib/ia/uzume/ambiente-fiesta";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen } from "@/lib/ia/nucleo/tipos";
 import { ReferenceBlueprintV2Schema, unidadesMaterialDeElemento, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { resolverProductosParaGeneracion } from "@/lib/rag/generate-products";
@@ -976,6 +977,12 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const ambiente = featureEnabled("AMBIENTE_FIESTA_V1") ? ambienteDeFiesta(nivelAmbienteConPolitica(nivelAmbienteDe(body.ambiente), politicaPresentacion)) : ambienteDeFiesta("ninguno");
     const ambientDecor = escenografiaVisible.map((item) => item.name).slice(0, 3);
     const visualContextFlux = visualContext;
+    // El ENTORNO del evento (2026-10-07, «composiciones más audaces… del entorno»): escenario, utilería, luz y encuadre
+    // de lo que dijo el cliente (evento, lugar, momento, temática) o, si no dijo nada, el de su evento; nunca pared
+    // vacía. Solo texto a imagen: con foto del espacio o sobre una imagen previa la escena ya existe. Lo que añade se
+    // avisa como no cotizado (`avisoNoCotizado`), igual en la clásica y en la guiada (mismo cuerpo, misma ruta).
+    const entorno = entornoDeEscena({ contexto: visualContextFlux, nivel: creatividad.nivel, modo: transformedSceneSpec.generation_mode, conEscenografiaDeFoto: ambientDecor.length > 0 });
+    decidir("regla:entorno_escena", "entorno del evento que acompaña a la decoración en el caption de FLUX", entorno ?? null, { entrada: { modo: transformedSceneSpec.generation_mode, nivel: creatividad.nivel, evento: visualContextFlux.eventType ?? null, lugar: visualContextFlux.venue ?? null, momento: visualContextFlux.timeOfDay ?? null, estilo: visualContextFlux.style ?? null, escenografiaDeFoto: ambientDecor.length } });
     const compilarCaptionCon = (maxLength: number | undefined, frases: typeof colorPatterns) => compileProductPrompt({
       sceneSpec: transformedSceneSpec,
       visualContext: visualContextFlux,
@@ -987,6 +994,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       creativeCues: creatividad.pistasPrompt,
       officialStructures: officialStructures ?? new Map<string, string>(),
       colorPatterns: frases,
+      entorno,
     });
     const compilarCaption = (maxLength: number | undefined) => compilarCaptionCon(maxLength, colorPatterns);
     // En base, el límite de 1000 es del CAPTION (que la decoración vaya primero), no de la nota fija que explica
@@ -1028,7 +1036,8 @@ async function generar(request: Request, generationRequestId: string): Promise<R
           // de patrón son lo prescindible si no caben con su nota (2026-10-04: dos piezas del motor orgánico
           // dejaban el prompt base en 1195 de 1000 y la guía se caía). Los armados de bouquet y de guirnalda se
           // quedan: el caption cuenta piezas y elige candados con ellos.
-          compilarSinFrases: (maxLength) => compilarCaptionCon(maxLength, colorPatterns?.filter((frase) => frase.armado || frase.guirnalda)),
+          // Las flores de globo de cada pieza (flores-pieza.ts) también se quedan: son globos que se compran y la guía no las dibuja.
+          compilarSinFrases: (maxLength) => compilarCaptionCon(maxLength, frasesEsenciales(colorPatterns)),
           largo: (compilacion) => compilacion.prompt.length,
           cabe: (compilacion, imagenes) => preflightFluxPrompt({
             sceneSpec: transformedSceneSpec,
@@ -1198,7 +1207,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       cotizacion,
       prompt: promptRespuesta,
       prompts: promptsRespuesta,
-      avisoNoCotizado: requiereAvisoNoCotizado(ambiente, escenografiaVisible) ? ambiente.aviso || AVISO_ESCENOGRAFIA_NO_COTIZADA : undefined,
+      avisoNoCotizado: avisoNoCotizadoDeImagen(ambiente, escenografiaVisible, entorno),
     });
   } catch (error) {
     // Los campos legacy (`error`, `causa`, sobre operational.v1) se conservan:

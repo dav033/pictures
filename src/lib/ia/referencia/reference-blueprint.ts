@@ -4,6 +4,7 @@ import { LecturaArmadoSchema } from "../../plan/armado-bouquet";
 import { RemateLeidoSchema } from "../../plan/armado-columna";
 import { LecturaGuirnaldaSchema } from "../../plan/armado-guirnalda";
 import { LecturaConteoSchema } from "../../plan/conteo-referencia";
+import { FloresLeidasSchema } from "../../plan/flores-pieza";
 import { PistaPatronSchema, TAMANOS_LEIDOS } from "../../plan/patron-color";
 import { VisualSemanticsSchema } from "../escena/scene-semantics";
 import {
@@ -165,6 +166,12 @@ const AppearanceSchema = z
      * `pistas_guirnalda` y Python decide si la usa, sin tocar la cantidad.
      */
     armado_guirnalda: LecturaGuirnaldaSchema.optional(),
+    /**
+     * Opcional: las flores de globo que la lectura vio sobre la pieza (`lecturas.flores`, 2026-10-07): cuántas y de
+     * qué colores. Es una lectura: al confirmar el plan, `floresDesdeLectura` la convierte en el adorno `flores` de la
+     * pieza que materializa este elemento, con los globos de esa pieza; Python cuenta y cotiza sus globos.
+     */
+    flores: FloresLeidasSchema.optional(),
   })
   .strict();
 

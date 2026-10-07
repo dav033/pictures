@@ -106,6 +106,8 @@ function geometriaAuditada(edicion: EdicionPlan): Record<string, unknown> {
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, forma: edicion.forma };
     case "propiedades":
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, forma: edicion.forma, densidad: edicion.densidad ?? null, medidas: edicion.medidas ?? null };
+    case "flores":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, flores: edicion.flores?.cantidad ?? null, petalo: edicion.flores?.petalo.product_id ?? null, centro: edicion.flores?.centro?.product_id ?? null };
     default:
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id };
   }
@@ -323,6 +325,10 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");
   const sinCobertura = faltaCoberturaPorElArmado(edicion, planBaseVerificado.resuelto, resuelto);
   if (sinCobertura) throw new PlanEditError(422, sinCobertura, "ARMADO_INVALIDO", { motivo: "sin_cobertura", mensaje: sinCobertura });
+  if (edicion.accion === "flores" && edicion.flores && !resuelto.estructuras.some((item) => item.estructura_id === edicion.estructura_id && item.lineas.some((linea) => linea.adorno === "flor"))) {
+    // Ningún globo de las flores tiene compra (el catálogo no vende ese globo redondo): no se firma un plan que las promete.
+    throw new PlanEditError(422, "El catálogo no tiene globos para esas flores. Prueba con otro color.");
+  }
   if (rehacerArmado && armadoQuitadoPorLaEdicion(base.plan, resuelto.plan, edicion.estructura_id)) {
     // Python avisó que lo volvería a sugerir y no pudo (la compra no se arma): el decorador lo sabe.
     avisos.push(AVISO_ARMADO_NO_REHECHO);

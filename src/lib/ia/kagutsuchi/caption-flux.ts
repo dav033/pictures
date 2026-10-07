@@ -1,5 +1,6 @@
 import type { SceneElement, SceneSpec } from "../escena/scene-spec";
 import { buildFluxEnvironmentCues, type VisualContext } from "../escena/visual-context";
+import { fraseEntorno, type DetalleEntorno, type EntornoEscena } from "../escena/entorno-escena";
 import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
 import type { FluxDensity, FluxDesignRole, FluxPlacement, FluxStructureType, VisualSemantics } from "../escena/scene-semantics";
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
@@ -9,9 +10,9 @@ import { FUENTE_PLAN } from "@/lib/plan/blueprint";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, armadoGuirnaldaOrganicaDeElemento, fraseDeFormaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 import { findSeparateSidePieces, type SeparateSidePieces } from "../uzume/separate-side-pieces";
 import { limpiarTextoBase } from "./texto-base";
-import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, fraseTallasBase, limpiarEtiqueta, rosaDelante, SUSTANTIVOS_ESTRUCTURA_BASE, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
+import { acabadoVisible, CIERRE_FOTOGRAFICO_BASE, ENCUADRE_ESCENA_PEQUENA_BASE, fraseTallasBase, limpiarEtiqueta, medidaBase, rosaDelante, SUSTANTIVOS_ESTRUCTURA_BASE, topeTallaBase, UBICACIONES_BASE, type TerminosBase } from "./vocabulario-base";
 
-export const FLUX_CAPTION_COMPILER_VERSION = "flux-caption-v2.11-piezas-sueltas" as const;
+export const FLUX_CAPTION_COMPILER_VERSION = "flux-caption-v2.13-entorno-evento" as const;
 
 /** Límite común de texto que mantiene primero la decoración. */
 export const FLUX_PROMPT_MAX_LENGTH = 1500;
@@ -26,6 +27,31 @@ const UBICACIONES_GUIRNALDA_BASE: Partial<Record<FluxPlacement, string>> = {
   arco_central: "running across the middle of the scene",
   entrada: "running along the entrance doorway",
 };
+/**
+ * Una guirnalda corta en la pared (sin armado del motor) se cuelga sobre la mesa principal: la mesa es el objeto de
+ * tamaño conocido que le dice al modelo cuánto mide la pieza. «running along the rear wall» la estiraba de pared a
+ * pared y FLUX la cerraba en un marco (guiada-20261007-055050-xkkihw, 2,4 m y 37 globos).
+ */
+const GUIRNALDA_CORTA_EN_PARED = "hung horizontally on the rear wall above the main table";
+/** Con la foto del espacio la escala la da la propia sala: la misma colocación, sin poner una mesa. */
+const GUIRNALDA_CORTA_EN_PARED_DE_LA_FOTO = "hung horizontally on the rear wall";
+/** Hasta aquí una guirnalda es «corta»: cabe sobre una mesa y no cubre la pared entera. */
+const METROS_GUIRNALDA_CORTA = 3.5;
+const GLOBOS_GUIRNALDA_CORTA = 80;
+/** Ubicaciones de pared en las que la guirnalda es una tira horizontal con los extremos libres. */
+const GUIRNALDAS_EN_PARED = new Set<FluxPlacement>(["fondo_pared", "pared_lateral"]);
+
+/** Largo de la guirnalda del plan, si lo trae (una guirnalda declarada con `ancho_m` lo usa como largo). */
+function largoGuirnalda(clause: Pick<FluxVisualClause, "medidasM">): number | undefined {
+  return clause.medidasM?.length ?? clause.medidasM?.width;
+}
+
+/** Guirnalda corta según el plan: su largo y sus globos (los que traiga) dentro del tope, y al menos uno de los dos. */
+function guirnaldaCorta(clause: Pick<FluxVisualClause, "medidasM" | "globosPorPieza">): boolean {
+  const largo = largoGuirnalda(clause);
+  if (largo === undefined && clause.globosPorPieza === undefined) return false;
+  return (largo ?? 0) <= METROS_GUIRNALDA_CORTA && (clause.globosPorPieza ?? 0) <= GLOBOS_GUIRNALDA_CORTA;
+}
 
 /** Alias legacy que aún aparece en nombres de escenas antiguas. */
 type CaptionStructureType = FluxStructureType | "bouquet";
@@ -74,6 +100,14 @@ export type FluxVisualClause = {
    * balloon (CASE-006, UI-6; auditoría de propiedades huérfanas, 2026-10-05).
    */
   globosCentro?: number;
+  /**
+   * Globos de UNA pieza según el plan (`quantity` de unidades de material, `FUENTE_PLAN`), para la escala de la
+   * cláusula («with about 37 balloons»). Sin él el caption no decía cuántos globos tenía la pieza y FLUX pintó una
+   * guirnalda de 37 globos como un marco de pared a pared con cientos (guiada-20261007-055050-xkkihw).
+   */
+  globosPorPieza?: number;
+  /** Medidas de UNA pieza del plan (`dimensions_m`), cuando todas las de la cláusula las comparten. */
+  medidasM?: { width?: number; height?: number; length?: number };
   colors: string[];
   finishes: string[];
   scale?: string;
@@ -538,7 +572,21 @@ function piezasSueltas(clause: { structureType?: string; relation?: string; stan
   return "";
 }
 
-function scaleFor(items: SemanticElement[]): string | undefined {
+/**
+ * Escala de la pieza según el PLAN (2026-10-07, «GUIRNALDA SACA ESTA ABERRACIÓN», guiada-20261007-055050-xkkihw):
+ * una guirnalda de 2,4 m y 37 globos salía «A grand organic balloon garland … running along the rear wall» —
+ * «grand» porque medía ≥ 2,4 m y era focal— y FLUX pintó un marco orgánico de pared a pared con cientos de globos.
+ * Con globos o medidas del plan el adjetivo sale de ellos: «grand» solo para una instalación de verdad grande,
+ * «small» para una guirnalda o un bouquet corto, y nada en medio (las cifras de `fraseEscalaPieza` dicen el resto).
+ */
+const GLOBOS_PIEZA_GRANDIOSA = 300;
+const METROS_PIEZA_GRANDIOSA = 6;
+const GLOBOS_PIEZA_PEQUENA = 60;
+const METROS_PIEZA_PEQUENA = 3;
+/** Piezas que pueden decirse «small»: las de pie (arco, semiarco, columna) llevan su altura, no un diminutivo. */
+const TIPOS_PIEZA_PEQUENA = new Set<CaptionStructureType>(["guirnalda", "bouquet", "kit"]);
+
+function scaleFor(items: SemanticElement[], globosPorPieza?: number): string | undefined {
   if (items.length > 1) return undefined;
   if (items[0]?.semantics.structure_type === "centro_mesa") return undefined;
   // A bouquet's assembly already sizes it balloon by balloon: "a grand balloon
@@ -546,10 +594,37 @@ function scaleFor(items: SemanticElement[]): string | undefined {
   if (items[0]?.armadoBouquet) return undefined;
   const focal = items.some((item) => item.semantics.design_role === "focal");
   const dimensions = items.flatMap((item) => Object.values(item.semantics.dimensions_m ?? {})).filter((value): value is number => typeof value === "number");
-  if (focal && (items.some((item) => item.semantics.density === "lujosa") || dimensions.some((value) => value >= 2.4))) return "grand";
-  if (focal && dimensions.some((value) => value >= 1.5)) return "large";
+  if (globosPorPieza !== undefined || dimensions.length) {
+    const mayor = Math.max(0, ...dimensions);
+    if ((globosPorPieza ?? 0) >= GLOBOS_PIEZA_GRANDIOSA || mayor >= METROS_PIEZA_GRANDIOSA) return "grand";
+    // Un acento sigue siendo «compact» (el de siempre); una guirnalda o un bouquet corto, «small».
+    if (items.some((item) => item.semantics.design_role === "acento")) return "compact";
+    return TIPOS_PIEZA_PEQUENA.has(items[0]!.semantics.structure_type) && (globosPorPieza ?? 0) <= GLOBOS_PIEZA_PEQUENA && mayor <= METROS_PIEZA_PEQUENA ? "small" : undefined;
+  }
+  // Sin globos ni medidas del plan (una escena de referencia), la regla de siempre.
+  if (focal && items.some((item) => item.semantics.density === "lujosa")) return "grand";
   if (items.some((item) => item.semantics.design_role === "acento")) return "compact";
   return undefined;
+}
+
+/**
+ * Globos de UNA pieza de la cláusula según el plan: solo elementos del plan (`FUENTE_PLAN`), cuya `quantity` son los
+ * globos que el plan compra para esa pieza. Las repeticiones reparten piso + resto (`planBlueprint`), así que dos
+ * columnas de 45 y 46 son «about 46»; más diferencia que un 10 % y la cláusula no dice ninguna cifra.
+ */
+function globosPorPiezaDe(items: readonly SemanticElement[]): number | undefined {
+  if (!items.every((item) => item.element.source_image_id === FUENTE_PLAN && quantitySemanticsFor(item.element) === "material_units")) return undefined;
+  const cantidades = items.map((item) => item.element.quantity.max);
+  const menor = Math.min(...cantidades);
+  if (!(menor >= 2) || Math.max(...cantidades) > menor * 1.1) return undefined;
+  return Math.round(cantidades.reduce((suma, cantidad) => suma + cantidad, 0) / cantidades.length);
+}
+
+/** Medidas de una pieza cuando todas las de la cláusula comparten las mismas (`dimensions_m` del plan). */
+function medidasCompartidasDe(items: readonly SemanticElement[]): FluxVisualClause["medidasM"] {
+  if (new Set(items.map((item) => JSON.stringify(item.semantics.dimensions_m ?? {}))).size !== 1) return undefined;
+  const medidas = items[0]!.semantics.dimensions_m;
+  return medidas && Object.keys(medidas).length ? { ...medidas } : undefined;
 }
 
 function salienceFor(items: SemanticElement[]): number {
@@ -725,6 +800,9 @@ function createClause(
     && first.element.quantity.max >= 1 && first.element.quantity.max <= MAX_GLOBOS_CENTRO_NOMBRADOS
     ? first.element.quantity.max
     : undefined;
+  // Un centro contado ya dice sus globos en el sustantivo, y el armado de un bouquet los cuenta globo a globo.
+  const globosPorPieza = globosCentro === undefined && !first.armadoBouquet ? globosPorPiezaDe(items) : undefined;
+  const medidasM = medidasCompartidasDe(items);
   return {
     elementIds,
     structureType: first.semantics.structure_type,
@@ -733,9 +811,11 @@ function createClause(
       : STRUCTURE_NOUNS[first.semantics.structure_type],
     count: items.length,
     ...(globosCentro !== undefined ? { globosCentro } : {}),
+    ...(globosPorPieza !== undefined ? { globosPorPieza } : {}),
+    ...(medidasM ? { medidasM } : {}),
     colors: uniqueEnglish(items.flatMap((item) => item.element.resolved_colors), translateFluxColor),
     finishes: sinAcabadoRepetido(uniqueEnglish(items.flatMap((item) => item.element.resolved_finishes ?? []), englishFinish)),
-    scale: scaleFor(items),
+    scale: scaleFor(items, globosPorPieza),
     density: first.semantics.density,
     placement,
     salience: salienceFor(items),
@@ -873,7 +953,7 @@ function nombrePiezasDePie(tipo: "semiarco" | "columna", piezas: number): string
  * piezas de pie. Un solo par de columnas en una cláusula ya lo dice `piezasSueltas` (verificado con la semilla del
  * caso del dueño): sin frase extra, su caption no cambia.
  */
-function piezasDePieSueltas(clauses: FluxVisualClause[], corta = false): string | undefined {
+function piezasDePieSueltas(clauses: FluxVisualClause[], corta = false, conEntorno = false): string | undefined {
   for (const clause of clauses) clause.standsApart = undefined;
   if (clauses.some((clause) => clause.structureType === "arco")) return undefined;
   const dePie = clauses.filter((clause) => clause.structureType === "semiarco" || clause.structureType === "columna");
@@ -887,8 +967,11 @@ function piezasDePieSueltas(clauses: FluxVisualClause[], corta = false): string 
     ...(semiarcos ? [nombrePiezasDePie("semiarco", semiarcos)] : []),
     ...(columnas ? [nombrePiezasDePie("columna", columnas)] : []),
   ]);
-  if (corta) return `${capitalized(numberWord(total))} separate pieces with wide gaps of plain wall between them`;
-  return `${capitalized(nombres)} are ${numberWord(total)} separate pieces standing on the floor, with a wide empty gap of plain wall between each piece and the next`;
+  // Con el entorno del evento el hueco no es «de pared lisa»: esas dos palabras pintaban la pared blanca vacía que el
+  // dueño pidió quitar (2026-10-07). Sin entorno, la frase verificada de siempre.
+  const deParedLisa = conEntorno ? "" : " of plain wall";
+  if (corta) return `${capitalized(numberWord(total))} separate pieces with wide gaps${deParedLisa} between them`;
+  return `${capitalized(nombres)} are ${numberWord(total)} separate pieces standing on the floor, with a wide empty gap${deParedLisa} between each piece and the next`;
 }
 
 function findFocalClause(clauses: FluxVisualClause[]): FluxVisualClause | undefined {
@@ -1035,6 +1118,32 @@ type CaptionRenderStep = {
   fragmentosForma?: number;
   /** Lo último: sin el cierre fotográfico («Professional event photograph, …»). Piezas, colores y patrones quedan. */
   sinCierre?: boolean;
+  /**
+   * Sin el tope de talla de la escena («every balloon at most …», `fraseEscalaEscena`): es frase del compilador, como
+   * la forma propia de la columna, y se va antes que la forma de Python. La escala de cada pieza (medida y globos)
+   * y la tira de la guirnalda se quedan.
+   */
+  sinTope?: boolean;
+  /**
+   * La escala de cada pieza en corto («2.4 m long, about 37 balloons»: solo metros y la medida que define la pieza).
+   * Va en el primer paso de compactación, antes que cualquier otra cosa: los pies son lo de menos y las frases de
+   * piezas sueltas en su forma larga son las verificadas con FLUX real. `compactSeparation` también la acorta.
+   */
+  escalaCorta?: boolean;
+  /**
+   * Cuánto del ENTORNO del evento (`entorno-escena.ts`) va en este paso, si el paso lo fija: el completo en los
+   * primeros (solo se quita redundancia de la decoración), el mínimo en el último. Si no lo fija, el medio mientras el
+   * paso no compacta el entorno (`compactEnvironment`) y el compacto (≈150-220 caracteres, el hueco que el presupuesto
+   * le reserva) desde ahí: sobrevive a toda la compactación de la decoración. Sin entorno en la entrada no cambia nada.
+   */
+  entorno?: Exclude<DetalleEntorno, "compacto" | "medio">;
+  /** Paso que solo existe con entorno (con el mismo texto de la decoración que el anterior): sin él, se salta. */
+  soloConEntorno?: boolean;
+  /**
+   * Red de seguridad, después del entorno mínimo: sin entorno. Con el límite de 1500 no se alcanza en ningún caso
+   * probado (test-entorno-escena.ts); existe para que el entorno nunca deje sin imagen un caption que sin él cabía.
+   */
+  sinEntorno?: boolean;
 };
 
 /** El paso más compacto de los de siempre, base de los pasos de presupuesto. */
@@ -1043,13 +1152,27 @@ const PASO_HEX_UNA_VEZ: CaptionRenderStep = { ...PASO_MAS_COMPACTO, hexUnaVez: t
 const PASO_SIN_AMBIENTE: CaptionRenderStep = { ...PASO_HEX_UNA_VEZ, sinAmbiente: true };
 const PASO_SIN_FORMA_PROPIA: CaptionRenderStep = { ...PASO_SIN_AMBIENTE, sinFormaPropia: true, separacionUnica: true };
 /** De las frases de forma, primero se van los últimos fragmentos (detalles de remate y racimos), luego el resto. */
-const PASOS_FRAGMENTOS_FORMA: readonly CaptionRenderStep[] = [8, 6, 5, 4, 3, 2, 1, 0].map((fragmentosForma) => ({ ...PASO_SIN_FORMA_PROPIA, fragmentosForma }));
-const PASO_SIN_CIERRE: CaptionRenderStep = { ...PASO_SIN_FORMA_PROPIA, fragmentosForma: 0, sinCierre: true };
+const PASO_SIN_TOPE: CaptionRenderStep = { ...PASO_SIN_FORMA_PROPIA, sinTope: true };
+const PASOS_FRAGMENTOS_FORMA: readonly CaptionRenderStep[] = [8, 6, 5, 4, 3, 2, 1, 0].map((fragmentosForma) => ({ ...PASO_SIN_TOPE, fragmentosForma }));
+const PASO_SIN_CIERRE: CaptionRenderStep = { ...PASO_SIN_TOPE, fragmentosForma: 0, sinCierre: true };
+/** Lo último de todo, y solo con entorno: el escenario, la luz y la guarda de globos, sin utilería ni encuadre. */
+const PASO_ENTORNO_MINIMO: CaptionRenderStep = { ...PASO_SIN_CIERRE, entorno: "minimo", soloConEntorno: true };
+const PASO_SIN_ENTORNO: CaptionRenderStep = { ...PASO_SIN_CIERRE, sinEntorno: true, soloConEntorno: true };
+const PASO_COMPLETO: CaptionRenderStep = { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false };
 
 const CAPTION_RENDER_STEPS: readonly CaptionRenderStep[] = [
-  { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false },
-  { referenceRepeatedConcepts: true, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false },
+  { ...PASO_COMPLETO, entorno: "completo" },
+  // Con entorno: primero se quita la pura REDUNDANCIA de la decoración (el mismo producto descrito dos veces, las
+  // etiquetas que comparten objeto) con el entorno completo; después el entorno pasa a su forma media con la decoración
+  // entera, y desde ahí sigue la compactación de siempre (con `compactEnvironment`, el entorno a la compacta). La escala
+  // de cada pieza y su contra-forma (`escalaCorta`) no se acortan antes que el entorno de lujo. El compacto ya no se
+  // quita hasta el último paso.
+  { ...PASO_COMPLETO, referenceRepeatedConcepts: true, entorno: "completo", soloConEntorno: true },
+  { ...PASO_COMPLETO, referenceRepeatedConcepts: true, factorLabels: true, entorno: "completo", soloConEntorno: true },
+  { ...PASO_COMPLETO, soloConEntorno: true },
+  { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false, escalaCorta: true },
+  { referenceRepeatedConcepts: true, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false, escalaCorta: true },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: false, escalaCorta: true },
   { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: true },
   { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: true },
   { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false, compactSeparation: true },
@@ -1061,8 +1184,11 @@ const CAPTION_RENDER_STEPS: readonly CaptionRenderStep[] = [
   PASO_HEX_UNA_VEZ,
   PASO_SIN_AMBIENTE,
   PASO_SIN_FORMA_PROPIA,
+  PASO_SIN_TOPE,
   ...PASOS_FRAGMENTOS_FORMA,
   PASO_SIN_CIERRE,
+  PASO_ENTORNO_MINIMO,
+  PASO_SIN_ENTORNO,
 ];
 
 const HEX_DE_COLOR = / \(#([0-9A-Fa-f]{6})\)/g;
@@ -1105,6 +1231,11 @@ type CaptionRenderState = {
   describedConceptIds: Set<string>;
   /** Hex codes already written next to their color (`hexUnaVez`), upper case. */
   hexVistos: Set<string>;
+  /**
+   * Imagen solo desde el texto (`text_to_image`): el caption elige el encuadre y puede poner la mesa que da la escala.
+   * Con la foto del espacio o una imagen previa la cámara y los muebles ya están: ni plano medio ni mesa inventada.
+   */
+  textoAImagen: boolean;
 };
 
 /**
@@ -1270,6 +1401,46 @@ function materialCentroContado(material: string, clause: FluxVisualClause): stri
   return clause.globosCentro === 1 ? material.replace(/\bmade of (?!a |an |one )/, "made of one ").replace(/\bballoons\b/, "balloon") : material;
 }
 
+/** Qué medidas definen cada tipo de pieza y en qué orden: el largo de una guirnalda, el ancho y alto de un arco. */
+function medidasDeLaPieza(clause: FluxVisualClause): Array<readonly [number, "long" | "wide" | "tall"]> {
+  const medidas = clause.medidasM;
+  if (!medidas) return [];
+  const con = (valor: number | undefined, palabra: "long" | "wide" | "tall") => (valor === undefined ? [] : [[valor, palabra] as const]);
+  switch (clause.structureType) {
+    case "guirnalda":
+      return con(largoGuirnalda(clause), "long");
+    case "arco":
+    case "pared":
+    case "backdrop":
+      return [...con(medidas.width, "wide"), ...con(medidas.height, "tall")];
+    case "columna":
+      return con(medidas.height, "tall");
+    default:
+      return [...con(medidas.height, "tall"), ...con(medidas.width, "wide"), ...con(medidas.length, "long")];
+  }
+}
+
+/**
+ * La escala de UNA pieza, del plan: sus medidas y sus globos («2.4 m / 8 ft long with about 37 balloons»; con varias
+ * piezas, «each …»). Sin medidas ni globos del plan, nada. `corta` (`escalaCorta` o `compactSeparation`): la medida
+ * principal en metros y la cifra.
+ * `conGlobos`: falso cuando la pieza no es de globos (un fondo, un producto que es la pieza).
+ */
+function fraseEscalaPieza(clause: FluxVisualClause, piezas: number, corta: boolean, conGlobos: boolean): string {
+  // En corto, la medida que define la pieza (la primera de `medidasDeLaPieza`) y la cifra de globos.
+  const medidas = medidasDeLaPieza(clause).slice(0, corta ? 1 : undefined).map(([metros, palabra]) => `${medidaBase(metros, corta)} ${palabra}`);
+  const globos = conGlobos && !BASE_NON_BALLOON_TYPES.has(clause.structureType) && clause.globosPorPieza !== undefined
+    ? `about ${clause.globosPorPieza} balloons`
+    : "";
+  if (!medidas.length && !globos) return "";
+  // Solo la cifra de una pieza va pegada al sustantivo, sin comas: «a small balloon bouquet of about 12 balloons».
+  if (!medidas.length && piezas === 1) return `of ${globos}`;
+  const texto = corta
+    ? [...medidas, globos].filter(Boolean).join(", ")
+    : [joinNatural(medidas), globos ? `with ${globos}` : ""].filter(Boolean).join(" ");
+  return piezas > 1 ? `each ${texto}` : texto;
+}
+
 function renderBaseClauseText(clause: FluxVisualClause, render: CaptionRenderState): string {
   const entries = clause.canonicalEntries ?? [];
   const parts = clause.canonicalPhrase && entries.length ? baseMaterialParts(entries, render) : undefined;
@@ -1306,15 +1477,25 @@ function renderBaseClauseText(clause: FluxVisualClause, render: CaptionRenderSta
   // Tras el reparto («… and accents of pink») una coma: sin ella la frase de Python («with silver, pink and white
   // scattered…») se leía como parte del último acento.
   const trasMaterial = parts?.conReparto && material && (frase || shapeCue) ? `${material},` : material;
-  const colored = [core, trasMaterial, frase, shapeCue].filter(Boolean).join(" ");
+  // Sujeto y escala primero (FLUX.2 atiende más a lo que va antes): «a small organic balloon garland, 2.4 m / 8 ft
+  // long with about 37 balloons, made of …».
+  const escala = fraseEscalaPieza(clause, renderedCount, Boolean(render.step.escalaCorta) || render.step.compactSeparation, !productIsThePiece);
+  const sujeto = !escala ? core : escala.startsWith("of ") ? `${core} ${escala}` : `${core}, ${escala},`;
+  const colored = [sujeto, trasMaterial, frase, shapeCue].filter(Boolean).join(" ");
+  // Con la escala delante, el reparto de colores («… and matte white») cierra con coma antes de la ubicación: sin ella
+  // «matte white hung horizontally on the rear wall» se leía como si colgara solo el blanco.
+  const antesDeUbicacion = clause.structureType === "guirnalda" && escala && parts?.conReparto && material && !frase && !shapeCue ? "," : "";
   // The same shape fixes the scene dialect learned: a lone side piece stands
   // apart from the focal arch, a half-arch elsewhere keeps its one-sided
   // shape, a garland without an assembly runs along its surface instead of
   // standing on legs. Those phrases are already plain English.
   const conArmado = Boolean(clause.armadoGuirnalda ?? clause.armadoGuirnaldaOrganica);
+  const guirnaldaCortaEnPared = clause.structureType === "guirnalda" && !conArmado && clause.placement === "fondo_pared" && guirnaldaCorta(clause);
+  const colgadaEnPared = render.textoAImagen ? GUIRNALDA_CORTA_EN_PARED : GUIRNALDA_CORTA_EN_PARED_DE_LA_FOTO;
   const placementPhrase = clause.placement === "lateral_izquierdo" ? "standing apart on the left"
     : clause.placement === "lateral_derecho" ? "standing apart on the right"
       : (clause.structureType === "semiarco" ? UBICACIONES_SEMIARCO_BASE[clause.placement] : undefined)
+        ?? (guirnaldaCortaEnPared ? colgadaEnPared : undefined)
         ?? (clause.structureType === "guirnalda" && !conArmado ? UBICACIONES_GUIRNALDA_BASE[clause.placement] : undefined)
         ?? UBICACIONES_BASE[clause.placement];
   if (clause.structureType === "backdrop") return `${colored} ${clause.relation ? `${placementPhrase}, ${clause.relation}` : placementPhrase}`;
@@ -1326,9 +1507,9 @@ function renderBaseClauseText(clause: FluxVisualClause, render: CaptionRenderSta
       : "one standing on the left and one on the right";
     return `${colored}, matching one another, ${reparto}${huecoEntrePar(clause)}${clause.relation ? `, ${clause.relation}` : ""}${sueltas}`;
   }
-  if (clause.relation && clause.structureType === "centro_mesa") return `${colored} ${placementPhrase} ${clause.relation}`;
-  if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}${sueltas}`;
-  return `${colored} ${placementPhrase}${sueltas}`;
+  if (clause.relation && clause.structureType === "centro_mesa") return `${colored}${antesDeUbicacion} ${placementPhrase} ${clause.relation}`;
+  if (clause.relation) return `${colored}${antesDeUbicacion} ${placementPhrase}, ${clause.relation}${sueltas}`;
+  return `${colored}${antesDeUbicacion} ${placementPhrase}${sueltas}`;
 }
 
 function renderClauseText(clause: FluxVisualClause, render: CaptionRenderState): string {
@@ -1427,11 +1608,74 @@ type CaptionParts = {
   structureSentence: string;
   /** How many separate standing pieces the scene has and the gap between them (`piezasDePieSueltas`), when it applies. */
   pieceCountSentence?: string;
+  /** Lo que la escena NO es, dicho en positivo (`fraseEscalaEscena`): la tira de la guirnalda y el tope de talla. */
+  scaleSentence?: string;
+  /** El entorno del evento (`entorno-escena.ts`), después de la decoración y antes de la cola fotográfica. */
+  entornoSentence?: string;
   tail: string[];
   colors: string[];
   /** Every piece is a garland on the wall or hanging (`soloGuirnaldasEnAlto`): no "grounded supports". */
   enAlto: boolean;
 };
+
+/**
+ * La talla mayor de toda la escena según el plan, o `undefined` si alguna pieza de globos no dice todas sus tallas
+ * (entonces no se sabe y no se acota nada). Solo tallas «N-inch» (`producto-flux.ts`); cualquier otra la deja sin tope.
+ */
+function tallaMaximaDeLaEscena(clauses: readonly FluxVisualClause[]): number | undefined {
+  let maxima = 0;
+  for (const clause of clauses) {
+    if (BASE_NON_BALLOON_TYPES.has(clause.structureType)) continue;
+    const entradas = clause.canonicalEntries ?? [];
+    if (!entradas.length) return undefined;
+    for (const entrada of entradas) {
+      if (!entrada.sizeCodes?.length) return undefined;
+      for (const talla of entrada.sizeCodes) {
+        const pulgadas = talla.match(/^(\d+(?:\.\d+)?)-inch$/);
+        if (!pulgadas) return undefined;
+        maxima = Math.max(maxima, Number(pulgadas[1]));
+      }
+    }
+  }
+  return maxima || undefined;
+}
+
+/**
+ * Lo que la pieza NO es, en positivo (FLUX.2 no admite negativos: «Focus on describing what you want», guía de
+ * prompts de BFL; nombrar «arch» o «giant balloons», aunque sea negado, se los pone en la cabeza, y las pruebas de
+ * ADR-0032 ya prohíben «arch» en el texto de una guirnalda armada). Caso real (guiada-20261007-055050-xkkihw): una
+ * guirnalda de 2,4 m y 37 globos salió como un marco orgánico de pared a pared con globos de 36″.
+ *
+ * - Guirnaldas de pared sin armado del motor, en una escena sin arcos: una sola tira horizontal con los extremos
+ *   libres (no se cierra en un portal ni baja al piso) y, si es corta, que cubre solo parte de la pared.
+ * - Tope de talla: si el plan no compra globos de 24″ o más, ninguno pasa de su talla mayor (con su objeto).
+ */
+function fraseEscalaEscena(clauses: readonly FluxVisualClause[], corta: boolean, sinTope = false): string | undefined {
+  const conArcos = clauses.some((clause) => clause.structureType === "arco" || clause.structureType === "semiarco");
+  const tiras = conArcos ? [] : clauses.filter((clause) => clause.structureType === "guirnalda"
+    && !clause.armadoGuirnalda && !clause.armadoGuirnaldaOrganica && GUIRNALDAS_EN_PARED.has(clause.placement));
+  const piezas = tiras.reduce((suma, clause) => suma + (clause.visibleCount ?? clause.count), 0);
+  const parteDeLaPared = tiras.length > 0 && tiras.every(guirnaldaCorta) ? " spanning only part of the wall" : "";
+  const tira = !piezas ? "" : corta
+    ? `${piezas > 1 ? "each garland one" : "one"} horizontal strip${parteDeLaPared}, ends free`
+    : `${piezas > 1 ? "each garland one" : "one single"} horizontal strip${parteDeLaPared}, both ends hanging free in mid-air`;
+  const maxima = sinTope ? undefined : tallaMaximaDeLaEscena(clauses);
+  const tope = maxima === undefined ? undefined : topeTallaBase(maxima, corta);
+  const partes = [tira, tope].filter(Boolean);
+  return partes.length ? partes.join(", ") : undefined;
+}
+
+/**
+ * Escena pequeña (todas sus piezas con globos del plan, 80 o menos en total y ninguna medida de más de 3 m): un
+ * plano medio. Sin él, FLUX base encuadra un salón entero y agranda la pieza hasta llenarlo.
+ */
+const GLOBOS_ESCENA_PEQUENA = 80;
+function escenaPequena(clauses: readonly FluxVisualClause[]): boolean {
+  if (!clauses.length || !clauses.every((clause) => clause.globosPorPieza !== undefined)) return false;
+  const globos = clauses.reduce((suma, clause) => suma + clause.globosPorPieza! * (clause.visibleCount ?? clause.count), 0);
+  const mayor = Math.max(0, ...clauses.flatMap((clause) => Object.values(clause.medidasM ?? {}).filter((valor): valor is number => typeof valor === "number")));
+  return globos <= GLOBOS_ESCENA_PEQUENA && mayor <= METROS_PIEZA_PEQUENA;
+}
 
 /**
  * Every clause of the caption is a garland whose assembly (Python, ADR-0032)
@@ -1465,24 +1709,28 @@ function soloGuirnaldasEnAlto(clauses: readonly FluxVisualClause[]): boolean {
   });
 }
 
-function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, ambientDecor: readonly string[] = [], creativeCues: readonly string[] = []): string {
-  const parts = buildCaptionParts(sceneSpec, context, clauses, step, ambientDecor, creativeCues);
+function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, ambientDecor: readonly string[] = [], creativeCues: readonly string[] = [], entorno?: EntornoEscena): string {
+  const parts = buildCaptionParts(sceneSpec, context, clauses, step, ambientDecor, creativeCues, entorno);
   const piezas = parts.pieceCountSentence ? `${parts.pieceCountSentence}. ` : "";
+  const escala = parts.scaleSentence ? `${capitalized(parts.scaleSentence)}. ` : "";
+  // Decoración primero (sujeto y escala); el entorno del evento después, y la cola fotográfica al final.
+  const escena = parts.entornoSentence ? `${capitalized(parts.entornoSentence)}. ` : "";
   // Sin cola (`sinCierre` sin evento): la frase acaba en las piezas, sin un «.» suelto.
   const cola = parts.tail.length ? `${capitalized(parts.tail.join(", "))}.` : "";
-  return `${capitalized(parts.structureSentence)}. ${piezas}${cola}`.trimEnd();
+  return `${capitalized(parts.structureSentence)}. ${piezas}${escala}${escena}${cola}`.trimEnd();
 }
 
 function capitalized(text: string): string {
   return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
 
-function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep, ambientDecor: readonly string[], creativeCues: readonly string[] = []): CaptionParts {
+function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses: FluxVisualClause[], step: CaptionRenderStep, ambientDecor: readonly string[], creativeCues: readonly string[] = [], entorno?: EntornoEscena): CaptionParts {
   resolveRelations(sceneSpec, clauses);
   assignHeightQualifiers(clauses);
   // Antes de redactar: marca el semiarco suelto (`standsApart`), que su cláusula lee.
-  const pieceCountSentence = piezasDePieSueltas(clauses, step.compactSeparation);
-  const render: CaptionRenderState = { step, describedConceptIds: new Set<string>(), hexVistos: new Set<string>() };
+  const pieceCountSentence = piezasDePieSueltas(clauses, step.compactSeparation, Boolean(entorno && !step.sinEntorno));
+  const textoAImagen = sceneSpec.generation_mode === "text_to_image";
+  const render: CaptionRenderState = { step, describedConceptIds: new Set<string>(), hexVistos: new Set<string>(), textoAImagen };
   const clauseText = (clause: FluxVisualClause) => renderClauseText(clause, render);
   const focal = clauses[0];
   const hasCanonicalSemantics = sceneSpec.elements.every((element) => Boolean(element.visual_semantics));
@@ -1509,7 +1757,10 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
   const globalPalette = !hasLocalColors && context.palette.length
     ? `in ${joinNatural(uniqueEnglish(context.palette, translateFluxColor))}`
     : undefined;
-  const eventPhrase = context.eventCue ? undefined : buildEventPhrase(context);
+  // El entorno del evento (si lo hay) sustituye las pistas sueltas de lugar, luz y evento: las dice todas juntas, con su
+  // utilería y su encuadre. Su mesa es la «main table» que ya nombre la decoración, no una segunda.
+  const frasesEntorno = entorno && !step.sinEntorno ? fraseEntorno(entorno, step.entorno ?? (step.compactEnvironment ? "compacto" : "medio"), { mesaPrincipal: /\bmain table\b/i.test(structureSentence) }) : undefined;
+  const eventPhrase = frasesEntorno || context.eventCue ? undefined : buildEventPhrase(context);
   const hasCanonicalProducts = clauses.some((clause) => Boolean(clause.canonicalPhrase));
   const enAlto = soloGuirnaldasEnAlto(clauses);
   const tail = [
@@ -1517,15 +1768,22 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
     step.minimalTail ? undefined : buildStylePhrase(context),
     ...(step.minimalTail ? [] : creativeCues),
     globalPalette,
-    ...(step.dropEnvironment ? [] : dedupeEnvironment(context, eventPhrase).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue)),
+    ...(frasesEntorno || step.dropEnvironment ? [] : dedupeEnvironment(context, eventPhrase).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue)),
+    // El encuadre del entorno (ángulo 3/4 a la altura de los ojos, profundidad de campo) abre la cola fotográfica.
+    frasesEntorno?.camara,
+    // Una escena pequeña se encuadra en plano medio: la pieza se ve de su tamaño junto a la mesa o la pared.
+    step.sinCierre || !textoAImagen || !escenaPequena(clauses) ? undefined : ENCUADRE_ESCENA_PEQUENA_BASE,
     step.sinCierre ? undefined : CIERRE_FOTOGRAFICO_BASE,
     step.minimalTail ? undefined : enAlto ? "natural depth" : hasCanonicalProducts ? "natural depth, grounded supports" : "natural depth, believable floor contact and supports",
   ].filter((part): part is string => Boolean(part));
+  const scaleSentence = fraseEscalaEscena(clauses, Boolean(step.escalaCorta) || step.compactSeparation, step.sinTope);
   return {
     subjects: [firstClause, ...supportText, ...accentText],
     subjectPatterns: [focal, ...supports, ...accents].map((clause) => clause?.colorPattern),
     structureSentence,
     ...(pieceCountSentence ? { pieceCountSentence } : {}),
+    ...(scaleSentence ? { scaleSentence } : {}),
+    ...(frasesEntorno ? { entornoSentence: frasesEntorno.escena } : {}),
     tail,
     colors: [...new Set(clauses.flatMap((clause) => clause.colors))],
     enAlto,
@@ -1570,6 +1828,11 @@ export function compileFluxCaption(input: {
    * or an assembly. Absent: the legacy caption.
    */
   colorPatterns?: readonly FraseDeEstructura[];
+  /**
+   * El entorno del evento (`entornoDeEscena`, entorno-escena.ts): escenario, utilería, luz y encuadre, después de la
+   * decoración. Su forma compacta tiene hueco reservado en todos los pasos de presupuesto. Sin él, la cola de siempre.
+   */
+  entorno?: EntornoEscena;
 }): FluxCaptionCompilation {
   const productConceptsByElementId = input.productConcepts?.length
     ? input.productConcepts.reduce((map, entry) => {
@@ -1598,8 +1861,10 @@ export function compileFluxCaption(input: {
   // The last budget steps (verificador 127) write each color's hex once, drop
   // the unsold scenery and the compiler's own column shape cue, and only then
   // shorten an organic-engine SHAPE phrase by whole fragments from its end.
-  for (const [index, step] of CAPTION_RENDER_STEPS.entries()) {
-    prompt = limpiar(buildCaption(input.sceneSpec, input.visualContext, clauses, step, input.ambientDecor, input.creativeCues));
+  // Sin entorno, los pasos que solo existen para él se saltan y la numeración es la de siempre.
+  const pasos = CAPTION_RENDER_STEPS.filter((step) => input.entorno || !step.soloConEntorno);
+  for (const [index, step] of pasos.entries()) {
+    prompt = limpiar(buildCaption(input.sceneSpec, input.visualContext, clauses, step, input.ambientDecor, input.creativeCues, input.entorno));
     compactionStep = index;
     if (prompt.length <= budget) break;
   }

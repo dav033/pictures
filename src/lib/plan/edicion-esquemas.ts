@@ -6,6 +6,7 @@ import { ArmadoColumnaV1Schema } from "./armado-columna";
 import { ArmadoColumnaOrganicaV1Schema } from "./armado-columna-organica";
 import { ArmadoGuirnaldaV1Schema } from "./armado-guirnalda";
 import { ArmadoGuirnaldaOrganicaV1Schema } from "./armado-guirnalda-organica";
+import { FloresPiezaV1Schema } from "./flores-pieza";
 import { MAX_LARGO_FORMA_PIEZA } from "./formas-pieza";
 import { PatronColorV1Schema } from "./patron-color";
 import { DENSIDADES, PlanDecoracionSchema } from "./tipos";
@@ -261,5 +262,19 @@ export const EdicionFormaSchema = z.object({
 
 export type EdicionForma = z.infer<typeof EdicionFormaSchema>;
 
+/**
+ * Flores de globo de una pieza (`flores-pieza.ts`, 2026-10-07): las pone, las cambia o, con `null`, las quita. Cualquier
+ * pieza las admite y no tocan sus materiales ni su armado. La forma se valida aquí con el contrato; Python la vuelve a
+ * validar con el plan entero y la resolución que sigue cuenta y cotiza sus globos (`app/flores_pieza.py`). Es la
+ * operación que usa el chat («ponle flores», `edicionFloresDePedido`).
+ */
+export const EdicionFloresSchema = z.object({
+  accion: z.literal("flores"),
+  estructura_id: z.string().trim().min(1).max(160),
+  flores: FloresPiezaV1Schema.nullable(),
+}).strict();
+
+export type EdicionFlores = z.infer<typeof EdicionFloresSchema>;
+
 /** Every edit the plan editor applies (Python applies it: services/ai-api/app/plan_edicion.py). */
-export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado | EdicionArmadoGuirnalda | EdicionArmadoArco | EdicionArmadoColumna | EdicionArmadoColumnaOrganica | EdicionArmadoGuirnaldaOrganica | EdicionArmadoArcoOrganico | EdicionForma | EdicionPropiedades;
+export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado | EdicionArmadoGuirnalda | EdicionArmadoArco | EdicionArmadoColumna | EdicionArmadoColumnaOrganica | EdicionArmadoGuirnaldaOrganica | EdicionArmadoArcoOrganico | EdicionForma | EdicionPropiedades | EdicionFlores;

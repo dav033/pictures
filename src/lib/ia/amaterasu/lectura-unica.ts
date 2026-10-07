@@ -8,6 +8,8 @@ import {
 import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { reclasificarColumnasConGuirnalda, reubicarGuirnaldas } from "@/lib/ia/referencia/reference-structure";
+import { floresLeidasDeCrudo, type FloresLeidas } from "@/lib/plan/flores-pieza";
+import { decidir } from "@/lib/registro";
 import { adjuntarLecturasBouquet } from "./bouquet-referencia";
 import { adjuntarLecturasConteo } from "./conteo-referencia";
 import { adjuntarLecturasGuirnalda } from "./guirnalda-referencia";
@@ -147,6 +149,42 @@ function registrarOmision(contexto: ContextoLecturaUnica, imageId: string, motiv
  * recibido, el mismo objeto.
  */
 export async function leerLecturaUnica(
+  blueprint: ReferenceBlueprintV2,
+  lecturas: LecturasCrudasPorElemento | undefined,
+  referencias: readonly ImagenEtiquetada[],
+  contexto: ContextoLecturaUnica,
+): Promise<ReferenceBlueprintV2> {
+  // Las flores de globo no pasan por Python (no hay validador ni lectura de producción que las posea): se validan aquí
+  // con su esquema y van al blueprint antes que las otras cuatro, así que una lectura de Python que falle no las borra.
+  return leerLecturasDePython(adjuntarLecturasFlores(blueprint, lecturas), lecturas, referencias, contexto);
+}
+
+/**
+ * `lecturas.flores` de cada estructura de globos aprobada → `appearance.flores`, validada con `FloresLeidasSchema` (una
+ * lectura inválida se cae sola, sin tocar las demás). El mismo objeto si ninguna pieza trae flores. Registra la decisión.
+ */
+export function adjuntarLecturasFlores(blueprint: ReferenceBlueprintV2, lecturas: LecturasCrudasPorElemento | undefined): ReferenceBlueprintV2 {
+  if (!lecturas) return blueprint;
+  const leidas: Array<{ id: string; flores: FloresLeidas }> = [];
+  const descartadas: string[] = [];
+  const elements = blueprint.elements.map((elemento) => {
+    const crudo = bloque(lecturas[elemento.element_id], "flores");
+    if (!crudo || !elemento.approved || elemento.category !== "balloon_structure") return elemento;
+    const flores = floresLeidasDeCrudo(crudo);
+    if (!flores) {
+      descartadas.push(elemento.element_id);
+      return elemento;
+    }
+    leidas.push({ id: elemento.element_id, flores });
+    return { ...elemento, appearance: { ...elemento.appearance, flores } };
+  });
+  if (leidas.length || descartadas.length) {
+    decidir("regla:lectura_foto.flores", "qué flores de globo vio la lectura en cada pieza", { leidas, descartadas }, { motivo: "lecturas.flores validada con FloresLeidasSchema (flores-pieza.ts)" });
+  }
+  return leidas.length ? { ...blueprint, elements } : blueprint;
+}
+
+async function leerLecturasDePython(
   blueprint: ReferenceBlueprintV2,
   lecturas: LecturasCrudasPorElemento | undefined,
   referencias: readonly ImagenEtiquetada[],

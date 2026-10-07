@@ -16,7 +16,7 @@ import { ModificarPieza, piezaModificable } from "./ModificarPieza";
 import { SelectorUsoCosteo, type OrigenUsoCosteo } from "./SelectorUsoCosteo";
 import { leyendaDePieza, motorDePieza } from "./motor-pieza";
 import { PanelPlegable } from "./Plegable";
-import { hexColor, piezasVistaDePlan, titulosDelPlan } from "./piezas-vista";
+import { hexColor, notaFloresCotizacion, piezasVistaDePlan, titulosDelPlan } from "./piezas-vista";
 import { BotonVerDetalle, DetalleGlobos } from "./TablaGlobosPieza";
 import { decoracionDePlan, type ContextoCompra } from "./plan-compra";
 import { colorSempertex } from "./color-sempertex";
@@ -41,6 +41,8 @@ type Props = {
   cotizacion?: CotizacionPlan;
   /** URL de la imagen «Ver cómo quedaría», si ya se dibujó. */
   imagen?: string | null;
+  /** Lo que la imagen muestra y no se cotiza (mesa, torta, luces del entorno del evento): va bajo la imagen, como en la clásica. */
+  avisoImagen?: string;
   estadoImagen: EstadoImagen;
   /** Costeo abierto para ESTE plan (no global): personal, negocio o ninguno. */
   usoCosteo: Uso | null;
@@ -87,7 +89,7 @@ function sinAjuste(): void {}
  * con él, con una acción principal clara («Ver cómo quedaría») y el resto a mano. Las cantidades son de Python.
  */
 export function TarjetaPlan(props: Props) {
-  const { plan, cotizacion, imagen, estadoImagen, usoCosteo, usoConocido, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
+  const { plan, cotizacion, imagen, avisoImagen, estadoImagen, usoCosteo, usoConocido, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
   const ultimoAjuste = ajustes?.at(-1);
   const reducido = useReducedMotion();
   const desglose = useMemo(() => generarPasosPlan(plan), [plan]);
@@ -311,6 +313,7 @@ export function TarjetaPlan(props: Props) {
                     />
                   </button>
                   <p className="mt-2 text-xs text-texto-suave">Imagen de referencia creada con IA</p>
+                  {avisoImagen && <p data-testid="aviso-no-cotizado" role="note" className="mt-1 rounded-xl bg-acento-suave px-3 py-2 text-xs text-acento">{avisoImagen}</p>}
                   <Lightbox src={imagen} open={lightbox} onClose={() => setLightbox(false)} />
                 </>
               )}
@@ -373,7 +376,7 @@ export function TarjetaPlan(props: Props) {
               {usoMostrado && (
                 <motion.div key={usoMostrado} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: EASE_SALIDA }} className="overflow-hidden">
                   {cotizacion
-                    ? <CostosMateriales cotizacion={cotizacion} titulos={titulos} uso={usoMostrado} clave={`plan-${plan.plan_hash}`} onProveedores={onProveedores} mensajePendiente="Todavía no tengo el precio de estos materiales." />
+                    ? <CostosMateriales cotizacion={cotizacion} titulos={titulos} uso={usoMostrado} clave={`plan-${plan.plan_hash}`} onProveedores={onProveedores} mensajePendiente="Todavía no tengo el precio de estos materiales." notaFlores={notaFloresCotizacion(piezasVista)} />
                     : <SinPrecio etiqueta="Buscar un proveedor cerca" onClick={onProveedores} />}
                 </motion.div>
               )}

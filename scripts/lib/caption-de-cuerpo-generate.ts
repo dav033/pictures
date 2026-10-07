@@ -17,6 +17,7 @@ import type { Pool } from "pg";
 import { PlanResueltoV1Schema } from "@/lib/ia/contracts/domain-v1";
 import { buildApprovedSceneSpec, SceneSpecSchema, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/escena/visual-context";
+import { entornoDeEscena } from "@/lib/ia/escena/entorno-escena";
 import { nivelCreatividadParaGenerar, perfilCreatividad } from "@/lib/ia/escena/creatividad";
 import { aspectoDeLaReferencia } from "@/lib/ia/nucleo/aspecto";
 import { compileProductPrompt, aliasesDeProducto, sizeConfirmationsFromMaterialLines } from "@/lib/ia/kagutsuchi/producto-flux";
@@ -178,6 +179,8 @@ export async function captionDeCuerpoGenerate(cuerpo: CuerpoGenerateGuardado, py
     creativeCues: creatividad.pistasPrompt,
     officialStructures: new Map(planResuelto.plan.estructuras.flatMap((estructura) => estructura.estructura_oficial ? [[estructura.estructura_id, estructura.estructura_oficial] as const] : [])),
     colorPatterns: frasesDeEstructuras(planResuelto),
+    // Como /api/generate: el entorno del evento, con el nivel con que se genera y la escenografía de la foto.
+    entorno: entornoDeEscena({ contexto: visualContext, nivel: creatividad.nivel, modo: escena.generation_mode, conEscenografiaDeFoto: escenografia.length > 0 }),
   };
   const compilacion = compileProductPrompt({ ...entrada, maxLength });
   return {

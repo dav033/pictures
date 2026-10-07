@@ -6,6 +6,7 @@ import { FORMAS_SIN_MOTOR, formasEstructurasOficiales, geometriaEstructurasOfici
 import { formasPiezaPorOficial, reglasJsonSchemaFormaPieza } from "../../src/lib/plan/formas-pieza";
 import { tonosColoresCatalogo } from "../../src/lib/rag/catalog/similitud-color";
 import { reglasMezclas } from "../../src/lib/plan/mezclas";
+import { reglasFlores } from "../../src/lib/plan/flores-pieza";
 import { reglasGuirnalda } from "../../src/lib/plan/armado-guirnalda";
 import { FORMAS_LISTAS_ARCO_ORGANICO } from "../../src/lib/plan/armado-arco-organico";
 import { FLUX_COLOR_NAMES_EN } from "../../src/lib/ia/kagutsuchi/caption-flux";
@@ -112,6 +113,9 @@ async function main(): Promise<void> {
           // rechazar la edición que la pondría. La tabla de TypeScript sigue siendo la única copia.
           "x-formas-pieza": formasPiezaPorOficial(),
           "x-reglas-mezclas": reglasMezclas(),
+          // app/flores_pieza.py lee la talla, los pétalos por defecto y la marca de línea de las flores de globo
+          // (flores-pieza.ts, su dueño): una sola copia de la regla.
+          "x-reglas-flores": reglasFlores(),
           // armado_guirnalda.py reads where a garland may hang or tilt
           // (ADR-0032, decision 27) from armado-guirnalda.ts, the contract's owner.
           "x-reglas-guirnalda": reglasGuirnalda(),

@@ -16,7 +16,7 @@ import {
   aplicarEdicionPlan,
   correlationDesde,
 } from "@/lib/plan/aplicar-edicion";
-import { BasePlanSchema, EdicionArmadoArcoOrganicoSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionFormaSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionPropiedadesSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
+import { BasePlanSchema, EdicionArmadoArcoOrganicoSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionFloresSchema, EdicionFormaSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionPropiedadesSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
 import { conRegistro } from "@/lib/registro/servidor";
 import { agregarColorPlan, agregarPiezaPlan, editarPiezaPlan, quitarPiezaPlan, reemplazarColorPlan } from "@/lib/plan/ajuste-plan-entero";
 import { OFICIALES_AGREGABLES, UBICACIONES_PIEZA_NUEVA } from "@/lib/plan/pieza-nueva";
@@ -119,7 +119,7 @@ const BodySchema = z.discriminatedUnion("modo", [
     ubicacion: z.enum(UBICACIONES_PIEZA_NUEVA).optional(),
     nombre: z.string().trim().min(1).max(60).optional(),
   }).strict().refine((valor) => valor.ubicacion !== undefined || valor.nombre !== undefined, { message: "Di a dónde va la pieza o cómo se llama." }),
-  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoArcoOrganicoSchema, EdicionFormaSchema, EdicionPropiedadesSchema]) }).strict(),
+  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionArmadoSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoArcoOrganicoSchema, EdicionFormaSchema, EdicionPropiedadesSchema, EdicionFloresSchema]) }).strict(),
 ]);
 
 const MENSAJE_JSON_INVALIDO = "El cuerpo de la solicitud no es JSON válido.";

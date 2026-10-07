@@ -2,9 +2,10 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Flower2 } from "lucide-react";
 import { IconoEstructura } from "@/components/plan/IconoEstructura";
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
+import { textoFlores, type ResumenFlores } from "@/lib/plan/flores-pieza";
 import { Ayuda } from "@/components/ui/Ayuda";
 import { CifraAnimada } from "./ajuste/AjustarPlan";
 import { AYUDAS } from "./ayudas-guiada";
@@ -46,7 +47,7 @@ function useDesborde(ref: RefObject<HTMLDivElement | null>): { hay: boolean; alF
 }
 
 /** `ayuda`: el «?» que explica cómo se lee la tabla (solo en la primera, para no repetirlo). */
-export function TablaGlobosPieza({ titulo, oficial, tabla, repeticiones = 1, ayuda = false }: { titulo: string; oficial: EstructuraOficialId | null; tabla: TablaGlobos; repeticiones?: number; ayuda?: boolean }) {
+export function TablaGlobosPieza({ titulo, oficial, tabla, repeticiones = 1, ayuda = false, flores = null }: { titulo: string; oficial: EstructuraOficialId | null; tabla: TablaGlobos; repeticiones?: number; ayuda?: boolean; /** Las flores de globo de la pieza: sus globos ya están en la tabla; esto dice cuántos son de flores. */ flores?: ResumenFlores | null }) {
   const idTitulo = useId();
   const caja = useRef<HTMLDivElement>(null);
   const desborde = useDesborde(caja);
@@ -124,6 +125,12 @@ export function TablaGlobosPieza({ titulo, oficial, tabla, repeticiones = 1, ayu
         </div>
         {desborde.hay && !desborde.alFinal && <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-xl bg-gradient-to-r from-transparent to-superficie" />}
       </div>
+      {flores && (
+        <p className="mt-1 flex items-center gap-1 text-xs text-texto-suave tabular-nums">
+          <Flower2 className="size-3.5 shrink-0 text-acento" aria-hidden />
+          Incluye las flores de globo: {textoFlores(flores).replace(/^\+\s*/, "")}
+        </p>
+      )}
       {desborde.hay && !desborde.alFinal && (
         <p className="mt-1 flex items-center justify-end gap-1 text-xs text-texto-suave">
           Desliza para ver más tamaños
@@ -141,12 +148,12 @@ export function TablaGlobosPieza({ titulo, oficial, tabla, repeticiones = 1, ayu
  */
 export function DetalleGlobos({ piezas, total, nota, lineasSinPieza }: { piezas: readonly PiezaVista[]; total: number; nota?: string; lineasSinPieza?: readonly LineaGlobo[] }) {
   const tablas = useMemo(() => {
-    if (lineasSinPieza?.length) return [{ id: "toda", titulo: "Toda la decoración", oficial: null, repeticiones: 1, tabla: tablaGlobos(lineasSinPieza) }];
-    return piezas.filter((pieza) => pieza.lineas.length > 0).map((pieza) => ({ id: pieza.id, titulo: pieza.nombre, oficial: pieza.oficial, repeticiones: pieza.repeticiones, tabla: tablaGlobos(pieza.lineas) }));
+    if (lineasSinPieza?.length) return [{ id: "toda", titulo: "Toda la decoración", oficial: null, repeticiones: 1, tabla: tablaGlobos(lineasSinPieza), flores: null }];
+    return piezas.filter((pieza) => pieza.lineas.length > 0).map((pieza) => ({ id: pieza.id, titulo: pieza.nombre, oficial: pieza.oficial, repeticiones: pieza.repeticiones, tabla: tablaGlobos(pieza.lineas), flores: pieza.flores ?? null }));
   }, [piezas, lineasSinPieza]);
   return (
     <div className="space-y-4 pb-1 pt-2">
-      {tablas.map((item, posicion) => <TablaGlobosPieza key={item.id} titulo={item.titulo} oficial={item.oficial} tabla={item.tabla} repeticiones={item.repeticiones} ayuda={posicion === 0} />)}
+      {tablas.map((item, posicion) => <TablaGlobosPieza key={item.id} titulo={item.titulo} oficial={item.oficial} tabla={item.tabla} repeticiones={item.repeticiones} ayuda={posicion === 0} flores={item.flores} />)}
       {tablas.length > 1 && (
         <p className="text-right text-sm font-semibold text-texto">Todo el plan: <span className="tabular-nums"><CifraAnimada valor={total} /></span> {total === 1 ? "globo" : "globos"}</p>
       )}

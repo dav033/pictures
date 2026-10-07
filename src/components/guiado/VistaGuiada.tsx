@@ -151,8 +151,11 @@ const ResultadoSchema = z.object({
   accionPlan: z.string().optional(),
 }).passthrough();
 const AccionModeloSchema = z.enum(["ver", "costear", "comprar", "aprender", "contratar"]);
-/** De /api/generate solo interesa la imagen: el plan que devuelve no trae approval_token y el de la tarjeta sí. */
-const ImagenGeneradaSchema = z.object({ imagen: z.string().regex(/^data:image\/(?:png|jpeg|webp);base64,/) }).passthrough();
+/**
+ * De /api/generate interesan la imagen y su aviso de lo no cotizado (mesa, torta, luces del entorno del evento): el plan
+ * que devuelve no trae approval_token y el de la tarjeta sí.
+ */
+const ImagenGeneradaSchema = z.object({ imagen: z.string().regex(/^data:image\/(?:png|jpeg|webp);base64,/), avisoNoCotizado: z.string().trim().min(1).max(300).optional().catch(undefined) }).passthrough();
 
 const LIMITE_TURNO_MS = 75_000;
 const LIMITE_PLAN_MS = 75_000;
@@ -1147,7 +1150,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       if (sesion !== sesionRef.current) return;
       // Se ve en el acto; el plan de la tarjeta (con su approval_token) no se toca.
       setImagenesLocales((actuales) => ({ ...actuales, [mensajeId]: salida.imagen }));
-      actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: false, hechas: conHecha(actual.hechas, "ver") }));
+      // Como en la clásica: lo que la imagen muestra y no se cotiza (el entorno del evento) se dice junto a la imagen.
+      actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: false, hechas: conHecha(actual.hechas, "ver"), avisoImagen: salida.avisoNoCotizado }));
       setAnuncio("La imagen de tu decoración está lista");
       void guardarImagen(salida.imagen).then((url) => {
         if (url && sesion === sesionRef.current) actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, imagen: url }));
@@ -1629,6 +1633,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
             plan={widget.plan}
             {...(widget.cotizacion ? { cotizacion: widget.cotizacion } : {})}
             imagen={imagen}
+            {...(widget.avisoImagen ? { avisoImagen: widget.avisoImagen } : {})}
             estadoImagen={estadoImagen}
             usoCosteo={widget.usoCosteo ?? null}
             usoConocido={uso}

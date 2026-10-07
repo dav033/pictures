@@ -2,7 +2,8 @@
 
 import { useMemo, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Pencil } from "lucide-react";
+import { Flower2, Pencil } from "lucide-react";
+import { textoFlores } from "@/lib/plan/flores-pieza";
 import { BarraTamanos } from "@/components/plan/BarraTamanos";
 import { Ayuda } from "@/components/ui/Ayuda";
 import { CifraAnimada } from "./ajuste/AjustarPlan";
@@ -91,6 +92,12 @@ export function FilaPieza({ pieza, dibujo, indice, recalculando = false, onModif
               ))}
             </AnimatePresence>
           </ul>
+        )}
+        {!recalculando && pieza.flores && (
+          <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-texto-suave tabular-nums">
+            <Flower2 className="size-3.5 shrink-0 text-acento" aria-hidden />
+            {textoFlores(pieza.flores)}
+          </p>
         )}
         {accion && <div className="mt-2">{accion}</div>}
       </div>
