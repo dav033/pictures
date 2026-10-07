@@ -1183,6 +1183,40 @@ body {
   box-shadow: inset 0 0 0 2px var(--acento);
 }
 
+/* Vista guiada: cursor de escritura al final del texto que llega del asistente. */
+.escribiendo-caret > :last-child::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--acento);
+  animation: caret 1s steps(2) infinite;
+}
+
+@keyframes caret {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Vista guiada: franja de acento que recorre la foto de inspiración mientras se lee. Va aparte de
+   `.escaner-barrido` (EscanerFoto.tsx de la vista clásica, 3,6 s de ida y vuelta) para no cambiar aquella. */
+.escaner-guiado {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: var(--acento);
+  box-shadow: 0 0 12px 3px var(--sombra-acento);
+  animation: escaner-guiado-barrido 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes escaner-guiado-barrido {
+  from { top: 0%; }
+  to { top: 100%; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1195,7 +1229,9 @@ body {
 
   .puntos span,
   .brillo-carga,
-  .foto-en-vuelo {
+  .foto-en-vuelo,
+  .escribiendo-caret > :last-child::after,
+  .escaner-guiado {
     animation: none !important;
   }
 }

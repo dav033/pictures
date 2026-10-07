@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 
@@ -5,15 +8,23 @@ import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
  * La imagen de una decoración: su foto si la representa, o una ilustración de globos en SUS colores si la única
  * foto disponible es de otro kit (una tarjeta «Espacio» con un ramo rojo de «Te amo» parecía un error). La
  * ilustración se dice como tal: nunca se presenta como foto de la decoración.
+ * La foto va enmarcada (fondo blanco dentro de un marco del tema): en oscuro se lee como foto, no deslumbra.
+ * Ocupa todo su contenedor, que debe ser `relative`.
  */
 export function FotoDecoracion({ decoracion, sizes }: { decoracion: DecoracionSempertex; sizes: string }) {
+  const [cargada, setCargada] = useState(false);
   const foto = decoracion.fotos[0];
   if (foto && decoracion.fotoRepresentativa !== false) {
-    return <Image src={foto.url} alt={decoracion.titulo} fill sizes={sizes} unoptimized loading="eager" className="bg-white object-contain p-2" />;
+    return <span className="absolute inset-0 block bg-superficie-2 p-2">
+      <span className="relative block size-full overflow-hidden rounded-xl bg-white">
+        <Image src={foto.url} alt={decoracion.titulo} fill sizes={sizes} unoptimized loading="eager" onLoad={() => setCargada(true)} className={`object-contain p-1.5 transition-[opacity,transform] duration-500 group-hover:scale-[1.03] ${cargada ? "opacity-100" : "opacity-0"}`} />
+        {!cargada && <span className="brillo-carga absolute inset-0" aria-hidden />}
+      </span>
+    </span>;
   }
   return <>
     <IlustracionGlobos colores={decoracion.paleta ?? ["#f7a8c4", "#c7a6d8", "#f6f3ee"]} titulo={decoracion.titulo} />
-    <span className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-white/85 px-2 py-0.5 text-[0.65rem] font-medium text-[#5b4a6b]">Ilustración de colores</span>
+    <span className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-superficie/90 px-2 py-0.5 text-[0.65rem] font-medium text-texto ring-1 ring-borde-suave backdrop-blur-sm">Ilustración de colores</span>
   </>;
 }
 

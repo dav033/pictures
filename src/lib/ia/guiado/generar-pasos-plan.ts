@@ -21,47 +21,66 @@ export type GloboPlanGuiado = { color: string; tamano: string; cantidad: number 
 /** Presenta cantidades ya resueltas por Python. Esta función nunca calcula consumo. */
 export type GuiaPiezaPlan = { estructura_id: string; nombre: string; medidas: { ancho_m?: number; alto_m?: number; largo_m?: number }; globos: GloboPlanGuiado[]; guia: z.infer<typeof GuiaArmadoSchema> };
 
-export function generarPasosPlan(planGuardado: unknown): { pasos: PasoPlanGuiado[]; globos: GloboPlanGuiado[]; total: number; guias: GuiaPiezaPlan[] } {
-  const plan = PlanMinimoSchema.parse(planGuardado);
+type LineaPlan = { color?: string; tamano_codigo?: string; diam_pulg?: number; unidades: number };
+
+const PLURAL_COLOR: Record<string, string> = {
+  negro: "negros", blanco: "blancos", dorado: "dorados", rosado: "rosados", rojo: "rojos", amarillo: "amarillos", azul: "azules", verde: "verdes",
+  plateado: "plateados", morado: "morados", transparente: "transparentes",
+};
+
+/** «negro» → «negros»; plata, lila, fucsia, naranja, café, violeta y los compuestos no cambian. */
+export function colorEnPlural(color: string): string {
+  return PLURAL_COLOR[color.trim().toLocaleLowerCase("es")] ?? color;
+}
+
+/** Tamaño para el cliente: 12" (nunca «R-12»). */
+function tamanoDe(linea: LineaPlan): string {
+  if (linea.diam_pulg) return `${linea.diam_pulg}"`;
+  if (linea.tamano_codigo) return `${linea.tamano_codigo.replace(/^R-/i, "")}"`;
+  return "tamaño indicado";
+}
+
+/** Fusiona las líneas del mismo color y tamaño (Python puede partir una misma variante en varias líneas). */
+function agruparGlobos(lineas: readonly LineaPlan[]): GloboPlanGuiado[] {
   const grupos = new Map<string, GloboPlanGuiado>();
-  for (const estructura of plan.estructuras) for (const linea of estructura.lineas) {
+  for (const linea of lineas) {
     const color = linea.color?.trim() || "color indicado en el plan";
-    const tamano = linea.diam_pulg ? `${linea.diam_pulg}\"` : linea.tamano_codigo ? `${linea.tamano_codigo.replace(/^R-/i, "")}\"` : "tamaño indicado";
+    const tamano = tamanoDe(linea);
     const clave = `${color.toLocaleLowerCase("es")}\u0000${tamano}`;
     const previo = grupos.get(clave);
     if (previo) previo.cantidad += linea.unidades;
     else grupos.set(clave, { color, tamano, cantidad: linea.unidades });
   }
-  const globos = [...grupos.values()];
+  return [...grupos.values()];
+}
+
+/** «69 globos negros de 12"». */
+export function textoGlobos(globos: readonly GloboPlanGuiado[]): string {
+  return globos.map((item) => `${item.cantidad} ${item.cantidad === 1 ? "globo" : "globos"} ${item.cantidad === 1 ? item.color : colorEnPlural(item.color)} de ${item.tamano}`).join(", ");
+}
+
+export function generarPasosPlan(planGuardado: unknown): { pasos: PasoPlanGuiado[]; globos: GloboPlanGuiado[]; total: number; guias: GuiaPiezaPlan[] } {
+  const plan = PlanMinimoSchema.parse(planGuardado);
+  const globos = agruparGlobos(plan.estructuras.flatMap((estructura) => estructura.lineas));
   const total = globos.reduce((suma, item) => suma + item.cantidad, 0);
+  const globosDePieza = (estructuraId: string): GloboPlanGuiado[] => agruparGlobos(plan.estructuras.find((item) => item.estructura_id === estructuraId)?.lineas ?? []);
   const guias: GuiaPiezaPlan[] = plan.plan.estructuras.flatMap((pieza) => {
     const oficial = pieza.estructura_oficial ?? idOficialPorTipo(pieza.tipo, pieza.nombre);
     const guia = guiaParaEstructura(oficial);
-    const lineas = plan.estructuras.find((item) => item.estructura_id === pieza.estructura_id)?.lineas ?? [];
     if (!guia) return [];
-    const cantidades = new Map<string, GloboPlanGuiado>();
-    for (const linea of lineas) {
-      const color = linea.color?.trim() || "color indicado en el plan";
-      const tamano = linea.diam_pulg ? `${linea.diam_pulg}\"` : linea.tamano_codigo ? `${linea.tamano_codigo.replace(/^R-/i, "")}\"` : "tamaño indicado";
-      const clave = `${color.toLocaleLowerCase("es")}\u0000${tamano}`;
-      const previo = cantidades.get(clave);
-      if (previo) previo.cantidad += linea.unidades;
-      else cantidades.set(clave, { color, tamano, cantidad: linea.unidades });
-    }
-    return [{ estructura_id: pieza.estructura_id, nombre: pieza.nombre, medidas: pieza.medidas, globos: [...cantidades.values()], guia }];
+    return [{ estructura_id: pieza.estructura_id, nombre: pieza.nombre, medidas: pieza.medidas, globos: globosDePieza(pieza.estructura_id), guia }];
   });
-  const listaGlobos = globos.map((item) => `${item.cantidad} globos ${item.color} de ${item.tamano}`).join(", ");
-  const pasos: PasoPlanGuiado[] = [{ orden: 1, texto: `Prepara el soporte y los materiales del plan. En total son ${total} globos: ${listaGlobos}.`, globos: listaGlobos }];
-  pasos.push({ orden: 2, texto: `Infla cada globo al tamaño indicado y separa los grupos por color y medida: ${listaGlobos}.`, globos: listaGlobos });
+  const listaGlobos = textoGlobos(globos);
+  const pasos: PasoPlanGuiado[] = [{ orden: 1, texto: `Prepara el soporte y los materiales. En total son ${total} globos: ${listaGlobos}.`, globos: listaGlobos }];
+  pasos.push({ orden: 2, texto: "Infla cada globo a su tamaño y sepáralos por color y tamaño antes de empezar a armar." });
   for (const pieza of plan.plan.estructuras) {
     const armado = detalleArmado(pieza);
     const medidas = [pieza.medidas.ancho_m && `${pieza.medidas.ancho_m} m de ancho`, pieza.medidas.alto_m && `${pieza.medidas.alto_m} m de alto`, pieza.medidas.largo_m && `${pieza.medidas.largo_m} m de largo`].filter(Boolean).join(" por ");
-    const globosPieza = plan.estructuras.find((item) => item.estructura_id === pieza.estructura_id)?.lineas
-      .map((linea) => `${linea.unidades} ${linea.color ?? "globos"} de ${linea.diam_pulg ? `${linea.diam_pulg}\"` : linea.tamano_codigo ?? "tamaño indicado"}`).join(", ");
+    const globosPieza = textoGlobos(globosDePieza(pieza.estructura_id));
     pasos.push({ orden: pasos.length + 1, texto: `Arma ${pieza.nombre}${pieza.repeticiones > 1 ? ` (${pieza.repeticiones} piezas)` : ""}${medidas ? `, de ${medidas}` : ""}. ${armado}`, ...(globosPieza ? { globos: globosPieza } : {}) });
   }
-  pasos.push({ orden: pasos.length + 1, texto: `Monta las piezas en el orden del plan y en sus ubicaciones indicadas; fija cada estructura a su soporte antes de continuar.` });
-  pasos.push({ orden: pasos.length + 1, texto: "Ajusta los amarres, oculta soportes y remata la decoración. Revisa estabilidad y que las piezas queden en la posición prevista." });
+  pasos.push({ orden: pasos.length + 1, texto: "Monta las piezas en su lugar y fija cada una a su soporte antes de seguir con la siguiente." });
+  pasos.push({ orden: pasos.length + 1, texto: "Ajusta los amarres, oculta los soportes y revisa que todo quede firme y en su sitio." });
   return { pasos, globos, total, guias };
 }
 
@@ -86,32 +105,32 @@ function detalleArmado(pieza: Record<string, unknown>): string {
   if (columna && typeof columna === "object") {
     const armado = columna as { modo?: string; patron?: string; capas?: unknown[]; remate?: { tipo?: string } };
     const cantidadCapas = armado.capas?.length;
-    return `Monta ${cantidadCapas ? `las ${cantidadCapas} capas o discos` : "las capas o discos"} que indica el motor${armado.patron ? `, siguiendo el patrón ${armado.patron}` : ""}${armado.remate?.tipo && armado.remate.tipo !== "ninguno" ? ` y coloca el remate ${armado.remate.tipo}` : ""}.`;
+    return `Monta ${cantidadCapas ? `las ${cantidadCapas} capas o discos` : "las capas o discos"} de abajo hacia arriba, girando cada una para que encaje en la anterior${armado.remate?.tipo && armado.remate.tipo !== "ninguno" ? ", y termina con el remate de arriba" : ""}.`;
   }
   const arco = pieza.armado_arco;
   if (arco && typeof arco === "object") {
     const armado = arco as { patron?: string; capas?: unknown[]; secciones?: unknown[] };
-    const detalles = [armado.capas?.length ? `${armado.capas.length} capas` : "capas", armado.secciones?.length ? `${armado.secciones.length} ${armado.secciones.length === 1 ? "sección" : "secciones"} de color` : "secciones de color"];
-    return `Arma el arco siguiendo el dibujo del plan (patrón ${armado.patron ?? "del plan"}); respeta ${detalles.join(" y ")}.`;
+    const detalles = [armado.capas?.length ? `${armado.capas.length} capas` : "las capas", armado.secciones?.length ? `${armado.secciones.length} ${armado.secciones.length === 1 ? "sección" : "secciones"} de color` : "las secciones de color"];
+    return `Arma el arco desde una base hasta la otra; respeta ${detalles.join(" y ")}.`;
   }
   const organic = pieza.armado_arco_organico ?? pieza.armado_columna_organica ?? pieza.armado_guirnalda_organica;
   if (organic && typeof organic === "object") {
     const armado = organic as { volumen?: { racimo?: number }; tamanos?: { mezcla?: Record<string, number> }; corona?: { activa?: boolean } };
     const racimo = armado.volumen?.racimo;
     const tamanos = Object.entries(armado.tamanos?.mezcla ?? {}).filter(([, peso]) => peso > 0).map(([tamano]) => Number(tamano)).filter(Number.isFinite);
-    return [racimo ? `forma racimos de ${racimo} globos como en el dibujo del plan` : "sigue el dibujo de armado del plan", tamanos?.length ? `usa la mezcla de tamaños indicada (${[...new Set(tamanos)].map((n) => `${n}\"`).join(", ")})` : "respeta los tamaños separados en el paso anterior", armado.corona?.activa ? "coloca la corona que define el plan" : ""]
-      .filter(Boolean).join("; ") + ".";
+    return [racimo ? `forma racimos de ${racimo} globos` : "forma racimos pequeños", tamanos.length ? `mezcla los tamaños (${[...new Set(tamanos)].map((n) => `${n}"`).join(", ")})` : "mezcla los tamaños que separaste antes", armado.corona?.activa ? "coloca la corona de globos" : ""]
+      .filter(Boolean).join("; ").replace(/^./, (letra) => letra.toLocaleUpperCase("es")) + ".";
   }
   const guirnalda = pieza.armado_guirnalda;
   if (guirnalda && typeof guirnalda === "object") {
     const armado = guirnalda as { racimo?: { unidad?: string }; relleno?: { proporcion?: number } | null; forma?: string; remates?: unknown[] };
-    return `Une los globos en ${armado.racimo?.unidad ?? "racimos indicados"} sobre el soporte previsto, da forma de ${armado.forma ?? "guía"}${armado.relleno && armado.relleno.proporcion ? " y añade el relleno definido por el motor" : ""}${armado.remates?.length ? ", luego coloca los remates del plan" : ""}.`;
+    return `Une los globos en ${armado.racimo?.unidad ?? "racimos"} sobre la cinta, dale forma de ${armado.forma ?? "guirnalda"}${armado.relleno && armado.relleno.proporcion ? " y rellena los huecos con globos pequeños" : ""}${armado.remates?.length ? "; luego coloca los remates" : ""}.`;
   }
   const bouquet = pieza.armado_bouquet;
   if (bouquet && typeof bouquet === "object") {
     const armado = bouquet as { niveles?: Array<{ cantidad?: number; unidad?: string }>; variante?: string };
     const niveles = armado.niveles?.map((nivel) => `${nivel.cantidad} ${nivel.unidad}`).join(", ");
-    return `Arma el bouquet ${armado.variante === "base_aire" ? "con base de aire" : "como en el dibujo del plan"}${niveles ? `, de abajo hacia arriba (${niveles.replace(/\b(\d+) trio\b/g, (_, n) => `${n} ${n === "1" ? "grupo" : "grupos"} de 3`)})` : ""}; añade el remate y los números si aparecen en el plan.`;
+    return `Arma el bouquet ${armado.variante === "base_aire" ? "con base de aire" : "sobre su peso"}${niveles ? `, de abajo hacia arriba (${niveles.replace(/\b(\d+) trio\b/g, (_, n) => `${n} ${n === "1" ? "grupo" : "grupos"} de 3`)})` : ""}, y termina con el remate.`;
   }
-  return "Arma esta estructura siguiendo la guía de armado que acompaña el plan.";
+  return "Arma esta pieza siguiendo su guía de armado.";
 }

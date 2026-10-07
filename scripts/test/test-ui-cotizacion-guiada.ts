@@ -38,10 +38,11 @@ Object.defineProperty(globalThis, "window", { configurable: true, value: { sessi
 const htmlNegocioAbierto = renderToStaticMarkup(createElement(CotizacionProfesional, { cotizacion, clave: "guiado-ej-demo-cotizacion" }));
 const textoNegocio = htmlNegocioAbierto.replaceAll("&quot;", "\"").replaceAll(/\s+/g, " ");
 
+// Uso personal: nombre de cliente («Globo palo de rosa de 12"», formato.ts). Negocio conserva el nombre de catálogo.
 for (const texto of [
-  "Globo de látex 12\" Palo de rosa",
-  "Globo de látex 12\" Durazno",
-  "Globo de látex 12\" Blanco",
+  "Globo palo de rosa de 12\"",
+  "Globo durazno de 12\"",
+  "Globo blanco de 12\"",
   "Usas 40 globos",
   "compras 1 paquete de 50",
   "te sobran 10",

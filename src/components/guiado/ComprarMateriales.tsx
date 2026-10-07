@@ -46,7 +46,7 @@ export function ComprarMateriales({ decoracion, onDistribuidor }: { decoracion: 
       </li>)}
     </ul>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-      <a href={enlace} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-acento px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-acento-hover">
+      <a href={enlace} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-acento px-4 py-3 text-sm font-semibold text-sobre-acento transition-colors hover:bg-acento-hover">
         <ExternalLink className="size-4" aria-hidden />{kit ? "Ver el kit en la tienda en línea" : "Ir a la tienda en línea"}
       </a>
       <button type="button" onClick={onDistribuidor} className="flex items-center justify-center gap-2 rounded-xl border border-borde-suave px-4 py-3 text-sm font-semibold transition-colors hover:border-acento">

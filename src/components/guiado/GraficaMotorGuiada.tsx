@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { z } from "zod";
 import { IconoEstructura } from "@/components/plan/IconoEstructura";
 import { VistaMotor } from "@/components/plan/motor/VistaMotor";
@@ -15,9 +16,15 @@ const MOTORES = [
   ["armado_bouquet", "/api/plan-armado-bouquet"],
 ] as const;
 
-/** Pide al motor el mismo SVG que usa el plan clásico; no calcula ni dibuja geometría en el navegador. */
-export function GraficaMotorGuiada({ plan, pieza, mezclaReal, id, nombre }: { plan: unknown; pieza: Record<string, unknown>; mezclaReal?: unknown; id: EstructuraOficialId; nombre: string }) {
-  const [grafica, setGrafica] = useState<z.infer<typeof GraficaSchema> | null>(null);
+type Grafica = z.infer<typeof GraficaSchema>;
+
+/**
+ * Pide al motor el mismo SVG que usa el plan clásico; no calcula ni dibuja geometría en el navegador.
+ * Distingue «cargando» (brillo), «fallo» (silueta de la estructura, atenuada) y «lista» (el dibujo entra suave).
+ */
+export function GraficaMotorGuiada({ plan, pieza, mezclaReal, id, nombre, className = "size-full" }: { plan: unknown; pieza: Record<string, unknown>; mezclaReal?: unknown; id: EstructuraOficialId; nombre: string; className?: string }) {
+  // El resultado recuerda para qué pieza se pidió: si la pieza cambia, vuelve a «cargando» sin un setState síncrono.
+  const [resultado, setResultado] = useState<{ pieza: Record<string, unknown>; grafica: Grafica | null } | null>(null);
   useEffect(() => {
     const motor = MOTORES.find(([campo]) => pieza[campo] !== undefined);
     const [campo, ruta] = motor ?? ["", "/api/plan-dibujo-estructura"];
@@ -37,11 +44,18 @@ export function GraficaMotorGuiada({ plan, pieza, mezclaReal, id, nombre }: { pl
         const parseada = GraficaSchema.safeParse(cuerpo.grafica);
         return parseada.success ? parseada.data : null;
       })
-      .then((vista) => { if (!controller.signal.aborted) setGrafica(vista); })
-      .catch(() => { if (!controller.signal.aborted) setGrafica(null); });
+      .then((grafica) => { if (!controller.signal.aborted) setResultado({ pieza, grafica }); })
+      .catch(() => { if (!controller.signal.aborted) setResultado({ pieza, grafica: null }); });
     return () => controller.abort();
   }, [plan, pieza, mezclaReal]);
 
-  if (!grafica) return <IconoEstructura id={id} className="h-10 w-11" />;
-  return <VistaMotor svg={grafica.svg} lienzo={grafica.lienzo ?? grafica.ancho ?? 600} alto={grafica.alto} etiqueta={`${nombre}, dibujo de armado del motor`} className="h-12 w-12" />;
+  const estado: "cargando" | "lista" | "fallo" = resultado?.pieza !== pieza ? "cargando" : resultado.grafica ? "lista" : "fallo";
+  if (estado === "cargando") return <span className={`brillo-carga block rounded-lg ${className}`} role="img" aria-label={`Dibujando ${nombre}`} />;
+  if (estado === "fallo" || !resultado?.grafica) return <span className={`grid place-items-center text-acento/60 ${className}`}><IconoEstructura id={id} className="h-3/5 w-3/5" /></span>;
+  const grafica = resultado.grafica;
+  return (
+    <motion.span className={`block ${className}`} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}>
+      <VistaMotor svg={grafica.svg} lienzo={grafica.lienzo ?? grafica.ancho ?? 600} alto={grafica.alto} etiqueta={`${nombre}, dibujo de armado`} className="size-full" />
+    </motion.span>
+  );
 }

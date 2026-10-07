@@ -1,50 +1,97 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { ArrowUp, ImagePlus, LoaderCircle, Sparkles, X, CircleDot } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Baby, Cake, Church, Crown, Heart, ImagePlus, Sparkles } from "lucide-react";
 import { z } from "zod";
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
 import { Markdown } from "@/components/Markdown";
 import { CarruselDecoraciones } from "./CarruselDecoraciones";
 import { ComprarMateriales } from "./ComprarMateriales";
-import { ChipsOpciones, type OpcionGuiada } from "./ChipsOpciones";
+import { ChipsOpciones, OPCIONES_GUIADAS, type OpcionGuiada } from "./ChipsOpciones";
 import { CostosMateriales } from "./CostosMateriales";
 import { PasoAPaso } from "./PasoAPaso";
 import { PreguntaUso } from "./PreguntaUso";
-import { RespuestasRapidas, separarOpciones } from "./RespuestasRapidas";
+import { RespuestasRapidas, dedupeOpciones, separarOpciones } from "./RespuestasRapidas";
 import { TarjetaEleccion } from "./TarjetaEleccion";
 import { TarjetasProveedores } from "./TarjetasProveedores";
+import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
+import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
+import { TarjetaPropuesta } from "./TarjetaPropuesta";
+import { TarjetaError } from "./TarjetaError";
+import { PreguntaPropuesta } from "./PreguntaPropuesta";
+import { GuiaPlan } from "./GuiaPlan";
+import { BarraPlanVigente } from "./BarraPlanVigente";
+import { Compositor } from "./Compositor";
+import { BurbujaAsistente, BurbujaUsuario } from "./Burbujas";
+import { IndicadorEscribiendo } from "./IndicadorEscribiendo";
+import type { EtapaPlan } from "./Esqueletos";
+import { EsqueletoPlan } from "./Esqueletos";
+import { claveTexto, conMayuscula, nombreLineaCliente } from "./formato";
+import { BotonIrAlFinal, useSeguirFinal } from "./animacion/useSeguirFinal";
+import { DUR, EASE_SALIDA, entradaMensaje, entradaUsuario, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 import { useModoVista } from "@/lib/estado/modo-vista";
 import { DecoracionSempertexSchema, ProveedorSempertexSchema, type DecoracionSempertex, type ProveedorSempertex } from "@/lib/biblioteca-sempertex/esquemas";
+import { CIUDADES_PROVEEDORES } from "@/lib/biblioteca-sempertex/ciudades";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
-import { CotizacionGuiadaSchema, CotizacionPlanGuiadoSchema, PlanGuiadoSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { CotizacionGuiadaSchema, CotizacionPlanGuiadoSchema, PlanGuiadoSchema, PropuestaComposicionSchema, type PlanActualGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/utilidades";
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
-import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
-import { ESTRUCTURAS_OFICIALES } from "@/lib/plan/estructuras-oficiales";
-import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
-import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
-import { GraficaMotorGuiada } from "./GraficaMotorGuiada";
-import { BarraTamanos, tramosPorTamano } from "@/components/plan/BarraTamanos";
+import { briefChatGuiado, instruccionPlanFoto, instruccionPlanGuiado, planActualDesdePlan, resumenPlanGuiado } from "@/lib/ia/guiado/instruccion-plan";
+import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 
 /**
- * Lo que el asistente muestra además de su texto. Cada pieza va PEGADA al mensaje que la trajo, en el orden de la
- * conversación (antes todas se apilaban al final y no se sabía a qué respondían). Solo las del último mensaje del
- * asistente están activas; las anteriores quedan como historia (la idea elegida, el precio que salió…).
+ * Vista guiada (/asistente). Cada pieza (ideas, plan, proveedores…) va PEGADA al mensaje que la trajo; solo las del
+ * último mensaje del asistente se pueden usar y las anteriores quedan como historia con lo que se eligió. En todo
+ * momento hay una siguiente acción a la vista: una pregunta con botones, la acción principal del plan, la barra del
+ * plan vigente o, si algo falla, una tarjeta con «Reintentar» que repite LA ACCIÓN que falló.
  */
 type Widget = WidgetGuiado;
-const ReferenciaSchema = z.object({ blueprint: ReferenceBlueprintV2Schema, frase: z.string(), aspecto: z.number().positive().optional(), piezas: z.array(z.object({ x: z.number(), y: z.number(), ancho: z.number(), alto: z.number() }).strict()), colores: z.array(z.object({ nombre: z.string(), hex: z.string() }).strict()) }).strict();
-const MensajeSchema = z.object({ id: z.string(), role: z.enum(["user", "assistant"]), content: z.string(), widgets: z.array(WidgetGuiadoSchema).optional(), miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional(), referencia: ReferenciaSchema.optional(), notaFoto: z.string().optional() }).strict();
-type Mensaje = z.infer<typeof MensajeSchema>;
+type WidgetPlan = Extract<Widget, { tipo: "plan" }>;
+type Propuesta = z.infer<typeof PropuestaComposicionSchema>;
+type PlanGuiado = z.infer<typeof PlanGuiadoSchema>;
 type BriefGuiado = { evento?: string; edad?: number; tematica?: string };
 type Uso = "negocio" | "personal";
+type FotoInspiracion = { base64: string; mime: "image/jpeg" | "image/png" | "image/webp" };
+type PreguntaCiudad = "ciudad-decorador" | "ciudad-distribuidor";
+type OpcionesEnvio = { uso?: Uso; reintentar?: boolean; alcance?: "completa" | "individual"; pieza?: EstructuraOficialId };
+
+/** Qué repite «Reintentar»: se guarda la acción (no un cierre) para ejecutarla con el estado del momento del clic. */
+type AccionFallo =
+  | { tipo: "turno"; texto: string; opciones: OpcionesEnvio }
+  | { tipo: "plan"; propuesta: Propuesta; mensajeId: string; brief: BriefGuiado; planAnterior?: PlanActualGuiado }
+  | { tipo: "foto"; referenciaId: string; mensajeId: string }
+  | { tipo: "imagen"; mensajeId: string }
+  | { tipo: "subir-foto" };
+type AlternativaFallo = "otros-colores" | "otra-pieza";
+type Fallo = { titulo: string; detalle?: string; etiqueta?: string; accion: AccionFallo; alternativas?: AlternativaFallo[]; mensajeId?: string };
+
+const ReferenciaSchema = z.object({ blueprint: ReferenceBlueprintV2Schema, frase: z.string(), aspecto: z.number().positive().optional(), piezas: z.array(z.object({ x: z.number(), y: z.number(), ancho: z.number(), alto: z.number() }).strict()), colores: z.array(z.object({ nombre: z.string(), hex: z.string() }).strict()) }).strict();
+const MensajeSchema = z.object({
+  id: z.string(),
+  role: z.enum(["user", "assistant"]),
+  content: z.string(),
+  widgets: z.array(WidgetGuiadoSchema).optional(),
+  miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional(),
+  referencia: ReferenciaSchema.optional(),
+  notaFoto: z.string().optional(),
+  /** La lectura de esta foto ya produjo un plan: «Sí, armémoslo» deja de mostrarse. */
+  fotoArmada: z.boolean().optional(),
+  /** Respuestas rápidas de una pregunta local (sin modelo). */
+  rapidas: z.array(z.string().min(1).max(60)).max(8).optional(),
+  destacadas: z.array(z.string().min(1).max(60)).max(4).optional(),
+  /** Pregunta local de ciudad: lo que el cliente elija o escriba se convierte en la búsqueda correspondiente. */
+  pregunta: z.enum(["ciudad-decorador", "ciudad-distribuidor"]).optional(),
+}).strict();
+type Mensaje = z.infer<typeof MensajeSchema>;
 
 const CLAVE_SESION = "demo_guiado_v2";
+const MAX_MENSAJES_GUARDADOS = 80;
 const EstadoGuardadoSchema = z.object({
-  mensajes: z.array(MensajeSchema).max(80),
+  mensajes: z.array(MensajeSchema).max(MAX_MENSAJES_GUARDADOS),
   brief: z.object({ evento: z.string().optional(), edad: z.number().int().optional(), tematica: z.string().optional() }).strict().optional(),
   seleccionadaId: z.string().nullable().optional(),
   uso: z.enum(["negocio", "personal"]).nullable().optional(),
@@ -59,313 +106,703 @@ const ResultadoSchema = z.object({
   pasos: z.array(z.object({ orden: z.number().int().positive(), texto: z.string().min(1) }).strict()).optional(),
   proveedores: z.array(ProveedorSempertexSchema).optional(),
   propuesta: PropuestaComposicionSchema.optional(),
+  ciudadProveedores: z.string().optional(),
+  ciudadesDisponibles: z.array(z.string()).optional(),
+  accionPlan: z.string().optional(),
 }).passthrough();
+const AccionModeloSchema = z.enum(["ver", "costear", "comprar", "aprender", "contratar"]);
+/** De /api/generate solo interesa la imagen: el plan que devuelve no trae approval_token y el de la tarjeta sí. */
+const ImagenGeneradaSchema = z.object({ imagen: z.string().regex(/^data:image\/(?:png|jpeg|webp);base64,/) }).passthrough();
+
+const LIMITE_TURNO_MS = 75_000;
+const LIMITE_PLAN_MS = 75_000;
+const LIMITE_IMAGEN_MS = 90_000;
+const LIMITE_FOTO_MS = 12_000;
+
+/** El saludo es fijo, sale al instante y no viaja en el historial: el prompt guiado sabe que ya se hizo. */
+const SALUDO = "¡Hola! Te hago unas preguntas cortas y te muestro decoraciones Sempertex que encajen con tu celebración.\n\n**¿Qué vas a celebrar?**";
+const CHIP_FOTO = "Tengo una foto de inspiración";
+const OPCIONES_SALUDO: ReadonlyArray<{ texto: string; icono: ReactNode }> = [
+  { texto: "Cumpleaños", icono: <Cake className="size-4" aria-hidden /> },
+  { texto: "Baby shower", icono: <Baby className="size-4" aria-hidden /> },
+  { texto: "Boda", icono: <Heart className="size-4" aria-hidden /> },
+  { texto: "XV años", icono: <Crown className="size-4" aria-hidden /> },
+  { texto: "Bautizo o comunión", icono: <Church className="size-4" aria-hidden /> },
+  { texto: "Otra celebración", icono: <Sparkles className="size-4" aria-hidden /> },
+];
+const OTRAS_CELEBRACIONES = ["Divorcio", "Graduación", "Jubilación", "Fiesta de empresa", "Aniversario"];
+const PROPONME = "Propónme algo";
+const PROPONME_LOCAL = /^(?:oye,?\s*)?(?:prop[oó]nme algo|qu[eé] me recomiendas armar\??|arma t[uú] algo\.?)[.!?]*$/i;
+const PREGUNTA_TIPO = "¿Quieres una decoración completa (varias piezas) o una pieza individual?";
+const PLACEHOLDER_CAMBIO = "Pide un cambio: más rosa, sin columnas…";
+const PLACEHOLDER_CIUDAD = "Escribe tu ciudad…";
+/** Widgets que ya hacen la pregunta: con ellos, los botones «Opciones:» del texto sobran. */
+const WIDGETS_QUE_PREGUNTAN = new Set<Widget["tipo"]>(["decoraciones", "opciones", "uso", "propuesta", "plan", "pregunta-propuesta", "pasos-plan"]);
+/** Widgets altos: al llegar se muestra su cabecera, no su final. */
+const WIDGETS_ALTOS = new Set<Widget["tipo"]>(["decoraciones", "propuesta", "plan", "proveedores", "pasos-plan"]);
+const ORDEN_ETAPA: Record<EtapaPlan, number> = { preparando: 0, reintentando: 0, buscando: 1, calculando: 2, precio: 3 };
+const SIN_DEFINIR = /^(?:pendiente|por[ _-]?definir|sin definir|ninguna)$/i;
+/** Cursor de escritura al final del texto que llega (el Markdown es compartido: se aplica desde fuera). */
+const CARET = "[&_.prose-chat>:last-child]:after:ml-0.5 [&_.prose-chat>:last-child]:after:inline-block [&_.prose-chat>:last-child]:after:h-[1em] [&_.prose-chat>:last-child]:after:w-0.5 [&_.prose-chat>:last-child]:after:bg-acento [&_.prose-chat>:last-child]:after:align-[-2px] [&_.prose-chat>:last-child]:after:content-[''] [&_.prose-chat>:last-child]:after:animate-[caret_1s_steps(2)_infinite]";
 
 function nuevoId(): string { return crypto.randomUUID(); }
 
-/**
- * La conversación la abre el asistente (pruebas del 5-oct: «el cliente se encuentra perdido» si nadie le pregunta
- * nada). El saludo es fijo, sale al instante y no viaja en el historial: el prompt guiado sabe que ya se hizo.
- */
-const SALUDO = "¡Hola! Te hago unas preguntas cortas y te muestro decoraciones Sempertex que encajen con tu celebración.\n\n**¿Qué vas a celebrar?**";
-const OPCIONES_SALUDO = ["Cumpleaños", "Baby shower", "Boda", "XV años", "Bautizo o comunión", "Otra celebración"] as const;
-
-/** Widgets que ya hacen la pregunta: con ellos, los botones «Opciones:» del texto sobran (salían duplicados). */
-const WIDGETS_QUE_PREGUNTAN = new Set<Widget["tipo"]>(["decoraciones", "opciones", "uso", "propuesta", "plan", "pregunta-propuesta"]);
-
 export function VistaGuiada() {
   const { modo, cambiar } = useModoVista();
+  const reducido = useReducedMotion();
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [brief, setBrief] = useState<BriefGuiado>({});
   const [entrada, setEntrada] = useState("");
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargandoEstado] = useState(false);
+  const [fallo, setFallo] = useState<Fallo | null>(null);
   const [seleccionada, setSeleccionada] = useState<DecoracionSempertex | null>(null);
   const [uso, setUso] = useState<Uso | null>(null);
-  const [imagenCargando, setImagenCargando] = useState(false);
+  const [imagenEnCurso, setImagenEnCurso] = useState<string | null>(null);
+  /** Imágenes ya pagadas, en memoria, por id del mensaje del plan: se ven en el acto aunque guardarlas falle. */
+  const [imagenesLocales, setImagenesLocales] = useState<Readonly<Record<string, string>>>({});
+  const [etapaPlan, setEtapaPlan] = useState<Readonly<Record<string, EtapaPlan>>>({});
   const [foto, setFoto] = useState<File | null>(null);
-  const [fotoReferencia, setFotoReferencia] = useState<{ base64: string; mime: string } | null>(null);
-  // Hasta hidratar, un clic o una tecla se pierden sin aviso (pasaba en la demo con el servidor recién arrancado): se muestran
-  // desactivados y se activan solos al quedar lista la página.
+  const [analizandoFoto, setAnalizandoFoto] = useState(false);
+  const [transmitiendoId, setTransmitiendoId] = useState<string | null>(null);
+  const [placeholderForzado, setPlaceholderForzado] = useState<string | null>(null);
+  const [sugerenciasCambio, setSugerenciasCambio] = useState<string[] | null>(null);
+  const [anuncio, setAnuncio] = useState("");
+  const [restaurado, setRestaurado] = useState(false);
+  /** Ids restaurados de la sesión: no se vuelven a animar al montar. */
+  const [restaurados, setRestaurados] = useState<ReadonlySet<string>>(() => new Set());
+  // Hasta hidratar, un clic se perdería sin aviso: el compositor sale desactivado y se activa solo.
   const hidratado = useSyncExternalStore(suscribirNada, () => true, () => false);
-  const entradaRef = useRef<HTMLInputElement>(null);
-  const finRef = useRef<HTMLDivElement>(null);
+
+  const textoRef = useRef<HTMLInputElement>(null);
+  const archivoRef = useRef<HTMLInputElement>(null);
+  const contenedorRef = useRef<HTMLDivElement>(null);
+  const contenidoRef = useRef<HTMLDivElement>(null);
   const turnoRef = useRef(0);
-  const mensajesRef = useRef(mensajes);
-  const aceptarPropuestaRef = useRef<((propuesta: z.infer<typeof PropuestaComposicionSchema>, desdeTurno?: boolean) => Promise<void>) | null>(null);
+  const sesionRef = useRef(0);
+  const cargandoRef = useRef(false);
+  const controlRef = useRef<AbortController | null>(null);
+  const imagenControlRef = useRef<AbortController | null>(null);
+  const imagenEnCursoRef = useRef<string | null>(null);
+  const fotosRef = useRef(new Map<string, FotoInspiracion>());
+  const restauradoRef = useRef(false);
+  const flujoRef = useRef<{ id: string; texto: string } | null>(null);
+  const cuadroRef = useRef<number | null>(null);
+  const vistaPendienteRef = useRef<{ tipo: "final"; instantaneo?: boolean } | { tipo: "mensaje"; id: string } | null>(null);
 
-  useEffect(() => { mensajesRef.current = mensajes; }, [mensajes]);
-  const fotosDePlanesRef = useRef(new Map<string, { base64: string; mime: string }>());
+  const { pegado, hayNuevo, irAlFinal, mostrarMensaje, seguirSiPegado } = useSeguirFinal({ contenedorRef, contenidoRef });
 
+  const marcarCargando = useCallback((valor: boolean) => { cargandoRef.current = valor; setCargandoEstado(valor); }, []);
+
+  // ── Derivados ────────────────────────────────────────────────────────────────────────────────────────────────
+  const planVigente = useMemo(() => buscarPlanVigente(mensajes), [mensajes]);
+  const ultimo = mensajes.at(-1);
   const indiceActivo = useMemo(() => {
     for (let indice = mensajes.length - 1; indice >= 0; indice -= 1) if (mensajes[indice]!.role === "assistant") return indice;
     return -1;
   }, [mensajes]);
-  const ultimo = mensajes.at(-1);
-  const respuestasRapidas = useMemo(() => {
-    if (cargando) return [];
-    if (!mensajes.length) return [...OPCIONES_SALUDO];
-    if (ultimo?.role !== "assistant" || ultimo.widgets?.some((widget) => WIDGETS_QUE_PREGUNTAN.has(widget.tipo))) return [];
-    return [...separarOpciones(ultimo.content).opciones, "Propónme algo"];
-  }, [mensajes.length, ultimo, cargando]);
-  const hayEjemplos = useMemo(() => mensajes.some((mensaje) => mensaje.widgets?.some((widget) => (widget.tipo === "decoraciones" && widget.decoraciones.some((decoracion) => decoracion.origen === "ejemplo")) || ("decoracion" in widget && widget.decoracion.origen === "ejemplo"))), [mensajes]);
-  const contexto = seleccionada ? `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}` : brief.tematica ? [brief.evento, brief.edad ? `${brief.edad} años` : null, /^por[ _-]?definir$/i.test(brief.tematica.trim()) ? null : brief.tematica].filter(Boolean).map((parte) => conMayuscula(String(parte))).join(" · ") : null;
+  const ultimoAsistente = indiceActivo >= 0 ? mensajes[indiceActivo] : undefined;
+  const opcionesModelo = useMemo(() => (ultimo?.role === "assistant" ? separarOpciones(ultimo.content).opciones : []), [ultimo]);
+  const preguntaCiudad = Boolean(ultimo?.role === "assistant" && (ultimo.pregunta || opcionesModelo.some((opcion) => claveTexto(opcion) === "otra ciudad")));
+  const preguntaEdad = Boolean(ultimo?.role === "assistant" && /cu[aá]ntos años|qu[eé] edad/i.test(ultimo.content));
+  const hechasOpciones = useMemo(() => {
+    let desde = -1;
+    mensajes.forEach((mensaje, indice) => { if (mensaje.widgets?.some((widget) => widget.tipo === "seleccion")) desde = indice; });
+    const hechas = new Set<OpcionGuiada>();
+    mensajes.slice(Math.max(0, desde)).forEach((mensaje) => mensaje.widgets?.forEach((widget) => { if (widget.tipo === "opciones" && widget.elegida) hechas.add(widget.elegida); }));
+    return [...hechas];
+  }, [mensajes]);
 
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(CLAVE_SESION);
-      if (!raw) return;
-      const parsed = EstadoGuardadoSchema.safeParse(JSON.parse(raw) as unknown);
-      if (!parsed.success) { console.warn("[asistente-guiado] sesión guardada inválida; se inicia una conversación nueva."); return; }
-      const elegida = parsed.data.seleccionadaId ? decoracionDeLaConversacion(parsed.data.mensajes, parsed.data.seleccionadaId) : null;
-      requestAnimationFrame(() => { setMensajes(parsed.data.mensajes); setBrief(parsed.data.brief ?? {}); setSeleccionada(elegida); setUso(parsed.data.uso ?? null); });
-    } catch (cause) {
-      console.warn("[asistente-guiado] no se pudo restaurar la conversación.", cause);
+  const respuestasRapidas = useMemo((): { opciones: string[]; destacadas: string[] } => {
+    const vacio = { opciones: [], destacadas: [] };
+    if (cargando || !mensajes.length || ultimo?.role !== "assistant") return vacio;
+    if (sugerenciasCambio?.length) return { opciones: sugerenciasCambio, destacadas: [] };
+    if (ultimo.rapidas?.length) return { opciones: dedupeOpciones(ultimo.rapidas), destacadas: ultimo.destacadas ?? [] };
+    if (ultimo.referencia || ultimo.widgets?.some((widget) => WIDGETS_QUE_PREGUNTAN.has(widget.tipo))) return vacio;
+    const opciones = [...opcionesModelo];
+    // Respaldo: con una idea elegida y sin botones, las cuatro opciones siguen a mano.
+    if (!opciones.length && seleccionada && !planVigente) opciones.push(...OPCIONES_GUIADAS.map((opcion) => opcion.titulo));
+    const conProponer = !planVigente && !seleccionada && !preguntaCiudad && !preguntaEdad;
+    if (conProponer) opciones.push(PROPONME);
+    return { opciones: dedupeOpciones(opciones), destacadas: conProponer ? [PROPONME] : [] };
+  }, [cargando, mensajes.length, ultimo, sugerenciasCambio, opcionesModelo, seleccionada, planVigente, preguntaCiudad, preguntaEdad]);
+
+  const contexto = useMemo(() => {
+    if (seleccionada && !planVigente) return `${seleccionada.titulo}${uso ? ` · ${uso === "negocio" ? "Para negocio" : "Uso personal"}` : ""}`;
+    const valido = (valor: string | undefined): valor is string => Boolean(valor?.trim() && !SIN_DEFINIR.test(valor.trim()));
+    const cumple = /cumple/i.test(brief.evento ?? "");
+    const partes = [valido(brief.evento) ? brief.evento : null, cumple && brief.edad ? `${brief.edad} años` : null, valido(brief.tematica) ? brief.tematica : null];
+    const visibles = partes.filter((parte): parte is string => Boolean(parte)).map(conMayuscula);
+    return visibles.length ? visibles.join(" · ") : null;
+  }, [brief, seleccionada, planVigente, uso]);
+
+  const placeholder = useMemo(() => {
+    if (placeholderForzado) return placeholderForzado;
+    if (!mensajes.length) return "Cuéntame qué quieres celebrar…";
+    if (cargando) return "Escribe mientras preparo tu respuesta…";
+    if (preguntaCiudad) return PLACEHOLDER_CIUDAD;
+    if (ultimoAsistente?.widgets?.some((widget) => widget.tipo === "decoraciones")) return "Cuéntame qué te gustó…";
+    // Una pregunta abierta manda sobre el plan vigente: primero se contesta.
+    const pregunta = ultimoAsistente?.widgets?.some((widget) => widget.tipo === "pregunta-propuesta" || widget.tipo === "opciones" || widget.tipo === "uso");
+    if (pregunta || (respuestasRapidas.opciones.length && !sugerenciasCambio)) return "Elige una opción o escríbela…";
+    if (planVigente) return PLACEHOLDER_CAMBIO;
+    return "Escribe tu respuesta…";
+  }, [placeholderForzado, mensajes.length, cargando, preguntaCiudad, planVigente, ultimoAsistente, respuestasRapidas.opciones.length, sugerenciasCambio]);
+
+  // ── Sesión ───────────────────────────────────────────────────────────────────────────────────────────────────
+  // Se restaura UNA vez y antes del primer guardado: en modo estricto el guardado del montaje ya no pisa lo guardado.
+  useLayoutEffect(() => {
+    if (restauradoRef.current) return;
+    restauradoRef.current = true;
+    const guardado = leerSesion();
+    /* eslint-disable react-hooks/set-state-in-effect -- restauración única desde sessionStorage (sistema externo) */
+    if (guardado) {
+      setMensajes(guardado.mensajes);
+      setBrief(guardado.brief);
+      setSeleccionada(guardado.seleccionada);
+      setUso(guardado.uso);
+      setRestaurados(new Set(guardado.mensajes.map((mensaje) => mensaje.id)));
+      vistaPendienteRef.current = { tipo: "final", instantaneo: true };
     }
+    setRestaurado(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   useEffect(() => {
-    try { sessionStorage.setItem(CLAVE_SESION, JSON.stringify({ mensajes, brief, seleccionadaId: seleccionada?.id ?? null, uso })); }
+    // Durante la transmisión no se guarda en cada fotograma: se guarda al terminar.
+    if (!restaurado || transmitiendoId) return;
+    try { sessionStorage.setItem(CLAVE_SESION, JSON.stringify({ mensajes: mensajes.slice(-MAX_MENSAJES_GUARDADOS), brief, seleccionadaId: seleccionada?.id ?? null, uso })); }
     catch (cause) { console.warn("[asistente-guiado] no se pudo guardar la conversación.", cause); }
-  }, [mensajes, brief, seleccionada, uso]);
+  }, [restaurado, transmitiendoId, mensajes, brief, seleccionada, uso]);
 
-  // Lo nuevo siempre a la vista: el texto que llega, las ideas, el precio.
-  useEffect(() => { finRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [mensajes, cargando, error]);
+  // Desplazamiento pedido por una acción: se hace después de pintar el mensaje.
+  useEffect(() => {
+    const pendiente = vistaPendienteRef.current;
+    if (!pendiente) return;
+    vistaPendienteRef.current = null;
+    if (pendiente.tipo === "final") irAlFinal(pendiente.instantaneo ? "auto" : undefined);
+    else mostrarMensaje(pendiente.id);
+  }, [mensajes, irAlFinal, mostrarMensaje]);
+
+  // ── Utilidades de estado ─────────────────────────────────────────────────────────────────────────────────────
+  function pedirFinal(): void { vistaPendienteRef.current = { tipo: "final" }; }
+  function pedirVista(id: string): void { vistaPendienteRef.current = { tipo: "mensaje", id }; }
+  /** Lleva a la vista lo que se acaba de abrir dentro de la tarjeta (compra, costeo, imagen); si no está, su final. */
+  function revelarEnTarjeta(id: string, selector: string): void {
+    window.setTimeout(() => {
+      const mensaje = contenedorRef.current?.querySelector<HTMLElement>(`[data-mensaje-id="${CSS.escape(id)}"]`);
+      const objetivo = mensaje?.querySelector<HTMLElement>(selector);
+      // Instantáneo: un desplazamiento suave competía con el seguimiento del final y no llegaba a mostrarlo.
+      if (objetivo) objetivo.scrollIntoView({ block: "center", behavior: "auto" });
+      else mensaje?.scrollIntoView({ block: "end", behavior: "auto" });
+    }, 380);
+  }
+  function actualizarMensaje(id: string, cambio: (mensaje: Mensaje) => Mensaje): void {
+    setMensajes((actuales) => actuales.map((mensaje) => (mensaje.id === id ? cambio(mensaje) : mensaje)));
+  }
+  function actualizarWidget<T extends Widget["tipo"]>(id: string, tipo: T, cambio: (widget: Extract<Widget, { tipo: T }>) => Extract<Widget, { tipo: T }>): void {
+    actualizarMensaje(id, (mensaje) => ({ ...mensaje, widgets: mensaje.widgets?.map((widget): Widget => (widget.tipo === tipo ? cambio(widget as Extract<Widget, { tipo: T }>) : widget)) }));
+  }
+  function agregar(nuevos: Mensaje[]): void { setMensajes((actuales) => [...actuales, ...nuevos]); }
+  function fijarEtapa(id: string, etapa: EtapaPlan): void { setEtapaPlan((actuales) => ({ ...actuales, [id]: etapa })); }
+  function avanzarEtapa(id: string, etapa: EtapaPlan): void {
+    setEtapaPlan((actuales) => {
+      const actual = actuales[id];
+      if (actual && actual !== "reintentando" && ORDEN_ETAPA[actual] >= ORDEN_ETAPA[etapa]) return actuales;
+      return { ...actuales, [id]: etapa };
+    });
+  }
+  function quitarEtapa(id: string): void {
+    setEtapaPlan((actuales) => (id in actuales ? Object.fromEntries(Object.entries(actuales).filter(([clave]) => clave !== id)) : actuales));
+  }
+  function pedirEscritura(texto: string, prefijo?: string): void {
+    setPlaceholderForzado(texto);
+    if (prefijo !== undefined) setEntrada(prefijo);
+    requestAnimationFrame(() => {
+      const caja = textoRef.current;
+      if (!caja) return;
+      caja.focus();
+      const fin = caja.value.length;
+      caja.setSelectionRange(fin, fin);
+    });
+  }
+  function limpiarAvisos(): void { setFallo(null); setSugerenciasCambio(null); setPlaceholderForzado(null); }
+
+  // Texto en streaming: como mucho un render por fotograma.
+  function empujarTexto(id: string, texto: string): void {
+    flujoRef.current = { id, texto };
+    if (cuadroRef.current !== null) return;
+    cuadroRef.current = requestAnimationFrame(() => {
+      cuadroRef.current = null;
+      const flujo = flujoRef.current;
+      if (!flujo) return;
+      actualizarMensaje(flujo.id, (mensaje) => ({ ...mensaje, content: flujo.texto }));
+      seguirSiPegado();
+    });
+  }
+  function cancelarFlujo(): void {
+    if (cuadroRef.current !== null) cancelAnimationFrame(cuadroRef.current);
+    cuadroRef.current = null;
+    flujoRef.current = null;
+  }
 
   const vaciar = useCallback(() => {
     turnoRef.current += 1;
-    setMensajes([]); setBrief({}); setSeleccionada(null); setUso(null); setFoto(null); setFotoReferencia(null); fotosDePlanesRef.current.clear(); setCargando(false); setError(null);
+    sesionRef.current += 1;
+    controlRef.current?.abort("usuario");
+    imagenControlRef.current?.abort("usuario");
+    controlRef.current = null;
+    imagenControlRef.current = null;
+    imagenEnCursoRef.current = null;
+    if (cuadroRef.current !== null) cancelAnimationFrame(cuadroRef.current);
+    cuadroRef.current = null;
+    flujoRef.current = null;
+    fotosRef.current.clear();
+    setMensajes([]); setBrief({}); setSeleccionada(null); setUso(null); setFoto(null); setFallo(null); setEntrada("");
+    setImagenEnCurso(null); setImagenesLocales({}); setEtapaPlan({}); setAnalizandoFoto(false); setTransmitiendoId(null);
+    setPlaceholderForzado(null); setSugerenciasCambio(null); setAnuncio("");
+    marcarCargando(false);
     try { sessionStorage.removeItem(CLAVE_SESION); } catch (cause) { console.warn("[asistente-guiado] no se pudo limpiar la sesión.", cause); }
-  }, []);
+  }, [marcarCargando]);
 
-  const enviar = useCallback(async (texto: string, opcionesEnvio?: { uso?: Uso; reintentar?: boolean }) => {
-    const limpio = texto.trim();
-    if (!limpio || cargando) return;
-    if (/^(?:oye,?\s*)?(?:prop[oó]nme algo|qu[eé] me recomiendas armar\??|arma t[uú] algo\.?)[.!?]*$/i.test(limpio)) {
-      const visibles = [...mensajes, { id: nuevoId(), role: "user" as const, content: limpio }, { id: nuevoId(), role: "assistant" as const, content: "¿Quieres una decoración completa (varias piezas) o una pieza individual?", widgets: [{ tipo: "pregunta-propuesta" as const, alcance: "tipo" as const }] }];
-      setMensajes(visibles); setEntrada(""); setError(null);
+  function detener(): void { controlRef.current?.abort("usuario"); }
+
+  // ── Turno con el asistente guiado ────────────────────────────────────────────────────────────────────────────
+  async function enviar(texto: string, opcionesEnvio: OpcionesEnvio = {}): Promise<void> {
+    const archivo = foto;
+    let limpio = texto.trim();
+    if ((!limpio && !archivo) || cargandoRef.current) return;
+    limpiarAvisos();
+    if (!limpio) limpio = "Mira esta foto de inspiración.";
+
+    // «Propónme algo» se resuelve aquí mismo: la pregunta de tipo no necesita al modelo.
+    if (!archivo && PROPONME_LOCAL.test(limpio)) {
+      setSeleccionada(null); setUso(null); setEntrada("");
+      agregar([
+        { id: nuevoId(), role: "user", content: limpio },
+        { id: nuevoId(), role: "assistant", content: PREGUNTA_TIPO, widgets: [{ tipo: "pregunta-propuesta", alcance: "tipo" }] },
+      ]);
+      pedirFinal();
       return;
     }
-    const contenido = limpio.slice(0, 6000);
+
+    const opciones: OpcionesEnvio = { ...opcionesEnvio };
+    let contenido = limpio.slice(0, 6000);
+    const previo = ultimoAsistente;
+    const tipoAbierto = previo && indiceActivo === mensajes.length - 1 ? previo.widgets?.find((widget) => widget.tipo === "pregunta-propuesta" && widget.alcance === "tipo" && !widget.elegida) : undefined;
+    if (!opciones.alcance && tipoAbierto && previo) {
+      const alcance = /completa/i.test(contenido) ? "completa" : /individual/i.test(contenido) ? "individual" : null;
+      if (alcance) {
+        opciones.alcance = alcance;
+        actualizarWidget(previo.id, "pregunta-propuesta", (widget) => ({ ...widget, elegida: alcance === "completa" ? "Decoración completa" : "Pieza individual" }));
+      }
+    }
+    if (!opciones.reintentar && previo?.pregunta && indiceActivo === mensajes.length - 1 && contenido.length <= 40 && !/\bbusca/i.test(contenido)) {
+      contenido = textoBusquedaCiudad(previo.pregunta, contenido, Boolean(planVigente));
+    }
+
     const turno = ++turnoRef.current;
-    const historial = prepararHistorialGuiado(mensajes, `${contenido}${foto ? "\nAdjunté una foto de inspiración." : ""}`, opcionesEnvio?.reintentar);
-    const mensajesVisibles = (opcionesEnvio?.reintentar ? sinUltimoTurnoGuiado(mensajes) : mensajes).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length);
-    const usoEnvio = opcionesEnvio?.uso ?? uso;
-    const elegida = seleccionada;
+    const control = new AbortController();
+    controlRef.current = control;
+    const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_TURNO_MS);
     const idUsuario = nuevoId();
-    setMensajes([...mensajesVisibles, { id: idUsuario, role: "user", content: contenido }, { id: nuevoId(), role: "assistant", content: "" }]);
-    setEntrada(""); setError(null); setCargando(true);
-    // El cliente ve en su mensaje la foto que mandó (miniatura pequeña: la conversación vive en sessionStorage).
-    if (foto) void miniaturaDe(foto).then((miniatura) => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === idUsuario ? { ...mensaje, miniatura } : mensaje)))
-      .catch((cause: unknown) => console.warn("[asistente-guiado] no se pudo crear la miniatura de la foto.", cause));
-    try {
-      const imagen = foto ? await leerFoto(foto) : null;
-      if (imagen) setFotoReferencia(imagen);
-      const analisisFoto = imagen ? fetch("/api/references/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [imagen] }) })
-        .then(async (respuesta) => {
-          if (!respuesta.ok) throw new Error("No se pudo analizar la foto.");
-          const analisis: unknown = await respuesta.json();
-          const referencia = adaptarAnalisisReferencia(analisis);
-          if (!referencia) throw new Error("No se encontraron piezas en la foto.");
-          setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === idUsuario ? { ...mensaje, referencia } : mensaje));
-          return referencia;
-        })
-        .catch((cause: unknown) => {
-          console.warn("[asistente-guiado] no se pudo leer la foto de inspiración.", cause);
-          setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === idUsuario ? { ...mensaje, notaFoto: "No pude distinguir bien los detalles, pero podemos seguir con tu idea." } : mensaje));
-          return null;
-        }) : null;
-      // Da oportunidad breve al análisis para orientar búsqueda; chat no espera análisis completo.
-      const referenciaRapida = analisisFoto ? await Promise.race([
-        analisisFoto,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
-      ]) : null;
-      const historialConLectura = referenciaRapida
-        ? historial.map((mensaje, indice) => indice === historial.length - 1 ? { ...mensaje, content: `${mensaje.content.slice(0, 5400)}\n\nLectura de la foto: ${referenciaRapida.frase}`.slice(0, 6000) } : mensaje)
-        : historial;
-      const response = await fetch("/api/asistente-guiado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historialConLectura, brief, estadoGuiado: { ...(elegida ? { decoracionId: elegida.id } : {}), ...(usoEnvio ? { uso: usoEnvio } : {}), ...( /prop[oó]n|arma t[uú]|cambia|sin guirnalda|m[aá]s rosa|solo un arco|decoraci[oó]n completa|pieza individual/i.test(contenido) ? { propuesta: true } : {}) }, ...(imagen ? { fotoInspiracion: imagen } : {}) }) });
-      if (!response.ok || !response.body) throw new Error(`El asistente respondió con estado ${response.status}.`);
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let textoFinal = "";
-      let propuestaParaPlan: z.infer<typeof PropuestaComposicionSchema> | null = null;
-      const reemplazarUltimo = (cambio: Partial<Mensaje>) => setMensajes((actuales) => actuales.map((mensaje, indice) => indice === actuales.length - 1 ? { ...mensaje, ...cambio } : mensaje));
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const paquetes = buffer.split("\n\n"); buffer = paquetes.pop() ?? "";
-        for (const paquete of paquetes) {
-          if (turno !== turnoRef.current) return;
-          const linea = paquete.split("\n").find((item) => item.startsWith("data: "));
-          if (!linea) continue;
-          let dato: unknown;
-          try { dato = JSON.parse(linea.slice(6)) as unknown; } catch (cause) { throw new Error("El asistente envió una respuesta incompleta.", { cause }); }
-          const parseado = ChatSseEventV1Schema.safeParse(dato);
-          if (!parseado.success) throw new Error("La respuesta del asistente no cumple el contrato.");
-          if (parseado.data.type === "texto") { textoFinal += parseado.data.delta; reemplazarUltimo({ content: textoFinal }); }
-          if (parseado.data.type === "error") throw new Error(parseado.data.error);
-          if (parseado.data.type === "fin") {
-            textoFinal = parseado.data.reply.slice(0, 6000);
-            const resultado = ResultadoSchema.safeParse(parseado.data.result ?? {});
-            if (!resultado.success) throw new Error("Los datos devueltos por el asistente no son válidos.");
-            const datos = resultado.data;
-            if (datos.brief) setBrief(datos.brief);
-            if (datos.uso) setUso(datos.uso);
-            const widgets: Widget[] = [];
-            if (datos.decoraciones?.length) widgets.push({ tipo: "decoraciones", decoraciones: datos.decoraciones });
-            if (datos.opciones && elegida) widgets.push({ tipo: "opciones" });
-            if (datos.preguntaUso) widgets.push({ tipo: "uso" });
-            const usoCotizado = datos.uso ?? usoEnvio;
-            if (elegida && usoCotizado && datos.cotizacion !== undefined) {
-              const valida = datos.cotizacion == null ? null : CotizacionGuiadaSchema.safeParse(datos.cotizacion);
-              if (valida && !valida.success) throw new Error("La cotización recibida no cumple el contrato.");
-              widgets.push({ tipo: "cotizacion", cotizacion: valida ? valida.data : null, uso: usoCotizado, decoracion: elegida });
-            }
-            if (datos.pasos && elegida) widgets.push({ tipo: "pasos", decoracion: elegida });
-            // Después del precio o de los pasos, el cliente sigue teniendo las otras opciones a mano (comprar, decorador...).
-            if (elegida && widgets.some((widget) => widget.tipo === "cotizacion" || widget.tipo === "pasos") && !widgets.some((widget) => widget.tipo === "opciones")) widgets.push({ tipo: "opciones" });
-            if (datos.proveedores) widgets.push({ tipo: "proveedores", proveedores: datos.proveedores });
-            // Toda propuesta se convierte en plan en el acto (pedido del dueño: «cuando seleccione, me manda el plan»), venga del botón,
-            // de un «Decoración completa» escrito o de un «cambia…».
-            const resolverAhora = Boolean(datos.propuesta);
-            if (datos.propuesta && !resolverAhora) widgets.push({ tipo: "propuesta", propuesta: datos.propuesta });
-            if (resolverAhora) propuestaParaPlan = datos.propuesta!;
-            reemplazarUltimo({ content: resolverAhora ? "Estoy preparando tu plan…" : textoFinal, ...(widgets.length ? { widgets } : {}) });
-            if (!resolverAhora && !textoFinal.trim() && !widgets.length) setMensajes((actuales) => actuales.slice(0, -1));
-          }
-        }
-      }
-      if (propuestaParaPlan && turno === turnoRef.current) await aceptarPropuestaRef.current?.(propuestaParaPlan, true);
-      if (turno === turnoRef.current) setFoto(null);
-    } catch (cause) {
-      if (turno !== turnoRef.current) return;
-      // Al cliente, un mensaje amable; la causa real queda en la consola para diagnosticar.
-      console.error("[asistente-guiado] turno fallido", cause);
-      setError(cause instanceof Error ? cause.message : "No se pudo enviar el mensaje.");
-      setMensajes((actuales) => actuales.filter((item) => item.content !== "" || item.widgets?.length));
-    } finally { if (turno === turnoRef.current) setCargando(false); }
-  }, [brief, cargando, mensajes, seleccionada, foto, uso]);
-
-  // `desdeTurno`: la llama el propio turno que trajo la propuesta, que todavía figura como «cargando»; sin esta
-  // excepción la función se cancelaba sola y el plan nunca se pedía (2026-10-06).
-  const aceptarPropuesta = useCallback(async (propuesta: z.infer<typeof PropuestaComposicionSchema>, desdeTurno = false) => {
-    if (cargando && !desdeTurno) return;
-    const piezas = propuesta.piezas.map((pieza) => `${pieza.cantidad} ${pieza.nombre ?? pieza.estructura}`).join(", ");
-    const instruccion = `Resuelve ahora, sin pedir aceptación, el plan exacto de esta composición con Python: ${piezas}. Paleta Sempertex: ${propuesta.colores.join(", ")}. Contexto: ${brief.evento ?? "celebración"}${brief.edad ? `, ${brief.edad} años` : ""}, ${brief.tematica ?? "sin temática definida"}.`;
-    const actuales = mensajesRef.current.filter((mensaje) => mensaje.content.trim() || mensaje.widgets?.length);
-    const historial = prepararHistorialGuiado(actuales, instruccion);
-    const visibles = [...actuales, { id: nuevoId(), role: "assistant" as const, content: "Estoy preparando tu plan…" }];
-    setMensajes(visibles); setCargando(true); setError(null);
-    const turno = ++turnoRef.current;
-    try {
-      const respuesta = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "chat.v1", messages: historial.slice(-16), brief: { tipo_evento: brief.evento, colores: propuesta.colores, estilo: brief.tematica } }) });
-      if (!respuesta.ok || !respuesta.body) throw new Error("No pude preparar el plan. Inténtalo otra vez.");
-      const reader = respuesta.body.getReader(); const decoder = new TextDecoder(); let buffer = ""; let plan: unknown; let cotizacion: unknown;
-      while (true) {
-        const { done, value } = await reader.read(); if (done) break;
-        buffer += decoder.decode(value, { stream: true }); const paquetes = buffer.split("\n\n"); buffer = paquetes.pop() ?? "";
-        for (const paquete of paquetes) {
-          const linea = paquete.split("\n").find((item) => item.startsWith("data: ")); if (!linea) continue;
-          const evento = ChatSseEventV1Schema.parse(JSON.parse(linea.slice(6)) as unknown);
-          if (evento.type === "error") throw new Error(evento.error);
-          if (evento.type === "fin") { plan = evento.plan; cotizacion = evento.cotizacion; }
-        }
-      }
-      if (turno !== turnoRef.current) return;
-      const validado = PlanGuiadoSchema.safeParse(plan);
-      if (!validado.success) throw new Error("El plan no llegó completo. Podemos intentarlo de nuevo.");
-      const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacion);
-      const armado = generarPasosPlan(validado.data);
-      setMensajes((actuales) => [...actuales.slice(0, -1), { id: nuevoId(), role: "assistant", content: "Listo. Este es tu plan; puedes costear, comprar, aprender a hacerlo o ver cómo quedaría.", widgets: [{ tipo: "plan", plan: validado.data, pasos: armado.pasos, ...(precio.success ? { cotizacion: precio.data } : {}) }] }]);
-    } catch (cause) {
-      console.error("[asistente-guiado] no se pudo preparar el plan", cause);
-      setError(cause instanceof Error ? cause.message : "No pude preparar el plan.");
-      setMensajes((actuales) => actuales.slice(0, -1));
-    } finally { if (turno === turnoRef.current) setCargando(false); }
-  }, [brief, cargando]);
-  useEffect(() => { aceptarPropuestaRef.current = aceptarPropuesta; }, [aceptarPropuesta]);
-
-  const aceptarPlanFoto = useCallback(async (referencia: z.infer<typeof ReferenceBlueprintV2Schema>) => {
-    if (cargando) return;
-    const instruccion = "Sí, armémoslo. Prepara el plan para reproducir las piezas de globos aprobadas en la foto y sus colores. Usa la lectura de referencia para resolverlo con Python.";
-    const historial = prepararHistorialGuiado(mensajes, instruccion);
-    setMensajes((actuales) => [...actuales, { id: nuevoId(), role: "user", content: "Sí, armémoslo." }, { id: nuevoId(), role: "assistant", content: "Estoy preparando el plan de tu foto…" }]);
-    setCargando(true); setError(null);
-    const turno = ++turnoRef.current;
-    try {
-      const respuesta = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schema_version: "chat.v1", messages: historial.slice(-16), brief: { tipo_evento: brief.evento, estilo: brief.tematica }, ...(fotoReferencia ? { imagenesReferencia: [fotoReferencia] } : {}), referenceBlueprint: referencia }) });
-      if (!respuesta.ok || !respuesta.body) throw new Error("No pude resolver el plan de la foto. Inténtalo otra vez.");
-      const reader = respuesta.body.getReader(); const decoder = new TextDecoder(); let buffer = ""; let plan: unknown; let cotizacion: unknown;
-      while (true) {
-        const { done, value } = await reader.read(); if (done) break;
-        buffer += decoder.decode(value, { stream: true }); const paquetes = buffer.split("\n\n"); buffer = paquetes.pop() ?? "";
-        for (const paquete of paquetes) {
-          const linea = paquete.split("\n").find((item) => item.startsWith("data: ")); if (!linea) continue;
-          const evento = ChatSseEventV1Schema.parse(JSON.parse(linea.slice(6)) as unknown);
-          if (evento.type === "error") throw new Error(evento.error);
-          if (evento.type === "fin") { plan = evento.plan; cotizacion = evento.cotizacion; }
-        }
-      }
-      if (turno !== turnoRef.current) return;
-      const validado = PlanGuiadoSchema.safeParse(plan);
-      if (!validado.success) throw new Error("El plan de la foto no llegó completo. Podemos intentarlo de nuevo.");
-      const armado = generarPasosPlan(validado.data);
-      const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacion);
-      if (fotoReferencia) fotosDePlanesRef.current.set(validado.data.plan_hash, fotoReferencia);
-      setMensajes((actuales) => [...actuales.slice(0, -1), { id: nuevoId(), role: "assistant", content: "Listo. Aquí tienes el plan de las piezas de globos de tu foto.", widgets: [{ tipo: "plan", plan: validado.data, pasos: armado.pasos, fotoInspiracion: true, ...(precio.success ? { cotizacion: precio.data } : {}) }] }]);
-    } catch (cause) {
-      console.error("[asistente-guiado] no se pudo resolver el plan de la foto", cause);
-      setError(cause instanceof Error ? cause.message : "No pude preparar el plan de la foto.");
-      setMensajes((actuales) => actuales.slice(0, -1));
-    } finally { if (turno === turnoRef.current) setCargando(false); }
-  }, [brief, cargando, fotoReferencia, mensajes]);
-
-  const verComoQuedaria = useCallback(async (plan: z.infer<typeof PlanGuiadoSchema>, mensajeId: string, usarFotoInspiracion = false) => {
-    if (imagenCargando) return;
-    setImagenCargando(true); setError(null);
-    setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, content: "Estoy dibujando tu decoración, tarda unos segundos…" } : mensaje));
-    try {
-      const imagenReferencia = usarFotoInspiracion ? fotosDePlanesRef.current.get(plan.plan_hash) : undefined;
-      const respuesta = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan, planHash: plan.plan_hash, brief: { tipo_evento: brief.evento, colores: plan.plan.concepto.paleta, estilo: brief.tematica }, solicitudUsuario: plan.plan.concepto.descripcion, ...(imagenReferencia ? { imagenesReferencia: [imagenReferencia] } : {}) }) });
-      if (!respuesta.ok) throw new Error("No pude generar la imagen. Puedes reintentar.");
-      const cuerpo: unknown = await respuesta.json();
-      const salida = z.object({ imagen: z.string().regex(/^data:image\/(?:png|jpeg|webp);base64,/), plan: PlanGuiadoSchema }).passthrough().parse(cuerpo);
-      const guardado = await fetch("/api/guiada-imagen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imagen: salida.imagen }) });
-      if (!guardado.ok) throw new Error("La imagen se generó, pero no pude guardarla para tu sesión.");
-      const referencia = z.object({ url: z.string().startsWith("/api/guiada-imagen/") }).strict().parse(await guardado.json());
-      const url = new URL(referencia.url, window.location.origin).toString();
-      setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, content: "Imagen referencial generada con IA", widgets: (mensaje.widgets ?? []).map((widget) => widget.tipo === "plan" ? { ...widget, plan: salida.plan, imagen: url } : widget) } : mensaje));
-    } catch (cause) {
-      console.error("[asistente-guiado] error al generar imagen", cause);
-      setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, content: "No pude dibujarla esta vez. Tu plan sigue guardado.", widgets: (mensaje.widgets ?? []).map((widget) => widget.tipo === "plan" ? { ...widget, errorImagen: true } : widget) } : mensaje));
-      setError("No pude dibujarla esta vez. Tu plan sigue guardado; puedes reintentar.");
-    } finally { setImagenCargando(false); }
-  }, [brief, imagenCargando]);
-
-  function elegirDecoracion(decoracion: DecoracionSempertex): void {
-    turnoRef.current += 1;
-    setCargando(false); setSeleccionada(decoracion); setUso(null); setError(null);
+    const idAsistente = nuevoId();
+    const base = (opciones.reintentar ? sinUltimoTurnoGuiado(mensajes) : mensajes).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length || mensaje.referencia);
+    const historial = prepararHistorialGuiado(base, `${contenido}${archivo ? "\nAdjunté una foto de inspiración." : ""}`);
+    const usoEnvio = opciones.uso ?? uso ?? undefined;
+    const planActual = planVigente ? planActualDesdePlan(planVigente.widget.plan) : null;
+    const planAnterior = planActual ?? undefined;
+    const estadoGuiado = {
+      ...(seleccionada && !planVigente ? { decoracionId: seleccionada.id } : {}),
+      ...(usoEnvio ? { uso: usoEnvio } : {}),
+      ...(opciones.alcance ? { alcancePropuesta: opciones.alcance } : {}),
+      ...(opciones.alcance === "individual" && opciones.pieza ? { piezaPedida: opciones.pieza } : {}),
+      ...(planActual ? { planActual } : {}),
+    };
+    const elegida = seleccionada && !planVigente ? seleccionada : null;
+    // Funcional: conserva lo que la acción que llamó acaba de marcar (la opción elegida en su widget).
     setMensajes((actuales) => [
-      ...actuales,
+      ...(opciones.reintentar ? sinUltimoTurnoGuiado(actuales) : actuales).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length || mensaje.referencia),
+      { id: idUsuario, role: "user", content: contenido },
+      { id: idAsistente, role: "assistant", content: "" },
+    ]);
+    setEntrada("");
+    marcarCargando(true);
+    setTransmitiendoId(idAsistente);
+    setAnuncio("El asistente está escribiendo");
+    pedirFinal();
+
+    let propuestaParaPlan: Propuesta | null = null;
+    let briefEfectivo: BriefGuiado = brief;
+    let accionModelo: z.infer<typeof AccionModeloSchema> | null = null;
+    let etapa: "foto" | "turno" = "turno";
+    try {
+      let imagen: FotoInspiracion | null = null;
+      if (archivo) {
+        etapa = "foto";
+        setFoto(null);
+        const miniatura = await miniaturaDe(archivo).catch((cause: unknown) => { console.warn("[asistente-guiado] no se pudo crear la miniatura de la foto.", cause); return undefined; });
+        if (turno !== turnoRef.current) return;
+        if (miniatura) actualizarMensaje(idUsuario, (mensaje) => ({ ...mensaje, miniatura }));
+        imagen = await leerFoto(archivo);
+        setAnalizandoFoto(true);
+        const referencia = await analizarFoto(imagen, control.signal);
+        setAnalizandoFoto(false);
+        if (turno !== turnoRef.current) return;
+        if (referencia) {
+          // Con la lectura no hace falta el modelo: el asistente muestra lo que vio y ofrece armarlo.
+          fotosRef.current.set(idAsistente, imagen);
+          actualizarMensaje(idAsistente, (mensaje) => ({ ...mensaje, content: "Esto es lo que veo en tu foto.", referencia, ...(miniatura ? { miniatura } : {}) }));
+          pedirVista(idAsistente);
+          setAnuncio("Ya leí tu foto");
+          return;
+        }
+        actualizarMensaje(idUsuario, (mensaje) => ({ ...mensaje, notaFoto: "No pude distinguir bien los detalles, pero podemos seguir con tu idea." }));
+        etapa = "turno";
+      }
+
+      const respuesta = await fetch("/api/asistente-guiado", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schema_version: "asistente-guiado.v1", messages: historial, brief, estadoGuiado, ...(imagen ? { fotoInspiracion: imagen } : {}) }),
+        signal: control.signal,
+      });
+      if (!respuesta.ok || !respuesta.body) throw new Error(`El asistente respondió con estado ${respuesta.status}.`);
+      let acumulado = "";
+      await leerSse(respuesta, (evento) => {
+        if (turno !== turnoRef.current) return;
+        if (evento.type === "texto") { acumulado += evento.delta; empujarTexto(idAsistente, acumulado); return; }
+        if (evento.type === "error") throw new Error(evento.error);
+        if (evento.type !== "fin") return;
+        cancelarFlujo();
+        const resultado = ResultadoSchema.safeParse(evento.result ?? {});
+        if (!resultado.success) throw new Error("Los datos devueltos por el asistente no son válidos.");
+        const datos = resultado.data;
+        if (datos.brief) { briefEfectivo = datos.brief; setBrief(datos.brief); }
+        if (datos.uso) setUso(datos.uso);
+        const widgets: Widget[] = [];
+        if (datos.decoraciones?.length) widgets.push({ tipo: "decoraciones", decoraciones: datos.decoraciones });
+        if (datos.opciones && elegida) widgets.push({ tipo: "opciones" });
+        if (datos.preguntaUso && elegida) widgets.push({ tipo: "uso" });
+        const usoCotizado = datos.uso ?? usoEnvio;
+        if (elegida && usoCotizado && datos.cotizacion !== undefined) {
+          const valida = datos.cotizacion == null ? null : CotizacionGuiadaSchema.safeParse(datos.cotizacion);
+          if (valida && !valida.success) throw new Error("La cotización recibida no cumple el contrato.");
+          widgets.push({ tipo: "cotizacion", cotizacion: valida ? valida.data : null, uso: usoCotizado, decoracion: elegida });
+        }
+        if (datos.pasos && elegida) widgets.push({ tipo: "pasos", decoracion: elegida });
+        // Después del precio o de los pasos, las otras opciones siguen a mano.
+        if (elegida && widgets.some((widget) => widget.tipo === "cotizacion" || widget.tipo === "pasos") && !widgets.some((widget) => widget.tipo === "opciones")) widgets.push({ tipo: "opciones" });
+        // Sin ciudad no hay directorio vacío: el modelo pregunta la ciudad.
+        if (datos.proveedores && (datos.proveedores.length || datos.ciudadProveedores)) {
+          widgets.push({ tipo: "proveedores", proveedores: datos.proveedores, ...(datos.ciudadProveedores ? { ciudad: datos.ciudadProveedores } : {}), ...(datos.ciudadesDisponibles?.length ? { ciudadesDisponibles: datos.ciudadesDisponibles } : {}) });
+        }
+        const accion = AccionModeloSchema.safeParse(datos.accionPlan);
+        if (accion.success) accionModelo = accion.data;
+        const textoFinal = evento.reply.slice(0, 6000);
+        if (datos.propuesta) {
+          propuestaParaPlan = datos.propuesta;
+          setSeleccionada(null); setUso(null);
+          actualizarMensaje(idAsistente, (mensaje) => ({ ...mensaje, content: datos.propuesta!.frase, widgets: [{ tipo: "propuesta", propuesta: datos.propuesta!, estado: "resolviendo" }] }));
+          pedirVista(idAsistente);
+        } else if (!textoFinal.trim() && !widgets.length) {
+          setMensajes((actuales) => actuales.filter((mensaje) => mensaje.id !== idAsistente));
+        } else {
+          actualizarMensaje(idAsistente, (mensaje) => ({ ...mensaje, content: textoFinal, ...(widgets.length ? { widgets } : {}) }));
+          if (widgets.some((widget) => WIDGETS_ALTOS.has(widget.tipo))) pedirVista(idAsistente);
+        }
+        setAnuncio("Respuesta lista");
+      });
+      if (turno !== turnoRef.current) return;
+      window.clearTimeout(reloj);
+      setTransmitiendoId(null);
+      if (accionModelo && planVigente && !(accionModelo === "ver" && planVigente.widget.reemplazado)) accionPlan(accionModelo, planVigente.mensajeId, "modelo");
+      if (propuestaParaPlan) await aceptarPropuesta(propuestaParaPlan, { mensajeId: idAsistente, brief: briefEfectivo, desdeTurno: true, ...(planAnterior ? { planAnterior } : {}) });
+    } catch (causa) {
+      if (turno !== turnoRef.current) return;
+      cancelarFlujo();
+      const detenido = control.signal.aborted && control.signal.reason === "usuario";
+      // warn y no error: en desarrollo, console.error abre el aviso rojo de Next en plena demo.
+      if (!detenido) console.warn("[asistente-guiado] turno fallido", causa);
+      // Si el cliente detuvo, se queda lo que alcanzó a llegar; si falló, el mensaje vacío o a medias se quita.
+      setMensajes((actuales) => actuales.filter((mensaje) => mensaje.id !== idAsistente || (detenido && (mensaje.content.trim() || mensaje.widgets?.length))));
+      if (etapa === "foto" && !detenido) {
+        setFallo({ titulo: "No pude leer tu foto", detalle: "Usa una foto JPG, PNG o WebP de menos de 6 MB.", etiqueta: "Elegir otra foto", accion: { tipo: "subir-foto" } });
+      } else {
+        setFallo({
+          titulo: detenido ? "Detuviste la respuesta" : "Se cortó la conexión",
+          detalle: detenido ? "Puedes pedirla otra vez cuando quieras." : "Tu conversación sigue guardada.",
+          accion: { tipo: "turno", texto: contenido, opciones: { ...opciones, reintentar: undefined } },
+        });
+      }
+      setAnuncio(detenido ? "Respuesta detenida" : "No pude responder");
+    } finally {
+      window.clearTimeout(reloj);
+      if (turno === turnoRef.current) { marcarCargando(false); setTransmitiendoId(null); setAnalizandoFoto(false); controlRef.current = null; }
+    }
+  }
+
+  // ── Plan con cantidades (/api/chat) ──────────────────────────────────────────────────────────────────────────
+  /** Pide el plan a /api/chat con un reintento automático. No toca los mensajes: eso lo hace quien llama. */
+  async function ejecutarPlan(mensajeId: string, armarCuerpo: (reintento: boolean) => Record<string, unknown>, soloReintento: boolean): Promise<{ turno: number } & ({ estado: "ok"; plan: PlanGuiado; cotizacion: unknown } | { estado: "detenido" | "fallo" | "obsoleto" })> {
+    const turno = ++turnoRef.current;
+    const control = new AbortController();
+    controlRef.current = control;
+    marcarCargando(true);
+    fijarEtapa(mensajeId, soloReintento ? "reintentando" : "preparando");
+    for (const reintento of soloReintento ? [true] : [false, true]) {
+      if (reintento && !soloReintento) fijarEtapa(mensajeId, "reintentando");
+      const intento = new AbortController();
+      const cortar = () => intento.abort();
+      control.signal.addEventListener("abort", cortar);
+      const reloj = window.setTimeout(cortar, LIMITE_PLAN_MS);
+      try {
+        const respuesta = await pedirPlanChat(armarCuerpo(reintento), intento.signal, (nombre, estado, ok) => {
+          if (turno !== turnoRef.current) return;
+          const siguiente: EtapaPlan | null = nombre === "buscar_catalogo_rag" ? "buscando"
+            : nombre === "confirmar_plan_decoracion" ? (estado === "ejecutando" ? "calculando" : ok !== false ? "precio" : null)
+              : null;
+          if (siguiente) avanzarEtapa(mensajeId, siguiente);
+        });
+        if (turno !== turnoRef.current) return { turno, estado: "obsoleto" };
+        const plan = PlanGuiadoSchema.safeParse(respuesta.plan);
+        if (plan.success) return { turno, estado: "ok", plan: plan.data, cotizacion: respuesta.cotizacion };
+        // La respuesta del agente clásico trae jerga: solo a la consola.
+        console.warn("[asistente-guiado] el plan no llegó confirmado", { intento: reintento ? 2 : 1, respuesta: respuesta.reply.slice(0, 600) });
+      } catch (causa) {
+        if (turno !== turnoRef.current) return { turno, estado: "obsoleto" };
+        if (control.signal.aborted) return { turno, estado: "detenido" };
+        console.warn("[asistente-guiado] falló un intento de plan", { intento: reintento ? 2 : 1, causa });
+      } finally {
+        window.clearTimeout(reloj);
+        control.signal.removeEventListener("abort", cortar);
+      }
+    }
+    return { turno, estado: "fallo" };
+  }
+
+  function terminarPlan(turno: number, mensajeId: string): void {
+    quitarEtapa(mensajeId);
+    if (turno === turnoRef.current) { marcarCargando(false); controlRef.current = null; }
+  }
+
+  /** Deja el plan en el MISMO mensaje (la propuesta pasa a «Tu plan») y marca como versión anterior el que había. */
+  function colocarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, fotoInspiracion: boolean): void {
+    const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacionCruda);
+    const cotizacion = precio.success ? { ...precio.data, lineas: precio.data.lineas.map((linea) => ({ ...linea, nombre: nombreLineaCliente(linea) })) } : undefined;
+    const armado = generarPasosPlan(plan);
+    const resumen = resumenPlanGuiado(plan);
+    setMensajes((actuales) => {
+      const previo = buscarPlanVigente(actuales.filter((mensaje) => mensaje.id !== mensajeId));
+      const totalAnterior = previo ? totalDePlan(previo.widget.plan) : undefined;
+      const nuevo: WidgetPlan = {
+        tipo: "plan", plan, pasos: armado.pasos,
+        ...(cotizacion ? { cotizacion } : {}),
+        ...(totalAnterior !== undefined ? { totalAnterior } : {}),
+        ...(fotoInspiracion ? { fotoInspiracion: true } : {}),
+      };
+      return actuales.map((mensaje) => {
+        if (mensaje.id === mensajeId) return { ...mensaje, content: resumen, widgets: [nuevo] };
+        if (!mensaje.widgets?.some((widget) => widget.tipo === "plan" && !widget.reemplazado)) return mensaje;
+        return { ...mensaje, widgets: mensaje.widgets.map((widget): Widget => (widget.tipo === "plan" ? { ...widget, reemplazado: true } : widget)) };
+      });
+    });
+    setSugerenciasCambio(null);
+    pedirVista(mensajeId);
+    setAnuncio("Tu plan está listo");
+  }
+
+  async function aceptarPropuesta(propuesta: Propuesta, opciones: { mensajeId: string; brief: BriefGuiado; desdeTurno?: boolean; reintento?: boolean; planAnterior?: PlanActualGuiado }): Promise<void> {
+    if (cargandoRef.current && !opciones.desdeTurno) return;
+    const { mensajeId, planAnterior } = opciones;
+    const briefPlan = opciones.brief;
+    setFallo(null);
+    setSeleccionada(null); setUso(null);
+    actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: propuesta.frase, widgets: [{ tipo: "propuesta", propuesta, estado: "resolviendo" }] }));
+    const armar = (reintento: boolean) => ({
+      schema_version: "chat.v1",
+      messages: [{ role: "user", content: instruccionPlanGuiado(propuesta, briefPlan, { reintento, ...(planAnterior ? { planAnterior } : {}) }) }],
+      brief: briefChatGuiado(propuesta, briefPlan),
+    });
+    const resultado = await ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento));
+    if (resultado.estado === "obsoleto") return;
+    if (resultado.estado === "ok") colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, false);
+    else {
+      actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: "fallo" }] }));
+      const accion: AccionFallo = { tipo: "plan", propuesta, mensajeId, brief: briefPlan, ...(planAnterior ? { planAnterior } : {}) };
+      setFallo(resultado.estado === "detenido"
+        ? { titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion, mensajeId }
+        : { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion, alternativas: ["otros-colores", "otra-pieza"], mensajeId });
+      setAnuncio("No pude terminar tu plan");
+    }
+    terminarPlan(resultado.turno, mensajeId);
+  }
+
+  /** «Sí, armémoslo» con la lectura de una foto. `mensajeId` es el del plan cuando se reintenta. */
+  async function aceptarPlanFoto(referenciaId: string, opciones?: { mensajeId?: string }): Promise<void> {
+    if (cargandoRef.current) return;
+    const origen = mensajes.find((mensaje) => mensaje.id === referenciaId);
+    if (!origen?.referencia) return;
+    const referencia = origen.referencia;
+    const imagen = fotosRef.current.get(referenciaId);
+    limpiarAvisos();
+    setSeleccionada(null); setUso(null);
+    let mensajeId = opciones?.mensajeId;
+    if (!mensajeId) {
+      mensajeId = nuevoId();
+      agregar([
+        { id: nuevoId(), role: "user", content: "Sí, armémoslo." },
+        { id: mensajeId, role: "assistant", content: "Preparo el plan con las piezas y los colores de tu foto." },
+      ]);
+      pedirFinal();
+    }
+    const idPlan = mensajeId;
+    const armar = (reintento: boolean) => ({
+      schema_version: "chat.v1",
+      messages: [{ role: "user", content: instruccionPlanFoto({ reintento }) }],
+      brief: briefChatGuiado(null, brief),
+      ...(imagen ? { imagenesReferencia: [imagen] } : {}),
+      referenceBlueprint: referencia.blueprint,
+    });
+    const resultado = await ejecutarPlan(idPlan, armar, false);
+    if (resultado.estado === "obsoleto") return;
+    if (resultado.estado === "ok") {
+      if (imagen) fotosRef.current.set(idPlan, imagen);
+      colocarPlan(idPlan, resultado.plan, resultado.cotizacion, true);
+      actualizarMensaje(referenciaId, (mensaje) => ({ ...mensaje, fotoArmada: true }));
+    } else {
+      setFallo(resultado.estado === "detenido"
+        ? { titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion: { tipo: "foto", referenciaId, mensajeId: idPlan }, mensajeId: idPlan }
+        : { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion: { tipo: "foto", referenciaId, mensajeId: idPlan }, mensajeId: idPlan });
+      setAnuncio("No pude terminar tu plan");
+    }
+    terminarPlan(resultado.turno, idPlan);
+  }
+
+  // ── «Ver cómo quedaría» ──────────────────────────────────────────────────────────────────────────────────────
+  async function verComoQuedaria(mensajeId: string): Promise<void> {
+    if (imagenEnCursoRef.current) return;
+    const widget = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
+    if (!widget || widget.reemplazado) return;
+    const sesion = sesionRef.current;
+    imagenEnCursoRef.current = mensajeId;
+    setImagenEnCurso(mensajeId);
+    setFallo(null);
+    actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: false }));
+    const control = new AbortController();
+    imagenControlRef.current = control;
+    const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_IMAGEN_MS);
+    const plan = widget.plan;
+    try {
+      const referencia = widget.fotoInspiracion ? fotosRef.current.get(mensajeId) : undefined;
+      const respuesta = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, planHash: plan.plan_hash, brief: { tipo_evento: brief.evento, colores: plan.plan.concepto.paleta, estilo: brief.tematica }, solicitudUsuario: plan.plan.concepto.descripcion, ...(referencia ? { imagenesReferencia: [referencia] } : {}) }),
+        signal: control.signal,
+      });
+      if (!respuesta.ok) throw new Error(`/api/generate respondió con estado ${respuesta.status}.`);
+      const salida = ImagenGeneradaSchema.parse(await respuesta.json() as unknown);
+      if (sesion !== sesionRef.current) return;
+      // Se ve en el acto; el plan de la tarjeta (con su approval_token) no se toca.
+      setImagenesLocales((actuales) => ({ ...actuales, [mensajeId]: salida.imagen }));
+      actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: false, hechas: conHecha(actual.hechas, "ver") }));
+      setAnuncio("La imagen de tu decoración está lista");
+      void guardarImagen(salida.imagen).then((url) => {
+        if (url && sesion === sesionRef.current) actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, imagen: url }));
+      });
+    } catch (causa) {
+      if (sesion !== sesionRef.current) return;
+      console.warn("[asistente-guiado] no se pudo dibujar la decoración", causa);
+      actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: true }));
+      setFallo({ titulo: "No pude dibujarla esta vez", detalle: "Tu plan sigue guardado.", etiqueta: "Reintentar imagen", accion: { tipo: "imagen", mensajeId }, mensajeId });
+      setAnuncio("No pude dibujar la imagen");
+    } finally {
+      window.clearTimeout(reloj);
+      if (imagenControlRef.current === control) imagenControlRef.current = null;
+      if (imagenEnCursoRef.current === mensajeId) { imagenEnCursoRef.current = null; setImagenEnCurso(null); }
+    }
+  }
+
+  // ── Acciones del plan (tarjeta, barra o pedidas al modelo) ───────────────────────────────────────────────────
+  function accionPlan(accion: AccionPlan, mensajeId: string, origen: "tarjeta" | "barra" | "modelo" = "tarjeta"): void {
+    const widget = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
+    if (!widget || widget.reemplazado) return;
+    if (accion !== "costear" && accion !== "comprar") limpiarAvisos();
+    const delCliente = origen !== "modelo";
+    switch (accion) {
+      case "ver":
+        void verComoQuedaria(mensajeId);
+        if (origen !== "tarjeta") revelarEnTarjeta(mensajeId, '[role="status"]');
+        return;
+      case "costear":
+        actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, usoCosteo: actual.usoCosteo ?? uso ?? "personal", hechas: conHecha(actual.hechas, "costear") }));
+        if (origen !== "tarjeta") revelarEnTarjeta(mensajeId, '[role="radiogroup"]');
+        return;
+      case "comprar":
+        actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, compraAbierta: origen === "tarjeta" ? !actual.compraAbierta : true, hechas: conHecha(actual.hechas, "comprar") }));
+        if (origen !== "tarjeta") revelarEnTarjeta(mensajeId, '[aria-label="Comprar materiales"]');
+        return;
+      case "aprender": {
+        const desglose = generarPasosPlan(widget.plan);
+        const id = nuevoId();
+        actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, hechas: conHecha(actual.hechas, "aprender") }));
+        agregar([
+          ...(delCliente ? [{ id: nuevoId(), role: "user" as const, content: "Quiero aprender a hacerlo" }] : []),
+          { id, role: "assistant", content: "Así se arma, pieza por pieza.", widgets: [{ tipo: "pasos-plan", pasos: widget.pasos ?? desglose.pasos, guias: desglose.guias }] },
+        ]);
+        pedirVista(id);
+        return;
+      }
+      case "contratar":
+        actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, hechas: conHecha(actual.hechas, "contratar") }));
+        preguntarCiudad("ciudad-decorador", delCliente ? "Quiero contratar un decorador" : null);
+        return;
+      case "cambiar":
+        actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, hechas: conHecha(actual.hechas, "cambiar") }));
+        setFallo(null);
+        setSugerenciasCambio(sugerenciasDeCambio(widget.plan));
+        pedirEscritura(PLACEHOLDER_CAMBIO);
+        irAlFinal();
+        return;
+    }
+  }
+
+  function preguntarCiudad(tipo: PreguntaCiudad, textoCliente: string | null): void {
+    limpiarAvisos();
+    agregar([
+      ...(textoCliente ? [{ id: nuevoId(), role: "user" as const, content: textoCliente }] : []),
+      { id: nuevoId(), role: "assistant", content: tipo === "ciudad-decorador" ? "¿En qué ciudad será tu celebración?" : "¿En qué ciudad quieres comprar los globos?", rapidas: [...CIUDADES_PROVEEDORES, "Otra ciudad"].slice(0, 8), pregunta: tipo },
+    ]);
+    pedirFinal();
+  }
+
+  // ── Acciones locales (sin modelo) ────────────────────────────────────────────────────────────────────────────
+  function elegirDecoracion(decoracion: DecoracionSempertex, mensajeId: string): void {
+    if (cargandoRef.current) return;
+    limpiarAvisos();
+    setSeleccionada(decoracion); setUso(null);
+    actualizarWidget(mensajeId, "decoraciones", (widget) => ({ ...widget, elegidaId: decoracion.id }));
+    agregar([
       { id: nuevoId(), role: "user", content: `Me gusta «${decoracion.titulo}».` },
       { id: nuevoId(), role: "assistant", content: `¡Buena elección! Esto es lo que lleva **${decoracion.titulo}**. ¿Qué te gustaría hacer ahora?`, widgets: [{ tipo: "seleccion", decoracion }, { tipo: "opciones" }] },
     ]);
+    pedirFinal();
   }
 
-  function elegirOpcion(opcion: OpcionGuiada): void {
-    // «Comprar» no necesita al modelo: la lista y las dos salidas (tienda en línea, distribuidor) salen al instante.
+  function elegirOpcion(opcion: OpcionGuiada, mensajeId?: string): void {
+    if (cargandoRef.current) return;
+    if (mensajeId) actualizarWidget(mensajeId, "opciones", (widget) => ({ ...widget, elegida: opcion }));
     if (opcion === "comprar" && seleccionada) {
-      setMensajes((actuales) => [
-        ...actuales,
+      limpiarAvisos();
+      agregar([
         { id: nuevoId(), role: "user", content: "Quiero comprar los materiales." },
         { id: nuevoId(), role: "assistant", content: `Puedes comprar los globos de **${seleccionada.titulo}** en la tienda en línea de Sempertex o con un distribuidor cerca de ti.`, widgets: [{ tipo: "comprar", decoracion: seleccionada }, { tipo: "opciones" }] },
       ]);
+      pedirFinal();
       return;
     }
-    const textos: Record<OpcionGuiada, string> = {
-      contratar: "Quiero contratar un decorador cerca de mí.",
+    if (opcion === "contratar") { preguntarCiudad("ciudad-decorador", "Quiero contratar un decorador"); return; }
+    const textos: Record<Exclude<OpcionGuiada, "contratar">, string> = {
       costear: "Quiero saber cuánto cuestan los materiales.",
       comprar: "Quiero saber dónde comprar los materiales.",
       aprender: seleccionada ? `Quiero aprender a hacerlo: armar «${seleccionada.titulo}» paso a paso.` : "Quiero aprender a hacerlo paso a paso.",
@@ -373,134 +810,400 @@ export function VistaGuiada() {
     void enviar(textos[opcion]);
   }
 
-  // Los registros son de ejemplo: la solicitud se explica en la conversación, sin fingir que se envió a alguien.
-  function solicitarProveedor(proveedor: ProveedorSempertex): void {
-    const decorador = proveedor.tipo === "decorador_happia" || proveedor.tipo === "mbp";
-    const idea = seleccionada ? ` con tu idea **${seleccionada.titulo}**` : "";
-    const respuesta = decorador
-      ? `¡Perfecto! En la versión final, **${proveedor.nombre}** recibirá tu solicitud${idea} y te contactará para cotizar el montaje. Por ahora es un decorador de ejemplo. ¿Qué más te gustaría hacer?`
-      : `¡Perfecto! En la versión final verás aquí la dirección y el horario de **${proveedor.nombre}**. Por ahora es un distribuidor de ejemplo. ¿Qué más te gustaría hacer?`;
-    setMensajes((actuales) => [
-      ...actuales,
-      { id: nuevoId(), role: "user", content: decorador ? `Quiero cotizar con ${proveedor.nombre}.` : `Quiero comprar en ${proveedor.nombre}.` },
-      { id: nuevoId(), role: "assistant", content: respuesta, widgets: seleccionada ? [{ tipo: "opciones" }] : [] },
-    ]);
+  function elegirUso(valor: Uso, mensajeId: string): void {
+    if (cargandoRef.current) return;
+    actualizarWidget(mensajeId, "uso", (widget) => ({ ...widget, elegido: valor }));
+    setUso(valor);
+    void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor });
   }
 
-  function elegirUso(valor: Uso): void { setUso(valor); void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor }); }
+  function elegirTipo(tipo: "completa" | "individual", mensajeId: string): void {
+    if (cargandoRef.current) return;
+    actualizarWidget(mensajeId, "pregunta-propuesta", (widget) => ({ ...widget, elegida: tipo === "completa" ? "Decoración completa" : "Pieza individual" }));
+    if (tipo === "completa") { void enviar("Propónme algo para una decoración completa con varias piezas.", { alcance: "completa" }); return; }
+    limpiarAvisos();
+    agregar([
+      { id: nuevoId(), role: "user", content: "Una pieza individual." },
+      { id: nuevoId(), role: "assistant", content: "¿Qué pieza individual prefieres?", widgets: [{ tipo: "pregunta-propuesta", alcance: "pieza" }] },
+    ]);
+    pedirFinal();
+  }
 
-  function renderWidget(widget: Widget, activo: boolean, clave: string, mensajeId: string) {
+  function elegirPieza(pieza: { etiqueta: string; estructura: EstructuraOficialId | null }, mensajeId: string): void {
+    if (cargandoRef.current) return;
+    actualizarWidget(mensajeId, "pregunta-propuesta", (widget) => ({ ...widget, elegida: pieza.etiqueta }));
+    void enviar(`Propónme una pieza individual: ${pieza.etiqueta}.`, { alcance: "individual", ...(pieza.estructura ? { pieza: pieza.estructura } : {}) });
+  }
+
+  function ningunaMeConvence(): void {
+    if (cargandoRef.current) return;
+    limpiarAvisos();
+    agregar([
+      { id: nuevoId(), role: "user", content: "Ninguna me convence." },
+      { id: nuevoId(), role: "assistant", content: "Sin problema. ¿Te propongo algo a la medida o prefieres mostrarme una foto que te guste?", rapidas: [PROPONME, "Subir una foto", "Ver otros estilos"], destacadas: [PROPONME] },
+    ]);
+    pedirFinal();
+  }
+
+  function otraCelebracion(): void {
+    limpiarAvisos();
+    agregar([
+      { id: nuevoId(), role: "user", content: "Otra celebración" },
+      { id: nuevoId(), role: "assistant", content: "¡Me encanta! ¿Qué vas a celebrar?", rapidas: OTRAS_CELEBRACIONES },
+    ]);
+    pedirFinal();
+  }
+
+  function solicitarProveedor(proveedor: ProveedorSempertex, mensajeId: string): void {
+    const decorador = proveedor.tipo === "decorador_happia" || proveedor.tipo === "mbp";
+    actualizarWidget(mensajeId, "proveedores", (widget) => ({ ...widget, solicitadoId: proveedor.id }));
+    limpiarAvisos();
+    const respuesta = decorador
+      ? `Elegiste a **${proveedor.nombre}** para tu decoración. ¿Qué más quieres hacer mientras tanto?`
+      : `En **${proveedor.nombre}** encuentras los globos de ${planVigente ? "tu plan" : "tu decoración"}.`;
+    // La siguiente acción siempre a la vista: la barra del plan, las opciones de la idea o una salida para empezar.
+    const siguiente: Partial<Mensaje> = planVigente ? {} : seleccionada ? { widgets: [{ tipo: "opciones" }] } : { rapidas: [PROPONME, "Ver ideas"], destacadas: [PROPONME] };
+    agregar([
+      { id: nuevoId(), role: "user", content: decorador ? `Elijo a ${proveedor.nombre}.` : `Quiero comprar en ${proveedor.nombre}.` },
+      { id: nuevoId(), role: "assistant", content: respuesta, ...siguiente },
+    ]);
+    pedirFinal();
+  }
+
+  function elegirFoto(archivo: File | null): void {
+    if (!archivo) { setFoto(null); setPlaceholderForzado(null); return; }
+    if (!TIPOS_FOTO.has(archivo.type) || archivo.size > 6_000_000) {
+      setFoto(null);
+      setFallo({ titulo: "No pude leer tu foto", detalle: "Usa una foto JPG, PNG o WebP de menos de 6 MB.", etiqueta: "Elegir otra foto", accion: { tipo: "subir-foto" } });
+      irAlFinal();
+      return;
+    }
+    setFallo(null);
+    setFoto(archivo);
+    pedirEscritura("Envíala o cuéntame qué te gusta de ella…");
+  }
+
+  function elegirRapida(texto: string): void {
+    const clave = claveTexto(texto);
+    const mensaje = ultimo?.role === "assistant" ? ultimo : undefined;
+    if (clave === claveTexto("Subir una foto") || clave === claveTexto(CHIP_FOTO)) { archivoRef.current?.click(); return; }
+    if (clave === "otra ciudad") { pedirEscritura(PLACEHOLDER_CIUDAD); return; }
+    if (clave === claveTexto("Otra celebración")) { otraCelebracion(); return; }
+    if (mensaje?.pregunta) { void enviar(textoBusquedaCiudad(mensaje.pregunta, texto, Boolean(planVigente))); return; }
+    if (clave === "ver ideas") { void enviar("Muéstrame ideas de decoración para mi celebración."); return; }
+    // Sugerencias de «Cambiar algo».
+    if (clave === "otros colores") { setSugerenciasCambio(null); pedirEscritura(PLACEHOLDER_CAMBIO, "Quiero otros colores: "); return; }
+    if (clave === "quitar una pieza") { setSugerenciasCambio(null); pedirEscritura(PLACEHOLDER_CAMBIO, "Quítale "); return; }
+    if (clave === "agregar una pieza") { void enviar("Agrégale una pieza que combine con lo que tengo."); return; }
+    if (clave === "hacerla mas grande") { void enviar("Hazla más grande."); return; }
+    if (clave === "hacerla mas sencilla") { void enviar("Hazla más sencilla, con menos globos."); return; }
+    const opcion = seleccionada ? OPCIONES_GUIADAS.find((item) => claveTexto(item.titulo) === clave) : undefined;
+    if (opcion) { elegirOpcion(opcion.id); return; }
+    void enviar(texto);
+  }
+
+  function reintentar(accion: AccionFallo): void {
+    switch (accion.tipo) {
+      case "turno": void enviar(accion.texto, { ...accion.opciones, reintentar: true }); return;
+      case "plan": void aceptarPropuesta(accion.propuesta, { mensajeId: accion.mensajeId, brief: accion.brief, ...(accion.planAnterior ? { planAnterior: accion.planAnterior } : {}) }); return;
+      case "foto": void aceptarPlanFoto(accion.referenciaId, { mensajeId: accion.mensajeId }); return;
+      case "imagen": void verComoQuedaria(accion.mensajeId); return;
+      case "subir-foto": setFallo(null); archivoRef.current?.click(); return;
+    }
+  }
+
+  function alternativa(tipo: AlternativaFallo): { etiqueta: string; onElegir: () => void } {
+    if (tipo === "otros-colores") return { etiqueta: "Usar otros colores", onElegir: () => { setFallo(null); pedirEscritura(PLACEHOLDER_CAMBIO, "Quiero otros colores: "); } };
+    return { etiqueta: "Elegir otra pieza", onElegir: () => { setFallo(null); void enviar(PROPONME); } };
+  }
+
+  function tarjetaFallo(actual: Fallo): ReactNode {
+    return <TarjetaError
+      titulo={actual.titulo}
+      {...(actual.detalle ? { detalle: actual.detalle } : {})}
+      {...(actual.etiqueta ? { reintentarEtiqueta: actual.etiqueta } : {})}
+      onReintentar={() => reintentar(actual.accion)}
+      onCerrar={() => setFallo(null)}
+      {...(actual.alternativas?.length ? { alternativas: actual.alternativas.map(alternativa) } : {})}
+    />;
+  }
+
+  // ── Pintado de widgets ───────────────────────────────────────────────────────────────────────────────────────
+  function renderWidget(widget: Widget, activo: boolean, clave: string, mensaje: Mensaje, indice: number): ReactNode {
+    const mensajeId = mensaje.id;
     switch (widget.tipo) {
-      case "decoraciones":
-        return <CarruselDecoraciones key={clave} decoraciones={widget.decoraciones} activo={activo && !cargando} elegidaId={seleccionada?.id ?? null} onElegir={elegirDecoracion} onNinguna={() => void enviar("Ninguna me convence. Propónme algo distinto o puedo mostrarte una foto de inspiración.")} />;
+      case "decoraciones": {
+        const elegidaId = widget.elegidaId ?? (seleccionada && widget.decoraciones.some((decoracion) => decoracion.id === seleccionada.id) ? seleccionada.id : null);
+        return <CarruselDecoraciones key={clave} decoraciones={widget.decoraciones} activo={activo && !elegidaId} elegidaId={elegidaId} onElegir={(decoracion) => elegirDecoracion(decoracion, mensajeId)} onNinguna={ningunaMeConvence} onProponer={() => void enviar(PROPONME)} onSubirFoto={() => archivoRef.current?.click()} />;
+      }
       case "seleccion":
         return <TarjetaEleccion key={clave} decoracion={widget.decoracion} />;
       case "opciones":
-        return activo ? <ChipsOpciones key={clave} onElegir={elegirOpcion} deshabilitado={cargando} /> : null;
+        return <ChipsOpciones key={clave} activo={activo && !widget.elegida} elegida={widget.elegida ?? null} hechas={hechasOpciones} deshabilitado={cargando} onElegir={(opcion) => elegirOpcion(opcion, mensajeId)} />;
       case "uso":
-        return activo ? <PreguntaUso key={clave} onElegir={elegirUso} deshabilitado={cargando} /> : null;
+        return <PreguntaUso key={clave} activo={activo && !widget.elegido} elegido={widget.elegido ?? null} deshabilitado={cargando} onElegir={(valor) => elegirUso(valor, mensajeId)} />;
       case "cotizacion":
-        return <CostosMateriales key={clave} cotizacion={widget.cotizacion} uso={widget.uso} clave={`guiado-${widget.decoracion.id}`} mensajePendiente="Todavía no tengo el precio de estos materiales. Puedo buscarte un proveedor cerca." onProveedores={() => void enviar("Busca proveedores cerca de mí para cotizar los materiales.")} />;
+        return <CostosMateriales key={clave} cotizacion={widget.cotizacion} uso={widget.uso} clave={`guiado-${widget.decoracion.id}`} mensajePendiente="Todavía no tengo el precio de estos materiales. Puedo buscarte un proveedor cerca." onProveedores={() => preguntarCiudad("ciudad-decorador", "Quiero cotizar con un proveedor cerca")} />;
       case "pasos":
         return <PasoAPaso key={clave} decoracion={widget.decoracion} />;
       case "pasos-plan":
-        return <section key={clave} className="mt-4 rounded-2xl border border-borde-suave bg-superficie p-4 shadow-sm" aria-label="Guía aproximada para aprender a hacerlo"><h3 className="font-semibold">Guía aproximada</h3><p className="mt-1 text-xs text-texto-secundario">Pasos orientativos combinados con las cantidades de tu plan.</p><div className="mt-4 space-y-4">{widget.guias.map((item) => <article key={item.estructura_id} className="rounded-xl border border-borde-suave p-3"><h4 className="font-semibold">{item.nombre}{item.medidas.ancho_m && item.medidas.alto_m ? ` · ${item.medidas.ancho_m} × ${item.medidas.alto_m} m` : item.medidas.largo_m ? ` · ${item.medidas.largo_m} m` : ""}</h4><p className="mt-2 text-xs text-texto-secundario">Materiales del plan: {item.globos.map((globo) => `${globo.cantidad} ${globo.color}, ${globo.tamano}`).join(" · ") || "sin globos contados"}</p><p className="mt-2 text-xs">{item.guia.dificultad} · {item.guia.tiempo_aprox}</p><p className="mt-3 text-sm font-medium">Herramientas y materiales base</p><ul className="ml-5 mt-1 list-disc space-y-1 text-sm">{[...item.guia.herramientas, ...item.guia.materiales_base].map((texto, i) => <li key={i}>{texto}</li>)}</ul><ol className="mt-3 space-y-3">{item.guia.pasos.map((paso, i) => <li key={i} className="text-sm"><strong>{i + 1}. {paso.titulo}.</strong> {paso.detalle}</li>)}</ol><details className="mt-3 text-sm"><summary className="cursor-pointer font-medium">Reglas aproximadas y consejos</summary><ul className="ml-5 mt-2 list-disc space-y-1">{[...item.guia.reglas_aproximadas, ...item.guia.consejos].map((texto, i) => <li key={i}>{texto}</li>)}</ul></details><details className="mt-2 text-sm"><summary className="cursor-pointer font-medium">Fuentes</summary><ul className="ml-5 mt-2 list-disc">{item.guia.fuentes.map((fuente) => <li key={fuente.url}><a className="text-acento underline" href={fuente.url} target="_blank" rel="noreferrer">{fuente.titulo}</a></li>)}</ul></details></article>)}</div><ol className="mt-4 space-y-3">{widget.pasos.map((paso) => <li key={paso.orden} className="flex gap-3 text-sm leading-6"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-acento text-xs font-bold text-white">{paso.orden}</span><span className="pt-0.5">{paso.texto}{paso.globos && <span className="mt-1 block text-xs text-texto-secundario">Globos: {paso.globos}</span>}</span></li>)}</ol></section>;
+        return <GuiaPlan key={clave} pasos={widget.pasos} guias={widget.guias} />;
       case "pregunta-propuesta":
-        return <div key={clave} className="mt-3 flex flex-wrap gap-2">{widget.alcance === "tipo" ? <><button type="button" className="rounded-xl border border-borde-suave px-3 py-2 text-sm" onClick={() => void enviar("Propónme algo para una decoración completa con varias piezas.")}>Decoración completa</button><button type="button" className="rounded-xl border border-borde-suave px-3 py-2 text-sm" onClick={() => setMensajes((actuales) => [...actuales, { id: nuevoId(), role: "assistant", content: "¿Qué pieza individual prefieres?", widgets: [{ tipo: "pregunta-propuesta", alcance: "pieza" }] }])}>Pieza individual</button></> : <>{["Arco orgánico", "Columna", "Guirnalda", "Semiarco", "Pared de globos", "Bouquet", "La que tú quieras"].map((pieza) => <button key={pieza} type="button" className="rounded-xl border border-borde-suave px-3 py-2 text-sm" onClick={() => void enviar(`Propónme una pieza individual: ${pieza}.`)}>{pieza}</button>)}</>}</div>;
-      case "proveedores":
-        return <TarjetasProveedores key={clave} proveedores={widget.proveedores} activo={activo && !cargando} onSolicitar={solicitarProveedor} />;
+        return <PreguntaPropuesta key={clave} alcance={widget.alcance} activo={activo && !widget.elegida} deshabilitado={cargando} elegida={widget.elegida ?? null} onTipo={(tipo) => elegirTipo(tipo, mensajeId)} onPieza={(pieza) => elegirPieza(pieza, mensajeId)} />;
+      case "proveedores": {
+        const anterior = mensajes[indice - 1];
+        const tipoBuscado = anterior?.role === "user" && /distribuidor/i.test(anterior.content) ? "distribuidor" : "decorador";
+        const tipoPregunta: PreguntaCiudad = tipoBuscado === "distribuidor" ? "ciudad-distribuidor" : "ciudad-decorador";
+        const hacerloYo = planVigente ? () => accionPlan("aprender", planVigente.mensajeId, "barra") : seleccionada ? () => elegirOpcion("aprender") : undefined;
+        return <TarjetasProveedores key={clave} proveedores={widget.proveedores} activo={activo} solicitadoId={widget.solicitadoId ?? null} ciudadesDisponibles={widget.ciudadesDisponibles ?? (widget.proveedores.length ? [] : CIUDADES_PROVEEDORES)} tipoBuscado={tipoBuscado} onSolicitar={(proveedor) => solicitarProveedor(proveedor, mensajeId)} onElegirCiudad={(ciudad) => void enviar(textoBusquedaCiudad(tipoPregunta, ciudad, Boolean(planVigente)))} onHacerloYo={hacerloYo} />;
+      }
       case "comprar":
-        return <ComprarMateriales key={clave} decoracion={widget.decoracion} onDistribuidor={() => void enviar("Busca un distribuidor de globos Sempertex cerca de mí.")} />;
-      case "propuesta":
-        return <article key={clave} className="mt-3 rounded-2xl border border-borde-suave bg-superficie p-4 shadow-sm">
-          <h3 className="font-semibold">Una idea para tu celebración</h3>
-          <p className="mt-2 text-sm text-texto-secundario">{widget.propuesta.frase}</p>
-          <ul className="mt-3 space-y-2">{widget.propuesta.piezas.map((pieza, indice) => <li key={`${pieza.estructura}-${indice}`} className="flex items-center gap-2 text-sm"><CircleDot className="size-4 text-acento" aria-hidden />{pieza.cantidad > 1 ? `${pieza.cantidad} ` : ""}{pieza.nombre ?? ESTRUCTURAS_OFICIALES[pieza.estructura].nombre}</li>)}</ul>
-          <div className="mt-3 flex items-center gap-2" aria-label={`Colores: ${widget.propuesta.colores.join(", ")}`}>{widget.propuesta.colores.map((color) => <span key={color} title={color} className="size-5 rounded-full border border-borde-suave" style={{ backgroundColor: HEX_COLORES_V2[color] }} />)}<span className="text-xs text-texto-secundario">{widget.propuesta.colores.join(", ")}</span></div>
-          {activo && cargando && <p className="mt-3 text-xs text-texto-secundario">Estoy convirtiendo esta idea en un plan con cantidades.</p>}
-        </article>;
+        return <ComprarMateriales key={clave} decoracion={widget.decoracion} onDistribuidor={() => preguntarCiudad("ciudad-distribuidor", "Quiero comprar con un distribuidor cerca")} />;
+      case "propuesta": {
+        // Una propuesta «resolviendo» sin nada en curso (p. ej. tras recargar) es un plan que no llegó.
+        const estado = widget.estado === "fallo" || !cargando ? "fallo" : "resolviendo";
+        return <TarjetaPropuesta key={clave} frase={widget.propuesta.frase} piezas={widget.propuesta.piezas} colores={widget.propuesta.colores} estado={estado} {...(etapaPlan[mensajeId] ? { etapa: etapaPlan[mensajeId] } : {})} />;
+      }
       case "plan": {
-        const piezas = widget.plan.plan.estructuras;
-        const desglose = generarPasosPlan(widget.plan);
-        const pasos = widget.pasos ?? desglose.pasos;
-        const cantidadPiezas = piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0);
-        const colores = [...new Set(desglose.globos.map((globo) => globo.color))];
-        return <article key={clave} className="mt-3 rounded-2xl border border-borde-suave bg-superficie p-4 shadow-sm"><h3 className="font-semibold">Tu plan</h3>
-          <p className="mt-2 text-sm">{cantidadPiezas} {cantidadPiezas === 1 ? "pieza" : "piezas"}: {piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} ` : ""}${pieza.nombre}`).join(", ")}</p>
-          <ul className="mt-3 space-y-3">{piezas.map((pieza) => { const grafica = desglose.guias.find((item) => item.estructura_id === pieza.estructura_id); const idOficial = ESTRUCTURAS_OFICIALES_IDS.includes((pieza.estructura_oficial ?? "") as typeof ESTRUCTURAS_OFICIALES_IDS[number]) ? pieza.estructura_oficial as typeof ESTRUCTURAS_OFICIALES_IDS[number] : null; const tamanos = tramosPorTamano(grafica?.globos.flatMap((globo) => { const pulgadas = Number.parseFloat(globo.tamano); return Number.isFinite(pulgadas) ? [{ pulgadas, unidades: globo.cantidad }] : []; }) ?? []); const mezclaReal = widget.plan.estructuras.find((resuelta) => resuelta.estructura_id === pieza.estructura_id)?.mezcla_real; return <li key={pieza.estructura_id} className="flex min-w-0 gap-3 rounded-xl bg-fondo p-3"><span className="grid size-12 shrink-0 place-items-center rounded-lg bg-acento-suave text-acento"><GraficaMotorGuiada plan={widget.plan.plan} pieza={pieza} mezclaReal={mezclaReal} id={idOficial ?? "arco"} nombre={pieza.nombre} /></span><div className="min-w-0 flex-1"><span className="font-medium">{pieza.nombre}</span><p className="text-xs text-texto-secundario">{pieza.medidas.ancho_m && pieza.medidas.alto_m ? `${pieza.medidas.ancho_m} m de ancho por ${pieza.medidas.alto_m} m de alto` : pieza.medidas.largo_m ? `${pieza.medidas.largo_m} m de largo` : "Medida según el plan"}</p>{tamanos.length > 0 && <BarraTamanos tramos={tamanos} className="mt-2" />}{grafica && <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">{grafica.globos.map((globo) => <li key={`${globo.color}-${globo.tamano}`} className="inline-flex items-center gap-1"><span className="size-2.5 rounded-full border border-borde-suave" style={{ backgroundColor: HEX_COLORES_V2[globo.color as keyof typeof HEX_COLORES_V2] ?? "#999" }} />{globo.color}: {globo.cantidad}</li>)}</ul>}</div></li>; })}</ul>
-          <p className="mt-3 text-sm font-medium">{desglose.total} globos en total</p>
-          <details className="mt-2 text-sm"><summary className="cursor-pointer font-medium">Ver detalle</summary><ul className="mt-2 space-y-1 text-texto-secundario">{desglose.globos.map((globo) => <li key={`${globo.color}-${globo.tamano}`}>{globo.cantidad} globos {globo.color} de {globo.tamano}</li>)}</ul><div className="mt-3 space-y-2">{desglose.guias.map((item) => <details key={item.estructura_id}><summary className="cursor-pointer">Tallas y guía técnica: {item.nombre}</summary><p className="mt-1 text-xs text-texto-secundario">{item.globos.map((globo) => `${globo.cantidad} ${globo.color} de ${globo.tamano}`).join(" · ")}</p><ul className="ml-5 mt-1 list-disc text-xs text-texto-secundario">{item.guia.reglas_aproximadas.map((regla, i) => <li key={i}>{regla}</li>)}</ul></details>)}</div></details>
-          {widget.imagen && <div className="mt-4"><img src={widget.imagen} alt="Imagen referencial generada con IA" className="w-full rounded-xl"/><p className="mt-2 text-xs text-texto-secundario">Imagen referencial generada con IA</p></div>}
-          {activo && <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={imagenCargando} onClick={() => void verComoQuedaria(widget.plan, mensajeId, widget.fotoInspiracion)} className="rounded-xl bg-acento px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{imagenCargando ? "Dibujando…" : widget.errorImagen ? "Reintentar imagen" : "Ver cómo quedaría"}</button>{widget.cotizacion && <><button type="button" onClick={() => setUso("personal")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear personal</button><button type="button" onClick={() => setUso("negocio")} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Costear negocio</button></>}<button type="button" onClick={() => setMensajes((actuales) => actuales.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, widgets: (mensaje.widgets ?? []).map((item) => item.tipo === "plan" ? { ...item, compraAbierta: true } : item) } : mensaje))} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Comprar</button><button type="button" onClick={() => setMensajes((actuales) => [...actuales, { id: nuevoId(), role: "assistant", content: "Aquí tienes una guía aproximada para armar tu plan.", widgets: [{ tipo: "pasos-plan", pasos, guias: desglose.guias }] }])} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Aprender a hacerlo</button><button type="button" onClick={() => void enviar(`Quiero contratar un decorador para ${piezas.map((pieza) => pieza.nombre).join(", ")} en ${brief.evento ?? "mi celebración"}.`)} className="rounded-xl border border-borde-suave px-3 py-2 text-sm">Contratar decorador</button></div>}
-          {widget.compraAbierta && widget.cotizacion && <ComprarMateriales decoracion={decoracionDePlan(widget.plan, widget.cotizacion, brief)} onDistribuidor={() => void enviar(`Busca un distribuidor de Sempertex cerca de mí para ${colores.join(", ")}.`)} />}
-          {activo && <button type="button" className="mt-2 rounded-xl border border-borde-suave px-3 py-2 text-sm" onClick={() => { setEntrada("Quiero cambiar algo: "); document.querySelector<HTMLInputElement>('input[aria-label="Escribe tu mensaje"]')?.focus(); }}>Cambiar algo por chat</button>}
-          {widget.cotizacion && uso && <CostosMateriales cotizacion={widget.cotizacion} uso={uso} clave={`plan-${widget.plan.plan_hash}`} onProveedores={() => void enviar("Busca un proveedor cerca de mí para cotizar estos materiales.")} mensajePendiente="Todavía no tengo el precio de estos materiales." />}
-        </article>;
+        const vigente = !widget.reemplazado;
+        const imagen = imagenesLocales[mensajeId] ?? widget.imagen ?? null;
+        const estadoImagen: EstadoImagen = imagenEnCurso === mensajeId ? "cargando" : widget.errorImagen ? "error" : imagen ? "lista" : "nada";
+        return <div key={clave} className="w-full">
+          <TarjetaPlan
+            plan={widget.plan}
+            {...(widget.cotizacion ? { cotizacion: widget.cotizacion } : {})}
+            imagen={imagen}
+            estadoImagen={estadoImagen}
+            usoCosteo={widget.usoCosteo ?? null}
+            compraAbierta={Boolean(widget.compraAbierta)}
+            vigente={vigente}
+            ocupado={cargando || imagenEnCurso !== null}
+            hechas={widget.hechas ?? []}
+            {...(widget.totalAnterior !== undefined ? { totalAnterior: widget.totalAnterior } : {})}
+            contextoCompra={brief}
+            onAccion={(accion) => accionPlan(accion, mensajeId, "tarjeta")}
+            onCosteo={(valor) => actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, usoCosteo: valor, hechas: conHecha(actual.hechas, "costear") }))}
+            onProveedores={() => preguntarCiudad("ciudad-decorador", "Quiero cotizar con un proveedor cerca")}
+            onDistribuidor={() => preguntarCiudad("ciudad-distribuidor", "Quiero comprar con un distribuidor cerca")}
+          />
+        </div>;
       }
     }
   }
 
-  // Alto fijo también en celular: el compositor queda siempre a la vista y solo se desplaza la conversación.
-  return <main className="app-shell h-dvh">
-    <CabeceraApp contexto={contexto} modoVista={modo} onModoVista={cambiar} onLimpiar={vaciar} limpiarDeshabilitado={!mensajes.length} totalSeleccion={0} />
-    <section className="flex min-h-0 flex-1 flex-col" aria-label="Asistente guiado">
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-3xl flex-col px-4 py-6 sm:px-6 sm:py-10">
-          {!mensajes.length && <header className="mb-8 text-center">
-            <span className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-acento-suave text-acento"><Sparkles className="size-7" aria-hidden /></span>
-            <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">Diseñemos tu decoración con globos</h1>
-            <p className="mx-auto mt-3 max-w-xl text-balance text-texto-secundario">Te muestro ideas Sempertex para tu celebración y te digo qué globos necesitas, cuánto cuestan y cómo armarla.</p>
-          </header>}
-          <div className="flex flex-col gap-6" aria-live="polite">
-            <BurbujaAsistente><Markdown>{SALUDO}</Markdown></BurbujaAsistente>
-            {mensajes.map((mensaje, indice) => mensaje.role === "user"
-              ? <div key={mensaje.id} className="ml-auto flex max-w-[min(85%,36rem)] flex-col items-end gap-1.5">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- miniatura local en data URL */}
-                  {mensaje.miniatura && !mensaje.referencia && <img src={mensaje.miniatura} alt="Foto de inspiración enviada" className="h-28 w-auto rounded-2xl border border-borde-suave object-cover shadow-sm" />}
-                  <div className="rounded-2xl rounded-br-md bg-acento px-4 py-2.5 text-sm text-white shadow-sm">{mensaje.content}</div>
-                  {mensaje.miniatura && mensaje.referencia && <ReferenciaInspiracion miniatura={mensaje.miniatura} referencia={mensaje.referencia} onArmar={() => void aceptarPlanFoto(mensaje.referencia!.blueprint)} deshabilitado={cargando} />}
-                  {mensaje.notaFoto && <p role="status" className="max-w-64 text-xs text-texto-secundario">{mensaje.notaFoto}</p>}
-                </div>
-              : <BurbujaAsistente key={mensaje.id}>
-                  {mensaje.content.trim()
-                    ? <Markdown>{separarOpciones(mensaje.content).texto}</Markdown>
-                    : !mensaje.widgets?.length && cargando && indice === mensajes.length - 1 ? <Escribiendo /> : null}
-                  {mensaje.widgets?.map((widget, posicion) => renderWidget(widget, indice === indiceActivo, `${mensaje.id}-${posicion}`, mensaje.id))}
-                </BurbujaAsistente>)}
-            {respuestasRapidas.length > 0 && <div className="pl-11"><RespuestasRapidas opciones={respuestasRapidas} deshabilitado={cargando || !hidratado} onElegir={(texto) => void enviar(texto)} /></div>}
-          </div>
-          {error && <div role="alert" className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
-            <span className="flex-1">No pude responder esta vez. Inténtalo de nuevo.</span>
-            <button type="button" className="rounded-xl bg-rose-900 px-4 py-2 font-semibold text-white" onClick={() => void enviar([...mensajes].reverse().find((mensaje) => mensaje.role === "user")?.content ?? "Continúa", { reintentar: true })}>Reintentar</button>
-          </div>}
-          <div ref={finRef} className="h-2" />
+  function contenidoAsistente(mensaje: Mensaje, indice: number): ReactNode {
+    const activo = indice === indiceActivo && !cargando;
+    const transmitiendo = transmitiendoId === mensaje.id;
+    // Con la propuesta o el plan, la tarjeta ya lo dice todo: el texto (que sí viaja en el historial) no se repite.
+    const conTarjeta = mensaje.widgets?.some((widget) => widget.tipo === "propuesta" || widget.tipo === "plan") ?? false;
+    const texto = conTarjeta ? "" : separarOpciones(mensaje.content).texto;
+    const propuestaFallida = mensaje.widgets?.find((widget) => widget.tipo === "propuesta" && (widget.estado === "fallo" || !cargando));
+    const falloPropio = fallo?.mensajeId === mensaje.id ? fallo
+      // Tras recargar a mitad de un plan no hay fallo guardado: se deriva para que siempre haya un «Reintentar».
+      : !fallo && indice === indiceActivo && propuestaFallida?.tipo === "propuesta" && !cargando
+        ? { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion: { tipo: "plan", propuesta: propuestaFallida.propuesta, mensajeId: mensaje.id, brief, ...(planVigente ? { planAnterior: planActualDesdePlan(planVigente.widget.plan) ?? undefined } : {}) }, alternativas: ["otros-colores", "otra-pieza"] } satisfies Fallo
+        : null;
+    return <>
+      {texto.trim()
+        ? <div className={transmitiendo ? CARET : undefined}><Markdown>{texto}</Markdown></div>
+        : !mensaje.widgets?.length && transmitiendo ? <IndicadorEscribiendo fase={analizandoFoto ? "foto" : "respuesta"} /> : null}
+      {mensaje.referencia && (
+        <ReferenciaInspiracion
+          miniatura={mensaje.miniatura ?? PIXEL_VACIO}
+          referencia={mensaje.referencia}
+          activo={!mensaje.fotoArmada && indice === ultimoIndiceConReferencia(mensajes)}
+          deshabilitado={cargando}
+          onArmar={() => void aceptarPlanFoto(mensaje.id)}
+          onVerIdeas={() => void enviar(`Muéstrame ideas parecidas a mi foto: ${mensaje.referencia!.frase}`.slice(0, 600))}
+        />
+      )}
+      {etapaPlan[mensaje.id] && !mensaje.widgets?.some((widget) => widget.tipo === "propuesta" || widget.tipo === "plan") && <EsqueletoPlan etapa={etapaPlan[mensaje.id]!} />}
+      {mensaje.widgets?.map((widget, posicion) => renderWidget(widget, activo, `${mensaje.id}-${posicion}`, mensaje, indice))}
+      {falloPropio && tarjetaFallo(falloPropio)}
+    </>;
+  }
+
+  const falloSuelto = fallo && (!fallo.mensajeId || !mensajes.some((mensaje) => mensaje.id === fallo.mensajeId)) ? fallo : null;
+  const barraVisible = Boolean(planVigente && ultimoAsistente && ultimoAsistente.id !== planVigente.mensajeId);
+  const totalVigente = useMemo(() => (planVigente ? totalDePlan(planVigente.widget.plan) : 0), [planVigente]);
+
+  return <main className="app-shell h-dvh overflow-hidden">
+    <CabeceraApp contexto={contexto} modoVista={modo} onModoVista={cambiar} onLimpiar={vaciar} limpiarDeshabilitado={!mensajes.length} totalSeleccion={0} ocultarModoDev />
+    <section className="relative flex min-h-0 flex-1 flex-col" aria-label="Asistente guiado">
+      <div ref={contenedorRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+        <div ref={contenidoRef} className="mx-auto flex w-full max-w-3xl flex-col px-4 pb-6 pt-4 sm:px-6 sm:pt-8">
+          <AnimatePresence initial={false}>
+            {restaurado && !mensajes.length && (
+              <motion.header
+                key="bienvenida"
+                variants={grupoConRitmo(0.08)}
+                initial="oculto"
+                animate="visible"
+                exit={{ opacity: 0, y: -12, height: 0, marginBottom: 0, transition: { duration: 0.3, ease: EASE_SALIDA } }}
+                className="mb-8 overflow-hidden text-center"
+              >
+                <motion.span variants={hijoEscalonado} className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-acento-suave text-acento">
+                  <motion.span className="inline-flex" animate={reducido ? undefined : { y: [0, -4, 0], rotate: [0, -6, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}>
+                    <Sparkles className="size-7" aria-hidden />
+                  </motion.span>
+                </motion.span>
+                <motion.h1 variants={hijoEscalonado} className="text-balance text-3xl font-semibold tracking-tight text-texto sm:text-4xl">Diseñemos tu decoración con globos</motion.h1>
+                <motion.p variants={hijoEscalonado} className="mx-auto mt-3 max-w-xl text-balance text-texto-suave">Te muestro ideas Sempertex para tu celebración y te digo qué globos necesitas, cuánto cuestan y cómo armarla.</motion.p>
+              </motion.header>
+            )}
+          </AnimatePresence>
+
+          <BurbujaAsistente mostrarAvatar transmitiendo={false}>
+            <Markdown>{SALUDO}</Markdown>
+            {restaurado && !mensajes.length && (
+              <motion.div variants={grupoConRitmo(0.04, 0.1)} initial="oculto" animate="visible" role="group" aria-label="Qué vas a celebrar" className="mt-3 flex flex-wrap gap-2">
+                {OPCIONES_SALUDO.map((opcion) => <ChipSaludo key={opcion.texto} icono={opcion.icono} deshabilitado={!hidratado} onClick={() => (opcion.texto === "Otra celebración" ? otraCelebracion() : void enviar(opcion.texto))}>{opcion.texto}</ChipSaludo>)}
+                <ChipSaludo destacado icono={<ImagePlus className="size-4" aria-hidden />} deshabilitado={!hidratado} onClick={() => archivoRef.current?.click()}>{CHIP_FOTO}</ChipSaludo>
+              </motion.div>
+            )}
+          </BurbujaAsistente>
+
+          {/* Se monta con la conversación ya restaurada: con initial={false}, lo restaurado no se vuelve a animar. */}
+          {restaurado && <AnimatePresence initial={false}>
+            {mensajes.map((mensaje, indice) => {
+              const anterior = mensajes[indice - 1];
+              const separacion = !anterior || anterior.role !== mensaje.role ? "mt-5" : "mt-2";
+              return <motion.div
+                key={mensaje.id}
+                layout="position"
+                variants={mensaje.role === "user" ? entradaUsuario : entradaMensaje}
+                initial={restaurados.has(mensaje.id) ? false : "oculto"}
+                animate="visible"
+                exit={{ opacity: 0, transition: { duration: DUR.corta } }}
+                style={mensaje.role === "user" ? { transformOrigin: "100% 100%" } : undefined}
+                className={separacion}
+              >
+                {mensaje.role === "user"
+                  ? <>
+                      <BurbujaUsuario id={mensaje.id} {...(mensaje.miniatura ? { miniatura: mensaje.miniatura } : {})}>{mensaje.content}</BurbujaUsuario>
+                      {mensaje.notaFoto && <p role="status" className="ml-auto mt-1.5 max-w-64 text-right text-xs text-texto-suave">{mensaje.notaFoto}</p>}
+                    </>
+                  : <BurbujaAsistente id={mensaje.id} mostrarAvatar={anterior?.role !== "assistant"} transmitiendo={transmitiendoId === mensaje.id}>
+                      {contenidoAsistente(mensaje, indice)}
+                    </BurbujaAsistente>}
+              </motion.div>;
+            })}
+          </AnimatePresence>}
+
+          {falloSuelto && <div className="mt-5"><BurbujaAsistente mostrarAvatar transmitiendo={false}>{tarjetaFallo(falloSuelto)}</BurbujaAsistente></div>}
+
+          {respuestasRapidas.opciones.length > 0 && (
+            <div className="pl-11">
+              <RespuestasRapidas opciones={respuestasRapidas.opciones} destacadas={respuestasRapidas.destacadas} deshabilitado={cargando || !hidratado} onElegir={elegirRapida} />
+            </div>
+          )}
         </div>
       </div>
-      <form className="mx-auto w-full max-w-3xl px-4 pb-4 pt-2 sm:px-6" onSubmit={(event) => { event.preventDefault(); void enviar(entrada); }}>
-        <div className="flex items-center gap-2 rounded-2xl border border-borde-suave bg-superficie p-2 shadow-sm focus-within:ring-2 focus-within:ring-acento/30">
-          <input ref={entradaRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => setFoto(event.target.files?.[0] ?? null)} />
-          <button type="button" aria-label="Adjuntar foto de inspiración" title="Adjuntar foto de inspiración" className="rounded-xl p-2 text-texto-secundario hover:bg-fondo" onClick={() => entradaRef.current?.click()}><ImagePlus className="size-5" /></button>
-          {foto && <span className="flex max-w-40 items-center gap-1 rounded-lg bg-fondo px-2 py-1 text-xs"><span className="truncate">{foto.name}</span><button type="button" aria-label="Quitar foto" onClick={() => setFoto(null)}><X className="size-3.5" /></button></span>}
-          <input aria-label="Escribe tu mensaje" value={entrada} maxLength={6000} onChange={(event) => setEntrada(event.target.value)} placeholder={mensajes.length ? "Escribe tu respuesta…" : "O cuéntame con tus palabras qué quieres celebrar…"} className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-texto-secundario" disabled={cargando || !hidratado} />
-          <button type="submit" aria-label="Enviar mensaje" disabled={cargando || !entrada.trim()} className="grid size-10 place-items-center rounded-xl bg-acento text-white transition-opacity disabled:opacity-40">{cargando ? <LoaderCircle className="size-4 animate-spin" /> : <ArrowUp className="size-5" />}</button>
-        </div>
-        {hayEjemplos && <p className="mt-2 text-center text-xs text-texto-secundario">Las ideas marcadas «Ejemplo» son ilustrativas; los precios salen del catálogo actual de Sempertex.</p>}
-      </form>
+      <BotonIrAlFinal visible={!pegado && mensajes.length > 0} hayNuevo={hayNuevo} onClick={() => irAlFinal()} />
     </section>
+    <BarraPlanVigente
+      visible={barraVisible}
+      titulo={planVigente?.widget.plan.plan.concepto.titulo ?? ""}
+      totalGlobos={totalVigente}
+      ocupado={cargando || imagenEnCurso !== null}
+      hechas={planVigente?.widget.hechas ?? []}
+      onAccion={(accion) => { if (planVigente) accionPlan(accion, planVigente.mensajeId, "barra"); }}
+      onIrAlPlan={() => { if (planVigente) mostrarMensaje(planVigente.mensajeId); }}
+    />
+    <Compositor
+      valor={entrada}
+      onCambiar={setEntrada}
+      onEnviar={() => void enviar(entrada)}
+      placeholder={placeholder}
+      cargando={cargando}
+      onDetener={detener}
+      deshabilitado={!hidratado}
+      foto={foto}
+      onFoto={elegirFoto}
+      textoRef={textoRef}
+      archivoRef={archivoRef}
+    />
+    <p role="status" aria-live="polite" className="sr-only">{anuncio}</p>
   </main>;
 }
 
-function BurbujaAsistente({ children }: { children: React.ReactNode }) {
-  return <div className="flex gap-3">
-    <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-acento-suave text-acento" aria-hidden><Sparkles className="size-4" /></span>
-    <div className="min-w-0 flex-1 text-[0.95rem] leading-relaxed">{children}</div>
-  </div>;
+function ChipSaludo({ children, icono, onClick, deshabilitado, destacado = false }: { children: string; icono: ReactNode; onClick: () => void; deshabilitado: boolean; destacado?: boolean }) {
+  return <motion.button
+    type="button"
+    variants={hijoEscalonado}
+    whileHover={deshabilitado ? undefined : { y: -1 }}
+    whileTap={deshabilitado ? undefined : { scale: 0.95 }}
+    disabled={deshabilitado}
+    onClick={onClick}
+    className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-[0.9rem] font-medium shadow-[0_1px_2px_var(--sombra)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/40 disabled:opacity-50 ${destacado ? "border-acento/40 bg-superficie text-acento hover:border-acento hover:bg-acento-suave" : "border-borde bg-superficie text-texto hover:border-acento hover:bg-acento-suave hover:text-acento"}`}
+  >
+    <span className="text-acento">{icono}</span>
+    <span className="whitespace-nowrap">{children}</span>
+  </motion.button>;
 }
 
-function Escribiendo() {
-  return <span className="inline-flex items-center gap-1 py-2" aria-label="El asistente está escribiendo">
-    {[0, 150, 300].map((retraso) => <span key={retraso} className="size-2 animate-bounce rounded-full bg-texto-secundario/60" style={{ animationDelay: `${retraso}ms` }} />)}
-  </span>;
+// ── Funciones puras ────────────────────────────────────────────────────────────────────────────────────────────
+/** Si la miniatura no se pudo crear, la lectura y «Sí, armémoslo» se muestran igual. */
+const PIXEL_VACIO = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+const TIPOS_FOTO: ReadonlySet<string> = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+function buscarPlanVigente(lista: readonly Mensaje[]): { mensajeId: string; widget: WidgetPlan } | null {
+  for (let indice = lista.length - 1; indice >= 0; indice -= 1) {
+    const widget = lista[indice]!.widgets?.find((item): item is WidgetPlan => item.tipo === "plan" && !item.reemplazado);
+    if (widget) return { mensajeId: lista[indice]!.id, widget };
+  }
+  return null;
+}
+
+function planDelMensaje(mensaje: Mensaje | undefined): WidgetPlan | undefined {
+  return mensaje?.widgets?.find((item): item is WidgetPlan => item.tipo === "plan");
+}
+
+function ultimoIndiceConReferencia(lista: readonly Mensaje[]): number {
+  for (let indice = lista.length - 1; indice >= 0; indice -= 1) if (lista[indice]!.referencia) return indice;
+  return -1;
+}
+
+function totalDePlan(plan: PlanGuiado): number {
+  try { return generarPasosPlan(plan).total; } catch { return 0; }
+}
+
+function conHecha(hechas: WidgetPlan["hechas"], accion: AccionPlan): NonNullable<WidgetPlan["hechas"]> {
+  const actuales = hechas ?? [];
+  return actuales.includes(accion) ? actuales : [...actuales, accion];
+}
+
+/** Sugerencias de «Cambiar algo» según lo que tiene el plan. */
+function sugerenciasDeCambio(plan: PlanGuiado): string[] {
+  const piezas = plan.plan.estructuras.length;
+  return ["Otros colores", ...(piezas > 1 ? ["Quitar una pieza"] : []), "Agregar una pieza", "Hacerla más grande", "Hacerla más sencilla"];
+}
+
+function textoBusquedaCiudad(pregunta: PreguntaCiudad, ciudad: string, hayPlan: boolean): string {
+  const lugar = ciudad.trim().replace(/[.!?]+$/, "");
+  return pregunta === "ciudad-decorador"
+    ? `Busca decoradores en ${lugar} para ${hayPlan ? "mi plan" : "mi decoración"}.`
+    : `Busca un distribuidor de globos Sempertex en ${lugar}.`;
+}
+
+function leerSesion(): { mensajes: Mensaje[]; brief: BriefGuiado; seleccionada: DecoracionSempertex | null; uso: Uso | null } | null {
+  try {
+    const raw = sessionStorage.getItem(CLAVE_SESION);
+    if (!raw) return null;
+    const parsed = EstadoGuardadoSchema.safeParse(JSON.parse(raw) as unknown);
+    if (!parsed.success) { console.warn("[asistente-guiado] sesión guardada inválida; se inicia una conversación nueva."); return null; }
+    // Un plan que estaba en camino al recargar ya no va a llegar: la propuesta queda como fallida, con su «Reintentar».
+    const mensajes = parsed.data.mensajes
+      .filter((mensaje) => mensaje.content.trim() || mensaje.widgets?.length || mensaje.referencia)
+      .map((mensaje) => (mensaje.widgets?.some((widget) => widget.tipo === "propuesta" && widget.estado !== "fallo")
+        ? { ...mensaje, widgets: mensaje.widgets.map((widget): WidgetGuiado => (widget.tipo === "propuesta" ? { ...widget, estado: "fallo" } : widget)) }
+        : mensaje));
+    const seleccionada = parsed.data.seleccionadaId ? decoracionDeLaConversacion(mensajes, parsed.data.seleccionadaId) : null;
+    return { mensajes, brief: parsed.data.brief ?? {}, seleccionada, uso: parsed.data.uso ?? null };
+  } catch (cause) {
+    console.warn("[asistente-guiado] no se pudo restaurar la conversación.", cause);
+    return null;
+  }
 }
 
 function decoracionDeLaConversacion(mensajes: readonly Mensaje[], id: string): DecoracionSempertex | null {
@@ -511,26 +1214,80 @@ function decoracionDeLaConversacion(mensajes: readonly Mensaje[], id: string): D
   return null;
 }
 
-function decoracionDePlan(
-  plan: z.infer<typeof PlanGuiadoSchema>,
-  cotizacion: z.infer<typeof CotizacionPlanGuiadoSchema>,
-  brief: BriefGuiado,
-): DecoracionSempertex {
-  return DecoracionSempertexSchema.parse({
-    id: `deco-plan-${plan.plan_hash.slice(0, 16)}`,
-    origen: "sempertex_manual",
-    titulo: plan.plan.concepto.titulo,
-    tematica: brief.tematica ?? plan.plan.concepto.estilo ?? "Celebración",
-    eventos: [brief.evento ?? "Celebración"],
-    edad: brief.edad === undefined ? null : { min: brief.edad, max: brief.edad },
-    fotos: [{ url: "/favicon.ico", fuente: "Catálogo de materiales", licencia: "ejemplo_sin_licencia" }],
-    video: null,
-    piezas: plan.plan.estructuras.flatMap((pieza) => pieza.estructura_oficial ? [{ estructura: pieza.estructura_oficial, cantidad: pieza.repeticiones }] : []),
-    materiales: cotizacion.lineas.flatMap((linea) => linea.varianteId ? [{ variantId: linea.varianteId, sku: null, cantidad: linea.cantidadNecesaria, nota: linea.nombre ?? linea.tamano }] : []),
-    pasos: [],
-    shopifyHandle: null,
-    fotoRepresentativa: false,
+async function leerSse(respuesta: Response, alEvento: (evento: z.infer<typeof ChatSseEventV1Schema>) => void): Promise<void> {
+  if (!respuesta.body) throw new Error("La respuesta llegó sin contenido.");
+  const lector = respuesta.body.getReader();
+  const decodificador = new TextDecoder();
+  let buffer = "";
+  const procesar = (paquete: string) => {
+    const linea = paquete.split("\n").find((item) => item.startsWith("data: "));
+    if (!linea) return;
+    let dato: unknown;
+    try { dato = JSON.parse(linea.slice(6)) as unknown; } catch (cause) { throw new Error("El asistente envió una respuesta incompleta.", { cause }); }
+    const evento = ChatSseEventV1Schema.safeParse(dato);
+    if (!evento.success) throw new Error("La respuesta del asistente no cumple el contrato.");
+    alEvento(evento.data);
+  };
+  while (true) {
+    const { done, value } = await lector.read();
+    if (done) break;
+    buffer += decodificador.decode(value, { stream: true });
+    const paquetes = buffer.split("\n\n");
+    buffer = paquetes.pop() ?? "";
+    for (const paquete of paquetes) procesar(paquete);
+  }
+  buffer += decodificador.decode();
+  if (buffer.trim()) procesar(buffer);
+}
+
+/** /api/chat (agente del plan): devuelve el plan y la cotización del «fin» y avisa de cada herramienta para el esqueleto. */
+async function pedirPlanChat(cuerpo: Record<string, unknown>, signal: AbortSignal, alHerramienta: (nombre: string, estado: "ejecutando" | "lista", ok: boolean | undefined) => void): Promise<{ plan: unknown; cotizacion: unknown; reply: string }> {
+  const respuesta = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo), signal });
+  if (!respuesta.ok || !respuesta.body) throw new Error(`/api/chat respondió con estado ${respuesta.status}.`);
+  let plan: unknown;
+  let cotizacion: unknown;
+  let reply = "";
+  await leerSse(respuesta, (evento) => {
+    if (evento.type === "herramienta") alHerramienta(evento.nombre, evento.estado, evento.ok);
+    else if (evento.type === "error") throw new Error(evento.error);
+    else if (evento.type === "fin") { plan = evento.plan; cotizacion = evento.cotizacion; reply = evento.reply; }
   });
+  return { plan, cotizacion, reply };
+}
+
+/** Lee la foto con /api/references/analyze; null si no se pudo o tardó más de 12 s (se sigue sin la lectura). */
+async function analizarFoto(imagen: FotoInspiracion, senalTurno: AbortSignal): Promise<z.infer<typeof ReferenciaSchema> | null> {
+  const control = new AbortController();
+  const cortar = () => control.abort();
+  senalTurno.addEventListener("abort", cortar);
+  const reloj = window.setTimeout(cortar, LIMITE_FOTO_MS);
+  try {
+    const respuesta = await fetch("/api/references/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [imagen] }), signal: control.signal });
+    if (!respuesta.ok) throw new Error(`/api/references/analyze respondió con estado ${respuesta.status}.`);
+    const referencia = adaptarAnalisisReferencia(await respuesta.json() as unknown);
+    const valida = ReferenciaSchema.safeParse(referencia);
+    if (!valida.success) throw new Error("No se encontraron piezas en la foto.");
+    return valida.data;
+  } catch (causa) {
+    if (senalTurno.aborted) throw causa;
+    console.warn("[asistente-guiado] no se pudo leer la foto de inspiración.", causa);
+    return null;
+  } finally {
+    window.clearTimeout(reloj);
+    senalTurno.removeEventListener("abort", cortar);
+  }
+}
+
+/** Guarda la imagen para esta sesión; si falla, la imagen sigue viéndose desde memoria. */
+async function guardarImagen(imagen: string): Promise<string | null> {
+  try {
+    const respuesta = await fetch("/api/guiada-imagen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imagen }) });
+    if (!respuesta.ok) throw new Error(`/api/guiada-imagen respondió con estado ${respuesta.status}.`);
+    return z.object({ url: z.string().startsWith("/api/guiada-imagen/") }).strict().parse(await respuesta.json() as unknown).url;
+  } catch (causa) {
+    console.warn("[asistente-guiado] la imagen se ve en esta sesión, pero no se pudo guardar.", causa);
+    return null;
+  }
 }
 
 async function miniaturaDe(archivo: File): Promise<string> {
@@ -545,17 +1302,13 @@ async function miniaturaDe(archivo: File): Promise<string> {
   return lienzo.toDataURL("image/jpeg", 0.7);
 }
 
-async function leerFoto(archivo: File): Promise<{ mime: string; base64: string }> {
-  if (!new Set(["image/jpeg", "image/png", "image/webp"]).has(archivo.type) || archivo.size > 6_000_000) throw new Error("La foto debe ser JPG, PNG o WebP y pesar menos de 6 MB.");
-  const datos = await archivo.arrayBuffer();
-  const bytes = new Uint8Array(datos);
+async function leerFoto(archivo: File): Promise<FotoInspiracion> {
+  const mime = archivo.type;
+  if ((mime !== "image/jpeg" && mime !== "image/png" && mime !== "image/webp") || archivo.size > 6_000_000) throw new Error("La foto debe ser JPG, PNG o WebP y pesar menos de 6 MB.");
+  const bytes = new Uint8Array(await archivo.arrayBuffer());
   let binario = "";
-  for (const byte of bytes) binario += String.fromCharCode(byte);
-  return { mime: archivo.type, base64: btoa(binario) };
-}
-
-function conMayuscula(texto: string): string {
-  return texto.charAt(0).toLocaleUpperCase("es") + texto.slice(1);
+  for (let inicio = 0; inicio < bytes.length; inicio += 0x8000) binario += String.fromCharCode(...bytes.subarray(inicio, inicio + 0x8000));
+  return { mime, base64: btoa(binario) };
 }
 
 function suscribirNada(): () => void {

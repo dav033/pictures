@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import { ChartColumn, FlaskConical, LayoutGrid, ListChecks, Monitor, Moon, Shield, Sun, Trash2 } from "lucide-react";
 import { OPCIONES_TEMA } from "@/lib/tema/tema";
 import { useTema } from "@/lib/tema/use-tema";
@@ -27,6 +28,8 @@ type Props = {
   totalSeleccion: number;
   /** Controles técnicos: se muestran en una barra aparte solo en modo dev. */
   barraDev?: ReactNode;
+  /** Vista guiada: sin el interruptor «Modo dev» (el cliente no lo necesita). La clásica no lo pasa. */
+  ocultarModoDev?: boolean;
 };
 
 /** Marca simple de la maqueta: cuadro violeta con un anillo y un punto. */
@@ -45,7 +48,7 @@ function MarcaIcono() {
  * Cabecera de una sola línea (maquetas Main y EstadoInicial): marca, contexto
  * del evento al centro, creatividad compacta, tema, "Modo dev" y menú.
  */
-export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, onModoVista, onLimpiar, limpiarDeshabilitado, onAbrirSeleccion, totalSeleccion, barraDev }: Props) {
+export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, onModoVista, onLimpiar, limpiarDeshabilitado, onAbrirSeleccion, totalSeleccion, barraDev, ocultarModoDev = false }: Props) {
   const pathname = usePathname();
   const esDev = modoVista === "dev";
   const { preferencia: preferenciaTema, cambiar: cambiarTema } = useTema();
@@ -56,12 +59,12 @@ export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, o
       ? [{ tipo: "accion" as const, id: "seleccion", etiqueta: totalSeleccion > 0 ? `Tu selección (${totalSeleccion})` : "Tu selección", onSeleccionar: onAbrirSeleccion, icono: <ListChecks className="size-4" /> }]
       : []),
     { tipo: "accion", id: "limpiar", etiqueta: "Limpiar chat", onSeleccionar: onLimpiar, deshabilitado: limpiarDeshabilitado, icono: <Trash2 className="size-4" /> },
-    // D10: the header switch flips light/dark quickly; here the customer can also go back to "Sistema".
-    { tipo: "separador", id: "sep-tema" },
-    { tipo: "titulo", id: "titulo-tema", etiqueta: "Tema" },
     pathname === "/asistente"
       ? { tipo: "enlace", id: "vista-clasica", etiqueta: "Vista clásica", href: "/" }
       : { tipo: "enlace", id: "vista-guiada", etiqueta: "Asistente guiado", href: "/asistente" },
+    // D10: the header switch flips light/dark quickly; here the customer can also go back to "Sistema".
+    { tipo: "separador", id: "sep-tema" },
+    { tipo: "titulo", id: "titulo-tema", etiqueta: "Tema" },
     ...OPCIONES_TEMA.map((opcion): ItemMenu => ({ tipo: "opcion", id: `tema-${opcion.valor}`, etiqueta: opcion.etiqueta, marcado: preferenciaTema === opcion.valor, onSeleccionar: () => cambiarTema(opcion.valor), icono: ICONO_TEMA[opcion.valor] })),
     ...(esDev
       ? ([
@@ -81,13 +84,19 @@ export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, o
           <h1 className="sr-only truncate text-sm font-semibold tracking-[-0.015em] min-[480px]:not-sr-only">Asistente de decoración</h1>
         </div>
         <div className="app-contexto" data-testid="contexto-evento">
-          {contexto && <p className="truncate" title={contexto}>{contexto}</p>}
+          <AnimatePresence mode="wait" initial={false}>
+            {contexto && (
+              <motion.p key={contexto} className="truncate" title={contexto} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
+                {contexto}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
         <div className="app-acciones">
           <ConmutadorVista />
           {creatividad !== undefined && onCreatividad && <SelectorCreatividad valor={creatividad} onCambiar={onCreatividad} />}
           <InterruptorTema />
-          <SwitchModoVista modo={modoVista} onCambiar={onModoVista} />
+          {!ocultarModoDev && <SwitchModoVista modo={modoVista} onCambiar={onModoVista} />}
           <MenuApp items={items} />
         </div>
       </header>

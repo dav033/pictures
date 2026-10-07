@@ -1,5 +1,5 @@
 import { strict as assert } from "node:assert";
-import { buscarDecoracionesSempertex, decoracionesSempertex } from "@/lib/biblioteca-sempertex/biblioteca";
+import { buscarDecoracionesSempertex, decoracionesSempertex, normalizarBusqueda } from "@/lib/biblioteca-sempertex/biblioteca";
 
 const exactas: Array<[string, string, string]> = [
   ["cumpleaños", "6", "castillo"],
@@ -17,7 +17,10 @@ const exactas: Array<[string, string, string]> = [
 for (const [evento, edad, tematica] of exactas) {
   const resultados = buscarDecoracionesSempertex({ evento, edad: Number(edad), tematica });
   assert.ok(resultados.length > 0, `Debe encontrar resultados para ${tematica}.`);
-  assert.ok(resultados.every((resultado) => resultado.coincidencia === "exacta"), `Resultados de ${tematica} deben marcarse exactos.`);
+  assert.equal(resultados[0]?.coincidencia, "exacta", `La primera idea de ${tematica} debe ser exacta.`);
+  const primeraCercana = resultados.findIndex((resultado) => resultado.coincidencia === "cercana");
+  assert.ok(primeraCercana === -1 || resultados.slice(primeraCercana).every((resultado) => resultado.coincidencia === "cercana"), `Las exactas de ${tematica} van antes que las cercanas.`);
+  assert.ok(resultados.length >= 3, `${tematica}: se completa hasta al menos 3 ideas (hay ${resultados.length}).`);
 }
 
 const babyGirl = buscarDecoracionesSempertex({ evento: "baby shower", tematica: "niña" });
@@ -45,5 +48,19 @@ assert.equal(resultadoMixto[0]?.coincidencia, "exacta");
 
 const eleganteReal = buscarDecoracionesSempertex({ evento: "graduación", tematica: "elegante negro y dorado" });
 assert.equal(eleganteReal[0]?.origen, "referencia_real", "Las temáticas nuevas deben encontrar decoración real primero.");
+
+// Celebraciones fuera del catálogo: al menos 3 ideas y ninguna titulada «Cumpleaños…» (la copia se renombra «Fiesta…»).
+for (const consulta of [{ evento: "Fiesta de divorcio", tematica: "divertido, negro y fucsia" }, { evento: "divorcio", tematica: "divorcio" }, { evento: "Fiesta de carnaval", tematica: "carnaval neón" }, { evento: "carnaval", tematica: "neón, colores fluorescentes" }]) {
+  const ideas = buscarDecoracionesSempertex(consulta);
+  assert.ok(ideas.length >= 3, `${consulta.evento}: al menos 3 ideas (hay ${ideas.length}).`);
+  assert.ok(ideas.every((idea) => !/^cumplea/i.test(idea.titulo) && !/cumplea(?:ñ|n)os$/i.test(idea.titulo)), `${consulta.evento}: ningún título de cumpleaños (${ideas.map((idea) => idea.titulo).join(" | ")}).`);
+}
+assert.ok(decoracionesSempertex.some((decoracion) => /^Cumpleaños/.test(decoracion.titulo)), "El renombrado es solo de la copia: el catálogo conserva sus títulos.");
+// Títulos casi iguales («Arco de entrada en blanco y negro» / «Arco de entrada blanco y negro») salen una sola vez.
+const graduacion = buscarDecoracionesSempertex({ evento: "graduación", tematica: "elegante blanco y negro" });
+const comparables = graduacion.map((idea) => normalizarBusqueda(idea.titulo).split(" ").filter((palabra) => palabra !== "en" && palabra !== "de").join(" "));
+assert.equal(new Set(comparables).size, comparables.length, `Sin títulos duplicados: ${graduacion.map((idea) => idea.titulo).join(" | ")}`);
+const princesas = buscarDecoracionesSempertex({ evento: "cumpleaños", edad: 6, tematica: "princesas" });
+assert.ok(princesas.length >= 3 && princesas.length <= 6 && princesas[0]?.coincidencia === "exacta" && princesas.slice(1).some((idea) => idea.coincidencia === "cercana"), "Princesas: exacta primero y cercanas para completar.");
 
 console.log("test-busqueda-biblioteca-sempertex: sinónimos, edad, coincidencia exacta y cercana correctos.");

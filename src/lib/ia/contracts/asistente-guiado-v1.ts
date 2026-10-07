@@ -5,7 +5,22 @@ import { BasePlanSchema } from "@/lib/plan/edicion-esquemas";
 
 export const ASISTENTE_GUIADO_VERSION = "asistente-guiado.v1" as const;
 const BriefGuiadoSchema = z.object({ evento: z.string().trim().min(1).max(120).optional(), edad: z.number().int().min(0).max(120).optional(), tematica: z.string().trim().min(1).max(160).optional() }).strict();
-const EstadoGuiadoSchema = z.object({ decoracionId: z.string().regex(/^(ej|deco)-[a-z0-9-]+$/).optional(), uso: z.enum(["negocio", "personal"]).optional(), opcion: z.enum(["contratar", "costear", "comprar", "aprender"]).optional(), propuesta: z.boolean().optional() }).strict();
+/** Plan que el cliente tiene a la vista: viaja en cada turno para que «Cambiar algo» conserve lo que no pidió cambiar. */
+export const PlanActualGuiadoSchema = z.object({
+  piezas: z.array(z.object({ estructura: z.enum(ESTRUCTURAS_OFICIALES_IDS), cantidad: z.number().int().min(1).max(12), nombre: z.string().max(120).optional() }).strict()).min(1).max(6),
+  colores: z.array(z.string().trim().min(1).max(40)).min(1).max(8),
+  totalGlobos: z.number().int().nonnegative().optional(),
+  resumen: z.string().max(400).optional(),
+}).strict();
+export type PlanActualGuiado = z.infer<typeof PlanActualGuiadoSchema>;
+// Sin .strict(): zod descarta las claves desconocidas, así un cliente anterior que todavía manda `propuesta: true` no recibe 400.
+const EstadoGuiadoSchema = z.object({
+  decoracionId: z.string().regex(/^(ej|deco)-[a-z0-9-]+$/).optional(),
+  uso: z.enum(["negocio", "personal"]).optional(),
+  alcancePropuesta: z.enum(["completa", "individual"]).optional(),
+  piezaPedida: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
+  planActual: PlanActualGuiadoSchema.optional(),
+});
 const FotoInspiracionSchema = z.object({ base64: z.string().min(1).max(8_000_000), mime: z.enum(["image/jpeg", "image/png", "image/webp"]) }).strict();
 export const AsistenteGuiadoRequestSchema = z.object({
   schema_version: z.literal(ASISTENTE_GUIADO_VERSION),

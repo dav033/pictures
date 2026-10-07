@@ -359,6 +359,18 @@ accent» (no dominan la imagen). Guías de armado por estructura investigadas en
 y guía aproximada con fuentes. Pendiente: 3 errores de `tsc` en `scripts/biblioteca/construir-biblioteca-real.ts` (los corrige la
 segunda pasada de la biblioteca).
 
+**Cierre de la tarde (2026-10-06 ~17:30).** Integrado y verificado en navegador: «Propónme algo» → «¿completa o individual?» → plan
+de Python SIN paso de aceptar (en el turno de propuesta el modelo solo ve `proponer_composicion` + `guardar_brief_guiado`; la función
+que pide el plan se cancelaba sola por el «cargando» del mismo turno → parámetro `desdeTurno`) → «Tu plan» (dibujo de armado por pieza,
+medidas, mezcla de tamaños, globos por color, total, «Ver detalle») → «Aprender a hacerlo» con guía aproximada investigada + fuentes
+plegadas + pasos del plan sin jerga. Biblioteca real corregida (globos lisos por acabado, todos los colores de la paleta). Dueño
+(17:25): «manda absolutamente todo a main y mándalo en cada hito» → `main` = 040835a (Vercel) y VPS DEPLOY_OK 040835a. Dueño (17:15):
+«el flujo del chat de guiada funciona brutalmente horrible» → workflow de subagentes Claude `rescate-vista-guiada` (4 auditorías: API
+E2E de 10 recorridos, navegador escritorio/390 px, código, diseño UX+motion → síntesis → implementación servidor ∥ componentes
+animados → VistaGuiada → verificación con una ronda de arreglo). Directiva: UI/UX agresiva (el usuario siempre sabe qué hacer),
+implementar recomendaciones superficiales y fáciles, descartar las que meten reglas de negocio (p. ej. WhatsApp). Limpieza de RAM
+autónoma cada 3 latidos (`scratchpad/limpiar-ram.ps1`: huérfanos propios; con <2 GB libres, apps pesadas ajenas al trabajo).
+
 ## 5. Decisiones del dueño
 - Tomadas: FLUX base sin LoRA (eliminar el LoRA); Gemini sin ningún camino para generar imágenes (2026-10-06); racimo de pared sí; juez Codex luna 6 medium; pruebas grandes en pausa.
 - Pendientes: taxonomía 12 o 18 clases (las 5 que AGENTS.md daba por retiradas: `arco_no_denso`, `columna_no_densa`, `pared_densa`,
