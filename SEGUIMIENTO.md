@@ -31,7 +31,12 @@ trazadores, diagnósticos) están en el repositorio, en `evaluacion/` (§7); las
 | `wf_965af056-88e` auditoría | 31 decoraciones contra su foto: productos Sempertex reales, remates > 12" | decoraciones.json, data/biblioteca-real |
 | ritmo | comparador (84), probador (84), verificador (84), usabilidad (85): solo informan | scratchpad/ritmo/*.md |
 
-**En cola:** `scratchpad/wf-editor.js` (globos libres además del %, chips dentro del editor, reemplazar/añadir colores del catálogo,
+**TOPE: máximo 6 agentes a la vez** (pedido del dueño ~22:45, RAM a ~1 GB disponible). Se detuvieron los de solo lectura: ritmo
+(comparador/probador/verificador/usabilidad 84-85) y la auditoría de la biblioteca (sus borradores quedan en
+`scratchpad/auditoria-biblioteca/aud2-r*.txt`). Siguen 7 que editan código (A, E, D, B2, granel, paridad, lector); no se lanza nada
+nuevo hasta bajar de 6. B terminó (gráfica del clásico en cada pieza + «Modificar esta pieza» + tabla de «Ver detalle»).
+**En cola (por prioridad, respetando el tope):** 1) `scratchpad/wf-editor.js`; 2) auditoría de la biblioteca (relanzar
+`wf-auditoria-biblioteca.js`, que puede leer los borradores); 3) agentes de ritmo cuando haya hueco. Antes en cola: `scratchpad/wf-editor.js` (globos libres además del %, chips dentro del editor, reemplazar/añadir colores del catálogo,
 inputs de negocio bonitos) cuando terminen A/B y granel.
 
 **Plan siguiente:** subir a main cada frente verificado (commits selectivos + tsc en e3-verif); convertir los hallazgos de los agentes de
