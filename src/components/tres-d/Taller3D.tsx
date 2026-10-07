@@ -268,6 +268,87 @@ export function Taller3D() {
     : modo === "columna" || modo === "arco" ? FORMATOS_GLOBO.filter((f) => FORMATOS_COLUMNA.includes(f.id as (typeof FORMATOS_COLUMNA)[number])) : FORMATOS_GLOBO;
   const seleccionado = (i: number) => (modo === "modulo" ? coloresModulo[i] : codigo);
 
+  // Ficha del visor: compacta encima del lienzo (sin listas) y completa debajo (con materiales y notas).
+  const fichaVisor = color ? (
+    <>
+                {modo === "pared" ? (
+                  tipoPared === "trenzas" ? (
+                    <>
+                      <p className="font-semibold text-texto">Trenzas alternando {paredTrenzas.grande.formatoId} a {formatoCm(paredTrenzas.grande.infladoCm)} y {paredTrenzas.chico.formatoId} a {formatoCm(paredTrenzas.chico.infladoCm)} · {metros(paredTrenzasArmada.anchoCm)} × {metros(paredTrenzasArmada.altoCm)} m</p>
+                      <p className="font-mono text-xs text-texto-suave">{paredTrenzasArmada.columnas} trenzas × {paredTrenzasArmada.niveles} cuartetos ({paredTrenzasArmada.cuartetos.grande} grandes + {paredTrenzasArmada.cuartetos.chico} chicos) · {(100 / paredTrenzasArmada.pasoCm).toLocaleString("es-CO", { maximumFractionDigits: 1 })} por metro · {formatoCm(paredTrenzasArmada.anchoTrenzaCm)} por trenza</p>
+                      <ListaMateriales materiales={paredTrenzasArmada.materiales} />
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-texto">Malla {pared.formatoId} tipo flor · {metros(paredArmada.anchoCm)} × {metros(paredArmada.altoCm)} m</p>
+                      <p className="font-mono text-xs text-texto-suave">{paredArmada.eslabones} eslabones · {paredArmada.uniones} parejas de unión ({paredArmada.uniones * 2} R-5)</p>
+                      <ListaMateriales materiales={paredArmada.materiales} />
+                    </>
+                  )
+                ) : modo === "decoracion" ? (
+                  <>
+                    <p className="font-semibold text-texto">
+                      {donde === "sola" ? `${nombreDecoracion(decoracionEnEditor)} · ${formatoCm(decoracionArmada.diametroCm)} de ancho`
+                        : donde === "pared" ? `${tipoPared === "trenzas" ? "Pared de trenzas" : `Malla ${pared.formatoId}`} ${metros(paredActual.anchoCm)} × ${metros(paredActual.altoCm)} m · ${escenaDecoracion.puestas} ${usarMezcla ? "decoraciones" : `× ${nombreDecoracion(decoracionEnEditor)}`}`
+                          : `${escenaDecoracion.puestas} × ${nombreDecoracion(decoracionEnEditor)} en ${donde === "arco" ? "el arco" : "la columna"}`}
+                    </p>
+                    {donde === "pared" && usarMezcla && (
+                      <p className="detalle-ficha text-xs text-texto-suave">{mezcla.elementos.map((e, i) => `${escenaDecoracion.porElemento[i] ?? 0} ${e.nombre}`).join(" · ")}</p>
+                    )}
+                    <p className="font-mono text-xs text-texto-suave">{escenaDecoracion.globos.length} globos{escenaDecoracion.tubos.length ? ` · ${escenaDecoracion.tubos.length} tramos de tubito` : ""}</p>
+                    <ListaMateriales materiales={escenaDecoracion.materiales} />
+                    {escenaDecoracion.materiales.some((m) => m.formatoId.startsWith("T-")) && <p className="detalle-ficha mt-1 text-[0.7rem] text-texto-suave">Tubitos contados por largo (~137 cm útiles cada uno).</p>}
+                    {escenaDecoracion.materiales.some((m) => m.formatoId === "C-6") && <p className="detalle-ficha text-[0.7rem] text-texto-suave">Corazón 6: color de Celebra ed. 27 (no está en la tabla oficial).</p>}
+                  </>
+                ) : modo === "arco" ? (
+                  <>
+                    <p className="font-semibold text-texto">Arco {FORMAS_ARCO.find((f) => f.id === forma)?.nombre.toLowerCase()} {datosPatron.nombre.toLowerCase()} de {formato.id} a {formatoCm(inflado)}</p>
+                    <p className="font-mono text-xs text-texto-suave">{(anchoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} × {(altoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {(arco.longitudCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 1 })} m de recorrido · {arco.niveles} cuartetos · {arco.globos.length} globos</p>
+                    <ul className="mt-1 text-xs text-texto">
+                      {arco.materiales.map((m) => {
+                        const ref = referenciaPorCodigo(m.codigo);
+                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
+                      })}
+                    </ul>
+                  </>
+                ) : modo === "columna" ? (
+                  <>
+                    <p className="font-semibold text-texto">Columna {datosPatron.nombre.toLowerCase()} de {formato.id} a {formatoCm(inflado)}</p>
+                    <p className="font-mono text-xs text-texto-suave">{(columna.alturaCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {columna.niveles} cuartetos · {columna.globos.length} globos</p>
+                    <ul className="mt-1 text-xs text-texto">
+                      {columna.materiales.map((m) => {
+                        const ref = referenciaPorCodigo(m.codigo);
+                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
+                      })}
+                    </ul>
+                  </>
+                ) : modo === "modulo" ? (
+                  <>
+                    <p className="font-semibold text-texto">{modulo.nombre} de {formato.id} a {formatoCm(inflado)}</p>
+                    <p className="font-mono text-xs text-texto-suave">{modulo.globos} globos · {formatoCm(armado.anchoCm)} de ancho</p>
+                    <ul className="mt-1 text-xs text-texto">
+                      {materiales.map((m) => {
+                        const ref = referenciaPorCodigo(m.codigo);
+                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
+                      })}
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-texto">{vista === "todos" ? "Redondos de 5\" a 36\"" : formato.nombre} · {color.nombreCompleto} <span className="font-mono text-xs text-texto-suave">{color.codigo}</span></p>
+                    <p className="font-mono text-xs text-texto-suave">
+                      {vista === "todos"
+                        ? "Inflado de decoración de cada tamaño"
+                        : formato.largoCm
+                          ? `${formatoCm(inflado)} de grosor × ${formatoCm(formato.largoCm)} de largo`
+                          : `${formatoCm(inflado)} de diámetro`}
+                      {" · "}{color.acabado}
+                    </p>
+                  </>
+                )}
+    </>
+  ) : null;
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-4 px-4 py-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -465,85 +546,17 @@ export function Taller3D() {
             {!listo && !error && <p className="absolute inset-0 grid place-items-center text-sm text-texto-suave">Cargando el visor 3D…</p>}
             {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-texto">{error}</p>}
             {color && (
-              <div className="pointer-events-none absolute left-3 top-3 max-w-[80%] rounded-xl bg-superficie/90 px-3 py-2 text-sm shadow-sm ring-1 ring-borde backdrop-blur">
-                {modo === "pared" ? (
-                  tipoPared === "trenzas" ? (
-                    <>
-                      <p className="font-semibold text-texto">Trenzas alternando {paredTrenzas.grande.formatoId} a {formatoCm(paredTrenzas.grande.infladoCm)} y {paredTrenzas.chico.formatoId} a {formatoCm(paredTrenzas.chico.infladoCm)} · {metros(paredTrenzasArmada.anchoCm)} × {metros(paredTrenzasArmada.altoCm)} m</p>
-                      <p className="font-mono text-xs text-texto-suave">{paredTrenzasArmada.columnas} trenzas × {paredTrenzasArmada.niveles} cuartetos ({paredTrenzasArmada.cuartetos.grande} grandes + {paredTrenzasArmada.cuartetos.chico} chicos) · {(100 / paredTrenzasArmada.pasoCm).toLocaleString("es-CO", { maximumFractionDigits: 1 })} por metro · {formatoCm(paredTrenzasArmada.anchoTrenzaCm)} por trenza</p>
-                      <ListaMateriales materiales={paredTrenzasArmada.materiales} />
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-semibold text-texto">Malla {pared.formatoId} tipo flor · {metros(paredArmada.anchoCm)} × {metros(paredArmada.altoCm)} m</p>
-                      <p className="font-mono text-xs text-texto-suave">{paredArmada.eslabones} eslabones · {paredArmada.uniones} parejas de unión ({paredArmada.uniones * 2} R-5)</p>
-                      <ListaMateriales materiales={paredArmada.materiales} />
-                    </>
-                  )
-                ) : modo === "decoracion" ? (
-                  <>
-                    <p className="font-semibold text-texto">
-                      {donde === "sola" ? `${nombreDecoracion(decoracionEnEditor)} · ${formatoCm(decoracionArmada.diametroCm)} de ancho`
-                        : donde === "pared" ? `${tipoPared === "trenzas" ? "Pared de trenzas" : `Malla ${pared.formatoId}`} ${metros(paredActual.anchoCm)} × ${metros(paredActual.altoCm)} m · ${escenaDecoracion.puestas} ${usarMezcla ? "decoraciones" : `× ${nombreDecoracion(decoracionEnEditor)}`}`
-                          : `${escenaDecoracion.puestas} × ${nombreDecoracion(decoracionEnEditor)} en ${donde === "arco" ? "el arco" : "la columna"}`}
-                    </p>
-                    {donde === "pared" && usarMezcla && (
-                      <p className="text-xs text-texto-suave">{mezcla.elementos.map((e, i) => `${escenaDecoracion.porElemento[i] ?? 0} ${e.nombre}`).join(" · ")}</p>
-                    )}
-                    <p className="font-mono text-xs text-texto-suave">{escenaDecoracion.globos.length} globos{escenaDecoracion.tubos.length ? ` · ${escenaDecoracion.tubos.length} tramos de tubito` : ""}</p>
-                    <ListaMateriales materiales={escenaDecoracion.materiales} />
-                    {escenaDecoracion.materiales.some((m) => m.formatoId.startsWith("T-")) && <p className="mt-1 text-[0.7rem] text-texto-suave">Tubitos contados por largo (~137 cm útiles cada uno).</p>}
-                    {escenaDecoracion.materiales.some((m) => m.formatoId === "C-6") && <p className="text-[0.7rem] text-texto-suave">Corazón 6: color de Celebra ed. 27 (no está en la tabla oficial).</p>}
-                  </>
-                ) : modo === "arco" ? (
-                  <>
-                    <p className="font-semibold text-texto">Arco {FORMAS_ARCO.find((f) => f.id === forma)?.nombre.toLowerCase()} {datosPatron.nombre.toLowerCase()} de {formato.id} a {formatoCm(inflado)}</p>
-                    <p className="font-mono text-xs text-texto-suave">{(anchoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} × {(altoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {(arco.longitudCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 1 })} m de recorrido · {arco.niveles} cuartetos · {arco.globos.length} globos</p>
-                    <ul className="mt-1 text-xs text-texto">
-                      {arco.materiales.map((m) => {
-                        const ref = referenciaPorCodigo(m.codigo);
-                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
-                      })}
-                    </ul>
-                  </>
-                ) : modo === "columna" ? (
-                  <>
-                    <p className="font-semibold text-texto">Columna {datosPatron.nombre.toLowerCase()} de {formato.id} a {formatoCm(inflado)}</p>
-                    <p className="font-mono text-xs text-texto-suave">{(columna.alturaCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {columna.niveles} cuartetos · {columna.globos.length} globos</p>
-                    <ul className="mt-1 text-xs text-texto">
-                      {columna.materiales.map((m) => {
-                        const ref = referenciaPorCodigo(m.codigo);
-                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
-                      })}
-                    </ul>
-                  </>
-                ) : modo === "modulo" ? (
-                  <>
-                    <p className="font-semibold text-texto">{modulo.nombre} de {formato.id} a {formatoCm(inflado)}</p>
-                    <p className="font-mono text-xs text-texto-suave">{modulo.globos} globos · {formatoCm(armado.anchoCm)} de ancho</p>
-                    <ul className="mt-1 text-xs text-texto">
-                      {materiales.map((m) => {
-                        const ref = referenciaPorCodigo(m.codigo);
-                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
-                      })}
-                    </ul>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-semibold text-texto">{vista === "todos" ? "Redondos de 5\" a 36\"" : formato.nombre} · {color.nombreCompleto} <span className="font-mono text-xs text-texto-suave">{color.codigo}</span></p>
-                    <p className="font-mono text-xs text-texto-suave">
-                      {vista === "todos"
-                        ? "Inflado de decoración de cada tamaño"
-                        : formato.largoCm
-                          ? `${formatoCm(inflado)} de grosor × ${formatoCm(formato.largoCm)} de largo`
-                          : `${formatoCm(inflado)} de diámetro`}
-                      {" · "}{color.acabado}
-                    </p>
-                  </>
-                )}
+              <div className="pointer-events-none absolute left-3 top-3 max-w-[min(80%,34rem)] rounded-xl bg-superficie/90 px-3 py-2 text-sm shadow-sm ring-1 ring-borde backdrop-blur [&_.detalle-ficha]:hidden [&_ul]:hidden">
+                {fichaVisor}
               </div>
             )}
           </div>
+          {color && (
+            <details className="rounded-2xl bg-superficie p-3 text-sm ring-1 ring-borde" open>
+              <summary className="cursor-pointer font-semibold text-texto">Materiales y detalle</summary>
+              <div className="mt-2">{fichaVisor}</div>
+            </details>
+          )}
           <p className="text-xs text-texto-suave">Arrastra para girar · rueda o pellizca para acercar · medidas nominales del catálogo Sempertex; el color es el del globo inflado.</p>
         </section>
       </div>
