@@ -458,8 +458,45 @@ function distanciaHex(a: string, b: string): number {
   return Math.hypot((r1 ?? 0) - (r2 ?? 0), (g1 ?? 0) - (g2 ?? 0), (b1 ?? 0) - (b2 ?? 0));
 }
 
-export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
-  const azar = crearAzar(opciones.semilla);
+/**
+ * Lo que arma el empaque (pasos 1 a 5): dónde va cada globo, los huecos para flores y lo que se avisó. No depende de
+ * los colores; `usosAzar` cuenta cuántas veces se tiró el azar para seguir la misma secuencia al repartir los colores.
+ */
+type GeometriaOrganica = {
+  tramos: TramoPreparado[]; globos: Interno[]; huecos: Hueco[]; estructuraPorMetro: number[]; avisos: readonly string[]; usosAzar: number;
+};
+
+/**
+ * El empaque ya hecho por opciones sin los colores: cambiar un color (la paleta, «Colores de la escena») solo
+ * reparte de nuevo los colores (milisegundos) y no rehace el empaque (medio segundo o más por estructura).
+ */
+const GEOMETRIAS = new Map<string, GeometriaOrganica>();
+const TOPE_GEOMETRIAS = 12;
+
+/** Olvida los empaques guardados (para las pruebas: armar desde cero). */
+export function olvidarEmpaquesOrganicos(): void {
+  GEOMETRIAS.clear();
+}
+
+function geometriaOrganica(opciones: OpcionesOrganico): GeometriaOrganica {
+  const clave = JSON.stringify({ ...opciones, colores: null });
+  const guardada = GEOMETRIAS.get(clave);
+  if (guardada) {
+    // La más usada queda al final (la primera es la que se olvida).
+    GEOMETRIAS.delete(clave);
+    GEOMETRIAS.set(clave, guardada);
+    return guardada;
+  }
+  const nueva = empacarOrganico(opciones);
+  GEOMETRIAS.set(clave, nueva);
+  while (GEOMETRIAS.size > TOPE_GEOMETRIAS) { const primera = GEOMETRIAS.keys().next().value; if (primera === undefined) break; GEOMETRIAS.delete(primera); }
+  return nueva;
+}
+
+function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
+  const azarBase = crearAzar(opciones.semilla);
+  let usosAzar = 0;
+  const azar = () => { usosAzar++; return azarBase(); };
   const avisos: string[] = [];
   const obstaculos = opciones.obstaculos ?? [];
   const tramos: TramoPreparado[] = opciones.tramos.map((def) => {
@@ -1181,6 +1218,17 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     cambiarSueltos(rayos);
   }
 
+  return { tramos, globos, huecos, estructuraPorMetro, avisos, usosAzar };
+}
+
+export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
+  const geometria = geometriaOrganica(opciones);
+  const { tramos, globos, huecos, estructuraPorMetro } = geometria;
+  const avisos = [...geometria.avisos];
+  // El azar sigue donde lo dejó el empaque (el mismo resultado que armarlo todo de una).
+  const azar = crearAzar(opciones.semilla);
+  for (let i = 0; i < geometria.usosAzar; i++) azar();
+
   // 6. Color por cuotas, sin dos iguales pegados cuando se puede.
   const referencias = new Map<string, ReferenciaSempertex>(TABLA_SEMPERTEX.referencias.map((r) => [r.codigo, r]));
   const paleta = opciones.colores.filter((c) => {
@@ -1298,7 +1346,7 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     return {
       indice: i, nudo, direccion, cuelloExtraCm: 0,
       formatoId: g.formatoId, infladoCm: g.d, codigo, nombreColor: ref.nombreCompleto, hexGlobo: ref.hexGlobo,
-      centro: g.c, tramo: tp.def.id, fraccion: m.s / tp.largo, tamano: g.tamano, racimo: g.racimo,
+      centro: { ...g.c }, tramo: tp.def.id, fraccion: m.s / tp.largo, tamano: g.tamano, racimo: g.racimo,
       transparente, confeti: Boolean(e?.confeti) && transparente,
     };
   });
@@ -1308,8 +1356,8 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     let holgura = Infinity;
     for (const g of globos) holgura = Math.min(holgura, distancia(h.c, g.c) - g.r);
     const tp = tramos[h.tramo]!;
-    const apoyos = globos.filter((g) => distancia(h.superficie, g.c) - g.r <= 30).map((g) => ({ centro: g.c, radioCm: g.r }));
-    return { indice, tramo: tp.def.id, fraccion: limitar(h.s / tp.largo, 0, 1), posicion: h.superficie, normal: h.normal, holguraCm: Math.round(holgura * 10) / 10, apoyos };
+    const apoyos = globos.filter((g) => distancia(h.superficie, g.c) - g.r <= 30).map((g) => ({ centro: { ...g.c }, radioCm: g.r }));
+    return { indice, tramo: tp.def.id, fraccion: limitar(h.s / tp.largo, 0, 1), posicion: { ...h.superficie }, normal: { ...h.normal }, holguraCm: Math.round(holgura * 10) / 10, apoyos };
   });
 
   // Materiales por formato + color (+ confeti, que es otro artículo).
