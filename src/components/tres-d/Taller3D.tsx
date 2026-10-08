@@ -21,6 +21,7 @@ import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
+import { follajeEnIngles } from "@/lib/globos3d/flores-artificiales";
 import { medirFuera } from "./medicion-visor";
 import { MenuContextual, type AccionMenu } from "./MenuContextual";
 import { useMenuContextual } from "./useMenuContextual";
@@ -515,7 +516,7 @@ export function Taller3D() {
       const ref = referenciaPorCodigo(raizSolitario.pieza.codigo);
       return descripcionRender3d(`A single ${formatoEnIngles(raizSolitario.pieza.formatoId)} latex balloon, ${ref?.nombreEn ?? ""}`, []);
     }
-    return descripcionRender3d(escenaEnIngles(escenaVista, armadaEscena), materialesEnIngles(armadaEscena.materiales), armadaEscena.flores.length ? "Artificial hydrangeas and roses tucked between the balloons" : "");
+    return descripcionRender3d(escenaEnIngles(escenaVista, armadaEscena), materialesEnIngles(armadaEscena.materiales), follajeEnIngles(armadaEscena.flores));
   }, [armadaEscena, escenaVista, solitario.activo, raizSolitario, todosLosGlobos]);
 
   // Teclado del taller: Enter abre la pieza elegida en el editor solitario; Esc cierra el panel donde está el foco.

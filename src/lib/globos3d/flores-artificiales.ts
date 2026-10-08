@@ -9,7 +9,11 @@ import { crearAzar, type AnclaHueco, type ApoyoHueco } from "./organico";
  * Tamaños de las flores de tela de decoración más comunes: la cabeza de hortensia mide 15–18 cm, la rosa abierta
  * 6–8 cm y la ramita de gypsophila (nube) unos 10 cm de mata. Unidades: cm.
  */
-export type TipoFlorArtificial = "hortensia" | "rosa" | "gypsophila";
+export type TipoFlorArtificial = "hortensia" | "rosa" | "gypsophila" | "monstera" | "palma" | "helecho" | "eucalipto" | "hoja_seca";
+
+/** El follaje que no es flor (hojas de las guirnaldas tropicales, de jungla, de boda): se dibuja tendido sobre los globos. */
+export const HOJAS: readonly TipoFlorArtificial[] = ["monstera", "palma", "helecho", "eucalipto", "hoja_seca"];
+export const esHoja = (t: TipoFlorArtificial) => HOJAS.includes(t);
 
 export type ColorFlor = { id: string; nombre: string; hex: string };
 
@@ -37,6 +41,31 @@ export const FLORES_ARTIFICIALES: Readonly<Record<TipoFlorArtificial, FlorArtifi
     tipo: "gypsophila", nombre: "Gypsophila (nube)", diametroCm: 10,
     colores: [{ id: "blanca", nombre: "blanca", hex: "#fbfbf8" }],
     descripcion: "Ramita de florecitas blancas que asoma entre los globos y suaviza los bordes.",
+  },
+  monstera: {
+    tipo: "monstera", nombre: "Hoja de monstera", diametroCm: 34,
+    colores: [{ id: "verde", nombre: "verde", hex: "#3a7d45" }, { id: "dorada", nombre: "dorada", hex: "#c9a14a" }],
+    descripcion: "Hoja tropical calada de tela o papel: el toque de las guirnaldas de verano, safari y jungla.",
+  },
+  palma: {
+    tipo: "palma", nombre: "Hoja de palma", diametroCm: 46,
+    colores: [{ id: "verde", nombre: "verde", hex: "#4f8a3c" }, { id: "dorada", nombre: "dorada", hex: "#c9a14a" }],
+    descripcion: "Penca de palma artificial que sale de entre los globos hacia fuera.",
+  },
+  helecho: {
+    tipo: "helecho", nombre: "Helecho", diametroCm: 36,
+    colores: [{ id: "verde", nombre: "verde", hex: "#4c7f3b" }],
+    descripcion: "Fronda de helecho artificial: guirnaldas de jungla y dinosaurios.",
+  },
+  eucalipto: {
+    tipo: "eucalipto", nombre: "Rama de eucalipto", diametroCm: 26,
+    colores: [{ id: "verde_gris", nombre: "verde grisáceo", hex: "#8fa58c" }],
+    descripcion: "Ramita de hojas redondas verde grisáceo: bodas y bautizos.",
+  },
+  hoja_seca: {
+    tipo: "hoja_seca", nombre: "Hoja seca / pampa", diametroCm: 32,
+    colores: [{ id: "dorada", nombre: "dorada", hex: "#c8a24f" }, { id: "beige", nombre: "beige", hex: "#d8c3a0" }],
+    descripcion: "Plumas de pampa u hojas secas pintadas: el acento dorado de las guirnaldas elegantes.",
   },
 };
 
@@ -191,4 +220,24 @@ export function repartirFlores(anclas: readonly AnclaHueco[], opciones: Opciones
     }
   }
   return { racimos, materiales: [...materiales.values()], avisos };
+}
+
+const EN_INGLES: Readonly<Record<TipoFlorArtificial, string>> = {
+  hortensia: "hydrangeas", rosa: "roses", gypsophila: "baby's breath sprigs", monstera: "monstera leaves", palma: "palm fronds",
+  helecho: "fern fronds", eucalipto: "eucalyptus sprigs", hoja_seca: "dried pampas leaves",
+};
+
+/** Lo que va metido entre los globos, para el texto de FLUX: «Artificial monstera leaves (green) tucked between…». */
+export function follajeEnIngles(flores: ReadonlyArray<{ tipo: TipoFlorArtificial; hex: string }>): string {
+  if (!flores.length) return "";
+  const porTipo = new Map<TipoFlorArtificial, Set<string>>();
+  for (const f of flores) {
+    const color = FLORES_ARTIFICIALES[f.tipo].colores.find((c) => c.hex.toLowerCase() === f.hex.toLowerCase());
+    const nombres = porTipo.get(f.tipo) ?? new Set<string>();
+    if (color && (color.id === "dorada" || color.id === "beige")) nombres.add(color.id === "dorada" ? "gold" : "beige");
+    porTipo.set(f.tipo, nombres);
+  }
+  const partes = [...porTipo].map(([t, c]) => `${c.size ? `${[...c].join(" and ")} ` : ""}${EN_INGLES[t]}`);
+  const lista = partes.length > 1 ? `${partes.slice(0, -1).join(", ")} and ${partes[partes.length - 1]}` : partes[0]!;
+  return `Artificial ${lista} tucked between the balloons, exactly where the input shows them`;
 }

@@ -7,7 +7,7 @@ import { armarPared, type PatronMalla } from "./paredes";
 import { armarParedTrenzas, type OpcionesParedTrenzas } from "./pared-trenzas";
 import { armarOrganico, type OpcionesOrganico } from "./organico";
 import type { GeneradorOrganico } from "./generadores-organicos";
-import { repartirFlores, type OpcionesFlores } from "./flores-artificiales";
+import { repartirFlores, type OpcionesFlores, type TipoFlorArtificial } from "./flores-artificiales";
 import { armarDecoracion, type Decoracion, type MaterialDecoracion } from "./figuras";
 import { materialesPorFormato, type GloboDecoracion, type TuboDecoracion } from "./decoraciones";
 import { sumarMateriales } from "./mezcla";
@@ -100,7 +100,7 @@ export type TipoPieza = Pieza["tipo"];
 /** Un globo listo para el visor (con confeti si es un cristal relleno). */
 export type GloboDePieza = GloboDecoracion & { confeti?: boolean };
 /** Flor artificial (follaje): no cotiza como globo. */
-export type FlorDePieza = { tipo: "hortensia" | "rosa" | "gypsophila"; hex: string; diametroCm: number; posicion: Vec3; normal: Vec3 };
+export type FlorDePieza = { tipo: TipoFlorArtificial; hex: string; diametroCm: number; posicion: Vec3; normal: Vec3 };
 export type AnclaDePieza = { posicion: Vec3; normal: Vec3 };
 
 export type PiezaArmada = {

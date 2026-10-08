@@ -14,6 +14,8 @@ import { conGenerador, escalarGenerador, piezaDeGenerador } from "@/lib/globos3d
 import { armarOrganico, APLASTAMIENTO_MAXIMO } from "@/lib/globos3d/organico";
 import { armarPieza } from "@/lib/globos3d/piezas";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
+import { crearTrazo, floresPedidas } from "@/lib/globos3d/herramientas-escena-trazo";
+import { follajeEnIngles } from "@/lib/globos3d/flores-artificiales";
 
 const colores = [{ codigo: "009", peso: 40 }, { codigo: "570", peso: 35 }, { codigo: "005", peso: 25 }];
 const trazo = (silueta: (typeof SILUETAS_TRAZO)[number]["id"], anchoCm = 260, altoCm = 180, grosorCm = 50): ParametrosTrazoOrganico =>
@@ -60,5 +62,15 @@ assert.equal(roja.opciones.colores[0]!.codigo, "005");
 assert.match(validarTrazo({ ...trazo("feston"), puntos: [{ x: 0, y: 100, grosor: 40 }] }) ?? "", /al menos 2 puntos/);
 assert.match(validarTrazo({ ...trazo("feston"), puntos: [{ x: 0, y: 100, grosor: 4 }, { x: 10, y: 100, grosor: 40 }] }) ?? "", /fuera de rango/);
 assert.throws(() => piezaDeGenerador({ tipo: "trazo", trazo: { ...trazo("feston"), colores: [] } }), /color/);
+
+// Follaje pedido por nombre (y color): hojas en los huecos, sin cotizar como globo; los nombres malos dan error.
+const conHojas = crearTrazo({ silueta: "feston", ancho_cm: 300, follaje: ["monstera", "palma dorada"] }, colores).pieza;
+const hojas = armarPieza(conHojas).flores;
+assert.ok(hojas.length >= 4, `${hojas.length} hojas`);
+assert.ok(hojas.every((f) => f.tipo === "monstera" || f.tipo === "palma"));
+assert.ok(hojas.some((f) => f.tipo === "palma" && f.hex === "#c9a14a"), "la palma dorada");
+assert.throws(() => floresPedidas(["girasol"]), /desconocido/);
+assert.throws(() => floresPedidas(["monstera azul"]), /viene en/);
+assert.match(follajeEnIngles(hojas), /(monstera leaves and gold palm fronds|gold palm fronds and monstera leaves)/);
 
 console.log("test-trazo-organico: ok");

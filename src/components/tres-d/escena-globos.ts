@@ -7,6 +7,8 @@ import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
 import { calcoMotivo } from "./motivos-utileria";
 import type { ImpresoGlobo } from "@/lib/globos3d/estampados";
 import { calcoCorazon, cascaraImpresa, geometriaFoil, materialFoil } from "./impresos-visor";
+import { colorPropio, geometriaParteFlor, materialParteFlor, partesFlor } from "./flores-visor";
+import type { TipoFlorArtificial } from "@/lib/globos3d/flores-artificiales";
 import { MEDIR_VISOR, cronometrar, infoDe, registrarVisor, type VisorMedible } from "./medicion-visor";
 
 /**
@@ -43,7 +45,7 @@ export type EstampadoEnEscena = { en: "cara" | "punta"; capas: ReadonlyArray<{ h
 export type TuboEnEscena = DeNodo & { puntos: readonly Punto3[]; grosorCm: number; hex: string; familia: string; cerrado: boolean; relleno?: boolean };
 
 /** Flor artificial (follaje, no es globo) en un hueco: tipo, color, tamaño, dónde y hacia dónde mira (cm). */
-export type FlorEnEscena = DeNodo & { tipo: "hortensia" | "rosa" | "gypsophila"; hex: string; diametroCm: number; posicion: Punto3; normal: Punto3 };
+export type FlorEnEscena = DeNodo & { tipo: TipoFlorArtificial; hex: string; diametroCm: number; posicion: Punto3; normal: Punto3 };
 /** Un volumen simple de la escena (el pedestal): base, radio y alto en cm. */
 export type CilindroEnEscena = DeNodo & { base: Punto3; radioCm: number; altoCm: number; hex: string };
 /** Escenografía (paneles con contorno, mesas, tapete): no son globos; vienen con su marco en cm (ver `escenografia.ts`). */
@@ -231,67 +233,6 @@ function confetiDentro(centroY: number, radio: number, semilla: number): THREE.I
   const malla = new THREE.InstancedMesh(geometriaConfeti(), materialConfeti(), discos.length);
   discos.forEach((m, i) => malla.setMatrixAt(i, m));
   return malla;
-}
-
-/** Las partes de una flor artificial (esferas o casquetes escalados): cada una se dibuja por instancias. */
-type ParteFlor = "florecita" | "hoja" | "petalo0" | "petalo1" | "petalo2" | "punto";
-
-/** Geometría de radio 1 de cada parte de flor (la escala de cada instancia le da su tamaño). */
-function geometriaParteFlor(parte: ParteFlor): THREE.BufferGeometry {
-  if (parte === "florecita") return new THREE.SphereGeometry(1, 8, 6);
-  if (parte === "hoja") return new THREE.SphereGeometry(1, 10, 6);
-  if (parte === "punto") return new THREE.SphereGeometry(1, 6, 4);
-  const capa = Number(parte.slice(-1));
-  return new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI * (0.55 + capa * 0.1));
-}
-
-/** Material de cada parte: blanco (el color va por instancia; si el material también lo llevara, se multiplicaría) salvo la hoja. */
-function materialParteFlor(parte: ParteFlor): THREE.MeshStandardMaterial {
-  if (parte === "hoja") return new THREE.MeshStandardMaterial({ color: 0x3f6b3a, roughness: 0.7 });
-  return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: parte === "florecita" ? 0.8 : parte === "punto" ? 0.9 : 0.6 });
-}
-
-type PiezaDeFlor = { parte: ParteFlor; local: THREE.Matrix4; color: THREE.Color | null };
-
-/**
- * Flor artificial mirando a +Y: hortensia (bola de florecitas y tres hojas), rosa (capullo en capas) o gypsophila (nube
- * de puntitos), como partes con su marco local y su color (`null`: el del material).
- */
-function partesFlor(f: FlorEnEscena, semilla: number): PiezaDeFlor[] {
-  const salida: PiezaDeFlor[] = [];
-  const color = new THREE.Color(f.hex);
-  const radio = (f.diametroCm / 2) * CM;
-  const r = azar(semilla);
-  const q = new THREE.Quaternion();
-  const vertical = new THREE.Vector3(0, 1, 0);
-  const marco = (x: number, y: number, z: number, giroY: number, sx: number, sy: number, sz: number) =>
-    new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), q.setFromAxisAngle(vertical, giroY), new THREE.Vector3(sx, sy, sz));
-  if (f.tipo === "hortensia") {
-    const e = radio * 0.2;
-    for (let i = 0; i < 34; i++) {
-      const u = r(), t = r() * Math.PI * 2, s = Math.sqrt(1 - u * u);
-      const tinte = 0.85 + r() * 0.3;
-      salida.push({ parte: "florecita", local: marco(s * Math.cos(t) * radio * 0.8, u * radio * 0.75, s * Math.sin(t) * radio * 0.8, 0, e, e, e), color: color.clone().multiplyScalar(tinte) });
-    }
-    const h = radio * 0.45;
-    for (let i = 0; i < 3; i++) {
-      const a = (i / 3) * Math.PI * 2 + r();
-      salida.push({ parte: "hoja", local: marco(Math.cos(a) * radio * 0.85, 0, Math.sin(a) * radio * 0.85, -a, h, h * 0.18, h * 0.55), color: null });
-    }
-  } else if (f.tipo === "rosa") {
-    const capas: readonly ParteFlor[] = ["petalo0", "petalo1", "petalo2"];
-    capas.forEach((parte, capa) => {
-      const e = radio * (1 - capa * 0.25);
-      salida.push({ parte, local: marco(0, capa * radio * 0.18, 0, capa * 0.9, e, e, e), color });
-    });
-  } else {
-    const e = 0.45 * CM;
-    for (let i = 0; i < 40; i++) {
-      const u = r(), t = r() * Math.PI * 2, s = Math.sqrt(1 - u * u), k = radio * (0.4 + r() * 0.6);
-      salida.push({ parte: "punto", local: marco(s * Math.cos(t) * k, u * k, s * Math.sin(t) * k, 0, e, e, e), color });
-    }
-  }
-  return salida;
 }
 
 function torneado(perfil: readonly PuntoPerfil[], vueltas: number = CALIDAD.alta.vueltas): THREE.LatheGeometry {
@@ -976,7 +917,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       const lote = `flor|${pieza.parte}`;
       asegurarDef(lote, () => {
         const g = geometria(lote, () => geometriaParteFlor(pieza.parte)), m = material(lote, () => materialParteFlor(pieza.parte));
-        return { geometria: () => g, material: () => m, conColor: pieza.parte !== "hoja" };
+        return { geometria: () => g, material: () => m, conColor: !colorPropio(pieza.parte) };
       });
       instancias.push({ lote, matriz: marco.clone().multiply(pieza.local), color: pieza.color });
     }

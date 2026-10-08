@@ -75,7 +75,7 @@ export type PedidoEstructura = {
   colores?: string[]; pesos?: number[]; tamanos?: string[]; acabado?: string; flores?: boolean;
   texto?: string; figura?: string; tecnica?: string; formato?: string;
   forma_metalizado?: string; pulgadas?: number; color_metalizado?: string; modelo?: string;
-  silueta?: string; puntos?: PuntoPedido[]; racimos?: number;
+  silueta?: string; puntos?: PuntoPedido[]; racimos?: number; follaje?: string[];
 };
 
 export type LugarPieza = "piso" | "pared" | "techo";
@@ -277,7 +277,7 @@ export function ajustarOrganico(pieza: Organico, p: PedidoEstructura, notas: str
     const actuales = pieza.generador.trazo.colores;
     if (!pedidos && p.pesos && p.pesos.length !== actuales.length) fallar(`pesos tiene ${p.pesos.length} valores y la pieza ${actuales.length} colores (en el orden de ver_escena).`);
     const colores = pedidos ? coloresOrganicosPedidos(pedidos, p.pesos, notas) : p.pesos ? actuales.map((c, i) => ({ ...c, peso: r0(p.pesos![i]!) })) : undefined;
-    return ajustarTrazo(pieza, pieza.generador, { ancho_cm: p.ancho_cm, alto_cm: p.alto_cm, grosor_cm: p.grosor_cm, tamanos: p.tamanos, racimos: p.racimos, flores: p.flores, ...(colores ? { colores } : {}) });
+    return ajustarTrazo(pieza, pieza.generador, { ancho_cm: p.ancho_cm, alto_cm: p.alto_cm, grosor_cm: p.grosor_cm, tamanos: p.tamanos, racimos: p.racimos, flores: p.flores, follaje: p.follaje, ...(colores ? { colores } : {}) });
   }
   const R = RANGOS_ESTRUCTURA.organico;
   let o: Organico = escalarOrganico(pieza, {
