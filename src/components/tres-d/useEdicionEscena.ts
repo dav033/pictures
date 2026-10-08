@@ -26,7 +26,9 @@ export function useHistorialEscena(inicial: () => Escena) {
   }, []);
   const deshacer = useCallback(() => { ultimo.current = null; setHistorial(historialDeshacer); }, []);
   const rehacer = useCallback(() => { ultimo.current = null; setHistorial(historialRehacer); }, []);
-  return { escena: historial.presente, cambiar, deshacer, rehacer, puedeDeshacer: historial.pasado.length > 0, puedeRehacer: historial.futuro.length > 0 };
+  /** Empieza de nuevo con `escena` y sin pasos (el editor solitario abre con un historial propio). */
+  const reiniciar = useCallback((escena: Escena) => { ultimo.current = null; setHistorial(historialNuevo(escena)); }, []);
+  return { escena: historial.presente, cambiar, deshacer, rehacer, reiniciar, puedeDeshacer: historial.pasado.length > 0, puedeRehacer: historial.futuro.length > 0 };
 }
 
 export type PiezaEnVivo = { id: string; colocacion: Colocacion };
@@ -60,9 +62,9 @@ function ejeMasCercano(v: Punto3): Punto3 {
 
 const por = (v: Punto3, k: number): Punto3 => ({ x: v.x * k, y: v.y * k, z: v.z * k });
 
-/** El foco está donde se escribe (o en un deslizador): las teclas son suyas. */
+/** El foco está donde se escribe (o en un deslizador, o en un menú abierto): las teclas son suyas. */
 function escribiendo(objetivo: EventTarget | null): boolean {
-  return objetivo instanceof HTMLElement && (objetivo.isContentEditable || Boolean(objetivo.closest("input, textarea, select, [contenteditable='true']")));
+  return objetivo instanceof HTMLElement && (objetivo.isContentEditable || Boolean(objetivo.closest("input, textarea, select, [contenteditable='true'], [role='menu']")));
 }
 
 /**

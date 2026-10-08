@@ -110,8 +110,17 @@ export type EscenaGlobos = {
   mostrarFantasma: (globos: readonly GloboColocadoEnEscena[], tubos: readonly TuboEnEscena[]) => void;
   /** Esconde lo de esa pieza que cae dentro de `caja` (la copia que se está moviendo); `null` lo vuelve a mostrar todo. */
   ocultarCopia: (nodo: string | null, caja?: CajaEnEscena | null) => void;
+  /** Dónde está la cámara (para volver a ese mismo ángulo: al salir del editor solitario la escena queda como estaba). */
+  vistaCamara: () => VistaCamara;
+  /** Pone la cámara en una vista guardada con `vistaCamara`. */
+  ponerVistaCamara: (vista: VistaCamara) => void;
+  /** Dónde cae en la pantalla (coordenadas de cliente) un punto del mundo (cm); `null` si queda detrás de la cámara. */
+  aPantalla: (punto: Punto3) => { x: number; y: number } | null;
   destruir: () => void;
 };
+
+/** Una vista de la cámara (m): posición, a dónde mira y sus límites de acercar. */
+export type VistaCamara = { posicion: Punto3; objetivo: Punto3; near: number; far: number; minDistancia: number; maxDistancia: number };
 
 /** Superficies de la sala que reciben una decoración al soltarla. */
 export type SuperficieSalaEnEscena = "piso" | "techo" | "fondo" | "izquierda" | "derecha";
@@ -127,6 +136,8 @@ export type AspectoCaptura = "2:3" | "1:1" | "3:2";
 const TAMANO_CAPTURA: Record<AspectoCaptura, { ancho: number; alto: number }> = { "2:3": { ancho: 1024, alto: 1536 }, "1:1": { ancho: 1024, alto: 1024 }, "3:2": { ancho: 1536, alto: 1024 } };
 
 const CM = 0.01;
+/** Cuántas piezas que dejaron de verse se guardan dibujadas por si vuelven (ver `aparcados`). */
+const MAX_APARCADOS = 160;
 
 /**
  * Entorno propio de los metalizados. La escena atenúa su entorno (`environmentIntensity`) para que el látex mate no se
@@ -870,6 +881,11 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const defs = new Map<string, DefLote>();
   const lotes = new Map<string, Lote>();
   const nodos = new Map<string, NodoDibujado>();
+  /**
+   * Piezas que dejaron de verse pero pueden volver tal cual (entrar y salir del editor solitario, ir a otra pestaña y
+   * volver): se guardan con sus recursos y, si vuelven con la misma huella, no se rehacen. Las más viejas se liberan.
+   */
+  const aparcados = new Map<string, NodoDibujado>();
   /** Lo corrido (m) de cada pieza que se arrastra sin rearmar. */
   const desplazamientos = new Map<string, THREE.Vector3>();
   let anclasMalla: THREE.InstancedMesh | null = null;
@@ -978,6 +994,31 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     liberar(dibujado.grupo);
   }
 
+  /** Guarda una pieza que dejó de verse (sin liberarla) por si vuelve. */
+  function aparcar(id: string, dibujado: NodoDibujado) {
+    modulo.remove(dibujado.grupo);
+    const previo = aparcados.get(id);
+    if (previo) { aparcados.delete(id); liberar(previo.grupo); }
+    aparcados.set(id, dibujado);
+    while (aparcados.size > MAX_APARCADOS) {
+      const [viejo, nodo] = aparcados.entries().next().value ?? [];
+      if (viejo === undefined || !nodo) break;
+      aparcados.delete(viejo);
+      liberar(nodo.grupo);
+    }
+  }
+
+  /** Saca una pieza aparcada (vuelve a estar en el módulo, donde se dejó). */
+  function desaparcar(id: string): NodoDibujado | undefined {
+    const dibujado = aparcados.get(id);
+    if (!dibujado) return undefined;
+    aparcados.delete(id);
+    dibujado.grupo.position.copy(dibujado.base);
+    dibujado.caja = null;
+    modulo.add(dibujado.grupo);
+    return dibujado;
+  }
+
   /** Pieza por pieza: rehace solo las que cambiaron y corre las que solo se movieron. Devuelve si cambió algo. */
   function actualizarNodos(globos: readonly GloboColocadoEnEscena[], tubos: readonly TuboEnEscena[], flores: readonly FlorEnEscena[], cilindros: readonly CilindroEnEscena[], solidos: readonly SolidoEnEscena[]): boolean {
     const porNodo = new Map<string, ContenidoNodo>();
@@ -993,11 +1034,16 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     for (const x of cilindros) de(x.nodo).cilindros.push(x);
     for (const s of solidos) de(s.nodo).solidos.push(s);
     let cambio = false;
-    for (const [id, dibujado] of nodos) if (!porNodo.has(id)) { quitarNodo(dibujado); nodos.delete(id); cambio = true; }
+    for (const [id, dibujado] of nodos) if (!porNodo.has(id)) { aparcar(id, dibujado); nodos.delete(id); cambio = true; }
     for (const [id, c] of porNodo) {
       const ref = referenciaDe(c);
       const huella = huellaDe(c, ref);
-      const previo = nodos.get(id);
+      let previo = nodos.get(id);
+      if (!previo) {
+        // Una pieza que vuelve (salir del editor solitario): se recupera la dibujada, sin rehacerla.
+        previo = desaparcar(id);
+        if (previo) { nodos.set(id, previo); cambio = true; }
+      }
       if (previo && previo.huella === huella) {
         if (!previo.ref.equals(ref)) {
           // La misma pieza, corrida: se mueve su grupo y sus copias, sin rehacer nada.
@@ -1081,6 +1127,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   function vaciarModulo() {
     for (const dibujado of nodos.values()) quitarNodo(dibujado);
     nodos.clear();
+    for (const dibujado of aparcados.values()) liberar(dibujado.grupo);
+    aparcados.clear();
     for (const lote of lotes.values()) quitarLote(lote);
     lotes.clear();
     if (anclasMalla) { modulo.remove(anclasMalla); anclasMalla.dispose(); anclasMalla = null; }
@@ -1574,6 +1622,27 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     resaltarEncima,
     mostrarFantasma: (globos, tubos) => cronometrar(medible, "mostrarFantasma", () => mostrarFantasma(globos, tubos)),
     ocultarCopia,
+    vistaCamara: () => ({
+      posicion: { x: camara.position.x, y: camara.position.y, z: camara.position.z }, objetivo: { x: controles.target.x, y: controles.target.y, z: controles.target.z },
+      near: camara.near, far: camara.far, minDistancia: controles.minDistance, maxDistancia: controles.maxDistance,
+    }),
+    ponerVistaCamara(v) {
+      camara.position.set(v.posicion.x, v.posicion.y, v.posicion.z);
+      controles.target.set(v.objetivo.x, v.objetivo.y, v.objetivo.z);
+      camara.near = v.near;
+      camara.far = v.far;
+      camara.updateProjectionMatrix();
+      controles.minDistance = v.minDistancia;
+      controles.maxDistance = v.maxDistancia;
+      controles.update();
+      pedirCuadro();
+    },
+    aPantalla(p) {
+      const v = new THREE.Vector3(p.x * CM, p.y * CM, p.z * CM).project(camara);
+      if (v.z > 1) return null;
+      const r = lienzo.getBoundingClientRect();
+      return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+    },
     capturar() {
       // 1. Render cuadrado grande desde el mismo ángulo, con la decoración entera en cuadro y fondo transparente.
       const L = 2304;

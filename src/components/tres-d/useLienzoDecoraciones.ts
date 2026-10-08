@@ -45,7 +45,7 @@ const LUGARES_VALIDOS = "una columna, un arco, un aro, una guirnalda, una pared 
 const colgada = (n: NodoEscena | undefined): n is NodoEscena => n !== undefined && (n.colocacion.en === "ancla" || n.colocacion.en === "sobre");
 
 function escribiendo(objetivo: EventTarget | null): boolean {
-  return objetivo instanceof HTMLElement && (objetivo.isContentEditable || Boolean(objetivo.closest("input, textarea, select, [contenteditable='true']")));
+  return objetivo instanceof HTMLElement && (objetivo.isContentEditable || Boolean(objetivo.closest("input, textarea, select, [contenteditable='true'], [role='menu']")));
 }
 
 const SUPERFICIE: Readonly<Record<SuperficieSala, string>> = { piso: "en el piso", techo: "colgada del techo", fondo: "en la pared del fondo", izquierda: "en la pared izquierda", derecha: "en la pared derecha" };

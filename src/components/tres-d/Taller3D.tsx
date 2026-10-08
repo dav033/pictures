@@ -22,12 +22,12 @@ import { repartirFlores } from "@/lib/globos3d/flores-artificiales";
 import { COLUMNA_QUINCE_AZUL } from "@/lib/globos3d/organico-presets";
 import { AJUSTES_QUINCE_AZUL, PanelOrganico, opcionesDeAjustes, type AjustesOrganico } from "./PanelOrganico";
 import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
-import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena, TuboEnEscena } from "./escena-globos";
+import type { EscenaGlobos, FlorEnEscena, GloboColocadoEnEscena, GloboEnEscena, SolidoEnEscena, TuboEnEscena } from "./escena-globos";
 import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
 import { GeneradorIA } from "./GeneradorIA";
 import { PaletaEscena, type GrupoColor } from "./PaletaEscena";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
-import { armarEscena, escenaEnIngles, type Escena } from "@/lib/globos3d/escena";
+import { armarEscena, escenaEnIngles, type Escena, type EscenaArmada } from "@/lib/globos3d/escena";
 import { escenaPredefinida } from "@/lib/globos3d/escenas-presets";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { PanelEscena } from "./PanelEscena";
@@ -36,6 +36,10 @@ import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoracione
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { ProductosFiesta } from "./UtileriaFiesta";
 import { medirFuera } from "./medicion-visor";
+import { MenuContextual, type AccionMenu } from "./MenuContextual";
+import { useMenuContextual } from "./useMenuContextual";
+import { cargarSolitario, useEditorSolitario } from "./useEditorSolitario";
+import type { InfoMenuPieza } from "@/lib/globos3d/editor-solitario";
 import type { ItemBiblioteca } from "@/lib/globos3d/biblioteca";
 
 /**
@@ -86,6 +90,9 @@ function materialesEnIngles(materiales: ReadonlyArray<{ formatoId: string; codig
 const PATRON_EN: Record<PatronColumna, string> = { un_color: "single-color", dos_colores: "two-color", espiral: "spiral", salvavidas: "life-ring", zigzag: "zig-zag" };
 const FORMA_EN: Record<FormaArco, string> = { redondo: "round", parabolico: "parabolic", rectangular: "rectangular" };
 const MODULO_EN: Record<TipoModulo, string> = { pareja: "duplet", trio: "triplet", cuarteto: "quartet", quinteto: "quintet", sexteto: "sextet" };
+
+/** Lo que el visor dibuja de una escena armada (cada cosa con el id de su pieza). */
+type DibujoEscena = { globos: GloboColocadoEnEscena[]; tubos: TuboEnEscena[]; flores: FlorEnEscena[]; solidos: SolidoEnEscena[] };
 
 /** Lo que se guarda antes de cambiar un color con la paleta, para «Deshacer». */
 type FotoColores = {
@@ -179,9 +186,20 @@ export function Taller3D() {
   const historialEscena = useHistorialEscena(() => escenaPredefinida("arco_organico_columnas_guirnalda"));
   const escenaEdit = historialEscena.escena;
   const setEscenaEdit = historialEscena.cambiar;
+  // Piezas ya armadas por su JSON: mover una pieza no rehace el arco orgánico (medio segundo).
+  const [cacheEscena] = useState(() => new Map<string, PiezaArmada>());
+  // Editor solitario (menú contextual → «Editar sola»): mientras está abierto, lo que se ve y se edita es la estructura
+  // aislada con su propio deshacer; «Listo» la devuelve a la escena en un solo paso.
+  const solitario = useEditorSolitario({ escena: escenaEdit, cambiarEscena: setEscenaEdit, cache: cacheEscena, visorRef: escenaRef });
+  const escenaVista = solitario.escena;
+  const cambiarVista = solitario.activo ? solitario.cambiar : setEscenaEdit;
+  const deshacerVista = solitario.activo ? solitario.deshacer : historialEscena.deshacer;
+  const rehacerVista = solitario.activo ? solitario.rehacer : historialEscena.rehacer;
+  const puedeDeshacerVista = solitario.activo ? solitario.puedeDeshacer : historialEscena.puedeDeshacer;
+  const puedeRehacerVista = solitario.activo ? solitario.puedeRehacer : historialEscena.puedeRehacer;
   const [seleccionElegida, setSeleccion] = useState<string | null>(null);
   // Si la pieza elegida ya no está (se quitó o se deshizo su llegada), no hay elegida.
-  const seleccion = seleccionElegida && escenaEdit.nodos.some((n) => n.id === seleccionElegida) ? seleccionElegida : null;
+  const seleccion = seleccionElegida && escenaVista.nodos.some((n) => n.id === seleccionElegida) ? seleccionElegida : null;
   /** La pieza que se está arrastrando y dónde va (sus coordenadas en vivo en el panel). */
   const [enVivo, setEnVivo] = useState<PiezaEnVivo | null>(null);
   /** La copia de un reparto en anclas que se tocó en el visor (las flechas, Q/E y Supr van solo a esa). */
@@ -192,8 +210,14 @@ export function Taller3D() {
   /** Sube al cargar una escena predefinida: el visor reencuadra; al mover una pieza, la cámara se queda quieta. */
   const [vueltaEncuadre, setVueltaEncuadre] = useState(0);
   const encuadradoRef = useRef<number | null>(null);
-  // Piezas ya armadas por su JSON: mover una pieza no rehace el arco orgánico (medio segundo).
-  const [cacheEscena] = useState(() => new Map<string, PiezaArmada>());
+  /** Lo armado y lo dibujado de cada escena ya vista: entrar y salir del editor solitario no rearma la escena. */
+  const [armadas] = useState(() => new WeakMap<Escena, EscenaArmada>());
+  const [dibujos] = useState(() => new WeakMap<EscenaArmada, { formatoId: string; dibujo: DibujoEscena }>());
+  /** El menú contextual abierto (de qué pieza y dónde) y lo que dice (decoraciones, quién la sostiene). */
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number; tactil: boolean } | null>(null);
+  const [infoMenu, setInfoMenu] = useState<{ id: string; info: InfoMenuPieza } | null>(null);
+  /** «Quitaste…» con su botón Deshacer. */
+  const [avisoQuitar, setAvisoQuitar] = useState<string | null>(null);
   /** Lo que se pidió ver desde la pestaña Escena: la Biblioteca abre su ficha al entrar. */
   const [verEnBiblioteca, setVerEnBiblioteca] = useState<ItemBiblioteca | null>(null);
   // Hoja inferior (teléfono y tablet): qué tan alta y qué pestaña se ve.
@@ -305,16 +329,30 @@ export function Taller3D() {
     return { resultado, flores };
   }, [ajustesOrganico]);
 
-  const armadaEscena = useMemo(() => (modo === "escena" ? medirFuera("armarEscena", () => armarEscena(escenaEdit, cacheEscena)) : null), [modo, escenaEdit, cacheEscena]);
+  const armadaEscena = useMemo(() => {
+    if (modo !== "escena") return null;
+    const hecha = armadas.get(escenaVista);
+    if (hecha) return hecha;
+    const nueva = medirFuera("armarEscena", () => armarEscena(escenaVista, cacheEscena));
+    armadas.set(escenaVista, nueva);
+    return nueva;
+  }, [modo, escenaVista, cacheEscena, armadas]);
 
   // La escena tal como la dibuja el visor. Cada cosa lleva el id de su pieza: un clic la elige y al arrastrarla se
   // mueve todo lo suyo junto. Aparte de lo que se ve para que elegir una pieza no rehaga las listas.
-  const dibujoEscena = useMemo(() => (armadaEscena ? {
-    globos: armadaEscena.porNodo.flatMap((n) => n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}), nodo: n.id }))),
-    tubos: armadaEscena.porNodo.flatMap((n) => n.tubos.map((t): TuboEnEscena => ({ ...tuboAEscena(t), nodo: n.id }))),
-    flores: armadaEscena.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))),
-    solidos: armadaEscena.porNodo.flatMap((n) => n.solidos.map((x) => ({ ...x, nodo: n.id }))),
-  } : null), [armadaEscena, formato]);
+  const dibujoEscena = useMemo((): DibujoEscena | null => {
+    if (!armadaEscena) return null;
+    const hecho = dibujos.get(armadaEscena);
+    if (hecho && hecho.formatoId === formato.id) return hecho.dibujo;
+    const dibujo: DibujoEscena = {
+      globos: armadaEscena.porNodo.flatMap((n) => n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}), nodo: n.id }))),
+      tubos: armadaEscena.porNodo.flatMap((n) => n.tubos.map((t): TuboEnEscena => ({ ...tuboAEscena(t), nodo: n.id }))),
+      flores: armadaEscena.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))),
+      solidos: armadaEscena.porNodo.flatMap((n) => n.solidos.map((x) => ({ ...x, nodo: n.id }))),
+    };
+    dibujos.set(armadaEscena, { formatoId: formato.id, dibujo });
+    return dibujo;
+  }, [armadaEscena, formato, dibujos]);
 
   // Lo que se ve.
   useEffect(() => {
@@ -322,10 +360,12 @@ export function Taller3D() {
     if (!listo || !escena || !color || modo === "biblioteca") return;
     if (modo === "escena" && armadaEscena) {
       // Ya viene en coordenadas del mundo, con su sala. Si la pieza elegida cuelga de otra, se ven las anclas de esa otra.
-      const elegido = escenaEdit.nodos.find((n) => n.id === seleccion);
+      const elegido = escenaVista.nodos.find((n) => n.id === seleccion);
       const padreId = elegido?.colocacion.en === "ancla" || elegido?.colocacion.en === "sobre" ? elegido.colocacion.padreId : null;
       const anclas = padreId ? armadaEscena.porNodo.find((n) => n.id === padreId)?.anclas.map((a) => a.posicion) ?? [] : [];
-      const encuadrar = encuadradoRef.current !== vueltaEncuadre;
+      // Al salir del editor solitario la cámara vuelve a donde estaba (no se reencuadra).
+      const vistaVuelta = solitario.activo ? null : solitario.tomarVista();
+      const encuadrar = !vistaVuelta && encuadradoRef.current !== vueltaEncuadre;
       encuadradoRef.current = vueltaEncuadre;
       // Elegir otra pieza pasa las mismas listas: el visor solo cambia la caja y las anclas, sin rehacer los globos.
       const { globos, tubos, flores, solidos } = dibujoEscena ?? { globos: [], tubos: [], flores: [], solidos: [] };
@@ -342,6 +382,7 @@ export function Taller3D() {
           })(), encuadrar,
         },
       );
+      if (vistaVuelta) escena.ponerVistaCamara(vistaVuelta);
       return;
     }
     encuadradoRef.current = null;
@@ -380,24 +421,108 @@ export function Taller3D() {
     } else {
       escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
-  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared, organico, ajustesOrganico.conPedestal, armadaEscena, dibujoEscena, escenaEdit, seleccion, vueltaEncuadre, copiaElegida]);
+  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared, organico, ajustesOrganico.conPedestal, armadaEscena, dibujoEscena, escenaVista, seleccion, vueltaEncuadre, copiaElegida, solitario]);
 
   // Estables: así los catálogos del panel (cientos de tarjetas con su dibujo) no se vuelven a pintar al elegir una pieza.
-  const cambiarDesdePanel = useCallback((e: Escena) => setEscenaEdit(e, { agrupar: "panel" }), [setEscenaEdit]);
+  const cambiarDesdePanel = useCallback((e: Escena) => cambiarVista(e, { agrupar: "panel" }), [cambiarVista]);
   const elegirDesdePanel = useCallback((id: string | null) => { setSeleccion(id); setCopiaTocada(null); }, []);
 
   // Escena a mano en el visor: clic elige, arrastrar mueve, teclado (flechas, Q/E, RePág/AvPág, Supr, Ctrl+D/Z/Y, Esc).
   useEdicionEscena({
-    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", escena: escenaEdit, armada: armadaEscena, seleccion,
-    onSeleccion: setSeleccion, onCambio: setEscenaEdit, onEnVivo: setEnVivo, onDeshacer: historialEscena.deshacer, onRehacer: historialEscena.rehacer,
+    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", escena: escenaVista, armada: armadaEscena, seleccion,
+    onSeleccion: setSeleccion, onCambio: cambiarVista, onEnVivo: setEnVivo, onDeshacer: deshacerVista, onRehacer: rehacerVista,
   });
 
   // La estructura como lienzo: arrastrar decoraciones del panel al visor, coger una copia colgada y moverla.
   const lienzoDecoraciones = useLienzoDecoraciones({
-    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", escena: escenaEdit, armada: armadaEscena, seleccion, copia: copiaElegida,
-    onCopia: setCopiaTocada, onSeleccion: setSeleccion, onCambio: setEscenaEdit, onAviso: setAvisoLienzo, cache: cacheEscena,
+    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", escena: escenaVista, armada: armadaEscena, seleccion, copia: copiaElegida,
+    onCopia: setCopiaTocada, onSeleccion: setSeleccion, onCambio: cambiarVista, onAviso: setAvisoLienzo, cache: cacheEscena,
     aEscena: (n) => ({ globos: n.globos.map((g) => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}) })), tubos: n.tubos.map(tuboAEscena) }),
   });
+  // ----------------------------------------------------------------------------------------------------------
+  // Menú contextual de una pieza (clic derecho, mantener el dedo, tecla Menú/Shift+F10) y editor solitario
+  // ----------------------------------------------------------------------------------------------------------
+  const abrirMenu = useCallback((id: string, x: number, y: number, tactil: boolean) => {
+    setSeleccion(id);
+    setCopiaTocada(null);
+    setMenu({ id, x, y, tactil });
+    setInfoMenu(null);
+  }, []);
+  // Lo que dice el menú (decoraciones, quién sostiene a una decoración) se calcula con la biblioteca, que se carga aparte.
+  useEffect(() => {
+    if (!menu || !armadaEscena) return;
+    let vivo = true;
+    void cargarSolitario().then((m) => { if (vivo) setInfoMenu({ id: menu.id, info: m.infoMenuPieza(escenaVista, menu.id, armadaEscena) }); });
+    return () => { vivo = false; };
+  }, [menu, escenaVista, armadaEscena]);
+  useMenuContextual({
+    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", onAbrir: abrirMenu,
+    elegida: () => {
+      const caja = seleccion ? armadaEscena?.porNodo.find((n) => n.id === seleccion)?.caja : undefined;
+      return seleccion && caja ? { id: seleccion, centro: { x: (caja.min.x + caja.max.x) / 2, y: (caja.min.y + caja.max.y) / 2, z: (caja.min.z + caja.max.z) / 2 } } : null;
+    },
+  });
+  const cerrarMenu = useCallback(() => setMenu(null), []);
+
+  async function entrarSolitario(id: string) {
+    if (!armadaEscena || solitario.activo) return;
+    if (await solitario.entrar(id, armadaEscena)) {
+      setSeleccion(id);
+      setCopiaTocada(null);
+      setVueltaEncuadre((v) => v + 1);
+      setHistorialColor([]);
+      setAvisoColor(null);
+    }
+  }
+  function salirSolitario(aplicar: boolean) {
+    const id = aplicar ? solitario.aplicar() : solitario.cancelar();
+    if (id === null) return;
+    setSeleccion(id);
+    setCopiaTocada(null);
+    setHistorialColor([]);
+  }
+
+  async function accionMenu(accion: AccionMenu) {
+    const abierto = menu;
+    setMenu(null);
+    if (!abierto || !armadaEscena) return;
+    const { id } = abierto;
+    const nombre = escenaVista.nodos.find((n) => n.id === id)?.nombre ?? id;
+    if (accion === "editar") {
+      // Dentro del editor solitario, «Editar» una decoración solo la elige (su editor está en el panel).
+      if (solitario.activo) setSeleccion(id); else await entrarSolitario(id);
+      return;
+    }
+    if (accion === "editar-sostiene") {
+      const sostiene = infoMenu?.id === id ? infoMenu.info.sostiene : null;
+      if (sostiene) await entrarSolitario(sostiene.id);
+      return;
+    }
+    if (accion === "colores") { setSeleccion(id); elegirPestana("colores"); return; }
+    if (accion === "colgar") {
+      setSeleccion(id);
+      setAvisoLienzo(`Arrastra una decoración de «Decoraciones pequeñas» del panel hasta «${nombre}» (se marca en verde donde se puede).`);
+      return;
+    }
+    const m = await cargarSolitario();
+    if (accion === "duplicar") {
+      const r = m.duplicarPieza(escenaVista, id, armadaEscena, cacheEscena);
+      cambiarVista(r.escena);
+      if (r.id) setSeleccion(r.id);
+      return;
+    }
+    const conDecoraciones = accion === "eliminar-con";
+    const cuantas = infoMenu?.id === id ? infoMenu.info.decoraciones.length : 0;
+    cambiarVista(m.eliminarPieza(escenaVista, id, { conDecoraciones, armada: armadaEscena }));
+    setSeleccion(null);
+    setAvisoQuitar(`Quitaste «${nombre}»${conDecoraciones && cuantas ? ` con sus ${cuantas} decoraciones` : ""}.`);
+  }
+  useEffect(() => {
+    if (!avisoQuitar) return;
+    const t = setTimeout(() => setAvisoQuitar(null), 7000);
+    return () => clearTimeout(t);
+  }, [avisoQuitar]);
+
   // El aviso del visor se va solo.
   useEffect(() => {
     if (!avisoLienzo) return;
@@ -471,7 +596,7 @@ export function Taller3D() {
   }, [modo, organico, paredActual, escenaDecoracion, columna, arco, materiales, formato.id, armadaEscena]);
 
   function reemplazarEnEscena(de: string, a: string, grupo: GrupoColor["id"] | "todo" = "todo") {
-    setHistorialColor((h) => [...h.slice(-19), { pared, paredTrenzas, mezcla, decoracion, coloresColumna, coloresModulo, ajustesOrganico, codigo, escena: escenaEdit }]);
+    setHistorialColor((h) => [...h.slice(-19), { pared, paredTrenzas, mezcla, decoracion, coloresColumna, coloresModulo, ajustesOrganico, codigo, escena: escenaVista }]);
     const enBase = grupo !== "decoraciones";
     const enDecoraciones = grupo !== "base";
     const omitidos = new Set<string>();
@@ -490,7 +615,7 @@ export function Taller3D() {
     };
     if (modo === "organico") setAjustesOrganico(cambiar(ajustesOrganico));
     // En la escena, el color cambia en todas sus piezas a la vez (la sala no: sus tonos no son globos).
-    if (modo === "escena") setEscenaEdit(cambiar(escenaEdit));
+    if (modo === "escena") cambiarVista(cambiar(escenaVista));
     if (modo === "pared" || (modo === "decoracion" && donde === "pared" && enBase)) {
       // Solo la pared que se ve (malla o trenzas): la otra no está en la escena.
       if (tipoPared === "malla") setPared(cambiar(pared)); else setParedTrenzas(cambiar(paredTrenzas));
@@ -514,7 +639,7 @@ export function Taller3D() {
     const ultima = historialColor[historialColor.length - 1];
     if (!ultima) return;
     setPared(ultima.pared); setParedTrenzas(ultima.paredTrenzas); setMezcla(ultima.mezcla); setDecoracion(ultima.decoracion);
-    setColoresColumna(ultima.coloresColumna); setColoresModulo(ultima.coloresModulo); setAjustesOrganico(ultima.ajustesOrganico); setCodigo(ultima.codigo); setEscenaEdit(ultima.escena);
+    setColoresColumna(ultima.coloresColumna); setColoresModulo(ultima.coloresModulo); setAjustesOrganico(ultima.ajustesOrganico); setCodigo(ultima.codigo); cambiarVista(ultima.escena);
     setHistorialColor(historialColor.slice(0, -1));
     setAvisoColor(null);
   }
@@ -523,7 +648,7 @@ export function Taller3D() {
   const descripcionIA = useMemo(() => {
     const m = (cm: number) => `${(cm / 100).toFixed(2).replace(/\.?0+$/, "")} m`;
     if (modo === "escena" && armadaEscena) {
-      return descripcionRender3d(escenaEnIngles(escenaEdit, armadaEscena), materialesEnIngles(armadaEscena.materiales), armadaEscena.flores.length ? "Artificial hydrangeas and roses tucked between the balloons" : "");
+      return descripcionRender3d(escenaEnIngles(escenaVista, armadaEscena), materialesEnIngles(armadaEscena.materiales), armadaEscena.flores.length ? "Artificial hydrangeas and roses tucked between the balloons" : "");
     }
     if (modo === "organico") {
       const r = organico.resultado;
@@ -543,7 +668,7 @@ export function Taller3D() {
     if (modo === "modulo") return descripcionRender3d(`A single ${MODULO_EN[moduloId]} balloon cluster (${modulo.globos} balloons tied together at the center)`, materialesEnIngles(materiales.map((x) => ({ ...x, formatoId: formato.id }))));
     if (vista === "todos") return descripcionRender3d(`A row of round latex balloons of every size side by side, all ${color?.nombreEn ?? ""}`, []);
     return descripcionRender3d(`A single ${formatoEnIngles(formato.id)} latex balloon, ${color?.nombreEn ?? ""}`, []);
-  }, [modo, organico, ajustesOrganico.conPedestal, paredActual, tipoPared, donde, forma, anchoArcoCm, altoArcoCm, columna, escenaDecoracion, patron, arco, formato.id, moduloId, modulo.globos, materiales, vista, color, armadaEscena, escenaEdit]);
+  }, [modo, organico, ajustesOrganico.conPedestal, paredActual, tipoPared, donde, forma, anchoArcoCm, altoArcoCm, columna, escenaDecoracion, patron, arco, formato.id, moduloId, modulo.globos, materiales, vista, color, armadaEscena, escenaVista]);
 
   // Ficha del visor: compacta encima del lienzo (sin listas) y completa debajo (con materiales y notas).
   const elegidaEscena = armadaEscena?.porNodo.find((n) => n.id === seleccion);
@@ -551,13 +676,13 @@ export function Taller3D() {
     <>
                 {modo === "escena" && armadaEscena ? (
                   <>
-                    <p className="font-semibold text-texto">Escena · {escenaEdit.nodos.length} {escenaEdit.nodos.length === 1 ? "pieza" : "piezas"} · {armadaEscena.globos.length} globos{armadaEscena.flores.length ? ` · ${armadaEscena.flores.length} flores` : ""}</p>
-                    <p className="font-mono text-xs text-texto-suave">Sala {metros(escenaEdit.sala.anchoCm)} × {metros(escenaEdit.sala.fondoCm)} × {metros(escenaEdit.sala.altoCm)} m{elegidaEscena ? ` · elegida: ${elegidaEscena.nombre} (${elegidaEscena.globos.length} globos)` : ""}</p>
+                    <p className="font-semibold text-texto">Escena · {escenaVista.nodos.length} {escenaVista.nodos.length === 1 ? "pieza" : "piezas"} · {armadaEscena.globos.length} globos{armadaEscena.flores.length ? ` · ${armadaEscena.flores.length} flores` : ""}</p>
+                    <p className="font-mono text-xs text-texto-suave">Sala {metros(escenaVista.sala.anchoCm)} × {metros(escenaVista.sala.fondoCm)} × {metros(escenaVista.sala.altoCm)} m{elegidaEscena ? ` · elegida: ${elegidaEscena.nombre} (${elegidaEscena.globos.length} globos)` : ""}</p>
                     <ul className="mt-1 text-xs text-texto-suave">
                       {armadaEscena.porNodo.map((n) => <li key={n.id}>{n.nombre}: {n.globos.length} globos{n.copias > 1 ? ` en ${n.copias} copias` : ""}</li>)}
                     </ul>
                     <ListaMateriales materiales={armadaEscena.materiales} />
-                    <ProductosFiesta escena={escenaEdit} armada={armadaEscena} />
+                    <ProductosFiesta escena={escenaVista} armada={armadaEscena} />
                     {armadaEscena.avisos.length > 0 && <p className="mt-1 text-[0.7rem] text-texto">{armadaEscena.avisos.join(" ")}</p>}
                   </>
                 ) : modo === "organico" ? (
@@ -686,7 +811,7 @@ export function Taller3D() {
     }
   }, [modo]);
 
-  const nodoElegido = modo === "escena" ? escenaEdit.nodos.find((n) => n.id === seleccion) ?? null : null;
+  const nodoElegido = modo === "escena" ? escenaVista.nodos.find((n) => n.id === seleccion) ?? null : null;
   const piezaEnVivo = nodoElegido && enVivo?.id === nodoElegido.id ? enVivo.colocacion : nodoElegido?.colocacion;
 
   /** Materiales, imagen con IA y ayuda: debajo del visor en escritorio; en la pestaña «Detalle» de la hoja. */
@@ -712,8 +837,8 @@ export function Taller3D() {
             Lo colgado de otra pieza no se arrastra: las flechas lo pasan de ancla. Arrastra el vacío para girar la cámara.
           </p>
           <div className="flex gap-1">
-            <button type="button" onClick={historialEscena.deshacer} disabled={!historialEscena.puedeDeshacer} title="Deshacer (Ctrl+Z)" aria-label="Deshacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Undo2 className="size-4" aria-hidden /></button>
-            <button type="button" onClick={historialEscena.rehacer} disabled={!historialEscena.puedeRehacer} title="Rehacer (Ctrl+Y)" aria-label="Rehacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Redo2 className="size-4" aria-hidden /></button>
+            <button type="button" onClick={deshacerVista} disabled={!puedeDeshacerVista} title="Deshacer (Ctrl+Z)" aria-label="Deshacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Undo2 className="size-4" aria-hidden /></button>
+            <button type="button" onClick={rehacerVista} disabled={!puedeRehacerVista} title="Rehacer (Ctrl+Y)" aria-label="Rehacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Redo2 className="size-4" aria-hidden /></button>
           </div>
         </div>
       ) : (
@@ -741,7 +866,7 @@ export function Taller3D() {
       <div ref={pestanasRef} role="tablist" aria-label="Qué modelar"
         className="flex w-fit max-w-full shrink-0 gap-1 overflow-x-auto overscroll-x-contain rounded-full bg-superficie p-1 ring-1 ring-borde [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"], ["pared", "Pared"], ["decoracion", "Decoración"], ["organico", "Orgánico"], ["escena", "Escena"], ["biblioteca", "Biblioteca"]] as const).map(([valor, etiqueta]) => (
-          <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => { setVerEnBiblioteca(null); cambiarModo(valor); }}
+          <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => { setVerEnBiblioteca(null); if (valor !== "escena" && solitario.activo) salirSolitario(true); cambiarModo(valor); }}
             className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-medium apaisado:min-h-10 lg:min-h-10 lg:px-5 ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
             {etiqueta}
           </button>
@@ -750,7 +875,7 @@ export function Taller3D() {
 
       {modo === "biblioteca" && (
         <Biblioteca escenaActual={escenaEdit} abrir={verEnBiblioteca}
-          onAbrirEnEscena={(e) => { setEscenaEdit(e); setSeleccion(null); setCopiaTocada(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); cambiarModo("escena"); }}
+          onAbrirEnEscena={(e) => { salirSolitario(false); setEscenaEdit(e); setSeleccion(null); setCopiaTocada(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); cambiarModo("escena"); }}
           onAnadirAEscena={(item) => {
             // La biblioteca ya está cargada (de ahí viene el item): este import no trae nada nuevo.
             void import("@/lib/globos3d/biblioteca").then(({ insertarEnEscena }) => { const r = insertarEnEscena(escenaEdit, item); setEscenaEdit(r.escena); setSeleccion(r.raizId); setCopiaTocada(null); cambiarModo("escena"); });
@@ -795,10 +920,10 @@ export function Taller3D() {
           )}
           <div className={`flex min-w-0 flex-col gap-3 lg:gap-4 ${modo === "escena" ? enHoja("ajustes", "ia") : enHoja("ajustes")}`}>
           {modo === "escena" && armadaEscena ? (
-            <PanelEscena escena={escenaEdit} onEscena={cambiarDesdePanel} armada={armadaEscena} seleccion={seleccion} onSeleccion={elegirDesdePanel} enVivo={enVivo}
+            <PanelEscena escena={escenaVista} onEscena={cambiarDesdePanel} armada={armadaEscena} seleccion={seleccion} onSeleccion={elegirDesdePanel} enVivo={enVivo}
               enMovil={pestana === "ia" ? "ia" : "piezas"}
               onPreset={(id) => { setEscenaEdit(escenaPredefinida(id)); setSeleccion(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); }}
-              accionesPieza={(id) => <AccionesPieza key={`biblioteca-${id}`} escena={escenaEdit} armada={armadaEscena} nodoId={id} onVer={(item) => { setVerEnBiblioteca(item); cambiarModo("biblioteca"); }} />} />
+              accionesPieza={(id) => <AccionesPieza key={`biblioteca-${id}`} escena={escenaVista} armada={armadaEscena} nodoId={id} onVer={(item) => { setVerEnBiblioteca(item); cambiarModo("biblioteca"); }} />} />
           ) : modo === "organico" ? (
             <PanelOrganico valor={ajustesOrganico} onCambio={setAjustesOrganico} />
           ) : modo === "pared" ? (
@@ -978,13 +1103,39 @@ export function Taller3D() {
             <canvas ref={lienzoRef} className="block h-full w-full touch-none" aria-label="Modelo en 3D: arrastra con un dedo o el ratón para girar; pellizca o usa la rueda para acercar" />
             {!listo && !error && <p className="absolute inset-0 grid place-items-center text-sm text-texto-suave">Cargando el visor 3D…</p>}
             {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-texto">{error}</p>}
-            {color && (
+            {modo === "escena" && solitario.solitario && (
+              <div role="region" aria-label="Editor solitario" className="absolute left-2 top-2 z-10 flex max-w-[calc(100%-7.5rem)] flex-wrap items-center gap-2 rounded-xl bg-superficie/95 px-2 py-1 text-sm shadow-sm ring-1 ring-acento lg:left-3 lg:top-3 lg:max-w-[calc(100%-1.5rem)]">
+                <nav aria-label="Dónde estás" className="min-w-0 truncate text-texto-suave">
+                  Escena <span aria-hidden>›</span> <b className="font-semibold text-texto" aria-current="page">{escenaVista.nodos.find((n) => n.id === solitario.solitario?.raizId)?.nombre ?? solitario.solitario.nombre}</b>
+                </nav>
+                <button type="button" onClick={() => salirSolitario(false)} className="min-h-9 rounded-lg px-2 text-texto ring-1 ring-borde hover:bg-superficie-suave">Cancelar</button>
+                <button type="button" onClick={() => salirSolitario(true)} className="min-h-9 rounded-lg bg-acento px-3 font-medium text-sobre-acento">Listo</button>
+              </div>
+            )}
+            {menu && (() => {
+              const nodoMenu = escenaVista.nodos.find((n) => n.id === menu.id);
+              if (!nodoMenu) return null;
+              const info = infoMenu?.id === menu.id ? infoMenu.info : null;
+              const esRaiz = solitario.solitario?.raizId === menu.id;
+              return (
+                <MenuContextual x={menu.x} y={menu.y} tactil={menu.tactil} nombre={nodoMenu.nombre} decoraciones={info ? info.decoraciones.length : null}
+                  sostiene={solitario.activo || !info?.sostiene ? null : info.sostiene} ocultar={esRaiz ? ["editar", "duplicar", "eliminar-con", "eliminar-sin"] : []}
+                  onAccion={(a) => { void accionMenu(a); }} onCerrar={cerrarMenu} />
+              );
+            })()}
+            {modo === "escena" && avisoQuitar && (
+              <div role="status" className="absolute bottom-16 left-3 right-3 z-10 mx-auto flex max-w-md items-center gap-2 rounded-xl bg-superficie/95 px-3 py-2 text-sm text-texto shadow-sm ring-1 ring-borde lg:bottom-3">
+                <span className="min-w-0 flex-1">{avisoQuitar}</span>
+                <button type="button" onClick={() => { deshacerVista(); setAvisoQuitar(null); }} className="min-h-9 rounded-lg px-2 font-medium text-acento ring-1 ring-borde hover:bg-superficie-suave">Deshacer</button>
+              </div>
+            )}
+            {color && !(modo === "escena" && solitario.activo) && (
               <div className="pointer-events-none absolute left-2 top-2 max-w-[calc(100%-7.5rem)] apaisado:hidden rounded-xl bg-superficie/90 px-2 py-1 text-xs shadow-sm ring-1 ring-borde backdrop-blur lg:left-3 lg:top-3 lg:max-w-[min(80%,34rem)] lg:px-3 lg:py-2 lg:text-sm [&_.detalle-ficha]:hidden [&_ul]:hidden">
                 {fichaVisor}
               </div>
             )}
             {modo === "escena" && listo && (
-              <DeshacerTactil onDeshacer={historialEscena.deshacer} onRehacer={historialEscena.rehacer} puedeDeshacer={historialEscena.puedeDeshacer} puedeRehacer={historialEscena.puedeRehacer} />
+              <DeshacerTactil onDeshacer={deshacerVista} onRehacer={rehacerVista} puedeDeshacer={puedeDeshacerVista} puedeRehacer={puedeRehacerVista} />
             )}
             {/* Con la hoja alta el visor queda bajito: los botones de mover vuelven al bajar la hoja. */}
             {nodoElegido && piezaEnVivo && listo && (esAncho || hoja !== "alta") && <ControlesPieza key={nodoElegido.id} nombre={nodoElegido.nombre} colocacion={piezaEnVivo} />}

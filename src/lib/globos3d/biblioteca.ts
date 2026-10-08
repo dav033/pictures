@@ -349,6 +349,11 @@ export type OpcionesExtraer = {
   armada?: EscenaArmada;
   /** Contar también las decoraciones sueltas pegadas a sus globos (por defecto, sí). */
   pegadas?: boolean;
+  /**
+   * Conservar los ids de la escena (en vez de «estructura», «hijo-1»…): el editor solitario los necesita para devolver
+   * cada pieza a su nodo. Con ellos el conjunto ya no es el mismo para dos escenas con otros ids.
+   */
+  conservarIds?: boolean;
 };
 
 /**
@@ -364,7 +369,7 @@ export function extraerConjunto(escena: Escena, nodoId: string, opciones: Opcion
   const hechos = new Map(armada.porNodo.map((n) => [n.id, n]));
   const pegadas = opciones.pegadas === false ? new Map<string, string>() : decoracionesPegadas(escena, armada);
   const ids = miembrosDeConjunto(escena, nodoId, armada, pegadas);
-  const nuevoId = new Map(ids.map((id, i) => [id, i === 0 ? "estructura" : `hijo-${i}`]));
+  const nuevoId = new Map(ids.map((id, i) => [id, opciones.conservarIds ? id : i === 0 ? "estructura" : `hijo-${i}`]));
   const marcoRaiz = hechos.get(nodoId)?.puestas[0]?.marco;
   const giroRaiz = marcoRaiz ? giroPuro(marcoRaiz.m) : null;
   const hijos: NodoConjunto[] = [];
@@ -385,7 +390,7 @@ export function extraerConjunto(escena: Escena, nodoId: string, opciones: Opcion
   // Lo que colgaba de algo que se quedó fuera, también fuera (hasta que no quede nada colgando del aire).
   for (let cambio = true; cambio;) {
     cambio = false;
-    const presentes = new Set(["estructura", ...hijos.map((h) => h.id)]);
+    const presentes = new Set([nuevoId.get(nodoId)!, ...hijos.map((h) => h.id)]);
     for (let i = hijos.length - 1; i >= 0; i--) {
       const c = hijos[i]!.colocacion;
       if ((c.en === "ancla" || c.en === "sobre") && !presentes.has(c.padreId)) { hijos.splice(i, 1); cambio = true; }
@@ -393,7 +398,7 @@ export function extraerConjunto(escena: Escena, nodoId: string, opciones: Opcion
   }
   const sugerida: Colocacion = raiz.colocacion.en === "ancla" || raiz.colocacion.en === "sobre" ? colocacionNormalizada(raiz) : structuredClone(raiz.colocacion);
   return {
-    raiz: { id: "estructura", nombre: raiz.nombre, pieza: structuredClone(raiz.pieza), colocacion: colocacionNormalizada(raiz) },
+    raiz: { id: nuevoId.get(nodoId)!, nombre: raiz.nombre, pieza: structuredClone(raiz.pieza), colocacion: colocacionNormalizada(raiz) },
     hijos, sugerida, sala: structuredClone(escena.sala),
   };
 }
@@ -408,16 +413,19 @@ export function dentroDeSala(c: Colocacion, sala: Sala): Colocacion {
   return c;
 }
 
+/** Cómo se ponen los nodos de un conjunto: ids del conjunto tal cual y piezas ya armadas (por su JSON). */
+type OpcionesPoner = { conservarIds?: boolean; cache?: Map<string, PiezaArmada> };
+
 /**
  * Los nodos de un conjunto puestos en una escena: la raíz en `donde` (o donde estaba), ids nuevos que no chocan con los
- * de `escena`, lo colgado con su padre nuevo y lo relativo pasado a `libre` en el mundo (con el marco de la raíz ya
- * puesta en esa sala).
+ * de `escena` (o los del conjunto, con `conservarIds`), lo colgado con su padre nuevo y lo relativo pasado a `libre` en
+ * el mundo (con el marco de la raíz ya puesta en esa sala).
  */
-function nodosDeConjunto(escena: Escena, conjunto: Conjunto, donde: Colocacion): NodoEscena[] {
+function nodosDeConjunto(escena: Escena, conjunto: Conjunto, donde: Colocacion, opciones: OpcionesPoner = {}): NodoEscena[] {
   let usados: Escena = escena;
   const nuevoId = new Map<string, string>();
   const reservar = (idConjunto: string, pieza: Pieza) => {
-    const id = idNuevo(usados, baseIdDe(pieza));
+    const id = opciones.conservarIds ? idConjunto : idNuevo(usados, baseIdDe(pieza));
     nuevoId.set(idConjunto, id);
     usados = { ...usados, nodos: [...usados.nodos, { id, nombre: "", pieza, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
     return id;
@@ -425,7 +433,7 @@ function nodosDeConjunto(escena: Escena, conjunto: Conjunto, donde: Colocacion):
   const raiz: NodoEscena = { ...structuredClone(conjunto.raiz), id: reservar(conjunto.raiz.id, conjunto.raiz.pieza), colocacion: structuredClone(donde) };
   for (const h of conjunto.hijos) reservar(h.id, h.pieza);
   const necesitaMarco = conjunto.hijos.some((h) => h.colocacion.en === "relativa");
-  const marco = necesitaMarco ? armarEscena({ sala: escena.sala, nodos: [raiz] }).porNodo[0]?.puestas[0]?.marco : undefined;
+  const marco = necesitaMarco ? armarEscena({ sala: escena.sala, nodos: [raiz] }, opciones.cache).porNodo[0]?.puestas[0]?.marco : undefined;
   const giroRaiz = marco ? giroPuro(marco.m) ?? 0 : 0;
   const salida: NodoEscena[] = [raiz];
   for (const h of conjunto.hijos) {
@@ -443,9 +451,9 @@ function nodosDeConjunto(escena: Escena, conjunto: Conjunto, donde: Colocacion):
 }
 
 /** Un conjunto solo, en su sala (o en otra), con la raíz en `donde` (por defecto, en el origen). */
-export function escenaDeConjunto(conjunto: Conjunto, opciones: { sala?: Sala; donde?: Colocacion } = {}): Escena {
+export function escenaDeConjunto(conjunto: Conjunto, opciones: { sala?: Sala; donde?: Colocacion } & OpcionesPoner = {}): Escena {
   const sala = structuredClone(opciones.sala ?? conjunto.sala);
-  return { sala, nodos: nodosDeConjunto({ sala, nodos: [] }, conjunto, opciones.donde ?? conjunto.raiz.colocacion) };
+  return { sala, nodos: nodosDeConjunto({ sala, nodos: [] }, conjunto, opciones.donde ?? conjunto.raiz.colocacion, opciones) };
 }
 
 /** Dónde se pone por defecto lo de un item al añadirlo a otra escena: donde estaba en la suya, dentro de la sala. */
@@ -462,10 +470,10 @@ export function dondeSugerido(item: ItemBiblioteca, sala: Sala): Colocacion | nu
  * `donde` es la colocación de la raíz (o de la pieza); sin ella, donde estaba en su escena. Los ids nuevos no chocan
  * con los de la escena. La escena de entrada no cambia.
  */
-export function insertarEnEscena(escena: Escena, item: ItemBiblioteca, donde?: Colocacion): { escena: Escena; ids: string[]; raizId: string | null } {
+export function insertarEnEscena(escena: Escena, item: ItemBiblioteca, donde?: Colocacion, cache?: Map<string, PiezaArmada>): { escena: Escena; ids: string[]; raizId: string | null } {
   const c = item.contenido;
   let nuevos: NodoEscena[];
-  if (c.tipo === "conjunto") nuevos = nodosDeConjunto(escena, c.conjunto, donde ?? dentroDeSala(c.conjunto.sugerida, escena.sala));
+  if (c.tipo === "conjunto") nuevos = nodosDeConjunto(escena, c.conjunto, donde ?? dentroDeSala(c.conjunto.sugerida, escena.sala), { cache });
   else if (c.tipo === "pieza") nuevos = [{ id: idNuevo(escena, baseIdDe(c.pieza)), nombre: c.nombre, pieza: structuredClone(c.pieza), colocacion: structuredClone(donde ?? dentroDeSala(c.sugerida, escena.sala)) }];
   else {
     // Una escena entera: cada pieza con su colocación, los ids renombrados y lo colgado con su padre nuevo.
