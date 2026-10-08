@@ -23,13 +23,15 @@ let ventana = { desde: Date.now(), usadas: 0 };
 const TIPOS: readonly TipoPieza[] = ["columna", "arco", "pared_malla", "pared_trenzas", "organico", "decoracion", "arco_organico", "guirnalda", "escenografia", "globo"];
 const Hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const Numero = z.number().finite();
+const Vec = z.object({ x: Numero, y: Numero, z: Numero });
 
 const ColocacionSchema: z.ZodType<Colocacion> = z.discriminatedUnion("en", [
   z.object({ en: z.literal("piso"), xCm: Numero, zCm: Numero, giroGrados: Numero }),
   z.object({ en: z.literal("pared"), pared: z.enum(["fondo", "izquierda", "derecha"]), aLoLargoCm: Numero, alturaCm: Numero }),
   z.object({ en: z.literal("techo"), xCm: Numero, zCm: Numero, cuelgaCm: Numero, giroGrados: Numero, volteada: z.boolean() }),
-  z.object({ en: z.literal("ancla"), padreId: z.string().min(1).max(80), ancla: Numero, cada: Numero, giroGrados: Numero }),
+  z.object({ en: z.literal("ancla"), padreId: z.string().min(1).max(80), ancla: Numero, cada: Numero, giroGrados: Numero, omitir: z.array(Numero).max(400).optional() }),
   z.object({ en: z.literal("libre"), xCm: Numero, yCm: Numero, zCm: Numero, giroGrados: Numero }),
+  z.object({ en: z.literal("sobre"), padreId: z.string().min(1).max(80), puntoCm: Vec, normal: Vec, giroGrados: Numero }),
 ]);
 
 /** La pieza la arma el taller (que ya valida sus datos al armar): aquí basta con que sea un objeto de un tipo conocido. */
@@ -52,7 +54,8 @@ const CuerpoSchema = z.object({
 
 const SISTEMA = `Eres el asistente del taller 3D de decoración con globos Sempertex. Armas y cambias la escena SOLO con las herramientas; no generas imágenes.
 Sala (cm): x de izquierda (−) a derecha (+) desde el centro; z de fondo (−) a frente (+); la pared del fondo está en z = −fondo/2. Lo que va delante de la pared del fondo suele ir a z ≈ −fondo/2 + 100.
-Piezas y rangos: columna (alto 60–500; R-5, R-9, R-12 o R-18), arco clásico (ancho 100–500, alto 100–350), arco_organico (ancho entre patas 150–500, alto 150–320; colores con pesos; flores opcionales), guirnalda (largo 100–800, caída 0–150; va en una pared con el borde de abajo a ~180–240), pared_malla (ancho 100–600, alto 100–300), decoracion (flores, moños, estrellas: del techo van volteadas; en otra pieza con donde.en = "ancla"). agregar_del_catalogo trae decoraciones reales.
+Piezas y rangos: columna (alto 60–500; R-5, R-9, R-12 o R-18), arco clásico (ancho 100–500, alto 100–350), arco_organico (ancho entre patas 150–500, alto 150–320; colores con pesos; flores opcionales), guirnalda (largo 100–800, caída 0–150; va en una pared con el borde de abajo a ~180–240), pared_malla (ancho 100–600, alto 100–300), decoracion (flores, moños, estrellas: del techo van volteadas; repetidas en las anclas de otra pieza con donde.en = "ancla"). agregar_del_catalogo trae decoraciones reales.
+Decoraciones EN un punto de una estructura (la estructura es un lienzo): poner_sobre con padre_id + altura_cm desde el piso + lado (frente, izquierda, derecha, atras) o angulo_grados alrededor (para repartir alrededor de una columna) + x_cm a lo ancho (en un arco, una guirnalda o una pared; en un arco las patas están en ±ancho/2). Queda apoyada en los globos mirando hacia fuera. Para llevar una que ya existe a otro punto u otra estructura: mover_sobre (si está repetida en varias anclas, indica copia; ver_escena lista las copias con su altura). Para sacar UNA copia de un reparto sin mover las demás: separar_copia. Usa agregar_pieza con donde.en = "ancla" solo para repartir muchas iguales a lo largo de una pieza.
 Colores: código Sempertex o nombre («rosado pastel», «dorado», «blanco»). Si una herramienta responde error, corrige con su sugerencia y reintenta una vez.
 Reglas:
 - Es CRUD: «agrega X» suma con agregar_pieza; no quites ni rehagas lo que no se pidió. usar_preset solo si piden empezar de cero con una escena de partida.

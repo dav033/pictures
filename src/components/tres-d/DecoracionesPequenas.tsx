@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useRef, useState } from "react";
 import { Flower2 } from "lucide-react";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import { agregarDecoracion, decoracionesPorGrupo, miniaturaDecoracion, repartoSugerido, type DecoracionPequena, type DestinoDecoracion, type Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { ACTIVO, BOTON, Deslizador, INACTIVO } from "./PanelFlor";
+import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 
 /** Las predefinidas por grupo, con su miniatura: no cambian, se calculan una vez. */
 const GRUPOS = decoracionesPorGrupo().map((g) => ({ ...g, decoraciones: g.decoraciones.map((d) => ({ ...d, miniatura: miniaturaDecoracion(d.decoracion) })) }));
@@ -61,14 +62,18 @@ const copiasEn = (n: number) => `${n} ${n === 1 ? "copia" : "copias"}`;
 
 /**
  * Sección «Decoraciones pequeñas» de la pestaña Escena: flores, moños, estrellas… ya armados, por grupo, con su
- * dibujo y cuántos globos llevan. Al tocar una se abre debajo qué hacer con ella: colgarla de la pieza elegida
- * (si tiene anclas: columna, arco, pared, guirnalda, orgánico…), repetida cada N anclas, o ponerla suelta en la
- * pared del fondo, el piso o el techo.
+ * dibujo y cuántos globos llevan. Con el ratón se arrastran al visor y se sueltan sobre una estructura (columna,
+ * arco, aro, guirnalda, pared de globos: la estructura es un lienzo) o en una pared o el techo. Al tocar una (o con
+ * el dedo) se abre debajo qué hacer con ella: colgarla de la pieza elegida (si tiene anclas), repetida cada N
+ * anclas, o ponerla suelta en la pared del fondo, el piso o el techo.
  */
 export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = null, onSeleccion }: Props) {
   const [elegida, setElegida] = useState<string | null>(null);
   const [cadaPedido, setCadaPedido] = useState<{ nodo: string; cada: number } | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const arrastrar = useContext(ArrastreDecoracionContexto);
+  /** Dónde se apretó la última tarjeta: un clic lejos de ahí fue un arrastre (no abre las opciones). */
+  const apretada = useRef<{ x: number; y: number } | null>(null);
 
   const nodo = escena.nodos.find((n) => n.id === seleccion) ?? null;
   const anclas = useMemo(() => (nodo ? armada.porNodo.find((x) => x.id === nodo.id)?.anclas ?? [] : []), [armada, nodo]);
@@ -95,7 +100,7 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
     <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde" aria-label="Decoraciones pequeñas">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-texto"><Flower2 className="size-4 text-acento" aria-hidden /> Decoraciones pequeñas <span className="font-normal text-texto-suave">· {total} listas</span></h2>
       <p className="text-xs text-texto-suave">
-        Flores, moños y estrellas ya armados. Toca una y elige dónde va.{" "}
+        Flores, moños y estrellas ya armados. {arrastrar ? <><b className="text-texto">Arrástrala al visor</b> y suéltala sobre una columna, un arco, un aro, una guirnalda, una pared de globos o una pared (se marcan en verde), o tócala y elige dónde va.</> : "Toca una y elige dónde va."}{" "}
         {puedeColgar
           ? <>Puedes colgarla de <b className="text-texto">«{nodo.nombre}»</b> (la pieza elegida) o ponerla suelta en la sala.</>
           : <>Para colgarla de una columna, un arco o una pared de globos, primero toca esa pieza en la lista de arriba.</>}
@@ -109,8 +114,21 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
               {g.decoraciones.map((d) => {
                 const activa = d.id === elegida;
                 return (
-                  <button key={d.id} type="button" onClick={() => tocar(d.id)} aria-pressed={activa} aria-expanded={activa} title={d.descripcion}
-                    className={`flex min-h-24 flex-col items-center gap-0.5 rounded-xl p-1.5 text-center ring-1 transition-colors ${activa ? "bg-superficie-suave ring-2 ring-acento" : "bg-superficie ring-borde hover:bg-superficie-suave"}`}>
+                  <button key={d.id} type="button" aria-pressed={activa} aria-expanded={activa} title={arrastrar ? `${d.descripcion} — arrástrala al visor` : d.descripcion}
+                    onPointerDown={(e) => {
+                      apretada.current = { x: e.clientX, y: e.clientY };
+                      // Con el dedo se toca y se elige (arrastrar movería la lista); con ratón o lápiz, se arrastra al visor.
+                      if (!arrastrar || e.button !== 0 || e.pointerType === "touch") return;
+                      e.preventDefault();
+                      arrastrar({ decoracion: d.decoracion, nombre: d.nombre, idBase: d.id.replace(/_/g, "-") }, { x: e.clientX, y: e.clientY });
+                    }}
+                    onClick={(e) => {
+                      const desde = apretada.current;
+                      apretada.current = null;
+                      if (desde && e.detail > 0 && Math.hypot(e.clientX - desde.x, e.clientY - desde.y) > 6) return;
+                      tocar(d.id);
+                    }}
+                    className={`flex min-h-24 select-none flex-col items-center gap-0.5 rounded-xl p-1.5 text-center ring-1 transition-colors ${arrastrar ? "cursor-grab active:cursor-grabbing" : ""} ${activa ? "bg-superficie-suave ring-2 ring-acento" : "bg-superficie ring-borde hover:bg-superficie-suave"}`}>
                     <MiniaturaDecoracion miniatura={d.miniatura} nombre={d.nombre} className="size-14" />
                     <span className="text-[0.7rem] leading-tight text-texto">{d.nombre}</span>
                     <span className="text-[0.65rem] text-texto-suave">{d.noEsGlobo ? "no es globo" : `${d.globos} globos`}</span>

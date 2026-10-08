@@ -30,6 +30,8 @@ import { escenaPredefinida } from "@/lib/globos3d/escenas-presets";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { PanelEscena } from "./PanelEscena";
 import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
+import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
+import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 const metros = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
@@ -145,6 +147,11 @@ export function Taller3D() {
   const seleccion = seleccionElegida && escenaEdit.nodos.some((n) => n.id === seleccionElegida) ? seleccionElegida : null;
   /** La pieza que se está arrastrando y dónde va (sus coordenadas en vivo en el panel). */
   const [enVivo, setEnVivo] = useState<PiezaEnVivo | null>(null);
+  /** La copia de un reparto en anclas que se tocó en el visor (las flechas, Q/E y Supr van solo a esa). */
+  const [copiaTocada, setCopiaTocada] = useState<CopiaElegida | null>(null);
+  const copiaElegida = copiaTocada && copiaTocada.id === seleccion ? copiaTocada : null;
+  /** Lo que pasó al soltar una decoración en el visor (o por qué no se puso). */
+  const [avisoLienzo, setAvisoLienzo] = useState<string | null>(null);
   /** Sube al cargar una escena predefinida: el visor reencuadra; al mover una pieza, la cámara se queda quieta. */
   const [vueltaEncuadre, setVueltaEncuadre] = useState(0);
   const encuadradoRef = useRef<number | null>(null);
@@ -262,7 +269,7 @@ export function Taller3D() {
     if (modo === "escena" && armadaEscena) {
       // Ya viene en coordenadas del mundo, con su sala. Si la pieza elegida cuelga de otra, se ven las anclas de esa otra.
       const elegido = escenaEdit.nodos.find((n) => n.id === seleccion);
-      const padreId = elegido?.colocacion.en === "ancla" ? elegido.colocacion.padreId : null;
+      const padreId = elegido?.colocacion.en === "ancla" || elegido?.colocacion.en === "sobre" ? elegido.colocacion.padreId : null;
       const anclas = padreId ? armadaEscena.porNodo.find((n) => n.id === padreId)?.anclas.map((a) => a.posicion) ?? [] : [];
       const encuadrar = encuadradoRef.current !== vueltaEncuadre;
       encuadradoRef.current = vueltaEncuadre;
@@ -274,7 +281,11 @@ export function Taller3D() {
         {
           flores: armadaEscena.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))), cilindros: armadaEscena.cilindros, sala: armadaEscena.sala,
           solidos: armadaEscena.porNodo.flatMap((n) => n.solidos.map((x) => ({ ...x, nodo: n.id }))),
-          resaltado: armadaEscena.porNodo.find((n) => n.id === seleccion)?.caja ?? null, encuadrar,
+          // La copia tocada de un reparto se resalta sola; si no, la pieza entera.
+          resaltado: (() => {
+            const hecho = armadaEscena.porNodo.find((n) => n.id === seleccion);
+            return (copiaElegida ? hecho?.puestas[copiaElegida.copia]?.caja : undefined) ?? hecho?.caja ?? null;
+          })(), encuadrar,
         },
       );
       return;
@@ -315,13 +326,26 @@ export function Taller3D() {
     } else {
       escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
-  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared, organico, ajustesOrganico.conPedestal, armadaEscena, escenaEdit, seleccion, vueltaEncuadre]);
+  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared, organico, ajustesOrganico.conPedestal, armadaEscena, escenaEdit, seleccion, vueltaEncuadre, copiaElegida]);
 
   // Escena a mano en el visor: clic elige, arrastrar mueve, teclado (flechas, Q/E, RePág/AvPág, Supr, Ctrl+D/Z/Y, Esc).
   useEdicionEscena({
     lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", escena: escenaEdit, armada: armadaEscena, seleccion,
     onSeleccion: setSeleccion, onCambio: setEscenaEdit, onEnVivo: setEnVivo, onDeshacer: historialEscena.deshacer, onRehacer: historialEscena.rehacer,
   });
+
+  // La estructura como lienzo: arrastrar decoraciones del panel al visor, coger una copia colgada y moverla.
+  const lienzoDecoraciones = useLienzoDecoraciones({
+    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", escena: escenaEdit, armada: armadaEscena, seleccion, copia: copiaElegida,
+    onCopia: setCopiaTocada, onSeleccion: setSeleccion, onCambio: setEscenaEdit, onAviso: setAvisoLienzo, cache: cacheEscena,
+    aEscena: (n) => ({ globos: n.globos.map((g) => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}) })), tubos: n.tubos.map(tuboAEscena) }),
+  });
+  // El aviso del visor se va solo.
+  useEffect(() => {
+    if (!avisoLienzo) return;
+    const t = setTimeout(() => setAvisoLienzo(null), 7000);
+    return () => clearTimeout(t);
+  }, [avisoLienzo]);
 
   function elegirFormato(f: FormatoGlobo) {
     setFormatoId(f.id);
@@ -591,13 +615,14 @@ export function Taller3D() {
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <ArrastreDecoracionContexto.Provider value={modo === "escena" && listo ? lienzoDecoraciones.empezarArrastre : null}>
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-1" aria-label="Elegir el globo">
           {modo !== "globo" && (
             <PaletaEscena grupos={gruposColor.length ? gruposColor : [{ id: "todo", nombre: "", materiales: materialesEscena }]} onReemplazar={reemplazarEnEscena}
               aviso={avisoColor} puedeDeshacer={historialColor.length > 0} onDeshacer={deshacerColor} />
           )}
           {modo === "escena" && armadaEscena ? (
-            <PanelEscena escena={escenaEdit} onEscena={(e) => setEscenaEdit(e, { agrupar: "panel" })} armada={armadaEscena} seleccion={seleccion} onSeleccion={setSeleccion} enVivo={enVivo}
+            <PanelEscena escena={escenaEdit} onEscena={(e) => setEscenaEdit(e, { agrupar: "panel" })} armada={armadaEscena} seleccion={seleccion} onSeleccion={(id) => { setSeleccion(id); setCopiaTocada(null); }} enVivo={enVivo}
               onPreset={(id) => { setEscenaEdit(escenaPredefinida(id)); setSeleccion(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); }} />
           ) : modo === "organico" ? (
             <PanelOrganico valor={ajustesOrganico} onCambio={setAjustesOrganico} />
@@ -768,11 +793,15 @@ export function Taller3D() {
           </section>
           </>)}
         </aside>
+        </ArrastreDecoracionContexto.Provider>
 
         <section className="order-1 flex min-w-0 flex-col gap-2 lg:sticky lg:top-4 lg:order-2 lg:self-start" aria-label="Visor 3D">
           <div className="relative h-[58vh] min-h-[320px] overflow-hidden rounded-2xl bg-superficie-suave ring-1 ring-borde lg:h-[calc(100dvh-220px)]">
             <canvas ref={lienzoRef} className="block h-full w-full touch-none" aria-label="Modelo en 3D: arrastra para girar, rueda o pellizca para acercar" />
             {!listo && !error && <p className="absolute inset-0 grid place-items-center text-sm text-texto-suave">Cargando el visor 3D…</p>}
+            {modo === "escena" && avisoLienzo && (
+              <p role="status" className="pointer-events-none absolute bottom-3 left-3 right-3 mx-auto max-w-xl rounded-xl bg-superficie/95 px-3 py-2 text-center text-sm text-texto shadow-sm ring-1 ring-borde">{avisoLienzo}</p>
+            )}
             {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-texto">{error}</p>}
             {color && (
               <div className="pointer-events-none absolute left-3 top-3 max-w-[min(80%,34rem)] rounded-xl bg-superficie/90 px-3 py-2 text-sm shadow-sm ring-1 ring-borde backdrop-blur [&_.detalle-ficha]:hidden [&_ul]:hidden">

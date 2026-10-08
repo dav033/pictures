@@ -206,12 +206,16 @@ export function repartoSugerido(anclas: readonly AnclaDePieza[], cada?: number):
 // Agregar a la escena
 // ----------------------------------------------------------------------------------------------------------
 
-/** Dónde va: colgada de las anclas de otra pieza (repetida cada `cada`) o suelta en la pared del fondo, el piso o el techo. */
+/**
+ * Dónde va: colgada de las anclas de otra pieza (repetida cada `cada`), suelta en la pared del fondo, el piso o el
+ * techo, o en un `sitio` exacto (lo que se soltó en el visor: sobre una estructura, en una pared o en el techo).
+ */
 export type DestinoDecoracion =
   | { en: "ancla"; padreId: string; cada: number; ancla?: number }
   | { en: "pared" }
   | { en: "piso" }
-  | { en: "techo" };
+  | { en: "techo" }
+  | { en: "sitio"; colocacion: Colocacion };
 
 /** Alturas de partida de lo suelto: a la vista en la pared y un poco bajo el techo. */
 export const ALTURA_EN_PARED_CM = 140;
@@ -229,7 +233,7 @@ const limitar = (v: number, max: number) => Math.max(-max, Math.min(max, v));
  * Mete una decoración en la escena y devuelve la escena nueva (la de entrada no cambia) con el id del nodo.
  * Colgada: `colocacion` ancla en `padreId`, desde `ancla` y repetida `cada` anclas (0 = una sola). Suelta: en la
  * pared del fondo (de frente, a 1,4 m), en el piso (adelante) o del techo (cabeza abajo, a 60 cm); si ya hay
- * decoraciones sueltas en ese sitio, la nueva se corre a un lado.
+ * decoraciones sueltas en ese sitio, la nueva se corre a un lado. En un `sitio`, justo en esa colocación.
  */
 export function agregarDecoracion(
   escena: Escena,
@@ -245,7 +249,12 @@ export function agregarDecoracion(
   // Las que van de pie (calabazas, árbol, ramo, fantasma) quedan derechas también en el piso y colgadas del techo.
   const dePie = esDePie(decoracion);
   let deFrente = false;
-  if (destino.en === "ancla") {
+  if (destino.en === "sitio") {
+    const c = structuredClone(destino.colocacion);
+    if ((c.en === "ancla" || c.en === "sobre") && !escena.nodos.some((n) => n.id === c.padreId)) throw new Error(`No hay ninguna pieza «${c.padreId}» donde ponerla.`);
+    colocacion = c;
+    deFrente = c.en === "pared" || c.en === "libre" || ((c.en === "piso" || c.en === "techo") && dePie);
+  } else if (destino.en === "ancla") {
     if (!escena.nodos.some((n) => n.id === destino.padreId)) throw new Error(`No hay ninguna pieza «${destino.padreId}» de la que colgarla.`);
     colocacion = { en: "ancla", padreId: destino.padreId, ancla: Math.max(0, Math.round(destino.ancla ?? 0)), cada: Math.max(0, Math.round(destino.cada)), giroGrados: 0 };
   } else if (destino.en === "pared") {

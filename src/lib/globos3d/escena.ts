@@ -5,6 +5,7 @@ import { decoracionEnIngles, type MaterialDecoracion } from "./figuras";
 import { esDePie } from "./halloween";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
+import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
 
 /**
  * Una **escena**: varias piezas del taller colocadas en una sala (el arco orgánico con dos columnas y una
@@ -27,7 +28,13 @@ import type { SolidoEscenografia } from "./escenografia";
  * - `libre`: suelta en el salón, con su origen (el de su espacio local: el centro del ojo, del cuerpo de la araña, el
  *   pie del tronco…) en (x, y, z) del mundo, de frente como en una pared (una decoración mira al salón) y girada
  *   `giroGrados` sobre la vertical. Es para lo que va pegado a otra pieza sin ser un ancla suya (los ojos sobre un
- *   racimo, la calabaza en el hueco de un arco, la araña sobre una guirnalda) o apoyado en la escenografía.
+ *   racimo, la calabaza en el hueco de un arco, la araña sobre una guirnalda) o apoyado en la escenografía;
+ * - `sobre`: la estructura como lienzo. Apoyada en cualquier punto de la superficie de otra pieza (una columna, un
+ *   aro, una pared de globos, una guirnalda), no solo en sus anclas: `puntoCm` y `normal` van en el espacio LOCAL
+ *   del padre (se mueven con él) y `giroGrados` la gira sobre la normal. Se arma como en un ancla (su +y local mira
+ *   hacia la normal) y se corre a lo largo de la normal hasta que su espalda queda sobre los globos de debajo,
+ *   hundida `HUNDIMIENTO_SOBRE_CM` (lo que cede el látex al amarrarla): ni flotando ni enterrada.
+ * Con `omitir`, un reparto en anclas se salta esas anclas (la copia que se separó a un nodo `sobre` propio).
  * `armarEscena` lo deja todo en coordenadas del mundo, con los materiales sumados y lo de cada pieza por separado.
  */
 export type ParedSala = "fondo" | "izquierda" | "derecha";
@@ -45,10 +52,15 @@ export type Colocacion =
   | { en: "piso"; xCm: number; zCm: number; giroGrados: number }
   | { en: "pared"; pared: ParedSala; aLoLargoCm: number; alturaCm: number }
   | { en: "techo"; xCm: number; zCm: number; cuelgaCm: number; giroGrados: number; volteada: boolean }
-  | { en: "ancla"; padreId: string; ancla: number; cada: number; giroGrados: number }
-  | { en: "libre"; xCm: number; yCm: number; zCm: number; giroGrados: number };
+  | { en: "ancla"; padreId: string; ancla: number; cada: number; giroGrados: number; /** Anclas del reparto que se saltan. */ omitir?: number[] }
+  | { en: "libre"; xCm: number; yCm: number; zCm: number; giroGrados: number }
+  | { en: "sobre"; padreId: string; puntoCm: Vec3; normal: Vec3; giroGrados: number };
 
 export type LugarColocacion = Colocacion["en"];
+export type ColocacionSobre = Extract<Colocacion, { en: "sobre" }>;
+
+/** Lo que se hunde la espalda de una decoración `sobre` en los globos (el látex cede al amarrarla). */
+export const HUNDIMIENTO_SOBRE_CM = 1.5;
 
 export type NodoEscena = { id: string; nombre: string; pieza: Pieza; colocacion: Colocacion };
 
@@ -75,7 +87,17 @@ export type NodoArmado = {
   caja: Caja;
   /** Por qué no se pudo poner (padre que no existe, ciclo…); vacío si quedó bien. */
   avisos: string[];
+  /**
+   * Cada copia puesta: su caja, su marco (de su espacio local al mundo) y, si cuelga de un reparto en anclas, el
+   * índice del ancla del padre. Sirve para resaltar y coger UNA copia en el visor y para pasar puntos del mundo al
+   * espacio local de una pieza (`sobre`).
+   */
+  puestas: PuestaDeNodo[];
 };
+
+/** v ↦ m·v + t (m de 3×3 por filas, ortonormal): de un espacio local al mundo. */
+export type MarcoPieza = { m: readonly [number, number, number, number, number, number, number, number, number]; t: Vec3 };
+export type PuestaDeNodo = { caja: Caja; marco: MarcoPieza; ancla: number | null };
 
 export type EscenaArmada = {
   globos: GloboDePieza[];
@@ -101,8 +123,8 @@ export const SALA_INICIAL: Sala = {
 // Transformaciones: v ↦ M·v + t (M de 3×3 por filas)
 // ----------------------------------------------------------------------------------------------------------
 
-type Matriz = readonly [number, number, number, number, number, number, number, number, number];
-type Transformacion = { m: Matriz; t: Vec3 };
+type Matriz = MarcoPieza["m"];
+type Transformacion = MarcoPieza;
 
 const IDENTIDAD: Matriz = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 const rad = (g: number) => (g * Math.PI) / 180;
@@ -124,6 +146,15 @@ function giroY(grados: number): Matriz {
 const VOLTEO: Matriz = [1, 0, 0, 0, -1, 0, 0, 0, -1];
 
 const normalizar = (v: Vec3): Vec3 => { const n = Math.hypot(v.x, v.y, v.z) || 1; return { x: v.x / n, y: v.y / n, z: v.z / n }; };
+
+/** Del espacio local de una pieza al mundo y de vuelta (sus marcos son giros: la inversa es la traspuesta). */
+export const puntoAlMundo = (marco: MarcoPieza, p: Vec3): Vec3 => mover(marco, p);
+export const vectorAlMundo = (marco: MarcoPieza, v: Vec3): Vec3 => girar(marco.m, v);
+export function vectorALocal(marco: MarcoPieza, v: Vec3): Vec3 {
+  const m = marco.m;
+  return { x: m[0] * v.x + m[3] * v.y + m[6] * v.z, y: m[1] * v.x + m[4] * v.y + m[7] * v.z, z: m[2] * v.x + m[5] * v.y + m[8] * v.z };
+}
+export const puntoALocal = (marco: MarcoPieza, p: Vec3): Vec3 => vectorALocal(marco, { x: p.x - marco.t.x, y: p.y - marco.t.y, z: p.z - marco.t.z });
 
 /**
  * El marco de un ancla, igual que `colocarEn` de `decoraciones.ts`: y local = normal; x local horizontal (o a lo
@@ -171,7 +202,7 @@ export function marcoDePared(sala: Sala, pared: ParedSala): { centro: Vec3; norm
  * Lleva la pieza (por su caja local) a su sitio en la sala. Se corre primero al origen por el punto que la apoya
  * (centro de la base, de la espalda o de la cara de arriba) y luego se gira y se traslada.
  */
-function transformacionDe(colocacion: Exclude<Colocacion, { en: "ancla" }>, caja: Caja, sala: Sala): Transformacion {
+function transformacionDe(colocacion: Exclude<Colocacion, { en: "ancla" } | { en: "sobre" }>, caja: Caja, sala: Sala): Transformacion {
   // Suelta: su origen va al punto pedido (no se corre por la caja), girada sobre la vertical.
   if (colocacion.en === "libre") return { m: giroY(colocacion.giroGrados), t: { x: colocacion.xCm, y: colocacion.yCm, z: colocacion.zCm } };
   const cx = (caja.min.x + caja.max.x) / 2, cz = (caja.min.z + caja.max.z) / 2;
@@ -212,14 +243,18 @@ function aplicar(armada: PiezaArmada, tr: Transformacion) {
   };
 }
 
-/** Las anclas que usa una colocación en un ancla: la elegida y, con `cada`, las que siguen de `cada` en `cada`. */
-export function anclasElegidas(total: number, ancla: number, cada: number): number[] {
+/**
+ * Las anclas que usa una colocación en un ancla: la elegida y, con `cada`, las que siguen de `cada` en `cada`, sin
+ * las de `omitir` (copias que se separaron del reparto).
+ */
+export function anclasElegidas(total: number, ancla: number, cada: number, omitir: readonly number[] = []): number[] {
   if (total <= 0) return [];
   const inicio = Math.min(total - 1, Math.max(0, Math.round(ancla)));
   const paso = Math.round(cada);
-  if (paso <= 0) return [inicio];
+  const fuera = new Set(omitir);
+  if (paso <= 0) return fuera.has(inicio) ? [] : [inicio];
   const salida: number[] = [];
-  for (let i = inicio; i < total; i += paso) salida.push(i);
+  for (let i = inicio; i < total; i += paso) if (!fuera.has(i)) salida.push(i);
   return salida;
 }
 
@@ -239,14 +274,42 @@ function orientada(nodo: NodoEscena): Pieza {
   const { pieza, colocacion } = nodo;
   if (pieza.tipo !== "decoracion") return pieza;
   // Las de Halloween que van de pie (calabazas, árbol, ramo, fantasma) quedan derechas en el piso y del techo.
-  const deFrente = colocacion.en === "pared" || colocacion.en === "libre" ? true : colocacion.en === "ancla" ? false : Boolean(pieza.deFrente) || esDePie(pieza.decoracion);
+  const deFrente = colocacion.en === "pared" || colocacion.en === "libre" ? true : colocacion.en === "ancla" || colocacion.en === "sobre" ? false : Boolean(pieza.deFrente) || esDePie(pieza.decoracion);
   if (deFrente === Boolean(pieza.deFrente)) return pieza;
   const { deFrente: _anterior, ...resto } = pieza;
   void _anterior;
   return deFrente ? { ...resto, deFrente: true } : resto;
 }
 
-export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): EscenaArmada {
+/**
+ * Dónde va una pieza `sobre` otra: el punto y la normal del padre pasan al mundo; la pieza se arma como en un ancla
+ * (su +y hacia la normal, girada `giroGrados`) y se corre a lo largo de la normal hasta que su espalda (lo más
+ * atrasado de su caja) queda sobre lo más saliente de los globos de debajo, hundida `HUNDIMIENTO_SOBRE_CM`.
+ */
+function marcoSobre(armada: PiezaArmada, c: ColocacionSobre, marcoPadre: MarcoPieza, cuerpos: readonly CuerpoGlobo[]): Transformacion {
+  const p = mover(marcoPadre, c.puntoCm);
+  const girada = girar(marcoPadre.m, c.normal);
+  const n = Math.hypot(girada.x, girada.y, girada.z) > 1e-9 ? normalizar(girada) : { x: 0, y: 0, z: 1 };
+  const { min, max } = armada.caja;
+  const radio = Math.max(Math.abs(min.x), Math.abs(max.x), Math.abs(min.z), Math.abs(max.z));
+  const base = marcoDeAncla({ posicion: p, normal: n }, c.giroGrados);
+  let espalda = ESPALDAS.get(armada);
+  if (!espalda) { espalda = espaldaDe(armada); ESPALDAS.set(armada, espalda); }
+  // Lo justo para que su espalda (cada globo, cada tubito) toque los globos de debajo; sin globos debajo, por su caja.
+  let t = contactoDeEspalda(cuerpos, espalda, (v) => mover(base, v), p, n, radio);
+  if (!Number.isFinite(t)) { const sobresale = alturaBajoDisco(cuerpos, p, n, radio); t = (Number.isFinite(sobresale) ? sobresale : 0) - min.y; }
+  t -= HUNDIMIENTO_SOBRE_CM;
+  return { m: base.m, t: { x: p.x + n.x * t, y: p.y + n.y * t, z: p.z + n.z * t } };
+}
+
+/** La espalda de cada decoración armada (se calcula una vez por pieza armada). */
+const ESPALDAS = new WeakMap<PiezaArmada, Vec3[]>();
+
+/**
+ * El que arma las piezas de una escena una por una (y las de las que cuelgan). `sembrados`: piezas ya armadas que
+ * no se rehacen (para armar una sola pieza nueva con lo que ya está, ver `armarNodoSuelto`).
+ */
+function crearArmador(escena: Escena, cache?: Map<string, PiezaArmada>, sembrados?: ReadonlyMap<string, NodoArmado>) {
   const piezaArmada = (pieza: Pieza): PiezaArmada => {
     if (!cache) return armarPieza(pieza);
     const clave = JSON.stringify(pieza);
@@ -258,12 +321,18 @@ export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): E
     return nueva;
   };
   const porId = new Map(escena.nodos.map((n) => [n.id, n]));
-  const hechos = new Map<string, NodoArmado>();
+  const hechos = new Map<string, NodoArmado>(sembrados ?? []);
   const enCurso = new Set<string>();
   const cilindrosPorNodo = new Map<string, CilindroDeEscena[]>();
+  const cuerposPorNodo = new Map<string, CuerpoGlobo[]>();
+  const cuerposDe = (n: NodoArmado) => {
+    let cuerpos = cuerposPorNodo.get(n.id);
+    if (!cuerpos) { cuerpos = cuerposDeGlobos(n.globos); cuerposPorNodo.set(n.id, cuerpos); }
+    return cuerpos;
+  };
 
   const vacio = (nodo: NodoEscena, aviso: string): NodoArmado => ({
-    id: nodo.id, nombre: nodo.nombre, copias: 0, globos: [], tubos: [], flores: [], solidos: [], anclas: [], materiales: [], caja: { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } }, avisos: [aviso],
+    id: nodo.id, nombre: nodo.nombre, copias: 0, globos: [], tubos: [], flores: [], solidos: [], anclas: [], materiales: [], caja: { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } }, avisos: [aviso], puestas: [],
   });
 
   const armarNodo = (nodo: NodoEscena): NodoArmado => {
@@ -280,22 +349,38 @@ export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): E
         if (!padre || padre.id === nodo.id) resultado = vacio(nodo, `«${nodo.nombre}» va colgada de una pieza que ya no está: elige otra o ponla en el piso.`);
         else {
           const delPadre = armarNodo(padre);
-          const indices = anclasElegidas(delPadre.anclas.length, c.ancla, c.cada);
+          const indices = anclasElegidas(delPadre.anclas.length, c.ancla, c.cada, c.omitir);
           if (!indices.length) resultado = vacio(nodo, `«${padre.nombre}» no tiene anclas donde colgar «${nodo.nombre}».`);
           else {
-            const copias = indices.map((i) => aplicar(armada, marcoDeAncla(delPadre.anclas[i]!, c.giroGrados)));
+            const marcos = indices.map((i) => marcoDeAncla(delPadre.anclas[i]!, c.giroGrados));
+            const copias = marcos.map((marco) => aplicar(armada, marco));
             resultado = {
               id: nodo.id, nombre: nodo.nombre, copias: copias.length,
               globos: copias.flatMap((x) => x.globos), tubos: copias.flatMap((x) => x.tubos), flores: copias.flatMap((x) => x.flores), solidos: copias.flatMap((x) => x.solidos), anclas: copias.flatMap((x) => x.anclas),
               materiales: sumarMateriales(...copias.map(() => armada.materiales)),
               caja: cajaDePuntos(copias.flatMap((x) => [x.caja.min, x.caja.max])),
               avisos: [],
+              puestas: copias.map((x, k) => ({ caja: x.caja, marco: marcos[k]!, ancla: indices[k]! })),
             };
           }
         }
+      } else if (c.en === "sobre") {
+        const padre = porId.get(c.padreId);
+        if (!padre || padre.id === nodo.id) resultado = vacio(nodo, `«${nodo.nombre}» va sobre una pieza que ya no está: ponla en otra o en la pared.`);
+        else {
+          const delPadre = armarNodo(padre);
+          const marcoPadre = delPadre.puestas[0]?.marco;
+          if (!marcoPadre) resultado = vacio(nodo, `«${padre.nombre}» no quedó puesta: «${nodo.nombre}» no tiene dónde apoyarse.`);
+          else {
+            const marco = marcoSobre(armada, c, marcoPadre, cuerposDe(delPadre));
+            const puesta = aplicar(armada, marco);
+            resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, materiales: sumarMateriales(armada.materiales), avisos: [], puestas: [{ caja: puesta.caja, marco, ancla: null }] };
+          }
+        }
       } else {
-        const puesta = aplicar(armada, transformacionDe(c, armada.caja, escena.sala));
-        resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, materiales: sumarMateriales(armada.materiales), avisos: [] };
+        const marco = transformacionDe(c, armada.caja, escena.sala);
+        const puesta = aplicar(armada, marco);
+        resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, materiales: sumarMateriales(armada.materiales), avisos: [], puestas: [{ caja: puesta.caja, marco, ancla: null }] };
         if (c.en === "techo" && c.cuelgaCm > 0) {
           const arriba = puesta.caja.max.y;
           cilindrosPorNodo.set(nodo.id, [{ base: { x: c.xCm, y: arriba, z: c.zCm }, radioCm: HILO.radioCm, altoCm: Math.max(0, escena.sala.altoCm - arriba), hex: HILO.hex, nodo: nodo.id }]);
@@ -308,7 +393,11 @@ export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): E
     hechos.set(nodo.id, resultado);
     return resultado;
   };
+  return { armarNodo, cilindrosPorNodo };
+}
 
+export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): EscenaArmada {
+  const { armarNodo, cilindrosPorNodo } = crearArmador(escena, cache);
   const porNodo = escena.nodos.map(armarNodo);
   return {
     globos: porNodo.flatMap((n) => n.globos),
@@ -323,14 +412,26 @@ export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): E
   };
 }
 
-/** Los ids de un nodo y de todo lo que cuelga de él (para no colgar una pieza de su propia hija). */
+/**
+ * Arma UNA pieza con lo ya armado de las demás (`armada`), sin rehacer la escena: la vista previa de una decoración
+ * mientras se arrastra. La pieza puede no estar todavía en la escena (o estar en otro sitio: se arma donde dice `nodo`).
+ */
+export function armarNodoSuelto(escena: Escena, armada: EscenaArmada, nodo: NodoEscena, cache?: Map<string, PiezaArmada>): NodoArmado {
+  const conNodo: Escena = { ...escena, nodos: [...escena.nodos.filter((n) => n.id !== nodo.id), nodo] };
+  const fuera = descendientes(conNodo, nodo.id);
+  const sembrados = new Map(armada.porNodo.filter((n) => !fuera.has(n.id)).map((n) => [n.id, n]));
+  return crearArmador(conNodo, cache, sembrados).armarNodo(nodo);
+}
+
+/** Los ids de un nodo y de todo lo que cuelga de él o va sobre él (para no colgar una pieza de su propia hija). */
 export function descendientes(escena: Escena, id: string): Set<string> {
   const salida = new Set<string>([id]);
   let crecio = true;
   while (crecio) {
     crecio = false;
     for (const n of escena.nodos) {
-      if (n.colocacion.en === "ancla" && salida.has(n.colocacion.padreId) && !salida.has(n.id)) { salida.add(n.id); crecio = true; }
+      const c = n.colocacion;
+      if ((c.en === "ancla" || c.en === "sobre") && salida.has(c.padreId) && !salida.has(n.id)) { salida.add(n.id); crecio = true; }
     }
   }
   return salida;
@@ -352,16 +453,18 @@ export function duplicarNodo(escena: Escena, id: string): Escena {
     : c.en === "pared" ? { ...c, aLoLargoCm: c.aLoLargoCm + 60 }
       : c.en === "techo" ? { ...c, xCm: c.xCm + 60 }
         : c.en === "libre" ? { ...c, xCm: c.xCm + 60 }
-          : { ...c, ancla: c.ancla + 1 };
+          // Sobre otra pieza: un poco más arriba en su superficie (se vuelve a apoyar al armar).
+          : c.en === "sobre" ? { ...c, puntoCm: { ...c.puntoCm, y: c.puntoCm.y + 15 } }
+            : { ...c, ancla: c.ancla + 1 };
   const copia: NodoEscena = { id: idNuevo(escena, original.id.replace(/-\d+$/, "")), nombre: `${original.nombre} (copia)`, pieza: structuredClone(original.pieza), colocacion: corrida };
   const indice = escena.nodos.indexOf(original);
   return { ...escena, nodos: [...escena.nodos.slice(0, indice + 1), copia, ...escena.nodos.slice(indice + 1)] };
 }
 
-/** Quita un nodo; lo que colgaba de él pasa al piso donde estaba, para no perderlo. */
+/** Quita un nodo; lo que colgaba de él (o iba sobre él) pasa al piso donde estaba, para no perderlo. */
 export function quitarNodo(escena: Escena, id: string, armada?: EscenaArmada): Escena {
   const nodos = escena.nodos.filter((n) => n.id !== id).map((n): NodoEscena => {
-    if (n.colocacion.en !== "ancla" || n.colocacion.padreId !== id) return n;
+    if ((n.colocacion.en !== "ancla" && n.colocacion.en !== "sobre") || n.colocacion.padreId !== id) return n;
     const caja = armada?.porNodo.find((x) => x.id === n.id)?.caja;
     return { ...n, colocacion: { en: "piso", xCm: caja ? Math.round((caja.min.x + caja.max.x) / 2) : 0, zCm: caja ? Math.round((caja.min.z + caja.max.z) / 2) : 0, giroGrados: 0 } };
   });
@@ -455,7 +558,8 @@ export type OpcionesMover = {
  */
 export function moverNodo(escena: Escena, id: string, delta: Vec3, opciones: OpcionesMover = {}): Escena {
   const nodo = escena.nodos.find((n) => n.id === id);
-  if (!nodo || nodo.colocacion.en === "ancla") return escena;
+  // Lo colgado de un ancla o apoyado sobre otra pieza no se mueve así (ver `pasarDeAncla` y `deslizarSobre`).
+  if (!nodo || nodo.colocacion.en === "ancla" || nodo.colocacion.en === "sobre") return escena;
   const { sala } = escena;
   const iman = opciones.iman ?? true;
   const caja = opciones.armada?.porNodo.find((n) => n.id === id && n.copias > 0)?.caja;

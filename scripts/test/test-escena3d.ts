@@ -10,15 +10,24 @@
  * - es determinista (y la caché no cambia nada); los ciclos y los padres que faltan avisan sin romper;
  * - `reemplazarColor` sobre la escena entera cambia el color en todas sus piezas;
  * - mover a mano (arrastrar / flechas): en el piso, la pared y el techo respeta los límites de la sala, el imán
- *   de 5 cm (y sin él), girar, pasar de ancla, el desplazamiento para arrastrar sin rearmar y deshacer/rehacer.
+ *   de 5 cm (y sin él), girar, pasar de ancla, el desplazamiento para arrastrar sin rearmar y deshacer/rehacer;
+ * - la estructura como lienzo (colocación `sobre`): en una columna, una pared de globos, un aro, una guirnalda y un
+ *   arco queda pegada a la superficie ±2 cm y mirando hacia fuera, se mueve con su estructura; separar una copia de
+ *   un reparto deja N − 1 + 1; moverla a otra estructura, quitarla, deslizarla por la superficie, el imán a las
+ *   anclas (< 6 cm), soltar en la pared, el techo o el piso, la vista previa y deshacer.
  */
 import assert from "node:assert/strict";
 import {
-  armarEscena, anclasElegidas, desplazamientoEntre, duplicarNodo, escenaEnIngles, girarNodo, historialCambiar, historialDeshacer, historialNuevo,
+  armarEscena, armarNodoSuelto, anclasElegidas, descendientes, desplazamientoEntre, duplicarNodo, escenaEnIngles, girarNodo, historialCambiar, historialDeshacer, historialNuevo,
   historialRehacer, historialReemplazar, imanar, moverNodo, pasarDeAncla, quitarNodo, SALA_INICIAL, type Colocacion, type Escena, type NodoArmado,
 } from "../../src/lib/globos3d/escena";
+import {
+  colocacionEnSala, colocacionSobre, copiaEn, deslizarSobre, moverCopia, quitarCopia, radioLateral, separarCopia, sitioDescrito, sitioEnPieza,
+  type SitioDescrito, type SitioEnPieza,
+} from "../../src/lib/globos3d/lienzo-escena";
+import { cuerposDeGlobos } from "../../src/lib/globos3d/superficie-globos";
 import { ESCENAS_PREDEFINIDAS, PIEZAS_NUEVAS, escenaPredefinida, piezaNueva } from "../../src/lib/globos3d/escenas-presets";
-import { armarPieza, type PiezaArmada } from "../../src/lib/globos3d/piezas";
+import { armarPieza, type Pieza, type PiezaArmada } from "../../src/lib/globos3d/piezas";
 import { colocarEn } from "../../src/lib/globos3d/decoraciones";
 import { decoracionPredefinida } from "../../src/lib/globos3d/figuras";
 import { reemplazarColor } from "../../src/lib/globos3d/recolorear";
@@ -232,5 +241,164 @@ h = historialReemplazar(h, paso2); assert.equal(h.pasado.length, 2, "reemplazar 
 let largo = historialNuevo(enPiso);
 for (let i = 1; i <= 70; i++) largo = historialCambiar(largo, moverNodo(enPiso, "col", { x: i, y: 0, z: 0 }, { iman: false }));
 assert.equal(largo.pasado.length, 50, "a lo más 50 pasos para deshacer");
+
+// 13. La estructura como lienzo: colocación `sobre` (cualquier punto de una columna, un aro, una pared de globos, una
+// guirnalda), pegada a la superficie ±2 cm y mirando hacia fuera; separar una copia de un reparto; mover y deslizar
+// sobre la superficie; imán a las anclas; vista previa igual a lo armado; deshacer.
+const florSobre: Pieza = { tipo: "decoracion", decoracion: decoracionPredefinida("flor5") };
+const normalDe = (n: NodoArmado) => { const m = n.puestas[0]!.marco.m; return { x: m[1], y: m[4], z: m[7] }; };
+const punto3 = (a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) => a.x * b.x + a.y * b.y + a.z * b.z;
+/** Lo que se mete la decoración en los globos de la estructura (cm; negativo = queda un hueco). */
+function penetracion(deco: NodoArmado, padre: NodoArmado): number {
+  let peor = -Infinity;
+  for (const a of cuerposDeGlobos(deco.globos)) for (const b of cuerposDeGlobos(padre.globos)) peor = Math.max(peor, a.r + b.r - Math.hypot(a.c.x - b.c.x, a.c.y - b.c.y, a.c.z - b.c.z));
+  return peor;
+}
+/** Pone la flor `sobre` el sitio descrito de `padreId` y devuelve la escena, lo armado y la colocación. */
+function ponerSobre(base: Escena, padreId: string, d: SitioDescrito, id = "flor-sobre") {
+  const a = armarEscena(base, cache);
+  const padre = nodo(a, padreId);
+  const sitio = sitioDescrito(padre, d, radioLateral(florSobre));
+  assert.ok(!("error" in sitio), `${padreId}: hay superficie en ${JSON.stringify(d)}${"error" in sitio ? ` (${sitio.error})` : ""}`);
+  const c = colocacionSobre(padre, sitio as SitioEnPieza, 0);
+  assert.ok(c, `${padreId}: colocación sobre`);
+  const escena: Escena = { ...base, nodos: [...base.nodos, { id, nombre: "Flor sobre", pieza: florSobre, colocacion: c }] };
+  const armadaS = armarEscena(escena, cache);
+  assert.deepEqual(armadaS.avisos.filter((x) => x.includes("Flor sobre")), [], `${padreId}: arma sin avisos`);
+  return { escena, armada: armadaS, c, deco: nodo(armadaS, id), padre: nodo(armadaS, padreId), sitio: sitio as SitioEnPieza };
+}
+const pegada = (deco: NodoArmado, padre: NodoArmado, que: string) => {
+  const p = penetracion(deco, padre);
+  assert.ok(p >= -2 && p <= 2, `${que}: pegada a la superficie ±2 cm (se mete ${p.toFixed(2)} cm)`);
+  return p;
+};
+const conColumna: Escena = { sala, nodos: [
+  { id: "col", nombre: "Columna", pieza: piezaNueva("columna").pieza, colocacion: { en: "piso", xCm: 50, zCm: -20, giroGrados: 30 } },
+  { id: "muro", nombre: "Pared de globos", pieza: piezaNueva("pared").pieza, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: -150, alturaCm: 20 } },
+  { id: "flor", nombre: "Flor", pieza: florSobre, colocacion: { en: "ancla", padreId: "col", ancla: 2, cada: 8, giroGrados: 0 } },
+] };
+const medidas: string[] = [];
+// Columna: de frente y por el lado izquierdo (girada 30°), mirando hacia fuera del eje.
+for (const lado of ["frente", "izquierda", "atras"] as const) {
+  const r = ponerSobre(conColumna, "col", { alturaCm: 100, lado });
+  const n = normalDe(r.deco);
+  const eje = { x: (r.padre.caja.min.x + r.padre.caja.max.x) / 2, z: (r.padre.caja.min.z + r.padre.caja.max.z) / 2 };
+  const fuera = { x: r.sitio.punto.x - eje.x, y: 0, z: r.sitio.punto.z - eje.z };
+  const largoFuera = Math.hypot(fuera.x, fuera.z);
+  assert.ok(punto3(n, fuera) / largoFuera > 0.8, `columna ${lado}: mira hacia fuera del eje (${(punto3(n, fuera) / largoFuera).toFixed(2)})`);
+  assert.ok(cerca(r.sitio.punto.y, 100, 0.01), `columna ${lado}: a la altura pedida`);
+  medidas.push(`columna ${lado} ${pegada(r.deco, r.padre, `columna ${lado}`).toFixed(1)}`);
+}
+// La columna gira 30°: su frente mira a (sin 30°, 0, cos 30°) y la flor de frente también.
+const deFrenteCol = ponerSobre(conColumna, "col", { alturaCm: 100 });
+assert.ok(punto3(normalDe(deFrenteCol.deco), { x: Math.sin(Math.PI / 6), y: 0, z: Math.cos(Math.PI / 6) }) > 0.85, "columna girada: la flor de frente mira a su frente");
+// Pared de globos: de frente al salón, en el punto pedido.
+const enMuro = ponerSobre(conColumna, "muro", { alturaCm: 120, xCm: 30 });
+assert.ok(normalDe(enMuro.deco).z > 0.95, `pared de globos: mira al salón (n.z ${normalDe(enMuro.deco).z.toFixed(3)})`);
+medidas.push(`pared ${pegada(enMuro.deco, enMuro.padre, "pared de globos").toFixed(1)}`);
+// Aro (Halloween) en la pared: en su parte de arriba, mirando hacia delante, no hacia la pared.
+const conAro = escenaPredefinida("halloween_aro_ojos");
+const aroArmado = nodo(armarEscena(conAro, cache), "aro");
+const enAro = ponerSobre(conAro, "aro", { alturaCm: aroArmado.caja.max.y - 15 });
+assert.ok(normalDe(enAro.deco).z > 0.3, `aro: mira hacia delante (n.z ${normalDe(enAro.deco).z.toFixed(2)})`);
+medidas.push(`aro ${pegada(enAro.deco, enAro.padre, "aro").toFixed(1)}`);
+// Guirnalda y arco orgánico del preset del dueño.
+const enGuirnalda = ponerSobre(preset, "guirnalda", { xCm: -80 });
+assert.ok(normalDe(enGuirnalda.deco).z > 0.2, "guirnalda: no mira a la pared");
+medidas.push(`guirnalda ${pegada(enGuirnalda.deco, enGuirnalda.padre, "guirnalda").toFixed(1)}`);
+const enArco = ponerSobre(preset, "arco", { alturaCm: 150, xCm: -110 });
+assert.ok(normalDe(enArco.deco).z > 0.9, "arco orgánico: la flor en la pata izquierda mira al frente");
+medidas.push(`arco ${pegada(enArco.deco, enArco.padre, "arco").toFixed(1)}`);
+// Va en el espacio del padre: al mover la columna, la flor se mueve con ella.
+const columnaMovida = moverNodo(deFrenteCol.escena, "col", { x: 100, y: 0, z: 0 }, { iman: false });
+const cajaAntes = deFrenteCol.deco.caja, cajaDespues = nodo(armarEscena(columnaMovida, cache), "flor-sobre").caja;
+assert.ok(cerca(cajaDespues.min.x - cajaAntes.min.x, 100, 0.01) && cerca(cajaDespues.min.y, cajaAntes.min.y, 0.01), "la flor sobre la columna se mueve con ella");
+// Vista previa: armar solo la pieza nueva con lo ya armado da lo mismo que armar la escena entera.
+const suelta = armarNodoSuelto(conColumna, armarEscena(conColumna, cache), deFrenteCol.escena.nodos.at(-1)!, cache);
+assert.equal(JSON.stringify(suelta.globos), JSON.stringify(deFrenteCol.deco.globos), "la vista previa coincide con lo que queda al soltar");
+// Lo que va sobre una pieza es su descendiente (no se puede poner la columna sobre la flor) y al quitarla pasa al piso.
+assert.ok(descendientes(deFrenteCol.escena, "col").has("flor-sobre"), "lo que va sobre la columna cuelga de ella");
+assert.equal(quitarNodo(deFrenteCol.escena, "col", deFrenteCol.armada).nodos.find((n) => n.id === "flor-sobre")?.colocacion.en, "piso", "sin la columna, la flor queda en el piso");
+assert.equal(moverNodo(deFrenteCol.escena, "flor-sobre", { x: 10, y: 0, z: 0 }), deFrenteCol.escena, "lo que va sobre otra pieza no se mueve con moverNodo (se desliza)");
+
+// Separar una copia de un reparto: quedan N − 1 + 1, la separada en el mismo sitio, materiales iguales.
+const armadaReparto = armarEscena(conColumna, cache);
+const reparto = nodo(armadaReparto, "flor");
+assert.equal(reparto.copias, 5, "la flor va en 5 anclas de la columna");
+const separada = separarCopia(conColumna, armadaReparto, "flor", 2);
+assert.ok(separada && separada.id !== "flor", "la copia separada es un nodo nuevo");
+const armadaSeparada = armarEscena(separada.escena, cache);
+assert.deepEqual(armadaSeparada.avisos, [], "separar no deja avisos");
+assert.equal(nodo(armadaSeparada, "flor").copias, 4, "el reparto queda con N − 1 = 4");
+assert.equal(nodo(armadaSeparada, separada.id).copias, 1, "y la separada es 1");
+assert.equal(separada.escena.nodos.find((n) => n.id === separada.id)?.colocacion.en, "sobre", "la separada va sobre la columna");
+assert.deepEqual((separada.escena.nodos.find((n) => n.id === "flor")?.colocacion as { omitir?: number[] }).omitir, [reparto.puestas[2]!.ancla], "el reparto se salta el ancla de la separada");
+const cajaCopia = reparto.puestas[2]!.caja, cajaSeparada = nodo(armadaSeparada, separada.id).caja;
+const centro = (c: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }) => ({ x: (c.min.x + c.max.x) / 2, y: (c.min.y + c.max.y) / 2, z: (c.min.z + c.max.z) / 2 });
+// En el reparto, la flor va amarrada en el hueco entre globos (algo metida); separada, se apoya sobre ellos: solo se
+// corre hacia fuera, a lo largo de la normal del ancla, sin irse de lado.
+const anclaSeparada = nodo(armadaReparto, "col").anclas[reparto.puestas[2]!.ancla!]!;
+const corrimiento = { x: centro(cajaSeparada).x - centro(cajaCopia).x, y: centro(cajaSeparada).y - centro(cajaCopia).y, z: centro(cajaSeparada).z - centro(cajaCopia).z };
+const haciaFuera = punto3(corrimiento, anclaSeparada.normal);
+const deLado = Math.sqrt(Math.max(0, punto3(corrimiento, corrimiento) - haciaFuera * haciaFuera));
+assert.ok(haciaFuera > -1 && haciaFuera < 15 && deLado < 3, `la separada se queda en su sitio (sale ${haciaFuera.toFixed(1)} cm hacia fuera y ${deLado.toFixed(1)} cm de lado)`);
+pegada(nodo(armadaSeparada, separada.id), nodo(armadaSeparada, "col"), "la copia separada");
+for (const k of [0, 1, 3, 4]) {
+  const antes = reparto.puestas[k]!.caja, despues = nodo(armadaSeparada, "flor").puestas[k > 2 ? k - 1 : k]!.caja;
+  assert.ok(cerca(antes.min.y, despues.min.y, 1e-6), `la copia ${k} no se mueve`);
+}
+assert.equal(total(armadaSeparada.materiales), total(armadaReparto.materiales), "los materiales no cambian al separar");
+assert.equal(copiaEn(reparto, centro(reparto.puestas[3]!.caja)), 3, "copiaEn: la copia bajo el puntero");
+// Una copia que se coge y se suelta en otra estructura: se separa y las demás se quedan; deshacer vuelve.
+const destinoMuro = colocacionSobre(nodo(armadaReparto, "muro"), sitioEnPieza(nodo(armadaReparto, "muro"), (sitioDescrito(nodo(armadaReparto, "muro"), { alturaCm: 100 }) as SitioEnPieza).punto, { radioCm: radioLateral(florSobre) }))!;
+const movida = moverCopia(conColumna, armadaReparto, "flor", 1, destinoMuro);
+assert.ok(movida, "la copia pasa a la pared de globos");
+const armadaMovida = armarEscena(movida.escena, cache);
+assert.equal(nodo(armadaMovida, "flor").copias, 4);
+assert.equal((movida.escena.nodos.find((n) => n.id === movida.id)?.colocacion as { padreId: string }).padreId, "muro");
+pegada(nodo(armadaMovida, movida.id), nodo(armadaMovida, "muro"), "copia movida a la pared");
+assert.equal(moverCopia(conColumna, armadaReparto, "col", 0, { ...destinoMuro, padreId: "flor" }), null, "no se puede poner una pieza sobre lo que cuelga de ella");
+let hLienzo = historialCambiar(historialNuevo(conColumna), movida.escena);
+hLienzo = historialDeshacer(hLienzo);
+assert.equal(hLienzo.presente, conColumna, "deshacer devuelve la copia a su reparto");
+assert.equal(historialRehacer(hLienzo).presente, movida.escena, "y rehacer la vuelve a mover");
+// Quitar una copia: el reparto se la salta; la última quita la pieza.
+assert.equal(nodo(armarEscena(quitarCopia(conColumna, armadaReparto, "flor", 0), cache), "flor").copias, 4, "Supr sobre una copia quita solo esa");
+const solo = { ...conColumna, nodos: conColumna.nodos.map((n) => (n.id === "flor" ? { ...n, colocacion: { en: "ancla" as const, padreId: "col", ancla: 5, cada: 0, giroGrados: 0 } } : n)) };
+assert.ok(!quitarCopia(solo, armarEscena(solo, cache), "flor", 0).nodos.some((n) => n.id === "flor"), "si es la única, se quita la pieza");
+const unaSola = separarCopia(solo, armarEscena(solo, cache), "flor", 0);
+assert.ok(unaSola && unaSola.id === "flor" && unaSola.escena.nodos.length === solo.nodos.length, "separar la única copia convierte ese mismo nodo");
+
+// Deslizar sobre la superficie: en la columna da la vuelta (sigue pegada y mirando fuera); en la pared sube derecho.
+let girando = deFrenteCol.escena;
+for (let i = 0; i < 4; i++) girando = deslizarSobre(girando, armarEscena(girando, cache), "flor-sobre", { x: 10, y: 0, z: -5 });
+const armadaGirando = armarEscena(girando, cache);
+const nGirando = normalDe(nodo(armadaGirando, "flor-sobre"));
+assert.ok(punto3(nGirando, normalDe(deFrenteCol.deco)) < 0.97, "deslizar: la flor da la vuelta a la columna (cambia hacia dónde mira)");
+assert.ok(Math.abs(nGirando.y) < 0.4, "deslizar de lado: sigue mirando hacia fuera, no al techo");
+pegada(nodo(armadaGirando, "flor-sobre"), nodo(armadaGirando, "col"), "deslizada en la columna");
+const subida = deslizarSobre(enMuro.escena, enMuro.armada, "flor-sobre", { x: 0, y: 20, z: 0 });
+const armadaSubida = armarEscena(subida, cache);
+assert.ok(cerca(nodo(armadaSubida, "flor-sobre").caja.min.y - enMuro.deco.caja.min.y, 20, 4), `deslizar en la pared: sube ~20 cm (${(nodo(armadaSubida, "flor-sobre").caja.min.y - enMuro.deco.caja.min.y).toFixed(1)})`);
+assert.ok(normalDe(nodo(armadaSubida, "flor-sobre")).z > 0.95, "y sigue de frente");
+pegada(nodo(armadaSubida, "flor-sobre"), nodo(armadaSubida, "muro"), "deslizada en la pared");
+assert.equal(deslizarSobre(enMuro.escena, enMuro.armada, "flor-sobre", { x: 0, y: 5000, z: 0 }), enMuro.escena, "si se sale de la superficie, no se mueve");
+
+// Imán: a menos de 6 cm de un ancla se pega a ella; más lejos o sin imán (Alt), no.
+const col = nodo(armadaReparto, "col");
+const ancla = col.anclas[7]!;
+const cercaDelAncla = { x: ancla.posicion.x + 3, y: ancla.posicion.y + 2, z: ancla.posicion.z };
+assert.equal(sitioEnPieza(col, cercaDelAncla, { iman: true }).ancla, 7, "a 3,6 cm se pega al ancla");
+assert.deepEqual(sitioEnPieza(col, cercaDelAncla, { iman: true }).punto, ancla.posicion);
+assert.equal(sitioEnPieza(col, cercaDelAncla, { iman: false }).ancla, null, "sin imán (Alt) no se pega");
+assert.equal(sitioEnPieza(col, { x: ancla.posicion.x + 9, y: ancla.posicion.y, z: ancla.posicion.z }, { iman: true }).ancla === 7, false, "a 9 cm no se pega a esa");
+
+// Soltar en la sala: pared (centrada donde se soltó, de frente), techo (colgada) y piso.
+const soltadaPared = colocacionEnSala(sala, "fondo", { x: 100, y: 150, z: -sala.fondoCm / 2 }, florSobre);
+const cajaPared = armarEscena({ sala, nodos: [{ id: "f", nombre: "F", pieza: florSobre, colocacion: soltadaPared }] }).porNodo[0]!.caja;
+assert.ok(cerca(centro(cajaPared).x, 100, 1) && cerca(centro(cajaPared).y, 150, 1) && cerca(cajaPared.min.z, -sala.fondoCm / 2, 0.5), "soltada en la pared del fondo: centrada donde se soltó y pegada");
+assert.deepEqual(colocacionEnSala(sala, "techo", { x: 40, y: sala.altoCm, z: -60 }, florSobre), { en: "techo", xCm: 40, zCm: -60, cuelgaCm: 60, giroGrados: 0, volteada: true });
+assert.equal(colocacionEnSala(sala, "piso", { x: 9000, y: 0, z: 0 }, florSobre).en, "piso");
+console.log(`OK lienzo: ${medidas.join(" · ")} cm metidas en los globos; reparto 5 → 4 + 1; deslizar, imán y soltar en la sala`);
 
 console.log(`OK escena 3D: arco ${arco.globos.length} globos + columnas ${izq.globos.length}/${der.globos.length} + guirnalda ${guirnalda.globos.length} = ${armada.globos.length}; ${ESCENAS_PREDEFINIDAS.length} presets dentro de la sala; ${texto.length} caracteres en inglés`);

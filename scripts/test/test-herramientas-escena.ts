@@ -8,13 +8,17 @@
  * - los colores se piden por código o por nombre («rosado pastel» → 609) y un color que no viene en el formato da
  *   error con el más parecido que sí viene; medidas fuera de rango, formatos e ids inexistentes dan error;
  * - ninguna herramienta toca nodos que no se le indicaron (CRUD, no rehacer) y un error deja la escena intacta;
- * - todo lo que producen las herramientas arma sin avisos.
+ * - todo lo que producen las herramientas arma sin avisos;
+ * - la estructura como lienzo: poner_sobre (columna de frente y a 90°, pata del arco, guirnalda) deja la decoración
+ *   pegada ±2 cm y mirando hacia fuera; separar_copia deja N − 1 + 1; mover_sobre lleva una copia de un reparto a
+ *   otra estructura (las demás se quedan) y una flor de una columna a otra; errores claros y sin tocar otros nodos.
  */
 import assert from "node:assert/strict";
 import { DECLARACIONES_ESCENA, NOMBRES_HERRAMIENTAS, aplicarHerramienta, resolverColor, resumenEscena, type ResultadoHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { armarEscena, type Escena, type NodoEscena } from "../../src/lib/globos3d/escena";
 import { escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import type { PiezaArmada } from "../../src/lib/globos3d/piezas";
+import { cuerposDeGlobos } from "../../src/lib/globos3d/superficie-globos";
 
 let pruebas = 0;
 const prueba = (nombre: string, fn: () => void) => { fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
@@ -262,6 +266,102 @@ prueba("usar_preset: reemplaza la escena entera (solo esta herramienta lo hace)"
   const r = ok(aplicarHerramienta(escena, "usar_preset", { id: "techo_racimos" }));
   assert.deepEqual(r.escena, escenaPredefinida("techo_racimos"));
   error(aplicarHerramienta(escena, "usar_preset", { id: "otro" }), /Parámetros no válidos/);
+});
+
+console.log("Lienzo (decoraciones sobre una estructura)");
+/** Lo que se mete la decoración en los globos de su estructura (cm). */
+const metida = (e: Escena, id: string, padreId: string): number => {
+  const a = armarEscena(e, cache);
+  const d = a.porNodo.find((n) => n.id === id)!, p = a.porNodo.find((n) => n.id === padreId)!;
+  let peor = -Infinity;
+  for (const x of cuerposDeGlobos(d.globos)) for (const y of cuerposDeGlobos(p.globos)) peor = Math.max(peor, x.r + y.r - Math.hypot(x.c.x - y.c.x, x.c.y - y.c.y, x.c.z - y.c.z));
+  return peor;
+};
+const normalDe = (e: Escena, id: string) => { const m = armarEscena(e, cache).porNodo.find((n) => n.id === id)!.puestas[0]!.marco.m; return { x: m[1], y: m[4], z: m[7] }; };
+let lienzo = base;
+
+prueba("hay declaraciones de poner_sobre, mover_sobre y separar_copia", () => {
+  for (const n of ["poner_sobre", "mover_sobre", "separar_copia"]) assert.ok(DECLARACIONES_ESCENA.some((d) => d.name === n), `falta ${n}`);
+  const poner = DECLARACIONES_ESCENA.find((x) => x.name === "poner_sobre")!.parametersJsonSchema;
+  assert.deepEqual([...(poner.required as string[])].sort(), ["decoracion_id", "padre_id"]);
+});
+
+prueba("poner_sobre: una flor en la columna a 1,2 m, de frente, pegada y mirando fuera; no toca lo demás", () => {
+  const r = ok(aplicarHerramienta(lienzo, "poner_sobre", { decoracion_id: "flor5", padre_id: "columna-izq", altura_cm: 120 }));
+  const n = r.escena.nodos.at(-1)!;
+  assert.equal(n.colocacion.en, "sobre");
+  assert.equal(n.colocacion.en === "sobre" && n.colocacion.padreId, "columna-izq");
+  soloTocó(lienzo, r.escena, []);
+  armaBien(r.escena);
+  const m = metida(r.escena, n.id, "columna-izq");
+  assert.ok(m >= -2 && m <= 2, `pegada ±2 cm (${m.toFixed(2)})`);
+  assert.ok(normalDe(r.escena, n.id).z > 0.8, "de frente: mira al público");
+  assert.match(r.resumen, /sobre «columna-izq» a 120 cm de altura, lado frente/);
+  assert.match(resumenEscena(r.escena), /sobre «columna-izq» a 120 cm de altura/);
+  lienzo = r.escena;
+});
+
+prueba("poner_sobre: alrededor de la columna (90° = su derecha), en la pata del arco y en la guirnalda", () => {
+  const derecha = ok(aplicarHerramienta(lienzo, "poner_sobre", { decoracion_id: "mono_fucsia", padre_id: "columna-der", altura_cm: 90, angulo_grados: 90, nombre: "Moño" }));
+  const id = derecha.escena.nodos.at(-1)!.id;
+  assert.ok(normalDe(derecha.escena, id).x > 0.8, "a 90° mira a la derecha");
+  assert.match(derecha.resumen, /lado derecha/);
+  const enArco = ok(aplicarHerramienta(derecha.escena, "poner_sobre", { decoracion_id: "flor5", padre_id: "arco", altura_cm: 150, x_cm: -110 }));
+  const idArco = enArco.escena.nodos.at(-1)!.id;
+  const m = metida(enArco.escena, idArco, "arco");
+  assert.ok(m >= -2 && m <= 2 && normalDe(enArco.escena, idArco).z > 0.8, `en la pata izquierda del arco, de frente y pegada (${m.toFixed(2)})`);
+  const enGuirnalda = ok(aplicarHerramienta(enArco.escena, "poner_sobre", { decoracion_id: "estrella_dorada", padre_id: "guirnalda", x_cm: 100, colores: ["plata"] }));
+  soloTocó(lienzo, enGuirnalda.escena, []);
+  armaBien(enGuirnalda.escena);
+  lienzo = enGuirnalda.escena;
+});
+
+prueba("poner_sobre: errores claros sin tocar nada", () => {
+  error(aplicarHerramienta(lienzo, "poner_sobre", { decoracion_id: "flor5", padre_id: "columna-izq", altura_cm: 900 }), /no hay globos de «.*»/);
+  error(aplicarHerramienta(lienzo, "poner_sobre", { decoracion_id: "flor5", padre_id: "no-existe" }), /No hay ninguna pieza/);
+  const decoracion = lienzo.nodos.find((n) => n.pieza.tipo === "decoracion")!;
+  error(aplicarHerramienta(lienzo, "poner_sobre", { decoracion_id: "flor5", padre_id: decoracion.id }), /no sirve de lienzo/);
+});
+
+prueba("separar_copia: de un reparto de N copias quedan N − 1 + 1, en el mismo sitio", () => {
+  const conReparto = ok(aplicarHerramienta(lienzo, "agregar_pieza", { tipo: "decoracion", decoracion_id: "flor5", donde: { en: "ancla", padre_id: "columna-der", ancla: 2, cada: 6 } }));
+  const id = conReparto.escena.nodos.at(-1)!.id;
+  const copias = armarEscena(conReparto.escena, cache).porNodo.find((n) => n.id === id)!.copias;
+  assert.ok(copias >= 3, `el reparto tiene varias copias (${copias})`);
+  assert.match(resumenEscena(conReparto.escena), new RegExp(`${id} .*${copias} copias: #0 a \\d+ cm de altura`));
+  const r = ok(aplicarHerramienta(conReparto.escena, "separar_copia", { id, copia: 1 }));
+  const nueva = r.escena.nodos.find((n) => !conReparto.escena.nodos.some((x) => x.id === n.id))!;
+  assert.equal(nueva.colocacion.en, "sobre");
+  const a = armarEscena(r.escena, cache);
+  assert.equal(a.porNodo.find((n) => n.id === id)!.copias, copias - 1, "el reparto queda con N − 1");
+  assert.equal(a.porNodo.find((n) => n.id === nueva.id)!.copias, 1);
+  soloTocó(conReparto.escena, r.escena, [id]);
+  assert.match(r.resumen, new RegExp(`sigue con ${copias - 1} copias`));
+  error(aplicarHerramienta(conReparto.escena, "separar_copia", { id, copia: 99 }), /copia va de 0 a/);
+  error(aplicarHerramienta(conReparto.escena, "separar_copia", { id: "columna-izq", copia: 0 }), /no está repetida/);
+  armaBien(r.escena);
+  lienzo = conReparto.escena;
+});
+
+prueba("mover_sobre: una copia de un reparto a la guirnalda (las demás se quedan) y una flor de una columna a otra", () => {
+  const reparto = lienzo.nodos.at(-1)!;
+  const copias = armarEscena(lienzo, cache).porNodo.find((n) => n.id === reparto.id)!.copias;
+  error(aplicarHerramienta(lienzo, "mover_sobre", { id: reparto.id, padre_id: "guirnalda" }), /Indica copia/);
+  const r = ok(aplicarHerramienta(lienzo, "mover_sobre", { id: reparto.id, copia: 0, padre_id: "guirnalda", x_cm: -150 }));
+  const movida = r.escena.nodos.find((n) => !lienzo.nodos.some((x) => x.id === n.id))!;
+  assert.ok(movida.colocacion.en === "sobre" && movida.colocacion.padreId === "guirnalda", "la copia pasó a la guirnalda");
+  assert.equal(armarEscena(r.escena, cache).porNodo.find((n) => n.id === reparto.id)!.copias, copias - 1);
+  soloTocó(lienzo, r.escena, [reparto.id]);
+  assert.match(r.resumen, /separada del reparto/);
+  // La flor que se puso sobre la columna izquierda pasa a la derecha, por su lado izquierdo.
+  const flor = r.escena.nodos.find((n) => n.colocacion.en === "sobre" && n.colocacion.padreId === "columna-izq")!;
+  const otra = ok(aplicarHerramienta(r.escena, "mover_sobre", { id: flor.id, padre_id: "columna-der", altura_cm: 60, lado: "izquierda" }));
+  const ahora = otra.escena.nodos.find((n) => n.id === flor.id)!;
+  assert.ok(ahora.colocacion.en === "sobre" && ahora.colocacion.padreId === "columna-der");
+  assert.ok(normalDe(otra.escena, flor.id).x < -0.8, "por el lado izquierdo mira a la izquierda");
+  soloTocó(r.escena, otra.escena, [flor.id]);
+  error(aplicarHerramienta(r.escena, "mover_sobre", { id: "columna-der", padre_id: "columna-der" }), /misma pieza/);
+  armaBien(otra.escena);
 });
 
 prueba("ninguna herramienta muta la escena que recibe", () => {

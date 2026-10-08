@@ -39,6 +39,7 @@ function dondeEsta(nodo: NodoEscena, escena: Escena): string {
   if (c.en === "pared") return NOMBRE_PARED[c.pared].replace("Pared", "en la pared");
   if (c.en === "techo") return `colgada del techo a ${m(c.cuelgaCm)}`;
   if (c.en === "libre") return "suelta en el salón";
+  if (c.en === "sobre") return `sobre «${escena.nodos.find((n) => n.id === c.padreId)?.nombre ?? "?"}»`;
   return `en «${escena.nodos.find((n) => n.id === c.padreId)?.nombre ?? "?"}»`;
 }
 
@@ -60,7 +61,8 @@ function coordenadas(c: Colocacion): string {
   if (c.en === "pared") return `a lo largo ${m(c.aLoLargoCm)} · altura ${m(c.alturaCm)}`;
   if (c.en === "techo") return `x ${m(c.xCm)} · z ${m(c.zCm)} · cuelga ${m(c.cuelgaCm)} · giro ${c.giroGrados}°`;
   if (c.en === "libre") return `x ${m(c.xCm)} · y ${m(c.yCm)} · z ${m(c.zCm)} · giro ${c.giroGrados}°`;
-  return `ancla ${c.ancla + 1}${c.cada > 0 ? `, 1 de cada ${c.cada}` : ""} · giro ${c.giroGrados}°`;
+  if (c.en === "sobre") return `sobre la superficie · giro ${c.giroGrados}°`;
+  return `ancla ${c.ancla + 1}${c.cada > 0 ? `, 1 de cada ${c.cada}` : ""}${c.omitir?.length ? ` (sin ${c.omitir.length})` : ""} · giro ${c.giroGrados}°`;
 }
 
 /**
@@ -240,6 +242,13 @@ function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena
             <Deslizador id="libre-z" etiqueta="Fondo ↔ frente" valor={c.zCm} min={-Math.round(sala.fondoCm / 2)} max={Math.round(sala.fondoCm / 2)} paso={1} texto={m(c.zCm)} onCambio={(v) => onNodo({ colocacion: { ...c, zCm: v } })} />
             <Deslizador id="libre-giro" etiqueta="Giro" valor={c.giroGrados} min={-180} max={180} paso={5} texto={`${c.giroGrados}°`} onCambio={(v) => onNodo({ colocacion: { ...c, giroGrados: v } })} />
             <p className="text-[0.7rem] text-texto-suave">De frente al salón, pegada a lo que tenga delante o detrás (un racimo, un arco, la mesa).</p>
+          </>
+        )}
+        {c.en === "sobre" && (
+          <>
+            <p className="text-xs text-texto">Sobre <b>«{escena.nodos.find((n) => n.id === c.padreId)?.nombre ?? "(pieza que ya no está)"}»</b>, apoyada en sus globos.</p>
+            <Deslizador id="sobre-giro" etiqueta="Giro sobre sí misma" valor={c.giroGrados} min={-180} max={180} paso={5} texto={`${c.giroGrados}°`} onCambio={(v) => onNodo({ colocacion: { ...c, giroGrados: v } })} />
+            <p className="text-[0.7rem] text-texto-suave">Arrástrala en el visor por la superficie (o a otra pieza o pared). Con el teclado: flechas la deslizan, Q/E la giran, Supr la quita.</p>
           </>
         )}
         {c.en === "ancla" && (() => {

@@ -68,8 +68,8 @@ function escribiendo(objetivo: EventTarget | null): boolean {
 /**
  * Edición a mano de la escena en el visor:
  * - clic sobre una pieza la elige; clic en el vacío la suelta;
- * - arrastrar la pieza elegida la mueve sobre su superficie (piso, pared o techo; lo colgado de un ancla no se
- *   arrastra) con imán de 5 cm (Alt lo quita) y sin salirse de la sala; mientras, la cámara no gira y lo dibujado
+ * - arrastrar la pieza elegida la mueve sobre su superficie (piso, pared o techo; lo colgado de un ancla o apoyado
+ *   sobre otra pieza lo coge `useLienzoDecoraciones`) con imán de 5 cm (Alt lo quita) y sin salirse de la sala; mientras, la cámara no gira y lo dibujado
  *   se corre sin rearmar nada; al soltar se guarda;
  * - teclado (fuera de los campos de texto): flechas 5 cm (Shift 25) relativo a la cámara, Q/E giran 15° (Shift
  *   45°), RePág/AvPág suben y bajan (pared y techo), Supr quita, Ctrl+D duplica, Ctrl+Z/Ctrl+Y deshacen y rehacen
@@ -182,7 +182,8 @@ export function useEdicionEscena(opciones: Opciones) {
       const d = datos.current;
       const visor = visorRef.current;
       const nodo = d.seleccion ? d.escena.nodos.find((n) => n.id === d.seleccion) : undefined;
-      if (!visor || !nodo || nodo.colocacion.en === "ancla") return;
+      // Lo colgado de un ancla o apoyado sobre otra pieza lo coge `useLienzoDecoraciones` (por copia, sobre la superficie).
+      if (!visor || !nodo || nodo.colocacion.en === "ancla" || nodo.colocacion.en === "sobre") return;
       const toque = visor.piezaEn(e.clientX, e.clientY);
       if (!toque || toque.nodo !== nodo.id) return;
       // Se arrastra en el plano de su superficie que pasa por donde se tocó: la pieza sigue al puntero.
@@ -221,7 +222,9 @@ export function useEdicionEscena(opciones: Opciones) {
         const toque = visor.piezaEn(encima.x, encima.y);
         const d = datos.current;
         const elegido = d.escena.nodos.find((n) => n.id === d.seleccion);
-        cursor(!toque ? "" : toque.nodo === elegido?.id && elegido.colocacion.en !== "ancla" ? "grab" : "pointer");
+        const tocado = toque ? d.escena.nodos.find((n) => n.id === toque.nodo) : undefined;
+        const colgada = tocado?.colocacion.en === "ancla" || tocado?.colocacion.en === "sobre";
+        cursor(!toque ? "" : colgada || (toque.nodo === elegido?.id && elegido.colocacion.en !== "ancla") ? "grab" : "pointer");
       });
     };
 

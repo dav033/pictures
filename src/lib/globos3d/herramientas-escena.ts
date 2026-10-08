@@ -11,8 +11,9 @@ import { COLUMNA_QUINCE_AZUL } from "./organico-presets";
 import { CATALOGO_DECORACIONES } from "./catalogo-fotos";
 import { reemplazarColor } from "./recolorear";
 import type { ColorOrganico } from "./organico";
-import type { Pieza, TipoPieza } from "./piezas";
-import { descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type Escena, type NodoEscena, type ParedSala, type Sala } from "./escena";
+import type { Pieza, PiezaArmada, TipoPieza } from "./piezas";
+import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
+import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
 
 /**
@@ -24,6 +25,11 @@ import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, 
  *
  * Es CRUD, no «rehacer»: agregar suma un nodo, cambiar/mover/girar tocan solo el nodo indicado, quitar quita solo
  * ese (y lo que cuelga de él, si se pide). Solo `usar_preset` reemplaza la escena entera.
+ *
+ * La estructura como lienzo (`poner_sobre`, `mover_sobre`, `separar_copia`): una decoración va en cualquier punto
+ * de una columna, un arco, un aro, una guirnalda o una pared de globos, descrito con lo que un modelo razona bien
+ * (estructura + altura desde el piso + lado o ángulo alrededor + corrimiento a lo ancho); se apoya en la superficie
+ * mirando hacia fuera (colocación `sobre`). Una copia de un reparto en anclas se puede separar y mover sola.
  *
  * Medidas en cm. Colores por código Sempertex («609») o por nombre («rosado pastel», «dorado»): se buscan en la
  * tabla oficial y solo valen los que se fabrican en el formato de la pieza.
@@ -110,6 +116,16 @@ type Propiedades = z.infer<typeof PropiedadesSchema>;
 
 const IdSchema = z.string().min(1).max(80).describe("id del nodo (los da ver_escena)");
 
+/** Un sitio en la superficie de una estructura, como lo describe una persona. */
+const SitioSchema = {
+  padre_id: z.string().min(1).max(80).describe("id de la estructura donde va (columna, arco, arco orgánico/aro, guirnalda o pared de globos)"),
+  altura_cm: z.number().optional().describe("altura desde el piso del punto donde va (cm); si falta, a media altura de la estructura"),
+  lado: z.enum(["frente", "izquierda", "derecha", "atras"]).optional().describe("de qué lado de la estructura, visto desde el público (por defecto frente)"),
+  angulo_grados: z.number().optional().describe("en vez de lado: grados alrededor de la estructura desde su frente (90 = su derecha, −90 = su izquierda, 180 = atrás); para repartir alrededor de una columna"),
+  x_cm: z.number().optional().describe("corrimiento a la derecha (− a la izquierda) desde el centro de la estructura, visto desde ese lado: en un arco, una guirnalda o una pared, dónde a lo ancho (en un arco, ±ancho/2 son las patas)"),
+  giro_grados: z.number().optional().describe("giro de la decoración sobre sí misma"),
+};
+
 const ESQUEMAS = {
   ver_escena: z.object({}),
   usar_preset: z.object({ id: z.enum(PRESET_IDS).describe(ESCENAS_PREDEFINIDAS.map((p) => `${p.id}: ${p.nombre}`).join("; ")) }),
@@ -146,6 +162,21 @@ const ESQUEMAS = {
     formato: z.string().describe(`Formato: ${FORMATOS_GLOBO.map((f) => f.id).join(", ")}`),
     buscar: z.string().max(40).optional().describe("filtra por nombre («rosado», «metal»)"),
   }),
+  poner_sobre: z.object({
+    decoracion_id: z.enum(DECORACION_IDS).describe("cuál decoración (las mismas de decoracion_id de agregar_pieza)"),
+    ...SitioSchema,
+    nombre: z.string().min(1).max(60).optional(),
+    colores: ColoresSchema.optional().describe("recolorea la decoración: sus colores en orden"),
+  }),
+  mover_sobre: z.object({
+    id: IdSchema.describe("id de la decoración que se mueve"),
+    copia: z.number().int().min(0).optional().describe("si está repetida en varias anclas: cuál copia (0 = la primera; ver_escena las lista) — se separa y se mueve solo esa"),
+    ...SitioSchema,
+  }),
+  separar_copia: z.object({
+    id: IdSchema.describe("id de la decoración repetida en varias anclas"),
+    copia: z.number().int().min(0).describe("cuál copia (0 = la primera; ver_escena las lista con su altura)"),
+  }),
 } as const;
 
 export type NombreHerramienta = keyof typeof ESQUEMAS;
@@ -163,6 +194,9 @@ const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
   cambiar_sala: "Cambia las medidas de la sala, sus tonos o qué superficies se ven (paredes, techo, piso).",
   agregar_del_catalogo: "Suma una decoración real digitalizada del catálogo Sempertex (no toca las demás).",
   listar_colores: "Lista los colores Sempertex que se fabrican en un formato, con código y nombre.",
+  poner_sobre: "Pone una decoración nueva SOBRE una estructura (columna, arco, aro, guirnalda, pared de globos) en el punto que se describe con altura, lado o ángulo y corrimiento: queda apoyada en los globos mirando hacia fuera. No toca lo demás.",
+  mover_sobre: "Mueve una decoración que ya existe a otro punto de una estructura (la misma u otra), descrito igual que en poner_sobre. Si está repetida en varias anclas, mueve solo la copia indicada (las demás se quedan).",
+  separar_copia: "Separa UNA copia de una decoración repetida en varias anclas en una pieza propia (en el mismo sitio), para moverla o quitarla sola. Las demás copias se quedan.",
 };
 
 /** Una declaración de función para Gemini (`functionDeclarations` con `parametersJsonSchema`). */
@@ -328,23 +362,41 @@ function coloresTexto(p: Pieza): string {
   return lista.map(nombreColor).join(", ");
 }
 
-function dondeTexto(c: Colocacion, escena: Escena): string {
+function dondeTexto(c: Colocacion, escena: Escena, armada?: EscenaArmada): string {
   if (c.en === "piso") return `piso x=${r0(c.xCm)} z=${r0(c.zCm)} giro=${r0(c.giroGrados)}°`;
   if (c.en === "pared") return `pared ${c.pared} a_lo_largo=${r0(c.aLoLargoCm)} altura=${r0(c.alturaCm)}`;
   if (c.en === "techo") return `techo x=${r0(c.xCm)} z=${r0(c.zCm)} cuelga=${r0(c.cuelgaCm)} giro=${r0(c.giroGrados)}°${c.volteada ? " volteada" : ""}`;
   if (c.en === "libre") return `suelta x=${r0(c.xCm)} y=${r0(c.yCm)} z=${r0(c.zCm)} giro=${r0(c.giroGrados)}°`;
+  if (c.en === "sobre") return armada ? describirSobre(armada, c) : `sobre «${c.padreId}»`;
   const padre = escena.nodos.find((n) => n.id === c.padreId);
-  return `colgada de «${padre?.id ?? c.padreId}» ancla=${c.ancla} cada=${c.cada} giro=${r0(c.giroGrados)}°`;
+  return `colgada de «${padre?.id ?? c.padreId}» ancla=${c.ancla} cada=${c.cada}${c.omitir?.length ? ` sin_anclas=${c.omitir.join(",")}` : ""} giro=${r0(c.giroGrados)}°`;
+}
+
+/** Piezas ya armadas por su JSON (para no rehacer un arco orgánico en cada llamada que necesita la geometría). */
+const CACHE_ARMADO = new Map<string, PiezaArmada>();
+
+/** Las copias de un reparto en anclas, con su altura y su corrimiento a lo ancho (para elegir cuál separar o mover). */
+function copiasTexto(armada: EscenaArmada, id: string): string {
+  const puestas = armada.porNodo.find((n) => n.id === id)?.puestas ?? [];
+  return puestas.map((p, i) => `#${i} a ${r0((p.caja.min.y + p.caja.max.y) / 2)} cm de altura, x=${r0((p.caja.min.x + p.caja.max.x) / 2)}`).join("; ");
 }
 
 /** La escena en pocas líneas: lo que devuelve `ver_escena`. */
 export function resumenEscena(escena: Escena): string {
   const s = escena.sala;
+  // La geometría solo hace falta para contar dónde va lo que está sobre otra pieza y las copias de un reparto.
+  const hace = escena.nodos.some((n) => n.colocacion.en === "sobre" || (n.colocacion.en === "ancla" && n.colocacion.cada > 0));
+  const armada = hace ? armarEscena(escena, CACHE_ARMADO) : undefined;
+  const copias = (n: NodoEscena) => {
+    if (!armada || n.colocacion.en !== "ancla") return "";
+    const total = armada.porNodo.find((x) => x.id === n.id)?.puestas.length ?? 0;
+    return total > 1 ? ` · ${total} copias: ${copiasTexto(armada, n.id)}` : "";
+  };
   const vistas = [s.mostrar.fondo && "pared del fondo", s.mostrar.laterales && "paredes laterales", s.mostrar.techo && "techo", s.mostrar.piso && "piso"].filter(Boolean).join(", ") || "nada";
   const lineas = [
     `Sala ${r0(s.anchoCm)}×${r0(s.fondoCm)}×${r0(s.altoCm)} cm (ancho×fondo×alto): x de −${r0(s.anchoCm / 2)} a ${r0(s.anchoCm / 2)}, z de −${r0(s.fondoCm / 2)} (pared del fondo) a ${r0(s.fondoCm / 2)} (frente). Se ve: ${vistas}.`,
     escena.nodos.length ? `${escena.nodos.length} piezas:` : "La sala está vacía.",
-    ...escena.nodos.map((n) => `- ${n.id} · «${n.nombre}» · ${n.pieza.tipo} · ${medidasDe(n.pieza)} · colores: ${coloresTexto(n.pieza) || "—"} · ${dondeTexto(n.colocacion, escena)}`),
+    ...escena.nodos.map((n) => `- ${n.id} · «${n.nombre}» · ${n.pieza.tipo} · ${medidasDe(n.pieza)} · colores: ${coloresTexto(n.pieza) || "—"} · ${dondeTexto(n.colocacion, escena, armada)}${copias(n)}`),
   ];
   return lineas.join("\n");
 }
@@ -734,6 +786,50 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       return { escena: nueva, resumen: `Dupliqué «${nodo.nombre}»: la copia es «${copia.nombre}» (id ${copia.id}), ${dondeTexto(copia.colocacion, nueva)}.` };
     }
 
+    case "poner_sobre": {
+      const a = ESQUEMAS.poner_sobre.parse(argumentos);
+      const armada = armarEscena(escena, CACHE_ARMADO);
+      let pieza: Pieza = { tipo: "decoracion", decoracion: structuredClone(decoracionPredefinida(a.decoracion_id)) };
+      if (a.colores) pieza = recolorearEnOrden(pieza, a.colores, notas);
+      const colocacion = sitioSobreDescrito(escena, armada, a, pieza, null, giroNormal(a.giro_grados ?? 0));
+      const id = idNuevo(escena, a.decoracion_id.replace(/_/g, "-"));
+      const nombre = a.nombre ?? DECORACIONES_PREDEFINIDAS.find((d) => d.id === a.decoracion_id)?.nombre ?? "Decoración";
+      const nueva = insertar(escena, { id, nombre, pieza, colocacion });
+      return { escena: nueva, resumen: conNotas(`Puse «${nombre}» (id ${id}) ${describirSobre(armarEscena(nueva, CACHE_ARMADO), colocacion)}.`, notas) };
+    }
+
+    case "mover_sobre": {
+      const a = ESQUEMAS.mover_sobre.parse(argumentos);
+      const nodo = nodoPorId(escena, a.id);
+      const armada = armarEscena(escena, CACHE_ARMADO);
+      const copias = armada.porNodo.find((n) => n.id === nodo.id)?.puestas.length ?? 0;
+      const repetida = nodo.colocacion.en === "ancla" && copias > 1;
+      if (repetida && a.copia === undefined) fallar(`«${nodo.nombre}» está repetida en ${copias} anclas (${copiasTexto(armada, nodo.id)}). Indica copia (0 a ${copias - 1}) para mover solo esa, o usa mover_pieza para mover todo el reparto.`);
+      if (a.copia !== undefined && a.copia >= Math.max(1, copias)) fallar(`«${nodo.nombre}» tiene ${copias} copia${copias === 1 ? "" : "s"}: copia va de 0 a ${Math.max(0, copias - 1)}.`);
+      const giroActual = "giroGrados" in nodo.colocacion ? nodo.colocacion.giroGrados : 0;
+      const colocacion = sitioSobreDescrito(escena, armada, a, nodo.pieza, nodo.id, giroNormal(a.giro_grados ?? giroActual));
+      const hecho = moverCopia(escena, armada, nodo.id, a.copia ?? 0, colocacion) ?? fallar(`No pude mover «${nodo.nombre}» ahí.`);
+      const movida = nodoPorId(hecho.escena, hecho.id);
+      const separada = hecho.id !== nodo.id ? ` (separada del reparto de «${nodo.id}», que sigue con ${copias - 1} copias)` : "";
+      return { escena: hecho.escena, resumen: `Moví «${movida.nombre}» (id ${movida.id})${separada} ${describirSobre(armarEscena(hecho.escena, CACHE_ARMADO), colocacion)}.` };
+    }
+
+    case "separar_copia": {
+      const a = ESQUEMAS.separar_copia.parse(argumentos);
+      const nodo = nodoPorId(escena, a.id);
+      if (nodo.colocacion.en !== "ancla") fallar(`«${nodo.nombre}» no está repetida en anclas (${dondeTexto(nodo.colocacion, escena)}): ya es una pieza sola; muévela con mover_sobre.`);
+      const armada = armarEscena(escena, CACHE_ARMADO);
+      const copias = armada.porNodo.find((n) => n.id === nodo.id)?.puestas.length ?? 0;
+      if (a.copia >= copias) fallar(`«${nodo.nombre}» tiene ${copias} copia${copias === 1 ? "" : "s"} (${copiasTexto(armada, nodo.id)}): copia va de 0 a ${Math.max(0, copias - 1)}.`);
+      const hecho = separarCopia(escena, armada, nodo.id, a.copia) ?? fallar(`No pude separar la copia ${a.copia} de «${nodo.nombre}».`);
+      const suelta = nodoPorId(hecho.escena, hecho.id);
+      const lugar = suelta.colocacion.en === "sobre" ? describirSobre(armarEscena(hecho.escena, CACHE_ARMADO), suelta.colocacion) : "";
+      const resumen = hecho.id === nodo.id
+        ? `«${nodo.nombre}» tenía una sola copia: ahora va ${lugar}.`
+        : `Separé la copia ${a.copia} de «${nodo.nombre}»: ahora es «${suelta.nombre}» (id ${suelta.id}), ${lugar}; «${nodo.id}» sigue con ${copias - 1} copias.`;
+      return { escena: hecho.escena, resumen };
+    }
+
     case "cambiar_sala": {
       const a = ESQUEMAS.cambiar_sala.parse(argumentos);
       const s = escena.sala;
@@ -754,6 +850,20 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       return { escena: nueva, resumen: `Sala: ${resumenEscena(nueva).split("\n")[0]}` };
     }
   }
+}
+
+/**
+ * El sitio que describe la IA (estructura + altura + lado/ángulo + corrimiento) → colocación `sobre`. `id` es el de
+ * la pieza que se pone ahí (para no ponerla sobre sí misma ni sobre lo que va encima de ella).
+ */
+function sitioSobreDescrito(escena: Escena, armada: EscenaArmada, a: { padre_id: string; altura_cm?: number; lado?: SitioDescrito["lado"]; angulo_grados?: number; x_cm?: number }, pieza: Pieza, id: string | null, giroGrados: number): ColocacionSobre {
+  const padreNodo = nodoPorId(escena, a.padre_id);
+  if (id && descendientes(escena, id).has(padreNodo.id)) fallar(`«${padreNodo.id}» es la misma pieza (o va sobre ella): elige otra estructura.`);
+  const padre = armada.porNodo.find((n) => n.id === padreNodo.id);
+  if (!padre || !aceptaDecoraciones(padreNodo, padre)) fallar(`«${padreNodo.nombre}» (${NOMBRE_TIPO[padreNodo.pieza.tipo]}) no sirve de lienzo: usa una columna, un arco, un aro u orgánico, una guirnalda o una pared de globos.`);
+  const sitio = sitioDescrito(padre!, { alturaCm: a.altura_cm, lado: a.lado, anguloGrados: a.angulo_grados, xCm: a.x_cm }, radioLateral(pieza));
+  if ("error" in sitio) return fallar(sitio.error);
+  return colocacionSobre(padre!, sitio, giroGrados) ?? fallar(`«${padreNodo.nombre}» no está puesta en la sala.`);
 }
 
 /**
