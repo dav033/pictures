@@ -11,7 +11,8 @@ import { arbolEnIngles } from "./arboles-globos";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
-import { PREFIJO_SALA, PREFIJO_UTILERIA, colorDeGloboEnIngles, coloresEnIngles, enLista, siluetaEnIngles, tonoEnIngles } from "./render-ia";
+import { PREFIJO_SALA, PREFIJO_UTILERIA, colorDeGloboEnIngles, coloresEnIngles, enLista, tonoEnIngles } from "./render-ia";
+import { contornoEnIngles, huecosEnIngles } from "./silueta-ia";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
 
 /**
@@ -554,7 +555,7 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     const lugar = c.en === "piso" ? "standing on the floor" : c.en === "pared" ? LUGAR_EN[c.pared] : c.en === "techo" ? "hanging from the ceiling" : c.en === "libre" ? "set on the arrangement" : "";
     // Lo orgánico, con su silueta vista de frente (si mira a la cámara): sin ella FLUX completaba una media guirnalda.
     const deFrente = (c.en === "pared" && c.pared === "fondo") || ((c.en === "piso" || c.en === "libre") && Math.abs(c.giroGrados) < 20);
-    const silueta = deFrente && (nodo.pieza.tipo === "organico" || nodo.pieza.tipo === "arco_organico") && hecho.copias === 1 ? siluetaEnIngles(hecho.globos) : "";
+    const silueta = deFrente && (nodo.pieza.tipo === "organico" || nodo.pieza.tipo === "arco_organico") && hecho.copias === 1 ? contornoEnIngles(hecho.globos) : "";
     const pieza = piezaEnIngles(nodo.pieza, hecho.caja);
     const frase = [`${pieza}${silueta ? ` (${silueta})` : ""}`, lugar, coloresDe(nodo.pieza, hecho)].filter(Boolean).join(", ");
     const entrada = { id: nodo.id, x, frase, clase: claseDe(pieza), copias: hecho.copias, padreId: c.en === "ancla" || c.en === "sobre" ? c.padreId : null };
@@ -580,6 +581,8 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
       const padre = numero.get(p.padreId ?? "");
       return `Attached to ${padre ? `piece (${padre})` : "the structure"}: ${p.copias > 1 ? `${p.copias} × ` : ""}${p.frase.replace(/^an? /, "")}`;
     }),
+    // Lo que NO hay (pared vacía bajo un extremo): sin esto FLUX cerraba una guirnalda y una pata en un marco.
+    huecosEnIngles(armada.globos),
     escenografia ? `${PREFIJO_UTILERIA} ${escenografia} party ${escenografia === 1 ? "prop" : "props"} (backdrop panels, tables or rug), exactly as in the input` : "",
   ];
   const { tonos, mostrar } = escena.sala;

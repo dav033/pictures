@@ -14,6 +14,7 @@ import {
   promptRender3dFiel, tonoEnIngles, colorDeGloboEnIngles,
 } from "../../src/lib/globos3d/render-ia";
 import { ESCENAS_HALLOWEEN, ESCENAS_PREDEFINIDAS } from "../../src/lib/globos3d/escenas-presets";
+import { contornoEnIngles, huecosEnIngles } from "../../src/lib/globos3d/silueta-ia";
 import { armarEscena, escenaEnIngles } from "../../src/lib/globos3d/escena";
 import { referenciaPorCodigo } from "../../src/lib/plan/referencia-sempertex";
 import { ESCENA_RENDER_FIEL } from "../exp/escena-render-fiel";
@@ -115,5 +116,21 @@ assert.match(media, /only one leg/);
 assert.match(enIngles("arco_organico_columnas_guirnalda"), /complete arch: two legs/);
 assert.ok(!/HALF arch/.test(enIngles("arco_organico_columnas_guirnalda")));
 assert.match(promptRender3d("x", "estudio"), /never complete, mirror or close them/);
+
+// El caso del dueño (2026-10-08): una pata orgánica a la izquierda con un pie que se abre por el piso, bajo una
+// guirnalda que sigue a la derecha. FLUX lo cerraba en un marco con una segunda pata: se dice la forma y el hueco.
+const globo = (x: number, y: number, d = 25) => ({ nudo: { x, y: y - d / 2, z: 0 }, direccion: { x: 0, y: 1, z: 0 }, infladoCm: d });
+const pata = [
+  ...Array.from({ length: 40 }, (_, i) => globo(-40 + (i % 3) * 20, 20 + Math.floor(i / 3) * 16)),
+  ...Array.from({ length: 12 }, (_, i) => globo(10 + i * 9, 18)),
+];
+assert.match(contornoEnIngles(pata), /ONE upright column on the left with a low cluster at its foot spreading to the right/, contornoEnIngles(pata));
+const guirnalda = Array.from({ length: 40 }, (_, i) => globo(-60 + i * 9, 250 + (i % 2) * 8));
+const huecos = huecosEnIngles([...pata, ...guirnalda]);
+assert.match(huecos, /decoration (on the right|right of center) the wall is bare down to the floor/, huecos);
+assert.match(huecos, /do not join into a closed frame/);
+assert.equal(huecosEnIngles([...pata]), "", "una pieza sola no lleva hueco");
+assert.match(contornoEnIngles(Array.from({ length: 30 }, (_, i) => globo(0, i * 15))), /ONE upright column/);
+assert.match(contornoEnIngles(Array.from({ length: 30 }, (_, i) => globo(i * 15, 100))), /ONE horizontal band/);
 
 console.log("test-render-ia: ok");
