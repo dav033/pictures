@@ -11,6 +11,7 @@ import { COLUMNA_QUINCE_AZUL } from "./organico-presets";
 import { CATALOGO_DECORACIONES } from "./catalogo-fotos";
 import { reemplazarColor } from "./recolorear";
 import type { ColorOrganico } from "./organico";
+import { nombreForma } from "./formas";
 import type { Pieza, PiezaArmada, TipoPieza } from "./piezas";
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
@@ -74,6 +75,7 @@ const CATALOGO_IDS = CATALOGO_DECORACIONES.map((d) => d.id) as [string, ...strin
 const NOMBRE_TIPO: Readonly<Record<TipoPieza, string>> = {
   columna: "columna", arco: "arco", pared_malla: "pared de malla", pared_trenzas: "pared de trenzas", organico: "pieza orgánica",
   decoracion: "decoración", arco_organico: "arco orgánico", guirnalda: "guirnalda", escenografia: "escenografía", globo: "globo suelto",
+  forma: "forma de globos", letras: "letras de globos",
 };
 
 // ----------------------------------------------------------------------------------------------------------
@@ -350,6 +352,8 @@ function medidasDe(p: Pieza): string {
     case "decoracion": return `${p.decoracion.tipo}`;
     case "escenografia": return `escenografía (${p.elementos.length} elementos, sin globos)`;
     case "globo": return `${p.formatoId} · ${r0(p.infladoCm)} cm`;
+    case "forma": return nombreForma(p.forma);
+    case "letras": return `«${p.letras.texto}» · ${r0(p.letras.altoCm)} cm de alto · ${p.letras.tecnica}`;
   }
 }
 
@@ -632,6 +636,8 @@ function aplicarPropiedades(base: Pieza, props: Propiedades, notas: string[]): P
       // No es globo: no tiene colores Sempertex que cambiar.
       return base;
     case "globo":
+    case "forma":
+    case "letras":
       return props.colores ? recolorearEnOrden(base, props.colores, notas) : base;
   }
 }

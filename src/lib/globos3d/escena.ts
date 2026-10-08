@@ -3,6 +3,7 @@ import { armarPieza, type AnclaDePieza, type FlorDePieza, type GloboDePieza, typ
 import type { TuboDecoracion } from "./decoraciones";
 import { decoracionEnIngles, type MaterialDecoracion } from "./figuras";
 import { esDePie } from "./halloween";
+import { formaEnIngles } from "./formas";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
@@ -491,6 +492,8 @@ export function piezaEnIngles(pieza: Pieza, caja: Caja): string {
     case "escenografia": return `party props (backdrop panels, tables or rug) ${ancho} wide`;
     case "decoracion": return decoracionEnIngles(pieza.decoracion);
     case "globo": return `a single large round balloon ${metrosEn(pieza.infladoCm)} across`;
+    case "forma": return `${formaEnIngles(pieza.forma)} ${alto} tall`;
+    case "letras": return `the balloon lettering "${pieza.letras.texto}" ${alto} tall`;
   }
 }
 

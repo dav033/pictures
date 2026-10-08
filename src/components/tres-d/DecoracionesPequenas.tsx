@@ -7,6 +7,7 @@ import { agregarDecoracion, decoracionesPorGrupo, miniaturaDecoracion, repartoSu
 import { ACTIVO, BOTON, Deslizador, INACTIVO } from "./PanelFlor";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { UtileriaFiesta } from "./UtileriaFiesta";
+import { FormasYLetras } from "./FormasYLetras";
 
 /** Las predefinidas por grupo, con su miniatura: no cambian, se calculan una vez. */
 const GRUPOS = decoracionesPorGrupo().map((g) => ({ ...g, decoraciones: g.decoraciones.map((d) => ({ ...d, miniatura: miniaturaDecoracion(d.decoracion) })) }));
@@ -163,6 +164,8 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
           </div>
         );
       })}
+      {/* Siluetas rellenas, volúmenes y letras de globos (ideas de sempertex.com). */}
+      <FormasYLetras escena={escena} onEscena={onEscena} onSeleccion={onSeleccion} />
       {/* Banderines, platos, vasos… (productos Sempertex de fiesta, no globos). */}
       <UtileriaFiesta escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} />
     </section>

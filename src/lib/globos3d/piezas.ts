@@ -14,6 +14,8 @@ import { armarTrenza } from "./trenza";
 import { opcionesArcoOrganico, recorridoGuirnalda, type OpcionesArcoOrganico, type OpcionesGuirnalda } from "./formas-escena";
 import { armarEscenografia, puntosSolido, type ElementoEscenografia, type ProductoDePieza, type SolidoEscenografia } from "./escenografia";
 import type { TipoUtileria } from "./utileria-catalogo";
+import { armarForma, type OpcionesForma } from "./formas";
+import { armarLetras, type OpcionesLetras } from "./letras";
 
 /**
  * Una **pieza**: cualquier cosa que sabe armar el taller, descrita solo con datos (JSON) para poder guardarla,
@@ -46,7 +48,14 @@ export type Pieza =
    * Un globo suelto (el R-24 de remate encima de un arco): el centro de su cuerpo en el origen y el cuerpo hacia +y
    * (nudo abajo). Cotiza como un globo.
    */
-  | { tipo: "globo"; formatoId: string; infladoCm: number; codigo: string };
+  | { tipo: "globo"; formatoId: string; infladoCm: number; codigo: string }
+  /**
+   * Forma rellena por contorno (corazón, estrella, ancla, número…: celdas, malla o capa orgánica, con borde, marco y
+   * acentos) o volumen (esfera, cono, árbol, globo aerostático). Ver `formas.ts`.
+   */
+  | { tipo: "forma"; forma: OpcionesForma }
+  /** Letras y números de globos (hilera de R-5, cuartetos o tubitos trenzados). Ver `letras.ts`. */
+  | { tipo: "letras"; letras: OpcionesLetras };
 
 export type TipoPieza = Pieza["tipo"];
 
@@ -143,6 +152,14 @@ export function armarPieza(pieza: Pieza): PiezaArmada {
       if (!formato) throw new Error(`Formato desconocido: ${pieza.formatoId}`);
       const globo: GloboDePieza = { formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: pieza.codigo, nudo: { x: 0, y: -centroCuerpo("redondo", pieza.infladoCm), z: 0 }, direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0 };
       return conCaja({ globos: [globo], tubos: [], flores: [], anclas: [], materiales: materialesPorFormato([globo]) });
+    }
+    case "forma": {
+      const armada = armarForma(pieza.forma);
+      return conCaja({ globos: armada.globos, tubos: armada.tubos, flores: [], anclas: armada.anclas, materiales: armada.materiales });
+    }
+    case "letras": {
+      const armada = armarLetras(pieza.letras);
+      return conCaja({ globos: armada.globos, tubos: armada.tubos, flores: [], anclas: armada.anclas, materiales: armada.materiales });
     }
     case "decoracion": {
       const armada = armarDecoracion(pieza.decoracion);
