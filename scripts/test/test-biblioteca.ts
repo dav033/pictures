@@ -242,7 +242,7 @@ const conDorado = filtrarBiblioteca(biblioteca, resumenes, { producto: "R-5|970"
 assert.ok(conDorado.length > 0 && conDorado.every((i) => resumenes.get(i.id)!.productos.includes("R-5|970")), "filtro por producto: R-5 Reflex Dorado 970");
 assert.ok(conDorado.some((i) => i.id === "decoracion:racimo_dorado") && !conDorado.some((i) => i.id === "decoracion:flor_lazos_dorados"), "el racimo dorado sí; la flor de lazos dorados es de T-260");
 assert.deepEqual(filtrarBiblioteca(biblioteca, resumenes, { producto: "R-12|970" }).map((i) => i.id), biblioteca.filter((i) => resumenes.get(i.id)!.productos.includes("R-12|970")).map((i) => i.id), "R-12 Reflex Dorado 970: solo lo que lo usa");
-assert.ok(filtrarBiblioteca(biblioteca, resumenes, { tipo: "escena", ocasion: "halloween" }).length === 5, "5 escenas de Halloween");
+assert.ok(filtrarBiblioteca(biblioteca, resumenes, { tipo: "escena", ocasion: "halloween" }).filter((i) => i.fuente?.tipo !== "idea-sempertex").length === 5, "5 escenas de Halloween del taller (más las de ideas de Sempertex)");
 assert.deepEqual(filtrarBiblioteca(biblioteca, resumenes, { texto: "arana LAZOS" }).map((i) => i.id).sort(), biblioteca.filter((i) => /araña de lazos/i.test(i.nombre) || /araña de lazos/i.test(i.descripcion)).map((i) => i.id).sort(), "texto sin tildes ni mayúsculas");
 assert.ok(filtrarBiblioteca(biblioteca, resumenes, { color: "061" }).every((i) => resumenes.get(i.id)!.colores.includes("061")), "filtro por color");
 assert.ok(filtrarBiblioteca(biblioteca, resumenes, { texto: "reflex dorado" }).length >= conDorado.length, "el texto busca también en los colores");
