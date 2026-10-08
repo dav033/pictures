@@ -65,7 +65,7 @@ export const NOMBRE_TIPO: Readonly<Record<TipoPieza, string>> = {
   columna: "columna clásica de cuartetos", arco: "arco clásico de cuartetos", pared_malla: "pared de malla", pared_trenzas: "pared de trenzas", organico: "pieza orgánica",
   decoracion: "decoración", arco_organico: "arco orgánico", guirnalda: "guirnalda clásica", escenografia: "escenografía", globo: "globo suelto",
   forma: "forma de globos", letras: "letras de globos", metalizado: "globo metalizado",
-  mural: "mural pixelado", techo: "decoración de techo", arbol_globos: "palmera o árbol de globos",
+  mural: "mural pixelado", techo: "decoración de techo", arbol_globos: "palmera o árbol de globos", modulo: "módulo de globos",
 };
 
 /** Lo que se le puede pedir a una estructura (los mismos nombres que el esquema de la herramienta). */

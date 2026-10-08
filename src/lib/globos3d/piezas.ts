@@ -1,6 +1,6 @@
 import { formatoPorId } from "./formatos";
 import { centroCuerpo } from "./geometria";
-import type { Vec3 } from "./modulos";
+import { armarModulo, moduloPorId, type TipoModulo, type Vec3 } from "./modulos";
 import { armarColumna, type PatronColumna } from "./columnas";
 import { armarArco, type FormaArco } from "./arcos";
 import { armarPared, type PatronMalla } from "./paredes";
@@ -77,7 +77,12 @@ type PiezaBase =
    */
   | { tipo: "techo"; techo: OpcionesTecho }
   /** Palmera (tronco de cuartetos que se curva, hojas de tubito, cocos) o árbol con copa de racimos. Ver `arboles-globos.ts`. */
-  | { tipo: "arbol_globos"; arbol: OpcionesArbolGlobos };
+  | { tipo: "arbol_globos"; arbol: OpcionesArbolGlobos }
+  /**
+   * Módulo suelto (pareja, trío, cuarteto, quinteto o sexteto) armado como enseña Sempertex, con el color de cada globo
+   * (`colores[i]`, el del globo i; si falta, el primero). Apoyado en y = 0, con sus anclas (centro y huecos).
+   */
+  | { tipo: "modulo"; modulo: TipoModulo; formatoId: string; infladoCm: number; colores: string[] };
 
 /**
  * Cualquier pieza puede llevar **globos impresos** de la tienda (`impresos`, ver `impresos-catalogo.ts`): se eligen
@@ -189,6 +194,18 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
       if (!formato) throw new Error(`Formato desconocido: ${pieza.formatoId}`);
       const globo: GloboDePieza = { formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: pieza.codigo, nudo: { x: 0, y: -centroCuerpo("redondo", pieza.infladoCm), z: 0 }, direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0 };
       return conCaja({ globos: [globo], tubos: [], flores: [], anclas: [], materiales: materialesPorFormato([globo]) });
+    }
+    case "modulo": {
+      const formato = formatoPorId(pieza.formatoId);
+      const datos = moduloPorId(pieza.modulo);
+      if (!formato || !datos) throw new Error(`Módulo desconocido: ${pieza.modulo} de ${pieza.formatoId}`);
+      const armado = armarModulo(datos, formato, pieza.infladoCm);
+      const sueltos: GloboDePieza[] = armado.globos.map((g) => ({ formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: pieza.colores[g.indice] ?? pieza.colores[0] ?? "005", nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
+      // Apoyado en el piso (y = 0), como lo mostraba la pestaña Módulos.
+      const dy = -cajaDe(sueltos, []).min.y;
+      const subir = (p: Vec3): Vec3 => ({ x: p.x, y: p.y + dy, z: p.z });
+      const globos = sueltos.map((g) => ({ ...g, nudo: subir(g.nudo) }));
+      return conCaja({ globos, tubos: [], flores: [], anclas: armado.anclas.map((a) => ({ posicion: subir(a.posicion), normal: a.normal })), materiales: materialesPorFormato(globos) });
     }
     case "forma": {
       const armada = armarForma(pieza.forma);

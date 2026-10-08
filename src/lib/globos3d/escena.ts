@@ -11,7 +11,7 @@ import { arbolEnIngles } from "./arboles-globos";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
-import { PREFIJO_SALA, PREFIJO_UTILERIA, coloresEnIngles, enLista, siluetaEnIngles, tonoEnIngles } from "./render-ia";
+import { PREFIJO_SALA, PREFIJO_UTILERIA, colorDeGloboEnIngles, coloresEnIngles, enLista, siluetaEnIngles, tonoEnIngles } from "./render-ia";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
 
 /**
@@ -504,8 +504,11 @@ export function piezaEnIngles(pieza: Pieza, caja: Caja): string {
     case "mural": return `${muralEnIngles(pieza.mural)} ${ancho} wide and ${alto} tall`;
     case "techo": return techoEnIngles(pieza.techo);
     case "arbol_globos": return `${arbolEnIngles(pieza.arbol)} ${alto} tall`;
+    case "modulo": return `a single balloon ${MODULO_EN[pieza.modulo]} (${pieza.colores.length} balloons tied together at the center)`;
   }
 }
+
+const MODULO_EN: Readonly<Record<Extract<Pieza, { tipo: "modulo" }>["modulo"], string>> = { pareja: "duplet", trio: "triplet", cuarteto: "quartet", quinteto: "quintet", sexteto: "sextet" };
 
 const LUGAR_EN: Readonly<Record<ParedSala, string>> = { fondo: "on the back wall", izquierda: "on the left wall", derecha: "on the right wall" };
 
@@ -518,7 +521,7 @@ const LUGAR_EN: Readonly<Record<ParedSala, string>> = { fondo: "on the back wall
  * `descripcionRender3d`.
  */
 export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
-  const colorEn = (codigo: string) => referenciaPorCodigo(codigo)?.nombreEn ?? codigo;
+  const colorEn = (codigo: string) => { const ref = referenciaPorCodigo(codigo); return ref ? colorDeGloboEnIngles(ref) : codigo; };
   const lista = (codigos: readonly string[]) => enLista([...new Set(codigos.map(colorEn))]);
   const coloresDe = (pieza: Pieza, hecho: NodoArmado): string => {
     if (pieza.tipo === "arbol_globos") {

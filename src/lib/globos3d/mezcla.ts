@@ -151,27 +151,38 @@ export type ParedDecorada = {
  * Arma cada decoración de la mezcla una vez, la reparte en las anclas y la apoya sobre la pared: el plano de
  * atrás de la decoración queda sobre lo más adelantado de la superficie bajo ella (menos lo que cede el látex).
  */
+/**
+ * Dónde va cada decoración de la mezcla, sin armarla en la pared: las anclas que usa (en «fijo», los sitios de la foto
+ * en el marco de la pared) y qué elemento va en cuál, con su giro. Lo usa `decorarPared` y el editor solitario de una
+ * pared para poner cada decoración como una pieza apoyada sobre ella.
+ */
+export function sitiosDeMezcla(opciones: {
+  anclas: readonly AnclaParaMezcla[];
+  mezcla: MezclaDecoraciones;
+  limites?: { minX: number; maxX: number; minY: number; maxY: number };
+}, armadas: readonly DecoracionArmada[] = opciones.mezcla.elementos.map((e) => armarDecoracion(e.decoracion))): { anclas: readonly AnclaParaMezcla[]; colocaciones: Colocacion[] } {
+  const { mezcla, limites } = opciones;
+  const piezas = armadas.map((a, i) => ({ radioCm: a.diametroCm / 2, girable: GIRABLES.has(mezcla.elementos[i]!.decoracion.tipo) }));
+  if (mezcla.modo !== "fijo") return { anclas: opciones.anclas, colocaciones: repartirMezcla(opciones.anclas, piezas, mezcla, limites) };
+  // Sitios medidos en la foto, relativos a la pared (si no hay límites, a lo que ocupan las anclas).
+  const xs = opciones.anclas.map((a) => a.posicion.x), ys = opciones.anclas.map((a) => a.posicion.y);
+  const caja = limites ?? { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+  const fijas = (mezcla.fijas ?? []).filter((f) => f.elemento >= 0 && f.elemento < mezcla.elementos.length);
+  return {
+    anclas: fijas.map((f) => ({ posicion: { x: caja.minX + f.u * (caja.maxX - caja.minX), y: caja.minY + f.v * (caja.maxY - caja.minY), z: 0 }, normal: { x: 0, y: 0, z: 1 } })),
+    colocaciones: fijas.map((f, i) => ({ elemento: f.elemento, ancla: i, giroRad: (f.giroGrados * Math.PI) / 180 })),
+  };
+}
+
 export function decorarPared(opciones: {
   anclas: readonly AnclaParaMezcla[];
   mezcla: MezclaDecoraciones;
   superficie?: (x: number, y: number) => number;
   limites?: { minX: number; maxX: number; minY: number; maxY: number };
 }): ParedDecorada {
-  const { mezcla, superficie, limites } = opciones;
+  const { mezcla, superficie } = opciones;
   const armadas: DecoracionArmada[] = mezcla.elementos.map((e) => armarDecoracion(e.decoracion));
-  const piezas = armadas.map((a, i) => ({ radioCm: a.diametroCm / 2, girable: GIRABLES.has(mezcla.elementos[i]!.decoracion.tipo) }));
-  let anclas = opciones.anclas;
-  let colocaciones: Colocacion[];
-  if (mezcla.modo === "fijo") {
-    // Sitios medidos en la foto, relativos a la pared (si no hay límites, a lo que ocupan las anclas).
-    const xs = anclas.map((a) => a.posicion.x), ys = anclas.map((a) => a.posicion.y);
-    const caja = limites ?? { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
-    const fijas = (mezcla.fijas ?? []).filter((f) => f.elemento >= 0 && f.elemento < mezcla.elementos.length);
-    anclas = fijas.map((f) => ({ posicion: { x: caja.minX + f.u * (caja.maxX - caja.minX), y: caja.minY + f.v * (caja.maxY - caja.minY), z: 0 }, normal: { x: 0, y: 0, z: 1 } }));
-    colocaciones = fijas.map((f, i) => ({ elemento: f.elemento, ancla: i, giroRad: (f.giroGrados * Math.PI) / 180 }));
-  } else {
-    colocaciones = repartirMezcla(anclas, piezas, mezcla, limites);
-  }
+  const { anclas, colocaciones } = sitiosDeMezcla(opciones, armadas);
   const globos: GloboDecoracion[] = [];
   const tubos: TuboDecoracion[] = [];
   const listas: MaterialDecoracion[][] = [];

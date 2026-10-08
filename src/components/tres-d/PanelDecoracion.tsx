@@ -22,6 +22,36 @@ export function nombreDecoracion(decoracion: Decoracion): string {
   return `${TIPOS_DECORACION.find((t) => t.id === decoracion.tipo)?.nombre ?? "Decoración"}${color ? ` ${color}` : " (editada)"}`;
 }
 
+/** Tipo, predefinidas y todas las propiedades de una decoración (el editor solitario de una decoración). */
+export function EditorDecoracionCompleto({ decoracion, onDecoracion }: { decoracion: Decoracion; onDecoracion: (d: Decoracion) => void }) {
+  const elegirTipo = (tipo: TipoDecoracion) => { if (tipo !== decoracion.tipo) onDecoracion(predefinidasDe(tipo)[0]!.decoracion); };
+  // Las de Halloween (ojos, araña, calabazas…) no tienen editor por propiedades: solo su predefinida.
+  const conEditor = TIPOS_DECORACION.some((t) => t.id === decoracion.tipo);
+  return (
+    <>
+      <section className="flex flex-col gap-2" aria-label="Decoración">
+        <h3 className="taller-rotulo">Decoración</h3>
+        <div className="grid grid-cols-2 gap-1">
+          {TIPOS_DECORACION.map((t) => (
+            <button key={t.id} type="button" title={t.descripcion} onClick={() => elegirTipo(t.id)} aria-pressed={decoracion.tipo === t.id} className={`${BOTON} ${decoracion.tipo === t.id ? ACTIVO : INACTIVO}`}>{t.nombre}</button>
+          ))}
+        </div>
+        {conEditor && <>
+          <p className="text-xs text-texto-suave">{TIPOS_DECORACION.find((t) => t.id === decoracion.tipo)?.descripcion}</p>
+          <div className="grid grid-cols-2 gap-1">
+            {predefinidasDe(decoracion.tipo).map((d) => (
+              <button key={d.id} type="button" title={d.descripcion} onClick={() => onDecoracion(d.decoracion)} className={`${BOTON} ${JSON.stringify(d.decoracion) === JSON.stringify(decoracion) ? ACTIVO : INACTIVO}`}>{d.nombre}</button>
+            ))}
+          </div>
+          <p className="text-xs text-texto-suave">Elige una para empezar; después cambia cualquier propiedad.</p>
+        </>}
+        {!conEditor && <p className="text-xs text-texto-suave">Esta decoración se arma tal cual (sin propiedades por cambiar): cambia sus colores con «Colores de la pieza» o elige otro tipo arriba.</p>}
+      </section>
+      {conEditor && <EditorDecoracion decoracion={decoracion} onDecoracion={onDecoracion} />}
+    </>
+  );
+}
+
 function EditorDecoracion({ decoracion, onDecoracion }: { decoracion: Decoracion; onDecoracion: (d: Decoracion) => void }) {
   switch (decoracion.tipo) {
     case "flor": return <EditorFlor flor={decoracion.propiedades} onFlor={(propiedades) => onDecoracion({ tipo: "flor", propiedades })} />;
@@ -29,6 +59,7 @@ function EditorDecoracion({ decoracion, onDecoracion }: { decoracion: Decoracion
     case "mono": return <EditorMono valor={decoracion.propiedades} onCambio={(propiedades) => onDecoracion({ tipo: "mono", propiedades })} />;
     case "estrella": return <EditorEstrella valor={decoracion.propiedades} onCambio={(propiedades) => onDecoracion({ tipo: "estrella", propiedades })} />;
     case "flor_corazones": return <EditorFlorCorazones valor={decoracion.propiedades} onCambio={(propiedades) => onDecoracion({ tipo: "flor_corazones", propiedades })} />;
+    default: return null;
   }
 }
 
@@ -50,6 +81,8 @@ type Props = {
   /** Cuántas de cada elemento de la mezcla quedaron puestas (las que cupieron). */
   puestas: readonly number[];
   onCelebra: () => void;
+  /** Solo la mezcla de la pared (en el editor solitario de una pared): sin «Celebra» ni «Dónde va». */
+  soloMezcla?: boolean;
 };
 
 /**
@@ -58,19 +91,19 @@ type Props = {
  * anclas por proporciones o en ciclo, con semilla fija; «Pared de Celebra ed. 27» deja todo como la foto.
  */
 export function PanelDecoracion(props: Props) {
-  const { decoracion, onDecoracion, editando, onEditando, donde, onDonde, regla, onRegla, usarMezcla, onUsarMezcla, mezcla, onMezcla, tipoPared, puestas, onCelebra } = props;
+  const { decoracion, onDecoracion, editando, onEditando, donde, onDonde, regla, onRegla, usarMezcla, onUsarMezcla, mezcla, onMezcla, tipoPared, puestas, onCelebra, soloMezcla = false } = props;
   const enMezcla = donde === "pared" && usarMezcla;
   const elegirTipo = (tipo: TipoDecoracion) => { if (tipo !== decoracion.tipo) onDecoracion(predefinidasDe(tipo)[0]!.decoracion); };
   const ponElemento = (i: number, cambio: Partial<MezclaDecoraciones["elementos"][number]>) => onMezcla({ ...mezcla, elementos: mezcla.elementos.map((e, k) => (k === i ? { ...e, ...cambio } : e)) });
 
   return (
     <>
-      <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
+      {!soloMezcla && <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
         <button type="button" onClick={onCelebra} className={`inline-flex items-center justify-center gap-2 ${BOTON} ${INACTIVO}`}>
           <Sparkles className="size-4 text-acento" aria-hidden /> Pared de Celebra ed. 27
         </button>
         <p className="text-xs text-texto-suave">Malla de trenzas rosada alternando R-12 y R-9, con sus 25 decoraciones cada una en su sitio de la foto (p. 42).</p>
-      </section>
+      </section>}
 
       {!enMezcla && (
         <>
@@ -93,7 +126,7 @@ export function PanelDecoracion(props: Props) {
         </>
       )}
 
-      <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
+      {!soloMezcla && <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
         <h2 className="text-sm font-semibold text-texto">Dónde va</h2>
         <div className="grid grid-cols-2 gap-1">
           {([["sola", "Sola"], ["columna", "En la columna"], ["arco", "En el arco"], ["pared", "En la pared"]] as const).map(([valor, etiqueta]) => (
@@ -118,7 +151,7 @@ export function PanelDecoracion(props: Props) {
             </p>
           </>
         )}
-      </section>
+      </section>}
 
       {enMezcla && (
         <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde">

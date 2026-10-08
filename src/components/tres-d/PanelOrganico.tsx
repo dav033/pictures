@@ -32,11 +32,42 @@ export function opcionesDeAjustes(a: AjustesOrganico): OpcionesOrganico {
   return { ...BASE, semilla: a.semilla, densidad: a.densidad, colores: a.colores, huecosFlores: a.conFlores ? a.huecosFlores : 0, tramos: [columna, ...BASE.tramos.slice(1)] };
 }
 
-const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
+/**
+ * Los ajustes de pantalla de una pieza orgánica ya armada (el editor solitario): semilla, densidad, colores y flores;
+ * alto y grosor salen de su primer tramo si es una columna (la de XV o una igual).
+ */
+export function ajustesDeOpciones(o: OpcionesOrganico, conFlores: boolean): AjustesOrganico & { esColumna: boolean } {
+  const tramo = o.tramos[0];
+  const esColumna = tramo?.id === "columna" && tramo.recorrido.length > 1 && tramo.grosor.length >= 4;
+  const punta = esColumna ? tramo.grosor[3]!.radioCm : 27;
+  const fin = esColumna ? tramo.recorrido[tramo.recorrido.length - 1]!.y : 0;
+  return {
+    semilla: o.semilla, densidad: o.densidad ?? 1, colores: o.colores.map((c) => ({ ...c })), huecosFlores: o.huecosFlores || BASE.huecosFlores, conFlores, conPedestal: false,
+    altoCm: esColumna ? Math.round(fin + punta * 0.8) : 230, grosor: esColumna ? Math.round((tramo.grosor[0]!.radioCm / 42) * 100) / 100 : 1, esColumna,
+  };
+}
+
+/**
+ * Lleva los ajustes de pantalla a las opciones de una pieza orgánica: semilla, densidad, colores y huecos de flores sobre
+ * las que ya tiene; si es una columna y cambiaron su alto o su grosor, su primer tramo se rehace como la de XV.
+ */
+export function aplicarAjustes(o: OpcionesOrganico, antes: AjustesOrganico, a: AjustesOrganico): OpcionesOrganico {
+  const forma = a.altoCm !== antes.altoCm || a.grosor !== antes.grosor;
+  const tramos = forma ? [formaColumna({ altoCm: a.altoCm, radioBaseCm: 42 * a.grosor, radioMedioCm: 36 * a.grosor, radioPuntaCm: 27 * a.grosor, inclinacionCm: 8, serpenteoCm: 3 }), ...o.tramos.slice(1)] : o.tramos;
+  return { ...o, semilla: a.semilla, densidad: a.densidad, colores: a.colores, huecosFlores: a.conFlores ? a.huecosFlores : 0, tramos };
+}
+
+const BOTON = "min-h-11 rounded-[9px] px-2 text-sm ring-1 transition-colors lg:min-h-8 lg:text-xs";
 const INACTIVO = "bg-superficie text-texto ring-borde hover:bg-superficie-suave";
 
 /** Editor de la columna orgánica: forma, azar (semilla), densidad, mezcla de colores por peso, flores y pedestal. */
-export function PanelOrganico({ valor, onCambio }: { valor: AjustesOrganico; onCambio: (v: AjustesOrganico) => void }) {
+export function PanelOrganico({ valor, onCambio, conForma = true, conPedestal = true }: {
+  valor: AjustesOrganico; onCambio: (v: AjustesOrganico) => void;
+  /** Alto y grosor (solo si es una columna). */
+  conForma?: boolean;
+  /** «Mostrar el pedestal» (en la escena el pedestal es una pieza aparte). */
+  conPedestal?: boolean;
+}) {
   const pon = (cambio: Partial<AjustesOrganico>) => onCambio({ ...valor, ...cambio });
   const ponColor = (i: number, cambio: Partial<ColorOrganico>) => pon({ colores: valor.colores.map((c, j) => (j === i ? { ...c, ...cambio } : c)) });
   const totalPeso = valor.colores.reduce((s, c) => s + c.peso, 0) || 1;
@@ -46,8 +77,8 @@ export function PanelOrganico({ valor, onCambio }: { valor: AjustesOrganico; onC
         <h2 className="text-sm font-semibold text-texto">Columna orgánica</h2>
         <button type="button" onClick={() => onCambio(AJUSTES_QUINCE_AZUL)} className={`${BOTON} ${INACTIVO}`}>Columna azul de XV con guirnalda</button>
         <p className="text-xs text-texto-suave">{COLUMNA_QUINCE_AZUL.descripcion}</p>
-        <Deslizador id="org-alto" etiqueta="Alto de la columna" valor={valor.altoCm} min={150} max={280} paso={5} texto={`${(valor.altoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m`} onCambio={(v) => pon({ altoCm: v })} />
-        <Deslizador id="org-grosor" etiqueta="Grosor" valor={valor.grosor} min={0.7} max={1.3} paso={0.05} texto={`${Math.round(valor.grosor * 100)} %`} onCambio={(v) => pon({ grosor: v })} />
+        {conForma && <Deslizador id="org-alto" etiqueta="Alto de la columna" valor={valor.altoCm} min={150} max={280} paso={5} texto={`${(valor.altoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m`} onCambio={(v) => pon({ altoCm: v })} />}
+        {conForma && <Deslizador id="org-grosor" etiqueta="Grosor" valor={valor.grosor} min={0.7} max={1.3} paso={0.05} texto={`${Math.round(valor.grosor * 100)} %`} onCambio={(v) => pon({ grosor: v })} />}
         <Deslizador id="org-densidad" etiqueta="Densidad" valor={valor.densidad} min={0.8} max={1.3} paso={0.05} texto={`${Math.round(valor.densidad * 100)} %`} onCambio={(v) => pon({ densidad: v })} />
         <Deslizador id="org-semilla" etiqueta="Variante (azar)" valor={valor.semilla} min={1} max={40} paso={1} texto={`#${valor.semilla}`} onCambio={(v) => pon({ semilla: v })} />
       </section>
@@ -83,9 +114,9 @@ export function PanelOrganico({ valor, onCambio }: { valor: AjustesOrganico; onC
           <input id="org-flores" type="checkbox" checked={valor.conFlores} onChange={(e) => pon({ conFlores: e.target.checked })} /> Flores artificiales en los huecos
         </label>
         {valor.conFlores && <Deslizador id="org-huecos" etiqueta="Racimos de flores" valor={valor.huecosFlores} min={2} max={30} paso={1} texto={`${valor.huecosFlores}`} onCambio={(v) => pon({ huecosFlores: v })} />}
-        <label className="flex items-center gap-2 text-sm text-texto" htmlFor="org-pedestal">
+        {conPedestal && <label className="flex items-center gap-2 text-sm text-texto" htmlFor="org-pedestal">
           <input id="org-pedestal" type="checkbox" checked={valor.conPedestal} onChange={(e) => pon({ conPedestal: e.target.checked })} /> Mostrar el pedestal
-        </label>
+        </label>}
         <p className="text-xs text-texto-suave">Las flores son follaje: no cuentan como globos en la cotización.</p>
       </section>
     </>

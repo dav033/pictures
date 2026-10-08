@@ -321,6 +321,7 @@ function medidasDe(p: Pieza): string {
     case "mural": return `mural ${p.mural.matriz.filas[0]?.length ?? 0}×${p.mural.matriz.filas.length} celdas · ${p.mural.disposicion} · ${p.mural.grande.formatoId}`;
     case "techo": return `techo: ${p.techo.elementos.map((e) => e.tipo).join(", ")}`;
     case "arbol_globos": return `${p.arbol.copa.tipo === "palmera" ? "palmera" : "árbol de racimos"} · tronco ${r0(p.arbol.tronco.altoCm)} cm`;
+    case "modulo": return `${p.modulo} de ${p.formatoId} · ${r0(p.infladoCm)} cm`;
   }
 }
 
@@ -727,6 +728,11 @@ function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[]):
     case "mural":
     case "techo":
       return props.colores ? recolorearEnOrden(base, props.colores, notas) : base;
+    case "modulo": {
+      if (!props.colores?.length) return base;
+      const pedidos = props.colores.map((c) => resolverColorFlexible(c, [base.formatoId], notas));
+      return { ...base, colores: base.colores.map((_, i) => pedidos[i % pedidos.length]!) };
+    }
   }
 }
 
