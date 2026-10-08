@@ -534,18 +534,34 @@
       "origen": "real",
       "texto": "baja la coolumna a un metro y pongle uy n glboo r35 de revelacion de genero",
       "cobertura": ["medidas", "formatos", "erratas"],
-      "backlog": "poner un globo suelto (R-36) encima de una columna: poner_sobre solo acepta decoraciones predefinidas, no un globo de formato libre; y la tabla no tiene «r35» (el dueño quiso R-36)",
+      "nota": "«r35» no existe: el dueño quiso R-36. El globo va de remate (poner_remate), no suelto con poner_sobre. El alto medido incluye el R-36 de arriba.",
       "contexto": { "pasos": [
         { "herramienta": "agregar_pieza", "args": { "tipo": "arco", "alto_cm": 150, "ancho_cm": 200, "colores": ["azul pastel", "rosado pastel"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } },
         { "herramienta": "agregar_pieza", "args": { "tipo": "columna", "colores": ["azul pastel", "rosado pastel"], "donde": { "en": "piso", "x_cm": 175, "z_cm": -150 } } }
       ] },
       "checks": [
-        { "tipo": "medida", "en": { "ids": ["columna"] }, "eje": "alto", "min": 90, "max": 130 },
-        { "tipo": "conteo", "en": { "todos": true }, "selector": { "formatos": ["R-36"] }, "compara": "min", "valor": 1 }
+        { "tipo": "medida", "en": { "ids": ["columna"] }, "eje": "alto", "min": 170, "max": 230 },
+        { "tipo": "conteo", "en": { "ids": ["columna"] }, "selector": { "formatos": ["R-36"] }, "compara": "min", "valor": 1 }
       ],
       "esperado": { "herramientas": [
         { "herramienta": "cambiar_pieza", "args": { "id": "columna", "alto_cm": 100 } },
-        { "herramienta": "poner_sobre", "args": { "decoracion_id": "doble_globo", "padre_id": "columna", "altura_cm": 100 } }
+        { "herramienta": "poner_remate", "args": { "ids": ["columna"], "formato": "R-36" } }
+      ] }
+    },
+    {
+      "id": "real-40-r36-arriba-de-cada-columna",
+      "origen": "real",
+      "texto": "agrega un globo r36 arriba de cada columna",
+      "cobertura": ["formatos", "grupos", "decoraciones_sobre"],
+      "nota": "Captura del dueño 2026-10-08: con globo suelto + poner_sobre quedó de lado y metido en la columna. Va de remate.",
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["columna-izq", "columna-der"] },
+        { "tipo": "conteo", "en": { "ids": ["columna-izq"] }, "selector": { "formatos": ["R-36"] }, "compara": "min", "valor": 1 },
+        { "tipo": "conteo", "en": { "ids": ["columna-der"] }, "selector": { "formatos": ["R-36"] }, "compara": "min", "valor": 1 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "poner_remate", "args": { "formato": "R-36" } }
       ] }
     },
     {

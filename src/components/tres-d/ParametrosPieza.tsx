@@ -21,6 +21,7 @@ import { AJUSTES_QUINCE_AZUL, PanelOrganico, ajustesDeOpciones, aplicarAjustes, 
 import { EditorDecoracionCompleto, PanelDecoracion, nombreDecoracion } from "./PanelDecoracion";
 import { CHIP, CHIP_ON, centimetros, metros } from "./ui-taller";
 import { EditorTrazo } from "./EditorTrazo";
+import { EditorRemate } from "./EditorRemate";
 import { piezaDeGenerador } from "@/lib/globos3d/generadores-organicos";
 import { MEZCLA_TRAZO, esColumnaTrazo, puntosDeSilueta } from "@/lib/globos3d/trazo-organico";
 import type { ColorOrganico } from "@/lib/globos3d/organico";
@@ -133,7 +134,13 @@ function tipoColumnaDe(p: Pieza): TipoColumna {
   return "organica";
 }
 
+/** Cambia el tipo de columna conservando su alto (sin el globo de arriba), sus colores y su globo de arriba. */
 function columnaDeTipo(p: Pieza, tipo: TipoColumna): Pieza {
+  const nueva = columnaDeTipoSinRemate({ ...p, remate: undefined }, tipo);
+  return p.remate ? { ...nueva, remate: p.remate } : nueva;
+}
+
+function columnaDeTipoSinRemate(p: Pieza, tipo: TipoColumna): Pieza {
   const { min, max } = armarPieza(p).caja;
   const alto = Math.round(max.y - min.y);
   const codigos = p.tipo === "columna" ? p.colores : p.tipo === "organico" ? p.opciones.colores.map((c) => c.codigo) : ["009", "005"];
@@ -417,6 +424,7 @@ export function ParametrosPieza({ escena, raizId, nodo, onPieza, onEscena, vista
     <>
       {(tipoColumna || tipoArco) && cabecera}
       {cuerpo}
+      {tipoColumna && <EditorRemate pieza={p} onPieza={onPieza} />}
       {p.tipo === "decoracion" && <section><p className="flex items-center gap-1.5 text-xs text-taller-suave"><Sparkles className="size-3.5" aria-hidden />Para colgarla de otra pieza o repetirla cada N anclas, usa «Lugar» en la escena.</p></section>}
     </>
   );

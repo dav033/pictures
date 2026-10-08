@@ -48,7 +48,7 @@ export const PARTES_ESTRUCTURA: readonly ParteEstructura[] = [
   { id: "borde", descripcion: "Hilera de globos que contornea una forma.", en: ["border", "edge", "outline"], sinonimos: ["contorno", "orilla"] },
   { id: "marco", descripcion: "Marco de una forma o un aro: el anillo de globos alrededor.", en: ["frame", "ring", "hoop"], sinonimos: ["aro"] },
   { id: "acento", descripcion: "Globos sueltos de otro color o tamaño sobre otra parte (acentos de una forma, lo que va encima de un mural, del tronco).", en: ["accent", "accent balloons", "highlights"], sinonimos: ["acentos", "detalles", "toques"] },
-  { id: "remate", descripcion: "Globo grande que corona una estructura (punta de un cono, de un árbol, de un festón).", en: ["topper", "crown", "finial"], sinonimos: ["punta", "corona"] },
+  { id: "remate", descripcion: "Globo que corona una estructura: el de arriba de una columna, la punta de un cono, de un árbol, de un festón.", en: ["topper", "crown", "finial"], sinonimos: ["punta", "corona", "globo de arriba", "globo de encima"] },
   { id: "canasta", descripcion: "Canasta de un globo aerostático.", en: ["basket", "gondola"] },
   { id: "letras", descripcion: "Letras y números de globos; cada carácter es «letras/<carácter>» («letras/a», «letras/2»).", en: ["letters", "numbers", "lettering"], sinonimos: ["letra", "numero", "numeros", "texto"] },
   // Techo

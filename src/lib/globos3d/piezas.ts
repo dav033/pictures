@@ -22,6 +22,7 @@ import { aplicarImpresos, type ImpresoEnPieza } from "./impresos-catalogo";
 import { armarMural, type OpcionesMural } from "./murales";
 import { armarTecho, type OpcionesTecho } from "./techo";
 import { armarArbolGlobos, type OpcionesArbolGlobos } from "./arboles-globos";
+import { aplicarRemate, type RemateGlobo } from "./remate";
 import { aplicarRepintes, type Repinte } from "./repintes";
 import { parteDeTramo } from "./partes-estructuras";
 
@@ -99,6 +100,8 @@ export type Pieza = PiezaBase & {
   impresos?: ImpresoEnPieza[];
   /** Reglas de color por formato/parte/color que se aplican al terminar de armarla (las pone `editar_globos`; ver `repintes.ts`). */
   repintes?: Repinte[];
+  /** El globo de arriba (columnas): amarrado sobre lo más alto de la pieza, con el nudo abajo (ver `remate.ts`). */
+  remate?: RemateGlobo;
 };
 
 export type TipoPieza = Pieza["tipo"];
@@ -147,7 +150,8 @@ function conCaja(p: Omit<PiezaArmada, "caja">): PiezaArmada {
 
 
 export function armarPieza(pieza: Pieza): PiezaArmada {
-  const base = armarPiezaBase(pieza);
+  const sola = armarPiezaBase(pieza);
+  const base = pieza.remate ? aplicarRemate(sola, pieza.remate) : sola;
   const armada = pieza.repintes?.length ? aplicarRepintes(base, pieza.repintes) : base;
   if (!pieza.impresos?.length) return armada;
   const conImpresos = aplicarImpresos(armada.globos, armada.materiales, pieza.impresos);
