@@ -20,6 +20,18 @@ import { LOTE_15 } from "./lote-15";
 import { LOTE_16 } from "./lote-16";
 import { LOTE_17 } from "./lote-17";
 import { LOTE_18 } from "./lote-18";
+import { LOTE_19 } from "./lote-19";
+import { LOTE_20 } from "./lote-20";
+import { LOTE_21 } from "./lote-21";
+import { LOTE_22 } from "./lote-22";
+import { LOTE_23 } from "./lote-23";
+import { LOTE_24 } from "./lote-24";
+import { LOTE_25 } from "./lote-25";
+import { LOTE_26 } from "./lote-26";
+import { LOTE_27 } from "./lote-27";
+import { LOTE_28 } from "./lote-28";
+import { LOTE_29 } from "./lote-29";
+import { LOTE_30 } from "./lote-30";
 import { IDEAS_IMPRESOS } from "../ideas-impresos";
 
 /** Etiqueta de la tienda → ocasión de la biblioteca (las mismas palabras de `OCASIONES`). */
@@ -62,4 +74,4 @@ function deFormas(): IdeaDigitalizada[] {
 }
 
 /** Todas las ideas de sempertex.com digitalizadas (cada lote lo llena un encargo distinto, sin pisarse). */
-export const IDEAS_SEMPERTEX: readonly IdeaDigitalizada[] = [...LOTE_01, ...LOTE_02, ...LOTE_03, ...LOTE_04, ...LOTE_05, ...LOTE_06, ...LOTE_07, ...LOTE_08, ...LOTE_09, ...LOTE_10, ...LOTE_11, ...LOTE_12, ...LOTE_13, ...LOTE_14, ...LOTE_15, ...LOTE_16, ...LOTE_17, ...LOTE_18, ...deFiguras(), ...deFormas(), ...IDEAS_IMPRESOS];
+export const IDEAS_SEMPERTEX: readonly IdeaDigitalizada[] = [...LOTE_01, ...LOTE_02, ...LOTE_03, ...LOTE_04, ...LOTE_05, ...LOTE_06, ...LOTE_07, ...LOTE_08, ...LOTE_09, ...LOTE_10, ...LOTE_11, ...LOTE_12, ...LOTE_13, ...LOTE_14, ...LOTE_15, ...LOTE_16, ...LOTE_17, ...LOTE_18, ...LOTE_19, ...LOTE_20, ...LOTE_21, ...LOTE_22, ...LOTE_23, ...LOTE_24, ...LOTE_25, ...LOTE_26, ...LOTE_27, ...LOTE_28, ...LOTE_29, ...LOTE_30, ...deFiguras(), ...deFormas(), ...IDEAS_IMPRESOS];
