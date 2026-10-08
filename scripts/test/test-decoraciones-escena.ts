@@ -139,3 +139,12 @@ assert.ok(armadaTecho.cilindros.some((c) => c.nodo === delTecho.id), "con su hil
 subieronExacto(armadaBase, armadaTecho, armarDecoracion(corazones).materiales, 1, "techo");
 
 console.log(`OK decoraciones en la escena: ${grupos.length} grupos, ${ids.length} predefinidas con miniatura; colgada ×${reparto.copias} (cada ${reparto.cada}), pared, piso y techo.`);
+
+// Orientación según el sitio: una decoración guardada sin `deFrente` que va en una pared se arma de frente igual.
+{
+  const flor = DECORACIONES_PREDEFINIDAS[0]!.decoracion;
+  const enPared: Escena = { sala: SALA_INICIAL, nodos: [{ id: "f", nombre: "Flor", pieza: { tipo: "decoracion", decoracion: flor }, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 150 } }] };
+  const conBandera: Escena = { ...enPared, nodos: [{ ...enPared.nodos[0]!, pieza: { tipo: "decoracion", decoracion: flor, deFrente: true } }] };
+  assert.deepEqual(armarEscena(enPared).globos, armarEscena(conBandera).globos, "en la pared, de frente aunque no traiga la bandera");
+  console.log("OK test-decoraciones-escena: la decoración en una pared siempre va de frente");
+}

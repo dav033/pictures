@@ -217,6 +217,21 @@ const HILO = { radioCm: 0.25, hex: "#d9d9de" };
  * Arma la escena en coordenadas del mundo. Determinista: la misma escena da siempre lo mismo. `cache` (opcional)
  * guarda las piezas ya armadas por su JSON, para no rehacer un arco orgánico al mover otra pieza.
  */
+/**
+ * Una decoración se orienta según dónde va, no según cómo quedó guardada: en una pared siempre de frente (mirando
+ * al salón); colgada de un ancla, en su espacio propio (+y), que `colocarEn` gira hacia fuera del ancla. Así no
+ * se queda mirando al techo al cambiarla por otra predefinida o al pasarla a una pared.
+ */
+function orientada(nodo: NodoEscena): Pieza {
+  const { pieza, colocacion } = nodo;
+  if (pieza.tipo !== "decoracion") return pieza;
+  const deFrente = colocacion.en === "pared" ? true : colocacion.en === "ancla" ? false : Boolean(pieza.deFrente);
+  if (deFrente === Boolean(pieza.deFrente)) return pieza;
+  const { deFrente: _anterior, ...resto } = pieza;
+  void _anterior;
+  return deFrente ? { ...resto, deFrente: true } : resto;
+}
+
 export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): EscenaArmada {
   const piezaArmada = (pieza: Pieza): PiezaArmada => {
     if (!cache) return armarPieza(pieza);
@@ -244,7 +259,7 @@ export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): E
     enCurso.add(nodo.id);
     let resultado: NodoArmado;
     try {
-      const armada = piezaArmada(nodo.pieza);
+      const armada = piezaArmada(orientada(nodo));
       const c = nodo.colocacion;
       if (c.en === "ancla") {
         const padre = porId.get(c.padreId);
