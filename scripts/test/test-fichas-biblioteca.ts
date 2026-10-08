@@ -55,7 +55,7 @@ console.log("OK guirnalda orgánica");
 // ----------------------------------------------------------------------------------------------------------
 
 const dueno = fichaDeItem(itemDe("referencia:dino-jungla-mesa"), { cache });
-assert.deepEqual(dueno.ocasiones, ["cumpleanos", "infantil"], "las ocasiones se guardan tal como están");
+assert.deepEqual(dueno.ocasiones, ["cumpleanos", "fiesta-infantil"], "las ocasiones se guardan tal como están (ids de la taxonomía)");
 assert.equal(dueno.fuente?.tipo, "referencia-dueno");
 assert.equal(dueno.tipo, "escena");
 incluye(dueno, "cumpleaños", "infantil", "dueño", "Pinterest", "Escena completa");
@@ -98,7 +98,7 @@ const clasificacion = { celebraciones: ["graduacion", "cumpleanos-adulto"], tema
 const clasificada = fichaDeItem(columna, { cache, clasificacion });
 assert.deepEqual(clasificada.clasificacion, clasificacion);
 assert.equal(rColumna.clasificacion, null);
-incluye(clasificada, "Celebraciones: graduacion, cumpleanos-adulto", "Temáticas: elegante-lujo, metalico-cromado");
+incluye(clasificada, "Celebraciones: Graduación, Cumpleaños adulto", "Temáticas: Elegante / lujo, Metálico / cromado");
 assert.notEqual(clasificada.hash, rColumna.hash, "la clasificación cambia lo que se embebe");
 const mismaEnOtroOrden = fichaDeItem(columna, { cache, clasificacion: { celebraciones: [...clasificacion.celebraciones].reverse(), tematicas: [...clasificacion.tematicas].reverse() } });
 assert.equal(mismaEnOtroOrden.hash, clasificada.hash, "el orden de la clasificación no cambia la huella");

@@ -1,4 +1,5 @@
 import { SIN_PARTE } from "@/lib/globos3d/partes-globos";
+import { celebracionPorId, tematicaPorId } from "./taxonomia-celebraciones";
 import type { LineaParteRegistro, ProductoRegistro, RegistroTaller } from "./fichas-tipos";
 import {
   FRASE_TIPO_ITEM, descripcionDeParte, esTubito, frasesFuente, nombreComercialFormato, ocasionLegible, ordenFormato, siluetasDe,
@@ -102,8 +103,8 @@ function redactar(d: DatosFicha, n: Nivel, conGlosario: boolean): string {
   if (medidas) bloques.push(medidas);
   const ocasiones = d.ocasiones.map(ocasionLegible);
   if (ocasiones.length) bloques.push(ocasiones.length === 1 && ocasiones[0] === "general" ? "Ocasión: general, sirve para cualquier fiesta." : `Ocasiones: ${ocasiones.join(", ")}.`);
-  if (d.clasificacion?.celebraciones.length) bloques.push(`Celebraciones: ${d.clasificacion.celebraciones.join(", ")}.`);
-  if (d.clasificacion?.tematicas.length) bloques.push(`Temáticas: ${d.clasificacion.tematicas.join(", ")}.`);
+  if (d.clasificacion?.celebraciones.length) bloques.push(`Celebraciones: ${d.clasificacion.celebraciones.map((id) => celebracionPorId(id)?.nombre ?? id).join(", ")}.`);
+  if (d.clasificacion?.tematicas.length) bloques.push(`Temáticas: ${d.clasificacion.tematicas.map((id) => tematicaPorId(id)?.nombre ?? id).join(", ")}.`);
   if (d.fuente) bloques.push(frasesFuente(d.fuente));
   if (conGlosario) {
     const explicadas = d.partes.map((p) => ({ p, texto: descripcionDeParte(p) })).filter((x): x is { p: string; texto: string } => x.texto !== null).slice(0, 4);

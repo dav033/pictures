@@ -9,6 +9,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { BIBLIOTECA_FABRICA, indexarEscena, unirBiblioteca, type ItemBiblioteca } from "../../src/lib/globos3d/biblioteca";
 import type { PiezaArmada } from "../../src/lib/globos3d/piezas";
+import { clasificacionDe } from "../../src/lib/taller/clasificacion-biblioteca";
 import { contarPalabras, fichaDeItem, type RegistroTaller } from "../../src/lib/taller/fichas";
 
 const RAIZ = path.resolve(__dirname, "../..");
@@ -40,7 +41,7 @@ function main() {
   const lentos: Array<{ id: string; ms: number }> = [];
   for (const item of items) {
     const t0 = Date.now();
-    try { registros.push(fichaDeItem(item, { cache })); } catch (e) { fallos.push({ id: item.id, fase: "ficha", error: mensaje(e) }); }
+    try { const clasificacion = clasificacionDe(item.id); registros.push(fichaDeItem(item, { cache, ...(clasificacion ? { clasificacion } : {}) })); } catch (e) { fallos.push({ id: item.id, fase: "ficha", error: mensaje(e) }); }
     lentos.push({ id: item.id, ms: Date.now() - t0 });
   }
   const msTotal = Date.now() - inicio;
