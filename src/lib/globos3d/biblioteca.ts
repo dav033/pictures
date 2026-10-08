@@ -21,6 +21,7 @@ import { metalizadoPorUrl } from "./metalizados";
 import { productosDeFiesta, type ProductoEnLista } from "./utileria";
 import { productoDeGlobo, type ProductoDeGlobo } from "./productos-tienda";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
+import { BASES_ORGANICAS, conjuntoDeBase, descripcionBase, piezaDeBase, tituloFuenteBase } from "./bases-organicas";
 
 /**
  * **La biblioteca** del taller: todo lo que se puede reutilizar, cada cosa por separado y encontrable.
@@ -63,8 +64,11 @@ export const OCASIONES: readonly string[] = [
   "halloween", "amor", "navidad", "cumpleaños", "infantil", "baby shower", "boda", "grado", "quince años", "bautizo y comunión", "día de la madre", "año nuevo", "general",
 ];
 
-/** De dónde viene: una idea de sempertex.com, una revista Celebra o algo propio. Solo urls públicas (https). */
-export type FuenteItem = { tipo: "idea-sempertex" | "celebra" | "propio"; titulo: string; url?: string; fotoUrl?: string };
+/**
+ * De dónde viene: una idea de sempertex.com, una revista Celebra, una referencia web (foto de un decorador o fabricante
+ * digitalizada como base orgánica, con su sitio y enlace) o algo propio. Solo urls públicas (https).
+ */
+export type FuenteItem = { tipo: "idea-sempertex" | "celebra" | "referencia-web" | "propio"; titulo: string; url?: string; fotoUrl?: string };
 
 /**
  * Una decoración pegada a la estructura sin ser hija de un ancla (los ojos sobre un racimo, la calabaza en el hueco de
@@ -939,6 +943,14 @@ function construirFabrica(): ItemBiblioteca[] {
     items.push(idea.contenido.tipo === "escena"
       ? itemDeEscena({ id: idea.id, nombre: idea.nombre, descripcion, ocasiones: idea.ocasiones, fuente, escena: idea.contenido.escena })
       : itemDePieza({ id: idea.id, nombre: idea.nombre, descripcion, ocasiones: idea.ocasiones, fuente, pieza: idea.contenido.pieza, ...(idea.contenido.sugerida ? { sugerida: idea.contenido.sugerida } : {}) }));
+  }
+  // Bases orgánicas de fotos de internet: estructura sola o con lo que lleva (flores colgadas, remate, marco).
+  for (const b of BASES_ORGANICAS) {
+    const fuente: FuenteItem = { tipo: "referencia-web", titulo: tituloFuenteBase(b), url: b.fuente.urlPagina, ...(b.fuente.urlImagen ? { fotoUrl: b.fuente.urlImagen } : {}) };
+    const conjunto = conjuntoDeBase(b);
+    items.push(conjunto
+      ? { id: b.id, tipo: "conjunto", nombre: b.nombre, descripcion: descripcionBase(b), ocasiones: [...b.ocasiones], fuente, contenido: { tipo: "conjunto", conjunto } }
+      : itemDePieza({ id: b.id, nombre: b.nombre, descripcion: descripcionBase(b), ocasiones: b.ocasiones, fuente, pieza: piezaDeBase(b) }));
   }
   return items;
 }

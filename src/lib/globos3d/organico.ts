@@ -83,8 +83,15 @@ export type RellenoOrganico = { formatoId: string; infladoCm: number; trios: boo
 /**
  * Un color de la paleta (código Sempertex de 3 cifras) con su peso relativo. `formatos` limita en qué globos va
  * (p. ej. el cristal con confeti solo en R-12 y R-18); `confeti` marca el globo para que el visor lo rellene.
+ * `tramos` limita en qué tramos va (por su `id`, o por el comienzo de su id hasta un «_»: «franja_1» vale para
+ * «franja_1» y «franja_1_izquierda», no para «franja_10»): así se hace un degradé o un bicolor por partes (la franja
+ * de abajo oscura y la de arriba clara, la espiral de otro color). El mismo código puede ir dos veces con tramos y pesos
+ * distintos. `franjas` lo limita además a unos trechos de su tramo (fracciones del recorrido, 0 al inicio y 1 al final):
+ * racimos de un color que se turnan o un degradé a lo largo de un arco sin partirlo en tramos. Las cuotas se reparten,
+ * en cada grupo de globos que admite los mismos colores, entre esos colores por sus pesos.
  */
-export type ColorOrganico = { codigo: string; peso: number; confeti?: boolean; formatos?: readonly string[] };
+export type FranjaColor = { desde: number; hasta: number };
+export type ColorOrganico = { codigo: string; peso: number; confeti?: boolean; formatos?: readonly string[]; tramos?: readonly string[]; franjas?: readonly FranjaColor[] };
 
 /** Un obstáculo cilíndrico vertical (un pedestal): `base` es el centro de su cara de abajo. */
 export type Cilindro = { id: string; base: Vec3; radioCm: number; altoCm: number };
@@ -1206,37 +1213,63 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
       if (distancia(a.c, b.c) <= a.r + b.r + 2) { vecinos[i]!.push(j); vecinos[j]!.push(i); }
     }
   }
-  const pesoTotal = paleta.reduce((acc, e) => acc + e.peso, 0);
-  const exactas = paleta.map((e) => (e.peso / pesoTotal) * globos.length);
-  const cuotas = exactas.map(Math.floor);
-  const sobrante = globos.length - cuotas.reduce((a, b) => a + b, 0);
-  [...exactas.keys()].sort((a, b) => (exactas[b]! - cuotas[b]!) - (exactas[a]! - cuotas[a]!) || a - b).slice(0, sobrante).forEach((k) => { cuotas[k]! += 1; });
   const entrada: Array<number | null> = globos.map(() => null);
   const codigos: Array<string | null> = globos.map(() => null);
-  const elegibles = paleta.map((e) => globos.map((g, i) => (codigoEn(e, g.formatoId) ? i : -1)).filter((i) => i >= 0));
-  const orden = [...paleta.keys()].sort((a, b) => elegibles[a]!.length - elegibles[b]!.length || a - b);
   const pegadoIgual = (i: number, k: number) => vecinos[i]!.some((j) => entrada[j] === k);
-  orden.forEach((k, posicion) => {
-    const lista = elegibles[k]!.filter((i) => entrada[i] === null);
-    for (let i = lista.length - 1; i > 0; i--) {
-      const j = Math.floor(azar() * (i + 1));
-      [lista[i], lista[j]] = [lista[j]!, lista[i]!];
-    }
-    const ultimo = posicion === orden.length - 1;
-    let restante = ultimo ? lista.length : cuotas[k]!;
-    for (const pasada of [0, 1]) {
-      for (const i of lista) {
-        if (restante <= 0) break;
-        if (entrada[i] !== null || (pasada === 0 && pegadoIgual(i, k))) continue;
-        entrada[i] = k;
-        restante--;
-      }
-    }
+  const conFranjas = paleta.some((e) => e.franjas?.length);
+  /** Fracción del recorrido de su tramo en que cae cada globo (solo hace falta si algún color va por franjas). */
+  const fracciones = conFranjas ? globos.map((g) => { const tp = tramos[g.tramo]!; return limitar(proyectar(tp, g.c).s / tp.largo, 0, 1); }) : [];
+  /** Si la entrada `e` de la paleta puede ir en el globo `i` (por su tramo y su franja). */
+  const vaEnGlobo = (e: ColorOrganico, i: number) => {
+    const id = tramos[globos[i]!.tramo]!.def.id;
+    if (e.tramos && !e.tramos.some((t) => id === t || id.startsWith(`${t}_`))) return false;
+    return !e.franjas?.length || e.franjas.some((f) => fracciones[i]! >= Math.min(f.desde, f.hasta) - 1e-9 && fracciones[i]! <= Math.max(f.desde, f.hasta) + 1e-9);
+  };
+  // Grupos de globos con las mismas entradas posibles: sin `tramos` ni `franjas` en la paleta, uno solo con todos.
+  const grupos = new Map<string, { entradas: number[]; indices: number[] }>();
+  globos.forEach((_, i) => {
+    let entradas = [...paleta.keys()].filter((k) => vaEnGlobo(paleta[k]!, i));
+    // Un globo justo en el borde de dos franjas que no cae en ninguna: los colores de su tramo, sin mirar franjas.
+    if (entradas.length === 0 && conFranjas) entradas = [...paleta.keys()].filter((k) => vaEnGlobo({ ...paleta[k]!, franjas: [] }, i));
+    const clave = entradas.join(",");
+    const grupo = grupos.get(clave) ?? { entradas, indices: [] };
+    grupo.indices.push(i);
+    grupos.set(clave, grupo);
   });
+  for (const { entradas, indices } of grupos.values()) {
+    if (entradas.length === 0) {
+      avisos.push("Hay globos sin ningún color de la paleta que pueda ir en ellos (revisa `tramos` y `franjas` de los colores): se usa Fashion Blanco (005).");
+      continue;
+    }
+    const pesoTotal = entradas.reduce((acc, k) => acc + paleta[k]!.peso, 0);
+    const exactas = new Map(entradas.map((k) => [k, (paleta[k]!.peso / pesoTotal) * indices.length]));
+    const cuotas = new Map(entradas.map((k) => [k, Math.floor(exactas.get(k)!)]));
+    const sobrante = indices.length - [...cuotas.values()].reduce((a, b) => a + b, 0);
+    [...entradas].sort((a, b) => (exactas.get(b)! - cuotas.get(b)!) - (exactas.get(a)! - cuotas.get(a)!) || a - b).slice(0, sobrante).forEach((k) => { cuotas.set(k, cuotas.get(k)! + 1); });
+    const elegibles = new Map(entradas.map((k) => [k, indices.filter((i) => codigoEn(paleta[k]!, globos[i]!.formatoId) !== null)]));
+    const orden = [...entradas].sort((a, b) => elegibles.get(a)!.length - elegibles.get(b)!.length || a - b);
+    orden.forEach((k, posicion) => {
+      const lista = elegibles.get(k)!.filter((i) => entrada[i] === null);
+      for (let i = lista.length - 1; i > 0; i--) {
+        const j = Math.floor(azar() * (i + 1));
+        [lista[i], lista[j]] = [lista[j]!, lista[i]!];
+      }
+      const ultimo = posicion === orden.length - 1;
+      let restante = ultimo ? lista.length : cuotas.get(k)!;
+      for (const pasada of [0, 1]) {
+        for (const i of lista) {
+          if (restante <= 0) break;
+          if (entrada[i] !== null || (pasada === 0 && pegadoIgual(i, k))) continue;
+          entrada[i] = k;
+          restante--;
+        }
+      }
+    });
+  }
   // Los que no pudo tomar nadie (solo pasa con paletas muy restringidas): la entrada posible con menos vecinos iguales.
   globos.forEach((g, i) => {
     if (entrada[i] !== null) return;
-    const posibles = paleta.map((e, k) => ({ k, ok: codigoEn(e, g.formatoId) !== null })).filter((x) => x.ok).map((x) => x.k);
+    const posibles = paleta.map((e, k) => ({ k, ok: vaEnGlobo(e, i) && codigoEn(e, g.formatoId) !== null })).filter((x) => x.ok).map((x) => x.k);
     if (posibles.length === 0) {
       avisos.push(`Ningún color de la paleta se fabrica en ${g.formatoId}: se usa Fashion Blanco (005).`);
       return;

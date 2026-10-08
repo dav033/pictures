@@ -254,7 +254,7 @@ function Miniatura3d({ item, url, className = "" }: { item: ItemBiblioteca; url:
 function Fuente({ item, corta = false }: { item: ItemBiblioteca; corta?: boolean }) {
   const f = item.fuente;
   if (!f) return null;
-  const tipo = f.tipo === "idea-sempertex" ? "Idea de sempertex.com" : f.tipo === "celebra" ? "Revista Celebra" : item.id.startsWith("vista:") ? "De tu escena" : item.propio ? "Tu biblioteca" : "Del taller";
+  const tipo = f.tipo === "idea-sempertex" ? "Idea de sempertex.com" : f.tipo === "celebra" ? "Revista Celebra" : f.tipo === "referencia-web" ? "Referencia web" : item.id.startsWith("vista:") ? "De tu escena" : item.propio ? "Tu biblioteca" : "Del taller";
   if (corta) return <span className="truncate text-[0.7rem] text-texto-suave" title={f.titulo}>{tipo}{f.tipo !== "propio" ? ` · ${f.titulo}` : ""}</span>;
   return (
     <span className="text-sm text-texto">

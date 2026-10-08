@@ -1,5 +1,5 @@
 import type { Vec3 } from "./modulos";
-import { formaColumna, formaGuirnalda, RELLENO_TUPIDO, type ColorOrganico, type OpcionesOrganico, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
+import { formaColumna, formaGuirnalda, RELLENO_TUPIDO, type ColorOrganico, type FranjaColor, type OpcionesOrganico, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
 
 /**
  * Estructuras orgánicas que no son columna, guirnalda recta ni arco de dos patas, armadas con el mismo motor
@@ -195,4 +195,385 @@ export function opcionesTroncoConBase(o: OpcionesTroncoConBase): OpcionesOrganic
     mezcla: constante(o.tronco.mezcla), irregularidad: 0.1, serpenteoCm: 3,
   });
   return opciones([base, tronco], o.colores, o.semilla, true, o.inflados ?? INFLADOS_ORGANICOS, o.relleno ?? RELLENO_TUPIDO);
+}
+
+// ----------------------------------------------------------------------------------------------------------
+// Columna paramétrica (recta, inclinada, en par, por franjas de color, con espiral o con montículo al pie)
+// ----------------------------------------------------------------------------------------------------------
+
+/** Pesos por formato («R-12»: 0,5) en un extremo de la pieza. */
+export type PesosFormato = Readonly<Record<string, number>>;
+
+/**
+ * Una columna orgánica descrita por sus medidas, no por sus globos: el motor la vuelve a armar cada vez, así que se
+ * puede cambiar el alto, la inclinación o los colores y sale bien. Medidas por fuera (de la cara de los globos).
+ *
+ * - **Inclinación** en grados desde la vertical (+ hacia +x). Con `curvaInclinacion` 0 el eje es recto e inclinado
+ *   desde el piso (las columnas «un poco inclinadas» de la foto CASE-002); con 1 se dobla más arriba (como `formaColumna`).
+ * - **Franjas**: cortes del alto (fracciones, de abajo arriba) que nombran las franjas `franja_1`, `franja_2`… Un color
+ *   con `tramos: ["franja_2"]` va solo en esa franja (degradé o bicolor por alturas); la columna sigue siendo un solo
+ *   tramo `columna` (sin costuras): el motor reparte el color por la fracción de su recorrido (`franjas` del color).
+ * - **Espiral**: un cordón orgánico más fino que da vueltas pegado a la columna (tramo `espiral`): la columna en
+ *   espiral de dos colores.
+ * - **Montículo**: un anillo acostado de globos grandes al pie (tramo `monticulo`): la columna con base de racimo.
+ * - **Par**: dos columnas iguales separadas `separacionCm` entre pies, la de la izquierda con la inclinación al revés
+ *   (las dos se abren o se cierran a la vez). Sus tramos llevan el sufijo `_izquierda` / `_derecha`; un color limitado
+ *   a `franja_1`, `columna` o `espiral` vale para las dos (ver `tramos` en `ColorOrganico`).
+ */
+export type ParametrosColumnaOrganica = {
+  altoCm: number;
+  /** Diámetro de la columna abajo, a media altura y en la punta. */
+  grosorBaseCm: number;
+  grosorMedioCm: number;
+  grosorPuntaCm: number;
+  inclinacionGrados?: number;
+  /** 0 (recta) a 1 (se dobla arriba). */
+  curvaInclinacion?: number;
+  serpenteoCm?: number;
+  /** Mezcla de tamaños abajo y en la punta; en medio se interpola. */
+  mezcla: { base: PesosFormato; punta: PesosFormato };
+  franjas?: readonly number[];
+  espiral?: { vueltas: number; grosorCm: number; mezcla: PesosFormato };
+  monticulo?: { anchoCm: number; grosorCm: number; mezcla: PesosFormato };
+  par?: { separacionCm: number };
+  colores: readonly ColorOrganico[];
+  /** Multiplica los globos de estructura (1 = envoltura cubierta). */
+  densidad?: number;
+  irregularidad?: number;
+  inflados?: Readonly<Record<string, number>>;
+  relleno?: readonly RellenoOrganico[];
+  semilla: number;
+};
+
+const r1 = (n: number) => Math.round(n * 10) / 10;
+
+/** Interpola dos juegos de pesos (los formatos que falten pesan 0). */
+function mezclaEntre(a: PesosFormato, b: PesosFormato, f: number): Record<string, number> {
+  const salida: Record<string, number> = {};
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const p = (a[k] ?? 0) * (1 - f) + (b[k] ?? 0) * f;
+    if (p > 0.001) salida[k] = Math.round(p * 1000) / 1000;
+  }
+  return salida;
+}
+
+/** Radio (cm) de la envoltura de la columna en la fracción `f` del alto: base hasta el 15 %, medio a la mitad, punta arriba. */
+function radioColumna(p: ParametrosColumnaOrganica, f: number): number {
+  const puntos: Array<[number, number]> = [[0, p.grosorBaseCm], [0.15, p.grosorBaseCm], [0.5, p.grosorMedioCm], [0.9, p.grosorPuntaCm], [1, p.grosorPuntaCm * 0.8]];
+  for (let i = 1; i < puntos.length; i++) {
+    const [t0, g0] = puntos[i - 1]!, [t1, g1] = puntos[i]!;
+    if (f <= t1) return (g0 + (g1 - g0) * ((f - t0) / Math.max(1e-6, t1 - t0))) / 2;
+  }
+  return (p.grosorPuntaCm * 0.8) / 2;
+}
+
+/** Los tramos de UNA columna con el pie en `x0` y la inclinación con el signo `lado`; `sufijo` distingue las del par. */
+function tramosColumna(p: ParametrosColumnaOrganica, x0: number, lado: 1 | -1, sufijo: string): TramoOrganico[] {
+  const inicio = p.grosorBaseCm * 0.25;
+  const fin = p.altoCm - p.grosorPuntaCm * 0.4;
+  const alto = Math.max(20, fin - inicio);
+  const desvio = Math.tan(((p.inclinacionGrados ?? 0) * Math.PI) / 180) * alto * lado;
+  const c = Math.min(1, Math.max(0, p.curvaInclinacion ?? 0));
+  const eje = (f: number): Vec3 => v(
+    r1(x0 + desvio * ((1 - c) * f + c * f * f) + (p.serpenteoCm ?? 0) * Math.sin(Math.PI * 2 * f)),
+    r1(inicio + alto * f),
+    0,
+  );
+  const etiqueta = sufijo ? ` ${sufijo.slice(1)}` : "";
+  const recorrido = Array.from({ length: 9 }, (_, k) => eje(k / 8));
+  const tramos: TramoOrganico[] = [{
+    id: `columna${sufijo}`, nombre: `Columna${etiqueta}`, recorrido,
+    grosor: [0, 0.15, 0.3, 0.5, 0.7, 0.9, 1].map((t) => ({ t, radioCm: r1(radioColumna(p, t)) })),
+    mezcla: [0, 0.25, 0.5, 0.75, 1].map((t) => ({ t, pesos: mezclaEntre(p.mezcla.base, p.mezcla.punta, t) })),
+    irregularidad: p.irregularidad ?? 0.12, tapas: { fin: true },
+  }];
+  if (p.espiral) {
+    const e = p.espiral;
+    const puntos: Vec3[] = [];
+    const n = Math.max(12, Math.round(e.vueltas * 12));
+    for (let k = 0; k <= n; k++) {
+      const f = 0.04 + (0.9 * k) / n;
+      const ang = Math.PI * 2 * e.vueltas * f * lado;
+      const centro = eje(f);
+      // El cordón va pegado por fuera: su eje un poco más allá de la cara de la columna.
+      const r = radioColumna(p, f) + e.grosorCm * 0.2;
+      puntos.push(v(r1(centro.x + Math.sin(ang) * r), centro.y, r1(Math.cos(ang) * r)));
+    }
+    tramos.push({
+      id: `espiral${sufijo}`, nombre: `Espiral${etiqueta}`, recorrido: puntos,
+      grosor: [{ t: 0, radioCm: e.grosorCm / 2 }, { t: 1, radioCm: e.grosorCm / 2 }], mezcla: constante(e.mezcla),
+      // Un cordón fino de globos chicos deja ver entre ellos: va más tupido que la columna.
+      irregularidad: 0.1, tapas: { inicio: true, fin: true }, densidad: 1.6,
+    });
+  }
+  if (p.monticulo) {
+    const m = p.monticulo;
+    const radioAnillo = Math.max(10, m.anchoCm / 2 - m.grosorCm / 2);
+    const anillo: Vec3[] = [];
+    for (let k = 0; k <= 16; k++) {
+      const t = (k / 16) * Math.PI * 2;
+      anillo.push(v(r1(x0 + radioAnillo * Math.cos(t)), r1(m.grosorCm * 0.45), r1(radioAnillo * Math.sin(t))));
+    }
+    tramos.push({
+      id: `monticulo${sufijo}`, nombre: `Montículo al pie${etiqueta}`, recorrido: anillo,
+      grosor: [{ t: 0, radioCm: m.grosorCm / 2 }, { t: 1, radioCm: m.grosorCm / 2 }], mezcla: constante(m.mezcla), irregularidad: 0.18, tapas: {},
+    });
+  }
+  return tramos;
+}
+
+export function opcionesColumnaOrganica(p: ParametrosColumnaOrganica): OpcionesOrganico {
+  const tramos = p.par
+    ? [...tramosColumna(p, -p.par.separacionCm / 2, -1, "_izquierda"), ...tramosColumna(p, p.par.separacionCm / 2, 1, "_derecha")]
+    : tramosColumna(p, 0, 1, "");
+  const cortes = cortesDeFranjas(p.franjas);
+  const colores = coloresPorFranjas(p.colores, (k) => (k < cortes.length - 1 ? [{ tramo: "columna", desde: cortes[k]!, hasta: cortes[k + 1]! }] : []));
+  return { ...opciones(tramos, colores, p.semilla, true, p.inflados ?? INFLADOS_ORGANICOS, p.relleno ?? RELLENO_TUPIDO), densidad: p.densidad ?? 1 };
+}
+
+/** 0, los cortes (ordenados, dentro de 0–1) y 1. */
+const cortesDeFranjas = (franjas: readonly number[] | undefined) => [0, ...[...(franjas ?? [])].filter((f) => f > 0.01 && f < 0.99).sort((a, b) => a - b), 1];
+
+/** Dónde cae la franja k (0, 1…) de una pieza: en qué tramo (o tramos, por el comienzo de su id) y en qué trecho de él. */
+type TrechoFranja = { tramo: string; desde: number; hasta: number };
+
+/**
+ * Los colores con `tramos: ["franja_N"]` pasados al motor: una entrada por tramo donde cae esa franja, limitada a su
+ * trecho (`franjas` del color). Lo que no es franja queda como venía (si un color mezcla franjas y otros tramos, va
+ * en dos entradas con el mismo peso).
+ */
+function coloresPorFranjas(colores: readonly ColorOrganico[], trechos: (k: number) => TrechoFranja[]): ColorOrganico[] {
+  return colores.flatMap((c) => {
+    const franjas = (c.tramos ?? []).map((t) => /^franja_(\d+)$/.exec(t)).filter((m): m is RegExpExecArray => m !== null).map((m) => Number(m[1]) - 1);
+    if (franjas.length === 0) return [{ ...c }];
+    const otros = (c.tramos ?? []).filter((t) => !/^franja_\d+$/.test(t));
+    const porTramo = new Map<string, FranjaColor[]>();
+    for (const k of franjas) for (const t of trechos(k)) porTramo.set(t.tramo, [...(porTramo.get(t.tramo) ?? []), { desde: r1000(t.desde), hasta: r1000(t.hasta) }]);
+    const resto: ColorOrganico = { codigo: c.codigo, peso: c.peso, ...(c.confeti ? { confeti: true } : {}), ...(c.formatos ? { formatos: c.formatos } : {}) };
+    return [
+      ...[...porTramo.entries()].map(([tramo, rangos]) => ({ ...resto, tramos: [tramo], franjas: rangos })),
+      ...(otros.length ? [{ ...resto, tramos: otros }] : []),
+    ];
+  });
+}
+
+const r1000 = (n: number) => Math.round(n * 1000) / 1000;
+
+// ----------------------------------------------------------------------------------------------------------
+// Arco paramétrico (completo, semiarco, asimétrico, guirnalda sobre marco redondo o rectangular)
+// ----------------------------------------------------------------------------------------------------------
+
+/**
+ * El recorrido que siguen los globos (el marco), con la pieza medida por fuera:
+ * - `arco`: U invertida apoyada en el piso, de pie izquierdo a pie derecho. `curva`: `elipse` (media elipse),
+ *   `parabola` (más picudo) o `medio_punto` (patas rectas y medio círculo arriba).
+ * - `circulo`: aro parado en el piso; empieza abajo, sube por la izquierda, pasa arriba y baja por la derecha.
+ * - `rectangulo`: marco de esquinas redondeadas parado en el piso; empieza abajo a la izquierda, sube, cruza arriba,
+ *   baja por la derecha y vuelve por abajo.
+ */
+export type MarcoArcoOrganico =
+  | { forma: "arco"; curva: "elipse" | "parabola" | "medio_punto" }
+  | { forma: "circulo" }
+  | { forma: "rectangulo"; radioEsquinaCm: number };
+
+/**
+ * Un tramo de globos sobre el marco, de `desde` a `hasta` (fracciones del largo del marco: 0 = inicio, 1 = fin), con su
+ * grosor (diámetro) al empezar, en medio y al acabar y su mezcla de tamaños al empezar y al acabar. `tapas`: remate
+ * redondo en sus puntas (un tramo que acaba en el aire lo lleva; uno que nace del piso o sigue en otro, no).
+ */
+export type SegmentoArcoOrganico = {
+  id: string;
+  desde: number;
+  hasta: number;
+  grosorCm: { inicio: number; medio: number; fin: number };
+  mezcla: { inicio: PesosFormato; fin: PesosFormato };
+  tapas?: { inicio?: boolean; fin?: boolean };
+  /** Cuánto va por delante del marco (cm, hacia quien mira). */
+  adelanteCm?: number;
+};
+
+export type ParametrosArcoOrganico = {
+  marco: MarcoArcoOrganico;
+  /** Medidas por fuera con los globos (de la cara de fuera de un lado a la del otro, y del piso a lo más alto). */
+  anchoCm: number;
+  altoCm: number;
+  segmentos: readonly SegmentoArcoOrganico[];
+  /**
+   * Cortes del marco (fracciones, 0–1) que nombran las franjas `franja_1`, `franja_2`… a lo largo del recorrido: un color
+   * con `tramos: ["franja_2"]` va solo ahí (degradé o color por tramos: el ombré de coral a menta). Los segmentos no se
+   * parten: el motor reparte el color por la fracción de su recorrido.
+   */
+  franjas?: readonly number[];
+  /**
+   * Racimos de un solo color: cada segmento se reparte en bloques de unos `largoCm` y cada bloque toma UN color de la
+   * paleta, por turnos según los pesos (naranja, negro, naranja…); los colores que ya traen `tramos` quedan de acento.
+   * Manda sobre `franjas`.
+   */
+  bloques?: { largoCm: number };
+  colores: readonly ColorOrganico[];
+  densidad?: number;
+  irregularidad?: number;
+  inflados?: Readonly<Record<string, number>>;
+  relleno?: readonly RellenoOrganico[];
+  semilla: number;
+};
+
+type Punto2D = { x: number; y: number };
+
+/** Puntos del marco en el plano XY, metidos `margen` cm hacia dentro (el radio de los globos de la orilla). */
+function puntosMarco(m: MarcoArcoOrganico, ancho: number, alto: number, margen: number): Punto2D[] {
+  const a = Math.max(10, ancho / 2 - margen);
+  const n = 64;
+  const salida: Punto2D[] = [];
+  if (m.forma === "arco") {
+    const y0 = margen * 0.5;
+    const h = Math.max(20, alto - margen - y0);
+    if (m.curva === "medio_punto") {
+      const r = Math.min(a, h);
+      const patas = Math.max(0, h - r);
+      const largoArco = Math.PI * r, total = 2 * patas + largoArco;
+      for (let i = 0; i <= n; i++) {
+        const s = (i / n) * total;
+        if (s <= patas) salida.push({ x: -a, y: y0 + s });
+        else if (s <= patas + largoArco) {
+          const ang = Math.PI - (s - patas) / r;
+          salida.push({ x: a * Math.cos(ang), y: y0 + patas + r * Math.sin(ang) });
+        } else salida.push({ x: a, y: y0 + patas - (s - patas - largoArco) });
+      }
+    } else {
+      for (let i = 0; i <= n; i++) {
+        const u = i / n;
+        if (m.curva === "parabola") { const x = -a + 2 * a * u; salida.push({ x, y: y0 + h * (1 - (x / a) ** 2) }); }
+        else { const ang = Math.PI * (1 - u); salida.push({ x: a * Math.cos(ang), y: y0 + h * Math.sin(ang) }); }
+      }
+    }
+  } else if (m.forma === "circulo") {
+    const r = Math.max(10, Math.min(ancho, alto) / 2 - margen);
+    const cy = alto / 2;
+    for (let i = 0; i <= n; i++) {
+      const ang = -Math.PI / 2 - (i / n) * Math.PI * 2;
+      salida.push({ x: r * Math.cos(ang), y: cy + r * Math.sin(ang) });
+    }
+  } else {
+    const b = margen, t = Math.max(b + 20, alto - margen);
+    const r = Math.min(m.radioEsquinaCm, a * 0.9, ((t - b) / 2) * 0.9);
+    // Cada esquina gira 90° en el sentido del reloj visto de frente; entre esquinas, los lados rectos.
+    const esquinas: Array<[number, number, number]> = [[-a + r, t - r, Math.PI], [a - r, t - r, Math.PI / 2], [a - r, b + r, 0], [-a + r, b + r, -Math.PI / 2]];
+    salida.push({ x: -a, y: b + r });
+    for (const [cx, cy, a0] of esquinas) {
+      for (let j = 0; j <= 6; j++) {
+        const ang = a0 - (j / 6) * (Math.PI / 2);
+        salida.push({ x: cx + r * Math.cos(ang), y: cy + r * Math.sin(ang) });
+      }
+    }
+  }
+  return salida;
+}
+
+/** El punto en la fracción `f` (0–1) del largo de una polilínea. */
+function puntoEnLargo(puntos: readonly Punto2D[], f: number): Punto2D {
+  const largos = [0];
+  for (let i = 1; i < puntos.length; i++) largos.push(largos[i - 1]! + Math.hypot(puntos[i]!.x - puntos[i - 1]!.x, puntos[i]!.y - puntos[i - 1]!.y));
+  const objetivo = Math.min(1, Math.max(0, f)) * largos[largos.length - 1]!;
+  for (let i = 1; i < puntos.length; i++) {
+    if (largos[i]! >= objetivo) {
+      const u = (objetivo - largos[i - 1]!) / Math.max(1e-6, largos[i]! - largos[i - 1]!);
+      return { x: puntos[i - 1]!.x + (puntos[i]!.x - puntos[i - 1]!.x) * u, y: puntos[i - 1]!.y + (puntos[i]!.y - puntos[i - 1]!.y) * u };
+    }
+  }
+  return puntos[puntos.length - 1]!;
+}
+
+
+/** El largo (cm) de una polilínea del plano. */
+function largoPolilinea(puntos: readonly Punto2D[]): number {
+  let largo = 0;
+  for (let i = 1; i < puntos.length; i++) largo += Math.hypot(puntos[i]!.x - puntos[i - 1]!.x, puntos[i]!.y - puntos[i - 1]!.y);
+  return largo;
+}
+
+/** Turnos de color por pesos (round-robin suave): con pesos 2 y 1 sale A, B, A, A, B, A…, sin dos iguales seguidos si se puede. */
+function turnosPorPeso(pesos: readonly number[], n: number): number[] {
+  const acumulado = pesos.map(() => 0);
+  const total = pesos.reduce((a, b) => a + b, 0);
+  const salida: number[] = [];
+  for (let j = 0; j < n; j++) {
+    pesos.forEach((p, i) => { acumulado[i]! += p; });
+    let mejor = 0;
+    for (let i = 1; i < pesos.length; i++) if (acumulado[i]! > acumulado[mejor]! + 1e-9) mejor = i;
+    if (pesos.length > 1 && salida[salida.length - 1] === mejor) {
+      let otro = mejor === 0 ? 1 : 0;
+      for (let i = 0; i < pesos.length; i++) if (i !== mejor && acumulado[i]! > acumulado[otro]! + 1e-9) otro = i;
+      if (acumulado[otro]! > 0) mejor = otro;
+    }
+    acumulado[mejor]! -= total;
+    salida.push(mejor);
+  }
+  return salida;
+}
+
+/** El perfil de tres puntos (inicio, medio, fin) en la fracción `t` del segmento. */
+const enPerfil = (g: { inicio: number; medio: number; fin: number }, t: number) => (t <= 0.5 ? g.inicio + (g.medio - g.inicio) * (t / 0.5) : g.medio + (g.fin - g.medio) * ((t - 0.5) / 0.5));
+
+export function opcionesArcoOrganicoParametrico(p: ParametrosArcoOrganico): OpcionesOrganico {
+  // El marco por fuera; cada punto del eje se mete hacia dentro su propio radio (la pieza mide lo pedido por fuera
+  // aunque sea gruesa en un pie y fina arriba). Todos los marcos se recorren en el sentido del reloj visto de frente:
+  // hacia dentro es la tangente girada −90°.
+  const marco = puntosMarco(p.marco, p.anchoCm, p.altoCm, 0);
+  const largoMarco = Math.max(1, largoPolilinea(marco));
+  const tramos: TramoOrganico[] = p.segmentos.map((s) => {
+    const pasos = Math.max(3, Math.round(Math.abs(s.hasta - s.desde) * 24));
+    const recorrido = Array.from({ length: pasos + 1 }, (_, k) => {
+      const f = s.desde + ((s.hasta - s.desde) * k) / pasos;
+      const q = puntoEnLargo(marco, f);
+      const delante = puntoEnLargo(marco, Math.min(1, f + 0.004)), detras = puntoEnLargo(marco, Math.max(0, f - 0.004));
+      const tx = delante.x - detras.x, ty = delante.y - detras.y, n = Math.hypot(tx, ty) || 1;
+      const r = enPerfil(s.grosorCm, k / pasos) / 2;
+      // Lo que nace del piso apoya en él: el eje, a medio radio del piso como mínimo.
+      return v(r1(q.x + (ty / n) * r), r1(Math.max(r * 0.5, q.y - (tx / n) * r)), s.adelanteCm ?? 0);
+    });
+    return {
+      id: s.id, nombre: s.id.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()), recorrido,
+      grosor: [{ t: 0, radioCm: s.grosorCm.inicio / 2 }, { t: 0.5, radioCm: s.grosorCm.medio / 2 }, { t: 1, radioCm: s.grosorCm.fin / 2 }],
+      mezcla: [{ t: 0, pesos: { ...s.mezcla.inicio } }, { t: 0.5, pesos: mezclaEntre(s.mezcla.inicio, s.mezcla.fin, 0.5) }, { t: 1, pesos: { ...s.mezcla.fin } }],
+      irregularidad: p.irregularidad ?? 0.14, tapas: { ...(s.tapas ?? {}) },
+    };
+  });
+  /** Fracción del segmento (0 en `desde`, 1 en `hasta`) de una fracción del marco. */
+  const local = (s: SegmentoArcoOrganico, f: number) => (s.hasta === s.desde ? 0 : (f - s.desde) / (s.hasta - s.desde));
+  let colores: ColorOrganico[];
+  if (p.bloques) {
+    // Bloques de cada segmento, en orden; cada uno, un color por turnos (los que traen `tramos` quedan de acento).
+    const bloques: TrechoFranja[] = p.segmentos.flatMap((s) => {
+      const n = Math.max(1, Math.round((Math.abs(s.hasta - s.desde) * largoMarco) / Math.max(20, p.bloques!.largoCm)));
+      return Array.from({ length: n }, (_, k) => ({ tramo: s.id, desde: k / n, hasta: (k + 1) / n }));
+    });
+    const libres = p.colores.map((c, i) => ({ c, i })).filter((x) => !x.c.tramos);
+    const turnos = turnosPorPeso(libres.map((x) => x.c.peso), bloques.length);
+    colores = p.colores.flatMap((c, i) => {
+      if (c.tramos) return [{ ...c }];
+      const mios = bloques.filter((_, j) => libres.length > 0 && libres[turnos[j]!]!.i === i);
+      const porTramo = new Map<string, FranjaColor[]>();
+      for (const b of mios) porTramo.set(b.tramo, [...(porTramo.get(b.tramo) ?? []), { desde: r1000(b.desde), hasta: r1000(b.hasta) }]);
+      return [...porTramo.entries()].map(([tramo, franjas]) => ({ ...c, tramos: [tramo], franjas }));
+    });
+  } else {
+    const cortes = cortesDeFranjas(p.franjas);
+    colores = coloresPorFranjas(p.colores, (k) => {
+      if (k >= cortes.length - 1) return [];
+      const a = cortes[k]!, b = cortes[k + 1]!;
+      return p.segmentos.flatMap((s) => {
+        const lo = Math.max(a, Math.min(s.desde, s.hasta)), hi = Math.min(b, Math.max(s.desde, s.hasta));
+        if (hi <= lo) return [];
+        const [t0, t1] = [local(s, lo), local(s, hi)].sort((x, y) => x - y) as [number, number];
+        return [{ tramo: s.id, desde: t0, hasta: t1 }];
+      });
+    });
+  }
+  return { ...opciones(tramos, colores, p.semilla, true, p.inflados ?? INFLADOS_ORGANICOS, p.relleno ?? RELLENO_TUPIDO), densidad: p.densidad ?? 1 };
+}
+
+/** El contorno del marco (plano XY, cm) metido `margenCm` hacia dentro de la medida por fuera: el panel de detrás. */
+export function contornoMarco(p: Pick<ParametrosArcoOrganico, "marco" | "anchoCm" | "altoCm">, margenCm: number): Punto2D[] {
+  return puntosMarco(p.marco, p.anchoCm, p.altoCm, margenCm);
 }
